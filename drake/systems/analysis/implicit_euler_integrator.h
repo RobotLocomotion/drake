@@ -237,27 +237,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   /// @}
 
-  /// @name Implicit-integration-specific parameters.
-  /// Parameters relevant to the nonlinear system solving process.
-  /// @{
-
-  /// Gets the tolerance below which changes to the state variables during the
-  /// integration process should indicate that the Newton-Raphson process
-  /// has converged. Convergence is only declared if the norms of the changes to
-  /// position variables, velocity variables, and auxiliary variables are all
-  /// within this tolerance. Norms are weighted as described in
-  /// "Methods for weighting state variable errors" for IntegratorBase
-  /// documentation; this tolerance is an absolute one.
-  double get_delta_state_tolerance() const { return delta_update_tol_; }
-
-  /// Sets the tolerance below which changes to the state variables during the
-  /// integration process should indicate that the Newton-Raphson process
-  /// has converged.
-  /// @sa get_delta_state_tolerance()
-  void set_delta_state_tolerance(double tol) { delta_update_tol_ = tol; }
-
-  /// @}
-
  protected:
   void DoInitialize() override;
   std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
@@ -282,11 +261,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   MatrixX<T> ComputeAutoDiffJacobian(const VectorX<T>& xtplus);
   VectorX<T> CalcTimeDerivatives(const VectorX<T>& x);
   void CalcErrorNorms(const Context<T>& context, T* q_nrm, T* v_nrm, T* z_nrm);
-
-  // The tolerance at which the updates to the state variables indicate that
-  // no change is effectively occurring, thereby allowing the nonlinear system
-  // solving process to complete.
-  double delta_update_tol_{std::sqrt(std::numeric_limits<double>::epsilon())};
 
   // This is a pre-allocated temporary for use by integration. It stores
   // the derivatives computed at x(t+h).

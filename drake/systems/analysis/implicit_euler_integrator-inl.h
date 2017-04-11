@@ -5,6 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -340,6 +341,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
                           VectorX<T>* xtplus) {
   using std::abs;
   using std::pow;
+  using std::max;
 
   // Verify xtplus
   Context<T>* context = this->get_mutable_context();
@@ -363,13 +365,12 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
 
     // Update the state.
     IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
-    const T h = this->get_minimum_step_size();
     context->get_mutable_continuous_state()->SetFromVector(
-        xt0 + h*derivs_->CopyToVector());
+        xt0 + dt*derivs_->CopyToVector());
 
     // Update the time
-    context->set_time(t0 + h);
-    return h;
+    context->set_time(t0 + dt);
+    return dt;
   }
 
   // Advance the context time; this means that all derivatives will be computed
@@ -412,7 +413,14 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     A_ = J * (dt / scale) - MatrixX<T>::Identity(n, n);
     num_iter_factorizations_++;
     VectorX<T> dx = Solve(A_, goutput);
-    T dx_norm = dx.norm();
+
+    // Get the infinity norm of the weighted update vector.
+    T q_nrm, v_nrm, z_nrm;
+    dx_state_->get_mutable_vector()->SetFromVector(dx);
+    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
+    SPDLOG_DEBUG(drake::log(), "g norm: {}  q norm: {}  v norm: {}  z norm: {}",
+                 goutput.norm(), q_nrm, v_nrm, z_nrm);
+    T dx_norm = max(q_nrm, max(v_nrm, z_nrm));
 
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
@@ -430,7 +438,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
         break;
 
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
-      const double k_dot_tol = kappa * this->get_target_accuracy();
+      const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
         *xtplus += dx;
@@ -440,16 +448,6 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
-
-    // Check whether the update is close to zero.
-    T q_nrm, v_nrm, z_nrm;
-    dx_state_->get_mutable_vector()->SetFromVector(dx);
-    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
-    SPDLOG_DEBUG(drake::log(), "g norm: {}  q norm: {}  v norm: {}  z norm: {}",
-                        goutput.norm(), q_nrm, v_nrm, z_nrm);
-    if (q_nrm < delta_update_tol_ && v_nrm < delta_update_tol_ &&
-        z_nrm < delta_update_tol_)
-      return dt;
 
     // Update the state and compute g(xⁱ⁺¹).
     *xtplus += dx;
@@ -552,7 +550,7 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
 
   // Save statistics.
   int saved_num_jacobian_reforms = num_jacobian_reforms_;
-  int saved_num_iter_factorizationss = num_iter_factorizations_;
+  int saved_num_iter_factorizations = num_iter_factorizations_;
   int64_t saved_num_function_evaluations =
       this->get_num_derivative_evaluations();
   int64_t saved_num_jacobian_function_evaluations =
@@ -573,7 +571,7 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   num_err_est_jacobian_reforms_ +=
       num_jacobian_reforms_ - saved_num_jacobian_reforms;
   num_err_est_iter_factorizations_ += num_iter_factorizations_ -
-      saved_num_iter_factorizationss;
+      saved_num_iter_factorizations;
   num_err_est_function_evaluations_ +=
       this->get_num_derivative_evaluations() - saved_num_function_evaluations;
   num_err_est_jacobian_function_evaluations_ +=
@@ -749,6 +747,37 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
   context->set_time(t0);
   context->get_mutable_continuous_state()->SetFromVector(xt0);
 
+  // If dt was smaller than the minimum step size, an explicit Euler step
+  // was taken. Computing the error estimate using two half steps is now the
+  // best bet.
+  if (dt < this->get_minimum_step_size()) {
+    const T half_dt = dt / 2;
+
+    // Do one half step.
+    IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
+    context->get_mutable_continuous_state()->SetFromVector(
+        xt0 + half_dt*derivs_->CopyToVector());
+    context->set_time(t0 + half_dt);
+
+    // Do another half step.
+    const VectorX<T> xtpoint5 = context->get_continuous_state_vector().
+        CopyToVector();
+    IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
+    context->get_mutable_continuous_state()->SetFromVector(
+        xtpoint5 + half_dt*derivs_->CopyToVector());
+    context->set_time(t0 + dt);
+
+    // Update the error estimation ODE counts.
+    num_err_est_function_evaluations_ += 2;
+
+    // Set the "trapezoid" state.
+    *xtplus_itr = context->get_continuous_state()->CopyToVector();
+
+    // Update the statistics.
+    this->UpdateStatistics(dt);
+    return dt;
+  }
+
   // The error estimation process uses the implicit trapezoid method, which
   // is defined as:
   // x(t+h) = x(t) + h/2 (f(t, x(t) + f(t+h, x(t+h))
@@ -770,8 +799,7 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
   *xtplus_itr = *xtplus_ie;
   T stepped_itr = StepImplicitTrapezoid(stepped_ie, dx0, xtplus_itr);
 
-  // If the implicit trapezoid approach failed, divide h in two and try
-  // again.
+  // If the implicit trapezoid approach failed, we have no error estimate.
   if (stepped_itr == 0.0) {
     context->set_time(t0);
     context->get_mutable_continuous_state()->SetFromVector(xt0);

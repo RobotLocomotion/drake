@@ -823,7 +823,7 @@ class IntegratorBase {
   /// Sets whether the integrator should throw an exception when the
   /// minimum step size is exceeded for purposes of error control. Default
   /// is `true`.
-  void set_min_step_size_exceeded_throws(bool throws) {
+  void set_minimum_step_size_exceeded_throws(bool throws) {
     min_step_exceeded_throws_ = throws; }
 
   /**
