@@ -137,9 +137,25 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   }
   /// @}
 
-  /**
-   * The integrator supports error estimation.
-   */
+  /// Gets whether the integrator will throw an exception on failure to take a
+  /// single full step with StepExactlyFixed(). In implicit integrators,
+  /// it cannot be guaranteed that a single integration step of a desired size
+  /// is taken, which can be a desirable feature (e.g., consider "consistency"
+  /// in nonlinear programming for direct transcription methods as described
+  /// in the documentation for IntegratorBase::StepExactlyFixed().
+  /// By default, this function returns `true`; `false` allows
+  /// IntegratorBase::set_fixed_step_mode() and StepOnceFixedSize() to be used
+  /// in the typical manner.
+  /// @sa set_multistep_in_step_exactly_fixed_throws()
+  bool get_multistep_in_step_exactly_fixed_throws() const {
+    return multistep_in_step_exactly_fixed_throws_; }
+
+  /// Sets whether the integrator will throw an exception on failure to take a
+  /// single full step with StepExactlyFixed(). The default value is `true`.
+  void set_multistep_in_step_exactly_fixed_throws(bool flag) {
+    multistep_in_step_exactly_fixed_throws_ = flag; }
+
+  /// The integrator supports error estimation.
   bool supports_error_estimation() const override { return true; }
 
   /// This integrator provides second order error estimates.
@@ -300,6 +316,10 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   // The computed iteration matrix.
   MatrixX<T> A_;
+
+  // Does integrator throw an exception on failure to take a single full step
+  // with DoStepOnceFixedSize()?
+  bool multistep_in_step_exactly_fixed_throws_{true};
 
   // Statistics that indicate why step sizes decrease.
   int num_shrinkages_from_error_control_{0};

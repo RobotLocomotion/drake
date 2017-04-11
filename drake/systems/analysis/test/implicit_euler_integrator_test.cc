@@ -201,12 +201,40 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
             ImplicitEulerIntegrator<double>::JacobianComputationScheme::
                 kForwardDifference);
+  EXPECT_TRUE(integrator.get_multistep_in_step_exactly_fixed_throws());
 
   // Test that setting the target accuracy and initial step size target is
   // successful.
   integrator.set_maximum_step_size(dt);
   EXPECT_NO_THROW(integrator.set_target_accuracy(1.0));
   EXPECT_NO_THROW(integrator.request_initial_step_size_target(1.0));
+}
+
+TEST_F(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
+  // Create a new spring-mass system.
+  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
+
+  // Set the integrator to operate in fixed step mode and with very tight
+  // tolerances.
+  ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
+  const double huge_dt = 100.0;
+  integrator.set_maximum_step_size(huge_dt);
+  integrator.set_fixed_step_mode(true);
+
+  // Use automatic differentiation because we can.
+  integrator.set_jacobian_computation_scheme(
+      ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+      kAutomatic);
+
+  // Set initial condition to something significant.
+  spring_mass.set_position(context.get(), 1.0);
+  spring_mass.set_velocity(context.get(), -1.0);
+
+  // Take all the defaults.
+  integrator.Initialize();
+
+  // Integrate for the desired step size.
+  EXPECT_THROW(integrator.StepExactlyFixed(huge_dt), std::runtime_error);
 }
 
 TEST_F(ImplicitIntegratorTest, ContextAccess) {
@@ -476,6 +504,7 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
   integrator.set_maximum_step_size(large_dt);
   integrator.set_fixed_step_mode(true);
+  integrator.set_multistep_in_step_exactly_fixed_throws(false);
 
   // Use automatic differentiation because we can.
   integrator.set_jacobian_computation_scheme(

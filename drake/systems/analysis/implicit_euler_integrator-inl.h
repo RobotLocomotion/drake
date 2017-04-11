@@ -833,8 +833,26 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   // Reset the error estimate.
   err_est_vec_.setZero(context->get_continuous_state()->size());
 
-  // Loop until there is no time remaining.
+  // Take a single step.
   T t_remaining = dt;
+  t_remaining -= StepOnceAtMostPaired(t_remaining, &xtplus_ie,
+                                      &xtplus_itr);
+
+  // If the single step didn't cover the entire interval, either throw an
+  // exception or continue integrating.
+  if (t_remaining > 0 && multi_step_in_step_once_fixed_throws_) {
+    throw std::runtime_error("ImplicitEulerIntegrator::DoStepOnceFixedSize()"
+                                 " needs to take multiple substeps to attain"
+                                 " the requested step size. Calling"
+                                 " set_multi_step_in_step_once_fixed(true) will"
+                                 " suppress this exception.");
+  }
+
+  // Compute and update the error estimate. We assume that the error estimates
+  // can be summed.
+  err_est_vec_ += xtplus_ie - xtplus_itr;
+
+  // Loop until there is no time remaining.
   while (t_remaining > 0) {
     // Perform the paired step.
     t_remaining -= StepOnceAtMostPaired(t_remaining, &xtplus_ie,

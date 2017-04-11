@@ -402,10 +402,13 @@ class IntegratorBase {
   /// circumstances. This method is designed for integrator
   /// users that do not wish to consider publishing or discontinuous,
   /// mid-interval updates. One such example application is that of direct
-  /// transcription for trajectory optimization. In keeping with the naming
-  /// semantics of this function, error controlled integration is not supported
-  /// (though error estimates will be computed for integrators that support that
-  /// feature).
+  /// transcription for trajectory optimization, for which the integration
+  /// process should be _consistent_: it should execute the same sequence of
+  /// arithmetic operations for all values of the nonlinear programming
+  /// variables. In keeping with the naming semantics of this function, error
+  /// controlled integration is not supported (though error estimates will be
+  /// computed for integrators that support that feature), which is a minimal
+  /// requirement for "consistency".
   /// @warning Users should simulate systems using `Simulator::StepTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
@@ -817,7 +820,7 @@ class IntegratorBase {
   /// Gets whether the integrator should throw an exception when the
   /// minimum step size is exceeded for purposes of error control. Default
   /// is `true`.
-  bool get_min_step_size_exceeded_throws() const {
+  bool get_minimum_step_size_exceeded_throws() const {
     return min_step_exceeded_throws_; }
 
   /// Sets whether the integrator should throw an exception when the
