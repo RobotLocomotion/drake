@@ -232,6 +232,7 @@ drake_cc_library(
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
+        "//drake/common:unused",
     ],
 )
 
@@ -259,6 +260,7 @@ drake_cc_library(
         ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
+        "//drake/common:unused",
     ],
 )
 
@@ -333,6 +335,7 @@ drake_cc_library(
     hdrs = ["siso_vector_system.h"],
     deps = [
         ":leaf_system",
+        "//drake/common:unused",
     ],
 )
 

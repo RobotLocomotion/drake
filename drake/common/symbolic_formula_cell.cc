@@ -135,9 +135,9 @@ bool FormulaTrue::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaTrue::Evaluate(const Environment& env) const { return true; }
+bool FormulaTrue::Evaluate(const Environment&) const { return true; }
 
-Formula FormulaTrue::Substitute(const Substitution& s) const {
+Formula FormulaTrue::Substitute(const Substitution&) const {
   return Formula::True();
 }
 
@@ -161,9 +161,9 @@ bool FormulaFalse::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaFalse::Evaluate(const Environment& env) const { return false; }
+bool FormulaFalse::Evaluate(const Environment&) const { return false; }
 
-Formula FormulaFalse::Substitute(const Substitution& s) const {
+Formula FormulaFalse::Substitute(const Substitution&) const {
   return Formula::False();
 }
 
@@ -403,7 +403,7 @@ bool FormulaForall::Less(const FormulaCell& f) const {
   return this->f_.Less(forall_f.f_);
 }
 
-bool FormulaForall::Evaluate(const Environment& env) const {
+bool FormulaForall::Evaluate(const Environment&) const {
   // Given ∀ x1, ..., xn. F, check if there is a counterexample satisfying
   // ¬F. If exists, it returns false. Otherwise, return true.
   // That is, it returns !check(∃ x1, ..., xn. ¬F)
@@ -531,7 +531,7 @@ bool FormulaPositiveSemidefinite::Less(const FormulaCell& f) const {
   // clang-format on
 }
 
-bool FormulaPositiveSemidefinite::Evaluate(const Environment& env) const {
+bool FormulaPositiveSemidefinite::Evaluate(const Environment&) const {
   // Need to check if xᵀ m x ≥ * 0 for all vector x ∈ ℝⁿ.
   // TODO(Soonho): implement this when we have SMT/delta-SMT support.
   throw runtime_error(
