@@ -21,10 +21,15 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   // This passes the model and model environment to a
   // an external 
-  typedef void (*mipSolCallbackFunction)(const MathematicalProgram&, void *, Eigen::VectorXd&, VectorXDecisionVariable&);
-  void addMIPNodeCallback(mipSolCallbackFunction fnc, void * usrdata){
+  typedef void (*mipNodeCallbackFunction)(const MathematicalProgram&, void *, Eigen::VectorXd&, VectorXDecisionVariable&);
+  void addMIPNodeCallback(mipNodeCallbackFunction fnc, void * usrdata){
   	mip_node_callback_ = fnc;
   	mip_node_callback_usrdata_ = usrdata;
+  }
+  typedef void (*mipSolCallbackFunction)(const MathematicalProgram&, void *);
+  void addMIPSolCallback(mipSolCallbackFunction fnc, void * usrdata){
+  	mip_sol_callback_ = fnc;
+  	mip_sol_callback_usrdata_ = usrdata;
   }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
@@ -35,8 +40,10 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   static SolverId id();
 
  private:
-  mipSolCallbackFunction mip_node_callback_ = NULL;
+  mipNodeCallbackFunction mip_node_callback_ = NULL;
+  mipSolCallbackFunction mip_sol_callback_ = NULL;
   void * mip_node_callback_usrdata_ = NULL;
+  void * mip_sol_callback_usrdata_ = NULL;
 };
 
 }  // end namespace solvers

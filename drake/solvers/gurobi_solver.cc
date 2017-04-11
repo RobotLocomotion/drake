@@ -36,7 +36,9 @@ namespace {
 struct GurobiCallbackInformation {
   MathematicalProgram * prog;
   std::vector<bool> is_new_variable;
-  GurobiSolver::mipSolCallbackFunction mip_node_callback;
+  GurobiSolver::mipNodeCallbackFunction mip_node_callback;
+  GurobiSolver::mipSolCallbackFunction mip_sol_callback;
+  void * mip_sol_callback_usrdata;
   void * mip_node_callback_usrdata;
 };
 
@@ -53,7 +55,22 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
   } else if (where == GRB_CB_MIP) { 
     ;
   } else if (where == GRB_CB_MIPSOL) {
-    ;
+    int num_total_variables = callbackInfo->is_new_variable.size();
+    std::vector<double> solver_sol_vector(num_total_variables);
+    auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, solver_sol_vector.data());
+    if (error){
+      printf("GRB error %d in cbget mipsol rel: %s\n", error, GRBgeterrormsg(GRBgetenv(model)));
+    }
+    // TODO(gizatt): If I use the entries from is_new_variable,
+    // I wind up out of alignment. Why? Where are the new vars
+    // coming from?
+    Eigen::VectorXd prog_sol_vector(callbackInfo->prog->num_vars());
+    for (int i = 0; i < num_total_variables; ++i) {
+      prog_sol_vector(i) = solver_sol_vector[i];
+    }
+    callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
+    callbackInfo->mip_sol_callback(*(callbackInfo->prog), callbackInfo->mip_node_callback_usrdata);
+
   } else if (where == GRB_CB_MIPNODE) {
     int sol_status;
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
@@ -681,7 +698,9 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     callbackInfo.prog = &prog;
     callbackInfo.is_new_variable = is_new_variable;
     callbackInfo.mip_node_callback = mip_node_callback_;
+    callbackInfo.mip_sol_callback = mip_sol_callback_;
     callbackInfo.mip_node_callback_usrdata = mip_node_callback_usrdata_;
+    callbackInfo.mip_sol_callback_usrdata = mip_sol_callback_usrdata_;
     GRBsetcallbackfunc(model, &gurobi_callback, &callbackInfo); 
   }
 
