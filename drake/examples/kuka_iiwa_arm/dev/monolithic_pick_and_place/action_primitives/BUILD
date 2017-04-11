@@ -4,7 +4,6 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "drake_cc_binary",
     "drake_cc_library",
 )
 
@@ -23,8 +22,6 @@ drake_cc_library(
     ],
     visibility = ["//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:__subpackages__"],
     deps = [
-        "//drake/examples/kuka_iiwa_arm/dev:iiwa_ik_planner",
-      #  "//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:kuka_pick_and_place",
         "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
@@ -41,3 +38,5 @@ drake_cc_library(
         "//drake/systems/analysis",
     ],
 )
+
+cpplint()

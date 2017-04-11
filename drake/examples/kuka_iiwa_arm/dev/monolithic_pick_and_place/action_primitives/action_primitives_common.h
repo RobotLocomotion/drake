@@ -8,7 +8,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {
 
-// Different states for the pick and place task.
+/// Different states for the pick and place task.
 typedef enum ActionPrimitiveState {
   // Primitive is currently under execution.
   RUNNING,
@@ -18,14 +18,26 @@ typedef enum ActionPrimitiveState {
   ABORTED
 } ActionPrimitiveState;
 
+/// A struct that contains all the variables needed for the abstract input
+/// of the `ActionPrimitive` of type `IiwaMove`.
 struct IiwaActionInput {
   IiwaActionInput() {}
 
+  /// A flag used to define if this instance of the `IiwaActionInput` is
+  /// valid.
   bool is_valid{false};
+
+  /// A vector of time stamps used to define the desired plan of the
+  /// `IiwaActionInput`.
   std::vector<double> time;
+
+  /// A vector of joint positions used to define the desired plan of the
+  /// `IiwaActionInput`.
   std::vector<VectorX<double>> q;
 };
 
+/// An enumeration that defined the abstract input of the of the
+/// `ActionPrimitive` of type `GripperAction`.
 typedef enum GripperActionInput { UNDEFINED, CLOSE, OPEN } GripperActionInput;
 
 }  // namespace monolithic_pick_and_place

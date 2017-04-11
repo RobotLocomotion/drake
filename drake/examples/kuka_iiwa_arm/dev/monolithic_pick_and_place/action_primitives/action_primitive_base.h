@@ -22,7 +22,7 @@ namespace monolithic_pick_and_place {
 /// as well as timing information that are task specific. Every
 /// `ActionPrimitive` has some default features,
 /// as defined by this base class :
-/// 1. They have atleast 1 internal state variable, the `ActionPrimitiveState`.
+/// 1. They have at least 1 internal state variable, the `ActionPrimitiveState`.
 /// 2. They have at least one Abstract output port that sends the current
 /// `ActionPrimitiveState`.
 /// 3. They have a declared periodic unrestricted update.
@@ -33,10 +33,15 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   /// The constructor to an action primitive.
   /// @param desired_update_interval The update period for the unrestricted
   /// state update.
-  explicit ActionPrimitive(double desired_update_interval = 0.01);
+  /// @param action_primitive_state_index The state index for the abstract
+  /// state belonging to this base class (index of the ActionPrimitiveState).
+  /// The derived classes need to set this appropriately.
+  explicit ActionPrimitive(double desired_update_interval = 0.01,
+                           unsigned int action_primitive_state_index = 1);
 
-  /// This method gets the status output port. Child classes may implement
-  /// additional getters as needed.
+  /// This gets the abstract output port corresponding to the
+  /// `ActionPrimitive` status. Child classes may implement additional getters
+  /// as needed.
   const systems::OutputPortDescriptor<double>& get_status_output_port() const {
     return this->get_output_port(status_output_port_);
   }
@@ -47,6 +52,10 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   // LeafSystem override.
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const final;
+
+  // LeafSystem override.
+  void SetDefaultState(const systems::Context<double>& context,
+                       systems::State<double>* state) const final;
 
   // LeafSystemOverride.
   void DoCalcOutput(const systems::Context<double>& context,
@@ -65,13 +74,18 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   }
 
  protected:
+  /// Derived class need to implement this. This method is used to set the
+  /// default state unique to the class.
+  virtual void SetExtendedDefaultState(const systems::Context<double>& context,
+      systems::State<double>* state) const = 0;
+
   /// Derived class need to implement this. This method is used to allocate
   /// the output unique to the derived class.
   virtual std::unique_ptr<systems::AbstractValue>
   ExtendedAllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const = 0;
 
-  /// Derived class need to implement this.This method is used to specify the
+  /// Derived class need to implement this. This method is used to specify the
   /// additional `AbstractState` of the derived class.
   virtual std::vector<std::unique_ptr<systems::AbstractValue>>
   AllocateExtendedAbstractState() const = 0;
@@ -88,9 +102,9 @@ class ActionPrimitive : public systems::LeafSystem<double> {
       const systems::Context<double>& context,
       systems::State<double>* state) const = 0;
 
- private:
   int status_output_port_{-1};
   const double update_interval_{0.01};
+  const unsigned int action_primitive_state_index_{0};
 };
 
 }  // namespace drake

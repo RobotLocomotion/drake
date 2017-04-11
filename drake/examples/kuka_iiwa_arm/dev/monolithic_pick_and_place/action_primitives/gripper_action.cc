@@ -18,21 +18,28 @@ const double kMaxWidthInMm{110};
 
 struct GripperAction::InternalState {
   InternalState() {
+    plan = lcmt_schunk_wsg_command();
+    plan.force = 0.0;
+    plan.utime = 0.0;
     plan.target_position_mm = kMaxWidthInMm; /* Opening */
   }
   ~InternalState() {}
 
   bool is_valid{false};
   lcmt_schunk_wsg_command plan;
-  GripperActionInput previous_action{GripperActionInput::CLOSE};
+  GripperActionInput previous_input{GripperActionInput::CLOSE};
+  lcmt_schunk_wsg_command previous_valid_plan;
   double start_time{0.0};
   double plan_duration{0.0};
 };
 
 GripperAction::GripperAction(double desired_update_interval)
-    : ActionPrimitive(desired_update_interval),
+    : ActionPrimitive(desired_update_interval,
+                      1 /* action_primitive_state_index */ ),
+      internal_state_index_(0),
       plan_output_port(this->DeclareAbstractOutputPort().get_index()),
-      input_port_primitive_(this->DeclareAbstractInputPort().get_index()) {}
+      input_port_primitive_input_(this->DeclareAbstractInputPort().get_index())
+      {}
 
 std::vector<std::unique_ptr<systems::AbstractValue>>
 GripperAction::AllocateExtendedAbstractState() const {
@@ -49,12 +56,27 @@ GripperAction::ExtendedAllocateOutputAbstract(
   if (descriptor.get_index() == plan_output_port) {
     lcmt_schunk_wsg_command default_command;
     default_command.target_position_mm = kMaxWidthInMm;
+    default_command.force = 0.0;
     return_value =
         systems::AbstractValue::Make<lcmt_schunk_wsg_command>(default_command);
   }
   return return_value;
 }
 
+void GripperAction::SetExtendedDefaultState(
+    const systems::Context<double> &context,
+    systems::State<double> *state) const {
+  InternalState& wsg_action_state =
+      state->get_mutable_abstract_state<InternalState>(
+          internal_state_index_ /* index of iiwastate */);
+  wsg_action_state.is_valid = false;
+  wsg_action_state.plan = lcmt_schunk_wsg_command(); // empty plan
+  wsg_action_state.plan.target_position_mm = kMaxWidthInMm;
+  wsg_action_state.previous_valid_plan = wsg_action_state.plan;
+  wsg_action_state.start_time = 0;
+  wsg_action_state.plan_duration = 0;
+  wsg_action_state.previous_input = GripperActionInput::UNDEFINED;
+}
 void GripperAction::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
@@ -63,14 +85,14 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
 
   InternalState& wsg_action_state =
       state->get_mutable_abstract_state<InternalState>(
-          0 /* index of wsgstate */);
+          internal_state_index_);
   ActionPrimitiveState& primitive_state =
       state->get_mutable_abstract_state<ActionPrimitiveState>(
-          1 /* index of action primitive state */);
+          action_primitive_state_index_);
 
   double time = context.get_time();
   const GripperActionInput& input_plan =
-      this->EvalAbstractInput(context, input_port_primitive_)
+      this->EvalAbstractInput(context, input_port_primitive_input_)
           ->GetValue<GripperActionInput>();
 
   // check current state
@@ -79,11 +101,12 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
       if (time - wsg_action_state.start_time > wsg_action_state.plan_duration) {
         wsg_action_state.is_valid = false;
         primitive_state = ActionPrimitiveState::WAITING;
+        wsg_action_state.previous_valid_plan = wsg_action_state.plan;
       }
       break;
     case ActionPrimitiveState::WAITING:
 
-      if (wsg_action_state.previous_action != input_plan) {
+      if (wsg_action_state.previous_input != input_plan) {
         // Then change state and start acting on the new input.
         primitive_state = ActionPrimitiveState::RUNNING;
         lcmt_schunk_wsg_command new_plan;
@@ -98,7 +121,7 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
         wsg_action_state.start_time = time;
         wsg_action_state.plan_duration = 0.5; /* wsg action duration */
         wsg_action_state.is_valid = true;
-        wsg_action_state.previous_action = input_plan;
+        wsg_action_state.previous_input = input_plan;
       }
       break;
     case ActionPrimitiveState::ABORTED:
@@ -119,6 +142,9 @@ void GripperAction::DoExtendedCalcOutput(
 
   if (internal_state.is_valid) {
     wsg_plan_output = internal_state.plan;
+  }
+  else {
+    wsg_plan_output = internal_state.previous_valid_plan;
   }
 }
 

@@ -35,13 +35,33 @@ const double kTableTopZInWorld = 0.736 + 0.057 / 2;
 const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
 
 // TODO(naveen): refactor this to reduce duplicate code.
+/**
+ * A method for building a `systems::RigidBodyPlant` for the pick-and-place
+ * demo.
+ *
+ * @tparam T  The vector element type, which must be a valid Eigen scalar.
+ * @param iiwa_instance A pointer to the ModelInstanceInfo object to store
+ * information on the IIWA (robot) within the constructed
+ * `systems::RigidBodyPlant`.
+ * @param wsg_instance A pointer to the ModelInstanceInfo object to store
+ * information on the Schunk WSG (gripper) within the constructed
+ * `systems::RigidBodyPlant`.
+ * @param box_instance A pointer to the ModelInstanceInfo object to store
+ * information on the box (target for manipulation) within the constructed
+ * `systems::RigidBodyPlant`.
+ * @param box_position The position of the target box in world coordinates
+ * as a Vector3 object.
+ * @param box_orientation The orientation of the target box in RPY
+ * parameterization as a Vector3 object.
+ * @return A `std::unique_ptr` to the constructed `systems::RigidBodyPlant`.
+ */
 template <typename T>
 std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
     ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
     ModelInstanceInfo<T>* box_instance,
-    Eigen::Vector3d box_position = Vector3<double>(1 + -0.43, -0.65,
+    const Eigen::Vector3d& box_position = Vector3<double>(1 + -0.43, -0.65,
                                                    kTableTopZInWorld + 0.1),
-    Eigen::Vector3d box_orientation = Vector3<double>(0, 0, 1)) {
+    const Eigen::Vector3d& box_orientation = Vector3<double>(0, 0, 1)) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -92,6 +112,17 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   return (std::move(plant));
 }
 
+/**
+ * A `systems::Diagram` that encapsulates a `PickAndPlaceStateMachineSystem`
+ * and a `IiwaMove` and a `GripperAction`. This `systems::Diagram` serves as
+ * the high-level logic to execute a pick-and-place demo. All of the input
+ * and output ports carry abstract data with custom lcm messages.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ */
 template <typename T>
 class StateMachineAndPrimitives : public systems::Diagram<T> {
  public:
@@ -133,22 +164,32 @@ class StateMachineAndPrimitives : public systems::Diagram<T> {
   int output_port_wsg_command_{-1};
 };
 
+/**
+ * A `systems::Diagram` that encapsulates a
+ * `IiwaAndWsgPlanGeneratorsEstimatorsAndVisualizer`, a
+ * `systems::DrakeVisualizer`, `IiwaStateFeedbackPlanSource`,
+ * `SchunkWsgTrajectoryGenerator` and  a `SchunkWsgStatusSender`. This
+ * `systems::Diagram`system serves as the "low-level" logic needed to execute
+ * a pick-and-place demo. All of the input and output ports carry abstract data
+ * with custom lcm messages.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ */
 template <typename T>
 class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
     : public systems::Diagram<T> {
  public:
-  /// Constructs the IiwaWsgPlantGeneratorsEstimatorsAndVisualizer.
-  /// This Diagram encapsulses a IiwaAndWsgPlantWithStateEstimator and adds a
-  /// `systems::DrakeVisualizer`, `IiwaStateFeedbackPlanSource`,
-  /// `SchunkWsgTrajectoryGenerator` and  a `SchunkWsgStatusSender` to it. This
-  /// diagram
-  /// is designed for usage within the monolithic pick and place demo.
-  /// @param lcm : A reference to the lcm object to be passed onto the
-  /// Visualizer
-  /// @param update_interval : The update interval of the unrestricted update of
-  /// `IiwaStateFeedbackPlanSource`. This should be smaller than that of
-  /// components
-  /// commanding new plans.
+  /** Constructs the IiwaWsgPlantGeneratorsEstimatorsAndVisualizer.
+   * @param lcm : A reference to the lcm object to be passed onto the
+   * Visualizer
+   * @param update_interval : The update interval of the unrestricted update of
+   * `IiwaStateFeedbackPlanSource`. This should be smaller than that of
+   * components
+   * commanding new plans.
+   */
   IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
       lcm::DrakeLcm* lcm, const double update_interval = 0.001);
 

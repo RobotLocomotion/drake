@@ -15,9 +15,11 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {
 
-ActionPrimitive::ActionPrimitive(double desired_update_interval)
+ActionPrimitive::ActionPrimitive(double desired_update_interval,
+                                 unsigned int action_primitive_state_index)
     : status_output_port_(this->DeclareAbstractOutputPort().get_index()),
-      update_interval_(desired_update_interval) {
+      update_interval_(desired_update_interval),
+      action_primitive_state_index_(action_primitive_state_index) {
   this->DeclarePeriodicUnrestrictedUpdate(update_interval_, 0);
 }
 
@@ -29,6 +31,16 @@ ActionPrimitive::AllocateAbstractState() const {
   abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
       std::make_unique<systems::Value<ActionPrimitiveState>>(default_state)));
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
+}
+
+void ActionPrimitive::SetDefaultState(
+    const systems::Context<double>& context,
+    systems::State<double>* state) const {
+  ActionPrimitiveState& action_state =
+      state->get_mutable_abstract_state<ActionPrimitiveState>(
+          action_primitive_state_index_);
+  action_state = ActionPrimitiveState::WAITING;
+  SetExtendedDefaultState(context, state);
 }
 
 void ActionPrimitive::DoCalcOutput(

@@ -99,6 +99,27 @@ PickAndPlaceStateMachineSystem::AllocateOutputAbstract(
   return return_val;
 }
 
+void PickAndPlaceStateMachineSystem::SetDefaultState(
+    const systems::Context<double> &context,
+    systems::State<double> *state) const {
+  InternalState& internal_state =
+      state->get_mutable_abstract_state<InternalState>(kStateIndex);
+
+  internal_state.pick_and_place_state = PickAndPlaceState::OPEN_GRIPPER;
+  internal_state.iiwa_current_action.is_valid = false;
+  internal_state.iiwa_current_action.q.clear();
+  internal_state.iiwa_current_action.time.clear();
+  internal_state.iiwa_action_initiated = false;
+
+  internal_state.wsg_current_action = GripperActionInput::UNDEFINED;
+  internal_state.wsg_action_initiated = false;
+
+  internal_state.X_WEndEffector0 = Isometry3<double>::Identity();
+  internal_state.X_WEndEffector1 = Isometry3<double>::Identity();
+  internal_state.X_IiwaObj_desired = Isometry3<double>::Identity();
+  internal_state.X_WObj_desired = Isometry3<double>::Identity();
+}
+
 void PickAndPlaceStateMachineSystem::DoCalcOutput(
     const systems::Context<double>& context,
     systems::SystemOutput<double>* output) const {

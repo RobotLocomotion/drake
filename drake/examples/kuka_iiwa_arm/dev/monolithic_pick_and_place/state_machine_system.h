@@ -20,8 +20,7 @@ namespace monolithic_pick_and_place {
  * A class that implements the Finite-State-Machine logic for the
  * Pick-And-Place demo. This system is to be used by coupling the outputs with
  * the `IiwaMove` and `GripperAction` `ActionPrimitive` systems and the inputs
- * are
- * to be supplied from `IiwaStatusSender`, `SchunkWsgStatusSender` and
+ * are to be supplied from `IiwaStatusSender`, `SchunkWsgStatusSender` and
  * `OracularStateEstimator` systems.
  */
 class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
@@ -40,9 +39,9 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
 
   /**
    * Allocates abstract value types for output @p descriptor. This function
-   * allocates QpInput when @p matches the port for QpInput, and calls
-   * ExtendedAllocateOutputAbstract() to allocate all the other derived class'
-   * custom output types.
+   * allocates `IiwaActionInput` when @p matches the port for
+   * `output_port_iiwa_action_`, and 'GripperActionInput` for
+   * `output_port_wsg_action_`.
    */
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const final;
@@ -53,41 +52,80 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
     return false;
   }
 
+  void SetDefaultState(const systems::Context<double>& context,
+                       systems::State<double>* state) const override;
+
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
 
+  /**
+   * Getter for the input port corresponding to the abstract input with iiwa
+   * state message (LCM `robot_state_t` message).
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
   const systems::InputPortDescriptor<double>& get_input_port_iiwa_state()
       const {
     return this->get_input_port(input_port_iiwa_state_);
   }
 
+  /**
+   * Getter for the input port corresponding to the abstract input with box
+   * state message (LCM `botcore::robot_state_t` message).
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
   const systems::InputPortDescriptor<double>& get_input_port_box_state() const {
     return this->get_input_port(input_port_box_state_);
   }
 
+  /**
+   * Getter for the input port corresponding to the abstract input with the wsg
+   * status message (LCM `lcmt_schunk_wsg_status` message).
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
   const systems::InputPortDescriptor<double>& get_input_port_wsg_status()
       const {
     return this->get_input_port(input_port_wsg_status_);
   }
 
+  /**
+   * Getter for the input port corresponding to the abstract input with the
+   * `IiwaMove`
+   * status message (`ActionPrimitiveState`).
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
   const systems::InputPortDescriptor<double>&
   get_input_port_iiwa_action_status() const {
     return this->get_input_port(input_port_iiwa_action_status_);
   }
 
+ /**
+  * Getter for the input port corresponding to the abstract input with the
+  * `GripperAction`
+  * status message (`ActionPrimitiveState`).
+  * @return The corresponding `sytems::InputPortDescriptor`.
+  */
   const systems::InputPortDescriptor<double>& get_input_port_wsg_action_status()
       const {
     return this->get_input_port(input_port_wsg_action_status_);
   }
 
+ /**
+  * Getter for the output port corresponding to the `IiwaActionInput` abstract
+  * output.
+  * @return The corresponding `sytems::OutputPortDescriptor`.
+  */
   const systems::OutputPortDescriptor<double>& get_output_port_iiwa_action()
       const {
     return this->get_output_port(output_port_iiwa_action_);
   }
-
+ /**
+  * Getter for the output port corresponding to the `GripperActionInput`
+  * abstract output.
+  * @return The corresponding `sytems::OutputPortDescriptor`.
+  */
   const systems::OutputPortDescriptor<double>& get_output_port_wsg_action()
       const {
     return this->get_output_port(output_port_wsg_action_);

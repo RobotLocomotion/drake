@@ -27,14 +27,17 @@ struct IiwaMove::InternalState {
   IiwaActionInput last_input;
   bool is_valid{false};
   robot_plan_t plan;
+  robot_plan_t previous_valid_plan;
   double start_time{0.0};
   double plan_duration{0.0};
 };
 
 IiwaMove::IiwaMove(const RigidBodyTree<double>& iiwa,
                    double desired_update_interval)
-    : ActionPrimitive(desired_update_interval),
-      input_port_primitive_(this->DeclareAbstractInputPort().get_index()),
+    : ActionPrimitive(desired_update_interval,
+                      1 /* action_primitive_state_index */ ),
+      internal_state_index_(0),
+      input_port_primitive_input_(this->DeclareAbstractInputPort().get_index()),
       output_port_plan_(this->DeclareAbstractOutputPort().get_index()),
       iiwa_tree_(iiwa) {}
 
@@ -56,6 +59,21 @@ IiwaMove::ExtendedAllocateOutputAbstract(
   return (return_value);
 }
 
+void IiwaMove::SetExtendedDefaultState(
+    const systems::Context<double> &context,
+    systems::State<double> *state) const {
+  InternalState& iiwa_action_state =
+      state->get_mutable_abstract_state<InternalState>(
+          internal_state_index_ /* index of iiwastate */);
+  iiwa_action_state.last_input.is_valid = false;
+  iiwa_action_state.plan = robot_plan_t();
+  iiwa_action_state.previous_valid_plan = iiwa_action_state.plan;
+  iiwa_action_state.last_input.time.clear();
+  iiwa_action_state.last_input.q.clear();
+  iiwa_action_state.start_time = 0;
+  iiwa_action_state.plan_duration = 0;
+}
+
 void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
@@ -64,15 +82,15 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
 
   InternalState& iiwa_action_state =
       state->get_mutable_abstract_state<InternalState>(
-          0 /* index of iiwastate */);
+          internal_state_index_ /* index of iiwastate */);
   ActionPrimitiveState& primitive_state =
       state->get_mutable_abstract_state<ActionPrimitiveState>(
-          1 /* index of action primitive state */);
+          action_primitive_state_index_ /* index of action primitive state */);
 
   robot_plan_t current_plan = iiwa_action_state.plan;
 
   const IiwaActionInput& input_plan =
-      this->EvalAbstractInput(context, input_port_primitive_)
+      this->EvalAbstractInput(context, input_port_primitive_input_)
           ->GetValue<IiwaActionInput>();
 
   DRAKE_DEMAND(input_plan.q.size() == input_plan.time.size());
@@ -87,6 +105,7 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
       if (time_now - iiwa_action_state.start_time >=
           iiwa_action_state.plan_duration) {
         primitive_state = ActionPrimitiveState::WAITING;
+        iiwa_action_state.previous_valid_plan = iiwa_action_state.plan;
         iiwa_action_state.is_valid = false;
       }
       break;
@@ -132,6 +151,8 @@ void IiwaMove::DoExtendedCalcOutput(
 
   if (internal_state.is_valid) {
     robot_plan_output = internal_state.plan;
+  } else {
+    robot_plan_output = internal_state.previous_valid_plan;
   }
 }
 
