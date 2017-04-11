@@ -840,7 +840,7 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
 
   // If the single step didn't cover the entire interval, either throw an
   // exception or continue integrating.
-  if (t_remaining > 0 && multi_step_in_step_once_fixed_throws_) {
+  if (t_remaining > 0 && multistep_in_step_exactly_fixed_throws_) {
     throw std::runtime_error("ImplicitEulerIntegrator::DoStepOnceFixedSize()"
                                  " needs to take multiple substeps to attain"
                                  " the requested step size. Calling"
