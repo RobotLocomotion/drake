@@ -91,6 +91,12 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "manipulator_plan_move_end_effector",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
+)
+
+lcm_cc_library(
     name = "piecewise_polynomial",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_piecewise_polynomial.lcm"],

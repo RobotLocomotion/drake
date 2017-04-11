@@ -1,0 +1,17 @@
+package drake;
+
+struct lcmt_manipulator_plan_move_end_effector
+{
+  int64_t timestamp;
+
+  int32_t num_steps;
+
+  // Time steps in microseconds.
+  int64_t utimes[num_steps];
+
+  // Desired end effector poses.
+  bot_core.position_3d_t poses[num_steps];
+
+  // Order of polynomial used for interpolation.
+  int32_t order_of_interpolation;
+}

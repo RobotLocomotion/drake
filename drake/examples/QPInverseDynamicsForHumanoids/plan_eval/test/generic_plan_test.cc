@@ -53,8 +53,8 @@ class DummyPlanTest : public GenericPlanTest {
  protected:
   void SetUp() override {
     const std::string kModelPath = drake::GetDrakePath() +
-        "/manipulation/models/iiwa_description/urdf/"
-        "iiwa14_polytope_collision.urdf";
+                                   "/manipulation/models/iiwa_description/urdf/"
+                                   "iiwa14_polytope_collision.urdf";
 
     const std::string kAliasGroupsPath =
         drake::GetDrakePath() +
@@ -66,13 +66,11 @@ class DummyPlanTest : public GenericPlanTest {
         "/examples/QPInverseDynamicsForHumanoids/"
         "config/iiwa.id_controller_config";
 
-    robot_ = std::make_unique<RigidBodyTree<double>>();
-    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        kModelPath, multibody::joints::kFixed, robot_.get());
-
+    std::default_random_engine generator(123);
+    AllocateRescourse(kModelPath, kAliasGroupsPath, kControlConfigPath);
+    SetRandomConfiguration(&generator);
     dut_ = std::unique_ptr<GenericPlan<double>>(new DummyPlan<double>());
-
-    Initialize(kAliasGroupsPath, kControlConfigPath);
+    dut_->Initialize(*robot_status_, *params_, *alias_groups_);
   }
 };
 
@@ -132,8 +130,8 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
 
   // Desired joint position and velocity.
   VectorX<double> q_d = robot_status_->position();
-  VectorX<double> v_d(robot_status_->robot().get_num_velocities());
-  v_d.setZero();
+  VectorX<double> v_d = VectorX<double>::Zero(robot_->get_num_velocities());
+  VectorX<double> vd_d = VectorX<double>::Zero(robot_->get_num_velocities());
 
   // Changes the current state. The choice of position and velocity is
   // arbitrary.
@@ -145,13 +143,7 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
 
   // The expected dof acceleration should only contain the position and
   // velocity terms.
-  VectorX<double> kp, kd;
-  params_->LookupDesiredDofMotionGains(&kp, &kd);
-
-  VectorX<double> expected_vd =
-      (kp.array() * (q_d - robot_status_->position()).array() +
-       kd.array() * (v_d - robot_status_->velocity()).array())
-          .matrix();
+  VectorX<double> expected_vd = ComputeExpectedDoFAcceleration(q_d, v_d, vd_d);
 
   // The weights / constraint types are hard coded in this test. They need to
   // match the numbers specified in
