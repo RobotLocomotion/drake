@@ -21,7 +21,7 @@ class GenericPlanTest : public ::testing::Test {
  protected:
   // Allocates robot_, alias_groups_, params_, and robot_status_. dut_ should
   // be allocated in individual tests depending on which plan is under test.
-  void AllocateRescourse(const std::string& robot_path,
+  void AllocateResources(const std::string& robot_path,
                          const std::string& alias_groups_path,
                          const std::string& control_param_path) {
     robot_ = std::make_unique<RigidBodyTree<double>>();

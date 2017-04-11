@@ -56,7 +56,7 @@ class ManipPlanTest : public GenericPlanTest {
         "config/iiwa.id_controller_config";
 
     std::default_random_engine generator(123);
-    AllocateRescourse(kModelPath, kAliasGroupsPath, kControlConfigPath);
+    AllocateResources(kModelPath, kAliasGroupsPath, kControlConfigPath);
     SetRandomConfiguration(&generator);
 
     ee_body_ = alias_groups_->get_body(

@@ -3,8 +3,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/test/test_common.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
 namespace examples {
@@ -67,7 +65,7 @@ class DummyPlanTest : public GenericPlanTest {
         "config/iiwa.id_controller_config";
 
     std::default_random_engine generator(123);
-    AllocateRescourse(kModelPath, kAliasGroupsPath, kControlConfigPath);
+    AllocateResources(kModelPath, kAliasGroupsPath, kControlConfigPath);
     SetRandomConfiguration(&generator);
     dut_ = std::unique_ptr<GenericPlan<double>>(new DummyPlan<double>());
     dut_->Initialize(*robot_status_, *params_, *alias_groups_);
