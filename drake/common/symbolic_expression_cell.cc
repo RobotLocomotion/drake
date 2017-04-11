@@ -349,19 +349,19 @@ Polynomial<double> ExpressionConstant::ToPolynomial() const {
   return Polynomial<double>(v_);
 }
 
-double ExpressionConstant::Evaluate(const Environment& env) const {
+double ExpressionConstant::Evaluate(const Environment&) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return v_;
 }
 
 Expression ExpressionConstant::Expand() const { return Expression{v_}; }
 
-Expression ExpressionConstant::Substitute(const Substitution& s) const {
+Expression ExpressionConstant::Substitute(const Substitution&) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return Expression{v_};
 }
 
-Expression ExpressionConstant::Differentiate(const Variable& x) const {
+Expression ExpressionConstant::Differentiate(const Variable&) const {
   return Expression::Zero();
 }
 
@@ -396,7 +396,7 @@ Polynomial<double> ExpressionNaN::ToPolynomial() const {
   throw runtime_error("NaN is detected while converting to Polynomial.");
 }
 
-double ExpressionNaN::Evaluate(const Environment& env) const {
+double ExpressionNaN::Evaluate(const Environment&) const {
   throw runtime_error("NaN is detected during Symbolic computation.");
 }
 
@@ -404,11 +404,11 @@ Expression ExpressionNaN::Expand() const {
   throw runtime_error("NaN is detected during expansion.");
 }
 
-Expression ExpressionNaN::Substitute(const Substitution& s) const {
+Expression ExpressionNaN::Substitute(const Substitution&) const {
   throw runtime_error("NaN is detected during substitution.");
 }
 
-Expression ExpressionNaN::Differentiate(const Variable& x) const {
+Expression ExpressionNaN::Differentiate(const Variable&) const {
   throw runtime_error("NaN is detected during differentiation.");
 }
 
@@ -1673,7 +1673,7 @@ Polynomial<double> ExpressionUninterpretedFunction::ToPolynomial() const {
       "Uninterpreted-function expression is not polynomial-convertible.");
 }
 
-double ExpressionUninterpretedFunction::Evaluate(const Environment& env) const {
+double ExpressionUninterpretedFunction::Evaluate(const Environment&) const {
   throw runtime_error("Uninterpreted-function expression cannot be evaluated.");
 }
 

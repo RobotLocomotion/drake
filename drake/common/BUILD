@@ -141,17 +141,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "is_dynamic_castable",
-    testonly = 1,
-    hdrs = [
-        "test/is_dynamic_castable.h",
-    ],
-    deps = [
-        ":nice_type_name",
-    ],
-)
-
-drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = [
@@ -162,17 +151,8 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "type_safe_index",
-    srcs = [],
-    hdrs = ["type_safe_index.h"],
-    deps = [
-        ":common",
-        ":nice_type_name",
-    ],
-)
-
 # Miscellaneous utilities.
+
 drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
@@ -215,6 +195,14 @@ drake_cc_library(
     hdrs = ["is_approx_equal_abstol.h"],
     deps = [
         ":common",
+    ],
+)
+drake_cc_library(
+    name = "is_dynamic_castable",
+    testonly = 1,
+    hdrs = ["test/is_dynamic_castable.h"],
+    deps = [
+        ":nice_type_name",
     ],
 )
 
@@ -263,6 +251,23 @@ drake_cc_library(
     deps = [
         ":common",
         "@gflags//:gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "type_safe_index",
+    hdrs = ["type_safe_index.h"],
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "unused",
+    hdrs = ["unused.h"],
+    deps = [
+        ":common",
     ],
 )
 
