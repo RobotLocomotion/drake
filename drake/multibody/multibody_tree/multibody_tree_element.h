@@ -43,10 +43,6 @@ class MultibodyTreeElement;
 /// };
 /// @endcode
 ///
-/// Multibody tree elements' constructors are made private in order to enforce
-/// users to create them via their Create() factories to prevent the creation
-/// of MultibodyTreeElement objects with an invalid parent %MultibodyTree.
-///
 /// @tparam ElementType The type of the specific multibody element, for
 ///                     instance, a body or a mobilizer. It must be a template
 ///                     class on the scalar type T.

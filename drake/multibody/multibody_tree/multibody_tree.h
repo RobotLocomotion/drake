@@ -48,7 +48,7 @@ class MultibodyTree {
   // valid topology in this documentation.
   // See this Reviewable comment: https://reviewable.io/reviews/robotlocomotion/drake/5583#-KgGqGisnX9uMuYDkHpx
 
-  /// Takes ownership of `body`, and adds it to `this` %MultibodyTree. Returns a
+  /// Takes ownership of `body` and adds it to `this` %MultibodyTree. Returns a
   /// constant reference to the body just added, which will remain valid for the
   /// lifetime of `this` %MultibodyTree.
   ///
@@ -135,7 +135,7 @@ class MultibodyTree {
     return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
   }
 
-  /// Takes ownership of `frame`, and adds it to `this` %MultibodyTree. Returns
+  /// Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns
   /// a constant reference to the frame just added, which will remain valid for
   /// the lifetime of `this` %MultibodyTree.
   ///
@@ -258,7 +258,8 @@ class MultibodyTree {
 
   /// Returns the topology information for this multibody tree. Users should not
   /// need to call this method since MultibodyTreeTopology is an internal
-  /// bookkeeping detail.
+  /// bookkeeping detail. MultibodyTreeElement::Compile() calls this method to
+  /// retrieve its topology at Compile() time.
   const MultibodyTreeTopology& get_topology() const { return topology_; }
 
   /// This method must be called after all elements in the tree (joints, bodies,
