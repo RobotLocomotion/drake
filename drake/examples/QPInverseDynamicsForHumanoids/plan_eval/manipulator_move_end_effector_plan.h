@@ -22,7 +22,7 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
 
   ManipulatorMoveEndEffectorPlan() {}
 
-  static constexpr char* kEndEffectorAliasGroupName = "flange";
+  static constexpr const char* kEndEffectorAliasGroupName = "flange";
 
  protected:
   /**
