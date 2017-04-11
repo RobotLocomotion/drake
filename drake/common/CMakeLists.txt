@@ -3,9 +3,6 @@
 #
 
 drake_find_package(Protobuf REQUIRED)
-include_directories(${Protobuf_INCLUDE_DIRS})
-include_directories(${PROJECT_BINARY_DIR}/..)  # to find generated protobuf headers
-
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS matlab_rpc.proto)
 
 # Generated code.
@@ -86,6 +83,7 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+target_include_directories(drakeCommon PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(drakeCommon
   Eigen3::Eigen
   fmt
