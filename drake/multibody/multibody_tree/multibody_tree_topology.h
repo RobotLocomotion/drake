@@ -10,8 +10,17 @@
 /// MultibodyTree and its components are instantiated with.
 /// All of the data structures defined in this file are meant to be the most
 /// minimalist representation that can store this information.
-/// All of these data structures are meant to be copiable to aid the process of
-/// cloning or transmogrifying multibody tree compoments.
+/// These data structures are used in the following ways:
+///  - To aid the process of cloning or transmogrifying multibody tree
+///    compoments without having to create maps between the "original" and
+///    "cloned" objects. That process is tedious and error prone.
+///  - Multibody tree elements retrieve entries from the Context using a
+///    local copy of their topology aquired at MultibodyTree::Compile() stage.
+///    In this regard, multibody tree components like for instance, bodies, are
+///    able to provide a "map" to their state in the Context.
+///  - To provide support for Context validity in Debug builds with a given tree
+///    or multibody component (i.e. the Context holds a copy to the tree
+///    topology).
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"

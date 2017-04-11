@@ -22,12 +22,11 @@ namespace multibody {
 /// pose is measured.
 /// Frames are defined within a given physical or geometrical system (where here
 /// the term "system" should not be confused with systems::System). For
-/// instance, MultibodyTree allows to define frames which can then be attached
-/// to bodies. Within MultibodyTree the pose of the frame depends on the state
-/// of the multibody tree as a whole, which is given by its systems::Context.
-/// In this regard, a frame sub-class will map a state or Context to a pose in
-/// SE(3). This pose will only be well defined when it is measured with respect
-/// to another frame.
+/// instance, in a MultiBodyTree, frames can be defined as attached to bodies.
+/// The pose of any particular frame can depend on state of the MultiBodyTree
+/// (or an arbitrary subset of that state), which is given by its
+/// systems::Context. In this regard, a frame sub-class will map a state or
+/// Context to a pose in SE(3).
 ///
 /// Sub-classes of %FrameBase are responsible for communicating useful semantics
 /// about that frame's dependencies and providing implementations for defining
