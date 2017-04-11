@@ -11,15 +11,16 @@ namespace qp_inverse_dynamics {
 /**
  * A concrete plan that sets up a Cartesian tracking objective for the end
  * effector assuming no contacts. The joint space tracking objective is set
- * to track the joint position when this plan is first initialized to.
+ * to track the measured joint position when Initialize() is called.
  * Note that joint position tracking can be turned off by setting the
  * position gains to zero in the parameters passed to UpdateQpInput.
  */
 template <typename T>
 class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulatorMoveEndEffectorPlan<T>)
+ protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ManipulatorMoveEndEffectorPlan)
 
+ public:
   ManipulatorMoveEndEffectorPlan() {}
 
   static constexpr const char* kEndEffectorAliasGroupName = "flange";
@@ -32,7 +33,7 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
   void InitializeGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups);
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override;
 
   /**
    * This function assumes that the bytes in @p message_bytes encodes a valid
@@ -56,21 +57,22 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      const void* message_bytes, int message_length);
+      const void* message_bytes, int message_length) override;
 
  private:
-  GenericPlan<T>* CloneGenericPlanDerived() const;
+  GenericPlan<T>* CloneGenericPlanDerived() const override;
 
   void ModifyPlanGenericPlanDerived(
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override {
+  }
 
   void UpdateQpInputGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      QpInput* qp_input) const {}
+      QpInput* qp_input) const override {}
 };
 
 }  // namespace qp_inverse_dynamics

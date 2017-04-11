@@ -37,6 +37,7 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
   int consumed = msg.decode(message_bytes, 0, message_length);
   DRAKE_DEMAND(consumed == message_length);
 
+  // TODO(siyuan): should do better error handling wrt bad plan message.
   DRAKE_DEMAND(static_cast<size_t>(msg.num_steps) == msg.utimes.size() &&
                static_cast<size_t>(msg.num_steps) == msg.poses.size());
   DRAKE_DEMAND(msg.num_steps >= 0);

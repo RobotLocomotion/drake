@@ -46,8 +46,6 @@ drake_cc_library(
         ":generic_plan",
         "//drake/lcmtypes:manipulator_plan_move_end_effector",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
