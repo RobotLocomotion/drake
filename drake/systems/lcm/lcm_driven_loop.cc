@@ -25,6 +25,7 @@ LcmDrivenLoop::LcmDrivenLoop(
 
   // Disables simulator's publish on its internal time step.
   stepper_->set_publish_every_time_step(false);
+  stepper_->set_publish_at_initialization(false);
 
   stepper_->Initialize();
 

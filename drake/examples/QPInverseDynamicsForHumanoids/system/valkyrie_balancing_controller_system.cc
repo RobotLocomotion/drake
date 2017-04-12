@@ -32,9 +32,6 @@ namespace qp_inverse_dynamics {
 // The overall input and output is a LCM message of type
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
-  DRAKE_ABORT_MSG("this example is temporarily broken, and will be "
-      "fixed after #5672 is merged");
-
   const std::string kModelFileName =
       drake::GetDrakePath() +
       "/examples/Valkyrie/urdf/urdf/"
