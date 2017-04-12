@@ -103,10 +103,7 @@ class DepthSensor : public systems::LeafSystem<double> {
   ///
   /// @param[in] frame The frame to which this depth sensor is attached.
   ///
-  /// @param[in] specification The specifications of this sensor. An alias of
-  /// this specification is stored as a class member variable, meaning its
-  /// lifetime must exceed the lifetime of the %DepthSensor object created by
-  /// this constructor.
+  /// @param[in] specification The specifications of this sensor.
   ///
   DepthSensor(const std::string& name, const RigidBodyTree<double>& tree,
               const RigidBodyFrame<double>& frame,
@@ -170,7 +167,7 @@ class DepthSensor : public systems::LeafSystem<double> {
   const std::string name_;
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double> frame_;
-  const DepthSensorSpecification& specification_;
+  const DepthSensorSpecification specification_;
   int input_port_index_{};
   int output_port_index_{};
 
