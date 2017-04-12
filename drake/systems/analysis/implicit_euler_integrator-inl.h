@@ -69,7 +69,9 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 // differentiation.
 template <>
 MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
-    ComputeAutoDiffJacobian(const VectorX<AutoDiffXd>& xtplus) {
+    ComputeAutoDiffJacobian(const System<AutoDiffXd>& system,
+                            const Context<AutoDiffXd>& context,
+                            ContinuousState<AutoDiffXd>* state) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitEulerIntegrator");
 }
@@ -79,36 +81,37 @@ MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
 // differentiation.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeAutoDiffJacobian(
-    const VectorX<T>& xtplus) {
+    const System<T>& system, const Context<T>& context,
+    ContinuousState<T>* state) {
   SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
-               this->get_context().get_time());
+               context.get_time());
   // Create AutoDiff versions of the state vector.
   typedef AutoDiffXd Scalar;
-  VectorX<Scalar> a_xtplus = xtplus;
+  VectorX<Scalar> a_xtplus = state->CopyToVector();
 
   // Set the size of the derivatives and prepare for Jacobian calculation.
-  const int n_state_dim = xtplus.size();
+  const int n_state_dim = a_xtplus.size();
   for (int i = 0; i < n_state_dim; ++i)
     a_xtplus[i].derivatives() = VectorX<T>::Unit(n_state_dim, i);
 
   // Get the system and the context in AutoDiffable format. Inputs must also
   // be copied to the AutoDiff'd system (which is accomplished using
   // FixInputPortsFrom()).
-  const auto system = this->get_system().ToAutoDiffXd();
-  std::unique_ptr<Context<Scalar>> context = system->AllocateContext();
-  context->SetTimeStateAndParametersFrom(this->get_context());
-  system->FixInputPortsFrom(this->get_system(), this->get_context(),
-                            context.get());
+  const auto adiff_system = system.ToAutoDiffXd();
+  std::unique_ptr<Context<Scalar>> adiff_context = adiff_system->
+      AllocateContext();
+  adiff_context->SetTimeStateAndParametersFrom(context);
+  adiff_system->FixInputPortsFrom(system, context, adiff_context.get());
 
   // Set the continuous state in the context.
-  context->get_mutable_continuous_state()->get_mutable_vector()->
+  adiff_context->get_mutable_continuous_state()->get_mutable_vector()->
       SetFromVector(a_xtplus);
 
   // Evaluate the derivatives at that state.
   std::unique_ptr<ContinuousState<Scalar>> derivs =
-      system->AllocateTimeDerivatives();
-  IntegratorBase<T>::CalcTimeDerivatives(*system, *context, derivs.get());
-  num_jacobian_function_evaluations_++;
+      adiff_system->AllocateTimeDerivatives();
+  IntegratorBase<T>::CalcTimeDerivatives(*adiff_system, *adiff_context,
+                                         derivs.get());
 
   // Get the Jacobian.
   auto result = derivs->CopyToVector().eval();
@@ -118,12 +121,8 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeAutoDiffJacobian(
 // Evaluates the ordinary differential equations at a given state. Permits
 // counting the number of function evaluations for a given integration step.
 template <class T>
-VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
-    const VectorX<T>& x) {
-  Context<T>* context = this->get_mutable_context();
-  context->get_mutable_continuous_state()->get_mutable_vector()->
-      SetFromVector(x);
-  IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
+VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives() {
+  IntegratorBase<T>::CalcTimeDerivatives(this->get_context(), derivs_.get());
   return derivs_->CopyToVector();
 }
 
@@ -132,25 +131,28 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivatives(
 // central difference (i.e., numerical differentiation).
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
-    const VectorX<T>& xtplus) {
+    const System<T>& system, const Context<T>& context,
+    ContinuousState<T>* state) {
   using std::abs;
 
   // Set epsilon to the square root of machine precision.
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
-  Context<T>* context = this->get_mutable_context();
-  const int n = context->get_continuous_state()->size();
+  // Get the number of state variables.
+  const int n = state->size();
+
+  // Get the current continuous state.
+  const VectorX<T> xtplus = state->CopyToVector();
 
   SPDLOG_DEBUG(drake::log(), "  IE Compute Forwarddiff {}-Jacobian t={}",
-               n, this->get_context().get_time());
+               n, context.get_time());
   SPDLOG_DEBUG(drake::log(), "  computing from state {}", xtplus.transpose());
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
 
-  // Evaluate f(t+h,xtplus) for the current xtplus.
-  VectorX<T> f = CalcTimeDerivatives(xtplus);
-  num_jacobian_function_evaluations_++;
+  // Evaluate f(t+h,xtplus) for the current state (current xtplus).
+  VectorX<T> f = CalcTimeDerivatives();
 
   // Compute the Jacobian.
   VectorX<T> xtplus_prime = xtplus;
@@ -169,8 +171,8 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
     dxi = xtplus_prime(i) - xtplus(i);
 
     // Compute f' and set the relevant column of the Jacobian matrix.
-    J.col(i) = (CalcTimeDerivatives(xtplus_prime) - f) / dxi;
-    num_jacobian_function_evaluations_++;
+    state->SetFromVector(xtplus_prime);
+    J.col(i) = (CalcTimeDerivatives() - f) / dxi;
 
     // Reset xtplus' to xtplus.
     xtplus_prime(i) = xtplus(i);
@@ -184,21 +186,25 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
 // central difference  (i.e., numerical differentiation).
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
-    const VectorX<T>& xtplus) {
+    const System<T>& system, const Context<T>& context,
+    ContinuousState<T>* state) {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
   // Pick power of eps halfway between 6/12 (i.e., 1/2) and 4/12 (i.e., 1/3).
   const double eps = std::pow(std::numeric_limits<double>::epsilon(), 5.0/12);
 
-  Context<T>* context = this->get_mutable_context();
-  const int n = context->get_continuous_state()->size();
+  // Get the number of state variables.
+  const int n = state->size();
 
   SPDLOG_DEBUG(drake::log(), "  IE Compute Centraldiff {}-Jacobian t={}",
-               n, this->get_context().get_time());
+               n, context.get_time());
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
+
+  // Get the current continuous state.
+  const VectorX<T> xtplus = state->CopyToVector();
 
   // Compute the Jacobian.
   VectorX<T> xtplus_prime = xtplus;
@@ -217,16 +223,16 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
     const T dxi_plus = xtplus_prime(i) - xtplus(i);
 
     // Compute f(x+dx).
-    VectorX<T> fprime_plus = CalcTimeDerivatives(xtplus_prime);
-    num_jacobian_function_evaluations_++;
+    state->SetFromVector(xtplus_prime);
+    VectorX<T> fprime_plus = CalcTimeDerivatives();
 
     // Update xtplus' again, minimizing the effect of roundoff error.
     xtplus_prime(i) = xtplus(i) - dxi;
     const T dxi_minus = xtplus(i) - xtplus_prime(i);
 
     // Compute f(x-dx).
-    VectorX<T> fprime_minus = CalcTimeDerivatives(xtplus_prime);
-    num_jacobian_function_evaluations_++;
+    state->SetFromVector(xtplus_prime);
+    VectorX<T> fprime_minus = CalcTimeDerivatives();
 
     // Set the Jacobian column.
     J.col(i) = (fprime_plus - fprime_minus) / (dxi_plus + dxi_minus);
@@ -275,7 +281,7 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
 //       on exit, where h <= dt.
 template <class T>
 T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
-                          const std::function<VectorX<T>(const VectorX<T>&)>& g,
+                          const std::function<VectorX<T>()>& g,
                           double scale,
                           bool shrink_ok,
                           VectorX<T>* xtplus) {
@@ -301,13 +307,14 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
   if (dt < this->get_minimum_step_size()) {
     SPDLOG_DEBUG(drake::log(), "StepAbstract()-- taking explicit Euler step");
 
+    // Update the time
+    context->set_time(t0 + dt);
+
     // Update the state.
     IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
     context->get_mutable_continuous_state()->SetFromVector(
         xt0 + dt*derivs_->CopyToVector());
 
-    // Update the time
-    context->set_time(t0 + dt);
     return dt;
   }
 
@@ -315,10 +322,11 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
   // at t+dt.
   const T tf = context->get_time() + dt;
   context->set_time(tf);
+  context->get_mutable_continuous_state()->SetFromVector(*xtplus);
 
-  // Evaluate the residual error using the passed-in x(t+h) as x⁰(t+h):
+  // Evaluate the residual error using the current x(t+h) as x⁰(t+h):
   // g(x⁰(t+h)) = x⁰(t+h) - x(t) - h f(t+h,x⁰(t+h)), where h = dt;
-  VectorX<T> goutput = g(*xtplus);
+  VectorX<T> goutput = g();
 
   // Initialize the "last" state update norm; this will be used to detect
   // convergence.
@@ -356,7 +364,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     dx_state_->get_mutable_vector()->SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
-    // Update the state.
+    // Update the state vector.
     *xtplus += dx;
 
     // Compute the convergence rate and check convergence.
@@ -385,8 +393,9 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
 
-    // Compute g(xⁱ⁺¹).
-    goutput = g(*xtplus);
+    // Update the state in the context and compute g(xⁱ⁺¹).
+    context->get_mutable_continuous_state()->SetFromVector(*xtplus);
+    goutput = g();
 
     // Recompute the Jacobian matrix.
     J = CalcJacobian(tf, *xtplus);
@@ -417,7 +426,10 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
   }
 }
 
-// Steps forward by dt using the implicit Euler method.
+// Steps the system forward by a single step of at most dt using the implicit
+// Euler method.
+// @param dt the maximum time increment to step forward.
+// @returns the amount actually stepped forward by a single step.
 template <class T>
 T ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& dt) {
   using std::abs;
@@ -434,9 +446,10 @@ T ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& dt) {
                dt, context->get_time());
 
   // Set g for the implicit Euler method.
-  std::function<VectorX<T>(const VectorX<T>&)> g =
-      [&xt0, dt, this](const VectorX<T>& x) {
-        return (x - xt0 - dt*CalcTimeDerivatives(x)).eval();
+  std::function<VectorX<T>()> g =
+      [&xt0, dt, context, this]() {
+        return (context->get_continuous_state()->CopyToVector() - xt0 -
+            dt*CalcTimeDerivatives()).eval();
       };
 
   // Use the current state as the candidate value for the next state.
@@ -446,20 +459,19 @@ T ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& dt) {
   // Compute the initial Jacobian matrix.
   J_ = CalcJacobian(tf, xtplus);
 
-  // Reset the time (CalcJacobian() changed it).
-  context->set_time(t0);
-
   // Step until successful.
   return StepAbstract(dt, g, 1, true, &xtplus);
 }
 
-// Steps forward by dt using the implicit trapezoid method.
-// @param dt the integration step
+// Steps forward by a single step of @p dt using the implicit trapezoid
+// method, if possible.
+// @param dt the maximum time increment to step forward.
 // @param dx0 the time derivatives computed at the beginning of the integration
 //        step.
 // @param xtplus the state computed by the implicit Euler method.
+// @returns `true` if the step was successful and `false` otherwise.
 template <class T>
-T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
+bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
                                                     const VectorX<T>& dx0,
                                                     VectorX<T>* xtplus) {
   using std::abs;
@@ -478,9 +490,10 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   // Set g for the implicit trapezoid method.
   // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
   // evaluate it at the current x(t+h).
-  std::function<VectorX<T>(const VectorX<T>&)> g =
-      [&xt0, dt, &dx0, this](const VectorX<T>& x) {
-        return (x - xt0 - dt/2*(dx0 + CalcTimeDerivatives(x).eval())).eval();
+  std::function<VectorX<T>()> g =
+      [&xt0, dt, &dx0, context, this]() {
+        return (context->get_continuous_state()->CopyToVector() - xt0 -
+            dt/2*(dx0 + CalcTimeDerivatives().eval())).eval();
       };
 
   // Save statistics.
@@ -494,9 +507,6 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
 
   // Compute the initial Jacobian matrix.
   J_ = CalcJacobian(tf, *xtplus);
-
-  // Restore the time (CalcJacobian() changes it).
-  context->set_time(t0);
 
   // Step ("false" indicates that the method will not attempt integration step
   // subdivisions).
@@ -514,33 +524,68 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
           saved_num_jacobian_function_evaluations;
   num_err_est_nr_loops_ += num_nr_loops_ - saved_num_nr_loops;
 
-  return stepped;
+  return (stepped > 0);
 }
 
 // Compute the partial derivative of the ordinary differential equations with
 // respect to the new state variables for a given x(t+dt).
+// @post the context's time and continuous state will be temporarily set during
+//       this call (and then reset to their original values) on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& tf,
                                                     const VectorX<T>& xtplus) {
-  this->get_mutable_context()->set_time(tf);
+  // We change the context but will change it back.
+  Context<T>* context = this->get_mutable_context();
+
+  // Get the current time and state.
+  T t_current = context->get_time();
+  const VectorX<T> x_current = context->get_continuous_state_vector().
+      CopyToVector();
+
+  // Update the time and state.
+  context->set_time(tf);
+  context->get_mutable_continuous_state_vector()->SetFromVector(xtplus);
   num_jacobian_evaluations_++;
 
-  // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
+  // Get the current number of ODE evaluations.
+  int64_t current_ODE_evals = this->get_num_derivative_evaluations();
 
+  // Get a the system.
+  const System<T>& system = this->get_system();
+
+  // Get the mutable continuous state.
+  ContinuousState<T>* continuous_state = context->
+      get_mutable_continuous_state();
+
+  // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
+  MatrixX<T> J;
   switch (jacobian_scheme_) {
     case JacobianComputationScheme::kForwardDifference:
-      return ComputeForwardDiffJacobian(xtplus);
+      J = ComputeForwardDiffJacobian(system, *context, continuous_state);
+      break;
 
     case JacobianComputationScheme::kCentralDifference:
-      return ComputeCentralDiffJacobian(xtplus);
+      J = ComputeCentralDiffJacobian(system, *context, continuous_state);
+      break;
 
     case JacobianComputationScheme::kAutomatic:
-      return ComputeAutoDiffJacobian(xtplus);
+      J = ComputeAutoDiffJacobian(system, *context, continuous_state);
+      break;
 
     default:
       // Should never get here.
       DRAKE_ABORT();
   }
+
+  // Use the new number of ODE evaluations to determine the number of Jacobian
+  // evaluations.
+  num_jacobian_function_evaluations_ += this->get_num_derivative_evaluations()
+      - current_ODE_evals;
+
+  // Reset the time and state.
+  context->set_time(t_current);
+  continuous_state->SetFromVector(x_current);
+  return J;
 }
 
 template <class T>
@@ -654,7 +699,10 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
 // @param dt the initial integration step size to attempt
 // @param [out] xtplus_ie contains the Euler integrator solution on return
 // @param [out] xtplus_itr contains the implicit trapezoid solution on return
-// @returns the step that integration succeeded at
+// @pre The time and state are set to {t0,x0} on entry (those at the beginning
+//      of the interval.
+// @post The time and state are set to {t0+h,x0(t0+h)} on return.
+// @retval h The step that integration succeeded at.
 template <class T>
 T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
                                                    VectorX<T>* xtplus_ie,
@@ -670,7 +718,7 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
       CopyToVector();
 
   // Compute the derivative at xt0.
-  const VectorX<T> dx0 = CalcTimeDerivatives(xt0);
+  const VectorX<T> dx0 = CalcTimeDerivatives();
 
   // Do the Euler step.
   T stepped_ie = StepImplicitEuler(dt);
@@ -730,19 +778,10 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
   // implicit Euler solution gives a second-order error estimate for the
   // implicit Euler result xᵢₑ.
 
-  // Compute the implicit trapezoid solution.
+  // Attempt to compute the implicit trapezoid solution.
   *xtplus_itr = *xtplus_ie;
-  T stepped_itr = StepImplicitTrapezoid(stepped_ie, dx0, xtplus_itr);
-
-  // If the implicit trapezoid approach failed, we have no error estimate.
-  if (stepped_itr == 0.0) {
-    context->set_time(t0);
-    context->get_mutable_continuous_state()->SetFromVector(xt0);
-    SPDLOG_DEBUG(drake::log(), "Implicit trapezoid approach FAILED with a step"
-        "size that succeeded on implicit Euler; trying both again at a smaller "
-        "step size.");
-    return StepOnceAtMostPaired(dt/2, xtplus_ie, xtplus_itr);
-  } else {
+  bool itr_successful = StepImplicitTrapezoid(stepped_ie, dx0, xtplus_itr);
+  if (itr_successful) {
     // Reset the state to that computed by implicit Euler.
     context->set_time(t0 + dt);
     context->get_mutable_continuous_state()->SetFromVector(*xtplus_ie);
@@ -750,6 +789,13 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
     // Update statistics.
     this->UpdateStatistics(dt);
     return dt;
+  } else {
+    context->set_time(t0);
+    context->get_mutable_continuous_state()->SetFromVector(xt0);
+    SPDLOG_DEBUG(drake::log(), "Implicit trapezoid approach FAILED with a step"
+        "size that succeeded on implicit Euler; trying both again at a smaller "
+        "step size.");
+    return StepOnceAtMostPaired(dt/2, xtplus_ie, xtplus_itr);
   }
 }
 

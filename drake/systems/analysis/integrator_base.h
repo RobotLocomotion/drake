@@ -900,7 +900,7 @@ class IntegratorBase {
    * largest error in any state vector component.
    * @returns the norm (a non-negative value)
    */
-  T CalcStateChangeNorm(const ContinuousState<T>& dx_state);
+  T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
 
   /**
    * Calculates the adjusted integrator step size toward keeping state variables
@@ -1075,7 +1075,7 @@ class IntegratorBase {
   int64_t error_check_failures_{0};
   int64_t num_ode_evals_{0};
 
-  // Applied as diagonal matrices to weight error estimates.
+  // Applied as diagonal matrices to weight state change variables.
   Eigen::VectorXd qbar_weight_, z_weight_;
 
   // State and time derivative copies for reversion during error-controlled
@@ -1087,12 +1087,13 @@ class IntegratorBase {
 
   // The pseudo-inverse of the matrix that converts time derivatives of
   // generalized coordinates to generalized velocities, multiplied by the
-  // error in the generalized coordinates (used in error norm calculations).
-  std::unique_ptr<VectorBase<T>> pinvN_dq_change_;
+  // change in the generalized coordinates (used in state change norm
+  // calculations).
+  mutable std::unique_ptr<VectorBase<T>> pinvN_dq_change_;
 
-  // Vectors used in error norm calculations.
-  VectorX<T> unweighted_substate_change_;
-  std::unique_ptr<VectorBase<T>> weighted_q_change_;
+  // Vectors used in state change norm calculations.
+  mutable VectorX<T> unweighted_substate_change_;
+  mutable std::unique_ptr<VectorBase<T>> weighted_q_change_;
 
   // Variable for indicating when an integrator has been initialized.
   bool initialization_done_{false};
@@ -1196,7 +1197,8 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 }
 
 template <class T>
-T IntegratorBase<T>::CalcStateChangeNorm(const ContinuousState<T>& dx_state) {
+T IntegratorBase<T>::CalcStateChangeNorm(
+    const ContinuousState<T>& dx_state) const {
   using std::max;
   const Context<T>& context = get_context();
   const auto& system = get_system();

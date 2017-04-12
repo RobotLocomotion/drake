@@ -263,19 +263,25 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   T StepOnceAtMostPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
   T StepAbstract(T dt,
-                 const std::function<VectorX<T>(const VectorX<T>&)>& g,
+                 const std::function<VectorX<T>()>& g,
                  double scale,
                  bool shrink_ok,
                  VectorX<T>* xtplus);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   void DoStepOnceFixedSize(const T& dt) override;
   T StepImplicitEuler(const T& dt);
-  T StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
-                          VectorX<T>* xtplus);
-  MatrixX<T> ComputeForwardDiffJacobian(const VectorX<T>& xtplus);
-  MatrixX<T> ComputeCentralDiffJacobian(const VectorX<T>& xtplus);
-  MatrixX<T> ComputeAutoDiffJacobian(const VectorX<T>& xtplus);
-  VectorX<T> CalcTimeDerivatives(const VectorX<T>& x);
+  bool StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
+                             VectorX<T>* xtplus);
+  MatrixX<T> ComputeForwardDiffJacobian(const System<T>& system,
+                                        const Context<T>& context,
+                                        ContinuousState<T>* state);
+  MatrixX<T> ComputeCentralDiffJacobian(const System<T>& system,
+                                        const Context<T>& context,
+                                        ContinuousState<T>* state);
+  MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
+                                     const Context<T>& context,
+                                     ContinuousState<T>* state);
+  VectorX<T> CalcTimeDerivatives();
 
   // This is a pre-allocated temporary for use by integration. It stores
   // the derivatives computed at x(t+h).
