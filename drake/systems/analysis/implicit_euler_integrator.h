@@ -195,7 +195,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// that the Jacobian matrix was reformed) since the last call to
   /// ResetStatistics(). This count includes those evaluations necessary
   /// during the error estimation process.
-  int get_num_jacobian_evaluations() const { return num_jacobian_reforms_; }
+  int get_num_jacobian_evaluations() const { return num_jacobian_evaluations_; }
 
   /// Gets the number of iteration matrix factorizations since the last
   /// call to ResetStatistics(). This count includes those refactorizations
@@ -327,7 +327,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   int num_substep_failures_{0};
 
   // Various combined statistics.
-  int num_jacobian_reforms_{0};
+  int num_jacobian_evaluations_{0};
   int num_iter_factorizations_{0};
   int num_jacobian_function_evaluations_{0};
   int num_nr_loops_{0};

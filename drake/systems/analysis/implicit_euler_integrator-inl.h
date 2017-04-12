@@ -339,8 +339,6 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
                           double scale,
                           bool shrink_ok,
                           VectorX<T>* xtplus) {
-  using std::abs;
-  using std::pow;
   using std::max;
 
   // Verify xtplus
