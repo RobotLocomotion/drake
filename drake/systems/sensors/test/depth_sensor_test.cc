@@ -288,6 +288,18 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   EXPECT_EQ(point_cloud.cols(), 0);
 }
 
+// Tests that DepthSensorSpecification is copyable.
+GTEST_TEST(TestDepthSensor, TestDepthSensorSpecIsCopyable) {
+  DepthSensorSpecification original_spec;
+  DepthSensorSpecification::set_x_linear_spec(&original_spec);
+
+  DepthSensorSpecification copied_spec_1 = original_spec;
+  EXPECT_EQ(copied_spec_1, original_spec);
+
+  DepthSensorSpecification copied_spec_2(original_spec);
+  EXPECT_EQ(copied_spec_2, original_spec);
+}
+
 }  // namespace
 }  // namespace sensors
 }  // namespace systems
