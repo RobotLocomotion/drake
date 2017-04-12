@@ -15,7 +15,7 @@ Bazel Installation
 ==================
 
 The Ubuntu Xenial platform setup process installs Bazel for you. On other
-platforms, refer to the Bazel installation instructions. We use Bazel 0.4.3.
+platforms, refer to the Bazel installation instructions. We use Bazel 0.4.5.
 https://bazel.build/versions/master/docs/install.html
 
 Drake clone and platform setup
