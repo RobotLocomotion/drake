@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- ===================================================================== -->
+<!-- Collision model: Meshes. This is more accurate than primitive shapes but is
+     also more computationally demanding. -->
+<!-- ===================================================================== -->
+<robot name="wsg_50" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--Import the wsg 50 macro -->
+  <xacro:include filename="$(find wsg_50_description)/urdf/wsg_50.urdf.xacro"/>
+  <!--   <xacro:arg name="hardware_interface" default="PositionJointInterface"/>-->
+  <xacro:arg default="wsg_50" name="robot_name"/>
+  <xacro:arg default="world" name="parent"/>
+  <!--iiwa-->
+  <xacro:wsg_50 name="$(arg robot_name)" parent="$(arg parent)">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </xacro:wsg_50>
+</robot>
