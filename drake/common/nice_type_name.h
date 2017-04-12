@@ -59,7 +59,9 @@ class NiceTypeName {
   /** Returns the type name of the most-derived type of an object of type T,
   typically but not necessarily polymorphic. This must be calculated on the fly
   so is expensive whenever called, though very reasonable for use in error
-  messages. **/
+  messages. For non-polymorphic types this produces the same result as would
+  `Get<decltype(thing)>()` but for polymorphic types the results will
+  differ. **/
   template <typename T>
   static std::string Get(const T& thing) {
     return Canonicalize(Demangle(typeid(thing).name()));
