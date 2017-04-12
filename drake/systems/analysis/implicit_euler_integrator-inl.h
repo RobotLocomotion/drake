@@ -23,7 +23,7 @@ void ImplicitEulerIntegrator<T>::DoResetStatistics() {
   num_err_est_function_evaluations_ = 0;
   num_jacobian_function_evaluations_ =
     num_err_est_jacobian_function_evaluations_ = 0;
-  num_jacobian_reforms_ = num_err_est_jacobian_reforms_ = 0;
+  num_jacobian_evaluations_ = num_err_est_jacobian_reforms_ = 0;
   num_iter_factorizations_ = num_err_est_iter_factorizations_ = 0;
   num_shrinkages_from_error_control_ = 0;
   num_shrinkages_from_substep_failures_ = 0;
@@ -238,66 +238,6 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
   return J;
 }
 
-// Calculates the infinity norms of the errors of the configuration variables,
-// velocity variables, and auxiliary variables. Weightings on changes in state
-// variables defined in IntegratorBase (and described in documentation for that
-// class labeled "Methods for weighting state variable errors") should be
-// selected such that "the weight `wᵢ` for state variable `xᵢ` ... makes the
-// product `wᵢ * dxᵢ` unitless." Thus, the three computed norms should be
-// directly comparable.
-// @param q_nrm the infinity norm of the change in position variables.
-// @param v_nrm the infinity norm of the change in velocity variables.
-// @param z_nrm the infinity norm of the change in auxiliary variables.
-// @note If a class of variable (e.g., auxiliary variables) isn't present in
-//       the system, the computed norm will be zero.
-template <class T>
-void ImplicitEulerIntegrator<T>::CalcErrorNorms(const Context<T>& context,
-                                                T* q_nrm, T* v_nrm, T* z_nrm) {
-  DRAKE_DEMAND(q_nrm);
-  DRAKE_DEMAND(v_nrm);
-  DRAKE_DEMAND(z_nrm);
-
-  // 1. Get the changes in state.
-  const VectorBase<T>& dgq = dx_state_->get_generalized_position();
-  const VectorBase<T>& dgv = dx_state_->get_generalized_velocity();
-  const VectorBase<T>& dgz = dx_state_->get_misc_continuous_state();
-
-  // 2. (re-)Initialize pinvN_dq_err_ and weighted_q_err_, if necessary.
-  // Reinitialization might be required if the system state variables can
-  // change during the course of the integration.
-  if (pinvN_ddq_ == nullptr) {
-    pinvN_ddq_ = std::make_unique<BasicVector<T>>(dgv.size());
-    weighted_dq_ = std::make_unique<BasicVector<T>>(dgq.size());
-  }
-  DRAKE_DEMAND(pinvN_ddq_->size() == dgv.size());
-  DRAKE_DEMAND(weighted_dq_->size() == dgq.size());
-
-  // TODO(edrumwri): Acquire characteristic time properly from the system
-  //                 (i.e., modify the System to provide this value).
-  const double characteristic_time = 1.0;
-
-  // 3. Compute the infinity norm of the weighted velocity variables.
-  const auto& qbar_v_weight = this->get_generalized_state_weight_vector();
-  unweighted_delta_ = dgv.CopyToVector();
-  *v_nrm = qbar_v_weight.cwiseProduct(unweighted_delta_).
-      template lpNorm<Eigen::Infinity>() * characteristic_time;
-
-  // 4. Compute the infinity norm of the weighted auxiliary variables.
-  const auto& z_weight = this->get_misc_state_weight_vector();
-  unweighted_delta_ = dgz.CopyToVector();
-  *z_nrm = (z_weight.cwiseProduct(unweighted_delta_))
-      .template lpNorm<Eigen::Infinity>();
-
-  // 5. Compute N * Wq * dq = N * Wꝗ * N+ * dq.
-  const System<T>& system = this->get_system();
-  unweighted_delta_ = dgq.CopyToVector();
-  system.MapQDotToVelocity(context, unweighted_delta_, pinvN_ddq_.get());
-  system.MapVelocityToQDot(
-      context, qbar_v_weight.cwiseProduct(pinvN_ddq_->CopyToVector()),
-      weighted_dq_.get());
-  *q_nrm = weighted_dq_->CopyToVector().template lpNorm<Eigen::Infinity>();
-}
-
 // Solves a linear system
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::Solve(const MatrixX<T>& A,
@@ -413,12 +353,8 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     VectorX<T> dx = Solve(A_, goutput);
 
     // Get the infinity norm of the weighted update vector.
-    T q_nrm, v_nrm, z_nrm;
     dx_state_->get_mutable_vector()->SetFromVector(dx);
-    CalcErrorNorms(*context, &q_nrm, &v_nrm, &z_nrm);
-    SPDLOG_DEBUG(drake::log(), "g norm: {}  q norm: {}  v norm: {}  z norm: {}",
-                 goutput.norm(), q_nrm, v_nrm, z_nrm);
-    T dx_norm = max(q_nrm, max(v_nrm, z_nrm));
+    T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
     // Update the state.
     *xtplus += dx;
@@ -548,7 +484,7 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
       };
 
   // Save statistics.
-  int saved_num_jacobian_reforms = num_jacobian_reforms_;
+  int saved_num_jacobian_evaluations = num_jacobian_evaluations_;
   int saved_num_iter_factorizations = num_iter_factorizations_;
   int64_t saved_num_function_evaluations =
       this->get_num_derivative_evaluations();
@@ -568,7 +504,7 @@ T ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
 
   // Move statistics to implicit trapezoid-specific.
   num_err_est_jacobian_reforms_ +=
-      num_jacobian_reforms_ - saved_num_jacobian_reforms;
+      num_jacobian_evaluations_ - saved_num_jacobian_evaluations;
   num_err_est_iter_factorizations_ += num_iter_factorizations_ -
       saved_num_iter_factorizations;
   num_err_est_function_evaluations_ +=
@@ -587,7 +523,7 @@ template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& tf,
                                                     const VectorX<T>& xtplus) {
   this->get_mutable_context()->set_time(tf);
-  num_jacobian_reforms_++;
+  num_jacobian_evaluations_++;
 
   // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
 
@@ -683,7 +619,7 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
           SetFromVector(err_est_vec_);
 
       //--------------------------------------------------------------------
-      T err_norm = this->CalcErrorNorm();
+      T err_norm = this->CalcStateChangeNorm(*this->get_error_estimate());
       SPDLOG_DEBUG(drake::log(), "Norm of error estimate: {}", err_norm);
       std::tie(step_succeeded, dt) = this->CalcAdjustedStepSize(
           err_norm, dt_was_artificially_limited, dt_actual);

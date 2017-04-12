@@ -216,9 +216,9 @@ class IntegratorBase {
     err_est_.reset();
     qbar_weight_.setZero(0);
     z_weight_.setZero(0);
-    pinvN_dq_err_.reset();
-    unweighted_err_.setZero(0);
-    weighted_q_err_.reset();
+    pinvN_dq_change_.reset();
+    unweighted_substate_change_.setZero(0);
+    weighted_q_change_.reset();
 
     // Integrator no longer operates in fixed step mode.
     fixed_step_mode_ = false;
@@ -762,7 +762,7 @@ class IntegratorBase {
    * - [Sherman 2011]   M. Sherman, et al. Procedia IUTAM 2:241-261 (2011),
    *     Section 3.3. http://dx.doi.org/10.1016/j.piutam.2011.04.023
    *
-   *  @sa CalcErrorNorm()
+   *  @sa CalcStateChangeNorm()
    */
   /**
    * Gets the weighting vector (equivalent to a diagonal matrix) applied to
@@ -894,15 +894,13 @@ class IntegratorBase {
   void StepErrorControlled(const T& dt_max, ContinuousState<T>* derivs0);
 
   /**
-   * Computes the infinity norm of the error estimate. We use the infinity norm
-   * to capture the idea that, by providing accuracy requirements, the user
-   * indirectly specifies error tolerances that act to  limit the largest error
-   * in any state vector component.
-   * @throws std::logic_error If the integrator does not support error
-   *                          estimation.
+   * Computes the infinity norm of a change in continuous state. We use the
+   * infinity norm to capture the idea that, by providing accuracy requirements,
+   * the user can indirectly specify error tolerances that act to limit the
+   * largest error in any state vector component.
    * @returns the norm (a non-negative value)
    */
-  T CalcErrorNorm();
+  T CalcStateChangeNorm(const ContinuousState<T>& dx_state);
 
   /**
    * Calculates the adjusted integrator step size toward keeping state variables
@@ -1090,11 +1088,11 @@ class IntegratorBase {
   // The pseudo-inverse of the matrix that converts time derivatives of
   // generalized coordinates to generalized velocities, multiplied by the
   // error in the generalized coordinates (used in error norm calculations).
-  std::unique_ptr<VectorBase<T>> pinvN_dq_err_;
+  std::unique_ptr<VectorBase<T>> pinvN_dq_change_;
 
   // Vectors used in error norm calculations.
-  VectorX<T> unweighted_err_;
-  std::unique_ptr<VectorBase<T>> weighted_q_err_;
+  VectorX<T> unweighted_substate_change_;
+  std::unique_ptr<VectorBase<T>> weighted_q_change_;
 
   // Variable for indicating when an integrator has been initialized.
   bool initialization_done_{false};
@@ -1171,7 +1169,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
     StepOnceAtFixedSize(current_step_size);
 
     //--------------------------------------------------------------------
-    T err_norm = CalcErrorNorm();
+    T err_norm = CalcStateChangeNorm(*get_error_estimate());
     std::tie(step_succeeded, current_step_size) = CalcAdjustedStepSize(
         err_norm, dt_was_artificially_limited, current_step_size);
 
@@ -1198,59 +1196,54 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 }
 
 template <class T>
-T IntegratorBase<T>::CalcErrorNorm() {
+T IntegratorBase<T>::CalcStateChangeNorm(const ContinuousState<T>& dx_state) {
   using std::max;
   const Context<T>& context = get_context();
   const auto& system = get_system();
-
-  // Verify that the integrator supports error estimation.
-  if (!supports_error_estimation())
-    throw std::logic_error("Integrator does not support error estimation.");
-
-  // Get the error estimate and necessary vectors.
-  const auto& err_est = get_error_estimate();
 
   // Get weighting matrices.
   const auto& qbar_v_weight = this->get_generalized_state_weight_vector();
   const auto& z_weight = this->get_misc_state_weight_vector();
 
-  // Get the generalized position, velocity, and miscellaneous continuous
-  // state vectors.
-  const VectorBase<T>& gq_err = err_est->get_generalized_position();
-  const VectorBase<T>& gv_err = err_est->get_generalized_velocity();
-  const VectorBase<T>& gz_err = err_est->get_misc_continuous_state();
+  // Get the differences in the generalized position, velocity, and
+  // miscellaneous continuous state vectors.
+  const VectorBase<T>& dgq = dx_state.get_generalized_position();
+  const VectorBase<T>& dgv = dx_state.get_generalized_velocity();
+  const VectorBase<T>& dgz = dx_state.get_misc_continuous_state();
 
-  // (re-)Initialize pinvN_dq_err_ and weighted_q_err_, if necessary.
+  // (re-)Initialize pinvN_dq_change_ and weighted_q_change_, if necessary.
   // Reinitialization might be required if the system state variables can
   // change during the course of the simulation.
-  if (pinvN_dq_err_ == nullptr) {
-    pinvN_dq_err_ = std::make_unique<BasicVector<T>>(gv_err.size());
-    weighted_q_err_ = std::make_unique<BasicVector<T>>(gq_err.size());
+  if (pinvN_dq_change_ == nullptr) {
+    pinvN_dq_change_ = std::make_unique<BasicVector<T>>(dgv.size());
+    weighted_q_change_ = std::make_unique<BasicVector<T>>(dgq.size());
   }
-  DRAKE_DEMAND(pinvN_dq_err_->size() == gv_err.size());
-  DRAKE_DEMAND(weighted_q_err_->size() == gq_err.size());
+  DRAKE_DEMAND(pinvN_dq_change_->size() == dgv.size());
+  DRAKE_DEMAND(weighted_q_change_->size() == dgq.size());
 
   // TODO(edrumwri): Acquire characteristic time properly from the system
   //                 (i.e., modify the System to provide this value).
   const double characteristic_time = 1.0;
 
   // Computes the infinity norm of the weighted velocity variables.
-  unweighted_err_ = gv_err.CopyToVector();
-  T v_nrm = qbar_v_weight.cwiseProduct(unweighted_err_).
+  unweighted_substate_change_ = dgv.CopyToVector();
+  T v_nrm = qbar_v_weight.cwiseProduct(unweighted_substate_change_).
       template lpNorm<Eigen::Infinity>() * characteristic_time;
 
   // Compute the infinity norm of the weighted auxiliary variables.
-  unweighted_err_ = gz_err.CopyToVector();
-  T z_nrm = (z_weight.cwiseProduct(unweighted_err_))
+  unweighted_substate_change_ = dgz.CopyToVector();
+  T z_nrm = (z_weight.cwiseProduct(unweighted_substate_change_))
                 .template lpNorm<Eigen::Infinity>();
 
   // Compute N * Wq * dq = N * Wꝗ * N+ * dq.
-  unweighted_err_ = gq_err.CopyToVector();
-  system.MapQDotToVelocity(context, unweighted_err_, pinvN_dq_err_.get());
+  unweighted_substate_change_ = dgq.CopyToVector();
+  system.MapQDotToVelocity(context, unweighted_substate_change_,
+                           pinvN_dq_change_.get());
   system.MapVelocityToQDot(
-      context, qbar_v_weight.cwiseProduct(pinvN_dq_err_->CopyToVector()),
-      weighted_q_err_.get());
-  T q_nrm = weighted_q_err_->CopyToVector().template lpNorm<Eigen::Infinity>();
+      context, qbar_v_weight.cwiseProduct(pinvN_dq_change_->CopyToVector()),
+      weighted_q_change_.get());
+  T q_nrm = weighted_q_change_->CopyToVector().
+      template lpNorm<Eigen::Infinity>();
 
   // TODO(edrumwri): Record the worst offender (which of the norms resulted
   // in the largest value).

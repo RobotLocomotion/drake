@@ -276,7 +276,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   MatrixX<T> ComputeCentralDiffJacobian(const VectorX<T>& xtplus);
   MatrixX<T> ComputeAutoDiffJacobian(const VectorX<T>& xtplus);
   VectorX<T> CalcTimeDerivatives(const VectorX<T>& x);
-  void CalcErrorNorms(const Context<T>& context, T* q_nrm, T* v_nrm, T* z_nrm);
 
   // This is a pre-allocated temporary for use by integration. It stores
   // the derivatives computed at x(t+h).
