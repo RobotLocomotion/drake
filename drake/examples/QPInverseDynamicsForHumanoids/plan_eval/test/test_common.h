@@ -98,9 +98,9 @@ class GenericPlanTest : public ::testing::Test {
   void TestGenericClone() const {
     std::unique_ptr<GenericPlan<double>> clone = dut_->Clone();
     EXPECT_EQ(dut_->get_planned_contact_state(),
-        clone->get_planned_contact_state());
-    EXPECT_TRUE(
-        dut_->get_dof_trajectory().is_approx(clone->get_dof_trajectory(), 1e-12));
+              clone->get_planned_contact_state());
+    EXPECT_TRUE(dut_->get_dof_trajectory().is_approx(
+        clone->get_dof_trajectory(), 1e-12));
 
     const auto& trajs = dut_->get_body_trajectories();
     const auto& cloned_trajs = clone->get_body_trajectories();
