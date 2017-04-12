@@ -106,40 +106,78 @@ build:kcov --copt -O0
 test:kcov --spawn_strategy=standalone
 test:kcov --run_under //tools:kcov
 test:kcov --local_test_jobs=1
-test:kcov --test_tag_filters=-cpplint,-gurobi
+test:kcov --test_tag_filters=-cpplint,-gurobi,-pycodestyle
 test:kcov --nocache_test_results
 
 ### ASan build. ###
 build:asan --action_env=ASAN_OPTIONS
+build:asan --copt -g
 build:asan --copt -fsanitize=address
 build:asan --copt -O1
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
+test:asan --test-env=ASAN_OPTIONS
+test:asan --test-env=ASAN_SYMBOLIZER_PATH
+test:asan --test_tag_filters=-cpplint,-pycodestyle
+# Typical slowdown introduced by AddressSanitizer is 2x.
+# See https://clang.llvm.org/docs/AddressSanitizer.html
+test:asan --test_timeout=120,600,1800,7200
 
 ### LSan build. ###
 build:lsan --action_env=LSAN_OPTIONS
+build:lsan --copt -g
 build:lsan --copt -fsanitize=leak
 build:lsan --copt -O1
 build:lsan --copt -fno-omit-frame-pointer
 build:lsan --linkopt -fsanitize=leak
+test:lsan --test-env=LSAN_OPTIONS
+test:lsan --test-env=LSAN_SYMBOLIZER_PATH
+test:lsan --test_tag_filters=-cpplint,-pycodestyle
+
+### MSan build. ###
+build:msan --action_env=MSAN_OPTIONS
+build:msan --copt -g
+build:msan --copt -fsanitize=memory
+build:msan --copt -O1
+build:msan --copt -fno-omit-frame-pointer
+build:msan --linkopt -fsanitize=memory
+test:msan --test_tag_filters=-cpplint,-pycodestyle
+test:msan --test-env=MSAN_OPTIONS
+test:msan --test-env=MSAN_SYMBOLIZER_PATH
+# Typical slowdown introduced by MemorySanitizer is 3x.
+# See https://clang.llvm.org/docs/MemorySanitizer.html
+test:msan --test_timeout=180,900,2700,10800
 
 ### TSan build. ###
 build:tsan --action_env=TSAN_OPTIONS
+build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
 build:tsan --linkopt -fsanitize=thread
+test:tsan --test_env=TSAN_OPTIONS
+test:tsan --test_tag_filters=-cpplint,-pycodestyle
+# Typical slowdown introduced by ThreadSanitizer is about 5x-15x
+# See https://clang.llvm.org/docs/ThreadSanitizer.html
+test:tsan --test_timeout=300,1500,5400,18000
 
 ### UBSan build. ###
 build:ubsan --action_env=UBSAN_OPTIONS
+build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
+test:ubsan --test_env=UBSAN_OPTIONS
+test:ubsan --test_tag_filters=-cpplint,-pycodestyle
 
 ### Memcheck build. ###
 build:memcheck --copt -g
 build:memcheck --run_under=//tools:valgrind
+test:memcheck --test_tag_filters=-cpplint,-pycodestyle
+# Slowdown factor can range from 5-100.
+# See http://valgrind.org/info/about.html
+test:memcheck --test_timeout=300,1500,5400,18000
 
 # Fast memcheck.
 #
@@ -151,3 +189,7 @@ build:memcheck --run_under=//tools:valgrind
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools:valgrind
+test:fastmemcheck --test_tag_filters=-cpplint,-pycodestyle
+# Slowdown factor can range from 5-100.
+# See http://valgrind.org/info/about.html
+test:fastmemcheck --test_timeout=300,1500,5400,18000
