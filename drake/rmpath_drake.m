@@ -31,7 +31,6 @@ rmpath(fullfile(root,'thirdParty','bsd','GetFullPath'));
 rmpath(fullfile(root,'thirdParty','bsd','plotregion'));
 rmpath(fullfile(root,'thirdParty','bsd','polytopes'));
 rmpath(fullfile(root,'thirdParty','bsd','psm'));
-rmpath(fullfile(root,'thirdParty','bsd','xacro'));
 rmpath(fullfile(root,'thirdParty','misc'));
 rmpath(fullfile(root,'thirdParty','misc','pathlcp'));
 rmpath(fullfile(root,'thirdParty','zlib'));
