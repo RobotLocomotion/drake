@@ -252,6 +252,9 @@ lcm_py_library(
     name = "lcmtypes-py",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
+    deps = [
+        "@bot_core_lcmtypes//:py",
+    ],
 )
 
 # === test/ ===
