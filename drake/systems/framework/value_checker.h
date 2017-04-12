@@ -32,11 +32,8 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
   const auto& original_type = typeid(*basic_vector);
   const auto& cloned_type = typeid(*cloned_vector);
   if (original_type != cloned_type) {
-    using N = NiceTypeName;
-    const std::string original_name =
-        N::Canonicalize(N::Demangle(original_type.name()));
-    const std::string cloned_name =
-        N::Canonicalize(N::Demangle(cloned_type.name()));
+    const std::string original_name = NiceTypeName::Get(*basic_vector);
+    const std::string cloned_name = NiceTypeName::Get(*cloned_vector);
     throw std::runtime_error(
         "CheckVectorValueInvariants failed: " + original_name + "::Clone "
         "produced a " + cloned_name + " object instead of the same type");

@@ -289,8 +289,7 @@ class LeafSystem : public System<T> {
     const int64_t id = this->GetGraphvizId();
     std::string name = this->get_name();
     if (name.empty()) {
-      const std::string type = NiceTypeName::Canonicalize(
-          NiceTypeName::Demangle(typeid(*this).name()));
+      const std::string type = NiceTypeName::Get(*this);
       // Drop the template parameters.
       name = std::regex_replace(type, std::regex("<.*>$"), std::string());
     }
