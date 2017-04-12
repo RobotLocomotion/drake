@@ -14,11 +14,18 @@ namespace drake {
 arbitrarily-complicated C++ types.
 
 Usage: @code
+// For types:
 using std::pair; using std::string;
 using MyVectorType = pair<int,string>;
 std::cout << "Type MyVectorType was: "
           << drake::NiceTypeName::Get<MyVectorType>() << std::endl;
 // Output: std::pair<int,std::string>
+
+// For expressions:
+std::unique_ptr<AbstractThing> thing;  // Assume actual type is ConcreteThing.
+std::cout << "Actual type of 'thing' was: "
+          << drake::NiceTypeName::Get(*thing) << std::endl;
+// Output: ConcreteThing
 @endcode
 
 We demangle and attempt to canonicalize the compiler-generated type names as
@@ -47,6 +54,15 @@ class NiceTypeName {
     static const never_destroyed<std::string> canonical(
         Canonicalize(Demangle(typeid(T).name())));
     return canonical.access();
+  }
+
+  /** Returns the type name of the most-derived type of an object of type T,
+  typically but not necessarily polymorphic. This must be calculated on the fly
+  so is expensive whenever called, though very reasonable for use in error
+  messages. **/
+  template <typename T>
+  static std::string Get(const T& thing) {
+    return Canonicalize(Demangle(typeid(thing).name()));
   }
 
   /** Using the algorithm appropriate to the current compiler, demangles a type

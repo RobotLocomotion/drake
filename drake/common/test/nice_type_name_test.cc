@@ -21,7 +21,13 @@ struct ForTesting {
   enum MyEnum { One, Two, Three };
   enum class MyEnumClass { Four, Five, Six };
 };
-}
+
+class Base {
+ public:
+  virtual ~Base() = default;
+};
+class Derived : public Base {};
+}  // namespace nice_type_name_test
 
 namespace {
 // Can't test much of NiceTypeName::Demangle because its behavior is compiler-
@@ -127,6 +133,28 @@ GTEST_TEST(NiceTypeNameTest, Enum) {
   EXPECT_EQ(NiceTypeName::Get<decltype(
                 nice_type_name_test::ForTesting::MyEnumClass::Four)>(),
             "drake::nice_type_name_test::ForTesting::MyEnumClass");
+}
+
+// Test the other form of NiceTypeName::Get().
+
+GTEST_TEST(NiceTypeNameTest, Expressions) {
+  using nice_type_name_test::Derived;
+  using nice_type_name_test::Base;
+  const int i = 10;
+  const double d = 3.14;
+  EXPECT_EQ(NiceTypeName::Get(i), "int");
+  EXPECT_EQ(NiceTypeName::Get(d), "double");
+  EXPECT_EQ(NiceTypeName::Get(i * d), "double");
+
+  Derived derived;
+  Base* base = &derived;
+  EXPECT_EQ(NiceTypeName::Get(derived), "drake::nice_type_name_test::Derived");
+  EXPECT_EQ(NiceTypeName::Get(*base), "drake::nice_type_name_test::Derived");
+
+  auto derived_uptr = std::make_unique<Derived>();
+  auto base_uptr = std::unique_ptr<Base>(new Derived());
+  EXPECT_EQ(NiceTypeName::Get(*derived_uptr), "drake::nice_type_name_test::Derived");
+  EXPECT_EQ(NiceTypeName::Get(*base_uptr), "drake::nice_type_name_test::Derived");
 }
 
 }  // namespace
