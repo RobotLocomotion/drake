@@ -3,8 +3,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/test/test_common.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
 namespace examples {
@@ -53,8 +51,8 @@ class DummyPlanTest : public GenericPlanTest {
  protected:
   void SetUp() override {
     const std::string kModelPath = drake::GetDrakePath() +
-        "/manipulation/models/iiwa_description/urdf/"
-        "iiwa14_polytope_collision.urdf";
+                                   "/manipulation/models/iiwa_description/urdf/"
+                                   "iiwa14_polytope_collision.urdf";
 
     const std::string kAliasGroupsPath =
         drake::GetDrakePath() +
@@ -66,13 +64,11 @@ class DummyPlanTest : public GenericPlanTest {
         "/examples/QPInverseDynamicsForHumanoids/"
         "config/iiwa.id_controller_config";
 
-    robot_ = std::make_unique<RigidBodyTree<double>>();
-    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        kModelPath, multibody::joints::kFixed, robot_.get());
-
+    std::default_random_engine generator(123);
+    AllocateResources(kModelPath, kAliasGroupsPath, kControlConfigPath);
+    SetRandomConfiguration(&generator);
     dut_ = std::unique_ptr<GenericPlan<double>>(new DummyPlan<double>());
-
-    Initialize(kAliasGroupsPath, kControlConfigPath);
+    dut_->Initialize(*robot_status_, *params_, *alias_groups_);
   }
 };
 
@@ -91,40 +87,25 @@ TEST_F(DummyPlanTest, TestInitialize) {
                                     robot_status_->time() + 3};
 
   for (double time : test_times) {
-    EXPECT_TRUE(
-        drake::CompareMatrices(robot_status_->position(),
-                               dut_->get_dof_trajectory().get_position(time),
-                               1e-12, drake::MatrixCompareType::absolute));
-
     EXPECT_TRUE(drake::CompareMatrices(
-        VectorX<double>::Zero(robot_->get_num_velocities()),
-        dut_->get_dof_trajectory().get_velocity(time), 1e-12,
+        robot_status_->position(),
+        dut_->get_dof_trajectory().get_position(time), kSmallTolerance,
         drake::MatrixCompareType::absolute));
 
     EXPECT_TRUE(drake::CompareMatrices(
         VectorX<double>::Zero(robot_->get_num_velocities()),
-        dut_->get_dof_trajectory().get_acceleration(time), 1e-12,
+        dut_->get_dof_trajectory().get_velocity(time), kSmallTolerance,
+        drake::MatrixCompareType::absolute));
+
+    EXPECT_TRUE(drake::CompareMatrices(
+        VectorX<double>::Zero(robot_->get_num_velocities()),
+        dut_->get_dof_trajectory().get_acceleration(time), kSmallTolerance,
         drake::MatrixCompareType::absolute));
   }
 }
 
 // Tests if the cloned fields are the same as the original.
-TEST_F(DummyPlanTest, TestClone) {
-  std::unique_ptr<GenericPlan<double>> clone = dut_->Clone();
-  EXPECT_EQ(dut_->get_planned_contact_state(),
-            clone->get_planned_contact_state());
-  EXPECT_TRUE(
-      dut_->get_dof_trajectory().is_approx(clone->get_dof_trajectory(), 1e-12));
-
-  const auto& trajs = dut_->get_body_trajectories();
-  const auto& cloned_trajs = clone->get_body_trajectories();
-  EXPECT_EQ(trajs.size(), cloned_trajs.size());
-  for (const auto& traj_pair : trajs) {
-    auto it = cloned_trajs.find(traj_pair.first);
-    EXPECT_TRUE(it != cloned_trajs.end());
-    EXPECT_TRUE(it->second.is_approx(traj_pair.second, 1e-12));
-  }
-}
+TEST_F(DummyPlanTest, TestClone) { TestGenericClone(); }
 
 // Checks the generated QpInput vs expected.
 TEST_F(DummyPlanTest, TestUpdateQpInput) {
@@ -132,8 +113,8 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
 
   // Desired joint position and velocity.
   VectorX<double> q_d = robot_status_->position();
-  VectorX<double> v_d(robot_status_->robot().get_num_velocities());
-  v_d.setZero();
+  VectorX<double> v_d = VectorX<double>::Zero(robot_->get_num_velocities());
+  VectorX<double> vd_d = VectorX<double>::Zero(robot_->get_num_velocities());
 
   // Changes the current state. The choice of position and velocity is
   // arbitrary.
@@ -145,13 +126,7 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
 
   // The expected dof acceleration should only contain the position and
   // velocity terms.
-  VectorX<double> kp, kd;
-  params_->LookupDesiredDofMotionGains(&kp, &kd);
-
-  VectorX<double> expected_vd =
-      (kp.array() * (q_d - robot_status_->position()).array() +
-       kd.array() * (v_d - robot_status_->velocity()).array())
-          .matrix();
+  VectorX<double> expected_vd = ComputeExpectedDoFAcceleration(q_d, v_d, vd_d);
 
   // The weights / constraint types are hard coded in this test. They need to
   // match the numbers specified in
@@ -159,7 +134,7 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
 
   // Checks dof acceleration.
   EXPECT_TRUE(drake::CompareMatrices(
-      expected_vd, qp_input.desired_dof_motions().values(), 1e-12,
+      expected_vd, qp_input.desired_dof_motions().values(), kSmallTolerance,
       drake::MatrixCompareType::absolute));
   for (int i = 0; i < robot_->get_num_positions(); ++i) {
     // Checks dof constraint type.

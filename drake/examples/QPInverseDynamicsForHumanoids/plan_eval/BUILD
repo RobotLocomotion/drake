@@ -35,6 +35,38 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "manipulator_plans",
+    srcs = [
+        "manipulator_move_end_effector_plan.cc",
+    ],
+    hdrs = [
+        "manipulator_move_end_effector_plan.h",
+    ],
+    deps = [
+        ":generic_plan",
+        "//drake/lcmtypes:manipulator_plan_move_end_effector",
+        "//drake/util:lcm_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulator_plan_test",
+    data = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":manipulator_plans",
+        ":test_common",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_library(
     name = "plan_eval_utils",
     srcs = [
         "plan_eval_utils.cc",
