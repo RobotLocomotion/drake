@@ -1,7 +1,7 @@
 #include "drake/systems/sensors/depth_sensor_to_lcm_point_cloud_message.h"
 
-#include "bot_core/pointcloud_t.hpp"
 #include <gflags/gflags.h>
+#include "bot_core/pointcloud_t.hpp"
 
 #include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"

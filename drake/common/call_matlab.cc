@@ -1,13 +1,13 @@
 #include "drake/common/call_matlab.h"
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <cstring>
 #include <fstream>
 #include <limits>
 #include <string>
-
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"

@@ -1,14 +1,12 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/manipulator_move_end_effector_plan.h"
-
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/manipulator_move_end_effector_plan.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/test/test_common.h"
+#include "drake/lcmt_manipulator_plan_move_end_effector.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-
-#include "drake/lcmt_manipulator_plan_move_end_effector.hpp"
 #include "drake/util/lcmUtil.h"
 
 namespace drake {

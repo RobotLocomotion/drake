@@ -1,11 +1,12 @@
-#include "gtest/gtest.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
 
 #include <limits>
 #include <sstream>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
-#include "drake/multibody/multibody_tree/spatial_inertia.h"
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
 namespace drake {
