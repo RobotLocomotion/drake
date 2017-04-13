@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -1246,6 +1247,8 @@ T IntegratorBase<T>::CalcStateChangeNorm(
       weighted_q_change_.get());
   T q_nrm = weighted_q_change_->CopyToVector().
       template lpNorm<Eigen::Infinity>();
+  SPDLOG_DEBUG(drake::log(), "dq norm: {}, dv norm: {}, dz norm: {}",
+               q_nrm, v_nrm, z_nrm);
 
   // TODO(edrumwri): Record the worst offender (which of the norms resulted
   // in the largest value).
