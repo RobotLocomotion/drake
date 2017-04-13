@@ -95,7 +95,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
                           const VectorXDecisionVariable& variables,
                           Number* result, Number* grad) {
   // For constraints which don't use all of the variables in the X
-  // input, extract a subset into the TaylorVecXd this_x to evaluate
+  // input, extract a subset into the AutoDiffVecXd this_x to evaluate
   // the constraint (we actually do this for all constraints.  One
   // potential optimization might be to detect if the initial "tx" has
   // the correct geometry (e.g. the constraint uses all decision
@@ -107,7 +107,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     this_x(i) = xvec(prog.FindDecisionVariableIndex(variables(i)));
   }
 
-  TaylorVecXd ty(c.num_constraints());
+  AutoDiffVecXd ty(c.num_constraints());
   c.Eval(math::initializeAutoDiff(this_x), ty);
 
   // Store the results.  Since IPOPT directly knows the bounds of the
@@ -412,7 +412,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateCosts(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
-    TaylorVecXd ty(1);
+    AutoDiffVecXd ty(1);
     Eigen::VectorXd this_x;
 
     memcpy(cost_cache_->x.data(), x, n * sizeof(Number));

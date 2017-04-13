@@ -218,8 +218,8 @@ class MathematicalProgram {
                    detail::FunctionTraits<F>::numOutputs(f_));
       detail::FunctionTraits<F>::eval(f_, x, y);
     }
-    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-                TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd& y) const override {
       y.resize(detail::FunctionTraits<F>::numOutputs(f_));
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                    detail::FunctionTraits<F>::numInputs(f_));
