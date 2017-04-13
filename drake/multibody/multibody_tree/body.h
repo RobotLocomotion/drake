@@ -4,15 +4,15 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
-#include "drake/multibody/multibody_tree/frame.h"
 
 namespace drake {
 namespace multibody {
 
-// Body<T> forward declaration for BodyFrame<T>.
+// Forward declaration for BodyFrame<T>.
 template<typename T> class Body;
 
 /// All Body objects, regardless of whether they represent rigid bodies or
@@ -21,13 +21,13 @@ template<typename T> class Body;
 /// These body frames can be thought of as a set of three orthogonal axes
 /// forming a right-handed orthogonal basis located at a point called the
 /// frame's origin. These %BodyFrame objects translate and rotate with their
-/// associated body and therefore their location and orientation is a function
+/// associated body and therefore their location and orientation are a function
 /// of time.
 /// For RigidBody objects %BodyFrame represents the frame in which their center
 /// of mass and rotational inertia are provided. The %BodyFrame associated with
 /// a body does not necessarily need to be located at its center of mass nor
-/// does it need to be aligned with the body's principal axes, even though it
-/// is a common use case found in practice.
+/// does it need to be aligned with the body's principal axes, although, in
+/// practice, it frequently is.
 /// For flexible bodies, %BodyFrame provides a representation for the body's
 /// reference frame. The flexible degrees of freedom associated with a flexible
 /// body describe the body's deformation in this frame. Therefore, the motion of
@@ -55,9 +55,9 @@ class BodyFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
- public:
-  // Implementation for MultibodyTreeElement::Compile().
-  void Compile(const MultibodyTree<T>& tree) final {}
+ protected:
+  // Implementation for MultibodyTreeElement::DoCompile().
+  void DoCompile(const MultibodyTree<T>& tree) final {}
 
  private:
   // Only Body objects can create BodyFrame objects since Body is a friend of
@@ -104,18 +104,20 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return &body_frame_;
   }
 
-  /// At MultibodyTree::Compile() time, each body retrieves its topology
-  /// from the parent MultibodyTree.
-  void Compile(const MultibodyTree<T>& tree) final {
-    topology_ = tree.get_topology().bodies[this->get_index()];
-  }
-
  private:
   // Body frame associated with this body.
   BodyFrame<T> body_frame_;
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   BodyTopology topology_;
+
+ protected:
+  // Implementation for MultibodyTreeElement::DoCompile().
+  // At MultibodyTree::Compile() time, each body retrieves its topology
+  // from the parent MultibodyTree.
+  void DoCompile(const MultibodyTree<T>& tree) final {
+    topology_ = tree.get_topology().bodies[this->get_index()];
+  }
 };
 
 }  // namespace multibody

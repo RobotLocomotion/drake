@@ -13,14 +13,8 @@ namespace multibody {
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
-    const Frame<T>& P, const Isometry3<T>& X_PF) :
-    Frame<T>(P.get_body()), X_PF_(X_PF) {
-  if (dynamic_cast<const BodyFrame<T>*>(&P) == nullptr) {
-    throw std::logic_error(
-        "Chaining of FixedOffsetFrame frames is not yet supported. "
-        "Therefore we only allow to fix frames to body frames.");
-  }
-}
+    const BodyFrame<T>& P, const Isometry3<T>& X_PF) :
+    Frame<T>(P.get_body()), X_PF_(X_PF) {}
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
