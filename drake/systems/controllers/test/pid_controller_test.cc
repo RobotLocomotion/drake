@@ -76,7 +76,7 @@ TEST_F(PidControllerDeathTest, GetterVectors) {
   ASSERT_EQ(ki, controller.get_Ki_vector());
   ASSERT_EQ(kd, controller.get_Kd_vector());
 
-  EXPECT_DEATH(controller.get_Kp_singleton(), ".*");
+  EXPECT_THROW(controller.get_Kp_singleton(), std::runtime_error);
 }
 
 TEST_F(PidControllerDeathTest, GetterVectorKi) {
@@ -85,7 +85,7 @@ TEST_F(PidControllerDeathTest, GetterVectorKi) {
   const Eigen::Vector2d kd{1.0, 2.0};
   PidController<double> controller{kp, ki, kd};
 
-  EXPECT_DEATH(controller.get_Ki_singleton(), ".*");
+  EXPECT_THROW(controller.get_Ki_singleton(), std::runtime_error);
 }
 
 TEST_F(PidControllerDeathTest, GetterVectorKd) {
@@ -94,7 +94,7 @@ TEST_F(PidControllerDeathTest, GetterVectorKd) {
   const Eigen::Vector2d kd{1.0, 2.0};
   PidController<double> controller{kp, ki, kd};
 
-  EXPECT_DEATH(controller.get_Kd_singleton(), ".*");
+  EXPECT_THROW(controller.get_Kd_singleton(), std::runtime_error);
 }
 
 TEST_F(PidControllerTest, Graphviz) {
