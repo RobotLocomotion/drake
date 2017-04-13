@@ -91,6 +91,15 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "manipulator_plan_move_end_effector",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
+    deps = [
+        "@bot_core_lcmtypes//:lib",
+    ],
+)
+
+lcm_cc_library(
     name = "piecewise_polynomial",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_piecewise_polynomial.lcm"],
@@ -234,6 +243,9 @@ lcm_py_library(
     name = "lcmtypes-py",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
+    deps = [
+        "@bot_core_lcmtypes//:py",
+    ],
 )
 
 # === test/ ===
