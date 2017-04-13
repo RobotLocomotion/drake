@@ -62,12 +62,14 @@ github_archive(
     build_file = "tools/pycodestyle.BUILD",
 )
 
-github_archive(
+bitbucket_archive(
     name = "eigen",
-    repository = "RobotLocomotion/eigen-mirror",
-    commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
+    repository = "eigen/eigen",
+    # N.B. See #5785; do your best not to have to bump this to a newer commit.
+    commit = "3.3.3",
+    sha256 = "94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f",
     build_file = "tools/eigen.BUILD",
-    sha256 = "db797e2857d3d6def92ec2c46aa04577d3e1bb371d6fe14e6bdfc088dcaf2e9e",
+    strip_prefix = "eigen-eigen-67e894c6cd8f",
 )
 
 github_archive(
