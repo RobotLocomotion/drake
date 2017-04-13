@@ -65,17 +65,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // Create the input arguments
     for (i = 0; i < message.rhs_size(); i++) {
       int num_bytes = message.rhs(i).data().size();
-      if (num_bytes == 0) {
-        mexPrintf("rhs %d seems to have zero bytes.  dropping message %s.\n", i,
-                  message.function_name().c_str());
-        mexPrintf("type: %d\n", message.rhs(i).type());
-        mexPrintf("rows: %d\n", message.rhs(i).rows());
-        mexPrintf("cols: %d\n", message.rhs(i).cols());
-        for (int j = 0; j < i; j++) {
-          mxDestroyArray(rhs[j]);
-        }
-      }
-
       switch (message.rhs(i).type()) {
         case drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE: {
           int64_t id;

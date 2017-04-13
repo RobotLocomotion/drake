@@ -40,7 +40,7 @@ message MatlabArray
 
 message MatlabRPC {
   repeated int64 lhs = 1;  // unique id for variables held in the MATLAB
-  	   	       	   // client's workspace
+                           // client's workspace
 
   repeated MatlabArray rhs = 2;  // the input argument data
 
