@@ -263,6 +263,8 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
 
 // Performs the bulk of the stepping computation for both implicit Euler and
 // implicit trapezoid method- they're very similar.
+// @note Functions should call this function rather than the second variant
+//       (listed immediately below).
 // @param dt the integration step size to attempt.
 // @param g the particular implicit function to zero.
 // @param scale a scale factor- either 1 or 2- that allows this method to be
@@ -281,11 +283,40 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
 //       on exit, where h <= dt.
 template <class T>
 T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
+                                           const std::function<VectorX<T>()>& g,
+                                           double scale, bool shrink_ok,
+                                           VectorX<T>* xtplus) {
+  return StepAbstract(dt, g, scale, shrink_ok, dt, xtplus);
+}
+
+// Performs the bulk of the stepping computation for both implicit Euler and
+// implicit trapezoid method- they're very similar.
+// @warning Only StepAbstract() should call this function.
+// @param dt the integration step size to attempt.
+// @param g the particular implicit function to zero.
+// @param scale a scale factor- either 1 or 2- that allows this method to be
+//        used by both implicit Euler and implicit trapezoid methods.
+// @param shrink_ok if set to `true`, the method will recursively call
+//        StepAbstract() with smaller step sizes (as necessary) until the
+//        Newton-Raphson process converges.
+// @param requested_dt the integration step size requested by the caller (which
+//        may differ from @p dt on recursive calls to this function).
+// @param [in,out] the starting guess for x(t+dt); the value for x(t+h) on
+//        return (assuming that h > 0)
+// @retval h if `shrink_ok` is `true`, `h` will be the eventual successful
+//           integration step size; if `shrink_ok` is `false`, `h` will either
+//           be equal to `dt` (if StepAbstract() was successful), or zero
+//           (if StepAbstract() was not successful).
+// @pre The time and state of the system are t0 and x(t0) on entry.
+// @post The time and state of the system will be set to t0+h and x(t0+h)
+//       on exit, where h <= dt.
+template <class T>
+T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
                           const std::function<VectorX<T>()>& g,
-                          double scale,
-                          bool shrink_ok,
+                          double scale, bool shrink_ok, const T& requested_dt,
                           VectorX<T>* xtplus) {
   using std::max;
+  using std::min;
 
   // Verify xtplus
   Context<T>* context = this->get_mutable_context();
@@ -301,21 +332,32 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}", t0, dt);
 
-  // If the step is below the smallest allowed, take an explicit Euler step.
+  // If dt is below the smallest allowed, take an explicit Euler step.
   // (This could happen from recursive calls of StepAbstract(), each of
-  // which shrinks the step size).
-  if (dt < this->get_minimum_step_size()) {
-    SPDLOG_DEBUG(drake::log(), "StepAbstract()-- taking explicit Euler step");
+  // which shrinks the step size). Do NOT take the an explicit Euler step if
+  // dt is equivalent to the requested step.
+  if (dt < this->get_minimum_step_size() && dt < requested_dt) {
+    // Throw an exception if that behavior is specified.
+    if (this->get_minimum_step_size_exceeded_throws()) {
+      throw std::runtime_error("Newton-Raphson process wanted to select a "
+                                   "smaller step size than the user-designated "
+                                   "minimum.");
+    }
+
+    // Determine the step size to take.
+    const T h = min(requested_dt, this->get_minimum_step_size());
+    SPDLOG_DEBUG(drake::log(), "StepAbstract()-- taking explicit Euler step of"
+        "size {}", h);
 
     // Update the time
-    context->set_time(t0 + dt);
+    context->set_time(t0 + h);
 
     // Update the state.
     IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
     context->get_mutable_continuous_state()->SetFromVector(
-        xt0 + dt*derivs_->CopyToVector());
+        xt0 + h*derivs_->CopyToVector());
 
-    return dt;
+    return h;
   }
 
   // Advance the context time; this means that all derivatives will be computed
@@ -417,7 +459,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
     context->set_time(t0);
     context->get_mutable_continuous_state()->SetFromVector(xt0);
     *xtplus = xtplus_star;
-    return StepAbstract(dt / 2, g, scale, true, xtplus);
+    return StepAbstract(dt / 2, g, scale, true, requested_dt, xtplus);
   } else {
     // This function must have been called by StepImplicitTrapezoid(); failure
     // at this point means that StepImplicitEuler() succeeded with a step of
@@ -696,7 +738,9 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
 
 // Steps both implicit Euler and implicit trapezoid forward by at most dt
 // until both integrators succeed.
-// @param dt the initial integration step size to attempt
+// @param dt the integration step size to attempt.
+// @param requested_dt the integration step size requested by the original
+//        caller.
 // @param [out] xtplus_ie contains the Euler integrator solution on return
 // @param [out] xtplus_itr contains the implicit trapezoid solution on return
 // @pre The time and state are set to {t0,x0} on entry (those at the beginning
@@ -705,6 +749,25 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
 // @retval h The step that integration succeeded at.
 template <class T>
 T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
+                                                   VectorX<T>* xtplus_ie,
+                                                   VectorX<T>* xtplus_itr) {
+  return StepOnceAtMostPaired(dt, dt, xtplus_ie, xtplus_itr);
+}
+
+// Steps both implicit Euler and implicit trapezoid forward by at most dt
+// until both integrators succeed.
+// @param dt the integration step size to attempt.
+// @param requested_dt the integration step size requested by the original
+//        caller.
+// @param [out] xtplus_ie contains the Euler integrator solution on return
+// @param [out] xtplus_itr contains the implicit trapezoid solution on return
+// @pre The time and state are set to {t0,x0} on entry (those at the beginning
+//      of the interval.
+// @post The time and state are set to {t0+h,x0(t0+h)} on return.
+// @retval h The step that integration succeeded at.
+template <class T>
+T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
+                                                   const T& requested_dt,
                                                    VectorX<T>* xtplus_ie,
                                                    VectorX<T>* xtplus_itr) {
   using std::abs;
@@ -730,10 +793,12 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
   context->set_time(t0);
   context->get_mutable_continuous_state()->SetFromVector(xt0);
 
-  // If dt was smaller than the minimum step size, an explicit Euler step
+  // If the time stepped was less than the time requested *and* the time stepped
+  // was less than or equal to the minimum step size, an explicit Euler step
   // was taken. Computing the error estimate using two half steps is now the
   // best bet.
-  if (dt < this->get_minimum_step_size()) {
+  if (stepped_ie < requested_dt &&
+      stepped_ie <= this->get_minimum_step_size()) {
     const T half_dt = dt / 2;
 
     // Do one half step.
@@ -795,7 +860,7 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
     SPDLOG_DEBUG(drake::log(), "Implicit trapezoid approach FAILED with a step"
         "size that succeeded on implicit Euler; trying both again at a smaller "
         "step size.");
-    return StepOnceAtMostPaired(dt/2, xtplus_ie, xtplus_itr);
+    return StepOnceAtMostPaired(dt/2, requested_dt, xtplus_ie, xtplus_itr);
   }
 }
 
@@ -804,8 +869,9 @@ template <class T>
 void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   VectorX<T> xtplus_ie, xtplus_itr;
 
-  // Save the current state and time.
+  // Get the target time.
   Context<T>* context = this->get_mutable_context();
+  const T tf = context->get_time() + dt;
 
   SPDLOG_DEBUG(drake::log(), "IE DoStepOnceFixedSize(h={}) t={}",
                       dt, context->get_time());
@@ -835,8 +901,9 @@ void ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T &dt) {
   // Loop until there is no time remaining.
   while (t_remaining > 0) {
     // Perform the paired step.
-    t_remaining -= StepOnceAtMostPaired(t_remaining, &xtplus_ie,
-                                       &xtplus_itr);
+    StepOnceAtMostPaired(t_remaining, &xtplus_ie,
+                         &xtplus_itr);
+    t_remaining = tf - context->get_time();
 
     // Compute and update the error estimate. We assume that the error estimates
     // can be summed.

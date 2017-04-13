@@ -260,12 +260,19 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
  private:
   VectorX<T> Solve(const MatrixX<T>& A, const VectorX<T>& b);
+  T StepOnceAtMostPaired(const T& dt, const T& requested_dt,
+                         VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
   T StepOnceAtMostPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
   T StepAbstract(T dt,
                  const std::function<VectorX<T>()>& g,
                  double scale,
                  bool shrink_ok,
+                 VectorX<T>* xtplus);
+  T StepAbstract(T dt,
+                 const std::function<VectorX<T>()>& g,
+                 double scale,
+                 bool shrink_ok, const T& requested_dt,
                  VectorX<T>* xtplus);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   void DoStepOnceFixedSize(const T& dt) override;

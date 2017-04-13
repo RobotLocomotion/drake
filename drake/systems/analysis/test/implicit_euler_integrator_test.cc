@@ -197,6 +197,10 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   // Create the integrator for a System<double>.
   ImplicitEulerIntegrator<double> integrator(*spring, context.get());
 
+  // Verifies that calling Initialize without setting step size target or
+  // maximum step size throws exception.
+  EXPECT_THROW(integrator.Initialize(), std::logic_error);
+
   // Verify defaults match documentation.
   EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
             ImplicitEulerIntegrator<double>::JacobianComputationScheme::
@@ -206,8 +210,13 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   // Test that setting the target accuracy and initial step size target is
   // successful.
   integrator.set_maximum_step_size(dt);
-  EXPECT_NO_THROW(integrator.set_target_accuracy(1.0));
-  EXPECT_NO_THROW(integrator.request_initial_step_size_target(1.0));
+  integrator.set_target_accuracy(1.0);
+  integrator.request_initial_step_size_target(dt);
+  integrator.Initialize();
+
+  // Verifies that setting accuracy too loose (from above) makes the working
+  // accuracy different than the target accuracy after initialization.
+  EXPECT_NE(integrator.get_accuracy_in_use(), integrator.get_target_accuracy());
 }
 
 TEST_F(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
@@ -571,52 +580,6 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
       EXPECT_LT(rel_est_err, rtol);
     }
   }
-
-  // Do the integration loop again, again verifying error estimates valid
-  // for when minimum step size exceeded.
-  for (int j = 0; j < n_dts; ++j) {
-    for (int i = 0; i < n_initial_conditions; ++i) {
-      // Reset the time.
-      context->set_time(0.0);
-
-      // Reset the minimum step size so that explicit Euler always triggered.
-      integrator.set_minimum_step_size_exceeded_throws(false);
-      integrator.set_minimum_step_size(dts[j] -
-          std::numeric_limits<double>::epsilon());
-      integrator.Initialize();
-
-      // Set initial condition.
-      spring_mass.set_position(context.get(), initial_position[i]);
-      spring_mass.set_velocity(context.get(), initial_velocity[i]);
-
-      // Setup c1 and c2 for ODE constants.
-      const double c1 = initial_position[i];
-      const double c2 = initial_velocity[i] / omega;
-
-      // Integrate for the desired step size.
-      integrator.StepExactlyFixed(dts[j]);
-
-      // Check the time.
-      EXPECT_NEAR(context->get_time(), dts[j], ttol);
-
-      // Get the error estimate.
-      const double est_err = std::abs(
-          integrator.get_error_estimate()->CopyToVector()[0]);
-
-      // Get the final position of the spring.
-      const double x_final =
-          context->get_continuous_state()->get_vector().GetAtIndex(0);
-
-      // Get the true position.
-      const double x_final_true = c1 * std::cos(omega * dts[j]) +
-          c2 * std::sin(omega * dts[j]);
-
-      // Check the relative error on position.
-      const double err = std::abs(x_final - x_final_true);
-      const double rel_est_err = std::abs(err - est_err) / err;
-      EXPECT_LT(rel_est_err, rtol);
-    }
-  }
 }
 
 // Try a purely continuous system with no sampling to verify that the
@@ -679,6 +642,7 @@ TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
                                              context.get());
   integrator.set_maximum_step_size(dt);
   integrator.set_minimum_step_size_exceeded_throws(false);
+  integrator.set_multistep_in_step_exactly_fixed_throws(false);
 
   // Setting the minimum step size speeds the unit test without (in this case)
   // affecting solution accuracy.
