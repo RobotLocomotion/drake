@@ -54,14 +54,22 @@ struct is_cloneable_helper<
  To be cloneable, the class `Foo` must have a public method of the form:
 
  @code
- unique_ptr<Bar> Foo::Clone() const;
+ unique_ptr<Foo> Foo::Clone() const;
  @endcode
 
- where `Foo` is derived from `Bar` or `Bar` _is_ `Foo`. The pointer contained in
- the `unique_ptr` must point to a heap-allocated deep copy of the _concrete_
- object. This test can confirm the proper signature, but cannot confirm the
- heap-allocated deep copy. A Clone() method that doesn't return such a copy of
- the _concrete_ object should be considered a malformed function.
+ The pointer contained in the returned `unique_ptr` must point to a
+ heap-allocated deep copy of the _concrete_ object. This test can confirm the
+ proper signature, but cannot confirm the heap-allocated deep copy. A Clone()
+ method that doesn't return such a copy of the _concrete_ object should be
+ considered a malformed function.
+
+ @warning It is important to note, that a `Clone()` method that returns a
+ `unique_ptr` to a _super_ class is _not_ sufficient to be cloneable. In other
+ words the presence of:
+ @code
+ unique_ptr<Base> Derived::Clone() const;
+ @endcode
+ will not make the `Derived` class cloneable.
 
  @tparam  T  The class to test for cloneability.
  */
