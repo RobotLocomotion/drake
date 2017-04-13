@@ -21,4 +21,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "ignition_rndf_test",
+    srcs = ["test/ignition_rndf_test.cc"],
+    deps = [
+        "@ignition_rndf",
+    ],
+)
+
 cpplint()
