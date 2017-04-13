@@ -42,7 +42,7 @@ def _gurobi_impl(repository_ctx):
         # happens, but I suspect it might be a Bazel bug.
         srcs = ["gurobi-distro/lib/libgurobi60.so"]
 
-        linkopts = []
+        linkopts = ["-pthread"]
 
     BUILD = """
     hdrs = glob([
