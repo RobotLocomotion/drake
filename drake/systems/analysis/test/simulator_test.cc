@@ -15,6 +15,7 @@
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
@@ -584,6 +585,49 @@ GTEST_TEST(SimulatorTest, AutodiffBasic) {
   Simulator<AutoDiffXd> simulator(spring_mass);
   simulator.Initialize();
   simulator.StepTo(1);
+}
+
+GTEST_TEST(SimulatorTest, PerStepActions) {
+  class Dummy : public LeafSystem<double> {
+   public:
+    Dummy(const std::string& name, bool flag) {
+      if (flag) {
+        DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
+      } else {
+        DeclarePublishPeriodSec(0.01);
+      }
+      set_name(name);
+    }
+
+    void DoCalcOutput(const Context<double>& context,
+        SystemOutput<double>* output) const override {}
+
+    void DoPublish(const Context<double>& context) const override {
+      std::cout << get_name() << ": " << context.get_time() << std::endl;
+    }
+  };
+
+  std::unique_ptr<Diagram<double>> sub_diagram;
+
+  {
+    DiagramBuilder<double> builder;
+    builder.AddSystem<Dummy>("perstep 0", true);
+    builder.AddSystem<Dummy>("periodic", false);
+
+    sub_diagram = builder.Build();
+  }
+
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram));
+  builder.AddSystem<Dummy>("perstep 1", true);
+  auto diagram = builder.Build();
+
+  Simulator<double> sim(*diagram);
+
+  sim.set_publish_at_initialization(false);
+  sim.set_publish_every_time_step(false);
+  sim.Initialize();
+  sim.StepTo(0.1);
 }
 
 }  // namespace

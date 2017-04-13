@@ -527,6 +527,14 @@ class LeafSystem : public System<T> {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
+  void DeclarePerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    DiscreteEvent<T> event;
+    event.action = action;
+    // should probably check for duplication??
+    per_step_events_.push_back(event);
+  }
+
   /// Declares that this System should reserve continuous state with
   /// @p num_state_variables state variables, which have no second-order
   /// structure. Has no effect if AllocateContinuousState is overridden.
@@ -664,6 +672,11 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  virtual void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const override {
+    *events = per_step_events_;
+  }
+
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
   //
@@ -754,6 +767,10 @@ class LeafSystem : public System<T> {
 
   // Periodic Update or Publish events registered on this system.
   std::vector<PeriodicEvent<T>> periodic_events_;
+
+  // Periodic Update or Publish events registered on this system for every
+  // simulator major time step.
+  std::vector<DiscreteEvent<T>> per_step_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;

@@ -538,6 +538,12 @@ class System {
     return actions->time;
   }
 
+  void GetPerStepEvents(
+      const Context<T>& context, std::vector<DiscreteEvent<T>>* events) const {
+    events->clear();
+    DoGetPerStepEvents(context, events);
+  }
+
   /// Computes the output values that should result from the current contents
   /// of the given Context. The result may depend on time and the current values
   /// of input ports, parameters, and state variables.
@@ -1204,6 +1210,10 @@ class System {
     actions->time = std::numeric_limits<T>::infinity();
   }
 
+  virtual void DoGetPerStepEvents(
+      const Context<T>& context, std::vector<DiscreteEvent<T>>* events) const {
+    unused(context);
+  }
 
   /// Override this method for physical systems to calculate the potential
   /// energy currently stored in the configuration provided in the given

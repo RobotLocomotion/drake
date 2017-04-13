@@ -414,6 +414,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // Integrate until desired interval has completed.
   UpdateActions<T> update_actions;
+
+  std::vector<DiscreteEvent<T>> per_step_actions;
+
   while (context_->get_time() < boundary_time || sample_time_hit) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
@@ -463,8 +466,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
         if (event.action == DiscreteEvent<T>::kPublishAction) {
             system_.Publish(*context_, event);
             ++num_publishes_;
-          }
         }
+      }
     }
 
     // TODO(edrumwri): Add every step updates in the same manner as every step
@@ -474,6 +477,53 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       system_.Publish(*context_);
       ++num_publishes_;
     }
+
+    ////////////////////////////////////////////////////////////////
+    // jajajajaj
+    per_step_actions.clear();
+    system_.GetPerStepEvents(*context_, &per_step_actions);
+    // Do unrestricted updates first.
+    for (const DiscreteEvent<T>& event : per_step_actions) {
+      if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+        State<T>* x = context_->get_mutable_state();
+        DRAKE_DEMAND(x != nullptr);
+        // First, compute the unrestricted updates into a temporary buffer.
+        system_.CalcUnrestrictedUpdate(*context_, event,
+            unrestricted_updates_.get());
+        // TODO(edrumwri): simply swap the states for additional speed.
+        // Now write the update back into the context.
+        x->CopyFrom(*unrestricted_updates_);
+        ++num_unrestricted_updates_;
+      } else {
+        if (event.action == DiscreteEvent<T>::kUnknownAction) {
+          throw std::logic_error("kUnknownAction encountered.");
+        }
+      }
+    }
+
+    // Do restricted (discrete variable) updates next.
+    for (const DiscreteEvent<T>& event : per_step_actions) {
+      if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
+        DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
+        // Systems with discrete update events must have discrete state.
+        DRAKE_DEMAND(xd != nullptr);
+        // First, compute the discrete updates into a temporary buffer.
+        system_.CalcDiscreteVariableUpdates(*context_, event,
+            discrete_updates_.get());
+        // Then, write them back into the context.
+        xd->CopyFrom(*discrete_updates_);
+        ++num_discrete_updates_;
+      }
+    }
+
+    // Do any publishes last.
+    for (const DiscreteEvent<T>& event : per_step_actions) {
+      if (event.action == DiscreteEvent<T>::kPublishAction) {
+        system_.Publish(*context_, event);
+        ++num_publishes_;
+      }
+    }
+    ////////////////////////////////////////////////////////////////
 
     // Remove old events
     update_actions.events.clear();
