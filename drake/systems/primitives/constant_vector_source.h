@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/single_output_vector_source.h"
 
@@ -36,6 +37,10 @@ class ConstantVectorSource : public SingleOutputVectorSource<T> {
   /// @param source_value the constant value of the output so that
   /// `y = source_value` at all times.
   explicit ConstantVectorSource(const T& source_value);
+
+  /// Constructs a system with a vector output that is constant, has the type of
+  /// the @p source_value, and equals the @p source_value at all times.
+  explicit ConstantVectorSource(const BasicVector<T>& source_value);
 
   ~ConstantVectorSource() override;
 

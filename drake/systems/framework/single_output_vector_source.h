@@ -23,8 +23,9 @@ class SingleOutputVectorSource : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleOutputVectorSource)
 
-  /// Deleted default constructor.  The output vector size must be supplied to
-  /// the single-argument constructor SingleOutputVectorSource(int).
+  /// Deleted default constructor.  Child classes must either supply the
+  /// vector size to the single-argument constructor of `int`, or supply a model
+  /// vector to the single-argument constructor of `const BasicVector<T>&`.
   SingleOutputVectorSource() = delete;
 
   ~SingleOutputVectorSource() override = default;
@@ -48,6 +49,11 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   /// Creates a source with the given sole output port configuration.
   explicit SingleOutputVectorSource(int size) {
     this->DeclareOutputPort(kVectorValued, size);
+  }
+
+  /// Creates a source with output type and dimension of the @p model_vector.
+  explicit SingleOutputVectorSource(const BasicVector<T>& model_vector) {
+    this->DeclareVectorOutputPort(model_vector);
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
