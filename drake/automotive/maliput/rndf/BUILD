@@ -14,10 +14,10 @@ package(default_visibility = ["//visibility:public"])
 # === test/ ===
 
 drake_cc_googletest(
-    name = "ignition_math_test",
-    srcs = ["test/ignition_math_test.cc"],
+    name = "ignition_rndf_test",
+    srcs = ["test/ignition_rndf_test.cc"],
     deps = [
-        "@ignition_math",
+        "@ignition_rndf",
     ],
 )
 
