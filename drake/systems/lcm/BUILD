@@ -50,7 +50,7 @@ drake_cc_library(
     ],
     deps = [
         ":lcm",
-        "//drake/lcm:lcm",
+        "//drake/lcm",
         "//drake/systems/analysis",
     ],
 )
