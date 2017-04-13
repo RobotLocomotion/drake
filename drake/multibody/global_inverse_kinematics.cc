@@ -294,7 +294,8 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   return q;
 }
 
-void GlobalInverseKinematics::AddWorldPositionConstraint(
+solvers::Binding<solvers::LinearConstraint>
+GlobalInverseKinematics::AddWorldPositionConstraint(
     int body_idx, const Eigen::Vector3d& p_BQ, const Eigen::Vector3d& box_lb_F,
     const Eigen::Vector3d& box_ub_F, const Isometry3d& X_WF) {
   Vector3<Expression> body_pt_pos =
@@ -302,12 +303,12 @@ void GlobalInverseKinematics::AddWorldPositionConstraint(
   Vector3<Expression> body_pt_in_measured_frame =
       X_WF.linear().transpose() *
       (body_pt_pos - X_WF.translation());
-  AddLinearConstraint(body_pt_in_measured_frame, box_lb_F, box_ub_F);
+  return AddLinearConstraint(body_pt_in_measured_frame, box_lb_F, box_ub_F);
 }
 
-void GlobalInverseKinematics::AddWorldOrientationConstraint(
-    int body_idx,
-    const Eigen::Quaterniond& desired_orientation,
+solvers::Binding<solvers::LinearConstraint>
+GlobalInverseKinematics::AddWorldOrientationConstraint(
+    int body_idx, const Eigen::Quaterniond& desired_orientation,
     double angle_tol) {
   // The rotation matrix error R_e satisfies
   // trace(R_e) = 2 * cos(θ) + 1, where θ is the rotation angle between
@@ -316,7 +317,7 @@ void GlobalInverseKinematics::AddWorldOrientationConstraint(
   Matrix3<Expression> rotation_matrix_err =
   desired_orientation.toRotationMatrix() * R_WB_[body_idx].transpose();
   double lb = angle_tol < M_PI ? 2 * cos(angle_tol) + 1 : -1;
-  AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
+  return AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
 }
 
 void GlobalInverseKinematics::AddPostureCost(
