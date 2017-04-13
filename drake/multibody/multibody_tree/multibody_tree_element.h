@@ -81,14 +81,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     return *parent_tree_;
   }
 
-  /// Returns the unique index in its parent MultibodyTree of this element.
-  /// The index of an element is an internal bookeeping detail for
-  /// MultibodyTree and users do not need to know about it. This method is made
-  /// public only so that the implementation can be unit tested.
-  /// @warning The return of this method is undefined before
-  ///          MultibodyTree::Compile() is called.
-  /// @pre MultibodyTree::Compile() must be called before this method can be
-  ///      invoked.
+  /// Returns this element's unique index in its parent MultibodyTree.
   ElementIndexType get_index() const { return index_;}
 
   /// Checks whether this MultibodyTreeElement has been registered into a
@@ -119,8 +112,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   }
 
   /// Checks whether this MultibodyTreeElement belongs to the provided
-  /// MultibodyTree `tree`. If not, it throws an exception of type
-  /// std::logic_error.
+  /// MultibodyTree `tree`. If not, it throws a std::logic_error.
   void HasThisParentTreeOrThrow(const MultibodyTree<T>* tree) const {
     DRAKE_ASSERT(tree != nullptr);
     if (parent_tree_ != tree) {

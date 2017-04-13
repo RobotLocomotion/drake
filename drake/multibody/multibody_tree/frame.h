@@ -2,6 +2,7 @@
 
 #include "drake/multibody/multibody_tree/frame_base.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -42,9 +43,19 @@ class Frame : public FrameBase<T> {
   // Only derived classes can use this constructor.
   explicit Frame(const Body<T>& body) : body_(body) {}
 
+ protected:
+  // Implementation for MultibodyTreeElement::DoCompile().
+  void DoCompile(const MultibodyTree<T>& tree) final {
+    topology_ = tree.get_topology().get_frame(this->get_index());
+    DRAKE_ASSERT(topology_.index == this->get_index());
+  }
+
  private:
   // The body associated with this frame.
   const Body<T>& body_;
+
+  // The internal bookkeeping topology struct used by MultibodyTree.
+  FrameTopology topology_;
 };
 
 }  // namespace multibody

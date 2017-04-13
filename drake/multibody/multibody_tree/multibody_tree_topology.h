@@ -1,26 +1,24 @@
 #pragma once
 
 /// @file
-/// This file defines the topological structures to represent the logical
-/// connectivities between multibody tree components. For instance, the
-/// BodyTopology for a Body will contain the topological information specifying
-/// its inboard body (or parent body) in the parent tree, its outboard bodies
-/// (or children) and the level or depth in the MultibodyTree.
+/// This file defines the topological structures which represent the logical
+/// connectivities between multibody tree elements. For instance, the
+/// BodyTopology for a Body will contain the topological information  specifying
+/// its inboard (or parent) body in the parent tree, and its outboard (or
+/// children) bodies, and the level or depth in the MultibodyTree.
 /// All of this information is independent of the particular scalar type T the
-/// MultibodyTree and its components are instantiated with.
+/// MultibodyTree and its components are specialized with.
 /// All of the data structures defined in this file are meant to be the most
 /// minimalist representation that can store this information.
 /// These data structures are used in the following ways:
 ///  - To aid the process of cloning or transmogrifying multibody tree
 ///    compoments without having to create maps between the "original" and
 ///    "cloned" objects. That process is tedious and error prone.
-///  - Multibody tree elements retrieve entries from the Context using a
-///    local copy of their topology aquired at MultibodyTree::Compile() stage.
-///    In this regard, multibody tree components like for instance, bodies, are
-///    able to provide a "map" to their state in the Context.
-///  - To provide support for Context validity in Debug builds with a given tree
-///    or multibody component (i.e. the Context holds a copy to the tree
-///    topology).
+///  - Each Multibody tree element has a copy (aquired at
+///    MultibodyTree::Compile() stage) of its topology which serves as a
+///    key into the Context for that element's state.
+///  - The topology is also stored in the Context so that the Multibody tree's
+///    topology can be validated against the stored topology in debug builds.
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -45,10 +43,10 @@ struct BodyTopology {
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
-  // Unique id in the MultibodyTree.
+  // Unique index in the MultibodyTree.
   BodyIndex index{0};
 
-  // Body frame.
+  // Unique index to the frame associated with this body.
   FrameIndex body_frame{0};
 
   // Depth level in the MultibodyTree, level = 0 for the world.
@@ -69,10 +67,10 @@ struct FrameTopology {
   FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
 
-  // Unique identifier in the MultibodyTree.
+  // Unique index in the MultibodyTree.
   FrameIndex index{0};
 
-  // Unique identifier of the body this physical frame attaches to.
+  // Unique index of the body this physical frame attaches to.
   BodyIndex body{0};
 };
 
@@ -93,11 +91,10 @@ struct MultibodyTreeTopology {
   }
 
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
-  /// A unique index is assigned to the newly created BodyTopology and a new
-  /// FrameTopology is created and associated to the body topology.
-  /// @returns A std::pair<BodyIndex, FrameIndex> containing the pair of indexes
-  ///          (body_index; body_frame_index) corresponding to the newly added
-  ///          body and body frame topologies.
+  /// The BodyTopology will be assigned new, unique BodyIndex and FrameIndex
+  /// values.
+  /// @returns a std::pair<BodyIndex, FrameIndex> containing the indexes
+  /// assigned to the new BodyTopology.
   std::pair<BodyIndex, FrameIndex> add_body() {
     BodyIndex body_index = BodyIndex(get_num_bodies());
     FrameIndex body_frame_index = add_frame(body_index);
@@ -105,18 +102,17 @@ struct MultibodyTreeTopology {
     return std::make_pair(body_index, body_frame_index);
   }
 
-  /// Creates and adds a FrameTopology to this MultibodyTreeTopology.
-  /// All physical frames are associated with a body here identified by their
-  /// unique index, body_index.
-  /// @returns The FrameIndex to the newly created FrameTopology.
+  /// Creates and adds a new FrameTopology, associated with the given
+  /// body_index, to this MultibodyTreeTopology.
+  /// @returns The FrameIndex assigned to the new FrameTopology.
   FrameIndex add_frame(BodyIndex body_index) {
     FrameIndex frame_index(get_num_frames());
     frames.emplace_back(frame_index, body_index);
     return frame_index;
   }
 
-  /// Given the FrameIndex, return a constant reference to the corresponding
-  /// FrameTopology.
+  /// Returns a constant reference to the corresponding FrameTopology given the
+  /// FrameIndex.
   const FrameTopology& get_frame(FrameIndex index) const {
     DRAKE_ASSERT(index < get_num_frames());
     return frames[index];

@@ -6,8 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
@@ -42,12 +42,19 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // Retrieves the world body.
   const Body<double>& world_body = model->get_world_body();
 
+  // Creates a NaN SpatialInertia to instantiate the two RigidBody links of
+  // the pendulum. Using a NaN spatial inertia is ok so far since we are still
+  // not performing any numerical computations. This is only to test API.
+  // M_Bo_B is the spatial inertia about the body frame's origin Bo and
+  // expressed in the body frame B.
+  SpatialInertia<double> M_Bo_B;
+
   // Adds the upper and lower links of the pendulum.
   // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
   const RigidBody<double>& upper_link =
-      model->AddBody(make_unique<RigidBody<double>>());
+      model->AddBody(make_unique<RigidBody<double>>(M_Bo_B));
   // Using: const BodyType<T>& AddBody(Args&&... args)
-  const RigidBody<double>& lower_link = model->AddBody<RigidBody>();
+  const RigidBody<double>& lower_link = model->AddBody<RigidBody>(M_Bo_B);
 
   // This is an experiment with std::reference_wrapper to show that we can save
   // bodies in an array of references.
@@ -71,12 +78,14 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   EXPECT_EQ(model->get_num_bodies(), 3);
   EXPECT_EQ(model->get_num_frames(), 3);
 
-  // Shoulder's inboard frame Si in this model IS the world frame. We will place
-  // a mobilizer between the shoulder inboard and outboard frames.
+  // The shoulder is the mobilizer that connects the world to the upper link.
+  // Its inboard frame, Si, is the world frame. Its outboard frame, So, a fixed
+  // offset frame on the upper link.
   const BodyFrame<double>& shoulder_inboard_frame = world_body.get_body_frame();
 
-  // Add a frame for the pendulum's shoulder. This will be the shoulder's
-  // outboard frame So.
+  // The body frame of the upper link is U, and that of the lower link is L.
+  // We will add a frame for the pendulum's shoulder. This will be the
+  // shoulder's outboard frame So.
   // X_UlSo specifies the pose of the shoulder outboard frame So in the body
   // frame Ul of the upper link.
   Isometry3d X_UlSo(Translation3d(0.0, half_link_length, 0.0));
@@ -87,7 +96,9 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   const auto& shoulder_outboard_frame =
       model->AddFrame<FixedOffsetFrame>(upper_link.get_body_frame(), X_UlSo);
 
-  // Create frames associated with the pendulum's elbow.
+  // The elbow is the mobilizer that connects upper and lower links.
+  // Below we will create inboard and outboard frames associated with the
+  // pendulum's elbow.
   // An inboard frame Ei is rigidly attached to the upper link. It is located at
   // y = -half_link_length in the frame of the upper link body.
   // An outboard frame Eo is rigidly attached to the lower link. It is located
@@ -98,7 +109,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // X_LlEo specifies the pose of the elbow outboard frame Eo in the body
   // frame Ll of the lower link.
   // In this case we create a frame using the FixedOffsetFrame::Create() method
-  // taking a Body, i.e. creating a frame with a fixed offset from the upper
+  // taking a Body, i.e., creating a frame with a fixed offset from the upper
   // link body frame.
   const auto& elbow_inboard_frame =
       model->AddFrame<FixedOffsetFrame>(upper_link, X_UlEi);
@@ -115,7 +126,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
 
   // Asserts that no more bodies can be added after compilation.
-  EXPECT_THROW(model->AddBody<RigidBody>(), std::logic_error);
+  EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo),
                std::logic_error);
 

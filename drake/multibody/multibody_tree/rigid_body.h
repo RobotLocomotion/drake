@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/body.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -44,13 +45,13 @@ class RigidBody : public Body<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
-  /// Constructs a %RigidBody with the given mass properties.
+  /// Constructs a %RigidBody with the given default SpatialInertia.
   // TODO(amcastro-tri): In a future PR this constructor will take a
   // MassProperties object to:
   //   1. Force users to provide all the necessary information at creation.
   //   2. Perform all the necessary checks to ensure the supplied mass
   //      properties are physically valid.
-  RigidBody();
+  explicit RigidBody(const SpatialInertia<double> M);
 
   /// There are no flexible degrees of freedom associated with a rigid body and
   /// therefore this method returns zero. By definition, a rigid body has no
@@ -61,6 +62,9 @@ class RigidBody : public Body<T> {
   /// therefore this method returns zero. By definition, a rigid body has no
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
+
+ private:
+  SpatialInertia<double> default_spatial_inertia_;
 };
 
 }  // namespace multibody

@@ -10,8 +10,8 @@ namespace multibody {
 /// multibody dynamics. Frames are a mathematical object that can be thought of
 /// as a set of three orthogonal axes forming a right-handed orthogonal basis
 /// located at a point called the frame's origin.
-/// It is important when talking about frames to make a distinction between the
-/// frame itself, and the description of the frame's state. A frame is a
+/// It is important, when talking about frames, to make a distinction between
+/// the frame itself, and the description of the frame's state. A frame is a
 /// mathematical object that can move through space, just like a body. At any
 /// given moment the _state_ of a frame can be described by its _pose_ as
 /// measured in another frame. These two concepts, the _state_ of the frame and

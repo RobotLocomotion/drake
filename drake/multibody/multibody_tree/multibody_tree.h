@@ -55,10 +55,10 @@ class MultibodyTree {
   /// Example of usage:
   /// @code
   ///   MultibodyTree<T> model;
-  ///   const auto& body =
-  ///       model.AddBody(std::make_unique<RigidBody<T>>(Args...));
+  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   const RigidBody<T>& body =
+  ///       model.AddBody(std::make_unique<RigidBody<T>>(spatial_inertia));
   /// @endcode
-  /// where `const auto&` here resolves to `const RigidBody<T>&`.
   ///
   /// @throws std::logic_error if `body` is a nullptr.
   /// @throws std::logic_error if Compile() was already called on `this` tree.
@@ -84,6 +84,8 @@ class MultibodyTree {
     BodyIndex body_index(0);
     FrameIndex body_frame_index(0);
     std::tie(body_index, body_frame_index) = topology_.add_body();
+    // These tests MUST be performed BEFORE frames_.push_back() and
+    // owned_bodies_.push_back() below. Do not move them around!
     DRAKE_ASSERT(body_index == get_num_bodies());
     DRAKE_ASSERT(body_frame_index == get_num_frames());
 
@@ -105,10 +107,10 @@ class MultibodyTree {
   /// Example of usage:
   /// @code
   ///   MultibodyTree<T> model;
-  ///   // Notice RigidBody is a template an a scalar type.
-  ///   const auto& body = model.AddBody<RigidBody>(Args...);
+  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   // Notice RigidBody is a template on a scalar type.
+  ///   const RigidBody<T>& body = model.AddBody<RigidBody>(spatial_inertia);
   /// @endcode
-  /// where `const auto&` here resolves to `const RigidBody<T>&`.
   ///
   /// Note that for dependent names you must use the template keyword (say for
   /// instance you have a MultibodyTree<T> member within your custom class):
@@ -143,10 +145,9 @@ class MultibodyTree {
   /// @code
   ///   MultibodyTree<T> model;
   ///   // ... Define body and X_BF ...
-  ///   const auto& frame =
+  ///   const FixedOffsetFrame<T>& frame =
   ///       model.AddFrame(std::make_unique<FixedOffsetFrame<T>>(body, X_BF));
   /// @endcode
-  /// where `const auto&` here resolves to `const FixedOffsetFrame<T>&`.
   ///
   /// @throws std::logic_error if `frame` is a nullptr.
   /// @throws std::logic_error if Compile() was already called on `this` tree.
@@ -171,6 +172,8 @@ class MultibodyTree {
       throw std::logic_error("Input frame is an invalid nullptr.");
     }
     FrameIndex frame_index = topology_.add_frame(frame->get_body().get_index());
+    // This test MUST be performed BEFORE frames_.push_back() and
+    // owned_frames_.push_back() below. Do not move it around!
     DRAKE_ASSERT(frame_index == get_num_frames());
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
@@ -190,9 +193,9 @@ class MultibodyTree {
   ///   MultibodyTree<T> model;
   ///   // ... Define body and X_BF ...
   ///   // Notice FixedOffsetFrame is a template an a scalar type.
-  ///   const auto& frame = model.AddFrame<FixedOffsetFrame>(body, X_BF);
+  ///   const FixedOffsetFrame<T>& frame =
+  ///       model.AddFrame<FixedOffsetFrame>(body, X_BF);
   /// @endcode
-  /// where `const auto&` here resolves to `const RigidBody<T>&`.
   ///
   /// Note that for dependent names you must use the template keyword (say for
   /// instance you have a MultibodyTree<T> member within your custom class):
@@ -200,7 +203,8 @@ class MultibodyTree {
   /// @code
   ///   MultibodyTree<T> model;
   ///   // ... Define body and X_BF ...
-  ///   const auto& frame = model.AddFrame<FixedOffsetFrame>(body, X_BF);
+  ///   const auto& frame =
+  ///       model.template AddFrame<FixedOffsetFrame>(body, X_BF);
   /// @endcode
   ///
   /// @throws std::logic_error if Compile() was already called on `this` tree.
@@ -291,7 +295,7 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   // List of all frames in the system ordered by their FrameIndex.
-  // This vector contains a pointer to all bodies in owned_bodies_ as well as a
+  // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.
   std::vector<Frame<T>*> frames_;
 

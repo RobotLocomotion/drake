@@ -9,7 +9,8 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-RigidBody<T>::RigidBody() {}
+RigidBody<T>::RigidBody(const SpatialInertia<double> M) :
+    default_spatial_inertia_(M) {}
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBody<double>;
