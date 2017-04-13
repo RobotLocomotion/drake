@@ -9,12 +9,7 @@ namespace rendering {
 
 PoseBundleToDrawMessage::PoseBundleToDrawMessage() {
   this->DeclareAbstractInputPort();
-
-  // Declare the output port and provide an allocator for the draw message.
-  // The lambda here serves only to signature-match and bind the `this` pointer
-  // to the allocator.
-  this->DeclareAbstractOutputPort(
-      [this](const Context<double>*) { return this->AllocateOutputValue(); });
+  this->DeclareAbstractOutputPort(Value<lcmt_viewer_draw>());
 }
 
 PoseBundleToDrawMessage::~PoseBundleToDrawMessage() {}
@@ -54,11 +49,6 @@ void PoseBundleToDrawMessage::DoCalcOutput(const Context<double>& context,
     message.quaternion[i][2] = q.y();
     message.quaternion[i][3] = q.z();
   }
-}
-
-std::unique_ptr<AbstractValue>
-PoseBundleToDrawMessage::AllocateOutputValue() const {
-  return AbstractValue::Make<lcmt_viewer_draw>(lcmt_viewer_draw());
 }
 
 }  // namespace rendering
