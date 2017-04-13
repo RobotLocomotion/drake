@@ -13,6 +13,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 
 using Eigen::Matrix3Xd;
@@ -24,6 +25,9 @@ using std::move;
 
 namespace drake {
 namespace systems {
+
+using rendering::PoseVector;
+
 namespace sensors {
 
 DepthSensor::DepthSensor(const std::string& name,
@@ -58,8 +62,10 @@ DepthSensor::DepthSensor(const std::string& name,
       DeclareInputPort(kVectorValued,
                        tree.get_num_positions() + tree.get_num_velocities())
           .get_index();
-  output_port_index_ = DeclareVectorOutputPort(
+  depth_output_port_index_ = DeclareVectorOutputPort(
       DepthSensorOutput<double>(specification_)).get_index();
+  pose_output_port_index_ = DeclareVectorOutputPort(
+      PoseVector<double>()).get_index();
   PrecomputeRaycastEndpoints();
 }
 
@@ -116,7 +122,11 @@ DepthSensor::get_rigid_body_tree_state_input_port() const {
 
 const OutputPortDescriptor<double>& DepthSensor::get_sensor_state_output_port()
     const {
-  return System<double>::get_output_port(output_port_index_);
+  return System<double>::get_output_port(depth_output_port_index_);
+}
+
+const OutputPortDescriptor<double>& DepthSensor::get_pose_output_port() const {
+  return System<double>::get_output_port(pose_output_port_index_);
 }
 
 void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
@@ -174,11 +184,22 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
     }
   }
 
-  // Evaluates the state output port.
-  BasicVector<double>* output_vector =
-      output->GetMutableVectorData(output_port_index_);
-  DRAKE_ASSERT(output_vector != nullptr);
-  output_vector->SetFromVector(distances);
+  // Evaluates the output port containing the depth measurements.
+  BasicVector<double>* data_output =
+      output->GetMutableVectorData(depth_output_port_index_);
+  DRAKE_ASSERT(data_output != nullptr);
+  data_output->SetFromVector(distances);
+
+  // Evaluates the output port containing X_WS.
+  const drake::Isometry3<double> X_WS =
+      tree_.CalcFramePoseInWorldFrame(kinematics_cache, frame_);
+  PoseVector<double>* pose_output =
+      dynamic_cast<PoseVector<double>*>(
+          output->GetMutableVectorData(pose_output_port_index_));
+  DRAKE_ASSERT(pose_output != nullptr);
+  pose_output->set_translation(
+      Eigen::Translation<double, 3>(X_WS.translation()));
+  pose_output->set_rotation(Eigen::Quaternion<double>(X_WS.rotation()));
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthSensor& sensor) {
