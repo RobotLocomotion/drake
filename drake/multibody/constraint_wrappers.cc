@@ -47,7 +47,7 @@ void SingleTimeKinematicConstraintWrapper::DoEval(
 }
 
 void SingleTimeKinematicConstraintWrapper::DoEval(
-    const Eigen::Ref<const TaylorVecXd> &tq, TaylorVecXd &ty) const {
+    const Eigen::Ref<const AutoDiffVecXd> &tq, AutoDiffVecXd &ty) const {
   Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
   auto& kinsol = kin_helper_->UpdateKinematics(
       q, rigid_body_constraint_->getRobotPointer());
@@ -85,7 +85,7 @@ QuasiStaticConstraintWrapper::QuasiStaticConstraintWrapper(
 QuasiStaticConstraintWrapper::~QuasiStaticConstraintWrapper() {}
 
 void QuasiStaticConstraintWrapper::DoEval(
-    const Eigen::Ref<const TaylorVecXd> &tq, TaylorVecXd &ty) const {
+    const Eigen::Ref<const AutoDiffVecXd> &tq, AutoDiffVecXd &ty) const {
   Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
   auto& kinsol = kin_helper_->UpdateKinematics(
       q.head(rigid_body_constraint_->getRobotPointer()->get_num_positions()),

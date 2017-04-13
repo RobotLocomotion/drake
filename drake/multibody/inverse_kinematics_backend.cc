@@ -181,8 +181,8 @@ class InverseKinObjective : public Constraint {
     y(0) = q_err.transpose() * Q_ * q_err;
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-                 TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                 AutoDiffVecXd& y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;
     VectorXd y_val = q_err.transpose() * Q_ * q_err;

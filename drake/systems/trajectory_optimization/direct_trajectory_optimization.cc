@@ -113,11 +113,11 @@ class FinalCostWrapper : public solvers::Constraint {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
     DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
 
-    TaylorVecXd wrapped_x(num_states_ + 1);
+    AutoDiffVecXd wrapped_x(num_states_ + 1);
     wrapped_x(0) = x.head(num_time_samples_ - 1).sum();
     wrapped_x.tail(num_states_) = x.tail(num_states_);
     DRAKE_ASSERT(wrapped_x(0).derivatives().rows() ==

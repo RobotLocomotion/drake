@@ -48,8 +48,8 @@ class IKTrajectoryCost : public drake::solvers::Constraint {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
-  void DoEval(const Eigen::Ref<const drake::TaylorVecXd> &x,
-              drake::TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const drake::AutoDiffVecXd> &x,
+              drake::AutoDiffVecXd &y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
 
@@ -153,8 +153,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
-  void DoEval(const Eigen::Ref<const drake::TaylorVecXd> &x,
-              drake::TaylorVecXd &y) const override {
+  void DoEval(const Eigen::Ref<const drake::AutoDiffVecXd> &x,
+              drake::AutoDiffVecXd &y) const override {
     const int nq = helper_.nq();
     const int nT = helper_.nT();
     const std::vector<Eigen::VectorXd>& t_inbetween = helper_.t_inbetween();
@@ -176,7 +176,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     const auto qdotf = x_scalar.segment(nq * (nT + 1), nq);
 
     // Create the return values.  After evaluating our constraints,
-    // build the TaylorVec output from the scalar values in y_scalar
+    // build the AutoDiffVec output from the scalar values in y_scalar
     // and dy_scalar.
     VectorXd y_scalar(num_constraints());
     MatrixXd dy_scalar(num_constraints(), x.size());

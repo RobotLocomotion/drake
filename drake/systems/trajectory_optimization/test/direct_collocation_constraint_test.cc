@@ -20,8 +20,8 @@ class PendulumTestDirectCollocationConstraint
   {}
 
  protected:
-  void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
-                TaylorVecXd* xdot) const override {
+  void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                AutoDiffVecXd* xdot) const override {
     // From the Pendulum example:
     const double m = 1.0;
     const double b = 0.1;
@@ -56,7 +56,7 @@ GTEST_TEST(DirectCollocationConstraintPendulumDynamicsTest,
 
   PendulumTestDirectCollocationConstraint dut;
 
-  TaylorVecXd result;
+  AutoDiffVecXd result;
   dut.Eval(math::initializeAutoDiff(x), result);
 
   EXPECT_NEAR(result(0).value(), 1.1027, 1e-4);

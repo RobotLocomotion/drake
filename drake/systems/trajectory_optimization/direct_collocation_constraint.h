@@ -40,13 +40,13 @@ class DirectCollocationConstraint : public solvers::Constraint {
   virtual ~DirectCollocationConstraint();
 
  protected:
-  virtual void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
-                        TaylorVecXd* xdot) const = 0;
+  virtual void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                        AutoDiffVecXd* xdot) const = 0;
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
               Eigen::VectorXd &y) const override;
-  void DoEval(const Eigen::Ref<const TaylorVecXd> &x,
-              TaylorVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
+              AutoDiffVecXd &y) const override;
 
 
  private:
@@ -75,8 +75,8 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
   ~SystemDirectCollocationConstraint() override;
 
  private:
-  void dynamics(const TaylorVecXd& state, const TaylorVecXd& input,
-                TaylorVecXd* xdot) const override;
+  void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                AutoDiffVecXd* xdot) const override;
 
   std::unique_ptr<System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;

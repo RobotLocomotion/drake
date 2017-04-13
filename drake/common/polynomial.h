@@ -231,22 +231,22 @@ class Polynomial {
     return value;
   }
 
-  /** Specialization of EvaluateMultivariate on TaylorVarXd.
+  /** Specialization of EvaluateMultivariate on AutoDiffXd.
    *
-   * Specialize EvaluateMultivariate on TaylorVarXd because Eigen autodiffs
+   * Specialize EvaluateMultivariate on AutoDiffXd because Eigen autodiffs
    * implement a confusing subset of operators and conversions that makes a
    * strictly generic approach too confusing and unreadable.
    *
-   * Note that it is up to the caller to ensure that all of the TaylorVarXds
+   * Note that it is up to the caller to ensure that all of the AutoDiffXds
    * in var_values correctly correspond to one another, because Polynomial has
    * no knowledge of what partial derivative terms the indices of a given
-   * TaylorVarXd correspond to.
+   * AutoDiffXd correspond to.
    */
-  drake::TaylorVarXd EvaluateMultivariate(
-      const std::map<VarType, drake::TaylorVarXd>& var_values) const {
-    drake::TaylorVarXd value(0);
+  drake::AutoDiffXd EvaluateMultivariate(
+      const std::map<VarType, drake::AutoDiffXd>& var_values) const {
+    drake::AutoDiffXd value(0);
     for (const Monomial& monomial : monomials_) {
-      drake::TaylorVarXd monomial_value(monomial.coefficient);
+      drake::AutoDiffXd monomial_value(monomial.coefficient);
       for (const Term& term : monomial.terms) {
         monomial_value *= pow(var_values.at(term.var), term.power);
       }
