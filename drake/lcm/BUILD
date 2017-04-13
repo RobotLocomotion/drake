@@ -38,9 +38,9 @@ drake_cc_library(
         "lcm_receive_thread.h",
     ],
     deps = [
-        "@lcm//:lcm",
         ":interface",
         "//drake/common",
+        "@lcm//:lcm",
     ],
 )
 

@@ -404,8 +404,8 @@ py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        "@lcm//:lcm-python",
         "//drake/lcmtypes:lcmtypes-py",
+        "@lcm//:lcm-python",
     ],
 )
 
@@ -422,11 +422,11 @@ py_binary(
     name = "demo",
     srcs = ["automotive_demo.py"],
     data = [
-        "@drake_visualizer//:drake-visualizer",
-        "@lcm//:lcm-logger",
         ":automotive_demo",
         ":lcm-spy",
         ":steering_command_driver",
+        "@drake_visualizer//:drake-visualizer",
+        "@lcm//:lcm-logger",
     ],
     main = "automotive_demo.py",
     deps = [

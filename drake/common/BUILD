@@ -198,6 +198,7 @@ drake_cc_library(
         ":common",
     ],
 )
+
 drake_cc_library(
     name = "is_dynamic_castable",
     testonly = 1,
@@ -268,8 +269,8 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        "@gflags//:gflags",
         ":common",
+        "@gflags//:gflags",
     ],
 )
 
