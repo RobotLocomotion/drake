@@ -9,24 +9,23 @@ namespace multibody {
 // Forward declarations.
 template<typename T> class Body;
 
-/// A %Frame represents a physical frame that moves with a body and therefore
-/// its state depends on the state of the body it moves with.
-/// Because this dependence can vary in interesting ways, this class is an
-/// abstract class. These frames move with physical bodies. Examples of this
-/// kind of frames are:
-///  - body frames (also referred to as _reference frames_ in some flexible
-///    body formulations),
-///  - frames attached to a body with a fixed pose in that body frame (for
-///    instance to define the inboard frame for a joint that connects it to
-///    another body) and,
-///  - frames attached to specific material points or sections of a flexible
-///    body.
+/// The %Frame class represents a frame whose state depends on the state of a
+/// single body and, therefore, moves with the body. The nature of the frame's
+/// state's dependency on the body can vary significantly:
+///   - the state of a body frame (also referred to as reference frames in some
+///     flexible body formulations from continuum mechanics) depends solely on
+///     the state of the body,
+///   - the state of a frame attached to a body with a fixed pose, depends on
+///     the state of the body's frame and its fixed relative pose, and
+///   - the state of a frame attached to specific material points on a flexible
+///     body would depend on the state of the body's frame and the state of
+///     deformation of the body.
 /// Like the FrameBase class, %Frame does not store the pose of a frame but it
 /// only represents the concept of a frame moving with a body.
 /// Specific physical frame classes inheriting from %Frame will
 /// typically provide methods to access or compute the pose of the frame
 /// instance they represent measured and expressed in specific frames as a
-/// function of the state of the MultibodyTree to which the frame belongs.
+/// function of the of the state of the associated Body.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>

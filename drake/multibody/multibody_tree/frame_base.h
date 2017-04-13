@@ -6,35 +6,36 @@
 namespace drake {
 namespace multibody {
 
-/// %FrameBase is an abstract base class representation of the concept of a
-/// frame in multibody dynamics. Frames can be thought of as a set of three
-/// orthogonal axes forming a right-handed orthogonal basis located at a point
-/// called the frame's origin.
-/// It is important at this point to make the distinction between a _frame_,
-/// and its _pose_ as measured and expressed in another frame. Even though
-/// related, _frame_ and _pose_ are two different concepts. Given two frames E
-/// and F, the pose `X_EF` of frame F measured and expressed in frame E defines
-/// the geometrical relationship between these two frames.
-/// This class does not store the pose `X_EF` of a frame but it only provides an
-/// abstraction to represent the frame itself. Notice that storing any pose
-/// `X_EF` within this class does not make sense since it would be imposible to
-/// specify the pose of F without knowledge of a specific frame E in which its
-/// pose is measured.
-/// Frames are defined within a given physical or geometrical system (where here
-/// the term "system" should not be confused with systems::System). For
-/// instance, in a MultiBodyTree, frames can be defined as attached to bodies.
-/// The pose of any particular frame can depend on state of the MultiBodyTree
-/// (or an arbitrary subset of that state), which is given by its
-/// systems::Context. In this regard, a frame sub-class will map a state or
-/// Context to a pose in SE(3).
+/// %FrameBase is an abstract representation of the concept of a frame in
+/// multibody dynamics. Frames are a mathematical object that can be thought of
+/// as a set of three orthogonal axes forming a right-handed orthogonal basis
+/// located at a point called the frame's origin.
+/// It is important when talking about frames to make a distinction between the
+/// frame itself, and the description of the frame's state. A frame is a
+/// mathematical object that can move through space, just like a body. At any
+/// given moment the _state_ of a frame can be described by its _pose_ as
+/// measured in another frame. These two concepts, the _state_ of the frame and
+/// the _pose_ of the frame, are somewhat orthogonal, and yet this abstraction
+/// needs to account for both.
+/// The pose of a frame depends on the state of the system to which it belongs
+/// (where here the term "system" should not be confused with systems::System).
+/// For example, if a frame is rigidly affixed to a body, then the frame moves
+/// to follow the body's movement. But knowing the system's state is only part
+/// of the pose definition. The pose of a frame cannot be expressed in absolute
+/// terms, it can only be described relative to another frame. In the previous
+/// example, if the pose of the frame is described relative to some fixed
+/// "world" frame, the frame's state will appear to change as it moves through
+/// space. However, if the pose of the frame is described relative to the body
+/// to which it is attached, the values of the pose will never change. And yet,
+/// the frame is still moving.
+/// Summarizing, this class serves as an abstraction for computing the pose of a
+/// frame. It doesn't store any values itself. It provides an interface through
+/// which a frame can report its position relative to another frame, given the
+/// current state of the system to which it belongs.
 ///
-/// Sub-classes of %FrameBase are responsible for communicating useful semantics
-/// about that frame's dependencies and providing implementations for defining
-/// the pose based on those semantics. For instace, the pose of a frame could
-/// be determined with the knowledge that it is attached to a body with a fixed
-/// pose in the body frame. Another example is a frame that is attached to
-/// a particular material point on a soft body. In that case the pose of the
-/// frame will generally depend on the state of deformation of the body.
+/// Sub-classes of %FrameBase provide semantic details of how the pose of a
+/// frame, as measured in another frame, relates to the state of the system to
+/// which this frame (and the measured-in frame) belongs.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
