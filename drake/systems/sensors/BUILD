@@ -87,6 +87,7 @@ drake_cc_library(
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -101,6 +102,7 @@ drake_cc_library(
     deps = [
         ":depth_sensor",
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/rendering:pose_vector",
         "@bot_core_lcmtypes//:lib",
     ],
 )

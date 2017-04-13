@@ -7,6 +7,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
@@ -20,6 +21,9 @@ using std::unique_ptr;
 
 namespace drake {
 namespace systems {
+
+using rendering::PoseVector;
+
 namespace sensors {
 namespace {
 
@@ -37,6 +41,8 @@ GTEST_TEST(TestDepthSensor, AccessorsAndToStringTest) {
 
   DepthSensor dut(kSensorName, tree, frame, specification);
   EXPECT_EQ(dut.get_specification(), specification);
+  EXPECT_EQ(dut.get_num_input_ports(), 1);
+  EXPECT_EQ(dut.get_num_output_ports(), 2);
 
   stringstream string_buffer;
   string_buffer << dut;
@@ -71,24 +77,34 @@ void DoEmptyWorldTest(const char* const name,
 
   dut.CalcOutput(*context, output.get());
 
-  Eigen::VectorXd expected_output =
+  Eigen::VectorXd expected_sensor_data_output =
       VectorXd::Constant(dut.get_num_depth_readings(),
           DepthSensorOutput<double>::kTooFar);
 
-  int output_port_index = dut.get_sensor_state_output_port().get_index();
+  const int sensor_data_output_port_index =
+      dut.get_sensor_state_output_port().get_index();
 
   EXPECT_TRUE(CompareMatrices(
-      expected_output, output->get_vector_data(output_port_index)->get_value(),
+      expected_sensor_data_output,
+      output->get_vector_data(sensor_data_output_port_index)->get_value(),
       1e-10));
 
   // Confirms that Clone is correct.
   std::unique_ptr<BasicVector<double>> cloned_base =
-      output->get_vector_data(output_port_index)->Clone();
+      output->get_vector_data(sensor_data_output_port_index)->Clone();
   const DepthSensorOutput<double>* const cloned_sub =
       dynamic_cast<const DepthSensorOutput<double>*>(cloned_base.get());
   ASSERT_NE(cloned_sub, nullptr);
   EXPECT_TRUE(CompareMatrices(
-      expected_output, cloned_sub->get_value(),
+      expected_sensor_data_output, cloned_sub->get_value(),
+      1e-10));
+
+  const int pose_output_port_index =
+      dut.get_pose_output_port().get_index();
+
+  EXPECT_TRUE(CompareMatrices(
+      PoseVector<double>().get_value(),
+      output->get_vector_data(pose_output_port_index)->get_value(),
       1e-10));
 }
 
