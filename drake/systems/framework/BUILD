@@ -159,6 +159,7 @@ drake_cc_library(
         ":value",
         "//drake/common",
         "//drake/common:type_safe_index",
+        "//drake/common:unused",
     ],
 )
 
