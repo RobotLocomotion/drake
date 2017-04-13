@@ -44,7 +44,7 @@ std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
 
 /// Returns true if any of the events in @p actions has type @p type.
 template <typename T>
-bool HasEvent(const UpdateActions<T> actions,
+bool HasEvent(const UpdateActions<T>& actions,
               typename DiscreteEvent<T>::ActionType type) {
   for (const DiscreteEvent<T>& event : actions.events) {
     if (event.action == type) return true;
