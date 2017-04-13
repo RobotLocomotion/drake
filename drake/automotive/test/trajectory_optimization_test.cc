@@ -4,8 +4,8 @@
 #include "gtest/gtest.h"
 
 #include "drake/automotive/simple_car.h"
+#include "drake/common/call_matlab.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/lcm/lcm_call_matlab.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 namespace drake {
@@ -91,10 +91,10 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   Eigen::MatrixXd states;
   std::vector<double> times_out;
   prog.GetResultSamples(&inputs, &states, &times_out);
-  lcm::LcmCallMatlab("plot", states.row(SimpleCarStateIndices::kX),
+  common::CallMatlab("plot", states.row(SimpleCarStateIndices::kX),
                      states.row(SimpleCarStateIndices::kY));
-  lcm::LcmCallMatlab("xlabel", "x (m)");
-  lcm::LcmCallMatlab("ylabel", "y (m)");
+  common::CallMatlab("xlabel", "x (m)");
+  common::CallMatlab("ylabel", "y (m)");
 
   // Checks that the input commands found are not too large.
   EXPECT_LE(inputs.row(0).lpNorm<1>(), 0.1);

@@ -91,6 +91,7 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
+        "@gflags//:gflags",
         ":acrobot_plant",
         "//drake/common:drake_path",
         "//drake/lcm",
@@ -98,7 +99,6 @@ drake_cc_binary(
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "@gflags//:gflags",
     ],
 )
 
@@ -110,10 +110,11 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
+        "@gflags//:gflags",
         ":acrobot_plant",
+        "//drake/common:call_matlab",
         "//drake/common:drake_path",
         "//drake/lcm",
-        "//drake/lcm:lcm_call_matlab",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
@@ -124,7 +125,6 @@ drake_cc_binary(
         "//drake/systems/primitives:linear_system",
         "//drake/systems/primitives:signal_logger",
         "//drake/systems/sensors:rotary_encoders",
-        "@gflags//:gflags",
     ],
 )
 
@@ -135,6 +135,7 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
+        "@gflags//:gflags",
         ":acrobot_plant",
         "//drake/common:drake_path",
         "//drake/lcm",
@@ -144,7 +145,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
-        "@gflags//:gflags",
     ],
 )
 
@@ -156,6 +156,7 @@ drake_cc_binary(
     ],
     data = [":models"],
     deps = [
+        "@gflags//:gflags",
         ":acrobot_plant",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
@@ -164,7 +165,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "@gflags//:gflags",
     ],
 )
 
@@ -173,6 +173,7 @@ drake_cc_binary(
     srcs = ["acrobot_run_swing_up_traj_optimization.cc"],
     data = [":models"],
     deps = [
+        "@gflags//:gflags",
         ":acrobot_plant",
         ":acrobot_swing_up",
         "//drake/lcm",
@@ -183,7 +184,6 @@ drake_cc_binary(
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/primitives:trajectory_source",
-        "@gflags//:gflags",
     ],
 )
 
@@ -209,6 +209,7 @@ drake_cc_binary(
     srcs = ["acrobot_plant_w_lcm.cc"],
     data = [":models"],
     deps = [
+        "@gflags//:gflags",
         ":acrobot_lcm",
         ":acrobot_plant",
         "//drake/lcm",
@@ -217,7 +218,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "@gflags//:gflags",
     ],
 )
 

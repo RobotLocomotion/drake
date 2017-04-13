@@ -1,6 +1,6 @@
 #include <limits>
 
-#include "drake/lcm/lcm_call_matlab.h"
+#include "drake/common/call_matlab.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/rotation_constraint.h"
 
@@ -51,21 +51,21 @@ void DrawCircle(double radius = 1.0) {
         Eigen::Vector2d(radius * std::cos(theta), radius * std::sin(theta));
   }
 
-  lcm::LcmCallMatlab("plot", points.row(0), points.row(1), "k", "LineWidth",
+  common::CallMatlab("plot", points.row(0), points.row(1), "k", "LineWidth",
                      4.0);
 }
 
 void PlotFeasiblePoints(const Eigen::Matrix2Xd& points, double radius = 1.0,
                         int fig_num = 1) {
-  using lcm::LcmCallMatlab;
-  LcmCallMatlab("figure", fig_num);
-  LcmCallMatlab("clf");
-  LcmCallMatlab("hold", "on");
-  LcmCallMatlab("plot", points.row(0), points.row(1), ".", "MarkerSize", 20.0);
+  using common::CallMatlab;
+  CallMatlab("figure", fig_num);
+  CallMatlab("clf");
+  CallMatlab("hold", "on");
+  CallMatlab("plot", points.row(0), points.row(1), ".", "MarkerSize", 20.0);
   DrawCircle(radius);
-  LcmCallMatlab("xlim", Eigen::RowVector2d(-1.1, 1.1));
-  LcmCallMatlab("ylim", Eigen::RowVector2d(-1.1, 1.1));
-  LcmCallMatlab("axis", "equal");
+  CallMatlab("xlim", Eigen::RowVector2d(-1.1, 1.1));
+  CallMatlab("ylim", Eigen::RowVector2d(-1.1, 1.1));
+  CallMatlab("axis", "equal");
 }
 
 void PlotColumnVectorXYSlice(double z = 0.0, int fig_num = 1) {
@@ -102,9 +102,9 @@ void PlotColumnVectorXYSlice(double z = 0.0, int fig_num = 1) {
 
   PlotFeasiblePoints(feasible_points, std::sqrt(1 - sample(2) * sample(2)),
                      fig_num);
-  lcm::LcmCallMatlab("xlabel", "R(0,0)");
-  lcm::LcmCallMatlab("ylabel", "R(1,0)");
-  lcm::LcmCallMatlab("title", "R(2,0) = " + std::to_string(z));
+  common::CallMatlab("xlabel", "R(0,0)");
+  common::CallMatlab("ylabel", "R(1,0)");
+  common::CallMatlab("title", "R(2,0) = " + std::to_string(z));
 }
 
 void DoMain() {

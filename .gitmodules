@@ -110,3 +110,6 @@
 [submodule "externals/fmt"]
 	path = externals/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "externals/protobuf"]
+	path = externals/protobuf
+	url = https://github.com/google/protobuf.git

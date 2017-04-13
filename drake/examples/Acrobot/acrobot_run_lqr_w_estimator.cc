@@ -3,11 +3,11 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/call_matlab.h"
 #include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcm/lcm_call_matlab.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -141,22 +141,22 @@ int do_main(int argc, char* argv[]) {
   simulator.StepTo(5);
 
   // Plot the results (launch lcm_call_matlab_client to see the plots).
-  using lcm::LcmCallMatlab;
-  LcmCallMatlab("figure", 1);
-  LcmCallMatlab("plot", x_logger->sample_times(),
+  using common::CallMatlab;
+  CallMatlab("figure", 1);
+  CallMatlab("plot", x_logger->sample_times(),
                 (x_logger->data().row(0).array() - M_PI).matrix(),
                 x_logger->sample_times(), x_logger->data().row(1));
-  LcmCallMatlab("legend", "theta1 - PI", "theta2");
-  LcmCallMatlab("axis", "tight");
+  CallMatlab("legend", "theta1 - PI", "theta2");
+  CallMatlab("axis", "tight");
 
-  LcmCallMatlab("figure", 2);
-  LcmCallMatlab("plot", x_logger->sample_times(),
+  CallMatlab("figure", 2);
+  CallMatlab("plot", x_logger->sample_times(),
                 (x_logger->data().array() - xhat_logger->data().array())
                     .matrix()
                     .transpose());
-  LcmCallMatlab("ylabel", "error");
-  LcmCallMatlab("legend", "theta1", "theta2", "theta1dot", "theta2dot");
-  LcmCallMatlab("axis", "tight");
+  CallMatlab("ylabel", "error");
+  CallMatlab("legend", "theta1", "theta2", "theta1dot", "theta2dot");
+  CallMatlab("axis", "tight");
 
   return 0;
 }

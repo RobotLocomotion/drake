@@ -80,7 +80,7 @@ build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 # manually list out all git submodule externals' BUILD files.
 #
 # TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
-build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c
+build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c,externals/protobuf,externals/protobuf/util/python
 
 ### Cpplint. ###
 # By default, cpplint tests are run as part of `bazel test` alongside all of

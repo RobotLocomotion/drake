@@ -228,15 +228,6 @@ lcm_cc_library(
     ],
 )
 
-lcm_cc_library(
-    name = "call_matlab",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_call_matlab.lcm",
-        "lcmt_matlab_array.lcm",
-    ],
-)
-
 # TODO(jwnimmer-tri) Many more C++ messages are missing ...
 
 lcm_py_library(

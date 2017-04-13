@@ -54,8 +54,11 @@ function(add_library_with_exports)
   endif()
 endfunction()
 
-# This makes all of our #include "drake/..." statemenets work.
+# This makes all of our #include "drake/..." statements work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
+
+# To find generated protobuf headers.
+include_directories(BEFORE ${PROJECT_BINARY_DIR}/..)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers -Werror=overloaded-virtual")
 if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize=") # sanitizers are extremely brittle without lazy linking

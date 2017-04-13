@@ -1,4 +1,4 @@
-#include "drake/lcm/lcm_call_matlab.h"
+#include "drake/common/call_matlab.h"
 
 #include <cmath>
 
@@ -11,42 +11,42 @@
 // messages are being sent.
 
 namespace drake {
-namespace lcm {
+namespace common {
 
-GTEST_TEST(TestLcmCallMatlab, DispEigenMatrix) {
+GTEST_TEST(TestCallMatlab, DispEigenMatrix) {
   Eigen::Matrix2d m;
   m << 1, 2, 3, 4;
-  LcmCallMatlab("disp", m);
+  CallMatlab("disp", m);
 
   Eigen::Matrix<bool, 2, 2> b;
   b << true, false, true, false;
-  LcmCallMatlab("disp", b);
+  CallMatlab("disp", b);
 }
 
-GTEST_TEST(TestLcmCallMatlab, RemoteVarTest) {
-  auto magic = LcmCallMatlabSingleOutput("magic", 4);
-  LcmCallMatlab("disp", magic);
-  LcmCallMatlab("disp", "element(1,1) is ");
-  LcmCallMatlab("disp", magic(1, 1));
-  LcmCallMatlab("disp", "element(3,2) is ");
-  LcmCallMatlab("disp", magic(3, 2));
-  LcmCallMatlab("disp", "elements (1:2) are");
-  LcmCallMatlab("disp", magic(Eigen::Vector2d(1, 2)));
-  LcmCallMatlab("disp", "row 3 is ");
-  LcmCallMatlab("disp", magic(3, ":"));
-  LcmCallMatlab("disp", "elements (1:5) are");
-  LcmCallMatlab("disp", magic(Eigen::VectorXd::LinSpaced(5, 1, 5)));
+GTEST_TEST(TestCallMatlab, RemoteVarTest) {
+  auto magic = CallMatlabSingleOutput("magic", 4);
+  CallMatlab("disp", magic);
+  CallMatlab("disp", "element(1,1) is ");
+  CallMatlab("disp", magic(1, 1));
+  CallMatlab("disp", "element(3,2) is ");
+  CallMatlab("disp", magic(3, 2));
+  CallMatlab("disp", "elements (1:2) are");
+  CallMatlab("disp", magic(Eigen::Vector2d(1, 2)));
+  CallMatlab("disp", "row 3 is ");
+  CallMatlab("disp", magic(3, ":"));
+  CallMatlab("disp", "elements (1:5) are");
+  CallMatlab("disp", magic(Eigen::VectorXd::LinSpaced(5, 1, 5)));
 
-  LcmCallMatlab("disp", "row 2 (accessed via logicals) is");
-  LcmCallMatlab(
+  CallMatlab("disp", "row 2 (accessed via logicals) is");
+  CallMatlab(
       "disp", magic(Eigen::Matrix<bool, 4, 1>(false, true, false, false), ":"));
 
-  LcmCallMatlab("disp", "Second column should now be 1,2,3,4: ");
+  CallMatlab("disp", "Second column should now be 1,2,3,4: ");
   auto n = magic.subsasgn(Eigen::Vector4d(1, 2, 3, 4), ":", 2);
-  LcmCallMatlab("disp", n);
+  CallMatlab("disp", n);
 }
 
-GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
+GTEST_TEST(TestCallMatlab, SimplePlot) {
   int N = 100;
 
   Eigen::VectorXd time(N), val(N);
@@ -55,13 +55,13 @@ GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
     val[i] = sin(2 * M_PI * time[i]);
   }
 
-  LcmCallMatlab("disp", "Plotting a (red) sine wave.");
-  LcmCallMatlab("figure", 1);
-  auto h = LcmCallMatlab(1, "plot", time, val);
-  LcmCallMatlab("set", h[0], "Color", "r");
+  CallMatlab("disp", "Plotting a (red) sine wave.");
+  CallMatlab("figure", 1);
+  auto h = CallMatlab(1, "plot", time, val);
+  CallMatlab("set", h[0], "Color", "r");
 }
 
-GTEST_TEST(TestLcmCallMatlab, MeshTest) {
+GTEST_TEST(TestCallMatlab, MeshTest) {
   const int N = 25, M = 35;
   Eigen::VectorXd x(N), y(M);
   Eigen::MatrixXd Z(M, N);
@@ -79,10 +79,10 @@ GTEST_TEST(TestLcmCallMatlab, MeshTest) {
                 1.0 / 3.0 * exp(-pow(x(i) + 1, 2) - pow(y(j), 2));
     }
   }
-  LcmCallMatlab("disp", "Plotting a simple 3D surface");
-  LcmCallMatlab("figure", 2);
-  LcmCallMatlab("surf", x, y, Z);
+  CallMatlab("disp", "Plotting a simple 3D surface");
+  CallMatlab("figure", 2);
+  CallMatlab("surf", x, y, Z);
 }
 
-}  // namespace lcm
+}  // namespace common
 }  // namespace drake

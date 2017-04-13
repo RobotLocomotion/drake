@@ -404,8 +404,8 @@ py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        "//drake/lcmtypes:lcmtypes-py",
         "@lcm//:lcm-python",
+        "//drake/lcmtypes:lcmtypes-py",
     ],
 )
 
@@ -422,11 +422,11 @@ py_binary(
     name = "demo",
     srcs = ["automotive_demo.py"],
     data = [
+        "@drake_visualizer//:drake-visualizer",
+        "@lcm//:lcm-logger",
         ":automotive_demo",
         ":lcm-spy",
         ":steering_command_driver",
-        "@drake_visualizer//:drake-visualizer",
-        "@lcm//:lcm-logger",
     ],
     main = "automotive_demo.py",
     deps = [
@@ -628,8 +628,8 @@ drake_cc_googletest(
     name = "trajectory_optimization_test",
     deps = [
         ":simple_car",
+        "//drake/common:call_matlab",
         "//drake/common:eigen_matrix_compare",
-        "//drake/lcm:lcm_call_matlab",
         "//drake/systems/trajectory_optimization:direct_collocation",
     ],
 )
