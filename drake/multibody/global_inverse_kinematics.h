@@ -121,7 +121,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    *   - p_WFo is the position of frame `F`'s origin, expressed and measured in
    *     frame `W`. `p_WFo = X_WF.translation()`.
    * @default is the identity transform.
-   * @retval binding The newly added constraint, together with the bounded
+   * @retval binding The newly added constraint, together with the bound
    * variables.
    */
   solvers::Binding<solvers::LinearConstraint> AddWorldPositionConstraint(
@@ -149,7 +149,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @param desired_orientation The desired orientation of the body.
    * @param angle_tol The tolerance on the angle between the body orientation
    * and the desired orientation. Unit is radians.
-   * @retval binding The newly added constraint, together with the bounded
+   * @retval binding The newly added constraint, together with the bound
    * variables.
    */
   solvers::Binding<solvers::LinearConstraint> AddWorldOrientationConstraint(

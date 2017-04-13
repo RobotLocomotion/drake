@@ -90,6 +90,11 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R);
 
+using AddRotationMatrixMcCormickEnvelopeReturnType =
+std::tuple<std::vector<MatrixDecisionVariable<3, 3>>,
+           std::vector<MatrixDecisionVariable<3, 3>>,
+           std::vector<MatrixDecisionVariable<3, 3>>,
+           std::vector<MatrixDecisionVariable<3, 3>>>;
 /**
  * Adds binary variables that constrain the value of the column *and* row
  * vectors of R, in order to add the following (in some cases non-convex)
@@ -134,11 +139,6 @@ void AddRotationMatrixOrthonormalSocpConstraint(
  * </pre>
  * where `N` is `num_binary_vars_per_half_axis`.
  */
-using AddRotationMatrixMcCormickEnvelopeReturnType =
-std::tuple<std::vector<MatrixDecisionVariable<3, 3>>,
-           std::vector<MatrixDecisionVariable<3, 3>>,
-           std::vector<MatrixDecisionVariable<3, 3>>,
-           std::vector<MatrixDecisionVariable<3, 3>>>;
 
 AddRotationMatrixMcCormickEnvelopeReturnType
 AddRotationMatrixMcCormickEnvelopeMilpConstraints(

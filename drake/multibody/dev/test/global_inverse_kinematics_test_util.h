@@ -10,8 +10,6 @@ std::unique_ptr<RigidBodyTree<double>> ConstructKuka();
 
 class KukaTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KukaTest)
-
   KukaTest();
 
   ~KukaTest() override {};
