@@ -47,18 +47,9 @@ class FixedOffsetFrame : public Frame<T> {
   ///                 of `body`.
   FixedOffsetFrame(const Body<T>& P, const Isometry3<T>& X_PF);
 
- protected:
-  void DoCompile(const MultibodyTree<T>& tree) final {
-    topology_ = tree.get_topology().get_frame(this->get_index());
-    DRAKE_ASSERT(topology_.index == this->get_index());
-  }
-
  private:
   // The fixed pose of this frame F measured and expressed in another frame P.
   Isometry3<T> X_PF_;
-
-  // The internal bookkeeping topology struct used by MultibodyTree.
-  FrameTopology topology_;
 };
 
 }  // namespace multibody

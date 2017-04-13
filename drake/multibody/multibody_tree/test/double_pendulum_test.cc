@@ -42,12 +42,19 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // Retrieves the world body.
   const Body<double>& world_body = model->get_world_body();
 
+  // Creates a NaN SpatialInertia to instantiate the two RigidBody links of
+  // the pendulum. Using a NaN spatial inertia is ok so far since we are still
+  // not performing any numerical computations. This is only to test API.
+  // M_Bo_B is the spatial inertia about the body frame's origin Bo and
+  // expressed in the body frame B.
+  SpatialInertia<double> M_Bo_B;
+
   // Adds the upper and lower links of the pendulum.
   // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
   const RigidBody<double>& upper_link =
-      model->AddBody(make_unique<RigidBody<double>>());
+      model->AddBody(make_unique<RigidBody<double>>(M_Bo_B));
   // Using: const BodyType<T>& AddBody(Args&&... args)
-  const RigidBody<double>& lower_link = model->AddBody<RigidBody>();
+  const RigidBody<double>& lower_link = model->AddBody<RigidBody>(M_Bo_B);
 
   // This is an experiment with std::reference_wrapper to show that we can save
   // bodies in an array of references.
@@ -115,7 +122,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
 
   // Asserts that no more bodies can be added after compilation.
-  EXPECT_THROW(model->AddBody<RigidBody>(), std::logic_error);
+  EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo),
                std::logic_error);
 

@@ -7,15 +7,15 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
 
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
-  // TODO(amcastro-tri): Assign an infinite mass to the "world" body when rigid
-  // body mass properties are implemented.
-  AddBody<RigidBody>();
+  // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
+  AddBody<RigidBody>(SpatialInertia<double>());
 }
 
 template <typename T>

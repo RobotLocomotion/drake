@@ -27,8 +27,15 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   // Retrieves the world body.
   const Body<double>& world_body = model->get_world_body();
 
+  // Creates a NaN SpatialInertia to instantiate the RigidBody links of the
+  // pendulum. Using a NaN spatial inertia is ok so far since we are still
+  // not performing any numerical computations. This is only to test API.
+  // M_Bo_B is the spatial inertia about the body frame's origin Bo and
+  // expressed in the body frame B.
+  SpatialInertia<double> M_Bo_B;
+
   // Adds a new body to the world.
-  const RigidBody<double>& pendulum = model->AddBody<RigidBody>();
+  const RigidBody<double>& pendulum = model->AddBody<RigidBody>(M_Bo_B);
 
   // Indexes not valid until Comile() is called.
   EXPECT_FALSE(model->topology_is_valid());
@@ -54,7 +61,7 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   EXPECT_THROW(model->Compile(), std::logic_error);
 
   // Verifies that after compilation no more bodies can be added.
-  EXPECT_THROW(model->AddBody<RigidBody>(), std::logic_error);
+  EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
 
   // Verifies we cannot re-compile.
   EXPECT_THROW(model->Compile(), std::logic_error);
@@ -66,8 +73,15 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   auto model1 = std::make_unique<MultibodyTree<double>>();
   auto model2 = std::make_unique<MultibodyTree<double>>();
 
-  const RigidBody<double>& body1 = model1->AddBody<RigidBody>();
-  const RigidBody<double>& body2 = model2->AddBody<RigidBody>();
+  // Creates a NaN SpatialInertia to instantiate the RigidBody links of the
+  // pendulum. Using a NaN spatial inertia is ok so far since we are still
+  // not performing any numerical computations. This is only to test API.
+  // M_Bo_B is the spatial inertia about the body frame's origin Bo and
+  // expressed in the body frame B.
+  SpatialInertia<double> M_Bo_B;
+
+  const RigidBody<double>& body1 = model1->AddBody<RigidBody>(M_Bo_B);
+  const RigidBody<double>& body2 = model2->AddBody<RigidBody>(M_Bo_B);
 
   model1->Compile();
   model2->Compile();

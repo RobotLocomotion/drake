@@ -55,10 +55,6 @@ class BodyFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
- protected:
-  // Implementation for MultibodyTreeElement::DoCompile().
-  void DoCompile(const MultibodyTree<T>& tree) final {}
-
  private:
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame. BodyFrame objects are *only* created from within
@@ -117,6 +113,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // from the parent MultibodyTree.
   void DoCompile(const MultibodyTree<T>& tree) final {
     topology_ = tree.get_topology().bodies[this->get_index()];
+    body_frame_.Compile(tree);
   }
 };
 
