@@ -113,7 +113,7 @@ This config turns off sandboxing, which allows a ``genrule`` to access the
 ``.o`` files and process them into a ``.dSYM``.  Use as follows::
 
   bazel build --config=apple_debug drake/path/to/my:binary_or_test_dsym
-  lldb ./bazel_bin/drake/path/to/my/binary_or_test
+  lldb ./bazel-bin/drake/path/to/my/binary_or_test
 
 For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
