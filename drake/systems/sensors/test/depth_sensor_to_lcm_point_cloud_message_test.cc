@@ -4,8 +4,8 @@
 #include <memory>
 #include <utility>
 
-#include "bot_core/pointcloud_t.hpp"
 #include <gtest/gtest.h>
+#include "bot_core/pointcloud_t.hpp"
 
 #include "drake/common/drake_path.h"
 #include "drake/systems/framework/system_port_descriptor.h"

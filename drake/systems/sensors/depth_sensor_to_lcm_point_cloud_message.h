@@ -5,7 +5,6 @@
 #include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
-
 namespace drake {
 namespace systems {
 namespace sensors {

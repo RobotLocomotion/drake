@@ -12,7 +12,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
-
 DEFINE_int32(num_simple_car, 0, "Number of SimpleCar vehicles. The cars are "
              "named \"0\", \"1\", \"2\", etc.");
 DEFINE_string(simple_car_names, "",

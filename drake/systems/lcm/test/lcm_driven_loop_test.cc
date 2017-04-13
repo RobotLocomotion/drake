@@ -1,13 +1,13 @@
 #include "drake/systems/lcm/lcm_driven_loop.h"
+
 #include <gtest/gtest.h>
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/signal_logger.h"
-
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_drake_signal.hpp"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {
 namespace systems {
