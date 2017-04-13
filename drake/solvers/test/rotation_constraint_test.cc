@@ -626,10 +626,8 @@ class TestMcCormickCorner
       col_idx_(std::get<2>(GetParam())) {
     DRAKE_DEMAND(orthant_ >= 0);
     DRAKE_DEMAND(orthant_ <= 7);
-    const auto Cpos_Cneg_Bpos_Bneg =
+    std::tie(Cpos_, Cneg_, std::ignore, std::ignore) =
         AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
-    Cpos_ = std::get<0>(Cpos_Cneg_Bpos_Bneg);
-    Cneg_ = std::get<1>(Cpos_Cneg_Bpos_Bneg);
   }
 
   ~TestMcCormickCorner() override {}
