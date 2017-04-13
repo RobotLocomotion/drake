@@ -10,7 +10,7 @@ package drake.common;
 message MatlabArray
 {
   enum ArrayType {
-    REMOTE_VARIABLE_REFERENCE = 0; // encoded as an int64 used in the lhs argument of lcmt_matlab_feval; rows and cols must be set to 1.
+    REMOTE_VARIABLE_REFERENCE = 0;
     DOUBLE = 1;
     CHAR = 2;
     LOGICAL = 3;
@@ -39,7 +39,8 @@ message MatlabArray
  */
 
 message MatlabRPC {
-  repeated int64 lhs = 1;  // unique id for variables held in the MATLAB client's workspace
+  repeated int64 lhs = 1;  // unique id for variables held in the MATLAB
+  	   	       	   // client's workspace
 
   repeated MatlabArray rhs = 2;  // the input argument data
 

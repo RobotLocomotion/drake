@@ -8,10 +8,10 @@
 
 /// @file Utilities for calling Matlab from C++
 ///
-/// A simple interface for (one-directional) RPC to a simple matlab remote
-/// client.  Methods are provided to serialize our favorite data types into
-/// protobuf and then published to a file.  The interface is modeled after
-/// mexCallMATLAB
+/// Provides a simple interface for (one-directional) RPC to a simple matlab
+/// remote client.  Methods are provided to serialize our favorite data types
+/// into protobuf and then published to a file.  The interface is modeled
+/// after mexCallMATLAB
 ///   https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html
 /// but we use C++11 to provide a much nicer interface.
 ///
