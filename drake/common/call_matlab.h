@@ -6,6 +6,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/matlab_rpc.pb.h"
 
+/// @file Utilities for calling Matlab from C++
+///
 /// A simple interface for (one-directional) RPC to a simple matlab remote
 /// client.  Methods are provided to serialize our favorite data types into
 /// protobuf and then published to a file.  The interface is modeled after
@@ -29,12 +31,13 @@
 ///
 /// See call_matlab_test.cc for some simple examples.
 
+
 namespace drake {
 namespace common {
 
 /// Serialize our favorite data types into the matlab_array structure.
 /// To support a calling call_matlab for a new data type, simply implement
-//  another one of these methods.
+///  another one of these methods.
 
 class MatlabRemoteVariable;
 void ToMatlabArray(const MatlabRemoteVariable& var, MatlabArray* matlab_array);
