@@ -1,10 +1,13 @@
 #include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
 
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 
 using Eigen::Vector3d;
@@ -79,6 +82,32 @@ void KukaTest::CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
     EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, orient_tol,
                                 MatrixCompareType::absolute));
   }
+}
+
+Eigen::VectorXd KukaTest::CheckNonlinearIK(
+    const Eigen::Vector3d& ee_pos_lb_W, const Eigen::Vector3d& ee_pos_ub_W,
+    const Eigen::Quaterniond& ee_orient, double angle_tol,
+    const Eigen::Matrix<double, 7, 1>& q_guess,
+    const Eigen::Matrix<double, 7, 1>& q_nom, int info_expected) const {
+  WorldPositionConstraint pos_cnstr(rigid_body_tree_.get(), ee_idx_,
+                                    Eigen::Vector3d::Zero(), ee_pos_lb_W,
+                                    ee_pos_ub_W);
+  WorldQuatConstraint orient_cnstr(
+      rigid_body_tree_.get(), ee_idx_,
+      Eigen::Vector4d(ee_orient.w(), ee_orient.x(), ee_orient.y(),
+                      ee_orient.z()),
+      angle_tol);
+  Eigen::VectorXd q_sol(7);
+  Eigen::VectorXd q_guess_ik = q_guess;
+  Eigen::VectorXd q_nom_ik = q_nom;
+  int info;
+  IKoptions ikoptions(rigid_body_tree_.get());
+  std::vector<std::string> infeasible_constraint;
+  std::array<RigidBodyConstraint*, 2> cnstr = {{&pos_cnstr, &orient_cnstr}};
+  inverseKin(rigid_body_tree_.get(), q_guess_ik, q_nom_ik, 2, cnstr.data(),
+             ikoptions, &q_sol, &info, &infeasible_constraint);
+  EXPECT_EQ(info, info_expected);
+  return q_sol;
 }
 }  // namespace multibody
 }  // namespace drake

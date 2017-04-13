@@ -2,8 +2,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
-#include "drake/multibody/rigid_body_ik.h"
 
 using Eigen::Vector3d;
 using Eigen::Isometry3d;
@@ -35,25 +33,12 @@ TEST_F(KukaTest, UnreachableTest) {
     EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded ||
                 sol_result == SolutionResult::kInfeasibleConstraints);
   }
-  WorldPositionConstraint pos_cnstr(rigid_body_tree_.get(), ee_idx_,
-                                    Eigen::Vector3d::Zero(), ee_pos_lb,
-                                    ee_pos_ub);
-  WorldQuatConstraint orient_cnstr(
-      rigid_body_tree_.get(), ee_idx_,
-      Eigen::Vector4d(ee_desired_orient.w(), ee_desired_orient.x(),
-                      ee_desired_orient.y(), ee_desired_orient.z()),
-      0);
-  IKoptions ikoptions(rigid_body_tree_.get());
-  std::array<RigidBodyConstraint*, 2> constraint_array = {
-      {&pos_cnstr, &orient_cnstr}};
-  Eigen::VectorXd q_ik(7);
-  Eigen::VectorXd q_nom = Eigen::VectorXd::Zero(7);
-  Eigen::VectorXd q_guess = Eigen::VectorXd::Zero(7);
-  int ik_info;
-  std::vector<std::string> infeasible_cnstr;
-  inverseKin(rigid_body_tree_.get(), q_guess, q_nom, 2, constraint_array.data(),
-             ikoptions, &q_ik, &ik_info, &infeasible_cnstr);
-  EXPECT_EQ(ik_info, 13);
+  Eigen::Matrix<double, 7, 1> q_nom;
+  Eigen::Matrix<double, 7, 1> q_guess;
+  q_nom.setZero();
+  q_guess.setZero();
+  CheckNonlinearIK(ee_pos_lb, ee_pos_ub, ee_desired_orient, 0, q_nom, q_guess,
+                   13);
 }
 
 TEST_F(KukaTest, ReachableWithCost) {

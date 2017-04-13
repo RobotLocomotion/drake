@@ -20,8 +20,9 @@ TEST_F(KukaTest, ReachableTest) {
 
   Eigen::Quaterniond ee_desired_orient(
       Eigen::AngleAxisd(-M_PI / 2, Vector3d(0, 1, 0)));
+  double angle_tol = 0.2 * M_PI;
   auto ee_orient_cnstr = global_ik_.AddWorldOrientationConstraint(
-      ee_idx_, ee_desired_orient, 0.2 * M_PI);
+      ee_idx_, ee_desired_orient, angle_tol);
 
   solvers::GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
@@ -34,6 +35,13 @@ TEST_F(KukaTest, ReachableTest) {
     double pos_tol = 0.06;
     double orient_tol = 0.2;
     CheckGlobalIKSolution(pos_tol, orient_tol);
+    // Now call nonlinear IK with the solution from global IK as the initial
+    // seed. If the global IK provides a good initial seed, then the nonlinear
+    // IK should be able to find a solution.
+    Eigen::Matrix<double, 7, 1> q_global_ik =
+        global_ik_.ReconstructGeneralizedPositionSolution();
+    CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W,
+                     ee_desired_orient, angle_tol, q_global_ik, q_global_ik, 1);
 
     // Now update the constraint, the problem should still be feasible.
     // TODO(hongkai.dai): do a warm start on the binary variables
@@ -41,7 +49,7 @@ TEST_F(KukaTest, ReachableTest) {
     ee_pos_ub_W << 0.4, 0.1, 1.0;
     ee_pos_cnstr.constraint()->UpdateLowerBound(ee_pos_lb_W);
     ee_pos_cnstr.constraint()->UpdateUpperBound(ee_pos_ub_W);
-    double angle_tol = 0.3 * M_PI;
+    angle_tol = 0.3 * M_PI;
     // The orientation constraint is 2 * cos(angle_tol) + 1 <= trace(Rᵀ * R_des)
     ee_orient_cnstr.constraint()->UpdateLowerBound(
         Vector1d(2 * cos(angle_tol) + 1));
@@ -56,6 +64,10 @@ TEST_F(KukaTest, ReachableTest) {
     Eigen::AngleAxisd ee_orient_err(ee_rotmat_sol.transpose() *
                                     ee_desired_orient.toRotationMatrix());
     EXPECT_LE(ee_orient_err.angle(), angle_tol + 1E-4);
+
+    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
+    CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W,
+                     ee_desired_orient, angle_tol, q_global_ik, q_global_ik, 1);
   }
 }
 }  // namespace
