@@ -5,21 +5,50 @@ load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
+    "drake_cc_library",
+)
+
+drake_cc_library(
+    name = "global_inverse_kinematics_test_util",
+    testonly = 1,
+    srcs = [
+        "test/global_inverse_kinematics_test_util.cc",
+    ],
+    hdrs = [
+        "test/global_inverse_kinematics_test_util.h",
+    ],
+    deps = [
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:global_inverse_kinematics",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+    ],
 )
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
-    size = "large",
+    size = "medium",
     srcs = ["test/global_inverse_kinematics_test.cc"],
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
     tags = ["gurobi"],
     deps = [
-        "//drake/common:eigen_matrix_compare",
-        "//drake/multibody:global_inverse_kinematics",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/parsers",
+        ":global_inverse_kinematics_test_util",
+        "//drake/multibody:inverse_kinematics",
+    ],
+)
+
+drake_cc_googletest(
+    name = "global_inverse_kinematics_reachable_test",
+    size = "medium",
+    srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = ["gurobi"],
+    deps = [
+        ":global_inverse_kinematics_test_util",
     ],
 )
 
