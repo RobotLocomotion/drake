@@ -258,6 +258,7 @@ drake_cc_googletest(
         ":constant_vector_source",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities:my_vector",
     ],
 )
 

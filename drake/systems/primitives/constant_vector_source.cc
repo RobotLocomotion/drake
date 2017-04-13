@@ -15,6 +15,12 @@ ConstantVectorSource<T>::ConstantVectorSource(
       source_value_(source_value) {}
 
 template <typename T>
+ConstantVectorSource<T>::ConstantVectorSource(
+    const BasicVector<T>& source_value)
+    : SingleOutputVectorSource<T>(source_value),
+      source_value_(source_value.get_value()) {}
+
+template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
     : ConstantVectorSource(Vector1<T>::Constant(source_value)) {}
 
