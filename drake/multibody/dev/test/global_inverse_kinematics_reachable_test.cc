@@ -37,11 +37,12 @@ TEST_F(KukaTest, ReachableTest) {
 
     // Now update the constraint, the problem should still be feasible.
     // TODO(hongkai.dai): do a warm start on the binary variables
-    ee_pos_lb_W << 0.2, -1, 0.6;
-    ee_pos_ub_W << 0.4, 1, 1.0;
+    ee_pos_lb_W << 0.2, -0.1, 0.6;
+    ee_pos_ub_W << 0.4, 0.1, 1.0;
     ee_pos_cnstr.constraint()->UpdateLowerBound(ee_pos_lb_W);
     ee_pos_cnstr.constraint()->UpdateUpperBound(ee_pos_ub_W);
     double angle_tol = 0.3 * M_PI;
+    // The orientation constraint is 2 * cos(angle_tol) + 1 <= trace(Rᵀ * R_des)
     ee_orient_cnstr.constraint()->UpdateLowerBound(
         Vector1d(2 * cos(angle_tol) + 1));
     sol_result = gurobi_solver.Solve(global_ik_);

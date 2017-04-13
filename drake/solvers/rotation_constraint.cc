@@ -898,8 +898,8 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   };
 
   // Creates binary decision variables which discretize each axis.
-  //   BRpos[k](i,j) = 1 <=> R(i,j) >= phi(k)
-  //   BRneg[k](i,j) = 1 <=> R(i,j) <= -phi(k)
+  //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
+  //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
   //
   // For convenience, we introduce additional (continuous) variables to
   // represent the individual sections of the real line

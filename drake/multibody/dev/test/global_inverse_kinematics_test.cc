@@ -47,8 +47,8 @@ TEST_F(KukaTest, UnreachableTest) {
   std::array<RigidBodyConstraint*, 2> constraint_array = {
       {&pos_cnstr, &orient_cnstr}};
   Eigen::VectorXd q_ik(7);
-  Eigen::VectorXd q_nom = Eigen::VectorXd::Zero(7, 0);
-  Eigen::VectorXd q_guess = Eigen::VectorXd::Zero(7, 0);
+  Eigen::VectorXd q_nom = Eigen::VectorXd::Zero(7);
+  Eigen::VectorXd q_guess = Eigen::VectorXd::Zero(7);
   int ik_info;
   std::vector<std::string> infeasible_cnstr;
   inverseKin(rigid_body_tree_.get(), q_guess, q_nom, 2, constraint_array.data(),

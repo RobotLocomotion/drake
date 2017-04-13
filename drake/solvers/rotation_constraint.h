@@ -130,7 +130,7 @@ void AddRotationMatrixOrthonormalSocpConstraint(
  *   CRpos[k](i, j) = 1 => k / N <= R(i, j) <= (k+1) / N
  *   CRneg[k](i, j) = 1 => -(k+1) / N <= R(i, j) <= -k / N
  *   BRpos[k](i, j) = 1 => R(i, j) >= k / N
- *   BRneg[k](i, j) = 1 => R(i, j) <= -k / n
+ *   BRneg[k](i, j) = 1 => R(i, j) <= -k / N
  * </pre>
  * where `N` is `num_binary_vars_per_half_axis`.
  */

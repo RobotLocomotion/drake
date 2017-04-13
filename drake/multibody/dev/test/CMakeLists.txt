@@ -15,7 +15,7 @@ if(gurobi_FOUND)
             drakeIK)
 
     drake_add_cc_test(global_inverse_kinematics_reachable_test)
-    set_tests_properties(global_inverse_kinematics_reachable_test PROPERTIES TIMEOUT 200)
+    set_tests_properties(global_inverse_kinematics_reachable_test PROPERTIES TIMEOUT 300)
     target_link_libraries(global_inverse_kinematics_reachable_test
             drakeGlobalInverseKinematicsTest)
 endif()
