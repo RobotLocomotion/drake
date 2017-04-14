@@ -1263,6 +1263,19 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
 }
 
+class PerStepActionTestSystem : public LeafSystem<double> {
+ public:
+  PerStepActionTestSystem() {
+    DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
+    DeclarePerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+    DeclarePerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+    DeclareDiscreteState(1);
+  }
+
+
+};
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

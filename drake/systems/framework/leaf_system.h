@@ -531,7 +531,12 @@ class LeafSystem : public System<T> {
       const typename DiscreteEvent<T>::ActionType& action) {
     DiscreteEvent<T> event;
     event.action = action;
-    // should probably check for duplication??
+    for (const auto& event : per_step_events_) {
+      if (event.action == action) {
+        DRAKE_ABORT_MSG("Per step action have already been declared.");
+      }
+    }
+
     per_step_events_.push_back(event);
   }
 
