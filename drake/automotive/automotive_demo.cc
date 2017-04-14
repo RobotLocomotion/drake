@@ -8,6 +8,7 @@
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
 #include "drake/automotive/gen/maliput_railcar_params.h"
+#include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/drake_path.h"
@@ -73,6 +74,10 @@ DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles added to the "
               "onramp.");
 DEFINE_bool(onramp_swap_start, false, "Whether to swap the starting lanes of "
     "the vehicles on the onramp.");
+
+DEFINE_bool(with_stalled_cars, false, "Places a stalled vehicle at the end of "
+            "each lane of a dragway. This option is only enabled when the "
+            "road is a dragway.");
 
 namespace drake {
 
@@ -208,6 +213,20 @@ void AddVehicles(RoadNetworkType road_network_type,
           FLAGS_num_dragway_lanes) * kRailcarRowSpacing;
     AddMaliputRailcar(FLAGS_num_maliput_railcar, false /* IDM controlled */,
         initial_s_offset, dragway_road_geometry, simulator);
+    if (FLAGS_with_stalled_cars) {
+      DRAKE_DEMAND(road_geometry != nullptr);
+      for (int i = 0; i < FLAGS_num_dragway_lanes; ++i) {
+        const Lane* lane = road_geometry->junction(0)->segment(0)->lane(i);
+        DRAKE_DEMAND(lane != nullptr);
+        const maliput::api::GeoPosition position = lane->ToGeoPosition(
+            {lane->length() /* s */, 0 /* r */, 0 /* h */});
+        SimpleCarState<double> state;
+        state.set_x(position.x);
+        state.set_y(position.y);
+        simulator->AddPriusSimpleCar("StalledCar" + std::to_string(i),
+            "StalledCarChannel" + std::to_string(i), state);
+      }
+    }
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {
