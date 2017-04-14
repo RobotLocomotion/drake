@@ -31,6 +31,7 @@ int do_main(int argc, char* argv[]) {
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();
+  pendulum->set_name("pendulum");
 
   // Prepare to linearize around the vertical equilibrium point (with tau=0)
   auto pendulum_context = pendulum->CreateDefaultContext();
@@ -49,10 +50,12 @@ int do_main(int argc, char* argv[]) {
 
   auto controller = builder.AddSystem(
       LinearQuadraticRegulator(*pendulum, *pendulum_context, Q, R));
+  controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port());
   builder.Connect(controller->get_output_port(), pendulum->get_tau_port());
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  publisher->set_name("publisher");
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
   auto diagram = builder.Build();
