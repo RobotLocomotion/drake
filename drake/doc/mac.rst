@@ -21,8 +21,10 @@ Install the prerequisites::
     brew upgrade
     brew install autoconf automake bazel clang-format cmake doxygen gcc glib \
       graphviz gtk+ jpeg libpng libtool libyaml mpfr ninja numpy python \
-      qt@4 qwt-qt4 scipy valgrind vtk5 wget
+      qt@4 qwt-qt4 scipy vtk5 wget
     pip install -U beautifulsoup4 html5lib lxml PyYAML Sphinx
+
+You may also want to install ``valgrind``, which can help debug memory issues in C++ code. Valgrind is available from homebrew with ``brew install valgrind``, but homebrew may encounter problems when installing ``valgrind`` on Mac OSX 10.12 (Sierra) or higher. See `this issue <https://github.com/Homebrew/homebrew-core/issues/4841#issuecomment-254217338>`_ for more details. If homebrew fails to install ``valgrind``, you can download it directly from `valgrind.org <http://valgrind.org/downloads/current.html>`_. 
 
 Add the line::
 
