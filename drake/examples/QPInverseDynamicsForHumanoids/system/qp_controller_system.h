@@ -32,9 +32,6 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
-  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
-      const override;
-
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
 
@@ -75,10 +72,6 @@ class QpControllerSystem : public systems::LeafSystem<double> {
  private:
   const RigidBodyTree<double>& robot_;
   const double control_dt_{};
-  // Indices into AbstractState. These are updated by DoCalcUnrestrictedUpdate,
-  // and DoCalcOutput copies them to the output ports.
-  const int kAbstractStateIndexQpOutput{0};
-  const int kAbstractStateIndexDebug{1};
 
   // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
   // CalcOutput. It is because qp controller needs to allocate mutable workspace
@@ -91,6 +84,9 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   int input_port_index_qp_input_{0};
   int output_port_index_qp_output_{0};
   int output_port_index_debug_info_{0};
+
+  int abs_state_index_qp_output_{0};
+  int abs_state_index_debug_info_{0};
 };
 
 }  // namespace qp_inverse_dynamics

@@ -32,6 +32,12 @@ QpControllerSystem::QpControllerSystem(const RigidBodyTree<double>& robot,
 
   set_name("QpControllerSystem");
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
+
+  abs_state_index_qp_output_ = DeclareAbstractState(
+      systems::AbstractValue::Make<QpOutput>(QpOutput(GetDofNames(robot_))));
+  abs_state_index_debug_info_ = DeclareAbstractState(
+      systems::AbstractValue::Make<lcmt_inverse_dynamics_debug_info>(
+          lcmt_inverse_dynamics_debug_info()));
 }
 
 void QpControllerSystem::DoCalcOutput(
@@ -39,14 +45,14 @@ void QpControllerSystem::DoCalcOutput(
     systems::SystemOutput<double>* output) const {
   QpOutput& qp_output = output->GetMutableData(output_port_index_qp_output_)
                             ->GetMutableValue<QpOutput>();
-  qp_output = context.get_abstract_state<QpOutput>(kAbstractStateIndexQpOutput);
+  qp_output = context.get_abstract_state<QpOutput>(abs_state_index_qp_output_);
 
   lcmt_inverse_dynamics_debug_info& debug =
       output->GetMutableData(output_port_index_debug_info_)
           ->GetMutableValue<lcmt_inverse_dynamics_debug_info>();
 
   debug = context.get_abstract_state<lcmt_inverse_dynamics_debug_info>(
-      kAbstractStateIndexDebug);
+      abs_state_index_debug_info_);
 }
 
 void QpControllerSystem::DoCalcUnrestrictedUpdate(
@@ -61,7 +67,7 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 
   // Calls the controller.
   QpOutput& qp_output =
-      get_mutable_value<QpOutput>(state, kAbstractStateIndexQpOutput);
+      get_mutable_value<QpOutput>(state, abs_state_index_qp_output_);
 
   if (qp_controller_.Control(*rs, *qp_input, &qp_output) < 0) {
     std::stringstream err;
@@ -75,7 +81,7 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
   // Generates debugging info.
   lcmt_inverse_dynamics_debug_info& debug =
       get_mutable_value<lcmt_inverse_dynamics_debug_info>(
-          state, kAbstractStateIndexDebug);
+          state, abs_state_index_debug_info_);
 
   debug.timestamp = context.get_time() * 1e6;
   debug.num_dof = robot_.get_num_velocities();
@@ -88,19 +94,6 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
     debug.solved_vd[i] = qp_output.vd()[i];
     debug.solved_torque[i] = qp_output.dof_torques()[i];
   }
-}
-
-std::unique_ptr<systems::AbstractValues>
-QpControllerSystem::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
-  abstract_vals[kAbstractStateIndexQpOutput] =
-      std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<QpOutput>(QpOutput(GetDofNames(robot_))));
-  abstract_vals[kAbstractStateIndexDebug] =
-      std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<lcmt_inverse_dynamics_debug_info>(
-              lcmt_inverse_dynamics_debug_info()));
-  return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
 std::unique_ptr<systems::AbstractValue>

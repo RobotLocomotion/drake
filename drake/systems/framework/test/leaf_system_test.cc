@@ -430,6 +430,25 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   EXPECT_EQ(2.2, param->GetAtIndex(1));
 }
 
+// Tests that DeclareAbstractState works expectedly.
+GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
+  class DeclaredModelAbstractStateSystem : public LeafSystem<double> {
+   public:
+    DeclaredModelAbstractStateSystem() {
+      DeclareAbstractState(AbstractValue::Make<int>(1));
+      DeclareAbstractState(AbstractValue::Make<std::string>("wow"));
+    }
+    void DoCalcOutput(const Context<double>& context,
+                      SystemOutput<double>* output) const override {}
+  };
+
+  DeclaredModelAbstractStateSystem dut;
+  auto context = dut.CreateDefaultContext();
+
+  EXPECT_EQ(context->get_abstract_state<int>(0), 1);
+  EXPECT_EQ(context->get_abstract_state<std::string>(1), "wow");
+}
+
 // Tests both that an unrestricted update callback is called and that
 // modifications to state dimension are caught.
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
