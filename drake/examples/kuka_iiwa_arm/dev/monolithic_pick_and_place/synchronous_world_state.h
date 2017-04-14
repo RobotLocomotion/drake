@@ -26,6 +26,11 @@ class SynchronousWorldState {
   /**
    * Constructs an SynchronousWorldState object that holds the states that
    * represent a pick and place scenario.
+   * @param iiwa_tree A constant reference to a `RigidBodyTreed` object.
+   * This reference must remain valid for the lifetime of this class's
+   * instance.
+   * @param ee_name A string containing the link name of the end-effector
+   * link
    */
   SynchronousWorldState(const RigidBodyTreed& iiwa_tree,
                         const std::string& ee_name = kIiwaEndEffectorName);
