@@ -358,9 +358,12 @@ class LeafSystem : public System<T> {
   }
 
   /// Reserves the abstract state as required by CreateDefaultContext. By
-  /// default, reserves no state. Systems with abstract state should override.
+  /// default, it clones the abstract states declared through
+  /// DeclareAbstractState() calls. Derived systems should override for
+  /// different behaviors.
   virtual std::unique_ptr<AbstractValues> AllocateAbstractState() const {
-    return std::make_unique<AbstractValues>();
+    return std::make_unique<AbstractValues>(std::move(
+        model_abstract_states_.CloneAllModels()));
   }
 
   /// Reserves the parameters as required by CreateDefaultContext.  The default
@@ -585,6 +588,15 @@ class LeafSystem : public System<T> {
         std::make_unique<BasicVector<T>>(num_state_variables);
   }
 
+  /// Declares an abstract state.
+  /// @param abstract_state The abstract state, its ownership is transfered.
+  /// @return index of the declared abstract state.
+  int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
+    int index = model_abstract_states_.size();
+    model_abstract_states_.AddModel(index, std::move(abstract_state));
+    return index;
+  }
+
   /// Declares a vector-valued input port using the given @p model_vector.
   /// This is the best way to declare LeafSystem input ports that require
   /// subclasses of BasicVector.  The port's size will be model_vector.size(),
@@ -751,6 +763,9 @@ class LeafSystem : public System<T> {
 
   // A model discrete state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
+
+  // A model abstract state to be used in AllocateAbstractState.
+  detail::ModelValues model_abstract_states_;
 
   // Model inputs to be used in AllocateOutput{Vector,Abstract}.
   detail::ModelValues model_input_values_;

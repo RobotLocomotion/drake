@@ -53,13 +53,10 @@ class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
       const systems::Context<double>& context,
       systems::SystemOutput<double>* output) const override;
 
-  std::vector<std::unique_ptr<systems::AbstractValue>>
-  ExtendedAllocateAbstractState() const override;
-
   std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
-  const int abs_state_index_plan_{};
+  int abs_state_index_plan_{};
 };
 
 }  // namespace qp_inverse_dynamics
