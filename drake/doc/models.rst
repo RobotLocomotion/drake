@@ -133,13 +133,18 @@ for example, the colors and patterns. To visualize the appearance of a Drake
 model, use the ``drake-visualizer`` program in the `Director external
 <https://github.com/RobotLocomotion/director>`_.
 
-The ``drake-visualizer`` program supports VTM/VTP texture files, which it will
-apply to an OBJ mesh.  Normally OBJ files support texture files via a MTL
-material file, but MTL files are not currently supported in ``drake-visualizer``
-(see `this issue
-<https://github.com/RobotLocomotion/drake/issues/5044>`_).  Place the VTM file
-and its associated files in the same location as the OBJ file, and rename it
-to have the same base file name as the OBJ file.
+There are three ways in which ``drake-visualizer`` applies visual surface
+properties to meshes:
+
+  1. Via VTK's native VTM/VTP texture files.
+  2. Via OBJ's native MTL material files.
+  3. Via URDF's and SDF's material specification. (Currently only color is
+     supported.)
+
+Priority will be given in the order shown above, i.e., VTM/VTP will be used
+if they exist followed by MTL and finally SDF and URDF. Note that VTM/VTP files
+will only be used if they (1) exist in the same directory as the OBJ file and
+(2) share the same base file name as the OBJ file.
 
 To create VTM/VTP texture files for your OBJ mesh, one method is to get a DAE
 file which is equivalent to your OBJ file (your 3D scanner may be able to output
@@ -147,11 +152,10 @@ both DAE and OBJ, or file converters are available).  Convert the DAE file into
 a VTM texture by running this `Python script
 <https://raw.githubusercontent.com/openhumanoids/oh-distro/master/software/models/model_transformation/convertCollada.py>`_.
 Save the script to the place where your DAE file is stored. Then run the
-following commands, and the script will create VTM and VTP files.
+following commands, and the script will create VTM and VTP files::
 
-``$ sudo apt-get install python-collada``
-
-``$ python convertCollada.py my_file.dae``
+    $ sudo apt-get install python-collada
+    $ python convertCollada.py my_file.dae
 
 .. _models_contents:
 
