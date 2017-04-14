@@ -41,12 +41,14 @@ class GenericQuadrotor: public systems::Diagram<T> {
     systems::DiagramBuilder<T> builder;
 
     plant_ = builder.template AddSystem<QuadrotorPlant<T>>();
+    plant_->set_name("plant");
 
     VectorX<T> hover_input(plant_->get_input_size());
     hover_input.setZero();
-    systems::ConstantVectorSource<T> *source =
+    systems::ConstantVectorSource<T>* source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             hover_input);
+    source->set_name("hover_input");
 
     builder.Connect(source->get_output_port(), plant_->get_input_port(0));
 
@@ -81,6 +83,7 @@ class RigidBodyQuadrotor: public systems::Diagram<T> {
 
     plant_ =
         builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
+    plant_->set_name("plant");
 
     builder.BuildInto(this);
   }
