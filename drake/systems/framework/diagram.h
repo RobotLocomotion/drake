@@ -1101,6 +1101,8 @@ class Diagram : public System<T>,
     DRAKE_ASSERT(PortsAreValid());
     // The sort order must square with the dependency_graph_.
     DRAKE_ASSERT(SortOrderIsCorrect());
+    // Every subsystem must have a unique name.
+    DRAKE_THROW_UNLESS(NamesAreUnique());
 
     // Add the inputs to the Diagram topology, and check their invariants.
     for (const PortIdentifier& id : input_port_ids_) {
@@ -1255,6 +1257,20 @@ class Diagram : public System<T>,
       }
     }
     return true;
+  }
+
+  // Returns true if every subsystem has a unique name.
+  bool NamesAreUnique() const {
+    std::set<std::string> names;
+    for (const auto& system : sorted_systems_) {
+      const std::string& name = system->get_name();
+      if (names.find(name) != names.end()) {
+        log()->error("Non-unique name \"{}\" for subsystem of type {}",
+                     name, NiceTypeName::Get(*system));
+      }
+      names.insert(name);
+    }
+    return names.size() == sorted_systems_.size();
   }
 
   /// Handles Publish callbacks that were registered in DoCalcNextUpdateTime.
