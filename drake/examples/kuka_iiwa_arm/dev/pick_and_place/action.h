@@ -11,7 +11,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace monolithic_pick_and_place {
+namespace pick_and_place {
 
 /**
  * Base class for actions used by the pick and place demo. E.g., moving the KUKA

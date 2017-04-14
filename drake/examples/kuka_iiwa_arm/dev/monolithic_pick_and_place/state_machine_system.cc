@@ -20,7 +20,7 @@ namespace {
 const int kStateIndex = 0;
 }
 
-using monolithic_pick_and_place::PickAndPlaceState;
+using pick_and_place::PickAndPlaceState;
 namespace monolithic_pick_and_place {
 
 struct PickAndPlaceStateMachineSystem::InternalState {
@@ -38,12 +38,18 @@ struct PickAndPlaceStateMachineSystem::InternalState {
   // The input to be applied to the IiwaMove ActionPrimitive.
   IiwaActionInput iiwa_current_action;
 
+  // The previous input that was applied to the IiwaMove ActionPrimitive.
+  IiwaActionInput previous_action;
+
   // A logic flag for the validity of the current IiwaActionInput stored
   // within the internal state.
   bool iiwa_action_initiated{false};
 
   // The input to be applied to the GripperAction ActionPrimitive.
   GripperActionInput wsg_current_action;
+
+  // The previous input that was applied to the GripperAction ActionPrimitive.
+  GripperActionInput wsg_previous_action;
 
   // A logic flag for the validity of the current GripperActionInput stored
   // within the internal state.
@@ -65,7 +71,8 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
     : iiwa_base_(iiwa_base),
       planner_(std::make_unique<IiwaIkPlanner>(
           drake::GetDrakePath() + kIiwaUrdf, kIiwaEndEffectorName, iiwa_base_)),
-      world_state_(std::make_unique<SynchronousWorldState>(iiwa_base)) {
+      world_state_(
+          std::make_unique<SynchronousWorldState>(planner_->get_robot())) {
   input_port_iiwa_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_box_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_wsg_status_ = this->DeclareAbstractInputPort().get_index();
@@ -100,8 +107,8 @@ PickAndPlaceStateMachineSystem::AllocateOutputAbstract(
 }
 
 void PickAndPlaceStateMachineSystem::SetDefaultState(
-    const systems::Context<double> &context,
-    systems::State<double> *state) const {
+    const systems::Context<double>& context,
+    systems::State<double>* state) const {
   InternalState& internal_state =
       state->get_mutable_abstract_state<InternalState>(kStateIndex);
 
@@ -109,10 +116,7 @@ void PickAndPlaceStateMachineSystem::SetDefaultState(
   internal_state.iiwa_current_action.is_valid = false;
   internal_state.iiwa_current_action.q.clear();
   internal_state.iiwa_current_action.time.clear();
-  internal_state.iiwa_action_initiated = false;
-
   internal_state.wsg_current_action = GripperActionInput::UNDEFINED;
-  internal_state.wsg_action_initiated = false;
 
   internal_state.X_WEndEffector0 = Isometry3<double>::Identity();
   internal_state.X_WEndEffector1 = Isometry3<double>::Identity();
@@ -136,13 +140,8 @@ void PickAndPlaceStateMachineSystem::DoCalcOutput(
   const InternalState& internal_state =
       context.get_abstract_state<InternalState>(0);
 
-  if (internal_state.iiwa_current_action.is_valid) {
-    iiwa_primitive_input = internal_state.iiwa_current_action;
-  }
-
-  if (internal_state.wsg_current_action != GripperActionInput::UNDEFINED) {
-    wsg_primitive_input = internal_state.wsg_current_action;
-  }
+  iiwa_primitive_input = internal_state.iiwa_current_action;
+  wsg_primitive_input = internal_state.wsg_current_action;
 }
 
 void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
@@ -208,8 +207,7 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
   /* state machine logic */
   switch (internal_state.pick_and_place_state) {
     case PickAndPlaceState::OPEN_GRIPPER:
-      // change output to gripper action primitive.
-
+      // changes output to gripper action primitive.
       if (!internal_state.wsg_action_initiated) {
         drake::log()->info("StateMachine : OPEN_GRIPPER at {}",
                            context.get_time());
@@ -233,12 +231,12 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
         drake::log()->info("StateMachine : APPROACH_PICK_PREGRASP at {}",
                            context.get_time());
         X_WEndEffector0 = world_state_->get_iiwa_end_effector_pose();
-        X_WEndEffector1 = monolithic_pick_and_place::ComputeGraspPose(
-            world_state_->get_object_pose());
+        X_WEndEffector1 =
+            pick_and_place::ComputeGraspPose(world_state_->get_object_pose());
         X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
 
         // 2 seconds, no via points.
-        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+        bool res = pick_and_place::PlanStraightLineMotion(
             world_state_->get_iiwa_q(), 0, 2, X_WEndEffector0, X_WEndEffector1,
             kLoosePosTol, kLooseRotTol, planner_.get(), &ik_res, &times);
         DRAKE_DEMAND(res);
@@ -262,12 +260,12 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
         drake::log()->info("StateMachine : APPROACH_PICK at {}",
                            context.get_time());
         X_WEndEffector0 = X_WEndEffector1;
-        X_WEndEffector1 = monolithic_pick_and_place::ComputeGraspPose(
-            world_state_->get_object_pose());
+        X_WEndEffector1 =
+            pick_and_place::ComputeGraspPose(world_state_->get_object_pose());
 
         // 1 second, 3 via points. More via points to ensure the end effector
         // moves in more or less a straight line.
-        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+        bool res = pick_and_place::PlanStraightLineMotion(
             world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
             kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
         DRAKE_DEMAND(res);
@@ -310,7 +308,7 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
         X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
 
         // 1 seconds, 3 via points.
-        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+        bool res = pick_and_place::PlanStraightLineMotion(
             world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
             kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
         DRAKE_DEMAND(res);
@@ -335,21 +333,19 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
       if (!internal_state.iiwa_action_initiated) {
         drake::log()->info("StateMachine : APPROACH_PLACE_PREGRASP at {}",
                            context.get_time());
-        int table = monolithic_pick_and_place::get_table(
-            world_state_->get_object_pose(), iiwa_base_);
+        int table = pick_and_place::get_table(world_state_->get_object_pose(),
+                                              iiwa_base_);
 
         // Sets desired place location based on where we picked up the object.
         // Table 0 is in front of iiwa base, and table 1 is to the left.
         if (table == 0) {
           // Table 0 -> table 1.
-          X_IiwaObj_desired.translation() =
-              monolithic_pick_and_place::kPlacePosition1;
+          X_IiwaObj_desired.translation() = pick_and_place::kPlacePosition1;
           X_IiwaObj_desired.linear() = Matrix3<double>(
               AngleAxis<double>(M_PI / 2., Vector3<double>::UnitZ()));
         } else {
           // Table 1 -> table 0.
-          X_IiwaObj_desired.translation() =
-              monolithic_pick_and_place::kPlacePosition0;
+          X_IiwaObj_desired.translation() = pick_and_place::kPlacePosition0;
           X_IiwaObj_desired.linear().setIdentity();
         }
         X_WObj_desired = iiwa_base_ * X_IiwaObj_desired;
@@ -367,7 +363,7 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
         // 2 seconds, 2 via points. This doesn't have to be a move straight
         // primitive. I did it this way because I have seen the IK gives a
         // wild motion that causes the gripper to lose the object.
-        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+        bool res = pick_and_place::PlanStraightLineMotion(
             world_state_->get_iiwa_q(), 2, 2, X_WEndEffector0, X_WEndEffector1,
             kLoosePosTol, kLooseRotTol, planner_.get(), &ik_res, &times);
 
@@ -406,7 +402,7 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
         X_WEndEffector1.translation()[2] += 0.02;
 
         // 1 seconds, 3 via points.
-        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+        bool res = pick_and_place::PlanStraightLineMotion(
             world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
             kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
         DRAKE_DEMAND(res);
@@ -449,7 +445,7 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
         X_WEndEffector1.translation()[2] += kPreGraspHeightOffset;
 
         // 1 seconds, 3 via points.
-        bool res = monolithic_pick_and_place::PlanStraightLineMotion(
+        bool res = pick_and_place::PlanStraightLineMotion(
             world_state_->get_iiwa_q(), 3, 1, X_WEndEffector0, X_WEndEffector1,
             kTightPosTol, kTightRotTol, planner_.get(), &ik_res, &times);
         DRAKE_DEMAND(res);

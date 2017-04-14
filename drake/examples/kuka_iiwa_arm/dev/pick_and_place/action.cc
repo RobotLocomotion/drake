@@ -8,7 +8,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace monolithic_pick_and_place {
+namespace pick_and_place {
 
 void IiwaMove::MoveJoints(const WorldState& est_state,
                           const std::vector<double>& time,

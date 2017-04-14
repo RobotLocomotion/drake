@@ -9,7 +9,7 @@
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry>  <box size="0.06 0.06 0.2" />
+      <geometry>
         <box size="0.06 0.12 0.2" />
       </geometry>
       <material name="green">

@@ -6,7 +6,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace monolithic_pick_and_place {
+namespace pick_and_place {
 
 WorldState::WorldState(const std::string& iiwa_model_path,
                        const std::string& end_effector_name, lcm::LCM* lcm)
@@ -114,7 +114,7 @@ void WorldState::HandleObjectStatus(const lcm::ReceiveBuffer* rbuf,
   obj_vel_ = DecodeTwist(obj_msg->twist);
 }
 
-}  // namespace monolithic_pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -19,7 +20,7 @@ class IiwaMove : public ActionPrimitive {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaMove)
 
   IiwaMove(const RigidBodyTree<double>& iiwa,
-                    const double desired_update_interval);
+           const double desired_update_interval);
 
   /// This method gets the abstract input port corresponding to the
   /// `IiwaActionInput`.
@@ -38,15 +39,15 @@ class IiwaMove : public ActionPrimitive {
   std::vector<std::unique_ptr<systems::AbstractValue>>
   AllocateExtendedAbstractState() const final;
 
-  std::unique_ptr<systems::AbstractValue>
-  ExtendedAllocateOutputAbstract(
+  std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   void SetExtendedDefaultState(const systems::Context<double>& context,
                                systems::State<double>* state) const override;
 
-  void DoExtendedCalcOutput(const systems::Context<double>& context,
-                            systems::SystemOutput<double>* output) const override;
+  void DoExtendedCalcOutput(
+      const systems::Context<double>& context,
+      systems::SystemOutput<double>* output) const override;
 
   void DoExtendedCalcUnrestrictedUpdate(
       const systems::Context<double>& context,

@@ -13,7 +13,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace monolithic_pick_and_place {
+namespace pick_and_place {
 
 /**
  * A class that represents the iiwa pick and place world, which contains a
@@ -116,7 +116,7 @@ class WorldState {
   std::list<lcm::Subscription*> lcm_subscriptions_;
 };
 
-}  // namespace monolithic_pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

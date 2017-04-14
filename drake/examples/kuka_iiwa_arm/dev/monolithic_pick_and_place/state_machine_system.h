@@ -18,10 +18,10 @@ namespace monolithic_pick_and_place {
 
 /**
  * A class that implements the Finite-State-Machine logic for the
- * Pick-And-Place demo. This system is to be used by coupling the outputs with
- * the `IiwaMove` and `GripperAction` `ActionPrimitive` systems and the inputs
- * are to be supplied from `IiwaStatusSender`, `SchunkWsgStatusSender` and
- * `OracularStateEstimator` systems.
+ * Pick-And-Place demo. This system should be used by coupling the outputs with
+ * the `IiwaMove` and `GripperAction` systems and the inputs are to be
+ * connected to the appropriate output ports of the `IiwaStatusSender`,
+ * `SchunkWsgStatusSender` and `OracularStateEstimator` systems.
  */
 class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
  public:
@@ -101,31 +101,31 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
     return this->get_input_port(input_port_iiwa_action_status_);
   }
 
- /**
-  * Getter for the input port corresponding to the abstract input with the
-  * `GripperAction`
-  * status message (`ActionPrimitiveState`).
-  * @return The corresponding `sytems::InputPortDescriptor`.
-  */
+  /**
+   * Getter for the input port corresponding to the abstract input with the
+   * `GripperAction`
+   * status message (`ActionPrimitiveState`).
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
   const systems::InputPortDescriptor<double>& get_input_port_wsg_action_status()
       const {
     return this->get_input_port(input_port_wsg_action_status_);
   }
 
- /**
-  * Getter for the output port corresponding to the `IiwaActionInput` abstract
-  * output.
-  * @return The corresponding `sytems::OutputPortDescriptor`.
-  */
+  /**
+   * Getter for the output port corresponding to the `IiwaActionInput` abstract
+   * output.
+   * @return The corresponding `sytems::OutputPortDescriptor`.
+   */
   const systems::OutputPortDescriptor<double>& get_output_port_iiwa_action()
       const {
     return this->get_output_port(output_port_iiwa_action_);
   }
- /**
-  * Getter for the output port corresponding to the `GripperActionInput`
-  * abstract output.
-  * @return The corresponding `sytems::OutputPortDescriptor`.
-  */
+  /**
+   * Getter for the output port corresponding to the `GripperActionInput`
+   * abstract output.
+   * @return The corresponding `sytems::OutputPortDescriptor`.
+   */
   const systems::OutputPortDescriptor<double>& get_output_port_wsg_action()
       const {
     return this->get_output_port(output_port_wsg_action_);

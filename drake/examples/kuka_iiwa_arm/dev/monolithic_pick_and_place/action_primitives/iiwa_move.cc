@@ -1,21 +1,16 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/iiwa_move.h"
 
 #include <vector>
-#include "robotlocomotion/robot_plan_t.hpp"
-
 #include "external/robotlocomotion_lcmtypes/lcmtypes/robotlocomotion/robot_plan_t.hpp"
+
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/framework/leaf_system.h"
 
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
-using systems::LeafSystem;
-
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {
@@ -25,9 +20,7 @@ struct IiwaMove::InternalState {
   ~InternalState() {}
 
   IiwaActionInput last_input;
-  bool is_valid{false};
-  robot_plan_t plan;
-  robot_plan_t previous_valid_plan;
+  robot_plan_t current_plan;
   double start_time{0.0};
   double plan_duration{0.0};
 };
@@ -35,7 +28,7 @@ struct IiwaMove::InternalState {
 IiwaMove::IiwaMove(const RigidBodyTree<double>& iiwa,
                    double desired_update_interval)
     : ActionPrimitive(desired_update_interval,
-                      1 /* action_primitive_state_index */ ),
+                      1 /* action_primitive_state_index */),
       internal_state_index_(0),
       input_port_primitive_input_(this->DeclareAbstractInputPort().get_index()),
       output_port_plan_(this->DeclareAbstractOutputPort().get_index()),
@@ -56,18 +49,17 @@ IiwaMove::ExtendedAllocateOutputAbstract(
   if (descriptor.get_index() == output_port_plan_) {
     return_value = systems::AbstractValue::Make<robot_plan_t>(robot_plan_t());
   }
-  return (return_value);
+  return return_value;
 }
 
-void IiwaMove::SetExtendedDefaultState(
-    const systems::Context<double> &context,
-    systems::State<double> *state) const {
+void IiwaMove::SetExtendedDefaultState(const systems::Context<double>& context,
+                                       systems::State<double>* state) const {
   InternalState& iiwa_action_state =
       state->get_mutable_abstract_state<InternalState>(
           internal_state_index_ /* index of iiwastate */);
   iiwa_action_state.last_input.is_valid = false;
-  iiwa_action_state.plan = robot_plan_t();
-  iiwa_action_state.previous_valid_plan = iiwa_action_state.plan;
+  iiwa_action_state.current_plan = robot_plan_t();
+  //  iiwa_action_state.previous_valid_plan = iiwa_action_state.current_plan;
   iiwa_action_state.last_input.time.clear();
   iiwa_action_state.last_input.q.clear();
   iiwa_action_state.start_time = 0;
@@ -87,8 +79,6 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
       state->get_mutable_abstract_state<ActionPrimitiveState>(
           action_primitive_state_index_ /* index of action primitive state */);
 
-  robot_plan_t current_plan = iiwa_action_state.plan;
-
   const IiwaActionInput& input_plan =
       this->EvalAbstractInput(context, input_port_primitive_input_)
           ->GetValue<IiwaActionInput>();
@@ -105,8 +95,6 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
       if (time_now - iiwa_action_state.start_time >=
           iiwa_action_state.plan_duration) {
         primitive_state = ActionPrimitiveState::WAITING;
-        iiwa_action_state.previous_valid_plan = iiwa_action_state.plan;
-        iiwa_action_state.is_valid = false;
       }
       break;
     case ActionPrimitiveState::WAITING:
@@ -115,22 +103,23 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
       if (input_plan.is_valid && input_plan.time.size() > 0 &&
           (input_plan.q != iiwa_action_state.last_input.q ||
            input_plan.time != iiwa_action_state.last_input.time)) {
-        const unsigned long plan_num_points = input_plan.time.size();
+        const int64_t plan_num_points = input_plan.time.size();
 
         std::vector<int> info(plan_num_points, 1);
         MatrixX<double> q_mat(input_plan.q.front().size(), plan_num_points);
         for (size_t i = 0; i < plan_num_points; ++i)
           q_mat.col(i) = input_plan.q[i];
-        iiwa_action_state.plan =
+        iiwa_action_state.current_plan =
             EncodeKeyFrames(iiwa_tree_, input_plan.time, info, q_mat);
-        // Revist next line for "long" term plans.
+        // TODO(naveenoid) : Revisit next line for "long" term plans.
         iiwa_action_state.plan_duration =
             input_plan.time.back() - input_plan.time.front();
 
         primitive_state = ActionPrimitiveState::RUNNING;
-        iiwa_action_state.is_valid = true;
         iiwa_action_state.start_time = time_now;
         iiwa_action_state.last_input = input_plan;
+      } else {
+        iiwa_action_state.current_plan = robot_plan_t();
       }
       break;
     case ActionPrimitiveState::ABORTED:
@@ -149,11 +138,7 @@ void IiwaMove::DoExtendedCalcOutput(
   const InternalState& internal_state =
       context.get_abstract_state<InternalState>(0);
 
-  if (internal_state.is_valid) {
-    robot_plan_output = internal_state.plan;
-  } else {
-    robot_plan_output = internal_state.previous_valid_plan;
-  }
+  robot_plan_output = internal_state.current_plan;
 }
 
 }  // namespace monolithic_pick_and_place

@@ -84,7 +84,7 @@ template <typename T>
 IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
     T>::IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(DrakeLcm* lcm,
                                                       const double
-                                                      update_interval) {
+                                                          update_interval) {
   this->set_name("IiwaWsgPlantGeneratorsEstimatorsAndVisualizer");
 
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;

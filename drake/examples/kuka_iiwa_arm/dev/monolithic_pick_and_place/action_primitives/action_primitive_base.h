@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -36,8 +37,11 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   /// @param action_primitive_state_index The state index for the abstract
   /// state belonging to this base class (index of the ActionPrimitiveState).
   /// The derived classes need to set this appropriately.
-  explicit ActionPrimitive(double desired_update_interval = 0.01,
-                           unsigned int action_primitive_state_index = 1);
+  ActionPrimitive(double desired_update_interval = 0.01,
+                  unsigned int action_primitive_state_index = 1);
+  // TODO(naveenoid) : Modify constructor and design of this class hierarchy
+  // using
+  // DeclareAbstractState (#5819).
 
   /// This gets the abstract output port corresponding to the
   /// `ActionPrimitive` status. Child classes may implement additional getters
@@ -77,7 +81,7 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   /// Derived class need to implement this. This method is used to set the
   /// default state unique to the class.
   virtual void SetExtendedDefaultState(const systems::Context<double>& context,
-      systems::State<double>* state) const = 0;
+                                       systems::State<double>* state) const = 0;
 
   /// Derived class need to implement this. This method is used to allocate
   /// the output unique to the derived class.
@@ -102,12 +106,15 @@ class ActionPrimitive : public systems::LeafSystem<double> {
       const systems::Context<double>& context,
       systems::State<double>* state) const = 0;
 
+  // This constant is needed by the derived classes.
+  const unsigned int action_primitive_state_index_{0};
+
+ private:
   int status_output_port_{-1};
   const double update_interval_{0.01};
-  const unsigned int action_primitive_state_index_{0};
 };
 
-}  // namespace drake
-}  // namespace examples
-}  // namespace kuka_iiwa_arm
 }  // namespace monolithic_pick_and_place
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake

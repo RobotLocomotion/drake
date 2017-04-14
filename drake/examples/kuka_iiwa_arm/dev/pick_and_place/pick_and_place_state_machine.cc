@@ -25,7 +25,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace monolithic_pick_and_place {
+namespace pick_and_place {
 namespace {
 
 // Makes a state machine that drives the iiwa to pick up a block from one table
@@ -329,12 +329,12 @@ void RunPickAndPlaceDemo() {
 }
 
 }  // namespace
-}  // namespace monolithic_pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::RunPickAndPlaceDemo();
+  drake::examples::kuka_iiwa_arm::pick_and_place::RunPickAndPlaceDemo();
   return 0;
 }

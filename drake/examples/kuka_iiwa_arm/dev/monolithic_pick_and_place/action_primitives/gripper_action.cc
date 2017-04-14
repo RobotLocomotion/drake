@@ -18,28 +18,26 @@ const double kMaxWidthInMm{110};
 
 struct GripperAction::InternalState {
   InternalState() {
-    plan = lcmt_schunk_wsg_command();
-    plan.force = 0.0;
-    plan.utime = 0.0;
-    plan.target_position_mm = kMaxWidthInMm; /* Opening */
+    current_plan = lcmt_schunk_wsg_command();
+    current_plan.force = 0.0;
+    current_plan.utime = 0;
+    current_plan.target_position_mm = kMaxWidthInMm; /* Opening */
   }
   ~InternalState() {}
 
-  bool is_valid{false};
-  lcmt_schunk_wsg_command plan;
+  lcmt_schunk_wsg_command current_plan;
   GripperActionInput previous_input{GripperActionInput::CLOSE};
-  lcmt_schunk_wsg_command previous_valid_plan;
   double start_time{0.0};
   double plan_duration{0.0};
 };
 
 GripperAction::GripperAction(double desired_update_interval)
     : ActionPrimitive(desired_update_interval,
-                      1 /* action_primitive_state_index */ ),
+                      1 /* action_primitive_state_index */),
       internal_state_index_(0),
       plan_output_port(this->DeclareAbstractOutputPort().get_index()),
-      input_port_primitive_input_(this->DeclareAbstractInputPort().get_index())
-      {}
+      input_port_primitive_input_(
+          this->DeclareAbstractInputPort().get_index()) {}
 
 std::vector<std::unique_ptr<systems::AbstractValue>>
 GripperAction::AllocateExtendedAbstractState() const {
@@ -64,15 +62,13 @@ GripperAction::ExtendedAllocateOutputAbstract(
 }
 
 void GripperAction::SetExtendedDefaultState(
-    const systems::Context<double> &context,
-    systems::State<double> *state) const {
+    const systems::Context<double>& context,
+    systems::State<double>* state) const {
   InternalState& wsg_action_state =
       state->get_mutable_abstract_state<InternalState>(
           internal_state_index_ /* index of iiwastate */);
-  wsg_action_state.is_valid = false;
-  wsg_action_state.plan = lcmt_schunk_wsg_command(); // empty plan
-  wsg_action_state.plan.target_position_mm = kMaxWidthInMm;
-  wsg_action_state.previous_valid_plan = wsg_action_state.plan;
+  wsg_action_state.current_plan = lcmt_schunk_wsg_command();  // empty plan
+  wsg_action_state.current_plan.target_position_mm = kMaxWidthInMm;
   wsg_action_state.start_time = 0;
   wsg_action_state.plan_duration = 0;
   wsg_action_state.previous_input = GripperActionInput::UNDEFINED;
@@ -82,10 +78,8 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
     systems::State<double>* state) const {
   // Gets the current input, check current state, overwrite state if state time
   // exceeded.
-
   InternalState& wsg_action_state =
-      state->get_mutable_abstract_state<InternalState>(
-          internal_state_index_);
+      state->get_mutable_abstract_state<InternalState>(internal_state_index_);
   ActionPrimitiveState& primitive_state =
       state->get_mutable_abstract_state<ActionPrimitiveState>(
           action_primitive_state_index_);
@@ -99,14 +93,13 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
   switch (primitive_state) {
     case ActionPrimitiveState::RUNNING:
       if (time - wsg_action_state.start_time > wsg_action_state.plan_duration) {
-        wsg_action_state.is_valid = false;
         primitive_state = ActionPrimitiveState::WAITING;
-        wsg_action_state.previous_valid_plan = wsg_action_state.plan;
       }
       break;
     case ActionPrimitiveState::WAITING:
 
-      if (wsg_action_state.previous_input != input_plan) {
+      if (input_plan != GripperActionInput::UNDEFINED &&
+          wsg_action_state.previous_input != input_plan) {
         // Then change state and start acting on the new input.
         primitive_state = ActionPrimitiveState::RUNNING;
         lcmt_schunk_wsg_command new_plan;
@@ -116,11 +109,10 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
         } else {
           new_plan.target_position_mm = kMaxWidthInMm;
         }
-        wsg_action_state.plan = new_plan;
+        wsg_action_state.current_plan = new_plan;
 
         wsg_action_state.start_time = time;
         wsg_action_state.plan_duration = 0.5; /* wsg action duration */
-        wsg_action_state.is_valid = true;
         wsg_action_state.previous_input = input_plan;
       }
       break;
@@ -139,13 +131,7 @@ void GripperAction::DoExtendedCalcOutput(
 
   const InternalState& internal_state =
       context.get_abstract_state<InternalState>(0);
-
-  if (internal_state.is_valid) {
-    wsg_plan_output = internal_state.plan;
-  }
-  else {
-    wsg_plan_output = internal_state.previous_valid_plan;
-  }
+  wsg_plan_output = internal_state.current_plan;
 }
 
 }  // namespace monolithic_pick_and_place

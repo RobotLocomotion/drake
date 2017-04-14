@@ -60,7 +60,8 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
     ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
     ModelInstanceInfo<T>* box_instance,
     const Eigen::Vector3d& box_position = Vector3<double>(1 + -0.43, -0.65,
-                                                   kTableTopZInWorld + 0.1),
+                                                          kTableTopZInWorld +
+                                                              0.1),
     const Eigen::Vector3d& box_orientation = Vector3<double>(0, 0, 1)) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 

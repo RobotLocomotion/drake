@@ -17,6 +17,8 @@ typedef enum ActionPrimitiveState {
   // Primitive has been aborted due to some kind of failure.
   ABORTED
 } ActionPrimitiveState;
+// TODO(naveenoid) : This needs to be expanded to become the base class for
+// all of the outputs that ActionPrimitives send.
 
 /// A struct that contains all the variables needed for the abstract input
 /// of the `ActionPrimitive` of type `IiwaMove`.
@@ -27,12 +29,9 @@ struct IiwaActionInput {
   /// valid.
   bool is_valid{false};
 
-  /// A vector of time stamps used to define the desired plan of the
-  /// `IiwaActionInput`.
+  /// `time` and `q` are used to generate the joint space spline for
+  /// interpolation.
   std::vector<double> time;
-
-  /// A vector of joint positions used to define the desired plan of the
-  /// `IiwaActionInput`.
   std::vector<VectorX<double>> q;
 };
 
