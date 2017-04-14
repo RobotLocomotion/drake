@@ -25,13 +25,13 @@ Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
   return xvec;
 }
 
-TaylorVecXd MakeInputTaylorVec(const MathematicalProgram& prog,
+AutoDiffVecXd MakeInputAutoDiffVec(const MathematicalProgram& prog,
                                const Eigen::VectorXd& xvec,
                                const VectorXDecisionVariable& vars) {
   const int num_vars = vars.rows();
 
   auto tx = math::initializeAutoDiff(xvec);
-  TaylorVecXd this_x(num_vars);
+  AutoDiffVecXd this_x(num_vars);
 
   for (int i = 0; i < num_vars; ++i) {
     this_x(i) = tx(prog.FindDecisionVariableIndex(vars(i)));
@@ -55,8 +55,8 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
   auto tx = math::initializeAutoDiff(xvec);
-  TaylorVecXd ty(1);
-  TaylorVecXd this_x;
+  AutoDiffVecXd ty(1);
+  AutoDiffVecXd this_x;
 
   if (!grad.empty()) {
     grad.assign(grad.size(), 0);
@@ -169,9 +169,9 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   DRAKE_ASSERT(num_constraints >= m);
   DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
-  TaylorVecXd ty(num_constraints);
-  TaylorVecXd this_x =
-      MakeInputTaylorVec(*(wrapped->prog), xvec, *(wrapped->vars));
+  AutoDiffVecXd ty(num_constraints);
+  AutoDiffVecXd this_x =
+      MakeInputAutoDiffVec(*(wrapped->prog), xvec, *(wrapped->vars));
   c->Eval(this_x, ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();

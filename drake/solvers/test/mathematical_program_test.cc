@@ -409,7 +409,8 @@ class GenericTrivialCost1 : public Constraint {
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
-  void DoEval(const Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+  void DoEval(const Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
     y.resize(1);
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }

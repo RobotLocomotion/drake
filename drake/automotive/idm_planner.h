@@ -27,7 +27,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
-/// - drake::TaylorVarXd
+/// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
