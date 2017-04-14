@@ -35,7 +35,7 @@ namespace multibody {
 struct BodyTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyTopology);
 
-  /// Default construction with invalid initialization.
+  /// Default construction to invalid configuration.
   BodyTopology() {}
 
   /// Constructs a body topology struct with index `body_index` and a body frame
@@ -59,7 +59,7 @@ struct BodyTopology {
 struct FrameTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameTopology);
 
-  // Default construction with invalid initialization.
+  // Default construction to invalid configuration.
   FrameTopology() {}
 
   /// Constructs a frame topology for a frame with index `frame_index`
@@ -79,7 +79,11 @@ struct FrameTopology {
 struct MultibodyTreeTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
-  /// Default constructor creates an empty, invalid, topology.
+  /// Default constructor creates an empty, invalid topology. The minimum valid
+  /// topology for a minimum valid MultibodyTree containts at least the
+  /// BodyTopology for the world. The topology for the _world_ body does not get
+  /// added but until MultibodyTree construction, which creates a _world_ body
+  /// and adds it to the tree.
   MultibodyTreeTopology() {}
 
   /// Returns the number of bodies in the multibody tree.
@@ -91,7 +95,7 @@ struct MultibodyTreeTopology {
   }
 
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
-  /// The BodyTopology will be assigned new, unique BodyIndex and FrameIndex
+  /// The BodyTopology will be assigned a new, unique BodyIndex and FrameIndex
   /// values.
   /// @returns a std::pair<BodyIndex, FrameIndex> containing the indexes
   /// assigned to the new BodyTopology.
@@ -120,8 +124,8 @@ struct MultibodyTreeTopology {
 
   bool is_valid{false};
 
-  /// Topology gets re-validated by MultibodyTree::Compile().
-  void validate() { is_valid = true; }
+  /// Topology gets validated by MultibodyTree::Compile().
+  void set_valid() { is_valid = true; }
 
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;

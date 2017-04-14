@@ -65,14 +65,13 @@ GTEST_TEST(MultibodyTree, CreateModel) {
 
   // Verify that vector "bodies" effectively holds valid references to the
   // actual body elements in the tree.
+  // In addition, since these tests compare actual memory addresses, they
+  // ensure that bodies were not copied instead.
   // Unfortunately we need the ugly get() method since operator.() is not
   // overloaded.
-  EXPECT_TRUE(bodies[world_body.get_index()].get().get_index() ==
-      world_body.get_index());
-  EXPECT_TRUE(bodies[upper_link.get_index()].get().get_index() ==
-      upper_link.get_index());
-  EXPECT_TRUE(bodies[lower_link.get_index()].get().get_index() ==
-      lower_link.get_index());
+  EXPECT_EQ(&bodies[world_body.get_index()].get(), &world_body);
+  EXPECT_EQ(&bodies[upper_link.get_index()].get(), &upper_link);
+  EXPECT_EQ(&bodies[lower_link.get_index()].get(), &lower_link);
 
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model->get_num_bodies(), 3);

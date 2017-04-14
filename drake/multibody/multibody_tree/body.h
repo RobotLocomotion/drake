@@ -21,7 +21,7 @@ template<typename T> class Body;
 /// These body frames can be thought of as a set of three orthogonal axes
 /// forming a right-handed orthogonal basis located at a point called the
 /// frame's origin. These %BodyFrame objects translate and rotate with their
-/// associated body and therefore their location and orientation are a function
+/// associated body and therefore their location and orientation are functions
 /// of time.
 /// For RigidBody objects %BodyFrame represents the frame in which their center
 /// of mass and rotational inertia are provided. The %BodyFrame associated with

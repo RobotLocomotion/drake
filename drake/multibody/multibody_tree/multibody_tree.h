@@ -64,14 +64,17 @@ class MultibodyTree {
   /// @throws std::logic_error if Compile() was already called on `this` tree.
   ///
   /// @param[in] body A unique pointer to a body to add to `this`
-  ///                 %MultibodyTree.
+  ///                 %MultibodyTree. The body class must be specialized on the
+  ///                 same scalar type T as this %MultibodyTree.
   /// @returns A constant reference to the `body` just added, which will remain
   ///          valid for the lifetime of `this` MultibodyTree.
   ///
-  /// @tparam BodyType The type of the specific sub-class of Body to add.
-  template <class BodyType>
-  const BodyType& AddBody(std::unique_ptr<BodyType> body) {
-    static_assert(std::is_convertible<BodyType*, Body<T>*>::value,
+  /// @tparam BodyType The type of the specific sub-class of Body to add. The
+  ///                  template needs to be specialized on the same scalar type
+  ///                  T of this %MultibodyTree.
+  template <template<typename Scalar> class BodyType>
+  const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body) {
+    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
     if (topology_.is_valid) {
       throw std::logic_error("This MultibodyTree is compiled already. "
@@ -95,7 +98,7 @@ class MultibodyTree {
     Frame<T>* body_frame = body->get_mutable_body_frame();
     body_frame->set_parent_tree(this, body_frame_index);
     frames_.push_back(body_frame);
-    BodyType* raw_body_ptr = body.get();
+    BodyType<T>* raw_body_ptr = body.get();
     owned_bodies_.push_back(std::move(body));
     return *raw_body_ptr;
   }
@@ -134,6 +137,8 @@ class MultibodyTree {
   ///                  %MultibodyTree.
   template<template<typename Scalar> class BodyType, typename... Args>
   const BodyType<T>& AddBody(Args&&... args) {
+    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
+                  "BodyType must be a sub-class of Body<T>.");
     return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
   }
 
@@ -153,15 +158,17 @@ class MultibodyTree {
   /// @throws std::logic_error if Compile() was already called on `this` tree.
   ///
   /// @param[in] frame A unique pointer to a frame to be added to `this`
-  ///                  %MultibodyTree.
+  ///                  %MultibodyTree. The frame class must be specialized on
+  ///                  the same scalar type T as this %MultibodyTree.
   /// @returns A constant reference to the frame just added, which will remain
   ///          valid for the lifetime of `this` MultibodyTree.
   ///
-  /// @tparam FrameType The type of the specific sub-class of Frame to
-  ///                   add.
-  template <class FrameType>
-  const FrameType& AddFrame(std::unique_ptr<FrameType> frame) {
-    static_assert(std::is_convertible<FrameType*, Frame<T>*>::value,
+  /// @tparam FrameType The type of the specific sub-class of Frame to add. The
+  ///                   template needs to be specialized on the same scalar type
+  ///                   T of this %MultibodyTree.
+  template <template<typename Scalar> class FrameType>
+  const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame) {
+    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
                   "FrameType must be a sub-class of Frame<T>.");
     if (topology_.is_valid) {
       throw std::logic_error("This MultibodyTree is compiled already. "
@@ -178,7 +185,7 @@ class MultibodyTree {
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
     frame->set_parent_tree(this, frame_index);
-    FrameType* raw_frame_ptr = frame.get();
+    FrameType<T>* raw_frame_ptr = frame.get();
     frames_.push_back(raw_frame_ptr);
     owned_frames_.push_back(std::move(frame));
     return *raw_frame_ptr;
@@ -221,6 +228,8 @@ class MultibodyTree {
   ///                   this %MultibodyTree.
   template<template<typename Scalar> class FrameType, typename... Args>
   const FrameType<T>& AddFrame(Args&&... args) {
+    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
+                  "FrameType must be a sub-class of Frame<T>.");
     return AddFrame(
         std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
   }
@@ -290,7 +299,7 @@ class MultibodyTree {
   // to RoadGeometry::CheckInvariants().
 
   // Sets a flag indicate the topology is valid.
-  void validate_topology() { topology_.validate(); }
+  void validate_topology() { topology_.set_valid(); }
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
