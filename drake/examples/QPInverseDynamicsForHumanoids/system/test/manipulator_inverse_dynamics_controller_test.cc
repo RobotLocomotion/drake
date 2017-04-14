@@ -66,6 +66,7 @@ class ManipulatorInverseDynamicsControllerTest : public ::testing::Test {
     auto qp_id_controller =
         builder.AddSystem<ManipulatorInverseDynamicsController>(
             kModelPath, kAliasGroupsPath, kControlConfigPath, 0.02);
+    qp_id_controller->set_name("qp_id_controller");
     params_ = &qp_id_controller->get_paramset();
 
     // Use the same kp kd gains from qp_id_controller.
@@ -74,16 +75,20 @@ class ManipulatorInverseDynamicsControllerTest : public ::testing::Test {
     auto vanilla_id_controller =
         builder.AddSystem<systems::InverseDynamicsController>(
             kModelPath, nullptr, kp, VectorX<double>::Zero(7), kd, true);
+    vanilla_id_controller->set_name("vanilla_id_controller");
 
     // Estimated state source.
     auto estimated_state_source =
         builder.AddSystem<systems::ConstantVectorSource<double>>(x);
+    estimated_state_source->set_name("estimated_state_source");
 
     // Desired state source.
     auto desired_state_source =
         builder.AddSystem<systems::ConstantVectorSource<double>>(x_r);
+    desired_state_source->set_name("desired_state_source");
     auto desired_acceleration_source =
         builder.AddSystem<systems::ConstantVectorSource<double>>(vd_r);
+    desired_acceleration_source->set_name("desired_acceleration_source");
 
     // Estimated state -> controllers.
     builder.Connect(estimated_state_source->get_output_port(),

@@ -23,9 +23,10 @@ namespace {
 /// it opens to its widest point.
 GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   systems::DiagramBuilder<double> builder;
-  const systems::RigidBodyPlant<double>* schunk =
+  systems::RigidBodyPlant<double>* schunk =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           CreateSimulatedSchunkWsgSystem<double>());
+  schunk->set_name("schunk");
   ASSERT_NE(schunk, nullptr);
   const RigidBodyTree<double>& tree = schunk->get_rigid_body_tree();
 
@@ -75,6 +76,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   const auto source =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
           input);
+  source->set_name("source");
   builder.Connect(source->get_output_port(), schunk->get_input_port(0));
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
@@ -83,6 +85,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   const auto viz_publisher =
       builder.template AddSystem<systems::DrakeVisualizer>(
           schunk->get_rigid_body_tree(), &lcm);
+  viz_publisher->set_name("visualization_publisher");
   builder.Connect(schunk->get_output_port(0),
                   viz_publisher->get_input_port(0));
 
