@@ -214,6 +214,41 @@ class SpringMassSystem : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
 
+  /// Returns the closed-form position and velocity solution for the unforced
+  /// spring-mass-damper from the given initial conditions.
+  /// @param x0 the position of the spring at time t = 0.
+  /// @param v0 the velocity of the spring at time t = 0.
+  /// @param tf the time at which to return the position and velocity.
+  /// @param[out] xf the position of the spring at time tf, on return.
+  /// @param[out] vf the velocity of the spring at time tf, on return.
+  /// @throws std::logic_error if xf or vf is nullptr or if the system is
+  ///         forced.
+  virtual void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
+                                        T* xf, T* vf) const {
+    using std::sqrt;
+    using std::sin;
+    using std::cos;
+
+    if (!xf || !vf)
+      throw std::logic_error("Passed final position/velocity is null.");
+    if (system_is_forced_)
+      throw std::logic_error("Can only compute closed form solution on "
+                                 "unforced system");
+
+    // d^2x/dt^2 = -kx/m
+    // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
+    // where omega = sqrt(k/m)
+    // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
+    // for t = 0, x(0) = c1, x'(0) = c2*omega
+
+    // Setup c1 and c2 for ODE constants.
+    const T omega = sqrt(get_spring_constant() / get_mass());
+    const T c1 = x0;
+    const T c2 = v0 / omega;
+    *xf = c1*cos(omega*tf) + c2*sin(omega*tf);
+    *vf = -c1*sin(omega*tf)*omega + c2*cos(omega*tf)*omega;
+  }
+
  protected:
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
     return new SpringMassSystem<AutoDiffXd>(this->get_spring_constant(),

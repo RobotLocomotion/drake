@@ -145,7 +145,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// in the documentation for IntegratorBase::StepExactlyFixed().
   /// By default, this function returns `true`; `false` allows
   /// IntegratorBase::set_fixed_step_mode() and StepOnceFixedSize() to be used
-  /// in the typical manner.
+  /// in the typical manner (though multiple sub-steps may be taken).
   /// @sa set_multistep_in_step_exactly_fixed_throws()
   bool get_multistep_in_step_exactly_fixed_throws() const {
     return multistep_in_step_exactly_fixed_throws_; }

@@ -818,15 +818,15 @@ class IntegratorBase {
     return z_weight_.head(z_weight_.rows());
   }
 
-  /// Gets whether the integrator should throw an exception when the
-  /// minimum step size is exceeded for purposes of error control. Default
-  /// is `true`.
+  /// Gets whether the integrator should throw an exception when the integrator
+  /// wishes to select a step smaller than the minimum (for, e.g., purposes of
+  /// error control). Default is `true`.
   bool get_minimum_step_size_exceeded_throws() const {
     return min_step_exceeded_throws_; }
 
-  /// Sets whether the integrator should throw an exception when the
-  /// minimum step size is exceeded for purposes of error control. Default
-  /// is `true`.
+  /// Gets whether the integrator should throw an exception when the integrator
+  /// wishes to select a step smaller than the minimum (for, e.g., purposes of
+  /// error control). Default is `true`.
   void set_minimum_step_size_exceeded_throws(bool throws) {
     min_step_exceeded_throws_ = throws; }
 

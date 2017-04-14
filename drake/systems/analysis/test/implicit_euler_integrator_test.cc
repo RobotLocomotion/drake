@@ -52,7 +52,71 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     (*derivatives)[1] = force / this->get_mass();
   }
 
+  /// Returns the closed-form position and velocity solution for the unforced
+  /// spring-mass-damper from the given initial conditions.
+  /// @param x0 the position of the spring at time t = 0.
+  /// @param v0 the velocity of the spring at time t = 0.
+  /// @param tf the time at which to return the position and velocity.
+  /// @param[out] xf the position of the spring at time tf, on return.
+  /// @param[out] vf the velocity of the spring at time tf, on return.
+  /// @throws std::logic_error if xf or vf is nullptr.
+  void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
+                                        T* xf, T* vf) const override {
+    using std::sqrt;
+    using std::sin;
+    using std::cos;
+    using std::exp;
+
+    if (!xf || !vf)
+      throw std::logic_error("Passed final position/velocity is null.");
+
+    // m⋅d²x/dt² + c⋅dx/dt + kx = 0
+    // Solution to this ODE: x(t) = c₁⋅eʳᵗ + c₂⋅eˢᵗ
+    //   where r and s are the roots to the equation mz² + cz + k = 0.
+    // Thus, dx/dt = r⋅c₁⋅eʳᵗ + s⋅c₂⋅eˢᵗ.
+
+    // Step 1: Solve the equation for z, yielding r and s.
+    T r, s;
+    std::tie(r, s) = SolveQuadratic(this->get_mass(), get_damping_constant(),
+                                    this->get_spring_constant());
+
+    // Step 2: Substituting t = 0 into the equatinons above, solve the resulting
+    // linear system:
+    // c1 + c2 = x0
+    // r⋅c1 + s⋅c2 = v0
+    // yielding:
+    // c1 = -(-v0 + s⋅x0)/(r - s) and c2 = -(v0 - r⋅x0)/(r - s)
+    const T c1 = -(v0 + s*x0)/(r - s);
+    const T c2 = -(v0 - r*x0)/(r - s);
+
+    // Step 3: Set the solutions.
+    *xf = c1*exp(r*tf) + c2*exp(s*tf);
+    *vf = r*c1*exp(r*tf) + s*c2*exp(s*tf);
+  }
+
  private:
+  // Signum function.
+  static T sgn(const T& x) {
+    if (x > 0) {
+      return 1;
+    } else {
+      if (x < 0) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+  }
+
+  // Solves the quadratic equation ax² + bx + c = 0 for x, returned as a pair
+  // of two values. Cancellation error is avoided. Aborts if b is zero.
+  static std::pair<T, T> SolveQuadratic(const T& a, const T& b, const T& c) {
+    DRAKE_DEMAND(b != 0);
+    const T x1 = (-b - sgn(b)*sqrt(b*b - 4*a*c))/(2*a);
+    const T x2 = c/(a*x1);
+    return std::make_pair(x1, x2);
+  }
+
   double damping_constant_N_per_m_;
 };
 
@@ -119,15 +183,15 @@ class ImplicitIntegratorTest : public ::testing::Test {
  public:
   ImplicitIntegratorTest() {
     // Create the spring-mass systems.
-    spring = std::make_unique<SpringMassSystem<double>>(spring_k,
-                                                        mass,
+    spring = std::make_unique<SpringMassSystem<double>>(spring_k_,
+                                                        mass_,
                                                         false /* no forcing */);
 
     spring_damper = std::make_unique<SpringMassDamperSystem<double>>(
-        stiff_spring_k, stiff_damping_b, mass);
+        stiff_spring_k_, stiff_damping_b_, mass_);
     mod_spring_damper = std::make_unique<
-        ModifiedSpringMassDamperSystem<double>>(stiff_spring_k, damping_b,
-                                                mass, constant_force_mag);
+        ModifiedSpringMassDamperSystem<double>>(stiff_spring_k_, damping_b_,
+                                                mass_, constant_force_mag_);
 
     // One context will be usable for three of the systems.
     context = spring->CreateDefaultContext();
@@ -138,37 +202,37 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<SpringMassDamperSystem<double>> spring_damper;
   std::unique_ptr<ModifiedSpringMassDamperSystem<double>> mod_spring_damper;
 
-  const double dt = 1e-3;                // Default integration step size.
-  const double large_dt = 1e-1;          // Large integration step size.
-  const double small_dt = 1e-6;          // Smallest integration step size.
-  const double mass = 2.0;               // Default particle mass.
-  const double constant_force_mag = 10;  // Magnitude of the constant force.
+  const double dt_ = 1e-3;                // Default integration step size.
+  const double large_dt_ = 1e-1;          // Large integration step size.
+  const double small_dt_ = 1e-6;          // Smallest integration step size.
+  const double mass_ = 2.0;               // Default particle mass.
+  const double constant_force_mag_ = 10;  // Magnitude of the constant force.
 
   /// Default spring constant. Corresponds to a frequency of 0.1125 cycles per
   /// second without damping, assuming that mass = 2 (using formula
   /// f = sqrt(k/mass)/(2*pi), where k is the spring constant, and f is the
   /// frequency in cycles per second).
-  const double spring_k = 1.0;
+  const double spring_k_ = 1.0;
 
   /// Default spring constant for a stiff spring. Corresponds to a frequency
   /// of 11,254 cycles per second without damping, assuming that mass = 2
   /// (using formula f = sqrt(k/mass)/(2*pi), where k is the spring constant,
   /// and f is the requency in cycles per second).
-  const double stiff_spring_k = 1e10;
+  const double stiff_spring_k_ = 1e10;
 
   /// Default semi-stiff (in the computational sense) damping coefficient.
   /// For the "modified" spring and damper, and assuming that mass = 2 and
   /// stiff_spring_k = 1e10, this will result in a damping ratio of
   /// damping_b / (2*sqrt(mass*stiff_spring_k)) = 0.035, meaning that
   /// the system is underdamped.
-  const double damping_b = 1e4;
+  const double damping_b_ = 1e4;
 
   /// Default stiff (in the computational sense) damping coefficient. For
   /// the "vanilla" spring and damper, and assuming that mass = 2 and
   /// stiff_spring_k = 1e10, this will result in a damping ratio of
   /// stiff_damping_b / (2*sqrt(mass*stiff_spring_k)) = 353, meaning
   /// that the system is overdamped.
-  const double stiff_damping_b = 1e8;
+  const double stiff_damping_b_ = 1e8;
 };
 
 // Verifies compilation and that trying to use automatic differentiated
@@ -180,14 +244,14 @@ TEST_F(ImplicitIntegratorTest, AutoDiff) {
   ImplicitEulerIntegrator<AutoDiffXd> integrator(*system, context.get());
 
   // Set reasonable integrator parameters.
-  integrator.set_maximum_step_size(large_dt);
-  integrator.request_initial_step_size_target(large_dt);
+  integrator.set_maximum_step_size(large_dt_);
+  integrator.request_initial_step_size_target(large_dt_);
   integrator.set_target_accuracy(1e-5);
-  integrator.set_minimum_step_size(small_dt);
+  integrator.set_minimum_step_size(small_dt_);
   integrator.Initialize();
 
   // Integrate for one step.
-  EXPECT_THROW(integrator.StepExactlyFixed(large_dt), std::logic_error);
+  EXPECT_THROW(integrator.StepExactlyFixed(large_dt_), std::logic_error);
 
   // TODO(edrumwri): Add test that an automatic differentiation of an implicit
   // integrator produces the expected result.
@@ -209,9 +273,9 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
 
   // Test that setting the target accuracy and initial step size target is
   // successful.
-  integrator.set_maximum_step_size(dt);
+  integrator.set_maximum_step_size(dt_);
   integrator.set_target_accuracy(1.0);
-  integrator.request_initial_step_size_target(dt);
+  integrator.request_initial_step_size_target(dt_);
   integrator.Initialize();
 
   // Verifies that setting accuracy too loose (from above) makes the working
@@ -221,7 +285,8 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
 
 TEST_F(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
   // Create a new spring-mass system.
-  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
+  SpringMassSystem<double> spring_mass(spring_k_, mass_,
+                                       false /* no forcing */);
 
   // Set the integrator to operate in fixed step mode and with very tight
   // tolerances.
@@ -255,7 +320,7 @@ TEST_F(ImplicitIntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, dt), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(dt_, dt_, dt_), std::logic_error);
 }
 
 /// Verifies error estimation is unsupported.
@@ -266,7 +331,7 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   EXPECT_EQ(integrator.get_error_estimate_order(), 2);
   EXPECT_EQ(integrator.supports_error_estimation(), true);
   EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
-  EXPECT_NO_THROW(integrator.request_initial_step_size_target(dt));
+  EXPECT_NO_THROW(integrator.request_initial_step_size_target(dt_));
 }
 
 // Checks the validity of general integrator statistics and resets statistics.
@@ -300,14 +365,13 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
 
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*spring_damper, context.get());
-  integrator.set_maximum_step_size(large_dt);
-  integrator.set_minimum_step_size(small_dt);
+  integrator.set_maximum_step_size(large_dt_);
+  integrator.set_minimum_step_size(small_dt_);
   integrator.set_minimum_step_size_exceeded_throws(false);
 
   // Set error controlled integration parameters.
-  const double xtol = 1e10 * std::numeric_limits<double>::epsilon();
+  const double xtol = 1e-6;
   integrator.set_target_accuracy(xtol);
-  integrator.set_minimum_step_size(0.0);
 
   // Set the initial position and initial velocity.
   const double initial_position = 1;
@@ -380,8 +444,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   v_final = xc_final.GetAtIndex(1);
 
   // Verify that error control was used by making sure that the minimum step
-  // size was smaller than large_dt.
-  EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_dt);
+  // size was smaller than large_dt_.
+  EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_dt_);
 
   // Verify that integrator statistics and outputs are valid.
   EXPECT_NEAR(0.0, x_final, xtol);
@@ -390,29 +454,23 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
 }
 
 // Try a purely continuous system with no sampling.
-// d^2x/dt^2 = -kx/m
-// solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
-// where omega = sqrt(k/m)
-// x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
-// for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   const double spring_k = 300.0;  // N/m
 
   // Create a new spring-mass system.
-  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
+  SpringMassSystem<double> spring_mass(spring_k, mass_, false /* no forcing */);
 
   // Set integrator parameters; we want error control to initially "fail",
   // necessitating step size adjustment.
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
-  integrator.set_maximum_step_size(large_dt);
-  integrator.request_initial_step_size_target(large_dt);
-  integrator.set_target_accuracy(1e-5);
+  integrator.set_maximum_step_size(large_dt_);
+  integrator.request_initial_step_size_target(large_dt_);
+  integrator.set_target_accuracy(5e-5);
   integrator.set_minimum_step_size(1e-6);
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
-  const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition.
   spring_mass.set_position(context.get(), initial_position);
@@ -420,10 +478,6 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 
   // Take all the defaults.
   integrator.Initialize();
-
-  // Setup c1 and c2 for ODE constants.
-  const double c1 = initial_position;
-  const double c2 = initial_velocity / omega;
 
   // Integrate for 1 second.
   const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
@@ -437,11 +491,14 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   double x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
 
+  // Compute the true solution at t_final.
+  double x_final_true, v_final_true;
+  spring_mass.get_closed_form_solution(initial_position, initial_velocity,
+                                       t_final, &x_final_true, &v_final_true);
+
   // Check the solution to the same tolerance as the explicit Euler
   // integrator.
-  EXPECT_NEAR(c1 * std::cos(omega * t_final) +
-              c2 * std::sin(omega * t_final), x_final,
-              5e-3);
+  EXPECT_NEAR(x_final_true, x_final, 5e-3);
 
   // Verify that integrator statistics are valid.
   CheckGeneralStatsValidity(&integrator);
@@ -462,9 +519,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Check results again.
   x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
-  EXPECT_NEAR(c1 * std::cos(omega * t_final) +
-              c2 * std::sin(omega * t_final), x_final,
-              5e-3);
+  EXPECT_NEAR(x_final_true, x_final, 5e-3);
   EXPECT_NEAR(context->get_time(), t_final, ttol);
 
   // Verify that integrator statistics are valid
@@ -486,9 +541,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Check results again.
   x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
-  EXPECT_NEAR(c1 * std::cos(omega * t_final) +
-              c2 * std::sin(omega * t_final), x_final,
-              5e-3);
+  EXPECT_NEAR(x_final_true, x_final, 5e-3);
   EXPECT_NEAR(context->get_time(), t_final, ttol);
 
   // Verify that integrator statistics are valid
@@ -506,12 +559,12 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   const double spring_k = 300.0;  // N/m
 
   // Create a new spring-mass system.
-  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
+  SpringMassSystem<double> spring_mass(spring_k, mass_, false /* no forcing */);
 
   // Set the integrator to operate in fixed step mode and with very tight
   // tolerances.
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
-  integrator.set_maximum_step_size(large_dt);
+  integrator.set_maximum_step_size(large_dt_);
   integrator.set_fixed_step_mode(true);
   integrator.set_multistep_in_step_exactly_fixed_throws(false);
 
@@ -524,12 +577,13 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   const int n_initial_conditions = 3;
   const double initial_position[n_initial_conditions] = { 0.1, 1.0, 0.0 };
   const double initial_velocity[n_initial_conditions] = { 0.01, 1.0, -10.0 };
-  const double omega = std::sqrt(spring_k / mass);
 
-  // Create the integration step size array. NOTE: dt values smaller than 1e-5
-  // and greater than 1e-2 (or so) result in very poor error estimates.
+  // Create the integration step size array. NOTE: dt values greater than 1e-2
+  // (or so) results in very poor error estimates. dt values smaller than 1e-8
+  // (or so) results in NaN relative errors (indicating that solution matches
+  // ideal one to very high accuracy).
   const int n_dts = 4;
-  const double dts[n_dts] = { 1e-5, 1e-4, 1e-3, 1e-2 };
+  const double dts[n_dts] = { 1e-8, 1e-4, 1e-3, 1e-2 };
 
   // Take all the defaults.
   integrator.Initialize();
@@ -552,10 +606,6 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
       spring_mass.set_position(context.get(), initial_position[i]);
       spring_mass.set_velocity(context.get(), initial_velocity[i]);
 
-      // Setup c1 and c2 for ODE constants.
-      const double c1 = initial_position[i];
-      const double c2 = initial_velocity[i] / omega;
-
       // Integrate for the desired step size.
       integrator.StepExactlyFixed(dts[j]);
 
@@ -571,8 +621,11 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
           context->get_continuous_state()->get_vector().GetAtIndex(0);
 
       // Get the true position.
-      const double x_final_true = c1 * std::cos(omega * dts[j]) +
-          c2 * std::sin(omega * dts[j]);
+      double x_final_true, v_final_true;
+      spring_mass.get_closed_form_solution(initial_position[i],
+                                           initial_velocity[i],
+                                           dts[j], &x_final_true,
+                                           &v_final_true);
 
       // Check the relative error on position.
       const double err = std::abs(x_final - x_final_true);
@@ -589,12 +642,12 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   const double spring_k = 300.0;  // N/m
 
   // Create a new spring-mass system.
-  SpringMassSystem<double> spring_mass(spring_k, mass, false /* no forcing */);
+  SpringMassSystem<double> spring_mass(spring_k, mass_, false /* no forcing */);
 
   // Spring-mass system is necessary only to setup the problem.
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
-  integrator.set_maximum_step_size(large_dt);
-  integrator.set_minimum_step_size(small_dt);
+  integrator.set_maximum_step_size(large_dt_);
+  integrator.set_minimum_step_size(small_dt_);
   integrator.set_minimum_step_size_exceeded_throws(false);
 
   // Turn fixed stepping on.
@@ -603,7 +656,6 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
-  const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition.
   spring_mass.set_position(context.get(), initial_position);
@@ -611,18 +663,19 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
 
   // Take all the defaults.
   integrator.Initialize();
+  EXPECT_NEAR(integrator.get_accuracy_in_use(), 1e-1,
+              std::numeric_limits<double>::epsilon());
 
-  // Setup c1 and c2 for ODE constants and compute the desired solution.
-  const double c1 = initial_position;
-  const double c2 = initial_velocity / omega;
-  const double x_des = c1 * std::cos(omega * large_dt) +
-      c2 * std::sin(omega * large_dt);
+  // Get the actual solution.
+  double x_final_true, v_final_true;
+  spring_mass.get_closed_form_solution(initial_position, initial_velocity,
+                                       large_dt_, &x_final_true, &v_final_true);
 
   // Integrate exactly one step.
-  integrator.StepExactlyFixed(large_dt);
+  integrator.StepExactlyFixed(large_dt_);
 
   // Get the positional error.
-  const double pos_err = std::abs(x_des -
+  const double pos_err = std::abs(x_final_true -
       context->get_continuous_state_vector().GetAtIndex(0));
 
   // Make the accuracy tolerance looser, integrate again, and verify that
@@ -630,17 +683,18 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   integrator.set_target_accuracy(100.0);
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);
-  integrator.StepExactlyFixed(large_dt);
-  EXPECT_GT(std::abs(x_des -
+  integrator.StepExactlyFixed(large_dt_);
+  EXPECT_GT(std::abs(x_final_true -
       context->get_continuous_state_vector().GetAtIndex(0)), pos_err);
 }
 
-// Integrate the mass-spring-damping system with a constant force.
+// Integrate the modified mass-spring-damping system, which exhibits a
+// discontinuity in the velocity derivative at spring position x = 0.
 TEST_F(ImplicitIntegratorTest, ModifiedSpringMassDamper) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*mod_spring_damper,
                                              context.get());
-  integrator.set_maximum_step_size(dt);
+  integrator.set_maximum_step_size(dt_);
   integrator.set_minimum_step_size_exceeded_throws(false);
   integrator.set_multistep_in_step_exactly_fixed_throws(false);
 
