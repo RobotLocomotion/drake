@@ -106,10 +106,12 @@ class ActionPrimitive : public systems::LeafSystem<double> {
       const systems::Context<double>& context,
       systems::State<double>* state) const = 0;
 
-  // This constant is needed by the derived classes.
-  const unsigned int action_primitive_state_index_{0};
+  unsigned int get_action_primitive_state_index() const {
+    return action_primitive_state_index_;
+  }
 
  private:
+  const unsigned int action_primitive_state_index_{0};
   int status_output_port_{-1};
   const double update_interval_{0.01};
 };

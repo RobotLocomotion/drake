@@ -82,7 +82,7 @@ void GripperAction::DoExtendedCalcUnrestrictedUpdate(
       state->get_mutable_abstract_state<InternalState>(internal_state_index_);
   ActionPrimitiveState& primitive_state =
       state->get_mutable_abstract_state<ActionPrimitiveState>(
-          action_primitive_state_index_);
+          get_action_primitive_state_index());
 
   double time = context.get_time();
   const GripperActionInput& input_plan =

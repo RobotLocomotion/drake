@@ -59,7 +59,6 @@ void IiwaMove::SetExtendedDefaultState(const systems::Context<double>& context,
           internal_state_index_ /* index of iiwastate */);
   iiwa_action_state.last_input.is_valid = false;
   iiwa_action_state.current_plan = robot_plan_t();
-  //  iiwa_action_state.previous_valid_plan = iiwa_action_state.current_plan;
   iiwa_action_state.last_input.time.clear();
   iiwa_action_state.last_input.q.clear();
   iiwa_action_state.start_time = 0;
@@ -74,10 +73,10 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
 
   InternalState& iiwa_action_state =
       state->get_mutable_abstract_state<InternalState>(
-          internal_state_index_ /* index of iiwastate */);
+          internal_state_index_);
   ActionPrimitiveState& primitive_state =
       state->get_mutable_abstract_state<ActionPrimitiveState>(
-          action_primitive_state_index_ /* index of action primitive state */);
+          get_action_primitive_state_index());
 
   const IiwaActionInput& input_plan =
       this->EvalAbstractInput(context, input_port_primitive_input_)
@@ -103,7 +102,7 @@ void IiwaMove::DoExtendedCalcUnrestrictedUpdate(
       if (input_plan.is_valid && input_plan.time.size() > 0 &&
           (input_plan.q != iiwa_action_state.last_input.q ||
            input_plan.time != iiwa_action_state.last_input.time)) {
-        const int64_t plan_num_points = input_plan.time.size();
+        const uint64_t plan_num_points = input_plan.time.size();
 
         std::vector<int> info(plan_num_points, 1);
         MatrixX<double> q_mat(input_plan.q.front().size(), plan_num_points);

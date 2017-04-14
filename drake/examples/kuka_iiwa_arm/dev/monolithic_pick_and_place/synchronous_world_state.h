@@ -43,7 +43,6 @@ class SynchronousWorldState {
 
   const Isometry3<double>& get_object_pose() const { return obj_pose_; }
   const Vector6<double>& get_object_velocity() const { return obj_vel_; }
-  //  const Isometry3<double>& get_iiwa_base() const { return iiwa_base_; }
   const Isometry3<double>& get_iiwa_end_effector_pose() const {
     return iiwa_ee_pose_;
   }
