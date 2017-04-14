@@ -62,8 +62,8 @@ class Context {
   bool is_stateless() const {
     const int nxc = get_continuous_state()->size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxm = get_num_abstract_state_groups();
-    return nxc == 0 && nxd == 0 && nxm == 0;
+    const int nxa = get_num_abstract_state_groups();
+    return nxc == 0 && nxd == 0 && nxa == 0;
   }
 
   /// Returns true if the Context has continuous state, but no discrete or
@@ -71,8 +71,8 @@ class Context {
   bool has_only_continuous_state() const {
     const int nxc = get_continuous_state()->size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxm = get_num_abstract_state_groups();
-    return nxc > 0 && nxd == 0 && nxm == 0;
+    const int nxa = get_num_abstract_state_groups();
+    return nxc > 0 && nxd == 0 && nxa == 0;
   }
 
   /// Returns true if the Context has discrete state, but no continuous or
@@ -80,8 +80,8 @@ class Context {
   bool has_only_discrete_state() const {
     const int nxc = get_continuous_state()->size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxm = get_num_abstract_state_groups();
-    return nxd > 0 && nxc == 0 && nxm == 0;
+    const int nxa = get_num_abstract_state_groups();
+    return nxd > 0 && nxc == 0 && nxa == 0;
   }
 
   /// Sets the continuous state to @p xc, deleting whatever was there before.
@@ -164,21 +164,21 @@ class Context {
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    AbstractValues* xm = get_mutable_abstract_state();
-    return xm->get_mutable_value(index).GetMutableValue<U>();
+    AbstractValues* xa = get_mutable_abstract_state();
+    return xa->get_mutable_value(index).GetMutableValue<U>();
   }
 
-  /// Sets the abstract state to @p xm, deleting whatever was there before.
-  void set_abstract_state(std::unique_ptr<AbstractValues> xm) {
-    get_mutable_state()->set_abstract_state(std::move(xm));
+  /// Sets the abstract state to @p xa, deleting whatever was there before.
+  void set_abstract_state(std::unique_ptr<AbstractValues> xa) {
+    get_mutable_state()->set_abstract_state(std::move(xa));
   }
 
   /// Returns a const reference to the abstract component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
   const U& get_abstract_state(int index) const {
-    const AbstractValues* xm = get_state().get_abstract_state();
-    return xm->get_value(index).GetValue<U>();
+    const AbstractValues* xa = get_state().get_abstract_state();
+    return xa->get_value(index).GetValue<U>();
   }
 
   // =========================================================================

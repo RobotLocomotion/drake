@@ -54,10 +54,10 @@ class LeafContextTest : public ::testing::Test {
 
     // Reserve an abstract state with one element, which is not owned.
     abstract_state_ = PackValue(42);
-    std::vector<AbstractValue*> xm;
-    xm.push_back(abstract_state_.get());
+    std::vector<AbstractValue*> xa;
+    xa.push_back(abstract_state_.get());
     context_.set_abstract_state(
-        std::make_unique<AbstractValues>(std::move(xm)));
+        std::make_unique<AbstractValues>(std::move(xa)));
 
     // Reserve two numeric parameters, of size 3 and size 4.
     std::vector<std::unique_ptr<BasicVector<double>>> params;
@@ -325,9 +325,9 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   target.set_discrete_state(
       std::make_unique<DiscreteValues<AutoDiffXd>>(std::move(xd)));
 
-  std::vector<std::unique_ptr<AbstractValue>> xm;
-  xm.push_back(PackValue(76));
-  target.set_abstract_state(std::make_unique<AbstractValues>(std::move(xm)));
+  std::vector<std::unique_ptr<AbstractValue>> xa;
+  xa.push_back(PackValue(76));
+  target.set_abstract_state(std::make_unique<AbstractValues>(std::move(xa)));
 
   std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> params;
   params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(3));
