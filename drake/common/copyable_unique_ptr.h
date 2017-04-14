@@ -20,21 +20,35 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
 namespace drake {
 
+/** @cond */
+
 namespace copyable_unique_ptr_detail {
 
-/** @cond */
+// This uses SFINAE to classify a particular class as "copyable". There are two
+// overloads of the `is_copyable_unique_ptr_compatible_helper` struct: one is
+// the default implementation and the other relies on the SFINAE and copyable
+// test.
+//
+// The default overload reports that a class is _not_ copyable. Only if the
+// class being queried passes the copyable test, will the second overload get
+// created. It defines value to be true. The second overload is a more specific
+// match to the helper invocation, so, if it exists, it will be instantiated by
+// preferece and report a true value.
+
 template <typename V, class>
 struct is_copyable_unique_ptr_compatible_helper : std::false_type {};
 
+// This is the specific overload. The copyable condition is that it is
+// "cloneable" or has a copy constructor.
 template <typename V>
 struct is_copyable_unique_ptr_compatible_helper<
     V, typename std::enable_if<is_cloneable<V>::value ||
         std::is_copy_constructible<V>::value>::type>
     : std::true_type {};
 
-/** @endcond */
 
 }  // namespace copyable_unique_ptr_detail
+/** @endcond */
 
 /**
  Test for determining if an arbitrary class is compatible with the
@@ -57,7 +71,7 @@ using is_copyable_unique_ptr_compatible =
     copyable_unique_ptr_detail::is_copyable_unique_ptr_compatible_helper<T,
                                                                          void>;
 
-/** Smart pointer with deep copy semantics.
+/** A smart pointer with deep copy semantics.
 
  This is _similar_ to `std::unique_ptr` in that it does not permit shared
  ownership of the contained object. However, unlike `std::unique_ptr`,
@@ -75,94 +89,57 @@ using is_copyable_unique_ptr_compatible =
    3. To allow for future copy-on-write optimizations, there is a distinction
    between writable and const access, the get() method is modified to return
    only a const pointer, with get_mutable() added to return a writable pointer.
-   There are also corresponding get_ref() and get_mutable_ref() with the
-   analogous semantics.
 
  This class is entirely inline and has no computational or
  space overhead except when copying is required; it contains just a single
  pointer and does no reference counting.
 
- __Usage without polymorphism__
+ __Usage__
 
- In many typical use cases, the pointer specialization type will match the type
- of object it references, e.g.:
+ In the simplest use case, the specialization type will match the type of object
+ it references, e.g.:
  @code
  copyable_unique_ptr<Foo> ptr = make_unique<Foo>(...);
  @endcode
  In this case, as long `Foo` is deemed compatible, the behavior will be as
- expected.
+ expected, i.e., when `ptr` copies, it will contain a reference to a new
+ instance of `Foo`.
 
- __Usage _with_ polymorphism__
+ %copyable_unique_ptr can also be used with polymorphic classes (where the
+ pointer is specialized on a base class, but it references an instance of a
+ derived class). When copying the object, we would want the copy to likewise
+ contain an instance of the derived class.  For example:
 
- There will be cases, where the pointer specialization type will be different
- from the object referenced -- the referenced object would be a concrete derived
- type, e.g.:
  @code
- copyable_unique_ptr<Base> ptr = make_unique<Derived>(...);
+ copyable_unique_ptr<Base> ptr = make_unique<Derived>();
+ copyable_unique_ptr<Base> other_ptr = ptr;                 // Triggers a copy.
+ is_dynamic_castable<Derived>(other_ptr.get());             // Should be true.
  @endcode
- The requirement that Base be copyable puts constraints on the definitions of
- `Base` and `Foo` in order for this to behave as expected.
 
-   1. If the `Base` class has a _public_ copy constructor, that copy constructor
-      will be invoked. In the best case, if `Derived` provides no additional
-      members, it will be upcast into an instance of `Base` in the copy.
-      At worst, if `Derived` _does_ add members, it will be type sliced into
-      an instance of `Base`.
-   2. As noted in @ref is_cloneable_doc "is_cloneable", both the `Base` and
-      `Derived` classes must have Clone methods of the form:
-      `unique_ptr<T> T::Clone() const`.
+ This works for well-designed polymorphic classes.
 
- We recommend the following to resolve these constraints if you need to use
- %copyable_unique_ptr in a polymorphic context:
+ @warning Ill-formed polymorphic classes can lead to fatal type slicing of the
+ referenced object, such that the new copy contains an instance of `Base`
+ instead of `Derived`. Some mistakes that would lead to this degenerate behavior:
+   - The `Base` class has a public copy constructor.
+   - The `Derived` class's clone/copy constructor is not invocable by the
+     `Base` (e.g., through virtual methods).
 
-   1. Make the `Base` such that it has no public copy constructor.
-   2. Implement the `Clone()` method using NVI (e.g., `Clone()` and a protected
-      `virtual DoClone()`).
-   3. In the `Derived` class, hide the `Base` class's declaration of `Clone()`
-      with one that returns the appropriate type.
-   4. The `Derived` class *can* have a public copy constructor.
-
-  These principles are illustrated in this code:
-
-  @code
-  struct Base {
-    virtual ~Base() {}
-    // Clone method satisifies the is_cloneable test.
-    std::unique_ptr<Base> Clone() const {
-        return std::unique_ptr<Base>(DoClone());
-    }
-   protected:
-    // Protected copy constructor will not be used by copyable_unique_ptr.
-    Base(const Base& b) = default;
-    // Virtual DoClone() provides the desired polymorphism.
-    virtual Base* DoClone() const {
-        return new Base(*this);
-    }
-  };
-
-  struct Derived {
-    // Public copy constructor acceptable -- just don't sub-class this.
-    Derived(const Derived& d) = default;
-    // This declaration hides Base::Clone() and satisfies is_cloneable.
-    std::unique_ptr<Derived> Clone() const {
-        return std::unique_ptr<Derived>(DoClone());
-    }
-   protected:
-    // Override DoClone() to create a real copy of this class.
-    Base* DoClone() const override {
-        return new Derived(*this);
-    }
-  };
-  @endcode
-
- Using this type of relationship, one can specialize %copyable_unique_ptr on
- `Base` and `Derived` classes, and reference a `Derived` instance in a
- `%copyable_unique_ptr<Base>` and still create correct copies.
+ @internal For future developers:
+   - the copyability of a base class does *not* imply anything about the
+   copyability of a derived class. In other words, `copyable_unique_ptr<Base>`
+   can be compilable while `copyable_unique_ptr<Derived>` is not.
+   - Given the pointer `copyable_unique_ptr<Base> ptr(new Derived())`, even if
+   this copies "correctly" (such that the copy contains an instance of
+   `Derived`), this does _not_ imply that `copyable_unique_ptr<Derived>` is
+   compilable.
 
  @see is_copyable_unique_ptr_compatible
- @tparam T   The type of the contained object, which *must* be "copyable". May
+ @tparam T   The type of the contained object, which *must* be
+             @ref is_copyable_unique_ptr_compatible "compatibally copyable". May
              be an abstract or concrete type.
  */
+// TODO(SeanCurtis-TRI): Consider extending this to add the Deleter as well.
 template <typename T>
 class copyable_unique_ptr : public std::unique_ptr<T> {
   static_assert(is_copyable_unique_ptr_compatible<T>::value,
@@ -177,18 +154,18 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   /** Default constructor stores a `nullptr`. No heap allocation is performed.
    The empty() method will return true when called on a default-constructed
    %copyable_unique_ptr. */
-  copyable_unique_ptr() : std::unique_ptr<T>() {}
+  copyable_unique_ptr() noexcept : std::unique_ptr<T>() {}
 
   /** Given a pointer to a writable heap-allocated object, take over
-   ownership of that object. The `Clone()` method is *not* invoked. */
-  explicit copyable_unique_ptr(T* ptr) : std::unique_ptr<T>(ptr) {}
+   ownership of that object. No copying occurs. */
+  explicit copyable_unique_ptr(T* ptr) noexcept : std::unique_ptr<T>(ptr) {}
 
   /** Copy constructor is deep; the new %copyable_unique_ptr object contains a
    new copy of the object in the source, created via the source object's
    copy constructor or `Clone()` method. If the source container is empty this
    one will be empty also. */
-  copyable_unique_ptr(const copyable_unique_ptr& src)
-      : std::unique_ptr<T>(CopyOrNull(src.get())) {}
+  copyable_unique_ptr(const copyable_unique_ptr& cu_ptr)
+      : std::unique_ptr<T>(CopyOrNull(cu_ptr.get())) {}
 
   /** Copy constructor from a standard `unique_ptr` of _compatible_ type. The
    copy is deep; the new %copyable_unique_ptr object contains a new copy of the
@@ -196,40 +173,40 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    `Clone()` method. If the source container is empty this one will be empty
    also. */
   template <typename U>
-  explicit copyable_unique_ptr(const std::unique_ptr<U>& src)
-      : std::unique_ptr<T>(CopyOrNull(src.get())) {}
+  explicit copyable_unique_ptr(const std::unique_ptr<U>& u_ptr)
+      : std::unique_ptr<T>(CopyOrNull(u_ptr.get())) {}
 
   /** Move constructor is very fast and leaves the source empty. Ownership
    is transferred from the source to the new %copyable_unique_ptr. If the source
    was empty this one will be empty also. No heap activity occurs. */
-  copyable_unique_ptr(copyable_unique_ptr&& ptr)
-      : std::unique_ptr<T>(ptr.release()) {}
+  copyable_unique_ptr(copyable_unique_ptr&& cu_ptr) noexcept
+      : std::unique_ptr<T>(cu_ptr.release()) {}
 
   /** Move constructor from a standard `unique_ptr`. The move is very fast and
    leaves the source empty. Ownership is transferred from the source to the new
    %copyable_unique_ptr. If the source was empty this one will be empty also. No
    heap activity occurs. */
-  explicit copyable_unique_ptr(std::unique_ptr<T>&& p)
-      : std::unique_ptr<T>(p.release()) {}
+  explicit copyable_unique_ptr(std::unique_ptr<T>&& u_ptr) noexcept
+      : std::unique_ptr<T>(u_ptr.release()) {}
 
   /** Move construction from a compatible standard `unique_ptr`. Type `U*` must
    be implicitly convertible to type `T*`. Ownership is transferred from the
    source to the new %copyable_unique_ptr. If the source was empty this one will
    be empty also. No heap activity occurs. */
   template <typename U>
-  explicit copyable_unique_ptr(std::unique_ptr<U>&& ptr)
-      : std::unique_ptr<T>(ptr.release()) {}
+  explicit copyable_unique_ptr(std::unique_ptr<U>&& u_ptr) noexcept
+      : std::unique_ptr<T>(u_ptr.release()) {}
 
-  /**@}**/
+  /**@}*/
 
-  /** @name                   Assignment **/
-  /**@{**/
+  /** @name                   Assignment */
+  /**@{*/
 
   /** This form of assignment replaces the currently-held object by
    the given source object and takes over ownership of the source object. The
    currently-held object (if any) is deleted. */
-  copyable_unique_ptr& operator=(T* x) noexcept {
-    std::unique_ptr<T>::reset(x);
+  copyable_unique_ptr& operator=(T* ptr) noexcept {
+    std::unique_ptr<T>::reset(ptr);
     return *this;
   }
 
@@ -237,8 +214,8 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    heap-allocated copy of the source object, created using its copy
    constructor or `Clone()` method. The currently-held object (if any) is
    deleted. */
-  copyable_unique_ptr & operator=(const T& x) {
-    std::unique_ptr<T>::reset(CopyOrNull(&x));
+  copyable_unique_ptr & operator=(const T& ref) {
+    std::unique_ptr<T>::reset(CopyOrNull(&ref));
     return *this;
   }
 
@@ -248,13 +225,8 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    object (if any) is deleted. If the source container is empty this one will be
    empty also after the assignment. Nothing happens if the source and
    destination are the same container. */
-  copyable_unique_ptr& operator=(const copyable_unique_ptr& src) {
-    if (&src != this) {
-      // can't be same ptr unless null
-      DRAKE_ASSERT((get() != src.get()) || !get());
-      std::unique_ptr<T>::reset(CopyOrNull(src.get()));
-    }
-    return *this;
+  copyable_unique_ptr& operator=(const copyable_unique_ptr& cu_ptr) {
+    return operator=(static_cast<const std::unique_ptr<T>&>(cu_ptr));
   }
 
   /** Copy assignment from a compatible %copyable_unique_ptr replaces the
@@ -264,12 +236,8 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    this one will be empty also after the assignment. Nothing happens if the
    source and destination are the same container. */
   template <typename U>
-  copyable_unique_ptr& operator=(const copyable_unique_ptr<U>& src) {
-    // can't be same ptr unless null
-    DRAKE_ASSERT((get() != src.get()) || !get());
-    std::unique_ptr<T>::reset(CopyOrNull(src.get()));
-
-    return *this;
+  copyable_unique_ptr& operator=(const copyable_unique_ptr<U>& cu_ptr) {
+    return operator=(static_cast<const std::unique_ptr<U>&>(cu_ptr));
   }
 
   /** Copy assignment from a standard `unique_ptr` replaces the
@@ -281,7 +249,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   copyable_unique_ptr& operator=(const std::unique_ptr<T>& src) {
     if (&src != this) {
       // can't be same ptr unless null
-      DRAKE_ASSERT((get() != src.get()) || !get());
+      DRAKE_DEMAND((get() != src.get()) || !get());
       std::unique_ptr<T>::reset(CopyOrNull(src.get()));
     }
     return *this;
@@ -294,10 +262,10 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    this one will be empty also after the assignment. Nothing happens if the
    source and destination are the same container. */
   template <typename U>
-  copyable_unique_ptr& operator=(const std::unique_ptr<U>& src) {
+  copyable_unique_ptr& operator=(const std::unique_ptr<U>& u_ptr) {
     // can't be same ptr unless null
-    DRAKE_ASSERT((get() != src.get()) || !get());
-    std::unique_ptr<T>::reset(CopyOrNull(src.get()));
+    DRAKE_DEMAND((get() != u_ptr.get()) || !get());
+    std::unique_ptr<T>::reset(CopyOrNull(u_ptr.get()));
     return *this;
   }
 
@@ -305,18 +273,18 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    leaving the source empty. The currently-held object (if any) is deleted.
    The instance is _not_ copied. Nothing happens if the source and destination
    are the same containers. */
-  copyable_unique_ptr& operator=(copyable_unique_ptr&& p) {
-    std::unique_ptr<T>::reset(p.release());
+  copyable_unique_ptr& operator=(copyable_unique_ptr&& cu_ptr) noexcept {
+    std::unique_ptr<T>::reset(cu_ptr.release());
     return *this;
   }
 
-  /** Move assignment replaces the compatible, currently-held object by the
+  /** Move assignment replaces the currently-held object by the compatible
    source object, leaving the source empty. The currently-held object (if any)
    is deleted. The instance is _not_ copied. Nothing happens if the source and
    destination are the same containers. */
   template <typename U>
-  copyable_unique_ptr& operator=(copyable_unique_ptr<U>&& p) {
-    std::unique_ptr<T>::reset(p.release());
+  copyable_unique_ptr& operator=(copyable_unique_ptr<U>&& cu_ptr) noexcept {
+    std::unique_ptr<T>::reset(cu_ptr.release());
     return *this;
   }
 
@@ -324,25 +292,25 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    leaving the source empty. The currently-held object (if any) is deleted.
    The instance is _not_ copied. Nothing happens if the source and destination
    are the same containers. */
-  copyable_unique_ptr& operator=(std::unique_ptr<T>&& p) {
-    std::unique_ptr<T>::reset(p.release());
+  copyable_unique_ptr& operator=(std::unique_ptr<T>&& u_ptr) noexcept {
+    std::unique_ptr<T>::reset(u_ptr.release());
     return *this;
   }
 
-  /** Move assignment of compatible type replaces the currently-held object by
-   the source object, leaving the source empty. The currently-held object (if
+  /** Move assignment replaces the currently-held object by the compatible
+   source object, leaving the source empty. The currently-held object (if
    any) is deleted. The instance is _not_ copied. Nothing happens if the source
    and destination are the same containers. */
   template <typename U>
-  copyable_unique_ptr& operator=(std::unique_ptr<U>&& p) {
-    std::unique_ptr<T>::reset(p.release());
+  copyable_unique_ptr& operator=(std::unique_ptr<U>&& u_ptr) noexcept {
+    std::unique_ptr<T>::reset(u_ptr.release());
     return *this;
   }
 
-  /**@}**/
+  /**@}*/
 
-  /** @name                   Observers                    **/
-  /**@{**/
+  /** @name                   Observers                    */
+  /**@{*/
 
   /** Return true if this container is empty, which is the state the container
    is in immediately after default construction and various other
@@ -362,27 +330,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    @see get(), get_mutable_ref() */
   T* get_mutable() noexcept { return std::unique_ptr<T>::get(); }
 
-  /** Return a const reference to the contained object. Throws an exception if
-   the container is empty.
-   @see get() **/
-  const T& get_ref() const {
-    if (empty())
-      throw std::logic_error(
-          "Trying to access a reference for a null copyable_unique_ptr.");
-    return *get();
-  }
-
-  /** Return a writable reference to the contained object. Throws an exception
-   if the container is empty.
-   @see get_mutable() */
-  T& get_mutable_ref() {
-    if (empty())
-      throw std::logic_error(
-          "Trying to access a reference for a null copyable_unique_ptr.");
-    return *get_mutable();
-  }
-
-  /**@}**/
+  /**@}*/
 
  private:
   // Selects Clone iff there is no copy constructor and the Clone method is of
@@ -390,20 +338,20 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   template <typename U>
   static typename std::enable_if<
       !std::is_copy_constructible<U>::value && is_cloneable<T>::value, U*>::type
-  CopyOrNullHelper(const U* src, int) {
-    return src->Clone().release();
+  CopyOrNullHelper(const U* ptr, int) {
+    return ptr->Clone().release();
   }
 
   // Default to copy constructor if present.
   template <typename U>
   static
-  U* CopyOrNullHelper(const U* src, ...) {
-    return new U(*src);
+  U* CopyOrNullHelper(const U* ptr, ...) {
+    return new U(*ptr);
   }
 
   // If src is non-null, clone it; otherwise return nullptr.
-  static T* CopyOrNull(const T *src) {
-    return src ? CopyOrNullHelper(src, 1) : nullptr;
+  static T* CopyOrNull(const T *ptr) {
+    return ptr ? CopyOrNullHelper(ptr, 1) : nullptr;
   }
 };
 
@@ -412,8 +360,8 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
  @relates copyable_unique_ptr */
 template <class charT, class traits, class T>
 inline std::basic_ostream<charT, traits>& operator<<(
-    std::basic_ostream<charT, traits>& os, const copyable_unique_ptr<T>& p) {
-  os << p.get();
+    std::basic_ostream<charT, traits>& os, const copyable_unique_ptr<T>& cu_ptr) {
+  os << cu_ptr.get();
   return os;
 }
 

@@ -15,13 +15,14 @@ template <typename T, class>
 struct is_cloneable_helper : std::false_type {};
 
 // Special sauce for SFINAE. Only compiles if it can finds the method
-// `unique_ptr<U> T::Clone() const`, where U* can be assigned to T* (meaning
-// T and U are the same or U is derived from T).
+// `unique_ptr<T> T::Clone() const`. If this exists, the is_cloneable implicitly
+// prefers this overload over the default overload.
 template <typename T>
 struct is_cloneable_helper<
     T,
-    typename std::enable_if<std::is_convertible<
-        decltype(std::declval<const T>().Clone().release()), T*>::value>::type>
+    typename std::enable_if<std::is_same<
+        decltype(std::declval<const T>().Clone().release()),
+        typename std::remove_const<T>::type*>::value>::type>
     : std::true_type {};
 
 }  // namespace is_cloneable_detail
