@@ -50,6 +50,9 @@ void PidControlledSystem<T>::Initialize(
   DRAKE_DEMAND(plant != nullptr);
   DiagramBuilder<T> builder;
   plant_ = builder.template AddSystem(std::move(plant));
+  if (plant_->get_name().empty()) {
+    plant_->set_name("plant");
+  }
   DRAKE_ASSERT(plant_->get_num_input_ports() >= 1);
   DRAKE_ASSERT(plant_->get_num_output_ports() >= 1);
 
@@ -74,9 +77,11 @@ PidControlledSystem<T>::ConnectController(
   auto controller = builder->template AddSystem<PidController<T>>(
       std::move(feedback_selector),
       Kp, Ki, Kd);
+  controller->set_name("pid_controller");
 
   auto plant_input_adder =
       builder->template AddSystem<Adder<T>>(2, plant_input.size());
+  plant_input_adder->set_name("input_adder");
 
   builder->Connect(plant_output, controller->get_input_port_estimated_state());
 
@@ -101,6 +106,7 @@ PidControlledSystem<T>::ConnectControllerWithInputSaturation(
     DiagramBuilder<T>* builder) {
   auto saturation = builder->template AddSystem<Saturation<T>>(
       min_plant_input, max_plant_input);
+  saturation->set_name("saturation");
 
   builder->Connect(saturation->get_output_port(), plant_input);
 

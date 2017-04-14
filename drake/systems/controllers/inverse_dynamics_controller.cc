@@ -42,16 +42,20 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
 
   // Adds a PID.
   pid_ = builder.template AddSystem<PidController<T>>(kp, ki, kd);
+  pid_->set_name("pid");
 
   // Adds inverse dynamics.
   auto inverse_dynamics =
       builder.template AddSystem<InverseDynamics<T>>(robot, false);
+  inverse_dynamics->set_name("inverse_dynamics");
 
   // Redirects estimated state input into PID and inverse dynamics.
   auto pass_through = builder.template AddSystem<PassThrough<T>>(2 * dim);
+  pass_through->set_name("passthrough");
 
   // Adds a adder to do PID's acceleration + reference acceleration.
   auto adder = builder.template AddSystem<Adder<T>>(2, dim);
+  adder->set_name("adder");
 
   // Connects estimated state to PID.
   builder.Connect(pass_through->get_output_port(),
@@ -78,10 +82,11 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
 
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
-    auto zero_feedforward_acceleartion =
+    auto zero_feedforward_acceleration =
         builder.template AddSystem<ConstantVectorSource<double>>(
             VectorX<T>::Zero(robot.get_num_velocities()));
-    builder.Connect(zero_feedforward_acceleartion->get_output_port(),
+    zero_feedforward_acceleration->set_name("zero");
+    builder.Connect(zero_feedforward_acceleration->get_output_port(),
                     adder->get_input_port(1));
   } else {
     // Exposes reference acceleration input port.
