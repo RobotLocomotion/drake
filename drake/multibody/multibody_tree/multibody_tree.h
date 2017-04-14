@@ -299,7 +299,7 @@ class MultibodyTree {
   // to RoadGeometry::CheckInvariants().
 
   // Sets a flag indicate the topology is valid.
-  void validate_topology() { topology_.set_valid(); }
+  void set_valid_topology() { topology_.set_valid(); }
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;

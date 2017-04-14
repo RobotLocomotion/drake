@@ -45,7 +45,7 @@ void MultibodyTree<T>::Compile() {
     frame->Compile(*this);
   }
 
-  validate_topology();
+  set_valid_topology();
 }
 
 // Explicitly instantiates on the most common scalar types.
