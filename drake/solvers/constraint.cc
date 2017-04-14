@@ -2,8 +2,11 @@
 
 #include "drake/math/matrix_util.h"
 
+using std::abs;
+
 namespace drake {
 namespace solvers {
+
 void QuadraticConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
                                  Eigen::VectorXd &y) const {
   y.resize(num_constraints());
@@ -107,6 +110,25 @@ void LinearComplementarityConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
   y.resize(num_constraints());
   y = (M_.cast<AutoDiffXd>() * x) + q_.cast<AutoDiffXd>();
+}
+
+bool LinearComplementarityConstraint::DoCheckSatisfied(
+    const Eigen::Ref<const Eigen::VectorXd> &x,
+    double tol) const {
+  // Check: x >= 0 && Mx + q >= 0 && x'(Mx + q) == 0
+  Eigen::VectorXd y(num_constraints());
+  DoEval(x, y);
+  return (x.array() > -tol).all() && (y.array() > -tol).all() &&
+         (abs(x.dot(y)) < tol);
+}
+
+bool LinearComplementarityConstraint::DoCheckSatisfied(
+    const Eigen::Ref<const AutoDiffVecXd> &x,
+    double tol) const {
+  AutoDiffVecXd y(num_constraints());
+  DoEval(x, y);
+  return (x.array() > -tol).all() && (y.array() > -tol).all() &&
+         (abs(x.dot(y)) < tol);
 }
 
 void PositiveSemidefiniteConstraint::DoEval(
