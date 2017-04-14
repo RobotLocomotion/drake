@@ -143,13 +143,13 @@ class LeafSystem : public System<T> {
     // not change.
     const int n_xc = context->get_continuous_state()->size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xm = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_state_groups();
 
     SetDefaultState(*context, context->get_mutable_state());
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xm == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.

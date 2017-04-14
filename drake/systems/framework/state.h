@@ -56,9 +56,9 @@ class State {
     return discrete_state_.get();
   }
 
-  void set_abstract_state(std::unique_ptr<AbstractValues> xm) {
-    DRAKE_DEMAND(xm != nullptr);
-    abstract_state_ = std::move(xm);
+  void set_abstract_state(std::unique_ptr<AbstractValues> xa) {
+    DRAKE_DEMAND(xa != nullptr);
+    abstract_state_ = std::move(xa);
   }
 
   const AbstractValues* get_abstract_state() const {
@@ -71,16 +71,16 @@ class State {
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
   const U& get_abstract_state(int index) const {
-    const AbstractValues* xm = get_abstract_state();
-    return xm->get_value(index).GetValue<U>();
+    const AbstractValues* xa = get_abstract_state();
+    return xa->get_value(index).GetValue<U>();
   }
 
   /// Returns a mutable pointer to element @p index of the abstract state.
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    AbstractValues* xm = get_mutable_abstract_state();
-    return xm->get_mutable_value(index).GetMutableValue<U>();
+    AbstractValues* xa = get_mutable_abstract_state();
+    return xa->get_mutable_value(index).GetMutableValue<U>();
   }
 
   /// Copies the values from another State of the same scalar type into this
