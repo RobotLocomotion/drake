@@ -42,7 +42,20 @@ AutomotiveSimulator<T>::AutomotiveSimulator()
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator(
     std::unique_ptr<lcm::DrakeLcmInterface> lcm)
-    : lcm_(std::move(lcm)) {}
+    : lcm_(std::move(lcm)) {
+  aggregator_ =
+      builder_->template AddSystem<systems::rendering::PoseAggregator<T>>();
+  aggregator_->set_name("pose_aggregator");
+
+  car_vis_applicator_ =
+      builder_->template AddSystem<CarVisApplicator<T>>();
+  car_vis_applicator_->set_name("car_vis_applicator");
+
+  bundle_to_draw_ =
+      builder_->template
+          AddSystem<systems::rendering::PoseBundleToDrawMessage>();
+  bundle_to_draw_->set_name("bundle_to_draw");
+}
 
 template <typename T>
 AutomotiveSimulator<T>::~AutomotiveSimulator() {
@@ -87,6 +100,7 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  coord_transform->set_name(name + "_transform");
   const auto& descriptor = aggregator_->AddSingleInput(name, id);
   builder_->Connect(simple_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
@@ -117,6 +131,7 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
   vehicles_[id] = trajectory_car;
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  coord_transform->set_name(name + "_transform");
   const auto& descriptor = aggregator_->AddSingleInput(name, id);
   builder_->Connect(trajectory_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
@@ -249,10 +264,10 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const MaliputRailcarStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
+  auto publisher =  builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system.state_output(), publisher->get_input_port(0));
 }
 
@@ -261,10 +276,10 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const SimpleCarStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
+  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system.state_output(), publisher->get_input_port(0));
 }
 
@@ -273,10 +288,10 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const SimpleCarStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
+  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
 }
 
@@ -285,18 +300,11 @@ void AutomotiveSimulator<T>::AddPublisher(
     const SimpleCarToEulerFloatingJoint<T>& system, int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const EulerFloatingJointStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE";
+  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system, *publisher);
-}
-
-template <typename T>
-void AutomotiveSimulator<T>::AddSystem(
-    std::unique_ptr<systems::System<T>> system) {
-  DRAKE_DEMAND(!has_started());
-  builder_->AddSystem(std::move(system));
 }
 
 template <typename T>
@@ -377,6 +385,7 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
       lcm_publisher_->get_input_port(0));
 
   diagram_ = builder_->Build();
+  diagram_->set_name("AutomotiveSimulator");
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
 
   InitializeSimpleCars();
