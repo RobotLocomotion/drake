@@ -1357,7 +1357,7 @@ class Diagram : public System<T>,
   /// Dispatches the Publish events to the subsystems that requested them.
   void HandlePublish(
       const Context<T>& context,
-      const std::vector<std::pair<int, std::vector<DiscreteEvent<T>>>>& sub_actions) const {
+      const SubsystemEvents<T>& sub_actions) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
@@ -1381,7 +1381,7 @@ class Diagram : public System<T>,
   /// Dispatches the Publish events to the subsystems that requested them.
   void HandleUpdate(
       const Context<T>& context, DiscreteValues<T>* update,
-      const std::vector<std::pair<int, std::vector<DiscreteEvent<T>>>>& sub_actions) const {
+      const SubsystemEvents<T>& sub_actions) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_differences =
@@ -1426,7 +1426,7 @@ class Diagram : public System<T>,
   /// them.
   void HandleUnrestrictedUpdate(
       const Context<T>& context, State<T>* state,
-      const std::vector<std::pair<int, std::vector<DiscreteEvent<T>>>>& sub_actions) const {
+      const SubsystemEvents<T>& sub_actions) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
