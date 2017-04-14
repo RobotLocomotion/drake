@@ -83,8 +83,11 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   // Makes the test system.
   auto sub = builder.AddSystem(
       LcmSubscriberSystem::Make<lcmt_drake_signal>("test", &lcm));
+  sub->set_name("subscriber");
   auto dummy = builder.AddSystem<DummySys>();
+  dummy->set_name("dummy");
   auto logger = builder.AddSystem<SignalLogger<double>>(1);
+  logger->set_name("logger");
   builder.Connect(*sub, *dummy);
   builder.Connect(*dummy, *logger);
   auto sys = builder.Build();
