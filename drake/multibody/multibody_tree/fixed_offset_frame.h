@@ -18,7 +18,8 @@ template <class T> class RigidBody;
 /// instance, we could rigidly attach a frame F to move with a rigid body B at a
 /// fixed pose `X_BF`, where B is the BodyFrame associated with body B.
 /// Thus, the World frame pose `X_WF` of a %FixedOffsetFrame F depends only on
-/// the World frame pose `X_WP` of its parent P, and the constant pose `X_PF`.
+/// the World frame pose `X_WP` of its parent P, and the constant pose `X_PF`,
+/// with `X_WF=X_WP*X_PF`.
 ///
 /// For more information about spatial transforms, see
 /// @ref multibody_spatial_pose. <!-- http://drake.mit.edu/doxygen_cxx/
