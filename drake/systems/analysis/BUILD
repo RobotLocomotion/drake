@@ -99,6 +99,22 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_library(
+    name = "spring_mass_damper_system",
+    testonly = 1,
+    hdrs = ["test/spring_mass_damper_system.h"],
+    deps = [
+        "//drake/systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_library(
+    name = "discontinuous_spring_mass_damper_system",
+    testonly = 1,
+    hdrs = ["test/discontinuous_spring_mass_damper_system.h"],
+    deps = [":spring_mass_damper_system"],
+)
+
+drake_cc_library(
     name = "my_spring_mass_system",
     testonly = 1,
     hdrs = ["test/my_spring_mass_system.h"],
@@ -128,8 +144,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
     deps = [
+        ":discontinuous_spring_mass_damper_system",
+        ":spring_mass_damper_system",
         ":implicit_euler_integrator",
-        ":my_spring_mass_system",
+        "//drake/systems/plants/spring_mass_system",
     ],
 )
 
