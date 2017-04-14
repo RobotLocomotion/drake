@@ -102,6 +102,22 @@ class Constraint {
     DoEval(x, y);
   }
 
+  bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
+                      double tol = 1E-14) const {
+    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    Eigen::VectorXd y(num_constraints());
+    EvalViolation(x, y);
+    return (y.array() < tol).all();
+  }
+
+  bool CheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
+                      double tol = 1E-14) const {
+    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    AutoDiffVecXd y(num_constraints());
+    EvalViolation(x, y);
+    return (y.array() < tol).all();
+  }
+
   Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
   size_t num_constraints() const { return lower_bound_.size(); }
@@ -150,6 +166,21 @@ class Constraint {
   virtual void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       AutoDiffVecXd &y) const = 0;
+
+  /**
+   * Return violation of the constraint at given value.
+   * @param x Decision variable value
+   * @param e A num_constraint() x 1 vector, where for each each e_i
+   * in e, e_i < 0 indicates feasible, e_i = 0 indicates feasible and active
+   * (for inequalities), and e_i > 0 indicates violation.
+   */
+  virtual void EvalViolation(const Eigen::Ref<const Eigen::VectorXd>& x,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                             Eigen::VectorXd& e) const;
+
+  virtual void EvalViolation(const Eigen::Ref<const AutoDiffVecXd>& x,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                             AutoDiffVecXd& e) const;
 
  private:
   Eigen::VectorXd lower_bound_;
@@ -531,6 +562,12 @@ class LinearComplementarityConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
               AutoDiffVecXd &y) const override;
+
+  void EvalViolation(const Eigen::Ref<const Eigen::VectorXd> &x,
+                     Eigen::VectorXd &e) const override;
+
+  void EvalViolation(const Eigen::Ref<const AutoDiffVecXd> &x,
+                     AutoDiffVecXd &e) const override;
 
  private:
   // TODO(ggould-tri) We are storing what are likely statically sized matrices

@@ -2,8 +2,28 @@
 
 #include "drake/math/matrix_util.h"
 
+using std::abs;
+
 namespace drake {
 namespace solvers {
+
+void Constraint::EvalViolation(const Eigen::Ref<const Eigen::VectorXd> &x,
+                               Eigen::VectorXd &e) const {
+  Eigen::VectorXd y(num_constraints());
+  DoEval(x, y);
+  // Return maximum element-wise inequality violations
+  // Ensure that -inf (feasible) will be returned if no bound is set
+  e = (-y + lower_bound_).array().max((y - upper_bound_).array());
+}
+
+void Constraint::EvalViolation(const Eigen::Ref<const AutoDiffVecXd> &x,
+                               AutoDiffVecXd &e) const {
+  AutoDiffVecXd y(num_constraints());
+  DoEval(x, y);
+  e = (-y + lower_bound_.cast<AutoDiffXd>()).array()
+      .max((y - upper_bound_.cast<AutoDiffXd>()).array());
+}
+
 void QuadraticConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
                                  Eigen::VectorXd &y) const {
   y.resize(num_constraints());
@@ -107,6 +127,22 @@ void LinearComplementarityConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
   y.resize(num_constraints());
   y = (M_.cast<AutoDiffXd>() * x) + q_.cast<AutoDiffXd>();
+}
+
+void LinearComplementarityConstraint::EvalViolation(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &e) const {
+  // Will return the maximum violation of any of the three conditions for LCP:
+  //  max(x >= 0, Mx + q >= 0, x'(Mx + q) == 0)
+  Eigen::VectorXd y(num_constraints());
+  DoEval(x, y);
+  e = (-x).array().max(-y.array()).max(abs(x.dot(y)));
+}
+
+void LinearComplementarityConstraint::EvalViolation(
+    const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &e) const {
+  AutoDiffVecXd y(num_constraints());
+  DoEval(x, y);
+  e = (-x).array().max(-y.array()).max(abs(x.dot(y)));
 }
 
 void PositiveSemidefiniteConstraint::DoEval(
