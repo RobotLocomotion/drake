@@ -23,7 +23,7 @@ namespace systems {
 /// of the constituent systems, and should therefore be discarded.
 ///
 /// A system must be added to the DiagramBuilder with AddSystem before it can
-/// be wired up in any way.
+/// be wired up in any way. Every system must have a unique, non-empty name.
 template <typename T>
 class DiagramBuilder {
  public:
