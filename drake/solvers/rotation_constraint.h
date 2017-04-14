@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -89,6 +90,11 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R);
 
+using AddRotationMatrixMcCormickEnvelopeReturnType =
+std::tuple<std::vector<MatrixDecisionVariable<3, 3>>,
+           std::vector<MatrixDecisionVariable<3, 3>>,
+           std::vector<MatrixDecisionVariable<3, 3>>,
+           std::vector<MatrixDecisionVariable<3, 3>>>;
 /**
  * Adds binary variables that constrain the value of the column *and* row
  * vectors of R, in order to add the following (in some cases non-convex)
@@ -120,17 +126,21 @@ void AddRotationMatrixOrthonormalSocpConstraint(
  * axis.
  * @param limits The angle joints for space fixed z-y-x representation of the
  * rotation. @default is no constraint. @see RollPitchYawLimitOptions
- * @retval p  `p.first` is the variables CRpos, `p.second` is the
- * variables CRneg. Both variables can only take values either 0 or 1.
+ * @retval NewVars  Included the newly added variables
+ * <CRpos, CRneg, BRpos, BRneg>. All new variables can only take values either
+ * 0 or 1. `CRpos` and `CRneg` are declared as continuous variables, while
+ * `BRpos` and `BRneg` are declared as binary variables.
  * The definition for these variables are
  * <pre>
  *   CRpos[k](i, j) = 1 => k / N <= R(i, j) <= (k+1) / N
  *   CRneg[k](i, j) = 1 => -(k+1) / N <= R(i, j) <= -k / N
+ *   BRpos[k](i, j) = 1 => R(i, j) >= k / N
+ *   BRneg[k](i, j) = 1 => R(i, j) <= -k / N
  * </pre>
  * where `N` is `num_binary_vars_per_half_axis`.
  */
-std::pair<std::vector<MatrixDecisionVariable<3, 3>>,
-          std::vector<MatrixDecisionVariable<3, 3>>>
+
+AddRotationMatrixMcCormickEnvelopeReturnType
 AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
