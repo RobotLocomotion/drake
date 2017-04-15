@@ -27,6 +27,10 @@ DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
 DEFINE_bool(with_speed_bump, false,
     "Whether to include a speed bump in front of the vehicle.");
 
+DEFINE_bool(with_stata_garage, false,
+    "Whether to include the Stata garage environment.");
+
+using std::make_shared;
 using std::make_unique;
 using std::move;
 
@@ -91,20 +95,44 @@ int main(int argc, char* argv[]) {
 
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   auto rigid_body_tree = make_unique<RigidBodyTreed>();
-  AddModelInstancesFromSdfFile(
+  parsers::ModelInstanceIdTable id_table = AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
       multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
+  const int vehicle_id = id_table.at("prius_1");
+
+  // TODO(liang.fok): Update SDF parser to automatically do the following.
+  auto top_lidar_frame = make_shared<RigidBodyFrame<double>>("top_lidar_frame",
+      rigid_body_tree->FindBody("top_lidar_link", "", vehicle_id));
+  rigid_body_tree->addFrame(top_lidar_frame);
+
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
+
+  AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() + "/automotive/models/stata_garage_p1.sdf",
+      multibody::joints::kFixed, nullptr /* weld to frame */,
+      rigid_body_tree.get());
+
+  int expected_num_bodies = 21;
+
   if (FLAGS_with_speed_bump) {
     AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
         multibody::joints::kFixed, nullptr /* weld to frame */,
         rigid_body_tree.get());
-    VerifyCarSimLcmTree(*rigid_body_tree, 19);
-  } else {
-    VerifyCarSimLcmTree(*rigid_body_tree, 18);
+    expected_num_bodies += 1;
   }
+
+  if (FLAGS_with_stata_garage) {
+    AddModelInstancesFromSdfFile(
+        drake::GetDrakePath() + "/automotive/models/stata_garage_p1.sdf",
+        multibody::joints::kFixed, nullptr /* weld to frame */,
+        rigid_body_tree.get());
+    expected_num_bodies += 3;
+  }
+
+  VerifyCarSimLcmTree(*rigid_body_tree, expected_num_bodies);
+
 
   lcm::DrakeLcm lcm;
   DrivingCommandTranslator driving_command_translator;

@@ -6,16 +6,22 @@
 #include "bot_core/pointcloud_t.hpp"
 
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 
 namespace drake {
 namespace systems {
+
+using rendering::PoseVector;
+
 namespace sensors {
 
 DepthSensorToLcmPointCloudMessage::DepthSensorToLcmPointCloudMessage(
       const DepthSensorSpecification& spec) : spec_(spec) {
-  input_port_index_ =
+  depth_readings_input_port_index_ =
       DeclareVectorInputPort(DepthSensorOutput<double>(spec_)).get_index();
+  pose_input_port_index_ =
+      DeclareVectorInputPort(PoseVector<double>()).get_index();
   output_port_index_ =
       DeclareAbstractOutputPort(systems::Value<bot_core::pointcloud_t>())
           .get_index();
@@ -23,7 +29,12 @@ DepthSensorToLcmPointCloudMessage::DepthSensorToLcmPointCloudMessage(
 
 const InputPortDescriptor<double>&
 DepthSensorToLcmPointCloudMessage::depth_readings_input_port() const {
-  return this->get_input_port(input_port_index_);
+  return this->get_input_port(depth_readings_input_port_index_);
+}
+
+const InputPortDescriptor<double>&
+DepthSensorToLcmPointCloudMessage::pose_input_port() const {
+  return this->get_input_port(pose_input_port_index_);
 }
 
 const OutputPortDescriptor<double>&
@@ -37,23 +48,35 @@ void DepthSensorToLcmPointCloudMessage::DoCalcOutput(
   // Obtains the input.
   const DepthSensorOutput<double>* depth_data =
       this->template EvalVectorInput<DepthSensorOutput>(context,
-          input_port_index_);
-  const Eigen::Matrix3Xd point_cloud = depth_data->GetPointCloud();
+          depth_readings_input_port_index_);
+  const PoseVector<double>* X_WS =
+      this->template EvalVectorInput<PoseVector>(context,
+          pose_input_port_index_);
+
+  // Handles the scenario where the X_WS input port is unconnected.
+  const PoseVector<double> default_X_WS;
+  if (X_WS == nullptr) {
+    X_WS = &default_X_WS;
+  }
+
+  // Obtains the point cloud in the sensor's frame (S).
+  const Eigen::Matrix3Xd point_cloud_S = depth_data->GetPointCloud();
 
   // Obtains the output.
   bot_core::pointcloud_t& message =
       output->GetMutableData(output_port_index_)->
-        GetMutableValue<bot_core::pointcloud_t>();
+          GetMutableValue<bot_core::pointcloud_t>();
 
   message.frame_id = std::string(RigidBodyTreeConstants::kWorldName);
-  message.n_points = point_cloud.cols();
+  message.n_points = point_cloud_S.cols();
   message.points.clear();
-  for (int i = 0; i < point_cloud.cols(); ++i) {
-    const auto& point = point_cloud.col(i);
+  for (int i = 0; i < point_cloud_S.cols(); ++i) {
+    const auto& point_S = point_cloud_S.col(i);
+    Eigen::Vector3d point_W = X_WS->get_isometry() * point_S;
     message.points.push_back(std::vector<float>{
-        static_cast<float>(point(0)),
-        static_cast<float>(point(1)),
-        static_cast<float>(point(2))});
+        static_cast<float>(point_W(0)),
+        static_cast<float>(point_W(1)),
+        static_cast<float>(point_W(2))});
   }
   message.n_channels = 0;
 }

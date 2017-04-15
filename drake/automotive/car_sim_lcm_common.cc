@@ -2,13 +2,20 @@
 
 #include <utility>
 
+#include "bot_core/pointcloud_t.hpp"
+
+#include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/sensors/depth_sensor.h"
+#include "drake/systems/sensors/depth_sensor_to_lcm_point_cloud_message.h"
+
 
 using std::make_unique;
 using std::move;
@@ -23,8 +30,48 @@ using systems::DrakeVisualizer;
 using systems::MatrixGain;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
+using systems::lcm::LcmPublisherSystem;
+using systems::sensors::DepthSensor;
+using systems::sensors::DepthSensorSpecification;
+using systems::sensors::DepthSensorToLcmPointCloudMessage;
 
 namespace automotive {
+
+void AddTopLidarSensor(const RigidBodyTreed& tree,
+    const systems::PidControlledSystem<double>& controller,
+    lcm::DrakeLcmInterface* lcm,
+    DiagramBuilder<double>* builder) {
+  DepthSensorSpecification spec;
+  spec.set_min_yaw(-M_PI_2);
+  spec.set_max_yaw(M_PI_2);
+  spec.set_min_pitch(0);
+  spec.set_max_pitch(0);
+  spec.set_num_yaw_values(640);
+  spec.set_num_pitch_values(1);
+  spec.set_min_range(0.08);
+  spec.set_max_range(25.0);
+
+  std::shared_ptr<RigidBodyFrame<double>> top_lidar_frame =
+      tree.findFrame("top_lidar_frame");
+  auto top_lidar =
+      builder->template AddSystem<DepthSensor>("top_lidar", tree,
+          *top_lidar_frame, spec);
+  auto top_lidar_to_point_cloud_message =
+      builder->template AddSystem<DepthSensorToLcmPointCloudMessage>(spec);
+  auto top_lidar_publisher = builder->template AddSystem(
+      LcmPublisherSystem::Make<bot_core::pointcloud_t>(
+          "DRAKE_POINTCLOUD_top_lidar", lcm));
+
+  builder->Connect(controller.get_output_port(0),
+      top_lidar->get_rigid_body_tree_state_input_port());
+  builder->Connect(top_lidar->get_sensor_state_output_port(),
+      top_lidar_to_point_cloud_message->depth_readings_input_port());
+  builder->Connect(top_lidar->get_pose_output_port(),
+      top_lidar_to_point_cloud_message->pose_input_port());
+  builder->Connect(
+      top_lidar_to_point_cloud_message->pointcloud_message_output_port(),
+      top_lidar_publisher->get_input_port(0));
+}
 
 std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
     const DrivingCommandTranslator& driving_command_translator,
@@ -257,6 +304,8 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   // Connects the LCM publisher, which is used for visualization.
   builder.Connect(controller->get_output_port(0),
                   publisher->get_input_port(0));
+
+  AddTopLidarSensor(tree_ptr, *controller, lcm, &builder);
 
   return builder.Build();
 }

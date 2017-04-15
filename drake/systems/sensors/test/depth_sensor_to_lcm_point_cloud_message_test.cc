@@ -9,11 +9,15 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
 namespace drake {
 namespace systems {
+
+using rendering::PoseVector;
+
 namespace sensors {
 namespace {
 
@@ -23,24 +27,37 @@ class TestDepthSensorToLcmPointCloudMessage : public ::testing::Test {
   // output a bot_core::pointcloud_t message.
   //
   // @pre spec_ was initialized.
-  const bot_core::pointcloud_t& InitializeAndOutputMessage() {
+  const bot_core::pointcloud_t& InitializeAndOutputMessage(
+      const PoseVector<double>& X_WS = PoseVector<double>(),
+      bool fix_pose_input_port = true) {
     // The Device Under Test (DUT).
     DepthSensorToLcmPointCloudMessage dut(spec_);
-    const InputPortDescriptor<double>& input_port =
+    EXPECT_EQ(dut.get_num_input_ports(), 2);
+    EXPECT_EQ(dut.get_num_output_ports(), 1);
+    const InputPortDescriptor<double>& sensor_data_input_port =
         dut.depth_readings_input_port();
-    EXPECT_EQ(input_port.get_system(), &dut);
-    EXPECT_EQ(input_port.size(), spec_.num_depth_readings());
+    EXPECT_EQ(sensor_data_input_port.get_system(), &dut);
+    EXPECT_EQ(sensor_data_input_port.size(), spec_.num_depth_readings());
+    const InputPortDescriptor<double>& pose_input_port =
+        dut.pose_input_port();
+    EXPECT_EQ(pose_input_port.size(), PoseVector<double>::kSize);
 
     auto depth_sensor_output =
         std::make_unique<DepthSensorOutput<double>>(spec_);
-
     const double half_range = (spec_.max_range() - spec_.min_range()) / 2;
     depth_sensor_output->SetFromVector(Eigen::VectorXd::Ones(
         spec_.num_depth_readings()) * half_range);
 
     std::unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-    context->FixInputPort(input_port.get_index(),
+    context->FixInputPort(sensor_data_input_port.get_index(),
         std::move(depth_sensor_output));
+
+    if (fix_pose_input_port) {
+      auto pose_input =  std::make_unique<PoseVector<double>>();
+      pose_input->set_translation(X_WS.get_translation());
+      pose_input->set_rotation(X_WS.get_rotation());
+      context->FixInputPort(pose_input_port.get_index(), std::move(pose_input));
+    }
 
     output_ = dut.AllocateOutput(*context);
 
@@ -66,12 +83,32 @@ const int kZ(2);
 // maximum depth sensing range.
 TEST_F(TestDepthSensorToLcmPointCloudMessage, Octant1Test) {
   DepthSensorSpecification::set_octant_1_spec(&spec_);
-  const bot_core::pointcloud_t& message = InitializeAndOutputMessage();
+  const bot_core::pointcloud_t message = InitializeAndOutputMessage();
   EXPECT_EQ(message.n_points, spec_.num_depth_readings());
   for (int i = 0; i < message.n_points; ++i) {
     EXPECT_GE(message.points.at(i).at(kX), 0);
     EXPECT_GE(message.points.at(i).at(kY), 0);
     EXPECT_GE(message.points.at(i).at(kZ), 0);
+  }
+
+  // Offsets the sensor's frame relative to the world frame. Then verifies the
+  // resulting depth measurements are offset relative to the original
+  // measurements. The tolerance value was determined empirically.
+  const double kXOffset{1};
+  const double kYOffset{2};
+  const double kZOffset{3};
+  PoseVector<double> X_WS;
+  X_WS.set_translation({kXOffset, kYOffset, kZOffset});
+  const bot_core::pointcloud_t& offset_message =
+      InitializeAndOutputMessage(X_WS);
+  EXPECT_EQ(offset_message.n_points, spec_.num_depth_readings());
+  for (int i = 0; i < message.n_points; ++i) {
+    EXPECT_NEAR(message.points.at(i).at(kX) + kXOffset,
+                offset_message.points.at(i).at(kX), 1e-6);
+    EXPECT_NEAR(message.points.at(i).at(kY) + kYOffset,
+                offset_message.points.at(i).at(kY), 1e-6);
+    EXPECT_NEAR(message.points.at(i).at(kZ) + kZOffset,
+                offset_message.points.at(i).at(kZ), 1e-6);
   }
 }
 
@@ -142,6 +179,20 @@ TEST_F(TestDepthSensorToLcmPointCloudMessage, XLinearTest) {
     EXPECT_EQ(message.points.at(i).at(kX), half_range);
     EXPECT_EQ(message.points.at(i).at(kY), 0);
     EXPECT_EQ(message.points.at(i).at(kZ), 0);
+  }
+}
+
+// Tests that the DUT will continue to work even if its pose input port is not
+// connected.
+TEST_F(TestDepthSensorToLcmPointCloudMessage, UnconnectedPoseInput) {
+  DepthSensorSpecification::set_octant_1_spec(&spec_);
+  const bot_core::pointcloud_t message = InitializeAndOutputMessage(
+      PoseVector<double>(), false /* fix_pose_input_port */);
+  EXPECT_EQ(message.n_points, spec_.num_depth_readings());
+  for (int i = 0; i < message.n_points; ++i) {
+    EXPECT_GE(message.points.at(i).at(kX), 0);
+    EXPECT_GE(message.points.at(i).at(kY), 0);
+    EXPECT_GE(message.points.at(i).at(kZ), 0);
   }
 }
 

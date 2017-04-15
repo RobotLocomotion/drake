@@ -141,8 +141,10 @@ if(lcm_FOUND)
       drakeAutomotiveLcm
       drakeLcmSystem
       drakeRigidBodyPlant
+      drakeSensors
       drakeSystemAnalysis
-      drakeSystemControllers)
+      drakeSystemControllers
+      robotlocomotion-lcmtypes-cpp)
   drake_add_test(NAME car_sim_lcm COMMAND car_sim_lcm --simulation_sec 0.01)
 
   # TODO(liang.fok) Enable the following unit test once the build system is able
