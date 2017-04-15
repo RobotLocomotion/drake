@@ -52,6 +52,7 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   const double kControlDt = 0.02;
   QpControllerSystem* controller =
       builder.AddSystem<QpControllerSystem>(*robot, kControlDt);
+  controller->set_name("controller");
 
   // Makes a source for humanoid status.
   HumanoidStatus robot_status(*robot, alias_groups);
@@ -64,6 +65,7 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   systems::ConstantValueSource<double>* state_source =
       builder.AddSystem<systems::ConstantValueSource<double>>(
           systems::AbstractValue::Make<HumanoidStatus>(robot_status));
+  state_source->set_name("state_source");
 
   // Makes a source for qp input.
   const std::vector<std::string> empty;
@@ -86,6 +88,7 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   systems::ConstantValueSource<double>* qp_input_source =
       builder.AddSystem<systems::ConstantValueSource<double>>(
           systems::AbstractValue::Make<QpInput>(input));
+  qp_input_source->set_name("qp_input_source");
 
   // Connects the diagram.
   builder.Connect(state_source->get_output_port(0),
