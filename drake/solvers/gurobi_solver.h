@@ -3,6 +3,8 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
@@ -19,14 +21,23 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   // Gurobi was available during compilation.
   bool available() const override;
 
+  struct SolveStatusInfo {
+      double reported_runtime;
+      double current_objective;
+      double best_objective;
+      double best_bound;
+      int explored_node_count;
+      int feasible_solutions_count;
+  };
+
   // This passes the model and model environment to a
   // an external 
-  typedef void (*mipNodeCallbackFunction)(const MathematicalProgram&, void *, Eigen::VectorXd&, VectorXDecisionVariable&);
+  typedef void (*mipNodeCallbackFunction)(const MathematicalProgram&, const SolveStatusInfo& callback_info, void *, Eigen::VectorXd&, VectorXDecisionVariable&);
   void addMIPNodeCallback(mipNodeCallbackFunction fnc, void * usrdata){
   	mip_node_callback_ = fnc;
   	mip_node_callback_usrdata_ = usrdata;
   }
-  typedef void (*mipSolCallbackFunction)(const MathematicalProgram&, void *);
+  typedef void (*mipSolCallbackFunction)(const MathematicalProgram&, const SolveStatusInfo& callback_info, void *);
   void addMIPSolCallback(mipSolCallbackFunction fnc, void * usrdata){
   	mip_sol_callback_ = fnc;
   	mip_sol_callback_usrdata_ = usrdata;
@@ -39,11 +50,14 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
 
+  double get_best_bound() const { return best_bound_; }
+
  private:
   mipNodeCallbackFunction mip_node_callback_ = NULL;
   mipSolCallbackFunction mip_sol_callback_ = NULL;
   void * mip_node_callback_usrdata_ = NULL;
   void * mip_sol_callback_usrdata_ = NULL;
+  double best_bound_ = -1.0;
 };
 
 }  // end namespace solvers
