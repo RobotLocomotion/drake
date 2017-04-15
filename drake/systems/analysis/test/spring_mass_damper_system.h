@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 // TODO(edrumwri): Beef this class up and move it to drake/systems/plants.
