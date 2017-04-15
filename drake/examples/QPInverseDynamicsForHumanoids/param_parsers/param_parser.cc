@@ -7,6 +7,7 @@
 #include "google/protobuf/text_format.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/id_controller_config.pb.h"
 #include "drake/util/drakeUtil.h"
 
 namespace drake {
