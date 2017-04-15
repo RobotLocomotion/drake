@@ -95,14 +95,17 @@ class TestRbtCloneDiagram : public Diagram<double> {
 
     plant_ =
         builder.template AddSystem<RigidBodyPlant<double>>(move(tree));
+    plant_->set_name("plant");
 
     const int num_actuators = plant_->actuator_command_input_port().size();
     auto constant_zero_source =
         builder.template AddSystem<ConstantVectorSource<double>>(
             VectorX<double>::Zero(num_actuators));
+    constant_zero_source->set_name("zero");
 
     logger_ = builder.template AddSystem<SignalLogger<double>>(
         plant_->get_num_states());
+    logger_->set_name("logger");
 
     builder.Connect(constant_zero_source->get_output_port(),
         plant_->actuator_command_input_port());
