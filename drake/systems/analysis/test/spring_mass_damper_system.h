@@ -118,7 +118,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   double damping_constant_N_per_m_;
 };
 
-}  // implicit_integrator_test
-}  // systems
-}  // drake
+}  // namespace implicit_integrator_test
+}  // namespace systems
+}  // namespace drake
 

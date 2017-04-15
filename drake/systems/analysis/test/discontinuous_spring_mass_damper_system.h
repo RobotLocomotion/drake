@@ -66,6 +66,6 @@ class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
   double constant_force_;
 };
 
-}  // implicit_integrator_test
-}  // systems
-}  // drake
+}  // namespace implicit_integrator_test
+}  // namespace systems
+}  // namespace drake
