@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/id_controller_config.pb.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 
