@@ -8,6 +8,8 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/alias_groups.pb.h"
+
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
