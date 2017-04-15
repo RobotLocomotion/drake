@@ -65,7 +65,7 @@ bool WsgAction::ActionFinished(const WorldState& est_state) const {
   return false;
 }
 
-}  // namespace monolithic_pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

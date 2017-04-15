@@ -168,7 +168,7 @@ class WsgAction : public Action {
   const std::string pub_channel_;
 };
 
-}  // namespace monolithic_pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
