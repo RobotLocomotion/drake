@@ -24,10 +24,13 @@ template<typename T> class MultibodyTree;
 /// It can be demonstrated that the unconstrained three-dimensional motions of a
 /// rigid body can be described by six coordinates and thus it is often said
 /// that a free body in space has six **degrees of freedom**. These degrees of
-/// freedom obey the Newton-Euler equations of motion. Within a MultibodyTree,
-/// a RigidBody is assigned a given number of degrees of freedom by a Mobilizer
-/// while, at the same time, its motions can be constrained by a given set of
-/// Constraint objects.
+/// freedom obey the Newton-Euler equations of motion. However, within a
+/// MultibodyTree, a %RigidBody is *not* free in space; instead, it is assigned
+/// a limited number of degrees of freedom (0-6) with respect to its parent
+/// body in the multibody tree by its Mobilizer (also called a
+/// "tree joint" or "inboard joint"). Additional constraints on permissible
+/// motion can be added using Constraint objects to remove more degrees of
+/// freedom.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.

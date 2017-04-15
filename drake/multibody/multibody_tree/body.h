@@ -93,11 +93,11 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// deformations for this body. A rigid body will therefore return zero.
   virtual int get_num_flexible_positions() const = 0;
 
-  /// Returns the number of generalized velocities describing flexible
+  /// Returns the number of generalized velocities v describing flexible
   /// deformations for this body. A rigid body will therefore return zero.
   virtual int get_num_flexible_velocities() const = 0;
 
-  /// Returns a constant reference to the associated BodyFrame.
+  /// Returns a const reference to the associated BodyFrame.
   const BodyFrame<T>& get_body_frame() const {
     return body_frame_;
   }

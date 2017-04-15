@@ -46,7 +46,8 @@ class MultibodyTree {
   /// @{
   // TODO(amcastro-tri): add at least one example of a method that requires a
   // valid topology in this documentation.
-  // See this Reviewable comment: https://reviewable.io/reviews/robotlocomotion/drake/5583#-KgGqGisnX9uMuYDkHpx
+  // See this Reviewable comment:
+  // https://reviewable.io/reviews/robotlocomotion/drake/5583#-KgGqGisnX9uMuYDkHpx
 
   /// Takes ownership of `body` and adds it to `this` %MultibodyTree. Returns a
   /// constant reference to the body just added, which will remain valid for the
