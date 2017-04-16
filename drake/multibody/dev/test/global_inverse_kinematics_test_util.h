@@ -1,3 +1,4 @@
+#pragma once
 #include "drake/multibody/global_inverse_kinematics.h"
 
 #include <memory>
