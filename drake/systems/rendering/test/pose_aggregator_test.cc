@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/autodiff.h"
 #include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_vector.h"
 
@@ -76,16 +77,26 @@ TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
   // Set an arbitrary translation in the first PoseVector input.
   auto pose_vec1 = std::make_unique<PoseVector<double>>();
   pose_vec1->set_translation(Eigen::Translation<double, 3>(0.5, 1.5, 2.5));
+  // TODO(russt): Consider implementing ToAutoDiffXd for BasicVector<double>?
+  auto autodiff_pose_vec1 = std::make_unique<PoseVector<AutoDiffXd>>();
+  autodiff_pose_vec1->set_value(
+      pose_vec1->get_value().template cast<AutoDiffXd>());
   context_->FixInputPort(1, std::move(pose_vec1));
 
   // Set some numbers in the corresponding FrameVelocity input.
   auto frame_vel1 = std::make_unique<FrameVelocity<double>>();
   frame_vel1->get_mutable_value() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+  auto autodiff_frame_vel1 = std::make_unique<FrameVelocity<AutoDiffXd>>();
+  autodiff_frame_vel1->set_value(
+      frame_vel1->get_value().template cast<AutoDiffXd>());
   context_->FixInputPort(2, std::move(frame_vel1));
 
   // Set an arbitrary rotation in the second PoseVector input.
   auto pose_vec2 = std::make_unique<PoseVector<double>>();
   pose_vec2->set_rotation(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5));
+  auto autodiff_pose_vec2 = std::make_unique<PoseVector<AutoDiffXd>>();
+  autodiff_pose_vec2->set_value(
+      pose_vec2->get_value().template cast<AutoDiffXd>());
   context_->FixInputPort(3, std::move(pose_vec2));
 
   aggregator_.CalcOutput(*context_, output_.get());
@@ -131,12 +142,38 @@ TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
   EXPECT_TRUE(CompareMatrices(
       Isometry3d(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5)).matrix(),
       x_pose.matrix()));
+
+  // The sequel checks the AutoDiffXd conversion.
+  auto autodiff_aggregator = aggregator_.ToAutoDiffXd();
+  auto autodiff_context = autodiff_aggregator->CreateDefaultContext();
+  autodiff_context->SetTimeStateAndParametersFrom(*context_);
+
+  autodiff_context->FixInputPort(
+      0, AbstractValue::Make(*generic_input.ToAutoDiffXd()));
+  autodiff_context->FixInputPort(1, std::move(autodiff_pose_vec1));
+  autodiff_context->FixInputPort(2, std::move(autodiff_frame_vel1));
+  autodiff_context->FixInputPort(3, std::move(autodiff_pose_vec2));
+
+  auto autodiff_output = autodiff_aggregator->AllocateOutput(*autodiff_context);
+  autodiff_aggregator->CalcOutput(*autodiff_context, autodiff_output.get());
+  const PoseBundle<AutoDiffXd>& autodiff_bundle =
+      autodiff_output->get_data(0)->GetValueOrThrow<PoseBundle<AutoDiffXd>>();
+  ASSERT_EQ(bundle.get_num_poses(), autodiff_bundle.get_num_poses());
+  for (int i = 0; i < bundle.get_num_poses(); i++) {
+    CompareMatrices(
+        bundle.get_pose(i).matrix(),
+        math::autoDiffToValueMatrix(autodiff_bundle.get_pose(i).matrix()));
+    CompareMatrices(bundle.get_velocity(i).get_value(),
+                    math::autoDiffToValueMatrix(
+                        autodiff_bundle.get_velocity(i).get_value()));
+    EXPECT_EQ(bundle.get_name(i), autodiff_bundle.get_name(i));
+    EXPECT_EQ(bundle.get_model_instance_id(i),
+              autodiff_bundle.get_model_instance_id(i));
+  }
 }
 
 // Tests that PoseAggregator allocates no state variables in the context_.
-TEST_F(PoseAggregatorTest, Stateless) {
-  EXPECT_TRUE(context_->is_stateless());
-}
+TEST_F(PoseAggregatorTest, Stateless) { EXPECT_TRUE(context_->is_stateless()); }
 
 // Tests that AddSinglePoseAndVelocityInput returns descriptors for both
 // the new ports.

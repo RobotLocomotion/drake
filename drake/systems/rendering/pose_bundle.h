@@ -1,11 +1,13 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/rendering/frame_velocity.h"
 
@@ -32,7 +34,7 @@ namespace rendering {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///           Only double and AutoDiffXd are supported.
-template<typename T>
+template <typename T>
 class PoseBundle {
  public:
   explicit PoseBundle(int num_poses);
@@ -52,6 +54,8 @@ class PoseBundle {
   void set_model_instance_id(int index, int id);
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
+
+  std::unique_ptr<PoseBundle<AutoDiffXd>> ToAutoDiffXd() const;
 
  private:
   std::vector<Isometry3<T>> poses_;

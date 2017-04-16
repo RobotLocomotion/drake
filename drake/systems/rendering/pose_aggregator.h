@@ -136,6 +136,9 @@ class PoseAggregator : public LeafSystem<T> {
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;
 
+  // System<T> override.
+  PoseAggregator<AutoDiffXd>* DoToAutoDiffXd() const override;
+
   // The type, size, and source of each input port.
   std::vector<InputRecord> input_records_;
 };
