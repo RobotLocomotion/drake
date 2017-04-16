@@ -480,6 +480,36 @@ GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
       MaliputRailcarState<double>() /* initial state */), std::runtime_error);
 }
 
+// Tests Build/Start logic
+GTEST_TEST(AutomotiveSimulatorTest, TestBuild) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+
+  simulator->AddPriusSimpleCar("Model1", "Channel1");
+  simulator->AddPriusSimpleCar("Model2", "Channel2");
+
+  simulator->Build();
+  EXPECT_FALSE(simulator->has_started());
+  EXPECT_NO_THROW(simulator->GetDiagram());
+
+  simulator->Start(0.0);
+  EXPECT_TRUE(simulator->has_started());
+  EXPECT_NO_THROW(simulator->GetDiagram());
+}
+
+// Tests Build/Start logic (calling Start only)
+GTEST_TEST(AutomotiveSimulatorTest, TestBuild2) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+
+  simulator->AddPriusSimpleCar("Model1", "Channel1");
+  simulator->AddPriusSimpleCar("Model2", "Channel2");
+
+  simulator->Start(0.0);
+  EXPECT_NO_THROW(simulator->GetDiagram());
+}
+
 }  // namespace
+
+
+
 }  // namespace automotive
 }  // namespace drake
