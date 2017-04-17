@@ -412,10 +412,8 @@ void Simulator<T>::HandleUnrestrictedUpdate(
       // Now write the update back into the context.
       x->CopyFrom(*unrestricted_updates_);
       ++num_unrestricted_updates_;
-    } else {
-      if (event.action == DiscreteEvent<T>::kUnknownAction) {
-        throw std::logic_error("kUnknownAction encountered.");
-      }
+    } else if (event.action == DiscreteEvent<T>::kUnknownAction) {
+      throw std::logic_error("kUnknownAction encountered.");
     }
   }
 }
@@ -434,10 +432,8 @@ void Simulator<T>::HandleDiscreteUpdate(
       // Then, write them back into the context.
       xd->CopyFrom(*discrete_updates_);
       ++num_discrete_updates_;
-    } else {
-      if (event.action == DiscreteEvent<T>::kUnknownAction) {
-        throw std::logic_error("kUnknownAction encountered.");
-      }
+    } else if (event.action == DiscreteEvent<T>::kUnknownAction) {
+      throw std::logic_error("kUnknownAction encountered.");
     }
   }
 }
@@ -449,10 +445,8 @@ void Simulator<T>::HandlePublish(
     if (event.action == DiscreteEvent<T>::kPublishAction) {
       system_.Publish(*context_, event);
       ++num_publishes_;
-    } else {
-      if (event.action == DiscreteEvent<T>::kUnknownAction) {
-        throw std::logic_error("kUnknownAction encountered.");
-      }
+    } else if (event.action == DiscreteEvent<T>::kUnknownAction) {
+      throw std::logic_error("kUnknownAction encountered.");
     }
   }
 }

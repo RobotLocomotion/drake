@@ -15,7 +15,6 @@
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-#include "drake/systems/framework/diagram_builder.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
@@ -587,7 +586,9 @@ GTEST_TEST(SimulatorTest, AutodiffBasic) {
   simulator.StepTo(1);
 }
 
-// Tests per step actions.
+// Tests per step publish, discrete and unrestricted update actions. Each
+// action handler logs the context time when it's called, and the test compares
+// the time stamp against the integrator's dt.
 GTEST_TEST(SImulatorTest, PerStepAction) {
   class PerStepActionTestSystem : public LeafSystem<double> {
    public:

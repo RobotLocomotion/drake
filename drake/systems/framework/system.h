@@ -538,8 +538,13 @@ class System {
     return actions->time;
   }
 
+  /// This method is called by a Simulator to gather all the update and publish
+  /// events that need to be handled before it computes derivatives and performs
+  /// integration. @p events cannot be null.
   void GetPerStepEvents(
       const Context<T>& context, std::vector<DiscreteEvent<T>>* events) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_ASSERT(events != nullptr);
     events->clear();
     DoGetPerStepEvents(context, events);
   }
@@ -1210,6 +1215,8 @@ class System {
     actions->time = std::numeric_limits<T>::infinity();
   }
 
+  /// Gets all the events that needs to be handled before the simulator can
+  /// take a step.
   virtual void DoGetPerStepEvents(
       const Context<T>& context, std::vector<DiscreteEvent<T>>* events) const {
     unused(context);

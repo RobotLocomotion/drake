@@ -531,9 +531,9 @@ class LeafSystem : public System<T> {
       const typename DiscreteEvent<T>::ActionType& action) {
     DiscreteEvent<T> event;
     event.action = action;
-    for (const auto& event : per_step_events_) {
-      if (event.action == action) {
-        DRAKE_ABORT_MSG("Per step action have already been declared.");
+    for (const auto& declared_event : per_step_events_) {
+      if (declared_event.action == action) {
+        DRAKE_ABORT_MSG("Per step action has already been declared.");
       }
     }
 
@@ -773,8 +773,8 @@ class LeafSystem : public System<T> {
   // Periodic Update or Publish events registered on this system.
   std::vector<PeriodicEvent<T>> periodic_events_;
 
-  // Periodic Update or Publish events registered on this system for every
-  // simulator major time step.
+  // Update or Publish events registered on this system for every simulator
+  // major time step.
   std::vector<DiscreteEvent<T>> per_step_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
