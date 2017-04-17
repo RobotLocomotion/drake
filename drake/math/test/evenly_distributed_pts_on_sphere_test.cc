@@ -34,12 +34,15 @@ void EvenlyDistributedPtsOnSphereFibonacciTest(int num_samples, double tol) {
   for (const auto& cone : cones) {
     const auto& a = cone.first;
     const double theta = cone.second;
+    EXPECT_NEAR(a.norm(), 1.0, 1E-6);
     int num_pts_in_cone = 0;
     const double cos_theta = cos(theta);
     for (int i = 0; i < num_samples; ++i) {
       num_pts_in_cone += static_cast<int>(a.dot(pts.col(i)) >= cos_theta);
     }
-    // The area of the intersection region is 2π(1-cosθ)
+    // The area of the intersection region is 2π(1-cosθ), the area of the unit
+    // sphere is 4π, so the ratio #pts_in_cone / #samples should be
+    // approximately equal to 2π(1-cosθ) / 4π = (1 - cosθ) / 2
     EXPECT_NEAR(num_pts_in_cone / static_cast<double>(num_samples),
                 (1 - cos_theta) / 2, tol);
   }
