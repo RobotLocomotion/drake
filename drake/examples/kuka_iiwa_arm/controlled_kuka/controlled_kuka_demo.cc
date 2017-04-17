@@ -167,6 +167,7 @@ int DoMain() {
   auto traj_src =
       diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
           *traj, 1 /* outputs q + v */);
+  traj_src->set_name("trajectory_source");
 
   diagram_builder->Connect(traj_src->get_output_port(),
                   controller->get_input_port_desired_state());

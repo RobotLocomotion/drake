@@ -14,6 +14,7 @@ systems::DrakeVisualizer* SimDiagramBuilder<T>::AddVisualizer(
 
   visualizer_ = builder_.template AddSystem<systems::DrakeVisualizer>(
       plant_->get_rigid_body_tree(), lcm);
+  visualizer_->set_name("visualizer");
 
   return visualizer_;
 }
@@ -24,6 +25,7 @@ systems::RigidBodyPlant<T>* SimDiagramBuilder<T>::AddPlant(
   DRAKE_DEMAND(plant_ == nullptr);
   plant_ =
       builder_.template AddSystem<systems::RigidBodyPlant<T>>(std::move(plant));
+  plant_->set_name("plant");
   return plant_;
 }
 

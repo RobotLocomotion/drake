@@ -9,13 +9,15 @@ load(
     "drake_cc_googletest",
 )
 
-cc_binary(
+drake_cc_binary(
     name = "controlled_kuka_demo",
     srcs = ["controlled_kuka_demo.cc"],
+    add_test_rule = 1,
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    tags = ["snopt"],
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
@@ -27,13 +29,15 @@ cc_binary(
     ],
 )
 
-cc_binary(
+drake_cc_binary(
     name = "kuka_cartesian_way_point_demo",
     srcs = ["kuka_cartesian_way_point_demo.cc"],
+    add_test_rule = 1,
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    tags = ["snopt"],
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
