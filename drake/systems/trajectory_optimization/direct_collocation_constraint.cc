@@ -75,13 +75,15 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
     const systems::System<double>& system,
     const systems::Context<double>& context)
     : DirectCollocationConstraint(context.get_continuous_state()->size(),
-                                  system.get_input_port(0).size()),
+                                  context.get_num_input_ports() > 0
+                                      ? system.get_input_port(0).size()
+                                      : 0),
       system_(systems::System<double>::ToAutoDiffXd(system)),
       context_(system_->CreateDefaultContext()),
       // Don't allocate the input port until we're past the point
       // where we might throw.
       derivatives_(system_->AllocateTimeDerivatives()) {
-  DRAKE_THROW_UNLESS(system_->get_num_input_ports() == 1);
+  DRAKE_THROW_UNLESS(system_->get_num_input_ports() <= 1);
   DRAKE_THROW_UNLESS(context.has_only_continuous_state());
 
   // TODO(russt): Add support for time-varying dynamics OR check for
@@ -90,8 +92,7 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
   context_->SetTimeStateAndParametersFrom(context);
   // Set derivatives of all parameters in the context to zero (but with the
   // correct size).
-  int num_gradients = 1 + 2 * context.get_continuous_state()->size() +
-                      2 * system.get_input_port(0).size();
+  int num_gradients = 1 + 2 * num_states() + 2 * num_inputs();
   for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
        i++) {
     auto params = context_->get_mutable_parameters()
@@ -106,11 +107,13 @@ SystemDirectCollocationConstraint::SystemDirectCollocationConstraint(
     }
   }
 
-  // Allocate the input port and keep an alias around.
-  input_port_value_ = new FreestandingInputPortValue(
-      system_->AllocateInputVector(system_->get_input_port(0)));
-  std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
-  context_->SetInputPortValue(0, std::move(input_port_value));
+  if (context.get_num_input_ports() > 0) {
+    // Allocate the input port and keep an alias around.
+    input_port_value_ = new FreestandingInputPortValue(
+        system_->AllocateInputVector(system_->get_input_port(0)));
+    std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+    context_->SetInputPortValue(0, std::move(input_port_value));
+  }
 }
 
 SystemDirectCollocationConstraint::~SystemDirectCollocationConstraint() {}
@@ -118,7 +121,9 @@ SystemDirectCollocationConstraint::~SystemDirectCollocationConstraint() {}
 void SystemDirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
                                                  const AutoDiffVecXd& input,
                                                  AutoDiffVecXd* xdot) const {
-  input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
+  if (context_->get_num_input_ports() > 0) {
+    input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
+  }
   context_->get_mutable_continuous_state()->SetFromVector(state);
   system_->CalcTimeDerivatives(*context_, derivatives_.get());
   *xdot = derivatives_->CopyToVector();

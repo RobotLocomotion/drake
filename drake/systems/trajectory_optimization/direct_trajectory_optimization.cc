@@ -40,7 +40,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
       placeholder_u_vars_(NewContinuousVariables(num_inputs_, "u")) {
   DRAKE_ASSERT(num_time_samples > 1);
   DRAKE_ASSERT(num_states_ > 0);
-  DRAKE_ASSERT(num_inputs_ > 0);
+  DRAKE_ASSERT(num_inputs_ >= 0);
   DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
   // Construct total time linear constraint.
   // TODO(Lucy-tri) add case for all timesteps independent (if needed).

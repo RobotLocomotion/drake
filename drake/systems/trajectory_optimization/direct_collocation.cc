@@ -24,11 +24,13 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
 
   context_->SetTimeStateAndParametersFrom(context);
 
-  // Allocate the input port and keep an alias around.
-  input_port_value_ = new FreestandingInputPortValue(
-      system->AllocateInputVector(system->get_input_port(0)));
-  std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
-  context_->SetInputPortValue(0, std::move(input_port_value));
+  if (context_->get_num_input_ports() > 0) {
+    // Allocate the input port and keep an alias around.
+    input_port_value_ = new FreestandingInputPortValue(
+        system->AllocateInputVector(system->get_input_port(0)));
+    std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+    context_->SetInputPortValue(0, std::move(input_port_value));
+  }
 
   // Add the dynamic constraints.
   auto constraint =
