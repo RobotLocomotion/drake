@@ -23,6 +23,7 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
     this->DeclareVectorOutputPort(EulerFloatingJointState<T>());
   }
 
+ private:
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override {
     typedef systems::VectorBase<T> Base;
@@ -41,17 +42,21 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
     using std::cos;
     using std::sin;
 
-    const double heading = input_data->heading();
+    const T heading = input_data->heading();
     // TODO(liang.fok) The following number is hard-coded to equal the distance
     // between the origin and the middle of the rear axle in prius.sdf and
     // prius_with_lidar.sdf. Generalize this to support arbitrary models.
     const double p_MoVo{1.40948};
     output_data->set_x(p_MoVo * cos(heading) + input_data->x());
     output_data->set_y(p_MoVo * sin(heading) + input_data->y());
-    output_data->set_z(0.0);
-    output_data->set_roll(0.0);
-    output_data->set_pitch(0.0);
+    output_data->set_z(T(0.0));
+    output_data->set_roll(T(0.0));
+    output_data->set_pitch(T(0.0));
     output_data->set_yaw(heading);
+  }
+
+  SimpleCarToEulerFloatingJoint<AutoDiffXd>* DoToAutoDiffXd() const override {
+    return new SimpleCarToEulerFloatingJoint<AutoDiffXd>();
   }
 };
 
