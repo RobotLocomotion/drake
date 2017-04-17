@@ -19,18 +19,18 @@ template<typename T> class Body;
 /// more-general discussion.
 ///
 /// The pose and motion of a %Frame object is always calculated relative to the
-/// BodyFrame of the body to which it is associated, and every %Frame object can
-/// report which Body object that is. Concrete classes derived from %Frame
+/// BodyFrame of the body with which it is associated, and every %Frame object
+/// can report which Body object that is. Concrete classes derived from %Frame
 /// differ only in how those kinematic properties are calculated. For soft
-/// bodies that calculation may depend on the body's deformation states.
-/// A %Frame on a rigid body will usually have a fixed offset from its
-/// BodyFrame, but that is not required -- a frame that moves with respect to
-/// its BodyFrame can still be a material frame on that rigid body. A contact
-/// frame is a typical example.
+/// bodies that calculation may depend on the body's deformation state
+/// variables. A %Frame on a rigid body will usually have a fixed offset from
+/// its BodyFrame, but that is not required -- a frame that moves with respect
+/// to its BodyFrame can still be a material frame on that rigid body.
 ///
 /// As always in Drake, runtime numerical quantities are stored in a Context.
-/// A %Frame object provides methods useful for extracting relevant properties
-/// from a given Context, but does not directly store runtime values.
+/// A %Frame object does not store runtime values, but provides methods for
+/// extracting frame-associated values (such as the %Frame object's kinematics)
+/// from a given Context.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
