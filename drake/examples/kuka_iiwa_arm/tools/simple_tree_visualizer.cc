@@ -18,7 +18,8 @@ namespace kuka_iiwa_arm {
 namespace tools {
 SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
                                            lcm::DrakeLcmInterface* lcm)
-    : tree_(tree), draw_message_translator_(tree_), lcm_(lcm) {
+    : tree_(tree), state_dimension_(tree_.get_num_positions() +
+    tree_.get_num_velocities()), draw_message_translator_(tree_), lcm_(lcm) {
   // loads the robot
   const lcmt_viewer_load_robot load_message(
       multibody::CreateLoadRobotMessage<double>(tree_));
@@ -34,11 +35,11 @@ SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
 
 void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
   DRAKE_DEMAND(position_vector.size() == tree_.get_num_positions());
-  Eigen::VectorXd q_qDot = Eigen::VectorXd::Zero(14);
-  q_qDot.head(7) = position_vector;
-  systems::BasicVector<double> state_vector(14);
+  Eigen::VectorXd state = Eigen::VectorXd::Zero(state_dimension_);
+  state.head(tree_.get_num_positions()) = position_vector;
+  systems::BasicVector<double> state_vector(state_dimension_);
 
-  state_vector.SetFromVector(q_qDot);
+  state_vector.SetFromVector(state);
 
   std::vector<uint8_t> message_bytes;
   draw_message_translator_.Serialize(0 /* context get time */, state_vector,
