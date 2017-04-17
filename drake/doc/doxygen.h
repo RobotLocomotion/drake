@@ -26,7 +26,7 @@
   </ul>
 </ul>
 <p>For more general information, you can also visit the <a
-  href="http:/drake.mit.edu">Drake documentation main page</a>.</p>
+  href="http://drake.mit.edu">Drake documentation main page</a>.</p>
 </p>
 
 <p>Drake's C++ libraries use a small amount of template metaprogramming to
