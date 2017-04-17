@@ -118,5 +118,54 @@ GTEST_TEST(testIK, iiwaIK) {
       pos_tol + 1e-6, MatrixCompareType::absolute));
 }
 
+GTEST_TEST(testIK, iiwaIKInfeasible) {
+  auto model = std::make_unique<RigidBodyTree<double>>();
+
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf",
+      drake::multibody::joints::kFixed, model.get());
+
+  // Create a timespan for the constraints.  It's not particularly
+  // meaningful in this test since inverseKin() only tests a single
+  // point, but the constructors need something.
+  const Vector2d tspan(0, 1);
+
+  // Start the robot in the zero configuration (all joints zeroed,
+  // pointing straight up).
+  const VectorXd q0 = model->getZeroConfiguration();
+
+  // Constrain iiwa_link_7 (the end effector) to move to an unreachable
+  // position.
+  const Vector3d pos_end(10.0, 0, 1.0);
+  const double pos_tol = 0.01;
+  const Vector3d pos_lb = pos_end - Vector3d::Constant(pos_tol);
+  const Vector3d pos_ub = pos_end + Vector3d::Constant(pos_tol);
+  const int link_7_idx = model->FindBodyIndex("iiwa_link_7");
+  const WorldPositionConstraint wpc(model.get(), link_7_idx,
+                              Vector3d::Zero(), pos_lb, pos_ub, tspan);
+
+  const std::vector<const RigidBodyConstraint*> constraint_array{&wpc};
+  const IKoptions ikoptions(model.get());
+
+  VectorXd q_sol = VectorXd::Zero(model->get_num_positions());
+  int info = 0;
+  std::vector<std::string> infeasible_constraint;
+  inverseKin(model.get(), q0, q0, constraint_array.size(),
+             constraint_array.data(), ikoptions, &q_sol, &info,
+             &infeasible_constraint);
+
+  // TODO(eric.cousineau): Clarify / remove redundant result mapping.
+  // See drake::systems::plants::GetIKSolverInfo (maps SolutionResult to
+  // SNOPT-type result), called by inverseKinBackend(...)
+  // Analog to: drake::solvers::SolutionResult::kInfeasibleConstraints
+  const int ikInfeasibleConstraints = 13;
+  EXPECT_EQ(info, ikInfeasibleConstraints);
+
+  // TODO(eric.cousineau): Ensure that this check has teeth
+  // // Expect nonzero set of infeasible constraints
+  // EXPECT_GT(ineasible_constraint.size(), 0);
+}
+
 }  // namespace
 }  // namespace drake
