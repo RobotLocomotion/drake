@@ -4,8 +4,8 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
-    "drake_cc_library",
     "drake_cc_binary",
+    "drake_cc_library",
 )
 
 drake_cc_library(
@@ -16,10 +16,10 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/lcm",
-        "//drake/systems/framework",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/lcmtypes:viewer",
+        "//drake/multibody/rigid_body_plant:create_load_robot_message",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/framework",
         "//drake/systems/rendering:drake_visualizer_client",
     ]
 )
@@ -34,12 +34,12 @@ drake_cc_binary(
     ],
     test_rule_args = ["--num_configurations=1"],
     deps = [
-        ":simple_tree_visualizer",
         "//drake/common",
-        "@gflags//:gflags",
         "//drake/lcm",
+        "//drake/multibody/parsers",
         "//drake/systems/framework",
-        "//drake/multibody/parsers",        
+        "@gflags//:gflags",
+        ":simple_tree_visualizer",
     ],
 )
 

@@ -1,7 +1,7 @@
 /**
  * @file test demo to visualize a given tree in a random set of configurations.
  */
-#include "drake/examples/kuka_iiwa_arm/tools/simple_tree_visualizer.h"
+#include "drake/examples/kuka_iiwa_arm/dev/tools/simple_tree_visualizer.h"
 
 #include <chrono>
 #include <thread>

@@ -15,6 +15,7 @@ drake_install_pkg_config_file(drake-kuka-iiwa-arm-ik
     REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm)
 
 add_subdirectory(pick_and_place)
+add_subdirectory(tools)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

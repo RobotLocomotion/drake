@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/tools/simple_tree_visualizer.h"
+#include "drake/examples/kuka_iiwa_arm/dev/tools/simple_tree_visualizer.h"
 
 #include <vector>
 
@@ -20,7 +20,7 @@ SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
                                            lcm::DrakeLcmInterface* lcm)
     : tree_(tree), state_dimension_(tree_.get_num_positions() +
     tree_.get_num_velocities()), draw_message_translator_(tree_), lcm_(lcm) {
-  // loads the robot
+  // Loads the robot.
   const lcmt_viewer_load_robot load_message(
       multibody::CreateLoadRobotMessage<double>(tree_));
 
