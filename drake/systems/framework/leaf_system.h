@@ -677,7 +677,7 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  virtual void DoGetPerStepEvents(const Context<T>& context,
+  void DoGetPerStepEvents(const Context<T>& context,
       std::vector<DiscreteEvent<T>>* events) const override {
     *events = per_step_events_;
   }

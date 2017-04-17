@@ -1263,6 +1263,7 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
 }
 
+// A system for testing per step actions.
 class PerStepActionTestSystem : public LeafSystem<double> {
  public:
   PerStepActionTestSystem() {
@@ -1312,12 +1313,17 @@ class PerStepActionTestSystem : public LeafSystem<double> {
   mutable int publish_ctr_{0};
 };
 
+// Builds a nested diagram and tests per step publish, discrete and
+// unrestricted updates.
 GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   std::unique_ptr<Diagram<double>> sub_diagram;
   PerStepActionTestSystem* sys0;
   PerStepActionTestSystem* sys1;
   PerStepActionTestSystem* sys2;
 
+  // Sub diagram. Has sys0, and sys1.
+  // sys0 does not have any per step actions.
+  // sys1 has discrete and unrestricted updates.
   {
     DiagramBuilder<double> builder;
     sys0 = builder.AddSystem<PerStepActionTestSystem>();
@@ -1333,6 +1339,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   builder.AddSystem(std::move(sub_diagram));
   sys2 = builder.AddSystem<PerStepActionTestSystem>();
 
+  // sys2 has publish and unrestricted updates.
   sys2->AddPerStepAction(DiscreteEvent<double>::kPublishAction);
   sys2->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
 
@@ -1373,7 +1380,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
     }
   }
 
-  // Only sys2 should have published once.
+  // Only sys2 published once.
   EXPECT_EQ(sys0->get_publish_ctr(), 0);
   EXPECT_EQ(sys1->get_publish_ctr(), 0);
   EXPECT_EQ(sys2->get_publish_ctr(), 1);

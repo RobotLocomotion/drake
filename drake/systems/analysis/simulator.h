@@ -6,6 +6,7 @@
 #include <memory>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -433,6 +434,10 @@ void Simulator<T>::HandleDiscreteUpdate(
       // Then, write them back into the context.
       xd->CopyFrom(*discrete_updates_);
       ++num_discrete_updates_;
+    } else {
+      if (event.action == DiscreteEvent<T>::kUnknownAction) {
+        throw std::logic_error("kUnknownAction encountered.");
+      }
     }
   }
 }
@@ -444,6 +449,10 @@ void Simulator<T>::HandlePublish(
     if (event.action == DiscreteEvent<T>::kPublishAction) {
       system_.Publish(*context_, event);
       ++num_publishes_;
+    } else {
+      if (event.action == DiscreteEvent<T>::kUnknownAction) {
+        throw std::logic_error("kUnknownAction encountered.");
+      }
     }
   }
 }
@@ -486,10 +495,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     if (sample_time_hit) {
       // Do unrestricted updates first.
       HandleUnrestrictedUpdate(update_actions.events);
-
       // Do restricted (discrete variable) updates next.
       HandleDiscreteUpdate(update_actions.events);
-
       // Do any publishes last.
       HandlePublish(update_actions.events);
     }

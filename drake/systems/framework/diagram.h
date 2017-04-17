@@ -846,7 +846,8 @@ class Diagram : public System<T>,
 
  private:
   template <typename T1>
-  using SubsystemEvents = std::vector<std::pair<int, std::vector<DiscreteEvent<T1>>>>;
+  using SubsystemEvents =
+  std::vector<std::pair<int, std::vector<DiscreteEvent<T1>>>>;
 
   /// Tries to recursively find @p target_system's BaseStuffPtr
   /// (context / state / etc). nullptr is returned if @p target_system is not
@@ -1041,7 +1042,8 @@ class Diagram : public System<T>,
 
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type DoGetPerStepEventsImpl(
-      const Context<T1>& context, std::vector<DiscreteEvent<T1>>* events) const {
+      const Context<T1>& context,
+      std::vector<DiscreteEvent<T1>>* events) const {
     events->clear();
 
     auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
