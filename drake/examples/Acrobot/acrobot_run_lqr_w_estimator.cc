@@ -40,6 +40,7 @@ int do_main(int argc, char* argv[]) {
   // Make the robot.
   systems::DiagramBuilder<double> builder;
   auto acrobot_w_encoder = builder.AddSystem<AcrobotWEncoder<double>>(true);
+  acrobot_w_encoder->set_name("acrobot_w_encoder");
 
   // Get a pointer to the actual plant subsystem (will be used below).
   auto acrobot = acrobot_w_encoder->acrobot_plant();
@@ -51,6 +52,7 @@ int do_main(int argc, char* argv[]) {
       GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  publisher->set_name("publisher");
   builder.Connect(acrobot_w_encoder->get_output_port(1),
                   publisher->get_input_port(0));
 
@@ -77,6 +79,7 @@ int do_main(int argc, char* argv[]) {
   auto observer =
       builder.AddSystem(systems::estimators::SteadyStateKalmanFilter(
           std::move(observer_acrobot), std::move(observer_context), W, V));
+  observer->set_name("observer");
   builder.Connect(acrobot_w_encoder->get_output_port(0),
                   observer->get_input_port(0));
 
@@ -93,6 +96,7 @@ int do_main(int argc, char* argv[]) {
 
   // Make the LQR Controller.
   auto controller = builder.AddSystem(BalancingLQRController(*acrobot));
+  controller->set_name("controller");
   builder.Connect(observer->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(),
                   acrobot_w_encoder->get_input_port(0));
@@ -100,9 +104,11 @@ int do_main(int argc, char* argv[]) {
 
   // Log the true state and the estimated state.
   auto x_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  x_logger->set_name("x_logger");
   builder.Connect(acrobot_w_encoder->get_output_port(1),
                   x_logger->get_input_port(0));
   auto xhat_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  xhat_logger->set_name("xhat_logger");
   builder.Connect(observer->get_output_port(0), xhat_logger->get_input_port(0));
 
   // Build the system/simulator.

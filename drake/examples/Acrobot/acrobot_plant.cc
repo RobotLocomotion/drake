@@ -165,9 +165,11 @@ AcrobotWEncoder<T>::AcrobotWEncoder(bool acrobot_state_as_second_output) {
   systems::DiagramBuilder<T> builder;
 
   acrobot_plant_ = builder.template AddSystem<AcrobotPlant<T>>();
+  acrobot_plant_->set_name("acrobot_plant");
   auto encoder =
       builder.template AddSystem<systems::sensors::RotaryEncoders<T>>(
           4, std::vector<int>{0, 1});
+  encoder->set_name("encoder");
   builder.Cascade(*acrobot_plant_, *encoder);
   builder.ExportInput(acrobot_plant_->get_input_port(0));
   builder.ExportOutput(encoder->get_output_port());
