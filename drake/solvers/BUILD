@@ -464,23 +464,24 @@ drake_cc_googletest(
 
 # TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
 # test that doesn't.
-drake_cc_googletest(
-    name = "mixed_integer_optimization_test",
-    srcs = [
-        "test/mixed_integer_optimization_test.cc",
-    ],
-    # This test uses Gurobi if present, but does not require it.
-    tags = [
-        "exclusive",
-        "local",
-    ],
-    deps = [
-        ":add_solver_util",
-        ":mathematical_program",
-        ":mathematical_program_test_util",
-        "//drake/common:eigen_matrix_compare",
-    ],
-)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+#drake_cc_googletest(
+#    name = "mixed_integer_optimization_test",
+#    srcs = [
+#        "test/mixed_integer_optimization_test.cc",
+#    ],
+#    # This test uses Gurobi if present, but does not require it.
+#    tags = [
+#        "exclusive",
+#        "local",
+#    ],
+#    deps = [
+#        ":add_solver_util",
+#        ":mathematical_program",
+#        ":mathematical_program_test_util",
+#        "//drake/common:eigen_matrix_compare",
+#    ],
+#)
 
 drake_cc_googletest(
     name = "moby_lcp_solver_test",
