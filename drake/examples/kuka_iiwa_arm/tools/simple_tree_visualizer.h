@@ -16,7 +16,9 @@ namespace tools {
 class SimpleTreeVisualizer {
  public:
   /**
-   * Constructs the `SimpleTreeVisualizer`
+   * Constructs the `SimpleTreeVisualizer` and publishes a
+   * DRAKE_VIEWER_LOAD_ROBOT message. Note that the drake-visualizer must be
+   * externally started before this constructor is called.
    * @param tree constant reference to the `RigidBodyTree` that is to
    * be visualized. This reference must remain valid for the life time of this
    * class.
