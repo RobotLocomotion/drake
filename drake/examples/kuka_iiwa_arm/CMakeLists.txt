@@ -72,7 +72,6 @@ if(lcm_FOUND)
     drakeLCMTypes
     drakeTrajectories
     drakeMultibodyParsers
-    drakeLcmDrivenLoop
     drakeLcmSystem
     drakeRBM
     drakeSystemAnalysis
@@ -126,6 +125,7 @@ endif()
 add_subdirectory(controlled_kuka)
 add_subdirectory(iiwa_world)
 add_subdirectory(dev)
+add_subdirectory(tools)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
