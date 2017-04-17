@@ -7,6 +7,7 @@ set(sources
   cross_product.cc
   discrete_algebraic_riccati_equation.cc
   eigen_sparse_triplet.cc
+  evenly_distributed_pts_on_sphere.cc
   expmap.cc
   gradient.cc
   jacobian.cc
@@ -27,6 +28,7 @@ set(installed_headers
   cross_product.h
   discrete_algebraic_riccati_equation.h
   eigen_sparse_triplet.h
+  evenly_distributed_pts_on_sphere.h
   expmap.h
   gradient.h
   gradient_util.h
