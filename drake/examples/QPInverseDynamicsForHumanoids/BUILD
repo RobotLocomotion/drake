@@ -22,6 +22,18 @@ exports_files(
     ["config/valkyrie.alias_groups"],
 )
 
+exports_files(
+    ["config/valkyrie.id_controller_config"],
+)
+
+exports_files(
+    ["config/iiwa.alias_groups"],
+)
+
+exports_files(
+    ["config/iiwa.id_controller_config"],
+)
+
 drake_cc_library(
     name = "humanoid_status",
     srcs = ["humanoid_status.cc"],
