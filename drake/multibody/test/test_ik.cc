@@ -62,7 +62,7 @@ GTEST_TEST(testIK, iiwaIK) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
           "iiwa14_primitive_collision.urdf",
-      drake::multibody::joints::kRollPitchYaw, model.get());
+      drake::multibody::joints::kFixed, model.get());
 
   // Create a timespan for the constraints.  It's not particularly
   // meaningful in this test since inverseKin() only tests a single
