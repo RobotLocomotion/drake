@@ -21,9 +21,9 @@ template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kJointGroupsKeyword[];
 
 namespace {
-// Inserts @p vec into @p mapping if @p key does not exist, or append @p vec
+// Inserts @p vec into @p mapping if @p key does not exist, or appends @p vec
 // to the existing vector in @p map. This function also guarantees the newly
-// inserted elements do no introduce duplicates.
+// inserted elements do not introduce duplicates.
 template <typename Type>
 void InsertOrMergeVectorWithoutDuplicates(
     const std::string& key, const std::vector<Type>& vec,
@@ -108,8 +108,7 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
 }
 
 template <typename T>
-void RigidBodyTreeAliasGroups<T>::LoadFromFile(
-    const std::string& file_path) {
+void RigidBodyTreeAliasGroups<T>::LoadFromFile(const std::string& file_path) {
   AliasGroups alias_groups;
   int fid = open(file_path.data(), O_RDONLY);
   if (fid < 0) {
