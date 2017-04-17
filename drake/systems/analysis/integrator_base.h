@@ -820,13 +820,15 @@ class IntegratorBase {
 
   /// Gets whether the integrator should throw an exception when the integrator
   /// wishes to select a step smaller than the minimum (for, e.g., purposes of
-  /// error control). Default is `true`.
+  /// error control). Default is `true`. If `false`, integrator will advance
+  /// time and state using the minimum specified step size, if necessary.
   bool get_minimum_step_size_exceeded_throws() const {
     return min_step_exceeded_throws_; }
 
-  /// Gets whether the integrator should throw an exception when the integrator
+  /// Sets whether the integrator should throw an exception when the integrator
   /// wishes to select a step smaller than the minimum (for, e.g., purposes of
-  /// error control). Default is `true`.
+  /// error control). Default is `true`. If `false`, integrator will advance
+  /// time and state using the minimum specified step size, if necessary.
   void set_minimum_step_size_exceeded_throws(bool throws) {
     min_step_exceeded_throws_ = throws; }
 

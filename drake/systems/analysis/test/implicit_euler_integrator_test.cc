@@ -1,5 +1,4 @@
 #include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/implicit_euler_integrator-inl.h"
 
 #include <cmath>
 
@@ -210,6 +209,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
 
   // Set error controlled integration parameters.
   const double xtol = 1e-6;
+  const double vtol = xtol * 100;
   integrator.set_target_accuracy(xtol);
 
   // Set the initial position and initial velocity.
@@ -237,12 +237,15 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   double x_final = xc_final.GetAtIndex(0);
   double v_final = xc_final.GetAtIndex(1);
 
-  // Check the solution - the large spring should have driven the spring
-  // position to zero, while the large damper should make the velocity
-  // essentially zero.
-  const double vtol = xtol * 100;
-  EXPECT_NEAR(0.0, x_final, xtol);
-  EXPECT_NEAR(0.0, v_final, vtol);
+  // Get the closed form solution.
+  double x_final_true, v_final_true;
+  spring_damper->get_closed_form_solution(initial_position, initial_velocity,
+                                          t_final, &x_final_true,
+                                          &v_final_true);
+
+  // Check the solution.
+  EXPECT_NEAR(x_final_true, x_final, xtol);
+  EXPECT_NEAR(v_final_true, v_final, vtol);
 
   // Verify that integrator statistics are valid
   CheckGeneralStatsValidity(&integrator);
@@ -263,8 +266,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   v_final = xc_final.GetAtIndex(1);
 
   // Verify that integrator statistics and outputs are valid.
-  EXPECT_NEAR(0.0, x_final, xtol);
-  EXPECT_NEAR(0.0, v_final, vtol);
+  EXPECT_NEAR(x_final_true, x_final, xtol);
+  EXPECT_NEAR(v_final_true, v_final, vtol);
   CheckGeneralStatsValidity(&integrator);
 
   // Switch to automatic differencing.
@@ -287,8 +290,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_dt_);
 
   // Verify that integrator statistics and outputs are valid.
-  EXPECT_NEAR(0.0, x_final, xtol);
-  EXPECT_NEAR(0.0, v_final, vtol);
+  EXPECT_NEAR(x_final_true, x_final, xtol);
+  EXPECT_NEAR(v_final_true, v_final, vtol);
   CheckGeneralStatsValidity(&integrator);
 }
 

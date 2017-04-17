@@ -29,6 +29,15 @@ class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
   /// Gets the magnitude of the constant force acting on the system.
   double get_constant_force() const { return constant_force_; }
 
+  /// Re-implements SpringMassDamperSystem::get_closed_form_solution() to
+  /// disable it: no closed form solution is currently available.
+  /// @throws std::logic_error if called.
+  void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
+                                T* xf, T* vf) const override {
+    throw std::logic_error("No closed form solution available for "
+                               "discontinuous mass spring damper.");
+  }
+
  protected:
   System <AutoDiffXd>* DoToAutoDiffXd() const override {
     return new DiscontinuousSpringMassDamperSystem<AutoDiffXd>(

@@ -25,6 +25,62 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   /// Returns the damping constant that was provided at construction in N/m
   double get_damping_constant() const { return damping_constant_N_per_m_; }
 
+  /// Returns the closed-form position and velocity solution for the unforced
+  /// spring-mass-damper from the given initial conditions *for the case that
+  /// the spring-mass-damper is not underdamped*. In other words, this function
+  /// requires that `c² - 4⋅m⋅k ≥ 0`, where c is the damping coefficient,
+  /// m is the mass, and k is the spring coefficient.
+  /// @param x0 the position of the spring at time t = 0.
+  /// @param v0 the velocity of the spring at time t = 0.
+  /// @param tf the time at which to return the position and velocity.
+  /// @param[out] xf the position of the spring at time tf, on return.
+  /// @param[out] vf the velocity of the spring at time tf, on return.
+  /// @throws std::logic_error if xf or vf is nullptr or the system is
+  ///         damped, yet underdamped.
+  void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
+                                T* xf, T* vf) const override {
+    using std::exp;
+
+    if (!xf || !vf)
+      throw std::logic_error("Passed final position/velocity is null.");
+
+    // Special case #1: no damping.
+    if (get_damping_constant() == 0) {
+      SpringMassSystem<T>::get_closed_form_solution(x0, v0, tf, xf, vf);
+      return;
+    }
+
+    // Special case #2: underdamping.
+    if (get_damping_constant() * get_damping_constant() <
+        4 * this->get_mass() * this->get_spring_constant()) {
+      throw std::logic_error("Closed form solution not available for "
+                                 "underdamped system.");
+    }
+
+    // m⋅d²x/dt² + c⋅dx/dt + kx = 0
+    // Solution to this ODE: x(t) = c₁⋅eʳᵗ + c₂⋅eˢᵗ
+    //   where r and s are the roots to the equation mz² + cz + k = 0.
+    // Thus, dx/dt = r⋅c₁⋅eʳᵗ + s⋅c₂⋅eˢᵗ.
+
+    // Step 1: Solve the equation for z, yielding r and s.
+    T r, s;
+    std::tie(r, s) = SolveQuadratic(this->get_mass(), get_damping_constant(),
+                                    this->get_spring_constant());
+
+    // Step 2: Substituting t = 0 into the equatinons above, solve the resulting
+    // linear system:
+    // c1 + c2 = x0
+    // r⋅c1 + s⋅c2 = v0
+    // yielding:
+    // c1 = -(-v0 + s⋅x0)/(r - s) and c2 = -(v0 - r⋅x0)/(r - s)
+    const T c1 = -(v0 + s*x0)/(r - s);
+    const T c2 = -(v0 - r*x0)/(r - s);
+
+    // Step 3: Set the solutions.
+    *xf = c1*exp(r*tf) + c2*exp(s*tf);
+    *vf = r*c1*exp(r*tf) + s*c2*exp(s*tf);
+  }
+
  protected:
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
     return new SpringMassDamperSystem<AutoDiffXd>(this->get_spring_constant(),
@@ -52,48 +108,6 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     (*derivatives)[1] = force / this->get_mass();
   }
 
-  /// Returns the closed-form position and velocity solution for the unforced
-  /// spring-mass-damper from the given initial conditions.
-  /// @param x0 the position of the spring at time t = 0.
-  /// @param v0 the velocity of the spring at time t = 0.
-  /// @param tf the time at which to return the position and velocity.
-  /// @param[out] xf the position of the spring at time tf, on return.
-  /// @param[out] vf the velocity of the spring at time tf, on return.
-  /// @throws std::logic_error if xf or vf is nullptr.
-  void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
-                                T* xf, T* vf) const override {
-    using std::sqrt;
-    using std::sin;
-    using std::cos;
-    using std::exp;
-
-    if (!xf || !vf)
-      throw std::logic_error("Passed final position/velocity is null.");
-
-    // m⋅d²x/dt² + c⋅dx/dt + kx = 0
-    // Solution to this ODE: x(t) = c₁⋅eʳᵗ + c₂⋅eˢᵗ
-    //   where r and s are the roots to the equation mz² + cz + k = 0.
-    // Thus, dx/dt = r⋅c₁⋅eʳᵗ + s⋅c₂⋅eˢᵗ.
-
-    // Step 1: Solve the equation for z, yielding r and s.
-    T r, s;
-    std::tie(r, s) = SolveQuadratic(this->get_mass(), get_damping_constant(),
-                                    this->get_spring_constant());
-
-    // Step 2: Substituting t = 0 into the equatinons above, solve the resulting
-    // linear system:
-    // c1 + c2 = x0
-    // r⋅c1 + s⋅c2 = v0
-    // yielding:
-    // c1 = -(-v0 + s⋅x0)/(r - s) and c2 = -(v0 - r⋅x0)/(r - s)
-    const T c1 = -(v0 + s*x0)/(r - s);
-    const T c2 = -(v0 - r*x0)/(r - s);
-
-    // Step 3: Set the solutions.
-    *xf = c1*exp(r*tf) + c2*exp(s*tf);
-    *vf = r*c1*exp(r*tf) + s*c2*exp(s*tf);
-  }
-
  private:
   // Signum function.
   static T sgn(const T& x) {
@@ -111,6 +125,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   // Solves the quadratic equation ax² + bx + c = 0 for x, returned as a pair
   // of two values. Cancellation error is avoided. Aborts if b is zero.
   static std::pair<T, T> SolveQuadratic(const T& a, const T& b, const T& c) {
+    using std::sqrt;
     DRAKE_DEMAND(b != 0);
     const T x1 = (-b - sgn(b)*sqrt(b*b - 4*a*c))/(2*a);
     const T x2 = c/(a*x1);
