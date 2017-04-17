@@ -3,6 +3,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -1331,7 +1332,9 @@ class System {
   /// A default implementation is provided in Diagram, which Diagram subclasses
   /// with member data should override.
   virtual System<AutoDiffXd>* DoToAutoDiffXd() const {
-    DRAKE_ABORT_MSG("Override DoToAutoDiffXd before using ToAutoDiffXd.");
+    std::stringstream ss;
+    ss << "Override DoToAutoDiffXd for object named [" << this->get_name() << "] of type " << typeid(*this).name() << " before using ToAutoDiffXd.";
+    DRAKE_ABORT_MSG(ss.str().c_str());
     return nullptr;
   }
 
