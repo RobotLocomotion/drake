@@ -8,7 +8,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place_demo {
+namespace pick_and_place {
 
 void IiwaMove::MoveJoints(const WorldState& est_state,
                           const std::vector<double>& time,
@@ -65,7 +65,7 @@ bool WsgAction::ActionFinished(const WorldState& est_state) const {
   return false;
 }
 
-}  // namespace pick_and_place_demo
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

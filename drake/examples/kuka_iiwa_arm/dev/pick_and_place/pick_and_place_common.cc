@@ -11,7 +11,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place_demo {
+namespace pick_and_place {
 
 // Determines which table is holding the object based on the object's xy
 // distance to the center of each table.
@@ -90,7 +90,7 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
   return planner->PlanSequentialTrajectory(waypoints, q_current, ik_res);
 }
 
-}  // namespace pick_and_place_demo
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

@@ -24,7 +24,7 @@ using robotlocomotion::robot_plan_t;
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 namespace {
 const int kNumJoints = 7;
 }  // namespace
@@ -180,7 +180,7 @@ void IiwaStateFeedbackPlanSource::DoCalcUnrestrictedUpdate(
   }
 }
 
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
