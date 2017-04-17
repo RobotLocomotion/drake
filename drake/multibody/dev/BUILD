@@ -27,30 +27,32 @@ drake_cc_library(
     ],
 )
 
-drake_cc_googletest(
-    name = "global_inverse_kinematics_test",
-    size = "medium",
-    srcs = ["test/global_inverse_kinematics_test.cc"],
-    data = [
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    tags = ["gurobi"],
-    deps = [
-        ":global_inverse_kinematics_test_util",
-    ],
-)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+#drake_cc_googletest(
+#    name = "global_inverse_kinematics_test",
+#    size = "medium",
+#    srcs = ["test/global_inverse_kinematics_test.cc"],
+#    data = [
+#        "//drake/manipulation/models/iiwa_description:models",
+#    ],
+#    tags = ["gurobi"],
+#    deps = [
+#        ":global_inverse_kinematics_test_util",
+#    ],
+#)
 
-drake_cc_googletest(
-    name = "global_inverse_kinematics_reachable_test",
-    size = "medium",
-    srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
-    data = [
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    tags = ["gurobi"],
-    deps = [
-        ":global_inverse_kinematics_test_util",
-    ],
-)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+#drake_cc_googletest(
+#    name = "global_inverse_kinematics_reachable_test",
+#    size = "medium",
+#    srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
+#    data = [
+#        "//drake/manipulation/models/iiwa_description:models",
+#    ],
+#    tags = ["gurobi"],
+#    deps = [
+#        ":global_inverse_kinematics_test_util",
+#    ],
+#)
 
 cpplint()
