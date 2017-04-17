@@ -33,9 +33,9 @@ void EvenlyDistributedPtsOnSphereFibonacciTest(int num_samples, double tol) {
       M_PI / 4);
   for (const auto& cone : cones) {
     const auto& a = cone.first;
-    double theta = cone.second;
+    const double theta = cone.second;
     int num_pts_in_cone = 0;
-    double cos_theta = cos(theta);
+    const double cos_theta = cos(theta);
     for (int i = 0; i < num_samples; ++i) {
       num_pts_in_cone += static_cast<int>(a.dot(pts.col(i)) >= cos_theta);
     }
