@@ -1,16 +1,15 @@
 if(lcm_FOUND)
-  add_library_with_exports(LIB_NAME drakeSimpleTreeVisualizer SOURCE
-      simple_tree_visualizer.cc)
-  target_link_libraries(
+
+  add_library_with_exports(LIB_NAME drakeSimpleTreeVisualizer SOURCE_FILES
+  simple_tree_visualizer.cc)
+  target_link_libraries(drakeSimpleTreeVisualizer
       drakeLcmSystem
       drakeLCMUtil
       drakeMultibodyParsers
       drakeRigidBodyPlant
-      drakeSystemFramework
-  )
+      drakeSystemFramework)
   drake_install_libraries(drakeSimpleTreeVisualizer)
-  drake_install_header(
-      simple_tree_visualizer.h)
+  drake_install_headers(simple_tree_visualizer.h)
   drake_install_pkg_config_file(drake-simple-tree-visualizer
       TARGET drakeSimpleTreeVisualizer
       LIBS
@@ -23,7 +22,7 @@ if(lcm_FOUND)
 
   add_executable(simple_tree_visualizer_demo simple_tree_visualizer_demo.cc)
   target_link_libraries(simple_tree_visualizer_demo
-      simple_tree_visualizer)
+      drakeSimpleTreeVisualizer)
   drake_add_test(
       NAME simple_tree_visualizer_demo COMMAND simple_tree_visualizer_demo
       --num_configurations 1)
