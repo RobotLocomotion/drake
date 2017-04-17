@@ -102,6 +102,23 @@ class Constraint {
     DoEval(x, y);
   }
 
+  /**
+   * Return whether this constraint is satisfied by the given value, \p x.
+   * @param x A num_vars() x 1 vector.
+   * @param tol A tolerance for bound checking.
+   */
+  bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
+                      const double tol = 1E-6) const {
+    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    return DoCheckSatisfied(x, tol);
+  }
+
+  bool CheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
+                      const double tol = 1E-6) const {
+    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    return DoCheckSatisfied(x, tol);
+  }
+
   Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
   size_t num_constraints() const { return lower_bound_.size(); }
@@ -150,6 +167,22 @@ class Constraint {
   virtual void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       AutoDiffVecXd &y) const = 0;
+
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd> &x,
+                                const double tol) const {
+    Eigen::VectorXd y(num_constraints());
+    DoEval(x, y);
+    return (y.array() >= lower_bound_.array() - tol).all() &&
+           (y.array() <= upper_bound_.array() + tol).all();
+  }
+
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd> &x,
+                                const double tol) const {
+    AutoDiffVecXd y(num_constraints());
+    DoEval(x, y);
+    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all()
+        && (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
+  }
 
  private:
   Eigen::VectorXd lower_bound_;
@@ -531,6 +564,12 @@ class LinearComplementarityConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
               AutoDiffVecXd &y) const override;
+
+  bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd> &x,
+                        const double tol) const override;
+
+  bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd> &x,
+                        const double tol) const override;
 
  private:
   // TODO(ggould-tri) We are storing what are likely statically sized matrices
