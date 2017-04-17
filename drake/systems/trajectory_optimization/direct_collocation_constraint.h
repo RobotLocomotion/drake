@@ -48,8 +48,6 @@ class DirectCollocationConstraint : public solvers::Constraint {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
               AutoDiffVecXd &y) const override;
 
-
- private:
   int num_states_;
   int num_inputs_;
 };
