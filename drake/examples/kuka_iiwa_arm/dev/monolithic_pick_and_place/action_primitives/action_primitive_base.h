@@ -54,10 +54,6 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState() const final;
 
   // LeafSystem override.
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const final;
-
-  // LeafSystem override.
   void SetDefaultState(const systems::Context<double>& context,
                        systems::State<double>* state) const final;
 
@@ -82,12 +78,6 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   /// default state unique to the class.
   virtual void SetExtendedDefaultState(const systems::Context<double>& context,
                                        systems::State<double>* state) const = 0;
-
-  /// Derived class need to implement this. This method is used to allocate
-  /// the output unique to the derived class.
-  virtual std::unique_ptr<systems::AbstractValue>
-  ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const = 0;
 
   /// Derived class need to implement this. This method is used to specify the
   /// additional `AbstractState` of the derived class.

@@ -37,15 +37,6 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 
-  /**
-   * Allocates abstract value types for output @p descriptor. This function
-   * allocates `IiwaActionInput` when @p matches the port for
-   * `output_port_iiwa_action_`, and 'GripperActionInput` for
-   * `output_port_wsg_action_`.
-   */
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const final;
-
   // This kind of a system is not a direct feedthrough.
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
                               int input_port, int output_port) const final {

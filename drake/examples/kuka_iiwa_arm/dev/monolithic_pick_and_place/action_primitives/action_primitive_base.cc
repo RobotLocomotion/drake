@@ -19,7 +19,9 @@ namespace monolithic_pick_and_place {
 ActionPrimitive::ActionPrimitive(double desired_update_interval,
                                  unsigned int action_primitive_state_index)
     : action_primitive_state_index_(action_primitive_state_index),
-      status_output_port_(this->DeclareAbstractOutputPort().get_index()),
+      status_output_port_(this->DeclareAbstractOutputPort(
+          systems::Value<ActionPrimitiveState>(ActionPrimitiveState::WAITING))
+          .get_index()),
       update_interval_(desired_update_interval) {
   this->DeclarePeriodicUnrestrictedUpdate(update_interval_, 0);
 }
@@ -55,16 +57,6 @@ void ActionPrimitive::DoCalcOutput(
 
   // Call DoExtendedCalcOutput.
   DoExtendedCalcOutput(context, output);
-}
-
-std::unique_ptr<systems::AbstractValue> ActionPrimitive::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == status_output_port_) {
-    return systems::AbstractValue::Make<ActionPrimitiveState>(
-        ActionPrimitiveState::WAITING);
-  } else {
-    return ExtendedAllocateOutputAbstract(descriptor);
-  }
 }
 
 }  // namespace monolithic_pick_and_place

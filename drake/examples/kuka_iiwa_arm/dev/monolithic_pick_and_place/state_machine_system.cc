@@ -78,8 +78,13 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
   input_port_wsg_status_ = this->DeclareAbstractInputPort().get_index();
   input_port_wsg_action_status_ = this->DeclareAbstractInputPort().get_index();
   input_port_iiwa_action_status_ = this->DeclareAbstractInputPort().get_index();
-  output_port_iiwa_action_ = this->DeclareAbstractOutputPort().get_index();
-  output_port_wsg_action_ = this->DeclareAbstractOutputPort().get_index();
+  output_port_iiwa_action_ =
+      this->DeclareAbstractOutputPort(systems::Value<IiwaActionInput>())
+          .get_index();
+  output_port_wsg_action_ =
+      this->DeclareAbstractOutputPort(
+              systems::Value<GripperActionInput>(GripperActionInput::CLOSE))
+          .get_index();
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
@@ -89,21 +94,6 @@ PickAndPlaceStateMachineSystem::AllocateAbstractState() const {
   abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
       new systems::Value<InternalState>(InternalState())));
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
-}
-
-std::unique_ptr<systems::AbstractValue>
-PickAndPlaceStateMachineSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  std::unique_ptr<systems::AbstractValue> return_val;
-  /* allocate iiwa action and wsg output port */
-  if (descriptor.get_index() == output_port_iiwa_action_) {
-    return_val =
-        systems::AbstractValue::Make<IiwaActionInput>(IiwaActionInput());
-  } else if (descriptor.get_index() == output_port_wsg_action_) {
-    return_val = systems::AbstractValue::Make<GripperActionInput>(
-        GripperActionInput::CLOSE);
-  }
-  return return_val;
 }
 
 void PickAndPlaceStateMachineSystem::SetDefaultState(

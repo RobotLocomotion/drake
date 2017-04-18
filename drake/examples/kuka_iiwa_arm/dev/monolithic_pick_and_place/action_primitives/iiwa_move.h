@@ -39,9 +39,6 @@ class IiwaMove : public ActionPrimitive {
   std::vector<std::unique_ptr<systems::AbstractValue>>
   AllocateExtendedAbstractState() const final;
 
-  std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   void SetExtendedDefaultState(const systems::Context<double>& context,
                                systems::State<double>* state) const override;
 

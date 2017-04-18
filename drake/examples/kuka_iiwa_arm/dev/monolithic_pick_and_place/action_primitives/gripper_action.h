@@ -40,10 +40,6 @@ class GripperAction : public ActionPrimitive {
   std::vector<std::unique_ptr<systems::AbstractValue>>
   AllocateExtendedAbstractState() const override;
 
-  std::unique_ptr<systems::AbstractValue>
-  ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   void SetExtendedDefaultState(
       const systems::Context<double>& context,
       systems::State<double>* state) const override;
@@ -57,6 +53,8 @@ class GripperAction : public ActionPrimitive {
       systems::State<double>* state) const override;
 
  private:
+  std::unique_ptr<systems::AbstractValue> AllocatePlanOutputPort() const;
+
   // InternalState relevant only to this primitive.
   struct InternalState;
 
