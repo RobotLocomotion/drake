@@ -1,0 +1,293 @@
+#!/bin/bash
+
+######################################################
+# TODO
+######################################################
+
+# The oxygen-urdf builder hasn't been tested (need a license!)
+# Especially the archiving part of that will probably hit the wrong directory
+
+######################################################
+# Colours
+######################################################
+
+# check if stdout is a terminal...
+if test -t 1; then
+ 
+    # see if it supports colors...
+    ncolors=$(tput colors)
+ 
+    if test -n "$ncolors" && test $ncolors -ge 8; then
+        BOLD="$(tput bold)"
+        UNDERLINE="$(tput smul)"
+        STANDOUT="$(tput smso)"
+        RESET="$(tput sgr0)"
+        BLACK="$(tput setaf 0)"
+        RED="$(tput setaf 1)"
+        GREEN="$(tput setaf 2)"
+        YELLOW="$(tput setaf 3)"
+        BLUE="$(tput setaf 4)"
+        MAGENTA="$(tput setaf 5)"
+        CYAN="$(tput setaf 6)"
+        WHITE="$(tput setaf 7)"
+    fi
+fi
+
+######################################################
+# Usage
+######################################################
+
+show_help ()
+{
+  echo -e ""
+  echo -e "    ${GREEN}Usage:"
+  echo -e "        ${CYAN}$(basename $0) ${YELLOW}<options>"
+  echo -e ""
+  echo -e "    ${GREEN}Options:"
+  echo -e "        ${CYAN}--help                 ${YELLOW} show this help message"
+  echo -e "        ${CYAN}--clean                ${YELLOW} clean temporary directories"
+  echo -e "        ${CYAN}--doxygen              ${YELLOW} build the doxygen c++ archive only"
+  echo -e "        ${CYAN}--matlab               ${YELLOW} build the doxygen matlab archive only"
+  echo -e "        ${CYAN}--sphinx               ${YELLOW} build the sphinx archive only"
+  echo -e "        ${CYAN}--urdf                 ${YELLOW} build the urdf archive only"
+  echo -e "        ${CYAN}-s,--source-directory  ${YELLOW} path to the drake sources [default: repo root relative to this script]"
+  echo -e "        ${CYAN}-w,--working-directory ${YELLOW} path to temporary files and logs [default: '.']"
+  echo -e "        ${CYAN}-o,--output-directory  ${YELLOW} path to save the .zip archives [default: '.']"
+  echo -e "${RESET}"
+  exit 0
+}
+
+for i in "$@"
+do
+case $i in
+    --help)
+    SHOW_HELP=1
+    shift
+    ;;
+    --clean)
+    CLEAN=1
+    shift
+    ;;
+    --doxygen)
+    DOXYGEN_ONLY=1
+    shift
+    ;;
+    --matlab)
+    MATLAB_ONLY=1
+    shift
+    ;;
+    --sphinx)
+    SPHINX_ONLY=1
+    shift
+    ;;
+    --urdf)
+    URDF_ONLY=1
+    shift
+    ;;
+    -s=*|--source-directory=*)
+    SOURCE_DIR="${i#*=}"
+    shift
+    ;;
+    -w=*|--working-directory=*)
+    WORKING_DIR="${i#*=}"
+    shift
+    ;;
+    -o=*|--output-directory=*)
+    OUTPUT_DIR="${i#*=}"
+    shift
+    ;;
+    *)
+       # unknown option
+    ;;
+esac
+done
+
+if [ ! -z "$SHOW_HELP" ]; then
+  show_help
+  exit 0
+fi
+
+######################################################
+# Variable configuration if not already set
+######################################################
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+: ${SOURCE_DIR="$(dirname $(dirname ${SCRIPT_DIR}))"}
+: ${WORKING_DIR="$PWD"}
+: ${OUTPUT_DIR="$PWD"}
+
+######################################################
+# Workers
+######################################################
+
+clean_artifacts()
+{
+    declare -a artifacts=("doxygen" "matlab" "sphinx" "urdf")
+    for i in "${artifacts[@]}"
+    do
+      echo -e "${GREEN}Removing directory --> ${WHITE}${BOLD}${WORKING_DIR}/.${i}${RESET}"
+      rm -rf ${WORKING_DIR}/.${i}
+      echo -e "${GREEN}Removing archive   --> ${WHITE}${BOLD}${OUTPUT_DIR}/${i}.zip${RESET}"
+      rm -f ${OUTPUT_DIR}/${i}.zip
+    done
+}
+
+find_doxygen_dependencies()
+{
+    # hunt like a caveman
+    DOXYGEN_EXECUTABLE=`which doxygen`
+    if [ $? -ne 0 ]; then
+    echo -e "${RED}ERROR : doxygen executable not found, aborting.${RESET}"
+    exit 1
+    fi
+    PERL_EXECUTABLE=`which perl`
+    if [ $? -ne 0 ]; then
+    echo -e "${RED}ERROR : perl executable not found, aborting.${RESET}"
+    exit 1
+    fi
+    DOT_EXECUTABLE=`which dot`
+    if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}WARNING : dot not found.${RESET}"
+    DOT_FOUND=NO
+    else
+    DOT_FOUND=YES
+    fi
+}
+
+build_doxygen()
+{
+    find_doxygen_dependencies
+    # pre-clean
+    rm -rf ${WORKING_DIR}/.doxygen ${OUTPUT_DIR}/doxygen.zip
+    mkdir -p ${WORKING_DIR}/.doxygen
+    # configure - envsubst needs substituting variables exported
+    export SOURCE_DIR WORKING_DIR DOXYGEN_EXECUTABLE PERL_EXECUTABLE DOT_FOUND DOT_EXECUTABLE
+    envsubst '${SOURCE_DIR} ${WORKING_DIR} ${DOXYGEN_EXECUTABLE} ${PERL_EXECUTABLE} ${DOT_FOUND} ${DOT_EXECUTABLE}' < "${SOURCE_DIR}/drake/doc/Doxyfile_CXX.in" > "${WORKING_DIR}/.doxygen/Doxyfile_CXX"
+    # build
+    echo -e "${GREEN}Building doxygen-cxx --> ${WHITE}${BOLD}${WORKING_DIR}/.doxygen${RESET}"
+    ${DOXYGEN_EXECUTABLE} ${WORKING_DIR}/.doxygen/Doxyfile_CXX
+    if [ $? -ne 0 ]; then
+      echo -e "${RED}ERROR : doxygen-cxx failed, aborting.${RESET}"
+      exit 1
+    fi
+    # archive
+    echo -e "${GREEN}Archiving doxygen-cxx --> ${WHITE}${BOLD}${OUTPUT_DIR}/doxygen.zip${RESET}"
+    (cd ${WORKING_DIR}/.doxygen/html && zip -q -r ${OUTPUT_DIR}/doxygen.zip .)
+}
+
+build_matlab()
+{
+    find_doxygen_dependencies
+    # pre-clean
+    rm -rf ${WORKING_DIR}/.matlab ${OUTPUT_DIR}/matlab.zip
+    mkdir -p ${WORKING_DIR}/.matlab
+    # configure - envsubst needs substituting variables exported
+    export SOURCE_DIR WORKING_DIR DOXYGEN_EXECUTABLE PERL_EXECUTABLE DOT_FOUND DOT_EXECUTABLE
+    envsubst '${SOURCE_DIR} ${WORKING_DIR} ${DOXYGEN_EXECUTABLE} ${PERL_EXECUTABLE} ${DOT_FOUND} ${DOT_EXECUTABLE}' < "${SOURCE_DIR}/drake/doc/Doxyfile_MATLAB.in" > "${WORKING_DIR}/.matlab/Doxyfile_MATLAB"
+    # build
+    echo -e "${GREEN}Building doxygen-matlab --> ${WHITE}${BOLD}${WORKING_DIR}/.matlab${RESET}"
+    ${DOXYGEN_EXECUTABLE} ${WORKING_DIR}/.matlab/Doxyfile_MATLAB
+    if [ $? -ne 0 ]; then
+      echo -e "${RED}ERROR : doxygen-matlab failed, aborting.${RESET}"
+      exit 1
+    fi
+    # archive
+    echo -e "${GREEN}Archiving doxygen-matlab --> ${WHITE}${BOLD}${OUTPUT_DIR}/matlab.zip${RESET}"
+    (cd ${WORKING_DIR}/.matlab/html && zip -q -r ${OUTPUT_DIR}/matlab.zip .)
+}
+build_sphinx()
+{
+    # hunt like a caveman
+    SPHINX_EXECUTABLE=`which sphinx-build`
+    if [ $? -ne 0 ]; then
+    echo -e "${RED}ERROR : perl executable not found, aborting.${RESET}"
+    exit 1
+    fi
+    SPHINX_SOURCE_DIR=${SCRIPT_DIR}
+    SPHINX_CONF=${SPHINX_SOURCE_DIR}/conf.py
+    # TODO ; check sphinx conf.py exists
+    # pre-clean
+    rm -rf ${WORKING_DIR}/.sphinx ${OUTPUT_DIR}/sphinx.zip
+    mkdir -p ${WORKING_DIR}/.sphinx
+    # build
+    echo -e "${GREEN}Building sphinx --> ${WHITE}${BOLD}${WORKING_DIR}/.sphinx${RESET}"
+    if [ $? -ne 0 ]; then
+      echo -e "${RED}ERROR : sphinx-build failed, aborting.${RESET}"
+      exit 1
+    fi
+    # -a -E -d <cache-dir>: don't use caching
+    # -W -N -q: turn warnings into errors else be quiet
+    ${SPHINX_EXECUTABLE} -b html -a -E -d ${WORKING_DIR}/.sphinx/.doctrees -W -N -q ${SPHINX_SOURCE_DIR} ${WORKING_DIR}/.sphinx/html
+    # archive
+    echo -e "${GREEN}Archiving sphinx --> ${WHITE}${BOLD}${OUTPUT_DIR}/sphinx.zip${RESET}"
+    (cd ${WORKING_DIR}/.sphinx/html && zip -q -r ${OUTPUT_DIR}/sphinx.zip .)
+}
+
+build_urdf()
+{
+    if [ -z ${OXYGEN_DIR+x} ]; then
+      echo -e "${YELLOW}WARNING : OXYGEN_DIR (oXygen XML Editor) not set. URDF documentation will be excluded from the documentation build.${RESET}"
+      return
+    fi
+    if [ ! -d "${OXYGEN_DIR}" ]; then
+      echo -e "${YELLOW}WARNING : ${OXYGEN_DIR} (oXygen XML Editor) not found. URDF documentation will be excluded from the documentation build.${RESET}"
+      return
+    fi
+    if [[ $OSTYPE == darwin* ]]; then
+      OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE="${OXYGEN_DIR}/schemaDocumentationMac.sh"
+    else
+      OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE="${OXYGEN_DIR}/schemaDocumentation.sh"
+    fi
+    # configure - envsubst needs substituting variables exported
+    export WORKING_DIR
+    envsubst '${WORKING_DIR}' < "${SOURCE_DIR}/drake/doc/oxygen_cfg.xml.in" > "${WORKING_DIR}/.urdf/oxygen_cfg.xml"
+    # build
+    echo -e "${GREEN}Building oxygen-urdf --> ${WHITE}${BOLD}${WORKING_DIR}/.urdf${RESET}"
+    ${OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE} ${SOURCE_DIR}/drake/doc/drakeURDF.xsd -cfg:${WORKING_DIR}/.urdf/oxygen_cfg.xml
+    if [ $? -ne 0 ]; then
+      echo -e "${RED}ERROR : oxygen-urdf failed, aborting.${RESET}"
+      exit 1
+    fi
+    # archive
+    echo -e "${GREEN}Archiving oxygen-urdf --> ${WHITE}${BOLD}${OUTPUT_DIR}/urdf.zip${RESET}"
+    (cd ${WORKING_DIR}/.urdf/html && zip -q -r ${OUTPUT_DIR}/urdf.zip .)
+}
+
+######################################################
+# Single Jobs
+######################################################
+
+if [ ! -z "$CLEAN" ]; then
+  clean_artifacts
+  exit 0
+fi
+
+if [ ! -z "$DOXYGEN_ONLY" ]; then
+  build_doxygen
+  exit 0
+fi
+
+if [ ! -z "$MATLAB_ONLY" ]; then
+  build_matlab
+  exit 0
+fi
+
+if [ ! -z "$SPHINX_ONLY" ]; then
+  build_sphinx
+  exit 0
+fi
+
+if [ ! -z "$URDF_ONLY" ]; then
+  build_urdf
+  exit 0
+fi
+
+######################################################
+# All builds
+######################################################
+
+build_doxygen
+build_matlab
+build_sphinx
+bulid_urdf
