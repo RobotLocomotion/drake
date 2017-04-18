@@ -62,7 +62,7 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
     : OptimizationProgram(cost_form, cnstr_form),
       x_(),
       x_expected_(0.25, 0.75) {
-  x_ = prog()->NewContinuousVariables<2>();
+  x_ = this->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
       Matrix2d Q;
@@ -71,12 +71,12 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
           0, 2;
       // clang-format on
       Vector2d b(1, 0);
-      prog()->AddQuadraticCost(Q, b, x_);
-      prog()->AddLinearCost(Vector1d(1.0), x_.segment<1>(1));
+      this->AddQuadraticCost(Q, b, x_);
+      this->AddLinearCost(Vector1d(1.0), x_.segment<1>(1));
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(2 * x_(0) * x_(0) + x_(0) * x_(1) +
+      this->AddQuadraticCost(2 * x_(0) * x_(0) + x_(0) * x_(1) +
                                x_(1) * x_(1) + x_(0) + x_(1));
       break;
     }
@@ -86,23 +86,23 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
   }
   switch (cnstr_form) {
     case ConstraintForm::kNonSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+      this->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
                                        x_);
-      prog()->AddBoundingBoxConstraint(-1, numeric_limits<double>::infinity(),
+      this->AddBoundingBoxConstraint(-1, numeric_limits<double>::infinity(),
                                        x_(1));
-      prog()->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_);
+      this->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_);
       break;
     }
     case ConstraintForm::kSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+      this->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
                                        x_);
-      prog()->AddLinearEqualityConstraint(x_(0) + x_(1), 1);
+      this->AddLinearEqualityConstraint(x_(0) + x_(1), 1);
       break;
     }
     case ConstraintForm::kFormula : {
-      prog()->AddLinearConstraint(x_(0) >= 0);
-      prog()->AddLinearConstraint(x_(1) >= 0);
-      prog()->AddLinearConstraint(x_(0) + x_(1) == 1);
+      this->AddLinearConstraint(x_(0) >= 0);
+      this->AddLinearConstraint(x_(1) >= 0);
+      this->AddLinearConstraint(x_(0) + x_(1) == 1);
       break;
     }
     default : {
@@ -118,9 +118,9 @@ void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
   } else if (solver_type == SolverType::kMosek) {
     tol = 1E-9;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(this->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*this, tol);
 }
 
 QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
@@ -128,7 +128,7 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
     : OptimizationProgram(cost_form, cnstr_form),
       x_{},
       x_expected_(0, 1, 2.0 / 3) {
-  x_ = prog()->NewContinuousVariables<3>();
+  x_ = this->NewContinuousVariables<3>();
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
       Matrix3d Q = 2 * Matrix3d::Identity();
@@ -138,11 +138,11 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
       Q(2, 1) = 1;
       Vector3d b{};
       b << 2.0, 0.0, 0.0;
-      prog()->AddQuadraticCost(Q, b, x_);
+      this->AddQuadraticCost(Q, b, x_);
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(0) * x_(1) + x_(1) * x_(1) +
+      this->AddQuadraticCost(x_(0) * x_(0) + x_(0) * x_(1) + x_(1) * x_(1) +
                                x_(1) * x_(2) + x_(2) * x_(2) + 2 * x_(0));
       break;
     }
@@ -154,18 +154,18 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
                 numeric_limits<double>::infinity());
   switch (cnstr_form) {
     case ConstraintForm::kNonSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+      this->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
                                        x_);
       Eigen::Matrix<double, 4, 3> A1;
       A1 << 1, 2, 3, -1, -1, 0, 0, 1, 2, 1, 1, 2;
 
-      prog()->AddLinearConstraint(A1, b_lb, b_ub, x_);
+      this->AddLinearConstraint(A1, b_lb, b_ub, x_);
       // This test also handles linear equality constraint
-      prog()->AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3, x_);
+      this->AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3, x_);
       break;
     }
     case ConstraintForm::kSymbolic : {
-      prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
+      this->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
                                        x_);
       Vector4<Expression> expr;
       // clang-format off
@@ -174,22 +174,22 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
           x_(1) + 2 * x_(2),
           x_(0) + x_(1) + 2 * x_(2);
       // clang-format on
-      prog()->AddLinearConstraint(expr, b_lb, b_ub);
-      prog()->AddLinearEqualityConstraint(3 * x_(0) + x_(1) + 3 * x_(2), 3);
+      this->AddLinearConstraint(expr, b_lb, b_ub);
+      this->AddLinearEqualityConstraint(3 * x_(0) + x_(1) + 3 * x_(2), 3);
       break;
     }
     case ConstraintForm::kFormula : {
       for (int i = 0; i < 3; ++i) {
-        prog()->AddLinearConstraint(x_(i) >= 0);
+        this->AddLinearConstraint(x_(i) >= 0);
       }
-      prog()->AddLinearConstraint(x_(0) + 2 * x_(1) + 3 * x_(2) >= 4);
-      prog()->AddLinearConstraint(-x_(0) - x_(1) <= -1);
-      prog()->AddLinearConstraint(x_(1) + 2 * x_(2), -20, 100);
+      this->AddLinearConstraint(x_(0) + 2 * x_(1) + 3 * x_(2) >= 4);
+      this->AddLinearConstraint(-x_(0) - x_(1) <= -1);
+      this->AddLinearConstraint(x_(1) + 2 * x_(2), -20, 100);
       // TODO(hongkai.dai): Uncoment the next line, when we resolves the error
       // with infinity on the right handside of a formula.
-      // prog()->AddLinearConstraint(x_(0) + x_(1) + 2 * x_(2) <=
+      // this->AddLinearConstraint(x_(0) + x_(1) + 2 * x_(2) <=
       // numeric_limits<double>::infinity());
-      prog()->AddLinearConstraint(3 * x_(0) + x_(1) + 3 * x_(2) == 3);
+      this->AddLinearConstraint(3 * x_(0) + x_(1) + 3 * x_(2) == 3);
       break;
     }
     default : throw std::runtime_error("Unsupported constraint form.");
@@ -203,15 +203,15 @@ void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
   } else if (solver_type == SolverType::kMosek) {
     tol = 1E-9;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(this->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*this, tol);
 }
 
 QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
                                      ConstraintForm cnstr_form)
     : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_{} {
-  x_ = prog()->NewContinuousVariables<5>();
+  x_ = this->NewContinuousVariables<5>();
 
   Eigen::Matrix<double, 5, 1> Q_diag{};
   Q_diag << 5.5, 6.5, 6.0, 5.3, 7.5;
@@ -222,11 +222,11 @@ QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
   b << 3.2, 1.3, 5.6, 9.0, 1.2;
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
-      prog()->AddQuadraticCost(Q, b, x_);
+      this->AddQuadraticCost(Q, b, x_);
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(0.5 * x_.dot(Q * x_) + b.dot(x_));
+      this->AddQuadraticCost(0.5 * x_.dot(Q * x_) + b.dot(x_));
       break;
     }
     default : throw std::runtime_error("Unsupported cost form.");
@@ -243,15 +243,15 @@ void QuadraticProgram2::CheckSolution(SolverType solver_type) const {
   } else if (solver_type == SolverType::kSnopt) {
     tol = 1E-6;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(this->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*this, tol);
 }
 
 QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
                                      ConstraintForm cnstr_form)
 : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_{} {
-  x_ = prog()->NewContinuousVariables<6>();
+  x_ = this->NewContinuousVariables<6>();
   Vector4d Q1_diag;
   Q1_diag << 5.5, 6.5, 6.0, 7.0;
   Eigen::Matrix4d Q1 = Q1_diag.asDiagonal();
@@ -267,12 +267,12 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
 
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
-      prog()->AddQuadraticCost(Q1, b1, x_.head<4>());
-      prog()->AddQuadraticCost(Q2, b2, x_.tail<4>());
+      this->AddQuadraticCost(Q1, b1, x_.head<4>());
+      this->AddQuadraticCost(Q2, b2, x_.tail<4>());
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(
+      this->AddQuadraticCost(
           0.5 * x_.head<4>().dot(Q1 * x_.head<4>()) + b1.dot(x_.head<4>()) +
           0.5 * x_.tail<4>().dot(Q2 * x_.tail<4>()) + b2.dot(x_.tail<4>()));
       break;
@@ -299,25 +299,25 @@ void QuadraticProgram3::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kMosek) {
     tol = 1E-8;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(this->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*this, tol);
 }
 
 QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
                                      ConstraintForm cnstr_form)
 : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_(0.8, 0.2, 0.6) {
-  x_ = prog()->NewContinuousVariables<3>();
+  x_ = this->NewContinuousVariables<3>();
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
       Matrix3d Q = Matrix3d::Identity();
       Q(2, 2) = 2.0;
       Vector3d b = Vector3d::Zero();
-      prog()->AddQuadraticCost(2 * Q, b, x_);
+      this->AddQuadraticCost(2 * Q, b, x_);
       break;
     }
     case CostForm::kSymbolic : {
-      prog()->AddQuadraticCost(x_(0) * x_(0) + x_(1) * x_(1) +
+      this->AddQuadraticCost(x_(0) * x_(0) + x_(1) * x_(1) +
                                2 * x_(2) * x_(2));
       break;
     }
@@ -325,19 +325,19 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
   }
   switch (cnstr_form) {
     case ConstraintForm::kNonSymbolic : {
-      prog()->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_.head<2>());
-      prog()->AddLinearEqualityConstraint(RowVector2d(1, 2), 2,
+      this->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_.head<2>());
+      this->AddLinearEqualityConstraint(RowVector2d(1, 2), 2,
                                           {x_.segment<1>(0), x_.segment<1>(2)});
       break;
     }
     case ConstraintForm::kSymbolic : {
-      prog()->AddLinearEqualityConstraint(x_(0) + x_(1), 1);
-      prog()->AddLinearEqualityConstraint(x_(0) + 2 * x_(2), 2);
+      this->AddLinearEqualityConstraint(x_(0) + x_(1), 1);
+      this->AddLinearEqualityConstraint(x_(0) + 2 * x_(2), 2);
       break;
     }
     case ConstraintForm::kFormula : {
-      prog()->AddLinearConstraint(x_(0) + x_(1) == 1);
-      prog()->AddLinearConstraint(x_(0) + 2 * x_(2) == 2);
+      this->AddLinearConstraint(x_(0) + x_(1) == 1);
+      this->AddLinearConstraint(x_(0) + 2 * x_(2) == 2);
       break;
     }
     default : throw std::runtime_error("Unsupported constraint form.");
@@ -349,9 +349,9 @@ void QuadraticProgram4::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kMosek) {
     tol = 1E-8;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(this->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*this, tol);
 }
 
 void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {

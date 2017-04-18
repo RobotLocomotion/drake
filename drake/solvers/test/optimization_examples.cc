@@ -54,13 +54,12 @@ void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol) {
 OptimizationProgram::OptimizationProgram(CostForm cost_form,
                                          ConstraintForm cnstr_form)
     : cost_form_(cost_form),
-      cnstr_form_(cnstr_form),
-      prog_(std::make_unique<MathematicalProgram>()) {}
+      cnstr_form_(cnstr_form) {}
 
 void OptimizationProgram::RunProblem(
     MathematicalProgramSolverInterface* solver) {
   if (solver->available()) {
-    RunSolver(prog_.get(), *solver);
+    RunSolver(this, *solver);
     CheckSolution(solver->solver_type());
   }
 }

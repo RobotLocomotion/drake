@@ -29,7 +29,7 @@ enum class ConstraintForm {
 
 void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol);
 
-class OptimizationProgram {
+class OptimizationProgram : public MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)
 
@@ -41,8 +41,6 @@ class OptimizationProgram {
 
   ConstraintForm cnstr_form() const {return cnstr_form_;}
 
-  MathematicalProgram* prog() const { return prog_.get(); }
-
   virtual void CheckSolution(SolverType solver_type) const = 0;
 
   double GetSolverSolutionDefaultCompareTolerance(SolverType solver_type) const;
@@ -52,7 +50,6 @@ class OptimizationProgram {
  private:
   CostForm cost_form_;
   ConstraintForm cnstr_form_;
-  std::unique_ptr<MathematicalProgram> prog_;
 };
 
 /**
