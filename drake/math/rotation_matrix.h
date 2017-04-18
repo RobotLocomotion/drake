@@ -323,7 +323,7 @@ double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
   Scalar alpha =
       atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
   Scalar theta;
-  // The bounds on θ + α is [angle_lb - 2π, angle_ub + 2π].
+  // The bounds on θ + α is [angle_lb + α, angle_ub + α].
   if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
     theta = M_PI_2 - alpha;
   } else if (std::isinf(angle_ub)) {
