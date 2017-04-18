@@ -74,7 +74,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
           context.get_discrete_state(0));
   SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
       dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          discrete_state->get_mutable_discrete_state(0));
+          discrete_state->get_mutable_vector(0));
 
   if (std::abs(last_traj_state->last_target_position() - target_position) >
       kTargetEpsilon) {

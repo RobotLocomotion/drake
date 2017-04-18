@@ -113,7 +113,7 @@ TEST_F(ZeroOrderHoldTest, Update) {
   hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update.get());
 
   // Check that the state has been updated to the input.
-  const VectorBase<double>* xd = update->get_discrete_state(0);
+  const VectorBase<double>* xd = update->get_vector(0);
   EXPECT_EQ(1.0, xd->GetAtIndex(0));
   EXPECT_EQ(1.0, xd->GetAtIndex(1));
   EXPECT_EQ(3.0, xd->GetAtIndex(2));
@@ -157,7 +157,7 @@ TEST_F(SymbolicZeroOrderHoldTest, Update) {
       DiscreteEvent<symbolic::Expression>::kDiscreteUpdateAction;
 
   hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update_.get());
-  const auto& xd = *update_->get_discrete_state(0);
+  const auto& xd = *update_->get_vector(0);
   EXPECT_EQ("u0", xd[0].to_string());
 }
 

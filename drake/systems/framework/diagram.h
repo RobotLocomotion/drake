@@ -1320,8 +1320,8 @@ class Diagram : public System<T>,
 
     // As a baseline, initialize all the difference variables to their
     // current values.
-    for (int i = 0; i < diagram_differences->size(); ++i) {
-      diagram_differences->get_mutable_discrete_state(i)->set_value(
+    for (int i = 0; i < diagram_differences->num_groups(); ++i) {
+      diagram_differences->get_mutable_vector(i)->set_value(
           context.get_discrete_state(i)->get_value());
     }
 

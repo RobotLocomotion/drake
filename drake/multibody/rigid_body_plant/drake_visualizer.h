@@ -119,9 +119,9 @@ class DrakeVisualizer : public LeafSystem<double> {
   void set_is_load_message_sent(DiscreteValues<double>* state,
                                 bool flag) const {
     if (flag)
-      state->get_mutable_discrete_state(0)->SetAtIndex(0, 1);
+      state->get_mutable_vector(0)->SetAtIndex(0, 1);
     else
-      state->get_mutable_discrete_state(0)->SetAtIndex(0, 0);
+      state->get_mutable_vector(0)->SetAtIndex(0, 0);
   }
 
   // Set the default to "initialization phase has not been completed."

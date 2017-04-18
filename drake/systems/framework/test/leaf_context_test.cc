@@ -107,11 +107,9 @@ void VerifyClonedState(const State<double>& clone) {
     EXPECT_EQ(expected, contents);
   }
 
-  EXPECT_EQ(2, clone.get_discrete_state()->size());
-  const BasicVector<double>* xd0 =
-      clone.get_discrete_state()->get_discrete_state(0);
-  const BasicVector<double>* xd1 =
-      clone.get_discrete_state()->get_discrete_state(1);
+  EXPECT_EQ(2, clone.get_discrete_state()->num_groups());
+  const BasicVector<double>* xd0 = clone.get_discrete_state()->get_vector(0);
+  const BasicVector<double>* xd1 = clone.get_discrete_state()->get_vector(1);
   {
     VectorX<double> contents = xd0->CopyToVector();
     VectorX<double> expected(1);

@@ -589,8 +589,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   VectorXd xn(qn.rows() + vn.rows());
   xn << qn, vn;
 
-  EXPECT_TRUE(
-      CompareMatrices(updates->get_discrete_state(0)->CopyToVector(), xn));
+  EXPECT_TRUE(CompareMatrices(updates->get_vector(0)->CopyToVector(), xn));
 }
 
 }  // namespace

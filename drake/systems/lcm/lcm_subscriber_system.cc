@@ -94,9 +94,9 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToDiscreteState(
   if (!received_message_.empty()) {
     translator_->Deserialize(
         received_message_.data(), received_message_.size(),
-        discrete_state->get_mutable_discrete_state(kStateIndexMessage));
+        discrete_state->get_mutable_vector(kStateIndexMessage));
   }
-  discrete_state->get_mutable_discrete_state(kStateIndexMessageCount)
+  discrete_state->get_mutable_vector(kStateIndexMessageCount)
       ->SetAtIndex(0, received_message_count_);
 }
 

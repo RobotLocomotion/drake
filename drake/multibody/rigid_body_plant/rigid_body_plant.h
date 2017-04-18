@@ -227,7 +227,7 @@ class RigidBodyPlant : public LeafSystem<T> {
     } else {
       // Extract a pointer to the discrete state from the context.
       BasicVector<T>* xd =
-          state->get_mutable_discrete_state()->get_mutable_discrete_state(0);
+          state->get_mutable_discrete_state()->get_mutable_vector(0);
       DRAKE_DEMAND(xd != nullptr);
 
       // Write the zero configuration into the discrete state.

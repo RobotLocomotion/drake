@@ -57,7 +57,7 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
       new_positions(i) = command.joint_position[i];
     }
 
-    BasicVector<double>* state = discrete_state->get_mutable_discrete_state(0);
+    BasicVector<double>* state = discrete_state->get_mutable_vector(0);
     auto state_value = state->get_mutable_value();
     state_value.tail(kNumJoints) =
         (new_positions - state_value.head(kNumJoints)) / kIiwaLcmStatusPeriod;
@@ -151,7 +151,7 @@ void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
       commanded_position(i) = status.joint_position_commanded[i];
     }
 
-    BasicVector<double>* state = discrete_state->get_mutable_discrete_state(0);
+    BasicVector<double>* state = discrete_state->get_mutable_vector(0);
     auto state_value = state->get_mutable_value();
     state_value.segment(kNumJoints, kNumJoints) =
         (measured_position - state_value.head(kNumJoints)) /
