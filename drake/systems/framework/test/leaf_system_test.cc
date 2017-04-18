@@ -85,6 +85,11 @@ class TestSystem : public LeafSystem<T> {
       const Context<T>& context) const {
     return this->GetNumericParameter(context, 0 /* index */);
   }
+
+  BasicVector<T>* GetVanillaMutableNumericParameters(
+      Context<T>* context) const {
+    return this->GetMutableNumericParameter(context, 0 /* index */);
+  }
 };
 
 class LeafSystemTest : public ::testing::Test {
@@ -233,13 +238,17 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
 }
 
 // Tests that the leaf system reserved the declared Parameters with default
-// values.
+// values, and that they are modifiable.
 TEST_F(LeafSystemTest, Parameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const BasicVector<double>& vec =
       system_.GetVanillaNumericParameters(*context);
   EXPECT_EQ(13.0, vec[0]);
   EXPECT_EQ(7.0, vec[1]);
+  BasicVector<double>* mutable_vec =
+      system_.GetVanillaMutableNumericParameters(context.get());
+  mutable_vec->SetAtIndex(1, 42.0);
+  EXPECT_EQ(42.0, vec[1]);
 }
 
 // Tests that the leaf system reserved the declared misc continuous state.

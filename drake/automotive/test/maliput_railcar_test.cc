@@ -218,17 +218,7 @@ class MaliputRailcarTest : public ::testing::Test {
 
   // Sets the configuration parameters of the railcar.
   void SetParams(const MaliputRailcarParams<double>& params) {
-    LeafContext<double>* leaf_context =
-        dynamic_cast<LeafContext<double>*>(context_.get());
-    ASSERT_NE(leaf_context, nullptr);
-    Parameters<double>& parameters = leaf_context->get_mutable_parameters();
-    BasicVector<double>* vector_param =
-        parameters.get_mutable_numeric_parameter(0);
-    ASSERT_NE(vector_param, nullptr);
-    MaliputRailcarParams<double>* railcar_params =
-        dynamic_cast<MaliputRailcarParams<double>*>(vector_param);
-    ASSERT_NE(railcar_params, nullptr);
-    railcar_params->SetFrom(params);
+    dut_->get_mutable_parameters(context_.get())->SetFrom(params);
   }
 
   // Obtains the lanes created by the call to InitializeTwoLaneStretchOfRoad().

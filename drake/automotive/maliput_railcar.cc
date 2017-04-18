@@ -94,6 +94,13 @@ const OutputPortDescriptor<T>& MaliputRailcar<T>::velocity_output() const {
 }
 
 template <typename T>
+MaliputRailcarParams<T>* MaliputRailcar<T>::get_mutable_parameters(
+    systems::Context<T>* context) const {
+  return this->template GetMutableNumericParameter<MaliputRailcarParams>(
+      context, 0);
+}
+
+template <typename T>
 void MaliputRailcar<T>::DoCalcOutput(const Context<T>& context,
     SystemOutput<T>* output) const {
   // Obtains the parameters.
