@@ -72,6 +72,7 @@ if(lcm_FOUND)
     drakeLCMTypes
     drakeTrajectories
     drakeMultibodyParsers
+    drakeLcmDrivenLoop
     drakeLcmSystem
     drakeRBM
     drakeSystemAnalysis

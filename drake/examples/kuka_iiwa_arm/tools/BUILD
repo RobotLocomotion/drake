@@ -16,7 +16,7 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/lcm",
-        "//drake/lcmtypes:viewer",        
+        "//drake/lcmtypes:viewer",
         "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/framework",
