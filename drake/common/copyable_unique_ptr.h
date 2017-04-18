@@ -97,7 +97,7 @@ using is_copyable_unique_ptr_compatible =
 
  __Usage__
 
- In the simplest use case, the specialization type will match the type of object
+ In the simplest use case, the instantiation type will match the type of object
  it references, e.g.:
  @code
  copyable_unique_ptr<Foo> ptr = make_unique<Foo>(...);
@@ -106,8 +106,8 @@ using is_copyable_unique_ptr_compatible =
  expected, i.e., when `ptr` copies, it will contain a reference to a new
  instance of `Foo`.
 
- %copyable_unique_ptr can also be used with polymorphic classes -- an instance
- of a %copyable_unique_ptr, specialized on a _base_ class, references an
+ %copyable_unique_ptr can also be used with polymorphic classes -- a
+ %copyable_unique_ptr, instantiated on a _base_ class, references an
  instance of a _derived_ class. When copying the object, we would want the copy
  to likewise contain an instance of the derived class.  For example:
 
@@ -329,9 +329,9 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    Note that you need write access to this container in order to get write
    access to the object it contains.
 
-   @warning If %copyable_unique_ptr is specialized on a const template parameter
-   (e.g., `copyable_unqiue_ptr<const Foo>`), then get_mutable() returns a const
-   pointer. */
+   @warning If %copyable_unique_ptr is instantiated on a const template
+   parameter (e.g., `copyable_unique_ptr<const Foo>`), then get_mutable()
+   returns a const pointer. */
   T* get_mutable() noexcept { return std::unique_ptr<T>::get(); }
 
   /**@}*/
