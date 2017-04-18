@@ -255,7 +255,7 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  * Projects a 3 x 3 matrix `M` onto SO(3). The projected rotation matrix `R`
  * has a given rotation axis `a`, and its rotation angle θ is bounded as
  * angle_lb <= θ <= angle_ub. One use case for this function is to reconstruct
- * the rotation matrix for a revolute joint of with joint limits.
+ * the rotation matrix for a revolute joint with joint limits.
  * @see GlobalInverseKinematics for an usage of this function.
  * We can formulate this as an optimization problem
  * <pre>
