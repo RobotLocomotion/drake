@@ -1263,6 +1263,144 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
 }
 
+// A system for testing per step actions.
+class PerStepActionTestSystem : public LeafSystem<double> {
+ public:
+  PerStepActionTestSystem() {
+    DeclareDiscreteState(1);
+    DeclareAbstractState(AbstractValue::Make<std::string>(""));
+  }
+
+  void AddPerStepAction(
+      const typename DiscreteEvent<double>::ActionType& action) {
+    this->DeclarePerStepAction(action);
+  }
+
+  int get_publish_ctr() const {
+    return publish_ctr_;
+  }
+
+ private:
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {
+    state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
+        SetAtIndex(0, 0);
+    state->get_mutable_abstract_state<std::string>(0) = "wow";
+  }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const override {
+    discrete_state->get_mutable_discrete_state(0)->SetAtIndex(
+        0, context.get_discrete_state(0)->GetAtIndex(0) + 1);
+  }
+
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                State<double>* state) const override {
+    int int_num = static_cast<int>(
+        context.get_discrete_state(0)->GetAtIndex(0));
+    state->get_mutable_abstract_state<std::string>(0) =
+        "wow" + std::to_string(int_num);
+  }
+
+  void DoPublish(const Context<double>& context) const override {
+    publish_ctr_++;
+  }
+
+  // A hack to test publish calls easily.
+  mutable int publish_ctr_{0};
+};
+
+// Builds a nested diagram and tests per step publish, discrete and
+// unrestricted updates.
+GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
+  std::unique_ptr<Diagram<double>> sub_diagram;
+  PerStepActionTestSystem* sys0;
+  PerStepActionTestSystem* sys1;
+  PerStepActionTestSystem* sys2;
+
+  // Sub diagram. Has sys0, and sys1.
+  // sys0 does not have any per step actions.
+  // sys1 has discrete and unrestricted updates.
+  {
+    DiagramBuilder<double> builder;
+    sys0 = builder.AddSystem<PerStepActionTestSystem>();
+    sys1 = builder.AddSystem<PerStepActionTestSystem>();
+
+    sys1->AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+    sys1->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+    sub_diagram = builder.Build();
+  }
+
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram));
+  sys2 = builder.AddSystem<PerStepActionTestSystem>();
+
+  // sys2 has publish and unrestricted updates.
+  sys2->AddPerStepAction(DiscreteEvent<double>::kPublishAction);
+  sys2->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  std::vector<DiscreteEvent<double>> events;
+  diagram->GetPerStepEvents(*context, &events);
+
+  EXPECT_EQ(events.size(), 3);
+
+  auto tmp_discrete_state = diagram->AllocateDiscreteVariables();
+  std::unique_ptr<State<double>> tmp_state;
+
+  // Does unrestricted update first.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kUnrestrictedUpdateAction) {
+      tmp_state = context->CloneState();
+      diagram->CalcUnrestrictedUpdate(*context, event,
+          tmp_state.get());
+      context->get_mutable_state()->CopyFrom(*tmp_state);
+    }
+  }
+
+  // Does discrete updates second.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kDiscreteUpdateAction) {
+      diagram->CalcDiscreteVariableUpdates(*context, event,
+          tmp_discrete_state.get());
+      context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
+    }
+  }
+
+  // Publishes last.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kPublishAction) {
+      diagram->Publish(*context, event);
+    }
+  }
+
+  // Only sys2 published once.
+  EXPECT_EQ(sys0->get_publish_ctr(), 0);
+  EXPECT_EQ(sys1->get_publish_ctr(), 0);
+  EXPECT_EQ(sys2->get_publish_ctr(), 1);
+
+  // sys0 doesn't have any updates.
+  auto& sys0_context = diagram->GetSubsystemContext(*context, sys0);
+  EXPECT_EQ(sys0_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
+
+  // sys1 should have an unrestricted update then a discrete update.
+  auto& sys1_context = diagram->GetSubsystemContext(*context, sys1);
+  EXPECT_EQ(sys1_context.get_discrete_state(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
+
+  // sys2 should have a unrestricted update then a publish.
+  auto& sys2_context = diagram->GetSubsystemContext(*context, sys2);
+  EXPECT_EQ(sys2_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

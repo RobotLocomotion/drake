@@ -586,6 +586,84 @@ GTEST_TEST(SimulatorTest, AutodiffBasic) {
   simulator.StepTo(1);
 }
 
+// Tests per step publish, discrete and unrestricted update actions. Each
+// action handler logs the context time when it's called, and the test compares
+// the time stamp against the integrator's dt.
+GTEST_TEST(SimulatorTest, PerStepAction) {
+  class PerStepActionTestSystem : public LeafSystem<double> {
+   public:
+    PerStepActionTestSystem() {}
+
+    void AddPerStepAction(
+        const typename DiscreteEvent<double>::ActionType& action) {
+      this->DeclarePerStepAction(action);
+    }
+
+    const std::vector<double>& get_publish_times() const {
+      return publish_times_;
+    }
+
+    const std::vector<double>& get_discrete_update_times() const {
+      return discrete_update_times_;
+    }
+
+    const std::vector<double>& get_unrestricted_update_times() const {
+      return unrestricted_update_times_;
+    }
+
+   private:
+    void DoCalcOutput(const Context<double>& context,
+        SystemOutput<double>* output) const override {}
+
+    void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+        DiscreteValues<double>* discrete_state) const override {
+      discrete_update_times_.push_back(context.get_time());
+    }
+
+    void DoCalcUnrestrictedUpdate(const Context<double>& context,
+        State<double>* state) const override {
+      unrestricted_update_times_.push_back(context.get_time());
+    }
+
+    void DoPublish(const Context<double>& context) const override {
+      publish_times_.push_back(context.get_time());
+    }
+
+    // A hack to test actions easily.
+    mutable std::vector<double> publish_times_;
+    mutable std::vector<double> discrete_update_times_;
+    mutable std::vector<double> unrestricted_update_times_;
+  };
+
+  PerStepActionTestSystem sys;
+  sys.AddPerStepAction(DiscreteEvent<double>::kPublishAction);
+  sys.AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+  sys.AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+  Simulator<double> sim(sys);
+
+  // Disables all simulator induced publish events, so that all publish calls
+  // are intiated by sys.
+  sim.set_publish_at_initialization(false);
+  sim.set_publish_every_time_step(false);
+  sim.Initialize();
+  sim.StepTo(0.1);
+
+  double dt = sim.get_integrator()->get_maximum_step_size();
+  int N = static_cast<int>(0.1 / dt);
+
+  auto& publish_times = sys.get_publish_times();
+  auto& discrete_update_times = sys.get_discrete_update_times();
+  auto& unrestricted_update_times = sys.get_unrestricted_update_times();
+  EXPECT_EQ(publish_times.size(), N);
+  EXPECT_EQ(sys.get_discrete_update_times().size(), N);
+  EXPECT_EQ(sys.get_unrestricted_update_times().size(), N);
+  for (size_t i = 0; i < publish_times.size(); ++i) {
+    EXPECT_NEAR(publish_times[i], i * dt, 1e-12);
+    EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
+    EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
+  }
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
