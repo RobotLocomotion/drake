@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -14,18 +15,17 @@ template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // TODO(amcastro-tri): Assign an infinite mass to the "world" body when rigid
   // body mass properties are implemented.
-  RigidBody<T>::Create(this);
+  AddBody<RigidBody>();
 }
 
 template <typename T>
 void MultibodyTree<T>::Compile() {
   // If the topology is valid it means that this MultibodyTree was already
-  // compiled. Since this is an expensive operation, throw an exception to alert
-  // users.
+  // compiled. Re-compilation is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
         "Attempting to call MultibodyTree::Compile() on an already compiled "
-            "MultibodyTree.");
+        "MultibodyTree.");
   }
 
   // TODO(amcastro-tri): This is a brief list of operations to be added in
@@ -35,9 +35,14 @@ void MultibodyTree<T>::Compile() {
   //     allocate a context and request the required cache entries.
   //   - Setup computational structures (BodyNode based).
 
-  // Here, give bodies the chance to perform any compile-time setup.
+  // Give bodies the chance to perform any compile-time setup.
   for (const auto& body : owned_bodies_) {
-    body->Compile();
+    body->Compile(*this);
+  }
+
+  // Give frames the chance to perform any compile-time setup.
+  for (const auto& frame : owned_frames_) {
+    frame->Compile(*this);
   }
 
   validate_topology();

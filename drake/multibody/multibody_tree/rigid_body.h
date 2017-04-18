@@ -44,22 +44,13 @@ class RigidBody : public Body<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
-  /// Creates a new %RigidBody and adds it to the MultibodyTree world.
-  /// The MultibodyTree `tree` takes ownership of the newly created body.
-  ///
-  /// @note This method invalidates the topology of the MultibodyTree `tree`.
-  /// Users must call the Compile() method on `tree` in order to re-compute and
-  /// validate its topology. See the documentation on Compile() for details.
-  ///
-  /// @param[in, out] tree The parent MultibodyTree to which this body will be
-  ///                      added.
-  /// @returns A constant reference to the newly created rigid body.
-  // TODO(amcastro-tri): In a future PR this factory will take a MassProperties
-  // object to:
+  /// Constructs a %RigidBody with the given mass properties.
+  // TODO(amcastro-tri): In a future PR this constructor will take a
+  // MassProperties object to:
   //   1. Force users to provide all the necessary information at creation.
   //   2. Perform all the necessary checks to ensure the supplied mass
   //      properties are physically valid.
-  static const RigidBody<T>& Create(MultibodyTree<T>* tree);
+  RigidBody();
 
   /// There are no flexible degrees of freedom associated with a rigid body and
   /// therefore this method returns zero. By definition, a rigid body has no
@@ -70,16 +61,6 @@ class RigidBody : public Body<T> {
   /// therefore this method returns zero. By definition, a rigid body has no
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
-
- private:
-  // Do not allow users to create a rigid body using its public constructors
-  // but force them to use the factory method Create().
-  // TODO(amcastro-tri): In a future PR this factory will take a MassProperties
-  // object to:
-  //   1. Force users to provide all the necessary information at creation.
-  //   2. Perform all the necessary checks to ensure the supplied mass
-  //      properties are physically valid.
-  RigidBody();
 };
 
 }  // namespace multibody
