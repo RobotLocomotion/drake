@@ -96,7 +96,7 @@ class MultibodyTree {
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
     body->set_parent_tree(this, body_index);
-    Frame<T>* body_frame = body->get_mutable_body_frame();
+    Frame<T>* body_frame = const_cast<BodyFrame<T>*>(&body->get_body_frame());
     body_frame->set_parent_tree(this, body_frame_index);
     frames_.push_back(body_frame);
     BodyType<T>* raw_body_ptr = body.get();

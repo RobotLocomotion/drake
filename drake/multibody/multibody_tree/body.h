@@ -52,15 +52,15 @@ template<typename T> class Body;
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class BodyFrame : public Frame<T> {
-  // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
-  // every time a Body object is created and they are associated with each
-  // other. Moreover, BodyFrame objects can *only* be created by Body objects
-  // through their protected method Body::CreateBodyFrame().
-  friend class Body<T>;
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
  private:
+  // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
+  // every time a Body object is created and they are associated with each
+  // other.
+  friend class Body<T>;
+
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame.
   explicit BodyFrame(const Body<T>& body) : Frame<T>(body) {}
@@ -100,11 +100,6 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// Returns a const reference to the associated BodyFrame.
   const BodyFrame<T>& get_body_frame() const {
     return body_frame_;
-  }
-
-  /// Returns a mutable pointer to the associated BodyFrame.
-  BodyFrame<T>* get_mutable_body_frame() {
-    return &body_frame_;
   }
 
  private:

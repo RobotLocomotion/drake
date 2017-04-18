@@ -55,6 +55,9 @@ class FixedOffsetFrame : public Frame<T> {
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<T>& X_BF);
 
  private:
+  // The frame to which this frame is attached to.
+  const Frame<T>& parent_frame_;
+
   // Spatial transform giving the fixed pose of this frame F in another frame P.
   Isometry3<T> X_PF_;
 };
