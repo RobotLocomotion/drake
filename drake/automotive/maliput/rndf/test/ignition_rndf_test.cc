@@ -3,7 +3,7 @@
 
 namespace drake {
 namespace maliput {
-namespace monolane {
+namespace rndf {
 
 GTEST_TEST(IgnitionRNDFTest, Test) {
   ignition::rndf::RNDF rndfLoader;
@@ -11,6 +11,6 @@ GTEST_TEST(IgnitionRNDFTest, Test) {
 };
 
 
-}  // namespace monolane
+}  // namespace rndf
 }  // namespace maliput
 }  // namespace drake

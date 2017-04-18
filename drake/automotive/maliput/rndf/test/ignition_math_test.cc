@@ -3,7 +3,7 @@
 
 namespace drake {
 namespace maliput {
-namespace monolane {
+namespace rndf {
 
 GTEST_TEST(IgnitionMathTest, Test) {
   ignition::math::Angle angle;
@@ -11,6 +11,6 @@ GTEST_TEST(IgnitionMathTest, Test) {
 };
 
 
-}  // namespace monolane
+}  // namespace rndf
 }  // namespace maliput
 }  // namespace drake
