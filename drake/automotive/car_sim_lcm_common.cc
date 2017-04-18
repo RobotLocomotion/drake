@@ -241,6 +241,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
+  constant_zero_source->set_name("zero");
 
   // Connects the feed-forward torque command.
   builder.Connect(constant_zero_source->get_output_port(),
