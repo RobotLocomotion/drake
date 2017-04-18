@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/tools/simple_tree_visualizer.h"
+#include "drake/examples/kuka_iiwa_arm/dev/tools/simple_tree_visualizer.h"
 
 #include <vector>
 
