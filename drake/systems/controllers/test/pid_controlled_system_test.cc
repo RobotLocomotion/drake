@@ -230,6 +230,7 @@ class ConnectControllerTest : public ::testing::Test {
             plant_ptr->get_output_port(0).size());
 
     plant_ = builder_.AddSystem(std::move(plant_ptr));
+    plant_->set_name("plant");
 
     input_source_ = builder_.AddSystem<ConstantVectorSource>(plant_input_);
     input_source_->set_name("input");

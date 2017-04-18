@@ -26,6 +26,7 @@ Accelerometer::Accelerometer(const string& name,
       frame_(frame),
       tree_(tree),
       include_gravity_(include_gravity) {
+  this->set_name(name_);
   plant_state_input_port_index_ =
       DeclareInputPort(kVectorValued, tree_.get_num_positions() +
                                       tree_.get_num_velocities()).get_index();

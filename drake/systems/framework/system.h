@@ -890,7 +890,11 @@ class System {
   /// scalar type, with a dynamic-sized vector of partial derivatives.
   /// Concrete Systems may shadow this with a more specific return type.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
-    return std::unique_ptr<System<AutoDiffXd>>(DoToAutoDiffXd());
+    System<AutoDiffXd>* sys = DoToAutoDiffXd();
+    if (sys != nullptr) {
+      sys->set_name(this->get_name());
+    }
+    return std::unique_ptr<System<AutoDiffXd>>(sys);
   }
 
   /// Creates a deep copy of `from`, transmogrified to use the autodiff
@@ -936,7 +940,11 @@ class System {
   ///
   /// Concrete Systems may shadow this with a more specific return type.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const {
-    return std::unique_ptr<System<symbolic::Expression>>(DoToSymbolic());
+    System<symbolic::Expression>* sys = DoToSymbolic();
+    if (sys != nullptr) {
+      sys->set_name(this->get_name());
+    }
+    return std::unique_ptr<System<symbolic::Expression>>(sys);
   }
 
   /// Creates a deep copy of `from`, transmogrified to use the symbolic

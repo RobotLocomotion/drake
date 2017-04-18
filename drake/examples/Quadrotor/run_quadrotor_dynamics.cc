@@ -55,6 +55,7 @@ class Quadrotor : public systems::Diagram<T> {
 
     plant_ =
         builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
+    plant_->set_name("plant");
 
     // Verifies that the quadrotor has no actuators.
     DRAKE_DEMAND(plant_->get_num_actuators() == 0);

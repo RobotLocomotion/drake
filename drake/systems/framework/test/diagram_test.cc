@@ -551,7 +551,9 @@ class AddConstantDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     constant_ = builder.AddSystem<ConstantVectorSource>(Vector1d{constant});
+    constant_->set_name("constant");
     adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+    adder_->set_name("adder");
 
     builder.Connect(constant_->get_output_port(), adder_->get_input_port(1));
     builder.ExportInput(adder_->get_input_port(0));
@@ -612,8 +614,10 @@ class PublishNumberDiagram : public Diagram<double> {
 
     constant_ =
         builder.AddSystem<ConstantVectorSource<double>>(Vector1d{constant});
+    constant_->set_name("constant");
     publisher_ =
         builder.AddSystem<PublishingSystem>([this](double v) { this->set(v); });
+    publisher_->set_name("publisher");
 
     builder.Connect(constant_->get_output_port(),
                     publisher_->get_input_port(0));
@@ -648,15 +652,19 @@ class FeedbackDiagram : public Diagram<double> {
 
     DiagramBuilder<double> integrator_builder;
     integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
+    integrator_->set_name("integrator");
     integrator_builder.ExportInput(integrator_->get_input_port());
     integrator_builder.ExportOutput(integrator_->get_output_port());
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
+    integrator_diagram_->set_name("integrator_diagram");
 
     DiagramBuilder<double> gain_builder;
     gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
+    gain_->set_name("gain");
     gain_builder.ExportInput(gain_->get_input_port());
     gain_builder.ExportOutput(gain_->get_output_port());
     gain_diagram_ = builder.AddSystem(gain_builder.Build());
+    gain_diagram_->set_name("gain_diagram");
 
     builder.Connect(*integrator_diagram_, *gain_diagram_);
     builder.Connect(*gain_diagram_, *integrator_diagram_);
@@ -747,7 +755,9 @@ class SecondOrderStateDiagram : public Diagram<double> {
   SecondOrderStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     sys1_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys1_->set_name("sys1");
     sys2_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys2_->set_name("sys2");
     builder.ExportInput(sys1_->get_input_port(0));
     builder.ExportInput(sys2_->get_input_port(0));
     builder.BuildInto(this);
@@ -839,8 +849,11 @@ class DiscreteStateDiagram : public Diagram<double> {
   DiscreteStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
+    hold1_->set_name("hold1");
     hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
+    hold2_->set_name("hold2");
     publisher_ = builder.template AddSystem<TestPublishingSystem>();
+    publisher_->set_name("publisher");
     builder.ExportInput(hold1_->get_input_port());
     builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
@@ -1004,7 +1017,9 @@ class AbstractStateDiagram : public Diagram<double> {
   AbstractStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     sys0_ = builder.template AddSystem<SystemWithAbstractState>(0, 2.);
+    sys0_->set_name("sys0");
     sys1_ = builder.template AddSystem<SystemWithAbstractState>(1, 3.);
+    sys1_->set_name("sys1");
     builder.BuildInto(this);
   }
 
@@ -1129,6 +1144,7 @@ class NestedDiagramContextTest : public ::testing::Test {
     big_diagram_builder.ExportOutput(diagram1_->get_output_port(0));
 
     auto src = big_diagram_builder.AddSystem<ConstantVectorSource<double>>(1);
+    src->set_name("constant");
     big_diagram_builder.Connect(src->get_output_port(),
                                 integrator2_->get_input_port());
     big_diagram_builder.Connect(src->get_output_port(),
@@ -1261,6 +1277,32 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
+}
+
+// Tests that an exception is thrown if the systems in a Diagram do not have
+// unique names.
+GTEST_TEST(NonUniqueNamesTest, NonUniqueNames) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  auto adder0 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder0->set_name("unoriginal");
+  auto adder1 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder1->set_name("unoriginal");
+  EXPECT_THROW(builder.Build(), std::runtime_error);
+}
+
+// Tests that an exception is thrown if any system in the Diagram has an empty
+// name.
+GTEST_TEST(NonUniqueNamesTest, EmptyName) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  auto adder0 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder0->set_name("");
+  auto adder1 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder1->set_name("nonempty");
+  EXPECT_THROW(builder.Build(), std::runtime_error);
 }
 
 }  // namespace
