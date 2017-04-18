@@ -440,13 +440,13 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const;
   void SetAccelerations(const systems::Context<T>& context,
-                        systems::VectorBase<T>* const f,
                         const T& fN, const T& fF,
-                        const Vector2<T>& c) const;
+                        const Vector2<T>& c,
+                        systems::VectorBase<T>* const f) const;
   void SetAccelerations(const systems::Context<T>& context,
-                        systems::VectorBase<T>* const f,
                         const Vector2<T>& fN, const Vector2<T>& fF,
-                        const Vector2<T>& c1, const Vector2<T>& c2) const;
+                        const Vector2<T>& c1, const Vector2<T>& c2,
+                        systems::VectorBase<T>* const f) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
 

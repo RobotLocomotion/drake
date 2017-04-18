@@ -750,9 +750,9 @@ Vector2<T> Rod2D<T>::CalcStickingImpactImpulse(
 // @param c the location of the point of contact.
 template <class T>
 void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
-                                systems::VectorBase<T>* const f,
                                 const T& fN, const T& fF,
-                                const Vector2<T>& c) const {
+                                const Vector2<T>& c,
+                                systems::VectorBase<T>* const f) const {
   using std::abs;
 
   // Get the point of contact.
@@ -816,10 +816,9 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
 // @param cb the location of the point of the second point of contact.
 template <class T>
 void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
-                                systems::VectorBase<T>* const f,
                                 const Vector2<T>& fN, const Vector2<T>& fF,
-                                const Vector2<T>& ca, const Vector2<T>& cb)
-                                  const {
+                                const Vector2<T>& ca, const Vector2<T>& cb,
+                                systems::VectorBase<T>* const f) const {
   using std::abs;
 
   // Get the inputs.
@@ -1040,7 +1039,7 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
                                                             right);
 
   // Get the inverse of the generalized inertia matrix.
-  Matrix3<T> iM = get_inverse_inertia_matrix();
+  const Matrix3<T> M_inv = get_inverse_inertia_matrix();
 
   // Compute the external forces (expressed in the world frame).
   const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
@@ -1078,11 +1077,11 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
 
   // Form the vector in the 2-dimensional linear complementarity problem.
   Vector2<T> qq;
-  qq = N * iM * fext + Ndot * v;
+  qq = N * M_inv * fext + Ndot * v;
 
   // Form the 2x2 linear complementarity problem matrix.
   Matrix2<T> MM;
-  MM = N * iM * (N.transpose() - mu * F.transpose());
+  MM = N * M_inv * (N.transpose() - mu * F.transpose());
 
   // Attempt to solve the LCP. For μ = 0, the LCP is guaranteed to have a
   // solution, and several algorithms (e.g., Dantzig's Principle Pivoting
@@ -1117,26 +1116,28 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
 // Computes the contact forces for the case of zero sliding velocity at two
 // points of contact. Equations governing the dynamics in this mode are:
 //
-// (1) M⋅dv/dt = fext + NᵀfN + DᵀfD
-// (2) N⋅dv/dt + dN/dt⋅v ≥ 0
-// (3) fN ≥ 0
-// (4) (N⋅dv/dt + dN/dt⋅v)ᵀ⋅fN = 0
-// (5) 0 ≤ Eλ + D⋅dv/dt + dD/dt v  ⊥  fD ≥ 0
-// (6) 0 ≤ (μ⋅fN - fD)  ⊥  λ ≥ 0
+// (1) 0 ≤ fN ⊥ N⋅dv/dt + dN/dt⋅v ≥ 0
+// (2) 0 ≤ Eλ + D⋅dv/dt + dD/dt v  ⊥  fD ≥ 0
+// (3) 0 ≤ (μ⋅fN - Eᵀf⋅D)  ⊥  λ ≥ 0
+// (4) M⋅dv/dt = fext + NᵀfN + DᵀfD
 // where M is the 3x3 generalized inertia matrix, v is the generalized velocity
 // vector, fext is the generalized external force vector, μ is the coefficient
 // of friction, N ∈ ℝⁿˣ³ is the Jacobian matrix transforming generalized
 // velocities to velocities along the normal component of the n contact frames,
 // D ∈ ℝ²ⁿˣ³ is the Jacobian matrix transforming generalized velocities to
 // velocities along the positive and negative tangent directions at each point
-// of contact, E is a block matrix of ones, λ is roughly interpretable as the
-// magnitudes of remaining tangential acceleration at each point of contact
-// after contact forces are applied, fN ∈ ℝⁿ are the magnitudes of forces
-// applied along the contact normals, and fD ∈ ℝ²ⁿ are the magnitude of
-// frictional forces applied along the positive and negative tangent directions
-// at each point of contact.
+// of contact, E is a block matrix of ones, λ- which can be viewed as a slack
+// variable- is roughly interpretable as the magnitudes of remaining tangential
+// acceleration at each point of contact after contact forces are applied,
+// fN ∈ ℝⁿ are the magnitudes of forces applied along the contact normals, and
+// fD ∈ ℝ²ⁿ are the magnitude of frictional forces applied along the positive
+// and negative tangent directions at each point of contact.
 //
-// Complementarity conditions (5) and (6) were inspired directly from
+// Equations (1) through (3) will be referred to as "Complementarity Conditions
+// (1)-(3)" in the remainder of this function documentation. They use the
+// operator ⊥, where a ⊥ b denotes the constraint a⋅b = 0.
+//
+// Complementarity conditions (2) and (3) were inspired directly from
 // corresponding conditions in [Anitescu and Potra, 1997]. In the case that
 // the frictional force lies strictly within the friction cone, (μ⋅fN - fD) > 0
 // in Equation 6, implying both that λ = 0 and- since fD ≥ 0, μ⋅fN = fD and
@@ -1191,7 +1192,7 @@ void Rod2D<T>::CalcTwoContactNoSlidingForces(
                                                              right);
 
   // Get the inverse of the generalized inertia matrix.
-  Matrix3<T> iM = get_inverse_inertia_matrix();
+  const Matrix3<T> M_inv = get_inverse_inertia_matrix();
 
   // Compute the external forces (expressed in the world frame).
   const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
@@ -1239,35 +1240,33 @@ void Rod2D<T>::CalcTwoContactNoSlidingForces(
   Ddot.template block<nc, ngc>(0, 0) = Fdot;
   Ddot.template block<nc, ngc>(nc, 0) = -Fdot;
 
-  // Form the vector in the linear complementarity problem.
-  Eigen::Matrix<T, 4*nc, 1> qq;
-  qq.template segment<2>(0) = N * iM * fext + Ndot * v;
-  qq.template segment<4>(2) = D * iM * fext + Ddot * v;
-  qq.template segment<2>(nc*3).setZero();
-
   // Construct E.
   const int nk = 2 * nc;
   Eigen::Matrix<T, nk, nc> E;
   E.col(0) << 1, 0, 1, 0;
   E.col(1) << 0, 1, 0, 1;
 
-  // Form the linear complementarity problem matrix.
+  // Form the linear complementarity problem matrix and vector.
   Eigen::Matrix<T, 4*nc, 4*nc> MM;
+  Eigen::Matrix<T, 4*nc, 1> qq;
 
-  // Do the first block of rows.
-  MM.template block<2, 2>(0, 0) = N * iM * N.transpose();
-  MM.template block<2, 4>(0, 2) = N * iM * D.transpose();
+  // First two rows correspond to Complementarity Condition (1).
+  MM.template block<2, 2>(0, 0) = N * M_inv * N.transpose();
+  MM.template block<2, 4>(0, 2) = N * M_inv * D.transpose();
   MM.template block<2, 2>(0, 6).setZero();
+  qq.template segment<2>(0) = N * M_inv * fext + Ndot * v;
 
-  // Do the second block of rows.
-  MM.template block<4, 2>(2, 0) = D * iM * N.transpose();
-  MM.template block<4, 4>(2, 2) = D * iM * D.transpose();
+  // Next four rows correspond to Complementarity Condition (2).
+  MM.template block<4, 2>(2, 0) = D * M_inv * N.transpose();
+  MM.template block<4, 4>(2, 2) = D * M_inv * D.transpose();
   MM.template block<4, 2>(2, 6) = E;
+  qq.template segment<4>(2) = D * M_inv * fext + Ddot * v;
 
-  // Construct the last two rows, which provide the friction "cone" constraint.
+  // Final two rows correspond to Complementarity Condition (3).
   MM.template block<2, 2>(6, 0) = Matrix2<T>::Identity() * get_mu_coulomb();
   MM.template block<2, 4>(6, 2) = -E.transpose();
   MM.template block<2, 2>(6, 6).setZero();
+  qq.template segment<2>(nc*3).setZero();
 
   // Do some very small regularization on the matrix to match the time
   // stepping solution and help ensure a robust solution.
@@ -1647,13 +1646,13 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
 
     // Pick the one that is smaller in magnitude.
     if (abs(cxddot1) < abs(cxddot2)) {
-      SetAccelerations(context, f, fN1, fF1, c);
+      SetAccelerations(context, fN1, fF1, c, f);
     } else {
-      SetAccelerations(context, f, fN2, fF2, c);
+      SetAccelerations(context, fN2, fF2, c, f);
     }
   } else {
     // Friction force is within the friction cone.
-    SetAccelerations(context, f, fN, fF, c);
+    SetAccelerations(context, fN, fF, c, f);
   }
 }
 
@@ -1692,7 +1691,7 @@ void Rod2D<T>::CalcAccelerationsTwoContact(
     CalcTwoContactSlidingForces(context, &fN, &fF);
   }
 
-  SetAccelerations(context, f, fN, fF, c1, c2);
+  SetAccelerations(context, fN, fF, c1, c2, f);
 }
 
 template <class T>
