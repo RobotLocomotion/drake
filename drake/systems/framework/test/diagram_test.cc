@@ -1303,6 +1303,7 @@ GTEST_TEST(NonUniqueNamesTest, EmptyName) {
   auto adder1 = builder.AddSystem<Adder<double>>(kInputs, kSize);
   adder1->set_name("nonempty");
   EXPECT_THROW(builder.Build(), std::runtime_error);
+}
 
 // A system for testing per step actions.
 class PerStepActionTestSystem : public LeafSystem<double> {
@@ -1368,17 +1369,21 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   {
     DiagramBuilder<double> builder;
     sys0 = builder.AddSystem<PerStepActionTestSystem>();
+    sys0->set_name("sys0");
     sys1 = builder.AddSystem<PerStepActionTestSystem>();
+    sys1->set_name("sys1");
 
     sys1->AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
     sys1->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
 
     sub_diagram = builder.Build();
+    sub_diagram->set_name("sub_diagram");
   }
 
   DiagramBuilder<double> builder;
   builder.AddSystem(std::move(sub_diagram));
   sys2 = builder.AddSystem<PerStepActionTestSystem>();
+  sys2->set_name("sys2");
 
   // sys2 has publish and unrestricted updates.
   sys2->AddPerStepAction(DiscreteEvent<double>::kPublishAction);
@@ -1386,6 +1391,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
+  diagram->set_name("diagram");
 
   std::vector<DiscreteEvent<double>> events;
   diagram->GetPerStepEvents(&events);
