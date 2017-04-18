@@ -32,15 +32,15 @@ const InputPortDescriptor<T>& PoseAggregator<T>::AddSingleInput(
 
 template <typename T>
 std::pair<const InputPortDescriptor<T>&, const InputPortDescriptor<T>&>
-PoseAggregator<T>::AddSinglePoseAndVelocityInput(
-    const std::string& name, int model_instance_id) {
+PoseAggregator<T>::AddSinglePoseAndVelocityInput(const std::string& name,
+                                                 int model_instance_id) {
   // Add an input for the pose.
   input_records_.push_back(MakeSinglePoseInputRecord(name, model_instance_id));
   const InputPortDescriptor<T>& pose_descriptor =
       this->DeclareVectorInputPort(PoseVector<T>());
   // Add an input for the velocity.
-  input_records_.push_back(MakeSingleVelocityInputRecord(name,
-                                                         model_instance_id));
+  input_records_.push_back(
+      MakeSingleVelocityInputRecord(name, model_instance_id));
   const InputPortDescriptor<T>& velocity_descriptor =
       this->DeclareVectorInputPort(FrameVelocity<T>());
 
@@ -119,9 +119,7 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
         }
         break;
       }
-      default: {
-        DRAKE_ABORT_MSG("Unknown PoseInputType.");
-      }
+      default: { DRAKE_ABORT_MSG("Unknown PoseInputType."); }
     }
   }
   return;
@@ -143,9 +141,41 @@ int PoseAggregator<T>::CountNumPoses() const {
 }
 
 template <typename T>
+PoseAggregator<AutoDiffXd>* PoseAggregator<T>::DoToAutoDiffXd() const {
+  PoseAggregator<AutoDiffXd>* aggregator = new PoseAggregator<AutoDiffXd>();
+  const int num_ports = this->get_num_input_ports();
+  for (int port_index = 0; port_index < num_ports; ++port_index) {
+    const InputRecord& record = input_records_[port_index];
+    switch (record.type) {
+      case kSinglePose: {
+        // Checks if it is followed immediately by a corresponding velocity.
+        if (port_index + 1 < num_ports &&
+            input_records_[port_index + 1].type == kSingleVelocity) {
+          aggregator->AddSinglePoseAndVelocityInput(record.name,
+                                                    record.model_instance_id);
+          port_index++;
+        } else {
+          aggregator->AddSingleInput(record.name, record.model_instance_id);
+        }
+        break;
+      }
+      case kBundle: {
+        aggregator->AddBundleInput(record.name, record.num_poses);
+        break;
+      }
+      default: {
+        // Note: kSingleVelocity should be handled in the kSinglePose branch.
+        DRAKE_ABORT_MSG("Unhandled input record type.");
+      }
+    }
+  }
+  return aggregator;
+}
+
+template <typename T>
 typename PoseAggregator<T>::InputRecord
-PoseAggregator<T>::MakeSinglePoseInputRecord(
-    const std::string& name, int model_instance_id) {
+PoseAggregator<T>::MakeSinglePoseInputRecord(const std::string& name,
+                                             int model_instance_id) {
   InputRecord rec;
   rec.type = kSinglePose;
   rec.num_poses = 1;
@@ -156,8 +186,8 @@ PoseAggregator<T>::MakeSinglePoseInputRecord(
 
 template <typename T>
 typename PoseAggregator<T>::InputRecord
-PoseAggregator<T>::MakeSingleVelocityInputRecord(
-    const std::string& name, int model_instance_id) {
+PoseAggregator<T>::MakeSingleVelocityInputRecord(const std::string& name,
+                                                 int model_instance_id) {
   InputRecord rec;
   rec.type = kSingleVelocity;
   rec.num_poses = 0;  // A velocity is not a pose.
@@ -168,8 +198,8 @@ PoseAggregator<T>::MakeSingleVelocityInputRecord(
 
 template <typename T>
 typename PoseAggregator<T>::InputRecord
-PoseAggregator<T>::MakePoseBundleInputRecord(
-    const std::string& bundle_name, int num_poses) {
+PoseAggregator<T>::MakePoseBundleInputRecord(const std::string& bundle_name,
+                                             int num_poses) {
   InputRecord rec;
   rec.type = kBundle;
   rec.num_poses = num_poses;
