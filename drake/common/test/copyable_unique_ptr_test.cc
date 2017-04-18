@@ -193,7 +193,7 @@ struct CloneOnlyChildUncopyable : CloneOnly {
 // cup<FullyCopyable> which contains a reference to a CopyChild will produce a
 // type-sliced copy of FullyCopyable.
 struct CopyChild : public FullyCopyable {
-  CopyChild(int v) : FullyCopyable(v) {}
+  explicit CopyChild(int v) : FullyCopyable(v) {}
   CopyChild(const CopyChild& c) = default;
 };
 
@@ -204,12 +204,14 @@ GTEST_TEST(CopyableUniquePtrTest, PolymorphicCopyability) {
   // Case 1) Child with *only* Clone method.
   EXPECT_TRUE(is_cloneable<CloneOnlyChildWithClone>::value);
   EXPECT_FALSE(std::is_copy_constructible<CloneOnlyChildWithClone>::value);
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CloneOnlyChildWithClone>::value);
+  EXPECT_TRUE(
+      is_copyable_unique_ptr_compatible<CloneOnlyChildWithClone>::value);
 
   // Case 2) Child with *only* Copy method but virtual DoClone().
   EXPECT_FALSE(is_cloneable<CloneOnlyChildWithCopyVClone>::value);
   EXPECT_TRUE(std::is_copy_constructible<CloneOnlyChildWithCopyVClone>::value);
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CloneOnlyChildWithCopyVClone>::value);
+  EXPECT_TRUE(
+      is_copyable_unique_ptr_compatible<CloneOnlyChildWithCopyVClone>::value);
 
   // Case 3) Child with *only* Copy method.
   EXPECT_FALSE(is_cloneable<CloneOnlyChildWithCopy>::value);
@@ -219,7 +221,8 @@ GTEST_TEST(CopyableUniquePtrTest, PolymorphicCopyability) {
   // Case 4) Child with no copy and no clone.
   EXPECT_FALSE(is_cloneable<CloneOnlyChildUncopyable>::value);
   EXPECT_FALSE(std::is_copy_constructible<CloneOnlyChildUncopyable>::value);
-  EXPECT_FALSE(is_copyable_unique_ptr_compatible<CloneOnlyChildUncopyable>::value);
+  EXPECT_FALSE(
+      is_copyable_unique_ptr_compatible<CloneOnlyChildUncopyable>::value);
 
   // Case 5) Child with copy, derived from base with copy.
   EXPECT_FALSE(is_cloneable<CopyChild>::value);
@@ -232,7 +235,9 @@ GTEST_TEST(CopyableUniquePtrTest, PolymorphicCopyability) {
 // copies that slice the type back to CloneOnly.
 template <typename T>
 void TestPolymorphicCopy(bool copy_success) {
-  static_assert(std::is_convertible<T*, CloneOnly*>::value, "This utility method can only be used with classes derived from CloneOnly.");
+  static_assert(std::is_convertible<T*, CloneOnly*>::value,
+                "This utility method can only be used with classes derived "
+                "from CloneOnly.");
   cup<CloneOnly> src(new T(1));
   cup<CloneOnly> tgt;
   tgt = src;    // Triggers a copy
@@ -417,7 +422,8 @@ GTEST_TEST(CopyableUniquePtrTest, CopyConstructFromUniquePtr) {
 
   // Copy constructor on copyable_unique-ptr of derived specialized class.
   CloneOnlyChildWithClone* co_ptr3;
-  unique_ptr<CloneOnlyChildWithClone> u_ptr3(co_ptr3 = new CloneOnlyChildWithClone(3));
+  unique_ptr<CloneOnlyChildWithClone> u_ptr3(
+      co_ptr3 = new CloneOnlyChildWithClone(3));
   EXPECT_EQ(u_ptr3.get(), co_ptr3);
   cup<CloneOnly> cup_ptr3(u_ptr3);
   EXPECT_EQ(u_ptr3.get(), co_ptr3);
@@ -489,7 +495,8 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromUnique) {
 
   // Copy constructor on copyable_unique-ptr of derived specialized class.
   CloneOnlyChildWithClone* co_ptr3;
-  unique_ptr<CloneOnlyChildWithClone> u_ptr3(co_ptr3 = new CloneOnlyChildWithClone(3));
+  unique_ptr<CloneOnlyChildWithClone> u_ptr3(
+      co_ptr3 = new CloneOnlyChildWithClone(3));
   EXPECT_EQ(u_ptr3.get(), co_ptr3);
   cup<CloneOnly> cup_ptr3(move(u_ptr3));
   EXPECT_EQ(u_ptr3.get(), nullptr);
@@ -705,7 +712,8 @@ GTEST_TEST(CopyableUniquePtrTest, CopyAssignFromCopyableUniquePtr) {
   // Case 4: Assign non-empty cup<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
   CloneOnlyChildWithClone* derived_raw;
-  cup<CloneOnlyChildWithClone> derived_src(derived_raw = new CloneOnlyChildWithClone(13));
+  cup<CloneOnlyChildWithClone> derived_src(derived_raw =
+                                               new CloneOnlyChildWithClone(13));
   base_tgt = derived_src;
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
   EXPECT_NE(base_tgt.get(), derived_src.get());
@@ -760,7 +768,8 @@ GTEST_TEST(CopyableUniquePtrTest, CopyAssignFromUniquePtr) {
   // Case 4: Assign non-empty unique_ptr<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
   CloneOnlyChildWithClone* derived_raw;
-  unique_ptr<CloneOnlyChildWithClone> derived_src(derived_raw = new CloneOnlyChildWithClone(13));
+  unique_ptr<CloneOnlyChildWithClone> derived_src(
+      derived_raw = new CloneOnlyChildWithClone(13));
   base_tgt = derived_src;
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
   EXPECT_NE(base_tgt.get(), derived_src.get());
@@ -814,7 +823,8 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromCopyableUniquePtr) {
   // Case 4: Assign non-empty unique_ptr<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
   CloneOnlyChildWithClone* derived_raw;
-  cup<CloneOnlyChildWithClone> derived_src(derived_raw = new CloneOnlyChildWithClone(13));
+  cup<CloneOnlyChildWithClone> derived_src(derived_raw =
+                                               new CloneOnlyChildWithClone(13));
   base_tgt = move(derived_src);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
   EXPECT_EQ(base_tgt.get(), derived_raw);   // Tgt has taken ownership of raw.
@@ -868,7 +878,8 @@ GTEST_TEST(CopyableUniquePtrTest, MoveAssignFromUniquePtr) {
   // Case 4: Assign non-empty unique_ptr<Derived> to empty cup<Base>
   cup<CloneOnly> base_tgt;
   CloneOnlyChildWithClone* derived_raw;
-  unique_ptr<CloneOnlyChildWithClone> derived_src(derived_raw = new CloneOnlyChildWithClone(13));
+  unique_ptr<CloneOnlyChildWithClone> derived_src(
+      derived_raw = new CloneOnlyChildWithClone(13));
   base_tgt = move(derived_src);
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(base_tgt.get()));
   EXPECT_EQ(base_tgt.get(), derived_raw);   // Tgt has taken ownership of raw.

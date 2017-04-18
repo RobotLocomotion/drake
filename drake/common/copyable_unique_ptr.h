@@ -33,7 +33,7 @@ namespace copyable_unique_ptr_detail {
 // class being queried passes the copyable test, will the second overload get
 // created. It defines value to be true. The second overload is a more specific
 // match to the helper invocation, so, if it exists, it will be instantiated by
-// preferece and report a true value.
+// preference and report a true value.
 
 template <typename V, class>
 struct is_copyable_unique_ptr_compatible_helper : std::false_type {};
@@ -82,8 +82,9 @@ using is_copyable_unique_ptr_compatible =
  A class can be tested for compatibility using the
  @ref is_copyable_unique_ptr_compatible struct.
 
- Generally, the API is modeled as closely as possible on the C++11
- `std::unique_ptr` API. However, there are some exceptions.
+ Generally, the API is modeled as closely as possible on the C++ standard
+ `std::unique_ptr` API and %copyable_unique_ptr<T> is interoperable with
+ `unique_ptr<T>` wherever that makes sense. However, there are some differences:
    1. It always uses a default deleter.
    2. There is no array version.
    3. To allow for future copy-on-write optimizations, there is a distinction
@@ -105,25 +106,26 @@ using is_copyable_unique_ptr_compatible =
  expected, i.e., when `ptr` copies, it will contain a reference to a new
  instance of `Foo`.
 
- %copyable_unique_ptr can also be used with polymorphic classes (where the
- pointer is specialized on a base class, but it references an instance of a
- derived class). When copying the object, we would want the copy to likewise
- contain an instance of the derived class.  For example:
+ %copyable_unique_ptr can also be used with polymorphic classes -- an instance
+ of a %copyable_unique_ptr, specialized on a _base_ class, references an
+ instance of a _derived_ class. When copying the object, we would want the copy
+ to likewise contain an instance of the derived class.  For example:
 
  @code
- copyable_unique_ptr<Base> ptr = make_unique<Derived>();
- copyable_unique_ptr<Base> other_ptr = ptr;                 // Triggers a copy.
- is_dynamic_castable<Derived>(other_ptr.get());             // Should be true.
+ copyable_unique_ptr<Base> cu_ptr = make_unique<Derived>();
+ copyable_unique_ptr<Base> other_cu_ptr = cu_ptr;           // Triggers a copy.
+ is_dynamic_castable<Derived>(cu_other_ptr.get());          // Should be true.
  @endcode
 
  This works for well-designed polymorphic classes.
 
  @warning Ill-formed polymorphic classes can lead to fatal type slicing of the
  referenced object, such that the new copy contains an instance of `Base`
- instead of `Derived`. Some mistakes that would lead to this degenerate behavior:
+ instead of `Derived`. Some mistakes that would lead to this degenerate
+ behavior:
    - The `Base` class has a public copy constructor.
-   - The `Derived` class's clone/copy constructor is not invocable by the
-     `Base` (e.g., through virtual methods).
+   - The `Base` class's Clone() implementation does not invoke the `Derived`
+   class's implementation of a suitable virtual method.
 
  @internal For future developers:
    - the copyability of a base class does *not* imply anything about the
@@ -136,7 +138,7 @@ using is_copyable_unique_ptr_compatible =
 
  @see is_copyable_unique_ptr_compatible
  @tparam T   The type of the contained object, which *must* be
-             @ref is_copyable_unique_ptr_compatible "compatibally copyable". May
+             @ref is_copyable_unique_ptr_compatible "compatibly copyable". May
              be an abstract or concrete type.
  */
 // TODO(SeanCurtis-TRI): Consider extending this to add the Deleter as well.
@@ -320,14 +322,16 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   /** Return a const pointer to the contained object if any, or `nullptr`.
    Note that this is different than `%get()` for the standard smart pointers
    like `std::unique_ptr` which return a writable pointer. Use get_mutable()
-   here for that purpose.
-   @see get_mutable(), get_ref() */
+   here for that purpose. */
   const T* get() const noexcept { return std::unique_ptr<T>::get(); }
 
   /** Return a writable pointer to the contained object if any, or `nullptr`.
    Note that you need write access to this container in order to get write
    access to the object it contains.
-   @see get(), get_mutable_ref() */
+
+   @warning If %copyable_unique_ptr is specialized on a const template parameter
+   (e.g., `copyable_unqiue_ptr<const Foo>`), then get_mutable() returns a const
+   pointer. */
   T* get_mutable() noexcept { return std::unique_ptr<T>::get(); }
 
   /**@}*/
@@ -360,7 +364,8 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
  @relates copyable_unique_ptr */
 template <class charT, class traits, class T>
 inline std::basic_ostream<charT, traits>& operator<<(
-    std::basic_ostream<charT, traits>& os, const copyable_unique_ptr<T>& cu_ptr) {
+    std::basic_ostream<charT, traits>& os,
+    const copyable_unique_ptr<T>& cu_ptr) {
   os << cu_ptr.get();
   return os;
 }
