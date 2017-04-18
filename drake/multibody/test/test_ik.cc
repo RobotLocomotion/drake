@@ -160,7 +160,12 @@ GTEST_TEST(testIK, iiwaIKInfeasible) {
   // SNOPT-type result), called by inverseKinBackend(...)
   // Analog to: drake::solvers::SolutionResult::kInfeasibleConstraints
   const int ikInfeasibleConstraints = 13;
-  EXPECT_EQ(info, ikInfeasibleConstraints);
+  // Analog to: drake::solvers::SolutionResult::kIterationLimit
+  const int ikIterationLimit = 3;
+  EXPECT_TRUE(info == ikInfeasibleConstraints || info == ikIterationLimit)
+      << "IK solver info (" << info << ") is not ikInfeasibleConstraints ("
+      << ikInfeasibleConstraints << ") or ikIterationLimit ("
+      << ikIterationLimit << ")";
 
   // TODO(eric.cousineau): Ensure that this check has teeth
   // // Expect nonzero set of infeasible constraints
