@@ -536,6 +536,16 @@ class System {
     return actions->time;
   }
 
+  /// This method is called by a Simulator in its Initializate() to gather all
+  /// the update and publish events that need to be handled before it computes
+  /// derivatives and performs integration. The `Step` here refers to the major
+  /// time step taken by the Simulator. @p events cannot be null.
+  void GetPerStepEvents(std::vector<DiscreteEvent<T>>* events) const {
+    DRAKE_ASSERT(events != nullptr);
+    events->clear();
+    DoGetPerStepEvents(events);
+  }
+
   /// Computes the output values that should result from the current contents
   /// of the given Context. The result may depend on time and the current values
   /// of input ports, parameters, and state variables.
@@ -1200,6 +1210,19 @@ class System {
     unused(context);
     actions->time = std::numeric_limits<T>::infinity();
   }
+
+  /// This method is intended to get all the events that need to be handled
+  /// before the simulator can take a step.
+  ///
+  /// Override this method if your System needs such events. This method is
+  /// called only from the public non-virtual GetPerStepEvents(), which will
+  /// already have error-checked the parameters so you don't have to. You
+  /// may assume that @p events is not null, and it can be changed freely by
+  /// the overriding implementation.
+  ///
+  /// The default implementation returns without changing @p events.
+  virtual void DoGetPerStepEvents(std::vector<DiscreteEvent<T>>* events)
+      const {}
 
   /// Override this method for physical systems to calculate the potential
   /// energy currently stored in the configuration provided in the given
