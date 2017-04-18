@@ -1,12 +1,9 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 
-#include <fcntl.h>
-
-#include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/protobuf.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/id_controller_config.pb.h"
 #include "drake/util/drakeUtil.h"
 
@@ -183,15 +180,10 @@ void ParamSet::LoadFromFile(
     const std::string& config_path,
     const RigidBodyTreeAliasGroups<double>& alias_group) {
   InverseDynamicsControllerConfig id_configs;
-  int fid = open(config_path.data(), O_RDONLY);
-  if (fid < 0) {
-    throw std::runtime_error("Cannot open file " + config_path);
-  }
-  google::protobuf::io::FileInputStream istream(fid);
-  if (!google::protobuf::TextFormat::Parse(&istream, &id_configs)) {
+  auto istream = MakeFileInputStreamOrThrow(config_path);
+  if (!google::protobuf::TextFormat::Parse(istream.get(), &id_configs)) {
     throw std::runtime_error("Error parsing " + config_path);
   }
-  istream.Close();
 
   name_ = id_configs.name();
 

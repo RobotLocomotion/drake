@@ -1,13 +1,10 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
 
-#include <fcntl.h>
-
 #include <set>
 
-#include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 
+#include "drake/common/protobuf.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/alias_groups.pb.h"
 
 namespace drake {
@@ -110,13 +107,8 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
 template <typename T>
 void RigidBodyTreeAliasGroups<T>::LoadFromFile(const std::string& file_path) {
   AliasGroups alias_groups;
-  int fid = open(file_path.data(), O_RDONLY);
-  if (fid < 0) {
-    throw std::runtime_error("Cannot open file " + file_path);
-  }
-  google::protobuf::io::FileInputStream istream(fid);
-  google::protobuf::TextFormat::Parse(&istream, &alias_groups);
-  istream.Close();
+  auto istream = MakeFileInputStreamOrThrow(file_path);
+  google::protobuf::TextFormat::Parse(istream.get(), &alias_groups);
 
   for (const auto& group : alias_groups.body_group()) {
     AddBodyGroup(group.name(), std::vector<std::string>(group.member().begin(),
