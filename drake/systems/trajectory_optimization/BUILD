@@ -50,6 +50,7 @@ drake_cc_googletest(
         ":direct_collocation",
         "//drake/common:eigen_matrix_compare",
         "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
