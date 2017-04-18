@@ -107,7 +107,7 @@ class DiagramContextTest : public ::testing::Test {
     xc->get_mutable_vector()->SetAtIndex(1, 43.0);
 
     DiscreteValues<double>* xd = context_->get_mutable_discrete_state();
-    xd->get_mutable_discrete_state(0)->SetAtIndex(0, 44.0);
+    xd->get_mutable_vector(0)->SetAtIndex(0, 44.0);
 
     context_->get_mutable_numeric_parameter(0)->SetAtIndex(0, 76.0);
     context_->get_mutable_numeric_parameter(0)->SetAtIndex(1, 77.0);
@@ -153,7 +153,7 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
   // - Discrete
   const DiscreteValues<double>* xd = clone.get_discrete_state();
-  EXPECT_EQ(44.0, xd->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(44.0, xd->get_vector(0)->GetAtIndex(0));
   // - Abstract
   const AbstractValues* xa = clone.get_abstract_state();
   EXPECT_EQ(42, xa->get_value(0).GetValue<int>());
@@ -204,8 +204,8 @@ TEST_F(DiagramContextTest, State) {
 
   // The zero-order hold has a difference state vector of length 1.
   DiscreteValues<double>* xd = context_->get_mutable_discrete_state();
-  EXPECT_EQ(1, xd->size());
-  EXPECT_EQ(1, xd->get_discrete_state(0)->size());
+  EXPECT_EQ(1, xd->num_groups());
+  EXPECT_EQ(1, xd->get_vector(0)->size());
 
   // Changes to the diagram state write through to constituent system states.
   // - Continuous
@@ -218,15 +218,15 @@ TEST_F(DiagramContextTest, State) {
   // - Discrete
   DiscreteValues<double>* hold_xd =
       context_->GetMutableSubsystemContext(4)->get_mutable_discrete_state();
-  EXPECT_EQ(44.0, hold_xd->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(44.0, hold_xd->get_vector(0)->GetAtIndex(0));
 
   // Changes to constituent system states appear in the diagram state.
   // - Continuous
   integrator1_xc->get_mutable_vector()->SetAtIndex(0, 1000.0);
   EXPECT_EQ(1000.0, xc->get_vector().GetAtIndex(1));
   // - Discrete
-  hold_xd->get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
-  EXPECT_EQ(1001.0, xd->get_discrete_state(0)->GetAtIndex(0));
+  hold_xd->get_mutable_vector(0)->SetAtIndex(0, 1001.0);
+  EXPECT_EQ(1001.0, xd->get_vector(0)->GetAtIndex(0));
 }
 
 // Tests that the pointers to substates in the DiagramState are equal to the

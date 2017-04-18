@@ -115,7 +115,7 @@ class Context {
 
   /// Returns the number of elements in the discrete state.
   int get_num_discrete_state_groups() const {
-    return get_state().get_discrete_state()->size();
+    return get_state().get_discrete_state()->num_groups();
   }
 
   /// Returns a mutable pointer to the discrete component of the state,
@@ -128,7 +128,7 @@ class Context {
   /// Asserts if @p index doesn't exist.
   BasicVector<T>* get_mutable_discrete_state(int index) {
     DiscreteValues<T>* xd = get_mutable_discrete_state();
-    return xd->get_mutable_discrete_state(index);
+    return xd->get_mutable_vector(index);
   }
 
   /// Sets the discrete state to @p xd, deleting whatever was there before.
@@ -140,7 +140,7 @@ class Context {
   /// state at @p index.  Asserts if @p index doesn't exist.
   const BasicVector<T>* get_discrete_state(int index) const {
     const DiscreteValues<T>* xd = get_state().get_discrete_state();
-    return xd->get_discrete_state(index);
+    return xd->get_vector(index);
   }
 
   /// Returns the number of elements in the abstract state.
