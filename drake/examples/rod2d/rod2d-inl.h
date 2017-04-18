@@ -372,13 +372,13 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   // 14, 1997.
 
   // Get the inverse of the generalized inertia matrix.
-  Matrix3<T> iM = get_inverse_inertia_matrix();
+  Matrix3<T> M_inv = get_inverse_inertia_matrix();
 
   // Update the generalized velocity vector with discretized external forces
   // (expressed in the world frame).
   const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
   const Vector3<T> fapplied = input.segment(0, 3);
-  v += dt_ * iM * (fgrav + fapplied);
+  v += dt_ * M_inv * (fgrav + fapplied);
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
@@ -406,15 +406,15 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
   Eigen::Matrix<T, 8, 8> MM;
-  MM.template block<2, 2>(0, 0) = N * iM * N.transpose();
-  MM.template block<2, 2>(0, 2) = N * iM * F.transpose();
+  MM.template block<2, 2>(0, 0) = N * M_inv * N.transpose();
+  MM.template block<2, 2>(0, 2) = N * M_inv * F.transpose();
   MM.template block<2, 2>(0, 4) = -MM.template block<2, 2>(0, 2);
   MM.template block<2, 2>(0, 6).setZero();
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
-  MM.template block<2, 2>(2, 0) = F * iM * N.transpose();
-  MM.template block<2, 2>(2, 2) = F * iM * F.transpose();
+  MM.template block<2, 2>(2, 0) = F * M_inv * N.transpose();
+  MM.template block<2, 2>(2, 2) = F * M_inv * F.transpose();
   MM.template block<2, 2>(2, 4) = -MM.template block<2, 2>(2, 2);
 
   // Now construct the negated tangent contact direction rows (everything but
@@ -459,7 +459,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Compute the new velocity. Note that external forces have already been
   // incorporated into v.
-  VectorX<T> vplus = v + iM * (N.transpose()*fN + F.transpose()*fF_pos -
+  VectorX<T> vplus = v + M_inv * (N.transpose()*fN + F.transpose()*fF_pos -
                                F.transpose()*fF_neg);
 
   // Compute the new position using explicit Euler integration.
@@ -957,20 +957,18 @@ Vector2<T> Rod2D<T>::CalcStickingContactForces(
 // center of mass of the rod and expressed in the world frame.
 template <class T>
 Matrix3<T> Rod2D<T>::get_inverse_inertia_matrix() const {
-  Matrix3<T> iM;
-  iM << 1.0 / mass_, 0, 0,
+  Matrix3<T> M_inv;
+  M_inv << 1.0 / mass_, 0, 0,
       0, 1.0 / mass_, 0,
       0, 0, 1.0 / J_;
-  return iM;
+  return M_inv;
 }
 
 // Computes the contact forces for the case of nonzero sliding velocity at
 // two points of contact. Equations governing the dynamics in this mode are:
 //
-// (1) M⋅dv/dt = fext + NᵀfN - μFᵀfN
-// (2) N⋅dv/dt + dN/dt⋅v ≥ 0
-// (3) fN ≥ 0
-// (4) (N⋅dv/dt + dN/dt⋅v)ᵀ⋅fN = 0
+// (1) 0 ≤ fN ⊥ N⋅dv/dt + dN/dt⋅v ≥ 0
+// (2) M⋅dv/dt = fext + NᵀfN - μFᵀfN
 // where M is the 3x3 generalized inertia matrix, v is the generalized velocity
 // vector, fext is the generalized external force vector, μ is the coefficient
 // of friction, N ∈ ℝⁿˣ³ is the Jacobian matrix transforming generalized
@@ -981,11 +979,18 @@ Matrix3<T> Rod2D<T>::get_inverse_inertia_matrix() const {
 // along the contact normals and fF ∈ ℝⁿ are the magnitude of forces applied
 // *against the directions of sliding*.
 //
-// From Equation 1:
+// ⊥ is the "complementarity operator" and 0 ≤ a ⊥ b ≥ 0 represents the
+// conjunction of three constraints:
+// (3) a ≥ 0
+// (4) b ≥ 0
+// (5) (a⋅b) = 0
+// where the last of these is known as the "complementarity constraint".
+//
+// From Equation 2:
 //   M⋅dv/dt = fext + NᵀfN - μFᵀfN
 //   dv/dt = M⁻¹(fext + NᵀfN - μFᵀfN)
-// Equation 2 then can be reformulated as:
-//   N⋅M⁻¹(fext + NᵀfN - μFᵀfN) + dN/dt⋅v ≥ 0
+// Equation 1 then can be reformulated as:
+//   0 ≤ fN ⊥ N⋅M⁻¹(fext + NᵀfN - μFᵀfN) + dN/dt⋅v ≥ 0
 // Therefore, the LCP matrix is:
 //   N⋅M⁻¹⋅(Nᵀ - μFᵀ)
 // and the LCP vector is:
@@ -1118,7 +1123,7 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
 //
 // (1) 0 ≤ fN ⊥ N⋅dv/dt + dN/dt⋅v ≥ 0
 // (2) 0 ≤ Eλ + D⋅dv/dt + dD/dt v  ⊥  fD ≥ 0
-// (3) 0 ≤ (μ⋅fN - Eᵀf⋅D)  ⊥  λ ≥ 0
+// (3) 0 ≤ (μ⋅fN - Eᵀ⋅fD)  ⊥  λ ≥ 0
 // (4) M⋅dv/dt = fext + NᵀfN + DᵀfD
 // where M is the 3x3 generalized inertia matrix, v is the generalized velocity
 // vector, fext is the generalized external force vector, μ is the coefficient
@@ -1135,12 +1140,13 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
 //
 // Equations (1) through (3) will be referred to as "Complementarity Conditions
 // (1)-(3)" in the remainder of this function documentation. They use the
-// operator ⊥, where a ⊥ b denotes the constraint a⋅b = 0.
+// operator ⊥, where 0 ≤ a ⊥ b ≥ 0 denotes the triple of constraints constraints
+// a ≥ 0, b ≥ 0, a⋅b = 0.
 //
 // Complementarity conditions (2) and (3) were inspired directly from
 // corresponding conditions in [Anitescu and Potra, 1997]. In the case that
 // the frictional force lies strictly within the friction cone, (μ⋅fN - fD) > 0
-// in Equation 6, implying both that λ = 0 and- since fD ≥ 0, μ⋅fN = fD and
+// in Equation 3, implying both that λ = 0 and, since fD ≥ 0, μ⋅fN = fD and
 // D⋅dv/dt + dD/dt v = 0 (i.e., there can be no tangential acceleration). In the
 // case that the friction force is insufficient to prevent sliding,
 // D⋅dv/dt + dD/dt v ≠ 0, which implies that λ > 0. It
