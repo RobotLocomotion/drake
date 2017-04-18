@@ -37,6 +37,10 @@ class OptimizationProgram {
 
   virtual ~OptimizationProgram() {}
 
+  CostForm cost_form() const {return cost_form_;}
+
+  ConstraintForm cnstr_form() const {return cnstr_form_;}
+
   MathematicalProgram* prog() const { return prog_.get(); }
 
   virtual void CheckSolution(SolverType solver_type) const = 0;
@@ -46,6 +50,8 @@ class OptimizationProgram {
   void RunProblem(MathematicalProgramSolverInterface* solver);
 
  private:
+  CostForm cost_form_;
+  ConstraintForm cnstr_form_;
   std::unique_ptr<MathematicalProgram> prog_;
 };
 

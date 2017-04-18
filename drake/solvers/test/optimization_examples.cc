@@ -53,7 +53,9 @@ void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol) {
 
 OptimizationProgram::OptimizationProgram(CostForm cost_form,
                                          ConstraintForm cnstr_form)
-    : prog_(std::make_unique<MathematicalProgram>()) {}
+    : cost_form_(cost_form),
+      cnstr_form_(cnstr_form),
+      prog_(std::make_unique<MathematicalProgram>()) {}
 
 void OptimizationProgram::RunProblem(
     MathematicalProgramSolverInterface* solver) {
