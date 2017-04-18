@@ -630,6 +630,21 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     }
 
     // A hack to test actions easily.
+    // Note that these should really be part of the Context, and users should
+    // NOT use this as an example code.
+    //
+    // Since Publish only takes a const Context, the only way to log time is
+    // through some side effects. Thus, using a mutable vector can be justified.
+    //
+    // One conceptually correct implementation for discrete_update_times_ is
+    // to pre allocate a big DiscreteState in Context, and store all the time
+    // stamps there.
+    //
+    // unrestricted_update_times_ can be put in the AbstractState in Context
+    // and mutated similarly to this implementation.
+    //
+    // The motivation for keeping them as mutable are for simplicity and
+    // easiness to understand.
     mutable std::vector<double> publish_times_;
     mutable std::vector<double> discrete_update_times_;
     mutable std::vector<double> unrestricted_update_times_;
