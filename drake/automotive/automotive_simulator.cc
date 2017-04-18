@@ -458,10 +458,8 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     const MaliputRailcarParams<T>& params = pair.second.first;
     const MaliputRailcarState<T>& initial_state = pair.second.second;
 
-    systems::LeafContext<T>* context =
-        dynamic_cast<systems::LeafContext<T>*>(
-            diagram_->GetMutableSubsystemContext(
-                simulator_->get_mutable_context(), car));
+    systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
+         simulator_->get_mutable_context(), car);
     DRAKE_DEMAND(context != nullptr);
 
     systems::VectorBase<T>* context_state =
@@ -472,8 +470,7 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     state->set_value(initial_state.get_value());
 
     MaliputRailcarParams<T>* railcar_system_params =
-        dynamic_cast<MaliputRailcarParams<T>*>(
-            context->get_mutable_numeric_parameter(0));
+        car->get_mutable_parameters(context);
     DRAKE_DEMAND(railcar_system_params != nullptr);
     railcar_system_params->set_value(params.get_value());
   }

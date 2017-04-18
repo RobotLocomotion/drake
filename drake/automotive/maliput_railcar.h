@@ -106,6 +106,10 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// Sets `railcar_state` to contain the default state for MaliputRailcar.
   static void SetDefaultState(MaliputRailcarState<T>* railcar_state);
 
+  /// Returns a mutable pointer to the parameters in the given @p context.
+  MaliputRailcarParams<T>* get_mutable_parameters(
+      systems::Context<T>* context) const;
+
   /// Getter methods for input and output port descriptors.
   /// @{
   const systems::InputPortDescriptor<T>& command_input() const;
