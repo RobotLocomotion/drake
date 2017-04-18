@@ -784,15 +784,20 @@ class Diagram : public System<T>,
 
   /// Populates a vector of events that need to be handled before the integrator
   /// can take a step.
-  void DoGetPerStepEvents(std::vector<DiscreteEvent<T>>* events)
-      const override {
+  void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
     // Iterate over the subsystems in sorted order, and harvest all their per
     // step actions.
     std::vector<std::vector<DiscreteEvent<T>>> sub_events(num_subsystems());
 
     bool no_events = true;
     for (int i = 0; i < num_subsystems(); ++i) {
-      sorted_systems_[i]->GetPerStepEvents(&sub_events[i]);
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      sorted_systems_[i]->GetPerStepEvents(*subcontext, &sub_events[i]);
       no_events = no_events && sub_events[i].empty();
     }
 
@@ -1021,6 +1026,7 @@ class Diagram : public System<T>,
       event.do_publish = std::bind(&Diagram<T1>::HandlePublish, this,
                                    std::placeholders::_1, /* context */
                                    sub_events);
+      DRAKE_ASSERT(my_events != nullptr);
       my_events->push_back(event);
     }
   }
@@ -1040,6 +1046,7 @@ class Diagram : public System<T>,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* state */
                                   sub_events);
+      DRAKE_ASSERT(my_events != nullptr);
       my_events->push_back(event);
     }
   }
@@ -1058,6 +1065,7 @@ class Diagram : public System<T>,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
                                   sub_events);
+      DRAKE_ASSERT(my_events != nullptr);
       my_events->push_back(event);
     }
   }

@@ -326,7 +326,7 @@ TEST_F(LeafSystemTest, DeclarePerStepActions) {
   system_.AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
 
   std::vector<DiscreteEvent<double>> events;
-  system_.GetPerStepEvents(&events);
+  system_.GetPerStepEvents(*context, &events);
 
   EXPECT_EQ(events.size(), 3);
   EXPECT_EQ(events[0].action, DiscreteEvent<double>::kPublishAction);

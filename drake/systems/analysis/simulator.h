@@ -292,12 +292,12 @@ class Simulator {
   // if that event's action type is kUnrestrictedUpdateAction.
   void HandleUnrestrictedUpdate(const std::vector<DiscreteEvent<T>>& events);
 
-  // Goes through every event in @p events and calls unrestricted update only
-  // if that event's action type is kDiscreteUpdateAction.
+  // Goes through every event in @p events and calls discrete update only if
+  // that event's action type is kDiscreteUpdateAction.
   void HandleDiscreteUpdate(const std::vector<DiscreteEvent<T>>& events);
 
-  // Goes through every event in @p events and calls unrestricted update only
-  // if that event's action type is kPublishAction.
+  // Goes through every event in @p events and calls publish only if that
+  // event's action type is kPublishAction.
   void HandlePublish(const std::vector<DiscreteEvent<T>>& events);
 
   // The steady_clock is immune to system clock changes so increases
@@ -394,7 +394,7 @@ void Simulator<T>::Initialize() {
   integrator_->Initialize();
 
   // Gets all the events that need handling.
-  system_.GetPerStepEvents(&per_step_actions_);
+  system_.GetPerStepEvents(*context_, &per_step_actions_);
 
   // Restore default values.
   ResetStatistics();

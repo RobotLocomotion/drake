@@ -223,6 +223,11 @@ class LeafSystem : public System<T> {
  protected:
   LeafSystem() {}
 
+  /// Returns the per step events declared through DeclarePerStepAction().
+  const std::vector<DiscreteEvent<T>>& get_per_step_events() const {
+    return per_step_events_;
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -680,8 +685,8 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  void DoGetPerStepEvents(std::vector<DiscreteEvent<T>>* events)
-      const override {
+  void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const override {
     *events = per_step_events_;
   }
 
@@ -706,8 +711,8 @@ class LeafSystem : public System<T> {
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, UpdateActions<T1>* actions) const {
     T1 min_time = std::numeric_limits<double>::infinity();
-    // No periodic events or per step events.
-    if (periodic_events_.empty() && per_step_events_.empty()) {
+    // No periodic events events.
+    if (periodic_events_.empty()) {
       // No discrete update.
       actions->time = min_time;
       return;

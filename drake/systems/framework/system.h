@@ -538,12 +538,15 @@ class System {
 
   /// This method is called by a Simulator in its Initializate() to gather all
   /// the update and publish events that need to be handled before it computes
-  /// derivatives and performs integration. The `Step` here refers to the major
-  /// time step taken by the Simulator. @p events cannot be null.
-  void GetPerStepEvents(std::vector<DiscreteEvent<T>>* events) const {
+  /// derivatives and performs integration. It is assumed that these events
+  /// remain constant throughout the simulation. The `Step` here refers to the
+  /// major time step taken by the Simulator. @p events cannot be null.
+  void GetPerStepEvents(const Context<T>& context,
+                        std::vector<DiscreteEvent<T>>* events) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(events != nullptr);
     events->clear();
-    DoGetPerStepEvents(events);
+    DoGetPerStepEvents(context, events);
   }
 
   /// Computes the output values that should result from the current contents
@@ -1217,12 +1220,14 @@ class System {
   /// Override this method if your System needs such events. This method is
   /// called only from the public non-virtual GetPerStepEvents(), which will
   /// already have error-checked the parameters so you don't have to. You
-  /// may assume that @p events is not null, and it can be changed freely by
-  /// the overriding implementation.
+  /// may assume that @p context has already been validated and @p events is
+  /// not null, and it can be changed freely by the overriding implementation.
   ///
   /// The default implementation returns without changing @p events.
-  virtual void DoGetPerStepEvents(std::vector<DiscreteEvent<T>>* events)
-      const {}
+  virtual void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const {
+    unused(context);
+  }
 
   /// Override this method for physical systems to calculate the potential
   /// energy currently stored in the configuration provided in the given

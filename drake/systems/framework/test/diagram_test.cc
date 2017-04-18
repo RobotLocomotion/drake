@@ -1394,7 +1394,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   diagram->set_name("diagram");
 
   std::vector<DiscreteEvent<double>> events;
-  diagram->GetPerStepEvents(&events);
+  diagram->GetPerStepEvents(*context, &events);
 
   EXPECT_EQ(events.size(), 3);
 
