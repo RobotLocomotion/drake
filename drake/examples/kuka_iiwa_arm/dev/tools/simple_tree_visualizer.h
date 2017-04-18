@@ -7,8 +7,8 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace tools {
-// TODO(naveenoid) : Consider a more common location for this tool since its
-// not Kuka IIWA specific.
+// TODO(naveenoid) : Modify component to simply wrap DrakeVisualizer before
+// moving out of dev.
 /**
  * A utility to render a `RigidBodyTree` in a specified configuration in the
  * `drake-visualizer`.
