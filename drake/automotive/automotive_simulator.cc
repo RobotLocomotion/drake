@@ -392,9 +392,8 @@ void AutomotiveSimulator<T>::SendLoadRobotMessage(
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
-  DRAKE_DEMAND(!has_started());
-  TransmitLoadMessage();
+void AutomotiveSimulator<T>::Build() {
+  DRAKE_DEMAND(diagram_ == nullptr);
 
   builder_->Connect(
       aggregator_->get_output_port(0),
@@ -411,6 +410,17 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
 
   diagram_ = builder_->Build();
   diagram_->set_name("AutomotiveSimulator");
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
+  DRAKE_DEMAND(!has_started());
+  if (diagram_ == nullptr) {
+    Build();
+  }
+
+  TransmitLoadMessage();
+
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
 
   InitializeSimpleCars();

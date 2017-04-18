@@ -69,10 +69,9 @@ class AutomotiveSimulator {
   /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
-  int AddPriusSimpleCar(const std::string& name,
-                        const std::string& channel_name,
-                        const SimpleCarState<T>& initial_state =
-                            SimpleCarState<T>());
+  int AddPriusSimpleCar(
+      const std::string& name, const std::string& channel_name,
+      const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
   /// includes its EulerFloatingJoint output.
@@ -90,8 +89,7 @@ class AutomotiveSimulator {
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddPriusTrajectoryCar(const std::string& name,
-                            const Curve2<double>& curve,
-                            double speed,
+                            const Curve2<double>& curve, double speed,
                             double start_time);
 
   /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
@@ -117,8 +115,7 @@ class AutomotiveSimulator {
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddPriusMaliputRailcar(
-      const std::string& name,
-      const LaneDirection& initial_lane_direction,
+      const std::string& name, const LaneDirection& initial_lane_direction,
       const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
       const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 
@@ -146,8 +143,7 @@ class AutomotiveSimulator {
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddIdmControlledPriusMaliputRailcar(
-      const std::string& name,
-      const LaneDirection& initial_lane_direction,
+      const std::string& name, const LaneDirection& initial_lane_direction,
       const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
       const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 
@@ -194,21 +190,35 @@ class AutomotiveSimulator {
   /// @pre Start() has been called.
   const systems::System<T>& GetDiagramSystemByName(std::string name) const;
 
-  /// Builds the Diagram and initializes the Simulator.  No further changes to
-  /// the diagram may occur after this has been called.
+  /// Builds the Diagram.  No further changes to the diagram may occur after
+  /// this has been called.
+  ///
+  /// @pre Build() has NOT been called.
+  void Build();
+
+  /// Returns the System containing the entire AutomotiveSimulator diagram.
+  ///
+  /// @pre Build() has been called.
+  const systems::System<T>& GetDiagram() const {
+    DRAKE_DEMAND(diagram_ != nullptr);
+    return *diagram_;
+  }
+
+  /// Calls Build() on the diagram (if it has not been build already) and
+  /// initializes the Simulator.  No further changes to the diagram may occur
+  /// after this has been called.
   ///
   /// @pre Start() has NOT been called.
   ///
   /// @param target_realtime_rate This value is passed to
   /// systems::Simulator::set_target_realtime_rate().
   //
-  // TODO(jwnimmer-tri) Perhaps this should be Build(), that returns an
-  // AutomotiveSimulator, and our class should be AutomotiveSimulatorBuilder?
+  // TODO(jwnimmer-tri) Perhaps our class should be AutomotiveSimulatorBuilder?
   // Port a few more demo programs, then decide what looks best.
   void Start(double target_realtime_rate = 0.0);
 
   /// Returns whether the automotive simulator has started.
-  bool has_started() const { return diagram_ != nullptr; }
+  bool has_started() const { return simulator_ != nullptr; }
 
   /// Advances simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
@@ -257,8 +267,7 @@ class AutomotiveSimulator {
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
 
   // === Start for building. ===
-  std::unique_ptr<RigidBodyTree<T>> tree_{
-      std::make_unique<RigidBodyTree<T>>()};
+  std::unique_ptr<RigidBodyTree<T>> tree_{std::make_unique<RigidBodyTree<T>>()};
 
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
@@ -269,8 +278,8 @@ class AutomotiveSimulator {
 
   // Holds the desired initial states of each MaliputRailcar. It is used to
   // initialize the simulation's diagram's state.
-  std::map<const MaliputRailcar<T>*, std::pair<MaliputRailcarParams<T>,
-                                               MaliputRailcarState<T>>>
+  std::map<const MaliputRailcar<T>*,
+           std::pair<MaliputRailcarParams<T>, MaliputRailcarState<T>>>
       railcar_configs_;
 
   // === End for building. ===
