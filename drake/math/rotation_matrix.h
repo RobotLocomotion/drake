@@ -252,9 +252,11 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
 }
 
 /**
- * Projects a 3 x 3 matrix `M` onto so(3), the projected rotation matrix `R`
+ * Projects a 3 x 3 matrix `M` onto SO(3). The projected rotation matrix `R`
  * has a given rotation axis `a`, and its rotation angle θ is bounded as
- * angle_lb <= θ <= angle_ub.
+ * angle_lb <= θ <= angle_ub. One use case for this function is to reconstruct
+ * the rotation matrix for a revolute joint of with joint limits.
+ * @see GlobalInverseKinematics for an usage of this function.
  * We can formulate this as an optimization problem
  * <pre>
  *   min_θ trace((R - M)ᵀ*(R - M))
@@ -268,13 +270,13 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  *       [-a₂  a₁  0 ]
  * </pre>
  * Equation (1) is the Rodriguez Formula, to compute the rotation matrix from
- * the rotation anxis `a` and the rotation angle θ. For more details, refer to
+ * the rotation axis `a` and the rotation angle θ. For more details, refer to
  * http://mathworld.wolfram.com/RodriguesRotationFormula.html
  * The objective function can be simplified as
  * <pre>
  *   max_θ trace(Rᵀ * M + Mᵀ * R)
  * </pre>
- * By substituting the matrix `R` with the angle-axis representation, the
+ * By substituting the matrix `R` with the axis-angle representation, the
  * optimization problem is formulated as
  * <pre>
  *   max_θ sinθ * trace(Aᵀ*M) - cosθ * trace(Mᵀ * A²)
@@ -283,7 +285,7 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  * By introducing α = atan2(-trace(Mᵀ * A²), trace(Aᵀ*M)), we can compute the
  * optimal θ as
  * <pre>
- * θ = π/2 - α, if angle_lb <= π/2 - α <= angle_ub
+ * θ = π/2 + 2kπ - α, if angle_lb <= π/2 + 2kπ - α <= angle_ub, k ∈ ℤ
  * else
  * θ = angle_lb if sin(angle_lb + α) >= sin(angle_ub + α)
  * θ = angle_ub if sin(angle_lb + α) < sin(angle_ub + α)
