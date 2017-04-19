@@ -223,6 +223,11 @@ class LeafSystem : public System<T> {
  protected:
   LeafSystem() {}
 
+  /// Returns the per step events declared through DeclarePerStepAction().
+  const std::vector<DiscreteEvent<T>>& get_per_step_events() const {
+    return per_step_events_;
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -542,6 +547,22 @@ class LeafSystem : public System<T> {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
+  /// Declares a per step action using the default handlers given type
+  /// @p action. This method aborts if the same type has already been declared.
+  // TODO(siyuan): provide a API for declaration with custom handlers.
+  void DeclarePerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    DiscreteEvent<T> event;
+    event.action = action;
+    for (const auto& declared_event : per_step_events_) {
+      if (declared_event.action == action) {
+        DRAKE_ABORT_MSG("Per step action has already been declared.");
+      }
+    }
+
+    per_step_events_.push_back(event);
+  }
+
   /// Declares that this System should reserve continuous state with
   /// @p num_state_variables state variables, which have no second-order
   /// structure. Has no effect if AllocateContinuousState is overridden.
@@ -679,6 +700,11 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const override {
+    *events = per_step_events_;
+  }
+
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
   //
@@ -700,6 +726,7 @@ class LeafSystem : public System<T> {
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, UpdateActions<T1>* actions) const {
     T1 min_time = std::numeric_limits<double>::infinity();
+    // No periodic events events.
     if (periodic_events_.empty()) {
       // No discrete update.
       actions->time = min_time;
@@ -769,6 +796,10 @@ class LeafSystem : public System<T> {
 
   // Periodic Update or Publish events registered on this system.
   std::vector<PeriodicEvent<T>> periodic_events_;
+
+  // Update or Publish events registered on this system for every simulator
+  // major time step.
+  std::vector<DiscreteEvent<T>> per_step_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
