@@ -89,7 +89,8 @@ void CheckProjectionWithAxis(const Eigen::Matrix3d& M,
           .toRotationMatrix();
   const double R_error = (R - M).squaredNorm();
   const int kNumAngles = 100;
-  double theta_lb, theta_ub;
+  double theta_lb{};
+  double theta_ub{};
   // Depending on the value of angle_lb and angle_ub, we choose the range for
   // the sampled theta. If angle_lb and/or angle_ub is inf, then the theta_lb
   // and/or theta_ub will be set to a finite value.
