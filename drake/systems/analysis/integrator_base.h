@@ -197,6 +197,13 @@ class IntegratorBase {
   /**
    * Sets the minimum step size that may be taken by this integrator.
    * All integration steps will be at least this large.
+   * @param min_step_size a non-negative value. Setting this value to zero
+   *                      is equivalent to saying "I don't know what the
+   *                      practical limit on step size is, but I don't want
+   *                      the integrator to stop shrinking the step size because
+   *                      of my ignorance." Practically speaking, setting this
+   *                      value to zero can effectively make an integration
+   *                      "hang".
    */
   void set_minimum_step_size(const T& min_step_size) {
     DRAKE_ASSERT(min_step_size >= 0.0);
@@ -946,7 +953,9 @@ class IntegratorBase {
    * portion of this system forward by a *single step* of no greater size than
    * @p max_dt. This method is called during the StepOnceAtMost() method. This
    * default implementation simply calls DoStepOnceFixedSize(max_dt) and
-   * returns `{ true, max_dt }`.
+   * returns `{ true, max_dt }`; methods that use error control, for example,
+   * will want to reimplement this method so that a step smaller than @p max_dt
+   * can be taken, as necessary.
    * @param max_dt The maximum integration step to take.
    * @returns a std::pair<bool, T>, with the first element corresponding to
    *          `false` if the integrator does not take the full step of @p max_dt
@@ -1026,6 +1035,7 @@ class IntegratorBase {
     largest_step_size_taken_ = dt;
   }
 
+  // Sets the "ideal" next step size (typically done via error control).
   void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
 
  private:

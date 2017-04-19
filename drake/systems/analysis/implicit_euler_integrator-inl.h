@@ -744,13 +744,11 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
 // Steps both implicit Euler and implicit trapezoid forward by at most dt
 // until both integrators succeed.
 // @param dt the integration step size to attempt.
-// @param requested_dt the integration step size requested by the original
-//        caller.
 // @param [out] xtplus_ie contains the Euler integrator solution on return
 // @param [out] xtplus_itr contains the implicit trapezoid solution on return
 // @pre The time and state are set to {t0,x0} on entry (those at the beginning
 //      of the interval.
-// @post The time and state are set to {t0+h,x0(t0+h)} on return.
+// @post The time and state are set to {t0+h,x0(t0+h)} in the context on return.
 // @retval h The step that integration succeeded at.
 template <class T>
 T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
@@ -800,8 +798,7 @@ T ImplicitEulerIntegrator<T>::StepOnceAtMostPaired(const T& dt,
 
   // If the time stepped was less than the time requested *and* the time stepped
   // was less than or equal to the minimum step size, an explicit Euler step
-  // was taken. Computing the error estimate using two half steps is now the
-  // best bet.
+  // was taken. We compute the error estimate using two half steps.
   if (stepped_ie < requested_dt &&
       stepped_ie <= this->get_minimum_step_size()) {
     const T half_dt = dt / 2;
