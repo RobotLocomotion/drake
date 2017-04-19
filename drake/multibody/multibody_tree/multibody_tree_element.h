@@ -147,8 +147,8 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     parent_tree_ = tree;
   }
 
-  /// MultibodyTree<T> is a natural friend of MultibodyTreeElement objects and
-  /// therefore it can set the owning parent tree and unique index in that tree.
+  // MultibodyTree<T> is a natural friend of MultibodyTreeElement objects and
+  // therefore it can set the owning parent tree and unique index in that tree.
   friend class MultibodyTree<T>;
 
   const MultibodyTree<T>* parent_tree_{nullptr};

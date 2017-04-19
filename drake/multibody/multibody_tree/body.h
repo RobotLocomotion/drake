@@ -69,6 +69,7 @@ class BodyFrame : public Frame<T> {
 // Forward declarations for Body<T>.
 template<typename T> class MultibodyTree;
 
+/// @cond
 // Internal implementation details. Users should not access implementations
 // in this namespace.
 namespace internal {
@@ -92,6 +93,7 @@ class BodyAttorney {
   friend class MultibodyTree<T>;
 };
 }  // namespace internal
+/// @endcond
 
 /// %Body provides the general abstraction of a body with an API that
 /// makes no assumption about whether a body is rigid or deformable and neither
@@ -130,6 +132,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
   // set of private Body methods.
   friend class internal::BodyAttorney<T>;
+
   // Implementation for MultibodyTreeElement::DoFinalize().
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
