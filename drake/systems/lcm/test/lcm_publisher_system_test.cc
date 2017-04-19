@@ -168,7 +168,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
 
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
-  simulator.set_publish_every_time_step(false);
+  //simulator.set_publish_every_time_step(false);
   simulator.Initialize();
 
   for (double time = 0; time < 4; time += 0.01) {

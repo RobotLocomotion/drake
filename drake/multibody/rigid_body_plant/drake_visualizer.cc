@@ -28,9 +28,12 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
   DeclareInputPort(kVectorValued, vector_size);
   this->DeclareDiscreteState(1);
   if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
+
+  DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
+  RemovePerStepAction(DiscreteEvent<double>::kPublishAction);
   LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 

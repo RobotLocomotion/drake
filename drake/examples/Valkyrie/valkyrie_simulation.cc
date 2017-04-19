@@ -202,7 +202,7 @@ int main(int argc, const char** argv) {
   simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(*diagram,
                                                                    3e-4,
                                                                    context);
-  simulator->set_publish_every_time_step(false);
+  //simulator->set_publish_every_time_step(false);
 
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);

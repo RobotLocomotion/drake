@@ -24,7 +24,7 @@ LcmDrivenLoop::LcmDrivenLoop(
   sub_swap_state_ = sub_context_->CloneState();
 
   // Disables simulator's publish on its internal time step.
-  stepper_->set_publish_every_time_step(false);
+  //stepper_->set_publish_every_time_step(false);
   stepper_->set_publish_at_initialization(false);
 
   stepper_->Initialize();

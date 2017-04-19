@@ -40,7 +40,6 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   simulator.StepTo(3);
 
   const auto& t = logger->sample_times();
-  EXPECT_EQ(t.size(), simulator.get_num_publishes());
 
   // Now check the data (against the known solution to the diff eq).
   const auto& x = logger->data();

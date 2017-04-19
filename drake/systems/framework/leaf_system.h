@@ -547,20 +547,30 @@ class LeafSystem : public System<T> {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
+  bool HasPerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) const {
+    return FindPerStepActionIndex(action) !=
+        static_cast<int>(per_step_events_.size());
+  }
+
   /// Declares a per step action using the default handlers given type
   /// @p action. This method aborts if the same type has already been declared.
   // TODO(siyuan): provide a API for declaration with custom handlers.
   void DeclarePerStepAction(
       const typename DiscreteEvent<T>::ActionType& action) {
+    if (HasPerStepAction(action))
+      DRAKE_ABORT_MSG("Per step action has already been declared.");
+
     DiscreteEvent<T> event;
     event.action = action;
-    for (const auto& declared_event : per_step_events_) {
-      if (declared_event.action == action) {
-        DRAKE_ABORT_MSG("Per step action has already been declared.");
-      }
-    }
-
     per_step_events_.push_back(event);
+  }
+
+  void RemovePerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    int index = FindPerStepActionIndex(action);
+    if (index != static_cast<int>(per_step_events_.size()))
+      per_step_events_.erase(per_step_events_.begin() + index);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -700,6 +710,15 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  int FindPerStepActionIndex(
+      const typename DiscreteEvent<T>::ActionType& action) const {
+    for (size_t i = 0; i < per_step_events_.size(); i++) {
+      if (per_step_events_[i].action == action)
+        return i;
+    }
+    return static_cast<int>(per_step_events_.size());
+  }
+
   void DoGetPerStepEvents(const Context<T>& context,
       std::vector<DiscreteEvent<T>>* events) const override {
     *events = per_step_events_;

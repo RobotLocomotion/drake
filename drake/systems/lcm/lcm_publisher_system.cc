@@ -45,6 +45,7 @@ LcmPublisherSystem::LcmPublisherSystem(
   }
 
   set_name(make_name(channel_));
+  DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
 }
 
 LcmPublisherSystem::LcmPublisherSystem(

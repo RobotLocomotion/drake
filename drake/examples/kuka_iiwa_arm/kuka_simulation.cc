@@ -106,7 +106,7 @@ int DoMain() {
   Simulator<double> simulator(*sys);
 
   lcm.StartReceiveThread();
-  simulator.set_publish_every_time_step(false);
+  //simulator.set_publish_every_time_step(false);
   simulator.Initialize();
 
   command_receiver->set_initial_position(

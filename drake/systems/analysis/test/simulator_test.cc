@@ -197,23 +197,6 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
-// Tests that if publishing every timestep is disabled, publish only happens
-// on initialization.
-GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
-  Simulator<double> simulator(spring_mass);  // Use default Context.
-  simulator.set_publish_every_time_step(false);
-
-  simulator.get_mutable_context()->set_time(0.);
-  simulator.Initialize();
-  // Publish should happen on initialization.
-  EXPECT_EQ(1, simulator.get_num_publishes());
-
-  // Simulate for 1 simulated second.  Publish should not happen.
-  simulator.StepTo(1.);
-  EXPECT_EQ(1, simulator.get_num_publishes());
-}
-
 // Repeat the previous test but now the continuous steps are interrupted
 // by a discrete sample every 1/30 second. The step size doesn't divide that
 // evenly so we should get some step size modification here.
@@ -527,7 +510,7 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   });
 
   drake::systems::Simulator<double> simulator(system);
-  simulator.set_publish_every_time_step(false);
+  //simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
   EXPECT_EQ(500, num_disc_updates);
   // Publication occurs at 400Hz, and also at initialization.
@@ -562,7 +545,7 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   });
 
   // Run a simulation.
-  simulator.set_publish_every_time_step(true);
+ // simulator.set_publish_every_time_step(true);
   simulator.StepTo(0.5);
 
   // Check that all the update events precede all the publish events, and all
@@ -659,7 +642,7 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   // Disables all simulator induced publish events, so that all publish calls
   // are intiated by sys.
   sim.set_publish_at_initialization(false);
-  sim.set_publish_every_time_step(false);
+  //sim.set_publish_every_time_step(false);
   sim.Initialize();
   sim.StepTo(0.1);
 
