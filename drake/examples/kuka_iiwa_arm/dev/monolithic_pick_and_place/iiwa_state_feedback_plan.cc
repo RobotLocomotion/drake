@@ -59,6 +59,7 @@ IiwaStateFeedbackPlanSource::IiwaStateFeedbackPlanSource(
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
+  this->set_name("IiwaStateFeedbackPlanSource");
 }
 
 IiwaStateFeedbackPlanSource::~IiwaStateFeedbackPlanSource() {}
