@@ -536,7 +536,7 @@ class System {
     return actions->time;
   }
 
-  /// This method is called by a Simulator in its Initializate() to gather all
+  /// This method is called by a Simulator in its Initialize() to gather all
   /// the update and publish events that need to be handled before it computes
   /// derivatives and performs integration. It is assumed that these events
   /// remain constant throughout the simulation. The `Step` here refers to the
