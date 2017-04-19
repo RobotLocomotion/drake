@@ -270,10 +270,12 @@
    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
    fun:_ZNSs12_S_constructIPKcEEPcT_S3_RKSaIcESt20forward_iterator_tag
    fun:_ZNSsC1EPKcRKSaIcE
-   fun:onetime_create_log
+   fun:_ZN5drake12_GLOBAL__N_118onetime_create_logEv
    fun:_ZN5drake3logEv
    fun:_ZNK5drake7systems15DrakeVisualizer9DoPublishERKNS0_7ContextIdEE
-   fun:Publish
-   fun:Publish
+   fun:_ZNK5drake7systems6SystemIdE7PublishERKNS0_7ContextIdEERKNS0_13DiscreteEventIdEE
+   fun:_ZNK5drake7systems6SystemIdE7PublishERKNS0_7ContextIdEE
    fun:_ZNK5drake7systems7DiagramIdE9DoPublishERKNS0_7ContextIdEE
+   fun:_ZNK5drake7systems6SystemIdE7PublishERKNS0_7ContextIdEERKNS0_13DiscreteEventIdEE
+   fun:_ZNK5drake7systems6SystemIdE7PublishERKNS0_7ContextIdEE
 }
