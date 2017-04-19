@@ -50,6 +50,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
       return;
     }
 
+    // TODO(edrumwri): Provide solutions to the underdamped system.
     // Special case #2: underdamping.
     if (get_damping_constant() * get_damping_constant() <
         4 * this->get_mass() * this->get_spring_constant()) {

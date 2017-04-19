@@ -336,6 +336,11 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
   // (This could happen from recursive calls of StepAbstract(), each of
   // which shrinks the step size). Do NOT take the an explicit Euler step if
   // dt is equivalent to the requested step.
+  // TODO(edrumwri): Investigate replacing this with an explicit trapezoid step,
+  //                 which would be expected to give better accuracy. The
+  //                 mitigating factor is that dt is already small, so a test
+  //                 of, e.g., a square wave function, should quantify the
+  //                 improvement (if any).
   if (dt < this->get_minimum_step_size() && dt < requested_dt) {
     // Throw an exception if that behavior is specified.
     if (this->get_minimum_step_size_exceeded_throws()) {
@@ -384,7 +389,7 @@ T ImplicitEulerIntegrator<T>::StepAbstract(T dt,
   // more efficient when we allow a relatively high number of iterations (e.g.,
   // [7 or 10])", p. 121.
   // TODO(edrumwri): Consider making this a settable parameter. Not putting it
-  //                 toward staving off parameter overflow.
+  //                 toward staving off parameter overload.
   const int max_loops = 10;
 
   // Do the Newton-Raphson loops.
