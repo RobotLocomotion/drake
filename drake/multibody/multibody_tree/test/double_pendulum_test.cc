@@ -119,10 +119,10 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // Verify the new number of frames.
   EXPECT_EQ(model->get_num_frames(), 6);
 
-  // Compile() stage.
-  EXPECT_FALSE(model->topology_is_valid());  // Not valid before Compile().
-  EXPECT_NO_THROW(model->Compile());
-  EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
+  // Finalize() stage.
+  EXPECT_FALSE(model->topology_is_valid());  // Not valid before Finalize().
+  EXPECT_NO_THROW(model->Finalize());
+  EXPECT_TRUE(model->topology_is_valid());  // Valid after Finalize().
 
   // Asserts that no more bodies can be added after compilation.
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
@@ -130,7 +130,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
                std::logic_error);
 
   // Asserts re-compilation is not allowed.
-  EXPECT_THROW(model->Compile(), std::logic_error);
+  EXPECT_THROW(model->Finalize(), std::logic_error);
 
   // Frame indexes are assigned by MultibodyTree. The number of physical frames
   // equals the number of body frames (one per body) plus the number of

@@ -39,8 +39,8 @@ GTEST_TEST(MultibodyTree, AddBodies) {
 
   // Indexes not valid until Comile() is called.
   EXPECT_FALSE(model->topology_is_valid());
-  // Verifies that the topology of this model gets validated at compile stage.
-  model->Compile();
+  // Verifies that the topology of this model gets validated at finalize stage.
+  model->Finalize();
   EXPECT_TRUE(model->topology_is_valid());
 
   // Body identifiers are unique and are assigned by MultibodyTree in increasing
@@ -56,15 +56,15 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
   EXPECT_EQ(pendulum.get_num_flexible_velocities(), 0);
 
-  // Verifies that an exception is throw if a call to Compile() is attempted to
-  // an already compiled MultibodyTree.
-  EXPECT_THROW(model->Compile(), std::logic_error);
+  // Verifies that an exception is throw if a call to Finalize() is attempted to
+  // an already finalized MultibodyTree.
+  EXPECT_THROW(model->Finalize(), std::logic_error);
 
   // Verifies that after compilation no more bodies can be added.
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
 
-  // Verifies we cannot re-compile.
-  EXPECT_THROW(model->Compile(), std::logic_error);
+  // Verifies we cannot re-finalize.
+  EXPECT_THROW(model->Finalize(), std::logic_error);
 }
 
 // Tests the correctness of MultibodyTreeElement checks to verify one or more
@@ -83,8 +83,8 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   const RigidBody<double>& body1 = model1->AddBody<RigidBody>(M_Bo_B);
   const RigidBody<double>& body2 = model2->AddBody<RigidBody>(M_Bo_B);
 
-  model1->Compile();
-  model2->Compile();
+  model1->Finalize();
+  model2->Finalize();
 
   // Tests that the created bodies indeed do have a parent MultibodyTree.
   EXPECT_NO_THROW(body1.HasParentTreeOrThrow());

@@ -40,9 +40,9 @@ class MultibodyTree {
   ///
   /// To create a %MultibodyTree users will add multibody elements like bodies,
   /// joints, force elements, constraints, etc, using one of these methods.
-  /// Once a user is done adding multibody elements, the Compile() method
+  /// Once a user is done adding multibody elements, the Finalize() method
   /// **must** be called before invoking any %MultibodyTree method.
-  /// See Compile() for details.
+  /// See Finalize() for details.
   /// @{
   // TODO(amcastro-tri): add at least one example of a method that requires a
   // valid topology in this documentation.
@@ -62,7 +62,7 @@ class MultibodyTree {
   /// @endcode
   ///
   /// @throws std::logic_error if `body` is a nullptr.
-  /// @throws std::logic_error if Compile() was already called on `this` tree.
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
   ///
   /// @param[in] body A unique pointer to a body to add to `this`
   ///                 %MultibodyTree. The body class must be specialized on the
@@ -78,9 +78,9 @@ class MultibodyTree {
     static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
     if (topology_.is_valid) {
-      throw std::logic_error("This MultibodyTree is compiled already. "
+      throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more bodies is not allowed. "
-                             "See documentation for Compile() for details.");
+                             "See documentation for Finalize() for details.");
     }
     if (body == nullptr) {
       throw std::logic_error("Input body is an invalid nullptr.");
@@ -127,7 +127,7 @@ class MultibodyTree {
   ///   auto body = model.template AddBody<RigidBody>(Args...);
   /// @endcode
   ///
-  /// @throws std::logic_error if Compile() was already called on `this` tree.
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
   ///
   /// @param[in] args The arguments needed to construct a valid Body of type
   ///                 `BodyType`. `BodyType` must provide a public constructor
@@ -159,7 +159,7 @@ class MultibodyTree {
   /// @endcode
   ///
   /// @throws std::logic_error if `frame` is a nullptr.
-  /// @throws std::logic_error if Compile() was already called on `this` tree.
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
   ///
   /// @param[in] frame A unique pointer to a frame to be added to `this`
   ///                  %MultibodyTree. The frame class must be specialized on
@@ -175,9 +175,9 @@ class MultibodyTree {
     static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
                   "FrameType must be a sub-class of Frame<T>.");
     if (topology_.is_valid) {
-      throw std::logic_error("This MultibodyTree is compiled already. "
+      throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more frames is not allowed. "
-                             "See documentation for Compile() for details.");
+                             "See documentation for Finalize() for details.");
     }
     if (frame == nullptr) {
       throw std::logic_error("Input frame is an invalid nullptr.");
@@ -218,7 +218,7 @@ class MultibodyTree {
   ///       model.template AddFrame<FixedOffsetFrame>(body, X_BF);
   /// @endcode
   ///
-  /// @throws std::logic_error if Compile() was already called on `this` tree.
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
   ///
   /// @param[in] args The arguments needed to construct a valid Frame of type
   ///                 `FrameType`. `FrameType` must provide a public constructor
@@ -266,11 +266,11 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
-  /// Returns `true` if this %MultibodyTree was compiled with Compile() after
+  /// Returns `true` if this %MultibodyTree was finalized with Finalize() after
   /// all multibody elements were added, and `false` otherwise.
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
-  /// Compile() is called, which validates the topology.
-  /// @see Compile().
+  /// Finalize() is called, which validates the topology.
+  /// @see Finalize().
   bool topology_is_valid() const { return topology_.is_valid; }
 
   /// Returns the topology information for this multibody tree. Users should not
@@ -287,15 +287,15 @@ class MultibodyTree {
   /// performs all the required pre-processing to perform computations at a
   /// later stage.
   ///
-  /// If the compile stage is successful, the topology of this %MultibodyTree is
-  /// validated, meaning that the topology is up-to-date after this call.
-  /// No more multibody tree elements can be added after a call to Compile().
+  /// If the finalize stage is successful, the topology of this %MultibodyTree
+  /// is validated, meaning that the topology is up-to-date after this call.
+  /// No more multibody tree elements can be added after a call to Finalize().
   ///
   /// @throws std::logic_error If users attempt to call this method on an
-  ///         already compiled %MultibodyTree.
+  ///         already finalized %MultibodyTree.
   // TODO(amcastro-tri): Consider making this method private and calling it
   // automatically when CreateDefaultContext() is called.
-  void Compile();
+  void Finalize();
 
  private:
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write

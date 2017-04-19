@@ -30,7 +30,7 @@ class MultibodyTreeElement;
 /// A class representing an element or component of a MultibodyTree. Examples of
 /// multibody tree elements are bodies, joints, force elements, and constraints.
 /// Multibody tree elements are owned and managed by a parent MultibodyTree.
-/// At MultibodyTree::Compile() stage, they get assigned an index that
+/// At MultibodyTree::Finalize() stage, they get assigned an index that
 /// uniquely identifies them within their parent MultibodyTree.
 /// A generic multibody tree element `MultibodyComponent` is derived from
 /// this class as:
@@ -131,14 +131,14 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   MultibodyTreeElement() {}
 
   /// Gives MultibodyTree elements the opportunity to perform internal setup
-  /// when MultibodyTree::Compile() is invoked.
-  /// NVI to pure virtual method DoCompile().
-  void Compile(const MultibodyTree<T>& tree) {
-    DoCompile(tree);
+  /// when MultibodyTree::Finalize() is invoked.
+  /// NVI to pure virtual method DoFinalize().
+  void Finalize(const MultibodyTree<T>& tree) {
+    DoFinalize(tree);
   }
 
-  /// Implementation of the NVI Compile().
-  virtual void DoCompile(const MultibodyTree<T>& tree) = 0;
+  /// Implementation of the NVI Finalize().
+  virtual void DoFinalize(const MultibodyTree<T>& tree) = 0;
 
  private:
   void set_parent_tree(

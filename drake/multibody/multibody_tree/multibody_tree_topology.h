@@ -15,7 +15,7 @@
 ///    compoments without having to create maps between the "original" and
 ///    "cloned" objects. That process is tedious and error prone.
 ///  - Each Multibody tree element has a copy (aquired at
-///    MultibodyTree::Compile() stage) of its topology which serves as a
+///    MultibodyTree::Finalize() stage) of its topology which serves as a
 ///    key into the Context for that element's state.
 ///  - The topology is also stored in the Context so that the Multibody tree's
 ///    topology can be validated against the stored topology in debug builds.
@@ -124,7 +124,7 @@ struct MultibodyTreeTopology {
 
   bool is_valid{false};
 
-  /// Topology gets validated by MultibodyTree::Compile().
+  /// Topology gets validated by MultibodyTree::Finalize().
   void set_valid() { is_valid = true; }
 
   std::vector<BodyTopology> bodies;

@@ -19,30 +19,30 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
-void MultibodyTree<T>::Compile() {
+void MultibodyTree<T>::Finalize() {
   // If the topology is valid it means that this MultibodyTree was already
-  // compiled. Re-compilation is not allowed.
+  // finalized. Re-compilation is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
-        "Attempting to call MultibodyTree::Compile() on an already compiled "
+        "Attempting to call MultibodyTree::Finalize() on an already finalized "
         "MultibodyTree.");
   }
 
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
-  //   - Compile non-T dependent topological information.
+  //   - Finalize non-T dependent topological information.
   //   - Compute degrees of freedom, array sizes and any other information to
   //     allocate a context and request the required cache entries.
   //   - Setup computational structures (BodyNode based).
 
-  // Give bodies the chance to perform any compile-time setup.
+  // Give bodies the chance to perform any finalize-time setup.
   for (const auto& body : owned_bodies_) {
-    body->Compile(*this);
+    body->Finalize(*this);
   }
 
-  // Give frames the chance to perform any compile-time setup.
+  // Give frames the chance to perform any finalize-time setup.
   for (const auto& frame : owned_frames_) {
-    frame->Compile(*this);
+    frame->Finalize(*this);
   }
 
   set_valid_topology();

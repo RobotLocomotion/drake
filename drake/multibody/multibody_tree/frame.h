@@ -48,8 +48,8 @@ class Frame : public FrameBase<T> {
   explicit Frame(const Body<T>& body) : body_(body) {}
 
  private:
-  // Implementation for MultibodyTreeElement::DoCompile().
-  void DoCompile(const MultibodyTree<T>& tree) final {
+  // Implementation for MultibodyTreeElement::DoFinalize().
+  void DoFinalize(const MultibodyTree<T>& tree) final {
     topology_ = tree.get_topology().get_frame(this->get_index());
     DRAKE_ASSERT(topology_.index == this->get_index());
   }

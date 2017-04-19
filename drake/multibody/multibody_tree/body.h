@@ -77,7 +77,7 @@ template <typename T>
 // private methods in Body.
 // BodyAttorney serves as a "proxy" to the Body class but only providing an
 // interface to a selected subset of methods that should be accessible to
-// MultibodyTree. These methods are related to the construction and compile
+// MultibodyTree. These methods are related to the construction and finalize
 // stage of the multibody system.
 class BodyAttorney {
  private:
@@ -130,12 +130,12 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
   // set of private Body methods.
   friend class internal::BodyAttorney<T>;
-  // Implementation for MultibodyTreeElement::DoCompile().
-  // At MultibodyTree::Compile() time, each body retrieves its topology
+  // Implementation for MultibodyTreeElement::DoFinalize().
+  // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
-  void DoCompile(const MultibodyTree<T>& tree) final {
+  void DoFinalize(const MultibodyTree<T>& tree) final {
     topology_ = tree.get_topology().bodies[this->get_index()];
-    body_frame_.Compile(tree);
+    body_frame_.Finalize(tree);
   }
 
   // MultibodyTree has access to the mutable BodyFrame through BodyAttorney.
