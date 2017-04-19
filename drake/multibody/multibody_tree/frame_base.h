@@ -27,7 +27,7 @@ namespace multibody {
 /// computations, so may have meaningful spatial velocity and acceleration --
 /// that will always be the case for material frames during a dynamic
 /// simulation. Such kinematic quantities must always be measured with respect
-/// to some other specified frame. The only one we can be sure exists is the
+/// to some other specified frame. The only frame we can be sure exists is the
 /// World frame W, so pose and motion with respect to W are always available.
 /// Utilities are provided for calculating frame motion with respect to other
 /// frames. Derived frame objects will have additional properties. For example,
