@@ -26,6 +26,7 @@ class SimpleTreeVisualizer {
    */
   SimpleTreeVisualizer(const RigidBodyTreed& tree, lcm::DrakeLcmInterface* lcm);
 
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleTreeVisualizer)
   /**
    * Visualizes a given state position configuration.
    * @param position_vector : A `VectorX` with the positions that are
