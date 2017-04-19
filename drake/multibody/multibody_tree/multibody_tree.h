@@ -275,8 +275,8 @@ class MultibodyTree {
 
   /// Returns the topology information for this multibody tree. Users should not
   /// need to call this method since MultibodyTreeTopology is an internal
-  /// bookkeeping detail. MultibodyTreeElement::Compile() calls this method to
-  /// retrieve its topology at Compile() time.
+  /// bookkeeping detail. Used at Finalize() stage by multibody elements to
+  /// retrieve a local copy of their topology.
   const MultibodyTreeTopology& get_topology() const { return topology_; }
 
   /// This method must be called after all elements in the tree (joints, bodies,

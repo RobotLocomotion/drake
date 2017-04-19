@@ -126,31 +126,33 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   // This will make use the template argument "MultibodyTreeElement".
 
  protected:
-  // Default constructor made protected so that sub-classes can still declare
-  // their default constructors if they need to.
+  /// Default constructor made protected so that sub-classes can still declare
+  /// their default constructors if they need to.
   MultibodyTreeElement() {}
 
-  // MultibodyTree<T> is a natural friend of MultibodyTreeElement objects and
-  // therefore it can set the owning parent tree and unique index in that tree.
-  friend class MultibodyTree<T>;
+  /// Gives MultibodyTree elements the opportunity to perform internal setup
+  /// when MultibodyTree::Compile() is invoked.
+  /// NVI to pure virtual method DoCompile().
+  void Compile(const MultibodyTree<T>& tree) {
+    DoCompile(tree);
+  }
+
+  /// Implementation of the NVI Compile().
+  virtual void DoCompile(const MultibodyTree<T>& tree) = 0;
+
+ private:
   void set_parent_tree(
       const MultibodyTree<T>* tree, ElementIndexType index) {
     index_ = index;
     parent_tree_ = tree;
   }
 
-  // Gives MultibodyTree elements the opportunity to perform internal setup
-  // when MultibodyTree::Compile() is invoked.
-  // NVI to pure virtual method DoCompile().
-  void Compile(const MultibodyTree<T>& tree) {
-    DoCompile(tree);
-  }
+  /// MultibodyTree<T> is a natural friend of MultibodyTreeElement objects and
+  /// therefore it can set the owning parent tree and unique index in that tree.
+  friend class MultibodyTree<T>;
 
-  // Implementation of the NVI Compile().
-  virtual void DoCompile(const MultibodyTree<T>& tree) = 0;
-
- private:
   const MultibodyTree<T>* parent_tree_{nullptr};
+
   // ElementIndexType requires a valid initialization.
   ElementIndexType index_{0};
 };

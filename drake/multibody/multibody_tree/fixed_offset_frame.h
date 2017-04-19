@@ -12,7 +12,7 @@ template <class T> class BodyFrame;
 template <class T> class MultibodyTree;
 template <class T> class RigidBody;
 
-/// %FixedOffsetFrame represents a material Frame F whose pose is fixed with
+/// %FixedOffsetFrame represents a material frame F whose pose is fixed with
 /// respect to a _parent_ material frame P. The pose offset is given by a
 /// spatial transform `X_PF`, which is constant after construction. For
 /// instance, we could rigidly attach a frame F to move with a rigid body B at a
@@ -55,7 +55,7 @@ class FixedOffsetFrame : public Frame<T> {
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<T>& X_BF);
 
  private:
-  // The frame to which this frame is attached to.
+  // The frame to which this frame is attached.
   const Frame<T>& parent_frame_;
 
   // Spatial transform giving the fixed pose of this frame F in another frame P.
