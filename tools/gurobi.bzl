@@ -19,8 +19,6 @@ def _gurobi_impl(repository_ctx):
             "-lgurobi60",
         ]
     else:
-        # TODO(jwnimmer-tri) Once bazelbuild/bazel#1595 is fixed, expose our
-        # dependency on GUROBI_PATH.
         gurobi_path = repository_ctx.os.environ.get("GUROBI_PATH", "")
         repository_ctx.symlink(
             gurobi_path or "/MISSING_GUROBI_PATH",
@@ -32,7 +30,7 @@ def _gurobi_impl(repository_ctx):
             warning_detail = "GUROBI_PATH=%s is invalid" % gurobi_path
         warning = (
             "gurobi.bzl: The saved value of " + warning_detail + "; " +
-            "export GUROBI_PATH to the correct value and then do 'bazel clean'.")
+            "export GUROBI_PATH to the correct value.")
 
         # In the Gurobi package, libgurobi60.so is just a symlink to
         # libgurobi.so.6.0.5. However, if you use libgurobi.so.6.0.5 in srcs,
@@ -64,4 +62,5 @@ def _gurobi_impl(repository_ctx):
 gurobi_repository = repository_rule(
     local = True,
     implementation = _gurobi_impl,
+    environ = ["GUROBI_PATH"],
 )
