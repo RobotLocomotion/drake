@@ -208,4 +208,10 @@ struct hash<drake::geometry::Identifier<Tag>> {
   }
 };
 
+/** Enables use of identifiers with std::to_string. */
+template <typename Tag>
+std::string to_string(drake::geometry::Identifier<Tag> id){
+  return to_string(id.get_value());
+}
+
 }  // namespace std
