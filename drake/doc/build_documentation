@@ -163,10 +163,10 @@ build_doxygen()
     mkdir -p ${WORKING_DIR}/.doxygen
     # configure - envsubst needs substituting variables exported
     export SOURCE_DIR WORKING_DIR DOXYGEN_EXECUTABLE PERL_EXECUTABLE DOT_FOUND DOT_EXECUTABLE
-    envsubst '${SOURCE_DIR} ${WORKING_DIR} ${DOXYGEN_EXECUTABLE} ${PERL_EXECUTABLE} ${DOT_FOUND} ${DOT_EXECUTABLE}' < "${SOURCE_DIR}/drake/doc/Doxyfile_CXX.in" > "${WORKING_DIR}/.doxygen/Doxyfile_CXX"
+    envsubst '${SOURCE_DIR} ${WORKING_DIR} ${DOXYGEN_EXECUTABLE} ${PERL_EXECUTABLE} ${DOT_FOUND} ${DOT_EXECUTABLE}' < "${SOURCE_DIR}/drake/doc/doxyfile_cxx.in" > "${WORKING_DIR}/.doxygen/doxyfile_cxx"
     # build
     echo -e "${GREEN}Building doxygen-cxx --> ${WHITE}${BOLD}${WORKING_DIR}/.doxygen${RESET}"
-    ${DOXYGEN_EXECUTABLE} ${WORKING_DIR}/.doxygen/Doxyfile_CXX
+    ${DOXYGEN_EXECUTABLE} ${WORKING_DIR}/.doxygen/doxyfile_cxx
     if [ $? -ne 0 ]; then
       echo -e "${RED}ERROR : doxygen-cxx failed, aborting.${RESET}"
       exit 1
@@ -184,10 +184,10 @@ build_matlab()
     mkdir -p ${WORKING_DIR}/.matlab
     # configure - envsubst needs substituting variables exported
     export SOURCE_DIR WORKING_DIR DOXYGEN_EXECUTABLE PERL_EXECUTABLE DOT_FOUND DOT_EXECUTABLE
-    envsubst '${SOURCE_DIR} ${WORKING_DIR} ${DOXYGEN_EXECUTABLE} ${PERL_EXECUTABLE} ${DOT_FOUND} ${DOT_EXECUTABLE}' < "${SOURCE_DIR}/drake/doc/Doxyfile_MATLAB.in" > "${WORKING_DIR}/.matlab/Doxyfile_MATLAB"
+    envsubst '${SOURCE_DIR} ${WORKING_DIR} ${DOXYGEN_EXECUTABLE} ${PERL_EXECUTABLE} ${DOT_FOUND} ${DOT_EXECUTABLE}' < "${SOURCE_DIR}/drake/doc/doxyfile_matlab.in" > "${WORKING_DIR}/.matlab/doxyfile_matlab"
     # build
     echo -e "${GREEN}Building doxygen-matlab --> ${WHITE}${BOLD}${WORKING_DIR}/.matlab${RESET}"
-    ${DOXYGEN_EXECUTABLE} ${WORKING_DIR}/.matlab/Doxyfile_MATLAB
+    ${DOXYGEN_EXECUTABLE} ${WORKING_DIR}/.matlab/doxyfile_matlab
     if [ $? -ne 0 ]; then
       echo -e "${RED}ERROR : doxygen-matlab failed, aborting.${RESET}"
       exit 1
@@ -241,10 +241,10 @@ build_urdf()
     fi
     # configure - envsubst needs substituting variables exported
     export WORKING_DIR
-    envsubst '${WORKING_DIR}' < "${SOURCE_DIR}/drake/doc/oxygen_cfg.xml.in" > "${WORKING_DIR}/.urdf/oxygen_cfg.xml"
+    envsubst '${WORKING_DIR}' < "${SOURCE_DIR}/drake/doc/oxyfile_urdf.xml.in" > "${WORKING_DIR}/.urdf/oxyfile_urdf.xml"
     # build
     echo -e "${GREEN}Building oxygen-urdf --> ${WHITE}${BOLD}${WORKING_DIR}/.urdf${RESET}"
-    ${OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE} ${SOURCE_DIR}/drake/doc/drakeURDF.xsd -cfg:${WORKING_DIR}/.urdf/oxygen_cfg.xml
+    ${OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE} ${SOURCE_DIR}/drake/doc/drakeURDF.xsd -cfg:${WORKING_DIR}/.urdf/oxyfile_urdf.xml
     if [ $? -ne 0 ]; then
       echo -e "${RED}ERROR : oxygen-urdf failed, aborting.${RESET}"
       exit 1

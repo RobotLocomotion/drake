@@ -107,7 +107,7 @@
 					<Boolean>true</Boolean>
 				</field>
 				<field name="unexpandedOutputFile">
-					<String>@CMAKE_CURRENT_BINARY_DIR@/urdf/${cfn}.html</String>
+					<String>${WORKING_DIR}/urdf/${cfn}.html</String>
 				</field>
 				<field name="splitMethod">
 					<Integer>3</Integer>

@@ -35,4 +35,3 @@ py_binary(
     srcs = ["serve_sphinx.py"],
     data = [":sphinx.zip"],
 )
-

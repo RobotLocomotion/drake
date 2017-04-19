@@ -8,7 +8,7 @@ PROJECT_NAME           = Drake
 PROJECT_NUMBER         =
 PROJECT_BRIEF          =
 PROJECT_LOGO           =
-OUTPUT_DIRECTORY       = "@CMAKE_CURRENT_BINARY_DIR@/doxygen_matlab"
+OUTPUT_DIRECTORY       = "${WORKING_DIR}/.matlab"
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
 OUTPUT_LANGUAGE        = English
@@ -112,13 +112,13 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@CMAKE_SOURCE_DIR@"
+INPUT                  = "${SOURCE_DIR}"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.m
 RECURSIVE              = YES
-EXCLUDE                = "@CMAKE_SOURCE_DIR@/examples" \
-                         "@CMAKE_BINARY_DIR@" \
-                         "@CMAKE_SOURCE_DIR@/thirdParty"
+EXCLUDE                = "${SOURCE_DIR}/drake/examples" \
+                         "${WORKING_DIR}" \
+                         "${SOURCE_DIR}/drake/thirdParty"
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =
@@ -127,7 +127,7 @@ EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             =
 INPUT_FILTER           =
-FILTER_PATTERNS        = "*.m=@CMAKE_CURRENT_BINARY_DIR@/DoxygenMatlab/m2cpp.pl"
+FILTER_PATTERNS        = "*.m=${WORKING_DIR}/DoxygenMatlab/m2cpp.pl"
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS =
 USE_MDFILE_AS_MAINPAGE =
@@ -289,7 +289,7 @@ GENERATE_TAGFILE       =
 ALLEXTERNALS           = NO
 EXTERNAL_GROUPS        = YES
 EXTERNAL_PAGES         = YES
-PERL_PATH              = "@PERL_EXECUTABLE@"
+PERL_PATH              = "${PERL_EXECUTABLE}"
 #---------------------------------------------------------------------------
 # Configuration options related to the dot tool
 #---------------------------------------------------------------------------
@@ -297,7 +297,7 @@ CLASS_DIAGRAMS         = YES
 MSCGEN_PATH            =
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = NO
-HAVE_DOT               = @DOXYGEN_DOT_FOUND@
+HAVE_DOT               = ${DOT_FOUND}
 DOT_NUM_THREADS        = 0
 DOT_FONTNAME           = Helvetica
 DOT_FONTSIZE           = 10
@@ -316,7 +316,7 @@ GRAPHICAL_HIERARCHY    = YES
 DIRECTORY_GRAPH        = YES
 DOT_IMAGE_FORMAT       = png
 INTERACTIVE_SVG        = NO
-DOT_PATH               = "@DOXYGEN_DOT_EXECUTABLE@"
+DOT_PATH               = "${DOT_EXECUTABLE}"
 DOTFILE_DIRS           =
 MSCFILE_DIRS           =
 DIAFILE_DIRS           =
