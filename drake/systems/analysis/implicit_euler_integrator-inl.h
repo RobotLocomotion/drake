@@ -741,8 +741,8 @@ std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
   }
 }
 
-// Steps both implicit Euler and implicit trapezoid forward by at most dt
-// until both integrators succeed.
+// Steps both implicit Euler and implicit trapezoid forward by at a single
+// step using the large possible `h ≤ dt` such that both integrators succeed.
 // @param dt the integration step size to attempt.
 // @param [out] xtplus_ie contains the Euler integrator solution on return
 // @param [out] xtplus_itr contains the implicit trapezoid solution on return
