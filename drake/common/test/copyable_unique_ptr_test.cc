@@ -508,9 +508,9 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromUnique) {
 // These tests the various methods that cause the object to be destroyed.
 
 // This class allows me to track destruction of instances in copyable_unique_ptr
-// instances. To use it, set the static member dtor_called to true, and then
+// instances. To use it, set the static member dtor_called to false, and then
 // perform an operation. If an instance has been destroyed, dtor_called will be
-// false, otherwise, no destructor was called.
+// true, otherwise, no destructor was called.
 struct DestructorTracker : public CloneOnly {
   explicit DestructorTracker(int v, Origin org = Origin::CONSTRUCT)
       : CloneOnly(v, org) {}
@@ -588,7 +588,6 @@ GTEST_TEST(CopyableUniquePtrTest, Reset) {
 // | Base        | Base*    | Base*        | Y     |
 // | Base        | Derived* | nullptr      | N     |
 GTEST_TEST(CopyableUniquePtrTest, AssignPointer) {
-  DestructorTracker* raw = new DestructorTracker(421);
   cup<DestructorTracker> ptr;
 
   // Do not re-order these tests. Each test implicitly relies on the verified
@@ -603,6 +602,7 @@ GTEST_TEST(CopyableUniquePtrTest, AssignPointer) {
 
   // Case 2: Assign pointer of specialized type to empty cup.
   DestructorTracker::dtor_called = false;
+  DestructorTracker* raw = new DestructorTracker(421);
   ptr = raw;
   EXPECT_FALSE(DestructorTracker::dtor_called);
   EXPECT_EQ(ptr.get(), raw);

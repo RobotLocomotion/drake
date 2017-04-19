@@ -42,6 +42,12 @@ GTEST_TEST(IsCloneableTest, OnlyCloneable) {
   EXPECT_TRUE(is_cloneable<CloneOnly>::value);
 }
 
+// Confirms that a const type is still considered cloneable if the type is
+// cloneable.
+GTEST_TEST(IsCloneableTest, TestConstType) {
+  EXPECT_TRUE(is_cloneable<const CloneOnly>::value);
+}
+
 // A class with no copy constructor, but has a Clone that returns the parent
 // class pointer. The parent is representative of *any* ancestor in the
 // inheritance tree.
@@ -127,12 +133,6 @@ class NoClone {
 
 GTEST_TEST(IsCloneableTest, CopyableButNoCloneFail) {
   EXPECT_FALSE(is_cloneable<NoClone>::value);
-}
-
-// Confirms that a const type is still considered cloneable if the type is
-// cloneable.
-GTEST_TEST(IsCloneableTest, TestConstType) {
-  EXPECT_TRUE(is_cloneable<const CloneOnly>::value);
 }
 
 }  // namespace
