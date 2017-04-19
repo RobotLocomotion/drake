@@ -296,7 +296,7 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
  * @param angle_lb The lower bound of the rotation angle.
  * @param angle_ub The upper bound of the rotation angle.
  * @return The rotation angle of the projected matrix.
- * @pre angle_lb >= -2π, angle_ub <= 2π. angle_ub >= angle_lb.
+ * @pre angle_ub >= angle_lb.
  * Throw std::runtime_error if these bounds are violated.
  */
 template <typename Derived>
@@ -306,9 +306,6 @@ double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
   using Scalar = typename Derived::Scalar;
   if (M.rows() != 3 || M.cols() != 3) {
     throw std::runtime_error("The input matrix should be of size 3 x 3.");
-  }
-  if (angle_lb < -2 * M_PI || angle_ub > 2 * M_PI) {
-    throw std::runtime_error("The angle bounds has to ben within [-2π, 2π]");
   }
   if (angle_ub < angle_lb) {
     throw std::runtime_error(
@@ -325,23 +322,35 @@ double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
   // clang-format on
   Scalar alpha =
       atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
-  Scalar theta;
-  // The bounds on θ + α is [-4π, 4π].
-  bool is_maximal_at_boundary = true;
-  for (int i = -2; i < 2; ++i) {
-    double max_sin_angle = M_PI * (0.5 + 2 * i);
-    if (angle_lb + alpha <= max_sin_angle &&
-        max_sin_angle <= angle_ub + alpha) {
+  Scalar theta{};
+  // The bounds on θ + α is [angle_lb + α, angle_ub + α].
+  if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
+    theta = M_PI_2 - alpha;
+  } else if (std::isinf(angle_ub)) {
+    // First if the angle upper bound is inf, start from the angle_lb, and
+    // find the angle θ, such that θ + α = 0.5π + 2kπ
+    int k = ceil((angle_lb + alpha - M_PI_2) / (2 * M_PI));
+    theta = (2 * k + 0.5) * M_PI - alpha;
+  } else if (std::isinf(angle_lb)) {
+    // If the angle lower bound is inf, start from the angle_ub, and find the
+    // angle θ, such that θ + α = 0.5π + 2kπ
+    int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
+    theta = (2 * k + 0.5) * M_PI - alpha;
+  } else {
+    // Now neither angle_lb nor angle_ub is inf. Check if there exists an
+    // integer k, such that 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
+    int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
+    double max_sin_angle = M_PI_2 + 2 * k * M_PI;
+    if (max_sin_angle >= angle_lb + alpha) {
+      // 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
       theta = max_sin_angle - alpha;
-      is_maximal_at_boundary = false;
-      break;
-    }
-  }
-  if (is_maximal_at_boundary) {
-    if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
-      theta = angle_lb;
     } else {
-      theta = angle_ub;
+      // Now the maximal is at the boundary, either θ = angle_lb or angle_ub
+      if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
+        theta = angle_lb;
+      } else {
+        theta = angle_ub;
+      }
     }
   }
   return theta;

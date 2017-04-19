@@ -89,8 +89,27 @@ void CheckProjectionWithAxis(const Eigen::Matrix3d& M,
           .toRotationMatrix();
   const double R_error = (R - M).squaredNorm();
   const int kNumAngles = 100;
+  double theta_lb{};
+  double theta_ub{};
+  // Depending on the value of angle_lb and angle_ub, we choose the range for
+  // the sampled theta. If angle_lb and/or angle_ub is inf, then the theta_lb
+  // and/or theta_ub will be set to a finite value.
+  if (!std::isinf(angle_lb) && !std::isinf(angle_ub)) {
+    theta_lb = angle_lb;
+    theta_ub = angle_ub;
+  } else if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
+    theta_lb = -2 * M_PI;
+    theta_ub = 2 * M_PI;
+  } else if (std::isinf(angle_lb)) {
+    theta_lb = angle_ub - 2 * M_PI;
+    theta_ub = angle_ub;
+  } else {
+    theta_lb = angle_lb;
+    theta_ub = angle_lb + 2 * M_PI;
+  }
   const Eigen::Matrix<double, kNumAngles, 1> theta =
-      Eigen::Matrix<double, kNumAngles, 1>::LinSpaced(angle_lb, angle_ub);
+      Eigen::Matrix<double, kNumAngles, 1>::LinSpaced(theta_lb, theta_ub);
+
   for (int i = 0; i < kNumAngles; ++i) {
     const Eigen::Matrix3d Ri =
         Eigen::AngleAxisd(theta(i), axis).toRotationMatrix();
@@ -112,6 +131,19 @@ GTEST_TEST(RotationMatrixTest, TestProjectionWithAxis) {
   // projection is to one of the bound.
   EXPECT_NEAR(ProjectMatToRotMatWithAxis(M, axis, 0.3, 1), 0.3, 1e-6);
 
+  // If the angle bounds include infinity, the the maximal angle is to shift 0.2
+  // by 2kπ
+  EXPECT_NEAR(ProjectMatToRotMatWithAxis(
+                  M, axis, 0.3, std::numeric_limits<double>::infinity()),
+              0.2 + 2 * M_PI, 1e-6);
+  EXPECT_NEAR(ProjectMatToRotMatWithAxis(
+                  M, axis, -std::numeric_limits<double>::infinity(), 0.1),
+              0.2 - 2 * M_PI, 1e-6);
+  EXPECT_NEAR(ProjectMatToRotMatWithAxis(
+                  M, axis, -std::numeric_limits<double>::infinity(),
+                  std::numeric_limits<double>::infinity()),
+              0.2, 1e-6);
+
   EXPECT_NEAR(ProjectMatToRotMatWithAxis(M, axis, -4, 0.1), 0.1, 1e-6);
 
   M = 2 * Eigen::AngleAxisd(M_PI_2, axis).toRotationMatrix();
@@ -131,6 +163,11 @@ GTEST_TEST(RotationMatrixTest, TestProjectionWithAxis) {
   CheckProjectionWithAxis(M, axis, M_PI, 2 * M_PI);
   CheckProjectionWithAxis(M, axis, -2 * M_PI, 0);
   CheckProjectionWithAxis(M, axis, 0.1, 0.2);
+  CheckProjectionWithAxis(M, axis, -std::numeric_limits<double>::infinity(),
+                          2 * M_PI);
+  CheckProjectionWithAxis(M, axis, -M_PI,
+                          std::numeric_limits<double>::infinity());
+  CheckProjectionWithAxis(M, axis, -2 * M_PI, 4 * M_PI);
 }
 }  // namespace
 }  // namespace math
