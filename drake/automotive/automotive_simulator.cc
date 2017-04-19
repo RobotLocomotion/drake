@@ -200,6 +200,7 @@ int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
   DRAKE_DEMAND(railcar != nullptr);
   auto controller =
       builder_->template AddSystem<IdmController<T>>(*road_);
+  controller->set_name(name + "_IdmController");
 
   builder_->Connect(railcar->pose_output(), controller->ego_pose_input());
   builder_->Connect(railcar->velocity_output(),
