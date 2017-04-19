@@ -27,14 +27,14 @@ namespace multibody {
 /// computations, so may have meaningful spatial velocity and acceleration --
 /// that will always be the case for material frames during a dynamic
 /// simulation. Such kinematic quantities must always be measured with respect
-/// to some other specified frame. The only one we can be sure exists is the
+/// to some other specified frame. The only frame we can be sure exists is the
 /// World frame W, so pose and motion with respect to W are always available.
 /// Utilities are provided for calculating frame motion with respect to other
 /// frames. Derived frame objects will have additional properties. For example,
-/// material frames derived from the Frame class have an associated Body.
+/// material frames have an associated Body.
 ///
 /// Summarizing, %FrameBase serves as an abstraction for a general frame object;
-/// it doesn't store any values itself. As always in Drake runtime values are
+/// it doesn't store any values itself. As always in Drake, runtime values are
 /// obtained from a Context object. %FrameBase provides an interface through
 /// which the pose of a frame may be obtained from a given Context.
 /// Classes derived from %FrameBase are used to represent more specific types
