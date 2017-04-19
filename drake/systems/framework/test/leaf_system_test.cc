@@ -51,6 +51,11 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePublishPeriodSec(period);
   }
 
+  void AddPerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    this->DeclarePerStepAction(action);
+  }
+
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {}
 
@@ -320,6 +325,22 @@ TEST_F(LeafSystemTest, DeclareAbstractOutput) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   auto output = system_.AllocateOutput(*context);
   EXPECT_EQ(42, UnpackIntValue(output->get_data(1)));
+}
+
+TEST_F(LeafSystemTest, DeclarePerStepActions) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+
+  system_.AddPerStepAction(DiscreteEvent<double>::kPublishAction);
+  system_.AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+  system_.AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+  std::vector<DiscreteEvent<double>> events;
+  system_.GetPerStepEvents(*context, &events);
+
+  EXPECT_EQ(events.size(), 3);
+  EXPECT_EQ(events[0].action, DiscreteEvent<double>::kPublishAction);
+  EXPECT_EQ(events[1].action, DiscreteEvent<double>::kDiscreteUpdateAction);
+  EXPECT_EQ(events[2].action, DiscreteEvent<double>::kUnrestrictedUpdateAction);
 }
 
 // A system that exercises the model_value-based input and output ports,
