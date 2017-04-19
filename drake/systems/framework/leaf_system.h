@@ -566,6 +566,7 @@ class LeafSystem : public System<T> {
     per_step_events_.push_back(event);
   }
 
+ public:
   void RemovePerStepAction(
       const typename DiscreteEvent<T>::ActionType& action) {
     int index = FindPerStepActionIndex(action);
@@ -573,6 +574,7 @@ class LeafSystem : public System<T> {
       per_step_events_.erase(per_step_events_.begin() + index);
   }
 
+ protected:
   /// Declares that this System should reserve continuous state with
   /// @p num_state_variables state variables, which have no second-order
   /// structure. Has no effect if AllocateContinuousState is overridden.

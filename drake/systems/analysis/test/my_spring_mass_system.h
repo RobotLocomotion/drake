@@ -21,6 +21,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
     if (update_rate > 0.0) {
       this->DeclareDiscreteUpdatePeriodSec(1.0 / update_rate);
     }
+    this->DeclarePerStepAction(DiscreteEvent<T>::kPublishAction);
   }
 
   int get_publish_count() const { return publish_count_; }

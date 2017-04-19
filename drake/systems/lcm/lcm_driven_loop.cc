@@ -27,6 +27,16 @@ LcmDrivenLoop::LcmDrivenLoop(
   //stepper_->set_publish_every_time_step(false);
   stepper_->set_publish_at_initialization(false);
 
+  std::vector<DiscreteEvent<double>> events;
+  system.GetPerStepEvents(stepper_->get_context(), &events);
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kPublishAction) {
+      drake::log()->warn(
+        "LcmDrivenLoop: Per step Publish event declared in the given system."
+        " Are you sure you want this?");
+    }
+  }
+
   stepper_->Initialize();
 
   // Starts the subscribing thread.

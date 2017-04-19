@@ -54,20 +54,31 @@ void controller_loop() {
   RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
       builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(
           *robot, kAliasGroupPath));
+  rs_msg_to_rs->set_name("rs_msg_to_rs");
+
   HumanoidPlanEvalSystem* plan_eval =
       builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(
           *robot, kAliasGroupPath, kControlConfigPath, 0.003));
+  plan_eval->set_name("plan_eval");
+
   QpControllerSystem* qp_con =
       builder.AddSystem(std::make_unique<QpControllerSystem>(*robot, 0.003));
+  qp_con->set_name("qp_con");
+
   AtlasJointLevelControllerSystem* joint_con =
       builder.AddSystem<AtlasJointLevelControllerSystem>(*robot);
+  joint_con->set_name("joint_con");
 
   auto& robot_state_subscriber = *builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
           "EST_ROBOT_STATE", &lcm));
+  robot_state_subscriber.set_name("robot_state_subscriber");
+
   auto& atlas_command_publisher = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::atlas_command_t>(
           "ROBOT_COMMAND", &lcm));
+  atlas_command_publisher.set_name("atlas_command_publisher");
+
 
   // lcm -> rs
   builder.Connect(robot_state_subscriber.get_output_port(0),

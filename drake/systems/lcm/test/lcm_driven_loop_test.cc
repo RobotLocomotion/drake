@@ -88,6 +88,7 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   dummy->set_name("dummy");
   auto logger = builder.AddSystem<SignalLogger<double>>(1);
   logger->set_name("logger");
+  logger->RemovePerStepAction(DiscreteEvent<double>::kPublishAction);
   builder.Connect(*sub, *dummy);
   builder.Connect(*dummy, *logger);
   auto sys = builder.Build();

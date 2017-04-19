@@ -55,6 +55,7 @@ int main(int argc, const char** argv) {
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  plant.set_name("plant");
 
   // Contact parameters
   const double kStiffness = 100000;
@@ -81,28 +82,36 @@ int main(int argc, const char** argv) {
   // LCM inputs.
   auto& atlas_command_subscriber = *builder.AddSystem(
       LcmSubscriberSystem::Make<atlas_command_t>("ROBOT_COMMAND", &lcm));
+  atlas_command_subscriber.set_name("atlas_command_subscriber");
+
   auto& robot_command_to_desired_effort_converter =
       *builder.AddSystem<RobotCommandToDesiredEffortConverter>(actuators);
+  robot_command_to_desired_effort_converter.set_name("robot_command_to_desired_effort_converter");
 
   // Placeholder for actuator dynamics.
   map<const RigidBodyActuator*, System<double>*> actuator_dynamics;
   for (const auto& actuator : actuators) {
-    actuator_dynamics.emplace(std::make_pair(
-        actuator,
-        builder.AddSystem<PassThrough<double>>(actuator_effort_length)));
+    PassThrough<double>* pass_through_ptr =
+        builder.AddSystem<PassThrough<double>>(actuator_effort_length);
+    pass_through_ptr->set_name(actuator->name_ + "_actuator_dynamics");
+
+    actuator_dynamics.emplace(std::make_pair(actuator, pass_through_ptr));
   }
 
   // Conversion from desired efforts to RigidBodyPlant input vector.
   auto& actuator_effort_to_rigid_body_plant_input_converter =
       *builder.AddSystem<ActuatorEffortToRigidBodyPlantInputConverter>(
           actuators);
+  actuator_effort_to_rigid_body_plant_input_converter.set_name("actuator_effort_to_rigid_body_plant_input_converter");
 
   // Placeholder for effort sensors.
   map<const RigidBodyActuator*, System<double>*> effort_sensors;
   for (const auto& actuator : actuators) {
-    effort_sensors.emplace(std::make_pair(
-        actuator,
-        builder.AddSystem<PassThrough<double>>(actuator_effort_length)));
+    PassThrough<double>* pass_through_ptr =
+        builder.AddSystem<PassThrough<double>>(actuator_effort_length);
+    pass_through_ptr->set_name(actuator->name_ + "_trq_sensor");
+
+    effort_sensors.emplace(std::make_pair(actuator, pass_through_ptr));
   }
 
   // LCM outputs.
@@ -114,17 +123,25 @@ int main(int argc, const char** argv) {
 
   auto& robot_state_encoder = *builder.AddSystem<RobotStateEncoder>(
       plant.get_rigid_body_tree(), force_torque_sensor_info);
+  robot_state_encoder.set_name("robot_state_encoder");
+
   auto& robot_state_publisher = *builder.AddSystem(
       LcmPublisherSystem::Make<robot_state_t>("EST_ROBOT_STATE", &lcm));
+  robot_state_publisher.set_name("robot_state_publisher");
 
   // Visualizer.
   DrakeVisualizer& visualizer_publisher =
       *builder.template AddSystem<DrakeVisualizer>(tree, &lcm);
+  visualizer_publisher.set_name("visualizer_publisher");
+
   ContactResultsToLcmSystem<double>& contact_viz =
       *builder.template AddSystem<ContactResultsToLcmSystem<double>>(tree);
+  contact_viz.set_name("contact_viz");
+
   auto& contact_results_publisher = *builder.AddSystem(
       LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm));
+  contact_results_publisher.set_name("contact_results_publisher");
 
   contact_results_publisher.set_publish_period(1e-3);
   visualizer_publisher.set_publish_period(1e-3);
@@ -197,6 +214,13 @@ int main(int argc, const char** argv) {
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
+
+  std::vector<DiscreteEvent<double>> events;
+  diagram->GetPerStepEvents(*context, &events);
+  for (const auto& event : events) {
+    std::cout << "has event: " << event.action << std::endl;
+  }
+
   // Integrator set arbitrarily. The time step was selected by tuning for the
   // largest value that appears to give stable results.
   simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(*diagram,
