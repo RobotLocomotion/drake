@@ -471,12 +471,27 @@ class LeafSystem : public System<T> {
   const U<T>& GetNumericParameter(const Context<T>& context, int index) const {
     static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
                   "U must be a subclass of BasicVector.");
-    const systems::LeafContext<T>& leaf_context =
-        dynamic_cast<const systems::LeafContext<T>&>(context);
-    const auto* const params =
-        dynamic_cast<const U<T>*>(leaf_context.get_numeric_parameter(index));
+    const auto& leaf_context = dynamic_cast<const systems::LeafContext<T>&>(
+        context);
+    const auto* const params = dynamic_cast<const U<T>*>(
+        leaf_context.get_numeric_parameter(index));
     DRAKE_ASSERT(params != nullptr);
     return *params;
+  }
+
+  /// Extracts the numeric parameters of type U from the @p context at @p index.
+  /// Asserts if the context is not a LeafContext, or if it does not have a
+  /// vector-valued parameter of type U at @p index.
+  template <template <typename> class U = BasicVector>
+  U<T>* GetMutableNumericParameter(Context<T>* context, int index) const {
+    static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
+                  "U must be a subclass of BasicVector.");
+    auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
+    DRAKE_ASSERT(leaf_context != nullptr);
+    auto* params = dynamic_cast<U<T>*>(
+        leaf_context->get_mutable_numeric_parameter(index));
+    DRAKE_ASSERT(params != nullptr);
+    return params;
   }
 
   /// Declares that this System has a simple, fixed-period discrete action.
