@@ -81,18 +81,19 @@ StateMachineAndPrimitives<T>::StateMachineAndPrimitives(
 template class StateMachineAndPrimitives<double>;
 
 template <typename T>
-IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
-    T>::IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(DrakeLcm* lcm,
-                                                      const double
-                                                          update_interval) {
+IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<T>::
+IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
+    DrakeLcm* lcm, const int chosen_box, const double update_interval,
+    Eigen::Vector3d box_position, Eigen::Vector3d box_orientation) {
   this->set_name("IiwaWsgPlantGeneratorsEstimatorsAndVisualizer");
 
+  DiagramBuilder<T> builder;
+  std::cout<<"Plant builder box ID :"<<chosen_box<<"\n";
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance);
-
-  DiagramBuilder<T> builder;
+      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance, chosen_box,
+                                 box_position, box_orientation);
   plant_ = builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<T>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
   plant_->set_name("plant");

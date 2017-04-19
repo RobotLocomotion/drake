@@ -49,6 +49,10 @@ const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
  * @param box_instance A pointer to the ModelInstanceInfo object to store
  * information on the box (target for manipulation) within the constructed
  * `systems::RigidBodyPlant`.
+ * @param chosen_box An integer from 1-3 to indicate which of the 3 possible
+ * boxes are to be added into this tree. The number 1 is the "small" sized
+ * box, 2 is the "medium, and 3 is the large). The corresponding models can
+ * be found in the /models folder.
  * @param box_position The position of the target box in world coordinates
  * as a Vector3 object.
  * @param box_orientation The orientation of the target box in RPY
@@ -58,11 +62,10 @@ const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
 template <typename T>
 std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
     ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
-    ModelInstanceInfo<T>* box_instance,
-    const Eigen::Vector3d& box_position = Vector3<double>(1 + -0.43, -0.65,
-                                                          kTableTopZInWorld +
-                                                              0.1),
-    const Eigen::Vector3d& box_orientation = Vector3<double>(0, 0, 1)) {
+    ModelInstanceInfo<T>* box_instance, const int chosen_box = 1,
+    Eigen::Vector3d box_position = Vector3<double>(
+        1 + -0.43, -0.65, kTableTopZInWorld + 0.1),
+    Eigen::Vector3d box_orientation = Vector3<double>(0, 0, 1)) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -191,10 +194,13 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
    * `IiwaPlanSource`. This should be smaller than that of
    * components
    * commanding new plans.
+   * @param chosen_box : The choice of which box ...
    */
   IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
-      lcm::DrakeLcm* lcm, const double update_interval = 0.001);
-
+      lcm::DrakeLcm* lcm, const int chosen_box = 1, const double update_interval = 0.001,
+      Eigen::Vector3d box_position = Vector3<double>(
+          1 + -0.43, -0.65, kTableTopZInWorld + 0.1),
+      Eigen::Vector3d box_orientation = Vector3<double>(0, 0, 1));
   const systems::InputPortDescriptor<T>& get_input_port_iiwa_plan() const {
     return this->get_input_port(input_port_iiwa_plan_);
   }
