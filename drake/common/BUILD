@@ -304,6 +304,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "protobuf",
+    srcs = ["protobuf.cc"],
+    hdrs = ["protobuf.h"],
+    deps = [
+        "@protobuf//:protobuf",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -507,6 +516,16 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":random_polynomial_matrix",
+    ],
+)
+
+drake_cc_googletest(
+    name = "protobuf_test",
+    data = [
+        "test/test_string.txt",
+    ],
+    deps = [
+        ":protobuf",
     ],
 )
 
