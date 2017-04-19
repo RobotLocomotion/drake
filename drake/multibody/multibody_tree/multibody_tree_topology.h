@@ -12,9 +12,9 @@
 /// minimalist representation that can store this information.
 /// These data structures are used in the following ways:
 ///  - To aid the process of cloning or transmogrifying multibody tree
-///    compoments without having to create maps between the "original" and
+///    components without having to create maps between the "original" and
 ///    "cloned" objects. That process is tedious and error prone.
-///  - Each Multibody tree element has a copy (aquired at
+///  - Each Multibody tree element has a copy (acquired at
 ///    MultibodyTree::Finalize() stage) of its topology which serves as a
 ///    key into the Context for that element's state.
 ///  - The topology is also stored in the Context so that the Multibody tree's
@@ -43,14 +43,14 @@ struct BodyTopology {
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
-  // Unique index in the MultibodyTree.
+  /// Unique index in the MultibodyTree.
   BodyIndex index{0};
 
-  // Unique index to the frame associated with this body.
+  /// Unique index to the frame associated with this body.
   FrameIndex body_frame{0};
 
-  // Depth level in the MultibodyTree, level = 0 for the world.
-  // Initialized to an invalid negative value.
+  /// Depth level in the MultibodyTree, level = 0 for the world.
+  /// Initialized to an invalid negative value.
   int level{-1};
 };
 
@@ -67,10 +67,10 @@ struct FrameTopology {
   FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
 
-  // Unique index in the MultibodyTree.
+  /// Unique index in the MultibodyTree.
   FrameIndex index{0};
 
-  // Unique index of the body this physical frame attaches to.
+  /// Unique index of the body this physical frame attaches to.
   BodyIndex body{0};
 };
 
@@ -82,7 +82,7 @@ struct MultibodyTreeTopology {
   /// Default constructor creates an empty, invalid topology. The minimum valid
   /// topology for a minimum valid MultibodyTree containts at least the
   /// BodyTopology for the world. The topology for the _world_ body does not get
-  /// added but until MultibodyTree construction, which creates a _world_ body
+  /// added until MultibodyTree construction, which creates a _world_ body
   /// and adds it to the tree.
   MultibodyTreeTopology() {}
 

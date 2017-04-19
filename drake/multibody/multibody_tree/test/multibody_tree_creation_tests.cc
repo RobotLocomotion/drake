@@ -37,7 +37,7 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   // Adds a new body to the world.
   const RigidBody<double>& pendulum = model->AddBody<RigidBody>(M_Bo_B);
 
-  // Indexes not valid until Comile() is called.
+  // Topology is invalid before MultibodyTree::Finalize().
   EXPECT_FALSE(model->topology_is_valid());
   // Verifies that the topology of this model gets validated at finalize stage.
   model->Finalize();
@@ -62,9 +62,6 @@ GTEST_TEST(MultibodyTree, AddBodies) {
 
   // Verifies that after compilation no more bodies can be added.
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
-
-  // Verifies we cannot re-finalize.
-  EXPECT_THROW(model->Finalize(), std::logic_error);
 }
 
 // Tests the correctness of MultibodyTreeElement checks to verify one or more

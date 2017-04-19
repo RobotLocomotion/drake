@@ -85,15 +85,13 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // The body frame of the upper link is U, and that of the lower link is L.
   // We will add a frame for the pendulum's shoulder. This will be the
   // shoulder's outboard frame So.
-  // X_UlSo specifies the pose of the shoulder outboard frame So in the body
-  // frame Ul of the upper link.
-  Isometry3d X_UlSo(Translation3d(0.0, half_link_length, 0.0));
+  // X_USo specifies the pose of the shoulder outboard frame So in the body
+  // frame U of the upper link.
+  Isometry3d X_USo(Translation3d(0.0, half_link_length, 0.0));
   // In this case the frame is created explicitly from the body frame of
-  // upper_link. Another option is to use the FixedOffsetFrame::Create() method
-  // directly taking a Body, as shown below, which creates a frame with a fixed
-  // offset from the body frame moving with the body.
+  // upper_link.
   const auto& shoulder_outboard_frame =
-      model->AddFrame<FixedOffsetFrame>(upper_link.get_body_frame(), X_UlSo);
+      model->AddFrame<FixedOffsetFrame>(upper_link.get_body_frame(), X_USo);
 
   // The elbow is the mobilizer that connects upper and lower links.
   // Below we will create inboard and outboard frames associated with the
@@ -102,16 +100,16 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // y = -half_link_length in the frame of the upper link body.
   // An outboard frame Eo is rigidly attached to the lower link. It is located
   // at y = +half_link_length in the frame of the lower link body.
-  // X_UlEi specifies the pose of the elbow inboard frame Ei in the body
-  // frame Ul of the upper link.
-  Isometry3d X_UlEi(Translation3d(0.0, -half_link_length, 0.0));
+  // X_UEi specifies the pose of the elbow inboard frame Ei in the body
+  // frame U of the upper link.
+  Isometry3d X_UEi(Translation3d(0.0, -half_link_length, 0.0));
   // X_LlEo specifies the pose of the elbow outboard frame Eo in the body
   // frame Ll of the lower link.
   // In this case we create a frame using the FixedOffsetFrame::Create() method
   // taking a Body, i.e., creating a frame with a fixed offset from the upper
   // link body frame.
   const auto& elbow_inboard_frame =
-      model->AddFrame<FixedOffsetFrame>(upper_link, X_UlEi);
+      model->AddFrame<FixedOffsetFrame>(upper_link, X_UEi);
   Isometry3d X_LlEo(Translation3d(0.0, +half_link_length, 0.0));
   const auto& elbow_outboard_frame =
       model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo);
@@ -124,12 +122,12 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   EXPECT_NO_THROW(model->Finalize());
   EXPECT_TRUE(model->topology_is_valid());  // Valid after Finalize().
 
-  // Asserts that no more bodies can be added after compilation.
+  // Asserts that no more bodies can be added after finalize.
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo),
                std::logic_error);
 
-  // Asserts re-compilation is not allowed.
+  // Asserts re-finalization is not allowed.
   EXPECT_THROW(model->Finalize(), std::logic_error);
 
   // Frame indexes are assigned by MultibodyTree. The number of physical frames
