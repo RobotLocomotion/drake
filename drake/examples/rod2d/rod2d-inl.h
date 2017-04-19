@@ -1041,7 +1041,7 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
   const Vector2<T> leftdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
                                                             left);
   const Vector2<T> rightdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
-                                                            right);
+                                                             right);
 
   // Get the inverse of the generalized inertia matrix.
   const Matrix3<T> M_inv = get_inverse_inertia_matrix();
