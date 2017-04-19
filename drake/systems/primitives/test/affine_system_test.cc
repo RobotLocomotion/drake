@@ -77,7 +77,7 @@ TEST_F(AffineSystemTest, Derivatives) {
 TEST_F(AffineSystemTest, Updates) {
   EXPECT_TRUE(context_->has_only_continuous_state());
   EXPECT_NE(updates_, nullptr);
-  EXPECT_EQ(updates_->size(), 0);
+  EXPECT_EQ(updates_->num_groups(), 0);
 }
 
 // Tests that the outputs are correctly computed.
@@ -175,7 +175,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   system.CalcDiscreteVariableUpdates(*context, update_event, update.get());
 
-  EXPECT_TRUE(CompareMatrices(update->get_discrete_state(0)->CopyToVector(),
+  EXPECT_TRUE(CompareMatrices(update->get_vector(0)->CopyToVector(),
                               A * x0 + B * u0 + f0));
 
   // Test TimeVaryingAffineSystem accessor methods.

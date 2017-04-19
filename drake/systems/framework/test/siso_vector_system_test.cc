@@ -311,12 +311,8 @@ TEST_F(SisoVectorSystemTest, DiscreteVariableUpdates) {
   dut.CalcDiscreteVariableUpdates(*context, event, discrete_updates.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 1);
-  EXPECT_EQ(
-      discrete_updates->get_mutable_discrete_state(0)->GetAtIndex(0),
-      2.0);
-  EXPECT_EQ(
-      discrete_updates->get_mutable_discrete_state(0)->GetAtIndex(1),
-      3.0);
+  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 2.0);
+  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(1), 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_time_derivatives_count(), 0);

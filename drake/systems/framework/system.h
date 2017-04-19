@@ -499,7 +499,7 @@ class System {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
     const int continuous_state_dim = state->get_continuous_state()->size();
-    const int discrete_state_dim = state->get_discrete_state()->size();
+    const int discrete_state_dim = state->get_discrete_state()->num_groups();
     const int abstract_state_dim = state->get_abstract_state()->size();
 
     // Copy current state to the passed-in state, as specified in the
@@ -512,7 +512,7 @@ class System {
       event.do_unrestricted_update(context, state);
     }
     if (continuous_state_dim != state->get_continuous_state()->size() ||
-        discrete_state_dim != state->get_discrete_state()->size() ||
+        discrete_state_dim != state->get_discrete_state()->num_groups() ||
         abstract_state_dim != state->get_abstract_state()->size())
       throw std::logic_error(
           "State variable dimensions cannot be changed "

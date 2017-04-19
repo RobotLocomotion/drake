@@ -109,8 +109,8 @@ class LeafSystem : public System<T> {
     ContinuousState<T>* xc = state->get_mutable_continuous_state();
     xc->SetFromVector(VectorX<T>::Zero(xc->size()));
     DiscreteValues<T>* xd = state->get_mutable_discrete_state();
-    for (int i = 0; i < xd->size(); i++) {
-      BasicVector<T>* s = xd->get_mutable_discrete_state(i);
+    for (int i = 0; i < xd->num_groups(); i++) {
+      BasicVector<T>* s = xd->get_mutable_vector(i);
       s->SetFromVector(VectorX<T>::Zero(s->size()));
     }
   }

@@ -466,8 +466,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> qplus = q + vplus*dt_;
 
   // Set the new discrete state.
-  systems::BasicVector<T>* new_state = discrete_state->
-      get_mutable_discrete_state(0);
+  systems::BasicVector<T>* new_state = discrete_state->get_mutable_vector(0);
   new_state->get_mutable_value().segment(0, 3) = qplus;
   new_state->get_mutable_value().segment(3, 3) = vplus;
 }
@@ -1870,8 +1869,8 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
   if (simulation_type_ == SimulationType::kTimeStepping) {
-    state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
-        SetFromVector(x0);
+    state->get_mutable_discrete_state()->get_mutable_vector(0)
+        ->SetFromVector(x0);
   } else {
     // Continuous variables.
     state->get_mutable_continuous_state()->SetFromVector(x0);
