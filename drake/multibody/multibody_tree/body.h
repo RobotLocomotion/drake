@@ -69,6 +69,30 @@ class BodyFrame : public Frame<T> {
 // Forward declarations for Body<T>.
 template<typename T> class MultibodyTree;
 
+// Internal implementation details. Users should not access implementations
+// in this namespace.
+namespace internal {
+template <typename T>
+// Attorney-Client idiom to grant MultibodyTree access to a selected set of
+// private methods in Body.
+// BodyAttorney serves as a "proxy" to the Body class but only providing an
+// interface to a selected subset of methods that should be accessible to
+// MultibodyTree. These methods are related to the construction and compile
+// stage of the multibody system.
+class BodyAttorney {
+ private:
+  // MultibodyTree keeps a list of mutable pointers to each of the body frames
+  // in the system and therefore it needs mutable access.
+  // Notice this method is private and therefore users do not have access to it
+  // even in the rare event they'd attempt to peek into the "internal::"
+  // namespace.
+  static BodyFrame<T>& get_mutable_body_frame(Body<T>* body) {
+    return body->get_mutable_body_frame();
+  }
+  friend class MultibodyTree<T>;
+};
+}  // namespace internal
+
 /// %Body provides the general abstraction of a body with an API that
 /// makes no assumption about whether a body is rigid or deformable and neither
 /// does it make any assumptions about the underlying physical model or
@@ -103,6 +127,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   }
 
  private:
+  // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
+  // set of private Body methods.
+  friend class internal::BodyAttorney<T>;
   // Implementation for MultibodyTreeElement::DoCompile().
   // At MultibodyTree::Compile() time, each body retrieves its topology
   // from the parent MultibodyTree.
@@ -111,12 +138,16 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     body_frame_.Compile(tree);
   }
 
+  // MultibodyTree has access to the mutable BodyFrame through BodyAttorney.
+  BodyFrame<T>& get_mutable_body_frame() {
+    return body_frame_;
+  }
+
   // Body frame associated with this body.
   BodyFrame<T> body_frame_;
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   BodyTopology topology_;
-
 };
 
 }  // namespace multibody
