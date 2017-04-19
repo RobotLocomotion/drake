@@ -179,7 +179,7 @@
    fun:*__static_initialization_and_destruction_0*
 }
 
-# On line world_body->set_name( <string>) sin file rigid_body_tree.cc
+# On line world_body->set_name( <string>) in file rigid_body_tree.cc
 {
     <ubuntu-14-2>
     Memcheck:Leak
@@ -192,9 +192,22 @@
  	fun:*RigidBody*
 }
 
+# On line  visualizer_->set_name("visualizer"); in file sim_diagram_builder.cc
+{
+    <ubuntu-14-3>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs12_S_constructIPKcEEPcT_S3_RKSaIcESt20forward_iterator_tag
+    fun:_ZNSsC1EPKcRKSaIcE
+ 	...
+    fun:_ZN5drake8examples13kuka_iiwa_arm12_GLOBAL__N_149SimDiagramBuilderTest_TestMultiAdd*er_Test8TestBodyEv
+}
+
 # Death tests
 {
-   <ubuntu-14-3>
+   <ubuntu-14-4>
    Memcheck:Leak
    match-leak-kinds: possible
    fun:_Znwm
@@ -206,7 +219,7 @@
 # append function in world_sim_tree_builder.cc
 #  info.model_path = drake::GetDrakePath() + model_map_[model_name];
 {
-   <ubuntu-14-4>
+   <ubuntu-14-5>
    Memcheck:Leak
    match-leak-kinds: possible
    fun:_Znwm
@@ -219,7 +232,7 @@
 # operator= in "parser_common.cc" [EXPECT DEATH]
 # floating_joint_name = FloatingJointConstants::kFloatingJointName;
 {
-    <ubuntu-14-5>
+    <ubuntu-14-6>
     Memcheck:Leak
     match-leak-kinds: possible
     fun:_Znwm
@@ -231,7 +244,7 @@
 # Google Test string leakage, gtest.cc
 # result.reserve(2 * (end - start));
 {
-   <ubuntu-14-6>
+   <ubuntu-14-7>
    Memcheck:Leak
    match-leak-kinds: possible
    fun:_Znwm
@@ -250,7 +263,7 @@
 # due to the string handling difference in g++-5 and g++-4.9,
 # because many suppressions string related functions in the stack.
 {
-   <ubuntu-14-7>
+   <ubuntu-14-8>
    Memcheck:Leak
    match-leak-kinds: possible
    fun:_Znwm
@@ -263,7 +276,7 @@
 # One time log:
 # result = spdlog::stderr_logger_mt("console");
 {
-   <ubuntu-14-8>
+   <ubuntu-14-9>
    Memcheck:Leak
    match-leak-kinds: possible
    fun:_Znwm
