@@ -180,6 +180,30 @@ def generate_accessors(hh, caller_context, fields):
         put(hh, ACCESSOR_FIELD_METHODS  % context, 1)
     put(hh, ACCESSOR_END % caller_context, 2)
 
+TO_STRING_BEGIN = """
+  /// Returns a string representation of this class. The provided @p prefix is
+  /// added to the beginning of each line in the returned string. It is useful
+  /// to achieve a desired level of indentation.
+  std::string ToString(const std::string& prefix = "") const {
+    std::stringstream result;
+"""
+
+TO_STRING_VARIABLE = """
+    result << prefix << \"- %(field)s = \" << %(field)s() << \"\\n\";
+"""
+
+TO_STRING_END = """
+    return result.str();
+  }
+"""
+
+def generate_to_string(hh, caller_context, fields):
+    put(hh, TO_STRING_BEGIN % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        put(hh, TO_STRING_VARIABLE % context, 1)
+    put(hh, TO_STRING_END % caller_context, 2)
 
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
@@ -475,6 +499,7 @@ def generate_code(args):
         generate_default_ctor(hh, context, fields)
         generate_do_clone(hh, context, fields)
         generate_accessors(hh, context, fields)
+        generate_to_string(hh, context, fields)
         generate_is_valid(hh, context, fields)
         put(hh, VECTOR_CLASS_END % context, 2)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)

@@ -32,6 +32,7 @@ using maliput::api::LaneEnd;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadGeometryId;
 using multibody::joints::kRollPitchYaw;
+using systems::Context;
 using systems::lcm::LcmPublisherSystem;
 
 namespace automotive {
@@ -482,6 +483,38 @@ void AutomotiveSimulator<T>::StepBy(const T& time_step) {
   const T time = simulator_->get_context().get_time();
   SPDLOG_TRACE(drake::log(), "Time is now {}", time);
   simulator_->StepTo(time + time_step);
+}
+
+template <typename T>
+std::string AutomotiveSimulator<T>::GetContextString(const std::string& prefix)
+    const {
+  if (!has_started()) {
+    throw std::runtime_error("AutomotiveSimulator::GetContextString(): ERROR: "
+        "Start() must be called before this method can be called.");
+  }
+
+  const Context<T>& diagram_context = simulator_->get_context();
+  std::stringstream result;
+  result << prefix << "AutomotiveSimulator Context:\n";
+
+  const int num_simple_cars = simple_car_initial_states_.size();
+  result << prefix << "  - Number of SimpleCars: " << num_simple_cars << "\n";
+  for (const auto& entry : simple_car_initial_states_) {
+    const SimpleCar<T>* simple_car = entry.first;
+    DRAKE_DEMAND(simple_car != nullptr);
+    const Context<T>& context =
+        diagram_->GetSubsystemContext(diagram_context, simple_car);
+    const SimpleCarState<T>* state =
+        dynamic_cast<const SimpleCarState<T>*>(
+            &context.get_state().get_continuous_state()->get_vector());
+    DRAKE_DEMAND(state != nullptr);
+    result << prefix << "    - SimpleCar:\n";
+    result << prefix << "      - Name: " << simple_car->get_name() << "\n";
+    result << prefix << "      - State:\n" << state->ToString(
+        prefix + "        ");
+  }
+
+  return result.str();
 }
 
 template <typename T>

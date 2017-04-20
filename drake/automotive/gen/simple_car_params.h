@@ -105,6 +105,21 @@ class SimpleCarParams : public systems::BasicVector<T> {
   }
   //@}
 
+  /// Returns a string representation of this class. The provided @p prefix is
+  /// added to the beginning of each line in the returned string. It is useful
+  /// to achieve a desired level of indentation.
+  std::string ToString(const std::string& prefix = "") const {
+    std::stringstream result;
+    result << prefix << "- wheelbase = " << wheelbase() << "\n";
+    result << prefix << "- track = " << track() << "\n";
+    result << prefix
+           << "- max_abs_steering_angle = " << max_abs_steering_angle() << "\n";
+    result << prefix << "- max_velocity = " << max_velocity() << "\n";
+    result << prefix << "- max_acceleration = " << max_acceleration() << "\n";
+    result << prefix << "- velocity_limit_kp = " << velocity_limit_kp() << "\n";
+    return result.str();
+  }
+
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {
     using std::isnan;

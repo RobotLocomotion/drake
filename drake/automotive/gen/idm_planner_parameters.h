@@ -117,6 +117,23 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   }
   //@}
 
+  /// Returns a string representation of this class. The provided @p prefix is
+  /// added to the beginning of each line in the returned string. It is useful
+  /// to achieve a desired level of indentation.
+  std::string ToString(const std::string& prefix = "") const {
+    std::stringstream result;
+    result << prefix << "- v_ref = " << v_ref() << "\n";
+    result << prefix << "- a = " << a() << "\n";
+    result << prefix << "- b = " << b() << "\n";
+    result << prefix << "- s_0 = " << s_0() << "\n";
+    result << prefix << "- time_headway = " << time_headway() << "\n";
+    result << prefix << "- delta = " << delta() << "\n";
+    result << prefix << "- bloat_diameter = " << bloat_diameter() << "\n";
+    result << prefix << "- distance_lower_limit = " << distance_lower_limit()
+           << "\n";
+    return result.str();
+  }
+
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {
     using std::isnan;

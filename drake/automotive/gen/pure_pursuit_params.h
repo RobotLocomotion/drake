@@ -51,6 +51,15 @@ class PurePursuitParams : public systems::BasicVector<T> {
   }
   //@}
 
+  /// Returns a string representation of this class. The provided @p prefix is
+  /// added to the beginning of each line in the returned string. It is useful
+  /// to achieve a desired level of indentation.
+  std::string ToString(const std::string& prefix = "") const {
+    std::stringstream result;
+    result << prefix << "- s_lookahead = " << s_lookahead() << "\n";
+    return result.str();
+  }
+
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {
     using std::isnan;

@@ -507,6 +507,17 @@ GTEST_TEST(AutomotiveSimulatorTest, TestBuild2) {
   EXPECT_NO_THROW(simulator->GetDiagram());
 }
 
+GTEST_TEST(AutomotiveSimulatorTest, TestContextToString) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+
+  simulator->AddPriusSimpleCar("Model1", "Channel1");
+  simulator->AddPriusSimpleCar("Model2", "Channel2");
+  simulator->Start();
+
+  const std::string result = simulator->GetContextString();
+  EXPECT_TRUE(result.find("AutomotiveSimulator Context:") != std::string::npos);
+}
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake

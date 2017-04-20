@@ -66,6 +66,20 @@ class EulerFloatingJointState : public systems::BasicVector<T> {
   void set_yaw(const T& yaw) { this->SetAtIndex(K::kYaw, yaw); }
   //@}
 
+  /// Returns a string representation of this class. The provided @p prefix is
+  /// added to the beginning of each line in the returned string. It is useful
+  /// to achieve a desired level of indentation.
+  std::string ToString(const std::string& prefix = "") const {
+    std::stringstream result;
+    result << prefix << "- x = " << x() << "\n";
+    result << prefix << "- y = " << y() << "\n";
+    result << prefix << "- z = " << z() << "\n";
+    result << prefix << "- roll = " << roll() << "\n";
+    result << prefix << "- pitch = " << pitch() << "\n";
+    result << prefix << "- yaw = " << yaw() << "\n";
+    return result.str();
+  }
+
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {
     using std::isnan;

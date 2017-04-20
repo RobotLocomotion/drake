@@ -223,6 +223,11 @@ class AutomotiveSimulator {
   /// Advances simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
 
+  /// Returns a string representation of the current context.
+  ///
+  /// @pre Start() has been called.
+  std::string GetContextString(const std::string& prefix = "") const;
+
  private:
   int allocate_vehicle_number();
 

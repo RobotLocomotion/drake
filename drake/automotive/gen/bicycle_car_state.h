@@ -64,6 +64,20 @@ class BicycleCarState : public systems::BasicVector<T> {
   void set_sy(const T& sy) { this->SetAtIndex(K::kSy, sy); }
   //@}
 
+  /// Returns a string representation of this class. The provided @p prefix is
+  /// added to the beginning of each line in the returned string. It is useful
+  /// to achieve a desired level of indentation.
+  std::string ToString(const std::string& prefix = "") const {
+    std::stringstream result;
+    result << prefix << "- Psi = " << Psi() << "\n";
+    result << prefix << "- Psi_dot = " << Psi_dot() << "\n";
+    result << prefix << "- beta = " << beta() << "\n";
+    result << prefix << "- vel = " << vel() << "\n";
+    result << prefix << "- sx = " << sx() << "\n";
+    result << prefix << "- sy = " << sy() << "\n";
+    return result.str();
+  }
+
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {
     using std::isnan;
