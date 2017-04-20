@@ -245,6 +245,10 @@ try { \
 // Performs operations on an invalid index in Debug mode. All of these should
 // throw exceptions with meaningful error messages.
 GTEST_TEST(TypeSafeIndex, OperationOnInvalidInDebug) {
+  // This is a no-op function so the compiler doesn't think I'm computing
+  // unused values. Used to consume otherwise un-used bool and integer values.
+  auto consume = [](bool) {};
+
   int i;
   AIndex valid(1);
   AIndex invalid;
@@ -255,17 +259,13 @@ GTEST_TEST(TypeSafeIndex, OperationOnInvalidInDebug) {
                        ".+negative value = \\-\\d+.+");
 
   // Implicit conversion to int.
-  EXPECT_ERROR_MESSAGE({ i = invalid; }, std::runtime_error,
+  EXPECT_ERROR_MESSAGE(consume(i = invalid), std::runtime_error,
                        "Converting to an int."
                        ".+negative value = \\-\\d+.+");
   // Assignment.
   EXPECT_ERROR_MESSAGE({ invalid = -1; }, std::runtime_error,
                        "Assigning an invalid int."
                        ".+negative value = \\-\\d+.+");
-
-  // This is a no-op function so the compiler doesn't think I'm computing
-  // unused boolean values in the next set of comparison tests.
-  auto consume = [](bool) {};
 
   // Comparison operators.
   EXPECT_ERROR_MESSAGE(consume(invalid == valid), std::runtime_error,
