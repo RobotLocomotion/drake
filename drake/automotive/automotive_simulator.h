@@ -21,8 +21,10 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/rendering/pose_aggregator.h"
+#include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
@@ -223,6 +225,11 @@ class AutomotiveSimulator {
   /// Advances simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
 
+  /// Returns the current poses of all vehicles in the simulation.
+  ///
+  /// @pre Start() has been called.
+  systems::rendering::PoseBundle<T> GetCurrentPoses() const;
+
  private:
   int allocate_vehicle_number();
 
@@ -230,6 +237,12 @@ class AutomotiveSimulator {
   // have been added to the `AutomotiveSimulator`. Throws a std::runtime_error
   // if it is not unique meaning a car of the same name was already added.
   void CheckNameUniqueness(const std::string& name);
+
+  // Connects the provided pose and velocity output ports of a vehicle model to
+  // the PoseAggregator and adds a PriusVis for visualizing the vehicle.
+  void ConnectCarOutputsAndPriusVis(int id,
+    const systems::OutputPortDescriptor<T>& pose_output,
+    const systems::OutputPortDescriptor<T>& velocity_output);
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
@@ -281,6 +294,9 @@ class AutomotiveSimulator {
   std::map<const MaliputRailcar<T>*,
            std::pair<MaliputRailcarParams<T>, MaliputRailcarState<T>>>
       railcar_configs_;
+
+  // The output port of the Diagram that contains pose bundle information.
+  int pose_bundle_output_port_{};
 
   // === End for building. ===
 

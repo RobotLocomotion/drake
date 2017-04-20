@@ -17,6 +17,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace automotive {
@@ -500,6 +501,48 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
       MaliputRailcarState<double>() /* initial state */);
 
   EXPECT_NO_THROW(simulator->Start());
+}
+
+// Verifies that the velocity outputs of the MaliputRailcars are connected to
+// the PoseAggregator, which prevents a regression of #5894.
+GTEST_TEST(AutomotiveSimulatorTest, TestRailcarVelocityOutput) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+
+  const MaliputRailcarParams<double> params;
+  const maliput::api::RoadGeometry* road =
+      simulator->SetRoadGeometry(
+          std::make_unique<const maliput::dragway::RoadGeometry>(
+              maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+  MaliputRailcarState<double> alice_initial_state;
+  alice_initial_state.set_s(5);
+  alice_initial_state.set_speed(1);
+  const int alice_id = simulator->AddPriusMaliputRailcar("Alice",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      alice_initial_state);
+  const int bob_id = simulator->AddIdmControlledPriusMaliputRailcar("Bob",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */);
+
+  EXPECT_NO_THROW(simulator->Start());
+
+  // Advances the simulation to allow Alice's MaliputRailcar to move at fixed
+  // speed and Bob's MaliputRailcar to move under IDM control.
+  simulator->StepBy(1);
+
+  const int kAliceIndex{0};
+  const int kBobIndex{1};
+
+  // Verifies that the velocity within the PoseAggregator's PoseBundle output is
+  // non-zero.
+  const systems::rendering::PoseBundle<double> poses =
+      simulator->GetCurrentPoses();
+  ASSERT_EQ(poses.get_num_poses(), 2);
+  ASSERT_EQ(poses.get_model_instance_id(kAliceIndex), alice_id);
+  ASSERT_EQ(poses.get_model_instance_id(kBobIndex), bob_id);
+  EXPECT_FALSE(poses.get_velocity(kAliceIndex).get_value().isZero());
+  EXPECT_FALSE(poses.get_velocity(kBobIndex).get_value().isZero());
 }
 
 // Tests Build/Start logic
