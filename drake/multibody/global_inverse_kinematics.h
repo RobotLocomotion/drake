@@ -214,6 +214,10 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    *   sum_i zᵢ = 1
    *   zᵢ ∈ {0, 1}
    * </pre>
+   * This function can be used for collision avoidance, if each region Pᵢ is a
+   * free space. It can also be used for grasping, each each region Pᵢ is a
+   * surface patch on the grasped object.
+   * Note this approach also works if the region Pᵢ overlaps with each other.
    * @param body_index The index of the body to on which point `Q` is attached.
    * @param p_BQThe position of point `Q` in the body frame `B`.
    * @param region_vertices region_vertices[i] is the vertices for the i'th
