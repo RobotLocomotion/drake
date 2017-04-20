@@ -28,4 +28,17 @@ if(lcm_FOUND)
     drakeMultibodyParsers
     drakeRBM
     drakeRigidBodyPlant)
+
+  drake_add_cc_test(valkyrie_simulation_test)
+  target_link_libraries(valkyrie_simulation_test
+      drakeLcmSystem
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeRobotStateEncoder
+      drakeSystemAnalysis
+      drakeSystemFramework
+      drakeSystemPrimitives
+      drakeActuatorEffortToRigidBodyPlantInputConverter
+      drakeRobotCommandToDesiredEffortConverter
+      drakeValkyrieConstants)
 endif()
