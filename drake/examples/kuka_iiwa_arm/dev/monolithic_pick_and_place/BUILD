@@ -13,24 +13,6 @@ package(
 )
 
 drake_cc_library(
-    name = "iiwa_state_feedback_plan",
-    srcs = [
-        "iiwa_state_feedback_plan.cc",
-    ],
-    hdrs = [
-        "iiwa_state_feedback_plan.h",
-    ],
-    deps = [
-        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/lcmtypes:iiwa",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/util:lcm_util",
-        "@robotlocomotion_lcmtypes//:lib",
-    ],
-)
-
-drake_cc_library(
     name = "kuka_pick_and_place_monolithic",
     srcs = [
         "demo_diagram_builder.cc",
@@ -44,8 +26,8 @@ drake_cc_library(
         "synchronous_world_state.h",
     ],
     deps = [
-        ":iiwa_state_feedback_plan",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
         "//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives",
         "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:kuka_pick_and_place",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
@@ -62,10 +44,10 @@ drake_cc_binary(
     name = "monolithic_pick_and_place_demo",
     srcs = ["monolithic_pick_and_place_demo.cc"],
     deps = [
-        ":iiwa_state_feedback_plan",
         ":kuka_pick_and_place_monolithic",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "@bot_core_lcmtypes//:lib",
         "@gflags//:gflags",
@@ -76,10 +58,10 @@ drake_cc_binary(
     name = "trajectory_generator_test",
     srcs = ["trajectory_generator_test.cc"],
     deps = [
-        ":iiwa_state_feedback_plan",
         ":kuka_pick_and_place_monolithic",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
