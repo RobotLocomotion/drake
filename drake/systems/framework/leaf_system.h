@@ -510,6 +510,14 @@ class LeafSystem : public System<T> {
     event.offset_sec = offset_sec;
     event.event.action = action;
     periodic_events_.push_back(event);
+
+    if (HasPerStepAction(action)) {
+      std::string err_msg = this->get_name() +
+        ": has both periodic publish and per step action of type: " +
+        std::to_string(action);
+      DRAKE_ABORT_MSG(err_msg.c_str());
+      // drake::log()->warn(err_msg);
+    }
   }
 
   /// Declares that this System has a simple, fixed-period discrete update.
@@ -566,7 +574,6 @@ class LeafSystem : public System<T> {
     per_step_events_.push_back(event);
   }
 
- public:
   void RemovePerStepAction(
       const typename DiscreteEvent<T>::ActionType& action) {
     int index = FindPerStepActionIndex(action);
@@ -574,7 +581,6 @@ class LeafSystem : public System<T> {
       per_step_events_.erase(per_step_events_.begin() + index);
   }
 
- protected:
   /// Declares that this System should reserve continuous state with
   /// @p num_state_variables state variables, which have no second-order
   /// structure. Has no effect if AllocateContinuousState is overridden.

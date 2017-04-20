@@ -78,9 +78,12 @@ class SimDiagramBuilder {
    * Adds a DrakeVisualizer. Can be called at most once. Must be called after
    * AddPlant().
    * @param lcm Pointer to a lcm interface.
+   * @param per_step_publish If ture, the visualizer will publish a draw message
+   * every major time step.
    * @return Pointer to the added visualizer.
    */
-  systems::DrakeVisualizer* AddVisualizer(drake::lcm::DrakeLcmInterface* lcm);
+  systems::DrakeVisualizer* AddVisualizer(
+      drake::lcm::DrakeLcmInterface* lcm, bool per_step_publish = true);
 
   /**
    * Adds a controller of type ControllerType, which must be derived from

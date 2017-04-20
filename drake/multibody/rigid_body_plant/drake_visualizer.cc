@@ -18,7 +18,7 @@ const int kPortIndex = 0;
 
 DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
                                  drake::lcm::DrakeLcmInterface* lcm,
-                                 bool enable_playback)
+                                 bool enable_playback, bool per_step_publish)
     : lcm_(lcm),
       load_message_(multibody::CreateLoadRobotMessage<double>(tree)),
       draw_message_translator_(tree) {
@@ -29,11 +29,11 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
   this->DeclareDiscreteState(1);
   if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
 
-  DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
+  if (per_step_publish)
+    DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
-  RemovePerStepAction(DiscreteEvent<double>::kPublishAction);
   LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 

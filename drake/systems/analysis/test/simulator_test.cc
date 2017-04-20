@@ -510,7 +510,6 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   });
 
   drake::systems::Simulator<double> simulator(system);
-  //simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
   EXPECT_EQ(500, num_disc_updates);
   // Publication occurs at 400Hz, and also at initialization.
@@ -545,7 +544,6 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   });
 
   // Run a simulation.
- // simulator.set_publish_every_time_step(true);
   simulator.StepTo(0.5);
 
   // Check that all the update events precede all the publish events, and all
@@ -642,7 +640,6 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   // Disables all simulator induced publish events, so that all publish calls
   // are intiated by sys.
   sim.set_publish_at_initialization(false);
-  //sim.set_publish_every_time_step(false);
   sim.Initialize();
   sim.StepTo(0.1);
 

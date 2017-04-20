@@ -86,7 +86,8 @@ int main(int argc, const char** argv) {
 
   auto& robot_command_to_desired_effort_converter =
       *builder.AddSystem<RobotCommandToDesiredEffortConverter>(actuators);
-  robot_command_to_desired_effort_converter.set_name("robot_command_to_desired_effort_converter");
+  robot_command_to_desired_effort_converter.set_name(
+      "robot_command_to_desired_effort_converter");
 
   // Placeholder for actuator dynamics.
   map<const RigidBodyActuator*, System<double>*> actuator_dynamics;
@@ -102,7 +103,8 @@ int main(int argc, const char** argv) {
   auto& actuator_effort_to_rigid_body_plant_input_converter =
       *builder.AddSystem<ActuatorEffortToRigidBodyPlantInputConverter>(
           actuators);
-  actuator_effort_to_rigid_body_plant_input_converter.set_name("actuator_effort_to_rigid_body_plant_input_converter");
+  actuator_effort_to_rigid_body_plant_input_converter.set_name(
+      "actuator_effort_to_rigid_body_plant_input_converter");
 
   // Placeholder for effort sensors.
   map<const RigidBodyActuator*, System<double>*> effort_sensors;
@@ -126,20 +128,20 @@ int main(int argc, const char** argv) {
   robot_state_encoder.set_name("robot_state_encoder");
 
   auto& robot_state_publisher = *builder.AddSystem(
-      LcmPublisherSystem::Make<robot_state_t>("EST_ROBOT_STATE", &lcm));
+      LcmPublisherSystem::Make<robot_state_t>("EST_ROBOT_STATE", &lcm, false));
   robot_state_publisher.set_name("robot_state_publisher");
 
   // Visualizer.
   DrakeVisualizer& visualizer_publisher =
-      *builder.template AddSystem<DrakeVisualizer>(tree, &lcm);
+      *builder.template AddSystem<DrakeVisualizer>(tree, &lcm, false, false);
   visualizer_publisher.set_name("visualizer_publisher");
 
   ContactResultsToLcmSystem<double>& contact_viz =
       *builder.template AddSystem<ContactResultsToLcmSystem<double>>(tree);
   contact_viz.set_name("contact_viz");
 
-  auto& contact_results_publisher = *builder.AddSystem(
-      LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+  auto& contact_results_publisher =
+      *builder.AddSystem(LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm));
   contact_results_publisher.set_name("contact_results_publisher");
 
@@ -223,11 +225,8 @@ int main(int argc, const char** argv) {
 
   // Integrator set arbitrarily. The time step was selected by tuning for the
   // largest value that appears to give stable results.
-  simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(*diagram,
-                                                                   3e-4,
-                                                                   context);
-  //simulator->set_publish_every_time_step(false);
-
+  simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(
+      *diagram, 3e-4, context);
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
 

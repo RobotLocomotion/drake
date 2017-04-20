@@ -73,10 +73,16 @@ class DrakeVisualizer : public LeafSystem<double> {
    * @param[in] enable_playback  If true, the visualizer will cache the
    * input data for playback and ReplayCachedSimulation() will replay that
    * cache data.
+   *
+   * @param[in] per_step_publish If true, the visualizer declares a per step
+   * publish action, which is returned by System::GetPerStepEvents(). When used
+   * with the Simulator, a draw message will be published every time the
+   * simulator takes a major time step.
    */
   DrakeVisualizer(const RigidBodyTree<double>& tree,
                   drake::lcm::DrakeLcmInterface* lcm,
-                  bool enable_playback = false);
+                  bool enable_playback = false,
+                  bool per_step_publish = true);
 
   /**
    * Sets the publishing period of this system. See
