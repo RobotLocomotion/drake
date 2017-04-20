@@ -76,9 +76,9 @@ int DoMain() {
   builder.Connect(plan_sub->get_output_port(0),
                   plan_source->get_plan_input_port());
   builder.Connect(status_sub->get_output_port(0),
-                  plan_source->get_status_input_port());
-  builder.Connect(status_sub->get_output_port(0),
                   status_receiver->get_input_port(0));
+  builder.Connect(status_receiver->get_measured_position_output_port(),
+                  plan_source->get_state_input_port());
   builder.Connect(plan_source->get_output_port(0),
                   target_demux->get_input_port(0));
   builder.Connect(target_demux->get_output_port(0),
