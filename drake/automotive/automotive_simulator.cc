@@ -102,9 +102,12 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   coord_transform->set_name(name + "_transform");
-  const auto& descriptor = aggregator_->AddSingleInput(name, id);
-  builder_->Connect(simple_car->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
+
+  auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
+  const systems::InputPortDescriptor<T>& pose_port = ports.first;
+  const systems::InputPortDescriptor<T>& velocity_port = ports.second;
+  builder_->Connect(simple_car->pose_output(), pose_port);
+  builder_->Connect(simple_car->velocity_output(), velocity_port);
 
   builder_->Connect(*command_subscriber, *simple_car);
   builder_->Connect(simple_car->state_output(),
@@ -133,9 +136,12 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   coord_transform->set_name(name + "_transform");
-  const auto& descriptor = aggregator_->AddSingleInput(name, id);
-  builder_->Connect(trajectory_car->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
+
+  auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
+  const systems::InputPortDescriptor<T>& pose_port = ports.first;
+  const systems::InputPortDescriptor<T>& velocity_port = ports.second;
+  builder_->Connect(trajectory_car->pose_output(), pose_port);
+  builder_->Connect(trajectory_car->velocity_output(), velocity_port);
 
   builder_->Connect(trajectory_car->raw_pose_output(),
                     coord_transform->get_input_port(0));
@@ -179,9 +185,11 @@ int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
   railcar_configs_[railcar].first.set_value(params.get_value());
   railcar_configs_[railcar].second.set_value(initial_state.get_value());
 
-  const auto& descriptor = aggregator_->AddSingleInput(name, id);
-  builder_->Connect(railcar->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
+  auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
+  const systems::InputPortDescriptor<T>& pose_port = ports.first;
+  const systems::InputPortDescriptor<T>& velocity_port = ports.second;
+  builder_->Connect(railcar->pose_output(), pose_port);
+  builder_->Connect(railcar->velocity_output(), velocity_port);
 
   car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   return id;

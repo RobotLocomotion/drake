@@ -502,6 +502,64 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
   EXPECT_NO_THROW(simulator->Start());
 }
 
+// Verifies that the velocity outputs of the MaliputRailcars are connected to
+// the PoseAggregator, which prevents a regression of #5894. This is done by
+// instantiating a single-lane dragway and placing one forward-moving
+// MaliputRailcar in front an IDM-controlled MaliputRailcar. When velocity
+// state is not sent into PoseAggregator, the IDM-controlled MaliputRailcar will
+// travel a shorter distance since it will think the car in front of it is
+// stopped.
+GTEST_TEST(AutomotiveSimulatorTest, TestRailcarVelocityOutput) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+
+  const MaliputRailcarParams<double> params;
+  const maliput::api::RoadGeometry* road =
+      simulator->SetRoadGeometry(
+          std::make_unique<const maliput::dragway::RoadGeometry>(
+              maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+  MaliputRailcarState<double> alice_initial_state;
+  alice_initial_state.set_s(5);
+  alice_initial_state.set_speed(1);
+  simulator->AddPriusMaliputRailcar("Alice",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      alice_initial_state);
+  simulator->AddIdmControlledPriusMaliputRailcar("Bob",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */);
+
+  EXPECT_NO_THROW(simulator->Start());
+
+  // Advances the simulation to allow Alice's MaliputRailcar to move at fixed
+  // speed and Bob's MaliputRailcar to move under IDM control.
+  simulator->StepBy(2.0);
+
+  lcm::DrakeMockLcm* lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(lcm, nullptr);
+
+  // Verifies that the MaliputRailcar has moved forward relative to prior to
+  // the nonzero acceleration command being issued.
+  const lcmt_viewer_draw draw_message =
+      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
+          "DRAKE_VIEWER_DRAW");
+
+  const int kAliceIndex{0};
+  const int kBobIndex{17};
+  EXPECT_EQ(draw_message.link_name[kAliceIndex], "chassis_floor");
+  EXPECT_EQ(draw_message.link_name[kBobIndex], "chassis_floor");
+
+  // Defines Bob's position when Alice's velocity state is *not* inputted into
+  // the PoseAggregator. This value was determined empirically.
+  const double kPosWithoutVelData{1.8867};
+
+  // Bob should advance further forward when Alice's velocity state is inputted
+  // into the PoseAggregator. This is because Alice is moving forward at 1 m/s.
+  const int kXIndex{0};
+  EXPECT_GT(draw_message.position[kBobIndex][kXIndex], kPosWithoutVelData);
+}
+
 // Tests Build/Start logic
 GTEST_TEST(AutomotiveSimulatorTest, TestBuild) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
