@@ -1,5 +1,6 @@
 #include "drake/common/type_safe_index.h"
 
+#include <regex>
 #include <sstream>
 #include <type_traits>
 #include <utility>
@@ -9,6 +10,9 @@
 namespace drake {
 namespace common {
 namespace {
+
+using std::regex;
+using std::regex_match;
 
 #ifndef DRAKE_ASSERT_IS_DISARMED
 #define EXPECT_THROW_IF_ARMED(expr) EXPECT_THROW(expr, std::runtime_error);
@@ -26,18 +30,6 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   EXPECT_EQ(index, 1);  // This also tests operator==(int).
   AIndex index2(index);  // Copy constructor.
   EXPECT_EQ(index2, 1);
-// In Debug builds construction from a negative int throws.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-  try {
-    AIndex negative_index(-1);
-    GTEST_FAIL();
-  } catch (std::runtime_error& e) {
-    std::string expected_msg =
-        "This index, of type \"" + drake::NiceTypeName::Get<AIndex>() +
-        "\", has the negative value = -1. Negative indexes are not allowed.";
-    EXPECT_EQ(e.what(), expected_msg);
-  }
-#endif
 }
 
 // Verifies implicit conversion from index to int.
@@ -187,6 +179,170 @@ GTEST_TEST(TypeSafeIndex, ValueAssignment) {
   EXPECT_EQ(target, 17);
   EXPECT_THROW_IF_ARMED(target = -1);
 }
+
+//-------------------------------------------------------------------
+
+// This codes tests the operations on invalid indices. In release mode, the
+// operations are "valid", but in debug they throw an exception. This is *not*
+// all inclusive. Some invalid tests are included in the previous operator-
+// specific tests, encapsulated within EXPECT_THROW_IF_ARMED.
+
+#ifdef DRAKE_ASSERT_IS_DISARMED
+// Performs operations on an invalid index in Release mode. None of these should
+// throw an exception.
+GTEST_TEST(TypeSafeIndex, OperationOnInvalidInRelease) {
+  AIndex invalid(-1);
+  AIndex valid(1);
+  // Confirm it reports as invalid.
+  EXPECT_FALSE(invalid.is_valid());
+  // Implicit conversion to int.
+  EXPECT_EQ(invalid, -1);
+  // Assignment.
+  EXPECT_EQ(invalid = -1, -1);
+  // Comparison operators.
+  EXPECT_FALSE(invalid == valid);
+  EXPECT_FALSE(valid == invalid);
+  EXPECT_TRUE(invalid != valid);
+  EXPECT_TRUE(valid != invalid);
+  EXPECT_TRUE(invalid < valid);
+  EXPECT_FALSE(valid < invalid);
+  EXPECT_TRUE(invalid <= valid);
+  EXPECT_FALSE(valid <= invalid);
+  EXPECT_FALSE(invalid > valid);
+  EXPECT_TRUE(valid > invalid);
+  EXPECT_FALSE(invalid >= valid);
+  EXPECT_TRUE(valid >= invalid);
+  // Pre-decrement/increment operations.
+  EXPECT_FALSE((--invalid).is_valid());
+  EXPECT_EQ(invalid, -2);
+  EXPECT_FALSE((++invalid).is_valid());
+  EXPECT_EQ(invalid, -1);
+  // Post-decrement/increment operations.
+  EXPECT_FALSE((invalid--).is_valid());
+  EXPECT_EQ(invalid, -2);
+  EXPECT_FALSE((invalid++).is_valid());
+  EXPECT_EQ(invalid, -1);
+  // In-place arithmetic operations.
+  EXPECT_EQ(invalid += invalid, -2);
+  EXPECT_EQ(invalid += -1, -3);
+  EXPECT_EQ(invalid -= -1, -2);
+  EXPECT_EQ(invalid -= AIndex(), -1);
+}
+#else
+
+// Helper macro for "expecting" an exception but *also* testing the error
+// message against the provided regular expression.
+#define EXPECT_ERROR_MESSAGE(expression, exception, reg_exp) \
+try { \
+  expression; \
+  GTEST_FAIL(); \
+} catch (const exception& err) { \
+  auto matcher = [](const char* s, const char* re) { \
+    return regex_match(s, regex(re)); }; \
+  EXPECT_PRED2(matcher, err.what(), reg_exp); \
+}
+
+// Performs operations on an invalid index in Debug mode. All of these should
+// throw exceptions with meaningful error messages.
+GTEST_TEST(TypeSafeIndex, OperationOnInvalidInDebug) {
+  int i;
+  AIndex valid(1);
+  AIndex invalid;
+  EXPECT_FALSE(invalid.is_valid());
+  // Explicit construction with negative value.
+  EXPECT_ERROR_MESSAGE({ AIndex(-1); }, std::runtime_error,
+                       "Constructing an invalid index."
+                       ".+negative value = \\-\\d+.+");
+
+  // Implicit conversion to int.
+  EXPECT_ERROR_MESSAGE({ i = invalid; }, std::runtime_error,
+                       "Converting to an int."
+                       ".+negative value = \\-\\d+.+");
+  // Assignment.
+  EXPECT_ERROR_MESSAGE({ invalid = -1; }, std::runtime_error,
+                       "Assigning an invalid int."
+                       ".+negative value = \\-\\d+.+");
+
+  // This is a no-op function so the compiler doesn't think I'm computing
+  // unused boolean values in the next set of comparison tests.
+  auto consume = [](bool) {};
+
+  // Comparison operators.
+  EXPECT_ERROR_MESSAGE(consume(invalid == valid), std::runtime_error,
+                       "Testing == with invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(valid == invalid), std::runtime_error,
+                       "Testing == with invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(invalid != valid), std::runtime_error,
+                       "Testing != with invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(valid != invalid), std::runtime_error,
+                       "Testing != with invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(invalid < valid), std::runtime_error,
+                       "Testing < with invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(valid < invalid), std::runtime_error,
+                       "Testing < with invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(invalid <= valid), std::runtime_error,
+                       "Testing <= with invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(valid <= invalid), std::runtime_error,
+                       "Testing <= with invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(invalid > valid), std::runtime_error,
+                       "Testing > with invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(valid > invalid), std::runtime_error,
+                       "Testing > with invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(invalid >= valid), std::runtime_error,
+                       "Testing >= with invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(consume(valid >= invalid), std::runtime_error,
+                       "Testing >= with invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+
+  // Pre-decrement/increment operations.
+  EXPECT_ERROR_MESSAGE(--invalid, std::runtime_error,
+                       "Pre-decrementing an invalid index."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(++invalid, std::runtime_error,
+                       "Pre-incrementing an invalid index."
+                       ".+negative value = \\-\\d+.+");
+
+  // Post-decrement/increment operations.
+  EXPECT_ERROR_MESSAGE(invalid--, std::runtime_error,
+                       "Post-decrementing an invalid index."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(invalid++, std::runtime_error,
+                       "Post-incrementing an invalid index."
+                       ".+negative value = \\-\\d+.+");
+
+  // In-place arithmetic operations.
+  EXPECT_ERROR_MESSAGE(invalid += 1, std::runtime_error,
+                       "In-place addition with an int on an invalid index."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(invalid -= 1, std::runtime_error,
+                       "In-place subtraction with an int on an invalid index."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(invalid += valid, std::runtime_error,
+                       "In-place addition with another index invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(invalid -= valid, std::runtime_error,
+                       "In-place subtraction with another index invalid LHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(valid += invalid, std::runtime_error,
+                       "In-place addition with another index invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+  EXPECT_ERROR_MESSAGE(valid -= invalid, std::runtime_error,
+                       "In-place subtraction with another index invalid RHS."
+                       ".+negative value = \\-\\d+.+");
+}
+
+#endif
 
 //-------------------------------------------------------------------
 
