@@ -35,11 +35,12 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>* context = simulator.get_mutable_context();
   context->get_mutable_continuous_state_vector()->SetAtIndex(0, 1.0);
-
+  simulator.set_publish_at_initialization(false);
   simulator.Initialize();
   simulator.StepTo(3);
 
   const auto& t = logger->sample_times();
+  EXPECT_EQ(t.size(), 3001);
 
   // Now check the data (against the known solution to the diff eq).
   const auto& x = logger->data();

@@ -555,6 +555,7 @@ class LeafSystem : public System<T> {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
+  /// Returns true if a per step action of type @p action has been declared.
   bool HasPerStepAction(
       const typename DiscreteEvent<T>::ActionType& action) const {
     return FindPerStepActionIndex(action) !=
@@ -574,6 +575,7 @@ class LeafSystem : public System<T> {
     per_step_events_.push_back(event);
   }
 
+  /// Removes a per step action of type @p action if one has been declared.
   void RemovePerStepAction(
       const typename DiscreteEvent<T>::ActionType& action) {
     int index = FindPerStepActionIndex(action);
@@ -718,6 +720,8 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  // Searches through per_step_events_ and returns the index of the first action
+  // whose type matches @p action or per_step_events_.size() if none exists.
   int FindPerStepActionIndex(
       const typename DiscreteEvent<T>::ActionType& action) const {
     for (size_t i = 0; i < per_step_events_.size(); i++) {

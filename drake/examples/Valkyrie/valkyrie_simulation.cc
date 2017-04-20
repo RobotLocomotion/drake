@@ -217,12 +217,6 @@ int main(int argc, const char** argv) {
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
 
-  std::vector<DiscreteEvent<double>> events;
-  diagram->GetPerStepEvents(*context, &events);
-  for (const auto& event : events) {
-    std::cout << "has event: " << event.action << std::endl;
-  }
-
   // Integrator set arbitrarily. The time step was selected by tuning for the
   // largest value that appears to give stable results.
   simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(
