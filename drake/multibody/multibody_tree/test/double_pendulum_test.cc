@@ -103,16 +103,16 @@ GTEST_TEST(MultibodyTree, CreateModel) {
   // X_UEi specifies the pose of the elbow inboard frame Ei in the body
   // frame U of the upper link.
   Isometry3d X_UEi(Translation3d(0.0, -half_link_length, 0.0));
-  // X_LlEo specifies the pose of the elbow outboard frame Eo in the body
-  // frame Ll of the lower link.
+  // X_LEo specifies the pose of the elbow outboard frame Eo in the body
+  // frame L of the lower link.
   // In this case we create a frame using the FixedOffsetFrame::Create() method
   // taking a Body, i.e., creating a frame with a fixed offset from the upper
   // link body frame.
   const auto& elbow_inboard_frame =
       model->AddFrame<FixedOffsetFrame>(upper_link, X_UEi);
-  Isometry3d X_LlEo(Translation3d(0.0, +half_link_length, 0.0));
+  Isometry3d X_LEo(Translation3d(0.0, +half_link_length, 0.0));
   const auto& elbow_outboard_frame =
-      model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo);
+      model->AddFrame<FixedOffsetFrame>(lower_link, X_LEo);
 
   // Verify the new number of frames.
   EXPECT_EQ(model->get_num_frames(), 6);
@@ -124,7 +124,7 @@ GTEST_TEST(MultibodyTree, CreateModel) {
 
   // Asserts that no more bodies can be added after finalize.
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
-  EXPECT_THROW(model->AddFrame<FixedOffsetFrame>(lower_link, X_LlEo),
+  EXPECT_THROW(model->AddFrame<FixedOffsetFrame>(lower_link, X_LEo),
                std::logic_error);
 
   // Asserts re-finalization is not allowed.
