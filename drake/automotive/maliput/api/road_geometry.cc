@@ -111,6 +111,11 @@ double Distance(const Rotation& a, const Rotation& b) {
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& out,
+    const RoadGeometryId& road_geometry_id) {
+  return out << std::string("RoadGeometry(") << road_geometry_id.id
+      << std::string(")");
+}
 
 std::vector<std::string> RoadGeometry::CheckInvariants() const {
   std::vector<std::string> failures;

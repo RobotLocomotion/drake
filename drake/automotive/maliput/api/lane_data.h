@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <ostream>
 #include <string>
 
 #include "drake/common/drake_assert.h"
@@ -41,6 +42,10 @@ struct LaneEnd {
   Which end{};
 };
 
+/// Streams a string representation of @p which_end into @p out. Returns
+/// @p out. This method is provided for the purposes of debugging or
+/// text-logging. It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
 /// A 3-dimensional rotation, expressed as a roll around X, followed
 /// by pitch around Y, followed by yaw around Z.
@@ -57,6 +62,10 @@ struct Rotation {
   double yaw{};
 };
 
+/// Streams a string representation of @p rotation into @p out. Returns
+/// @p out. This method is provided for the purposes of debugging or
+/// text-logging. It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const Rotation& rotation);
 
 /// A position in 3-dimensional geographical Cartesian space, i.e.,
 /// in the world frame, consisting of three components x, y, and z.
@@ -102,6 +111,10 @@ class GeoPosition {
   explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
 };
 
+/// Streams a string representation of @p geo_position into @p out. Returns
+/// @p out. This method is provided for the purposes of debugging or
+/// text-logging. It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position);
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
@@ -149,6 +162,10 @@ class LanePosition {
   explicit LanePosition(const Vector3<double>& srh) : srh_(srh) {}
 };
 
+/// Streams a string representation of @p lane_position into @p out. Returns
+/// @p out. This method is provided for the purposes of debugging or
+/// text-logging. It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const LanePosition& lane_position);
 
 /// Isometric velocity vector in a `Lane`-frame.
 ///
