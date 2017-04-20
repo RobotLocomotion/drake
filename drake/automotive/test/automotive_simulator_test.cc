@@ -508,8 +508,5 @@ GTEST_TEST(AutomotiveSimulatorTest, TestBuild2) {
 }
 
 }  // namespace
-
-
-
 }  // namespace automotive
 }  // namespace drake
