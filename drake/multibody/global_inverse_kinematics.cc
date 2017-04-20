@@ -379,5 +379,40 @@ void GlobalInverseKinematics::AddPostureCost(
   // error.
   AddCost(p_WBo_err.cast<Expression>().sum() + orient_err_sum);
 }
+
+solvers::VectorXDecisionVariable
+GlobalInverseKinematics::BodyPointInOneOfRegions(
+    int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const std::vector<Eigen::Matrix3Xd>& region_vertices) {
+  const auto& R_WB = body_rotation_matrix(body_index);
+  const auto& p_WBo = body_position(body_index);
+  const int num_regions = region_vertices.size();
+  const string& body_name = robot_->get_body(body_index).get_name();
+  solvers::VectorXDecisionVariable z = NewBinaryVariables(num_regions, "z_" + body_name);
+  std::vector<solvers::VectorXDecisionVariable> w(num_regions);
+
+  // We will write p_WQ in two ways, we first write p_WQ as
+  // sum_i (w_i1 * v_i1 + w_i2 * v_i2 + ... + w_in * v_in). As the convex
+  // combination of vertices in one of the regions.
+  Vector3<symbolic::Expression> p_WQ;
+  p_WQ << 0, 0, 0;
+  for (int i = 0; i < num_regions; ++i) {
+    const int num_vertices_i = region_vertices[i].cols();
+    if (num_vertices_i < 3) {
+      throw std::runtime_error("Each region should have at least 3 vertices.");
+    }
+    w[i] = NewContinuousVariables(num_vertices_i, "w_" + body_name + "_region_" + std::to_string(i));
+    AddLinearConstraint(w[i].cast<symbolic::Expression>().sum() - z(i) == 0);
+    AddBoundingBoxConstraint(Eigen::VectorXd::Zero(num_vertices_i), Eigen::VectorXd::Ones(num_vertices_i), w[i]);
+    p_WQ += region_vertices[i] * w[i];
+  }
+
+  AddLinearConstraint(z.cast<symbolic::Expression>().sum() == 1);
+
+  // p_WQ can also be computed from the body pose, as p_WQ = p_WBo + R_WB * p_BQ
+  AddLinearEqualityConstraint(p_WBo + R_WB * p_BQ - p_WQ, Eigen::Vector3d::Zero());
+
+  return z;
+}
 }  // namespace multibody
 }  // namespace drake
