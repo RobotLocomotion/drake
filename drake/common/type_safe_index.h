@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/nice_type_name.h"
@@ -39,11 +41,15 @@ namespace drake {
 ///     type.
 ///   - In general, indices of different types are _not_ interconvertible.
 ///
-/// There is no such thing as an "invalid" index; there is no sentinel
-/// value which indicates uninitialized or undefined. Operations which return
-/// an index, but can fail, should communicate this in the function interface
-/// (e.g. through the std::optional<IndexType> return value). If an index
-/// exists, it should be considered valid.
+/// While there _is_ the conept of an "invalid" index, this only exists to
+/// facilitate use with STL containers that require default constructors. Using
+/// an invalid index in _any_ operation is considered an error. In Debug build,
+/// attempts to compare, increment, decrement, etc. an invalid index
+/// will throw an exception.
+///
+/// A function that returns %type_safe_index values which need to communicate
+/// failure should _not_ use an invalid index. It should return an
+/// `std::optional<Index>` instead.
 ///
 /// It is the designed intent of this class, that indices derived from this
 /// class can be passed and returned by value. Passing indices by const
@@ -76,6 +82,8 @@ namespace drake {
 ///    size_t sz = 7;
 ///    if (a == sz) { ... }     // Ok.
 ///    if (a == b) { ... }      // <-- Compiler error.
+///    AIndex invalid;          // Creates an invalid index.
+///    ++invalid;               // Runtime error in Debug build.
 /// @endcode
 ///
 /// As previously stated, the intent of this class is to seamlessly serve as an
@@ -131,14 +139,15 @@ class TypeSafeIndex {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TypeSafeIndex)
 
-  /// Default constructor is disabled to force users to initialize their indexes
-  /// at creation.
-  TypeSafeIndex() = delete;
+  /// Default constructor; the result is an _invalid_ index. This only
+  /// exists to satisfy demands of working with various container classes.
+  TypeSafeIndex() : index_(-1) {}
 
   /// Construction from a non-negative `int` value.
   /// Constructor only promises to enforce non-negativity in Debug build.
   explicit TypeSafeIndex(int index) : index_(index) {
-    DRAKE_ASSERT_VOID(CheckInvariants());
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Constructing an invalid index.", index_));
   }
 
   /// Disallow construction from another index type.
@@ -149,24 +158,34 @@ class TypeSafeIndex {
   /// In Debug builds, this method asserts that the input index is non-negative.
   TypeSafeIndex& operator=(int idx) {
     index_ = idx;
-    DRAKE_ASSERT_VOID(CheckInvariants());
+    DRAKE_ASSERT_VOID(CheckInvariants("Assigning an invalid int.", index_));
     return *this;
   }
 
   /// Implicit conversion-to-int operator.
-  operator int() const { return index_; }
+  operator int() const {
+    DRAKE_ASSERT_VOID(CheckInvariants("Converting to an int.", index_));
+    return index_; }
+
+  /// Reports if the index is valid; the only acceptable operation on an invalid
+  /// index.
+  bool is_valid() const { return index_ >= 0; }
 
   /// @name Arithmetic operators.
   ///@{
 
   /// Prefix increment operator.
   const TypeSafeIndex& operator++() {
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Pre-incrementing an invalid index.", index_));
     ++index_;
     return *this;
   }
 
   /// Postfix increment operator.
   TypeSafeIndex operator++(int) {
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Post-incrementing an invalid index.", index_));
     ++index_;
     return TypeSafeIndex(index_ - 1);
   }
@@ -175,8 +194,11 @@ class TypeSafeIndex {
   /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
   const TypeSafeIndex& operator--() {
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Pre-decrementing an invalid index.", index_));
     --index_;
-    DRAKE_ASSERT_VOID(CheckInvariants());
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Pre-decrementing produced an invalid index.", index_));
     return *this;
   }
 
@@ -184,8 +206,11 @@ class TypeSafeIndex {
   /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
   TypeSafeIndex operator--(int) {
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Post-decrementing an invalid index.", index_));
     --index_;
-    DRAKE_ASSERT_VOID(CheckInvariants());
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "Post-decrementing produced an invalid index.", index_));
     return TypeSafeIndex(index_ + 1);
   }
   ///@}
@@ -197,8 +222,11 @@ class TypeSafeIndex {
   /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
   TypeSafeIndex& operator+=(int i) {
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place addition with an int on an invalid index.", index_));
     index_ += i;
-    DRAKE_ASSERT_VOID(CheckInvariants());
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place addition with an int produced an invalid index.", index_));
     return *this;
   }
 
@@ -206,8 +234,11 @@ class TypeSafeIndex {
   /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
   TypeSafeIndex& operator-=(int i) {
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place subtraction with an int on an invalid index.", index_));
     index_ -= i;
-    DRAKE_ASSERT_VOID(CheckInvariants());
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place subtraction with an int produced an invalid index.", index_));
     return *this;
   }
   ///@}
@@ -223,6 +254,9 @@ class TypeSafeIndex {
 
   /// Whitelist equality test with indices of this tag.
   bool operator==(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(CheckInvariants("Testing == with invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Testing == with invalid RHS.", other.index_));
     return index_ == other.index_;
   }
 
@@ -232,6 +266,9 @@ class TypeSafeIndex {
 
   /// Whitelist inequality test with indices of this tag.
   bool operator!=(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(CheckInvariants("Testing != with invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Testing != with invalid RHS.", other.index_));
     return index_ != other.index_;
   }
 
@@ -241,6 +278,9 @@ class TypeSafeIndex {
 
   /// Whitelist less than test with indices of this tag.
   bool operator<(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(CheckInvariants("Testing < with invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Testing < with invalid RHS.", other.index_));
     return index_ < other.index_;
   }
 
@@ -250,6 +290,9 @@ class TypeSafeIndex {
 
   /// Whitelist less than or equals test with indices of this tag.
   bool operator<=(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(CheckInvariants("Testing <= with invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Testing <= with invalid RHS.", other.index_));
     return index_ <= other.index_;
   }
 
@@ -259,6 +302,9 @@ class TypeSafeIndex {
 
   /// Whitelist greater than test with indices of this tag.
   bool operator>(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(CheckInvariants("Testing > with invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Testing > with invalid RHS.", other.index_));
     return index_ > other.index_;
   }
 
@@ -268,6 +314,9 @@ class TypeSafeIndex {
 
   /// Whitelist greater than or equals test with indices of this tag.
   bool operator>=(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(CheckInvariants("Testing >= with invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(
+        CheckInvariants("Testing >= with invalid RHS.", other.index_));
     return index_ >= other.index_;
   }
 
@@ -277,7 +326,15 @@ class TypeSafeIndex {
 
   /// Whitelist addition for indices with the same tag.
   TypeSafeIndex<Tag>& operator+=(const TypeSafeIndex<Tag>& other) {
-    return *this += other.index_;
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place addition with another index invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place addition with another index invalid RHS.", other.index_));
+    index_ += other.index_;
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place addition with another index produced an invalid index.",
+        index_));
+    return *this;
   }
 
   /// Blacklist addition for indices of different tags.
@@ -286,7 +343,15 @@ class TypeSafeIndex {
 
   /// Whitelist subtraction for indices with the same tag.
   TypeSafeIndex<Tag>& operator-=(const TypeSafeIndex<Tag>& other) {
-    return *this -= other.index_;
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place subtraction with another index invalid LHS.", index_));
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place subtraction with another index invalid RHS.", other.index_));
+    index_ -= other.index_;
+    DRAKE_ASSERT_VOID(CheckInvariants(
+        "In-place subtraction with another index produced an invalid index.",
+        index_));
+    return *this;
   }
 
   /// Blacklist subtraction for indices of different tags.
@@ -297,12 +362,12 @@ class TypeSafeIndex {
 
  private:
   // Checks if this index is negative and if so it throws an exception.
-  void CheckInvariants() const {
-    if (index_ < 0) {
+  // Invocations provide a string explaining the origin of the bad value.
+  static void CheckInvariants(const std::string& source, int index) {
+    if (index < 0) {
       throw std::runtime_error(
-          "This index, of type \"" +
-              drake::NiceTypeName::Get<TypeSafeIndex<Tag>>() +
-              "\", has the negative value = " + std::to_string(index_) +
+          source + " Type \"" +drake::NiceTypeName::Get<TypeSafeIndex<Tag>>() +
+              "\", has the negative value = " + std::to_string(index) +
               ". Negative indexes are not allowed.");
     }
   }

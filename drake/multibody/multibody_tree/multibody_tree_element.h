@@ -154,7 +154,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   const MultibodyTree<T>* parent_tree_{nullptr};
 
   // ElementIndexType requires a valid initialization.
-  ElementIndexType index_{0};
+  ElementIndexType index_;
 };
 
 }  // namespace multibody
