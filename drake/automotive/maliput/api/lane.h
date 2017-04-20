@@ -20,6 +20,10 @@ struct LaneId {
   std::string id;
 };
 
+/// Streams a string representation of @p lane_id into @p out. Returns @p out.
+/// This method is provided for the purposes of debugging or text-logging. It is
+/// not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const LaneId& lane_id);
 
 /// A Lane represents a lane of travel in a road network.  A Lane defines
 /// a curvilinear coordinate system covering the road surface, with a
