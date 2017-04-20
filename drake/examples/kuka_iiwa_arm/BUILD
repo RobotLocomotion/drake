@@ -251,6 +251,7 @@ drake_cc_googletest(
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
+        ":iiwa_common",
         ":iiwa_plan_source",
         "//drake/systems/framework",
     ],

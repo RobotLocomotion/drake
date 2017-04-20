@@ -14,28 +14,38 @@ namespace kuka_iiwa_arm {
 
 /// This class implements a source of joint positions for an iiwa arm.
 /// It has two input ports, one for robot_plan_t messages containing a
-/// plan to follow, and another port for lcmt_iiwa_status messages.
+/// plan to follow, and another vector-valued port which expects the
+/// current (q,v) state of the iiwa arm.
 ///
-/// If no plan has been received, the system will create an initial
-/// plan on the first unrestricted state update which commands the arm
-/// to hold at the measured position.
+/// The system has two output ports, one with the current desired
+/// state (q,v) of the iiwa arm and another for the accelerations.
 ///
-/// It is an error to attempt to read from the output port if a valid
-/// status message is not available.
-
+/// If a plan is received with no knot points, the system will create
+/// a plan which commands the arm to hold at the measured position.
 class IiwaPlanSource : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaPlanSource)
 
-  explicit IiwaPlanSource(const std::string& model_path);
+  IiwaPlanSource(const std::string& model_path,
+                 double update_interval = kDefaultPlanUpdateInterval);
   ~IiwaPlanSource() override;
 
   const systems::InputPortDescriptor<double>& get_plan_input_port() const {
     return this->get_input_port(plan_input_port_);
   }
 
-  const systems::InputPortDescriptor<double>& get_status_input_port() const {
-    return this->get_input_port(status_input_port_);
+  const systems::InputPortDescriptor<double>& get_state_input_port() const {
+    return this->get_input_port(state_input_port_);
+  }
+
+  const systems::OutputPortDescriptor<double>&
+  get_state_output_port() const {
+    return this->get_output_port(state_output_port_);
+  }
+
+  const systems::OutputPortDescriptor<double>&
+  get_acceleration_output_port() const {
+    return this->get_output_port(acceleration_output_port_);
   }
 
   /**
@@ -45,6 +55,8 @@ class IiwaPlanSource : public systems::LeafSystem<double> {
    */
   void Initialize(double plan_start_time, const VectorX<double>& q0,
                   systems::State<double>* state) const;
+
+  const RigidBodyTree<double>& tree() { return tree_; }
 
  protected:
   void SetDefaultState(const systems::Context<double>& context,
@@ -62,8 +74,14 @@ class IiwaPlanSource : public systems::LeafSystem<double> {
  private:
   struct PlanData;
 
+  void MakeFixedPlan(double plan_start_time, const VectorX<double>& q0,
+                  systems::State<double>* state) const;
+
+  static constexpr double kDefaultPlanUpdateInterval = 0.1;
   const int plan_input_port_{};
-  const int status_input_port_{};
+  const int state_input_port_{};
+  const int state_output_port_{};
+  const int acceleration_output_port_{};
   RigidBodyTree<double> tree_;
 };
 

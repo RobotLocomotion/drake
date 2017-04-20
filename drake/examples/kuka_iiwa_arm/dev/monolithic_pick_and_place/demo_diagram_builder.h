@@ -5,10 +5,10 @@
 
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/gripper_action.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/iiwa_move.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/iiwa_state_feedback_plan.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
@@ -168,7 +168,7 @@ class StateMachineAndPrimitives : public systems::Diagram<T> {
 /**
  * A `systems::Diagram` that encapsulates a
  * `IiwaAndWsgPlanGeneratorsEstimatorsAndVisualizer`, a
- * `systems::DrakeVisualizer`, `IiwaStateFeedbackPlanSource`,
+ * `systems::DrakeVisualizer`, `IiwaPlanSource`,
  * `SchunkWsgTrajectoryGenerator` and  a `SchunkWsgStatusSender`. This
  * `systems::Diagram`system serves as the "low-level" logic needed to execute
  * a pick-and-place demo. All of the input and output ports carry abstract data
@@ -180,14 +180,15 @@ class StateMachineAndPrimitives : public systems::Diagram<T> {
  * - double
  */
 template <typename T>
-class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
+class
+IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
     : public systems::Diagram<T> {
  public:
   /** Constructs the IiwaWsgPlantGeneratorsEstimatorsAndVisualizer.
    * @param lcm : A reference to the lcm object to be passed onto the
    * Visualizer
    * @param update_interval : The update interval of the unrestricted update of
-   * `IiwaStateFeedbackPlanSource`. This should be smaller than that of
+   * `IiwaPlanSource`. This should be smaller than that of
    * components
    * commanding new plans.
    */
@@ -216,11 +217,19 @@ class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
     return this->get_output_port(output_port_box_robot_state_msg_);
   }
 
+  /**
+   * Makes a plan for the iiwa to hold at the measured joint
+   * configuration @p q0.  This function needs to be explicitly called
+   * before any simulation. Otherwise this aborts in CalcOutput().
+   */
+  void InitializeIiwaPlan(const VectorX<T>& q0,
+                          systems::Context<T>* context) const;
+
  private:
   IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
   schunk_wsg::SchunkWsgStatusSender* wsg_status_sender_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
-  IiwaStateFeedbackPlanSource* iiwa_trajectory_generator_{nullptr};
+  IiwaPlanSource* iiwa_trajectory_generator_{nullptr};
   schunk_wsg::SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
 
   int input_port_iiwa_plan_{-1};

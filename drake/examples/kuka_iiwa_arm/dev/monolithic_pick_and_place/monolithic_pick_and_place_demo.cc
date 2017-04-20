@@ -70,6 +70,10 @@ int DoMain(void) {
   Simulator<double> simulator(*sys);
   simulator.Initialize();
 
+  plant->InitializeIiwaPlan(
+      Eigen::VectorXd::Zero(7),
+      sys->GetMutableSubsystemContext(simulator.get_mutable_context(), plant));
+
   simulator.StepTo(FLAGS_simulation_sec);
 
   std::cout << "Demo completed.\n";
