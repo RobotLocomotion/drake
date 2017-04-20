@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <ostream>
 #include <string>
 
 #include "drake/common/drake_assert.h"
@@ -37,6 +38,13 @@ struct LaneEnd {
   /// Construct a LaneEnd specifying the @p end of @p lane.
   LaneEnd(const Lane* _lane, Which _end) : lane(_lane), end(_end) {}
 
+  /// Streams a string representation of @p which_end into @p out. Returns
+  /// @p out. This method is provided for the purposes of debugging or
+  /// text-logging. It is not intended for serialization.
+  friend std::ostream& operator<<(std::ostream& out, const Which& which_end) {
+    return out << (which_end == kStart ? "start" : "finish");
+  }
+
   const Lane* lane{};
   Which end{};
 };
@@ -55,6 +63,14 @@ struct Rotation {
   double roll{};
   double pitch{};
   double yaw{};
+
+  /// Streams a string representation of @p rotation into @p out. Returns
+  /// @p out. This method is provided for the purposes of debugging or
+  /// text-logging. It is not intended for serialization.
+  friend std::ostream& operator<<(std::ostream& out, const Rotation& rotation) {
+    return out << "(roll = " << rotation.roll << ", pitch = " << rotation.pitch
+        << ", yaw = " << rotation.yaw << ")";
+  }
 };
 
 
@@ -95,6 +111,15 @@ class GeoPosition {
   /// Sets `z` value.
   void set_z(double z) { xyz_.z() = z; }
   //@}
+
+  /// Streams a string representation of @p geo_position into @p out. Returns
+  /// @p out. This method is provided for the purposes of debugging or
+  /// text-logging. It is not intended for serialization.
+  friend std::ostream& operator<<(std::ostream& out, const GeoPosition&
+      geo_position) {
+    return out << "(x = " << geo_position.x() << ", y = " << geo_position.y()
+        << ", z = " << geo_position.z() << ")";
+  }
 
  private:
   Vector3<double> xyz_;
@@ -142,6 +167,15 @@ class LanePosition {
   /// Sets `h` value.
   void set_h(double h) { srh_.z() = h; }
   //@}
+
+  /// Streams a string representation of @p lane_position into @p out. Returns
+  /// @p out. This method is provided for the purposes of debugging or
+  /// text-logging. It is not intended for serialization.
+  friend std::ostream& operator<<(std::ostream& out, const LanePosition&
+      lane_position) {
+    return out << "(s = " << lane_position.s() << ", r = " << lane_position.r()
+        << ", h = " << lane_position.h() << ")";
+  }
 
  private:
   Vector3<double> srh_;

@@ -19,6 +19,11 @@ struct RoadGeometryId {
   std::string id;
 };
 
+/// Streams a string representation of @p road_geometry_id into @p out.
+/// Returns @p out. This method is provided for the purposes of debugging or
+/// text-logging. It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out,
+    const RoadGeometryId& road_geometry_id);
 
 /// Abstract API for the geometry of a road network, including both
 /// the network topology and the geometry of its embedding in 3-space.
