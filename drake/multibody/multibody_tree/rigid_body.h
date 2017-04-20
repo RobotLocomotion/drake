@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/body.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -23,10 +24,13 @@ template<typename T> class MultibodyTree;
 /// It can be demonstrated that the unconstrained three-dimensional motions of a
 /// rigid body can be described by six coordinates and thus it is often said
 /// that a free body in space has six **degrees of freedom**. These degrees of
-/// freedom obey the Newton-Euler equations of motion. Within a MultibodyTree,
-/// a RigidBody is assigned a given number of degrees of freedom by a Mobilizer
-/// while, at the same time, its motions can be constrained by a given set of
-/// Constraint objects.
+/// freedom obey the Newton-Euler equations of motion. However, within a
+/// MultibodyTree, a %RigidBody is *not* free in space; instead, it is assigned
+/// a limited number of degrees of freedom (0-6) with respect to its parent
+/// body in the multibody tree by its Mobilizer (also called a
+/// "tree joint" or "inboard joint"). Additional constraints on permissible
+/// motion can be added using Constraint objects to remove more degrees of
+/// freedom.
 ///
 /// - [Goldstein 2001] H Goldstein, CP Poole, JL Safko, Classical Mechanics
 ///                    (3rd Edition), Addison-Wesley, 2001.
@@ -44,22 +48,13 @@ class RigidBody : public Body<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
-  /// Creates a new %RigidBody and adds it to the MultibodyTree world.
-  /// The MultibodyTree `tree` takes ownership of the newly created body.
-  ///
-  /// @note This method invalidates the topology of the MultibodyTree `tree`.
-  /// Users must call the Compile() method on `tree` in order to re-compute and
-  /// validate its topology. See the documentation on Compile() for details.
-  ///
-  /// @param[in, out] tree The parent MultibodyTree to which this body will be
-  ///                      added.
-  /// @returns A constant reference to the newly created rigid body.
-  // TODO(amcastro-tri): In a future PR this factory will take a MassProperties
-  // object to:
+  /// Constructs a %RigidBody with the given default SpatialInertia.
+  // TODO(amcastro-tri): In a future PR this constructor will take a
+  // MassProperties object to:
   //   1. Force users to provide all the necessary information at creation.
   //   2. Perform all the necessary checks to ensure the supplied mass
   //      properties are physically valid.
-  static const RigidBody<T>& Create(MultibodyTree<T>* tree);
+  explicit RigidBody(const SpatialInertia<double> M);
 
   /// There are no flexible degrees of freedom associated with a rigid body and
   /// therefore this method returns zero. By definition, a rigid body has no
@@ -72,14 +67,7 @@ class RigidBody : public Body<T> {
   int get_num_flexible_velocities() const final { return 0; }
 
  private:
-  // Do not allow users to create a rigid body using its public constructors
-  // but force them to use the factory method Create().
-  // TODO(amcastro-tri): In a future PR this factory will take a MassProperties
-  // object to:
-  //   1. Force users to provide all the necessary information at creation.
-  //   2. Perform all the necessary checks to ensure the supplied mass
-  //      properties are physically valid.
-  RigidBody();
+  SpatialInertia<double> default_spatial_inertia_;
 };
 
 }  // namespace multibody
