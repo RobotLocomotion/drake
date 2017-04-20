@@ -41,13 +41,13 @@ namespace drake {
 ///     type.
 ///   - In general, indices of different types are _not_ interconvertible.
 ///
-/// While there _is_ the conept of an "invalid" index, this only exists to
+/// While there _is_ the concept of an "invalid" index, this only exists to
 /// facilitate use with STL containers that require default constructors. Using
 /// an invalid index in _any_ operation is considered an error. In Debug build,
 /// attempts to compare, increment, decrement, etc. an invalid index
 /// will throw an exception.
 ///
-/// A function that returns %type_safe_index values which need to communicate
+/// A function that returns %TypeSafeIndex values which need to communicate
 /// failure should _not_ use an invalid index. It should return an
 /// `std::optional<Index>` instead.
 ///
