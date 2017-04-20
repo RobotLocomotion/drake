@@ -62,10 +62,8 @@ const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
 template <typename T>
 std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
     ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
-    ModelInstanceInfo<T>* box_instance, const int chosen_box = 1,
-    Eigen::Vector3d box_position = Vector3<double>(
-        1 + -0.43, -0.65, kTableTopZInWorld + 0.1),
-    Eigen::Vector3d box_orientation = Vector3<double>(0, 0, 1)) {
+    ModelInstanceInfo<T>* box_instance, const int chosen_box,
+    Eigen::Vector3d box_position, Eigen::Vector3d box_orientation) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -77,10 +75,18 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   tree_builder->StoreModel(
       "box_small",
       "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
+
+  tree_builder->StoreModel("box_medium",
+                           "/examples/kuka_iiwa_arm/models/objects/"
+                           "block_for_pick_and_place_mid_size.urdf");
+
+  tree_builder->StoreModel("box_large",
+                           "/examples/kuka_iiwa_arm/models/objects/"
+                           "block_for_pick_and_place_large_size.urdf");
   tree_builder->StoreModel("wsg",
                            "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
 
-  // Build a world with two fixed tables.  A box is placed one on
+  // Builds a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
   tree_builder->AddFixedModelInstance("table",
                                       Eigen::Vector3d::Zero() /* xyz */,
@@ -94,22 +100,35 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
 
   tree_builder->AddGround();
 
-  // Start the box slightly above the table.  If we place it at
-  // the table top exactly, it may start colliding the table (which is
-  // not good, as it will likely shoot off into space).
-  const Eigen::Vector3d kBoxBase(1 + -0.43, -0.65, kTableTopZInWorld + 0.1);
+  // Chooses and appropriate box.
+  int box_id = 0;
+  int iiwa_id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
+  *iiwa_instance = tree_builder->get_model_info_for_instance(iiwa_id);
+  switch (chosen_box) {
+    case 1:
+      box_id = tree_builder->AddFloatingModelInstance("box_small", box_position,
+                                                      box_orientation);
+      *box_instance = tree_builder->get_model_info_for_instance(box_id);
+      break;
+    case 2:
+      box_id = tree_builder->AddFloatingModelInstance(
+          "box_medium", box_position, box_orientation);
+      *box_instance = tree_builder->get_model_info_for_instance(box_id);
+      break;
+    case 3:
+      box_id = tree_builder->AddFloatingModelInstance("box_large", box_position,
+                                                      box_orientation);
+      *box_instance = tree_builder->get_model_info_for_instance(box_id);
+      break;
+    default:
+      break;
+  }
 
-  int id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
-  *iiwa_instance = tree_builder->get_model_info_for_instance(id);
-  id = tree_builder->AddFloatingModelInstance("box_small", kBoxBase,
-                                              Vector3<double>(0, 0, 1));
-
-  *box_instance = tree_builder->get_model_info_for_instance(id);
-  id = tree_builder->AddModelInstanceToFrame(
+  int wsg_id = tree_builder->AddModelInstanceToFrame(
       "wsg", Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
       tree_builder->tree().findFrame("iiwa_frame_ee"),
       drake::multibody::joints::kFixed);
-  *wsg_instance = tree_builder->get_model_info_for_instance(id);
+  *wsg_instance = tree_builder->get_model_info_for_instance(wsg_id);
 
   auto plant =
       std::make_unique<systems::RigidBodyPlant<T>>(tree_builder->Build());
@@ -197,9 +216,10 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
    * @param chosen_box : The choice of which box ...
    */
   IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
-      lcm::DrakeLcm* lcm, const int chosen_box = 1, const double update_interval = 0.001,
-      Eigen::Vector3d box_position = Vector3<double>(
-          1 + -0.43, -0.65, kTableTopZInWorld + 0.1),
+      lcm::DrakeLcm* lcm, const int chosen_box = 1,
+      const double update_interval = 0.001,
+      Eigen::Vector3d box_position = Vector3<double>(1 + -0.43, -0.65,
+                                                     kTableTopZInWorld + 0.1),
       Eigen::Vector3d box_orientation = Vector3<double>(0, 0, 1));
   const systems::InputPortDescriptor<T>& get_input_port_iiwa_plan() const {
     return this->get_input_port(input_port_iiwa_plan_);

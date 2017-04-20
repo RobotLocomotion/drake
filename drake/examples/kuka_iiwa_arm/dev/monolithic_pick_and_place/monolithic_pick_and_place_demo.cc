@@ -22,7 +22,7 @@
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
 "Number of seconds to simulate.");
 DEFINE_uint64(box_choice, 1, "ID of the box to pick.");
-DEFINE_double(orientation, 2 * M_PI,"Yaw angle of the box.");
+DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
 
 
 using robotlocomotion::robot_plan_t;
