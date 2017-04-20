@@ -641,6 +641,33 @@ GTEST_TEST(AutomotiveSimulatorTest, TestBuild2) {
   EXPECT_NO_THROW(simulator->GetDiagram());
 }
 
+GTEST_TEST(AutomotiveSimulatorTest, TestContextToString) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+
+  simulator->AddPriusSimpleCar("Model1", "Channel1");
+  simulator->AddPriusSimpleCar("Model2", "Channel2");
+
+  MaliputRailcarParams<double> params;
+  params.set_r(1);
+
+  const maliput::api::RoadGeometry* road{};
+  road = simulator->SetRoadGeometry(
+      std::make_unique<const maliput::dragway::RoadGeometry>(
+          maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+
+  simulator->AddPriusMaliputRailcar("My Railcar",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */);
+
+  simulator->Start();
+
+  const std::string result = simulator->GetContextString();
+  EXPECT_TRUE(result.find("AutomotiveSimulator Context:") != std::string::npos);
+  EXPECT_TRUE(result.find("Number of SimpleCars:") != std::string::npos);
+  EXPECT_TRUE(result.find("Number of Maliput Railcars:") != std::string::npos);
+}
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake
