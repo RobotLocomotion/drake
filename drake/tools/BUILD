@@ -97,6 +97,7 @@ sh_test(
         "test/sample.named_vector",
         ":lcm_vector_gen",
     ],
+    args = ["--no_memcheck"],
 )
 
 py_test(
@@ -111,6 +112,7 @@ sh_test(
     data = [
         ":clang-format-includes",
     ],
+    args = ["--no_memcheck"],
 )
 
 cpplint(data = ["test/gen/drake/CPPLINT.cfg"])
