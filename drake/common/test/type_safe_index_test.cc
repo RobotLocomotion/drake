@@ -259,7 +259,7 @@ GTEST_TEST(TypeSafeIndex, OperationOnInvalidInDebug) {
                        ".+negative value = \\-\\d+.+");
 
   // Implicit conversion to int.
-  EXPECT_ERROR_MESSAGE(consume(i = invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE(consume((i = invalid)), std::runtime_error,
                        "Converting to an int."
                        ".+negative value = \\-\\d+.+");
   // Assignment.
