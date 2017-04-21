@@ -6,9 +6,14 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
+// The following include was manually added. It was not added to the code
+// generator because the vast majority of the uses cases of the generated
+// classes do not require it. For more detail, see #5912 and #5737.
 #include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -26,6 +31,12 @@ struct AcrobotStateVectorIndices {
   static const int kTheta2 = 1;
   static const int kTheta1dot = 2;
   static const int kTheta2dot = 3;
+
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `AcrobotStateVectorIndices::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -63,6 +74,11 @@ class AcrobotStateVector : public systems::BasicVector<T> {
     this->SetAtIndex(K::kTheta2dot, theta2dot);
   }
   //@}
+
+  /// See AcrobotStateVectorIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return AcrobotStateVectorIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

@@ -12,5 +12,14 @@ const int MaliputRailcarParamsIndices::kH;
 const int MaliputRailcarParamsIndices::kMaxSpeed;
 const int MaliputRailcarParamsIndices::kVelocityLimitKp;
 
+const std::vector<std::string>&
+MaliputRailcarParamsIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "r", "h", "max_speed", "velocity_limit_kp",
+      });
+  return coordinates.access();
+}
+
 }  // namespace automotive
 }  // namespace drake

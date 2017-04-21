@@ -12,5 +12,13 @@ const int SimpleCarStateIndices::kY;
 const int SimpleCarStateIndices::kHeading;
 const int SimpleCarStateIndices::kVelocity;
 
+const std::vector<std::string>& SimpleCarStateIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "x", "y", "heading", "velocity",
+      });
+  return coordinates.access();
+}
+
 }  // namespace automotive
 }  // namespace drake

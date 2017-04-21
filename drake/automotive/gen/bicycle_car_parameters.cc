@@ -14,5 +14,14 @@ const int BicycleCarParametersIndices::kIz;
 const int BicycleCarParametersIndices::kCf;
 const int BicycleCarParametersIndices::kCr;
 
+const std::vector<std::string>&
+BicycleCarParametersIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "mass", "lf", "lr", "Iz", "Cf", "Cr",
+      });
+  return coordinates.access();
+}
+
 }  // namespace automotive
 }  // namespace drake

@@ -11,5 +11,14 @@ const int MobilPlannerParametersIndices::kP;
 const int MobilPlannerParametersIndices::kThreshold;
 const int MobilPlannerParametersIndices::kMaxDeceleration;
 
+const std::vector<std::string>&
+MobilPlannerParametersIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "p", "threshold", "max_deceleration",
+      });
+  return coordinates.access();
+}
+
 }  // namespace automotive
 }  // namespace drake
