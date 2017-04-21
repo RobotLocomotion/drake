@@ -21,7 +21,7 @@ drake_cc_library(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/framework",
         "//drake/systems/rendering:drake_visualizer_client",
-    ]
+    ],
 )
 
 drake_cc_binary(
@@ -34,12 +34,12 @@ drake_cc_binary(
     ],
     test_rule_args = ["--num_configurations=1"],
     deps = [
+        ":simple_tree_visualizer",
         "//drake/common",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
         "@gflags//:gflags",
-        ":simple_tree_visualizer",
     ],
 )
 
