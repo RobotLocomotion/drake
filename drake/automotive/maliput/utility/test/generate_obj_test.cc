@@ -45,6 +45,7 @@ class GenerateObjTest : public ::testing::Test {
   void ReadAsString(const spruce::path& path, std::string* destination) {
     std::ifstream is(path.getStr());
     std::stringstream ss;
+    std::cout << "FILE '" << path.getStr() << "'\n";
     ASSERT_TRUE(is.is_open());
     while (true) {
       char c = is.get();
@@ -183,6 +184,72 @@ TEST_F(GenerateObjBasicDutTest, MtlContent) {
   std::string expected_mtl_contents;
   ReadExpectedData(basename + ".mtl", &expected_mtl_contents);
   EXPECT_EQ(expected_mtl_contents, actual_mtl_contents);
+}
+
+
+TEST_F(GenerateObjBasicDutTest, NoBranchPointsObjContent) {
+  const std::string basename{"NoBranchPointsObjContent"};
+
+  std::string expected_obj_contents;
+  ReadExpectedData(basename + ".obj", &expected_obj_contents);
+
+  ObjFeatures obj_features;
+  obj_features.draw_branch_points = false;
+  GenerateObjFile(dut_.get(), directory_.getStr(), basename, obj_features);
+  // We expect to get two files out of this.
+
+  spruce::path actual_obj_path(directory_);
+  actual_obj_path.append(basename + ".obj");
+  EXPECT_TRUE(actual_obj_path.isFile());
+  paths_to_cleanup_.push_back(actual_obj_path);
+
+  spruce::path actual_mtl_path(directory_);
+  actual_mtl_path.append(basename + ".mtl");
+  EXPECT_TRUE(actual_mtl_path.isFile());
+  paths_to_cleanup_.push_back(actual_mtl_path);
+
+  // Quick regression test on the OBJ.
+  std::string actual_obj_contents;
+  ReadAsString(actual_obj_path, &actual_obj_contents);
+  EXPECT_EQ(expected_obj_contents, actual_obj_contents);
+}
+
+
+TEST_F(GenerateObjBasicDutTest, StackedBranchPointsObjContent) {
+  const std::string basename{"StackedBranchPointsObjContent"};
+
+  std::string expected_obj_contents;
+  ReadExpectedData(basename + ".obj", &expected_obj_contents);
+
+  // Construct a RoadGeometry with two lanes that don't quite connect.
+  {
+    mono::Builder b(kLaneBounds, kDriveableBounds,
+                    kLinearTolerance, kAngularTolerance);
+
+    const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
+    const mono::Endpoint start0{{0., 0., 0.}, kZeroZ};
+    const mono::Endpoint start1{{10. * kLinearTolerance, 0., M_PI}, kZeroZ};
+    b.Connect("0", start0, 1., kZeroZ);
+    b.Connect("1", start1, 1., kZeroZ);
+    const std::unique_ptr<const api::RoadGeometry> dut = b.Build({"dut"});
+    dut_ = b.Build({"dut"});
+  }
+
+  GenerateObjFile(dut_.get(), directory_.getStr(), basename, ObjFeatures());
+
+  spruce::path actual_obj_path(directory_);
+  actual_obj_path.append(basename + ".obj");
+  EXPECT_TRUE(actual_obj_path.isFile());
+  paths_to_cleanup_.push_back(actual_obj_path);
+
+  spruce::path actual_mtl_path(directory_);
+  actual_mtl_path.append(basename + ".mtl");
+  EXPECT_TRUE(actual_mtl_path.isFile());
+  paths_to_cleanup_.push_back(actual_mtl_path);
+
+  std::string actual_obj_contents;
+  ReadAsString(actual_obj_path, &actual_obj_contents);
+  EXPECT_EQ(expected_obj_contents, actual_obj_contents);
 }
 
 
