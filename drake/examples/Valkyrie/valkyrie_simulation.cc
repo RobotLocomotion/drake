@@ -1,3 +1,9 @@
+/// @file
+///
+/// Runs the simulator for the valkyrie robot. It receives torque commands and
+/// sends measured robot state through LCM traffic. See valkyrie_simulator.h
+/// for more details.
+
 #include "drake/examples/Valkyrie/valkyrie_simulator.h"
 
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
@@ -32,11 +38,8 @@ int main(int argc, const char** argv) {
   plant->set_state_vector(plant_context, initial_state);
   lcm.StartReceiveThread();
 
-  while (true) {
-    const double time = context->get_time();
-    SPDLOG_TRACE(drake::log(), "Time is now {}", time);
-    simulator.StepTo(time + 0.01);
-  }
+  simulator.StepTo(std::numeric_limits<double>::infinity());
+  return 0;
 }
 
 }  // namespace valkyrie

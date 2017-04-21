@@ -38,17 +38,18 @@ class ValkyrieController : public systems::Diagram<double> {
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         model_path, multibody::joints::kRollPitchYaw, robot_.get());
-    RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
+    RobotStateMsgToHumanoidStatusSystem* msg_to_humanoid_status =
         builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(
             *robot_, alias_group_path));
-    rs_msg_to_rs->set_name("rs_msg_to_rs");
+    msg_to_humanoid_status->set_name("msg_to_humanoid_status");
 
+    const double kControlDt = 0.003;
     plan_eval_ = builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(
-        *robot_, alias_group_path, control_config_path, 0.003));
+        *robot_, alias_group_path, control_config_path, kControlDt));
     plan_eval_->set_name("plan_eval");
 
-    QpControllerSystem* qp_con =
-        builder.AddSystem(std::make_unique<QpControllerSystem>(*robot_, 0.003));
+    QpControllerSystem* qp_con = builder.AddSystem(
+        std::make_unique<QpControllerSystem>(*robot_, kControlDt));
     qp_con->set_name("qp_con");
 
     AtlasJointLevelControllerSystem* joint_con =
@@ -67,12 +68,12 @@ class ValkyrieController : public systems::Diagram<double> {
 
     // lcm -> rs
     builder.Connect(robot_state_subscriber_->get_output_port(0),
-                    rs_msg_to_rs->get_input_port_robot_state_msg());
+                    msg_to_humanoid_status->get_input_port_robot_state_msg());
     // rs -> qp_input
-    builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
+    builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
                     plan_eval_->get_input_port_humanoid_status());
     // rs + qp_input -> qp_output
-    builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
+    builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
                     qp_con->get_input_port_humanoid_status());
     builder.Connect(plan_eval_->get_output_port_qp_input(),
                     qp_con->get_input_port_qp_input());
