@@ -6,9 +6,11 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -26,6 +28,12 @@ struct BicycleCarParametersIndices {
   static const int kIz = 3;
   static const int kCf = 4;
   static const int kCr = 5;
+
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `BicycleCarParametersIndices::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -88,6 +96,11 @@ class BicycleCarParameters : public systems::BasicVector<T> {
   const T& Cr() const { return this->GetAtIndex(K::kCr); }
   void set_Cr(const T& Cr) { this->SetAtIndex(K::kCr, Cr); }
   //@}
+
+  /// See BicycleCarParametersIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return BicycleCarParametersIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {
