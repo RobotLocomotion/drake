@@ -35,9 +35,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
-      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm) {
+      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm,
+      bool per_step_publish = true) {
     return std::make_unique<LcmPublisherSystem>(
-        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
+        per_step_publish);
   }
 
   /**
@@ -55,7 +57,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     bool per_step_publish = true);
 
   /**
    * A constructor for an %LcmPublisherSystem that takes vector data on its sole
@@ -73,7 +76,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     bool per_step_publish = true);
 
   /**
    * Constructor that returns a publisher System that takes vector data on
@@ -91,7 +95,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     bool per_step_publish = true);
 
   ~LcmPublisherSystem() override;
 
@@ -131,7 +136,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
  private:
   // All constructors delegate to here.
-  LcmPublisherSystem(const std::string& channel,
+  LcmPublisherSystem(const std::string& channel, bool per_step_publish,
                      const LcmAndVectorBaseTranslator* translator,
                      std::unique_ptr<SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm);

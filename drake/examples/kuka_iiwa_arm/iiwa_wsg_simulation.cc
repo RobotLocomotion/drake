@@ -142,7 +142,8 @@ int DoMain() {
   const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
   drake::lcm::DrakeLcm lcm;
-  DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
+  DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(
+      tree, &lcm, false, false);
   visualizer->set_name("visualizer");
   builder.Connect(model->get_output_port_plant_state(),
                   visualizer->get_input_port(0));
@@ -158,7 +159,7 @@ int DoMain() {
 
   auto iiwa_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+                                                               &lcm, false));
   iiwa_status_pub->set_name("iiwa_status_publisher");
   iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
@@ -196,7 +197,7 @@ int DoMain() {
 
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
-          "SCHUNK_WSG_STATUS", &lcm));
+          "SCHUNK_WSG_STATUS", &lcm, false));
   wsg_status_pub->set_name("wsg_status_publisher");
   wsg_status_pub->set_publish_period(schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
@@ -216,30 +217,27 @@ int DoMain() {
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "IIWA_STATE_EST", &lcm));
+          "IIWA_STATE_EST", &lcm, false));
   iiwa_state_pub->set_name("iiwa_state_publisher");
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port(0));
-  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "OBJECT_STATE_EST", &lcm));
+          "OBJECT_STATE_EST", &lcm, false));
   box_state_pub->set_name("box_state_publisher");
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_box_robot_state_msg(),
                   box_state_pub->get_input_port(0));
-  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
 
   lcm.StartReceiveThread();
   simulator.Initialize();
-  simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;

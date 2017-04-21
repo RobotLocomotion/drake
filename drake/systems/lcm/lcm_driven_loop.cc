@@ -1,5 +1,7 @@
 #include "drake/systems/lcm/lcm_driven_loop.h"
 
+#include <vector>
+
 namespace drake {
 namespace systems {
 namespace lcm {
@@ -24,8 +26,17 @@ LcmDrivenLoop::LcmDrivenLoop(
   sub_swap_state_ = sub_context_->CloneState();
 
   // Disables simulator's publish on its internal time step.
-  stepper_->set_publish_every_time_step(false);
   stepper_->set_publish_at_initialization(false);
+
+  std::vector<DiscreteEvent<double>> events;
+  system.GetPerStepEvents(stepper_->get_context(), &events);
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kPublishAction) {
+      drake::log()->warn(
+        "LcmDrivenLoop: Per step Publish event declared in the given system."
+        " Are you sure you want this?");
+    }
+  }
 
   stepper_->Initialize();
 

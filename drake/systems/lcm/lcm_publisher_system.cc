@@ -27,10 +27,9 @@ const int kPortIndex = 0;
 // the old code yet, but still can supply the AbstractValue port for new code.
 
 LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
+    const std::string& channel, bool per_step_publish,
     const LcmAndVectorBaseTranslator* translator,
-    std::unique_ptr<SerializerInterface> serializer,
-    DrakeLcmInterface* lcm)
+    std::unique_ptr<SerializerInterface> serializer, DrakeLcmInterface* lcm)
     : channel_(channel),
       translator_(translator),
       serializer_(std::move(serializer)),
@@ -45,28 +44,28 @@ LcmPublisherSystem::LcmPublisherSystem(
   }
 
   set_name(make_name(channel_));
+  if (per_step_publish)
+    DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
+}
+
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
+    drake::lcm::DrakeLcmInterface* lcm, bool per_step_publish)
+    : LcmPublisherSystem(channel, per_step_publish, nullptr,
+                         std::move(serializer), lcm) {}
+
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel, const LcmAndVectorBaseTranslator& translator,
+    drake::lcm::DrakeLcmInterface* lcm, bool per_step_publish)
+    : LcmPublisherSystem(channel, per_step_publish, &translator, nullptr, lcm) {
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
-    drake::lcm::DrakeLcmInterface* lcm)
-    : LcmPublisherSystem(channel, nullptr, std::move(serializer), lcm) {}
-
-LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
-    const LcmAndVectorBaseTranslator& translator,
-    drake::lcm::DrakeLcmInterface* lcm)
-    : LcmPublisherSystem(channel, &translator, nullptr, lcm) {}
-
-LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
-    DrakeLcmInterface* lcm)
-    : LcmPublisherSystem(
-          channel,
-          translator_dictionary.GetTranslator(channel),
-          lcm) {}
+    DrakeLcmInterface* lcm, bool per_step_publish)
+    : LcmPublisherSystem(channel, translator_dictionary.GetTranslator(channel),
+                         lcm, per_step_publish) {}
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 

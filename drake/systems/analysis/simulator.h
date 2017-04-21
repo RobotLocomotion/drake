@@ -168,27 +168,11 @@ class Simulator {
    */
   double get_actual_realtime_rate() const;
 
-  /** Sets whether the simulation should invoke Publish on the System under
-   * simulation during every time step. If enabled, Publish will be invoked
-   * after discrete updates and before continuous integration. Regardless of
-   * whether publishing every time step is enabled, Publish will be invoked at
-   * Simulator initialize time, and as System<T>::CalcNextUpdateTime requests.
-   */
-  void set_publish_every_time_step(bool publish) {
-    publish_every_time_step_ = publish;
-  }
-
   /** Sets whether the simulation should invoke Publish in Initialize().
    */
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
-
-  /** Returns true if the simulation should invoke Publish on the System under
-   * simulation every time step.  By default, returns true.
-   */
-  // TODO(sherm1, edrumwri): Consider making this false by default.
-  bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /** Returns a const reference to the internally-maintained Context holding the
    * most recent step in the trajectory. This is suitable for publishing or
@@ -232,12 +216,6 @@ class Simulator {
    * have post construction or immediately after `Initialize()`.
    */
   void ResetStatistics();
-
-  /**
-   * Gets the number of publishes made since the last Initialize() or
-   * ResetStatistics() call.
-   */
-  int64_t get_num_publishes() const { return num_publishes_; }
 
   /** Gets the number of integration steps since the last Initialize() call. */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
@@ -330,8 +308,6 @@ class Simulator {
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{0.};
 
-  bool publish_every_time_step_{true};
-
   bool publish_at_initialization_{true};
 
   // These are recorded at initialization or statistics reset.
@@ -403,7 +379,6 @@ void Simulator<T>::Initialize() {
   // Do a publish before the simulation starts.
   if (publish_at_initialization_) {
     system_.Publish(*context_);
-    ++num_publishes_;
   }
 
   // Initialize runtime variables.
@@ -513,13 +488,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     if (sample_time_hit)
       HandlePublish(update_actions.events);
     HandlePublish(per_step_actions_);
-
-    // TODO(siyuan): transfer per step publish entirely to individual systems.
-    // Allow System a chance to produce some output.
-    if (get_publish_every_time_step()) {
-      system_.Publish(*context_);
-      ++num_publishes_;
-    }
 
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =

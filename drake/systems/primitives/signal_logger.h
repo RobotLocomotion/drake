@@ -12,8 +12,9 @@
 namespace drake {
 namespace systems {
 
-/// A sink block which logs its input to memory.  This data is then retrievable
-/// (e.g. after a simulation) via a handful of accessor methods.
+/// A sink block which logs its input to memory. Logging is done in the
+/// Publish() method. This data is then retrievable (e.g. after a simulation)
+/// via a handful of accessor methods.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -31,7 +32,11 @@ class SignalLogger : public LeafSystem<T> {
   /// @param input_size Dimension of the (single) input port.
   /// @param batch_allocation_size Storage is (re)allocated in blocks of
   /// input_size-by-batch_allocation_size.
-  explicit SignalLogger(int input_size, int batch_allocation_size = 1000);
+  /// @param per_step_publish_mode If true, declares a per step Publish action,
+  /// which will be returned by System::GetPerStepEvents()
+  explicit SignalLogger(int input_size,
+                        int batch_allocation_size = 1000,
+                        bool per_step_publish_mode = true);
 
   /// Access the (simulation) time of the logged data.
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {

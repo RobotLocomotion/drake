@@ -86,7 +86,8 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   sub->set_name("subscriber");
   auto dummy = builder.AddSystem<DummySys>();
   dummy->set_name("dummy");
-  auto logger = builder.AddSystem<SignalLogger<double>>(1);
+  // Disables per simulation step logging.
+  auto logger = builder.AddSystem<SignalLogger<double>>(1, 1000, false);
   logger->set_name("logger");
   builder.Connect(*sub, *dummy);
   builder.Connect(*dummy, *logger);

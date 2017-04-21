@@ -60,7 +60,7 @@ int DoMain() {
     plant = builder.AddPlant(std::move(tree));
   }
   // Creates and adds LCM publisher for visualization.
-  builder.AddVisualizer(&lcm);
+  builder.AddVisualizer(&lcm, false);
   builder.get_visualizer()->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Adds a iiwa controller
@@ -85,7 +85,7 @@ int DoMain() {
   command_receiver->set_name("command_receiver");
   auto status_pub = base_builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
-          "IIWA_STATUS", &lcm));
+          "IIWA_STATUS", &lcm, false));
   status_pub->set_name("status_publisher");
   status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>();
@@ -106,8 +106,8 @@ int DoMain() {
   Simulator<double> simulator(*sys);
 
   lcm.StartReceiveThread();
-  simulator.set_publish_every_time_step(false);
   simulator.Initialize();
+  simulator.set_target_realtime_rate(1.0);
 
   command_receiver->set_initial_position(
       sys->GetMutableSubsystemContext(simulator.get_mutable_context(),

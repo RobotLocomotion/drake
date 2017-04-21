@@ -512,7 +512,8 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   drake::lcm::DrakeMockLcm lcm;
 
   // Instantiates the "device under test".
-  DrakeVisualizer dut(*tree, &lcm);
+  // No replay, no per step publish.
+  DrakeVisualizer dut(*tree, &lcm, false, false);
   dut.set_publish_period(kPublishPeriod);
   unique_ptr<Context<double>> context = dut.AllocateContext();
 
@@ -523,7 +524,6 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
 
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));
-  simulator.set_publish_every_time_step(false);
   PublishLoadRobotModelMessageHelper(dut, simulator.get_mutable_context());
   simulator.Initialize();
 

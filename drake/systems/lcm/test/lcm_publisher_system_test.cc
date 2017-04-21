@@ -159,7 +159,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   LcmtDrakeSignalTranslator translator(kDim);
 
   // Instantiates the "device under test".
-  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm);
+  auto dut = make_unique<LcmPublisherSystem>(
+      channel_name, translator, &lcm, false);
   dut->set_publish_period(kPublishPeriod);
   unique_ptr<Context<double>> context = dut->AllocateContext();
 
@@ -168,7 +169,6 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
 
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
-  simulator.set_publish_every_time_step(false);
   simulator.Initialize();
 
   for (double time = 0; time < 4; time += 0.01) {

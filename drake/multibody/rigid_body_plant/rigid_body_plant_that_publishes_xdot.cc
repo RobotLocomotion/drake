@@ -28,6 +28,7 @@ RigidBodyPlantThatPublishesXdot<T>::RigidBodyPlantThatPublishesXdot(
     message_.coord.push_back(rigid_body_tree.get_velocity_name(i));
   }
   DRAKE_DEMAND(message_.coord.size() == message_.val.size());
+  this->DeclarePerStepAction(DiscreteEvent<T>::kPublishAction);
 }
 
 template <typename T>

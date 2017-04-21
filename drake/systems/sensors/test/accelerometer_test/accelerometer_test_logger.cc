@@ -21,6 +21,8 @@ AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size) {
       this->DeclareInputPort(kVectorValued, plant_state_size).get_index();
   acceleration_port_index_ =
       this->DeclareInputPort(kVectorValued, 3).get_index();
+
+  DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
 }
 
 void AccelerometerTestLogger::DoPublish(const Context<double>& context)

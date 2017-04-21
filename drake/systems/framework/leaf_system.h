@@ -510,6 +510,14 @@ class LeafSystem : public System<T> {
     event.offset_sec = offset_sec;
     event.event.action = action;
     periodic_events_.push_back(event);
+
+    if (HasPerStepAction(action)) {
+      std::string err_msg = this->get_name() +
+        ": has both periodic publish and per step action of type: " +
+        std::to_string(action);
+      DRAKE_ABORT_MSG(err_msg.c_str());
+      // drake::log()->warn(err_msg);
+    }
   }
 
   /// Declares that this System has a simple, fixed-period discrete update.
@@ -547,20 +555,32 @@ class LeafSystem : public System<T> {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
   }
 
+  /// Returns true if a per step action of type @p action has been declared.
+  bool HasPerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) const {
+    return FindPerStepActionIndex(action) !=
+        static_cast<int>(per_step_events_.size());
+  }
+
   /// Declares a per step action using the default handlers given type
   /// @p action. This method aborts if the same type has already been declared.
   // TODO(siyuan): provide a API for declaration with custom handlers.
   void DeclarePerStepAction(
       const typename DiscreteEvent<T>::ActionType& action) {
+    if (HasPerStepAction(action))
+      DRAKE_ABORT_MSG("Per step action has already been declared.");
+
     DiscreteEvent<T> event;
     event.action = action;
-    for (const auto& declared_event : per_step_events_) {
-      if (declared_event.action == action) {
-        DRAKE_ABORT_MSG("Per step action has already been declared.");
-      }
-    }
-
     per_step_events_.push_back(event);
+  }
+
+  /// Removes a per step action of type @p action if one has been declared.
+  void RemovePerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    int index = FindPerStepActionIndex(action);
+    if (index != static_cast<int>(per_step_events_.size()))
+      per_step_events_.erase(per_step_events_.begin() + index);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -700,6 +720,17 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  // Searches through per_step_events_ and returns the index of the first action
+  // whose type matches @p action or per_step_events_.size() if none exists.
+  int FindPerStepActionIndex(
+      const typename DiscreteEvent<T>::ActionType& action) const {
+    for (size_t i = 0; i < per_step_events_.size(); i++) {
+      if (per_step_events_[i].action == action)
+        return i;
+    }
+    return static_cast<int>(per_step_events_.size());
+  }
+
   void DoGetPerStepEvents(const Context<T>& context,
       std::vector<DiscreteEvent<T>>* events) const override {
     *events = per_step_events_;
