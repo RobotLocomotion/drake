@@ -130,7 +130,7 @@ LinearProgram0::LinearProgram0(CostForm cost_form, ConstraintForm cnstr_form)
 
 void LinearProgram0::CheckSolution(SolverType solver_type) const {
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  EXPECT_TRUE(CompareMatrices(this->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*this, tol);
 }
@@ -170,7 +170,7 @@ LinearProgram1::LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form)
 
 void LinearProgram1::CheckSolution(SolverType solver_type) const {
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  EXPECT_TRUE(CompareMatrices(this->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*this, tol);
 }
