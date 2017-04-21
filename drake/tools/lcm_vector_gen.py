@@ -24,9 +24,23 @@ struct %(indices)s {
 """
 INDICES_FIELD = """static const int %(kname)s = %(kvalue)d;"""
 INDICES_FIELD_STORAGE = """const int %(indices)s::%(kname)s;"""
-INDICES_END = """
+INDICES_NAMES_ACCESSOR_DECL = """
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `%(indices)s::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 """
+INDICIES_NAMES_ACCESSOR_IMPL_START = """
+const std::vector<std::string>& %(camel)sIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string> {
+"""
+INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\","""
+INDICES_NAMES_ACCESSOR_END = """  });
+  return coordinates.access();
+}"""
 
 
 def to_kname(field):
@@ -53,8 +67,8 @@ def generate_indices(hh, caller_context, fields):
         context.update(kname=to_kname(field['name']))
         context.update(kvalue=kvalue)
         put(hh, INDICES_FIELD % context, 1)
-    put(hh, INDICES_END % context, 2)
-
+    put(hh, '', 1)
+    put(hh, INDICES_NAMES_ACCESSOR_DECL % context, 2)
 
 def generate_indices_storage(cc, caller_context, fields):
     """
@@ -73,7 +87,11 @@ def generate_indices_storage(cc, caller_context, fields):
         context.update(kvalue=kvalue)
         put(cc, INDICES_FIELD_STORAGE % context, 1)
     put(cc, '', 1)
-
+    put(cc, INDICIES_NAMES_ACCESSOR_IMPL_START % context, 1)
+    for kvalue, field in enumerate(fields):
+        context.update(name=field['name'])
+        put(cc, INDICES_NAMES_ACCESSOR_IMPL_MID % context, 1)
+    put(cc, INDICES_NAMES_ACCESSOR_END % context, 2)
 
 # One variant of a default constructor (all zeros).  (Depending on the
 # named_vector details, we will either use this variant or the subsequent one.)
@@ -180,6 +198,12 @@ def generate_accessors(hh, caller_context, fields):
         put(hh, ACCESSOR_FIELD_METHODS  % context, 1)
     put(hh, ACCESSOR_END % caller_context, 2)
 
+GET_COORDINATE_NAMES = """
+    /// See %(camel)sIndices::GetCoordinateNames().
+    static const std::vector<std::string>& GetCoordinateNames() {
+      return %(camel)sIndices::GetCoordinateNames();
+   }
+"""
 
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
@@ -226,9 +250,11 @@ VECTOR_HH_PREAMBLE = """
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 %(opening_namespace)s
@@ -475,6 +501,7 @@ def generate_code(args):
         generate_default_ctor(hh, context, fields)
         generate_do_clone(hh, context, fields)
         generate_accessors(hh, context, fields)
+        put(hh, GET_COORDINATE_NAMES % context, 2)
         generate_is_valid(hh, context, fields)
         put(hh, VECTOR_CLASS_END % context, 2)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)

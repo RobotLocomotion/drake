@@ -12,6 +12,14 @@ const int SampleIndices::kX;
 const int SampleIndices::kTwoWord;
 const int SampleIndices::kAbsone;
 
+const std::vector<std::string>& SampleIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "x", "two_word", "absone",
+      });
+  return coordinates.access();
+}
+
 }  // namespace test
 }  // namespace tools
 }  // namespace drake
