@@ -6,9 +6,11 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -23,6 +25,12 @@ struct MobilPlannerParametersIndices {
   static const int kP = 0;
   static const int kThreshold = 1;
   static const int kMaxDeceleration = 2;
+
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `MobilPlannerParametersIndices::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -71,6 +79,11 @@ class MobilPlannerParameters : public systems::BasicVector<T> {
     this->SetAtIndex(K::kMaxDeceleration, max_deceleration);
   }
   //@}
+
+  /// See MobilPlannerParametersIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return MobilPlannerParametersIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {
