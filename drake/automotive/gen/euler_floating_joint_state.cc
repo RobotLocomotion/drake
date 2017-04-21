@@ -14,5 +14,8 @@ const int EulerFloatingJointStateIndices::kRoll;
 const int EulerFloatingJointStateIndices::kPitch;
 const int EulerFloatingJointStateIndices::kYaw;
 
+const never_destroyed<std::vector<std::string>>
+    EulerFloatingJointStateIndices::coordinates(std::vector<std::string>{
+        "x", "y", "z", "roll", "pitch", "yaw"});
 }  // namespace automotive
 }  // namespace drake

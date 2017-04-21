@@ -11,6 +11,10 @@ const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kNumCoordinates;
 const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kLastTargetPosition;
 const int SchunkWsgTrajectoryGeneratorStateVectorIndices::kTrajectoryStartTime;
 
+const never_destroyed<std::vector<std::string>>
+    SchunkWsgTrajectoryGeneratorStateVectorIndices::coordinates(
+        std::vector<std::string>{"last_target_position",
+                                 "trajectory_start_time"});
 }  // namespace schunk_wsg
 }  // namespace examples
 }  // namespace drake

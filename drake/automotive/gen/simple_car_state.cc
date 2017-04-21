@@ -12,5 +12,8 @@ const int SimpleCarStateIndices::kY;
 const int SimpleCarStateIndices::kHeading;
 const int SimpleCarStateIndices::kVelocity;
 
+const never_destroyed<std::vector<std::string>>
+    SimpleCarStateIndices::coordinates(std::vector<std::string>{
+        "x", "y", "heading", "velocity"});
 }  // namespace automotive
 }  // namespace drake

@@ -12,5 +12,8 @@ const int MaliputRailcarParamsIndices::kH;
 const int MaliputRailcarParamsIndices::kMaxSpeed;
 const int MaliputRailcarParamsIndices::kVelocityLimitKp;
 
+const never_destroyed<std::vector<std::string>>
+    MaliputRailcarParamsIndices::coordinates(std::vector<std::string>{
+        "r", "h", "max_speed", "velocity_limit_kp"});
 }  // namespace automotive
 }  // namespace drake

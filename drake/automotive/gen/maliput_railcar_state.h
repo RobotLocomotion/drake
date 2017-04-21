@@ -6,9 +6,12 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -22,6 +25,17 @@ struct MaliputRailcarStateIndices {
   // The index of each individual coordinate.
   static const int kS = 0;
   static const int kSpeed = 1;
+
+  /// Returns a reference to a std::vector containing the names of each value
+  /// within this class, sorted by this class's index. In other words, the name
+  /// of the value returned by GetAtIndex() is the string at the same index in
+  /// the returned std::vector.
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return coordinates.access();
+  }
+
+ private:
+  static const never_destroyed<std::vector<std::string>> coordinates;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -49,6 +63,11 @@ class MaliputRailcarState : public systems::BasicVector<T> {
   const T& speed() const { return this->GetAtIndex(K::kSpeed); }
   void set_speed(const T& speed) { this->SetAtIndex(K::kSpeed, speed); }
   //@}
+
+  /// See MaliputRailcarStateIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return MaliputRailcarStateIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

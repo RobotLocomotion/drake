@@ -6,9 +6,12 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -21,6 +24,17 @@ struct PurePursuitParamsIndices {
 
   // The index of each individual coordinate.
   static const int kSLookahead = 0;
+
+  /// Returns a reference to a std::vector containing the names of each value
+  /// within this class, sorted by this class's index. In other words, the name
+  /// of the value returned by GetAtIndex() is the string at the same index in
+  /// the returned std::vector.
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return coordinates.access();
+  }
+
+ private:
+  static const never_destroyed<std::vector<std::string>> coordinates;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -50,6 +64,11 @@ class PurePursuitParams : public systems::BasicVector<T> {
     this->SetAtIndex(K::kSLookahead, s_lookahead);
   }
   //@}
+
+  /// See PurePursuitParamsIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return PurePursuitParamsIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

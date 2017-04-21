@@ -10,5 +10,8 @@ const int MaliputRailcarStateIndices::kNumCoordinates;
 const int MaliputRailcarStateIndices::kS;
 const int MaliputRailcarStateIndices::kSpeed;
 
+const never_destroyed<std::vector<std::string>>
+    MaliputRailcarStateIndices::coordinates(std::vector<std::string>{"s",
+                                                                     "speed"});
 }  // namespace automotive
 }  // namespace drake

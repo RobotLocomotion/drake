@@ -6,9 +6,11 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -26,6 +28,17 @@ struct AcrobotStateVectorIndices {
   static const int kTheta2 = 1;
   static const int kTheta1dot = 2;
   static const int kTheta2dot = 3;
+
+  /// Returns a reference to a std::vector containing the names of each value
+  /// within this class, sorted by this class's index. In other words, the name
+  /// of the value returned by GetAtIndex() is the string at the same index in
+  /// the returned std::vector.
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return coordinates.access();
+  }
+
+ private:
+  static const never_destroyed<std::vector<std::string>> coordinates;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -63,6 +76,11 @@ class AcrobotStateVector : public systems::BasicVector<T> {
     this->SetAtIndex(K::kTheta2dot, theta2dot);
   }
   //@}
+
+  /// See AcrobotStateVectorIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return AcrobotStateVectorIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

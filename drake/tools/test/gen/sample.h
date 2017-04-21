@@ -6,9 +6,12 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -24,6 +27,17 @@ struct SampleIndices {
   static const int kX = 0;
   static const int kTwoWord = 1;
   static const int kAbsone = 2;
+
+  /// Returns a reference to a std::vector containing the names of each value
+  /// within this class, sorted by this class's index. In other words, the name
+  /// of the value returned by GetAtIndex() is the string at the same index in
+  /// the returned std::vector.
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return coordinates.access();
+  }
+
+ private:
+  static const never_destroyed<std::vector<std::string>> coordinates;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -63,6 +77,11 @@ class Sample : public systems::BasicVector<T> {
   const T& absone() const { return this->GetAtIndex(K::kAbsone); }
   void set_absone(const T& absone) { this->SetAtIndex(K::kAbsone, absone); }
   //@}
+
+  /// See SampleIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return SampleIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

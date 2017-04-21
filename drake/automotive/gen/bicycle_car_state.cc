@@ -14,5 +14,8 @@ const int BicycleCarStateIndices::kVel;
 const int BicycleCarStateIndices::kSx;
 const int BicycleCarStateIndices::kSy;
 
+const never_destroyed<std::vector<std::string>>
+    BicycleCarStateIndices::coordinates(std::vector<std::string>{
+        "Psi", "Psi_dot", "beta", "vel", "sx", "sy"});
 }  // namespace automotive
 }  // namespace drake

@@ -10,6 +10,8 @@ namespace acrobot {
 const int AcrobotInputVectorIndices::kNumCoordinates;
 const int AcrobotInputVectorIndices::kTau;
 
+const never_destroyed<std::vector<std::string>>
+    AcrobotInputVectorIndices::coordinates(std::vector<std::string>{"tau"});
 }  // namespace acrobot
 }  // namespace examples
 }  // namespace drake

@@ -14,5 +14,9 @@ const int SimpleCarParamsIndices::kMaxVelocity;
 const int SimpleCarParamsIndices::kMaxAcceleration;
 const int SimpleCarParamsIndices::kVelocityLimitKp;
 
+const never_destroyed<std::vector<std::string>>
+    SimpleCarParamsIndices::coordinates(std::vector<std::string>{
+        "wheelbase", "track", "max_abs_steering_angle", "max_velocity",
+        "max_acceleration", "velocity_limit_kp"});
 }  // namespace automotive
 }  // namespace drake

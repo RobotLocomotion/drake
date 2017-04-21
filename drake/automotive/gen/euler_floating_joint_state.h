@@ -6,9 +6,12 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -26,6 +29,17 @@ struct EulerFloatingJointStateIndices {
   static const int kRoll = 3;
   static const int kPitch = 4;
   static const int kYaw = 5;
+
+  /// Returns a reference to a std::vector containing the names of each value
+  /// within this class, sorted by this class's index. In other words, the name
+  /// of the value returned by GetAtIndex() is the string at the same index in
+  /// the returned std::vector.
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return coordinates.access();
+  }
+
+ private:
+  static const never_destroyed<std::vector<std::string>> coordinates;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -65,6 +79,11 @@ class EulerFloatingJointState : public systems::BasicVector<T> {
   const T& yaw() const { return this->GetAtIndex(K::kYaw); }
   void set_yaw(const T& yaw) { this->SetAtIndex(K::kYaw, yaw); }
   //@}
+
+  /// See EulerFloatingJointStateIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return EulerFloatingJointStateIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

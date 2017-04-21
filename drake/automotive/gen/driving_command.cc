@@ -10,5 +10,8 @@ const int DrivingCommandIndices::kNumCoordinates;
 const int DrivingCommandIndices::kSteeringAngle;
 const int DrivingCommandIndices::kAcceleration;
 
+const never_destroyed<std::vector<std::string>>
+    DrivingCommandIndices::coordinates(std::vector<std::string>{
+        "steering_angle", "acceleration"});
 }  // namespace automotive
 }  // namespace drake

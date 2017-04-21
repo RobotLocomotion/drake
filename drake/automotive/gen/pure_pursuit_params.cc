@@ -9,5 +9,8 @@ namespace automotive {
 const int PurePursuitParamsIndices::kNumCoordinates;
 const int PurePursuitParamsIndices::kSLookahead;
 
+const never_destroyed<std::vector<std::string>>
+    PurePursuitParamsIndices::coordinates(std::vector<std::string>{
+        "s_lookahead"});
 }  // namespace automotive
 }  // namespace drake
