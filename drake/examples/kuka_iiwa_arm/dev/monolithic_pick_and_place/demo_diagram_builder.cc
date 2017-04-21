@@ -95,9 +95,11 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
   DiagramBuilder<T> builder;
   plant_ = builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<T>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
+  plant_->set_name("plant");
 
   drake_visualizer_ = builder.template AddSystem<DrakeVisualizer>(
       plant_->get_plant().get_rigid_body_tree(), lcm);
+  drake_visualizer_->set_name("drake_visualizer");
 
   builder.Connect(plant_->get_output_port_plant_state(),
                   drake_visualizer_->get_input_port(0));
@@ -105,6 +107,8 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
   iiwa_trajectory_generator_ =
       builder.template AddSystem<IiwaStateFeedbackPlanSource>(
           drake::GetDrakePath() + kIiwaUrdf, update_interval);
+  iiwa_trajectory_generator_->set_name("iiwa_trajectory_generator");
+
   builder.Connect(plant_->get_output_port_iiwa_state(),
                   iiwa_trajectory_generator_->get_input_port_state());
   builder.Connect(
@@ -120,6 +124,8 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
   wsg_trajectory_generator_ =
       builder.template AddSystem<SchunkWsgTrajectoryGenerator>(
           plant_->get_output_port_wsg_state().size(), 0);
+  wsg_trajectory_generator_->set_name("wsg_trajectory_generator");
+
   builder.Connect(plant_->get_output_port_wsg_state(),
                   wsg_trajectory_generator_->get_state_input_port());
   builder.Connect(wsg_trajectory_generator_->get_output_port(0),
@@ -135,6 +141,7 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
   // Sets up a WSG Status sender.
   wsg_status_sender_ = builder.template AddSystem<SchunkWsgStatusSender>(
       plant_->get_output_port_wsg_state().size(), 0, 0);
+  wsg_status_sender_->set_name("wsg_status_sender");
 
   builder.Connect(plant_->get_output_port_wsg_state(),
                   wsg_status_sender_->get_input_port(0));
