@@ -60,7 +60,7 @@ def _gurobi_impl(repository_ctx):
     repository_ctx.file("BUILD", content=BUILD, executable=False)
 
 gurobi_repository = repository_rule(
+    environ = ["GUROBI_PATH"],
     local = True,
     implementation = _gurobi_impl,
-    environ = ["GUROBI_PATH"],
 )
