@@ -45,6 +45,13 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   EXPECT_NE(dynamic_cast<Sample<double>*>(cloned.get()), nullptr);
   EXPECT_EQ(cloned->GetAtIndex(0), 11.0);
   EXPECT_EQ(cloned->GetAtIndex(1), 22.0);
+
+  // Coordinate names.
+  const std::vector<std::string>& coordinate_names = dut.GetCoordinateNames();
+  const std::vector<std::string> expected_names = {"x", "two_word", "absone"};
+  for (int i = 0; i < dut.size(); ++i) {
+    EXPECT_EQ(coordinate_names.at(i), expected_names.at(i));
+  }
 }
 
 // Cover Simple<double>::IsValid.
