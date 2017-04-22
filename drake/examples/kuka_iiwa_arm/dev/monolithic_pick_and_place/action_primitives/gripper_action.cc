@@ -1,6 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/gripper_action.h"
 
 #include <vector>
+
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"

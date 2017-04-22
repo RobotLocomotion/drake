@@ -3,7 +3,6 @@
 #include <string>
 
 #include <gtest/gtest.h>
-
 #include "google/protobuf/io/coded_stream.h"
 
 namespace drake {

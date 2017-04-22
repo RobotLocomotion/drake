@@ -1,9 +1,9 @@
 #pragma once
-#include "drake/multibody/global_inverse_kinematics.h"
-
 #include <memory>
 
 #include <gtest/gtest.h>
+
+#include "drake/multibody/global_inverse_kinematics.h"
 
 namespace drake {
 namespace multibody {
