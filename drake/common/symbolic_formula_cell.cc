@@ -467,7 +467,11 @@ FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
     ostringstream oss;
     oss << "The following matrix is not symmetric and cannot be used to "
            "construct drake::symbolic::FormulaPositiveSemidefinite:\n"
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
         << m;
+#else
+        << "OLD_EIGEN_CANNOT_RENDER_THIS";
+#endif
     throw std::runtime_error(oss.str());
   }
 }
@@ -476,17 +480,23 @@ namespace {
 // Helper Eigen-visitor class that we use to implement
 // FormulaPositiveSemidefinite::GetFreeVariables().
 struct VariablesCollector {
-  Variables vars_;
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
+  using Index = Eigen::Index;
+#else
+  using Index = std::ptrdiff_t;
+#endif  // EIGEN_VERSION...
+
   // Called for the first coefficient.
-  void init(const Expression& e, const Eigen::Index i, const Eigen::Index j) {
+  void init(const Expression& e, Index i, Index j) {
     DRAKE_ASSERT(vars_.empty());
     return operator()(e, i, j);
   }
   // Called for all other coefficients.
-  void operator()(const Expression& e, const Eigen::Index /* i */,
-                  const Eigen::Index /* j */) {
+  void operator()(const Expression& e, Index /* i */, Index /* j */) {
     vars_ += e.GetVariables();
   }
+
+  Variables vars_;
 };
 }  // namespace
 
@@ -544,7 +554,13 @@ Formula FormulaPositiveSemidefinite::Substitute(const Substitution& s) const {
 }
 
 ostream& FormulaPositiveSemidefinite::Display(ostream& os) const {
-  return os << "positive_semidefinite(" << m_ << ")";
+  return os << "positive_semidefinite("
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
+            << m_
+#else
+            << "OLD_EIGEN_CANNOT_RENDER_THIS"
+#endif
+            << ")";
 }
 
 bool is_false(const FormulaCell& f) {
