@@ -630,9 +630,14 @@ void GenerateObjFile(const api::RoadGeometry* rg,
     // times the per-component error.  The `10` is a fudge-factor to ensure
     // that the error in a rendered vertex with respect to the true position
     // (underlying the value expressed by maliput) is within 110% of ε.
+    //
+    // The bound on error due to rounding to `n` places is `0.5 * 10^(-n)`,
+    // so we want `n` such that `0.5 * 10^(-n) < ε / (sqrt(3) * 10)`.
+    // This yields:  `n > log10(sqrt(3) * 5) - log10(ε)`.
     DRAKE_DEMAND(rg->linear_tolerance() > 0.);
     const int precision =
-        std::max(0., std::ceil(1.25 - std::log10(rg->linear_tolerance())));
+        std::max(0., std::ceil(std::log10(std::sqrt(3.) * 5.) -
+                               std::log10(rg->linear_tolerance())));
 
     std::ofstream os(dirpath + "/" + obj_filename, std::ios::binary);
     fmt::print(os,
