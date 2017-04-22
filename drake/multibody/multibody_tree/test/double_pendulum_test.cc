@@ -1,4 +1,6 @@
+// clang-format: off
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+// clang-format: on
 
 #include <functional>
 #include <memory>
