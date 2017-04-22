@@ -763,7 +763,7 @@ later.
 )doom";
   DRAKE_ABORT_MSG(doom);
 }
-#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
+#endif  // EIGEN_VERSION...
 
 }  // namespace std
 
@@ -829,7 +829,7 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
   enum { Defined = 1 };
   typedef drake::symbolic::Expression ReturnType;
 };
-#endif  // EIGEN_VERSION_AT_LEAST(3, 2, 93)
+#endif  // EIGEN_VERSION...
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
@@ -874,7 +874,19 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   // Note that std::equal_to<Expression> calls Expression::EqualTo which checks
   // structural equality between two expressions.
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
   return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
+#else
+  // TODO(jwnimmer-tri) This is untested.  We should remove it ASAP.
+  const std::equal_to<Expression> compare;
+  bool result = true;
+  for (int i = 0; i < m1.rows(); ++i) {
+    for (int j = 0; j < m1.cols(); ++j) {
+      result = result && compare(m1(i, j), m2(i, j));
+    }
+  }
+  return result;
+#endif  // EIGEN_VERSION...
 }
 
 }  // namespace symbolic
