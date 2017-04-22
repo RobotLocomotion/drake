@@ -15,6 +15,7 @@ drake_cc_binary(
     ],
     linkshared = 1,
     linkstatic = 1,
+    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "@eigen//:eigen",
         "@pybind11//:pybind11",
@@ -29,6 +30,7 @@ drake_cc_binary(
     ],
     linkshared = 1,
     linkstatic = 1,
+    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
@@ -53,6 +55,7 @@ drake_cc_binary(
     srcs = ["pybind11/pydrake_ik.cc"],
     linkshared = 1,
     linkstatic = 1,
+    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
@@ -68,6 +71,7 @@ drake_cc_binary(
     ],
     linkshared = 1,
     linkstatic = 1,
+    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/common:symbolic",
         "//drake/solvers:mathematical_program",
@@ -105,6 +109,7 @@ drake_cc_binary(
     ],
     linkshared = 1,
     linkstatic = 1,
+    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/common:symbolic",
         "@pybind11//:pybind11",
