@@ -199,6 +199,10 @@ class GeoMesh {
 
   // Emits the mesh as Wavefront OBJ elements to @p os.  @p material is the
   // name of an MTL-defined material to describe visual properties of the mesh.
+  // @p precision specifies the fixed-point precision (number of digits after
+  // the decimal point) for vertex and normal coordinate values.  @p origin
+  // specifies a world-frame origin for vertex coordinates (i.e., the emitted
+  // values for a vertex at `(x,y,z)` will be `(x,y,z) - origin`).
   //
   // If other meshes have already been emitted to stream @p os, then
   // @p vertex_index_offset and @p normal_index_offset must correspond to the
@@ -208,9 +212,8 @@ class GeoMesh {
   // EmitObj().
   std::tuple<int, int>
   EmitObj(std::ostream& os, const std::string& material,
-          int vertex_index_offset, int normal_index_offset,
-          int precision,
-          const api::GeoPosition& origin) {
+          int precision, const api::GeoPosition& origin,
+          int vertex_index_offset, int normal_index_offset) {
     // NOLINTNEXTLINE(build/namespaces)  Usage documented by fmt library.
     using namespace fmt::literals;
     fmt::print(os, "# Vertices\n");
@@ -620,9 +623,16 @@ void GenerateObjFile(const api::RoadGeometry* rg,
   {
     // Figure out the fixed-point precision necessary to ensure that generated
     // position values can represent at least linear_tolerance() precision.
+    //
+    // Given linear_tolerance ε, we conservatively want to bound the error
+    // per component to `|x - x_0| < ε / (sqrt(3) * 10)`.  The `sqrt(3)` is
+    // because the worst-case error in total 3-space distance is `sqrt(3)`
+    // times the per-component error.  The `10` is a fudge-factor to ensure
+    // that the error in a rendered vertex with respect to the true position
+    // (underlying the value expressed by maliput) is within 110% of ε.
     DRAKE_DEMAND(rg->linear_tolerance() > 0.);
     const int precision =
-        std::max(0., 1. - std::floor(std::log10(rg->linear_tolerance())));
+        std::max(0., std::ceil(1.25 - std::log10(rg->linear_tolerance())));
 
     std::ofstream os(dirpath + "/" + obj_filename, std::ios::binary);
     fmt::print(os,
@@ -637,19 +647,16 @@ mtllib {}
     int normal_index_offset = 0;
     std::tie(vertex_index_offset, normal_index_offset) =
         asphalt_mesh.EmitObj(os, kBlandAsphalt,
-                             vertex_index_offset, normal_index_offset,
-                             precision,
-                             features.origin);
+                             precision, features.origin,
+                             vertex_index_offset, normal_index_offset);
     std::tie(vertex_index_offset, normal_index_offset) =
         lane_mesh.EmitObj(os, kLaneHaze,
-                          vertex_index_offset, normal_index_offset,
-                          precision,
-                          features.origin);
+                          precision, features.origin,
+                          vertex_index_offset, normal_index_offset);
     std::tie(vertex_index_offset, normal_index_offset) =
         marker_mesh.EmitObj(os, kMarkerPaint,
-                            vertex_index_offset, normal_index_offset,
-                            precision,
-                            features.origin);
+                            precision, features.origin,
+                            vertex_index_offset, normal_index_offset);
   }
 
   // Create the MTL file referenced by the OBJ file.
