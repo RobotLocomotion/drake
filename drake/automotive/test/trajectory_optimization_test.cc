@@ -1,7 +1,7 @@
 #include <cmath>
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/automotive/simple_car.h"
 #include "drake/common/call_matlab.h"
