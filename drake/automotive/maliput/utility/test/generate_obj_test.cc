@@ -57,8 +57,8 @@ class GenerateObjTest : public ::testing::Test {
 
 class GenerateObjBasicDutTest : public GenerateObjTest {
  protected:
-  static constexpr double kLinearTolerance = 0.01;
-  static constexpr double kAngularTolerance = 0.01 * M_PI;
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
   const api::RBounds kLaneBounds{-0.5, 0.5};
   const api::RBounds kDriveableBounds{-1., 1.};
 

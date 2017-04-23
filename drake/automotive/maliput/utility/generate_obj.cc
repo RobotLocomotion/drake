@@ -621,15 +621,18 @@ void GenerateObjFile(const api::RoadGeometry* rg,
 
   // Create the requested OBJ file.
   {
-    // Figure out the fixed-point precision necessary to ensure that generated
-    // position values can represent at least linear_tolerance() precision.
+    // Figure out the fixed-point precision necessary to render OBJ vertices
+    // with enough precision relative to linear_tolerance().
     //
-    // Given linear_tolerance ε, we conservatively want to bound the error
-    // per component to `|x - x_0| < ε / (sqrt(3) * 10)`.  The `sqrt(3)` is
+    // Given linear_tolerance ε, we conservatively want to bound the rendering
+    // error per component to `ε / (sqrt(3) * 10)`.  The `sqrt(3)` is
     // because the worst-case error in total 3-space distance is `sqrt(3)`
     // times the per-component error.  The `10` is a fudge-factor to ensure
-    // that the error in a rendered vertex with respect to the true position
-    // (underlying the value expressed by maliput) is within 110% of ε.
+    // that the "rendering error in an OBJ vertex with respect to the
+    // maliput-expressed value" is within 10% of the "error-bound between
+    // the maliput-expressed position and the underlying ground-truth".
+    // In other words, we're aiming for the rendered vertex to be within
+    // 110% ε of the ground-truth position.
     //
     // The bound on error due to rounding to `n` places is `0.5 * 10^(-n)`,
     // so we want `n` such that `0.5 * 10^(-n) < ε / (sqrt(3) * 10)`.
