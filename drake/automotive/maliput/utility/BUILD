@@ -42,6 +42,15 @@ drake_cc_binary(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "generate_obj_test",
+    deps = [
+        ":utility",
+        "//drake/automotive/maliput/monolane",
+        "//drake/thirdParty:spruce",
+    ],
+)
+
+drake_cc_googletest(
     name = "generate_urdf_test",
     deps = [
         ":utility",
