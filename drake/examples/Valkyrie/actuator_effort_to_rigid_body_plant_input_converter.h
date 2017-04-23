@@ -12,12 +12,6 @@ namespace systems {
 template <typename T>
 class ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
  public:
-  using System<T>::DeclareInputPort;
-  using System<T>::DeclareOutputPort;
-  using System<T>::set_name;
-  using System<T>::EvalVectorInput;
-  using System<T>::get_input_port;
-
   ActuatorEffortToRigidBodyPlantInputConverter(
       const std::vector<const RigidBodyActuator*>& ordered_actuators);
 

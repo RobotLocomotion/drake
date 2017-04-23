@@ -9,7 +9,7 @@ namespace rendering {
 
 PoseBundleToDrawMessage::PoseBundleToDrawMessage() {
   this->DeclareAbstractInputPort();
-  this->DeclareAbstractOutputPort();
+  this->DeclareAbstractOutputPort(Value<lcmt_viewer_draw>());
 }
 
 PoseBundleToDrawMessage::~PoseBundleToDrawMessage() {}
@@ -49,12 +49,6 @@ void PoseBundleToDrawMessage::DoCalcOutput(const Context<double>& context,
     message.quaternion[i][2] = q.y();
     message.quaternion[i][3] = q.z();
   }
-}
-
-std::unique_ptr<AbstractValue>
-PoseBundleToDrawMessage::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& descriptor) const {
-  return AbstractValue::Make<lcmt_viewer_draw>(lcmt_viewer_draw());
 }
 
 }  // namespace rendering

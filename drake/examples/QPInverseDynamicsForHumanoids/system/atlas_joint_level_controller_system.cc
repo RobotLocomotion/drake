@@ -15,7 +15,9 @@ namespace qp_inverse_dynamics {
 AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
     const RigidBodyTree<double>& robot)
     : JointLevelControllerBaseSystem(robot) {
-  output_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_atlas_cmd_ =
+      DeclareAbstractOutputPort(systems::Value<bot_core::atlas_command_t>())
+          .get_index();
 
   // TODO(siyuan.feng): Load gains from some config.
   const int act_size = get_robot().get_num_actuators();
@@ -77,15 +79,6 @@ void AtlasJointLevelControllerSystem::DoCalcExtendedOutput(
   // deprecated simulation as well.
   // Consider removing this from atlas_command_t.
   msg.desired_controller_period_ms = 0;
-}
-
-std::unique_ptr<systems::AbstractValue>
-AtlasJointLevelControllerSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_DEMAND(output_port_index_atlas_cmd_ == descriptor.get_index());
-
-  return systems::AbstractValue::Make<bot_core::atlas_command_t>(
-      bot_core::atlas_command_t());
 }
 
 }  // namespace qp_inverse_dynamics

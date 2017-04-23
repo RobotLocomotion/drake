@@ -10,18 +10,11 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-AccelerometerXdotHack::AccelerometerXdotHack(int port_size)
-    : port_size_(port_size) {
+AccelerometerXdotHack::AccelerometerXdotHack(int port_size) {
   input_port_index_ =
       DeclareInputPort(kVectorValued, port_size).get_index();
   output_port_index_ =
       DeclareOutputPort(kVectorValued, port_size).get_index();
-}
-
-std::unique_ptr<BasicVector<double>>
-AccelerometerXdotHack::AllocateOutputVector(
-    const OutputPortDescriptor<double>& descriptor) const {
-  return std::make_unique<BasicVector<double>>(port_size_);
 }
 
 void AccelerometerXdotHack::DoCalcOutput(

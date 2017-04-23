@@ -33,11 +33,6 @@ class AccelerometerXdotHack : public systems::LeafSystem<double> {
   ///
   explicit AccelerometerXdotHack(int port_size);
 
-  /// Allocates the output vector. See this class' description for details of
-  /// this output vector.
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
   /// @name System input port descriptor accessors.
   ///@{
 
@@ -58,13 +53,11 @@ class AccelerometerXdotHack : public systems::LeafSystem<double> {
   }
   ///@}
 
- protected:
-  /// Filters the input vector and outputs the reults.
+ private:
+  // Filters the input vector and outputs the reults.
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
 
- private:
-  int port_size_{};
   int input_port_index_{};
   int output_port_index_{};
 };

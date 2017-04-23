@@ -247,6 +247,16 @@ class VectorValue : public Value<BasicVector<T>*> {
     return std::make_unique<VectorValue>(*this);
   }
 
+  /// Extract the contained basic vector and transfer ownership to
+  /// the caller. The VectorValue is left empty. This is useful when you have
+  /// been handed an AbstractValue but would like to use only the BasicVector
+  /// you know lurks inside. After extracting the vector you should delete
+  /// the now-empty shell of the AbstractValue.
+  std::unique_ptr<BasicVector<T>> ExtractBasicVector() {
+    this->set_value(nullptr);  // Clear the parent Value.
+    return std::move(owned_value_);
+  }
+
  private:
   void CheckInvariants() {
     DRAKE_DEMAND(owned_value_.get() == this->get_value());

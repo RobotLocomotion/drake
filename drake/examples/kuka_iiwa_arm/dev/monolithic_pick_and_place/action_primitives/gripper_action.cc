@@ -35,7 +35,10 @@ GripperAction::GripperAction(double desired_update_interval)
     : ActionPrimitive(desired_update_interval,
                       1 /* action_primitive_state_index */),
       internal_state_index_(0),
-      plan_output_port(this->DeclareAbstractOutputPort().get_index()),
+      plan_output_port(this->DeclareAbstractOutputPort(
+          [this](const systems::Context<double>*) {
+            return AllocatePlanOutputPort();
+          }).get_index()),
       input_port_primitive_input_(
           this->DeclareAbstractInputPort().get_index()) {}
 
@@ -47,18 +50,13 @@ GripperAction::AllocateExtendedAbstractState() const {
 
   return return_value;
 }
-std::unique_ptr<systems::AbstractValue>
-GripperAction::ExtendedAllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  std::unique_ptr<systems::AbstractValue> return_value;
-  if (descriptor.get_index() == plan_output_port) {
-    lcmt_schunk_wsg_command default_command;
-    default_command.target_position_mm = kMaxWidthInMm;
-    default_command.force = 0.0;
-    return_value =
-        systems::AbstractValue::Make<lcmt_schunk_wsg_command>(default_command);
-  }
-  return return_value;
+
+std::unique_ptr<systems::AbstractValue> GripperAction::AllocatePlanOutputPort()
+    const {
+  lcmt_schunk_wsg_command default_command;
+  default_command.target_position_mm = kMaxWidthInMm;
+  default_command.force = 0.0;
+  return systems::AbstractValue::Make<lcmt_schunk_wsg_command>(default_command);
 }
 
 void GripperAction::SetExtendedDefaultState(

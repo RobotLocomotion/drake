@@ -24,9 +24,6 @@ class AtlasJointLevelControllerSystem : public JointLevelControllerBaseSystem {
    */
   explicit AtlasJointLevelControllerSystem(const RigidBodyTree<double>& robot);
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   /**
    * Returns the output port for bot_core::atlas_command_t.
    */

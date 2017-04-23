@@ -161,14 +161,7 @@ SchunkWsgStatusSender(int input_size,
     : position_index_(position_index), velocity_index_(velocity_index) {
   this->set_name("SchunkWsgStatusSender");
   this->DeclareInputPort(systems::kVectorValued, input_size);
-  this->DeclareAbstractOutputPort();
-}
-
-std::unique_ptr<systems::AbstractValue>
-SchunkWsgStatusSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  lcmt_schunk_wsg_status msg{};
-  return std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg);
+  this->DeclareAbstractOutputPort(systems::Value<lcmt_schunk_wsg_status>());
 }
 
 void SchunkWsgStatusSender::DoCalcOutput(const Context<double>& context,
