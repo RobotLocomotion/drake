@@ -7,6 +7,7 @@
  */
 
 #include <vector>
+
 #include <gflags/gflags.h>
 #include "robotlocomotion/robot_plan_t.hpp"
 

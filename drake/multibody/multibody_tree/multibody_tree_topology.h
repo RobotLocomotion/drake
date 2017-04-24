@@ -20,13 +20,13 @@
 ///  - The topology is also stored in the Context so that the Multibody tree's
 ///    topology can be validated against the stored topology in debug builds.
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
-
 #include <algorithm>
 #include <utility>
 #include <vector>
+
+#include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {

@@ -1,5 +1,6 @@
 #include <memory>
 #include <string>
+
 #include <gflags/gflags.h>
 #include "bot_core/robot_state_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"

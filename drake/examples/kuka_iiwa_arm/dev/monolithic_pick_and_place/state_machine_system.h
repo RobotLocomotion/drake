@@ -4,6 +4,7 @@
 #include <string>
 
 #include "bot_core/robot_state_t.hpp"
+
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/synchronous_world_state.h"
 #include "drake/multibody/rigid_body_tree.h"
