@@ -1214,7 +1214,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
   const PackageMap package_map;
   return AddModelInstanceFromUrdfStringSearchingInRosPackages(
       urdf_string, package_map, root_dir, floating_base_type,
-      nullptr /* weld_to_frame */, tree);
+      weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
