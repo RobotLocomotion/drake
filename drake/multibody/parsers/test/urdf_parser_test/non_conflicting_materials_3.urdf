@@ -7,7 +7,7 @@ loading this, no exception should be thrown since the RGBA values for both are
 the same.
 -->
 
-<robot name="non_conflicting_materials_2">
+<robot name="non_conflicting_materials_3">
   <link name="base_link">
     <inertial>
       <mass value="1"/>
