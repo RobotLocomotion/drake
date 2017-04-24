@@ -97,6 +97,7 @@ sh_test(
         "test/sample.named_vector",
         ":lcm_vector_gen",
     ],
+    tags = ["sh_script"],
 )
 
 py_test(
@@ -111,6 +112,7 @@ sh_test(
     data = [
         ":clang-format-includes",
     ],
+    tags = ["sh_script"],
 )
 
 cpplint(data = ["test/gen/drake/CPPLINT.cfg"])

@@ -175,7 +175,7 @@ test:ubsan --test_tag_filters=-cpplint,-pycodestyle
 ### Memcheck build. ###
 build:memcheck --copt -g
 build:memcheck --run_under=//tools:valgrind
-test:memcheck --test_tag_filters=-cpplint,-pycodestyle
+test:memcheck --test_tag_filters=-cpplint,-pycodestyle,-sh_script
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:memcheck --test_timeout=300,1500,5400,18000
@@ -190,7 +190,7 @@ test:memcheck --test_timeout=300,1500,5400,18000
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools:valgrind
-test:fastmemcheck --test_tag_filters=-cpplint,-pycodestyle
+test:fastmemcheck --test_tag_filters=-cpplint,-pycodestyle,-sh_script
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:fastmemcheck --test_timeout=300,1500,5400,18000
