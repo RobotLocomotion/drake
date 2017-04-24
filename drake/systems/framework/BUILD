@@ -424,6 +424,7 @@ drake_cc_googletest(
         ":leaf_context",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
