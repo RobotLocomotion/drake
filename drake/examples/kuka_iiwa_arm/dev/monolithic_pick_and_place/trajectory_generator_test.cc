@@ -1,7 +1,7 @@
 /**
  *
  * @file This is a demo of the functionality of the
- * IiwaStateFeedbackPlanSource along with the
+ * IiwaPlanSource along with the
  * SchunkWsgTrajectoryGenerator.
  *
  */
@@ -13,9 +13,9 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/demo_diagram_builder.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/iiwa_state_feedback_plan.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
@@ -70,7 +70,7 @@ class PlanSourceTester : public systems::LeafSystem<double> {
     std::unique_ptr<systems::AbstractValue> return_value;
     std::unique_ptr<systems::AbstractValue> return_val;
 
-    /* allocate outputs for IiwaStateFeedbackPlanSource and
+    /* allocate outputs for IiwaPlanSource and
      * SchunkWsgTrajectoryGenerator */
     if (descriptor.get_index() == output_port_iiwa_plan_) {
       return_val = systems::AbstractValue::Make<robot_plan_t>(robot_plan_t());
@@ -180,6 +180,10 @@ int DoMain(void) {
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
   simulator.Initialize();
+  plant_and_estimators->InitializeIiwaPlan(
+      Eigen::VectorXd::Zero(7),
+      sys->GetMutableSubsystemContext(simulator.get_mutable_context(),
+                                      plant_and_estimators));
 
   simulator.StepTo(6.0);
 
