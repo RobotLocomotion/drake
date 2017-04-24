@@ -279,6 +279,18 @@ class Diagram : public System<T>,
     return false;
   }
 
+  std::unique_ptr<EventInfo> AllocateEventInfo() const final {
+    const int num_systems = num_subsystems();
+    DiagramEventInfo* info = new DiagramEventInfo(num_systems);
+    for (int i = 0; i < num_systems; ++i) {
+      std::unique_ptr<EventInfo> sub_info =
+          sorted_systems_[i]->AllocateEventInfo();
+      info->set_and_own_sub_event(i, std::move(sub_info));
+    }
+
+    return std::unique_ptr<EventInfo>(info);
+  }
+
   std::unique_ptr<Context<T>> AllocateContext() const override {
     const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
@@ -627,6 +639,20 @@ class Diagram : public System<T>,
     }
   }
 
+  void MyPublish(const Context<T>& context, const EventInfo* event_info) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      const EventInfo* subinfo = info->get_sub_event(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      sorted_systems_[i]->MyPublish(*subcontext, subinfo);
+    }
+  }
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
@@ -804,6 +830,11 @@ class Diagram : public System<T>,
   void DoCalcNextUpdateTime(const Context<T>& context,
                             UpdateActions<T>* actions) const override {
     DoCalcNextUpdateTimeImpl(context, actions);
+  }
+
+  void DoCalcNextUpdateTime(const Context<T>& context,
+                            EventInfo* event_info, T* time) const override {
+    DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
   /// Populates a vector of events that need to be handled before the integrator
@@ -1097,6 +1128,14 @@ class Diagram : public System<T>,
         "only works with types that are drake::is_numeric.");
   }
 
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value>::type
+  DoCalcNextUpdateTimeImpl(const Context<T1>&, EventInfo*, T1* time) const {
+    DRAKE_ABORT_MSG(
+        "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
+        "only works with types that are drake::is_numeric.");
+  }
+
   // Computes the next update time across all the scheduled events, for
   // scalar types that are numeric.
   //
@@ -1150,6 +1189,53 @@ class Diagram : public System<T>,
     // Request an unrestricted update event, if our subsystems want it.
     RequestUnrestrictedUpdateIfAny<T1>(
         unrestricted_updaters, &(actions->events));
+  }
+
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value>::type
+  DoCalcNextUpdateTimeImpl(const Context<T1>& context, EventInfo* event_info, T1* time) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
+    auto info = dynamic_cast<DiagramEventInfo*>(event_info);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
+
+    *time = std::numeric_limits<T1>::infinity();
+
+    // Iterate over the subsystems in sorted order, and harvest the most
+    // imminent updates.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
+      EventInfo* subinfo = info->get_mutable_sub_event(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      const T1 sub_time =
+          sorted_systems_[i]->CalcNextUpdateTime(*subcontext, subinfo);
+      if (sub_time < *time) {
+        // i is the earliest, need to clear all the previous ones.
+        for (int j = 0; j < i; ++j) {
+          info->get_mutable_sub_event(j)->clear();
+        }
+        *time = sub_time;
+      } else if (sub_time > *time) {
+        // i is too late, clear it.
+        subinfo->clear();
+      }
+    }
+  }
+
+  void DoMyGetPerStepEvents(const Context<T>& context,
+                            EventInfo* event_info) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    auto info = dynamic_cast<DiagramEventInfo*>(event_info);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      EventInfo* subinfo = info->get_mutable_sub_event(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+
+      sorted_systems_[i]->MyGetPerStepEvents(*subcontext, subinfo);
+    }
   }
 
   // A structural outline of a Diagram, produced by DiagramBuilder.
