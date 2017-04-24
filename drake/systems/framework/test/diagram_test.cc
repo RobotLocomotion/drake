@@ -1455,6 +1455,73 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }
 
+
+
+
+class MyEventTestSystem : public LeafSystem<double> {
+ public:
+  MyEventTestSystem(const std::string& name, double p) {
+    if (p > 0)
+      DeclarePublishPeriodSec(p);
+    else
+      DeclarePerStepAction(DiscreteEvent<double>::kPublishAction);
+    set_name(name);
+  }
+
+ private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoMyPublish(const Context<double>& context, EventInfo::TriggerType triggers) const override {
+    std::cout << get_name() << ": " << context.get_time() << ", trigger: " << triggers << "\n";
+  }
+};
+
+GTEST_TEST(MyEventTest, MyEventTestLeaf) {
+  MyEventTestSystem dut("sys", 0.2);
+  auto event_info = dut.AllocateEventInfo();
+  auto context = dut.CreateDefaultContext();
+
+  double time = dut.CalcNextUpdateTime(*context, event_info.get());
+  context->set_time(time);
+  dut.MyPublish(*context, event_info.get());
+}
+
+GTEST_TEST(MyEventTest, MyEventTestDiagram) {
+  std::unique_ptr<Diagram<double>> sub_diagram;
+  {
+    DiagramBuilder<double> builder;
+
+    builder.AddSystem<MyEventTestSystem>("sys0", 0.2);
+    builder.AddSystem<MyEventTestSystem>("sys1", 0.1);
+    builder.AddSystem<MyEventTestSystem>("sys2", 0.1);
+
+    sub_diagram = builder.Build();
+    sub_diagram->set_name("sub_diagram");
+  }
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram));
+  builder.AddSystem<MyEventTestSystem>("sys3", 0.1);
+  builder.AddSystem<MyEventTestSystem>("sys4", 0.);
+
+  auto dut = builder.Build();
+
+  auto periodic_event_info = dut->AllocateEventInfo();
+  auto perstep_event_info = dut->AllocateEventInfo();
+  auto event_info = dut->AllocateEventInfo();
+
+  auto context = dut->CreateDefaultContext();
+
+  double time = dut->CalcNextUpdateTime(*context, periodic_event_info.get());
+  dut->MyGetPerStepEvents(*context, perstep_event_info.get());
+
+  event_info->merge(periodic_event_info.get());
+  event_info->merge(perstep_event_info.get());
+
+  context->set_time(time);
+  dut->MyPublish(*context, event_info.get());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

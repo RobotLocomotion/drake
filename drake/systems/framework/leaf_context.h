@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <set>
 #include <utility>
@@ -17,6 +18,48 @@
 
 namespace drake {
 namespace systems {
+
+class LeafEventInfo : public EventInfo {
+ public:
+  void merge(const EventInfo* other_info) final {
+    if (other_info == this)
+      return;
+
+    const LeafEventInfo* other = dynamic_cast<const LeafEventInfo*>(other_info);
+    if (other == nullptr)
+      DRAKE_ABORT_MSG("cannot merger LeafEventInfo with non LeafEventInfo.");
+
+    for (const auto& other_pair : other->events_) {
+      add_event_trigger_pair(other_pair.first, other_pair.second);
+    }
+  }
+
+  TriggerType get_triggers(EventType event) const final {
+    auto it = events_.find(event);
+    if (it == events_.end()) {
+      return TriggerType::kUnknownTrigger;
+    }
+    return it->second;
+  }
+
+  void add_event_trigger_pair(EventType event, TriggerType trigger) {
+    auto it = events_.find(event);
+    if (it == events_.end()) {
+      events_.emplace(event, trigger);
+    } else {
+      int new_trigger = it->second;
+      new_trigger |= trigger;
+      it->second = static_cast<TriggerType>(new_trigger);
+    }
+  }
+
+  void clear() final {
+    events_.clear();
+  }
+
+ private:
+  std::map<EventType, TriggerType> events_;
+};
 
 /// %LeafContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a leaf System. Specifically, a
@@ -126,6 +169,21 @@ class LeafContext : public Context<T> {
   Parameters<T>& get_mutable_parameters() final {
     return *parameters_;
   }
+
+  /*
+  const EventTriggers<T>& get_event_triggers(const Event<T>& event) const final {
+    switch(event.event) {
+      case Event<T>::kPublish:
+        return publish_triggers_;
+      case Event<T>::kDiscreteUpdate:
+        return discrete_update_triggers_;
+      case Event<T>::kUnrestrictedUpdate:
+        return unrestricted_update_triggers_;
+      default:
+        DRAKE_ABORT_MSG("unknown event type.");
+    }
+  }
+  */
 
  protected:
   /// The caller owns the returned memory.

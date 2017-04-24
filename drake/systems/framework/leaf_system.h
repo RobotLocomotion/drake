@@ -56,6 +56,23 @@ class LeafSystem : public System<T> {
 
   ~LeafSystem() override {}
 
+  std::unique_ptr<EventInfo> AllocateEventInfo() const final {
+    return std::unique_ptr<EventInfo>(new LeafEventInfo());
+  }
+
+  void MyPublish(const Context<T>& context, const EventInfo* event_info) const final {
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    EventInfo::TriggerType trigger = info->get_triggers(EventInfo::EventType::kPublish);
+    // Actually have regiestered publish.
+    if (trigger != EventInfo::TriggerType::kUnknownTrigger)
+      DoMyPublish(context, trigger);
+  }
+
+  virtual void DoMyPublish(const Context<T>& context, EventInfo::TriggerType triggers) const {
+    unused(context);
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -236,6 +253,11 @@ class LeafSystem : public System<T> {
   void DoCalcNextUpdateTime(const Context<T>& context,
                             UpdateActions<T>* events) const override {
     DoCalcNextUpdateTimeImpl(context, events);
+  }
+
+  void DoCalcNextUpdateTime(const Context<T>& context,
+                            EventInfo* event_info, T* time) const override {
+    DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
   /// Allocates a vector that is suitable as an input value for @p descriptor.
@@ -702,6 +724,16 @@ class LeafSystem : public System<T> {
     *events = per_step_events_;
   }
 
+  void DoMyGetPerStepEvents(const Context<T>& context,
+                            EventInfo* event_info) const override {
+    LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    for (const auto& event : per_step_events_) {
+      EventInfo::EventType e = static_cast<EventInfo::EventType>(event.action);
+      info->add_event_trigger_pair(e, EventInfo::TriggerType::kPerStep);
+    }
+  }
+
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
   //
@@ -710,6 +742,15 @@ class LeafSystem : public System<T> {
   typename std::enable_if<!is_numeric<T1>::value>::type
   DoCalcNextUpdateTimeImpl(const Context<T1>& context,
                            UpdateActions<T1>* events) const {
+    DRAKE_ABORT_MSG(
+        "The default implementation of LeafSystem<T>::DoCalcNextUpdateTime "
+        "only works with types that are drake::is_numeric.");
+  }
+
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value>::type
+  DoCalcNextUpdateTimeImpl(const Context<T1>& context,
+                           EventInfo* event_info, T1* time) const {
     DRAKE_ABORT_MSG(
         "The default implementation of LeafSystem<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");
@@ -747,6 +788,41 @@ class LeafSystem : public System<T> {
     actions->time = min_time;
     for (const PeriodicEvent<T>* event : next_events) {
       actions->events.push_back(event->event);
+    }
+  }
+
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
+      const Context<T1>& context, EventInfo* event_info, T1* time) const {
+    LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+
+    T1 min_time = std::numeric_limits<double>::infinity();
+    // No periodic events events.
+    if (periodic_events_.empty()) {
+      // No discrete update.
+      *time = min_time;
+      return;
+    }
+
+    // Find the minimum next sample time across all registered events, and
+    // the set of registered events that will occur at that time.
+    std::vector<const PeriodicEvent<T>*> next_events;
+    for (const PeriodicEvent<T>& event : periodic_events_) {
+      T1 t = GetNextSampleTime(event, context.get_time());
+      if (t < min_time) {
+        min_time = t;
+        next_events = {&event};
+      } else if (t == min_time) {
+        next_events.push_back(&event);
+      }
+    }
+
+    // Write out the events that fire at min_time.
+    *time = min_time;
+    for (const PeriodicEvent<T>* event : next_events) {
+      EventInfo::EventType e = static_cast<EventInfo::EventType>(event->event.action);
+      info->add_event_trigger_pair(e, EventInfo::TriggerType::kPeriodic);
     }
   }
 

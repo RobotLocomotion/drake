@@ -34,7 +34,6 @@ namespace systems {
 /// state only, and unrestricted update events may modify any state. The
 /// event handlers do not apply state updates to the Context directly. Instead,
 /// they write the updates into a separate buffer that the Simulator provides.
-
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
@@ -113,6 +112,8 @@ class System {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
   virtual ~System() {}
+
+  virtual std::unique_ptr<EventInfo> AllocateEventInfo() const = 0;
 
   //----------------------------------------------------------------------------
   /// @name           Resource allocation and initialization
@@ -254,6 +255,8 @@ class System {
     event.action = DiscreteEvent<T>::kPublishAction;
     Publish(context, event);
   }
+
+  virtual void MyPublish(const Context<T>& context, const EventInfo* event_info) const {};
 
   /// This method publishes as a result of a specified `event`, such as the
   /// arrival of the sample time requested by `event`. Dispatches to
@@ -546,6 +549,24 @@ class System {
     actions->events.clear();
     DoCalcNextUpdateTime(context, actions);
     return actions->time;
+  }
+
+  T CalcNextUpdateTime(const Context<T>& context,
+                       EventInfo* event_info) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_ASSERT(event_info != nullptr);
+    event_info->clear();
+    T ret;
+    DoCalcNextUpdateTime(context, event_info, &ret);
+    return ret;
+  }
+
+  void MyGetPerStepEvents(const Context<T>& context,
+                          EventInfo* event_info) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_ASSERT(event_info != nullptr);
+    event_info->clear();
+    DoMyGetPerStepEvents(context, event_info);
   }
 
   /// This method is called by a Simulator in its Initialize() to gather all
@@ -1235,6 +1256,17 @@ class System {
                                     UpdateActions<T>* actions) const {
     unused(context);
     actions->time = std::numeric_limits<T>::infinity();
+  }
+
+  virtual void DoCalcNextUpdateTime(const Context<T>& context,
+                                    EventInfo* event_info, T* time) const {
+    unused(context);
+    *time = std::numeric_limits<T>::infinity();
+  }
+
+  virtual void DoMyGetPerStepEvents(const Context<T>& context,
+                                    EventInfo* event_info) const {
+    unused(context);
   }
 
   /// This method is intended to get all the events that need to be handled
