@@ -428,12 +428,20 @@ class IntegratorBase {
   /// @throws std::logic_error If the integrator has not been initialized or
   ///                          dt is negative **or** if the integrator
   ///                          is not operating in fixed step mode.
+  /// @throws std::runtime_error If the integrator was unable to take a step
+  ///         of the requested size.
   /// @sa StepExactlyVariable()
   void StepExactlyFixed(const T& dt) {
+    if (dt < 0) {
+      throw std::logic_error("StepExactlyFixed() called with a negative step "
+                                 "size.");
+    }
     if (!this->get_fixed_step_mode())
       throw std::logic_error("StepExactlyFixed() requires fixed stepping.");
-    const T inf = std::numeric_limits<double>::infinity();
-    StepOnceAtMost(inf, inf, dt);
+    if (!StepOnceFixedSize(dt)) {
+      throw std::runtime_error("Integrator was unable to take a single fixed "
+                                   "step of the requested size.");
+    }
   }
 
   /**
@@ -457,7 +465,26 @@ class IntegratorBase {
     num_steps_taken_ = 0;
     num_ode_evals_ = 0;
     error_check_failures_ = 0;
+    num_shrinkages_from_error_control_ = 0;
+    num_shrinkages_from_substep_failures_ = 0;
+    num_substep_failures_ = 0;
     DoResetStatistics();
+  }
+
+  /// Gets the number of failed sub-steps (implying step halving was required
+  /// to permit solving the necessary nonlinear system of equations).
+  int64_t get_num_substep_failures() const {
+    return num_substep_failures_;
+  }
+
+  /// Gets the number of step size shrinkages due to sub-step failures.
+  int64_t get_num_step_shrinkages_from_substep_failures() const {
+    return num_shrinkages_from_substep_failures_;
+  }
+
+  /// Gets the number of step size shrinkages due to error control.
+  int64_t get_num_step_shrinkages_from_error_control() const {
+    return num_shrinkages_from_error_control_;
   }
 
   /**
@@ -969,8 +996,13 @@ class IntegratorBase {
    * portion of this system forward exactly by a single step of size dt. This
    * method is called during the default DoStepOnceAtMost() method.
    * @param dt The integration step to take.
+   * @returns `true` if successful, `false` otherwise (due to, e.g., a
+   *           integrator convergence failure).
+   * @post If the time on entry is denoted `t`, the time and state will be
+   *       advanced to `t+dt` if the method returns `true`; otherwise, the
+   *       time and state should be reset to those at `t`.
    */
-  virtual void DoStepOnceFixedSize(const T& dt) = 0;
+  virtual bool DoStepOnceFixedSize(const T& dt) = 0;
 
   /**
    * Updates the integrator statistics, accounting for a step just taken of
@@ -1044,12 +1076,15 @@ class IntegratorBase {
 
   // Calls DoStepOnceFixedSize and does necessary pre-initialization and
   // post-cleanup. This method does not update general integrator statistics.
-  void StepOnceAtFixedSize(const T& dt) {
-    DoStepOnceFixedSize(dt);
+  // @returns `true` if successful, `false` otherwise (due to, e.g., integrator
+  //          convergence failure).
+  bool StepOnceFixedSize(const T& dt) {
+    if (!DoStepOnceFixedSize(dt))
+      return false;
     prev_step_size_ = dt;
+    return true;
   }
 
- private:
   // Reference to the system being simulated.
   const System<T>& system_;
 
@@ -1087,6 +1122,10 @@ class IntegratorBase {
   int64_t num_steps_taken_{0};
   int64_t error_check_failures_{0};
   int64_t num_ode_evals_{0};
+  int64_t num_shrinkages_from_error_control_{0};
+  int64_t num_shrinkages_from_substep_failures_{0};
+  int64_t num_substep_failures_{0};
+
 
   // Applied as diagonal matrices to weight state change variables.
   Eigen::VectorXd qbar_weight_, z_weight_;
@@ -1130,7 +1169,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
   // If the directed step is less than the minimum, just go ahead and take it.
   if (dt_max < get_minimum_step_size()) {
-    StepOnceAtFixedSize(dt_max);
+    StepOnceFixedSize(dt_max);
     return;
   }
 
@@ -1179,8 +1218,13 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
         current_step_size = dt_max;  // dt_max is roughly current step.
     }
 
-    // Attempt to take the step.
-    StepOnceAtFixedSize(current_step_size);
+    // Keep attempting to step until stepping successful.
+    while (!StepOnceFixedSize(current_step_size)) {
+      current_step_size /= 2;
+      dt_was_artificially_limited = true;
+      ++num_shrinkages_from_substep_failures_;
+      ++num_substep_failures_;
+    }
 
     //--------------------------------------------------------------------
     T err_norm = CalcStateChangeNorm(*get_error_estimate());
@@ -1198,6 +1242,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
               current_step_size < dt_max))
         set_smallest_adapted_step_size_taken(current_step_size);
     } else {
+      ++num_shrinkages_from_error_control_;
       report_error_check_failure();
 
       // Reset the time, state, and time derivative at t0.
@@ -1354,8 +1399,14 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 
 template <class T>
 std::pair<bool, T> IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
-  StepOnceAtFixedSize(max_dt);
-  return std::make_pair(true, max_dt);
+  bool subdivided = false;
+  T dt = max_dt;
+  while (!StepOnceFixedSize(dt)) {
+    dt /= 2;
+    subdivided = true;
+  }
+
+  return std::make_pair(subdivided, dt);
 }
 
 template <class T>

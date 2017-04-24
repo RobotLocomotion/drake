@@ -249,7 +249,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   const double c1 = initial_position;
   const double c2 = initial_velocity / omega;
 
-  // StepOnceAtFixedSize for 1 second.
+  // StepOnceFixedSize for 1 second.
   const double t_final = 1.0;
   for (double t = 0.0; t < t_final; t += dt)
     integrator_->StepOnceAtMost(dt, dt, dt);
@@ -283,7 +283,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
                              initial_velocity);
 
-  // StepOnceAtFixedSize for 1 second.
+  // StepOnceFixedSize for 1 second.
   double t_remaining = t_final - context_->get_time();
   do {
     integrator_->StepOnceAtMost(t_remaining, t_remaining, t_remaining);

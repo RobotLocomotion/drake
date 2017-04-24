@@ -107,7 +107,6 @@ TEST_F(ImplicitIntegratorTest, MiscAPI) {
   EXPECT_EQ(integrator.get_jacobian_computation_scheme(),
             ImplicitEulerIntegrator<double>::JacobianComputationScheme::
                 kForwardDifference);
-  EXPECT_TRUE(integrator.get_multistep_in_step_exactly_fixed_throws());
 
   // Test that setting the target accuracy and initial step size target is
   // successful.
@@ -408,7 +407,6 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_fixed_step_mode(true);
-  integrator.set_multistep_in_step_exactly_fixed_throws(false);
 
   // Use automatic differentiation because we can.
   integrator.set_jacobian_computation_scheme(
@@ -538,7 +536,6 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
                                              context.get());
   integrator.set_maximum_step_size(dt_);
   integrator.set_minimum_step_size_exceeded_throws(false);
-  integrator.set_multistep_in_step_exactly_fixed_throws(false);
 
   // Setting the minimum step size speeds the unit test without (in this case)
   // affecting solution accuracy.

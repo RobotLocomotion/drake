@@ -137,24 +137,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   }
   /// @}
 
-  /// Gets whether the integrator will throw an exception on failure to take a
-  /// single full step with StepExactlyFixed(). In implicit integrators,
-  /// it cannot be guaranteed that a single integration step of a desired size
-  /// is taken, which can be a desirable feature (e.g., consider "consistency"
-  /// in nonlinear programming for direct transcription methods as described
-  /// in the documentation for IntegratorBase::StepExactlyFixed().
-  /// By default, this function returns `true`; `false` allows
-  /// IntegratorBase::set_fixed_step_mode() and StepOnceFixedSize() to be used
-  /// in the typical manner (though multiple sub-steps may be taken).
-  /// @sa set_multistep_in_step_exactly_fixed_throws()
-  bool get_multistep_in_step_exactly_fixed_throws() const {
-    return multistep_in_step_exactly_fixed_throws_; }
-
-  /// Sets whether the integrator will throw an exception on failure to take a
-  /// single full step with StepExactlyFixed(). The default value is `true`.
-  void set_multistep_in_step_exactly_fixed_throws(bool flag) {
-    multistep_in_step_exactly_fixed_throws_ = flag; }
-
   /// The integrator supports error estimation.
   bool supports_error_estimation() const override { return true; }
 
@@ -204,17 +186,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     return num_iter_factorizations_;
   }
 
-  /// Gets the number of failed sub-steps (implying step halving was required
-  /// to permit solving the necessary nonlinear system of equations).
-  int get_num_substep_failures() const {
-    return num_substep_failures_;
-  }
-
-  /// Gets the number of step size shrinkages due to sub-step failures.
-  int get_num_step_shrinkages_from_substep_failures() const {
-    return num_shrinkages_from_substep_failures_;
-  }
-
   /// @}
 
   /// @name Error-estimation statistics functions.
@@ -246,11 +217,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     return num_err_est_iter_factorizations_;
   }
 
-  /// Gets the number of step size shrinkages due to error control.
-  int get_num_step_shrinkages_from_error_control() const {
-    return num_shrinkages_from_error_control_;
-  }
-
   /// @}
 
  protected:
@@ -260,23 +226,17 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
  private:
   VectorX<T> Solve(const MatrixX<T>& A, const VectorX<T>& b);
-  T StepOnceAtMostPaired(const T& dt, const T& requested_dt,
-                         VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
+  bool AttemptStepOncePaired(const T& dt, VectorX<T>* xtplus_euler,
+                             VectorX<T>* xtplus_trap);
   T StepOnceAtMostPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
-  T StepAbstract(T dt,
-                 const std::function<VectorX<T>()>& g,
-                 double scale,
-                 bool shrink_ok,
-                 VectorX<T>* xtplus);
-  T StepAbstract(T dt,
-                 const std::function<VectorX<T>()>& g,
-                 double scale,
-                 bool shrink_ok, const T& requested_dt,
-                 VectorX<T>* xtplus);
+  bool StepAbstract(const T& dt,
+                    const std::function<VectorX<T>()>& g,
+                    double scale,
+                    VectorX<T>* xtplus);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
-  void DoStepOnceFixedSize(const T& dt) override;
-  T StepImplicitEuler(const T& dt);
+  bool DoStepOnceFixedSize(const T& dt) override;
+  bool StepImplicitEuler(const T& dt);
   bool StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
                              VectorX<T>* xtplus);
   MatrixX<T> ComputeForwardDiffJacobian(const System<T>& system,
@@ -328,15 +288,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
   // The computed iteration matrix.
   MatrixX<T> A_;
-
-  // Does integrator throw an exception on failure to take a single full step
-  // with DoStepOnceFixedSize()?
-  bool multistep_in_step_exactly_fixed_throws_{true};
-
-  // Statistics that indicate why step sizes decrease.
-  int num_shrinkages_from_error_control_{0};
-  int num_shrinkages_from_substep_failures_{0};
-  int num_substep_failures_{0};
 
   // Various combined statistics.
   int num_jacobian_evaluations_{0};
