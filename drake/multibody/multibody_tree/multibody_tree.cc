@@ -62,8 +62,8 @@ MultibodyTree<T>::CreateDefaultContext() const {
   if (!topology_is_valid()) {
     throw std::logic_error(
         "Attempting to create a Context for a  MultibodyTree with an invalid "
-            "topology. MultibodyTree::Compile() must be called before attempting "
-            "to create a context.");
+        "topology. MultibodyTree::Finalize() must be called before attempting "
+        "to create a context.");
   }
 
   // TODO(amcastro-tri): pass the MultibodyTreeTopology instead of just the

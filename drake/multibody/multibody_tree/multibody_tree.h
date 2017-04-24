@@ -1,6 +1,6 @@
 #pragma once
 
-// We allow checking for the occurrence of dynamic memory allocation is Debug
+// We allow checking for the occurrence of dynamic memory allocation in Debug
 // builds.
 #ifndef NDEBUG
 // Define this symbol to enable runtime tests for allocations.

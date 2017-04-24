@@ -130,7 +130,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   }
 
   const Isometry3<T>& get_pose_in_world(
-      const systems::Context<T>& context) const
+      const systems::Context<T>& context) const {
     return this->get_parent_tree().get_body_pose_in_world(
         context, this->get_index());
   }

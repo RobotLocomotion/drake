@@ -224,12 +224,12 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_EQ(model->get_num_bodies(), 3);
 
   // Verify we cannot create a Context until we have a valid topology.
-  EXPECT_FALSE(model->topology_is_valid());  // Not valid before Compile().
+  EXPECT_FALSE(model->topology_is_valid());  // Not valid before Finalize().
   EXPECT_ANY_THROW(model->CreateDefaultContext());
 
-  // Compile() stage.
+  // Finalize() stage.
   EXPECT_NO_THROW(model->Finalize());
-  EXPECT_TRUE(model->topology_is_valid());  // Valid after Compile().
+  EXPECT_TRUE(model->topology_is_valid());  // Valid after Finalize().
 
   // Create Context.
   std::unique_ptr<Context<double>> context;
@@ -246,9 +246,9 @@ TEST_F(PendulumTests, CreateContext) {
 
 #ifndef NDEBUG
 TEST_F(PendulumTests, AssertEigenDynamicMemoryAllocation) {
-  // Compile() stage.
-  EXPECT_NO_THROW(model_.Compile());
-  EXPECT_TRUE(model_.topology_is_valid());  // Valid after Compile().
+  // Finalize() stage.
+  EXPECT_NO_THROW(model_.Finalize());
+  EXPECT_TRUE(model_.topology_is_valid());  // Valid after Finalize().
 
   // Create Context.
   std::unique_ptr<Context<double>> context;
