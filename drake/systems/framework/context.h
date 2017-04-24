@@ -27,6 +27,8 @@ struct StepInfo {
 
 class EventInfo {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventInfo)
+
   enum EventType {
     kUnknownEvent = 0,
     kPublish = 1,
@@ -36,10 +38,13 @@ class EventInfo {
 
   enum TriggerType {
     kUnknownTrigger = 0,
-    kPeriodic = 1,
-    kPerStep = (1 << 1),
-    kWitness = (1 << 2),
+    kForced = (1 << 0),
+    kPeriodic = (1 << 1),
+    kPerStep = (1 << 2),
+    kWitness = (1 << 3),
   };
+
+  EventInfo() = default;
 
   virtual ~EventInfo() {}
 
@@ -48,6 +53,10 @@ class EventInfo {
   virtual TriggerType get_triggers(EventType event) const = 0;
 
   virtual void clear() = 0;
+
+  static bool trigger_has_forced(TriggerType trigger) {
+    return trigger & TriggerType::kForced;
+  }
 
   static bool trigger_has_periodic(TriggerType trigger) {
     return trigger & TriggerType::kPeriodic;

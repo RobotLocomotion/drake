@@ -23,6 +23,8 @@ namespace systems {
 
 class DiagramEventInfo : public EventInfo {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventInfo)
+
   explicit DiagramEventInfo(int size) :
       EventInfo(),
       sub_event_info_(size),

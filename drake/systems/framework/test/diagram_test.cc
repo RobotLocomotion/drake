@@ -598,7 +598,8 @@ class PublishingSystem : public LeafSystem<double> {
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
-  void DoPublish(const Context<double>& context) const override {
+  void DoPublish(const Context<double>& context,
+                 EventInfo::TriggerType triggers) const override {
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
@@ -828,14 +829,14 @@ class TestPublishingSystem : public LeafSystem<double> {
 
   ~TestPublishingSystem() override {}
 
-
   bool published() { return published_; }
 
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
-  void DoPublish(const Context<double>& context) const override {
+  void DoPublish(const Context<double>& context,
+                 EventInfo::TriggerType triggers) const override {
     published_ = true;
   }
 
@@ -965,17 +966,15 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 // Tests that a publish action is taken at 19 sec.
 TEST_F(DiscreteStateTest, Publish) {
   context_->set_time(18.5);
-  UpdateActions<double> actions;
-  diagram_.CalcNextUpdateTime(*context_, &actions);
+  auto event_info = diagram_.AllocateEventInfo();
+  double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
 
-  EXPECT_EQ(19.0, actions.time);
-  ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kPublishAction, actions.events[0].action);
+  EXPECT_EQ(19.0, time);
 
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
   context_->set_time(19.0);
-  diagram_.Publish(*context_, actions.events[0]);
+  diagram_.Publish(*context_, event_info.get());
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
@@ -1354,7 +1353,8 @@ class PerStepActionTestSystem : public LeafSystem<double> {
         "wow" + std::to_string(int_num);
   }
 
-  void DoPublish(const Context<double>& context) const override {
+  void DoPublish(const Context<double>& context,
+                 EventInfo::TriggerType triggers) const override {
     publish_ctr_++;
   }
 
@@ -1403,7 +1403,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   std::vector<DiscreteEvent<double>> events;
   diagram->GetPerStepEvents(*context, &events);
 
-  EXPECT_EQ(events.size(), 3);
+  EXPECT_EQ(events.size(), 2);
 
   auto tmp_discrete_state = diagram->AllocateDiscreteVariables();
   std::unique_ptr<State<double>> tmp_state;
@@ -1428,11 +1428,9 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   }
 
   // Publishes last.
-  for (const auto& event : events) {
-    if (event.action == DiscreteEvent<double>::kPublishAction) {
-      diagram->Publish(*context, event);
-    }
-  }
+  auto event_info = diagram->AllocateEventInfo();
+  diagram->MyGetPerStepEvents(*context, event_info.get());
+  diagram->Publish(*context, event_info.get());
 
   // Only sys2 published once.
   EXPECT_EQ(sys0->get_publish_ctr(), 0);
@@ -1455,9 +1453,6 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }
 
-
-
-
 class MyEventTestSystem : public LeafSystem<double> {
  public:
   MyEventTestSystem(const std::string& name, double p) {
@@ -1472,7 +1467,7 @@ class MyEventTestSystem : public LeafSystem<double> {
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
-  void DoMyPublish(const Context<double>& context, EventInfo::TriggerType triggers) const override {
+  void DoPublish(const Context<double>& context, EventInfo::TriggerType triggers) const override {
     std::cout << get_name() << ": " << context.get_time() << ", trigger: " << triggers << "\n";
   }
 };
@@ -1484,7 +1479,7 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
 
   double time = dut.CalcNextUpdateTime(*context, event_info.get());
   context->set_time(time);
-  dut.MyPublish(*context, event_info.get());
+  dut.Publish(*context, event_info.get());
 }
 
 GTEST_TEST(MyEventTest, MyEventTestDiagram) {
@@ -1519,7 +1514,7 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   event_info->merge(perstep_event_info.get());
 
   context->set_time(time);
-  dut->MyPublish(*context, event_info.get());
+  dut->Publish(*context, event_info.get());
 }
 
 }  // namespace

@@ -57,19 +57,25 @@ class LeafSystem : public System<T> {
   ~LeafSystem() override {}
 
   std::unique_ptr<EventInfo> AllocateEventInfo() const final {
-    return std::unique_ptr<EventInfo>(new LeafEventInfo());
+    LeafEventInfo* ptr = new LeafEventInfo();
+    return std::unique_ptr<EventInfo>(ptr);
   }
 
-  void MyPublish(const Context<T>& context, const EventInfo* event_info) const final {
+  void Publish(const Context<T>& context, const EventInfo* event_info = nullptr) const final {
+    if (event_info == nullptr) {
+      DoPublish(context, EventInfo::TriggerType::kForced);
+      return;
+    }
+
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     EventInfo::TriggerType trigger = info->get_triggers(EventInfo::EventType::kPublish);
     // Actually have regiestered publish.
     if (trigger != EventInfo::TriggerType::kUnknownTrigger)
-      DoMyPublish(context, trigger);
+      DoPublish(context, trigger);
   }
 
-  virtual void DoMyPublish(const Context<T>& context, EventInfo::TriggerType triggers) const {
+  virtual void DoPublish(const Context<T>& context, EventInfo::TriggerType triggers) const {
     unused(context);
   }
 

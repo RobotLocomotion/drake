@@ -250,13 +250,12 @@ class System {
   /// of the first step of a simulation (after initialization) and after the
   /// final simulation step (after a final update to discrete variables).
   /// Dispatches to DoPublish().
+  /*
   void Publish(const Context<T>& context) const {
     DiscreteEvent<T> event;
     event.action = DiscreteEvent<T>::kPublishAction;
     Publish(context, event);
   }
-
-  virtual void MyPublish(const Context<T>& context, const EventInfo* event_info) const {};
 
   /// This method publishes as a result of a specified `event`, such as the
   /// arrival of the sample time requested by `event`. Dispatches to
@@ -276,6 +275,12 @@ class System {
     } else {
       event.do_publish(context);
     }
+  }
+  */
+
+  virtual void Publish(const Context<T>& context,
+      const EventInfo* event_info = nullptr) const {
+    unused(context, event_info);
   }
   //@}
 
@@ -1195,7 +1200,7 @@ class System {
   /// This method is called only from the public non-virtual Publish() which
   /// will have already error-checked `context` so you may assume that it is
   /// valid for this %System.
-  virtual void DoPublish(const Context<T>& context) const { unused(context); }
+  // virtual void DoPublish(const Context<T>& context) const { unused(context); }
 
   /// Updates the @p discrete_state on sample events.
   /// Override it, along with DoCalcNextUpdateTime(), if your System has any

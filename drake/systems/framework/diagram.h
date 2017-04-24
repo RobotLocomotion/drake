@@ -639,17 +639,25 @@ class Diagram : public System<T>,
     }
   }
 
-  void MyPublish(const Context<T>& context, const EventInfo* event_info) const override {
+  void Publish(const Context<T>& context, const EventInfo* event_info = nullptr) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
     DRAKE_DEMAND(diagram_context != nullptr);
-    DRAKE_DEMAND(info != nullptr);
+    if (event_info == nullptr) {
+      for (int i = 0; i < num_subsystems(); ++i) {
+        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+        DRAKE_DEMAND(subcontext != nullptr);
+        sorted_systems_[i]->Publish(*subcontext, nullptr);
+      }
+      return;
+    }
 
+    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       const EventInfo* subinfo = info->get_sub_event(i);
       DRAKE_DEMAND(subcontext != nullptr);
-      sorted_systems_[i]->MyPublish(*subcontext, subinfo);
+      sorted_systems_[i]->Publish(*subcontext, subinfo);
     }
   }
 
@@ -710,6 +718,7 @@ class Diagram : public System<T>,
         &DiagramState<T>::get_substate);
   }
 
+  /*
   void DoPublish(const Context<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -719,6 +728,7 @@ class Diagram : public System<T>,
       system->Publish(*diagram_context->GetSubsystemContext(i));
     }
   }
+  */
 
   /// The @p generalized_velocity vector must have the same size and ordering as
   /// the generalized velocity in the ContinuousState that this Diagram reserves
@@ -872,7 +882,7 @@ class Diagram : public System<T>,
                  !unrestricted_updaters.empty());
 
     // Request a publish event, if our subsystems want it.
-    RequestPublishIfAny<T>(publishers, events);
+    // RequestPublishIfAny<T>(publishers, events);
 
     // Request an update event, if our subsystems want it.
     RequestDiscreteUpdateIfAny<T>(updaters, events);
@@ -1058,23 +1068,6 @@ class Diagram : public System<T>,
         "Scalar type conversion is only supported from Diagram<double>.");
   }
 
-  // Adds a Diagram<T1>::HandlePublish callback to handle diagram level
-  // publish in @p my_events if @p sub_events is not empty.
-  template <typename T1 = T>
-  void RequestPublishIfAny(
-      const internal::SubsystemIdAndEventPairs<T1>& sub_events,
-      std::vector<DiscreteEvent<T1>>* my_events) const {
-    if (!sub_events.empty()) {
-      DiscreteEvent<T1> event;
-      event.action = DiscreteEvent<T1>::kPublishAction;
-      event.do_publish = std::bind(&Diagram<T1>::HandlePublish, this,
-                                   std::placeholders::_1, /* context */
-                                   sub_events);
-      DRAKE_ASSERT(my_events != nullptr);
-      my_events->push_back(event);
-    }
-  }
-
   // Adds a Diagram<T1>::HandleUnrestrictedUpdate callback to handle
   // diagram level unrestricted update to @p my_events if @p sub_events is
   // not empty.
@@ -1181,7 +1174,7 @@ class Diagram : public System<T>,
                  !unrestricted_updaters.empty());
 
     // Request a publish event, if our subsystems want it.
-    RequestPublishIfAny<T1>(publishers, &(actions->events));
+    // RequestPublishIfAny<T1>(publishers, &(actions->events));
 
     // Request an update event, if our subsystems want it.
     RequestDiscreteUpdateIfAny<T1>(updaters, &(actions->events));
@@ -1463,28 +1456,6 @@ class Diagram : public System<T>,
       names.insert(name);
     }
     return names.size() == sorted_systems_.size();
-  }
-
-  /// Handles Publish callbacks that were registered in DoCalcNextUpdateTime.
-  /// Dispatches the Publish events to the subsystems that requested them.
-  void HandlePublish(
-      const Context<T>& context,
-      const internal::SubsystemIdAndEventPairs<T>& sub_actions) const {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-
-    for (const auto& action : sub_actions) {
-      const int index = action.first;
-      const DiscreteEvent<T>& event = action.second;
-      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
-
-      const Context<T>* subcontext =
-          diagram_context->GetSubsystemContext(index);
-      DRAKE_DEMAND(subcontext != nullptr);
-
-      DRAKE_ASSERT(event.action == DiscreteEvent<T>::kPublishAction);
-      sorted_systems_[index]->Publish(*subcontext, event);
-    }
   }
 
   /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.

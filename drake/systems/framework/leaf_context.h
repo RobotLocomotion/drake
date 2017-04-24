@@ -21,6 +21,10 @@ namespace systems {
 
 class LeafEventInfo : public EventInfo {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventInfo)
+
+  LeafEventInfo() = default;
+
   void merge(const EventInfo* other_info) final {
     if (other_info == this)
       return;
