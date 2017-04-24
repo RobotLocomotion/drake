@@ -287,14 +287,13 @@ class AutomotiveSimulator {
   // Adds the PoseAggregator.
   systems::rendering::PoseAggregator<T>* aggregator_{};
 
-  // Adds a CarVisApplicator system, which takes the poses of the vehicles and
-  // outputs the poses of the visual elements that make up the visualization of
-  // the vehicles. For a system-level architecture diagram, see #5541.
+  // Takes the poses of the vehicles and outputs the poses of the visual
+  // elements that make up the visualization of the vehicles. For a system-level
+  // architecture diagram, see #5541.
   CarVisApplicator<T>* car_vis_applicator_{};
 
-  // Adds a PoseBundleToDrawMessage system, which takes the output of
-  // car_vis_applicator_ and creates an lcmt_viewer_draw message containing the
-  // latest poses of the visual elements.
+  // Takes the output of car_vis_applicator_ and creates an lcmt_viewer_draw
+  // message containing the latest poses of the visual elements.
   systems::rendering::PoseBundleToDrawMessage* bundle_to_draw_{};
 
   // Takes the output of bundle_to_draw_ and passes it to lcm_ for publishing.
