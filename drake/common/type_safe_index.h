@@ -33,7 +33,7 @@ namespace drake {
 /// The type-safe index is a _stripped down_ `int`. Each uniquely declared
 /// index type has the following properties:
 ///
-///   - Index values are _explicitly_ constructed from `int` values.
+///   - Valid index values are _explicitly_ constructed from `int` values.
 ///   - The index is implicitly convertible to an `int` (to serve as an index).
 ///   - The index supports increment, decrement, and in-place addition and
 ///     subtraction to support standard index-like operations.
@@ -165,10 +165,11 @@ class TypeSafeIndex {
   /// Implicit conversion-to-int operator.
   operator int() const {
     DRAKE_ASSERT_VOID(CheckInvariants("Converting to an int.", index_));
-    return index_; }
+    return index_;
+  }
 
-  /// Reports if the index is valid; the only acceptable operation on an invalid
-  /// index.
+  /// Reports if the index is valid--the only operation on an invalid index
+  /// that doesn't throw an exception in Debug builds.
   bool is_valid() const { return index_ >= 0; }
 
   /// @name Arithmetic operators.

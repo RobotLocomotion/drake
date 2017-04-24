@@ -182,7 +182,7 @@ GTEST_TEST(TypeSafeIndex, ValueAssignment) {
 
 //-------------------------------------------------------------------
 
-// This codes tests the operations on invalid indices. In release mode, the
+// This code tests the operations on invalid indices. In release mode, the
 // operations are "valid", but in debug they throw an exception. This is *not*
 // all inclusive. Some invalid tests are included in the previous operator-
 // specific tests, encapsulated within EXPECT_THROW_IF_ARMED.
