@@ -200,6 +200,38 @@ GTEST_TEST(URDFParserTest,
   EXPECT_EQ(tree->get_num_velocities(), 36);
 }
 
+// Tests that AddModelInstanceFromUrdfString()'s weld_to_frame parameter works.
+// This prevents a regression of #5928.
+GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfStringWeldToFrame) {
+  const string model_file = GetDrakePath() + "/multibody/parsers/test/"
+      "urdf_parser_test/non_conflicting_materials_1.urdf";
+  const string model_string = ReadTextFile(model_file);
+  const string kModelName = "non_conflicting_materials_1";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  const ModelInstanceIdTable table1 = AddModelInstanceFromUrdfString(
+      model_string, "." /* root_dir */, kQuaternion,
+      nullptr /* weld_to_frame */, tree.get());
+  const int model_instance_id_1 = table1.at(kModelName);
+  // In the following variable, "B" represents the base_link's frame while "F"
+  // represents the frame of the model instance that's being added (i.e., the
+  // model instance with ID model_instance_id_2).
+  const Eigen::Isometry3d X_BF = Eigen::Isometry3d::Identity();
+  RigidBody<double>* base_body = tree->FindBody("base_link",
+      kModelName, model_instance_id_1);
+  auto weld_to_frame = std::make_shared<RigidBodyFrame<double>>("base_frame",
+    base_body, X_BF);
+  const ModelInstanceIdTable table2 = AddModelInstanceFromUrdfString(
+      model_string, "." /* root_dir */, kQuaternion,
+      weld_to_frame, tree.get());
+  const int model_instance_id_2 = table2.at(kModelName);
+
+  // If the URDF parser's weld_to_frame parameter wasn't working, there would be
+  // two base bodies, one for each model instance in the tree.
+  EXPECT_EQ(tree->FindBaseBodies().size(), 1u);
+  EXPECT_EQ(tree->FindBaseBodies(model_instance_id_1).size(), 1u);
+  EXPECT_EQ(tree->FindBaseBodies(model_instance_id_2).size(), 0u);
+}
 
 }  // namespace
 }  // namespace parsers
