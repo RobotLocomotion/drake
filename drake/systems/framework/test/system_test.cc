@@ -37,6 +37,10 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
+  virtual std::unique_ptr<EventInfo> AllocateEventInfo() const override {
+    return nullptr;
+  }
+
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override {}
 
@@ -339,6 +343,10 @@ class ValueIOTestSystem : public System<T> {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     context->SetNumInputPorts(this->get_num_input_ports());
     return std::unique_ptr<Context<T>>(context.release());
+  }
+
+  virtual std::unique_ptr<EventInfo> AllocateEventInfo() const override {
+    return std::unique_ptr<EventInfo>(new LeafEventInfo());
   }
 
   void SetDefaultState(const Context<T>& context,

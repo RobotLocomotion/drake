@@ -25,6 +25,43 @@ struct StepInfo {
   T time_sec{0.0};
 };
 
+class EventInfo {
+ public:
+  enum EventType {
+    kUnknownEvent = 0,
+    kPublish = 1,
+    kDiscreteUpdate = 2,
+    kUnrestrictedUpdate = 3,
+  };
+
+  enum TriggerType {
+    kUnknownTrigger = 0,
+    kPeriodic = 1,
+    kPerStep = (1 << 1),
+    kWitness = (1 << 2),
+  };
+
+  virtual ~EventInfo() {}
+
+  virtual void merge(const EventInfo* other) = 0;
+
+  virtual TriggerType get_triggers(EventType event) const = 0;
+
+  virtual void clear() = 0;
+
+  static bool trigger_has_periodic(TriggerType trigger) {
+    return trigger & TriggerType::kPeriodic;
+  }
+
+  static bool trigger_has_per_step(TriggerType trigger) {
+    return trigger & TriggerType::kPerStep;
+  }
+
+  static bool trigger_has_Witness(TriggerType trigger) {
+    return trigger & TriggerType::kWitness;
+  }
+};
+
 /// Context is an abstract base class template that represents all
 /// the inputs to a System: time, state, and input vectors. The framework
 /// provides two concrete subclasses of Context: LeafContext (for
