@@ -152,7 +152,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   friend class MultibodyTree<T>;
 
   const MultibodyTree<T>* parent_tree_{nullptr};
-  
+
   ElementIndexType index_;
 };
 
