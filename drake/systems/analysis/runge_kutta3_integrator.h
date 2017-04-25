@@ -79,7 +79,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
  private:
   void DoInitialize() override;
   std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
-  void DoStepOnceFixedSize(const T& dt) override;
+  bool DoStepOnceFixedSize(const T& dt) override;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;

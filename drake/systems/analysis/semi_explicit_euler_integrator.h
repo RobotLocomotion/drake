@@ -100,7 +100,7 @@ class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
   bool supports_error_estimation() const override { return false; }
 
  private:
-  void DoStepOnceFixedSize(const T& dt) override;
+  bool DoStepOnceFixedSize(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
@@ -112,7 +112,7 @@ class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
  * by IntegratorBase::StepOnce().
  */
 template <class T>
-void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
+bool SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = this->get_mutable_context();
   const auto& xc = context->get_mutable_continuous_state();
@@ -144,6 +144,9 @@ void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // Update the time.
   context->set_time(context->get_time() + dt);
+
+  // This integrator always succeeds at taking the step.
+  return true;
 }
 }  // namespace systems
 }  // namespace drake

@@ -76,7 +76,7 @@ std::pair<bool, T> RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& max_dt) {
 }
 
 template <class T>
-void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
+bool RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   using std::abs;
 
   // Find the continuous state xc within the Context, just once.
@@ -126,6 +126,9 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   xc->ScaleAndAddToVector(1.0, err_est_vec_);
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
+
+  // RK3 always succeeds in taking its desired step.
+  return true;
 }
 
 }  // namespace systems
