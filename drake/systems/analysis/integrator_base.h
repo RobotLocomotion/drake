@@ -190,13 +190,15 @@ class IntegratorBase {
    * Gets the maximum step size that may be taken by this integrator. This is
    * a soft maximum: the integrator may stretch it by as much as 1% to hit a
    * discrete event.
+   * @sa set_minimum_step_size()
    */
   // TODO(edrumwri): Update this comment when stretch size is configurable.
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
    * Sets the minimum step size that may be taken by this integrator.
-   * All integration steps will be at least this large.
+   * All integration steps will be at least this large *except those
+   * specifically requested by users*.
    * @param min_step_size a non-negative value. Setting this value to zero
    *                      is equivalent to saying "I don't know what the
    *                      practical limit on step size is, but I don't want
@@ -204,6 +206,7 @@ class IntegratorBase {
    *                      of my ignorance." Practically speaking, setting this
    *                      value to zero can effectively make an integration
    *                      "hang".
+   * @sa get_minimum_step_size()
    */
   void set_minimum_step_size(const T& min_step_size) {
     DRAKE_ASSERT(min_step_size >= 0.0);
@@ -212,6 +215,7 @@ class IntegratorBase {
 
   /**
    * Gets the minimum step size that may be taken by this integrator.
+   * @sa set_minimum_step_size()
    */
   const T& get_minimum_step_size() const { return min_step_size_; }
 
@@ -849,7 +853,9 @@ class IntegratorBase {
   /// Gets whether the integrator should throw an exception when the integrator
   /// wishes to select a step smaller than the minimum (for, e.g., purposes of
   /// error control). Default is `true`. If `false`, integrator will advance
-  /// time and state using the minimum specified step size, if necessary.
+  /// time and state using the minimum specified step size, if necessary. Note
+  /// that the minimum step size behavior is not followed when the *user*
+  /// requests a small integration step (such a step is always taken).
   bool get_minimum_step_size_exceeded_throws() const {
     return min_step_exceeded_throws_; }
 

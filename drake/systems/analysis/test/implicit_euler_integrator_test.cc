@@ -146,7 +146,8 @@ TEST_F(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
   integrator.Initialize();
 
   // Integrate for the desired step size.
-  EXPECT_THROW(integrator.IntegrateWithSingleFixedStep(huge_dt), std::runtime_error);
+  EXPECT_THROW(integrator.IntegrateWithSingleFixedStep(huge_dt),
+               std::runtime_error);
 }
 
 TEST_F(ImplicitIntegratorTest, ContextAccess) {
