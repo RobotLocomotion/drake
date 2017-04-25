@@ -111,9 +111,9 @@ drake_cc_binary(
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_plant",
+        "//drake/common:call_matlab",
         "//drake/common:drake_path",
         "//drake/lcm",
-        "//drake/lcm:lcm_call_matlab",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",

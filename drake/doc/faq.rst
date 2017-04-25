@@ -84,6 +84,27 @@ non support of hardware-accelerated rendering. To address this, go to
 ``Virtual Machine Settings``, and check the ``Accelerate 3D Graphics`` box under
 Display settings; now the simulations draw properly.
 
+.. _faq_drake_visualizer_segfault:
+
+Why Does drake-visualizer Segfault Upon Start?
+==============================================
+
+Symptom: VTK6 is installed but Drake's CMake-based super-build is configured to
+download and build against VTK5 using the technique described in
+:ref:`here <faq_cmake_vtk_version_crash>`. When starting ``drake-visualizer``,
+it immediately segfaults::
+
+    $ cd drake-distro
+    $ ./build/install/bin/drake-visualizer
+    Segmentation fault (core dumped)
+
+Solution: The problem is ``drake-visualizer`` is correctly being built against
+VTK5, but is incorrectly run against VTK6. To fix this problem, modify the
+``LD_LIBRARY_PATH`` and ``PYTHONPATH`` environment variables to ensure VTK5 is
+prioritized over VTK6 as described
+:ref:`here <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.
+For more information, see `this comment <https://github.com/RobotLocomotion/drake/issues/5280#issuecomment-282036045>`_.
+
 .. _faq_drake_visualizer_no_module_named_vtk_common_core_python:
 
 Why does Drake Visualizer crash with a "No module named vtkCommonCorePython" Error?

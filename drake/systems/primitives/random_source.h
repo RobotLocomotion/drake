@@ -47,11 +47,11 @@ class RandomSource : public LeafSystem<double> {
   // Computes a random number and stores it in the discrete state.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      drake::systems::DiscreteState<double>* updates) const override {
-    const int N = updates->get_discrete_state(0)->size();
+      drake::systems::DiscreteValues<double>* updates) const override {
+    const int N = updates->size();
     for (int i = 0; i < N; i++) {
       double random_value = distribution_(generator_);
-      updates->get_mutable_discrete_state(0)->SetAtIndex(0, random_value);
+      (*updates)[0] = random_value;
     }
   }
 

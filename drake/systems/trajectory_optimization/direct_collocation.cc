@@ -24,11 +24,13 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
 
   context_->SetTimeStateAndParametersFrom(context);
 
-  // Allocate the input port and keep an alias around.
-  input_port_value_ = new FreestandingInputPortValue(
-      system->AllocateInputVector(system->get_input_port(0)));
-  std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
-  context_->SetInputPortValue(0, std::move(input_port_value));
+  if (context_->get_num_input_ports() > 0) {
+    // Allocate the input port and keep an alias around.
+    input_port_value_ = new FreestandingInputPortValue(
+        system->AllocateInputVector(system->get_input_port(0)));
+    std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+    context_->SetInputPortValue(0, std::move(input_port_value));
+  }
 
   // Add the dynamic constraints.
   auto constraint =
@@ -66,9 +68,9 @@ class RunningCostEndWrapper : public solvers::Constraint {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
-    TaylorVecXd wrapped_x = x;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    AutoDiffVecXd wrapped_x = x;
     wrapped_x(0) *= 0.5;
     constraint_->Eval(wrapped_x, y);
   };
@@ -95,9 +97,9 @@ class RunningCostMidWrapper : public solvers::Constraint {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
-    TaylorVecXd wrapped_x(x.rows() - 1);
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    AutoDiffVecXd wrapped_x(x.rows() - 1);
     wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
     wrapped_x(0) = (x(0) + x(1)) * 0.5;
     constraint_->Eval(wrapped_x, y);

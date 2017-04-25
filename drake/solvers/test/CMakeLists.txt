@@ -42,10 +42,11 @@ target_link_libraries(drakeRotationConstraintVisualization
         drakeRotationConstraint
         drakeLcm
         drakeLCMTypes)
-endif(lcm_FOUND)
+endif()
 
-drake_add_cc_test(convex_optimization_test)
-target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+# drake_add_cc_test(convex_optimization_test)
+# target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
 
 drake_add_cc_test(equality_constrained_qp_solver_test)
 target_link_libraries(equality_constrained_qp_solver_test drakeCommon drakeOptimizationTest)
@@ -56,11 +57,13 @@ target_link_libraries(nonlinear_program_test drakeCommon drakeOptimizationTest)
 drake_add_cc_test(linear_system_solver_test)
 target_link_libraries(linear_system_solver_test drakeCommon drakeOptimizationTest)
 
-drake_add_cc_test(mixed_integer_optimization_test)
-target_link_libraries(mixed_integer_optimization_test drakeCommon drakeOptimizationTest)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+# drake_add_cc_test(mixed_integer_optimization_test)
+# target_link_libraries(mixed_integer_optimization_test drakeCommon drakeOptimizationTest)
 
-drake_add_cc_test(gurobi_solver_test)
-target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+# drake_add_cc_test(gurobi_solver_test)
+# target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
 
 drake_add_cc_test(mosek_solver_test)
 target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
@@ -74,19 +77,23 @@ target_link_libraries(ipopt_solver_test drakeOptimizationTest)
 drake_add_cc_test(snopt_solver_test)
 target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
-if (mosek_FOUND)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+# if (mosek_FOUND)
+if (FALSE)
   drake_add_cc_test(rotation_constraint_test rotation_constraint_test.cc)
   set_tests_properties(rotation_constraint_test PROPERTIES TIMEOUT 900)
   target_link_libraries(rotation_constraint_test drakeRotationConstraint)
-endif(mosek_FOUND)
+endif()
 
-if (gurobi_FOUND)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+# if (gurobi_FOUND)
+if (FALSE)
   if(NOT APPLE)
 	  drake_add_cc_test(rotation_constraint_limit_test)
 	  set_tests_properties(rotation_constraint_limit_test PROPERTIES TIMEOUT 900)
 	  target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
   endif()
-endif(gurobi_FOUND)
+endif()
 
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
@@ -101,4 +108,4 @@ if (lcm_FOUND)
           drakeOptimization
           drakeRotationConstraint
           drakeRotationConstraintVisualization)
-endif(lcm_FOUND)
+endif()

@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <string>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -194,7 +195,16 @@ inline std::ostream& operator<<(std::ostream& out,
   return out;
 }
 
+/** Enables use of identifiers with to_string. It requires ADL to work. So,
+ it should be invoked as: `to_string(id);` and should be preceded by
+ `using std::to_string`.*/
+template <typename Tag> inline
+std::string to_string(const drake::geometry::Identifier<Tag>& id) {
+  return std::to_string(id.get_value());
+}
+
 }  // namespace geometry
+
 }  // namespace drake
 
 namespace std {

@@ -3,6 +3,7 @@
 
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -136,17 +137,7 @@ drake_cc_library(
         ":dummy_value",
         ":number_traits",
         ":polynomial",
-    ],
-)
-
-drake_cc_library(
-    name = "is_dynamic_castable",
-    testonly = 1,
-    hdrs = [
-        "test/is_dynamic_castable.h",
-    ],
-    deps = [
-        ":nice_type_name",
+        "//drake/math:matrix_util",
     ],
 )
 
@@ -161,17 +152,8 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "type_safe_index",
-    srcs = [],
-    hdrs = ["type_safe_index.h"],
-    deps = [
-        ":common",
-        ":nice_type_name",
-    ],
-)
-
 # Miscellaneous utilities.
+
 drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
@@ -218,6 +200,33 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "is_dynamic_castable",
+    testonly = 1,
+    hdrs = ["test/is_dynamic_castable.h"],
+    deps = [
+        ":nice_type_name",
+    ],
+)
+
+cc_proto_library(
+    name = "matlab_rpc",
+    srcs = [
+        "matlab_rpc.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "call_matlab",
+    testonly = 1,
+    srcs = ["call_matlab.cc"],
+    hdrs = ["call_matlab.h"],
+    deps = [
+        "common",
+        "matlab_rpc",
+    ],
+)
+
+drake_cc_library(
     name = "monomial",
     srcs = ["monomial.cc"],
     hdrs = ["monomial.h"],
@@ -234,6 +243,19 @@ drake_cc_library(
     deps = [
         ":common",
     ],
+)
+
+drake_cc_library(
+    name = "is_cloneable",
+    srcs = [],
+    hdrs = ["is_cloneable.h"],
+)
+
+drake_cc_library(
+    name = "copyable_unique_ptr",
+    srcs = [],
+    hdrs = ["copyable_unique_ptr.h"],
+    deps = [":is_cloneable"],
 )
 
 drake_cc_library(
@@ -265,6 +287,32 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "type_safe_index",
+    hdrs = ["type_safe_index.h"],
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "unused",
+    hdrs = ["unused.h"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_library(
+    name = "protobuf",
+    srcs = ["protobuf.cc"],
+    hdrs = ["protobuf.h"],
+    deps = [
+        "@protobuf//:protobuf",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -289,6 +337,13 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":extract_double",
+    ],
+)
+
+drake_cc_googletest(
+    name = "call_matlab_test",
+    deps = [
+        ":call_matlab",
     ],
 )
 
@@ -336,6 +391,21 @@ drake_cc_googletest(
     name = "drake_assert_test_compile",
     deps = [
         ":common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_cloneable_test",
+    deps = [
+        ":is_cloneable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "copyable_unique_ptr_test",
+    deps = [
+        ":copyable_unique_ptr",
+        ":is_dynamic_castable",
     ],
 )
 
@@ -446,6 +516,16 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":random_polynomial_matrix",
+    ],
+)
+
+drake_cc_googletest(
+    name = "protobuf_test",
+    data = [
+        "test/test_string.txt",
+    ],
+    deps = [
+        ":protobuf",
     ],
 )
 

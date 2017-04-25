@@ -131,8 +131,8 @@ class TestSystem : public System<double> {
 
   // The default update function.
   void DoCalcDiscreteVariableUpdates(
-      const Context<double> &context,
-      DiscreteState<double> *discrete_state) const override {
+      const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const override {
     ++update_count_;
   }
 
@@ -144,8 +144,8 @@ class TestSystem : public System<double> {
 
   // A custom update function with additional argument @p num, which may be
   // bound in DoCalcNextUpdateTime.
-  void DoCalcDiscreteUpdatesNumber(const Context<double> &context,
-                                   DiscreteState<double> *discrete_state,
+  void DoCalcDiscreteUpdatesNumber(const Context<double>& context,
+                                   DiscreteValues<double>* discrete_state,
                                    int num) const {
     updated_numbers_.push_back(num);
   }
@@ -234,7 +234,7 @@ TEST_F(SystemTest, DiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DiscreteState<double>> update =
+  std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
   system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
                                       update.get());
@@ -264,7 +264,7 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DiscreteState<double>> update =
+  std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
   system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
                                       update.get());

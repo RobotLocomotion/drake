@@ -77,7 +77,6 @@ class SimpleCar : public systems::LeafSystem<T> {
                     systems::rendering::PoseVector<T>* pose) const;
   void ImplCalcVelocity(const SimpleCarParams<T>& params,
                         const SimpleCarState<T>& state,
-                        const DrivingCommand<T>& input,
                         systems::rendering::FrameVelocity<T>* velocity) const;
   void ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
                                const SimpleCarState<T>& state,

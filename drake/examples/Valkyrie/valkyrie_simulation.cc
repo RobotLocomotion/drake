@@ -118,13 +118,17 @@ int main(int argc, const char** argv) {
       LcmPublisherSystem::Make<robot_state_t>("EST_ROBOT_STATE", &lcm));
 
   // Visualizer.
-  const DrakeVisualizer& visualizer_publisher =
+  DrakeVisualizer& visualizer_publisher =
       *builder.template AddSystem<DrakeVisualizer>(tree, &lcm);
-  const ContactResultsToLcmSystem<double>& contact_viz =
+  ContactResultsToLcmSystem<double>& contact_viz =
       *builder.template AddSystem<ContactResultsToLcmSystem<double>>(tree);
   auto& contact_results_publisher = *builder.AddSystem(
       LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm));
+
+  contact_results_publisher.set_publish_period(1e-3);
+  visualizer_publisher.set_publish_period(1e-3);
+  robot_state_publisher.set_publish_period(1e-3);
 
   // Connections.
   // LCM message to desired effort conversion.
@@ -198,6 +202,7 @@ int main(int argc, const char** argv) {
   simulator->reset_integrator<SemiExplicitEulerIntegrator<double>>(*diagram,
                                                                    3e-4,
                                                                    context);
+  simulator->set_publish_every_time_step(false);
 
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);

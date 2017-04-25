@@ -132,15 +132,18 @@ int DoMain() {
 
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
       BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance);
+  model_ptr->set_name("plant");
 
   auto model =
       builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
           std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
+  model->set_name("plant_with_state_estimator");
 
   const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
   drake::lcm::DrakeLcm lcm;
   DrakeVisualizer* visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
+  visualizer->set_name("visualizer");
   builder.Connect(model->get_output_port_plant_state(),
                   visualizer->get_input_port(0));
   visualizer->set_publish_period(kIiwaLcmStatusPeriod);
@@ -149,19 +152,24 @@ int DoMain() {
   auto iiwa_command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
                                                                  &lcm));
+  iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
+  iiwa_command_receiver->set_name("iwwa_command_receiver");
 
   auto iiwa_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
                                                                &lcm));
+  iiwa_status_pub->set_name("iiwa_status_publisher");
   iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
+  iiwa_status_sender->set_name("iiwa_status_sender");
 
   // TODO(siyuan): Connect this to kuka_planner runner once it generates
   // reference acceleration.
   auto iiwa_zero_acceleration_source =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
           Eigen::VectorXd::Zero(7));
+  iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
   builder.Connect(iiwa_command_sub->get_output_port(0),
                   iiwa_command_receiver->get_input_port(0));
@@ -180,17 +188,21 @@ int DoMain() {
   auto wsg_command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
+  wsg_command_sub->set_name("wsg_command_subscriber");
   auto wsg_trajectory_generator =
       builder.AddSystem<SchunkWsgTrajectoryGenerator>(
           model->get_output_port_wsg_state().size(), 0);
+  wsg_trajectory_generator->set_name("wsg_trajectory_generator");
 
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
+  wsg_status_pub->set_name("wsg_status_publisher");
   wsg_status_pub->set_publish_period(schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       model->get_output_port_wsg_state().size(), 0, 1);
+  wsg_status_sender->set_name("wsg_status_sender");
 
   builder.Connect(wsg_command_sub->get_output_port(0),
                   wsg_trajectory_generator->get_command_input_port());
@@ -205,6 +217,9 @@ int DoMain() {
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "IIWA_STATE_EST", &lcm));
+  iiwa_state_pub->set_name("iiwa_state_publisher");
+  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
+
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port(0));
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
@@ -212,6 +227,9 @@ int DoMain() {
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
           "OBJECT_STATE_EST", &lcm));
+  box_state_pub->set_name("box_state_publisher");
+  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
+
   builder.Connect(model->get_output_port_box_robot_state_msg(),
                   box_state_pub->get_input_port(0));
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);

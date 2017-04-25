@@ -57,12 +57,11 @@ namespace sensors {
 /// frame to rotate about the base frame's +Z axis, while the pitch causes it to
 /// rotate about this sensor's -Y axis.
 ///
-/// This system has one output port containing the sensed values. It is a
-/// vector representation of a depth image. For each pitch, there is a fixed
-/// number of yaw values as specified as num_pixel_cols(). Each of these vector
+/// This system has two output ports. The first contains the sensed values
+/// stored in a DepthSensorOutput object. For each pitch, there is a fixed
+/// number of yaw values as specified by num_pixel_cols(). Each of these vector
 /// of yaw values that share the same pitch are contiguous in the output vector.
-/// In other words, here is some pseudocode describing this sensor's output
-/// vector:
+/// In other words, here is pseudocode describing this sensor's output vector:
 ///
 /// <pre>
 ///  for i in 0 to num_pixel_rows():
@@ -72,8 +71,8 @@ namespace sensors {
 ///                            pitch = min_pitch() + i * pitch_increment()]
 /// </pre>
 ///
-/// If nothing is detected in between min_range and max_range, an invalid value
-/// of DepthSensor::kTooFar is provided. Is something is detected but the
+/// If nothing is detected between min_range and max_range, an invalid value of
+/// DepthSensor::kTooFar is provided. Is something is detected but the
 /// distance is less than  the sensor's minimum sensing range, a value of
 /// DepthSensor::kTooClose is provided.
 ///
@@ -81,6 +80,10 @@ namespace sensors {
 /// not expected to occur in this system's output because it models an ideal
 /// sensor in which sensing errors do not occur. It is expected to be used by
 /// non-ideal depth sensors.
+///
+/// The second output port contains a PoseVector, which is `X_WS`, i.e., the
+/// transform from this sensor's frame to the world frame. It is useful for
+/// converting this sensor's point cloud into the world frame.
 ///
 /// @ingroup sensor_systems
 ///
@@ -103,10 +106,7 @@ class DepthSensor : public systems::LeafSystem<double> {
   ///
   /// @param[in] frame The frame to which this depth sensor is attached.
   ///
-  /// @param[in] specification The specifications of this sensor. An alias of
-  /// this specification is stored as a class member variable, meaning its
-  /// lifetime must exceed the lifetime of the %DepthSensor object created by
-  /// this constructor.
+  /// @param[in] specification The specifications of this sensor.
   ///
   DepthSensor(const std::string& name, const RigidBodyTree<double>& tree,
               const RigidBodyFrame<double>& frame,
@@ -150,6 +150,10 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// sensed values.
   const OutputPortDescriptor<double>& get_sensor_state_output_port() const;
 
+  /// Returns a descriptor of the `X_WS` output port, which contains the
+  /// transform from this sensor's frame to the world frame.
+  const OutputPortDescriptor<double>& get_pose_output_port() const;
+
   friend std::ostream& operator<<(std::ostream& out,
                                   const DepthSensor& depth_sensor);
 
@@ -170,12 +174,14 @@ class DepthSensor : public systems::LeafSystem<double> {
   const std::string name_;
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double> frame_;
-  const DepthSensorSpecification& specification_;
+  const DepthSensorSpecification specification_;
   int input_port_index_{};
-  int output_port_index_{};
+  int depth_output_port_index_{};
+  int pose_output_port_index_{};
 
   // A cache of where a depth measurement ray endpoint would be if the maximum
-  // range were achieved. This is cached to avoid repeated allocation.
+  // range were achieved. This is cached to avoid repeated allocation and
+  // computation.
   Eigen::Matrix3Xd raycast_endpoints_;
 };
 

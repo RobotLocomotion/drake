@@ -109,6 +109,7 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
+        "//drake/systems/lcm:lcm_driven_loop",
         "//drake/systems/primitives:demultiplexer",
         "@bot_core_lcmtypes//:lib",
         "@gflags//:gflags",
@@ -250,6 +251,7 @@ drake_cc_googletest(
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
+        ":iiwa_common",
         ":iiwa_plan_source",
         "//drake/systems/framework",
     ],

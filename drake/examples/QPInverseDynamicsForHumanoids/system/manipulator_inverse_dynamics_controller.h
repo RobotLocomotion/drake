@@ -102,8 +102,8 @@ class ManipulatorInverseDynamicsController
   /**
    * Returns the output port for QpInput from plan eval.
    */
-  const systems::OutputPortDescriptor<double>&
-  get_output_port_qp_input() const {
+  const systems::OutputPortDescriptor<double>& get_output_port_qp_input()
+      const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_qp_input_);
   }
@@ -111,8 +111,8 @@ class ManipulatorInverseDynamicsController
   /**
    * Returns the output port for QpOutput from inverse dynamics.
    */
-  const systems::OutputPortDescriptor<double>&
-  get_output_port_qp_output() const {
+  const systems::OutputPortDescriptor<double>& get_output_port_qp_output()
+      const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_qp_output_);
   }

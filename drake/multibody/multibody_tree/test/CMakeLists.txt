@@ -8,6 +8,9 @@ target_link_libraries(multibody_tree_creation_tests drakeMultibodyTree)
 drake_add_cc_test(rotational_inertia_tests)
 target_link_libraries(rotational_inertia_tests Eigen3::Eigen drakeCommon)
 
+drake_add_cc_test(spatial_inertia_tests)
+target_link_libraries(spatial_inertia_tests Eigen3::Eigen drakeCommon)
+
 drake_add_cc_test(unit_inertia_tests)
 target_link_libraries(unit_inertia_tests Eigen3::Eigen drakeCommon)
 

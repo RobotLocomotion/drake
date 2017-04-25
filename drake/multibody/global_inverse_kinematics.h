@@ -121,12 +121,13 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    *   - p_WFo is the position of frame `F`'s origin, expressed and measured in
    *     frame `W`. `p_WFo = X_WF.translation()`.
    * @default is the identity transform.
+   * @retval binding The newly added constraint, together with the bound
+   * variables.
    */
-  void AddWorldPositionConstraint(int body_idx, const Eigen::Vector3d& p_BQ,
-                                  const Eigen::Vector3d& box_lb_F,
-                                  const Eigen::Vector3d& box_ub_F,
-                                  const Eigen::Isometry3d& X_WF =
-                                      Eigen::Isometry3d::Identity());
+  solvers::Binding<solvers::LinearConstraint> AddWorldPositionConstraint(
+      int body_idx, const Eigen::Vector3d& p_BQ,
+      const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
+      const Eigen::Isometry3d& X_WF = Eigen::Isometry3d::Identity());
 
   /**
    * Add a constraint that the angle between the body orientation and the
@@ -148,8 +149,10 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @param desired_orientation The desired orientation of the body.
    * @param angle_tol The tolerance on the angle between the body orientation
    * and the desired orientation. Unit is radians.
+   * @retval binding The newly added constraint, together with the bound
+   * variables.
    */
-  void AddWorldOrientationConstraint(
+  solvers::Binding<solvers::LinearConstraint> AddWorldOrientationConstraint(
       int body_idx, const Eigen::Quaterniond& desired_orientation,
       double angle_tol);
 

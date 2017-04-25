@@ -7,6 +7,7 @@
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/maliput_railcar_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
+#include "drake/automotive/idm_controller.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
@@ -42,7 +43,20 @@ AutomotiveSimulator<T>::AutomotiveSimulator()
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator(
     std::unique_ptr<lcm::DrakeLcmInterface> lcm)
-    : lcm_(std::move(lcm)) {}
+    : lcm_(std::move(lcm)) {
+  aggregator_ =
+      builder_->template AddSystem<systems::rendering::PoseAggregator<T>>();
+  aggregator_->set_name("pose_aggregator");
+
+  car_vis_applicator_ =
+      builder_->template AddSystem<CarVisApplicator<T>>();
+  car_vis_applicator_->set_name("car_vis_applicator");
+
+  bundle_to_draw_ =
+      builder_->template
+          AddSystem<systems::rendering::PoseBundleToDrawMessage>();
+  bundle_to_draw_->set_name("bundle_to_draw");
+}
 
 template <typename T>
 AutomotiveSimulator<T>::~AutomotiveSimulator() {
@@ -87,6 +101,7 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  coord_transform->set_name(name + "_transform");
   const auto& descriptor = aggregator_->AddSingleInput(name, id);
   builder_->Connect(simple_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
@@ -117,6 +132,7 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
   vehicles_[id] = trajectory_car;
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  coord_transform->set_name(name + "_transform");
   const auto& descriptor = aggregator_->AddSingleInput(name, id);
   builder_->Connect(trajectory_car->pose_output(),
                     aggregator_->get_input_port(descriptor.get_index()));
@@ -168,6 +184,31 @@ int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
                     aggregator_->get_input_port(descriptor.get_index()));
 
   car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
+  return id;
+}
+
+template <typename T>
+int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
+    const std::string& name,
+    const LaneDirection& initial_lane_direction,
+    const MaliputRailcarParams<T>& params,
+    const MaliputRailcarState<T>& initial_state) {
+  const int id = AddPriusMaliputRailcar(name, initial_lane_direction, params,
+                                        initial_state);
+  const MaliputRailcar<T>* railcar =
+      dynamic_cast<const MaliputRailcar<T>*>(vehicles_.at(id));
+  DRAKE_DEMAND(railcar != nullptr);
+  auto controller =
+      builder_->template AddSystem<IdmController<T>>(*road_);
+  controller->set_name(name + "_IdmController");
+
+  builder_->Connect(railcar->pose_output(), controller->ego_pose_input());
+  builder_->Connect(railcar->velocity_output(),
+                    controller->ego_velocity_input());
+  builder_->Connect(aggregator_->get_output_port(0),
+                    controller->traffic_input());
+  builder_->Connect(controller->acceleration_output(),
+                    railcar->command_input());
   return id;
 }
 
@@ -249,10 +290,10 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const MaliputRailcarStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
+  auto publisher =  builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system.state_output(), publisher->get_input_port(0));
 }
 
@@ -261,10 +302,10 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const SimpleCarStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
+  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system.state_output(), publisher->get_input_port(0));
 }
 
@@ -273,10 +314,10 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const SimpleCarStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
+  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
 }
 
@@ -285,18 +326,11 @@ void AutomotiveSimulator<T>::AddPublisher(
     const SimpleCarToEulerFloatingJoint<T>& system, int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   static const EulerFloatingJointStateTranslator translator;
-  auto publisher =
-      builder_->template AddSystem<LcmPublisherSystem>(
-          std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE", translator,
-          lcm_.get());
+  const std::string channel =
+      std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE";
+  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
+      channel, translator, lcm_.get());
   builder_->Connect(system, *publisher);
-}
-
-template <typename T>
-void AutomotiveSimulator<T>::AddSystem(
-    std::unique_ptr<systems::System<T>> system) {
-  DRAKE_DEMAND(!has_started());
-  builder_->AddSystem(std::move(system));
 }
 
 template <typename T>
@@ -359,9 +393,8 @@ void AutomotiveSimulator<T>::SendLoadRobotMessage(
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
-  DRAKE_DEMAND(!has_started());
-  TransmitLoadMessage();
+void AutomotiveSimulator<T>::Build() {
+  DRAKE_DEMAND(diagram_ == nullptr);
 
   builder_->Connect(
       aggregator_->get_output_port(0),
@@ -377,6 +410,18 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
       lcm_publisher_->get_input_port(0));
 
   diagram_ = builder_->Build();
+  diagram_->set_name("AutomotiveSimulator");
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
+  DRAKE_DEMAND(!has_started());
+  if (diagram_ == nullptr) {
+    Build();
+  }
+
+  TransmitLoadMessage();
+
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
 
   InitializeSimpleCars();
@@ -414,10 +459,8 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     const MaliputRailcarParams<T>& params = pair.second.first;
     const MaliputRailcarState<T>& initial_state = pair.second.second;
 
-    systems::LeafContext<T>* context =
-        dynamic_cast<systems::LeafContext<T>*>(
-            diagram_->GetMutableSubsystemContext(
-                simulator_->get_mutable_context(), car));
+    systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
+         simulator_->get_mutable_context(), car);
     DRAKE_DEMAND(context != nullptr);
 
     systems::VectorBase<T>* context_state =
@@ -428,8 +471,7 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     state->set_value(initial_state.get_value());
 
     MaliputRailcarParams<T>* railcar_system_params =
-        dynamic_cast<MaliputRailcarParams<T>*>(
-            context->get_mutable_numeric_parameter(0));
+        car->get_mutable_parameters(context);
     DRAKE_DEMAND(railcar_system_params != nullptr);
     railcar_system_params->set_value(params.get_value());
   }

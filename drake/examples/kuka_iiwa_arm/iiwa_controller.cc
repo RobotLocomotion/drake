@@ -19,6 +19,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/demultiplexer.h"
@@ -40,35 +41,44 @@ const int kNumJoints = 7;
 // Create a system which has an integrator on the interpolated
 // reference position for received plans.
 int DoMain() {
-  DRAKE_ABORT_MSG("this example is temporarily broken, and will be "
-      "fixed after #5672 is merged");
-
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
   auto status_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_status>(
           kLcmStatusChannel, &lcm));
+  status_sub->set_name("status_sub");
+
   auto status_receiver = builder.AddSystem<IiwaStatusReceiver>();
+  status_receiver->set_name("status_receiver");
+
   auto plan_sub =
       builder.AddSystem(systems::lcm::LcmSubscriberSystem::Make<robot_plan_t>(
           kLcmPlanChannel, &lcm));
+  plan_sub->set_name("plan_sub");
+
   auto plan_source =
       builder.AddSystem<IiwaPlanSource>(GetDrakePath() + kIiwaUrdf);
+  plan_source->set_name("plan_source");
+
   auto target_demux =
       builder.AddSystem<systems::Demultiplexer>(kNumJoints * 2, kNumJoints);
+  target_demux->set_name("target_demux");
+
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>(
           kLcmCommandChannel, &lcm));
-  command_pub->set_publish_period(kIiwaLcmStatusPeriod);
+  command_pub->set_name("command_pub");
+
   auto command_sender = builder.AddSystem<IiwaCommandSender>();
+  command_sender->set_name("command_sender");
 
   builder.Connect(plan_sub->get_output_port(0),
                   plan_source->get_plan_input_port());
   builder.Connect(status_sub->get_output_port(0),
-                  plan_source->get_status_input_port());
-  builder.Connect(status_sub->get_output_port(0),
                   status_receiver->get_input_port(0));
+  builder.Connect(status_receiver->get_measured_position_output_port(),
+                  plan_source->get_state_input_port());
   builder.Connect(plan_source->get_output_port(0),
                   target_demux->get_input_port(0));
   builder.Connect(target_demux->get_output_port(0),
@@ -77,39 +87,37 @@ int DoMain() {
                   command_pub->get_input_port(0));
   auto diagram = builder.Build();
 
-  lcm.StartReceiveThread();
   drake::log()->info("controller started");
 
-  // Loops until the first status message arrives.
-  std::unique_ptr<systems::Context<double>> initial_context =
-      diagram->CreateDefaultContext();
-  while (true) {
-    // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
-    const lcmt_iiwa_status* msg =
-        status_receiver->EvalInputValue<lcmt_iiwa_status>(
-            diagram->GetSubsystemContext(*initial_context, status_receiver), 0);
-    initial_context->set_time(static_cast<double>(msg->utime) / 1e6);
-    if (initial_context->get_time() != 0) break;
-  }
-  double iiwa_time = initial_context->get_time();
-  drake::log()->info("status received");
+  systems::lcm::LcmDrivenLoop loop(
+      *diagram, *status_sub, nullptr, &lcm,
+      std::make_unique<
+          systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
 
-  systems::Simulator<double> simulator(*diagram, std::move(initial_context));
-  simulator.set_publish_every_time_step(false);
-  simulator.Initialize();
+  // Waits for the first message.
+  const systems::AbstractValue& first_msg = loop.WaitForMessage();
+  double msg_time =
+      loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
+  const lcmt_iiwa_status& first_status = first_msg.GetValue<lcmt_iiwa_status>();
+  VectorX<double> q0(kNumJoints);
+  DRAKE_DEMAND(kNumJoints == first_status.num_joints);
+  for (int i = 0; i < kNumJoints; i++)
+    q0[i] = first_status.joint_position_measured[i];
 
-  // Loop forever, continuing to update the simulation based on the incoming
-  // status message.
-  while (true) {
-    while (iiwa_time <= simulator.get_context().get_time()) {
-      const lcmt_iiwa_status* msg =
-          status_receiver->EvalInputValue<lcmt_iiwa_status>(
-              diagram->GetSubsystemContext(
-                  simulator.get_context(), status_receiver), 0);
-      iiwa_time = static_cast<double>(msg->utime) / 1e6;
-    }
-    simulator.StepTo(iiwa_time);
-  }
+  systems::Context<double>* diagram_context = loop.get_mutable_context();
+  systems::Context<double>* status_sub_context =
+      diagram->GetMutableSubsystemContext(diagram_context, status_sub);
+  status_sub->SetDefaults(status_sub_context);
+
+  // Explicit initialization.
+  diagram_context->set_time(msg_time);
+  auto plan_source_context =
+      diagram->GetMutableSubsystemContext(diagram_context, plan_source);
+  plan_source->Initialize(msg_time, q0,
+                          plan_source_context->get_mutable_state());
+
+  loop.RunToSecondsAssumingInitialized();
+  return 0;
 }
 
 }  // namespace

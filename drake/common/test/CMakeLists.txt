@@ -3,6 +3,9 @@
 drake_add_cc_test(autodiff_overloads_test)
 target_link_libraries(autodiff_overloads_test drakeCommon)
 
+drake_add_cc_test(copyable_unique_ptr_test)
+target_link_libraries(copyable_unique_ptr_test drakeCommon)
+
 drake_add_cc_test(double_overloads_test)
 target_link_libraries(double_overloads_test drakeCommon)
 
@@ -29,6 +32,9 @@ target_link_libraries(functional_form_test drakeCommon)
 
 drake_add_cc_test(is_approx_equal_abstol_test)
 target_link_libraries(is_approx_equal_abstol_test drakeCommon)
+
+drake_add_cc_test(is_cloneable_test)
+target_link_libraries(is_cloneable_test drakeCommon)
 
 drake_add_cc_test(never_destroyed_test)
 target_link_libraries(never_destroyed_test drakeCommon)

@@ -58,13 +58,15 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
 
   plant_ = builder_.template AddSystem<RigidBodyPlantThatPublishesXdot<double>>(
       move(tree), xdot_channel_name, lcm_);
-
+  plant_->set_name("plant");
   xdot_hack_ = builder_.template AddSystem<AccelerometerXdotHack>(
     plant_->get_num_states());
+  xdot_hack_->set_name("xdot_hack");
   translator_ =
       make_unique<LcmtDrakeSignalTranslator>(plant_->get_num_states());
   lcm_subscriber_ = builder_.template AddSystem<LcmSubscriberSystem>(
       xdot_channel_name, *translator_, lcm_);
+  lcm_subscriber_->set_name("lcm_subscriber");
 
   accelerometer_ = Accelerometer::AttachAccelerometer(
       "my accelerometer", *sensor_frame_, *plant_, true /* include_gravity */,
@@ -72,10 +74,12 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
 
   logger_ = builder_.template AddSystem<AccelerometerTestLogger>(
       plant_->get_num_states());
+  logger_->set_name("logger");
 
   auto constant_zero_source =
       builder_.template AddSystem<ConstantVectorSource<double>>(
           VectorX<double>::Zero(plant_->actuator_command_input_port().size()));
+  constant_zero_source->set_name("zero");
 
   builder_.Connect(lcm_subscriber_->get_output_port(0),
                    xdot_hack_->get_input_port());
@@ -95,6 +99,9 @@ void AccelerometerExampleDiagram::Initialize(
     unique_ptr<DrakeVisualizer> visualizer) {
   if (visualizer != nullptr) {
     visualizer_ = builder_.AddSystem(move(visualizer));
+    if (visualizer_->get_name().empty()) {
+      visualizer_->set_name("visualizer");
+    }
     builder_.Connect(plant_->state_output_port(),
                      visualizer_->get_input_port(0));
   }

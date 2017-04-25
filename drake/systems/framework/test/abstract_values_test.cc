@@ -23,27 +23,27 @@ class AbstractStateTest : public ::testing::Test {
 };
 
 TEST_F(AbstractStateTest, OwnedState) {
-  AbstractValues xm(std::move(data_));
-  EXPECT_EQ(42, UnpackIntValue(xm.get_value(0)));
-  EXPECT_EQ(76, UnpackIntValue(xm.get_value(1)));
+  AbstractValues xa(std::move(data_));
+  EXPECT_EQ(42, UnpackIntValue(xa.get_value(0)));
+  EXPECT_EQ(76, UnpackIntValue(xa.get_value(1)));
 }
 
 TEST_F(AbstractStateTest, UnownedState) {
-  AbstractValues xm(
+  AbstractValues xa(
       std::vector<AbstractValue*>{data_[0].get(), data_[1].get()});
-  EXPECT_EQ(42, UnpackIntValue(xm.get_value(0)));
-  EXPECT_EQ(76, UnpackIntValue(xm.get_value(1)));
+  EXPECT_EQ(42, UnpackIntValue(xa.get_value(0)));
+  EXPECT_EQ(76, UnpackIntValue(xa.get_value(1)));
 }
 
 TEST_F(AbstractStateTest, SingleValueConstructor) {
-  AbstractValues xm(PackValue<int>(1000));
-  ASSERT_EQ(1, xm.size());
-  EXPECT_EQ(1000, UnpackIntValue(xm.get_value(0)));
+  AbstractValues xa(PackValue<int>(1000));
+  ASSERT_EQ(1, xa.size());
+  EXPECT_EQ(1000, UnpackIntValue(xa.get_value(0)));
 }
 
 TEST_F(AbstractStateTest, Clone) {
-  AbstractValues xm(std::move(data_));
-  std::unique_ptr<AbstractValues> clone = xm.Clone();
+  AbstractValues xa(std::move(data_));
+  std::unique_ptr<AbstractValues> clone = xa.Clone();
   EXPECT_EQ(42, UnpackIntValue(clone->get_value(0)));
   EXPECT_EQ(76, UnpackIntValue(clone->get_value(1)));
 }

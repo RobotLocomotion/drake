@@ -62,8 +62,8 @@ class Context {
   bool is_stateless() const {
     const int nxc = get_continuous_state()->size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxm = get_num_abstract_state_groups();
-    return nxc == 0 && nxd == 0 && nxm == 0;
+    const int nxa = get_num_abstract_state_groups();
+    return nxc == 0 && nxd == 0 && nxa == 0;
   }
 
   /// Returns true if the Context has continuous state, but no discrete or
@@ -71,8 +71,8 @@ class Context {
   bool has_only_continuous_state() const {
     const int nxc = get_continuous_state()->size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxm = get_num_abstract_state_groups();
-    return nxc > 0 && nxd == 0 && nxm == 0;
+    const int nxa = get_num_abstract_state_groups();
+    return nxc > 0 && nxd == 0 && nxa == 0;
   }
 
   /// Returns true if the Context has discrete state, but no continuous or
@@ -80,8 +80,8 @@ class Context {
   bool has_only_discrete_state() const {
     const int nxc = get_continuous_state()->size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxm = get_num_abstract_state_groups();
-    return nxd > 0 && nxc == 0 && nxm == 0;
+    const int nxa = get_num_abstract_state_groups();
+    return nxd > 0 && nxc == 0 && nxa == 0;
   }
 
   /// Sets the continuous state to @p xc, deleting whatever was there before.
@@ -115,32 +115,32 @@ class Context {
 
   /// Returns the number of elements in the discrete state.
   int get_num_discrete_state_groups() const {
-    return get_state().get_discrete_state()->size();
+    return get_state().get_discrete_state()->num_groups();
   }
 
   /// Returns a mutable pointer to the discrete component of the state,
   /// which may be of size zero.
-  DiscreteState<T>* get_mutable_discrete_state() {
+  DiscreteValues<T>* get_mutable_discrete_state() {
     return get_mutable_state()->get_mutable_discrete_state();
   }
 
   /// Returns a mutable pointer to element @p index of the discrete state.
   /// Asserts if @p index doesn't exist.
   BasicVector<T>* get_mutable_discrete_state(int index) {
-    DiscreteState<T>* xd = get_mutable_discrete_state();
-    return xd->get_mutable_discrete_state(index);
+    DiscreteValues<T>* xd = get_mutable_discrete_state();
+    return xd->get_mutable_vector(index);
   }
 
   /// Sets the discrete state to @p xd, deleting whatever was there before.
-  void set_discrete_state(std::unique_ptr<DiscreteState<T>> xd) {
+  void set_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
     get_mutable_state()->set_discrete_state(std::move(xd));
   }
 
   /// Returns a const pointer to the discrete component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
   const BasicVector<T>* get_discrete_state(int index) const {
-    const DiscreteState<T>* xd = get_state().get_discrete_state();
-    return xd->get_discrete_state(index);
+    const DiscreteValues<T>* xd = get_state().get_discrete_state();
+    return xd->get_vector(index);
   }
 
   /// Returns the number of elements in the abstract state.
@@ -164,21 +164,21 @@ class Context {
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    AbstractValues* xm = get_mutable_abstract_state();
-    return xm->get_mutable_value(index).GetMutableValue<U>();
+    AbstractValues* xa = get_mutable_abstract_state();
+    return xa->get_mutable_value(index).GetMutableValue<U>();
   }
 
-  /// Sets the abstract state to @p xm, deleting whatever was there before.
-  void set_abstract_state(std::unique_ptr<AbstractValues> xm) {
-    get_mutable_state()->set_abstract_state(std::move(xm));
+  /// Sets the abstract state to @p xa, deleting whatever was there before.
+  void set_abstract_state(std::unique_ptr<AbstractValues> xa) {
+    get_mutable_state()->set_abstract_state(std::move(xa));
   }
 
   /// Returns a const reference to the abstract component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
   const U& get_abstract_state(int index) const {
-    const AbstractValues* xm = get_state().get_abstract_state();
-    return xm->get_value(index).GetValue<U>();
+    const AbstractValues* xa = get_state().get_abstract_state();
+    return xa->get_value(index).GetValue<U>();
   }
 
   // =========================================================================
@@ -326,6 +326,11 @@ class Context {
   /// parameters. Asserts if @p index doesn't exist.
   BasicVector<T>* get_mutable_numeric_parameter(int index) {
     return get_mutable_parameters().get_mutable_numeric_parameter(index);
+  }
+
+  /// Returns the number of abstract-valued parameters.
+  int num_abstract_parameters() const {
+    return get_parameters().num_abstract_parameters();
   }
 
   /// Returns a const reference to the abstract-valued parameter at @p index.

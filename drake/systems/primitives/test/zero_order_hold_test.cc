@@ -108,12 +108,12 @@ TEST_F(ZeroOrderHoldTest, Update) {
   DiscreteEvent<double> update_event;
   update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
 
-  std::unique_ptr<DiscreteState<double>> update =
+  std::unique_ptr<DiscreteValues<double>> update =
       hold_->AllocateDiscreteVariables();
   hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update.get());
 
   // Check that the state has been updated to the input.
-  const VectorBase<double>* xd = update->get_discrete_state(0);
+  const VectorBase<double>* xd = update->get_vector(0);
   EXPECT_EQ(1.0, xd->GetAtIndex(0));
   EXPECT_EQ(1.0, xd->GetAtIndex(1));
   EXPECT_EQ(3.0, xd->GetAtIndex(2));
@@ -141,7 +141,7 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
   std::unique_ptr<ZeroOrderHold<symbolic::Expression>> hold_;
   std::unique_ptr<Context<symbolic::Expression>> context_;
   std::unique_ptr<SystemOutput<symbolic::Expression>> output_;
-  std::unique_ptr<DiscreteState<symbolic::Expression>> update_;
+  std::unique_ptr<DiscreteValues<symbolic::Expression>> update_;
 };
 
 TEST_F(SymbolicZeroOrderHoldTest, Output) {
@@ -157,7 +157,7 @@ TEST_F(SymbolicZeroOrderHoldTest, Update) {
       DiscreteEvent<symbolic::Expression>::kDiscreteUpdateAction;
 
   hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update_.get());
-  const auto& xd = *update_->get_discrete_state(0);
+  const auto& xd = *update_->get_vector(0);
   EXPECT_EQ("u0", xd[0].to_string());
 }
 

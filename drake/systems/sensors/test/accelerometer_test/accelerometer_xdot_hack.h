@@ -23,8 +23,6 @@ namespace sensors {
 /// accelerometer, which will contain non-finite values during the first
 /// simulation tick.
 ///
-/// @ingroup sensor_systems
-///
 class AccelerometerXdotHack : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerXdotHack);

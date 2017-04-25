@@ -81,6 +81,7 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   auto state_d_source =
       base_builder->template AddSystem<systems::ConstantVectorSource<double>>(
           state_d);
+  state_d_source->set_name("state_d_source");
 
   // Adds a controller.
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
@@ -92,6 +93,7 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
             .template AddController<systems::InverseDynamicsController<double>>(
                 info.instance_id, info.model_path, info.world_offset, iiwa_kp,
                 iiwa_ki, iiwa_kd, false /* no feedforward acceleration */);
+    controller->set_name("controller_" + std::to_string(info.instance_id));
 
     base_builder->Connect(state_d_source->get_output_port(),
                           controller->get_input_port_desired_state());

@@ -26,9 +26,16 @@ pkg_config_package(
     modname = "glib-2.0",
 )
 
-pkg_config_package(
-    name = "python2",
-    modname = "python2",
+load("//tools:python.bzl", "python_repository")
+python_repository(
+    name = "python",
+    version = "2.7",
+)
+
+load("//tools:numpy.bzl", "numpy_repository")
+numpy_repository(
+    name = "numpy",
+    python_version = "2.7",
 )
 
 github_archive(
@@ -62,12 +69,14 @@ github_archive(
     build_file = "tools/pycodestyle.BUILD",
 )
 
-github_archive(
+bitbucket_archive(
     name = "eigen",
-    repository = "RobotLocomotion/eigen-mirror",
-    commit = "d3ee2bc648be3d8be8c596a9a0aefef656ff8637",
+    repository = "eigen/eigen",
+    # N.B. See #5785; do your best not to have to bump this to a newer commit.
+    commit = "3.3.3",
+    sha256 = "94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f",
     build_file = "tools/eigen.BUILD",
-    sha256 = "db797e2857d3d6def92ec2c46aa04577d3e1bb371d6fe14e6bdfc088dcaf2e9e",
+    strip_prefix = "eigen-eigen-67e894c6cd8f",
 )
 
 github_archive(
@@ -158,10 +167,10 @@ github_archive(
 
 github_archive(
     name = "pybind11",
-    repository = "pybind/pybind11",
-    commit = "7830e8509f2adc97ce9ee32bf99cd4b82089cc4c",
+    repository = "RobotLocomotion/pybind11",
+    commit = "6d72785766558047ee2e2075198c07d8c25eb631",
     build_file = "tools/pybind11.BUILD",
-    sha256 = "16612244e7585f82228fe27e0629f6b01e7459b7b4ead90447cfb53c48dd86f3",
+    sha256 = "08b4813b3b17f607efc4e8ba8b73bf55759ba744cab125e9fc666b5161cb1d0a",
 )
 
 github_archive(
@@ -241,7 +250,7 @@ gfortran_repository(
 git_repository(
   name = "snopt",
   remote = "git@github.com:RobotLocomotion/snopt.git",
-  commit = "d08d0ea5454349d252b2bc355c6d7c7237090a46",
+  commit = "a9a5f3f209573b96a2b355ef88f00aefa3d7ec7e",
 )
 
 # Python Libraries
@@ -280,4 +289,13 @@ bitbucket_archive(
     sha256 = "9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd",
     build_file = "tools/ignition_math.BUILD",
     strip_prefix = "ignitionrobotics-ign-math-a06d26055d07",
+)
+
+bitbucket_archive(
+    name = "ignition_rndf",
+    repository = "ignitionrobotics/ign-rndf",
+    commit = "ignition-rndf_0.1.2",
+    sha256 = "e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a",
+    build_file = "tools/ignition_rndf.BUILD",
+    strip_prefix = "ignitionrobotics-ign-rndf-b20a4f68333f",
 )

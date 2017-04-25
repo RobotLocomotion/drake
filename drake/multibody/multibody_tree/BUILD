@@ -24,17 +24,23 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree",
     srcs = [
+        "fixed_offset_frame.cc",
         "multibody_tree.cc",
         "rigid_body.cc",
     ],
     hdrs = [
         "body.h",
+        "fixed_offset_frame.h",
+        "frame.h",
+        "frame_base.h",
         "multibody_tree.h",
         "multibody_tree_element.h",
+        "multibody_tree_topology.h",
         "rigid_body.h",
     ],
     deps = [
         ":multibody_tree_indexes",
+        ":spatial_inertia",
         "//drake/common:autodiff",
     ],
 )
@@ -59,6 +65,13 @@ drake_cc_library(
     ],
 )
 
+# === test/ ===
+
+drake_cc_googletest(
+    name = "double_pendulum_test",
+    deps = [":multibody_tree"],
+)
+
 drake_cc_googletest(
     name = "multibody_tree_indexes_tests",
     deps = [":multibody_tree_indexes"],
@@ -81,6 +94,24 @@ drake_cc_googletest(
     name = "unit_inertia_tests",
     deps = [
         ":unit_inertia",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_inertia",
+    srcs = [],
+    hdrs = ["spatial_inertia.h"],
+    deps = [
+        ":unit_inertia",
+        "//drake/math:gradient",
+        "//drake/multibody/multibody_tree/math:spatial_algebra",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spatial_inertia_tests",
+    deps = [
+        ":spatial_inertia",
     ],
 )
 

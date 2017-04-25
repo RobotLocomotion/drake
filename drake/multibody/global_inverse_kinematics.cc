@@ -257,6 +257,8 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
               math::rotmat2quat(normalized_rotmat);
         }
       } else if (num_positions == 1) {
+        const double joint_lb = joint->getJointLimitMin()(0);
+        const double joint_ub = joint->getJointLimitMax()(0);
         // Should NOT do this evil dynamic cast here, but currently we do
         // not have a method to tell if a joint is revolute or not.
         if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
@@ -265,21 +267,14 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
           Matrix3d joint_rotmat =
               X_PF.linear().transpose() *
               R_WP.transpose() * R_WC;
-          // The joint_angle_axis computed from the body orientation is very
-          // likely not being aligned with the real joint axis. The reason is
+          // The joint_rotmat is very likely not on SO(3). The reason is
           // that we use a relaxation of the rotation matrix, and thus
-          // R_WC might not lie on SO(3) exactly.
-          Matrix3d normalized_rotmat = math::ProjectMatToRotMat(joint_rotmat);
-          Eigen::AngleAxisd joint_angle_axis(normalized_rotmat);
-
+          // R_WC might not lie on SO(3) exactly. Here we need to project
+          // joint_rotmat to SO(3), with joint axis as the rotation axis, and
+          // joint limits as the lower and upper bound on the rotation angle.
           const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
-          // There can be two possible angle-axis combination, negating the
-          // both angle and axis will result in the same rotation.
-          q(body.get_position_start_index()) =
-              joint_angle_axis.axis().dot(rotate_axis) > 0
-              ? joint_angle_axis.angle() : -joint_angle_axis.angle();
-          // TODO(hongkai.dai): check if the joint is within the limit, shift
-          // it by 2 * PI if it is out of range.
+          q(body.get_position_start_index()) = math::ProjectMatToRotMatWithAxis(
+              joint_rotmat, rotate_axis, joint_lb, joint_ub);
         } else {
           // TODO(hongkai.dai): add prismatic and helical joints.
           throw std::runtime_error("Unsupported joint type.");
@@ -294,7 +289,8 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   return q;
 }
 
-void GlobalInverseKinematics::AddWorldPositionConstraint(
+solvers::Binding<solvers::LinearConstraint>
+GlobalInverseKinematics::AddWorldPositionConstraint(
     int body_idx, const Eigen::Vector3d& p_BQ, const Eigen::Vector3d& box_lb_F,
     const Eigen::Vector3d& box_ub_F, const Isometry3d& X_WF) {
   Vector3<Expression> body_pt_pos =
@@ -302,12 +298,12 @@ void GlobalInverseKinematics::AddWorldPositionConstraint(
   Vector3<Expression> body_pt_in_measured_frame =
       X_WF.linear().transpose() *
       (body_pt_pos - X_WF.translation());
-  AddLinearConstraint(body_pt_in_measured_frame, box_lb_F, box_ub_F);
+  return AddLinearConstraint(body_pt_in_measured_frame, box_lb_F, box_ub_F);
 }
 
-void GlobalInverseKinematics::AddWorldOrientationConstraint(
-    int body_idx,
-    const Eigen::Quaterniond& desired_orientation,
+solvers::Binding<solvers::LinearConstraint>
+GlobalInverseKinematics::AddWorldOrientationConstraint(
+    int body_idx, const Eigen::Quaterniond& desired_orientation,
     double angle_tol) {
   // The rotation matrix error R_e satisfies
   // trace(R_e) = 2 * cos(θ) + 1, where θ is the rotation angle between
@@ -316,7 +312,7 @@ void GlobalInverseKinematics::AddWorldOrientationConstraint(
   Matrix3<Expression> rotation_matrix_err =
   desired_orientation.toRotationMatrix() * R_WB_[body_idx].transpose();
   double lb = angle_tol < M_PI ? 2 * cos(angle_tol) + 1 : -1;
-  AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
+  return AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
 }
 
 void GlobalInverseKinematics::AddPostureCost(

@@ -32,14 +32,16 @@ void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 
   bool is_in_cone_expected = (y(0) >= 0) & (y(1) >= 0);
   EXPECT_EQ(is_in_cone, is_in_cone_expected);
+  EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 
   auto tx = drake::math::initializeAutoDiff(x_test);
-  TaylorVecXd x_taylor = tx;
-  TaylorVecXd y_taylor;
-  // Test Eval with TaylorVar.
+  AutoDiffVecXd x_taylor = tx;
+  AutoDiffVecXd y_taylor;
+  // Test Eval with AutoDiff.
   cnstr.Eval(x_taylor, y_taylor);
 
   EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
+  EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
 }
 
 void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
@@ -59,14 +61,16 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
   bool is_in_cone_expected =
       (z(0) >= 0) & (z(1) >= 0) & (z(0) * z(1) >= z.tail(z.size() - 2).norm());
   EXPECT_EQ(is_in_cone, is_in_cone_expected);
+  EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 
   // Eval with taylor var.
   auto tx = drake::math::initializeAutoDiff(x_test);
-  TaylorVecXd x_taylor = tx;
-  TaylorVecXd y_taylor;
+  AutoDiffVecXd x_taylor = tx;
+  AutoDiffVecXd y_taylor;
   cnstr.Eval(x_taylor, y_taylor);
 
   EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
+  EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
 }
 
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
@@ -154,6 +158,7 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   cnstr.Eval(X1, y);
   EXPECT_TRUE((y.array() >= cnstr.lower_bound().array()).all());
   EXPECT_TRUE((y.array() <= cnstr.upper_bound().array()).all());
+  EXPECT_TRUE(cnstr.CheckSatisfied(X1));
 
   Eigen::Matrix<double, 9, 1> X2;
   // clang-format off
@@ -165,6 +170,7 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());
   EXPECT_EQ(cnstr.matrix_rows(), 3);
+  EXPECT_FALSE(cnstr.CheckSatisfied(X2));
 }
 
 GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
@@ -178,15 +184,19 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   // [4, 3]
   // [3, 4] is positive semidefinite
   Eigen::VectorXd y;
-  cnstr.Eval(Eigen::Vector2d(1, 1), y);
+  Eigen::Vector2d x1(1, 1);
+  cnstr.Eval(x1, y);
   EXPECT_TRUE((y.array() >= cnstr.lower_bound().array()).all());
   EXPECT_TRUE((y.array() <= cnstr.upper_bound().array()).all());
+  EXPECT_TRUE(cnstr.CheckSatisfied(x1));
 
   // [1 -2]
   // [-2 1] is not p.s.d
-  cnstr.Eval(Eigen::Vector2d(0, -1), y);
+  Eigen::Vector2d x2(0, -1);
+  cnstr.Eval(x2, y);
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());
+  EXPECT_FALSE(cnstr.CheckSatisfied(x2));
 }
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
@@ -195,15 +205,19 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
   Eigen::Vector2d q(-1, -1);
 
   LinearComplementarityConstraint c(M, q);
-  Eigen::VectorXd x;
-  c.Eval(Eigen::Vector2d(1, 1), x);
+  Eigen::VectorXd w;
 
+  Eigen::Vector2d x1(1, 1);
+  c.Eval(x1, w);
   EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
-  c.Eval(Eigen::Vector2d(1, 2), x);
+      CompareMatrices(w, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(c.CheckSatisfied(x1));
 
+  Eigen::Vector2d x2(1, 2);
+  c.Eval(x2, w);
   EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+      CompareMatrices(w, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+  EXPECT_FALSE(c.CheckSatisfied(x2));
 }
 }  // namespace
 }  // namespace solvers

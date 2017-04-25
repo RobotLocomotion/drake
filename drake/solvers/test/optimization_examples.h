@@ -322,8 +322,12 @@ class LowerBoundedProblem {
                 Eigen::VectorXd& y) const override {
       EvalImpl(x, y);
     }
-    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-                TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd& y) const override {
+      // Check that the autodiff vector was initialized to the proper (minimal)
+      // size.
+      EXPECT_EQ(x.size(), x(0).derivatives().size());
+
       EvalImpl(x, y);
     }
 
@@ -420,8 +424,8 @@ class GloptiPolyConstrainedMinimizationProblem {
                 Eigen::VectorXd& y) const override {
       EvalImpl(x, &y);
     }
-    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-                TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd& y) const override {
       EvalImpl(x, &y);
     }
 

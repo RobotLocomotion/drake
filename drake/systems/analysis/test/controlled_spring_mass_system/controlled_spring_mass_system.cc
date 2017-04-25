@@ -27,12 +27,15 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
 
   plant_ = builder.template
       AddSystem<SpringMassSystem>(spring_stiffness, mass, true /* is forced */);
+  plant_->set_name("plant");
   controller_ = builder.template AddSystem<PidController>(
       VectorX<double>::Constant(1, Kp), VectorX<double>::Constant(1, Ki),
       VectorX<double>::Constant(1, Kd));
+  controller_->set_name("controller");
   VectorX<T> desired(2);
   desired << target_position, 0;
   target_ = builder.template AddSystem<ConstantVectorSource>(desired);
+  target_->set_name("target");
 
   // A demultiplexer is used to split the output from the spring-mass system
   // into three ports. One port with the mass position and another port with the
@@ -40,7 +43,9 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   // The third output from the demultiplexer is the spring-mass system's energy
   // and it is left unconnected.
   auto demux = builder.template AddSystem<Demultiplexer>(3);
+  demux->set_name("demux");
   auto mux = builder.template AddSystem<Multiplexer>(2);
+  mux->set_name("mux");
 
   builder.Connect(plant_->get_output_port(),
                   demux->get_input_port(0));

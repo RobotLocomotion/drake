@@ -51,6 +51,11 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePublishPeriodSec(period);
   }
 
+  void AddPerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    this->DeclarePerStepAction(action);
+  }
+
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {}
 
@@ -84,6 +89,11 @@ class TestSystem : public LeafSystem<T> {
   const BasicVector<T>& GetVanillaNumericParameters(
       const Context<T>& context) const {
     return this->GetNumericParameter(context, 0 /* index */);
+  }
+
+  BasicVector<T>* GetVanillaMutableNumericParameters(
+      Context<T>* context) const {
+    return this->GetMutableNumericParameter(context, 0 /* index */);
   }
 };
 
@@ -233,13 +243,17 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
 }
 
 // Tests that the leaf system reserved the declared Parameters with default
-// values.
+// values, and that they are modifiable.
 TEST_F(LeafSystemTest, Parameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const BasicVector<double>& vec =
       system_.GetVanillaNumericParameters(*context);
   EXPECT_EQ(13.0, vec[0]);
   EXPECT_EQ(7.0, vec[1]);
+  BasicVector<double>* mutable_vec =
+      system_.GetVanillaMutableNumericParameters(context.get());
+  mutable_vec->SetAtIndex(1, 42.0);
+  EXPECT_EQ(42.0, vec[1]);
 }
 
 // Tests that the leaf system reserved the declared misc continuous state.
@@ -311,6 +325,22 @@ TEST_F(LeafSystemTest, DeclareAbstractOutput) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   auto output = system_.AllocateOutput(*context);
   EXPECT_EQ(42, UnpackIntValue(output->get_data(1)));
+}
+
+TEST_F(LeafSystemTest, DeclarePerStepActions) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+
+  system_.AddPerStepAction(DiscreteEvent<double>::kPublishAction);
+  system_.AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+  system_.AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+  std::vector<DiscreteEvent<double>> events;
+  system_.GetPerStepEvents(*context, &events);
+
+  EXPECT_EQ(events.size(), 3);
+  EXPECT_EQ(events[0].action, DiscreteEvent<double>::kPublishAction);
+  EXPECT_EQ(events[1].action, DiscreteEvent<double>::kDiscreteUpdateAction);
+  EXPECT_EQ(events[2].action, DiscreteEvent<double>::kUnrestrictedUpdateAction);
 }
 
 // A system that exercises the model_value-based input and output ports,
@@ -430,6 +460,25 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   EXPECT_EQ(2.2, param->GetAtIndex(1));
 }
 
+// Tests that DeclareAbstractState works expectedly.
+GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
+  class DeclaredModelAbstractStateSystem : public LeafSystem<double> {
+   public:
+    DeclaredModelAbstractStateSystem() {
+      DeclareAbstractState(AbstractValue::Make<int>(1));
+      DeclareAbstractState(AbstractValue::Make<std::string>("wow"));
+    }
+    void DoCalcOutput(const Context<double>& context,
+                      SystemOutput<double>* output) const override {}
+  };
+
+  DeclaredModelAbstractStateSystem dut;
+  auto context = dut.CreateDefaultContext();
+
+  EXPECT_EQ(context->get_abstract_state<int>(0), 1);
+  EXPECT_EQ(context->get_abstract_state<std::string>(1), "wow");
+}
+
 // Tests both that an unrestricted update callback is called and that
 // modifications to state dimension are caught.
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
@@ -439,8 +488,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   context->set_continuous_state(
     std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
-  context->set_discrete_state(
-    std::make_unique<DiscreteState<double>>(
+  context->set_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
   std::vector<std::unique_ptr<AbstractValue>> abstract_data;
   abstract_data.push_back(PackValue(3));
@@ -492,7 +540,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     disc_data.push_back(std::make_unique<BasicVector<double>>(1));
     disc_data.push_back(std::make_unique<BasicVector<double>>(1));
     s->set_discrete_state(
-         std::make_unique<DiscreteState<double>>(std::move(disc_data)));
+        std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
   };
 
   // Call the unrestricted update function again, again verifying that an
@@ -501,8 +549,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
                std::logic_error);
 
   // Restore the discrete state (size).
-  x->set_discrete_state(
-    std::make_unique<DiscreteState<double>>(
+  x->set_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
 
   // Change the event to indicate to change the abstract state dimension.

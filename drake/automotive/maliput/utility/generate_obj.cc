@@ -199,6 +199,10 @@ class GeoMesh {
 
   // Emits the mesh as Wavefront OBJ elements to @p os.  @p material is the
   // name of an MTL-defined material to describe visual properties of the mesh.
+  // @p precision specifies the fixed-point precision (number of digits after
+  // the decimal point) for vertex and normal coordinate values.  @p origin
+  // specifies a world-frame origin for vertex coordinates (i.e., the emitted
+  // values for a vertex at `(x,y,z)` will be `(x,y,z) - origin`).
   //
   // If other meshes have already been emitted to stream @p os, then
   // @p vertex_index_offset and @p normal_index_offset must correspond to the
@@ -208,16 +212,23 @@ class GeoMesh {
   // EmitObj().
   std::tuple<int, int>
   EmitObj(std::ostream& os, const std::string& material,
+          int precision, const api::GeoPosition& origin,
           int vertex_index_offset, int normal_index_offset) {
+    // NOLINTNEXTLINE(build/namespaces)  Usage documented by fmt library.
+    using namespace fmt::literals;
     fmt::print(os, "# Vertices\n");
     for (const GeoVertex* gv : vertices_.vector()) {
-      fmt::print(os, "v {} {} {}\n",
-                 gv->v().x, gv->v().y, gv->v().z);
+      fmt::print(os, "v {x:.{p}f} {y:.{p}f} {z:.{p}f}\n",
+                 "x"_a = (gv->v().x - origin.x),
+                 "y"_a = (gv->v().y - origin.y),
+                 "z"_a = (gv->v().z - origin.z),
+                 "p"_a = precision);
     }
     fmt::print(os, "# Normals\n");
     for (const GeoNormal* gn : normals_.vector()) {
-      fmt::print(os, "vn {} {} {}\n",
-                 gn->n().x, gn->n().y, gn->n().z);
+      fmt::print(os, "vn {x:.{p}f} {y:.{p}f} {z:.{p}f}\n",
+                 "x"_a = gn->n().x, "y"_a = gn->n().y, "z"_a = gn->n().z,
+                 "p"_a = precision);
     }
     fmt::print(os, "\n");
     fmt::print(os, "# Faces\n");
@@ -265,6 +276,10 @@ class SrhFace {
     GeoFace geo_face;
     for (const api::LanePosition& srh : v_) {
       api::GeoPosition v0(lane->ToGeoPosition(srh));
+      // TODO(maddog@tri.global)  Calculation of the surface normal should
+      //                          really use GetOrientation(), and the format
+      //                          of the result should have a fixed-point
+      //                          precision based on angular_tolerance().
       api::GeoPosition v1(lane->ToGeoPosition({srh.s, srh.r, srh.h + 1.}));
       geo_face.push_vn(GeoVertex(v0), GeoNormal(v0, v1));
     }
@@ -517,6 +532,11 @@ void DrawLaneArrow(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
 // @param h_offset  h value of each vertex (height above road surface)
 void MarkLaneEnds(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
                   double h_offset) {
+  // To avoid crossing boundaries (and tripping assertions) due to
+  // numeric precision issues, we will nudge the arrows inward from
+  // the ends of the lanes by the RoadGeometry's linear_tolerance().
+  const double nudge =
+      lane->segment()->junction()->road_geometry()->linear_tolerance();
   const double max_length = 0.3 * lane->length();
   // Arrows are sized relative to their respective ends.
   const api::RBounds start_rb = lane->lane_bounds(0.);
@@ -527,9 +547,11 @@ void MarkLaneEnds(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
   const double finish_s_size = std::min(max_length,
                                         (finish_rb.r_max - finish_rb.r_min));
 
-  DrawLaneArrow(mesh, lane, grid_unit, 0., start_s_size, h_offset);
   DrawLaneArrow(mesh, lane, grid_unit,
-                lane->length() - finish_s_size, finish_s_size, h_offset);
+                0. + nudge, start_s_size, h_offset);
+  DrawLaneArrow(mesh, lane, grid_unit,
+                lane->length() - finish_s_size - nudge, finish_s_size,
+                h_offset);
 }
 
 
@@ -599,6 +621,27 @@ void GenerateObjFile(const api::RoadGeometry* rg,
 
   // Create the requested OBJ file.
   {
+    // Figure out the fixed-point precision necessary to render OBJ vertices
+    // with enough precision relative to linear_tolerance().
+    //
+    // Given linear_tolerance ε, we conservatively want to bound the rendering
+    // error per component to `ε / (sqrt(3) * 10)`.  The `sqrt(3)` is
+    // because the worst-case error in total 3-space distance is `sqrt(3)`
+    // times the per-component error.  The `10` is a fudge-factor to ensure
+    // that the "rendering error in an OBJ vertex with respect to the
+    // maliput-expressed value" is within 10% of the "error-bound between
+    // the maliput-expressed position and the underlying ground-truth".
+    // In other words, we're aiming for the rendered vertex to be within
+    // 110% ε of the ground-truth position.
+    //
+    // The bound on error due to rounding to `n` places is `0.5 * 10^(-n)`,
+    // so we want `n` such that `0.5 * 10^(-n) < ε / (sqrt(3) * 10)`.
+    // This yields:  `n > log10(sqrt(3) * 5) - log10(ε)`.
+    DRAKE_DEMAND(rg->linear_tolerance() > 0.);
+    const int precision =
+        std::max(0., std::ceil(std::log10(std::sqrt(3.) * 5.) -
+                               std::log10(rg->linear_tolerance())));
+
     std::ofstream os(dirpath + "/" + obj_filename, std::ios::binary);
     fmt::print(os,
                R"X(# GENERATED BY maliput::utility::GenerateObjFile()
@@ -612,12 +655,15 @@ mtllib {}
     int normal_index_offset = 0;
     std::tie(vertex_index_offset, normal_index_offset) =
         asphalt_mesh.EmitObj(os, kBlandAsphalt,
+                             precision, features.origin,
                              vertex_index_offset, normal_index_offset);
     std::tie(vertex_index_offset, normal_index_offset) =
         lane_mesh.EmitObj(os, kLaneHaze,
+                          precision, features.origin,
                           vertex_index_offset, normal_index_offset);
     std::tie(vertex_index_offset, normal_index_offset) =
         marker_mesh.EmitObj(os, kMarkerPaint,
+                            precision, features.origin,
                             vertex_index_offset, normal_index_offset);
   }
 

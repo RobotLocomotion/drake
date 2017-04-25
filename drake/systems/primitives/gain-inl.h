@@ -29,7 +29,7 @@ double Gain<T>::get_gain() const {
     std::stringstream s;
     s << "The gain vector, [" << k_ << "], cannot be represented as a scalar "
       << "value. Please use drake::systems::Gain::get_gain_vector() instead.";
-    DRAKE_ABORT_MSG(s.str().c_str());
+    throw std::runtime_error(s.str().c_str());
   }
   return k_[0];
 }

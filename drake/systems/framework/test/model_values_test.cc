@@ -48,6 +48,19 @@ GTEST_TEST(ModelValuesTest, AbstractValueTest) {
 
   // Unknown indices are nullptr.
   EXPECT_EQ(dut.CloneModel(1000000).get(), nullptr);
+
+  // Test CloneAllModels().
+  auto cloned_vec = dut.CloneAllModels();
+  EXPECT_EQ(cloned_vec.size(), 100);
+  for (int i = 0; i < 100; ++i) {
+    if (i == 1) {
+      EXPECT_EQ(cloned_vec[i]->GetValueOrThrow<int>(), 11);
+    } else if (i == 99) {
+      EXPECT_EQ(cloned_vec[i]->GetValueOrThrow<int>(), 999);
+    } else {
+      EXPECT_EQ(cloned_vec[i].get(), nullptr);
+    }
+  }
 }
 
 /// Tests the BasicVector<T> sugar.

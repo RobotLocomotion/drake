@@ -75,6 +75,7 @@ int main(int argc, char**argv) {
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  plant.set_name("plant");
   // Contact parameters set arbitrarily.
   plant.set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
   plant.set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
@@ -89,8 +90,9 @@ int main(int argc, char**argv) {
   // Pusher
   VectorXd push_value(1);      // Single actuator.
   push_value << FLAGS_push;
-  const ConstantVectorSource<double>& push_source =
+  ConstantVectorSource<double>& push_source =
       *builder.template AddSystem<ConstantVectorSource<double>>(push_value);
+  push_source.set_name("push_source");
 
   // NOTE: This is *very* fragile.  It is not obvious that input port 0 is
   // the actuator on the first brick loaded and input port 1 is likewise the
@@ -101,6 +103,7 @@ int main(int argc, char**argv) {
   // Visualizer.
   const auto visualizer_publisher =
       builder.template AddSystem<DrakeVisualizer>(tree, &lcm, true);
+  visualizer_publisher->set_name("visualizer_publisher");
 
   // Raw state vector to visualizer.
   builder.Connect(plant.state_output_port(),

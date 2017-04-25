@@ -17,6 +17,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_value_source.h"
@@ -31,9 +32,6 @@ namespace qp_inverse_dynamics {
 // The overall input and output is a LCM message of type
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
-  DRAKE_ABORT_MSG("this example is temporarily broken, and will be "
-      "fixed after #5672 is merged");
-
   const std::string kModelFileName =
       drake::GetDrakePath() +
       "/examples/Valkyrie/urdf/urdf/"
@@ -51,7 +49,6 @@ void controller_loop() {
       kModelFileName, multibody::joints::kRollPitchYaw, robot.get());
 
   systems::DiagramBuilder<double> builder;
-
   lcm::DrakeLcm lcm;
 
   RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
@@ -92,62 +89,29 @@ void controller_loop() {
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
-  auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
-  std::unique_ptr<systems::State<double>> tmp_state = context->CloneState();
-  systems::UpdateActions<double> actions;
+  // Makes a Lcm driven loop that's blocked by robot_state_subscriber.
+  systems::lcm::LcmDrivenLoop loop(
+      *diagram, robot_state_subscriber, nullptr, &lcm,
+      std::make_unique<
+          systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>());
+
+  // Do initialization based on the first received message.
+  const systems::AbstractValue& first_msg = loop.WaitForMessage();
+  double msg_time =
+      loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
+  loop.get_mutable_context()->set_time(msg_time);
 
   // Sets plan eval's desired to the nominal state.
   systems::Context<double>* plan_eval_context =
-      diagram->GetMutableSubsystemContext(context.get(), plan_eval);
-  systems::State<double>* plan_eval_state =
-      plan_eval_context->get_mutable_state();
+      diagram->GetMutableSubsystemContext(loop.get_mutable_context(),
+                                          plan_eval);
   DRAKE_DEMAND(valkyrie::kRPYValkyrieDof == robot->get_num_positions());
   VectorX<double> desired_q =
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
-  plan_eval->Initialize(desired_q, plan_eval_state);
+  plan_eval->Initialize(desired_q, plan_eval_context->get_mutable_state());
 
-  lcm.StartReceiveThread();
-
-  drake::log()->info("controller started");
-
-  systems::UpdateActions<double> update_actions;
-
-  // Loops until the first status message arrives.
-  while (true) {
-    // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
-    const bot_core::robot_state_t* msg =
-        rs_msg_to_rs->EvalInputValue<bot_core::robot_state_t>(
-            diagram->GetSubsystemContext(*context, rs_msg_to_rs), 0);
-    context->set_time(static_cast<double>(msg->utime) / 1e6);
-    if (context->get_time() != 0) break;
-  }
-
-  double next_control_time =
-      diagram->CalcNextUpdateTime(*context, &update_actions);
-
-  while (true) {
-    // Computes control.
-    if (next_control_time <= context->get_time()) {
-      diagram->CalcUnrestrictedUpdate(*context, update_actions.events.front(),
-                                      tmp_state.get());
-      context->get_mutable_state()->CopyFrom(*tmp_state);
-
-      next_control_time =
-          diagram->CalcNextUpdateTime(*context, &update_actions);
-
-      // Sends the bot_core::atlas_command_t msg.
-      diagram->Publish(*context);
-    }
-
-    // TODO(siyuan): This is a busy polling loop on LCM message. Should switch
-    // to a descheduled version.
-    // Sets Context's time to the timestamp in the bot_core::robot_state_t msg.
-    const bot_core::robot_state_t* msg =
-        rs_msg_to_rs->EvalInputValue<bot_core::robot_state_t>(
-            diagram->GetSubsystemContext(*context, rs_msg_to_rs), 0);
-    context->set_time(static_cast<double>(msg->utime) / 1e6);
-  }
+  // Starts the loop.
+  loop.RunToSecondsAssumingInitialized();
 }
 
 }  // end namespace qp_inverse_dynamics

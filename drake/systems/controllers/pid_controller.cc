@@ -139,11 +139,17 @@ PidControllerInternal<T>::PidControllerInternal(const Eigen::VectorXd& Kp,
 
   DiagramBuilder<T> builder;
   pass_through_ = builder.AddSystem(make_unique<PassThrough<T>>(size));
+  pass_through_->set_name("passthrough");
   proportional_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kp));
+  proportional_gain_->set_name("kp");
   integral_gain_ = builder.AddSystem(make_unique<Gain<T>>(Ki));
+  integral_gain_->set_name("ki");
   derivative_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kd));
+  derivative_gain_->set_name("kd");
   integrator_ = builder.AddSystem(make_unique<Integrator<T>>(size));
+  integrator_->set_name("integrator");
   adder_ = builder.AddSystem(make_unique<Adder<T>>(3 /* inputs */, size));
+  adder_->set_name("adder");
 
   // Input 0 connects to the proportional and integral components.
   builder.ExportInput(pass_through_->get_input_port());
@@ -246,6 +252,10 @@ void PidController<T>::ConnectPorts(
     // identity matrix, which results in every element of the plant's output
     // port zero being used as the feedback signal to the PID controller.
     feedback_selector = std::make_unique<MatrixGain<T>>(2 * kp.size());
+    feedback_selector->set_name("default_feedback_selector");
+  }
+  if (feedback_selector->get_name().empty()) {
+    feedback_selector->set_name("custom_feedback_selector");
   }
   auto feedback_selector_p =
     builder.template AddSystem(std::move(feedback_selector));
@@ -259,18 +269,23 @@ void PidController<T>::ConnectPorts(
 
   auto state_minus_target =
     builder.template AddSystem<Adder<T>>(2, num_states);
+  state_minus_target->set_name("state_minus_target");
 
   controller_ =
       builder.template AddSystem<PidControllerInternal<T>>(kp, ki, kd);
+  controller_->set_name("controller");
 
   // Split the input into two signals one with the positions and one
   // with the velocities.
   auto error_demux = builder.template AddSystem<Demultiplexer<T>>(
       num_states, num_effort_commands);
+  error_demux->set_name("error_demux");
 
   auto controller_inverter =
     builder.template AddSystem<Gain<T>>(-1.0, num_effort_commands);
+  controller_inverter->set_name("controller_inverter");
   auto error_inverter = builder.template AddSystem<Gain<T>>(-1.0, num_states);
+  error_inverter->set_name("error_inverter");
 
   builder.Connect(error_inverter->get_output_port(),
       state_minus_target->get_input_port(0));

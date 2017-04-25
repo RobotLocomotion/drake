@@ -251,5 +251,109 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
   return svd.matrixU() * svd.matrixV().transpose();
 }
 
+/**
+ * Projects a 3 x 3 matrix `M` onto SO(3). The projected rotation matrix `R`
+ * has a given rotation axis `a`, and its rotation angle θ is bounded as
+ * angle_lb <= θ <= angle_ub. One use case for this function is to reconstruct
+ * the rotation matrix for a revolute joint with joint limits.
+ * @see GlobalInverseKinematics for an usage of this function.
+ * We can formulate this as an optimization problem
+ * <pre>
+ *   min_θ trace((R - M)ᵀ*(R - M))
+ *   subject to R = I + sinθ * A + (1 - cosθ) * A²   (1)
+ *              angle_lb <= θ <= angle_ub
+ * </pre>
+ * where `A` is the cross product matrix of the rotation axis `a`.
+ * <pre>
+ *   A = [ 0  -a₃  a₂]
+ *       [ a₃  0  -a₁]
+ *       [-a₂  a₁  0 ]
+ * </pre>
+ * Equation (1) is the Rodriguez Formula, to compute the rotation matrix from
+ * the rotation axis `a` and the rotation angle θ. For more details, refer to
+ * http://mathworld.wolfram.com/RodriguesRotationFormula.html
+ * The objective function can be simplified as
+ * <pre>
+ *   max_θ trace(Rᵀ * M + Mᵀ * R)
+ * </pre>
+ * By substituting the matrix `R` with the axis-angle representation, the
+ * optimization problem is formulated as
+ * <pre>
+ *   max_θ sinθ * trace(Aᵀ*M) - cosθ * trace(Mᵀ * A²)
+ *   subject to angle_lb <= θ <= angle_ub
+ * </pre>
+ * By introducing α = atan2(-trace(Mᵀ * A²), trace(Aᵀ*M)), we can compute the
+ * optimal θ as
+ * <pre>
+ * θ = π/2 + 2kπ - α, if angle_lb <= π/2 + 2kπ - α <= angle_ub, k ∈ ℤ
+ * else
+ * θ = angle_lb if sin(angle_lb + α) >= sin(angle_ub + α)
+ * θ = angle_ub if sin(angle_lb + α) < sin(angle_ub + α)
+ * </pre>
+ * @tparam Derived A 3 x 3 matrix
+ * @param M The matrix to be projected.
+ * @param axis The axis of the rotation matrix. A unit length vector.
+ * @param angle_lb The lower bound of the rotation angle.
+ * @param angle_ub The upper bound of the rotation angle.
+ * @return The rotation angle of the projected matrix.
+ * @pre angle_ub >= angle_lb.
+ * Throw std::runtime_error if these bounds are violated.
+ */
+template <typename Derived>
+double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
+                                  const Eigen::Ref<const Eigen::Vector3d>& axis,
+                                  double angle_lb, double angle_ub) {
+  using Scalar = typename Derived::Scalar;
+  if (M.rows() != 3 || M.cols() != 3) {
+    throw std::runtime_error("The input matrix should be of size 3 x 3.");
+  }
+  if (angle_ub < angle_lb) {
+    throw std::runtime_error(
+        "The angle upper bound should be no smaller than the angle lower "
+        "bound.");
+  }
+  Vector3<Scalar> a = axis;
+  a = a / a.norm();
+  Eigen::Matrix3d A;
+  // clang-format off
+  A << 0, -a(2), a(1),
+       a(2), 0, -a(0),
+       -a(1), a(0), 0;
+  // clang-format on
+  Scalar alpha =
+      atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
+  Scalar theta{};
+  // The bounds on θ + α is [angle_lb + α, angle_ub + α].
+  if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
+    theta = M_PI_2 - alpha;
+  } else if (std::isinf(angle_ub)) {
+    // First if the angle upper bound is inf, start from the angle_lb, and
+    // find the angle θ, such that θ + α = 0.5π + 2kπ
+    int k = ceil((angle_lb + alpha - M_PI_2) / (2 * M_PI));
+    theta = (2 * k + 0.5) * M_PI - alpha;
+  } else if (std::isinf(angle_lb)) {
+    // If the angle lower bound is inf, start from the angle_ub, and find the
+    // angle θ, such that θ + α = 0.5π + 2kπ
+    int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
+    theta = (2 * k + 0.5) * M_PI - alpha;
+  } else {
+    // Now neither angle_lb nor angle_ub is inf. Check if there exists an
+    // integer k, such that 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
+    int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
+    double max_sin_angle = M_PI_2 + 2 * k * M_PI;
+    if (max_sin_angle >= angle_lb + alpha) {
+      // 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
+      theta = max_sin_angle - alpha;
+    } else {
+      // Now the maximal is at the boundary, either θ = angle_lb or angle_ub
+      if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
+        theta = angle_lb;
+      } else {
+        theta = angle_ub;
+      }
+    }
+  }
+  return theta;
+}
 }  // namespace math
 }  // namespace drake

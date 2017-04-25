@@ -55,17 +55,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "lcm_call_matlab",
-    testonly = 1,
-    srcs = ["lcm_call_matlab.cc"],
-    hdrs = ["lcm_call_matlab.h"],
-    deps = [
-        "//drake/common",
-        "//drake/lcmtypes:call_matlab",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -88,15 +77,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "lcmt_drake_signal_utils_test",
     deps = [
-        ":lcmt_drake_signal_utils",
-    ],
-)
-
-drake_cc_googletest(
-    name = "lcm_call_matlab_test",
-    local = 1,
-    deps = [
-        ":lcm_call_matlab",
         ":lcmt_drake_signal_utils",
     ],
 )

@@ -77,7 +77,7 @@ void SparsityMatrix::InitializeDiscreteState() {
   // expression whose value is the variable "xdi_j".
   auto& xd = *context_->get_mutable_discrete_state();
   for (int i = 0; i < context_->get_num_discrete_state_groups(); ++i) {
-    auto& xdi = *xd.get_mutable_discrete_state(i);
+    auto& xdi = *xd.get_mutable_vector(i);
     for (int j = 0; j < xdi.size(); ++j) {
       std::ostringstream name;
       name << "xd" << i << "_" << j;

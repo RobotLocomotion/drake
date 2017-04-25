@@ -10,7 +10,7 @@ namespace kuka_iiwa_arm {
 
 using systems::BasicVector;
 using systems::Context;
-using systems::DiscreteState;
+using systems::DiscreteValues;
 using systems::State;
 using systems::SystemOutput;
 
@@ -40,7 +40,7 @@ void IiwaCommandReceiver::set_initial_position(
 
 void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    DiscreteState<double>* discrete_state) const {
+    DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_iiwa_command>();
@@ -57,7 +57,7 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
       new_positions(i) = command.joint_position[i];
     }
 
-    BasicVector<double>* state = discrete_state->get_mutable_discrete_state(0);
+    BasicVector<double>* state = discrete_state->get_mutable_vector(0);
     auto state_value = state->get_mutable_value();
     state_value.tail(kNumJoints) =
         (new_positions - state_value.head(kNumJoints)) / kIiwaLcmStatusPeriod;
@@ -134,8 +134,7 @@ IiwaStatusReceiver::IiwaStatusReceiver()
 
 void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    DiscreteState<double>* discrete_state) const {
-
+    DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->GetValue<lcmt_iiwa_status>();
@@ -152,7 +151,7 @@ void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
       commanded_position(i) = status.joint_position_commanded[i];
     }
 
-    BasicVector<double>* state = discrete_state->get_mutable_discrete_state(0);
+    BasicVector<double>* state = discrete_state->get_mutable_vector(0);
     auto state_value = state->get_mutable_value();
     state_value.segment(kNumJoints, kNumJoints) =
         (measured_position - state_value.head(kNumJoints)) /

@@ -29,15 +29,19 @@ ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
   // Converts raw state to humanoid status.
   StateToHumanoidStatusSystem* rs_wrapper =
       builder.AddSystem<StateToHumanoidStatusSystem>(robot, alias_group_path);
+  rs_wrapper->set_name("rs_wrapper");
   // Converts qp output to raw torque.
   TrivialJointLevelControllerSystem* joint_level_controller =
       builder.AddSystem<TrivialJointLevelControllerSystem>(robot);
+  joint_level_controller->set_name("joint_level_controller");
   // Generates qp_input from desired q and v vd.
   plan_eval_ = builder.AddSystem<ManipulatorPlanEvalSystem>(
       robot, alias_group_path, controller_config_path, dt);
+  plan_eval_->set_name("plan_eval");
   // Inverse dynamics controller
   QpControllerSystem* id_controller =
       builder.AddSystem<QpControllerSystem>(robot, dt);
+  id_controller->set_name("id_controller");
 
   // Connects state translator to plan eval.
   builder.Connect(rs_wrapper->get_output_port_humanoid_status(),

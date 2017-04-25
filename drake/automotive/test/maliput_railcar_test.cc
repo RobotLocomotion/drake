@@ -16,6 +16,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
+#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
 
@@ -28,9 +29,12 @@ using maliput::monolane::Endpoint;
 using maliput::monolane::EndpointXy;
 using maliput::monolane::EndpointZ;
 
+using multibody::SpatialVelocity;
+
 using systems::BasicVector;
 using systems::LeafContext;
 using systems::Parameters;
+using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
 namespace automotive {
@@ -205,19 +209,16 @@ class MaliputRailcarTest : public ::testing::Test {
     return pose;
   }
 
+  const FrameVelocity<double>* velocity_output() const {
+    auto frame_velocity = dynamic_cast<const FrameVelocity<double>*>(
+        output_->get_vector_data(dut_->velocity_output().get_index()));
+    DRAKE_DEMAND(frame_velocity != nullptr);
+    return frame_velocity;
+  }
+
   // Sets the configuration parameters of the railcar.
   void SetParams(const MaliputRailcarParams<double>& params) {
-    LeafContext<double>* leaf_context =
-        dynamic_cast<LeafContext<double>*>(context_.get());
-    ASSERT_NE(leaf_context, nullptr);
-    Parameters<double>& parameters = leaf_context->get_mutable_parameters();
-    BasicVector<double>* vector_param =
-        parameters.get_mutable_numeric_parameter(0);
-    ASSERT_NE(vector_param, nullptr);
-    MaliputRailcarParams<double>* railcar_params =
-        dynamic_cast<MaliputRailcarParams<double>*>(vector_param);
-    ASSERT_NE(railcar_params, nullptr);
-    railcar_params->SetFrom(params);
+    dut_->get_mutable_parameters(context_.get())->SetFrom(params);
   }
 
   // Obtains the lanes created by the call to InitializeTwoLaneStretchOfRoad().
@@ -283,6 +284,8 @@ class MaliputRailcarTest : public ::testing::Test {
 
     dut_->CalcOutput(*context_, output_.get());
     std::unique_ptr<BasicVector<double>> prior_pose = pose_output()->Clone();
+    std::unique_ptr<BasicVector<double>> prior_velocity =
+        velocity_output()->Clone();
 
     systems::DiscreteEvent<double> event;
     event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
@@ -315,12 +318,18 @@ class MaliputRailcarTest : public ::testing::Test {
     }
     EXPECT_DOUBLE_EQ(railcar_derivatives->speed(), 0);
 
-    // Verifies the vehicle's pose did not change even after switching lanes.
+    // Verifies the vehicle's pose and velocity did not change even after
+    // switching lanes.
     dut_->CalcOutput(*context_, output_.get());
     const PoseVector<double>* post_pose = pose_output();
-    // The following tolerance was empirically determined.
+    const FrameVelocity<double>* post_velocity = velocity_output();
+    // The following tolerances were empirically determined.
     EXPECT_TRUE(CompareMatrices(prior_pose->get_value(),
-                                post_pose->get_value(), 1e-14 /* tolerance */));
+                                post_pose->get_value(),
+                                1e-14 /* tolerance */));
+    EXPECT_TRUE(CompareMatrices(prior_velocity->get_value(),
+                                post_velocity->get_value(),
+                                1e-14 /* tolerance */));
   }
 
   // The length of the straight lane segment of the road when it is created
@@ -343,7 +352,7 @@ TEST_F(MaliputRailcarTest, Topology) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
   ASSERT_EQ(dut_->get_num_input_ports(), 1);
 
-  ASSERT_EQ(dut_->get_num_output_ports(), 3);
+  ASSERT_EQ(dut_->get_num_output_ports(), 4);
   const auto& state_output = dut_->state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
   EXPECT_EQ(MaliputRailcarStateIndices::kNumCoordinates, state_output.size());
@@ -351,6 +360,10 @@ TEST_F(MaliputRailcarTest, Topology) {
   const auto& pose_output = dut_->pose_output();
   EXPECT_EQ(systems::kVectorValued, pose_output.get_data_type());
   EXPECT_EQ(PoseVector<double>::kSize, pose_output.size());
+
+  const auto& velocity_output = dut_->velocity_output();
+  EXPECT_EQ(systems::kVectorValued, velocity_output.get_data_type());
+  EXPECT_EQ(FrameVelocity<double>::kSize, velocity_output.size());
 
   EXPECT_FALSE(dut_->HasAnyDirectFeedthrough());
 }
@@ -368,6 +381,9 @@ TEST_F(MaliputRailcarTest, ZeroInitialOutput) {
   EXPECT_EQ(translation.x(), 0);
   EXPECT_EQ(translation.y(), 0);
   EXPECT_EQ(translation.z(), 0);
+  auto velocity = velocity_output();
+  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
+      (Vector6<double>() << 0, 0, 0, state->speed(), 0, 0).finished()));
 }
 
 TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
@@ -391,6 +407,12 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
   expected_pose.translation() = Eigen::Vector3d(kS, 0, 0);
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
                               expected_pose.matrix()));
+
+  auto velocity = velocity_output();
+  const Vector6<double> expected_velocity =
+      (Vector6<double>() << 0, 0, 0, kSpeed, 0, 0).finished();
+  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
+                              expected_velocity));
 }
 
 TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
@@ -417,6 +439,38 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
   // The following tolerance was determined emperically.
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
                               expected_pose.matrix(), 1e-15 /* tolerance */));
+
+  auto velocity = velocity_output();
+  Vector6<double> expected_velocity;
+  expected_velocity << 0, 0, 0, 0, kSpeed, 0;
+  // The following tolerance was determined emperically.
+  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
+                              expected_velocity, 1e-15 /* tolerance */));
+
+  // Position the vehicle half way down the s-curve of the lane and verify that
+  // the pose and velocity outputs are as expected. At this position, the
+  // vehicle has a yaw of 45 degrees and is on a circle with radius
+  // kCurvedRoadRadius that is centered at (kCurvedRoadRadius, 0, 0). The
+  // tolerance values were emperically determined.
+  continuous_state()->set_s(lane->length() / 2);
+  dut_->CalcOutput(*context_, output_.get());
+  pose = pose_output();
+  {
+    const double expected_x = kCurvedRoadRadius * std::sin(45. / 180. * M_PI);
+    const double expected_y = kCurvedRoadRadius -
+        kCurvedRoadRadius * std::cos(45. / 180. * M_PI);
+    const Eigen::Vector3d rpy(0, 0, M_PI_4);
+    const Eigen::Vector3d xyz(expected_x, expected_y, 0 /* expected z */);
+    expected_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+  EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
+                              expected_pose.matrix(), 1e-15 /* tolerance */));
+
+  velocity = velocity_output();
+  expected_velocity
+      << 0, 0, 0, kSpeed * std::cos(M_PI_4), kSpeed * std::sin(M_PI_4), 0;
+  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
+                              expected_velocity, 1e-15 /* tolerance */));
 }
 
 TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
@@ -635,6 +689,13 @@ TEST_F(MaliputRailcarTest, DecreasingSDragway) {
   // The following tolerance was determined empirically.
   EXPECT_TRUE(CompareMatrices(
       pose->get_value(), expected_pose.get_value(), 1e-15 /* tolerance */));
+  const FrameVelocity<double>* frame_velocity = velocity_output();
+  const multibody::SpatialVelocity<double> spatial_velocity =
+      frame_velocity->get_velocity();
+  EXPECT_TRUE(CompareMatrices(spatial_velocity.translational(),
+      Eigen::Vector3d(-MaliputRailcar<double>::kDefaultInitialSpeed, 0, 0)));
+  EXPECT_TRUE(CompareMatrices(spatial_velocity.rotational(),
+                              Eigen::Vector3d(0, 0, 0)));
 }
 
 TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
@@ -651,25 +712,32 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
   continuous_state()->set_s(kS);
   continuous_state()->set_speed(kInitialSpeed);
 
-  // Obtains the against-s pose.
   dut_->CalcOutput(*context_, output_.get());
+
+  // Obtains the against-s pose and spatial velocity.
   const PoseVector<double>* against_s_pose = pose_output();
   Eigen::Translation<double, 3> against_s_translation =
       against_s_pose->get_translation();
   Eigen::Quaternion<double> against_s_orientation =
       against_s_pose->get_rotation();
 
-  // Obtains the with-s pose.
+  const SpatialVelocity<double> against_s_spatial_velocity =
+      velocity_output()->get_velocity();
+
   EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(true /* with_s */));
   SetParams(params);
   continuous_state()->set_s(kS);
   continuous_state()->set_speed(kInitialSpeed);
   dut_->CalcOutput(*context_, output_.get());
-  const PoseVector<double>* with_s_pose = pose_output();
 
+  // Obtains the with-s pose and spatial velocity.
+  const PoseVector<double>* with_s_pose = pose_output();
   Eigen::Translation<double, 3> with_s_translation =
       with_s_pose->get_translation();
   Eigen::Quaternion<double> with_s_orientation = with_s_pose->get_rotation();
+
+  const SpatialVelocity<double> with_s_spatial_velocity =
+      velocity_output()->get_velocity();
 
   // Verifies that the with-s and against-s translations are equal.
   EXPECT_TRUE(with_s_translation.isApprox(against_s_translation));
@@ -679,6 +747,18 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
   // quaternions is equal to zero. The following tolerance was empirically
   // determined.
   EXPECT_NEAR(with_s_orientation.dot(against_s_orientation), 0, 1e-15);
+
+  // Verifies that the with-s and against-s translational velocities negate
+  // each other.
+  EXPECT_TRUE(CompareMatrices(against_s_spatial_velocity.translational() +
+      with_s_spatial_velocity.translational(), Eigen::Vector3d::Zero()));
+
+  // Verifies that the with-s and against-s rotational velocities are zero.
+  // This will change once #5751 is resolved.
+  EXPECT_TRUE(CompareMatrices(against_s_spatial_velocity.rotational(),
+                              Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(CompareMatrices(with_s_spatial_velocity.rotational(),
+                              Eigen::Vector3d::Zero()));
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the

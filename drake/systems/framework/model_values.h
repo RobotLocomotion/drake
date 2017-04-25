@@ -48,6 +48,15 @@ class ModelValues {
   /// Returns a clone of the model value at @p index, which may be nullptr.
   std::unique_ptr<AbstractValue> CloneModel(int index) const;
 
+  /// Returns a vector of all the cloned model values. Some may be nullptr.
+  std::vector<std::unique_ptr<AbstractValue>> CloneAllModels() const {
+    std::vector<std::unique_ptr<AbstractValue>> ret(size());
+    for (int i = 0; i < size(); ++i) {
+      ret[i] = CloneModel(i);
+    }
+    return ret;
+  }
+
   /// Returns a clone of the vector within the model value at @p index, which
   /// may be nullptr.
   ///

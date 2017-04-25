@@ -86,7 +86,7 @@ void LcmSubscriberSystem::SetDefaultState(const Context<double>& context,
 // However, this computational concern will not exist once caching is properly
 // implemented and in place. Same for ProcessMessageAndStoreToAbstractState()
 void LcmSubscriberSystem::ProcessMessageAndStoreToDiscreteState(
-    DiscreteState<double>* discrete_state) const {
+    DiscreteValues<double>* discrete_state) const {
   DRAKE_ASSERT(translator_ != nullptr);
   DRAKE_ASSERT(serializer_ == nullptr);
 
@@ -94,9 +94,9 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToDiscreteState(
   if (!received_message_.empty()) {
     translator_->Deserialize(
         received_message_.data(), received_message_.size(),
-        discrete_state->get_mutable_discrete_state(kStateIndexMessage));
+        discrete_state->get_mutable_vector(kStateIndexMessage));
   }
-  discrete_state->get_mutable_discrete_state(kStateIndexMessageCount)
+  discrete_state->get_mutable_vector(kStateIndexMessageCount)
       ->SetAtIndex(0, received_message_count_);
 }
 
@@ -148,7 +148,7 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   }
 }
 
-std::unique_ptr<DiscreteState<double>>
+std::unique_ptr<DiscreteValues<double>>
 LcmSubscriberSystem::AllocateDiscreteState() const {
   // Only make discrete states if we are outputing vector values.
   if (translator_ != nullptr) {
@@ -158,7 +158,7 @@ LcmSubscriberSystem::AllocateDiscreteState() const {
         this->AllocateOutputVector(this->get_output_port(0));
     discrete_state_vec[kStateIndexMessageCount] =
         std::make_unique<BasicVector<double>>(1);
-    return std::make_unique<DiscreteState<double>>(
+    return std::make_unique<DiscreteValues<double>>(
         std::move(discrete_state_vec));
   }
   DRAKE_DEMAND(serializer_ != nullptr);
@@ -243,13 +243,34 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
     std::lock_guard<std::mutex> lock(received_message_mutex_);
     received_message_.clear();
     received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
+
     received_message_count_++;
+    received_message_condition_variable_.notify_all();
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel
               << "\" instead of channel \"" << channel_ << "\". Ignoring it."
               << std::endl;
   }
+}
+
+int LcmSubscriberSystem::WaitForMessage(int old_message_count) const {
+  // The message buffer and counter are updated in HandleMessage(), which is
+  // a callback function invoked by a different thread owned by the
+  // drake::lcm::DrakeLcmInterface instance passed to the constructor. Thus,
+  // for thread safety, these need to be properly protected by a mutex.
+  std::unique_lock<std::mutex> lock(received_message_mutex_);
+
+  // This while loop is necessary to guard for spurious wakeup:
+  // https://en.wikipedia.org/wiki/Spurious_wakeup
+  while (old_message_count == received_message_count_)
+    // When wait returns, lock is atomically acquired. So it's thread safe to
+    // read received_message_count_.
+    received_message_condition_variable_.wait(lock);
+  int new_message_count = received_message_count_;
+  lock.unlock();
+
+  return new_message_count;
 }
 
 const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {

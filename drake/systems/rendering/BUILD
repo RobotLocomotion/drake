@@ -68,10 +68,10 @@ drake_cc_library(
     srcs = ["drake_visualizer_client.cc"],
     hdrs = ["drake_visualizer_client.h"],
     deps = [
-        "@eigen//:eigen",
         "//drake/lcmtypes:viewer",
         "//drake/math:geometric_transform",
         "//drake/multibody/shapes",
+        "@eigen//:eigen",
     ],
 )
 
@@ -80,6 +80,7 @@ drake_cc_googletest(
     deps = [
         ":pose_aggregator",
         "//drake/common:eigen_matrix_compare",
+        "//drake/math:autodiff",
     ],
 )
 

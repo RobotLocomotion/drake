@@ -116,11 +116,12 @@ class DrakeVisualizer : public LeafSystem<double> {
   }
 
   // Sets the discrete state to @p flag.
-  void set_is_load_message_sent(DiscreteState<double>* state, bool flag) const {
+  void set_is_load_message_sent(DiscreteValues<double>* state,
+                                bool flag) const {
     if (flag)
-      state->get_mutable_discrete_state(0)->SetAtIndex(0, 1);
+      state->get_mutable_vector(0)->SetAtIndex(0, 1);
     else
-      state->get_mutable_discrete_state(0)->SetAtIndex(0, 0);
+      state->get_mutable_vector(0)->SetAtIndex(0, 0);
   }
 
   // Set the default to "initialization phase has not been completed."
@@ -138,7 +139,7 @@ class DrakeVisualizer : public LeafSystem<double> {
   // Sets the initialization flag to true, and calls PublishLoadRobot().
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      DiscreteState<double>* discrete_state) const override;
+      DiscreteValues<double>* discrete_state) const override;
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override {}

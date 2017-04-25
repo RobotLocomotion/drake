@@ -122,6 +122,14 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
+# protobuf
+drake_add_external(protobuf PUBLIC CMAKE ALWAYS
+  SOURCE_SUBDIR cmake
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -Dprotobuf_BUILD_TESTS=OFF
+    -Dprotobuf_MODULE_COMPATIBLE=ON)
+
 # pybind11
 drake_add_external(pybind11 CMAKE
   CMAKE_ARGS
@@ -270,6 +278,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_MOSEK:BOOL=${WITH_MOSEK}
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
+    -DWITH_PROTOBUF:BOOL=${WITH_PROTOBUF}
     -DWITH_PYBIND11:BOOL=${WITH_PYBIND11}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
@@ -307,6 +316,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     mosek
     nlopt
     octomap
+    protobuf
     pybind11
     robotlocomotion_lcmtypes
     sedumi

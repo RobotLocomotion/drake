@@ -30,7 +30,7 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
     msg << "The model is under-actuated!\n"
         << "  - size of gravity vector: " << v_dim_ << "\n"
         << "  - number of actuators: " << act_dim_;
-    DRAKE_ABORT_MSG(msg.str().c_str());
+    throw std::runtime_error(msg.str().c_str());
   }
 }
 

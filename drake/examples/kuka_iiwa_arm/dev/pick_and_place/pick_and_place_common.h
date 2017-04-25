@@ -10,7 +10,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place_demo {
+namespace pick_and_place {
 
 // This needs to match the object model file in iiwa_wsg_simulation.cc
 const double kHalfBoxHeight = 0.1;
@@ -59,7 +59,7 @@ enum PickAndPlaceState {
   DONE,
 };
 
-}  // namespace pick_and_place_demo
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

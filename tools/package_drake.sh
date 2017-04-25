@@ -22,11 +22,12 @@ bazel build //drake:libdrake.so //drake:libdrake_headers //drake:external_licens
 # Copy off all the package artifacts into a temporary directory.
 # TODO(jamiesnape): Add drake-config.cmake and drake-targets.cmake.
 tmpdir=$(mktemp -d)
-mkdir -p "$tmpdir/lib"
+mkdir -p "$tmpdir/lib/cmake/drake"
 mkdir -p "$tmpdir/include/external/scratch"
 cp bazel-bin/drake/libdrake.so "$tmpdir/lib"
 cp bazel-bin/drake/libdrake_headers.tar.gz "$tmpdir/include/external/scratch"
 cp bazel-bin/drake/external_licenses.tar.gz "$tmpdir/include/external"
+cp tools/drake-config.cmake "$tmpdir/lib/cmake/drake"
 chmod -R 755 "$tmpdir"
 
 # Un-tar the headers. The -P flag and scratch directory are necessary because
@@ -43,6 +44,15 @@ mv drake "$tmpdir/include"
 rm libdrake_headers.tar.gz
 cd .. # include/external
 rmdir scratch
+
+# Make a list of the externals.
+extlist=$(mktemp)
+ls -d1 */ | sed "s#/\$##g" > "$extlist"
+# Make a list of the directories for which we have license files.
+liclist=$(mktemp)
+tar tf external_licenses.tar.gz | sed "s#\./##g" | xargs dirname | sort | uniq | grep -v "\." > "$liclist"
+# Confirm those two lists are identical.
+diff "$extlist" "$liclist" || (echo "error: There should be a one-to-many relationship between externals and license files." && false)
 
 # Un-tar the license notices.
 tar -xzf external_licenses.tar.gz

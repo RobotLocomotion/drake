@@ -22,6 +22,8 @@ drake_cc_library(
         "gen/idm_planner_parameters.cc",
         "gen/maliput_railcar_params.cc",
         "gen/maliput_railcar_state.cc",
+        "gen/mobil_planner_parameters.cc",
+        "gen/pure_pursuit_params.cc",
         "gen/simple_car_params.cc",
         "gen/simple_car_state.cc",
     ],
@@ -33,6 +35,8 @@ drake_cc_library(
         "gen/idm_planner_parameters.h",
         "gen/maliput_railcar_params.h",
         "gen/maliput_railcar_state.h",
+        "gen/mobil_planner_parameters.h",
+        "gen/pure_pursuit_params.h",
         "gen/simple_car_params.h",
         "gen/simple_car_state.h",
     ],
@@ -134,7 +138,6 @@ drake_cc_library(
         ":generated_vectors",
         ":idm_planner",
         ":pose_selector",
-        ":simple_car",
         "//drake/automotive/maliput/api",
         "//drake/math:saturate",
         "//drake/systems/rendering:pose_bundle",
@@ -171,6 +174,26 @@ drake_cc_library(
         ":lane_direction",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
+        "//drake/systems/rendering:frame_velocity",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "mobil_planner",
+    srcs = ["mobil_planner.cc"],
+    hdrs = ["mobil_planner.h"],
+    deps = [
+        ":generated_vectors",
+        ":idm_controller",
+        ":idm_planner",
+        ":lane_direction",
+        ":pose_selector",
+        "//drake/automotive/maliput/api",
+        "//drake/common:cond",
+        "//drake/common:symbolic",
+        "//drake/math:saturate",
+        "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -210,6 +233,36 @@ drake_cc_library(
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/systems/rendering:pose_bundle",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "pure_pursuit",
+    srcs = ["pure_pursuit.cc"],
+    hdrs = ["pure_pursuit.h"],
+    deps = [
+        ":generated_vectors",
+        ":lane_direction",
+        ":pose_selector",
+        "//drake/automotive/maliput/api",
+        "//drake/common:cond",
+        "//drake/common:symbolic",
+        "//drake/math:saturate",
+        "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "pure_pursuit_controller",
+    srcs = ["pure_pursuit_controller.cc"],
+    hdrs = ["pure_pursuit_controller.h"],
+    deps = [
+        ":generated_vectors",
+        ":lane_direction",
+        ":pose_selector",
+        ":pure_pursuit",
+        "//drake/automotive/maliput/api",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -289,6 +342,7 @@ drake_cc_library(
         ":car_vis_applicator",
         ":generated_translators",
         ":generated_vectors",
+        ":idm_controller",
         ":maliput_railcar",
         ":prius_vis",
         ":simple_car",
@@ -301,8 +355,6 @@ drake_cc_library(
         "//drake/systems/analysis",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcmt_drake_signal_translator",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:multiplexer",
         "//drake/systems/rendering:pose_aggregator",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
     ],
@@ -387,7 +439,6 @@ genrule(
     outs = ["models/speed_bump/speed_bump.obj"],
     cmd = " ".join([
         "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
-        "--spdlog_level warn",
         "--yaml_file '$<'",
         "--obj_dir `dirname '$@'`",
         "--obj_file `basename '$@' .obj`",
@@ -493,6 +544,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mobil_planner_test",
+    deps = [
+        "//drake/automotive:mobil_planner",
+        "//drake/automotive/maliput/dragway",
+    ],
+)
+
+drake_cc_googletest(
     name = "pose_selector_test",
     deps = [
         "//drake/automotive:pose_selector",
@@ -516,6 +575,22 @@ drake_cc_googletest(
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pure_pursuit_test",
+    deps = [
+        "//drake/automotive:pure_pursuit",
+        "//drake/automotive/maliput/dragway",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pure_pursuit_controller_test",
+    deps = [
+        "//drake/automotive:pure_pursuit_controller",
+        "//drake/automotive/maliput/dragway",
     ],
 )
 
@@ -552,8 +627,8 @@ drake_cc_googletest(
     name = "trajectory_optimization_test",
     deps = [
         ":simple_car",
+        "//drake/common:call_matlab",
         "//drake/common:eigen_matrix_compare",
-        "//drake/lcm:lcm_call_matlab",
         "//drake/systems/trajectory_optimization:direct_collocation",
     ],
 )

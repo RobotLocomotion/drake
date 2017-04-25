@@ -16,10 +16,11 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
-#include "drake/systems/framework/discrete_state.h"
+#include "drake/systems/framework/discrete_values.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/output_port_value.h"
@@ -103,12 +104,13 @@ class LeafSystem : public System<T> {
   /// must not change the number of state variables.
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {
+    unused(context);
     DRAKE_DEMAND(state != nullptr);
     ContinuousState<T>* xc = state->get_mutable_continuous_state();
     xc->SetFromVector(VectorX<T>::Zero(xc->size()));
-    DiscreteState<T>* xd = state->get_mutable_discrete_state();
-    for (int i = 0; i < xd->size(); i++) {
-      BasicVector<T>* s = xd->get_mutable_discrete_state(i);
+    DiscreteValues<T>* xd = state->get_mutable_discrete_state();
+    for (int i = 0; i < xd->num_groups(); i++) {
+      BasicVector<T>* s = xd->get_mutable_vector(i);
       s->SetFromVector(VectorX<T>::Zero(s->size()));
     }
   }
@@ -119,6 +121,7 @@ class LeafSystem : public System<T> {
   /// parameter values.  Overrides must not change the number of parameters.
   virtual void SetDefaultParameters(const LeafContext<T>& context,
                                     Parameters<T>* parameters) const {
+    unused(context);
     for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
       BasicVector<T>* p = parameters->get_mutable_numeric_parameter(i);
       auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
@@ -140,13 +143,13 @@ class LeafSystem : public System<T> {
     // not change.
     const int n_xc = context->get_continuous_state()->size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xm = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_state_groups();
 
     SetDefaultState(*context, context->get_mutable_state());
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xm == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -158,6 +161,7 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const final {
+    unused(context);
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPortDescriptor<T>& descriptor = this->get_output_port(i);
@@ -178,7 +182,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Returns the AllocateDiscreteState value, which must not be nullptr.
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
       const override {
     return AllocateDiscreteState();
   }
@@ -218,6 +222,11 @@ class LeafSystem : public System<T> {
 
  protected:
   LeafSystem() {}
+
+  /// Returns the per step events declared through DeclarePerStepAction().
+  const std::vector<DiscreteEvent<T>>& get_per_step_events() const {
+    return per_step_events_;
+  }
 
   // =========================================================================
   // Implementations of System<T> methods.
@@ -285,8 +294,7 @@ class LeafSystem : public System<T> {
     const int64_t id = this->GetGraphvizId();
     std::string name = this->get_name();
     if (name.empty()) {
-      const std::string type = NiceTypeName::Canonicalize(
-          NiceTypeName::Demangle(typeid(*this).name()));
+      const std::string type = NiceTypeName::Get(*this);
       // Drop the template parameters.
       name = std::regex_replace(type, std::regex("<.*>$"), std::string());
     }
@@ -346,18 +354,21 @@ class LeafSystem : public System<T> {
 
   /// Reserves the discrete state as required by CreateDefaultContext. By
   /// default, reserves no state. Systems with discrete state should override.
-  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteState() const {
+  virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const {
     if (model_discrete_state_vector_ != nullptr) {
-      return std::make_unique<DiscreteState<T>>(
+      return std::make_unique<DiscreteValues<T>>(
           model_discrete_state_vector_->Clone());
     }
-    return std::make_unique<DiscreteState<T>>();
+    return std::make_unique<DiscreteValues<T>>();
   }
 
   /// Reserves the abstract state as required by CreateDefaultContext. By
-  /// default, reserves no state. Systems with abstract state should override.
+  /// default, it clones the abstract states declared through
+  /// DeclareAbstractState() calls. Derived systems should override for
+  /// different behaviors.
   virtual std::unique_ptr<AbstractValues> AllocateAbstractState() const {
-    return std::make_unique<AbstractValues>();
+    return std::make_unique<AbstractValues>(std::move(
+        model_abstract_states_.CloneAllModels()));
   }
 
   /// Reserves the parameters as required by CreateDefaultContext.  The default
@@ -447,21 +458,11 @@ class LeafSystem : public System<T> {
     DRAKE_ASSERT(output_port >= 0);
     DRAKE_ASSERT(output_port < this->get_num_output_ports());
 
-    // If this System has manually declared that it has no direct-feedthrough
-    // by overriding the deprecated API has_any_direct_feedthrough, accept
-    // that override and skip sparsity analysis.
-    // TODO(david-german-tri): Remove overrides of has_any_direct_feedthrough,
-    // then remove this check.
-    if (!this->has_any_direct_feedthrough()) {
-      return false;
-    }
-
     // If no symbolic sparsity matrix is available, assume direct feedthrough
     // by default.
     if (sparsity == nullptr) {
       return true;
     }
-
     return sparsity->IsConnectedInputToOutput(input_port, output_port);
   }
 
@@ -475,12 +476,27 @@ class LeafSystem : public System<T> {
   const U<T>& GetNumericParameter(const Context<T>& context, int index) const {
     static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
                   "U must be a subclass of BasicVector.");
-    const systems::LeafContext<T>& leaf_context =
-        dynamic_cast<const systems::LeafContext<T>&>(context);
-    const auto* const params =
-        dynamic_cast<const U<T>*>(leaf_context.get_numeric_parameter(index));
+    const auto& leaf_context = dynamic_cast<const systems::LeafContext<T>&>(
+        context);
+    const auto* const params = dynamic_cast<const U<T>*>(
+        leaf_context.get_numeric_parameter(index));
     DRAKE_ASSERT(params != nullptr);
     return *params;
+  }
+
+  /// Extracts the numeric parameters of type U from the @p context at @p index.
+  /// Asserts if the context is not a LeafContext, or if it does not have a
+  /// vector-valued parameter of type U at @p index.
+  template <template <typename> class U = BasicVector>
+  U<T>* GetMutableNumericParameter(Context<T>* context, int index) const {
+    static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
+                  "U must be a subclass of BasicVector.");
+    auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
+    DRAKE_ASSERT(leaf_context != nullptr);
+    auto* params = dynamic_cast<U<T>*>(
+        leaf_context->get_mutable_numeric_parameter(index));
+    DRAKE_ASSERT(params != nullptr);
+    return params;
   }
 
   /// Declares that this System has a simple, fixed-period discrete action.
@@ -529,6 +545,22 @@ class LeafSystem : public System<T> {
   /// the discrete state.
   void DeclarePublishPeriodSec(double period_sec) {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
+  }
+
+  /// Declares a per step action using the default handlers given type
+  /// @p action. This method aborts if the same type has already been declared.
+  // TODO(siyuan): provide a API for declaration with custom handlers.
+  void DeclarePerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    DiscreteEvent<T> event;
+    event.action = action;
+    for (const auto& declared_event : per_step_events_) {
+      if (declared_event.action == action) {
+        DRAKE_ABORT_MSG("Per step action has already been declared.");
+      }
+    }
+
+    per_step_events_.push_back(event);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -590,6 +622,15 @@ class LeafSystem : public System<T> {
   void DeclareDiscreteState(int num_state_variables) {
     model_discrete_state_vector_ =
         std::make_unique<BasicVector<T>>(num_state_variables);
+  }
+
+  /// Declares an abstract state.
+  /// @param abstract_state The abstract state, its ownership is transfered.
+  /// @return index of the declared abstract state.
+  int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
+    int index = model_abstract_states_.size();
+    model_abstract_states_.AddModel(index, std::move(abstract_state));
+    return index;
   }
 
   /// Declares a vector-valued input port using the given @p model_vector.
@@ -659,6 +700,11 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const override {
+    *events = per_step_events_;
+  }
+
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
   //
@@ -680,6 +726,7 @@ class LeafSystem : public System<T> {
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, UpdateActions<T1>* actions) const {
     T1 min_time = std::numeric_limits<double>::infinity();
+    // No periodic events events.
     if (periodic_events_.empty()) {
       // No discrete update.
       actions->time = min_time;
@@ -750,6 +797,10 @@ class LeafSystem : public System<T> {
   // Periodic Update or Publish events registered on this system.
   std::vector<PeriodicEvent<T>> periodic_events_;
 
+  // Update or Publish events registered on this system for every simulator
+  // major time step.
+  std::vector<DiscreteEvent<T>> per_step_events_;
+
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
   int num_generalized_positions_{0};
@@ -758,6 +809,9 @@ class LeafSystem : public System<T> {
 
   // A model discrete state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
+
+  // A model abstract state to be used in AllocateAbstractState.
+  detail::ModelValues model_abstract_states_;
 
   // Model inputs to be used in AllocateOutput{Vector,Abstract}.
   detail::ModelValues model_input_values_;

@@ -1,9 +1,23 @@
-if(gurobi_FOUND)
+add_library_with_exports(LIB_NAME drakeGlobalInverseKinematicsTest
+        SOURCE_FILES global_inverse_kinematics_test_util.h global_inverse_kinematics_test_util.cc)
+target_link_libraries(drakeGlobalInverseKinematicsTest
+        drakeGlobalIK
+        drakeRigidBodyPlant
+        drakeMultibodyParsers
+        drakeCommon
+        drakeIK
+        GTest::GTest)
+
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+# if(gurobi_FOUND)
+if (FALSE)
     drake_add_cc_test(global_inverse_kinematics_test)
-    set_tests_properties(global_inverse_kinematics_test PROPERTIES TIMEOUT 400)
+    set_tests_properties(global_inverse_kinematics_test PROPERTIES TIMEOUT 200)
     target_link_libraries(global_inverse_kinematics_test
-            drakeGlobalIK
-            drakeRigidBodyPlant
-            drakeMultibodyParsers
-            drakeCommon)
+            drakeGlobalInverseKinematicsTest)
+
+    drake_add_cc_test(global_inverse_kinematics_reachable_test)
+    set_tests_properties(global_inverse_kinematics_reachable_test PROPERTIES TIMEOUT 300)
+    target_link_libraries(global_inverse_kinematics_reachable_test
+            drakeGlobalInverseKinematicsTest)
 endif()

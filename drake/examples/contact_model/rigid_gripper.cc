@@ -84,6 +84,7 @@ int main() {
 
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>(BuildTestTree());
+  plant->set_name("plant");
 
   // Command-line specified contact parameters.
   std::cout << "Contact properties:\n";

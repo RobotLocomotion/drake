@@ -24,12 +24,12 @@ template <typename T> class SpatialVelocity;
 /// from context. It is the responsibility of the user to keep track of the
 /// application point and the expressed-in frame. That is best accomplished
 /// through disciplined notation. In source code we use monogram notation
-/// where capital `F` is used to designate a spatial force quantity. We write
-/// a point `P` fixed to body (or frame) `B` as @f$B_P@f$ which appears in
+/// where capital F is used to designate a spatial force quantity. We write
+/// a point P fixed to body (or frame) B as @f$B_P@f$ which appears in
 /// code and comments as `Bp`. Then we write a particular spatial force as
 /// `F_Bp_E` where the `_E` suffix indicates that the expressed-in frame
-/// is `E`. This symbol represents a torque applied to body `B`, and a force
-/// applied to point `P` on `B`, with both vectors expressed in `E`. Very often
+/// is E. This symbol represents a torque applied to body B, and a force
+/// applied to point P on B, with both vectors expressed in E. Very often
 /// the application point will be the body origin `Bo`; if no point is
 /// shown the origin is understood, so `F_B_E` means `F_Bo_E`.
 /// For a more detailed introduction on spatial vectors and the monogram
@@ -60,7 +60,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 
   /// SpatialForce constructor from an Eigen expression that represents a
   /// six-dimensional vector.
-  /// This constructor will assert the size of `V` is six (6) at compile-time
+  /// This constructor will assert the size of V is six (6) at compile-time
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
   template <typename Derived>
@@ -68,14 +68,14 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 
   /// In-place shift of a %SpatialForce from one application point to another.
   /// `this` spatial force `F_Bp_E`, which applies its translational force
-  /// component to point `P` of body `B`, is modified to become the equivalent
+  /// component to point P of body B, is modified to become the equivalent
   /// spatial force `F_Bq_E` that considers the force to be applied to point
-  /// `Q` of body `B` instead (see class comment for more about this notation).
+  /// Q of body B instead (see class comment for more about this notation).
   /// This requires adjusting the torque component to account
   /// for the change in moment caused by the force shift.
   ///
-  /// We are given the vector from point `P` to point `Q`, as a position vector
-  /// `p_BpBq_E` (or `p_PQ_E`) expressed in the same frame `E` as the
+  /// We are given the vector from point P to point Q, as a position vector
+  /// `p_BpBq_E` (or `p_PQ_E`) expressed in the same frame E as the
   /// spatial force. The operation performed, in coordinate-free form, is:
   /// <pre>
   ///   τ_B  = τ_B -  p_BpBq x f_Bp
@@ -85,18 +85,18 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// where τ and f represent the torque and force components respectively.
   ///
   /// For computation, all quantities above must be expressed in a common
-  /// frame `E`; we add an `_E` suffix to each symbol to indicate that.
+  /// frame E; we add an `_E` suffix to each symbol to indicate that.
   ///
   /// This operation is performed in-place modifying the original object.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
-  ///   expressed in frame `E`. The "from" point `Bp` must be the
-  ///   current application point of `this` spatial force, and `E` must be
+  ///   Shift vector from point P of body B to point Q of B,
+  ///   expressed in frame E. The "from" point `Bp` must be the
+  ///   current application point of `this` spatial force, and E must be
   ///   the same expressed-in frame as for this spatial force.
   ///
   /// @returns A reference to `this` spatial force which is now `F_Bq_E`,
-  ///          that is, the force is now applied at point `Q` rather than `P`.
+  ///          that is, the force is now applied at point Q rather than P.
   ///
   /// @see Shift() to compute the shifted spatial force without modifying
   ///              this original object.
@@ -111,14 +111,14 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// ShiftInPlace() for more information.
   ///
   /// @param[in] p_BpBq_E
-  ///   Shift vector from point `P` of body `B` to point `Q` of `B`,
-  ///   expressed in frame `E`. The "from" point `Bp` must be the
-  ///   current application point of `this` spatial force, and `E` must be
+  ///   Shift vector from point P of body B to point Q of B,
+  ///   expressed in frame E. The "from" point `Bp` must be the
+  ///   current application point of `this` spatial force, and E must be
   ///   the same expressed-in frame as for this spatial force.
   ///
   /// @retval F_Bq_E
-  ///   The equivalent shifted spatial force, now applied at point `Q`
-  ///   rather than `P`.
+  ///   The equivalent shifted spatial force, now applied at point Q
+  ///   rather than P.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial force in-place
   ///                     modifying the original object.
@@ -126,10 +126,10 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /// Given `this` spatial force `F_Bp_E` applied at point `P` of body `B` and
-  /// expressed in a frame `E`, this method computes the 6-dimensional dot
-  /// product with the spatial velocity `V_IBp_E` of body `B` at point `P`,
-  /// measured in an inertial frame `I` and expressed in the same frame `E`
+  /// Given `this` spatial force `F_Bp_E` applied at point P of body B and
+  /// expressed in a frame E, this method computes the 6-dimensional dot
+  /// product with the spatial velocity `V_IBp_E` of body B at point P,
+  /// measured in an inertial frame I and expressed in the same frame E
   /// in which the spatial force is expressed.
   /// This dot-product represents the power generated by `this` spatial force
   /// when its body and application point have the given spatial velocity.
@@ -137,7 +137,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// the result is independent of that frame.
   ///
   /// @warning The result of this method cannot be interpreted as power unless
-  ///          the spatial velocity is measured in an inertial frame `I`.
+  ///          the spatial velocity is measured in an inertial frame I.
   T dot(const SpatialVelocity<T>& V_IBp_E) const;
 };
 
