@@ -29,8 +29,9 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
     if (event_info->has_event(EventInfo::EventType::kDiscreteUpdate)) {
       sub.CalcDiscreteVariableUpdates(*context, event_info.get(),
-          tmp_state->get_mutable_discrete_state());
-    } else if (event_info->has_event(EventInfo::EventType::kUnrestrictedUpdate)) {
+                                      tmp_state->get_mutable_discrete_state());
+    } else if (event_info->has_event(
+                   EventInfo::EventType::kUnrestrictedUpdate)) {
       sub.CalcUnrestrictedUpdate(*context, event_info.get(), tmp_state.get());
     } else {
       DRAKE_DEMAND(false);

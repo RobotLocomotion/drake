@@ -19,15 +19,20 @@
 namespace drake {
 namespace systems {
 
+/**
+ * Holds event related information for LeafSystem
+ */
 class LeafEventInfo : public EventInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventInfo)
 
   LeafEventInfo() = default;
 
+  /**
+   * Merges with @p other_info, which must also be of type LeafEventInfo.
+   */
   void merge(const EventInfo* other_info) final {
-    if (other_info == this)
-      return;
+    if (other_info == this) return;
 
     const LeafEventInfo* other = dynamic_cast<const LeafEventInfo*>(other_info);
     if (other == nullptr)
@@ -42,10 +47,12 @@ class LeafEventInfo : public EventInfo {
     return events_.find(event) != events_.end();
   }
 
-  bool empty() const final {
-    return events_.empty();
-  }
+  bool empty() const final { return events_.empty(); }
 
+  /**
+   * Returns the TriggerType that's associated with @p event, or
+   * TriggerType::kUnknownTrigger if @p event doesn't exsit.
+   */
   TriggerType get_triggers(EventType event) const {
     auto it = events_.find(event);
     if (it == events_.end()) {
@@ -54,6 +61,11 @@ class LeafEventInfo : public EventInfo {
     return it->second;
   }
 
+  /**
+   * If this does not have @p event, @p event and @p trigger will be insterted.
+   * Otherwise, @p trigger will be | to the exsiting triggers that corresponds
+   * to @p event.
+   */
   void add_event_trigger_pair(EventType event, TriggerType trigger) {
     auto it = events_.find(event);
     if (it == events_.end()) {
@@ -65,19 +77,20 @@ class LeafEventInfo : public EventInfo {
     }
   }
 
-  void clear() final {
-    events_.clear();
-  }
+  void clear() final { events_.clear(); }
 
   void print() const final {
     for (const auto& pair : events_) {
-      std::cout << "\t" << "event: " << pair.first << ", trigger: " << pair.second << std::endl;
+      std::cout << "\t"
+                << "event: " << pair.first << ", trigger: " << pair.second
+                << std::endl;
     }
   }
 
  private:
   std::map<EventType, TriggerType> events_;
 };
+
 
 /// %LeafContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a leaf System. Specifically, a

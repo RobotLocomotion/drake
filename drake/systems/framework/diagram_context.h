@@ -25,16 +25,13 @@ class DiagramEventInfo : public EventInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventInfo)
 
-  explicit DiagramEventInfo(int size) :
-      EventInfo(),
-      sub_event_info_(size),
-      owned_sub_event_info_(size) {}
+  explicit DiagramEventInfo(int size)
+      : EventInfo(), sub_event_info_(size), owned_sub_event_info_(size) {}
 
-  int size() const {
-    return static_cast<int>(sub_event_info_.size());
-  }
+  int size() const { return static_cast<int>(sub_event_info_.size()); }
 
-  void set_and_own_sub_event(int index, std::unique_ptr<EventInfo> sub_event_info) {
+  void set_and_own_sub_event(int index,
+                             std::unique_ptr<EventInfo> sub_event_info) {
     DRAKE_DEMAND(index >= 0 && index < size());
     owned_sub_event_info_[index] = std::move(sub_event_info);
     sub_event_info_[index] = owned_sub_event_info_[index].get();
@@ -51,12 +48,13 @@ class DiagramEventInfo : public EventInfo {
   }
 
   void merge(const EventInfo* other_info) final {
-    if (other_info == this)
-      return;
+    if (other_info == this) return;
 
-    const DiagramEventInfo* other = dynamic_cast<const DiagramEventInfo*>(other_info);
+    const DiagramEventInfo* other =
+        dynamic_cast<const DiagramEventInfo*>(other_info);
     if (other == nullptr)
-      DRAKE_ABORT_MSG("cannot merger DiagramEventInfo with non DiagramEventInfo.");
+      DRAKE_ABORT_MSG(
+          "cannot merger DiagramEventInfo with non DiagramEventInfo.");
 
     DRAKE_DEMAND(size() == other->size());
 
@@ -73,16 +71,14 @@ class DiagramEventInfo : public EventInfo {
 
   bool has_event(EventType event) const final {
     for (int i = 0; i < size(); i++) {
-      if (sub_event_info_[i]->has_event(event))
-        return true;
+      if (sub_event_info_[i]->has_event(event)) return true;
     }
     return false;
   }
 
   bool empty() const final {
     for (int i = 0; i < size(); i++) {
-      if (!sub_event_info_[i]->empty())
-        return false;
+      if (!sub_event_info_[i]->empty()) return false;
     }
     return true;
   }
