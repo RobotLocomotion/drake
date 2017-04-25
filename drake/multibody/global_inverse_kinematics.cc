@@ -412,7 +412,7 @@ GlobalInverseKinematics::BodyPointInOneOfRegions(
 
   AddLinearConstraint(z.cast<symbolic::Expression>().sum() == 1);
 
-  // p_WQ can also be computed from the body pose, as p_WQ = p_WBo + R_WB * p_BQ
+  // p_WQ must match the body pose, as p_WQ = p_WBo + R_WB * p_BQ
   AddLinearEqualityConstraint(p_WBo + R_WB * p_BQ - p_WQ,
                               Eigen::Vector3d::Zero());
 

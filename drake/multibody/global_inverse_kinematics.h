@@ -221,7 +221,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * is a surface patch on the grasped object.
    * Note this approach also works if the region Pᵢ overlaps with each other.
    * @param body_index The index of the body to on which point `Q` is attached.
-   * @param p_BQThe position of point `Q` in the body frame `B`.
+   * @param p_BQ The position of point `Q` in the body frame `B`.
    * @param region_vertices region_vertices[i] is the vertices for the i'th
    * region.
    * @retval z The newly added binary variables. If point `Q` is in the i'th
