@@ -1406,7 +1406,7 @@ std::pair<bool, T> IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
     subdivided = true;
   }
 
-  return std::make_pair(subdivided, dt);
+  return std::make_pair(!subdivided, dt);
 }
 
 template <class T>
