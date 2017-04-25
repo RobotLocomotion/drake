@@ -50,9 +50,13 @@ class EventInfo {
 
   virtual void merge(const EventInfo* other) = 0;
 
-  virtual TriggerType get_triggers(EventType event) const = 0;
-
   virtual void clear() = 0;
+
+  virtual bool has_event(EventType event) const = 0;
+
+  virtual bool empty() const = 0;
+
+  virtual void print() const = 0;
 
   static bool trigger_has_forced(TriggerType trigger) {
     return trigger & TriggerType::kForced;

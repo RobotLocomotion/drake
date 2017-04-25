@@ -75,6 +75,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /// may override this for performance reasons.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
+      EventInfo::TriggerType triggers,
       drake::systems::DiscreteValues<T>* updates) const override;
 
  private:
@@ -169,6 +170,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
+      EventInfo::TriggerType triggers,
       drake::systems::DiscreteValues<T>* updates) const final;
 
   // System<T> override.

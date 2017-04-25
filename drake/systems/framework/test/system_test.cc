@@ -82,16 +82,9 @@ class TestSystem : public System<double> {
   }
 
   // The default publish function.
-  void Publish(const Context<double>& context,
-               const EventInfo* event_info) const override {
-    DRAKE_DEMAND(event_info != nullptr);
-
-    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType trigger = info->get_triggers(EventInfo::EventType::kPublish);
-    // Actually have regiestered publish.
-    if (trigger != EventInfo::TriggerType::kUnknownTrigger)
-      ++publish_count_;
+  void DoPublish(const Context<double>& context,
+                 EventInfo::TriggerType triggers) const override {
+    ++publish_count_;
   }
 
  protected:
@@ -115,20 +108,6 @@ class TestSystem : public System<double> {
   // Sets up an arbitrary mapping from the current time to the next discrete
   // action, to exercise several different forms of discrete action.
   void DoCalcNextUpdateTime(const Context<double>& context,
-                            UpdateActions<double>* actions) const override {
-    actions->time = context.get_time() + 1;
-    actions->events.emplace_back();
-    DiscreteEvent<double>& event = actions->events.back();
-    if (context.get_time() < 10.0) {
-      // Use the default publish action.
-      event.action = DiscreteEvent<double>::kPublishAction;
-    } else {
-      // Use the default update action.
-      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-    }
-  }
-
-  void DoCalcNextUpdateTime(const Context<double>& context,
       EventInfo* event_info, double* time) const override {
     *time = context.get_time() + 1;
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
@@ -138,22 +117,47 @@ class TestSystem : public System<double> {
       // Use the default publish action.
       info->add_event_trigger_pair(EventInfo::EventType::kPublish,
           EventInfo::TriggerType::kPeriodic);
-    } else if (context.get_time() < 20.0) {
-      // Use the default update action.
-      info->add_event_trigger_pair(EventInfo::EventType::kDiscreteUpdate,
-          EventInfo::TriggerType::kPeriodic);
-    } else if (context.get_time() < 30.0) {
-      info->add_event_trigger_pair(EventInfo::EventType::kPublish,
-          EventInfo::TriggerType::kPeriodic);
     } else {
+      // Use the default update action.
       info->add_event_trigger_pair(EventInfo::EventType::kDiscreteUpdate,
           EventInfo::TriggerType::kPeriodic);
     }
   }
 
+  void PublishImpl(const Context<double>& context,
+      const EventInfo* event_info) const final {
+    if (event_info == nullptr) {
+      this->DoPublish(context, EventInfo::TriggerType::kForced);
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    EventInfo::TriggerType trigger = info->get_triggers(EventInfo::EventType::kPublish);
+    // Actually have regiestered publish.
+    if (trigger != EventInfo::TriggerType::kUnknownTrigger)
+      this->DoPublish(context, trigger);
+  }
+
+  void CalcDiscreteVariableUpdatesImpl(const Context<double>& context,
+      const EventInfo* event_info,
+      DiscreteValues<double>* discrete_state) const final {
+    if (event_info == nullptr) {
+      this->DoCalcDiscreteVariableUpdates(context, EventInfo::TriggerType::kForced, discrete_state);
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    EventInfo::TriggerType triggers = info->get_triggers(EventInfo::EventType::kDiscreteUpdate);
+    if (triggers != EventInfo::TriggerType::kUnknownTrigger)
+      this->DoCalcDiscreteVariableUpdates(context, triggers, discrete_state);
+  }
+
   // The default update function.
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
+      EventInfo::TriggerType triggers,
       DiscreteValues<double>* discrete_state) const override {
     ++update_count_;
   }
@@ -239,14 +243,13 @@ TEST_F(SystemTest, DiscretePublish) {
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
   context_.set_time(15.0);
-  UpdateActions<double> actions;
 
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
+  auto event_info = system_.AllocateEventInfo();
+  system_.CalcNextUpdateTime(context_, event_info.get());
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
+  system_.CalcDiscreteVariableUpdates(context_, event_info.get(),
                                       update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }

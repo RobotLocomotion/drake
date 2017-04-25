@@ -38,7 +38,15 @@ class LeafEventInfo : public EventInfo {
     }
   }
 
-  TriggerType get_triggers(EventType event) const final {
+  bool has_event(EventType event) const final {
+    return events_.find(event) != events_.end();
+  }
+
+  bool empty() const final {
+    return events_.empty();
+  }
+
+  TriggerType get_triggers(EventType event) const {
     auto it = events_.find(event);
     if (it == events_.end()) {
       return TriggerType::kUnknownTrigger;
@@ -59,6 +67,12 @@ class LeafEventInfo : public EventInfo {
 
   void clear() final {
     events_.clear();
+  }
+
+  void print() const final {
+    for (const auto& pair : events_) {
+      std::cout << "\t" << "event: " << pair.first << ", trigger: " << pair.second << std::endl;
+    }
   }
 
  private:

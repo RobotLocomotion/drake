@@ -26,6 +26,7 @@
 namespace drake {
 namespace systems {
 
+/*
 /// A description of a discrete-time event, which is passed from the Simulator
 /// to the recipient System's appropriate event handling method. Different
 /// DiscreteEvent ActionTypes trigger different event handlers, which are
@@ -88,6 +89,7 @@ struct UpdateActions {
   /// The events that should occur when the sample time arrives.
   std::vector<DiscreteEvent<T>> events;
 };
+*/
 
 /** @cond */
 // Private helper class for System.
@@ -278,9 +280,18 @@ class System {
   }
   */
 
-  virtual void Publish(const Context<T>& context,
+  void Publish(const Context<T>& context,
       const EventInfo* event_info = nullptr) const {
-    unused(context, event_info);
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    PublishImpl(context, event_info);
+  }
+
+  virtual void PublishImpl(const Context<T>& context,
+      const EventInfo* event_info) const {
+    if (event_info == nullptr)
+      DoPublish(context, EventInfo::TriggerType::kForced);
+    else
+      DRAKE_ABORT_MSG("need to override this for other types of triggers");
   }
   //@}
 
@@ -495,14 +506,19 @@ class System {
   /// DoCalcDiscreteVariableUpdates by default, or to `event.do_update` if
   /// provided.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
-                                   const DiscreteEvent<T>& event,
-                                   DiscreteValues<T>* discrete_state) const {
+      const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
-    if (event.do_calc_discrete_variable_update == nullptr) {
-      DoCalcDiscreteVariableUpdates(context, discrete_state);
+    CalcDiscreteVariableUpdatesImpl(context, event_info, discrete_state);
+  }
+
+  virtual void CalcDiscreteVariableUpdatesImpl(const Context<T>& context,
+      const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const {
+    if (event_info == nullptr) {
+      DoCalcDiscreteVariableUpdates(context, EventInfo::TriggerType::kForced, discrete_state);
     } else {
-      event.do_calc_discrete_variable_update(context, discrete_state);
+      DRAKE_ABORT_MSG("need to override this for other types of triggers");
     }
   }
 
@@ -514,10 +530,9 @@ class System {
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes in the callback.
   void CalcUnrestrictedUpdate(const Context<T>& context,
-                              const DiscreteEvent<T>& event,
+                              const EventInfo* event_info,
                               State<T>* state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
     const int continuous_state_dim = state->get_continuous_state()->size();
     const int discrete_state_dim = state->get_discrete_state()->num_groups();
     const int abstract_state_dim = state->get_abstract_state()->size();
@@ -526,17 +541,23 @@ class System {
     // documentation for DoCalclUnrestrictedUpdate().
     state->CopyFrom(context.get_state());
 
-    if (event.do_unrestricted_update == nullptr) {
-      DoCalcUnrestrictedUpdate(context, state);
-    } else {
-      event.do_unrestricted_update(context, state);
-    }
+    CalcUnrestrictedUpdateImpl(context, event_info, state);
+
     if (continuous_state_dim != state->get_continuous_state()->size() ||
         discrete_state_dim != state->get_discrete_state()->num_groups() ||
         abstract_state_dim != state->get_abstract_state()->size())
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
+  }
+
+  virtual void CalcUnrestrictedUpdateImpl(const Context<T>& context,
+      const EventInfo* event_info, State<T>* state) const {
+    if (event_info == nullptr) {
+      DoCalcUnrestrictedUpdate(context, EventInfo::TriggerType::kForced, state);
+    } else {
+      DRAKE_ABORT_MSG("need to override this for other types of triggers");
+    }
   }
 
   /// This method is called by a Simulator during its calculation of the size of
@@ -547,6 +568,7 @@ class System {
   /// action (with a const Context) or an update action (with a mutable
   /// Context). The UpdateAction object is retained and returned to the System
   /// when it is time to take the action.
+  /*
   T CalcNextUpdateTime(const Context<T>& context,
                        UpdateActions<T>* actions) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
@@ -555,6 +577,7 @@ class System {
     DoCalcNextUpdateTime(context, actions);
     return actions->time;
   }
+  */
 
   T CalcNextUpdateTime(const Context<T>& context,
                        EventInfo* event_info) const {
@@ -566,12 +589,12 @@ class System {
     return ret;
   }
 
-  void MyGetPerStepEvents(const Context<T>& context,
+  void GetPerStepEvents(const Context<T>& context,
                           EventInfo* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(event_info != nullptr);
     event_info->clear();
-    DoMyGetPerStepEvents(context, event_info);
+    DoGetPerStepEvents(context, event_info);
   }
 
   /// This method is called by a Simulator in its Initialize() to gather all
@@ -579,6 +602,7 @@ class System {
   /// derivatives and performs integration. It is assumed that these events
   /// remain constant throughout the simulation. The `Step` here refers to the
   /// major time step taken by the Simulator. @p events cannot be null.
+  /*
   void GetPerStepEvents(const Context<T>& context,
                         std::vector<DiscreteEvent<T>>* events) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
@@ -586,6 +610,7 @@ class System {
     events->clear();
     DoGetPerStepEvents(context, events);
   }
+  */
 
   /// Computes the output values that should result from the current contents
   /// of the given Context. The result may depend on time and the current values
@@ -1200,7 +1225,10 @@ class System {
   /// This method is called only from the public non-virtual Publish() which
   /// will have already error-checked `context` so you may assume that it is
   /// valid for this %System.
-  // virtual void DoPublish(const Context<T>& context) const { unused(context); }
+  virtual void DoPublish(const Context<T>& context,
+      EventInfo::TriggerType triggers) const {
+    unused(context, triggers);
+  }
 
   /// Updates the @p discrete_state on sample events.
   /// Override it, along with DoCalcNextUpdateTime(), if your System has any
@@ -1213,9 +1241,10 @@ class System {
   /// `discrete_state` pointer is non-null, and that the referenced object
   /// has the same constituent structure as was produced by
   /// AllocateDiscreteVariables().
-  virtual void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context, DiscreteValues<T>* discrete_state) const {
-    unused(context, discrete_state);
+  virtual void DoCalcDiscreteVariableUpdates(const Context<T>& context,
+      EventInfo::TriggerType triggers,
+      DiscreteValues<T>* discrete_state) const {
+    unused(context, triggers, discrete_state);
   }
 
   /// Updates the @p state *in an unrestricted fashion* on unrestricted update
@@ -1239,8 +1268,9 @@ class System {
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
+                                        EventInfo::TriggerType triggers,
                                         State<T>* state) const {
-    unused(context, state);
+    unused(context, triggers, state);
   }
 
   /// Computes the next time at which this System must perform a discrete
@@ -1257,11 +1287,13 @@ class System {
   /// time of Infinity and no actions to take.  If you declare actions, you may
   /// specify custom do_publish and do_update handlers.  If you do not,
   /// DoPublish and DoCalcDifferenceUpdates will be used by default.
+  /*
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     UpdateActions<T>* actions) const {
     unused(context);
     actions->time = std::numeric_limits<T>::infinity();
   }
+  */
 
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     EventInfo* event_info, T* time) const {
@@ -1269,8 +1301,8 @@ class System {
     *time = std::numeric_limits<T>::infinity();
   }
 
-  virtual void DoMyGetPerStepEvents(const Context<T>& context,
-                                    EventInfo* event_info) const {
+  virtual void DoGetPerStepEvents(const Context<T>& context,
+                                  EventInfo* event_info) const {
     unused(context);
   }
 
@@ -1287,10 +1319,12 @@ class System {
   /// not null, and it can be changed freely by the overriding implementation.
   ///
   /// The default implementation returns without changing @p events.
+  /*
   virtual void DoGetPerStepEvents(const Context<T>& context,
       std::vector<DiscreteEvent<T>>* events) const {
     unused(context);
   }
+  */
 
   /// Override this method for physical systems to calculate the potential
   /// energy currently stored in the configuration provided in the given
