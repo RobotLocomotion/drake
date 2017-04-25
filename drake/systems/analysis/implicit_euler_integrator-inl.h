@@ -676,11 +676,11 @@ bool ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   if (dt < this->get_minimum_step_size()) {
     const T half_dt = dt / 2;
 
-    // TODO(edrumwri): Investigate replacing this with an explicit trapezoid step,
-    //                 which would be expected to give better accuracy. The
-    //                 mitigating factor is that dt is already small, so a test
-    //                 of, e.g., a square wave function, should quantify the
-    //                 improvement (if any).
+    // TODO(edrumwri): Investigate replacing this with an explicit trapezoid
+    //                 step, which would be expected to give better accuracy.
+    //                 The mitigating factor is that dt is already small, so a
+    //                 test of, e.g., a square wave function, should quantify
+    //                 the improvement (if any).
     // Compute the Euler step.
     IntegratorBase<T>::CalcTimeDerivatives(*context, derivs_.get());
     xtplus_ie = xt0 + dt*derivs_->CopyToVector();
