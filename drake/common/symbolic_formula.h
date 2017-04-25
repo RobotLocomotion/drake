@@ -95,7 +95,7 @@ class Formula {
   /** Default constructor. */
   Formula() { *this = True(); }
 
-  explicit Formula(const std::shared_ptr<FormulaCell> ptr);
+  explicit Formula(std::shared_ptr<FormulaCell> ptr);
 
   FormulaKind get_kind() const;
   size_t get_hash() const;

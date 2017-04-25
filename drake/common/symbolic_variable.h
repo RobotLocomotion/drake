@@ -32,7 +32,7 @@ class Variable {
   Variable() : id_{0}, name_{std::string()} {}
 
   /** Constructs a variable with a string . */
-  explicit Variable(const std::string& name);
+  explicit Variable(std::string name);
 
   /** Checks if this is a dummy variable (ID = 0) which is created by
    *  the default constructor. */
