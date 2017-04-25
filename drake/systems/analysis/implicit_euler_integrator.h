@@ -94,13 +94,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     derivs_ = system.AllocateTimeDerivatives();
   }
 
-  ///
-  /// @name Methods for getting and setting the Jacobian scheme.
-  ///
-  /// Methods for getting and setting the scheme used to determine the
-  /// Jacobian matrix necessary for solving the requisite nonlinear system
-  /// if equations.
-  /// @{
   /// Selecting the wrong such Jacobian determination scheme will slow (possibly
   /// critically) the implicit integration process. Automatic differentiation is
   /// recommended if the System supports it for reasons of both higher
@@ -125,6 +118,14 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
     /// Automatic differentiation.
     kAutomatic
   };
+
+  /// @name Methods for getting and setting the Jacobian scheme.
+  ///
+  /// Methods for getting and setting the scheme used to determine the
+  /// Jacobian matrix necessary for solving the requisite nonlinear system
+  /// if equations.
+  /// @see JacobianComputationScheme
+  /// @{
 
   /// Sets the Jacobian computation scheme. This function can be safely called
   /// at any time (i.e., the integrator need not be re-initialized afterward).
