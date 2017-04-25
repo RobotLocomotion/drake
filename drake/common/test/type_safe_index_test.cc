@@ -5,6 +5,7 @@
 #include <sstream>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -20,7 +21,7 @@ using std::move;
 
 #ifdef DRAKE_ASSERT_IS_DISARMED
 // With assertion disarmed, expect no exception.
-#define EXPECT_ERROR_MESSAGE_IF_ARMED(expression, exception, reg_exp) \
+#define EXPECT_ERROR_MESSAGE_IF_ARMED(expression, reg_exp) \
 do {\
   EXPECT_NO_THROW(expression); \
 } while (0)
@@ -29,12 +30,13 @@ do {\
 // Helper macro for "expecting" an exception but *also* testing the error
 // message against the provided regular expression.
 
-#define EXPECT_ERROR_MESSAGE_IF_ARMED(expression, exception, reg_exp) \
+#define EXPECT_ERROR_MESSAGE_IF_ARMED(expression, reg_exp) \
 do {\
   try { \
     expression; \
-    GTEST_NONFATAL_FAILURE_("\t" #expression " failed to throw " #exception); \
-  } catch (const exception& err) { \
+    GTEST_NONFATAL_FAILURE_("\t" #expression \
+        " failed to throw std::runtime_error."); \
+  } catch (const std::runtime_error& err) { \
     auto matcher = [](const char* s, const char* re) { \
       return regex_match(s, regex(re)); }; \
     EXPECT_PRED2(matcher, err.what(), reg_exp); \
@@ -53,19 +55,17 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   EXPECT_EQ(index, 1);                      // This also tests operator==(int).
   AIndex index2(index);                     // Copy constructor.
   EXPECT_EQ(index2, 1);
-  AIndex index3(move(index2));              // Move constructor[
+  AIndex index3(move(index2));              // Move constructor.
   EXPECT_EQ(index3, 1);
   EXPECT_FALSE(index2.is_valid());
 
   // Construction with invalid index.
   AIndex invalid;                           // Default constructor.
   EXPECT_FALSE(invalid.is_valid());
-  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex(-1), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex(-1),
                                 "Explicitly constructing an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex thing(invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(AIndex(invalid)),
                                 "Copy constructing from an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex(move(invalid)), std::runtime_error,
-                                "Move constructing from an invalid index.+");
 }
 
 // Verifies the constructor behavior -- in debug and release modes.
@@ -90,19 +90,13 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   AIndex index4;
   index4 = 17;
   EXPECT_EQ(index4, 17);
-  EXPECT_ERROR_MESSAGE_IF_ARMED(index4 = -3, std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(index4 = -3,
                                 "Assigning an invalid int.+");
 
   // Invalid assignment.
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(invalid = index2, std::runtime_error,
-                                "Copy assigning to an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(index2 = invalid, std::runtime_error,
-                                "Copy assigning an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(invalid = move(index3), std::runtime_error,
-                                "Move assigning to an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(index3 = move(invalid), std::runtime_error,
-                                "Move assigning an invalid index.+");
+  EXPECT_ERROR_MESSAGE_IF_ARMED(index2 = invalid,
+                                "Copy assigning from an invalid index.+");
 }
 
 // Verifies implicit conversion from index to int.
@@ -113,7 +107,6 @@ GTEST_TEST(TypeSafeIndex, ConversionToInt) {
 
   AIndex invalid;
   EXPECT_ERROR_MESSAGE_IF_ARMED(unused(static_cast<int>(invalid)),
-                                std::runtime_error,
                                 "Converting to an int.+");
 }
 
@@ -145,29 +138,29 @@ GTEST_TEST(TypeSafeIndex, InvalidIndexComparisonOperators) {
   AIndex invalid;
 
   // Comparison operators.
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid == valid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid == valid),
                                 "Testing == with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid == invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid == invalid),
                                 "Testing == with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid != valid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid != valid),
                                 "Testing != with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid != invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid != invalid),
                                 "Testing != with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid < valid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid < valid),
                                 "Testing < with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid < invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid < invalid),
                                 "Testing < with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid <= valid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid <= valid),
                                 "Testing <= with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid <= invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid <= invalid),
                                 "Testing <= with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid > valid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid > valid),
                                 "Testing > with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid > invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid > invalid),
                                 "Testing > with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid >= valid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid >= valid),
                                 "Testing >= with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid >= invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid >= invalid),
                                 "Testing >= with invalid RHS.+");
 }
 
@@ -182,13 +175,12 @@ GTEST_TEST(TypeSafeIndex, PrefixIncrement) {
   // In Debug builds, some increment operations will throw.
   // Overflow produces an invalid index.
   AIndex max_index(std::numeric_limits<int>::max());
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      ++max_index, std::runtime_error,
-      "Pre-incrementing produced an invalid index.+");
+  EXPECT_ERROR_MESSAGE_IF_ARMED(++max_index,
+                                "Pre-incrementing produced an invalid index.+");
   // Increment invalid index.
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(++invalid, std::runtime_error,
-                       "Pre-incrementing an invalid index.+");
+  EXPECT_ERROR_MESSAGE_IF_ARMED(++invalid,
+                                "Pre-incrementing an invalid index.+");
 }
 
 // Tests the postfix increment behavior.
@@ -203,12 +195,11 @@ GTEST_TEST(TypeSafeIndex, PostfixIncrement) {
   // Overflow produces an invalid index.
   AIndex max_index(std::numeric_limits<int>::max());
   EXPECT_ERROR_MESSAGE_IF_ARMED(
-      max_index++, std::runtime_error,
-      "Post-incrementing produced an invalid index.+");
+      max_index++, "Post-incrementing produced an invalid index.+");
   // Increment invalid index.
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(invalid++, std::runtime_error,
-                                "Post-incrementing an invalid index.+");
+  EXPECT_ERROR_MESSAGE_IF_ARMED(
+      invalid++, "Post-incrementing an invalid index.+");
 }
 
 // Tests the prefix decrement behavior.
@@ -220,12 +211,10 @@ GTEST_TEST(TypeSafeIndex, PrefixDecrement) {
   EXPECT_EQ(index_minus, AIndex(7));
   // In Debug builds decrements leading to a negative result will throw.
   AIndex about_to_be_negative_index(0);
+  EXPECT_ERROR_MESSAGE_IF_ARMED(--about_to_be_negative_index,
+                                "Pre-decrementing produced an invalid index.+");
   EXPECT_ERROR_MESSAGE_IF_ARMED(
-      --about_to_be_negative_index,
-      std::runtime_error,
-      "Pre-decrementing produced an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(--AIndex(), std::runtime_error,
-                       "Pre-decrementing an invalid index.+");
+      --AIndex(), "Pre-decrementing an invalid index.+");
 }
 
 // Tests the postfix decrement behavior.
@@ -239,9 +228,8 @@ GTEST_TEST(TypeSafeIndex, PostfixDecrement) {
   AIndex about_to_be_negative_index(0);
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       about_to_be_negative_index--,
-      std::runtime_error,
       "Post-decrementing produced an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex()--, std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex()--,
                                 "Post-decrementing an invalid index.+");
 }
 
@@ -272,27 +260,22 @@ GTEST_TEST(TypeSafeIndex, InPlaceAddition) {
   AIndex about_to_be_negative_index(7);
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       about_to_be_negative_index += (-9),
-      std::runtime_error,
       "In-place addition with an int produced an invalid index.+");
   AIndex invalid;
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       invalid += 1,
-      std::runtime_error,
       "In-place addition with an int on an invalid index.+");
 
   // In-place with an index.
   AIndex max_index(std::numeric_limits<int>::max());
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       max_index += AIndex(1),
-      std::runtime_error,
       "In-place addition with another index produced an invalid index.+");
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       invalid += AIndex(1),
-      std::runtime_error,
       "In-place addition with another index invalid LHS.+");
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       index += invalid,
-      std::runtime_error,
       "In-place addition with another index invalid RHS.+");
 }
 
@@ -310,28 +293,23 @@ GTEST_TEST(TypeSafeIndex, InPlaceSubtract) {
   AIndex about_to_be_negative_index(0);
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       about_to_be_negative_index -= 7,
-      std::runtime_error,
       "In-place subtraction with an int produced an invalid index.+");
   AIndex invalid;
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       invalid -= -3,
-      std::runtime_error,
       "In-place subtraction with an int on an invalid index.+");
 
   // In-place with an index.
   about_to_be_negative_index = 0;
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       about_to_be_negative_index -= AIndex(1),
-      std::runtime_error,
       "In-place subtraction with another index produced an invalid index.+");
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       invalid -= AIndex(1),
-      std::runtime_error,
       "In-place subtraction with another index invalid LHS.+");
   about_to_be_negative_index = 0;
   EXPECT_ERROR_MESSAGE_IF_ARMED(
       about_to_be_negative_index -= invalid,
-      std::runtime_error,
       "In-place subtraction with another index invalid RHS.+");
 }
 
@@ -343,7 +321,7 @@ GTEST_TEST(TypeSafeIndex, StreamInsertion) {
   EXPECT_EQ(stream.str(), "8");
 
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(stream << invalid, std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(stream << invalid,
                                 "Converting to an int.+");
 }
 
@@ -354,7 +332,7 @@ GTEST_TEST(TypeSafeIndex, ToString) {
   EXPECT_EQ(std::to_string(index), std::to_string(value));
 
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(std::to_string(invalid), std::runtime_error,
+  EXPECT_ERROR_MESSAGE_IF_ARMED(std::to_string(invalid),
                                 "Converting to an int.+");
 }
 
@@ -368,6 +346,24 @@ GTEST_TEST(TypeSafeIndex, ConversionNotAllowedBetweenDifferentTypes) {
   // The trivial case of course is true.
   EXPECT_TRUE((std::is_convertible<AIndex, AIndex>::value));
   EXPECT_TRUE((std::is_convertible<BIndex, BIndex>::value));
+}
+
+// Exercises the index in an STL context. This isn't intended to be exhaustive,
+// merely the canary in the coal mine.
+GTEST_TEST(TypeSafeIndex, UseInStl) {
+  std::vector<AIndex> indices;
+  EXPECT_NO_THROW(indices.resize(3));
+  EXPECT_FALSE(indices[0].is_valid());
+  EXPECT_NO_THROW(indices[0] = 0);
+  EXPECT_NO_THROW(indices[1] = AIndex(1));
+  EXPECT_NO_THROW(indices[2] = AIndex());  // Valid for *move* assignment.
+  AIndex invalid;
+  EXPECT_ERROR_MESSAGE_IF_ARMED(indices[2] = invalid,
+                                "Copy assigning from an invalid index.+");
+  EXPECT_NO_THROW(indices.emplace_back(3));
+  EXPECT_NO_THROW(indices.emplace_back(AIndex(4)));
+  EXPECT_NO_THROW(indices.emplace_back());
+  EXPECT_NO_THROW(indices.emplace_back(AIndex()));
 }
 
 //-------------------------------------------------------------------
