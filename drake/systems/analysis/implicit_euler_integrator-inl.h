@@ -553,29 +553,6 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& tf,
   return J;
 }
 
-template <class T>
-std::pair<bool, T> ImplicitEulerIntegrator<T>::DoStepOnceAtMost(
-    const T& max_dt) {
-  using std::max;
-  using std::isnan;
-
-  const Context<T>& context = this->get_context();
-
-  // Call the generic error controlled stepper unless error control is
-  // disabled.
-  if (this->get_fixed_step_mode()) {
-    this->get_mutable_interval_start_state() =
-        context.get_continuous_state_vector().CopyToVector();
-    this->DoStepOnceFixedSize(max_dt);
-    return std::make_pair(true, max_dt);
-  } else {
-    IntegratorBase<T>::CalcTimeDerivatives(context, derivs_.get());
-    this->StepErrorControlled(max_dt, derivs_.get());
-    const T& dt = this->get_previous_integration_step_size();
-    return std::make_pair(dt == max_dt, dt);
-  }
-}
-
 // Steps both implicit Euler and implicit trapezoid forward by dt, if possible.
 // @param dt the integration step size to attempt.
 // @param [out] xtplus_ie contains the Euler integrator solution on return
@@ -641,9 +618,6 @@ bool ImplicitEulerIntegrator<T>::AttemptStepOncePaired(const T& dt,
     // Reset the state to that computed by implicit Euler.
     context->set_time(t0 + dt);
     context->get_mutable_continuous_state()->SetFromVector(*xtplus_ie);
-
-    // Update statistics.
-    this->UpdateStatistics(dt);
     return true;
   } else {
     SPDLOG_DEBUG(drake::log(), "Implicit trapezoid approach FAILED with a step"
@@ -659,7 +633,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepOncePaired(const T& dt,
 /// @post the time and continuous state will be advanced only if `true` is
 ///       returned.
 template <class T>
-bool ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
+bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
   VectorX<T> xtplus_ie, xtplus_itr;
 
   // Save the current time and state.
@@ -667,7 +641,7 @@ bool ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   const T t0 = context->get_time();
   const VectorX<T> xt0 = context->get_continuous_state()->CopyToVector();
 
-  SPDLOG_DEBUG(drake::log(), "IE DoStepOnceFixedSize(h={}) t={}",
+  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}",
                dt, t0);
 
   // If the requested dt is less than or equal to the minimum step size, an
@@ -704,8 +678,6 @@ bool ImplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
     // Set the "trapezoid" state.
     xtplus_itr = context->get_continuous_state()->CopyToVector();
 
-    // Update the statistics.
-    this->UpdateStatistics(dt);
     return true;
   }
 

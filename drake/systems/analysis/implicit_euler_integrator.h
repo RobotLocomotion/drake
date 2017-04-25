@@ -109,9 +109,9 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// ε is machine epsilon, from n forward dynamics calls (where n is the number
   /// of state variables). Central differencing yields the most accurate
   /// numerically differentiated Jacobian matrix, but expends double the
-  /// computational effort for approximately 50% greater accuracy: the total
-  /// error in the central-difference approximation is close to ε^(2/3), from 2n
-  /// forward dynamics calls. See [Nocedal 2004, pp. 167-169].
+  /// computational effort for approximately three digits greater accuracy: the
+  /// total error in the central-difference approximation is close to ε^(2/3),
+  /// from 2n forward dynamics calls. See [Nocedal 2004, pp. 167-169].
   ///
   /// - [Nocedal 2004] J. Nocedal and S. Wright. Numerical Optimization.
   ///                  Springer, 2004.
@@ -223,7 +223,6 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
 
  private:
   void DoInitialize() override;
-  std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
   void DoResetStatistics() override;
   VectorX<T> Solve(const MatrixX<T>& A, const VectorX<T>& b);
   bool AttemptStepOncePaired(const T& dt, VectorX<T>* xtplus_euler,
@@ -235,7 +234,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
                     double scale,
                     VectorX<T>* xtplus);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
-  bool DoStepOnceFixedSize(const T& dt) override;
+  bool DoStep(const T& dt) override;
   bool StepImplicitEuler(const T& dt);
   bool StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
                              VectorX<T>* xtplus);

@@ -81,7 +81,7 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
   integrator_->Initialize();
 
   // Take a variable step.
-  integrator_->StepExactlyVariable(1e-40);
+  integrator_->IntegrateExactly(1e-40);
 }
 
 // Test scaling vectors
@@ -155,7 +155,7 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   const double t_final = 1.0;
   double t_remaining = t_final - context_->get_time();
   do {
-    integrator_->StepOnceAtMost(t_remaining, t_remaining, t_remaining);
+    integrator_->IntegrateAtMost(t_remaining, t_remaining, t_remaining);
     t_remaining = t_final - context_->get_time();
   } while (t_remaining > 0.0);
 
@@ -195,7 +195,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
   integrator_->Initialize();
 
   // Take a single step of size big_dt.
-  integrator_->StepOnceAtMost(big_dt, big_dt, big_dt);
+  integrator_->IntegrateAtMost(big_dt, big_dt, big_dt);
 
   // Verify that a step of big_dt was taken.
   EXPECT_NEAR(context_->get_time(), big_dt,
@@ -249,10 +249,10 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   const double c1 = initial_position;
   const double c2 = initial_velocity / omega;
 
-  // StepOnceFixedSize for 1 second.
+  // Step for 1 second.
   const double t_final = 1.0;
   for (double t = 0.0; t < t_final; t += dt)
-    integrator_->StepOnceAtMost(dt, dt, dt);
+    integrator_->IntegrateAtMost(dt, dt, dt);
 
   // Get the final position.
   const double x_final =
@@ -283,10 +283,10 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
                              initial_velocity);
 
-  // StepOnceFixedSize for 1 second.
+  // Step for 1 second.
   double t_remaining = t_final - context_->get_time();
   do {
-    integrator_->StepOnceAtMost(t_remaining, t_remaining, t_remaining);
+    integrator_->IntegrateAtMost(t_remaining, t_remaining, t_remaining);
     t_remaining = t_final - context_->get_time();
   } while (t_remaining > 0.0);
 
@@ -321,7 +321,7 @@ TEST_F(RK3IntegratorTest, IllegalFixedStep) {
   // Initialize the integrator.
   integrator_->Initialize();
 
-  EXPECT_THROW(integrator_->StepExactlyFixed(1e-8), std::logic_error);
+  EXPECT_THROW(integrator_->IntegrateWithSingleFixedStep(1e-8), std::logic_error);
 }
 
 // Verifies statistics validity for error controlled integrator.
@@ -348,7 +348,7 @@ TEST_F(RK3IntegratorTest, CheckStat) {
                              initial_velocity);
 
   // Integrate just one step.
-  integrator_->StepOnceAtMost(dt, dt, dt);
+  integrator_->IntegrateAtMost(dt, dt, dt);
 
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator_->get_previous_integration_step_size(), 0.0);
@@ -407,7 +407,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   const double t_final = 1.0;
   const int n_steps = t_final / dt;
   for (int i = 0; i< n_steps; ++i)
-    rk2.StepExactlyFixed(dt);
+    rk2.IntegrateWithSingleFixedStep(dt);
 
   // Get the final state.
   VectorX<double> x_final_rk2 = context->get_continuous_state_vector().
@@ -431,9 +431,9 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   rk3.set_target_accuracy(1e-6);
   rk3.Initialize();
 
-  // Verify that StepExactlyVariable works.
+  // Verify that IntegrateExactly works.
   const double tol = std::numeric_limits<double>::epsilon();
-  rk3.StepExactlyVariable(t_final - context->get_time());
+  rk3.IntegrateExactly(t_final - context->get_time());
   EXPECT_NEAR(context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".
