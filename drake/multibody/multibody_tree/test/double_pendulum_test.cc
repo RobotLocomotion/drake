@@ -260,10 +260,18 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_EQ(mbt_context->get_velocities().size(), 0);
   EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 0);
 
+  // Expect an assertion in Debug builds if the position kinematics is not yet
+  // valid.
+  EXPECT_FALSE(mbt_context->is_position_kinematics_valid());
+#ifndef NDEBUG
+  EXPECT_THROW(world_body_->get_pose_in_world(*mbt_context), std::runtime_error);
+#endif
+
   // Set the poses of each body in the context to have an arbitrary value that
   // we can use for unit testing. In practice the poses in the context will be
   // the result of a position kinematics update.
   SetPendulumPoses(context.get());
+  EXPECT_TRUE(mbt_context->is_position_kinematics_valid());
 
   // Tests the API to retrieve body poses from the context.
   const Isometry3d& X_WW = world_body_->get_pose_in_world(*context);

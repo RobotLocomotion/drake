@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -129,10 +130,14 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return body_frame_;
   }
 
+  /// Returns a constant reference to the pose of this body in the world frame
+  /// for a given @p context.
+  /// @throws std::runtime_error if the position kinematics cache entry was not
+  /// validated, only in Debug builds.
   const Isometry3<T>& get_pose_in_world(
       const systems::Context<T>& context) const {
-    return this->get_parent_tree().get_body_pose_in_world(
-        context, this->get_index());
+    return get_multibody_tree_context(context).get_position_kinematics().
+        get_X_WB(topology_.body_node);
   }
 
  private:
@@ -158,6 +163,17 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   BodyTopology topology_;
+
+  // Helper method to convert a systems::Context to a MultibodyTreeContext.
+  // In Debug builds it throws a std::bad_cast exception.
+  static const MultibodyTreeContext<T>& get_multibody_tree_context(
+      const systems::Context<T>& context) {
+#ifndef NDEBUG
+    return dynamic_cast<const MultibodyTreeContext<T>&>(context);
+#else
+    return static_cast<const MultibodyTreeContext<T>&>(context);
+#endif
+  }
 };
 
 }  // namespace multibody

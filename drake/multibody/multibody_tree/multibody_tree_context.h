@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
@@ -68,33 +69,46 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     this->InitCachedValue(
         position_kinematics_ticket_,
         std::make_unique<Value<PositionKinematicsCache<T>>>(num_bodies));
+    // Forces cache entry invalidation.
+    this->invalidate_cache_entry(position_kinematics_ticket_);
+  }
+
+  /// Returns the size of the generalized positions vector.
+  int get_num_positions() const {
+    return this->get_continuous_state()->get_generalized_position().size();
+  }
+
+  /// Returns the size of the generalized velocities vector.
+  int get_num_velocities() const {
+    return this->get_continuous_state()->get_generalized_velocity().size();
   }
 
   /// Returns an Eigen expression of the vector of generalized positions.
   Eigen::VectorBlock<const VectorX<T>> get_positions() const {
-    return safe_cast<systems::BasicVector<T>>(
-        this->get_continuous_state()->get_generalized_position()).get_value();
+    return get_state_vector().segment(0, get_num_positions());
   }
 
   /// Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_velocities() const {
-    return safe_cast<systems::BasicVector<T>>(
-        this->get_continuous_state()->get_generalized_velocity()).get_value();
+    return get_state_vector().segment(get_num_positions(),
+                                      get_num_velocities());
   }
 
   /// Returns a mutable Eigen expression of the vector of generalized positions.
   Eigen::VectorBlock<VectorX<T>> get_mutable_positions() {
-    return safe_cast<systems::BasicVector<T>>(
-        this->get_mutable_continuous_state()->
-            get_mutable_generalized_position())->get_mutable_value();
+    return get_mutable_state_vector().segment(0, get_num_positions());
   }
 
   /// Returns a mutable Eigen expression of the vector of generalized
   /// velocities.
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities() {
-    return safe_cast<systems::BasicVector<T>>(
-        this->get_mutable_continuous_state()->
-            get_mutable_generalized_velocity())->get_mutable_value();
+    return get_mutable_state_vector().segment(get_num_positions(),
+                                              get_num_velocities());
+  }
+
+
+  bool is_position_kinematics_valid() const {
+    return this->is_cache_entry_valid(position_kinematics_ticket_);
   }
 
   /// Validates cache entry corresponding to the PositionKinematicsCache.
@@ -104,7 +118,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
   /// Returns a constant reference to the position kinematics cache entry.
   /// @throws std::runtime_error if the position kinematics cache entry was not
-  /// validated.
+  /// validated, only in Debug builds.
   const PositionKinematicsCache<T>& get_position_kinematics() const {
     using systems::AbstractValue;
     using systems::Value;
@@ -126,16 +140,32 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   }
 
  private:
-  const MultibodyTreeTopology topology_;
-  systems::CacheTicket position_kinematics_ticket_;
+  // Returns a constant reference to the underlying Eigen vector for the state.
+  const VectorX<T>& get_state_vector() const {
+    // xc below resolves to "Eigen::VectorBlock<const VectorX<T>>".
+    auto xc = safe_cast<systems::BasicVector<T>>(
+        this->get_continuous_state()->get_vector()).get_value();
+    // xc.nestedExpression() resolves to "const VectorX<T>&".
+    return xc.nestedExpression();
+  }
+
+  // Returns a reference to the underlying Eigen vector for the state.
+  VectorX<T>& get_mutable_state_vector() {
+    // xc below resolves to "Eigen::VectorBlock<const VectorX<T>>".
+    auto xc = safe_cast<systems::BasicVector<T>>(
+        this->get_mutable_continuous_state()->get_mutable_vector())->
+        get_mutable_value();
+    // xc.nestedExpression() resolves to "const VectorX<T>&".
+    return xc.nestedExpression();
+  }
 
   // Helper method to verify if the position kinematics cache is valid and
   // throw an exception if not.
   void VerifyPositionKinematicsCacheIsValid() const {
-    if (!this->is_cache_entry_valid(position_kinematics_ticket_)) {
+    if (!is_position_kinematics_valid()) {
       throw std::runtime_error(
           "Attempting to retrieve an invalidated position kinematics cache"
-          " entry.");
+              " entry.");
     }
   }
 
@@ -145,9 +175,11 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   // Const type version.
   template<class ToType, class FromType>
   static const ToType& safe_cast(const FromType& from) {
-    static_assert(std::is_convertible<ToType*, FromType*>::value,
+    static_assert(std::is_convertible<const ToType&, const FromType&>::value,
                   "FromType is not convertible to ToType.");
 #ifndef NDEBUG
+    if(dynamic_cast<const ToType*>(&from)==nullptr)
+      throw std::runtime_error("what the fack!");
     return dynamic_cast<const ToType&>(from);
 #else
     return static_cast<const ToType&>(from);
@@ -165,6 +197,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return static_cast<ToType*>(from);
 #endif
   }
+
+  const MultibodyTreeTopology topology_;
+  systems::CacheTicket position_kinematics_ticket_;
 };
 
 }  // namespace multibody

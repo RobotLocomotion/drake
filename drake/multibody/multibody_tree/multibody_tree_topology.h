@@ -49,6 +49,10 @@ struct BodyTopology {
   /// Unique index to the frame associated with this body.
   FrameIndex body_frame{0};
 
+  /// The unique index indentifying the BodyNode this Body is associated with
+  /// in a MultibodyTree.
+  BodyNodeIndex body_node{0};
+
   /// Depth level in the MultibodyTree, level = 0 for the world.
   /// Initialized to an invalid negative value.
   int level{-1};

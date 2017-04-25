@@ -122,6 +122,10 @@ class LeafContext : public Context<T> {
     cache_.validate(ticket);
   }
 
+  void invalidate_cache_entry(CacheTicket ticket) {
+    cache_.Invalidate(ticket);
+  }
+
   // =========================================================================
   // Accessors and Mutators for Parameters.
 

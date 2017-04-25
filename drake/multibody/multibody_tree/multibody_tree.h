@@ -335,6 +335,10 @@ class MultibodyTree {
   // Cache tickets.
   // These cache tickets should be set just once in CreateDefaultContext().
   mutable systems::CacheTicket position_kinematics_ticket_;
+
+  // This method gets called from within Finalize() to setup the topological
+  // information of this MultibodyTree.
+  void CompileTopology();
 };
 
 }  // namespace multibody

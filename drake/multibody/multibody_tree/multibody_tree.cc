@@ -29,6 +29,8 @@ void MultibodyTree<T>::Finalize() {
         "MultibodyTree.");
   }
 
+  CompileTopology();
+
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
   //   - Finalize non-T dependent topological information.
@@ -50,6 +52,19 @@ void MultibodyTree<T>::Finalize() {
 }
 
 template <typename T>
+void MultibodyTree<T>::CompileTopology() {
+  // TODO(amcastro-tri): BodyNode objects will be actual tree nodes ordered by a
+  // breadth first traversal. Therefore body node indexes will be appropriately
+  // initialized in a following PR that introduces Mobilizer objects connecting
+  // frames in a meaningful way. The code below is now introduced so that bodies
+  // can retrieve Context entries.
+  BodyNodeIndex body_node(0);
+  for (auto& body_topology: topology_.bodies) {
+    body_topology.body_node = body_node++;
+  }
+}
+
+template <typename T>
 std::unique_ptr<systems::Context<T>>
 MultibodyTree<T>::CreateDefaultContext() const {
   if (!topology_is_valid()) {
@@ -58,9 +73,6 @@ MultibodyTree<T>::CreateDefaultContext() const {
         "topology. MultibodyTree::Finalize() must be called before attempting "
         "to create a context.");
   }
-
-  // TODO(amcastro-tri): pass the MultibodyTreeTopology instead of just the
-  // number of bodies.
   auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
   SetDefaults(context.get());
   return context;
