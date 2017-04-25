@@ -41,7 +41,10 @@ api::LanePosition LineLane::DoToLanePosition(
                                   driveable_bounds(s).r_max);
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h = geo_position.z() - elevation().a() * length;
+  const double h_unsaturated = geo_position.z() - elevation().a() * length;
+  const double h = math::saturate(h_unsaturated,
+                                  elevation_bounds(s, r).min(),
+                                  elevation_bounds(s, r).max());
 
   const api::LanePosition lane_position{s, r, h};
 
@@ -50,8 +53,7 @@ api::LanePosition LineLane::DoToLanePosition(
     *nearest_position = nearest;
   }
   if (distance != nullptr) {
-    const V2 p_to_nearest{p(0) - nearest.x(), p(1) - nearest.y()};
-    *distance = p_to_nearest.norm();
+    *distance = (nearest.xyz() - geo_position.xyz()).norm();
   }
 
   return lane_position;

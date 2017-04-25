@@ -13,6 +13,7 @@ std::unique_ptr<const maliput::api::RoadGeometry>
 MonolaneOnrampMerge::BuildOnramp() {
   std::unique_ptr<maliput::monolane::Builder> rb(
       new maliput::monolane::Builder(rc_.lane_bounds, rc_.driveable_bounds,
+                                     rc_.elevation_bounds,
                                      linear_tolerance_, angular_tolerance_));
 
   // Initialize the road from the origin.

@@ -16,10 +16,12 @@ namespace monolane {
 
 Builder::Builder(const api::RBounds& lane_bounds,
                  const api::RBounds& driveable_bounds,
+                 const api::HBounds& elevation_bounds,
                  const double linear_tolerance,
                  const double angular_tolerance)
     : lane_bounds_(lane_bounds),
       driveable_bounds_(driveable_bounds),
+      elevation_bounds_(elevation_bounds),
       linear_tolerance_(linear_tolerance),
       angular_tolerance_(angular_tolerance) {
   DRAKE_DEMAND(lane_bounds_.r_min >= driveable_bounds_.r_min);
@@ -211,6 +213,7 @@ Lane* Builder::BuildConnection(
       lane = segment->NewLineLane(lane_id,
                                   xy0, dxy,
                                   lane_bounds_, driveable_bounds_,
+                                  elevation_bounds_,
                                   elevation, superelevation);
       break;
     }
@@ -237,6 +240,7 @@ Lane* Builder::BuildConnection(
       lane = segment->NewArcLane(lane_id,
                                  center, radius, theta0, d_theta,
                                  lane_bounds_, driveable_bounds_,
+                                 elevation_bounds_,
                                  elevation, superelevation);
       break;
     }

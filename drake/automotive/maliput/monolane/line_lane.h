@@ -19,7 +19,9 @@ class LineLane : public Lane {
   /// @param xy0 start point of the reference line segment
   /// @param dxy displacement to the end point of the reference line segment
   ///
-  /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
+  /// @param id,segment,lane_bounds,driveable_bounds,elevation_bounds
+  ///        See documentation for the Lane base class.
+  /// @param elevation,superelevation
   ///        See documentation for the Lane base class.
   ///
   /// N.B. The override LineLane::ToLanePosition() is currently restricted to
@@ -27,10 +29,13 @@ class LineLane : public Lane {
   LineLane(const api::LaneId& id, const api::Segment* segment, const V2& xy0,
            const V2& dxy, const api::RBounds& lane_bounds,
            const api::RBounds& driveable_bounds,
+           const api::HBounds& elevation_bounds,
            const CubicPolynomial& elevation,
            const CubicPolynomial& superelevation)
-      : Lane(id, segment, lane_bounds, driveable_bounds, dxy.norm(), elevation,
-             superelevation),
+      : Lane(id, segment,
+             lane_bounds, driveable_bounds, elevation_bounds,
+             dxy.norm(),
+             elevation, superelevation),
         x0_(xy0.x()),
         y0_(xy0.y()),
         dx_(dxy.x()),

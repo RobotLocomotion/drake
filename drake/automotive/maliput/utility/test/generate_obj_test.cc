@@ -73,11 +73,12 @@ class GenerateObjBasicDutTest : public GenerateObjTest {
   const double kAngularTolerance = 0.01 * M_PI;
   const api::RBounds kLaneBounds{-0.5, 0.5};
   const api::RBounds kDriveableBounds{-1., 1.};
+  const api::HBounds kElevationBounds{0., 5.};
 
   void SetUp() override {
     GenerateObjTest::SetUp();
 
-    mono::Builder b(kLaneBounds, kDriveableBounds,
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                     kLinearTolerance, kAngularTolerance);
 
     const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
@@ -129,7 +130,7 @@ TEST_F(GenerateObjBasicDutTest, ChangeOrigin) {
 
   // Reconstruct the basic DUT, but starting at the offset instead of (0,0,0).
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds,
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                     kLinearTolerance, kAngularTolerance);
 
     const mono::EndpointZ kZeroZ{kOffsetZ, 0., 0., 0.};
@@ -220,7 +221,7 @@ TEST_F(GenerateObjBasicDutTest, StackedBranchPointsObjContent) {
 
   // Construct a RoadGeometry with two lanes that don't quite connect.
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds,
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                     kLinearTolerance, kAngularTolerance);
 
     const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
@@ -259,6 +260,7 @@ maliput_monolane_builder:
   id: city_1
   lane_bounds: [-2, 2]
   driveable_bounds: [-4, 4]
+  elevation_bounds: [0, 5]
   position_precision: 0.01
   orientation_precision: 0.5
   points:
@@ -298,7 +300,7 @@ TEST_F(GenerateObjBasicDutTest, HighlightedSegments) {
 
   // Construct a RoadGeometry with two segments.
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds,
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                     kLinearTolerance, kAngularTolerance);
 
     const mono::EndpointZ kZeroZ{0., 0., 0., 0.};

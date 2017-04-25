@@ -5,6 +5,7 @@ maliput_monolane_builder:
   id: sidewinder
   lane_bounds: [-3, 3]
   driveable_bounds: [-8, 8]
+  elevation_bounds: [0, 5]
   position_precision: .01
   orientation_precision: 0.5
   points:

@@ -26,14 +26,19 @@ class ArcLane : public Lane {
   /// @param d_theta central angle of the arc, i.e., angular displacement
   ///                from start to end.  d_theta > 0 is counter-clockwise.
   ///
-  /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
+  /// @param id,segment,lane_bounds,driveable_bounds,elevation_bounds
+  ///        See documentation for the Lane base class.
+  /// @param elevation,superelevation
   ///        See documentation for the Lane base class.
   ///
   /// N.B. The override ArcLane::ToLanePosition() is currently restricted to
   /// lanes in which superelevation and elevation change are both zero.
-  ArcLane(const api::LaneId& id, const api::Segment* segment, const V2& center,
-          double radius, double theta0, double d_theta,
-          const api::RBounds& lane_bounds, const api::RBounds& driveable_bounds,
+  ArcLane(const api::LaneId& id, const api::Segment* segment,
+          const V2& center, double radius,
+          double theta0, double d_theta,
+          const api::RBounds& lane_bounds,
+          const api::RBounds& driveable_bounds,
+          const api::HBounds& elevation_bounds,
           const CubicPolynomial& elevation,
           const CubicPolynomial& superelevation);
 

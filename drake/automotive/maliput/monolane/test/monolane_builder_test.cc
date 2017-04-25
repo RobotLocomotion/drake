@@ -14,9 +14,11 @@ namespace monolane {
 GTEST_TEST(MonolaneBuilderTest, Fig8) {
   const api::RBounds kLaneBounds(-2., 2.);
   const api::RBounds kDriveableBounds(-4., 4.);
+  const api::HBounds kElevationBounds(0., 5.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b(kLaneBounds, kDriveableBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
+            kLinearTolerance, kAngularTolerance);
 
   const EndpointZ kLowFlatZ(0., 0., 0., 0.);
   const EndpointZ kMidFlatZ(3., 0., 0., 0.);
@@ -96,9 +98,11 @@ GTEST_TEST(MonolaneBuilderTest, Fig8) {
 GTEST_TEST(MonolaneBuilderTest, QuadRing) {
   const api::RBounds kLaneBounds(-2., 2.);
   const api::RBounds kDriveableBounds(-4., 4.);
+  const api::HBounds kElevationBounds(0., 5.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b(kLaneBounds, kDriveableBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
+            kLinearTolerance, kAngularTolerance);
 
   const EndpointZ kFlatZ(0., 0., 0., 0.);
   const ArcOffset kLargeClockwiseLoop(150., -2. * M_PI);

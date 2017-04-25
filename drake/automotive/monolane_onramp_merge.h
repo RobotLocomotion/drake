@@ -26,6 +26,7 @@ struct RoadCharacteristics {
   const maliput::api::RBounds lane_bounds{-lane_width / 2., lane_width / 2.};
   const maliput::api::RBounds driveable_bounds{-driveable_width / 2.,
                                                driveable_width / 2.};
+  const maliput::api::HBounds elevation_bounds{0., 5.2};
 };
 
 /// MonolaneOnrampMerge contains an example lane-merge scenario expressed as a
