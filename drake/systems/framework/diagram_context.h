@@ -65,13 +65,32 @@ class DiagramEventInfo : public EventInfo {
     }
   }
 
-  TriggerType get_triggers(EventType event) const final {
-    DRAKE_ABORT_MSG("no one should call this");
-  }
-
   void clear() final {
     for (int i = 0; i < size(); i++) {
       sub_event_info_[i]->clear();
+    }
+  }
+
+  bool has_event(EventType event) const final {
+    for (int i = 0; i < size(); i++) {
+      if (sub_event_info_[i]->has_event(event))
+        return true;
+    }
+    return false;
+  }
+
+  bool empty() const final {
+    for (int i = 0; i < size(); i++) {
+      if (!sub_event_info_[i]->empty())
+        return false;
+    }
+    return true;
+  }
+
+  void print() const final {
+    for (int i = 0; i < size(); i++) {
+      std::cout << "subsys: " << std::to_string(i) << std::endl;
+      sub_event_info_[i]->print();
     }
   }
 

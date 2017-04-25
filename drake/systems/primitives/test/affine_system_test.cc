@@ -170,10 +170,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   context->FixInputPort(0, Vector1d::Constant(u0));
 
   auto update = system.AllocateDiscreteVariables();
-  DiscreteEvent<double> update_event;
-  update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-
-  system.CalcDiscreteVariableUpdates(*context, update_event, update.get());
+  system.CalcDiscreteVariableUpdates(*context, nullptr, update.get());
 
   EXPECT_TRUE(CompareMatrices(update->get_vector(0)->CopyToVector(),
                               A * x0 + B * u0 + f0));

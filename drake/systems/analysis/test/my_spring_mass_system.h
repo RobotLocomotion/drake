@@ -39,7 +39,8 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
  private:
   // Publish t q u to standard output.
-  void DoPublish(const Context<T>& context) const override {
+  void DoPublish(const Context<T>& context,
+      EventInfo::TriggerType triggers) const override {
     ++publish_count_;
   }
 
@@ -47,6 +48,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   // discrete variables- in other words, this is just a counter.
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
+      EventInfo::TriggerType triggers,
       DiscreteValues<T>* discrete_state) const override {
     ++update_count_;
   }

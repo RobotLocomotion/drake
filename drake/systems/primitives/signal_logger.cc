@@ -10,7 +10,8 @@ SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
 }
 
 template <typename T>
-void SignalLogger<T>::DoPublish(const Context<T>& context) const {
+void SignalLogger<T>::DoPublish(const Context<T>& context,
+    EventInfo::TriggerType triggers) const {
   log_.AddData(context.get_time(),
                this->EvalVectorInput(context, 0)->get_value());
 }

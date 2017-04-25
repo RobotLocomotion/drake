@@ -353,6 +353,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
   void DoCalcDiscreteVariableUpdates(const Context<T>& context,
+                                     EventInfo::TriggerType triggers,
                                      DiscreteValues<T>* updates) const override;
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override;
