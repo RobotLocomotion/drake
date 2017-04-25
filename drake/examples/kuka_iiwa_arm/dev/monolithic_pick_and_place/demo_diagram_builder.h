@@ -99,7 +99,6 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
                                       Eigen::Vector3d::Zero() /* rpy */);
 
   tree_builder->AddGround();
-  
   // Chooses an appropriate box.
   int box_id = 0;
   int iiwa_id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
