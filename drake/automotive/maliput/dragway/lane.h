@@ -139,6 +139,10 @@ class Lane final : public api::Lane {
 
   api::RBounds do_driveable_bounds(double) const final;
 
+  api::HBounds do_elevation_bounds(double, double) const final {
+    DRAKE_ABORT();  // TODO(maddog@tri.global)  Implement me.
+  }
+
   api::LanePosition DoEvalMotionDerivatives(
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const final;
