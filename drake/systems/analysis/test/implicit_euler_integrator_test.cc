@@ -89,7 +89,8 @@ TEST_F(ImplicitIntegratorTest, AutoDiff) {
   integrator.Initialize();
 
   // Integrate for one step.
-  EXPECT_THROW(integrator.IntegrateWithSingleFixedStep(large_dt_), std::logic_error);
+  EXPECT_THROW(integrator.IntegrateWithSingleFixedStep(large_dt_),
+               std::logic_error);
 
   // TODO(edrumwri): Add test that an automatic differentiation of an implicit
   // integrator produces the expected result.

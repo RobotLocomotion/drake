@@ -321,7 +321,8 @@ TEST_F(RK3IntegratorTest, IllegalFixedStep) {
   // Initialize the integrator.
   integrator_->Initialize();
 
-  EXPECT_THROW(integrator_->IntegrateWithSingleFixedStep(1e-8), std::logic_error);
+  EXPECT_THROW(integrator_->IntegrateWithSingleFixedStep(1e-8),
+               std::logic_error);
 }
 
 // Verifies statistics validity for error controlled integrator.

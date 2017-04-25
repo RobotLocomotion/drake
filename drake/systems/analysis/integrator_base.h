@@ -407,10 +407,10 @@ class IntegratorBase {
   /// consider publishing or discontinuous, mid-interval updates. One such
   /// example application is that of direct transcription for trajectory
   /// optimization, for which the integration process should be _consistent_: it
-  /// should execute the same sequence of arithmetic operations for all values of
-  /// the nonlinear programming variables. In keeping with the naming semantics
-  /// of this function, error controlled integration is not supported (though
-  /// error estimates will be computed for integrators that support that
+  /// should execute the same sequence of arithmetic operations for all values
+  /// of the nonlinear programming variables. In keeping with the naming
+  /// semantics of this function, error controlled integration is not supported
+  /// (though error estimates will be computed for integrators that support that
   /// feature), which is a minimal requirement for "consistency".
   /// @warning Users should simulate systems using `Simulator::StepTo()` in
   ///          place of this function (which was created for off-simulation
