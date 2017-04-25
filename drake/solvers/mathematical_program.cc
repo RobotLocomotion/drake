@@ -427,13 +427,28 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
     }
   }
 }
+
+template<typename To, typename From>
+Binding<To> BindingUpcast(const Binding<From>& binding) {
+  return Binding<To>(std::dynamic_pointer_cast<To>(binding.constraint()),
+                     binding.variables());
+}
+
 }  // anonymous namespace
 
 Binding<Cost> MathematicalProgram::AddCost(
     const Binding<Cost>& binding) {
+  // See AddCost(const Binding<Constraint>&) for explanation
+  Cost* cost = binding.constraint().get();
+  if (dynamic_cast<QuadraticCost*>(cost)) {
+    return AddCost(BindingUpcast<QuadraticCost>(binding));
+  } else if (dynamic_cast<LinearCost*>(cost)) {
+    return AddCost(BindingUpcast<LinearCost>(binding));
+  } else {
     required_capabilities_ |= kGenericCost;
     generic_costs_.push_back(binding);
     return generic_costs_.back();
+  }
 }
 
 Binding<Cost> MathematicalProgram::AddCost(
@@ -614,9 +629,39 @@ Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
     const Binding<Constraint>& binding) {
-  required_capabilities_ |= kGenericConstraint;
-  generic_constraints_.push_back(binding);
-  return generic_constraints_.back();
+  // TODO(eric.cousineau): Use alternative to RTTI.
+  // Move kGenericConstraint, etc. to Constraint. Dispatch based on this
+  // information. As it is, this causes extra work when we explicitly want a
+  // generic constraint.
+
+  // If we get here, then this was possibly a dynamically-simplified
+  // constraint. Determine correct container. As last resort, add to generic
+  // constraints.
+  Constraint* constraint = binding.constraint().get();
+  // Check constraints types in reverse order, such that classes that inherit
+  // from other classes will not be prematurely added to less specific (or
+  // incorrect) container.
+  if (dynamic_cast<LinearMatrixInequalityConstraint*>(constraint)) {
+    return AddConstraint(
+        BindingUpcast<LinearMatrixInequalityConstraint>(binding));
+  } else if (dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)) {
+    return AddConstraint(
+        BindingUpcast<PositiveSemidefiniteConstraint>(binding));
+  } else if (dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
+    return AddConstraint(BindingUpcast<RotatedLorentzConeConstraint>(binding));
+  } else if (dynamic_cast<LorentzConeConstraint*>(constraint)) {
+    return AddConstraint(BindingUpcast<LorentzConeConstraint>(binding));
+  } else if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
+    return AddConstraint(BindingUpcast<BoundingBoxConstraint>(binding));
+  } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
+    return AddConstraint(BindingUpcast<LinearEqualityConstraint>(binding));
+  } else if (dynamic_cast<LinearConstraint*>(constraint)) {
+    return AddConstraint(BindingUpcast<LinearConstraint>(binding));
+  } else {
+    required_capabilities_ |= kGenericConstraint;
+    generic_constraints_.push_back(binding);
+    return generic_constraints_.back();
+  }
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
@@ -1101,6 +1146,8 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearComplementarityConstraint>& binding) {
   required_capabilities_ |= kLinearComplementarityConstraint;
+
+  // TODO(eric.cousineau): Consider checking bitmask rather than list sizes
 
   // Linear Complementarity Constraint cannot currently coexist with any
   // other types of constraint or cost.
