@@ -64,8 +64,7 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   EXPECT_FALSE(invalid.is_valid());
   EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex(-1),
                                 "Explicitly constructing an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(AIndex(invalid)),
-                                "Copy constructing from an invalid index.+");
+  EXPECT_NO_THROW(unused(AIndex(invalid)));  // Copy construct invalid index.
 }
 
 // Verifies the constructor behavior -- in debug and release modes.
@@ -93,10 +92,43 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   EXPECT_ERROR_MESSAGE_IF_ARMED(index4 = -3,
                                 "Assigning an invalid int.+");
 
-  // Invalid assignment.
-  AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(index2 = invalid,
-                                "Copy assigning from an invalid index.+");
+  // Assignment involving invalid indices.
+
+  // Copy assign *to* invalid.
+  {
+    AIndex source(3);
+    AIndex starts_invalid;
+    EXPECT_NO_THROW(starts_invalid = source);
+    EXPECT_EQ(source, 3);
+    EXPECT_EQ(starts_invalid, source);
+  }
+
+  // Copy assign *from* invalid.
+  {
+    AIndex invalid;
+    AIndex target(3);
+    EXPECT_NO_THROW(target = invalid);
+    EXPECT_FALSE(target.is_valid());
+  }
+
+  // Move assign *to* invalid.
+  {
+    AIndex invalid;
+    AIndex target(2);
+    EXPECT_TRUE(target.is_valid());
+    EXPECT_NO_THROW(invalid = move(target));
+    EXPECT_FALSE(target.is_valid());
+    EXPECT_EQ(invalid, 2);
+  }
+
+  // Move assign *from* invalid.
+  {
+    AIndex invalid;
+    AIndex target(3);
+    EXPECT_NO_THROW(target = move(invalid));
+    EXPECT_FALSE(target.is_valid());
+    EXPECT_FALSE(invalid.is_valid());
+  }
 }
 
 // Verifies implicit conversion from index to int.
@@ -358,8 +390,7 @@ GTEST_TEST(TypeSafeIndex, UseInStl) {
   EXPECT_NO_THROW(indices[1] = AIndex(1));
   EXPECT_NO_THROW(indices[2] = AIndex());  // Valid for *move* assignment.
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(indices[2] = invalid,
-                                "Copy assigning from an invalid index.+");
+  EXPECT_NO_THROW(indices[2] = invalid);
   EXPECT_NO_THROW(indices.emplace_back(3));
   EXPECT_NO_THROW(indices.emplace_back(AIndex(4)));
   EXPECT_NO_THROW(indices.emplace_back());

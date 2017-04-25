@@ -156,27 +156,15 @@ class TypeSafeIndex {
   template <typename U>
   TypeSafeIndex( const TypeSafeIndex<U>& idx) = delete;
 
-  TypeSafeIndex(const TypeSafeIndex& other) : index_(other.index_) {
-    DRAKE_ASSERT_VOID(
-        AssertValid("Copy constructing from an invalid index."));
-  }
+  TypeSafeIndex(const TypeSafeIndex&) = default;
 
-  TypeSafeIndex& operator=(const TypeSafeIndex& other) {
-    DRAKE_ASSERT_VOID(
-        other.AssertValid("Copy assigning from an invalid index."));
-    index_ = other.index_;
-    return *this;
-  }
+  TypeSafeIndex& operator=(const TypeSafeIndex&) = default;
 
   TypeSafeIndex(TypeSafeIndex&& other) noexcept : index_(other.index_) {
-    // Note: move semantics on invalid indices is acceptable; no _new_ invalid
-    // indices are being created.
     other.index_ = kDefaultInvalid;
   }
 
   TypeSafeIndex& operator=(TypeSafeIndex&& other) noexcept {
-    // Note: move semantics on invalid indices is acceptable; no _new_ invalid
-    // indices are being created.
     index_ = other.index_;
     other.index_ = kDefaultInvalid;
     return *this;
@@ -203,7 +191,8 @@ class TypeSafeIndex {
     // invariant that the only way to get an invalid index is via the default
     // constructor. This assertion will catch any crack in that effort.
     DRAKE_ASSERT((index_ >= 0) || (index_ == kDefaultInvalid));
-    return index_ >= 0; }
+    return index_ >= 0;
+  }
 
   /// @name Arithmetic operators.
   ///@{
@@ -372,6 +361,9 @@ class TypeSafeIndex {
         "In-place addition with another index invalid LHS."));
     DRAKE_ASSERT_VOID(other.AssertValid(
         "In-place addition with another index invalid RHS."));
+    DRAKE_ASSERT_VOID(AssertNoOverflow(
+        other.index_,
+        "In-place addition with another index produced an invalid index."));
     index_ += other.index_;
     DRAKE_ASSERT_VOID(AssertValid(
         "In-place addition with another index produced an invalid index."));
@@ -388,6 +380,9 @@ class TypeSafeIndex {
         "In-place subtraction with another index invalid LHS."));
     DRAKE_ASSERT_VOID(other.AssertValid(
         "In-place subtraction with another index invalid RHS."));
+    // No test for overflow; it would only be necessary if other had a negative
+    // index value. In that case, it would be invalid and that would be caught
+    // by the previous assertion.
     index_ -= other.index_;
     DRAKE_ASSERT_VOID(AssertValid(
         "In-place subtraction with another index produced an invalid index."));
