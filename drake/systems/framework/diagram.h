@@ -155,11 +155,6 @@ class Diagram : public System<T>,
   // Diagram objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Diagram)
 
-  // HACK
-  const System<T>* get_sub_system(int i) const {
-    return sorted_systems_[i];
-  }
-
   typedef typename std::pair<const System<T>*, int> PortIdentifier;
 
   ~Diagram() override {}
@@ -610,112 +605,6 @@ class Diagram : public System<T>,
     }
   }
 
-  void PublishImpl(const Context<T>& context,
-      const EventInfo* event_info) const final {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    if (event_info == nullptr) {
-      for (int i = 0; i < num_subsystems(); ++i) {
-        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-        DRAKE_DEMAND(subcontext != nullptr);
-        sorted_systems_[i]->Publish(*subcontext, nullptr);
-      }
-      return;
-    }
-
-    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    for (int i = 0; i < num_subsystems(); ++i) {
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      const EventInfo* subinfo = info->get_sub_event(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      sorted_systems_[i]->Publish(*subcontext, subinfo);
-    }
-  }
-
-  void CalcDiscreteVariableUpdatesImpl(
-      const Context<T>& context, const EventInfo* event_info,
-      DiscreteValues<T>* discrete_state) const final {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    auto diagram_differences =
-        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
-    DRAKE_DEMAND(diagram_differences != nullptr);
-
-    // As a baseline, initialize all the difference variables to their
-    // current values.
-    for (int i = 0; i < diagram_differences->num_groups(); ++i) {
-      diagram_differences->get_mutable_vector(i)->set_value(
-          context.get_discrete_state(i)->get_value());
-    }
-
-    if (event_info == nullptr) {
-      for (int i = 0; i < num_subsystems(); ++i) {
-        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-        DRAKE_DEMAND(subcontext != nullptr);
-        DiscreteValues<T>* subdifference =
-            diagram_differences->get_mutable_subdifference(i);
-        DRAKE_DEMAND(subdifference != nullptr);
-
-        sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, nullptr,
-                                                        subdifference);
-      }
-      return;
-    }
-
-    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    for (int i = 0; i < num_subsystems(); ++i) {
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      DiscreteValues<T>* subdifference =
-          diagram_differences->get_mutable_subdifference(i);
-      DRAKE_DEMAND(subdifference != nullptr);
-      const EventInfo* subinfo = info->get_sub_event(i);
-
-      sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, subinfo,
-                                                      subdifference);
-    }
-  }
-
-  void CalcUnrestrictedUpdateImpl(const Context<T>& context,
-                                  const EventInfo* event_info,
-                                  State<T>* state) const final {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
-    DRAKE_DEMAND(diagram_state != nullptr);
-
-    // No need to set state to context's state, since it has already been done
-    // in System::CalcUnrestrictedUpdate().
-
-    if (event_info == nullptr) {
-      for (int i = 0; i < num_subsystems(); ++i) {
-        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-        DRAKE_DEMAND(subcontext != nullptr);
-        State<T>* substate = diagram_state->get_mutable_substate(i);
-        DRAKE_DEMAND(substate != nullptr);
-
-        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, nullptr,
-                                                   substate);
-      }
-      return;
-    }
-
-    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    for (int i = 0; i < num_subsystems(); ++i) {
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      State<T>* substate = diagram_state->get_mutable_substate(i);
-      DRAKE_DEMAND(substate != nullptr);
-      const EventInfo* subinfo = info->get_sub_event(i);
-
-      sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, subinfo,
-                                                 substate);
-    }
-  }
-
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
@@ -949,6 +838,112 @@ class Diagram : public System<T>,
   }
 
  private:
+  void PublishImpl(const Context<T>& context,
+      const EventInfo* event_info) const final {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    if (event_info == nullptr) {
+      for (int i = 0; i < num_subsystems(); ++i) {
+        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+        DRAKE_DEMAND(subcontext != nullptr);
+        sorted_systems_[i]->Publish(*subcontext, nullptr);
+      }
+      return;
+    }
+
+    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      const EventInfo* subinfo = info->get_sub_event(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      sorted_systems_[i]->Publish(*subcontext, subinfo);
+    }
+  }
+
+  void CalcDiscreteVariableUpdatesImpl(
+      const Context<T>& context, const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const final {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    auto diagram_differences =
+        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
+    DRAKE_DEMAND(diagram_differences != nullptr);
+
+    // As a baseline, initialize all the difference variables to their
+    // current values.
+    for (int i = 0; i < diagram_differences->num_groups(); ++i) {
+      diagram_differences->get_mutable_vector(i)->set_value(
+          context.get_discrete_state(i)->get_value());
+    }
+
+    if (event_info == nullptr) {
+      for (int i = 0; i < num_subsystems(); ++i) {
+        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+        DRAKE_DEMAND(subcontext != nullptr);
+        DiscreteValues<T>* subdifference =
+            diagram_differences->get_mutable_subdifference(i);
+        DRAKE_DEMAND(subdifference != nullptr);
+
+        sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, nullptr,
+                                                        subdifference);
+      }
+      return;
+    }
+
+    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      DiscreteValues<T>* subdifference =
+          diagram_differences->get_mutable_subdifference(i);
+      DRAKE_DEMAND(subdifference != nullptr);
+      const EventInfo* subinfo = info->get_sub_event(i);
+
+      sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, subinfo,
+                                                      subdifference);
+    }
+  }
+
+  void CalcUnrestrictedUpdateImpl(const Context<T>& context,
+                                  const EventInfo* event_info,
+                                  State<T>* state) const final {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+
+    // No need to set state to context's state, since it has already been done
+    // in System::CalcUnrestrictedUpdate().
+
+    if (event_info == nullptr) {
+      for (int i = 0; i < num_subsystems(); ++i) {
+        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+        DRAKE_DEMAND(subcontext != nullptr);
+        State<T>* substate = diagram_state->get_mutable_substate(i);
+        DRAKE_DEMAND(substate != nullptr);
+
+        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, nullptr,
+                                                   substate);
+      }
+      return;
+    }
+
+    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      State<T>* substate = diagram_state->get_mutable_substate(i);
+      DRAKE_DEMAND(substate != nullptr);
+      const EventInfo* subinfo = info->get_sub_event(i);
+
+      sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, subinfo,
+                                                 substate);
+    }
+  }
+
   /// Tries to recursively find @p target_system's BaseStuffPtr
   /// (context / state / etc). nullptr is returned if @p target_system is not
   /// a sub system of this diagram. This template function should only be used

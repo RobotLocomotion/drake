@@ -133,6 +133,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "events_and_triggers",
+    srcs = [
+        "event_info.cc",
+        "trigger.cc",
+    ],
+    hdrs = [
+        "event_info.h",
+        "trigger.h",
+    ],
+    deps = [
+        ":abstract_values",
+        ":value",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+drake_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
@@ -229,6 +247,7 @@ drake_cc_library(
     deps = [
         ":cache",
         ":context",
+        ":events_and_triggers",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
