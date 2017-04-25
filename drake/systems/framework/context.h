@@ -25,60 +25,6 @@ struct StepInfo {
   T time_sec{0.0};
 };
 
-/**
- * Base class that holds event related information.
- */
-class EventInfo {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventInfo)
-
-  enum EventType {
-    kUnknownEvent = 0,
-    kPublish = 1,
-    kDiscreteUpdate = 2,
-    kUnrestrictedUpdate = 3,
-  };
-
-  // Represented as bit masks. so i can do |
-  enum TriggerType {
-    kUnknownTrigger = 0,
-    kForced = (1 << 0),
-    kPeriodic = (1 << 1),
-    kPerStep = (1 << 2),
-    kWitness = (1 << 3),
-  };
-
-  EventInfo() = default;
-
-  virtual ~EventInfo() {}
-
-  virtual void merge(const EventInfo* other) = 0;
-
-  virtual void clear() = 0;
-
-  virtual bool has_event(EventType event) const = 0;
-
-  virtual bool empty() const = 0;
-
-  virtual void print() const = 0;
-
-  static bool trigger_has_forced(TriggerType trigger) {
-    return trigger & TriggerType::kForced;
-  }
-
-  static bool trigger_has_periodic(TriggerType trigger) {
-    return trigger & TriggerType::kPeriodic;
-  }
-
-  static bool trigger_has_per_step(TriggerType trigger) {
-    return trigger & TriggerType::kPerStep;
-  }
-
-  static bool trigger_has_Witness(TriggerType trigger) {
-    return trigger & TriggerType::kWitness;
-  }
-};
-
 /// Context is an abstract base class template that represents all
 /// the inputs to a System: time, state, and input vectors. The framework
 /// provides two concrete subclasses of Context: LeafContext (for
