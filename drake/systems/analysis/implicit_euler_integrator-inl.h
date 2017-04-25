@@ -19,7 +19,7 @@ namespace systems {
 
 template <class T>
 void ImplicitEulerIntegrator<T>::DoResetStatistics() {
-  num_nr_loops_ = num_err_est_nr_loops_ = 0;
+  num_nr_iterations_ = num_err_est_nr_iterations_ = 0;
   num_err_est_function_evaluations_ = 0;
   num_jacobian_function_evaluations_ =
     num_err_est_jacobian_function_evaluations_ = 0;
@@ -319,18 +319,18 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // reforming the Jacobian.
   MatrixX<T> J = J_;
 
-  // The maximum number of Newton-Raphson loops to take before declaring
+  // The maximum number of Newton-Raphson iterations to take before declaring
   // failure. [Hairer, 1996] states, "It is our experience that the code becomes
   // more efficient when we allow a relatively high number of iterations (e.g.,
   // [7 or 10])", p. 121.
   // TODO(edrumwri): Consider making this a settable parameter. Not putting it
   //                 toward staving off parameter overload.
-  const int max_loops = 10;
+  const int max_iterations = 10;
 
-  // Do the Newton-Raphson loops.
-  for (int i = 0; i < max_loops; ++i) {
-    // Update the number of Newton-Raphson loops.
-    num_nr_loops_++;
+  // Do the Newton-Raphson iterations.
+  for (int i = 0; i < max_iterations; ++i) {
+    // Update the number of Newton-Raphson iterations.
+    num_nr_iterations_++;
 
     // Compute the state update by computing the negation of the iteration
     // matrix, factorizing it, and solving it. The idea of using the negation
@@ -469,7 +469,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
       this->get_num_derivative_evaluations();
   int64_t saved_num_jacobian_function_evaluations =
       num_jacobian_function_evaluations_;
-  int saved_num_nr_loops = num_nr_loops_;
+  int saved_num_nr_iterations = num_nr_iterations_;
 
   // Compute the initial Jacobian matrix.
   J_ = CalcJacobian(tf, *xtplus);
@@ -487,7 +487,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
   num_err_est_jacobian_function_evaluations_ +=
       num_jacobian_function_evaluations_ -
           saved_num_jacobian_function_evaluations;
-  num_err_est_nr_loops_ += num_nr_loops_ - saved_num_nr_loops;
+  num_err_est_nr_iterations_ += num_nr_iterations_ - saved_num_nr_iterations;
 
   return success;
 }

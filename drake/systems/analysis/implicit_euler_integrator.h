@@ -65,7 +65,7 @@ namespace systems {
  * `n` derivative evaluations with what is hopefully a much less expensive
  * process, though the complexity to form the Jacobian matrix is still `O(n²)`.
  * For large `n`, the time complexity may be dominated by the `O(n³)` time
- * required to (repeatedly) solve least squares problems as part of the
+ * required to (repeatedly) solve linear systems problems as part of the
  * nonlinear system solution process.
  *
  * This implementation uses Newton-Raphson (NR) and relies upon the obvious
@@ -163,26 +163,28 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// the Jacobian matrices* since the last call to ResetStatistics(). This
   /// count includes those derivative calculations necessary for computing
   /// Jacobian matrices during the error estimation process.
-  int get_num_derivative_evaluations_for_jacobian() const {
+  int64_t get_num_derivative_evaluations_for_jacobian() const {
     return num_jacobian_function_evaluations_;
   }
 
-  /// Gets the number of loops used in the Newton-Raphson nonlinear systems of
-  /// equation solving process since the last call to ResetStatistics(). This
-  /// count includes those Newton-Raphson loops used during the error estimation
-  /// process.
-  int get_num_newton_raphson_loops() const { return num_nr_loops_; }
+  /// Gets the number of iterations used in the Newton-Raphson nonlinear systems
+  /// of equation solving process since the last call to ResetStatistics(). This
+  /// count includes those Newton-Raphson iterations used during the error
+  /// estimation process.
+  int64_t get_num_newton_raphson_iterations() const {
+    return num_nr_iterations_; }
 
   /// Gets the number of Jacobian evaluations (i.e., the number of times
   /// that the Jacobian matrix was reformed) since the last call to
   /// ResetStatistics(). This count includes those evaluations necessary
   /// during the error estimation process.
-  int get_num_jacobian_evaluations() const { return num_jacobian_evaluations_; }
+  int64_t get_num_jacobian_evaluations() const { return
+        num_jacobian_evaluations_; }
 
   /// Gets the number of iteration matrix factorizations since the last
   /// call to ResetStatistics(). This count includes those refactorizations
   /// necessary during the error estimation process.
-  int get_num_iteration_matrix_factorizations() const {
+  int64_t get_num_iteration_matrix_factorizations() const {
     return num_iter_factorizations_;
   }
 
@@ -196,35 +198,33 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// CalcTimeDerivatives()) *used only for computing the Jacobian matrices
   /// needed by the error estimation process* since the last call to
   /// ResetStatistics().
-  int get_num_error_estimator_derivative_evaluations_for_jacobian() const {
+  int64_t get_num_error_estimator_derivative_evaluations_for_jacobian() const {
     return num_err_est_jacobian_function_evaluations_;
   }
 
-  /// Gets the number of loops *used in the Newton-Raphson nonlinear systems of
-  /// equation solving process for the error estimation process* since the last
-  /// call to ResetStatistics().
-  int get_num_error_estimator_newton_raphson_loops() const { return
-        num_err_est_nr_loops_; }
+  /// Gets the number of iterations *used in the Newton-Raphson nonlinear
+  /// systems of equation solving process for the error estimation process*
+  /// since the last call to ResetStatistics().
+  int64_t get_num_error_estimator_newton_raphson_iterations() const { return
+        num_err_est_nr_iterations_; }
 
   /// Gets the number of Jacobian matrix evaluations *used only during
   /// the error estimation process* since the last call to ResetStatistics().
-  int get_num_error_estimator_jacobian_evaluations() const {
+  int64_t get_num_error_estimator_jacobian_evaluations() const {
     return num_err_est_jacobian_reforms_; }
 
   /// Gets the number of iteration matrix factorizations *used only during
   /// the error estimation process* since the last call to ResetStatistics().
-  int get_num_error_estimator_iteration_matrix_factorizations() const {
+  int64_t get_num_error_estimator_iteration_matrix_factorizations() const {
     return num_err_est_iter_factorizations_;
   }
 
   /// @}
 
- protected:
+ private:
   void DoInitialize() override;
   std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
   void DoResetStatistics() override;
-
- private:
   VectorX<T> Solve(const MatrixX<T>& A, const VectorX<T>& b);
   bool AttemptStepOncePaired(const T& dt, VectorX<T>* xtplus_euler,
                              VectorX<T>* xtplus_trap);
@@ -290,17 +290,17 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   MatrixX<T> A_;
 
   // Various combined statistics.
-  int num_jacobian_evaluations_{0};
-  int num_iter_factorizations_{0};
-  int num_jacobian_function_evaluations_{0};
-  int num_nr_loops_{0};
+  int64_t num_jacobian_evaluations_{0};
+  int64_t num_iter_factorizations_{0};
+  int64_t num_jacobian_function_evaluations_{0};
+  int64_t num_nr_iterations_{0};
 
   // Implicit trapezoid specific statistics.
-  int num_err_est_jacobian_reforms_{0};
-  int num_err_est_iter_factorizations_{0};
+  int64_t num_err_est_jacobian_reforms_{0};
+  int64_t num_err_est_iter_factorizations_{0};
   int64_t num_err_est_function_evaluations_{0};
-  int num_err_est_jacobian_function_evaluations_{0};
-  int num_err_est_nr_loops_{0};
+  int64_t num_err_est_jacobian_function_evaluations_{0};
+  int64_t num_err_est_nr_iterations_{0};
 };
 }  // namespace systems
 }  // namespace drake
