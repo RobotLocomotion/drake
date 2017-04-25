@@ -18,12 +18,12 @@ drake_cc_library(
         "test/global_inverse_kinematics_test_util.h",
     ],
     deps = [
-        "@gtest//:main",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody:global_inverse_kinematics",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
+        "@gtest//:main",
     ],
 )
 
