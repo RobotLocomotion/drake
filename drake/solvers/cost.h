@@ -17,12 +17,19 @@ namespace solvers {
  * Using an internal implementation permits child costs to inherit directly
  * from cost, thus be convertible to a cost.
  */
-class Cost : public Constraint {
+class Cost : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost)
 
-  explicit Cost(const std::shared_ptr<Constraint>& impl)
-      : Constraint(impl->num_constraints(), impl->num_vars()), impl_(impl) {
+  using EvaluatorBase::EvaluatorBase;
+};
+
+
+class CostShimBase : public Cost {
+ public:
+  explicit CostShimBase(const std::shared_ptr<Constraint>& impl)
+      : Cost(impl->num_constraints(), impl->num_vars()),
+        impl_(impl) {
     // Costs may only be scalar.
     DRAKE_DEMAND(impl->num_constraints() == 1);
   }
@@ -36,7 +43,7 @@ class Cost : public Constraint {
               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               AutoDiffVecXd& y) const override;
 
- private:
+ protected:
   std::shared_ptr<Constraint> impl_;
 };
 
@@ -45,14 +52,18 @@ class Cost : public Constraint {
  * detect a difference from results from CreateConstraint and CreateCost.
  * @tparam C Constraint type to inherit from.
  */
-template <typename C>
-class CostShim : public Cost {
+template<typename C>
+class CostShim : public CostShimBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CostShim)
 
-  template <typename... Args>
+  template<typename... Args>
   explicit CostShim(Args&&... args)
-      : Cost(std::make_shared<C>(std::forward<Args>(args)...)) {}
+      : CostShimBase(std::make_shared<C>(std::forward<Args>(args)...)) {
+    constraint_ = std::dynamic_pointer_cast<C>(impl_);
+  }
+ protected:
+  std::shared_ptr<C> constraint_;
 };
 
 /**

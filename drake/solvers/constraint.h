@@ -18,24 +18,7 @@
 namespace drake {
 namespace solvers {
 
-/**
- * A constraint is a function + lower and upper bounds.
- *
- * Solver interfaces must acknowledge that these constraints are mutable.
- * Parameters can change after the constraint is constructed and before the
- * call to Solve().
- *
- * Some thoughts:
- * It should support evaluating the constraint, adding it to an optimization
- * problem, and have support for constraints that require slack variables
- * (adding additional decision variables to the problem).  There
- * should also be some notion of parameterized constraints:  e.g. the
- * acceleration constraints in the rigid body dynamics are constraints
- * on vdot and f, but are "parameterized" by q and v.
- *
- * Constraint is not copyable, nor movable.
- */
-class Constraint {
+class EvaluatorBase {
   void check(size_t num_constraints) {
     static_cast<void>(num_constraints);
     DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
@@ -45,7 +28,7 @@ class Constraint {
   }
 
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorBase)
 
   /// Constructs a constraint which has \p num_constraints rows, with input
   /// variables to Eval a \p num_vars x 1 vector.
@@ -55,7 +38,7 @@ class Constraint {
   /// Constraint::Eval(x, y), x should be a \p num_vars x 1 vector.
   /// If the input dimension is not known, then set \p num_vars to
   /// Eigen::Dynamic.
-  Constraint(size_t num_constraints, int num_vars)
+  EvaluatorBase(size_t num_constraints, int num_vars)
       : lower_bound_(num_constraints),
         upper_bound_(num_constraints),
         num_vars_(num_vars) {
@@ -65,13 +48,13 @@ class Constraint {
   }
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, int num_vars,
+  EvaluatorBase(size_t num_constraints, int num_vars,
              Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)
-      : Constraint(num_constraints, num_vars, lb, ub, "") {}
+      : EvaluatorBase(num_constraints, num_vars, lb, ub, "") {}
 
   template <typename DerivedLB, typename DerivedUB>
-  Constraint(size_t num_constraints, int num_vars,
+  EvaluatorBase(size_t num_constraints, int num_vars,
              const Eigen::MatrixBase<DerivedLB>& lb,
              const Eigen::MatrixBase<DerivedUB>& ub,
              const std::string& description)
@@ -82,7 +65,7 @@ class Constraint {
     check(num_constraints);
   }
 
-  virtual ~Constraint() {}
+  virtual ~EvaluatorBase() {}
 
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
@@ -189,6 +172,32 @@ class Constraint {
   Eigen::VectorXd upper_bound_;
   int num_vars_{0};
   std::string description_;
+};
+
+/**
+ * A constraint is a function + lower and upper bounds.
+ *
+ * Solver interfaces must acknowledge that these constraints are mutable.
+ * Parameters can change after the constraint is constructed and before the
+ * call to Solve().
+ *
+ * Some thoughts:
+ * It should support evaluating the constraint, adding it to an optimization
+ * problem, and have support for constraints that require slack variables
+ * (adding additional decision variables to the problem).  There
+ * should also be some notion of parameterized constraints:  e.g. the
+ * acceleration constraints in the rigid body dynamics are constraints
+ * on vdot and f, but are "parameterized" by q and v.
+ *
+ * Constraint is not copyable, nor movable.
+ */
+class Constraint : public EvaluatorBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
+
+  // TODO(eric.cousineau): Move Constraint-only functionality here.
+
+  using EvaluatorBase::EvaluatorBase;
 };
 
 /**
@@ -390,7 +399,9 @@ class PolynomialConstraint : public Constraint {
 
   const VectorXPoly& polynomials() const {return polynomials_;}
 
-  const std::vector<Polynomiald::VarType> poly_vars() const {return poly_vars_;}
+  const std::vector<Polynomiald::VarType>& poly_vars() const {
+    return poly_vars_;
+  }
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
