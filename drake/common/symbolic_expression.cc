@@ -21,7 +21,6 @@
 
 namespace drake {
 namespace symbolic {
-
 using std::make_shared;
 using std::map;
 using std::ostream;
@@ -45,9 +44,8 @@ namespace {
 shared_ptr<ExpressionCell> make_cell(const double d) {
   if (std::isnan(d)) {
     return make_shared<ExpressionNaN>();
-  } else {
-    return make_shared<ExpressionConstant>(d);
   }
+  return make_shared<ExpressionConstant>(d);
 }
 
 // Negates an addition expression.
@@ -63,12 +61,12 @@ Expression NegateMultiplication(const Expression& e) {
   DRAKE_ASSERT(is_multiplication(e));
   return ExpressionMulFactory{to_multiplication(e)}.Negate().GetExpression();
 }
-}  // anonymous namespace
+}  // namespace
 
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
-Expression::Expression(const shared_ptr<ExpressionCell> ptr) : ptr_{ptr} {}
+Expression::Expression(shared_ptr<ExpressionCell> ptr) : ptr_{std::move(ptr)} {}
 
 ExpressionKind Expression::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -173,11 +171,10 @@ Expression Expression::Substitute(const Variable& var,
 
 Expression Expression::Substitute(const Substitution& s) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  if (s.size() > 0) {
+  if (!s.empty()) {
     return Expression{ptr_->Substitute(s)};
-  } else {
-    return *this;
   }
+  return *this;
 }
 
 Expression Expression::Differentiate(const Variable& x) const {
@@ -277,7 +274,7 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-Expression operator-(Expression e) {
+Expression operator-(const Expression& e) {
   // Simplification: constant folding
   if (is_constant(e)) {
     return Expression{-get_constant_value(e)};
@@ -443,11 +440,10 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       if (lhs.EqualTo(rhs)) {
         lhs = pow(lhs, 2.0);
         return lhs;
-      } else {
-        // nothing to flatten
-        mul_factory.AddExpression(lhs);
-        mul_factory.AddExpression(rhs);
       }
+      // nothing to flatten
+      mul_factory.AddExpression(lhs);
+      mul_factory.AddExpression(rhs);
     }
   }
   lhs = mul_factory.GetExpression();
@@ -812,7 +808,7 @@ Expression operator-(const Variable& var) { return -Expression{var}; }
 
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const vector<Variable>& vars) {
-  DRAKE_DEMAND(vars.size() > 0);
+  DRAKE_DEMAND(!vars.empty());
   const Eigen::Ref<const VectorX<Expression>>::Index n{f.size()};
   const size_t m{vars.size()};
   MatrixX<Expression> J(n, m);

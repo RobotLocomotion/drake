@@ -286,7 +286,7 @@ class Expression {
   friend Expression& operator-=(Expression& lhs, const Expression& rhs);
 
   /** Provides unary minus operator. */
-  friend Expression operator-(Expression e);
+  friend Expression operator-(const Expression& e);
   /** Provides prefix decrement operator (i.e. --x). */
   Expression& operator--();
   /** Provides postfix decrement operator (i.e. x--). */
@@ -426,7 +426,7 @@ class Expression {
   friend class ExpressionMulFactory;
 
  private:
-  explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
+  explicit Expression(std::shared_ptr<ExpressionCell> ptr);
 
   std::shared_ptr<ExpressionCell> ptr_;
 };
@@ -437,7 +437,7 @@ Expression& operator+=(Expression& lhs, const Expression& rhs);
 Expression operator-(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs);
-Expression operator-(Expression e);
+Expression operator-(const Expression& e);
 Expression operator*(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator*=(Expression& lhs, const Expression& rhs);

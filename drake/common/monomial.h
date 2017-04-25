@@ -255,7 +255,7 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
  * @param vars A set of variables.
  * @return The total degree.
  */
-int Degree(const Expression& e, const Variables& var);
+int Degree(const Expression& e, const Variables& vars);
 
 /**
  * Returns the total degress of all the variables in the polynomial @p e.
@@ -300,13 +300,12 @@ Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
  * \pre{<tt>vars.size()</tt> == @p.}
  */
 template <int n, int degree>
-Eigen::Matrix<Expression, NChooseK(n + degree, degree), 1>
-MonomialBasis(const Variables& vars) {
+Eigen::Matrix<Expression, NChooseK(n + degree, degree), 1> MonomialBasis(
+    const Variables& vars) {
   static_assert(n > 0, "n should be a positive integer.");
   static_assert(degree >= 0, "degree should be a non-negative integer.");
   DRAKE_ASSERT(vars.size() == n);
-  return ComputeMonomialBasis<NChooseK(n + degree, degree)>(
-      vars, degree);
+  return ComputeMonomialBasis<NChooseK(n + degree, degree)>(vars, degree);
 }
 
 typedef std::unordered_map<Expression, Expression, hash_value<Expression>>
@@ -364,9 +363,7 @@ MonomialAsExpressionToCoefficientMap DecomposePolynomialIntoExpression(
 /** Computes the hash value of a Monomial. */
 template <>
 struct hash_value<symbolic::Monomial> {
-  size_t operator()(const symbolic::Monomial& m) const {
-    return m.GetHash();
-  }
+  size_t operator()(const symbolic::Monomial& m) const { return m.GetHash(); }
 };
 
 namespace symbolic {

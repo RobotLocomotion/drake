@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "drake/common/never_destroyed.h"
 
@@ -23,7 +24,7 @@ Variable::Id Variable::get_next_id() {
   return next_id.access()++;
 }
 
-Variable::Variable(const string& name) : id_{get_next_id()}, name_{name} {
+Variable::Variable(string name) : id_{get_next_id()}, name_{std::move(name)} {
   DRAKE_ASSERT(id_ > 0);
 }
 Variable::Id Variable::get_id() const { return id_; }

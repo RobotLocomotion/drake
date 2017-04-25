@@ -81,9 +81,9 @@ class RelationalFormulaCell : public FormulaCell {
   RelationalFormulaCell& operator=(RelationalFormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = delete;
-  /** Construct RelationalFormulaCell of kind @p k with @p hash. */
-  RelationalFormulaCell(FormulaKind k, const Expression& e1,
-                        const Expression& e2);
+  /** Construct RelationalFormulaCell of kind @p k with @p lhs and @p rhs. */
+  RelationalFormulaCell(FormulaKind k, const Expression& lhs,
+                        const Expression& rhs);
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -115,7 +115,7 @@ class NaryFormulaCell : public FormulaCell {
   NaryFormulaCell& operator=(NaryFormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   NaryFormulaCell& operator=(const NaryFormulaCell& f) = delete;
-  /** Construct NaryFormulaCell of kind @p k with @p hash. */
+  /** Construct NaryFormulaCell of kind @p k with @p formulas. */
   NaryFormulaCell(FormulaKind k, const std::set<Formula>& formulas);
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
@@ -232,7 +232,7 @@ class FormulaAnd : public NaryFormulaCell {
 class FormulaOr : public NaryFormulaCell {
  public:
   /** Constructs from @p formulas. */
-  explicit FormulaOr(const std::set<Formula>& formula);
+  explicit FormulaOr(const std::set<Formula>& formulas);
   /** Constructs @p f1 ∨ @p f2. */
   FormulaOr(const Formula& f1, const Formula& f2);
   bool Evaluate(const Environment& env) const override;
@@ -437,7 +437,7 @@ bool is_positive_semidefinite(const FormulaCell& f);
  *  \pre{@c is_relational(*f_ptr) is true.}
  */
 std::shared_ptr<RelationalFormulaCell> to_relational(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to
  * @c shared_ptr<RelationalFormulaCell>.
@@ -450,7 +450,7 @@ std::shared_ptr<RelationalFormulaCell> to_relational(const Formula& f);
  *  \pre{@c is_nary(*f_ptr) is true.}
  */
 std::shared_ptr<NaryFormulaCell> to_nary(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<NaryFormulaCell>.
  *  \pre{@c is_nary(f) is true.}
@@ -461,7 +461,7 @@ std::shared_ptr<NaryFormulaCell> to_nary(const Formula& f);
  *  \pre{@c is_negation(*f_ptr) is true.}
  */
 std::shared_ptr<FormulaNot> to_negation(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<FormulaNot>.
  *  \pre{@c is_negation(f) is true.}
@@ -472,7 +472,7 @@ std::shared_ptr<FormulaNot> to_negation(const Formula& f);
  *  \pre{@c is_forall(*f_ptr) is true.}
  */
 std::shared_ptr<FormulaForall> to_forall(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<FormulaForall>.
  *  \pre{@c is_forall(f) is true.}
@@ -483,7 +483,7 @@ std::shared_ptr<FormulaForall> to_forall(const Formula& f);
  *  \pre{@c is_isnan(*f_ptr) is true.}
  */
 std::shared_ptr<FormulaIsnan> to_isnan(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<FormulaIsnan>.
  *  \pre{@c is_isnan(f) is true.}
@@ -495,7 +495,7 @@ std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
  * @pre @c is_positive_semidefinite(*f_ptr) is true.
  */
 std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<FormulaPositiveSemidefinite>.
  *
