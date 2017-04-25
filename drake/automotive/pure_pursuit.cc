@@ -56,7 +56,8 @@ const GeoPosition PurePursuit<T>::ComputeGoalPoint(const T& s_lookahead,
   const RoadPosition position =
       pose_selector::CalcRoadPosition(road, pose.get_isometry());
   const T s_new =
-      cond(with_s, position.pos.s + s_lookahead, position.pos.s - s_lookahead);
+      cond(with_s,
+           position.pos.s() + s_lookahead, position.pos.s() - s_lookahead);
   const T s_goal = math::saturate(s_new, 0., position.lane->length());
   // TODO(jadecastro): Add support for locating goal points located in ongoing
   // lanes.

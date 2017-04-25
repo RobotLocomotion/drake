@@ -82,10 +82,10 @@ std::tuple<Curve2<double>, double, double> CreateTrajectoryParamsForDragway(
   const maliput::api::Lane* lane = segment->lane(index);
   const maliput::api::GeoPosition start_geo_position =
       lane->ToGeoPosition(maliput::api::LanePosition(
-          {0 /* s */, 0 /* r */, 0 /* h */}));
+          0 /* s */, 0 /* r */, 0 /* h */));
   const maliput::api::GeoPosition end_geo_position =
       lane->ToGeoPosition(maliput::api::LanePosition(
-          {lane->length() /* s */, 0 /* r */, 0 /* h */}));
+          lane->length() /* s */, 0 /* r */, 0 /* h */));
   std::vector<Curve2<double>::Point2> waypoints;
   waypoints.push_back({start_geo_position.x, start_geo_position.y});
   waypoints.push_back({end_geo_position.x, end_geo_position.y});

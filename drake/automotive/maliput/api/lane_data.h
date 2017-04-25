@@ -4,6 +4,8 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace maliput {
@@ -74,16 +76,46 @@ struct GeoPosition {
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
 ///  * r is lateral position, perpendicular to the reference line at s.
 ///  * h is height above the road surface.
-struct LanePosition {
-  /// Default constructor.
-  LanePosition() = default;
+class LanePosition {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LanePosition)
+
+  /// Default constructor, initializing all components to zero.
+  LanePosition() : srh_(0., 0., 0.) {}
 
   /// Fully parameterized constructor.
-  LanePosition(double _s, double _r, double _h) : s(_s), r(_r), h(_h) {}
+  LanePosition(double s, double r, double h) : srh_(s, r, h) {}
 
-  double s{};
-  double r{};
-  double h{};
+  /// Construct a LanePosition from a 3-vector @p srh of the form `[s, r, h]`.
+  static LanePosition FromSrh(const Vector3<double>& srh) {
+    return LanePosition(srh);
+  }
+
+  /// Return as 3-vector `[s, r, h]`.
+  Vector3<double> srh() const { return srh_; }
+  /// Set from 3-vector `[s, r, h]`.
+  void set_srh(const Vector3<double>& srh) { srh_ = srh; }
+
+  /// @name Accessors
+  //@{
+  /// Get `s` value.
+  double s() const { return srh_.x(); }
+  /// Set `s` value.
+  void set_s(double s) { srh_.x() = s; }
+  /// Get `r` value.
+  double r() const { return srh_.y(); }
+  /// Set `r` value.
+  void set_r(double r) { srh_.y() = r; }
+  /// Get `h` value.
+  double h() const { return srh_.z(); }
+  /// Set `h` value.
+  void set_h(double h) { srh_.z() = h; }
+  //@}
+
+ private:
+  Eigen::Matrix<double, 3, 1, Eigen::DontAlign> srh_;
+
+  explicit LanePosition(const Vector3<double>& srh) : srh_(srh) {}
 };
 
 
