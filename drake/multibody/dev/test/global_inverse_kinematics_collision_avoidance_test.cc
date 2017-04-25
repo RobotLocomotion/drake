@@ -40,7 +40,7 @@ void CheckPtCollisionFreeBinary(
 }
 
 TEST_F(KukaTest, CollisionAvoidanceTest) {
-  // Suppose there is a box with length 0.1m, located at [0.5, 0, 0.4]
+  // Suppose there is a box with length 0.15m, located at [-0.5, 0, 0.4]
   // The goal is to reach the goal position, without colliding with the box
   Eigen::Vector3d box_size(0.15, 0.15, 0.15);
   Eigen::Vector3d box_pos(-0.5, 0, 0.4);
@@ -128,6 +128,9 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
   int link5_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_5");
   std::vector<Eigen::Vector3d> link5_pts;
   std::vector<Eigen::Vector3d> link6_pts;
+  // Currently only make sure the origin of the body is collision free. We can
+  // add more points if it is not sufficient to guarantee the whole body is
+  // collision free.
   link5_pts.emplace_back(0, 0, 0);
   link6_pts.emplace_back(0, 0, 0);
   std::vector<solvers::VectorXDecisionVariable>
