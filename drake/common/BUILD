@@ -668,7 +668,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "type_safe_index_test",
-    deps = [":type_safe_index"],
+    deps = [
+        ":type_safe_index",
+        ":unused",
+    ],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...
