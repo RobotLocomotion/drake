@@ -115,9 +115,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           const api::LanePosition motion_derivatives =
               lane->EvalMotionDerivatives(lane_position,
                   api::IsoLaneVelocity(kSigma_v, kRho_v, kEta_v));
-          EXPECT_DOUBLE_EQ(motion_derivatives.s, kSigma_v);
-          EXPECT_DOUBLE_EQ(motion_derivatives.r, kRho_v);
-          EXPECT_DOUBLE_EQ(motion_derivatives.h, kEta_v);
+          EXPECT_DOUBLE_EQ(motion_derivatives.s(), kSigma_v);
+          EXPECT_DOUBLE_EQ(motion_derivatives.r(), kRho_v);
+          EXPECT_DOUBLE_EQ(motion_derivatives.h(), kEta_v);
         }
       }
     }
@@ -317,9 +317,9 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         EXPECT_DOUBLE_EQ(nearest_position.z, z);
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
-        EXPECT_EQ(road_position.pos.s, x);
-        EXPECT_EQ(road_position.pos.r, y + lane_width_ / 2);
-        EXPECT_EQ(road_position.pos.h, z);
+        EXPECT_EQ(road_position.pos.s(), x);
+        EXPECT_EQ(road_position.pos.r(), y + lane_width_ / 2);
+        EXPECT_EQ(road_position.pos.h(), z);
       }
     }
   }
@@ -343,13 +343,13 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         EXPECT_DOUBLE_EQ(nearest_position.z, z);
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
-        EXPECT_EQ(road_position.pos.s, x);
+        EXPECT_EQ(road_position.pos.s(), x);
         if (y == 0) {
-          EXPECT_EQ(road_position.pos.r, y + lane_width_ / 2);
+          EXPECT_EQ(road_position.pos.r(), y + lane_width_ / 2);
         } else {
-          EXPECT_EQ(road_position.pos.r, y - lane_width_ / 2);
+          EXPECT_EQ(road_position.pos.r(), y - lane_width_ / 2);
         }
-        EXPECT_EQ(road_position.pos.h, z);
+        EXPECT_EQ(road_position.pos.h(), z);
       }
     }
   }
@@ -428,10 +428,10 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
       const Lane* expected_lane = dynamic_cast<const Lane*>(
           road_geometry.junction(0)->segment(0)->lane(expected_lane_index));
       EXPECT_EQ(road_position.lane, expected_lane);
-      EXPECT_EQ(road_position.pos.s, expected_nearest_position.x);
-      EXPECT_EQ(road_position.pos.r,
+      EXPECT_EQ(road_position.pos.s(), expected_nearest_position.x);
+      EXPECT_EQ(road_position.pos.r(),
           expected_nearest_position.y - expected_lane->y_offset());
-      EXPECT_EQ(road_position.pos.h, z);
+      EXPECT_EQ(road_position.pos.h(), z);
     }
   }
 }
@@ -542,10 +542,10 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
       EXPECT_DOUBLE_EQ(nearest_position.y, expected_nearest_position.y);
       EXPECT_DOUBLE_EQ(nearest_position.z, expected_nearest_position.z);
       EXPECT_GE(distance, 0);
-      EXPECT_EQ(lane_position.s, expected_nearest_position.x);
-      EXPECT_EQ(lane_position.r,
+      EXPECT_EQ(lane_position.s(), expected_nearest_position.x);
+      EXPECT_EQ(lane_position.r(),
           expected_nearest_position.y - lane->y_offset());
-      EXPECT_EQ(lane_position.h, expected_nearest_position.z);
+      EXPECT_EQ(lane_position.h(), expected_nearest_position.z);
     }
   }
 }

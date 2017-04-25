@@ -83,7 +83,7 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
 
 api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
-  return {lane_pos.s, lane_pos.r + Lane::y_offset(), lane_pos.h};
+  return {lane_pos.s(), lane_pos.r() + Lane::y_offset(), lane_pos.h()};
 }
 
 api::Rotation Lane::DoGetOrientation(

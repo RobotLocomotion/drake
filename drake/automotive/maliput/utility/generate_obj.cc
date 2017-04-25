@@ -264,7 +264,7 @@ class SrhFace {
     // TODO(maddog@tri.global) Provide for explicit normals if we ever
     // consider faces which are not parallel to the road surface.
     for (const api::LanePosition& vertex : v_) {
-      DRAKE_DEMAND(vertex.h == v_[0].h);
+      DRAKE_DEMAND(vertex.h() == v_[0].h());
     }
   }
 
@@ -279,7 +279,8 @@ class SrhFace {
       //                          really use GetOrientation(), and the format
       //                          of the result should have a fixed-point
       //                          precision based on angular_tolerance().
-      api::GeoPosition v1(lane->ToGeoPosition({srh.s, srh.r, srh.h + 1.}));
+      api::GeoPosition v1(lane->ToGeoPosition({
+            srh.s(), srh.r(), srh.h() + 1.}));
       geo_face.push_vn(GeoVertex(v0), GeoNormal(v0, v1));
     }
     return geo_face;

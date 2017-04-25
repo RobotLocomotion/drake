@@ -123,7 +123,7 @@ V3 Lane::r_hat_of_Rabg(const Rot3& Rabg) const {
 api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   // Recover parameter p from arc-length position s.
-  const double p = p_from_s(lane_pos.s);
+  const double p = p_from_s(lane_pos.s());
   // Calculate z (elevation) of (s,0,0);
   const double z = elevation().f_p(p) * p_scale_;
   // Calculate x,y of (s,0,0).
@@ -133,16 +133,16 @@ api::GeoPosition Lane::DoToGeoPosition(
 
   // Rotate (0,r,h) and sum with mapped (s,0,0).
   const V3 xyz =
-      ypr.apply({0., lane_pos.r, lane_pos.h}) + V3(xy.x(), xy.y(), z);
+      ypr.apply({0., lane_pos.r(), lane_pos.h()}) + V3(xy.x(), xy.y(), z);
   return {xyz.x(), xyz.y(), xyz.z()};
 }
 
 
 api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
   // Recover linear parameter p from arc-length position s.
-  const double p = p_from_s(lane_pos.s);
-  const double r = lane_pos.r;
-  const double h = lane_pos.h;
+  const double p = p_from_s(lane_pos.s());
+  const double r = lane_pos.r();
+  const double h = lane_pos.h();
   // Calculate orientation of (s,r,h) basis at (s,0,0).
   const Rot3 Rabg = Rabg_of_p(p);
 
@@ -178,9 +178,9 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
     const api::LanePosition& position,
     const api::IsoLaneVelocity& velocity) const {
 
-  const double p = p_from_s(position.s);
-  const double r = position.r;
-  const double h = position.h;
+  const double p = p_from_s(position.s());
+  const double r = position.r();
+  const double h = position.h();
 
   // TODO(maddog@tri.global)  When s(p) is integrated properly, do this:
   //                          const double g_prime = elevation().fdot_p(p);
