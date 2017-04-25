@@ -58,10 +58,10 @@ const GeoPosition PurePursuit<T>::ComputeGoalPoint(
                             pose.get_isometry().translation().z()},
                            nullptr, nullptr);
   const T s_new =
-      cond(with_s, position.s + s_lookahead, position.s - s_lookahead);
+      cond(with_s, position.s() + s_lookahead, position.s() - s_lookahead);
   const T s_goal = math::saturate(s_new, 0., lane->length());
   // TODO(jadecastro): Add support for locating goal points in ongoing lanes.
-  return lane->ToGeoPosition({s_goal, 0., position.h});
+  return lane->ToGeoPosition({s_goal, 0., position.h()});
 }
 
 // These instantiations must match the API documentation in pure_pursuit.h.

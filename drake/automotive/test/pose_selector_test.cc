@@ -119,21 +119,22 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Verifies that we are on the road and that the correct car was identified.
-  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s);
-  EXPECT_EQ(kTrailingSPosition, trailing_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s());
+  EXPECT_EQ(kTrailingSPosition, trailing_odometry.pos.s());
 
   // Test that we get the same result when just the leading car is returned.
   const RoadOdometry<double>& traffic_odometry =
       FindClosestLeading(road, ego_pose, traffic_poses);
-  EXPECT_EQ(kLeadingSPosition, traffic_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition, traffic_odometry.pos.s());
 
   // Peer into the adjacent lane to the left.
   std::tie(leading_odometry, trailing_odometry) = FindClosestPair(
       road, ego_pose, traffic_poses, ego_position.lane->to_left());
 
   // Expect to see no cars in the left lane.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s);
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_odometry.pos.s);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s());
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            trailing_odometry.pos.s());
 
   // Bump the "just ahead" car into the lane to the left.
   Isometry3<double> isometry_just_ahead =
@@ -144,7 +145,7 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Expect the "far ahead" car to be identified and with the correct speed.
-  EXPECT_EQ(kLeadingSPosition + kSOffset, leading_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition + kSOffset, leading_odometry.pos.s());
   EXPECT_EQ(kTrafficXVelocity, leading_odometry.vel[3]);
 
   // Bump the "far ahead" car into the lane to the left.
@@ -155,7 +156,7 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Looking forward, we expect there to be no car in sight.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s());
   for (int i = 0; i < 6; ++i) {
     EXPECT_EQ(0., leading_odometry.vel[i]);  // Defaults to zero velocity.
   }
@@ -166,8 +167,9 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
 
   // Expect there to be no car behind on the immediate left and the "just ahead"
   // car to be leading.
-  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s);
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s());
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            trailing_odometry.pos.s());
 }
 
 // Verifies the result when the s-positions of the ego traffic vehicles have the
