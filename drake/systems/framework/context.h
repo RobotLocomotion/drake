@@ -25,6 +25,9 @@ struct StepInfo {
   T time_sec{0.0};
 };
 
+/**
+ * Base class that holds event related information.
+ */
 class EventInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventInfo)
@@ -36,6 +39,7 @@ class EventInfo {
     kUnrestrictedUpdate = 3,
   };
 
+  // Represented as bit masks. so i can do |
   enum TriggerType {
     kUnknownTrigger = 0,
     kForced = (1 << 0),

@@ -633,9 +633,9 @@ class Diagram : public System<T>,
     }
   }
 
-  void CalcDiscreteVariableUpdatesImpl(const Context<T>& context,
-                                   const EventInfo* event_info,
-                                   DiscreteValues<T>* discrete_state) const final {
+  void CalcDiscreteVariableUpdatesImpl(
+      const Context<T>& context, const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_differences =
@@ -657,7 +657,8 @@ class Diagram : public System<T>,
             diagram_differences->get_mutable_subdifference(i);
         DRAKE_DEMAND(subdifference != nullptr);
 
-        sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, nullptr, subdifference);
+        sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, nullptr,
+                                                        subdifference);
       }
       return;
     }
@@ -672,12 +673,14 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(subdifference != nullptr);
       const EventInfo* subinfo = info->get_sub_event(i);
 
-      sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, subinfo, subdifference);
+      sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, subinfo,
+                                                      subdifference);
     }
   }
 
   void CalcUnrestrictedUpdateImpl(const Context<T>& context,
-      const EventInfo* event_info, State<T>* state) const final {
+                                  const EventInfo* event_info,
+                                  State<T>* state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
@@ -693,7 +696,8 @@ class Diagram : public System<T>,
         State<T>* substate = diagram_state->get_mutable_substate(i);
         DRAKE_DEMAND(substate != nullptr);
 
-        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, nullptr, substate);
+        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, nullptr,
+                                                   substate);
       }
       return;
     }
@@ -707,7 +711,8 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(substate != nullptr);
       const EventInfo* subinfo = info->get_sub_event(i);
 
-      sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, subinfo, substate);
+      sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, subinfo,
+                                                 substate);
     }
   }
 
@@ -1086,8 +1091,8 @@ class Diagram : public System<T>,
   //
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value>::type
-  DoCalcNextUpdateTimeImpl(const Context<T1>& context, EventInfo* event_info, T1* time) const {
+  typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
+      const Context<T1>& context, EventInfo* event_info, T1* time) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
     auto info = dynamic_cast<DiagramEventInfo*>(event_info);
     DRAKE_DEMAND(diagram_context != nullptr);

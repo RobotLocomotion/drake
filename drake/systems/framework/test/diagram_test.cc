@@ -1463,8 +1463,11 @@ class MyEventTestSystem : public LeafSystem<double> {
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
-  void DoPublish(const Context<double>& context, EventInfo::TriggerType triggers) const override {
-    std::cout << get_name() << ": " << context.get_time() << ", trigger: " << triggers << "\n";
+  void DoPublish(const Context<double>& context,
+                 EventInfo::TriggerType triggers) const override {
+    std::cout << get_name() << ": " <<
+                 context.get_time() << ", trigger: " <<
+                 triggers << "\n";
   }
 };
 

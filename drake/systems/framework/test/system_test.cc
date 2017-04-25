@@ -37,7 +37,7 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  virtual std::unique_ptr<EventInfo> AllocateEventInfo() const override {
+  std::unique_ptr<EventInfo> AllocateEventInfo() const override {
     return std::unique_ptr<EventInfo>(new LeafEventInfo());
   }
 
@@ -133,7 +133,8 @@ class TestSystem : public System<double> {
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType trigger = info->get_triggers(EventInfo::EventType::kPublish);
+    EventInfo::TriggerType trigger =
+        info->get_triggers(EventInfo::EventType::kPublish);
     // Actually have regiestered publish.
     if (trigger != EventInfo::TriggerType::kUnknownTrigger)
       this->DoPublish(context, trigger);
@@ -143,13 +144,15 @@ class TestSystem : public System<double> {
       const EventInfo* event_info,
       DiscreteValues<double>* discrete_state) const final {
     if (event_info == nullptr) {
-      this->DoCalcDiscreteVariableUpdates(context, EventInfo::TriggerType::kForced, discrete_state);
+      this->DoCalcDiscreteVariableUpdates(
+          context, EventInfo::TriggerType::kForced, discrete_state);
       return;
     }
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType triggers = info->get_triggers(EventInfo::EventType::kDiscreteUpdate);
+    EventInfo::TriggerType triggers =
+        info->get_triggers(EventInfo::EventType::kDiscreteUpdate);
     if (triggers != EventInfo::TriggerType::kUnknownTrigger)
       this->DoCalcDiscreteVariableUpdates(context, triggers, discrete_state);
   }
@@ -232,7 +235,8 @@ TEST_F(SystemTest, DiscretePublish) {
   DRAKE_DEMAND(info != nullptr);
 
   system_.CalcNextUpdateTime(context_, event_info.get());
-  EXPECT_EQ(info->get_triggers(EventInfo::EventType::kPublish), EventInfo::TriggerType::kPeriodic);
+  EXPECT_EQ(info->get_triggers(EventInfo::EventType::kPublish),
+            EventInfo::TriggerType::kPeriodic);
 
   system_.Publish(context_, event_info.get());
   EXPECT_EQ(1, system_.get_publish_count());
@@ -334,7 +338,7 @@ class ValueIOTestSystem : public System<T> {
     return std::unique_ptr<Context<T>>(context.release());
   }
 
-  virtual std::unique_ptr<EventInfo> AllocateEventInfo() const override {
+  std::unique_ptr<EventInfo> AllocateEventInfo() const override {
     return std::unique_ptr<EventInfo>(new LeafEventInfo());
   }
 

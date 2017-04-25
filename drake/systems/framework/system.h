@@ -516,7 +516,8 @@ class System {
       const EventInfo* event_info,
       DiscreteValues<T>* discrete_state) const {
     if (event_info == nullptr) {
-      DoCalcDiscreteVariableUpdates(context, EventInfo::TriggerType::kForced, discrete_state);
+      DoCalcDiscreteVariableUpdates(
+          context, EventInfo::TriggerType::kForced, discrete_state);
     } else {
       DRAKE_ABORT_MSG("need to override this for other types of triggers");
     }
