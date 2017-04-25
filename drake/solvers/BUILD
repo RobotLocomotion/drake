@@ -32,6 +32,33 @@ drake_cc_library(
     ],
 )
 
+# TODO(eric.cousineau): Remove CostShim that produces coupling
+drake_cc_library(
+    name = "cost",
+    srcs = ["cost.cc"],
+    hdrs = ["cost.h"],
+    deps = [
+        ":constraint",
+        ":function",
+    ],
+)
+
+drake_cc_library(
+    name = "create_cost",
+    srcs = [],
+    hdrs = ["create_cost.h"],
+    deps = [
+        ":binding",
+        ":cost",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:monomial",
+        "//drake/common:number_traits",
+        "//drake/common:polynomial",
+        "//drake/common:symbolic",
+    ],
+)
+
 drake_cc_library(
     name = "decision_variable",
     srcs = ["decision_variable.cc"],
@@ -88,9 +115,8 @@ drake_cc_library(
     ],
     deps = [
         ":binding",
-        ":constraint",
+        ":create_cost",
         ":decision_variable",
-        ":function",
         ":gurobi_solver",
         ":ipopt_solver",
         ":mosek_solver",
@@ -158,6 +184,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "generic_trivial_cost",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/generic_trivial_costs.h"],
+    deps = [
+        ":constraint",
+        ":cost",
+    ],
+)
+
+drake_cc_library(
     name = "mathematical_program_test_util",
     testonly = 1,
     srcs = ["test/mathematical_program_test_util.cc"],
@@ -217,7 +254,7 @@ drake_cc_library(
     ],
     deps = [
         ":binding",
-        ":constraint",
+        ":create_cost",
         ":decision_variable",
         ":function",
         "//drake/common",
@@ -346,6 +383,18 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "cost_test",
+    deps = [
+        ":cost",
+        ":create_cost",
+        ":generic_trivial_cost",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
+        "//drake/math:gradient",
+    ],
+)
+
 # Temporarily disabled because we have no Gurobi license in CI. #5862
 # TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
 # test that doesn't.
@@ -454,6 +503,7 @@ drake_cc_googletest(
         "test/mathematical_program_test.cc",
     ],
     deps = [
+        ":generic_trivial_cost",
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
