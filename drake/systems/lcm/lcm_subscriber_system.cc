@@ -116,7 +116,8 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
 }
 
 void LcmSubscriberSystem::DoCalcNextUpdateTime(
-    const Context<double>& context, UpdateActions<double>* events) const {
+    const Context<double>& context,
+    EventInfo* events, double* time) const {
   // Gets the last message count from either abstract state or discrete state.
   int last_message_count;
   if (translator_ == nullptr) {
@@ -133,18 +134,21 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   // Has a new message. Schedule an update event.
   if (last_message_count != received_message_count_) {
     // TODO(siyuan): should be context.get_time() once #5725 is resolved.
-    events->time = context.get_time() + 0.0001;
-    DiscreteEvent<double> event;
+    *time = context.get_time() + 0.0001;
+    LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(events);
+    DRAKE_DEMAND(info != nullptr);
     if (translator_ == nullptr) {
-      event.action =
-          DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction;
+      info->add_event_trigger_pair(
+          EventInfo::EventType::kUnrestrictedUpdate,
+          EventInfo::TriggerType::kPeriodic);
     } else {
-      event.action = DiscreteEvent<double>::ActionType::kDiscreteUpdateAction;
+      info->add_event_trigger_pair(
+          EventInfo::EventType::kDiscreteUpdate,
+          EventInfo::TriggerType::kPeriodic);
     }
-    events->events.push_back(event);
   } else {
     // Use base class' implementation.
-    LeafSystem<double>::DoCalcNextUpdateTime(context, events);
+    LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   }
 }
 

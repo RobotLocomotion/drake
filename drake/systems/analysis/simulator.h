@@ -398,7 +398,6 @@ void Simulator<T>::Initialize() {
   DRAKE_DEMAND(per_step_events_ != nullptr);
 
   system_.GetPerStepEvents(*context_, per_step_events_.get());
-  per_step_events_->print();
 
   // Restore default values.
   ResetStatistics();
@@ -487,35 +486,18 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
 
-    // The general policy here is to do actions in decreasing order of
-    // "violence" to the state, i.e. unrestricted -> discrete -> publish.
-    // The "timed" actions happen before the "per step" ones.
-
     merged_events->clear();
+    // Merge all the events together.
     merged_events->merge(per_step_events_.get());
-    merged_events->merge(timed_events.get());
+    if (sample_time_hit)
+      merged_events->merge(timed_events.get());
 
-    merged_events.print();
-    HandleUnrestrictedUpdate(merged_events.get());
-    HandleDiscreteUpdate(merged_events.get());
-    HandlePublish(merged_events.get());
-
-    /*
     // Do unrestricted updates first.
-    if (sample_time_hit)
-      HandleUnrestrictedUpdate(update_actions.events);
-    HandleUnrestrictedUpdate(per_step_actions_);
-
+    HandleUnrestrictedUpdate(merged_events.get());
     // Do restricted (discrete variable) updates next.
-    if (sample_time_hit)
-      HandleDiscreteUpdate(update_actions.events);
-    HandleDiscreteUpdate(per_step_actions_);
-
+    HandleDiscreteUpdate(merged_events.get());
     // Do any publishes last.
-    if (sample_time_hit)
-      HandlePublish(update_actions.events);
-    HandlePublish(per_step_actions_);
-    */
+    HandlePublish(merged_events.get());
 
     // TODO(siyuan): transfer per step publish entirely to individual systems.
     // Allow System a chance to produce some output.
@@ -527,6 +509,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =
         system_.CalcNextUpdateTime(*context_, timed_events.get());
+
     DRAKE_DEMAND(next_sample_time >= step_start_time);
 
     // Determine whether the DiscreteEvent requested by the System at

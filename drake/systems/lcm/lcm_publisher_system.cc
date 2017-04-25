@@ -82,7 +82,8 @@ void LcmPublisherSystem::set_publish_period(double period) {
   LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
-void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
+void LcmPublisherSystem::DoPublish(const Context<double>& context,
+    EventInfo::TriggerType triggers) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
 
