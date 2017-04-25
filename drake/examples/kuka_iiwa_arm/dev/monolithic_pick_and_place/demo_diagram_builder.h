@@ -99,9 +99,8 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
                                       Eigen::Vector3d::Zero() /* rpy */);
 
   tree_builder->AddGround();
-
-  DRAKE_DEMAND(chosen_box < 4);
-  // Chooses and appropriate box.
+  
+  // Chooses an appropriate box.
   int box_id = 0;
   int iiwa_id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
   *iiwa_instance = tree_builder->get_model_info_for_instance(iiwa_id);
@@ -118,7 +117,7 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
       box_id = tree_builder->AddFloatingModelInstance("box_large", box_position,
                                                       box_orientation);
       break;
-    default: //TODO(naveenoid) : Handle the condition for no boxes added.
+    default: DRAKE_ABORT_MSG("Chosen box should be between 0 and 4.");
       break;
   }
   *box_instance = tree_builder->get_model_info_for_instance(box_id);
