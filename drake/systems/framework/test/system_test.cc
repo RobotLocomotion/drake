@@ -83,7 +83,7 @@ class TestSystem : public System<double> {
 
   // The default publish function.
   void DoPublish(const Context<double>& context,
-                 EventInfo::TriggerType triggers) const override {
+                 const std::vector<const Trigger*>& triggers) const override {
     ++publish_count_;
   }
 
@@ -115,52 +115,56 @@ class TestSystem : public System<double> {
 
     if (context.get_time() < 10.0) {
       // Use the default publish action.
-      info->add_event_trigger_pair(EventInfo::EventType::kPublish,
-          EventInfo::TriggerType::kPeriodic);
+      info->add_trigger(EventInfo::EventType::kPublish,
+          std::make_unique<PeriodicTrigger>());
     } else {
       // Use the default update action.
-      info->add_event_trigger_pair(EventInfo::EventType::kDiscreteUpdate,
-          EventInfo::TriggerType::kPeriodic);
+      info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
+          std::make_unique<PeriodicTrigger>());
     }
   }
 
   void PublishImpl(const Context<double>& context,
       const EventInfo* event_info) const final {
     if (event_info == nullptr) {
-      this->DoPublish(context, EventInfo::TriggerType::kForced);
+      ForcedTrigger trigger;
+      std::vector<const Trigger*> triggers(1, &trigger);
+      this->DoPublish(context, triggers);
       return;
     }
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType trigger =
-        info->get_triggers(EventInfo::EventType::kPublish);
-    // Actually have regiestered publish.
-    if (trigger != EventInfo::TriggerType::kUnknownTrigger)
-      this->DoPublish(context, trigger);
+    if (info->has_event(EventInfo::EventType::kPublish)) {
+      this->DoPublish(context,
+          info->get_triggers(EventInfo::EventType::kPublish));
+    }
   }
 
   void CalcDiscreteVariableUpdatesImpl(const Context<double>& context,
       const EventInfo* event_info,
       DiscreteValues<double>* discrete_state) const final {
     if (event_info == nullptr) {
+      ForcedTrigger trigger;
+      std::vector<const Trigger*> triggers(1, &trigger);
       this->DoCalcDiscreteVariableUpdates(
-          context, EventInfo::TriggerType::kForced, discrete_state);
+          context, triggers, discrete_state);
       return;
     }
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType triggers =
-        info->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-    if (triggers != EventInfo::TriggerType::kUnknownTrigger)
-      this->DoCalcDiscreteVariableUpdates(context, triggers, discrete_state);
+    if (info->has_event(EventInfo::EventType::kDiscreteUpdate)) {
+      this->DoCalcDiscreteVariableUpdates(context,
+          info->get_triggers(EventInfo::EventType::kDiscreteUpdate),
+          discrete_state);
+    }
   }
 
   // The default update function.
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      EventInfo::TriggerType triggers,
+      const std::vector<const Trigger*>& triggers,
       DiscreteValues<double>* discrete_state) const override {
     ++update_count_;
   }
@@ -235,8 +239,9 @@ TEST_F(SystemTest, DiscretePublish) {
   DRAKE_DEMAND(info != nullptr);
 
   system_.CalcNextUpdateTime(context_, event_info.get());
-  EXPECT_EQ(info->get_triggers(EventInfo::EventType::kPublish),
-            EventInfo::TriggerType::kPeriodic);
+  const auto& triggers = info->get_triggers(EventInfo::EventType::kPublish);
+  EXPECT_EQ(triggers.size(), 1);
+  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
 
   system_.Publish(context_, event_info.get());
   EXPECT_EQ(1, system_.get_publish_count());

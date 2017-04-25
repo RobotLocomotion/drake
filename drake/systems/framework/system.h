@@ -19,6 +19,7 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/event_info.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
@@ -286,13 +287,6 @@ class System {
     PublishImpl(context, event_info);
   }
 
-  virtual void PublishImpl(const Context<T>& context,
-      const EventInfo* event_info) const {
-    if (event_info == nullptr)
-      DoPublish(context, EventInfo::TriggerType::kForced);
-    else
-      DRAKE_ABORT_MSG("need to override this for other types of triggers");
-  }
   //@}
 
   //----------------------------------------------------------------------------
@@ -512,17 +506,6 @@ class System {
     CalcDiscreteVariableUpdatesImpl(context, event_info, discrete_state);
   }
 
-  virtual void CalcDiscreteVariableUpdatesImpl(const Context<T>& context,
-      const EventInfo* event_info,
-      DiscreteValues<T>* discrete_state) const {
-    if (event_info == nullptr) {
-      DoCalcDiscreteVariableUpdates(
-          context, EventInfo::TriggerType::kForced, discrete_state);
-    } else {
-      DRAKE_ABORT_MSG("need to override this for other types of triggers");
-    }
-  }
-
   /// This method is called to update *any* state variables in the @p context
   /// because the given @p event has arrived. Dispatches to
   /// DoCalcUnrestrictedUpdate() by default, or to
@@ -550,15 +533,6 @@ class System {
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
-  }
-
-  virtual void CalcUnrestrictedUpdateImpl(const Context<T>& context,
-      const EventInfo* event_info, State<T>* state) const {
-    if (event_info == nullptr) {
-      DoCalcUnrestrictedUpdate(context, EventInfo::TriggerType::kForced, state);
-    } else {
-      DRAKE_ABORT_MSG("need to override this for other types of triggers");
-    }
   }
 
   /// This method is called by a Simulator during its calculation of the size of
@@ -1110,6 +1084,36 @@ class System {
   //@}
 
  protected:
+  virtual void PublishImpl(const Context<T>& context,
+      const EventInfo* event_info) const {
+    if (event_info == nullptr) {
+      DoPublish(context, ForcedTrigger::OneForcedTrigger());
+    }
+    else
+      DRAKE_ABORT_MSG("need to override this for other types of triggers");
+  }
+
+  virtual void CalcDiscreteVariableUpdatesImpl(const Context<T>& context,
+      const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const {
+    if (event_info == nullptr) {
+      DoCalcDiscreteVariableUpdates(
+          context, ForcedTrigger::OneForcedTrigger(), discrete_state);
+    } else {
+      DRAKE_ABORT_MSG("need to override this for other types of triggers");
+    }
+  }
+
+  virtual void CalcUnrestrictedUpdateImpl(const Context<T>& context,
+      const EventInfo* event_info, State<T>* state) const {
+    if (event_info == nullptr) {
+      DoCalcUnrestrictedUpdate(
+          context, ForcedTrigger::OneForcedTrigger(), state);
+    } else {
+      DRAKE_ABORT_MSG("need to override this for other types of triggers");
+    }
+  }
+
   //----------------------------------------------------------------------------
   /// @name                 System construction
   /// Authors of derived %Systems can use these methods in the constructor
@@ -1227,7 +1231,7 @@ class System {
   /// will have already error-checked `context` so you may assume that it is
   /// valid for this %System.
   virtual void DoPublish(const Context<T>& context,
-      EventInfo::TriggerType triggers) const {
+      const std::vector<const Trigger*>& triggers) const {
     unused(context, triggers);
   }
 
@@ -1243,7 +1247,7 @@ class System {
   /// has the same constituent structure as was produced by
   /// AllocateDiscreteVariables().
   virtual void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-      EventInfo::TriggerType triggers,
+      const std::vector<const Trigger*>& triggers,
       DiscreteValues<T>* discrete_state) const {
     unused(context, triggers, discrete_state);
   }
@@ -1269,8 +1273,7 @@ class System {
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
-                                        EventInfo::TriggerType triggers,
-                                        State<T>* state) const {
+      const std::vector<const Trigger*>& triggers, State<T>* state) const {
     unused(context, triggers, state);
   }
 

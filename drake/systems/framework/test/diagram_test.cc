@@ -599,7 +599,7 @@ class PublishingSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context,
-                 EventInfo::TriggerType triggers) const override {
+                 const std::vector<const Trigger*>& triggers) const override {
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
@@ -836,7 +836,7 @@ class TestPublishingSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context,
-                 EventInfo::TriggerType triggers) const override {
+                 const std::vector<const Trigger*>& triggers) const override {
     published_ = true;
   }
 
@@ -1005,7 +1005,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
 
   // Abstract state is set to time + id.
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
-                                EventInfo::TriggerType triggers,
+                                const std::vector<const Trigger*>& triggers,
                                 State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
                             ->get_mutable_value(0)
@@ -1347,14 +1347,14 @@ class PerStepActionTestSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoCalcDiscreteVariableUpdates(const Context<double>& context,
-      EventInfo::TriggerType triggers,
+      const std::vector<const Trigger*>& triggers,
       DiscreteValues<double>* discrete_state) const override {
     (*discrete_state)[0] =
         context.get_discrete_state(0)->GetAtIndex(0) + 1;
   }
 
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
-                                EventInfo::TriggerType triggers,
+                                const std::vector<const Trigger*>& triggers,
                                 State<double>* state) const override {
     int int_num = static_cast<int>(
         context.get_discrete_state(0)->GetAtIndex(0));
@@ -1363,7 +1363,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
   }
 
   void DoPublish(const Context<double>& context,
-                 EventInfo::TriggerType triggers) const override {
+                 const std::vector<const Trigger*>& triggers) const override {
     publish_ctr_++;
   }
 
@@ -1464,10 +1464,13 @@ class MyEventTestSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context,
-                 EventInfo::TriggerType triggers) const override {
+                 const std::vector<const Trigger*>& triggers) const override {
     std::cout << get_name() << ": " <<
-                 context.get_time() << ", trigger: " <<
-                 triggers << "\n";
+                 context.get_time() << ", trigger: ";
+    for (const auto trigger : triggers) {
+      std::cout << trigger->get_type() << " ";
+    }
+    std::cout << std::endl;
   }
 };
 

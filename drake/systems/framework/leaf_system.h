@@ -58,56 +58,6 @@ class LeafSystem : public System<T> {
     return std::unique_ptr<EventInfo>(ptr);
   }
 
-  void PublishImpl(const Context<T>& context,
-                   const EventInfo* event_info = nullptr) const final {
-    if (event_info == nullptr) {
-      this->DoPublish(context, EventInfo::TriggerType::kForced);
-      return;
-    }
-
-    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType trigger =
-        info->get_triggers(EventInfo::EventType::kPublish);
-    // Actually have regiestered publish.
-    if (trigger != EventInfo::TriggerType::kUnknownTrigger)
-      this->DoPublish(context, trigger);
-  }
-
-  void CalcDiscreteVariableUpdatesImpl(
-      const Context<T>& context, const EventInfo* event_info,
-      DiscreteValues<T>* discrete_state) const final {
-    if (event_info == nullptr) {
-      this->DoCalcDiscreteVariableUpdates(
-          context, EventInfo::TriggerType::kForced, discrete_state);
-      return;
-    }
-
-    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType triggers =
-        info->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-    if (triggers != EventInfo::TriggerType::kUnknownTrigger)
-      this->DoCalcDiscreteVariableUpdates(context, triggers, discrete_state);
-  }
-
-  void CalcUnrestrictedUpdateImpl(const Context<T>& context,
-                                  const EventInfo* event_info,
-                                  State<T>* state) const final {
-    if (event_info == nullptr) {
-      this->DoCalcUnrestrictedUpdate(context, EventInfo::TriggerType::kForced,
-                                     state);
-      return;
-    }
-
-    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    EventInfo::TriggerType triggers =
-        info->get_triggers(EventInfo::EventType::kUnrestrictedUpdate);
-    if (triggers != EventInfo::TriggerType::kUnknownTrigger)
-      this->DoCalcUnrestrictedUpdate(context, triggers, state);
-  }
-
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -746,12 +696,62 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  void PublishImpl(const Context<T>& context,
+                   const EventInfo* event_info = nullptr) const final {
+    if (event_info == nullptr) {
+      this->DoPublish(context, ForcedTrigger::OneForcedTrigger());
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    if (info->has_event(EventInfo::EventType::kPublish)) {
+      this->DoPublish(context,
+          info->get_triggers(EventInfo::EventType::kPublish));
+    }
+  }
+
+  void CalcDiscreteVariableUpdatesImpl(
+      const Context<T>& context, const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const final {
+    if (event_info == nullptr) {
+      this->DoCalcDiscreteVariableUpdates(
+          context, ForcedTrigger::OneForcedTrigger(), discrete_state);
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    if (info->has_event(EventInfo::EventType::kDiscreteUpdate)) {
+      this->DoCalcDiscreteVariableUpdates(context,
+          info->get_triggers(EventInfo::EventType::kDiscreteUpdate),
+          discrete_state);
+    }
+  }
+
+  void CalcUnrestrictedUpdateImpl(const Context<T>& context,
+                                  const EventInfo* event_info,
+                                  State<T>* state) const final {
+    if (event_info == nullptr) {
+      this->DoCalcUnrestrictedUpdate(
+          context, ForcedTrigger::OneForcedTrigger(), state);
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    if (info->has_event(EventInfo::EventType::kUnrestrictedUpdate)) {
+      this->DoCalcUnrestrictedUpdate(context,
+          info->get_triggers(EventInfo::EventType::kUnrestrictedUpdate), state);
+    }
+  }
+
   void DoGetPerStepEvents(const Context<T>& context,
                           EventInfo* event_info) const override {
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     for (const auto& event : per_step_events_) {
-      info->add_event_trigger_pair(event, EventInfo::TriggerType::kPerStep);
+      info->add_trigger(event, std::make_unique<PerStepTrigger>());
     }
   }
 
@@ -802,8 +802,8 @@ class LeafSystem : public System<T> {
     // Write out the events that fire at min_time.
     *time = min_time;
     for (const PeriodicEvent* event : next_events) {
-      EventInfo::EventType e = static_cast<EventInfo::EventType>(event->event);
-      info->add_event_trigger_pair(e, EventInfo::TriggerType::kPeriodic);
+      EventInfo::EventType e = event->event;
+      info->add_trigger(e, std::make_unique<PeriodicTrigger>());
     }
   }
 
