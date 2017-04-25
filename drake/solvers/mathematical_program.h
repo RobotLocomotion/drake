@@ -187,9 +187,6 @@ enum ProgramAttributes {
 typedef uint32_t AttributesSet;
 
 class MathematicalProgram {
-  template <typename F>
-  using ConstraintImpl = FunctionCost<F>;
-
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
 
@@ -634,15 +631,15 @@ class MathematicalProgram {
   /**
    * Adds a generic cost to the optimization program.
    */
-  Binding<Constraint> AddCost(const Binding<Constraint>& binding);
+  Binding<Cost> AddCost(const Binding<Cost>& binding);
 
   /**
    * Adds a generic cost to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
    */
-  Binding<Constraint> AddCost(
-      const std::shared_ptr<Constraint>& obj,
+  Binding<Cost> AddCost(
+      const std::shared_ptr<Cost>& obj,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
@@ -650,21 +647,19 @@ class MathematicalProgram {
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
    */
-  void AddCost(const std::shared_ptr<Constraint>& obj,
+  Binding<Cost> AddCost(const std::shared_ptr<Cost>& obj,
                const VariableRefList& vars) {
-    AddCost(obj, ConcatenateVariableRefList(vars));
+    return AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
   /**
-   * Convert an input of type @tparam F to a ConstraintImpl object.
+   * Convert an input of type @tparam F to a FunctionCost object.
    * @tparam F This class should have functions numInputs(), numOutputs and
    * eval(x, y). Check drake::solvrs::detail::FunctionTraits for more details.
    */
   template <typename F>
-  static std::shared_ptr<Constraint> MakeCost(F&& f) {
-    return std::make_shared<
-        ConstraintImpl<typename std::remove_reference<F>::type>>(
-        std::forward<F>(f));
+  static std::shared_ptr<Cost> MakeCost(F&& f) {
+    return CreateFunctionCost(f);
   }
 
   /**
@@ -674,9 +669,8 @@ class MathematicalProgram {
    */
   template <typename F>
   typename std::enable_if<
-      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
-          (!std::is_convertible<F, Binding<Constraint>>::value),
-      Binding<Constraint>>::type
+      detail::is_cost_functor_candidate<F>::value,
+      Binding<Cost>>::type
   AddCost(F&& f, const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
@@ -689,41 +683,19 @@ class MathematicalProgram {
    */
   template <typename F>
   typename std::enable_if<
-      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
-          (!std::is_convertible<F, Binding<Constraint>>::value),
-      Binding<Constraint>>::type
+      detail::is_cost_functor_candidate<F>::value,
+      Binding<Cost>>::type
   AddCost(F&& f, const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    auto c = MakeCost(std::forward<F>(f));
+    auto c = CreateFunctionCost(std::forward<F>(f));
     return AddCost(c, vars);
   }
 
-  // libstdc++ 4.9 evaluates
-  // `std::is_convertible<std::unique_ptr<Unrelated>,
-  // std::shared_ptr<Constraint>>::value`
-  // incorrectly as `true` so our enable_if overload is not used.
-  // Provide an explicit alternative for this case.
-  template <typename F>
-  Binding<Constraint> AddCost(std::unique_ptr<F>&& f,
-                              const VariableRefList& vars) {
-    return AddCost(f, ConcatenateVariableRefList(vars));
-  }
-
-  /**
-   * Adds a cost to the optimization program on an Eigen::Vector containing
-   * decision variables.
-   * @tparam F it should define functions numInputs, numOutputs and eval. Check
-   * drake::solvers::detail::FunctionTraits for more detail.
-   */
-  template <typename F>
+  template <typename F, typename Vars>
   typename std::enable_if<
-      (!std::is_convertible<F, std::shared_ptr<Constraint>>::value) &&
-          (!std::is_convertible<F, Binding<Constraint>>::value),
-      Binding<Constraint>>::type
-  AddCost(std::unique_ptr<F>&& f,
-          const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
-        std::forward<std::unique_ptr<F>>(f));
-    return AddCost(c, vars);
+      detail::assert_if_is_constraint<F>::value,
+      Binding<Cost>>::type
+  AddCost(F&& f, Vars&& vars) {
+    throw(std::runtime_error("This will assert at compile-time."));
   }
 
   /**
@@ -731,15 +703,15 @@ class MathematicalProgram {
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  Binding<LinearConstraint> AddCost(const Binding<LinearConstraint>& binding);
+  Binding<LinearCost> AddCost(const Binding<LinearCost>& binding);
 
   /**
    * Adds a cost term of the form c'*x.
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  Binding<LinearConstraint> AddCost(
-      const std::shared_ptr<LinearConstraint>& obj,
+  Binding<LinearCost> AddCost(
+      const std::shared_ptr<LinearCost>& obj,
       const VariableRefList& vars) {
     return AddCost(obj, ConcatenateVariableRefList(vars));
   }
@@ -749,8 +721,8 @@ class MathematicalProgram {
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  Binding<LinearConstraint> AddCost(
-      const std::shared_ptr<LinearConstraint>& obj,
+  Binding<LinearCost> AddCost(
+      const std::shared_ptr<LinearCost>& obj,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
@@ -761,14 +733,14 @@ class MathematicalProgram {
    * @return The newly added linear constraint, together with the bound
    * variables.
    */
-  Binding<LinearConstraint> AddLinearCost(const symbolic::Expression& e);
+  Binding<LinearCost> AddLinearCost(const symbolic::Expression& e);
 
   /**
    * Adds a linear cost term of the form c'*x.
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  Binding<LinearConstraint> AddLinearCost(
+  Binding<LinearCost> AddLinearCost(
       const Eigen::Ref<const Eigen::VectorXd>& c, const VariableRefList& vars) {
     return AddLinearCost(c, ConcatenateVariableRefList((vars)));
   }
@@ -778,7 +750,7 @@ class MathematicalProgram {
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  Binding<LinearConstraint> AddLinearCost(
+  Binding<LinearCost> AddLinearCost(
       const Eigen::Ref<const Eigen::VectorXd>& c,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
@@ -787,16 +759,16 @@ class MathematicalProgram {
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  Binding<QuadraticConstraint> AddCost(
-      const Binding<QuadraticConstraint>& binding);
+  Binding<QuadraticCost> AddCost(
+      const Binding<QuadraticCost>& binding);
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  Binding<QuadraticConstraint> AddCost(
-      const std::shared_ptr<QuadraticConstraint>& obj,
+  Binding<QuadraticCost> AddCost(
+      const std::shared_ptr<QuadraticCost>& obj,
       const VariableRefList& vars) {
     return AddCost(obj, ConcatenateVariableRefList(vars));
   }
@@ -806,8 +778,8 @@ class MathematicalProgram {
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  Binding<QuadraticConstraint> AddCost(
-      const std::shared_ptr<QuadraticConstraint>& obj,
+  Binding<QuadraticCost> AddCost(
+      const std::shared_ptr<QuadraticCost>& obj,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
@@ -818,12 +790,12 @@ class MathematicalProgram {
    * expression is not quadratic.
    * @return The newly added cost together with the bound variables.
    */
-  Binding<QuadraticConstraint> AddQuadraticCost(const symbolic::Expression& e);
+  Binding<QuadraticCost> AddQuadraticCost(const symbolic::Expression& e);
 
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
-  Binding<QuadraticConstraint> AddQuadraticErrorCost(
+  Binding<QuadraticCost> AddQuadraticErrorCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& x_desired,
       const VariableRefList& vars) {
@@ -834,7 +806,7 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
-  Binding<QuadraticConstraint> AddQuadraticErrorCost(
+  Binding<QuadraticCost> AddQuadraticErrorCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& x_desired,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
@@ -842,7 +814,7 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form | Ax - b |^2.
    */
-  Binding<QuadraticConstraint> AddL2NormCost(
+  Binding<QuadraticCost> AddL2NormCost(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
     return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
@@ -851,7 +823,7 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form | Ax - b |^2.
    */
-  Binding<QuadraticConstraint> AddL2NormCost(
+  Binding<QuadraticCost> AddL2NormCost(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
@@ -863,7 +835,7 @@ class MathematicalProgram {
    * Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables.
    */
-  Binding<QuadraticConstraint> AddQuadraticCost(
+  Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
     return AddQuadraticCost(Q, b, ConcatenateVariableRefList(vars));
@@ -873,7 +845,7 @@ class MathematicalProgram {
    * Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables.
    */
-  Binding<QuadraticConstraint> AddQuadraticCost(
+  Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
@@ -883,7 +855,7 @@ class MathematicalProgram {
    * @param e A symbolic expression in the polynomial form.
    * @return The newly created cost and the bound variables.
    */
-  Binding<PolynomialConstraint> AddPolynomialCost(
+  Binding<PolynomialCost> AddPolynomialCost(
       const symbolic::Expression& e);
 
   /**
@@ -895,7 +867,7 @@ class MathematicalProgram {
    * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
    * @return The newly created cost, together with the bound variables.
    */
-  Binding<Constraint> AddCost(const symbolic::Expression& e);
+  Binding<Cost> AddCost(const symbolic::Expression& e);
 
   /**
    * Adds a generic constraint to the program.  This should
@@ -2155,7 +2127,7 @@ class MathematicalProgram {
   /**
    * Getter for all generic costs.
    */
-  const std::vector<Binding<Constraint>>& generic_costs() const {
+  const std::vector<Binding<Cost>>& generic_costs() const {
     return generic_costs_;
   }  // e.g. for snopt_user_fun
 
@@ -2175,12 +2147,12 @@ class MathematicalProgram {
   }
 
   /** Getter for linear costs. */
-  const std::vector<Binding<LinearConstraint>>& linear_costs() const {
+  const std::vector<Binding<LinearCost>>& linear_costs() const {
     return linear_costs_;
   }
 
   /** Getter for quadratic costs. */
-  const std::vector<Binding<QuadraticConstraint>>& quadratic_costs() const {
+  const std::vector<Binding<QuadraticCost>>& quadratic_costs() const {
     return quadratic_costs_;
   }
 
@@ -2218,8 +2190,8 @@ class MathematicalProgram {
    * generic costs, then quadratic costs appended to
    * generic costs).
    */
-  std::vector<Binding<Constraint>> GetAllCosts() const {
-    std::vector<Binding<Constraint>> costlist = generic_costs_;
+  std::vector<Binding<Cost>> GetAllCosts() const {
+    auto costlist = generic_costs_;
     costlist.insert(costlist.end(), linear_costs_.begin(), linear_costs_.end());
     costlist.insert(costlist.end(), quadratic_costs_.begin(),
                     quadratic_costs_.end());
@@ -2372,10 +2344,10 @@ class MathematicalProgram {
                                                  // variable with index i.
 
   VectorXDecisionVariable decision_variables_;
-  std::vector<Binding<Constraint>> generic_costs_;
+  std::vector<Binding<Cost>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;
-  std::vector<Binding<QuadraticConstraint>> quadratic_costs_;
-  std::vector<Binding<LinearConstraint>> linear_costs_;
+  std::vector<Binding<QuadraticCost>> quadratic_costs_;
+  std::vector<Binding<LinearCost>> linear_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_

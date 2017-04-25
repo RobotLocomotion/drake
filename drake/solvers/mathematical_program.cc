@@ -429,21 +429,21 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
 }
 }  // anonymous namespace
 
-Binding<Constraint> MathematicalProgram::AddCost(
-    const Binding<Constraint>& binding) {
-  required_capabilities_ |= kGenericCost;
-  generic_costs_.push_back(binding);
-  return generic_costs_.back();
+Binding<Cost> MathematicalProgram::AddCost(
+    const Binding<Cost>& binding) {
+    required_capabilities_ |= kGenericCost;
+    generic_costs_.push_back(binding);
+    return generic_costs_.back();
 }
 
-Binding<Constraint> MathematicalProgram::AddCost(
-    const shared_ptr<Constraint>& obj,
+Binding<Cost> MathematicalProgram::AddCost(
+    const shared_ptr<Cost>& obj,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(Binding<Constraint>(obj, vars));
+  return AddCost(Binding<Cost>(obj, vars));
 }
 
-Binding<LinearConstraint> MathematicalProgram::AddCost(
-    const Binding<LinearConstraint>& binding) {
+Binding<LinearCost> MathematicalProgram::AddCost(
+    const Binding<LinearCost>& binding) {
   required_capabilities_ |= kLinearCost;
   DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 &&
                binding.constraint()->A().cols() ==
@@ -453,13 +453,13 @@ Binding<LinearConstraint> MathematicalProgram::AddCost(
   return linear_costs_.back();
 }
 
-Binding<LinearConstraint> MathematicalProgram::AddCost(
-    const shared_ptr<LinearConstraint>& obj,
+Binding<LinearCost> MathematicalProgram::AddCost(
+    const shared_ptr<LinearCost>& obj,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(Binding<LinearConstraint>(obj, vars));
+  return AddCost(Binding<LinearCost>(obj, vars));
 }
 
-Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
+Binding<LinearCost> MathematicalProgram::AddLinearCost(
     const Expression& e) {
   auto p = ExtractVariablesFromExpression(e);
   const VectorXDecisionVariable& var = p.first;
@@ -472,18 +472,16 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
   return AddLinearCost(c, var);
 }
 
-Binding<LinearConstraint> MathematicalProgram::AddLinearCost(
+Binding<LinearCost> MathematicalProgram::AddLinearCost(
     const Eigen::Ref<const Eigen::VectorXd>& c,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto cost = make_shared<LinearConstraint>(
-      c.transpose(),
-      Vector1<double>::Constant(-numeric_limits<double>::infinity()),
-      Vector1<double>::Constant(numeric_limits<double>::infinity()));
+  auto cost = make_shared<LinearCost>(
+      c.transpose());
   return AddCost(cost, vars);
 }
 
-Binding<QuadraticConstraint> MathematicalProgram::AddCost(
-    const Binding<QuadraticConstraint>& binding) {
+Binding<QuadraticCost> MathematicalProgram::AddCost(
+    const Binding<QuadraticCost>& binding) {
   required_capabilities_ |= kQuadraticCost;
   DRAKE_ASSERT(binding.constraint()->Q().rows() ==
                    static_cast<int>(binding.GetNumElements()) &&
@@ -494,13 +492,13 @@ Binding<QuadraticConstraint> MathematicalProgram::AddCost(
   return quadratic_costs_.back();
 }
 
-Binding<QuadraticConstraint> MathematicalProgram::AddCost(
-    const shared_ptr<QuadraticConstraint>& obj,
+Binding<QuadraticCost> MathematicalProgram::AddCost(
+    const shared_ptr<QuadraticCost>& obj,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(Binding<QuadraticConstraint>(obj, vars));
+  return AddCost(Binding<QuadraticCost>(obj, vars));
 }
 
-Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(
+Binding<QuadraticCost> AddQuadraticCostWithMonomialToCoeffMap(
     const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
     const VectorXDecisionVariable& vars_vec,
     const unordered_map<Variable::Id, int>& map_var_to_index,
@@ -517,7 +515,7 @@ Binding<QuadraticConstraint> AddQuadraticCostWithMonomialToCoeffMap(
   return prog->AddQuadraticCost(Q, b, vars_vec);
 }
 
-Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
+Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Expression& e) {
   // First build an Eigen vector, that contains all the bound variables.
   const symbolic::Variables& vars = e.GetVariables();
@@ -532,27 +530,23 @@ Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
                                                 map_var_to_index, this);
 }
 
-Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticErrorCost(
+Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& x_desired,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto cost = make_shared<QuadraticConstraint>(
-      2 * Q, -2 * Q * x_desired, -numeric_limits<double>::infinity(),
-      numeric_limits<double>::infinity());
+  auto cost = make_shared<QuadraticCost>(2 * Q, -2 * Q * x_desired);
   return AddCost(cost, vars);
 }
 
-Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticCost(
+Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto cost = make_shared<QuadraticConstraint>(
-      Q, b, -numeric_limits<double>::infinity(),
-      numeric_limits<double>::infinity());
+  auto cost = make_shared<QuadraticCost>(Q, b);
   return AddCost(cost, vars);
 }
 
-Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(
+Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
     const Expression& e) {
   if (!e.is_polynomial()) {
     ostringstream oss;
@@ -571,17 +565,15 @@ Binding<PolynomialConstraint> MathematicalProgram::AddPolynomialCost(
     var_vec[polynomial_var_count] = var;
     ++polynomial_var_count;
   }
-  Vector1d lb(-numeric_limits<double>::infinity());
-  Vector1d ub(numeric_limits<double>::infinity());
-  Binding<PolynomialConstraint> polynomial_cost(
-      make_shared<PolynomialConstraint>(Vector1<Polynomiald>(polynomial),
-                                        polynomial_vars, lb, ub),
+  Binding<PolynomialCost> polynomial_cost(
+      make_shared<PolynomialCost>(Vector1<Polynomiald>(polynomial),
+                                  polynomial_vars),
       var_vec);
   AddCost(polynomial_cost);
   return polynomial_cost;
 }
 
-Binding<Constraint> MathematicalProgram::AddCost(const Expression& e) {
+Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
   if (!e.is_polynomial()) {
     ostringstream oss;
     oss << "Expression " << e

@@ -45,6 +45,22 @@ struct is_convertible_workaround<std::unique_ptr<A>, std::shared_ptr<B>>
     : std::is_convertible<A*, B*> {};
 
 /**
+ * Enable us to catch and provide a meaningful assertion if a Constraint is
+ * passed in, when we should have a Cost.
+ * @tparam C
+ */
+template <typename F, typename C>
+struct is_binding_compatible
+    : std::integral_constant<
+          bool,
+          (is_convertible_workaround<F, C>::value) ||
+          (is_convertible_workaround<
+              F, std::shared_ptr<C>>::value) ||
+          (is_convertible_workaround<
+              F, std::unique_ptr<C>>::value) ||
+          (is_convertible_workaround<F, Binding<C>>::value)> {};
+
+/**
  * Template condition to check if @p F is a candidate to be used to construct a
  * FunctionCost object for generic costs.
  * @note Constraint is used to ensure that we do not preclude cost objects
@@ -54,15 +70,21 @@ template <typename F>
 struct is_cost_functor_candidate
     : std::integral_constant<
           bool,
-          (!is_convertible_workaround<F, Constraint>::value) &&
-              (!is_convertible_workaround<
-                  F, std::shared_ptr<Constraint>>::value) &&
-              (!is_convertible_workaround<
-                  F, std::unique_ptr<Constraint>>::value) &&
-              (!is_convertible_workaround<F, Binding<Constraint>>::value) &&
+              (!is_binding_compatible<F, Cost>::value) &&
               (!is_convertible_workaround<F, symbolic::Expression>::value)> {};
 
-}  // namespace detail
+/**
+ *
+ */
+template <typename F>
+struct assert_if_is_constraint {
+  static constexpr bool value = is_binding_compatible<F, Constraint>::value;
+  // Use deferred evaluation
+  static_assert(!value, "You cannot pass a Constraint to "
+      "create a FunctionCost object. Please ensure you are passing a Cost.");
+};
+
+};  // namespace detail
 
 // TODO(eric.cousineau): For is_cost_functor_candidate, consider
 // changing implementation to simply check if F is callable (after removing
