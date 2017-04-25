@@ -256,7 +256,11 @@ git_repository(
 # Python Libraries
 new_http_archive(
     name = "six_archive",
-    url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz",
+    urls = [
+        "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz",
+        "https://d2tbce6hkathzp.cloudfront.net/pypi/six/six-1.10.0.tar.gz",
+        "https://s3.amazonaws.com/drake-mirror/pypi/six/six-1.10.0.tar.gz",
+    ],
     sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
     build_file = "tools/six.BUILD",
 )

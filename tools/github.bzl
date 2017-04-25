@@ -39,7 +39,9 @@ def github_archive(
         sha256 = "0" * 64
 
     urls = [
-        "https://github.com/%s/archive/%s.tar.gz" % (repository, commit)
+        "https://github.com/%s/archive/%s.tar.gz" % (repository, commit),
+        "https://d2tbce6hkathzp.cloudfront.net/github/%s/%s.tar.gz" % (repository, commit),
+        "https://s3.amazonaws.com/drake-mirror/github/%s/%s.tar.gz" % (repository, commit),
     ]
 
     repository_split = repository.split("/")

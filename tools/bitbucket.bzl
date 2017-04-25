@@ -40,7 +40,9 @@ def bitbucket_archive(
         fail("Missing strip_prefix=")
 
     urls = [
-        "https://bitbucket.org/%s/get/%s.tar.gz" % (repository, commit)
+        "https://bitbucket.org/%s/get/%s.tar.gz" % (repository, commit),
+        "https://d2tbce6hkathzp.cloudfront.net/bitbucket/%s/%s.tar.gz" % (repository, commit),
+        "https://s3.amazonaws.com/drake-mirror/bitbucket/%s/%s.tar.gz" % (repository, commit),
     ]
 
     repository_split = repository.split("/")
