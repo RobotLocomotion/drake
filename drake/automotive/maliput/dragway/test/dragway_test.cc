@@ -92,9 +92,10 @@ class MaliputDragwayLaneTest : public ::testing::Test {
               lane->ToGeoPosition(lane_position);
           const double linear_tolerance =
               lane->segment()->junction()->road_geometry()->linear_tolerance();
-          EXPECT_DOUBLE_EQ(geo_position.x, s);
-          EXPECT_NEAR(geo_position.y, expected.y_offset + r, linear_tolerance);
-          EXPECT_DOUBLE_EQ(geo_position.z, h);
+          EXPECT_DOUBLE_EQ(geo_position.x(), s);
+          EXPECT_NEAR(geo_position.y(),
+                      expected.y_offset + r, linear_tolerance);
+          EXPECT_DOUBLE_EQ(geo_position.z(), h);
 
           // Tests Lane::GetOrientation().
           const api::Rotation rotation =
@@ -312,9 +313,9 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
             &distance);
         const api::Lane* expected_lane =
             road_geometry.junction(0)->segment(0)->lane(0);
-        EXPECT_DOUBLE_EQ(nearest_position.x, x);
-        EXPECT_DOUBLE_EQ(nearest_position.y, y);
-        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        EXPECT_DOUBLE_EQ(nearest_position.x(), x);
+        EXPECT_DOUBLE_EQ(nearest_position.y(), y);
+        EXPECT_DOUBLE_EQ(nearest_position.z(), z);
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
         EXPECT_EQ(road_position.pos.s(), x);
@@ -338,9 +339,9 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         const int lane_index = (y == 0 ? 0 : 1);
         const api::Lane* expected_lane =
             road_geometry.junction(0)->segment(0)->lane(lane_index);
-        EXPECT_DOUBLE_EQ(nearest_position.x, x);
-        EXPECT_DOUBLE_EQ(nearest_position.y, y);
-        EXPECT_DOUBLE_EQ(nearest_position.z, z);
+        EXPECT_DOUBLE_EQ(nearest_position.x(), x);
+        EXPECT_DOUBLE_EQ(nearest_position.y(), y);
+        EXPECT_DOUBLE_EQ(nearest_position.z(), z);
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
         EXPECT_EQ(road_position.pos.s(), x);
@@ -398,39 +399,39 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
       const api::RoadPosition road_position = road_geometry.ToRoadPosition(
           api::GeoPosition(x, y, z), nullptr /* hint */, &nearest_position,
           &distance);
-      EXPECT_LE(nearest_position.x, x_max);
-      EXPECT_GE(nearest_position.x, x_min);
-      EXPECT_LE(nearest_position.y, y_max);
-      EXPECT_GE(nearest_position.y, y_min);
+      EXPECT_LE(nearest_position.x(), x_max);
+      EXPECT_GE(nearest_position.x(), x_min);
+      EXPECT_LE(nearest_position.y(), y_max);
+      EXPECT_GE(nearest_position.y(), y_min);
 
       api::GeoPosition expected_nearest_position;
-      expected_nearest_position.x = x;
-      expected_nearest_position.y = y;
-      expected_nearest_position.z = z;
+      expected_nearest_position.set_x(x);
+      expected_nearest_position.set_y(y);
+      expected_nearest_position.set_z(z);
       if (x < x_min) {
-        expected_nearest_position.x = x_min;
+        expected_nearest_position.set_x(x_min);
       }
       if (x > x_max) {
-        expected_nearest_position.x = x_max;
+        expected_nearest_position.set_x(x_max);
       }
       if (y < y_min) {
-        expected_nearest_position.y = y_min;
+        expected_nearest_position.set_y(y_min);
       }
       if (y > y_max) {
-        expected_nearest_position.y = y_max;
+        expected_nearest_position.set_y(y_max);
       }
 
-      EXPECT_DOUBLE_EQ(nearest_position.x, expected_nearest_position.x);
-      EXPECT_DOUBLE_EQ(nearest_position.y, expected_nearest_position.y);
-      EXPECT_DOUBLE_EQ(nearest_position.z, expected_nearest_position.z);
+      EXPECT_DOUBLE_EQ(nearest_position.x(), expected_nearest_position.x());
+      EXPECT_DOUBLE_EQ(nearest_position.y(), expected_nearest_position.y());
+      EXPECT_DOUBLE_EQ(nearest_position.z(), expected_nearest_position.z());
       EXPECT_LT(0, distance);
       const int expected_lane_index = (y > 0 ? 1 : 0);
       const Lane* expected_lane = dynamic_cast<const Lane*>(
           road_geometry.junction(0)->segment(0)->lane(expected_lane_index));
       EXPECT_EQ(road_position.lane, expected_lane);
-      EXPECT_EQ(road_position.pos.s(), expected_nearest_position.x);
+      EXPECT_EQ(road_position.pos.s(), expected_nearest_position.x());
       EXPECT_EQ(road_position.pos.r(),
-          expected_nearest_position.y - expected_lane->y_offset());
+                expected_nearest_position.y() - expected_lane->y_offset());
       EXPECT_EQ(road_position.pos.h(), z);
     }
   }
@@ -527,25 +528,25 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
           api::GeoPosition(x, y, z), &nearest_position, &distance);
       api::GeoPosition expected_nearest_position(x, y, z);
       if (x < min_x) {
-        expected_nearest_position.x = min_x;
+        expected_nearest_position.set_x(min_x);
       }
       if (x > max_x) {
-        expected_nearest_position.x = max_x;
+        expected_nearest_position.set_x(max_x);
       }
       if (y < min_y) {
-        expected_nearest_position.y = min_y;
+        expected_nearest_position.set_y(min_y);
       }
       if (y > max_y) {
-        expected_nearest_position.y = max_y;
+        expected_nearest_position.set_y(max_y);
       }
-      EXPECT_DOUBLE_EQ(nearest_position.x, expected_nearest_position.x);
-      EXPECT_DOUBLE_EQ(nearest_position.y, expected_nearest_position.y);
-      EXPECT_DOUBLE_EQ(nearest_position.z, expected_nearest_position.z);
+      EXPECT_DOUBLE_EQ(nearest_position.x(), expected_nearest_position.x());
+      EXPECT_DOUBLE_EQ(nearest_position.y(), expected_nearest_position.y());
+      EXPECT_DOUBLE_EQ(nearest_position.z(), expected_nearest_position.z());
       EXPECT_GE(distance, 0);
-      EXPECT_EQ(lane_position.s(), expected_nearest_position.x);
+      EXPECT_EQ(lane_position.s(), expected_nearest_position.x());
       EXPECT_EQ(lane_position.r(),
-          expected_nearest_position.y - lane->y_offset());
-      EXPECT_EQ(lane_position.h(), expected_nearest_position.z);
+                expected_nearest_position.y() - lane->y_offset());
+      EXPECT_EQ(lane_position.h(), expected_nearest_position.z());
     }
   }
 }
