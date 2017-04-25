@@ -1,0 +1,10 @@
+---
+Checks: 'clang-diagnostic-*,clang-analyzer-*,cppcoreguidelines-*,google-*,modernize-*,performance-*,readability-*,-modernize-use-using,-modernize-use-bool-literals,-readability-named-parameter,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-type-static-cast-downcast,-modernize-use-transparent-functors,-readability-else-after-return'
+
+CheckOptions:
+  - { key: readability-identifier-naming.ClassCase,           value: CamelCase  }
+  - { key: readability-identifier-naming.NamespaceCase,       value: lower_case }
+  - { key: readability-identifier-naming.PrivateMemberSuffix, value: '_'        }
+  - { key: readability-identifier-naming.StructCase,          value: CamelCase  }
+  - { key: readability-identifier-naming.VariableCase,        value: lower_case }
+...
