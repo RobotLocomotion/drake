@@ -95,7 +95,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "double_pendulum_test",
-    #    defines = ["EIGEN_RUNTIME_NO_MALLOC"],
     deps = [":multibody_tree"],
 )
 

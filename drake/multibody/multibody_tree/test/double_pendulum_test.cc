@@ -244,24 +244,6 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_TRUE(X_WLu.matrix().isApprox(X_WLu_.matrix()));
 }
 
-#ifndef NDEBUG
-TEST_F(PendulumTests, AssertEigenDynamicMemoryAllocation) {
-  // Finalize() stage.
-  EXPECT_NO_THROW(model_.Finalize());
-  EXPECT_TRUE(model_.topology_is_valid());  // Valid after Finalize().
-
-  // Create Context.
-  std::unique_ptr<Context<double>> context;
-  EXPECT_NO_THROW(context = model_.CreateDefaultContext());
-
-  // After this point MultibodyTree queries should not allocate memory.
-  Eigen::internal::set_is_malloc_allowed(false);
-  ASSERT_DEATH({ auto context2 = model_.CreateDefaultContext(); },
-               R"(double_pendulum_test: .*Memory.h:...: )"
-               R"(void Eigen::internal::check_that_malloc_is_allowed\(\):)");
-}
-#endif
-
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

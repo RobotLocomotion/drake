@@ -15,13 +15,6 @@ namespace multibody {
 
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
-  // By default allow to perform dynamic allocations even in Debug builds.
-  // We can disable dynamic memory allocation in Debug builds to verify we do
-  // not re-allocate memory unnecessarily after CreateDefaultContext().
-#ifndef NDEBUG
-  Eigen::internal::set_is_malloc_allowed(true);
-#endif
-
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
   AddBody<RigidBody>(SpatialInertia<double>());
 }

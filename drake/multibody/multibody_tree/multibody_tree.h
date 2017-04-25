@@ -1,12 +1,5 @@
 #pragma once
 
-// We allow checking for the occurrence of dynamic memory allocation in Debug
-// builds.
-#ifndef NDEBUG
-// Define this symbol to enable runtime tests for allocations.
-#define EIGEN_RUNTIME_NO_MALLOC
-#endif
-
 #include <memory>
 #include <tuple>
 #include <type_traits>
