@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_types.h"
+
 
 namespace drake {
 namespace multibody {
@@ -21,6 +21,13 @@ using Eigen::Vector3d;
 using std::sort;
 
 constexpr double epsilon = std::numeric_limits<double>::epsilon();
+
+// Test default constructor - all elements should be NaN.
+GTEST_TEST(RotationalInertia, DefaultRotationalInertiaConstructorIsNaN) {
+  RotationalInertia<double> default_rotational_inertia;
+  Matrix3d inertia_matrix = default_rotational_inertia.CopyToFullMatrix3();
+  EXPECT_TRUE(inertia_matrix.array().isNaN().all());
+}
 
 // Test constructor for a diagonal rotational inertia with all elements equal.
 GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
@@ -64,6 +71,16 @@ GTEST_TEST(RotationalInertia, GeneralConstructor) {
   // Test SetToNaN().
   I.SetToNaN();
   EXPECT_TRUE(I.CopyToFullMatrix3().array().isNaN().all());
+}
+
+// Test calculation of trace of rotational inertia (sum of diagonal elements).
+GTEST_TEST(RotationalInertia, TraceIsSumOfDiagonalElements) {
+  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
+  const RotationalInertia<double> I(m(0), m(1), m(2),
+                                    p(0), p(1), p(2));
+  const double trace = m(0) + m(1) + m(2);
+  EXPECT_EQ(trace, I.get_trace());
 }
 
 // Test access by (i, j) indexes.
@@ -113,9 +130,8 @@ GTEST_TEST(RotationalInertia, Symmetry) {
   EXPECT_EQ(Imatrix(2, 1), p(2));
 }
 
-// Test we can take a rotational inertia expressed in a frame R and express it
-// in another frame F.
-GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
+// TestA: Rotational inertia expressed in frame R then re-expressed in frame E.
+GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   // Rod frame R located at the rod's geometric center, oriented along its
   // principal axes and z-axis along the rod's axial direction.
   // Inertia computed about Ro and expressed in R.
@@ -144,6 +160,189 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrame) {
   // While at it, check if after transformation this still is a physically
   // valid inertia.
   EXPECT_TRUE(I_Ro_F.CouldBePhysicallyValid());
+}
+
+// TestB: Rotational inertia expressed in frame R then re-expressed in frame E.
+GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
+  // Rotate rigid-body B from frame A by sequence: BodyXYZ q1, q2, q3.
+  // Calculations from MotionGenesis.
+  const double deg_to_rad = M_PI/180;
+  const double q1 = 30*deg_to_rad,  q2 = 70*deg_to_rad,  q3 = -70*deg_to_rad;
+  const double R_BAxx = cos(q2)*cos(q3);
+  const double R_BAxy = sin(q3)*cos(q1) + sin(q1)*sin(q2)*cos(q3);
+  const double R_BAxz = sin(q1)*sin(q3) - sin(q2)*cos(q1)*cos(q3);
+  const double R_BAyx = -sin(q3)*cos(q2);
+  const double R_BAyy = cos(q1)*cos(q3) - sin(q1)*sin(q2)*sin(q3);
+  const double R_BAyz = sin(q1)*cos(q3) + sin(q2)*sin(q3)*cos(q1);
+  const double R_BAzx = sin(q2);
+  const double R_BAzy = -sin(q1)*cos(q2);
+  const double R_BAzz = cos(q1)*cos(q2);
+  Matrix3d R_BA;
+  R_BA << R_BAxx, R_BAxy, R_BAxz,
+          R_BAyx, R_BAyy, R_BAyz,
+          R_BAzx, R_BAzy, R_BAzz;
+
+  // Form B's rotational inertia expressed-in-frame A (irrelevant about-point).
+  // const double mB = 2.0;
+  const double I_Axx = 17.36933842091061;
+  const double I_Ayy = 13.60270381717411;
+  const double I_Azz = 10.02795776191528;
+  const double I_Axy = -3.084298624204901;
+  const double I_Axz = -3.634144189476002;
+  const double I_Ayz = -6.539290790868233;
+  const RotationalInertia<double> I_A(I_Axx, I_Ayy, I_Azz,
+                                      I_Axy, I_Axz, I_Ayz);
+
+  // Ensure rotational inertia I_A is physically valid inertia.
+  EXPECT_TRUE(I_A.CouldBePhysicallyValid());
+
+  // Re-express B's inertia matrix from expressed-in-frame A to frame B.
+  const RotationalInertia<double> IDrake_B = I_A.ReExpress(R_BA);
+
+  // Form a rotational inertia with MotionGenesis results.
+  const double I_Bxx = 6.369894432933752;
+  const double I_Byy = 18.38428249710324;
+  const double I_Bzz = 16.24582306996301;
+  const double I_Bxy = 1.134877977228511;
+  const double I_Bxz = 6.018249975302059;
+  const double I_Byz = -0.6136491084717202;
+  const RotationalInertia<double> IMotionGenesis_B(I_Bxx, I_Byy, I_Bzz,
+                                                   I_Bxy, I_Bxz, I_Byz);
+
+  // Compare Drake results versus MotionGenesis results using generic compare.
+  EXPECT_TRUE(IDrake_B.IsApproxEqualBasedOnMaximumPossibleMomentOfInertia(
+                       IMotionGenesis_B, epsilon));
+
+  // Compare Drake results versus MotionGenesis results.
+  EXPECT_TRUE(IDrake_B.IsApproxMomentsAndProducts(IMotionGenesis_B, 8*epsilon));
+}
+
+// Test the method ShiftFromCenterOfMass for a body B's rotational inertia
+// about-point Bcm (B's center of mass) to about-point Q.
+GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
+  const double I_BBcm_xx = 2,  I_BBcm_yy = 3,  I_BBcm_zz = 4;
+  const double I_BBcm_xy = 0,  I_BBcm_xz = 0,  I_BBcm_yz = 0;
+  const RotationalInertia<double> I_BBcm(I_BBcm_xx, I_BBcm_yy, I_BBcm_zz,
+                                         I_BBcm_xy, I_BBcm_xz, I_BBcm_yz);
+  const double mass = 1.1, xQ = 2.234, yQ = 3.14, zQ = 0.56;
+  const Vector3d p_BcmQ(xQ, yQ, zQ);
+  const RotationalInertia<double> I_BQ = I_BBcm.ShiftFromCenterOfMass(
+      mass, p_BcmQ);
+
+  // Compare Drake results versus by-hand results.
+  const double Ixx = I_BBcm_xx + mass * (yQ*yQ + zQ*zQ);
+  const double Iyy = I_BBcm_yy + mass * (xQ*xQ + zQ*zQ);
+  const double Izz = I_BBcm_zz + mass * (xQ*xQ + yQ*yQ);
+  const double Ixy = I_BBcm_xy - mass * xQ*yQ;
+  const double Ixz = I_BBcm_xz - mass * xQ*zQ;
+  const double Iyz = I_BBcm_yz - mass * yQ*zQ;
+  const RotationalInertia<double> shift_inertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+  EXPECT_TRUE(I_BQ.IsApproxMomentsAndProducts(shift_inertia, 16*epsilon));
+}
+
+// Test the method ShiftToCenterOfMass for a body B's rotational inertia
+// about-point P to about-point Bcm (B's center of mass).
+GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
+  const double I_BP_xx = 13.2,  I_BP_yy = 8.8,   I_BP_zz = 20.3;
+  const double I_BP_xy = -7.7,  I_BP_xz = -1.3,  I_BP_yz = -1.9;
+  const RotationalInertia<double> I_BP(I_BP_xx, I_BP_yy, I_BP_zz,
+                                       I_BP_xy, I_BP_xz, I_BP_yz);
+  const double mass = 1.1, xBcm = 2.234, yBcm = 3.14, zBcm = 0.56;
+  const Vector3d p_PBcm(xBcm, yBcm, zBcm);
+  const RotationalInertia<double> I_BBcm = I_BP.ShiftToCenterOfMass(
+      mass, p_PBcm);
+
+  // Compare Drake results versus by-hand results.
+  const double Ixx = I_BP_xx - mass * (yBcm*yBcm + zBcm*zBcm);
+  const double Iyy = I_BP_yy - mass * (xBcm*xBcm + zBcm*zBcm);
+  const double Izz = I_BP_zz - mass * (xBcm*xBcm + yBcm*yBcm);
+  const double Ixy = I_BP_xy + mass * xBcm*yBcm;
+  const double Ixz = I_BP_xz + mass * xBcm*zBcm;
+  const double Iyz = I_BP_yz + mass * yBcm*zBcm;
+  const RotationalInertia<double> shift_inertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+  EXPECT_TRUE(I_BBcm.IsApproxMomentsAndProducts(shift_inertia, 8*epsilon));
+}
+
+// Test the methods ShiftToOtherPointViaThisToCenterOfMass and
+// ShiftToOtherPointViaOtherToCenterOfMass for a body B's
+// rotational inertia about-point P to about-point Q.
+GTEST_TEST(RotationalInertia, ShiftToOtherPointViaThisToCenterOfMass) {
+  const double I_BP_xx = 13.2,  I_BP_yy = 8.8,   I_BP_zz = 20.3;
+  const double I_BP_xy = -7.7,  I_BP_xz = -1.3,  I_BP_yz = -1.9;
+  const RotationalInertia<double> I_BP(I_BP_xx, I_BP_yy, I_BP_zz,
+                                       I_BP_xy, I_BP_xz, I_BP_yz);
+  const double mass = 1.1, xBcm = 2.234, yBcm = 3.14, zBcm = 0.56;
+  const double xP = -1.234, yP = -2.11, zP = 1.98;
+  const Vector3d p_PBcm(xBcm, yBcm, zBcm);
+  const Vector3d p_QP(xP, yP, zP);
+  const Vector3d p_QBcm = p_QP + p_PBcm;
+  const Vector3d p_BcmQ = -p_QBcm;
+
+  // Calculate with two shifts: Shift 1 is from P to Bcm (B's center of mass).
+  // Shift 2 is from Bcm to Q.
+  const RotationalInertia<double> I_BBcm = I_BP.ShiftToCenterOfMass(
+      mass, p_PBcm);
+  const RotationalInertia<double> shift_inertia = I_BBcm.ShiftFromCenterOfMass(
+      mass, p_BcmQ);
+
+  // Calculate then test ShiftToOtherPointViaThisToCenterOfMass.
+  RotationalInertia<double> I_BQ;
+  I_BQ = I_BP.ShiftToOtherPointViaThisToCenterOfMass(mass, p_PBcm, p_QP);
+  EXPECT_TRUE(I_BQ.IsApproxMomentsAndProducts(shift_inertia, 8*epsilon));
+
+  // Calculate then test ShiftToOtherPointViaOtherToCenterOfMass.
+  I_BQ = I_BP.ShiftToOtherPointViaOtherToCenterOfMass(mass, p_QBcm, p_QP);
+  EXPECT_TRUE(I_BQ.IsApproxMomentsAndProducts(shift_inertia, 8*epsilon));
+}
+
+// Test the method CouldBePhysicallyValid after a body B's rotational inertia
+// is shifted from about-point P to about-point Bcm (B's center of mass).
+GTEST_TEST(RotationalInertia, CouldBePhysicallyValidA) {
+  const double I_BP_xx = 2,  I_BP_yy =  3,   I_BP_zz = 4;
+  const double I_BP_xy = 0,   I_BP_xz = 0,   I_BP_yz = 0;
+  const RotationalInertia<double> I_BP(I_BP_xx, I_BP_yy, I_BP_zz,
+                                       I_BP_xy, I_BP_xz, I_BP_yz);
+  const double mass = 1.1, xBcm = 2.234, yBcm = 3.14, zBcm = 0.56;
+  const Vector3d p_PBcm(xBcm, yBcm, zBcm);
+  const RotationalInertia<double> I_BBcm = I_BP.ShiftToCenterOfMass(
+      mass, p_PBcm);
+  EXPECT_FALSE(I_BBcm.CouldBePhysicallyValid());
+}
+
+// Test the method CouldBePhysicallyValid for a rod-like object.
+GTEST_TEST(RotationalInertia, CouldBePhysicallyValidB) {
+  const double I_transverse = 20;
+  const double I_axial = -1.0E-15;  // Although negative, this is effectively 0.
+  const RotationalInertia<double> rod(I_transverse, I_transverse, I_axial);
+  EXPECT_TRUE(rod.CouldBePhysicallyValid());
+
+  const RotationalInertia<double> sphere(1.0E-5, 1.0E-5, 1.0E-5);
+  EXPECT_TRUE(sphere.CouldBePhysicallyValid());
+
+  const RotationalInertia<double> rod_minus_sphere = rod - sphere;
+  EXPECT_FALSE(rod_minus_sphere.CouldBePhysicallyValid());
+}
+
+// Test the method CouldBePhysicallyValid to violate triangle inequality.
+GTEST_TEST(RotationalInertia, CouldBePhysicallyValidC) {
+  EXPECT_THROW(RotationalInertia<double> bad_inertia(10, 10, 30),
+               std::runtime_error);
+}
+
+// Test the method CouldBePhysicallyValid for bad product of inertia
+// sizing relative to moments of inertia.
+GTEST_TEST(RotationalInertia, CouldBePhysicallyValidD) {
+  EXPECT_THROW(RotationalInertia<double> inertia(10, 10, 10, 5.1, 0, 0),
+               std::runtime_error);
+}
+
+// Test the method CouldBePhysicallyValid for principal moments of inertia
+// (i.e., eigenvalues of the inertia matrix) that violate triangle inequality.
+// This test is courtesy of Steve Peters via Michael Sherman.
+GTEST_TEST(RotationalInertia, CouldBePhysicallyValidE) {
+  const double Ixx = 2,  Iyy = 2,  Izz = 2,  Ixy = -0.8,  Ixz = 0,  Iyz = -0.8;
+  EXPECT_THROW(RotationalInertia<double> inertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz),
+               std::runtime_error);
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() that

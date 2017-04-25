@@ -20,37 +20,27 @@
 namespace drake {
 namespace multibody {
 
-/// This class provides an abstraction for the physical concept of the mass
-/// distribution of a body (or a collection of bodies forming a composite body),
-/// about a particular point.
-/// In this documentation with "composite body" we mean a collection of bodies
-/// welded together which contains at least one body (throughout this
-/// documentation "body" is many times used instead of "composite body" but the
-/// same concepts apply to a collection of bodies as well.)
-/// Given a point, the mass distribution of a body is generally described by the
-/// first three mass weighted moments about that point. These moments are: the
-/// mass of the body (or zeroth moment), the center of mass vector (or first
-/// moment) and finally the rotational inertia (or second moment).
-// TODO(amcastro-tri): Add reference to a book describing the concept of i-th
-// moments for those not familiar with it.
-/// We choose to use the term **rotational inertia** as used by [Jain 2010] to
-/// distinguish from the more general concept of **inertia** of a body.
-/// A rotational inertia can be represented by the six scalar elements of a
-/// symmetric 3x3 matrix often referred also as **the inertia matrix** or also
-/// as **the inertia tensor**. We can therefore think of a rotational inertia
-/// I as the matrix: <pre>
+/// This class helps describe the mass distribution (inertia properties) of a
+/// body or composite body about a particular point.  Herein, "composite body"
+/// means one body or a collection of bodies that are welded together.  In this
+/// documentation, "body" and "composite body" are used interchangeably.
+///
+/// A **rigid** body's mass distribution is described by three quantities:
+/// the body's mass; the body's center of mass; and the body's rotational
+/// inertia about a particular point. The term **rotational inertia** is used
+/// here and by [Jain 2010] to distinguish from a body's **spatial inertia**.
+/// In this class, a 3x3 **inertia matrix** I represents a body's rotational
+/// inertia about a point and expressed in a frame (e.g., about-point P and
+/// expressed-in-frame E with right-handed orthogonal unit vectors x̂, ŷ, ẑ).
+/// <pre>
 ///     | Ixx Ixy Ixz |
 /// I = | Ixy Iyy Iyz |
 ///     | Ixz Iyz Izz |
 /// </pre>
-/// where diagonal elements of this matrix are referred to as the **moments of
-/// inertia** while the off-diagonal elements are referred to as the **products
-/// of inertia**. The definition of the diagonal terms is uncontroversial.
-/// However, there are two conventions in common use for the products of
-/// inertia, differing in sign. Here is the precise definition we use for
-/// each of these elements. Inertias are defined in terms of the mass dm
-/// of a differential volume of the body or system of bodies whose position
-/// from about-point P is described by [x, y, z].<pre>
+/// The moments of inertia Ixx, Iyy, Izz and products of inertia Ixy, Ixz, Iyz
+/// are defined in terms of the mass dm of a differential volume of the body.
+/// The position of dm from about-point P is xx̂ + yŷ + zẑ = [x, y, z]_E.
+/// <pre>
 /// Ixx = ∫ (y² + z²) dm
 /// Iyy = ∫ (x² + z²) dm
 /// Izz = ∫ (x² + y²) dm
@@ -59,38 +49,40 @@ namespace multibody {
 /// Iyz = - ∫ y z dm
 /// </pre>
 /// We use the negated convention for products of inertia, so that I serves
-/// to relate angular velocity ω and angular momentum h via `h=I⋅ω`. Be sure
-/// that your input values follow this convention.
+/// to relate angular velocity ω and angular momentum h via `h = I ⋅ ω`.
+/// Ensure your products of inertia follow this negative sign convention.
 ///
-/// The scalar elements defined above are the numerical values of the
-/// rotational inertia components measured with respect to the axes of a given
-/// frame and therefore this frame needs to be explicitly stated. These scalar
-/// elements have no meaning if a reference frame is not specified.
-/// For a given point on the rigid body there exists a set of axes, called
-/// **principal axes of inertia** in which the inertia tensor is diagonal. The
-/// resulting diagonal elements are the **principal moments of inertia** about
-/// that point. The corresponding directions are an orthogonal basis for the
-/// inertia tensor with those principal moments.
+/// The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
+/// inertia) and off-diagonal elements (products of inertia) are associated
+/// with a body (or composite body) S, an about-point P, and an expressed-in-
+/// frame E (x̂, ŷ, ẑ).  A rotational inertia is ill-defined unless there is a
+/// body S, about-point P, and expressed-in-frame E. The user of this class is
+/// responsible for tracking the body S, about-point P and expressed-in-frame E
+/// (none of these are stored in this class). The rotational inertia class only
+/// stores data for the inertia matrix, whose elements are initially set to NaN
+/// to aid in ensuring only the lower-triangular part of the matrix is used
+/// (the upper-triangular part is not used - with each element as NaN).
 ///
-/// @note This class does not implement any mechanism to track the frame in
-/// which an inertia is expressed or about what point is computed. Methods and
-/// operators on this class have no means to determine frame consistency through
-/// operations. It is therefore the responsibility of users of this class to
-/// keep track of frames in which operations are performed. The best way to do
-/// that is to use a disciplined notation as described below.
+/// @note This class does not store the about-point nor the expressed-in-frame,
+/// nor does this class help enforce consistency of the about-point or
+/// expressed-in-frame. To help users of this class track the about-point and
+/// expressed-in-frame. We strongly recommend the following notation.
 ///
-/// In typeset material we use the symbol @f$ [I^{S/P}]_E @f$ to represent the
-/// rotational inertia of a body or composite body S about point P, expressed in
-/// frame E. In code and comments we use the monogram notation as described
-/// in @ref multibody_spatial_inertia. For this inertia, the monogram notation
-/// reads `I_SP_E`. If the point P is fixed to a body B, we write that
-/// point as @f$ B_P @f$ which appears in code and comments as `Bp`. So if the
-/// body or composite body is B and the about point is `Bp`, the monogram
-/// notation reads `I_BBp_E`, which can be abbreviated to `I_Bp_E` since the
-/// about point `Bp` also identifies body. Common cases are that the
-/// about point is the origin `Bo` of the body, or its the center of mass `Bcm`
-/// for which the rotational inertia in monogram notation would read
-/// as `I_Bo_E` and `I_Bcm_E`, respectively.
+/// In typeset material, use the symbol @f$ [I^{S/P}]_E @f$ to represent the
+/// rotational inertia (inertia matrix) of a body (or composite body) S
+/// about-point P, expressed in frame E. In code and comments, use the monogram
+/// notation `I_SP_E` (e.g., as described in @ref multibody_spatial_inertia).
+/// If the about-point P is fixed to a body B, the point is named @f$ B_P @f$
+/// and this appears in code/comments as `Bp`.  Examples: `I_BBp_E` is rigid
+/// body B's rotational inertia about-point Bp expressed-in-frame E; I_BBo_E is
+/// B's rotational inertia about-point `Bo` (body B's origin) expressed-in-frame
+/// E; and I_BBcm_E is B's inertia matrix about-point `Bcm` (B's center of
+/// mass) expressed-in-frame E.
+///
+/// @note The rotational inertia (inertia matrix) can be re-expressed in terms
+/// of a special frame whose orthogonal unit vectors are parallel to **principal
+/// axes of inertia** so that the inertia matrix is diagonalized with elements
+/// called **principal moments of inertia**.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -98,253 +90,266 @@ class RotationalInertia {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
-  /// Default RotationalInertia constructor. All entries are set to NaN for a
-  /// quick detection of uninitialized values.
+  /// Constructs a rotational inertia that has all its moments/products of
+  /// inertia equal to NaN (helps quickly detect uninitialized values).
   RotationalInertia() {}
 
-  /// Creates a principal rotational inertia with identical diagonal elements
-  /// equal to I and zero products of inertia.
-  /// As examples, consider the moments of inertia about their geometric
-  /// center for a sphere or a cube.
-  /// Throws an exception if I is negative.
-  explicit RotationalInertia(const T& I) {
-    DRAKE_THROW_UNLESS(I >= T(0));
-    SetZero();
-    I_SP_E_.diagonal().setConstant(I);
-  }
+  /// Constructs a rotational inertia with equal moments of inertia along its
+  /// diagonal and with each product of inertia set to zero. This constructor
+  /// is useful for the rotational inertia of a uniform-density sphere or cube.
+  /// This constructor throws an exception if I is negative or NaN.
+  explicit RotationalInertia(const T& I_triaxial) :
+      RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0, 0, 0) {}
 
-  /// Creates a principal axes rotational inertia matrix for which the products
-  /// of inertia are zero and the moments of inertia are given by `Ixx`, `Iyy`
-  /// and `Izz`.
-  /// Throws an exception if the resulting inertia is invalid according to
-  /// CouldBePhysicallyValid(). For a diagonal rotational inertia the necessary
-  /// conditions for a valid inertia reduce to:
-  /// - Neither Ixx, Iyy, nor Izz are NaN.
-  /// - Ixx, Iyy and Izz are all non-negative.
-  /// - Ixx, Iyy and Izz must satisfy the triangle inequality:
-  ///   - `Ixx + Iyy >= Izz`
-  ///   - `Ixx + Izz >= Iyy`
-  ///   - `Iyy + Izz >= Ixx`
-  RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) {
-    DRAKE_THROW_UNLESS(Ixx >= T(0));
-    DRAKE_THROW_UNLESS(Iyy >= T(0));
-    DRAKE_THROW_UNLESS(Izz >= T(0));
-    SetZero();
-    I_SP_E_.diagonal() = Vector3<T>(Ixx, Iyy, Izz);
-    DRAKE_THROW_UNLESS(CouldBePhysicallyValid());
-  }
+  /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /// and with each product of inertia set to zero.  This constructor throws an
+  /// exception if it violates CouldBePhysicallyValid().
+  RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) :
+      RotationalInertia(Ixx, Iyy, Izz, 0, 0, 0) {}
 
-  /// Creates a general rotational inertia matrix with non-zero off-diagonal
-  /// elements where the six components of the rotational inertia in a given
-  /// frame E need to be provided.
-  /// Throws an exception if the resulting inertia is invalid according to
-  /// CouldBePhysicallyValid().
+  /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.  This constructor
+  /// throws an exception if it violates CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
-    // The upper part is left initialized to NaN.
-    I_SP_E_(0, 0) = Ixx; I_SP_E_(1, 1) = Iyy; I_SP_E_(2, 2) = Izz;
-    I_SP_E_(1, 0) = Ixy; I_SP_E_(2, 0) = Ixz; I_SP_E_(2, 1) = Iyz;
+    set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
+                                               Ixy, Ixz, Iyz);
     DRAKE_THROW_UNLESS(CouldBePhysicallyValid());
   }
 
-  /// For consistency with Eigen's API this method returns the number of rows
-  /// in the inertia matrix.
-  int rows() const { return 3;}
+  /// Constructs a rotational inertia for a particle Q of mass `mass`, whose
+  /// position vector from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E,
+  /// where E is the expressed-in-frame.
+  /// @param mass The mass of particle Q.
+  /// @param p_PQ_E Position from about-point P to Q, expressed-in-frame E.
+  /// @return I_QP_E, Q's rotational inertia about-point Q expressed-in-frame E.
+  /// @remark Negating the position vector p_PQ_E has no affect on the result.
+  RotationalInertia(const T& mass, const Vector3<T> p_PQ_E) {
+    const T& x = p_PQ_E(0);
+    const T& y = p_PQ_E(1);
+    const T& z = p_PQ_E(2);
+    const T Ixx = mass*(y*y + z*z);
+    const T Iyy = mass*(x*x + z*z);
+    const T Izz = mass*(x*x + y*y);
+    const T Ixy = -mass * x * y;
+    const T Ixz = -mass * x * z;
+    const T Iyz = -mass * y * z;
+    set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
+                                               Ixy, Ixz, Iyz);
+    DRAKE_THROW_UNLESS(CouldBePhysicallyValid());
+  }
 
-  /// For consistency with Eigen's API this method returns the number of columns
-  /// in the inertia matrix.
+  /// For consistency with Eigen's API, the rows() and cols() methods both
+  /// return 3 (i.e., the number of rows or columns in the inertia matrix).
+  int rows() const { return 3;}
   int cols() const { return 3;}
 
-  /// Returns a three-dimensional vector containing the diagonal elements of
-  /// this rotational inertia.
-  /// @retval moments The vector of principal moments `[Ixx Iyy Izz]`.
+  /// Returns 3-element vector with moments of inertia [Ixx, Iyy, Izz].
   Vector3<T> get_moments() const { return I_SP_E_.diagonal(); }
 
-  /// Returns a three-dimensional vector containing the products of inertia of
-  /// this rotational inertia.
-  /// @retval products The vector of products of inertia `[Ixy, Ixz, Iyz]`.
+  /// Returns 3-element vector with products of inertia [Ixy, Ixz, Iyz].
   Vector3<T> get_products() const {
-    // Let operator(int ,int) decide what portion (upper/lower) to use.
-    const auto& Iref = *this;
+    // Let operator(int ,int) decide whether upper/lower part of matrix is used.
+    const RotationalInertia& Iref = *this;
     return Vector3<T>(Iref(0, 1), Iref(0, 2), Iref(1, 2));
   }
 
-  /// Const access to the `(i, j)` element of this rotational inertia.
-  /// This operator performs checks on the pair `(i, j)` to determine the
-  /// appropriate mapping to the internal in-memory representation of a
-  /// symmetric rotational inertia. Therefore this accessor is not meant for
-  /// speed but rather as a convenience method.
-  /// Notice that the mutable counterpart of this accessor is not provided to
-  /// prevent the creation of nonphysical inertias by setting one element at a
-  /// time.
+  /// Returns a rotational inertia's trace (i.e., Ixx + Iyy + Izz, the sum of
+  /// the diagonal elements of the inertia matrix).  The trace happens to be
+  /// invariant to its expressed-in-frame (i.e., the trace does not depend
+  /// on the frame in which it is expressed).  The trace is useful because the
+  /// largest moment of inertia Imax must satisfy  trace/3 <= Imax <= trace/2,
+  /// and the largest possible product of inertia must be <= Imax / 2.
+  /// Hence, trace/3 and trace/2 give a lower and upper bound on the largest
+  /// possible element that can be in a valid rotational inertia.
+  T get_trace() const { return I_SP_E_(0, 0) + I_SP_E_(1, 1) + I_SP_E_(2, 2); }
+
+  /// Const access to the `(i, j)` element of this rotational inertia.  Since
+  /// rotational inertia is a symmetric matrix and the upper-off diagonal is not
+  /// stored, this operator maps `(i, j)` to the appropriate memory location.
+  /// This operator is meant for convenience (not speed) and helps avoid access
+  /// to invalid or NaN parts of the inertia matrix.  To prevent a user from
+  /// constructing a non-symmetric or non-physical rotational inertia element-
+  /// by-element, a mutable version of this operator is not provided.
   const T& operator()(int i, int j) const {
     // Overwrites local copies of i and j.
     check_and_swap(&i, &j);
     return I_SP_E_(i, j);
   }
 
-  /// Get a copy to a full Matrix3 representation for this rotational inertia
-  /// including both lower and upper triangular parts.
+  /// Get a full 3x3 matrix copy of this rotational inertia.  The returned copy
+  /// is symmetric and includes both lower and upper parts of the matrix.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /// Returns the Frobenius norm of this rotational inertia including both lower
-  /// and upper triangular elements.
-  // The Frobenius norm of a rotational inertia I with moments m and
-  // products p is:
-  //   ‖I‖F = sqrt(‖m‖₂² + 2 ‖p‖₂²), with sqrt() the square root function and
-  //                                 ‖⋅‖₂ the ℓ²-norm of a vector.
+  /// Returns this rotational inertia's Frobenius norm, which for a rotational
+  /// inertia I having moments of inertia m and products of inertia p is:
+  ///  ‖I‖F = sqrt(‖m‖₂² + 2 ‖p‖₂²), with sqrt() the square root function and
+  ///                                ‖⋅‖₂ the ℓ²-norm of a vector.
   T Norm() const {
     using std::sqrt;
     return sqrt(get_moments().squaredNorm() + 2 * get_products().squaredNorm());
   }
 
-  /// Adds in a rotational inertia to `this` rotational inertia. This operation
-  /// is only valid if both inertias are computed about the same point P and
-  /// expressed in the same frame E. Considering `this` inertia to be `I_SP_E`
-  /// for some body or composite body S, about some point P, the supplied
-  /// inertia must be for some body or composite body B about the _same_ point
-  /// P; B's inertia is then included in S.
-  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must be defined about the same
-  ///                   point P as `this` inertia, and expressed in the same
-  ///                   frame E.
-  /// @returns A reference to `this` rotational inertia, which has been updated
-  ///          to include the given inertia.
+  /// Compares two rotational inertias to within a specified `precision`.
+  /// @param   precision should be a real non-negative number.  It is usually
+  ///          small relative to the maximum moment of inertia for `this`.
+  /// @returns `true` if the absolute value of each moment/product of inertia
+  ///          in `this' is within `precision` of the corresponding moment/
+  ///          product absolute value in `other`.  Otherwise returns `false`.
+  /// @remark  get_trace()/2 is a rotational inertia's maximum possible element.
+  bool IsApproxMomentsAndProducts(
+      const RotationalInertia& other, const double precision) const {
+    return get_moments().isApprox(other.get_moments(),  precision) &&
+          get_products().isApprox(other.get_products(), precision);
+  }
+
+  /// Compares two rotational inertias to within a `multiplier` of `I_maximum`
+  /// (absolute value of `this` rotational inertia's maximum possible moment of
+  /// inertia, which is trace/2 -- half this rotational inertia's trace).
+  /// @param  multiplier is a small real positive number that multiplies
+  ///         `I_maximum` to form the argument `precision` (see below).
+  /// @returns IsApproxMomentsAndProducts(other,precision).
+  /// @remark If `I_maximum` is 0, it is set to Eigen::NumTraits<T>::epsilon().
+  /// @see IsApproxMomentsAndProducts().
+  bool IsApproxEqualBasedOnMaximumPossibleMomentOfInertia(
+      const RotationalInertia& other, const double multiplier) const {
+    using std::abs;
+    double I_maximum = 0.5 * abs(get_trace());
+    if (I_maximum == 0) I_maximum = Eigen::NumTraits<T>::epsilon();
+    const double precision = multiplier * I_maximum;
+    return IsApproxMomentsAndProducts(other, precision);
+  }
+
+  /// Adds a rotational inertia `I_BP_E` to `this` rotational inertia.
+  /// This method requires both rotational inertias (`I_BP_E` and `this`)
+  /// to have the same about-point P and the same expressed-in-frame E.
+  /// The += operator updates `this` so `I_BP_E' is added to `this'.
+  /// @param I_BP_E Rotational inertia of a body (or composite body) B to
+  ///        be added to `this` rotational inertia.  `I_BP_E` and `this`
+  ///        must have the same about-point P and expressed-in-frame E.
+  /// @returns A reference to `this` rotational inertia. `this' changes
+  ///          since rotational inertia `I_BP_E` has been added to it.
+  /// @see operator+().
   RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_BP_E) {
     this->get_mutable_triangular_view() += I_BP_E.get_matrix();
     return *this;
   }
 
-  /// Returns the combined inertia obtained by adding `this` rotational inertia
-  /// with another rotational inertia `I_BP_E`.
-  /// This operation is only valid if both inertias are computed about the same
-  /// point P and expressed in the same frame E. Considering `this` inertia
-  /// to be `I_SP_E` for some body or composite body S, about some point P, the
-  /// supplied inertia must be for some body or composite body B about the
-  /// _same_ point P; the returned _combined_ inertia `I_CP_E` for the composite
-  /// body C includes both the inertia of `this` body S and that of body B.
-  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must be defined about the same
-  ///                   point P as `this` inertia, and expressed in the same
-  ///                   frame E.
-  /// @retval I_CP_E The rotational inertia of the combined composite body C
-  ///                including both, the rotational inertia `I_SP_E` of `this`
-  ///                body or composite body S and the rotational inertia
-  ///                `I_BP_E` of body or composite body B.
+  /// Adds a rotational inertia `I_BP_E` to `this` rotational inertia.
+  /// This method requires both rotational inertias (`I_BP_E` and `this`)
+  /// to have the same about-point P and the same expressed-in-frame E.
+  /// @param I_BP_E Rotational inertia of a body (or composite body) B to
+  ///        be added to `this` rotational inertia.  `I_BP_E` and `this`
+  ///        must have the same about-point P and expressed-in-frame E.
+  /// @returns The sum of `this` rotational inertia and `I_BP_E'.
   /// @see operator+=().
-  RotationalInertia<T> operator+(const RotationalInertia<T>& I_BP_E) {
+  RotationalInertia<T> operator+(const RotationalInertia<T>& I_BP_E) const {
     return RotationalInertia(*this) += I_BP_E;
   }
 
-  /// Subtracts a rotational inertia from `this` rotational inertia. This
-  /// operation is only valid if both inertias are computed about the same point
-  /// P and expressed in the same frame E. Considering `this` inertia to be
-  /// `I_SP_E` for some body or composite body S, about some point P, the
-  /// supplied inertia must be for some body or composite body B about the
-  /// _same_ point P.
-  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must be defined about the same
-  ///                   point P as `this` inertia, and expressed in the same
-  ///                   frame E.
-  /// @returns A reference to `this` rotational inertia, which has been updated
-  ///          to include the given inertia.
-  ///
-  /// @warning This operation might lead to physically invalid rotational
-  /// inertia. Use CouldBePhysicallyValid() to perform a number of necessary
-  /// (but not sufficient) checks for a rotational inertia to be physically
-  /// valid. Sufficient conditions are provided by the class SpatialInertia.
-  /// @see SpatialInertia::IsPhysicallyValid().
+  /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
+  /// This method requires both rotational inertias (`I_BP_E` and `this`)
+  /// to have the same about-point P and the same expressed-in-frame E.
+  /// The -= operator updates `this` so `I_BP_E' is subtracted from `this'.
+  /// @param I_BP_E Rotational inertia of a body (or composite body) B to
+  ///        be subtracted from `this` rotational inertia. `I_BP_E` and `this`
+  ///        must have the same about-point P and expressed-in-frame E.
+  /// @returns A reference to `this` rotational inertia. `this' changes
+  ///          since rotational inertia `I_BP_E` has been subtracted from it.
+  /// @warning This operator may produce an invalid rotational inertia.
+  ///    Use CouldBePhysicallyValid() to perform necessary (but insufficient)
+  ///    checks on the physical validity of the resulting rotational inertia.
+  ///    Sufficient conditions require calling CouldBePhysicallyValid() when the
+  ///    about-point is the body's center of mass.
+  /// @see operator-().
+  /// @remark This subtract operator is useful for computing rotational inertia
+  /// of a body with a hole.  First the rotational inertia of a fully solid
+  /// body S (without the hole) is calculated, then the rotational inertia of
+  /// the hole (treated as a massive solid body B) is calculated. The rotational
+  /// inertia of a composite body C (comprised of S and -B) is computed by
+  /// subtracting B's rotational inertia from S's rotational inertia.
   RotationalInertia<T>& operator-=(const RotationalInertia<T>& I_BP_E) {
     this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
     return *this;
   }
 
-  /// Returns the combined inertia obtained by subtracting another rotational
-  /// inertia `I_BP_E` from `this` rotational inertia. This operation is useful
-  /// when computing the inertia of a geometry with a hole in it; its inertia
-  /// can be computed by subtracting the _inertia_ of the empty space from the
-  /// full inertia of the geometry without the empty space. Consider for example
-  /// a cube with a cylindrical hole passing through from one side to the other
-  /// side of the cube. The inertia of this _combined_ body can be computed by
-  /// subtracting the inertia of a cylinder from the inertia of a solid cube.
-  /// This operation is only valid if both inertias are computed about the same
-  /// point P and expressed in the same frame E. Considering `this` inertia
-  /// to be `I_SP_E` for some body or composite body S, about some point P, the
-  /// supplied inertia must be for some other body or composite body B about the
-  /// _same_ point P; the returned _combined_ inertia `I_CP_E` for the composite
-  /// body C includes the inertia of `this` composite body S and subtracts that
-  /// of composite body B.
-  /// @param[in] I_BP_E A rotational inertia of some body B to be added to
-  ///                  `this` inertia. It must be defined about the same
-  ///                   point P as `this` inertia, and expressed in the same
-  ///                   frame E.
-  /// @retval I_CP_E The rotational inertia of the composite body C including
-  ///                the rotational inertia `I_SP_E` of `this` body or composite
-  ///                body S and subtracts the rotational inertia `I_BP_E` of
-  ///                body or composite body B.
+  /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
+  /// This method requires both rotational inertias (`I_BP_E` and `this`)
+  /// to have the same about-point P and the same expressed-in-frame E.
+  /// @param I_BP_E Rotational inertia of a body (or composite body) B to
+  ///        be subtracted from `this` rotational inertia. `I_BP_E` and `this`
+  ///        must have the same about-point P and expressed-in-frame E.
+  /// @returns The subtraction of `I_BP_E` from `this` rotational inertia.
+  /// @warning See warning and documentation for operator-=().
   /// @see operator-=().
-  ///
-  /// @warning This operation might lead to physically invalid rotational
-  /// inertia. Use CouldBePhysicallyValid() to perform a number of necessary
-  /// (but not sufficient) checks for a rotational inertia to be physically
-  /// valid. Sufficient conditions are provided by the class SpatialInertia.
-  /// @see SpatialInertia::IsPhysicallyValid().
   RotationalInertia<T> operator-(const RotationalInertia<T>& I_BP_E) const {
     return RotationalInertia(*this) -= I_BP_E;
   }
 
-  /// In-place multiplication of `this` rotational inertia by a `scalar`
-  /// modifying the original object. `scalar` must be non-negative or this
-  /// method aborts in Debug builds.
-  RotationalInertia<T>& operator*=(const T& scalar) {
-    DRAKE_ASSERT(scalar >= 0);
-    this->get_mutable_triangular_view() *= scalar;
+  /// Multiplies `this` rotational inertia by a nonnegative scalar.
+  /// @param nonnegative_scalar Nonnegative scalar which multiplies `this'
+  ///     rotational inertia, and which must be >= 0 or method aborts in Debug.
+  /// @returns A reference to `this` rotational inertia. `this' changes
+  ///          since `this` has been multiplied by `nonnegative_scalar'.
+  /// @see operator*().
+  RotationalInertia<T>& operator*=(const T& nonnegative_scalar) {
+    DRAKE_ASSERT(nonnegative_scalar >= 0);
+    this->get_mutable_triangular_view() *= nonnegative_scalar;
     return *this;
   }
 
-  /// In-place division of `this` rotational inertia by a `scalar` modifying the
-  /// original object.`scalar` must be non-negative or this
-  /// method aborts in Debug builds.
-  RotationalInertia<T>& operator/=(const T& scalar) {
-    DRAKE_ASSERT(scalar > 0);
-    this->get_mutable_triangular_view() /= scalar;
+  /// Divides `this` rotational inertia by a positive scalar.
+  /// @param positive_scalar Positive scalar which must be > 0 or method aborts
+  ///        in Debug.  `this' is divided by `positive_scalar'.
+  /// @returns A reference to `this` rotational inertia. `this' changes
+  ///          since `this` has been divided by `positive_scalar'.
+  /// @see operator/().
+  RotationalInertia<T>& operator/=(const T& positive_scalar) {
+    DRAKE_ASSERT(positive_scalar > 0);
+    this->get_mutable_triangular_view() /= positive_scalar;
     return *this;
   }
 
-  /// Computes the product from the right `I * w` of this rotational inertia
-  /// matrix I with a vector `w`.
-  /// This inertia and vector `w` must both be expressed in the same frame.
-  /// @param[in] w_E Vector to multiply from the right, expressed in the same
-  ///                frame E as `this` inertia matrix.
-  /// @returns The product from the right of `this` inertia with `w_E`.
+  /// Divides `this` rotational inertia by a positive scalar.
+  /// Parameter `positive_scalar` must be > 0 or method aborts in Debug.
+  /// @returns `this` rotational inertia divided by `positive_scalar`.
+  /// @see operator/=().
+  RotationalInertia<T> operator/(const T& positive_scalar) {
+    return RotationalInertia(*this) /= positive_scalar;
+  }
+
+  /// Calculates the dot-product of `this` rotational inertia with vector w_E.
+  /// Both `this` and vector `w_E` must have the same expressed-in-frame E.
+  /// @param w_E Vector to post-dot-multiply with `this` rotational inertia.
+  /// @returns The dot-product of `this` rotational inertia with `w_E`.
   Vector3<T> operator*(const Vector3<T>& w_E) const {
     return Vector3<T>(get_symmetric_matrix_view() * w_E);
   }
 
-  /// Sets this inertia to have NaN entries. Typically used to quickly detect
-  /// uninitialized values since NaN will trigger a chain of invalid
-  /// computations that can then be tracked to the source.
+  /// Sets `this` rotational inertia so all its elements are equal to NaN.
+  /// This helps quickly detect uninitialized moments/products of inertia.
+  /// Computating with NaN triggers a trackable stack of invalid operations.
   void SetToNaN() {
     I_SP_E_.setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
-  /// Sets this rotational inertia to have all-zero entries. This results in a
-  /// non-physical inertia that could only mathematically correspond to the mass
-  /// distribution of a point mass. However this method is useful when
-  /// performing initializations for a given computation.
+  /// Sets `this` rotational inertia so all its moments/products of inertia
+  /// are zero, e.g., for convenient initialization before a computation or
+  /// for inertia calculations involving a particle (point-mass).
+  /// Note: Real 3D massive physical objects have non-zero moments of inertia.
   void SetZero() {
-    // The strictly-upper triangle is left initialized to NaN to quickly detect
-    // if this part is mistakenly used.
+    // Only set the lower-triangular part of this symmetric matrix to zero.
+    // The three upper off-diagonal products of inertia should be/remain NaN.
     I_SP_E_.template triangularView<Eigen::Lower>() = Matrix3<T>::Zero();
   }
 
-  /// Returns `true` if any of the elements in this rotational inertia is NaN
-  /// and `false` otherwise.
+  /// Returns `true` if any moment/product in `this` rotational inertia is NaN.
+  /// Otherwise returns `false`.
   bool IsNaN() const {
     using std::isnan;
-    // Only check the lower entries; the upper ones really are NaN but we want
-    // them that way.
+    // Only check the lower-triangular part of this symmetric matrix for NaN.
+    // The three upper off-diagonal products of inertia should be/remain NaN.
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j <= i; ++j) {
         if (isnan(I_SP_E_(i, j))) return true;
@@ -353,121 +358,100 @@ class RotationalInertia {
     return false;
   }
 
-  /// For `this` inertia about a given point P and expressed in a frame E,
-  /// this method computes the principal moments of inertia of `this` rotational
-  /// inertia about the same point P and expressed in a frame with origin at
-  /// P and aligned with the principal axes.
+  /// This method takes `this` rotational inertia about-point P, expressed-in-
+  /// frame E, and computes its principal moments of inertia about-point P, but
+  /// expressed-in a frame aligned with the principal axes.
   ///
-  /// Note: The current version of this method only works for inertias with a
-  ///       scalar type T that can be converted to a double discarding any
-  ///       supplemental scalar data, e.g., the derivatives of an
-  ///       AutoDiffScalar. It fails at runtime if the type T cannot be
-  ///       converted to `double`.
+  /// Note: This method only works if all moments/products of inertia in `this`
+  ///       with a scalar type T can be converted to a double (discarding
+  ///       supplemental scalar data such as derivatives of an AutoDiffScalar).
+  ///       It fails at runtime if type T cannot be converted to `double`.
   ///
-  /// @retval moments The vector of principal moments `[Ixx Iyy Izz]` sorted in
-  ///                 ascending order.
+  /// @retval principal_moments The vector of principal moments of inertia
+  ///                           `[Ixx Iyy Izz]` sorted in ascending order.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
     // Notes:
-    //   1. Eigen's SelfAdjointEigenSolver only works with the lower diagonal
-    //      part of the matrix.
-    //   2. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffScalar.
-    //      Therefore we use a local copy to a Matrix3<double>.
-    Matrix3<double> Id;  // Only the lower triangle is used.
+    //   1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffScalar.
+    //      Therefore, convert `this` to a local copy of type Matrix3<double>.
+    //   2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
+    //      of this symmetric matrix.
+    Matrix3<double> Id;
     Id(0, 0) = ExtractDoubleOrThrow(I_SP_E_(0, 0));
     Id(1, 0) = ExtractDoubleOrThrow(I_SP_E_(1, 0));
     Id(2, 0) = ExtractDoubleOrThrow(I_SP_E_(2, 0));
     Id(1, 1) = ExtractDoubleOrThrow(I_SP_E_(1, 1));
     Id(2, 1) = ExtractDoubleOrThrow(I_SP_E_(2, 1));
     Id(2, 2) = ExtractDoubleOrThrow(I_SP_E_(2, 2));
+
+    // If all products of inertia are zero, no need to calculate eigenvalues.
+    // The eigenvalues are the diagonal elements.  Sort them in ascending order.
+    const bool is_diagonal = (Id(1, 0) == 0 && Id(2, 0) == 0 && Id(2, 1) == 0);
+    if (is_diagonal) {
+      Vector3<double> moments(Id(0, 0), Id(1, 1), Id(2, 2));
+      std::sort(moments.data(), moments.data()+moments.size());
+      return moments;
+    }
+
     Eigen::SelfAdjointEigenSolver<Matrix3<double>> solver(
         Id, Eigen::EigenvaluesOnly);
     if (solver.info() != Eigen::Success) {
       throw std::runtime_error(
           "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia()."
-          " Solver failed when attempting to compute the eigenvalues of the"
-          " inertia matrix.");
+          " Solver failed while computing eigenvalues of the inertia matrix.");
     }
     return solver.eigenvalues();
   }
 
-  /// Performs a number of checks to verify that this *could* be a physically
-  /// valid rotational inertia.
-  /// The checks performed are:
-  /// - No NaN entries.
-  /// - Non-negative principal moments.
-  /// - Principal moments must satisfy the triangle inequality:
+  /// Performs several necessary checks to verify whether `this` rotational
+  /// inertia *could* be physically valid, including:
+  /// - No NaN moments or products of inertia.
+  /// - Ixx, Iyy, Izz and principal moments are all non-negative (not NaN).
+  /// - Ixx, Iyy  Izz and principal moments satisfy the triangle inequality:
   ///   - `Ixx + Iyy >= Izz`
   ///   - `Ixx + Izz >= Iyy`
   ///   - `Iyy + Izz >= Ixx`
   ///
-  /// @warning These checks are a necessary but NOT a sufficient condition for a
-  /// rotational inertia to be physically valid. The sufficient condition is for
-  /// a rotational inertia to meet these conditions when shifted to the center
-  /// of mass using the parallel axis theorem. However, this class has no means
-  /// to know where the center of mass is located. Use with caution.
+  /// @warning These checks are necessary (but NOT sufficient) conditions for a
+  /// rotational inertia to be physically valid. The sufficient condition
+  /// requires a rotational inertia to satisfy the above checks *after* `this'
+  /// is shifed to the center of mass using the parallel axis theorem.  However,
+  /// this class does not know its about-point or its center of mass location.
+  /// Sufficient conditions require calling CouldBePhysicallyValid() when the
+  /// about-point is the body's center of mass.
   ///
   /// @returns `true` for a plausible rotational inertia passing the above
-  ///                 checks and `false` otherwise.
+  ///           necessary but insufficient checks and `false` otherwise.
   bool CouldBePhysicallyValid() const {
     if (IsNaN()) return false;
 
-    // Compute principal moments of inertia.
-    Vector3<double> d = CalcPrincipalMomentsOfInertia();
+    const double trace  = ExtractDoubleOrThrow(get_trace());
+    if ( trace < 0 ) return false;
 
-    // Perform checks to machine precision instead of performing exact
-    // comparisons. A "slop" value is chosen relative to the "size" of the
-    // inertia matrix which is measured by the 2-norm of the vector of principal
-    // moments. See below for details on how a "slop" is needed for specific
-    // floating point comparisons.
+    // Calculates principal moments of inertia.
+    const Vector3<double> d = CalcPrincipalMomentsOfInertia();
+
+    // Check the validity of rotational inertia using an epsilon value that is
+    // a number related to machine precision multiplied by the largest possible
+    // element (trace/2) that can appear in a valid `this` rotational inertia.
     const double precision = 10 * std::numeric_limits<double>::epsilon();
-    const double slop = std::max(precision * d.norm(), precision);
+    const double max_possible_inertia_moment_or_product = 0.5 * trace;
+    const double epsilon = precision * max_possible_inertia_moment_or_product;
 
-    // Principal moments must be non-negative.
-    // This comparison actually allows for very small (equal to -slop) negative
-    // principal moments since the result from CalcPrincipalMomentsOfInertia()
-    // is affected by round-off errors.
-    if ((d.array() < -slop).any() ) return false;
-
-    // Checks triangle inequality.
-    // To understand why a slop is needed consider a case for a degenerate
-    // inertia with one of its principal moments very close to zero (or zero).
-    // Say CalcPrincipalMomentsOfInertia() results in a very small negative
-    // value d0 = -slop⁻, with slop⁻ ∈ [0; slop) (notice closed and open bounds
-    // in this range) a very small floating point number that could be very
-    // close to slop but never equal since otherwise the first comparison
-    // above (d.array() < -slop) would not pass. d1 and d2 in this example case
-    // could take any values.
-    // For this case the triangle inequality d0 + d1 >= d2 becomes:
-    //   d0 + d1 >= d2
-    //   -slop⁻ + d1 >= d2
-    //   d1 >= d2 + slop⁻
-    // Therefore even if in the case d1=d2, this test would fail. To allow this
-    // test to succeed for this (actually common in practice) case we subtract
-    // slop from the right hand side above resulting in:
-    //   d0 + d1 >= d2 - slop ⇒ d1 >= d2 - (slop - slop⁻)
-    // which would succeed since (slop - slop⁻) > 0.
-    //
-    // TODO(amcastro-tri): analyze the case d0 = d1 = slop⁻ when (and if)
-    // needed, since in that case the inequality would require d2 <= -2 * slop⁻.
-    //
-    // Another case that requires to account for slop is when the addition of
-    // two moments equals to the third one. Consider the case d0 = d1 = 50
-    // and d2 = 100.
-    if (!(d[0] + d[1] >= d[2] - slop &&
-          d[0] + d[2] >= d[1] - slop &&
-          d[1] + d[2] >= d[0] - slop)) return false;
-
-    return true;  // All tests passed.
+    // Test principal moments of inertia to be mostly non-negative and
+    // also satisfy triangle inequality.
+    return AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+        d(0), d(1), d(2), epsilon);
   }
 
-  /// Given `this` rotational inertia `I_SP_E` for some body or composite body
-  /// S, about a point P and expressed in frame E, this method computes the same
-  /// inertia re-expressed in another frame A as
+  /// Re-expresses `this` rotational inertia `I_SP_E` so it is `I_SP_A`.
+  /// In other words, starts with `this` rotational inertia of a body (or
+  /// composite body) S about-point P expressed-in-frame E and re-expresses
+  /// to S's rotational inertia about-point P expressed-in-frame A, i.e.,
   /// `I_SP_A = R_AE * I_SP_E * (R_AE)ᵀ`.
-  /// This operation is performed in-place modifying the original object.
-  /// @param[in] R_AE Rotation matrix from frame E to frame A.
-  /// @returns A reference to `this` rotational inertia about P but now
-  ///          re-expressed in frame A, that is, `I_SP_A`.
+  /// @param R_AE Rotation matrix from frame A to frame E.
+  /// @returns A reference to `this` rotational inertia about-point P, but
+  ///          with `this` expressed in frame A (instead of frame E).
+  /// @see ReExpress().
   RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
     // There is an interesting discussion on Eigen's forum here:
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
@@ -476,67 +460,144 @@ class RotationalInertia {
     // parts only. Then gain is in accuracy, by having RotationalInertia to only
     // deal with one triangular portion of the matrix.
 
-    // Local copy to avoid aliasing since there is aliasing when using the
-    // triangular view.
+    // Local copy to avoid aliasing that occurs if using triangular view.
     Matrix3<T> I_SP_A;
     I_SP_A.noalias() =
         R_AE * I_SP_E_.template selfadjointView<Eigen::Lower>() *
             R_AE.transpose();
 
-    // Notice that there is no guarantee on having a symmetric result in I_SP_A,
-    // though it should be symmetric to round-off error. Here we are simply
-    // dropping the upper triangle elements, which could be slightly different
-    // than their lower triangle equivalents.
+    // Note: There is no guarantee of a symmetric result in I_SP_A (although it
+    // should be symmetric within round-off error). Here we discard the upper-
+    // triangular elements (which could slightly differ from the lower ones).
     this->get_mutable_triangular_view() = I_SP_A;
     return *this;
   }
 
-  /// Re-express `this` inertia `I_SP_E` from frame E to frame A and return
-  /// the result. See ReExpressInPlace() for details.
-  ///
-  /// @param[in] R_AE Rotation matrix from frame E to frame A.
-  /// @retval I_SP_A The same rotational inertia of S about P but now
-  ///                re-expressed in frame A.
+  /// Copies `this` rotational inertia `I_SP_E` and re-expresses it to `I_SP_A`,
+  /// i.e., re-expresses body S's rotational inertia from frame E to frame A.
+  /// @param R_AE Rotation matrix from frame A to frame E.
+  /// @retval I_SP_A Rotational inertia of B about-point P expressed-in-frame A.
   /// @see ReExpressInPlace()
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /// Multiplies a %RotationalInertia from the left by a scalar `s`.
-  /// Multiplication by scalar is commutative.
-  friend RotationalInertia<T> operator*(const T& s,
+  /// Shift `this` rotational inertia for a body (or composite body) B from
+  /// about-point Bcm (B's center of mass) to about-point Q.  In other words,
+  /// shifts `I_BBcm_E` to `I_BQ_E` (both are expressed-in-frame E).
+  /// @param mass The mass of body (or composite body) B.
+  /// @param p_BcmQ_E Position vector from Bcm to Q, expressed-in-frame E.
+  /// @retval I_BQ_E B's rotational inertia about-point Q expressed-in-frame E.
+  /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
+  /// @see ShiftToCenterOfMass(), ShiftToOtherPointViaCenterOfMass().
+  RotationalInertia<T> ShiftFromCenterOfMass(const T& mass,
+                                             const Vector3<T> p_BcmQ_E) const {
+    const RotationalInertia I(mass, p_BcmQ_E);
+    return *this + I;
+  }
+
+  /// Shift `this` rotational inertia for a body (or composite body) B from
+  /// about-point P to about-point Bcm (B's center of mass).  In other words,
+  /// shifts `I_BP_E` to `I_BBcm_E` (both are expressed-in-frame E).
+  /// @param mass The mass of body (or composite body) B.
+  /// @param p_PBcm_E Position vector from P to Bcm, expressed-in-frame E.
+  /// @retval I_BBcm_E B's rotational inertia about-point Bcm
+  ///         expressed-in-frame E.
+  /// @remark Negating the position vector p_PBcm_E has no affect on the result.
+  /// @see ShiftFromCenterOfMass(), ShiftToOtherPointViaCenterOfMass().
+  RotationalInertia<T> ShiftToCenterOfMass(const T& mass,
+                                           const Vector3<T> p_PBcm_E) const {
+    const RotationalInertia I(mass, p_PBcm_E);
+    return *this - I;
+  }
+
+  /// Shift `this` rotational inertia for a body (or composite body) B from
+  /// about-point P to about-point Q.  In other words, shift from
+  /// `I_BP_E` to `I_BQ_E` (both are expressed-in-frame E).
+  /// Note: This shift occurs via Bcm (B's center of mass).
+  /// @param mass The mass of body (or composite body) B.
+  /// @param p_PBcm_E Position vector from P to Bcm, expressed-in-frame E.
+  /// @param p_QP_E   Position vector from Q to P, expressed-in-frame E.
+  /// @retval I_BQ_E B's rotational inertia about-point Q expressed-in-frame E.
+  /// @remark  This method allows different arguments (and is slightly more
+  ///  efficient) than calls to ShiftToCenterMass() and ShiftFromCenterOfMass().
+  /// @see ShiftToCenterOfMass(), ShiftFromCenterOfMass().
+  /// @see ShiftToOtherPointViaOtherToCenterOfMass().
+  RotationalInertia<T> ShiftToOtherPointViaThisToCenterOfMass(
+                       const T& mass,
+                       const Vector3<T> p_PBcm_E,
+                       const Vector3<T> p_QP_E) const {
+    const Vector3<T> r = 2 * p_PBcm_E + p_QP_E;
+    const Matrix3<T> termA = r.dot(p_QP_E) * Eigen::Matrix3d::Identity();
+    const Matrix3<T> termB = p_PBcm_E * p_QP_E.transpose()
+                           + p_QP_E * p_PBcm_E.transpose()
+                           + p_QP_E * p_QP_E.transpose();
+    const Matrix3<T> shift_I = mass * (termA - termB);
+    return *this + RotationalInertia(shift_I);
+  }
+
+  /// Shift `this` rotational inertia for a body (or composite body) B from
+  /// about-point P to about-point Q.  In other words, shift from
+  /// `I_BP_E` to `I_BQ_E` (both are expressed-in-frame E).
+  /// Note: This shift occurs via Bcm (B's center of mass).
+  /// @param mass The mass of body (or composite body) B.
+  /// @param p_QBcm_E Position vector from Q to Bcm, expressed-in-frame E.
+  /// @param p_QP_E   Position vector from Q to P, expressed-in-frame E.
+  /// @retval I_BQ_E B's rotational inertia about-point Q expressed-in-frame E.
+  /// @remark  This method allows different arguments (and is slightly more
+  ///  efficient) than calls to ShiftToCenterMass() and ShiftFromCenterOfMass().
+  /// @see ShiftToCenterOfMass(), ShiftFromCenterOfMass().
+  /// @see ShiftToOtherPointViaThisToCenterOfMass().
+  RotationalInertia<T> ShiftToOtherPointViaOtherToCenterOfMass(
+                       const T& mass,
+                       const Vector3<T> p_QBcm_E,
+                       const Vector3<T> p_QP_E) const {
+    const Vector3<T> r = 2 * p_QBcm_E - p_QP_E;
+    const Matrix3<T> termA = r.dot(p_QP_E) * Eigen::Matrix3d::Identity();
+    const Matrix3<T> termB = p_QBcm_E * p_QP_E.transpose()
+                           + p_QP_E * p_QBcm_E.transpose()
+                           - p_QP_E * p_QP_E.transpose();
+    const Matrix3<T> shift_I = mass * (termA - termB);
+    return *this + RotationalInertia(shift_I);
+  }
+
+  /// Multiplies a nonnegative scalar by a rotational inertia.
+  /// Parameter `nonnegative_scalar` must be >= 0 or method aborts in Debug.
+  /// @returns rotational inertia `I_BP_E` multiplied by `nonnegative_scalar`.
+  /// @see operator*=().
+  friend RotationalInertia<T> operator*(const T& nonnegative_scalar,
                                         const RotationalInertia<T>& I_BP_E) {
-    RotationalInertia<T> sxI;
-    sxI.get_mutable_triangular_view() = s * I_BP_E.get_matrix();
-    return sxI;
+    /// Multiplication of a scalar with a rotational matrix is commutative.
+    return RotationalInertia(I_BP_E) *= nonnegative_scalar;
   }
 
-  /// Multiplies `this` %RotationalInertia from the right by a scalar `s`.
-  /// Multiplication by scalar is commutative.
+  /// Multiplies `this` rotational inertia by a nonnegative scalar.
+  /// Parameter `nonnegative_scalar` must be >= 0 or method aborts in Debug.
+  /// @returns `this` rotational inertia multiplied by `nonnegative_scalar`.
+  /// @see operator*=().
   friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_BP_E,
-                                        const T& s) {
-    return s * I_BP_E;  // Multiplication by a scalar is commutative.
-  }
-
-  /// Divides `this` %RotationalInertia by a positive scalar s.
-  /// Aborts if the scalar s is not positive.
-  friend RotationalInertia<T> operator/(const RotationalInertia<T>& I_BP_E,
-                                        const T& s) {
-    DRAKE_ASSERT(s > 0);
-    RotationalInertia<T> I_over_s;
-    I_over_s.get_mutable_triangular_view() = I_BP_E.get_matrix() / s;
-    return I_over_s;
+                                        const T& nonnegative_scalar) {
+    return RotationalInertia(I_BP_E) *= nonnegative_scalar;
   }
 
  private:
+  // Creates a rotational inertia from a more generic Eigen 3x3 matrix by
+  // ignoring the generic matrix's three upper-off diagonal matrix elements.
+  // This constructor intentionally does not test CouldBePhysicallyValid().
+  // The three upper off-diagonal matrix elements remain equal to NaN.
+  explicit RotationalInertia(const Matrix3<T> I) : RotationalInertia(0) {
+      set_moments_and_products_no_validity_check(I(0, 0),  I(1, 1),  I(2, 2),
+                                                 I(1, 0),  I(2, 0),  I(2, 1));
+  }
+
   // Utility method used to swap matrix indexes (i, j) depending on the
   // TriangularViewInUse portion of this inertia. The swap is performed so that
   // we only use the triangular portion corresponding to TriangularViewInUse.
   static void check_and_swap(int* i, int* j) { if (*i < *j) std::swap(*i, *j); }
 
   // Returns a constant reference to the underlying Eigen matrix. Notice that
-  // since RotationalInertia only uses the lower portion of this matrix, the
-  // strictly upper part will be set to have NaN entries.
+  // since RotationalInertia only uses the lower-triangular portion of its
+  // matrix, the three upper off-diagonal matrix elements will be NaN.
   // Most users won't call this method.
   const Matrix3<T>& get_matrix() const { return I_SP_E_; }
 
@@ -556,13 +617,70 @@ class RotationalInertia {
     return I_SP_E_.template triangularView<Eigen::Lower>();
   }
 
-  // Inertia matrix of a body or composite body S about point P, expressed in
-  // frame E. The body S, point P, and expressed-in frame E are implicit here.
-  // RotationalInertia only keeps track of the inertia measures, which are
-  // assumed to correspond to some S, P, and E. Users are responsible for
-  // keeping track of the frame in which a particular inertia is expressed in.
-  // Initially set to NaN to aid finding when by mistake we use the strictly
-  // upper portion of the matrix. Only the lower portion should be used.
+  // Sets this rotational inertia's moments and products of inertia. This method
+  // intentionally avoids testing CouldBePhysicallyValid().  Some methods need
+  // to be able to form non-physical rotational inertias (which are to be
+  // subtracted or added to other rotational inertias to form valid ones).
+  void set_moments_and_products_no_validity_check(
+                                    const T& Ixx, const T& Iyy, const T& Izz,
+                                    const T& Ixy, const T& Ixz, const T& Iyz) {
+    // Note: The three upper off-diagonal matrix elements remain equal to NaN.
+    I_SP_E_(0, 0) = Ixx;  I_SP_E_(1, 1) = Iyy;  I_SP_E_(2, 2) = Izz;
+    I_SP_E_(1, 0) = Ixy;  I_SP_E_(2, 0) = Ixz;  I_SP_E_(2, 1) = Iyz;
+  }
+
+  // Tests whether each moment of inertia is non-negative (to within `epsilon`)
+  // and tests whether moments of inertia satisfy triangle-inequality.  The
+  // triangle-inequality test requires `epsilon` when the sum of two moments are
+  // nearly equal to the third one. Example: Ixx = Iyy = 50, Izz = 100.00000001,
+  // or Ixx = -0.0001 (negative),  Ixx = 49.9999,  Iyy = 50.
+  // A positive (non-zero) epsilon accounts for round-off errors, e.g., from
+  // CalcPrincipalMomentsOfInertia() or re-expressing inertia in another frame.
+  // @param Ixx, Iyy, Izz moments of inertia for a generic rotational inertia,
+  //        (i.e., not necessarily principal moments of inertia).
+  // @param epsilon Real positive number that is significantly smaller than the
+  //        largest possible element in a valid rotational inertia.
+  //        Heuristically, `epsilon' is a small multiplier of get_trace()/2.
+  // @note Denoting Imin and Imax as the smallest and largest possible moments
+  //       of inertia in a valid rotational inertia, denoting Imed as the
+  //       intermediate moment of inertia, and denoting tr as the trace of the
+  //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
+  //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
+  //       If Imin == 0, then Imed == Imax == tr/2.
+  static bool AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+      const T& Ixx, const T& Iyy, const T&Izz, const double epsilon) {
+    const bool are_moments_near_positive = AreMomentsOfInertiaNearPositive(
+        Ixx, Iyy, Izz, epsilon);
+    const bool is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
+                                                   Ixx + Iyy + epsilon >= Iyy &&
+                                                   Iyy + Izz + epsilon >= Ixx;
+    return are_moments_near_positive && is_triangle_inequality_satisified;
+  }
+
+  // Tests whether each moment of inertia is non-negative (to within epsilon).
+  // This test allows for small (equal to -epsilon) negative moments of inertia
+  // due to round-off errors, e.g., from CalcPrincipalMomentsOfInertia() and/or
+  // re-expressing a rotational inertia in another frame.
+  // @param Ixx, Iyy, Izz moments of inertia for a generic rotational inertia,
+  //        (i.e., not necessarily principal moments of inertia).
+  // @param epsilon Real positive number that is significantly smaller than the
+  //        largest possible element in a valid rotational inertia.
+  //        Heuristically, `epsilon' is a small multiplier of get_trace()/2.
+  static bool AreMomentsOfInertiaNearPositive(
+      const T& Ixx, const T& Iyy, const T& Izz, const double epsilon) {
+    return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
+  }
+
+  // The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
+  // inertia) and off-diagonal elements (products of inertia) are associated
+  // with a body (or composite body) S, an about-point P, and an expressed-in-
+  // frame E.  A rotational inertia is ill-defined unless there is a body S,
+  // about-point P, and expressed-in-frame E. The user of this class is
+  // responsible for tracking the body S, about-point P and expressed-in-frame E
+  // (none of these are stored in this class).
+  // The rotational inertia class only has data for the inertia matrix, whose
+  // elements are initially set to NaN to aid in ensuring only the lower-
+  // triangular part of the matrix is used (upper-triangular part is not used).
   Matrix3<T> I_SP_E_{Matrix3<T>::Constant(std::numeric_limits<
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
