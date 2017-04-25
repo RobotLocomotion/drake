@@ -401,7 +401,7 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
 
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
-  // For the dragway, the `(s, r, h)` axes in lane-space coorespond to the
+  // For the dragway, the `(s, r, h)` axes in `Lane`-frame correspond to the
   // `(x, y, z)` axes in geo-space. In this case, `s = kS` while `r` and `h` are
   // by default zero.
   expected_pose.translation() = Eigen::Vector3d(kS, 0, 0);

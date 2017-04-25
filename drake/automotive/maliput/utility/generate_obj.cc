@@ -255,7 +255,7 @@ class GeoMesh {
 };
 
 
-// A LANE-space face: a sequence of vertices expressed in the (s,r,h)
+// A `Lane`-frame face: a sequence of vertices expressed in the (s,r,h)
 // coordinates of an api::Lane (which is not referenced here).  Each
 // vertex has an implicit unit-length normal vector in the +h
 // direction normal to the road surface.
@@ -412,7 +412,7 @@ void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
 
 
 // Adds faces to @p mesh which draw a simple triangular arrow in the
-// LANE-space of @p lane.  The width of the arrow is fixed at 80% of
+// `Lane`-frame of @p lane.  The width of the arrow is fixed at 80% of
 // the lane_bounds() of @p lane at the base of the arrow.
 //
 // @param mesh  the GeoMesh which will receive the faces
