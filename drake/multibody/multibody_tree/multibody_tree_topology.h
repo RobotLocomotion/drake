@@ -129,6 +129,10 @@ struct MultibodyTreeTopology {
 
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;
+  // Total number of generalized positions and velocities in the MultibodyTree
+  // model.
+  int num_positions{0};
+  int num_velocities{0};
 };
 
 }  // namespace multibody

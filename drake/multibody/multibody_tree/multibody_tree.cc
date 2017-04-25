@@ -61,7 +61,7 @@ MultibodyTree<T>::CreateDefaultContext() const {
 
   // TODO(amcastro-tri): pass the MultibodyTreeTopology instead of just the
   // number of bodies.
-  auto context = std::make_unique<MultibodyTreeContext<T>>(get_num_bodies());
+  auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
   SetDefaults(context.get());
   return context;
 }

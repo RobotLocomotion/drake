@@ -243,7 +243,7 @@ TEST_F(PendulumTests, CreateContext) {
 
   // Verify we cannot create a Context until we have a valid topology.
   EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
-  EXPECT_ANY_THROW(model_->CreateDefaultContext());
+  EXPECT_THROW(model_->CreateDefaultContext(), std::logic_error);
 
   // Finalize() stage.
   EXPECT_NO_THROW(model_->Finalize());
@@ -253,11 +253,24 @@ TEST_F(PendulumTests, CreateContext) {
   std::unique_ptr<Context<double>> context;
   EXPECT_NO_THROW(context = model_->CreateDefaultContext());
 
+  // Tests MultibodyTreeContext accessors.
+  auto mbt_context = dynamic_cast<MultibodyTreeContext<double>*>(context.get());
+  EXPECT_EQ(mbt_context->get_positions().size(), 0);
+  EXPECT_EQ(mbt_context->get_mutable_positions().size(), 0);
+  EXPECT_EQ(mbt_context->get_velocities().size(), 0);
+  EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 0);
+
+  // Set the poses of each body in the context to have an arbitrary value that
+  // we can use for unit testing. In practice the poses in the context will be
+  // the result of a position kinematics update.
   SetPendulumPoses(context.get());
 
+  // Tests the API to retrieve body poses from the context.
   const Isometry3d& X_WW = world_body_->get_pose_in_world(*context);
   const Isometry3d& X_WLu = upper_link_->get_pose_in_world(*context);
 
+  // Asserts that the retrieved poses match with the ones specified by the unit
+  // test method SetPendulumPoses().
   EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
   EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
 }
