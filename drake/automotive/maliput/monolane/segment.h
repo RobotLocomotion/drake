@@ -33,6 +33,7 @@ class Segment : public api::Segment {
                         const V2& xy0, const V2& dxy,
                         const api::RBounds& lane_bounds,
                         const api::RBounds& driveable_bounds,
+                        const api::HBounds& elevation_bounds,
                         const CubicPolynomial& elevation,
                         const CubicPolynomial& superelevation);
 
@@ -42,6 +43,7 @@ class Segment : public api::Segment {
                       const double theta0, const double d_theta,
                       const api::RBounds& lane_bounds,
                       const api::RBounds& driveable_bounds,
+                      const api::HBounds& elevation_bounds,
                       const CubicPolynomial& elevation,
                       const CubicPolynomial& superelevation);
 
