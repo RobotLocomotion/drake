@@ -584,9 +584,9 @@ class System {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(event_info != nullptr);
     event_info->clear();
-    T ret;
-    DoCalcNextUpdateTime(context, event_info, &ret);
-    return ret;
+    T update_time;
+    DoCalcNextUpdateTime(context, event_info, &update_time);
+    return update_time;
   }
 
   void GetPerStepEvents(const Context<T>& context,

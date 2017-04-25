@@ -142,9 +142,10 @@ class LcmSubscriberSystem : public LeafSystem<double>,
       const OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcNextUpdateTime(const Context<double>& context,
-                            UpdateActions<double>* events) const override;
+                            EventInfo* events, double* time) const override;
 
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                EventInfo::TriggerType triggers,
                                 State<double>* state) const override {
     ProcessMessageAndStoreToAbstractState(state->get_mutable_abstract_state());
   }
@@ -153,6 +154,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
+      EventInfo::TriggerType triggers,
       DiscreteValues<double>* discrete_state) const override {
     ProcessMessageAndStoreToDiscreteState(discrete_state);
   }
