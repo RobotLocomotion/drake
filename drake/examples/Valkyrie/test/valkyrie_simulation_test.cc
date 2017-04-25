@@ -1,10 +1,6 @@
-/// @file
-///
-/// Runs the simulator for the valkyrie robot. It receives torque commands and
-/// sends measured robot state through LCM traffic. See valkyrie_simulator.h
-/// for more details.
-
 #include "drake/examples/Valkyrie/valkyrie_simulator.h"
+
+#include <gtest/gtest.h>
 
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
@@ -14,7 +10,8 @@ namespace drake {
 namespace examples {
 namespace valkyrie {
 
-int main(int argc, const char** argv) {
+// Tests if the simulation runs at all. Nothing else.
+GTEST_TEST(ValkyrieSimulationTest, TestIfRuns) {
   // LCM communication.
   lcm::DrakeLcm lcm;
   ValkyrieSimulationDiagram diagram(&lcm);
@@ -38,14 +35,9 @@ int main(int argc, const char** argv) {
   plant->set_state_vector(plant_context, initial_state);
   lcm.StartReceiveThread();
 
-  simulator.StepTo(std::numeric_limits<double>::infinity());
-  return 0;
+  simulator.StepTo(0.01);
 }
 
 }  // namespace valkyrie
 }  // namespace examples
 }  // namespace drake
-
-int main(int argc, const char* argv[]) {
-  return drake::examples::valkyrie::main(argc, argv);
-}

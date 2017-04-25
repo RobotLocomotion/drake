@@ -112,10 +112,9 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "valkyrie_simulation",
-    srcs = ["valkyrie_simulation.cc"],
-    data = [":models"],
+drake_cc_library(
+    name = "valkyrie_simulator",
+    hdrs = ["valkyrie_simulator.h"],
     deps = [
         ":actuator_effort_to_rigid_body_plant_input_converter",
         ":robot_command_to_desired_effort_converter",
@@ -136,6 +135,13 @@ drake_cc_binary(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:pass_through",
     ],
+)
+
+drake_cc_binary(
+    name = "valkyrie_simulation",
+    srcs = ["valkyrie_simulation.cc"],
+    data = [":models"],
+    deps = [":valkyrie_simulator"],
 )
 
 # === test/ ===
@@ -170,6 +176,13 @@ drake_cc_googletest(
         "//drake/systems/framework:diagram",
         "//drake/systems/primitives:constant_value_source",
     ],
+)
+
+drake_cc_googletest(
+    name = "valkyrie_simulation_test",
+    data = [":models"],
+    srcs = ["test/valkyrie_simulation_test.cc"],
+    deps = [":valkyrie_simulator"],
 )
 
 drake_cc_googletest(
