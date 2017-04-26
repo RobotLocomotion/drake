@@ -314,7 +314,7 @@ class RotationalInertia {
   /// Parameter `positive_scalar` must be > 0 or method aborts in Debug.
   /// @returns `this` rotational inertia divided by `positive_scalar`.
   /// @see operator/=().
-  RotationalInertia<T> operator/(const T& positive_scalar) {
+  RotationalInertia<T> operator/(const T& positive_scalar) const {
     return RotationalInertia(*this) /= positive_scalar;
   }
 
