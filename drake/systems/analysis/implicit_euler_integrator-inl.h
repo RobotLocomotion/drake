@@ -312,14 +312,11 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   DRAKE_ASSERT(xtplus &&
                xtplus->size() == context->get_continuous_state_vector().size());
 
-  // Save initial value of xtplus and initial time.
-  const T t0 = context->get_time();
-  const VectorX<T> xtplus_star = *xtplus;
-
   // Get the initial state.
   VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
 
-  SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}", t0, dt);
+  SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}",
+               context->get_time(), dt);
 
   // Advance the context time; this means that all derivatives will be computed
   // at t+dt.
