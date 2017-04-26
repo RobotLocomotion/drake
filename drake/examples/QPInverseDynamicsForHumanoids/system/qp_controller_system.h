@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
@@ -33,7 +34,8 @@ class QpControllerSystem : public systems::LeafSystem<double> {
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
+      const std::vector<const systems::Trigger*>& triggers,
+      systems::State<double>* state) const override;
 
   /**
    * Returns the input port for HumanoidStatus.
