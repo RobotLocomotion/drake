@@ -38,7 +38,7 @@ class IKTrajectoryCost : public drake::solvers::Cost {
   template <typename Derived>
   IKTrajectoryCost(const IKTrajectoryHelper& helper,
                    const Eigen::MatrixBase<Derived>& q_nom)
-      : Cost(1, helper.nq() * (helper.nT() + 2)),
+      : Cost(helper.nq() * (helper.nT() + 2)),
         helper_(helper),
         q_nom_(q_nom) {}
 

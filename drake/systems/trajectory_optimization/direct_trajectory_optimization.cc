@@ -97,8 +97,7 @@ class FinalCostWrapper : public solvers::Cost {
 
   FinalCostWrapper(int num_time_samples, int num_states,
                    std::shared_ptr<solvers::Cost> cost)
-      : Cost(cost->num_constraints(),
-                   (num_time_samples - 1) + num_states),
+      : Cost((num_time_samples - 1) + num_states),
         num_time_samples_(num_time_samples),
         num_states_(num_states),
         cost_(cost) {}

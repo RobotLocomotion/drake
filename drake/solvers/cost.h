@@ -23,18 +23,18 @@ class Cost : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost)
 
-  using EvaluatorBase::EvaluatorBase;
+  explicit Cost(size_t num_vars)
+    : EvaluatorBase(1, num_vars) {}
 };
 
 class CostShimBase : public Cost {
- public:
+ protected:
   explicit CostShimBase(const std::shared_ptr<Constraint>& impl)
-      : Cost(impl->num_constraints(), impl->num_vars()), impl_(impl) {
+      : Cost(impl->num_vars()), impl_(impl) {
     // Costs may only be scalar.
     DRAKE_DEMAND(impl->num_constraints() == 1);
   }
 
- protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               Eigen::VectorXd& y) const override;
@@ -43,7 +43,6 @@ class CostShimBase : public Cost {
               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               AutoDiffVecXd& y) const override;
 
- protected:
   std::shared_ptr<Constraint> impl_;
 };
 
