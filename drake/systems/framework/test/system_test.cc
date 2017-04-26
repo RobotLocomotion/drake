@@ -122,7 +122,7 @@ class TestSystem : public System<double> {
     }
   }
 
-  void PublishImpl(const Context<double>& context,
+  void DispatchPublishHandler(const Context<double>& context,
       const EventInfo* event_info) const final {
     if (event_info == nullptr) {
       ForcedTrigger trigger;
@@ -139,7 +139,7 @@ class TestSystem : public System<double> {
     }
   }
 
-  void CalcDiscreteVariableUpdatesImpl(const Context<double>& context,
+  void DispatchDiscreteVariableUpdateHandler(const Context<double>& context,
       const EventInfo* event_info,
       DiscreteValues<double>* discrete_state) const final {
     if (event_info == nullptr) {
