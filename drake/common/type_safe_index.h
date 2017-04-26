@@ -147,7 +147,7 @@ class TypeSafeIndex {
   ///@{
 
   /// Default constructor; the result is an _invalid_ index. This only
-  /// exists to applications which require a default constructor.
+  /// exists to serve applications which require a default constructor.
   TypeSafeIndex() {}
 
   /// Construction from a non-negative `int` value.
