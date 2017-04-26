@@ -109,7 +109,8 @@ namespace drake {
 ///
 /// __Type-safe Index vs Identifier__
 ///
-/// In principle, the TypeSafeIndex is related to the Identifier. In
+/// In principle, the TypeSafeIndex is related to the
+/// @ref drake::geometry::Identifier "Identifier". In
 /// some sense, both are "type-safe `int`s". They differ in their semantics. We
 /// can consider `ints`, indexes, and identifiers as a list of `int` types with
 /// _decreasing_ functionality.
@@ -121,10 +122,11 @@ namespace drake {
 ///     can be compared with `int` and other indexes of the same type. This
 ///     behavior arises from the intention of having them serve as an _index_ in
 ///     an ordered set (e.g., `std::vector`.)
-///   - The Identifier is the most restricted. They exist solely to serve as
-///     a unique identifier. They are immutable when created. Very few
-///     operations exist on them (comparison for _equality_ with other
-///     identifiers of the same type, hashing, writing to output stream).
+///   - The @ref drake::geometry::Identifier "Identifier" is the most
+///     restricted. They exist solely to serve as a unique identifier. They are
+///     immutable when created. Very few operations exist on them (comparison
+///     for _equality_ with other identifiers of the same type, hashing, writing
+///     to output stream).
 ///
 /// Ultimately, indexes _can_ serve as identifiers (within the scope of the
 /// object they index into). Although, their mutability could make this a
@@ -134,15 +136,18 @@ namespace drake {
 /// implementation from the idea of the object. Combined with its immutability,
 /// it would serve well as a element of a public API.
 ///
-/// @sa Identifier
+/// @sa drake::geometry::Identifier
 ///
 /// @tparam Tag The name of the tag associated with a class type. The class
 ///             need not be a defined class.
 template <class Tag>
 class TypeSafeIndex {
  public:
+  /// @name           Constructors
+  ///@{
+
   /// Default constructor; the result is an _invalid_ index. This only
-  /// exists to satisfy demands of working with various container classes.
+  /// exists to applications which require a default constructor.
   TypeSafeIndex() {}
 
   /// Construction from a non-negative `int` value.
@@ -158,11 +163,15 @@ class TypeSafeIndex {
 
   TypeSafeIndex(const TypeSafeIndex&) = default;
 
-  TypeSafeIndex& operator=(const TypeSafeIndex&) = default;
-
   TypeSafeIndex(TypeSafeIndex&& other) noexcept : index_(other.index_) {
     other.index_ = kDefaultInvalid;
   }
+  ///@}
+
+  /// @name       Assignment
+  ///@{
+
+  TypeSafeIndex& operator=(const TypeSafeIndex&) = default;
 
   TypeSafeIndex& operator=(TypeSafeIndex&& other) noexcept {
     index_ = other.index_;
@@ -177,6 +186,11 @@ class TypeSafeIndex {
     DRAKE_ASSERT_VOID(AssertValid("Assigning an invalid int."));
     return *this;
   }
+
+  ///@}
+
+  /// @name     Utility methods
+  ///@{
 
   /// Implicit conversion-to-int operator.
   operator int() const {
@@ -194,7 +208,9 @@ class TypeSafeIndex {
     return index_ >= 0;
   }
 
-  /// @name Arithmetic operators.
+  ///@}
+
+  /// @name Arithmetic operators
   ///@{
 
   /// Prefix increment operator.
@@ -242,7 +258,7 @@ class TypeSafeIndex {
   }
   ///@}
 
-  /// @name Compound assignment operators.
+  /// @name Compound assignment operators
   ///@{
 
   /// Addition assignment operator.
@@ -259,6 +275,25 @@ class TypeSafeIndex {
     return *this;
   }
 
+  /// Whitelist addition for indices with the same tag.
+  TypeSafeIndex<Tag>& operator+=(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(AssertValid(
+        "In-place addition with another index invalid LHS."));
+    DRAKE_ASSERT_VOID(other.AssertValid(
+        "In-place addition with another index invalid RHS."));
+    DRAKE_ASSERT_VOID(AssertNoOverflow(
+        other.index_,
+        "In-place addition with another index produced an invalid index."));
+    index_ += other.index_;
+    DRAKE_ASSERT_VOID(AssertValid(
+        "In-place addition with another index produced an invalid index."));
+    return *this;
+  }
+
+  /// Blacklist addition for indices of different tags.
+  template <typename U>
+  TypeSafeIndex<U>& operator+=(const TypeSafeIndex<U>& u) = delete;
+
   /// Subtraction assignment operator.
   /// In Debug builds, this method asserts that the resulting index is
   /// non-negative.
@@ -272,9 +307,29 @@ class TypeSafeIndex {
         "In-place subtraction with an int produced an invalid index."));
     return *this;
   }
+
+  /// Whitelist subtraction for indices with the same tag.
+  TypeSafeIndex<Tag>& operator-=(const TypeSafeIndex<Tag>& other) {
+    DRAKE_ASSERT_VOID(AssertValid(
+        "In-place subtraction with another index invalid LHS."));
+    DRAKE_ASSERT_VOID(other.AssertValid(
+        "In-place subtraction with another index invalid RHS."));
+    // No test for overflow; it would only be necessary if other had a negative
+    // index value. In that case, it would be invalid and that would be caught
+    // by the previous assertion.
+    index_ -= other.index_;
+    DRAKE_ASSERT_VOID(AssertValid(
+        "In-place subtraction with another index produced an invalid index."));
+    return *this;
+  }
+
+  /// Blacklist subtraction for indices of different tags.
+  template <typename U>
+  TypeSafeIndex<U>& operator-=(const TypeSafeIndex<U>& u) = delete;
+
   ///@}
 
-  /// @name Exclusionary operators
+  /// @name Exclusive comparison operators
   ///
   /// In order to prevent indices _of different type_ being added together or
   /// compared against each other, we apply a whitelist/blacklist approach to
@@ -354,44 +409,6 @@ class TypeSafeIndex {
   /// Blacklist greater than or equals test with indices of other tags.
   template <typename U>
   bool operator>=(const TypeSafeIndex<U>& u) = delete;
-
-  /// Whitelist addition for indices with the same tag.
-  TypeSafeIndex<Tag>& operator+=(const TypeSafeIndex<Tag>& other) {
-    DRAKE_ASSERT_VOID(AssertValid(
-        "In-place addition with another index invalid LHS."));
-    DRAKE_ASSERT_VOID(other.AssertValid(
-        "In-place addition with another index invalid RHS."));
-    DRAKE_ASSERT_VOID(AssertNoOverflow(
-        other.index_,
-        "In-place addition with another index produced an invalid index."));
-    index_ += other.index_;
-    DRAKE_ASSERT_VOID(AssertValid(
-        "In-place addition with another index produced an invalid index."));
-    return *this;
-  }
-
-  /// Blacklist addition for indices of different tags.
-  template <typename U>
-  TypeSafeIndex<U>& operator+=(const TypeSafeIndex<U>& u) = delete;
-
-  /// Whitelist subtraction for indices with the same tag.
-  TypeSafeIndex<Tag>& operator-=(const TypeSafeIndex<Tag>& other) {
-    DRAKE_ASSERT_VOID(AssertValid(
-        "In-place subtraction with another index invalid LHS."));
-    DRAKE_ASSERT_VOID(other.AssertValid(
-        "In-place subtraction with another index invalid RHS."));
-    // No test for overflow; it would only be necessary if other had a negative
-    // index value. In that case, it would be invalid and that would be caught
-    // by the previous assertion.
-    index_ -= other.index_;
-    DRAKE_ASSERT_VOID(AssertValid(
-        "In-place subtraction with another index produced an invalid index."));
-    return *this;
-  }
-
-  /// Blacklist subtraction for indices of different tags.
-  template <typename U>
-  TypeSafeIndex<U>& operator-=(const TypeSafeIndex<U>& u) = delete;
 
   ///@}
 
