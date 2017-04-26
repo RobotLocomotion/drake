@@ -5,21 +5,42 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
 
+/// This class is one of the cache entries in MultibodyTreeContext. It holds the
+/// kinematics results of compuatations that only depend on the generalized
+/// positions of the system.
+/// These results are internally stored as arrays with BSF (Breadth-First
+/// Search) ordering in order to minimize cache misses (in this context we mean
+/// **hardware cache**) during MultibodyTree traversals. Cache misses result in
+/// memory access with a much longer latency.
+/// Kinematics results include:
+/// - Body frame B poses X_WB measured and expressed in the world frame W.
+/// - Pose X_FM of a mobilizer's outboard frame M measured and expressed in the
+///   inboard frame F.
+/// - Mobilizer's Jacobian matrices H_FM, H_PB.
+///
+/// @tparam T The mathematical type of the context, which must be a valid Eigen
+///           scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
 template <typename T>
 class PositionKinematicsCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache)
 
-  // We should not need this constructor. Remove before PR'ing.
-  PositionKinematicsCache() {}
-
-  // TODO(amcastro-tri): This should take a MultibodyTreeTopology instead.
-  explicit PositionKinematicsCache(int num_body_nodes) {
-    Allocate(num_body_nodes);
+  /// Constructs a position kinematics cache entry for the given
+  /// MultibodyTreeTopology.
+  explicit PositionKinematicsCache(const MultibodyTreeTopology& topology) :
+      num_nodes_(topology.get_num_bodies()) {
+    Allocate();
   }
 
   /// Returns a constant reference to the pose `X_WB` of the body `B`
@@ -46,25 +67,18 @@ class PositionKinematicsCache {
     return X_WB_pool_[body_node_id];
   }
 
-  // Do we need an argument here? get it at construction?
-  // Obtain this from the constructor?
-  //void Allocate(const MultibodyTreeTopology& tree_topology) {
-  void Allocate(int num_body_nodes) {
-    // Obtain this from the constructor?
-    //num_nodes_ = tree_topology.get_num_body_nodes();
-    num_nodes_ = num_body_nodes;
+ private:
+  // The type of pools for storing poses.
+  typedef eigen_aligned_std_vector<Isometry3<T>> X_PoolType;
 
+  // Allocates resources for this position kinematics cache.
+  void Allocate() {
     X_WB_pool_.resize(num_nodes_);
     X_WB_pool_[world_index()] = Isometry3<T>::Identity();
   }
 
- private:
-  typedef eigen_aligned_std_vector<Isometry3<T>> X_PoolType;
-
+  // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
-  // TODO(amcastro-tri): This MUST be indexed by BodyNodeIndex to avoid paging.
-  // In this first prototype we index by BodyIndex just as a proof of concept to
-  // introduce MultibodyTreeContext and a reasonable cache entry.
   X_PoolType X_WB_pool_;  // Indexed by BodyNodeIndex.
 };
 

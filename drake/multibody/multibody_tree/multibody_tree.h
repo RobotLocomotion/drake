@@ -305,15 +305,10 @@ class MultibodyTree {
   ///
   /// @throws std::logic_error If users attempt to call this method on a
   ///         %MultibodyTree with an invalid topology.
-  //std::unique_ptr<MultibodyTreeContext<T>> CreateDefaultContext() const;
-
   std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
 
-   /// Sets default values in the context including pre-computed cache entries.
+  /// Sets default values in the context including pre-computed cache entries.
   void SetDefaults(systems::Context<T>* context) const {}
-
-  const Isometry3<T>& get_body_pose_in_world(
-      const systems::Context<T>& context, BodyIndex index) const;
 
  private:
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write

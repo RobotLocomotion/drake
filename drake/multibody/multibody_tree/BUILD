@@ -27,6 +27,7 @@ drake_cc_library(
     name = "multibody_tree_context",
     srcs = [
         "multibody_tree_context.cc",
+        "position_kinematics_cache.cc",
     ],
     hdrs = [
         "multibody_tree_context.h",

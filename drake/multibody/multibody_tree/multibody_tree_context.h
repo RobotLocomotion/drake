@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
@@ -39,7 +40,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeContext)
 
-  MultibodyTreeContext(const MultibodyTreeTopology& topology) :
+  explicit MultibodyTreeContext(const MultibodyTreeTopology& topology) :
       systems::LeafContext<T>(), topology_(topology) {
     using systems::AbstractValue;
     using systems::BasicVector;
@@ -50,7 +51,6 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     using systems::Value;
 
     // Allocate continuous state.
-    const int num_bodies = topology_.get_num_bodies();
     const int num_positions = topology_.num_positions;
     const int num_velocities = topology_.num_velocities;
     const int num_states = num_positions + num_velocities;
@@ -68,7 +68,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     position_kinematics_ticket_ = this->CreateCacheEntry({});
     this->InitCachedValue(
         position_kinematics_ticket_,
-        std::make_unique<Value<PositionKinematicsCache<T>>>(num_bodies));
+        std::make_unique<Value<PositionKinematicsCache<T>>>(topology));
     // Forces cache entry invalidation.
     this->invalidate_cache_entry(position_kinematics_ticket_);
   }
@@ -122,7 +122,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   const PositionKinematicsCache<T>& get_position_kinematics() const {
     using systems::AbstractValue;
     using systems::Value;
-    DRAKE_ASSERT_VOID(VerifyPositionKinematicsCacheIsValid());
+    DRAKE_ASSERT_VOID(PositionKinematicsCacheIsValidOrThrow());
     const AbstractValue* value =
         this->GetCachedValue(position_kinematics_ticket_);
     auto unpacked = safe_cast<const Value<PositionKinematicsCache<T>>>(value);
@@ -139,34 +139,40 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return &unpacked->get_mutable_value();
   }
 
- private:
-  // Returns a constant reference to the underlying Eigen vector for the state.
-  const VectorX<T>& get_state_vector() const {
-    // xc below resolves to "Eigen::VectorBlock<const VectorX<T>>".
-    auto xc = safe_cast<systems::BasicVector<T>>(
-        this->get_continuous_state()->get_vector()).get_value();
-    // xc.nestedExpression() resolves to "const VectorX<T>&".
-    return xc.nestedExpression();
-  }
-
-  // Returns a reference to the underlying Eigen vector for the state.
-  VectorX<T>& get_mutable_state_vector() {
-    // xc below resolves to "Eigen::VectorBlock<const VectorX<T>>".
-    auto xc = safe_cast<systems::BasicVector<T>>(
-        this->get_mutable_continuous_state()->get_mutable_vector())->
-        get_mutable_value();
-    // xc.nestedExpression() resolves to "const VectorX<T>&".
-    return xc.nestedExpression();
-  }
-
-  // Helper method to verify if the position kinematics cache is valid and
-  // throw an exception if not.
-  void VerifyPositionKinematicsCacheIsValid() const {
+  /// Checks that the position kinematics cache is valid and throws an exception
+  /// if not.
+  void PositionKinematicsCacheIsValidOrThrow() const {
     if (!is_position_kinematics_valid()) {
       throw std::runtime_error(
           "Attempting to retrieve an invalidated position kinematics cache"
-              " entry.");
+          " entry.");
     }
+  }
+
+ private:
+  // Returns a constant reference to the underlying Eigen vector for the state.
+  const VectorX<T>& get_state_vector() const {
+    // We know that MultibodyTreeContext is a LeafContext and therefore the
+    // continuous state vector must be a BasicVector.
+    Eigen::VectorBlock<const VectorX<T>> xc =
+        safe_cast<systems::BasicVector<T>>(
+            this->get_continuous_state()->get_vector()).get_value();
+    // xc.nestedExpression() resolves to "const VectorX<T>&" since the
+    // continuous state is a BasicVector.
+    return xc.nestedExpression();
+  }
+
+  // Returns a mutable reference to the underlying Eigen vector for the state.
+  VectorX<T>& get_mutable_state_vector() {
+    // We know that MultibodyTreeContext is a LeafContext and therefore the
+    // continuous state vector must be a BasicVector.
+    Eigen::VectorBlock<VectorX<T>> xc =
+        safe_cast<systems::BasicVector<T>>(
+            this->get_mutable_continuous_state()->get_mutable_vector())->
+            get_mutable_value();
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    return xc.nestedExpression();
   }
 
   // Helper methods to safely switch between static_cast in Release builds to
@@ -178,8 +184,6 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     static_assert(std::is_convertible<const ToType&, const FromType&>::value,
                   "FromType is not convertible to ToType.");
 #ifndef NDEBUG
-    if(dynamic_cast<const ToType*>(&from)==nullptr)
-      throw std::runtime_error("what the fack!");
     return dynamic_cast<const ToType&>(from);
 #else
     return static_cast<const ToType&>(from);

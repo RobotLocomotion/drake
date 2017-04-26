@@ -263,9 +263,8 @@ TEST_F(PendulumTests, CreateContext) {
   // Expect an assertion in Debug builds if the position kinematics is not yet
   // valid.
   EXPECT_FALSE(mbt_context->is_position_kinematics_valid());
-#ifndef NDEBUG
-  EXPECT_THROW(world_body_->get_pose_in_world(*mbt_context), std::runtime_error);
-#endif
+  EXPECT_THROW(world_body_->get_pose_in_world(*mbt_context),
+               std::runtime_error);
 
   // Set the poses of each body in the context to have an arbitrary value that
   // we can use for unit testing. In practice the poses in the context will be

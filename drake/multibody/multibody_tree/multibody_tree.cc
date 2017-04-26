@@ -59,7 +59,7 @@ void MultibodyTree<T>::CompileTopology() {
   // frames in a meaningful way. The code below is now introduced so that bodies
   // can retrieve Context entries.
   BodyNodeIndex body_node(0);
-  for (auto& body_topology: topology_.bodies) {
+  for (auto& body_topology : topology_.bodies) {
     body_topology.body_node = body_node++;
   }
 }
@@ -76,21 +76,6 @@ MultibodyTree<T>::CreateDefaultContext() const {
   auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
   SetDefaults(context.get());
   return context;
-}
-
-template <typename T>
-const Isometry3<T>& MultibodyTree<T>::get_body_pose_in_world(
-    const systems::Context<T>& context, BodyIndex body_index) const {
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-
-  // TODO(amcastro-tri): body_node_index will come from the
-  // MultibodyTreeTopology as:
-  //    body_node_index = topology_.bodies[body_index].body_node;
-  BodyNodeIndex body_node_index = BodyNodeIndex((int)body_index);
-  // TODO(amcastro-tri): Check cache validity.
-  //                     Check topology validity.
-  return mbt_context.get_position_kinematics().get_X_WB(body_node_index);
 }
 
 // Explicitly instantiates on the most common scalar types.
