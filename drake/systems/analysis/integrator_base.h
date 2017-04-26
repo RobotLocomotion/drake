@@ -26,7 +26,84 @@ solution, so must be avoided.
 */
 
 /**
- * An abstract class for an integrator for ODEs and DAEs.
+ * An abstract class for an integrator for ODEs. Integrators solve
+ * initial value problems of the form:<pre>
+ * x'(t) = f(t, y(t)) with f : ℝ × ℝⁿ → ℝⁿ
+ * </pre>
+ * (i.e., `f()` is an ordinary differential equation) given initial conditions
+ * (t₀, x₀). Thus, integrators advance the continuous state of a dynamical
+ * system forward in time.
+ *
+ * Apart from solving initial value problems, for which the integrator is a
+ * key component of a simulator, integrators can also be used to solve
+ * boundary value problems (via numerical methods like the Multiple Shooting
+ * Method) and trajectory optimization problems (via numerical methods like
+ * direct transcription). This class and its derivatives were developed
+ * primarily toward the former application (through Simulator). However,
+ * the IntegratorBase architecture was developed to support these ancillary
+ * applications as well.
+ *
+ * A natural question for a user to ask of an integrator is: Which scheme
+ * (method) should be applied to a particular problem? The answer is whichever
+ * one most quickly computes the solution to the desired accuracy! Selecting
+ * an integration scheme for a particular problem is presently an artform. As
+ * examples of some selection criteria: multistep methods generally work poorly
+ * when events (that require state reinitializations) are common, symplectic
+ * methods generally work well at maintaining stability for large integration
+ * steps, and stiff integrators are often best for computationally stiff
+ * systems. If ignorant as to the characteristics of a particular problem, it
+ * is often best to start with an explicit, Runge-Kutta type method. Statistics
+ * collected by the integrator can help diagnose performance issues and possibly
+ * point to the use of a different integration scheme.
+ *
+ * Some systems are known to exhibit "computational stiffness", by which it is
+ * meant that (excessively) small integration steps are necessary for purposes
+ * of stability: in other words, steps must be taken smaller than that
+ * required to achieve a desired accuracy *over a particular interval*.
+ * Thus, the nature of computationally stiff problems is that the solution to
+ * the ODE is *smooth* in the interval of stiffness (in contrast, some problems
+ * possess such high frequency dynamics that very small steps are simply
+ * necessary to capture the solution accurately). Implicit integrators are the
+ * go-to approach for solving computationally stiff problems, but careful
+ * consideration is warranted. Implicit integrators typically require much more
+ * computation than non-implicit (explicit) integrators, stiffness might be an
+ * issue on only a very small time interval, and some problems might be only
+ * "moderately stiff". Put another way, applying an implicit integrator to a
+ * potentially stiff problem might not yield faster computation. The first
+ * chapter of [Hairer, 1996] illustrates the issues broached in this paragraph
+ * using various examples.
+ *
+ * Established methods for integrating ordinary differential equations
+ * invariably make provisions for estimating the "local error" (i.e., the
+ * error over a small time interval) of a solution. Although the relationship
+ * between local error and global error (i.e., the accumulated error over
+ * multiple time steps) can be tenuous, such error estimates can allow
+ * integrators to work adaptively, subdividing time intervals as necessary
+ * (if, e.g., the system is particularly dynamic or stationary in an interval).
+ * Even for applications that do not recommend such adaptive integration- like
+ * direct transcription methods for trajectory optimization- error estimation
+ * allows the user to assess the accuracy of the solution.
+ *
+ * IntegratorBase provides numerous settings and flags that can leverage
+ * problem-specific information to speed integration and/or improve integration
+ * accuracy. As an example, set_maximum_step_size() allows the user to prevent
+ * overly large integration steps (that integration error control alone might
+ * be insufficient to detect). As noted previously, IntegratorBase also collects
+ * a plethora of statistics that can be used to diagnose poor integration
+ * performance. For example, a large number of shrinkages due to error control
+ * could indicate that a system is computationally stiff.
+ *
+ * Derived classes are tasked with providing a method, DoStep(), to (1) take a
+ * *single integration step* from time/state (t₀, x₀) to time/state (t₁, x₁), or
+ * reporting failure (which might occur if t₁-t₀ is too large of a step) and
+ * (2) computing an estimate of the error, if possible, over that step. Such
+ * derived classes may provide special routines for any bespoke initialization
+ * or statistics collection.
+ *
+ *  - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
+ *                     Equations II (Stiff and Differential-Algebraic Problems).
+ *                     Springer, 1996.
+
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  */
 template <class T>

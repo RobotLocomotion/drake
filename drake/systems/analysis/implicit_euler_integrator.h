@@ -225,14 +225,12 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
  private:
   void DoInitialize() override;
   void DoResetStatistics() override;
-  VectorX<T> Solve(const MatrixX<T>& A, const VectorX<T>& b);
-  bool AttemptStepOncePaired(const T& dt, VectorX<T>* xtplus_euler,
-                             VectorX<T>* xtplus_trap);
-  T StepOnceAtMostPaired(const T& dt, VectorX<T>* xtplus_euler,
+  VectorX<T> FactorAndSolve(const MatrixX<T>& A, const VectorX<T>& b);
+  bool AttemptStepPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
   bool StepAbstract(const T& dt,
                     const std::function<VectorX<T>()>& g,
-                    double scale,
+                    int scale,
                     VectorX<T>* xtplus);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   bool DoStep(const T& dt) override;
@@ -248,7 +246,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
                                      const Context<T>& context,
                                      ContinuousState<T>* state);
-  VectorX<T> CalcTimeDerivatives();
+  VectorX<T> CalcTimeDerivativesUsingContext();
 
   // This is a pre-allocated temporary for use by integration. It stores
   // the derivatives computed at x(t+h).
