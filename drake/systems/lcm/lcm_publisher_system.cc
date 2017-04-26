@@ -83,7 +83,7 @@ void LcmPublisherSystem::set_publish_period(double period) {
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context,
-    EventInfo::TriggerType triggers) const {
+    const std::vector<const Trigger*>& triggers) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
 

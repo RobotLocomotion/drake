@@ -82,8 +82,10 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   EXPECT_NEAR(0.1, next_t, 10e-8);
 
   // Check that the action is to update.
-  EXPECT_EQ(leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate),
-            EventInfo::TriggerType::kPeriodic);
+  const auto& triggers =
+      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
+  EXPECT_EQ(triggers.size(), 1);
+  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that when the current time is between updates, a update is requested
@@ -97,8 +99,10 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   EXPECT_NEAR(76.4, next_t, 10e-8);
 
   // Check that the action is to update.
-  EXPECT_EQ(leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate),
-            EventInfo::TriggerType::kPeriodic);
+  const auto& triggers =
+      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
+  EXPECT_EQ(triggers.size(), 1);
+  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that discrete updates update the state.

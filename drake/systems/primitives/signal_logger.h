@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -51,7 +52,7 @@ class SignalLogger : public LeafSystem<T> {
 
   // Logging is done in this method.
   void DoPublish(const Context<T>& context,
-      EventInfo::TriggerType triggers) const override;
+      const std::vector<const Trigger*>& triggers) const override;
 
   mutable SignalLog<T> log_;
 };
