@@ -28,14 +28,6 @@ namespace drake {
 namespace systems {
 
 /*
-/// A description of a discrete-time event, which is passed from the Simulator
-/// to the recipient System's appropriate event handling method. Different
-/// DiscreteEvent ActionTypes trigger different event handlers, which are
-/// permitted to modify different state fields. For instance, publish events may
-/// not modify any state at all, discrete update events may modify the discrete
-/// state only, and unrestricted update events may modify any state. The
-/// event handlers do not apply state updates to the Context directly. Instead,
-/// they write the updates into a separate buffer that the Simulator provides.
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
@@ -48,16 +40,12 @@ struct DiscreteEvent {
   /// triggered the event handler, toward obviating the need to redetermine
   /// the reason that the event handler is called.
   enum ActionType {
-    /// A default value that causes the handler to abort.
     kUnknownAction = 0,
 
-    /// On publish actions, state does not change.
     kPublishAction = 1,
 
-    /// On discrete updates, discrete state may change.
     kDiscreteUpdateAction = 2,
 
-    /// On unrestricted updates, the state variables may change arbitrarily.
     kUnrestrictedUpdateAction = 3,
   };
 
@@ -558,7 +546,7 @@ class System {
                        EventInfo* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(event_info != nullptr);
-    event_info->clear();
+    event_info->Clear();
     T update_time;
     DoCalcNextUpdateTime(context, event_info, &update_time);
     return update_time;
@@ -568,7 +556,7 @@ class System {
                           EventInfo* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(event_info != nullptr);
-    event_info->clear();
+    event_info->Clear();
     DoGetPerStepEvents(context, event_info);
   }
 

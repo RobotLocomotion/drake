@@ -1,6 +1,5 @@
 #include "drake/systems/framework/event_info.h"
 
-#include <iostream>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -8,73 +7,57 @@
 namespace drake {
 namespace systems {
 
-void DiagramEventInfo::set_and_own_sub_event(int index,
-    std::unique_ptr<EventInfo> sub_event_info) {
-  DRAKE_DEMAND(index >= 0 && index < size());
+void DiagramEventInfo::set_and_own_sub_event_info(
+    int index, std::unique_ptr<EventInfo> sub_event_info) {
+  DRAKE_DEMAND(index >= 0 && index < num_sub_event_info());
   owned_sub_event_info_[index] = std::move(sub_event_info);
   sub_event_info_[index] = owned_sub_event_info_[index].get();
 }
 
-const EventInfo* DiagramEventInfo::get_sub_event(int index) const {
-  DRAKE_DEMAND(index >= 0 && index < size());
+const EventInfo* DiagramEventInfo::get_sub_event_info(int index) const {
+  DRAKE_DEMAND(index >= 0 && index < num_sub_event_info());
   return sub_event_info_[index];
 }
 
-EventInfo* DiagramEventInfo::get_mutable_sub_event(int index) {
-  DRAKE_DEMAND(index >= 0 && index < size());
+EventInfo* DiagramEventInfo::get_mutable_sub_event_info(int index) {
+  DRAKE_DEMAND(index >= 0 && index < num_sub_event_info());
   return sub_event_info_[index];
 }
 
-void DiagramEventInfo::merge(const EventInfo* other_info) {
-  if (other_info == this) return;
-
+void DiagramEventInfo::DoMerge(const EventInfo* other_info) {
   const DiagramEventInfo* other =
-    dynamic_cast<const DiagramEventInfo*>(other_info);
-  if (other == nullptr)
-    DRAKE_ABORT_MSG(
-        "cannot merger DiagramEventInfo with non DiagramEventInfo.");
+      dynamic_cast<const DiagramEventInfo*>(other_info);
+  DRAKE_DEMAND(other != nullptr);
+  DRAKE_DEMAND(num_sub_event_info() == other->num_sub_event_info());
 
-  DRAKE_DEMAND(size() == other->size());
-
-  for (int i = 0; i < size(); i++) {
-    sub_event_info_[i]->merge(other->get_sub_event(i));
+  for (int i = 0; i < num_sub_event_info(); i++) {
+    sub_event_info_[i]->Merge(other->get_sub_event_info(i));
   }
 }
 
-void DiagramEventInfo::clear() {
-  for (int i = 0; i < size(); i++) {
-    sub_event_info_[i]->clear();
+void DiagramEventInfo::DoClear() {
+  for (EventInfo* sub_event : sub_event_info_) {
+    sub_event->Clear();
   }
 }
 
-bool DiagramEventInfo::has_event(EventType event) const {
-  for (int i = 0; i < size(); i++) {
-    if (sub_event_info_[i]->has_event(event)) return true;
+bool DiagramEventInfo::DoHasEvent(EventType event_type) const {
+  for (const EventInfo* sub_event : sub_event_info_) {
+    if (sub_event->HasEvent(event_type)) return true;
   }
   return false;
 }
 
-bool DiagramEventInfo::empty() const {
-  for (int i = 0; i < size(); i++) {
-    if (!sub_event_info_[i]->empty()) return false;
+bool DiagramEventInfo::DoIsEmpty() const {
+  for (const EventInfo* sub_event : sub_event_info_) {
+    if (!sub_event->IsEmpty()) return false;
   }
   return true;
 }
 
-void DiagramEventInfo::print() const {
-  for (int i = 0; i < size(); i++) {
-    std::cout << "subsys: " << std::to_string(i) << std::endl;
-    sub_event_info_[i]->print();
-  }
-}
-
-
-void LeafEventInfo::merge(const EventInfo* other_info) {
-  if (other_info == this) return;
-
+void LeafEventInfo::DoMerge(const EventInfo* other_info) {
   const LeafEventInfo* other = dynamic_cast<const LeafEventInfo*>(other_info);
-  if (other == nullptr)
-    DRAKE_ABORT_MSG("cannot merger LeafEventInfo with non LeafEventInfo.");
+  DRAKE_DEMAND(other != nullptr);
 
   for (const auto& other_pair : other->events_) {
     for (const auto& trigger : other_pair.second) {
@@ -83,15 +66,8 @@ void LeafEventInfo::merge(const EventInfo* other_info) {
   }
 }
 
-bool LeafEventInfo::has_event(EventType event) const {
-  return events_.find(event) != events_.end();
-}
-
-bool LeafEventInfo::empty() const {
-  return events_.empty();
-}
-
-const std::vector<const Trigger*>& LeafEventInfo::get_triggers(EventType event) const {
+const std::vector<const Trigger*>& LeafEventInfo::get_triggers(
+    EventType event) const {
   auto it = events_.find(event);
   if (it == events_.end()) {
     DRAKE_ABORT_MSG("no such event");
@@ -99,31 +75,17 @@ const std::vector<const Trigger*>& LeafEventInfo::get_triggers(EventType event) 
   return it->second;
 }
 
-void LeafEventInfo::add_trigger(EventType event, std::unique_ptr<Trigger> trigger) {
+void LeafEventInfo::add_trigger(EventType event_type,
+                                std::unique_ptr<Trigger> trigger) {
   owned_triggers_.push_back(std::move(trigger));
-  auto it = events_.find(event);
+  auto it = events_.find(event_type);
   if (it == events_.end()) {
     std::vector<const Trigger*> triggers(1, owned_triggers_.back().get());
-    events_.emplace(event, triggers);
+    events_.emplace(event_type, triggers);
   } else {
     it->second.push_back(owned_triggers_.back().get());
   }
 }
-
-void LeafEventInfo::clear() {
-  events_.clear();
-}
-
-void LeafEventInfo::print() const {
-  /*
-  for (const auto& pair : events_) {
-    std::cout << "\t"
-      << "event: " << pair.first << ", trigger: " << pair.second
-      << std::endl;
-  }
-  */
-}
-
 
 }  // namespace systems
 }  // namespace drake

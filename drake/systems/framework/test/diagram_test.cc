@@ -893,10 +893,10 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   EXPECT_EQ(2.0, time);
   auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
   // TODO(siyuan): don't have hard code event index, need to implement
-  // get_sub_event.
-  auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event(2));
+  // get_sub_event_info.
+  auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
 
-  EXPECT_TRUE(sub_info->has_event(EventInfo::EventType::kDiscreteUpdate));
+  EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
 }
 
 // Tests that the next update time after 5.1 is 6.0.
@@ -908,16 +908,16 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   EXPECT_EQ(6.0, time);
   // Both zoh should have an update event.
   // TODO(siyuan): don't have hard code event index, need to implement
-  // get_sub_event.
+  // get_sub_event_info.
   auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
   {
-    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event(1));
-    EXPECT_TRUE(sub_info->has_event(EventInfo::EventType::kDiscreteUpdate));
+    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
+    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
   }
 
   {
-    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event(2));
-    EXPECT_TRUE(sub_info->has_event(EventInfo::EventType::kDiscreteUpdate));
+    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
+    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
   }
 }
 
@@ -1073,9 +1073,9 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 2);
   // TODO(siyuan): don't have hard code event index, need to implement
-  // get_sub_event.
-  auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event(1));
-  EXPECT_TRUE(sub_info->has_event(EventInfo::EventType::kUnrestrictedUpdate));
+  // get_sub_event_info.
+  auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
+  EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
 
   // Creates a temp state and does unrestricted updates.
   std::unique_ptr<State<double>> x_buf = context_->CloneState();
@@ -1095,8 +1095,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->set_time(time);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 6);
   for (int i = 0; i < 2; i++) {
-    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event(i));
-    EXPECT_TRUE(sub_info->has_event(EventInfo::EventType::kUnrestrictedUpdate));
+    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(i));
+    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
   }
 
   diagram_.CalcUnrestrictedUpdate(*context_, event_info.get(), x_buf.get());
@@ -1512,8 +1512,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   double time = dut->CalcNextUpdateTime(*context, periodic_event_info.get());
   dut->GetPerStepEvents(*context, perstep_event_info.get());
 
-  event_info->merge(periodic_event_info.get());
-  event_info->merge(perstep_event_info.get());
+  event_info->Merge(periodic_event_info.get());
+  event_info->Merge(perstep_event_info.get());
 
   context->set_time(time);
   dut->Publish(*context, event_info.get());

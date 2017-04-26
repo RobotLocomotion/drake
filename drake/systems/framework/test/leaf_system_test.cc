@@ -116,7 +116,7 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
   context_.set_time(25.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(std::numeric_limits<double>::infinity(), time);
-  EXPECT_TRUE(leaf_info_->empty());
+  EXPECT_TRUE(leaf_info_->IsEmpty());
 }
 
 // Tests that if the current time is smaller than the offset, the next
@@ -841,7 +841,7 @@ class TriggerTest : public ::testing::Test {
 TEST_F(TriggerTest, AbstractTrigger) {
   // schedule a publish event with multiple abstract triggers.
   dut_.MakeupAnAbstractTriggeredPublishEvent(*context_, info_.get());
-  EXPECT_TRUE(leaf_info_->has_event(EventInfo::EventType::kPublish));
+  EXPECT_TRUE(leaf_info_->HasEvent(EventInfo::EventType::kPublish));
 
   const auto& triggers = leaf_info_->get_triggers(EventInfo::EventType::kPublish);
   EXPECT_EQ(triggers.size(), 2);
