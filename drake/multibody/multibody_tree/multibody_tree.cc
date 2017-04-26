@@ -75,7 +75,7 @@ MultibodyTree<T>::CreateDefaultContext() const {
   }
   auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
   SetDefaults(context.get());
-  return context;
+  return std::move(context);
 }
 
 // Explicitly instantiates on the most common scalar types.
