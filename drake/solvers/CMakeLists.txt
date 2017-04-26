@@ -29,6 +29,7 @@ set(optimization_requires)
 list(APPEND optimization_files
   ${solver_headers}
   constraint.cc
+  cost.cc
   decision_variable.cc
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
@@ -77,6 +78,8 @@ drake_install_headers(
   ${solver_headers}
   binding.h
   constraint.h
+  cost.h
+  create_cost.h
   function.h
   mathematical_program.h
   mathematical_program_solver_interface.h

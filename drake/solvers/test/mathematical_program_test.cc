@@ -27,6 +27,7 @@
 #include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Dynamic;
@@ -390,57 +391,6 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   EXPECT_TRUE(
       CompareMatrices(constraint5->upper_bound(), constraint6->upper_bound()));
 }
-
-// A generic cost derived from Constraint class. This is meant for testing
-// adding a cost to optimization program, and the cost is in the form of a
-// derived class of Constraint.
-class GenericTrivialCost1 : public Constraint {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1)
-
-  GenericTrivialCost1()
-      : Constraint(1, 3, Vector1d(numeric_limits<double>::infinity()),
-                   Vector1d(numeric_limits<double>::infinity())),
-        private_val_(2) {}
-
- protected:
-  void DoEval(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-  }
-
-  void DoEval(const Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-  }
-
- private:
-  // Add a private data member to make sure no slicing on this class, derived
-  // from Constraint.
-  double private_val_{0};
-};
-
-// A generic cost. This class is meant for testing adding a cost to the
-// optimization program, by calling `MathematicalProgram::MakeCost` to
-// convert this class to a ConstraintImpl object.
-class GenericTrivialCost2 {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialCost2)
-
-  GenericTrivialCost2() = default;
-
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = x(0) * x(0) - x(1) * x(1) + 2;
-  }
-};
 
 // Verifies if the added cost evaluates the same as the original cost.
 // This function is supposed to test these costs added as a derived class

@@ -26,6 +26,8 @@
 #include "drake/common/symbolic_variable.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/cost.h"
+#include "drake/solvers/create_cost.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
@@ -186,48 +188,7 @@ typedef uint32_t AttributesSet;
 
 class MathematicalProgram {
   template <typename F>
-  class ConstraintImpl : public Constraint {
-    F const f_;
-
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintImpl)
-
-    // Construct by copying from an lvalue.
-    template <typename... Args>
-    ConstraintImpl(const F& f, Args&&... args)
-        : Constraint(detail::FunctionTraits<F>::numOutputs(f),
-                     detail::FunctionTraits<F>::numInputs(f),
-                     std::forward<Args>(args)...),
-          f_(f) {}
-
-    // Construct by moving from an rvalue.
-    template <typename... Args>
-    ConstraintImpl(F&& f, Args&&... args)
-        : Constraint(detail::FunctionTraits<F>::numOutputs(f),
-                     detail::FunctionTraits<F>::numInputs(f),
-                     std::forward<Args>(args)...),
-          f_(std::forward<F>(f)) {}
-
-   protected:
-    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                Eigen::VectorXd& y) const override {
-      y.resize(detail::FunctionTraits<F>::numOutputs(f_));
-      DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   detail::FunctionTraits<F>::numInputs(f_));
-      DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   detail::FunctionTraits<F>::numOutputs(f_));
-      detail::FunctionTraits<F>::eval(f_, x, y);
-    }
-    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                AutoDiffVecXd& y) const override {
-      y.resize(detail::FunctionTraits<F>::numOutputs(f_));
-      DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                   detail::FunctionTraits<F>::numInputs(f_));
-      DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
-                   detail::FunctionTraits<F>::numOutputs(f_));
-      detail::FunctionTraits<F>::eval(f_, x, y);
-    }
-  };
+  using ConstraintImpl = FunctionCost<F>;
 
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
