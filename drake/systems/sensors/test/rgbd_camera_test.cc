@@ -99,6 +99,7 @@ class RenderingSim : public systems::Diagram<double> {
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     plant_ = builder_.AddSystem<RigidBodyPlant<double>>(std::move(tree));
+    plant_->set_name("rigid_body_plant");
     const double kPenetrationStiffness = 3000.;
     const double kPenetrationDamping = 10.;
     const double kStaticFriction = 0.9;
@@ -116,6 +117,7 @@ class RenderingSim : public systems::Diagram<double> {
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(),
         position, orientation, kFovY, kShowWindow);
+    rgbd_camera_->set_name("rgbd_camera");
     Connect();
   }
 
@@ -129,6 +131,7 @@ class RenderingSim : public systems::Diagram<double> {
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(), *rgbd_camera_frame_.get(),
         kFovY, kShowWindow);
+    rgbd_camera_->set_name("rgbd_camera");
     Connect();
   }
 
