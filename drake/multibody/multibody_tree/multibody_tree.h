@@ -299,7 +299,10 @@ class MultibodyTree {
   // automatically when CreateDefaultContext() is called.
   void Finalize();
 
-  /// @pre The method Compile() must be called before attempting to create a
+  /// Allocates a new context for this %MultibodyTree uniquely identifying the
+  /// state of the multibody system.
+  ///
+  /// @pre The method Finalize() must be called before attempting to create a
   /// context in order for the %MulitbodyTree topology to be valid at the moment
   /// of allocating resources.
   ///
@@ -326,10 +329,6 @@ class MultibodyTree {
   std::vector<const Frame<T>*> frames_;
 
   MultibodyTreeTopology topology_;
-
-  // Cache tickets.
-  // These cache tickets should be set just once in CreateDefaultContext().
-  mutable systems::CacheTicket position_kinematics_ticket_;
 
   // This method gets called from within Finalize() to setup the topological
   // information of this MultibodyTree.

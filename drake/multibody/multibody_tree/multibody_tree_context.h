@@ -106,7 +106,6 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
                                               get_num_velocities());
   }
 
-
   bool is_position_kinematics_valid() const {
     return this->is_cache_entry_valid(position_kinematics_ticket_);
   }
