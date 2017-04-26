@@ -1,6 +1,7 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <ostream>
 #include <set>

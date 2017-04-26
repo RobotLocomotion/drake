@@ -1,5 +1,6 @@
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
+#include <cstddef>
 #include <stdexcept>
 #include <utility>
 #include <vector>
