@@ -1,5 +1,6 @@
 #include "drake/solvers/cost.h"
 
+#include <iostream>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -12,6 +13,8 @@
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 
+using std::cout;
+using std::endl;
 using std::make_shared;
 using std::make_unique;
 using std::vector;
@@ -25,6 +28,33 @@ using drake::solvers::test::GenericTrivialCost2;
 namespace drake {
 namespace solvers {
 namespace {
+
+// Check for the failure of libstdc++ 4.9's std::is_convertible if used to
+// check From = std::unique_ptr<T>, To = std::shared_ptr<U>
+template <typename From, typename To>
+struct check_ptr_convertible {
+  typedef std::unique_ptr<From> FromPtr;
+  typedef std::shared_ptr<To> ToPtr;
+  static constexpr bool std_value = std::is_convertible<FromPtr, ToPtr>::value;
+  static constexpr bool workaround_value =
+      detail::is_convertible_workaround<FromPtr, ToPtr>::value;
+};
+
+GTEST_TEST(testCost, testIsConvertibleWorkaround) {
+  struct A {};
+  struct B {};
+#if !defined(__clang__) && __GNUC__ == 4 && __GNUC_MINOR__ == 9
+  // Bug in libstdc++ 4.9.x
+  // Unable to easily determine libstdc++ version from macros at present:
+  // https://patchwork.ozlabs.org/patch/716321/
+  cout << "Checking for libstdc++-4.9 bug since GCC 4.9.x was detected."
+       << endl;
+  EXPECT_TRUE((check_ptr_convertible<A, B>::std_value));
+#else
+  EXPECT_FALSE((check_ptr_convertible<A, B>::std_value));
+#endif
+  EXPECT_FALSE((check_ptr_convertible<A, B>::workaround_value));
+}
 
 // For a given Constraint, return the equivalent Cost type
 template <typename C>
