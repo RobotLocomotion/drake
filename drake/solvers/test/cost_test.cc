@@ -114,7 +114,7 @@ GTEST_TEST(testCost, testCostShim) {
 
   const Polynomiald x("x");
   const auto poly = (x - 1) * (x - 1);
-  const auto var_mapping = {x.GetSimpleVariable()};
+  const auto var_mapping = make_vector({x.GetSimpleVariable()});
   VerifyRelatedCost<PolynomialConstraint, Vector1d>(
       Vector1d(2), VectorXPoly::Constant(1, poly), var_mapping);
 }
