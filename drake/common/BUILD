@@ -72,7 +72,13 @@ drake_cc_library(
         ":common",
         ":cond",
         ":dummy_value",
+        ":eigen_autodiff_limits",
     ],
+)
+
+drake_cc_library(
+    name = "eigen_autodiff_limits",
+    hdrs = ["eigen_autodiff_limits.h"],
 )
 
 drake_cc_library(

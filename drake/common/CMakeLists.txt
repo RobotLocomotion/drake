@@ -52,6 +52,7 @@ set(installed_headers
   drake_throw.h
   dummy_value.h
   eigen_autodiff_types.h
+  eigen_autodiff_limits.h
   eigen_matrix_compare.h
   eigen_stl_types.h
   eigen_types.h
