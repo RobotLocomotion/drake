@@ -27,7 +27,7 @@ bool operator<(FormulaKind k1, FormulaKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
 }
 
-Formula::Formula(const shared_ptr<FormulaCell> ptr) : ptr_{ptr} {}
+Formula::Formula(shared_ptr<FormulaCell> ptr) : ptr_{std::move(ptr)} {}
 
 FormulaKind Formula::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -86,11 +86,10 @@ Formula Formula::Substitute(const Variable& var, const Expression& e) const {
 
 Formula Formula::Substitute(const Substitution& s) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  if (s.size() > 0) {
+  if (!s.empty()) {
     return Formula{ptr_->Substitute(s)};
-  } else {
-    return *this;
   }
+  return *this;
 }
 
 string Formula::to_string() const {
@@ -139,18 +138,16 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
       formulas.insert(f2);
     }
     return Formula{make_shared<FormulaAnd>(formulas)};
-  } else {
-    if (is_conjunction(f2)) {
-      // f1 ∧ (f2,1 ∧ ... f2,m)
-      // => (f1 ∧ f2,1 ∧ ... f2,m)
-      set<Formula> formulas{get_operands(f2)};
-      formulas.insert(f1);
-      return Formula{make_shared<FormulaAnd>(formulas)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaAnd>(f1, f2)};
-    }
   }
+  if (is_conjunction(f2)) {
+    // f1 ∧ (f2,1 ∧ ... f2,m)
+    // => (f1 ∧ f2,1 ∧ ... f2,m)
+    set<Formula> formulas{get_operands(f2)};
+    formulas.insert(f1);
+    return Formula{make_shared<FormulaAnd>(formulas)};
+  }
+  // Nothing to flatten.
+  return Formula{make_shared<FormulaAnd>(f1, f2)};
 }
 
 Formula operator||(const Formula& f1, const Formula& f2) {
@@ -180,18 +177,16 @@ Formula operator||(const Formula& f1, const Formula& f2) {
       formulas.insert(f2);
     }
     return Formula{make_shared<FormulaOr>(formulas)};
-  } else {
-    if (is_disjunction(f2)) {
-      // f1 ∨ (f2,1 ∨ ... f2,m)
-      // => (f1 ∨ f2,1 ∨ ... f2,m)
-      set<Formula> formulas{get_operands(f2)};
-      formulas.insert(f1);
-      return Formula{make_shared<FormulaOr>(formulas)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaOr>(f1, f2)};
-    }
   }
+  if (is_disjunction(f2)) {
+    // f1 ∨ (f2,1 ∨ ... f2,m)
+    // => (f1 ∨ f2,1 ∨ ... f2,m)
+    set<Formula> formulas{get_operands(f2)};
+    formulas.insert(f1);
+    return Formula{make_shared<FormulaOr>(formulas)};
+  }
+  // Nothing to flatten.
+  return Formula{make_shared<FormulaOr>(f1, f2)};
 }
 
 Formula operator!(const Formula& f) {
