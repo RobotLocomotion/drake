@@ -52,7 +52,8 @@ class RgbdCameraTest : public ::testing::Test {
     EXPECT_NEAR(kExpectedWidth * 0.5, dut.center_x(), kTolerance);
     EXPECT_NEAR(kExpectedHeight * 0.5, dut.center_y(), kTolerance);
 
-    // The expected focal value is calculated by hand.
+    // The expected focal value is calculated by the equation here:
+    // https://github.com/RobotLocomotion/drake/blob/master/drake/systems/sensors/camera_info.h#L87
     const double kExpectedFocal = 579.41125496954282;
     EXPECT_NEAR(kExpectedFocal, dut.focal_x(), kTolerance);
     EXPECT_NEAR(kExpectedFocal, dut.focal_y(), kTolerance);
