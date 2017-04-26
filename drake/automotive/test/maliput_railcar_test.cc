@@ -48,10 +48,14 @@ class MaliputRailcarTest : public ::testing::Test {
     const double kDragwayLength{50};
     const double kDragwayLaneWidth{0.5};
     const double kDragwayShoulderWidth{0.25};
+    const double kMaximumHeight{5.};
+    const double kLinearTolerance{std::numeric_limits<double>::epsilon()};
+    const double kAngularTolerance{std::numeric_limits<double>::epsilon()};
     Initialize(
         std::make_unique<const maliput::dragway::RoadGeometry>(
             maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
-            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth), with_s);
+            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth,
+            kMaximumHeight, kLinearTolerance, kAngularTolerance), with_s);
   }
 
   void InitializeCurvedMonoLane(bool with_s = true) {

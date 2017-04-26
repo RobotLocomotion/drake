@@ -16,12 +16,14 @@ Segment::Segment(Junction* junction,
     int num_lanes,
     double length,
     double lane_width,
-    double shoulder_width)
+    double shoulder_width,
+    double maximum_height)
     : id_({"Dragway_Segment_ID"}),
       junction_(junction) {
   // To better understand the semantics of the variables defined in this method,
   // see the class description.
 
+  const api::HBounds elevation_bounds(0., maximum_height);
   const api::RBounds lane_bounds({-lane_width / 2, lane_width / 2});
   const double road_width = num_lanes * lane_width + 2 * shoulder_width;
   const double y_min = -road_width / 2;
@@ -39,7 +41,8 @@ Segment::Segment(Junction* junction,
         length,
         y_offset,
         lane_bounds,
-        driveable_bounds);
+        driveable_bounds,
+        elevation_bounds);
     lanes_.push_back(move(lane));
   }
 

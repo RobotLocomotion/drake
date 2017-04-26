@@ -313,13 +313,17 @@ void AddFlatTerrain(AutomotiveSimulator<double>*) {
 // flags.
 const maliput::api::RoadGeometry* AddDragway(
     AutomotiveSimulator<double>* simulator) {
+  const double kMaximumHeight = 5.;  // meters
+  const double kLinearTolerance = std::numeric_limits<double>::epsilon();
+  const double kAngularTolerance = std::numeric_limits<double>::epsilon();
   std::unique_ptr<const maliput::api::RoadGeometry> road_geometry
       = std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"Automotive Demo Dragway"}),
           FLAGS_num_dragway_lanes,
           FLAGS_dragway_length,
           FLAGS_dragway_lane_width,
-          FLAGS_dragway_shoulder_width);
+          FLAGS_dragway_shoulder_width,
+          kMaximumHeight, kLinearTolerance, kAngularTolerance);
   return simulator->SetRoadGeometry(std::move(road_geometry));
 }
 
