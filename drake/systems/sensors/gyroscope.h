@@ -78,7 +78,7 @@ class Gyroscope : public systems::LeafSystem<double> {
             const RigidBodyTree<double>& tree);
 
   /// Returns the name of this sensor. The name can be any user-specified value.
-  const std::string& get_name() const { return name_; }
+  const std::string& get_sensor_name() const { return name_; }
 
   /// Returns the RigidBodyTree that this sensor is sensing.
   const RigidBodyTree<double>& get_tree() const { return tree_; }

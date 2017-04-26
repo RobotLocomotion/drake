@@ -40,6 +40,7 @@ GTEST_TEST(TestDepthSensor, AccessorsAndToStringTest) {
   DepthSensorSpecification::set_octant_1_spec(&specification);
 
   DepthSensor dut(kSensorName, tree, frame, specification);
+  EXPECT_EQ(dut.get_sensor_name(), kSensorName);
   EXPECT_EQ(dut.get_specification(), specification);
   EXPECT_EQ(dut.get_num_input_ports(), 1);
   EXPECT_EQ(dut.get_num_output_ports(), 2);

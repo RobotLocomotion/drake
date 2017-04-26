@@ -49,6 +49,7 @@ class TestGyroscope : public ::testing::Test {
 
     // Defines the Device Under Test (DUT).
     dut_ = make_unique<Gyroscope>(kSensorName, *frame, *tree_);
+    EXPECT_EQ(dut_->get_sensor_name(), kSensorName);
 
     context_ = dut_->CreateDefaultContext();
     EXPECT_EQ(context_->get_num_input_ports(), 1);

@@ -62,6 +62,7 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
 
   // Defines the Device Under Test (DUT).
   Accelerometer dut(kSensorName, *sensor_frame, *tree);
+  EXPECT_EQ(dut.get_sensor_name(), kSensorName);
 
   unique_ptr<Context<double>> dut_context = dut.CreateDefaultContext();
   EXPECT_EQ(dut_context->get_num_input_ports(), 2);
