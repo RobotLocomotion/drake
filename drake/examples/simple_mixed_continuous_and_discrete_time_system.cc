@@ -27,6 +27,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
   // x[n+1] = x[n]^3
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
+      const std::vector<const drake::systems::Trigger*>& triggers,
       drake::systems::DiscreteValues<double>* updates) const override {
     const double x = context.get_discrete_state(0)->GetAtIndex(0);
     const double xn = std::pow(x, 3.0);

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
@@ -69,7 +70,8 @@ class IiwaPlanSource : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
+      const std::vector<const systems::Trigger*>& triggers,
+      systems::State<double>* state) const override;
 
  private:
   struct PlanData;

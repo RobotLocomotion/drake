@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "bot_core/robot_state_t.hpp"
 
@@ -60,7 +61,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
+      const std::vector<const systems::Trigger*>& triggers,
+      systems::State<double>* state) const override;
 
   /**
    * Getter for the input port corresponding to the abstract input with iiwa

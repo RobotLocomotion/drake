@@ -1,5 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 
+#include <vector>
+
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -40,6 +42,7 @@ void IiwaCommandReceiver::set_initial_position(
 
 void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
+    const std::vector<const systems::Trigger*>& triggers,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
@@ -134,6 +137,7 @@ IiwaStatusReceiver::IiwaStatusReceiver()
 
 void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
+    const std::vector<const systems::Trigger*>& triggers,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);

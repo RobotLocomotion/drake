@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -52,8 +54,7 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
 
 template <typename T>
 void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
-                                           systems::UpdateActions<T>* actions)
-                                             const {
+    systems::EventInfo* event_info, T* time) const {
   using std::sqrt;
 
   // Get the state of the guard function.
@@ -95,16 +96,18 @@ void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
   DRAKE_DEMAND(std::min(r1, r2) > 0.0);
 
   // Compute the impact time.
-  actions->time = context.get_time() + std::min(r1, r2);
-  actions->events.push_back(systems::DiscreteEvent<T>());
-  actions->events.back().action = systems::DiscreteEvent<T>::
-                                                  kUnrestrictedUpdateAction;
+  *time = context.get_time() + std::min(r1, r2);
+  auto info = dynamic_cast<systems::LeafEventInfo*>(event_info);
+  DRAKE_ASSERT(info != nullptr);
+  info->add_trigger(systems::EventInfo::EventType::kUnrestrictedUpdate,
+      std::make_unique<systems::PeriodicTrigger>());
 }
 
 template <typename T>
-void BouncingBall<T>::DoCalcUnrestrictedUpdate(const systems::Context<T>&
-                                               context, systems::State<T>*
-                                               next_state) const {
+void BouncingBall<T>::DoCalcUnrestrictedUpdate(
+    const systems::Context<T>& context,
+    const std::vector<const systems::Trigger*>& triggers,
+    systems::State<T>* next_state) const {
   systems::VectorBase<T>* next_cstate = next_state->
                            get_mutable_continuous_state()->get_mutable_vector();
 
