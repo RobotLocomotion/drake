@@ -108,6 +108,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "evenly_distributed_pts_on_sphere",
+    srcs = ["evenly_distributed_pts_on_sphere.cc"],
+    hdrs = ["evenly_distributed_pts_on_sphere.h"],
+    deps = ["@eigen//:eigen"],
+)
+
+drake_cc_library(
     name = "expmap",
     srcs = ["expmap.cc"],
     hdrs = ["expmap.h"],
@@ -161,6 +168,14 @@ drake_cc_googletest(
     name = "discrete_algebraic_riccati_equation_test",
     deps = [
         ":discrete_algebraic_riccati_equation",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "evenly_distributed_pts_on_sphere_test",
+    deps = [
+        ":evenly_distributed_pts_on_sphere",
         "//drake/common:eigen_matrix_compare",
     ],
 )

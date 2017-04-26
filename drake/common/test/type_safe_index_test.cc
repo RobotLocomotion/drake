@@ -148,10 +148,17 @@ GTEST_TEST(TypeSafeIndex, InPlaceSubtract) {
 
 // Tests stream insertion.
 GTEST_TEST(TypeSafeIndex, StreamInsertion) {
-    AIndex index(8);
-    std::stringstream stream;
-    stream << index;
-    EXPECT_EQ(stream.str(), "8");
+  AIndex index(8);
+  std::stringstream stream;
+  stream << index;
+  EXPECT_EQ(stream.str(), "8");
+}
+
+// Tests conversion to string via std::to_string function.
+GTEST_TEST(TypeSafeIndex, ToString) {
+  const int value = 17;
+  AIndex index(value);
+  EXPECT_EQ(std::to_string(index), std::to_string(value));
 }
 
 // Verifies that it is not possible to convert between two different

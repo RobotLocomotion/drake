@@ -3,12 +3,19 @@
 cc_library(
     name = "main",
     srcs = glob(
-        ["googletest/src/*.cc"],
-        exclude = ["googletest/src/gtest-all.cc"],
+        [
+            "googlemock/src/*.cc",
+            "googletest/src/*.cc",
+            "googletest/src/*.h",
+        ],
+        exclude = [
+            "googlemock/src/gmock-all.cc",
+            "googletest/src/gtest-all.cc",
+        ],
     ),
     hdrs = glob([
+        "googlemock/include/**/*.h",
         "googletest/include/**/*.h",
-        "googletest/src/*.h",
     ]),
     copts = ["-Wno-unused-const-variable"],
     defines = [
@@ -17,6 +24,8 @@ cc_library(
         "GTEST_DONT_DEFINE_TEST=1",
     ],
     includes = [
+        "googlemock",
+        "googlemock/include",
         "googletest",
         "googletest/include",
     ],

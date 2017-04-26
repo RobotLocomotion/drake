@@ -31,6 +31,8 @@ std::unique_ptr<RigidBodyTree<double>> ConstructKuka() {
       rigid_body_tree.get());
 
   AddFlatTerrainToWorld(rigid_body_tree.get());
+  // Manually change the joint limits.
+  rigid_body_tree->joint_limit_min(6) = -2.1 * M_PI;
   return rigid_body_tree;
 }
 

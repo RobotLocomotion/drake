@@ -257,6 +257,8 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
               math::rotmat2quat(normalized_rotmat);
         }
       } else if (num_positions == 1) {
+        const double joint_lb = joint->getJointLimitMin()(0);
+        const double joint_ub = joint->getJointLimitMax()(0);
         // Should NOT do this evil dynamic cast here, but currently we do
         // not have a method to tell if a joint is revolute or not.
         if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
@@ -265,21 +267,14 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
           Matrix3d joint_rotmat =
               X_PF.linear().transpose() *
               R_WP.transpose() * R_WC;
-          // The joint_angle_axis computed from the body orientation is very
-          // likely not being aligned with the real joint axis. The reason is
+          // The joint_rotmat is very likely not on SO(3). The reason is
           // that we use a relaxation of the rotation matrix, and thus
-          // R_WC might not lie on SO(3) exactly.
-          Matrix3d normalized_rotmat = math::ProjectMatToRotMat(joint_rotmat);
-          Eigen::AngleAxisd joint_angle_axis(normalized_rotmat);
-
+          // R_WC might not lie on SO(3) exactly. Here we need to project
+          // joint_rotmat to SO(3), with joint axis as the rotation axis, and
+          // joint limits as the lower and upper bound on the rotation angle.
           const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
-          // There can be two possible angle-axis combination, negating the
-          // both angle and axis will result in the same rotation.
-          q(body.get_position_start_index()) =
-              joint_angle_axis.axis().dot(rotate_axis) > 0
-              ? joint_angle_axis.angle() : -joint_angle_axis.angle();
-          // TODO(hongkai.dai): check if the joint is within the limit, shift
-          // it by 2 * PI if it is out of range.
+          q(body.get_position_start_index()) = math::ProjectMatToRotMatWithAxis(
+              joint_rotmat, rotate_axis, joint_lb, joint_ub);
         } else {
           // TODO(hongkai.dai): add prismatic and helical joints.
           throw std::runtime_error("Unsupported joint type.");
@@ -383,6 +378,45 @@ void GlobalInverseKinematics::AddPostureCost(
   // The total cost is the summation of the position error and the orientation
   // error.
   AddCost(p_WBo_err.cast<Expression>().sum() + orient_err_sum);
+}
+
+solvers::VectorXDecisionVariable
+GlobalInverseKinematics::BodyPointInOneOfRegions(
+    int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const std::vector<Eigen::Matrix3Xd>& region_vertices) {
+  const auto& R_WB = body_rotation_matrix(body_index);
+  const auto& p_WBo = body_position(body_index);
+  const int num_regions = region_vertices.size();
+  const string& body_name = robot_->get_body(body_index).get_name();
+  solvers::VectorXDecisionVariable z =
+      NewBinaryVariables(num_regions, "z_" + body_name);
+  std::vector<solvers::VectorXDecisionVariable> w(num_regions);
+
+  // We will write p_WQ in two ways, we first write p_WQ as
+  // sum_i (w_i1 * v_i1 + w_i2 * v_i2 + ... + w_in * v_in). As the convex
+  // combination of vertices in one of the regions.
+  Vector3<symbolic::Expression> p_WQ;
+  p_WQ << 0, 0, 0;
+  for (int i = 0; i < num_regions; ++i) {
+    const int num_vertices_i = region_vertices[i].cols();
+    if (num_vertices_i < 3) {
+      throw std::runtime_error("Each region should have at least 3 vertices.");
+    }
+    w[i] = NewContinuousVariables(
+        num_vertices_i, "w_" + body_name + "_region_" + std::to_string(i));
+    AddLinearConstraint(w[i].cast<symbolic::Expression>().sum() - z(i) == 0);
+    AddBoundingBoxConstraint(Eigen::VectorXd::Zero(num_vertices_i),
+                             Eigen::VectorXd::Ones(num_vertices_i), w[i]);
+    p_WQ += region_vertices[i] * w[i];
+  }
+
+  AddLinearConstraint(z.cast<symbolic::Expression>().sum() == 1);
+
+  // p_WQ must match the body pose, as p_WQ = p_WBo + R_WB * p_BQ
+  AddLinearEqualityConstraint(p_WBo + R_WB * p_BQ - p_WQ,
+                              Eigen::Vector3d::Zero());
+
+  return z;
 }
 }  // namespace multibody
 }  // namespace drake

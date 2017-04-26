@@ -80,6 +80,7 @@ drake_cc_googletest(
     deps = [
         ":pose_aggregator",
         "//drake/common:eigen_matrix_compare",
+        "//drake/math:autodiff",
     ],
 )
 

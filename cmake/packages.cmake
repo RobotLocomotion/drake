@@ -145,6 +145,10 @@ macro(drake_find_packages)
   drake_find_package(GTest MODULE REQUIRED)
   set_property(TARGET GTest::GTest APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
+  drake_find_package(GMock MODULE REQUIRED)
+  set_property(TARGET GMock::GMock APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
+
   drake_find_package(tinyobjloader CONFIG REQUIRED)
 
   # END required packages

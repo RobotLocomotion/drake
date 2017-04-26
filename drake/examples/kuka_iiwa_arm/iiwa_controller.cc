@@ -47,25 +47,38 @@ int DoMain() {
   auto status_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_status>(
           kLcmStatusChannel, &lcm));
+  status_sub->set_name("status_sub");
+
   auto status_receiver = builder.AddSystem<IiwaStatusReceiver>();
+  status_receiver->set_name("status_receiver");
+
   auto plan_sub =
       builder.AddSystem(systems::lcm::LcmSubscriberSystem::Make<robot_plan_t>(
           kLcmPlanChannel, &lcm));
+  plan_sub->set_name("plan_sub");
+
   auto plan_source =
       builder.AddSystem<IiwaPlanSource>(GetDrakePath() + kIiwaUrdf);
+  plan_source->set_name("plan_source");
+
   auto target_demux =
       builder.AddSystem<systems::Demultiplexer>(kNumJoints * 2, kNumJoints);
+  target_demux->set_name("target_demux");
+
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>(
           kLcmCommandChannel, &lcm));
+  command_pub->set_name("command_pub");
+
   auto command_sender = builder.AddSystem<IiwaCommandSender>();
+  command_sender->set_name("command_sender");
 
   builder.Connect(plan_sub->get_output_port(0),
                   plan_source->get_plan_input_port());
   builder.Connect(status_sub->get_output_port(0),
-                  plan_source->get_status_input_port());
-  builder.Connect(status_sub->get_output_port(0),
                   status_receiver->get_input_port(0));
+  builder.Connect(status_receiver->get_measured_position_output_port(),
+                  plan_source->get_state_input_port());
   builder.Connect(plan_source->get_output_port(0),
                   target_demux->get_input_port(0));
   builder.Connect(target_demux->get_output_port(0),

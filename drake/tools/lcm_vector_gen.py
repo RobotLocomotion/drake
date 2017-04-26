@@ -24,16 +24,11 @@ struct %(indices)s {
 """
 INDICES_FIELD = """static const int %(kname)s = %(kvalue)d;"""
 INDICES_FIELD_STORAGE = """const int %(indices)s::%(kname)s;"""
-INDICES_END = """
-};
-"""
-
 
 def to_kname(field):
     return 'k' + ''.join([
         word.capitalize()
         for word in field.split('_')])
-
 
 def generate_indices(hh, caller_context, fields):
     """
@@ -53,8 +48,6 @@ def generate_indices(hh, caller_context, fields):
         context.update(kname=to_kname(field['name']))
         context.update(kvalue=kvalue)
         put(hh, INDICES_FIELD % context, 1)
-    put(hh, INDICES_END % context, 2)
-
 
 def generate_indices_storage(cc, caller_context, fields):
     """
@@ -72,8 +65,44 @@ def generate_indices_storage(cc, caller_context, fields):
         context.update(kname=to_kname(field['name']))
         context.update(kvalue=kvalue)
         put(cc, INDICES_FIELD_STORAGE % context, 1)
-    put(cc, '', 1)
 
+INDICES_NAMES_ACCESSOR_DECL = """
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `%(indices)s::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
+"""
+INDICES_END = """
+};
+"""
+
+INDICIES_NAMES_ACCESSOR_IMPL_START = """
+const std::vector<std::string>& %(camel)sIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string> {
+"""
+INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\","""
+INDICES_NAMES_ACCESSOR_IMPL_END = """  });
+  return coordinates.access();
+}"""
+
+def generate_indices_names_accessor_decl(hh, caller_context):
+    context = dict(caller_context)
+    put(hh, INDICES_NAMES_ACCESSOR_DECL % context, 1)
+    put(hh, INDICES_END, 2)
+
+def generate_indices_names_accessor_impl(cc, caller_context, fields):
+    """
+    Args:
+        fields is the list of fieldnames in the LCM message.
+    """
+    context = dict(caller_context)
+    put(cc, INDICIES_NAMES_ACCESSOR_IMPL_START % context, 1)
+    for kvalue, field in enumerate(fields):
+        context.update(name=field['name'])
+        put(cc, INDICES_NAMES_ACCESSOR_IMPL_MID % context, 1)
+    put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
 
 # One variant of a default constructor (all zeros).  (Depending on the
 # named_vector details, we will either use this variant or the subsequent one.)
@@ -180,6 +209,12 @@ def generate_accessors(hh, caller_context, fields):
         put(hh, ACCESSOR_FIELD_METHODS  % context, 1)
     put(hh, ACCESSOR_END % caller_context, 2)
 
+GET_COORDINATE_NAMES = """
+    /// See %(camel)sIndices::GetCoordinateNames().
+    static const std::vector<std::string>& GetCoordinateNames() {
+      return %(camel)sIndices::GetCoordinateNames();
+   }
+"""
 
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
@@ -226,9 +261,11 @@ VECTOR_HH_PREAMBLE = """
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 %(opening_namespace)s
@@ -471,10 +508,13 @@ def generate_code(args):
         print "generating %s" % hh.name
         put(hh, VECTOR_HH_PREAMBLE % context, 2)
         generate_indices(hh, context, fields)
+        put(hh, '', 1)
+        generate_indices_names_accessor_decl(hh, context)
         put(hh, VECTOR_CLASS_BEGIN % context, 2)
         generate_default_ctor(hh, context, fields)
         generate_do_clone(hh, context, fields)
         generate_accessors(hh, context, fields)
+        put(hh, GET_COORDINATE_NAMES % context, 2)
         generate_is_valid(hh, context, fields)
         put(hh, VECTOR_CLASS_END % context, 2)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)
@@ -483,6 +523,8 @@ def generate_code(args):
         print "generating %s" % cc.name
         put(cc, VECTOR_CC_PREAMBLE % context, 2)
         generate_indices_storage(cc, context, fields)
+        put(cc, '', 1)
+        generate_indices_names_accessor_impl(cc, context, fields)
         put(cc, VECTOR_CC_POSTAMBLE % context, 1)
 
     if args.lcmtype_dir:

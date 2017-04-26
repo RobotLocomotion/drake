@@ -15,6 +15,8 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
+namespace pose_aggregator_detail { struct InputRecord; }
+
 // TODO(david-german-tri, SeanCurtis-TRI): Evolve PoseAggregator into
 // GeometrySystem after GeometryWorld becomes available.
 
@@ -105,21 +107,11 @@ class PoseAggregator : public LeafSystem<T> {
       const OutputPortDescriptor<T>& descriptor) const override;
 
  private:
-  enum PoseInputType {
-    kUnknown = 0,
-    kSinglePose = 1,
-    kSingleVelocity = 2,
-    kBundle = 3,
-  };
+  using InputRecord = pose_aggregator_detail::InputRecord;
 
-  struct InputRecord {
-    PoseInputType type{kUnknown};
-    int num_poses{0};
-    // name is only valid if type is kSingle{Pose, Velocity} or kBundle.
-    std::string name{};
-    // model_instance_id is only valid if type is kSingle{Pose, Velocity}.
-    int model_instance_id{-1};
-  };
+  // Allow different specializations to access each other's private data.
+  friend class PoseAggregator<double>;
+  friend class PoseAggregator<AutoDiffXd>;
 
   // Returns an InputRecord for a generic single pose input.
   static InputRecord MakeSinglePoseInputRecord(const std::string& name,
@@ -133,12 +125,43 @@ class PoseAggregator : public LeafSystem<T> {
   static InputRecord MakePoseBundleInputRecord(const std::string& bundle_name,
                                                int num_poses);
 
+  // Declares a System input port based on the given record.
+  const InputPortDescriptor<T>& DeclareInput(const InputRecord&);
+
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;
+
+  // System<T> override.
+  PoseAggregator<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   // The type, size, and source of each input port.
   std::vector<InputRecord> input_records_;
 };
+
+/** @cond */
+namespace pose_aggregator_detail {
+
+// A private data structure of PoseAggregator.  It is not nested within
+// PoseAggregator because it does not (and should not) depend on the type
+// parameter @p T.
+struct InputRecord {
+  enum PoseInputType {
+    kUnknown = 0,
+    kSinglePose = 1,
+    kSingleVelocity = 2,
+    kBundle = 3,
+  };
+
+  PoseInputType type{kUnknown};
+  int num_poses{0};
+  // name is only valid if type is kSingle{Pose, Velocity} or kBundle.
+  std::string name{};
+  // model_instance_id is only valid if type is kSingle{Pose, Velocity}.
+  int model_instance_id{-1};
+};
+
+}  // namespace pose_aggregator_detail
+/** @endcond */
 
 }  // namespace rendering
 }  // namespace systems

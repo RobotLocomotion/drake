@@ -10,10 +10,13 @@ namespace systems {
 namespace sensors {
 
 /// A DepthSensorToLcmPointCloudMessage takes as input a DepthSensorOutput and
-/// outputs an AbstractValue containing a `Value<bot_core::pointcloud_t>` LCM
-/// message. This message can then be sent to `drake-visualizer` using
-/// LcmPublisherSystem for visualizing the depth readings contained within the
-/// DepthSensorOutput.
+/// the pose of the depth sensor in the world (`X_WS`). If the input port
+/// containing `X_WS` is unconnected, a std::runtime_error will be thrown
+/// while evaluating the output of this system. This system outputs an
+/// AbstractValue containing a `Value<bot_core::pointcloud_t>` LCM message that
+/// defines a point cloud in the world frame. This message can then be sent to
+/// `drake-visualizer` using LcmPublisherSystem for visualizing the depth
+/// readings contained within the inputted DepthSensorOutput.
 class DepthSensorToLcmPointCloudMessage : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensorToLcmPointCloudMessage)
@@ -28,6 +31,9 @@ class DepthSensorToLcmPointCloudMessage : public systems::LeafSystem<double> {
   /// Returns a descriptor of the input port containing a DepthSensorOutput.
   const InputPortDescriptor<double>& depth_readings_input_port() const;
 
+  /// Returns a descriptor of the input port containing `X_WS`.
+  const InputPortDescriptor<double>& pose_input_port() const;
+
   /// Returns a descriptor of the abstract valued output port that contains a
   /// `Value<bot_core::pointcloud_t>`.
   const OutputPortDescriptor<double>& pointcloud_message_output_port() const;
@@ -40,7 +46,8 @@ class DepthSensorToLcmPointCloudMessage : public systems::LeafSystem<double> {
   const DepthSensorSpecification& spec_;
 
   // See class description for the semantics of the input and output ports.
-  int input_port_index_{};
+  int depth_readings_input_port_index_{};
+  int pose_input_port_index_{};
   int output_port_index_{};
 };
 

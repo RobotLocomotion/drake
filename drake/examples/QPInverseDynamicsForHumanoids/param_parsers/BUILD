@@ -21,6 +21,7 @@ drake_cc_library(
     deps = [
         ":id_controller_config",
         ":rigid_body_tree_alias_groups",
+        "//drake/common:protobuf",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
         "@yaml_cpp//:lib",
     ],
@@ -46,6 +47,7 @@ drake_cc_library(
     hdrs = ["rigid_body_tree_alias_groups.h"],
     deps = [
         ":alias_groups",
+        "//drake/common:protobuf",
         "//drake/multibody:rigid_body_tree",
     ],
 )

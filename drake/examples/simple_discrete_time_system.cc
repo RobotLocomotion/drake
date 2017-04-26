@@ -26,7 +26,7 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
       drake::systems::DiscreteValues<double>* updates) const override {
     double x = context.get_discrete_state(0)->GetAtIndex(0);
     double xn = std::pow(x, 3.0);
-    updates->get_mutable_discrete_state(0)->SetAtIndex(0, xn);
+    (*updates)[0] = xn;
   }
 
   // y = x
@@ -47,13 +47,13 @@ int main(int argc, char* argv[]) {
   // Set the initial conditions x(0).
   drake::systems::DiscreteValues<double>& xd =
       *simulator.get_mutable_context()->get_mutable_discrete_state();
-  xd.get_mutable_discrete_state(0)->SetAtIndex(0, 0.99);
+  xd[0] = 0.99;
 
   // Simulate for 10 seconds.
   simulator.StepTo(10);
 
   // Make sure the simulation converges to the stable fixed point at x=0.
-  DRAKE_DEMAND(xd.get_discrete_state(0)->GetAtIndex(0) < 1.0e-4);
+  DRAKE_DEMAND(xd[0] < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory.
 

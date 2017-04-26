@@ -138,7 +138,7 @@ T Rod2D<T>::CalcNormalAccelWithoutContactForces(const systems::Context<T>&
   const T& fY = fapplied(1);
   const T& tau = fapplied(2);
 
-  // Compute the normal acceleration at the point of contact (yc_ddot),
+  // Compute the normal acceleration at the point of contact (cyddot),
   // *assuming zero contact force*. This equation comes from the kinematics of
   // the rod:
   // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
@@ -340,9 +340,6 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   const int port_index = 0;
   const auto input = this->EvalEigenVectorInput(context, port_index);
 
-  // Compute the two rod vertical endpoint locations.
-  const T stheta = sin(theta), ctheta = cos(theta);
-
   // Three generalized coordinates / velocities.
   const int ngc = 3;
 
@@ -356,6 +353,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   const int nc = 2;
 
   // Find left and right end point locations.
+  const T stheta = sin(theta), ctheta = cos(theta);
   const Vector2<T> left =
       CalcRodEndpoint(x, y, -1, ctheta, stheta, half_length_);
   const Vector2<T> right =
@@ -373,18 +371,14 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
 
-  // Construct the inverse generalized inertia matrix computed about the
-  // center of mass of the rod and expressed in the world frame.
-  Matrix3<T> iM;
-  iM << 1.0/mass_, 0,         0,
-        0,         1.0/mass_, 0,
-        0,         0,         1.0/J_;
+  // Get the inverse of the generalized inertia matrix.
+  Matrix3<T> M_inv = get_inverse_inertia_matrix();
 
   // Update the generalized velocity vector with discretized external forces
   // (expressed in the world frame).
   const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
   const Vector3<T> fapplied = input.segment(0, 3);
-  v += dt_ * iM * (fgrav + fapplied);
+  v += dt_ * M_inv * (fgrav + fapplied);
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
@@ -412,15 +406,15 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
   Eigen::Matrix<T, 8, 8> MM;
-  MM.template block<2, 2>(0, 0) = N * iM * N.transpose();
-  MM.template block<2, 2>(0, 2) = N * iM * F.transpose();
+  MM.template block<2, 2>(0, 0) = N * M_inv * N.transpose();
+  MM.template block<2, 2>(0, 2) = N * M_inv * F.transpose();
   MM.template block<2, 2>(0, 4) = -MM.template block<2, 2>(0, 2);
   MM.template block<2, 2>(0, 6).setZero();
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
-  MM.template block<2, 2>(2, 0) = F * iM * N.transpose();
-  MM.template block<2, 2>(2, 2) = F * iM * F.transpose();
+  MM.template block<2, 2>(2, 0) = F * M_inv * N.transpose();
+  MM.template block<2, 2>(2, 2) = F * M_inv * F.transpose();
   MM.template block<2, 2>(2, 4) = -MM.template block<2, 2>(2, 2);
 
   // Now construct the negated tangent contact direction rows (everything but
@@ -465,15 +459,14 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Compute the new velocity. Note that external forces have already been
   // incorporated into v.
-  VectorX<T> vplus = v + iM * (N.transpose()*fN + F.transpose()*fF_pos -
+  VectorX<T> vplus = v + M_inv * (N.transpose()*fN + F.transpose()*fF_pos -
                                F.transpose()*fF_neg);
 
   // Compute the new position using explicit Euler integration.
   VectorX<T> qplus = q + vplus*dt_;
 
   // Set the new discrete state.
-  systems::BasicVector<T>* new_state = discrete_state->
-      get_mutable_discrete_state(0);
+  systems::BasicVector<T>* new_state = discrete_state->get_mutable_vector(0);
   new_state->get_mutable_value().segment(0, 3) = qplus;
   new_state->get_mutable_value().segment(3, 3) = vplus;
 }
@@ -747,13 +740,23 @@ Vector2<T> Rod2D<T>::CalcStickingImpactImpulse(
   return Vector2<T>(fN, fF);
 }
 
-// Sets the velocity derivatives for the rod, given contact forces.
+// Sets the velocity derivatives for the rod, given contact forces at a single
+// point of contact.
+// @param [out] f the meta vector object containing all derivatives; velocity
+//        derivatives *only* will be modified on return.
+// @param fN the magnitude of the force applied normal to a single contact.
+// @param fF the magnitude of the force applied tangent to a single contact.
+// @param c the location of the point of contact.
 template <class T>
 void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
-                                   systems::VectorBase<T>* const f,
-                                   const T& fN, const T& fF,
-                                   const T& cx, const T& cy) const {
+                                const T& fN, const T& fF,
+                                const Vector2<T>& c,
+                                systems::VectorBase<T>* const f) const {
   using std::abs;
+
+  // Get the point of contact.
+  const T& cx = c(0);
+  const T& cy = c(1);
 
   // Get the inputs.
   const int port_index = 0;
@@ -768,10 +771,11 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
   // Retrieve the external forces.
   const Vector3<T> fapplied = input.segment(0, 3);
 
-  // Compute the derivatives
+  // Compute the velocity derivatives.
   const T xddot = (fapplied(0) + fF) / mass_;
   const T yddot = (fapplied(1) + fN) / mass_ + get_gravitational_acceleration();
-  const T thetaddot = ((cx - x) * fN - (cy - y) * fF + fapplied(2)) / J_;
+  const T contact_moment = (cx - x) * fN - (cy - y) * fF;
+  const T thetaddot = (contact_moment + fapplied(2)) / J_;
 
   // Set the derivatives.
   f->SetAtIndex(3, xddot);
@@ -798,6 +802,75 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
         xddot + h * k * (-stheta * thetaddot - ctheta * thetadot * thetadot);
 
     DRAKE_DEMAND(abs(cxddot) < 10 * std::numeric_limits<double>::epsilon());
+  }
+}
+
+// Sets the velocity derivatives for the rod, given contact forces at the two
+// rod endpoints.
+// @param [out] f the meta vector object containing all derivatives; velocity
+//        derivatives *only* will be modified on return.
+// @param fN the magnitudes of the forces applied normal to the contacts.
+// @param fF the magnitudes of the forces applied tangent to the contacts.
+// @param ca the location of the point of the first point of contact.
+// @param cb the location of the point of the second point of contact.
+template <class T>
+void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
+                                const Vector2<T>& fN, const Vector2<T>& fF,
+                                const Vector2<T>& ca, const Vector2<T>& cb,
+                                systems::VectorBase<T>* const f) const {
+  using std::abs;
+
+  // Get the inputs.
+  const int port_index = 0;
+  const auto input = this->EvalEigenVectorInput(context, port_index);
+
+  // Get necessary state variables.
+  const T& x = context.get_continuous_state_vector().GetAtIndex(0);
+  const T& y = context.get_continuous_state_vector().GetAtIndex(1);
+  const T& theta = context.get_continuous_state_vector().GetAtIndex(2);
+  const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
+
+  // Retrieve the external forces.
+  const Vector3<T> fapplied = input.segment(0, 3);
+
+  // Compute the derivatives
+  const T xddot = (fapplied(0) + fF[0] + fF[1]) / mass_;
+  const T yddot = (fapplied(1) + fN[0] + fN[1]) / mass_ +
+      get_gravitational_acceleration();
+  const T moment_a = (ca[0] - x) * fN[0] - (ca[1] - y) * fF[0];
+  const T moment_b = (cb[0] - x) * fN[1] - (cb[1] - y) * fF[1];
+  const T thetaddot = (moment_a + moment_b + fapplied(2)) / J_;
+
+  // Set the derivatives.
+  f->SetAtIndex(3, xddot);
+  f->SetAtIndex(4, yddot);
+  f->SetAtIndex(5, thetaddot);
+
+  // Get constants for checking accelerations.
+  const double mu = mu_;
+  const T ctheta = cos(theta), stheta = sin(theta);
+  const double h = half_length_;
+
+  // Verify that the vertical acceleration at both points of contact are zero
+  // (i.e., cyddot = 0).
+  const T cyddot0 =
+      yddot + h * 1 * (ctheta * thetaddot - stheta * thetadot * thetadot);
+  const T cyddot1 =
+      yddot + h * -1 * (ctheta * thetaddot - stheta * thetadot * thetadot);
+
+  DRAKE_DEMAND(abs(cyddot0) < 10 * get_cfm());
+  DRAKE_DEMAND(abs(cyddot1) < 10 * get_cfm());
+
+  // If the force is within the friction cone, verify that the horizontal
+  // acceleration at the point of contact is zero (i.e., cxddot = 0).
+  if (fN[0] * mu > abs(fF[0]) && fN[1] * mu > abs(fF[1])) {
+    const T cxddot0 =
+        xddot + h * 1 * (-stheta * thetaddot - ctheta * thetadot * thetadot);
+    const T cxddot1 =
+        xddot + h * -1 * (-stheta * thetaddot - ctheta * thetadot * thetadot);
+
+    DRAKE_DEMAND(abs(cxddot0) < 10 * get_cfm());
+    DRAKE_DEMAND(abs(cxddot1) < 10 * get_cfm());
   }
 }
 
@@ -837,7 +910,6 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
 template <class T>
 Vector2<T> Rod2D<T>::CalcStickingContactForces(
     const systems::Context<T>& context) const {
-
   // Get necessary state variables.
   const T& theta = context.get_continuous_state_vector().GetAtIndex(2);
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
@@ -878,6 +950,344 @@ Vector2<T> Rod2D<T>::CalcStickingContactForces(
           ctheta * thetadot * thetadot));
 
   return Vector2<T>(fN, fF);
+}
+
+// Returns the inverse of the generalized inertia matrix computed about the
+// center of mass of the rod and expressed in the world frame.
+template <class T>
+Matrix3<T> Rod2D<T>::get_inverse_inertia_matrix() const {
+  Matrix3<T> M_inv;
+  M_inv << 1.0 / mass_, 0, 0,
+      0, 1.0 / mass_, 0,
+      0, 0, 1.0 / J_;
+  return M_inv;
+}
+
+// Computes the contact forces for the case of nonzero sliding velocity at
+// two points of contact. Equations governing the dynamics in this mode are:
+//
+// (1) 0 ≤ fN ⊥ N⋅dv/dt + dN/dt⋅v ≥ 0
+// (2) M⋅dv/dt = fext + NᵀfN - μFᵀfN
+// where M is the 3x3 generalized inertia matrix, v is the generalized velocity
+// vector, fext is the generalized external force vector, μ is the coefficient
+// of friction, N ∈ ℝⁿˣ³ is the Jacobian matrix transforming generalized
+// velocities to velocities along the normal component of the n contact frames,
+// and F ∈ ℝⁿˣ³ is the Jacobian matrix transforming generalized velocities to
+// velocities along the _directions of sliding_ of the n contact frames. As in
+// other functions, we assume that fN ∈ ℝⁿ are the magnitudes of forces applied
+// along the contact normals and fF ∈ ℝⁿ are the magnitude of forces applied
+// *against the directions of sliding*.
+//
+// ⊥ is the "complementarity operator" and 0 ≤ a ⊥ b ≥ 0 represents the
+// conjunction of three constraints:
+// (3) a ≥ 0
+// (4) b ≥ 0
+// (5) (a⋅b) = 0
+// where the last of these is known as the "complementarity constraint".
+//
+// From Equation 2:
+//   M⋅dv/dt = fext + NᵀfN - μFᵀfN
+//   dv/dt = M⁻¹(fext + NᵀfN - μFᵀfN)
+// Equation 1 then can be reformulated as:
+//   0 ≤ fN ⊥ N⋅M⁻¹(fext + NᵀfN - μFᵀfN) + dN/dt⋅v ≥ 0
+// Therefore, the LCP matrix is:
+//   N⋅M⁻¹⋅(Nᵀ - μFᵀ)
+// and the LCP vector is:
+//   N⋅M⁻¹⋅fext + dN/dt⋅v
+template <class T>
+void Rod2D<T>::CalcTwoContactSlidingForces(
+    const systems::Context<T>& context, Vector2<T>* fN, Vector2<T>* fF) const {
+  // Get the necessary state variables.
+  const VectorX<T> state = context.get_continuous_state_vector().
+      CopyToVector();
+  const auto& q = state.template segment<3>(0);
+  const auto& v = state.template segment<3>(3);
+  const T& x = q(0);
+  const T& y = q(1);
+  const T& theta = q(2);
+  const T& xdot = v(0);
+  const T& ydot = v(1);
+  const T& thetadot = v(2);
+
+  // Function name is predicated on two contact points.
+  const int nc = 2;
+
+  // Verify arguments.
+  DRAKE_DEMAND(fN && fN->size() == nc);
+  DRAKE_DEMAND(fF && fF->size() == nc);
+
+  // Get the coefficient of friction.
+  const double mu = get_mu_coulomb();
+
+  // Get the inputs.
+  const int port_index = 0;
+  const auto input = this->EvalEigenVectorInput(context, port_index);
+
+  // Three generalized coordinates / velocities.
+  const int ngc = 3;
+
+  // Find left and right end point locations.
+  const T stheta = sin(theta), ctheta = cos(theta);
+  const Vector2<T> left =
+      CalcRodEndpoint(x, y, -1, ctheta, stheta, half_length_);
+  const Vector2<T> right =
+      CalcRodEndpoint(x, y, 1, ctheta, stheta, half_length_);
+
+  // Compute the velocities at the rod end points.
+  const Vector2<T> v_WRo(xdot, ydot);
+  const T w_WR(thetadot);
+  const Vector2<T> p_WRo(x, y);
+  const Vector2<T> leftdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                            left);
+  const Vector2<T> rightdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                             right);
+
+  // Get the inverse of the generalized inertia matrix.
+  const Matrix3<T> M_inv = get_inverse_inertia_matrix();
+
+  // Compute the external forces (expressed in the world frame).
+  const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
+  const Vector3<T> fapplied = input.segment(0, 3);
+  const Vector3<T> fext = fgrav + fapplied;
+
+  // Verify that the two directions of sliding are identical.
+  double sliding_sign_left = (leftdot[0] > 0) ? 1 : -1;
+  double sliding_sign_right = (rightdot[0] > 0) ? 1 : -1;
+  DRAKE_DEMAND(sliding_sign_left * sliding_sign_right > 0);
+
+  // Set up the contact normal and tangent (friction) direction Jacobian
+  // matrices. These take the form:
+  //     | 0 1 n1 |        | 1 0 f1 |
+  // N = | 0 1 n2 |    F = | 1 0 f2 |
+  // where n1, n2/f1, f2 are the moment arm induced by applying the
+  // force at the given contact point along the normal/tangent direction.
+  Eigen::Matrix<T, nc, ngc> N, F;
+  N(0, 0) = N(1, 0) = 0;
+  N(0, 1) = N(1, 1) = 1;
+  N(0, 2) = (left[0] - x);
+  N(1, 2) = (right[0] - x);
+  F(0, 0) = sliding_sign_left;
+  F(1, 0) = sliding_sign_right;
+  F(0, 1) = F(1, 1) = 0;
+  F(0, 2) = -sliding_sign_left*(left[1] - y);
+  F(1, 2) = -sliding_sign_right*(right[1] - y);
+
+  // Compute dN/dt.
+  Eigen::Matrix<T, nc, ngc> Ndot;
+  Ndot(0, 0) = Ndot(1, 0) = 0;
+  Ndot(0, 1) = Ndot(1, 1) = 0;
+  Ndot(0, 2) = (leftdot[0] - xdot);
+  Ndot(1, 2) = (rightdot[0] - xdot);
+
+  // Form the vector in the 2-dimensional linear complementarity problem.
+  Vector2<T> qq;
+  qq = N * M_inv * fext + Ndot * v;
+
+  // Form the 2x2 linear complementarity problem matrix.
+  Matrix2<T> MM;
+  MM = N * M_inv * (N.transpose() - mu * F.transpose());
+
+  // Attempt to solve the LCP. For μ = 0, the LCP is guaranteed to have a
+  // solution, and several algorithms (e.g., Dantzig's Principle Pivoting
+  // Method) are capable of solving it in expected polynomial time. For μ > 0,
+  // the LCP might not possess a solution. We use Lemke's Algorithm, which is
+  // capable of solving "harder" LCPs (i.e., more classes of matrices) than
+  // Dantzig's Algorithm, and then we verify the solution if success is
+  // reported.
+
+  // Set a zero tolerance for solving the LCP.
+  const double eps = std::numeric_limits<double>::epsilon();
+  const double zero_tol = std::sqrt(eps);
+
+  // Solve the LCP.
+  VectorX<T> zz, ww;
+  bool success = lcp_.SolveLcpLemke(MM, qq, &zz, zero_tol);
+  ww = MM * zz + qq;
+
+  // If not successful, throw an exception. It is conceivable that Lemke's
+  // Algorithm will report success when it is applied to a "harder" than
+  // copositive problem without actually finding a solution. Thus, we also
+  // check that the LCP solution really is a solution.
+  if (!success || zz.minCoeff() < -zero_tol || ww.minCoeff() < -zero_tol ||
+      std::abs(zz.dot(ww)) > zero_tol)
+    throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
+
+  // Obtain the normal and frictional contact forces.
+  *fN = zz;
+  *fF = (*fN) * -mu;
+}
+
+// Computes the contact forces for the case of zero sliding velocity at two
+// points of contact. Equations governing the dynamics in this mode are:
+//
+// (1) 0 ≤ fN ⊥ N⋅dv/dt + dN/dt⋅v ≥ 0
+// (2) 0 ≤ Eλ + D⋅dv/dt + dD/dt v  ⊥  fD ≥ 0
+// (3) 0 ≤ (μ⋅fN - Eᵀ⋅fD)  ⊥  λ ≥ 0
+// (4) M⋅dv/dt = fext + NᵀfN + DᵀfD
+// where M is the 3x3 generalized inertia matrix, v is the generalized velocity
+// vector, fext is the generalized external force vector, μ is the coefficient
+// of friction, N ∈ ℝⁿˣ³ is the Jacobian matrix transforming generalized
+// velocities to velocities along the normal component of the n contact frames,
+// D ∈ ℝ²ⁿˣ³ is the Jacobian matrix transforming generalized velocities to
+// velocities along the positive and negative tangent directions at each point
+// of contact, E is a block matrix of ones, λ- which can be viewed as a slack
+// variable- is roughly interpretable as the magnitudes of remaining tangential
+// acceleration at each point of contact after contact forces are applied,
+// fN ∈ ℝⁿ are the magnitudes of forces applied along the contact normals, and
+// fD ∈ ℝ²ⁿ are the magnitude of frictional forces applied along the positive
+// and negative tangent directions at each point of contact.
+//
+// Equations (1) through (3) will be referred to as "Complementarity Conditions
+// (1)-(3)" in the remainder of this function documentation. They use the
+// operator ⊥, where 0 ≤ a ⊥ b ≥ 0 denotes the triple of constraints constraints
+// a ≥ 0, b ≥ 0, a⋅b = 0.
+//
+// Complementarity conditions (2) and (3) were inspired directly from
+// corresponding conditions in [Anitescu and Potra, 1997]. In the case that
+// the frictional force lies strictly within the friction cone, (μ⋅fN - fD) > 0
+// in Equation 3, implying both that λ = 0 and, since fD ≥ 0, μ⋅fN = fD and
+// D⋅dv/dt + dD/dt v = 0 (i.e., there can be no tangential acceleration). In the
+// case that the friction force is insufficient to prevent sliding,
+// D⋅dv/dt + dD/dt v ≠ 0, which implies that λ > 0. It
+// should also be evident that when the frictional force pushes along +x, any
+// remaining tangential acceleration must be pointed along -x (and vice versa).
+template <class T>
+void Rod2D<T>::CalcTwoContactNoSlidingForces(
+    const systems::Context<T>& context, Vector2<T>* fN, Vector2<T>* fF) const {
+  // Get the necessary state variables.
+  const VectorX<T> state = context.get_continuous_state_vector().
+      CopyToVector();
+  const auto& q = state.template segment<3>(0);
+  const auto& v = state.template segment<3>(3);
+  const T& x = q(0);
+  const T& y = q(1);
+  const T& theta = q(2);
+  const T& xdot = v(0);
+  const T& ydot = v(1);
+  const T& thetadot = v(2);
+
+  // Function name is predicated on two contact points.
+  const int nc = 2;
+
+  // Verify arguments.
+  DRAKE_DEMAND(fN && fN->size() == nc);
+  DRAKE_DEMAND(fF && fF->size() == nc);
+
+  // Get the inputs.
+  const int port_index = 0;
+  const auto input = this->EvalEigenVectorInput(context, port_index);
+
+  // Three generalized coordinates / velocities.
+  const int ngc = 3;
+
+  // Find left and right end point locations.
+  const T stheta = sin(theta), ctheta = cos(theta);
+  const Vector2<T> left = CalcRodEndpoint(x, y, -1, ctheta, stheta,
+                                          half_length_);
+  const Vector2<T> right = CalcRodEndpoint(x, y, 1, ctheta, stheta,
+                                          half_length_);
+
+  // Compute the velocities at the end points.
+  const Vector2<T> v_WRo(xdot, ydot);
+  const T w_WR(thetadot);
+  const Vector2<T> p_WRo(x, y);
+  const Vector2<T> leftdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                            left);
+  const Vector2<T> rightdot = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                             right);
+
+  // Get the inverse of the generalized inertia matrix.
+  const Matrix3<T> M_inv = get_inverse_inertia_matrix();
+
+  // Compute the external forces (expressed in the world frame).
+  const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
+  const Vector3<T> fapplied = input.segment(0, 3);
+  const Vector3<T> fext = fgrav + fapplied;
+
+  // Set up the contact normal and tangent (friction) direction Jacobian
+  // matrices. These take the form:
+  //     | 0 1 n1 |        | 1 0 f1 |
+  // N = | 0 1 n2 |    F = | 1 0 f2 |
+  // where n1, n2/f1, f2 are the moment arm induced by applying the
+  // force at the given contact point along the normal/tangent direction.
+  Eigen::Matrix<T, nc, ngc> N, F;
+  N(0, 0) = N(1, 0) = 0;
+  N(0, 1) = N(1, 1) = 1;
+  N(0, 2) = (left[0] - x);
+  N(1, 2) = (right[0] - x);
+  F(0, 0) = 1;
+  F(1, 0) = 1;
+  F(0, 1) = F(1, 1) = 0;
+  F(0, 2) = -(left[1] - y);
+  F(1, 2) = -(right[1] - y);
+
+  // Compute D.
+  Eigen::Matrix<T, 2*nc, ngc> D;
+  D.template block<nc, ngc>(0, 0) = F;
+  D.template block<nc, ngc>(nc, 0) = -F;
+
+  // Compute dN/dt.
+  Eigen::Matrix<T, nc, ngc> Ndot;
+  Ndot(0, 0) = Ndot(1, 0) = 0;
+  Ndot(0, 1) = Ndot(1, 1) = 0;
+  Ndot(0, 2) = (leftdot[0] - xdot);
+  Ndot(1, 2) = (rightdot[0] - xdot);
+
+  // Compute dF/dt.
+  Eigen::Matrix<T, nc, ngc> Fdot;
+  Fdot(0, 0) = Fdot(1, 0) = 0;
+  Fdot(0, 1) = Fdot(1, 1) = 0;
+  Fdot(0, 2) = -(leftdot[1] - ydot);
+  Fdot(1, 2) = -(rightdot[1] - ydot);
+
+  // Compute dD/dt.
+  Eigen::Matrix<T, 2*nc, ngc> Ddot;
+  Ddot.template block<nc, ngc>(0, 0) = Fdot;
+  Ddot.template block<nc, ngc>(nc, 0) = -Fdot;
+
+  // Construct E.
+  const int nk = 2 * nc;
+  Eigen::Matrix<T, nk, nc> E;
+  E.col(0) << 1, 0, 1, 0;
+  E.col(1) << 0, 1, 0, 1;
+
+  // Form the linear complementarity problem matrix and vector.
+  Eigen::Matrix<T, 4*nc, 4*nc> MM;
+  Eigen::Matrix<T, 4*nc, 1> qq;
+
+  // First two rows correspond to Complementarity Condition (1).
+  MM.template block<2, 2>(0, 0) = N * M_inv * N.transpose();
+  MM.template block<2, 4>(0, 2) = N * M_inv * D.transpose();
+  MM.template block<2, 2>(0, 6).setZero();
+  qq.template segment<2>(0) = N * M_inv * fext + Ndot * v;
+
+  // Next four rows correspond to Complementarity Condition (2).
+  MM.template block<4, 2>(2, 0) = D * M_inv * N.transpose();
+  MM.template block<4, 4>(2, 2) = D * M_inv * D.transpose();
+  MM.template block<4, 2>(2, 6) = E;
+  qq.template segment<4>(2) = D * M_inv * fext + Ddot * v;
+
+  // Final two rows correspond to Complementarity Condition (3).
+  MM.template block<2, 2>(6, 0) = Matrix2<T>::Identity() * get_mu_coulomb();
+  MM.template block<2, 4>(6, 2) = -E.transpose();
+  MM.template block<2, 2>(6, 6).setZero();
+  qq.template segment<2>(nc*3).setZero();
+
+  // Do some very small regularization on the matrix to match the time
+  // stepping solution and help ensure a robust solution.
+  const double cfm = get_cfm();
+  MM += Eigen::Matrix<T, 8, 8>::Identity() * cfm;
+
+  // Solve the LCP. It has the same form of that in [Anitescu and Potra, 1997];
+  // by following the same proof as in that reference, it is clear that this
+  // matrix is copositive and hence provably solvable by Lemke's Algorithm.
+  VectorX<T> zz, ww;
+  bool success = lcp_.SolveLcpLemke(MM, qq, &zz);
+  DRAKE_DEMAND(success);
+
+  // Obtain the normal and frictional contact forces.
+  *fN = zz.template segment<2>(0);
+  *fF = zz.template segment<2>(2) - zz.template segment<2>(4);
 }
 
 // This is a smooth approximation to a step function. Input x goes from 0 to 1;
@@ -1064,7 +1474,7 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   const double fY = input(1);
   const double tau = input(2);
 
-  // Compute the normal acceleration at the point of contact (yc_ddot),
+  // Compute the normal acceleration at the point of contact (cyddot),
   // *assuming zero contact force*. This equation comes from the kinematics of
   // the rod:
   // cy = y + k * half_rod_length * sin(θ)  [rod endpoint vertical location]
@@ -1241,13 +1651,13 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
 
     // Pick the one that is smaller in magnitude.
     if (abs(cxddot1) < abs(cxddot2)) {
-      SetAccelerations(context, f, fN1, fF1, cx, cy);
+      SetAccelerations(context, fN1, fF1, c, f);
     } else {
-      SetAccelerations(context, f, fN2, fF2, cx, cy);
+      SetAccelerations(context, fN2, fF2, c, f);
     }
   } else {
     // Friction force is within the friction cone.
-    SetAccelerations(context, f, fN, fF, cx, cy);
+    SetAccelerations(context, fN, fF, c, f);
   }
 }
 
@@ -1261,26 +1671,32 @@ void Rod2D<T>::CalcAccelerationsTwoContact(
 
   // Get the necessary parts of the state.
   const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+  const T& x = state.GetAtIndex(0);
+  const T& y = state.GetAtIndex(1);
+  const T& theta = state.GetAtIndex(2);
   const T& xdot = state.GetAtIndex(3);
 
   // Obtain the structure we need to write into.
   systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
   DRAKE_ASSERT(f != nullptr);
 
-  // Look to see whether there is sliding velocity.
+  // Get the two points of contact.
+  const int k = get_k(context);
+  const T ctheta = cos(theta), stheta = sin(theta);
+  const Vector2<T> c1 = CalcRodEndpoint(x, y, k, ctheta, stheta,
+                                        half_length_);
+  const Vector2<T> c2 = CalcRodEndpoint(x, y, k, ctheta, stheta,
+                                        half_length_);
+
+  // Call the appropriate contact force computation method.
+  Vector2<T> fN, fF;
   if (abs(xdot) < std::numeric_limits<double>::epsilon()) {
-    // TODO(edrumwri): Handle sticking contact for two points of contact.
-    // Set the time derivatives to "resting".
-    f->SetAtIndex(3, T(0));
-    f->SetAtIndex(4, T(0));
-    f->SetAtIndex(5, T(0));
+    CalcTwoContactNoSlidingForces(context, &fN, &fF);
   } else {
-    // TODO(edrumwri): Check/correct this assumption as necessary.
-    // This code assumes no sliding will occur with contacts at multiple
-    // points unless the system is initialized to such a condition. This
-    // assumption has been neither proven nor rigorously validated.
-    throw std::logic_error("Sliding detected with non-point contact.");
+    CalcTwoContactSlidingForces(context, &fN, &fF);
   }
+
+  SetAccelerations(context, fN, fF, c1, c2, f);
 }
 
 template <class T>
@@ -1453,8 +1869,8 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
   if (simulation_type_ == SimulationType::kTimeStepping) {
-    state->get_mutable_discrete_state()->get_mutable_discrete_state(0)->
-        SetFromVector(x0);
+    state->get_mutable_discrete_state()->get_mutable_vector(0)
+        ->SetFromVector(x0);
   } else {
     // Continuous variables.
     state->get_mutable_continuous_state()->SetFromVector(x0);

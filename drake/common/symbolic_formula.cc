@@ -271,6 +271,7 @@ Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m) {
   return Formula{make_shared<FormulaPositiveSemidefinite>(m)};
 }
 
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 Formula positive_semidefinite(const MatrixX<Expression>& m,
                               const Eigen::UpLoType mode) {
   switch (mode) {
@@ -286,6 +287,7 @@ Formula positive_semidefinite(const MatrixX<Expression>& m,
           "Eigen::Lower nor Eigen::Upper.");
   }
 }
+#endif  // EIGEN_VERSION...
 
 Formula operator==(const Variable& v1, const Variable& v2) {
   return Expression{v1} == Expression{v2};

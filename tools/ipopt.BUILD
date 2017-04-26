@@ -110,7 +110,7 @@ PRINT_ERRORS = (
 )
 
 BUILD_IPOPT_CMD = (
-    "(" + CDEXEC + " `pwd`/external/ipopt/configure --enable-shared=no" + LOG +
+    "(ADD_CFLAGS=-fPIC ADD_CXXFLAGS=-fPIC " + CDEXEC + " `pwd`/external/ipopt/configure --disable-shared --with-pic" + LOG +
     " && " + CDEXEC + " make -j " + HALF_THE_CORES + LOG +
     " && " + CDEXEC + " make install" + LOG +
     ") || (" + PRINT_ERRORS + " && false)"

@@ -480,6 +480,55 @@ GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
       MaliputRailcarState<double>() /* initial state */), std::runtime_error);
 }
 
+// Verifies that no exception is thrown when multiple IDM-controlled
+// MaliputRailcar vehicles are simulated. This prevents a regression of #5886.
+GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
+
+  const MaliputRailcarParams<double> params;
+  const maliput::api::RoadGeometry* road =
+      simulator->SetRoadGeometry(
+          std::make_unique<const maliput::dragway::RoadGeometry>(
+              maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+  simulator->AddIdmControlledPriusMaliputRailcar("Alice",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */);
+  simulator->AddIdmControlledPriusMaliputRailcar("Bob",
+      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      MaliputRailcarState<double>() /* initial state */);
+
+  EXPECT_NO_THROW(simulator->Start());
+}
+
+// Tests Build/Start logic
+GTEST_TEST(AutomotiveSimulatorTest, TestBuild) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+
+  simulator->AddPriusSimpleCar("Model1", "Channel1");
+  simulator->AddPriusSimpleCar("Model2", "Channel2");
+
+  simulator->Build();
+  EXPECT_FALSE(simulator->has_started());
+  EXPECT_NO_THROW(simulator->GetDiagram());
+
+  simulator->Start(0.0);
+  EXPECT_TRUE(simulator->has_started());
+  EXPECT_NO_THROW(simulator->GetDiagram());
+}
+
+// Tests Build/Start logic (calling Start only)
+GTEST_TEST(AutomotiveSimulatorTest, TestBuild2) {
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+
+  simulator->AddPriusSimpleCar("Model1", "Channel1");
+  simulator->AddPriusSimpleCar("Model2", "Channel2");
+
+  simulator->Start(0.0);
+  EXPECT_NO_THROW(simulator->GetDiagram());
+}
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake

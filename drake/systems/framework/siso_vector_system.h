@@ -120,7 +120,7 @@ class SisoVectorSystem : public LeafSystem<T> {
       const Context<T>& context,
       DiscreteValues<T>* discrete_state) const final {
     // Short-circuit when there's no work to do.
-    if (discrete_state->size() == 0) {
+    if (discrete_state->num_groups() == 0) {
       return;
     }
 
@@ -138,7 +138,7 @@ class SisoVectorSystem : public LeafSystem<T> {
     // Obtain the block form of xd after the update (i.e., the next state).
     DRAKE_ASSERT(discrete_state != nullptr);
     BasicVector<T>* const discrete_update_vector =
-        discrete_state->get_mutable_discrete_state(0);
+        discrete_state->get_mutable_vector();
     DRAKE_ASSERT(discrete_update_vector != nullptr);
     Eigen::VectorBlock<VectorX<T>> discrete_update_block =
         discrete_update_vector->get_mutable_value();

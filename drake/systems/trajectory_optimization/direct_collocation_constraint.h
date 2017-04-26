@@ -39,15 +39,17 @@ class DirectCollocationConstraint : public solvers::Constraint {
   DirectCollocationConstraint(int num_states, int num_inputs);
   virtual ~DirectCollocationConstraint();
 
+  int num_states() const { return num_states_; }
+  int num_inputs() const { return num_inputs_; }
+
  protected:
   virtual void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
                         AutoDiffVecXd* xdot) const = 0;
 
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
-
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
  private:
   int num_states_;
@@ -71,7 +73,7 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
   ///  context will also be "cloned" by the optimization; changes to the context
   ///  after calling this method will NOT impact the trajectory optimization.
   SystemDirectCollocationConstraint(const systems::System<double>& system,
-                                     const systems::Context<double>& context);
+                                    const systems::Context<double>& context);
   ~SystemDirectCollocationConstraint() override;
 
  private:

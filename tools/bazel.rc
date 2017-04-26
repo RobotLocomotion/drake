@@ -3,6 +3,7 @@
 build -c opt
 
 # Default build options.
+build --force_pic
 build --strip=never
 build --crosstool_top=//tools:default-toolchain
 # Only show warnings from Drake, not from externals.
@@ -116,8 +117,8 @@ build:asan --copt -fsanitize=address
 build:asan --copt -O1
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
-test:asan --test-env=ASAN_OPTIONS
-test:asan --test-env=ASAN_SYMBOLIZER_PATH
+test:asan --test_env=ASAN_OPTIONS
+test:asan --test_env=ASAN_SYMBOLIZER_PATH
 test:asan --test_tag_filters=-cpplint,-pycodestyle
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
@@ -130,8 +131,8 @@ build:lsan --copt -fsanitize=leak
 build:lsan --copt -O1
 build:lsan --copt -fno-omit-frame-pointer
 build:lsan --linkopt -fsanitize=leak
-test:lsan --test-env=LSAN_OPTIONS
-test:lsan --test-env=LSAN_SYMBOLIZER_PATH
+test:lsan --test_env=LSAN_OPTIONS
+test:lsan --test_env=LSAN_SYMBOLIZER_PATH
 test:lsan --test_tag_filters=-cpplint,-pycodestyle
 
 ### MSan build. ###
@@ -142,8 +143,8 @@ build:msan --copt -O1
 build:msan --copt -fno-omit-frame-pointer
 build:msan --linkopt -fsanitize=memory
 test:msan --test_tag_filters=-cpplint,-pycodestyle
-test:msan --test-env=MSAN_OPTIONS
-test:msan --test-env=MSAN_SYMBOLIZER_PATH
+test:msan --test_env=MSAN_OPTIONS
+test:msan --test_env=MSAN_SYMBOLIZER_PATH
 # Typical slowdown introduced by MemorySanitizer is 3x.
 # See https://clang.llvm.org/docs/MemorySanitizer.html
 test:msan --test_timeout=180,900,2700,10800
@@ -174,7 +175,7 @@ test:ubsan --test_tag_filters=-cpplint,-pycodestyle
 ### Memcheck build. ###
 build:memcheck --copt -g
 build:memcheck --run_under=//tools:valgrind
-test:memcheck --test_tag_filters=-cpplint,-pycodestyle
+test:memcheck --test_tag_filters=-cpplint,-pycodestyle,-sh_script
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:memcheck --test_timeout=300,1500,5400,18000
@@ -189,7 +190,7 @@ test:memcheck --test_timeout=300,1500,5400,18000
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools:valgrind
-test:fastmemcheck --test_tag_filters=-cpplint,-pycodestyle
+test:fastmemcheck --test_tag_filters=-cpplint,-pycodestyle,-sh_script
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:fastmemcheck --test_timeout=300,1500,5400,18000

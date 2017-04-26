@@ -70,6 +70,7 @@ int main(int argc, char* argv[]) {
   auto zero_source =
       base_builder->template AddSystem<ConstantVectorSource<double>>(
           zero_value);
+  zero_source->set_name("zero");
   base_builder->Connect(zero_source->get_output_port(),
                         plant->get_input_port(0));
 

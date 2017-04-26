@@ -246,6 +246,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "is_cloneable",
+    srcs = [],
+    hdrs = ["is_cloneable.h"],
+)
+
+drake_cc_library(
+    name = "copyable_unique_ptr",
+    srcs = [],
+    hdrs = ["copyable_unique_ptr.h"],
+    deps = [":is_cloneable"],
+)
+
+drake_cc_library(
     name = "reinit_after_move",
     hdrs = ["reinit_after_move.h"],
 )
@@ -288,6 +301,15 @@ drake_cc_library(
     hdrs = ["unused.h"],
     deps = [
         ":common",
+    ],
+)
+
+drake_cc_library(
+    name = "protobuf",
+    srcs = ["protobuf.cc"],
+    hdrs = ["protobuf.h"],
+    deps = [
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -369,6 +391,21 @@ drake_cc_googletest(
     name = "drake_assert_test_compile",
     deps = [
         ":common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_cloneable_test",
+    deps = [
+        ":is_cloneable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "copyable_unique_ptr_test",
+    deps = [
+        ":copyable_unique_ptr",
+        ":is_dynamic_castable",
     ],
 )
 
@@ -479,6 +516,16 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":random_polynomial_matrix",
+    ],
+)
+
+drake_cc_googletest(
+    name = "protobuf_test",
+    data = [
+        "test/test_string.txt",
+    ],
+    deps = [
+        ":protobuf",
     ],
 )
 

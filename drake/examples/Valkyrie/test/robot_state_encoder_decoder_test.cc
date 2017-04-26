@@ -128,6 +128,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   auto& kinematics_results_source =
       *builder.AddSystem<ConstantValueSource<double>>(
           move(kinematics_results_value));
+  kinematics_results_source.set_name("kinematics_results_source");
 
   // Effort sources.
   VectorX<double> efforts = VectorX<double>::LinSpaced(
@@ -136,8 +137,9 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   for (size_t i = 0; i < tree.actuators.size(); i++) {
     const auto& actuator = tree.actuators[i];
     auto effort = efforts.segment(i, 1);
-    const auto& effort_source =
+    System<double>* effort_source =
         builder.AddSystem<ConstantVectorSource<double>>(effort);
+    effort_source->set_name("effort_source_" + std::to_string(i));
     effort_sources.emplace(make_pair(&actuator, effort_source));
   }
 
@@ -191,11 +193,14 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   auto& contact_results_source =
       *builder.AddSystem<ConstantValueSource<double>>(
           move(contact_results_value));
+  contact_results_source.set_name("contact_results_source");
 
   // RobotStateEncoder and RobotStateDecoder.
   auto& robot_state_encoder =
       *builder.AddSystem<RobotStateEncoder>(tree, force_torque_sensor_info);
+  robot_state_encoder.set_name("robot_state_encoder");
   auto& robot_state_decoder = *builder.AddSystem<RobotStateDecoder>(tree);
+  robot_state_decoder.set_name("robot_state_decoder");
 
   // Connections.
   for (const auto& actuator_and_effort_source : effort_sources) {

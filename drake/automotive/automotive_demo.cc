@@ -8,19 +8,22 @@
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
 #include "drake/automotive/gen/maliput_railcar_params.h"
+#include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
 DEFINE_int32(num_simple_car, 0, "Number of SimpleCar vehicles. The cars are "
-             "named \"0\", \"1\", \"2\", etc.");
+             "named \"0\", \"1\", \"2\", etc. If this option is provided, "
+             "simple_car_names must not be provided.");
 DEFINE_string(simple_car_names, "",
               "A comma-separated list that specifies the number of SimpleCar "
               "models to instantiate, their names, and the names of the LCM "
               "channels to which they subscribe (e.g., 'Russ,Jeremy,Liang' "
               "would spawn 3 cars subscribed to DRIVING_COMMAND_Russ, "
-              "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang)");
+              "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang). If this "
+              "option is provided, num_simple_car must not be provided.");
 DEFINE_int32(num_trajectory_car, 0, "Number of TrajectoryCar vehicles. This "
              "option is currently only applied when the road network is a flat "
              "plane or a dragway.");
@@ -73,6 +76,10 @@ DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles added to the "
               "onramp.");
 DEFINE_bool(onramp_swap_start, false, "Whether to swap the starting lanes of "
     "the vehicles on the onramp.");
+
+DEFINE_bool(with_stalled_cars, false, "Places a stalled vehicle at the end of "
+            "each lane of a dragway. This option is only enabled when the "
+            "road is a dragway.");
 
 namespace drake {
 
@@ -146,15 +153,13 @@ void AddMaliputRailcar(int num_cars, bool idm_controlled, int initial_s_offset,
   }
 }
 
-// Initializes the provided `simulator` with user-specified numbers of
-// `SimpleCar` vehicles and `TrajectoryCar` vehicles. If parameter
-// `road_network_type` equals `RoadNetworkType::dragway`, the provided
-// `road_geometry` parameter must not be `nullptr`.
-void AddVehicles(RoadNetworkType road_network_type,
-    const maliput::api::RoadGeometry* road_geometry,
-    AutomotiveSimulator<double>* simulator) {
+// Adds SimpleCar instances to the simulator. It uses FLAGS_num_simple_car or
+// FLAGS_simple_car_names to determine the number and names of SimpleCar
+// instances to add. If both are specified, an exception will be thrown. The
+// SimpleCar instances will start at X = 0 in the world frame, and will be
+// offset along the world frame's Y-axis by a constant distance.
+void AddSimpleCars(AutomotiveSimulator<double>* simulator) {
   const double kSimpleCarYSpacing{3};
-
   if (FLAGS_num_simple_car != 0 && !FLAGS_simple_car_names.empty()) {
     throw std::runtime_error("Both --num_simple_car and --simple_car_names "
         "specified. Only one can be specified at a time.");
@@ -178,9 +183,19 @@ void AddVehicles(RoadNetworkType road_network_type,
       SimpleCarState<double> state;
       state.set_y(y_offset);
       simulator->AddPriusSimpleCar(name, channel_name, state);
-      y_offset += kSimpleCarYSpacing;
-    }
+       y_offset += kSimpleCarYSpacing;
+     }
   }
+}
+
+// Initializes the provided `simulator` with user-specified numbers of
+// `SimpleCar` vehicles and `TrajectoryCar` vehicles. If parameter
+// `road_network_type` equals `RoadNetworkType::dragway`, the provided
+// `road_geometry` parameter must not be `nullptr`.
+void AddVehicles(RoadNetworkType road_network_type,
+    const maliput::api::RoadGeometry* road_geometry,
+    AutomotiveSimulator<double>* simulator) {
+  AddSimpleCars(simulator);
 
   if (road_network_type == RoadNetworkType::dragway) {
     DRAKE_DEMAND(road_geometry != nullptr);
@@ -208,6 +223,20 @@ void AddVehicles(RoadNetworkType road_network_type,
           FLAGS_num_dragway_lanes) * kRailcarRowSpacing;
     AddMaliputRailcar(FLAGS_num_maliput_railcar, false /* IDM controlled */,
         initial_s_offset, dragway_road_geometry, simulator);
+    if (FLAGS_with_stalled_cars) {
+      DRAKE_DEMAND(road_geometry != nullptr);
+      for (int i = 0; i < FLAGS_num_dragway_lanes; ++i) {
+        const Lane* lane = road_geometry->junction(0)->segment(0)->lane(i);
+        DRAKE_DEMAND(lane != nullptr);
+        const maliput::api::GeoPosition position = lane->ToGeoPosition(
+            {lane->length() /* s */, 0 /* r */, 0 /* h */});
+        SimpleCarState<double> state;
+        state.set_x(position.x);
+        state.set_y(position.y);
+        simulator->AddPriusSimpleCar("StalledCar" + std::to_string(i),
+            "StalledCarChannel" + std::to_string(i), state);
+      }
+    }
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {

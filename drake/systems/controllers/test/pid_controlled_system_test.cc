@@ -106,52 +106,92 @@ class TestPlantWithMoreOutputs : public TestPlant {
   }
 };
 
-// Instantiates a PidControlledSystem based on the supplied plant and
-// feedback selector. Verifies that the output of the PID controller is correct
-// relative to the hard-coded input and gain values.
-void DoPidControlledSystemTest(
-    std::unique_ptr<TestPlant> plant,
-    std::unique_ptr<MatrixGain<double>> feedback_selector) {
-  DiagramBuilder<double> builder;
-  const Vector1d input(1.);
-  const Eigen::Vector2d state(1.1, 0.2);
-  auto input_source = builder.AddSystem<ConstantVectorSource>(input);
-  auto state_source = builder.AddSystem<ConstantVectorSource>(state);
+class PidControlledSystemTest : public ::testing::Test {
+ protected:
+  // Instantiates a PidControlledSystem based on the supplied plant and
+  // feedback selector. Verifies that the output of the PID controller is
+  // correct relative to the hard-coded input and gain values.
+  void DoPidControlledSystemTest(
+      std::unique_ptr<TestPlant> plant,
+      std::unique_ptr<MatrixGain<double>> feedback_selector) {
+    DiagramBuilder<double> builder;
+    const Vector1d input(1.);
+    const Eigen::Vector2d state(1.1, 0.2);
+    auto input_source = builder.AddSystem<ConstantVectorSource>(input);
+    input_source->set_name("input");
+    auto state_source = builder.AddSystem<ConstantVectorSource>(state);
+    state_source->set_name("state");
 
-  const Vector1d Kp(2);
-  const Vector1d Ki(0);
-  const Vector1d Kd(0.1);
+    auto controller = builder.AddSystem<PidControlledSystem>(
+        std::move(plant), std::move(feedback_selector), Kp_, Ki_, Kd_);
+    // Check that the controller automatically assigns a name to the plant.
+    controller->set_name("controller");
 
-  auto controller = builder.AddSystem<PidControlledSystem>(
-      std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
+    builder.Connect(input_source->get_output_port(),
+                    controller->get_input_port(0));
+    builder.Connect(state_source->get_output_port(),
+                    controller->get_input_port(1));
+    builder.ExportOutput(controller->get_output_port(0));
+    diagram_ = builder.Build();
+    auto context = diagram_->CreateDefaultContext();
+    auto output = diagram_->AllocateOutput(*context);
 
-  builder.Connect(input_source->get_output_port(),
-                  controller->get_input_port(0));
-  builder.Connect(state_source->get_output_port(),
-                  controller->get_input_port(1));
-  builder.ExportOutput(controller->get_output_port(0));
-  auto diagram = builder.Build();
-  auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
+    systems::Context<double>* controller_context =
+        diagram_->GetMutableSubsystemContext(context.get(), controller);
+    systems::Context<double>* plant_context =
+        controller->GetMutableSubsystemContext(controller_context,
+                                               controller->plant());
 
-  systems::Context<double>* controller_context =
-      diagram->GetMutableSubsystemContext(context.get(), controller);
-  systems::Context<double>* plant_context =
-      controller->GetMutableSubsystemContext(controller_context,
-                                             controller->plant());
+    diagram_->CalcOutput(*context, output.get());
+    const BasicVector<double>* output_vec = output->get_vector_data(0);
+    const double pid_input = dynamic_cast<TestPlant*>(controller->plant())
+                                 ->GetInputValue(*plant_context);
+    EXPECT_EQ(pid_input, input[0] +
+                             (state[0] - output_vec->get_value()[0]) * Kp_(0) +
+                             (state[1] - output_vec->get_value()[1]) * Kd_(0));
+  }
 
-  diagram->CalcOutput(*context, output.get());
-  const BasicVector<double>* output_vec = output->get_vector_data(0);
-  const double pid_input = dynamic_cast<TestPlant*>(controller->plant())
-                               ->GetInputValue(*plant_context);
-  EXPECT_EQ(pid_input, input[0] +
-                           (state[0] - output_vec->get_value()[0]) * Kp(0) +
-                           (state[1] - output_vec->get_value()[1]) * Kd(0));
+  const Vector1d Kp_{2};
+  const Vector1d Ki_{0};
+  const Vector1d Kd_{0.1};
+  std::unique_ptr<Diagram<double>> diagram_;
+};
+
+// Tests that the PidController assigns default names to the plant and the
+// feedback selector, if they have no name.
+TEST_F(PidControlledSystemTest, DefaultNamesAssigned) {
+  auto plant = std::make_unique<TestPlantWithMinOutputs>();
+  auto plant_ptr = plant.get();
+  auto feedback_selector =
+    std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
+  auto feedback_selector_ptr = feedback_selector.get();
+
+  PidControlledSystem<double> controller(
+      std::move(plant), std::move(feedback_selector), Kp_, Ki_, Kd_);
+  EXPECT_EQ("plant", plant_ptr->get_name());
+  EXPECT_EQ("custom_feedback_selector", feedback_selector_ptr->get_name());
+}
+
+// Tests that the PidController preserves the names of the plant and the
+// feedback selector.
+TEST_F(PidControlledSystemTest, ExistingNamesRespected) {
+  auto plant = std::make_unique<TestPlantWithMinOutputs>();
+  plant->set_name("my awesome plant!");
+  auto plant_ptr = plant.get();
+  auto feedback_selector =
+      std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
+  feedback_selector->set_name("my boring feedback selector");
+  auto feedback_selector_ptr = feedback_selector.get();
+
+  PidControlledSystem<double> controller(
+      std::move(plant), std::move(feedback_selector), Kp_, Ki_, Kd_);
+  EXPECT_EQ("my awesome plant!", plant_ptr->get_name());
+  EXPECT_EQ("my boring feedback selector", feedback_selector_ptr->get_name());
 }
 
 // Tests a plant where the size of output port zero is twice the size of input
 // port zero.
-GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
+TEST_F(PidControlledSystemTest, SimplePidControlledSystem) {
   // Our test plant is just a multiplexer which takes the input and outputs it
   // twice.
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
@@ -162,7 +202,7 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
 
 // Tests a plant where the size of output port zero is more than twice the size
 // of input port zero.
-GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
+TEST_F(PidControlledSystemTest, PlantWithMoreOutputs) {
   auto plant = std::make_unique<TestPlantWithMoreOutputs>();
   const int plant_output_size = plant->get_output_port(0).size();
   const int controller_feedback_size = plant->get_input_port(0).size() * 2;
@@ -190,9 +230,12 @@ class ConnectControllerTest : public ::testing::Test {
             plant_ptr->get_output_port(0).size());
 
     plant_ = builder_.AddSystem(std::move(plant_ptr));
+    plant_->set_name("plant");
 
     input_source_ = builder_.AddSystem<ConstantVectorSource>(plant_input_);
+    input_source_->set_name("input");
     state_source_ = builder_.AddSystem<ConstantVectorSource>(desired_state_);
+    state_source_->set_name("state");
 
     builder_.ExportOutput(plant_->get_output_port(0));
   }

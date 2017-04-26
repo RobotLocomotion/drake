@@ -6,9 +6,11 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -23,6 +25,12 @@ struct PendulumStateVectorIndices {
   // The index of each individual coordinate.
   static const int kTheta = 0;
   static const int kThetadot = 1;
+
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `PendulumStateVectorIndices::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -52,6 +60,11 @@ class PendulumStateVector : public systems::BasicVector<T> {
     this->SetAtIndex(K::kThetadot, thetadot);
   }
   //@}
+
+  /// See PendulumStateVectorIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return PendulumStateVectorIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

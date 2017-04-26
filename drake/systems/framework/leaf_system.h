@@ -109,8 +109,8 @@ class LeafSystem : public System<T> {
     ContinuousState<T>* xc = state->get_mutable_continuous_state();
     xc->SetFromVector(VectorX<T>::Zero(xc->size()));
     DiscreteValues<T>* xd = state->get_mutable_discrete_state();
-    for (int i = 0; i < xd->size(); i++) {
-      BasicVector<T>* s = xd->get_mutable_discrete_state(i);
+    for (int i = 0; i < xd->num_groups(); i++) {
+      BasicVector<T>* s = xd->get_mutable_vector(i);
       s->SetFromVector(VectorX<T>::Zero(s->size()));
     }
   }
@@ -222,6 +222,11 @@ class LeafSystem : public System<T> {
 
  protected:
   LeafSystem() {}
+
+  /// Returns the per step events declared through DeclarePerStepAction().
+  const std::vector<DiscreteEvent<T>>& get_per_step_events() const {
+    return per_step_events_;
+  }
 
   // =========================================================================
   // Implementations of System<T> methods.
@@ -471,12 +476,27 @@ class LeafSystem : public System<T> {
   const U<T>& GetNumericParameter(const Context<T>& context, int index) const {
     static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
                   "U must be a subclass of BasicVector.");
-    const systems::LeafContext<T>& leaf_context =
-        dynamic_cast<const systems::LeafContext<T>&>(context);
-    const auto* const params =
-        dynamic_cast<const U<T>*>(leaf_context.get_numeric_parameter(index));
+    const auto& leaf_context = dynamic_cast<const systems::LeafContext<T>&>(
+        context);
+    const auto* const params = dynamic_cast<const U<T>*>(
+        leaf_context.get_numeric_parameter(index));
     DRAKE_ASSERT(params != nullptr);
     return *params;
+  }
+
+  /// Extracts the numeric parameters of type U from the @p context at @p index.
+  /// Asserts if the context is not a LeafContext, or if it does not have a
+  /// vector-valued parameter of type U at @p index.
+  template <template <typename> class U = BasicVector>
+  U<T>* GetMutableNumericParameter(Context<T>* context, int index) const {
+    static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
+                  "U must be a subclass of BasicVector.");
+    auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
+    DRAKE_ASSERT(leaf_context != nullptr);
+    auto* params = dynamic_cast<U<T>*>(
+        leaf_context->get_mutable_numeric_parameter(index));
+    DRAKE_ASSERT(params != nullptr);
+    return params;
   }
 
   /// Declares that this System has a simple, fixed-period discrete action.
@@ -525,6 +545,22 @@ class LeafSystem : public System<T> {
   /// the discrete state.
   void DeclarePublishPeriodSec(double period_sec) {
     DeclarePeriodicAction(period_sec, 0, DiscreteEvent<T>::kPublishAction);
+  }
+
+  /// Declares a per step action using the default handlers given type
+  /// @p action. This method aborts if the same type has already been declared.
+  // TODO(siyuan): provide a API for declaration with custom handlers.
+  void DeclarePerStepAction(
+      const typename DiscreteEvent<T>::ActionType& action) {
+    DiscreteEvent<T> event;
+    event.action = action;
+    for (const auto& declared_event : per_step_events_) {
+      if (declared_event.action == action) {
+        DRAKE_ABORT_MSG("Per step action has already been declared.");
+      }
+    }
+
+    per_step_events_.push_back(event);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -664,6 +700,11 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const override {
+    *events = per_step_events_;
+  }
+
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
   //
@@ -685,6 +726,7 @@ class LeafSystem : public System<T> {
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, UpdateActions<T1>* actions) const {
     T1 min_time = std::numeric_limits<double>::infinity();
+    // No periodic events events.
     if (periodic_events_.empty()) {
       // No discrete update.
       actions->time = min_time;
@@ -754,6 +796,10 @@ class LeafSystem : public System<T> {
 
   // Periodic Update or Publish events registered on this system.
   std::vector<PeriodicEvent<T>> periodic_events_;
+
+  // Update or Publish events registered on this system for every simulator
+  // major time step.
+  std::vector<DiscreteEvent<T>> per_step_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;

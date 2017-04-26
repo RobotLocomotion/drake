@@ -551,7 +551,9 @@ class AddConstantDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     constant_ = builder.AddSystem<ConstantVectorSource>(Vector1d{constant});
+    constant_->set_name("constant");
     adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+    adder_->set_name("adder");
 
     builder.Connect(constant_->get_output_port(), adder_->get_input_port(1));
     builder.ExportInput(adder_->get_input_port(0));
@@ -612,8 +614,10 @@ class PublishNumberDiagram : public Diagram<double> {
 
     constant_ =
         builder.AddSystem<ConstantVectorSource<double>>(Vector1d{constant});
+    constant_->set_name("constant");
     publisher_ =
         builder.AddSystem<PublishingSystem>([this](double v) { this->set(v); });
+    publisher_->set_name("publisher");
 
     builder.Connect(constant_->get_output_port(),
                     publisher_->get_input_port(0));
@@ -648,15 +652,19 @@ class FeedbackDiagram : public Diagram<double> {
 
     DiagramBuilder<double> integrator_builder;
     integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
+    integrator_->set_name("integrator");
     integrator_builder.ExportInput(integrator_->get_input_port());
     integrator_builder.ExportOutput(integrator_->get_output_port());
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
+    integrator_diagram_->set_name("integrator_diagram");
 
     DiagramBuilder<double> gain_builder;
     gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
+    gain_->set_name("gain");
     gain_builder.ExportInput(gain_->get_input_port());
     gain_builder.ExportOutput(gain_->get_output_port());
     gain_diagram_ = builder.AddSystem(gain_builder.Build());
+    gain_diagram_->set_name("gain_diagram");
 
     builder.Connect(*integrator_diagram_, *gain_diagram_);
     builder.Connect(*gain_diagram_, *integrator_diagram_);
@@ -747,7 +755,9 @@ class SecondOrderStateDiagram : public Diagram<double> {
   SecondOrderStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     sys1_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys1_->set_name("sys1");
     sys2_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys2_->set_name("sys2");
     builder.ExportInput(sys1_->get_input_port(0));
     builder.ExportInput(sys2_->get_input_port(0));
     builder.BuildInto(this);
@@ -839,8 +849,11 @@ class DiscreteStateDiagram : public Diagram<double> {
   DiscreteStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
+    hold1_->set_name("hold1");
     hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
+    hold2_->set_name("hold2");
     publisher_ = builder.template AddSystem<TestPublishingSystem>();
+    publisher_->set_name("publisher");
     builder.ExportInput(hold1_->get_input_port());
     builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
@@ -1004,7 +1017,9 @@ class AbstractStateDiagram : public Diagram<double> {
   AbstractStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     sys0_ = builder.template AddSystem<SystemWithAbstractState>(0, 2.);
+    sys0_->set_name("sys0");
     sys1_ = builder.template AddSystem<SystemWithAbstractState>(1, 3.);
+    sys1_->set_name("sys1");
     builder.BuildInto(this);
   }
 
@@ -1129,6 +1144,7 @@ class NestedDiagramContextTest : public ::testing::Test {
     big_diagram_builder.ExportOutput(diagram1_->get_output_port(0));
 
     auto src = big_diagram_builder.AddSystem<ConstantVectorSource<double>>(1);
+    src->set_name("constant");
     big_diagram_builder.Connect(src->get_output_port(),
                                 integrator2_->get_input_port());
     big_diagram_builder.Connect(src->get_output_port(),
@@ -1261,6 +1277,174 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
+}
+
+// Tests that an exception is thrown if the systems in a Diagram do not have
+// unique names.
+GTEST_TEST(NonUniqueNamesTest, NonUniqueNames) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  auto adder0 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder0->set_name("unoriginal");
+  auto adder1 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder1->set_name("unoriginal");
+  EXPECT_THROW(builder.Build(), std::runtime_error);
+}
+
+// Tests that an exception is thrown if any system in the Diagram has an empty
+// name.
+GTEST_TEST(NonUniqueNamesTest, EmptyName) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  auto adder0 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder0->set_name("");
+  auto adder1 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder1->set_name("nonempty");
+  EXPECT_THROW(builder.Build(), std::runtime_error);
+}
+
+// A system for testing per step actions.
+class PerStepActionTestSystem : public LeafSystem<double> {
+ public:
+  PerStepActionTestSystem() {
+    DeclareDiscreteState(1);
+    DeclareAbstractState(AbstractValue::Make<std::string>(""));
+  }
+
+  void AddPerStepAction(
+      const typename DiscreteEvent<double>::ActionType& action) {
+    this->DeclarePerStepAction(action);
+  }
+
+  int get_publish_ctr() const {
+    return publish_ctr_;
+  }
+
+ private:
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {
+    (*state->get_mutable_discrete_state())[0] = 0;
+    state->get_mutable_abstract_state<std::string>(0) = "wow";
+  }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const override {
+    (*discrete_state)[0] =
+        context.get_discrete_state(0)->GetAtIndex(0) + 1;
+  }
+
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                State<double>* state) const override {
+    int int_num = static_cast<int>(
+        context.get_discrete_state(0)->GetAtIndex(0));
+    state->get_mutable_abstract_state<std::string>(0) =
+        "wow" + std::to_string(int_num);
+  }
+
+  void DoPublish(const Context<double>& context) const override {
+    publish_ctr_++;
+  }
+
+  // A hack to test publish calls easily.
+  mutable int publish_ctr_{0};
+};
+
+// Builds a nested diagram and tests per step publish, discrete and
+// unrestricted updates.
+GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
+  std::unique_ptr<Diagram<double>> sub_diagram;
+  PerStepActionTestSystem* sys0;
+  PerStepActionTestSystem* sys1;
+  PerStepActionTestSystem* sys2;
+
+  // Sub diagram. Has sys0, and sys1.
+  // sys0 does not have any per step actions.
+  // sys1 has discrete and unrestricted updates.
+  {
+    DiagramBuilder<double> builder;
+    sys0 = builder.AddSystem<PerStepActionTestSystem>();
+    sys0->set_name("sys0");
+    sys1 = builder.AddSystem<PerStepActionTestSystem>();
+    sys1->set_name("sys1");
+
+    sys1->AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+    sys1->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+    sub_diagram = builder.Build();
+    sub_diagram->set_name("sub_diagram");
+  }
+
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram));
+  sys2 = builder.AddSystem<PerStepActionTestSystem>();
+  sys2->set_name("sys2");
+
+  // sys2 has publish and unrestricted updates.
+  sys2->AddPerStepAction(DiscreteEvent<double>::kPublishAction);
+  sys2->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  diagram->set_name("diagram");
+
+  std::vector<DiscreteEvent<double>> events;
+  diagram->GetPerStepEvents(*context, &events);
+
+  EXPECT_EQ(events.size(), 3);
+
+  auto tmp_discrete_state = diagram->AllocateDiscreteVariables();
+  std::unique_ptr<State<double>> tmp_state;
+
+  // Does unrestricted update first.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kUnrestrictedUpdateAction) {
+      tmp_state = context->CloneState();
+      diagram->CalcUnrestrictedUpdate(*context, event,
+          tmp_state.get());
+      context->get_mutable_state()->CopyFrom(*tmp_state);
+    }
+  }
+
+  // Does discrete updates second.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kDiscreteUpdateAction) {
+      diagram->CalcDiscreteVariableUpdates(*context, event,
+          tmp_discrete_state.get());
+      context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
+    }
+  }
+
+  // Publishes last.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kPublishAction) {
+      diagram->Publish(*context, event);
+    }
+  }
+
+  // Only sys2 published once.
+  EXPECT_EQ(sys0->get_publish_ctr(), 0);
+  EXPECT_EQ(sys1->get_publish_ctr(), 0);
+  EXPECT_EQ(sys2->get_publish_ctr(), 1);
+
+  // sys0 doesn't have any updates.
+  auto& sys0_context = diagram->GetSubsystemContext(*context, sys0);
+  EXPECT_EQ(sys0_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
+
+  // sys1 should have an unrestricted update then a discrete update.
+  auto& sys1_context = diagram->GetSubsystemContext(*context, sys1);
+  EXPECT_EQ(sys1_context.get_discrete_state(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
+
+  // sys2 should have a unrestricted update then a publish.
+  auto& sys2_context = diagram->GetSubsystemContext(*context, sys2);
+  EXPECT_EQ(sys2_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }
 
 }  // namespace

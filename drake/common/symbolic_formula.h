@@ -237,6 +237,7 @@ Formula isnan(const Expression& e);
  */
 Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
 
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 /** Constructs and returns a symbolic positive-semidefinite formula from @p
  * m. If @p mode is Eigen::Lower, it's using the lower-triangular part of @p m
  * to construct a positive-semidefinite formula. If @p mode is Eigen::Upper, the
@@ -259,6 +260,7 @@ Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
  */
 Formula positive_semidefinite(const MatrixX<Expression>& m,
                               Eigen::UpLoType mode);
+#endif  // EIGEN_VERSION...
 
 /** Constructs and returns a symbolic positive-semidefinite formula from a lower
  * triangular-view @p l. See the following code snippet.
@@ -1221,7 +1223,7 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
 };
 
 }  // namespace internal
-#endif  // EIGEN_VERSION_AT_LEAST(...)
+#endif  // EIGEN_VERSION...
 
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)

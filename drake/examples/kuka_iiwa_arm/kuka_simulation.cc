@@ -80,12 +80,16 @@ int DoMain() {
   auto command_sub = base_builder->AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
           "IIWA_COMMAND", &lcm));
+  command_sub->set_name("command_subscriber");
   auto command_receiver = base_builder->AddSystem<IiwaCommandReceiver>();
+  command_receiver->set_name("command_receiver");
   auto status_pub = base_builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
+  status_pub->set_name("status_publisher");
   status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>();
+  status_sender->set_name("status_sender");
 
   base_builder->Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));

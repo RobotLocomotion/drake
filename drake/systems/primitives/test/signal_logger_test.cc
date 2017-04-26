@@ -23,8 +23,10 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
       Eigen::MatrixXd::Zero(1, 0),   // B.
       Vector1d::Constant(1.0),       // C.
       Eigen::MatrixXd::Zero(1, 0));  // D.
+  plant->set_name("plant");
 
   auto logger = builder.AddSystem<systems::SignalLogger<double>>(1);
+  logger->set_name("logger");
   builder.Cascade(*plant, *logger);
 
   auto diagram = builder.Build();
