@@ -41,11 +41,11 @@ const AbstractValue& LcmDrivenLoop::WaitForMessage() {
 
   // If driving_sub_.WaitForMessage() returned, a message should be received
   // and an event should be queued by driving_sub_.CalcNextUpdateTime().
-  if (sub_events_->has_event(EventInfo::EventType::kDiscreteUpdate)) {
+  if (sub_events_->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
     driving_sub_.CalcDiscreteVariableUpdates(
         *sub_context_, sub_events_.get(),
         sub_swap_state_->get_mutable_discrete_state());
-  } else if (sub_events_->has_event(
+  } else if (sub_events_->HasEvent(
                  EventInfo::EventType::kUnrestrictedUpdate)) {
     driving_sub_.CalcUnrestrictedUpdate(*sub_context_, sub_events_.get(),
                                         sub_swap_state_.get());

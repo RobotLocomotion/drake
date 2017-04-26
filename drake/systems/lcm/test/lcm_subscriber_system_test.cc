@@ -25,12 +25,12 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
   auto event_info = sub.AllocateEventInfo();
   sub.CalcNextUpdateTime(*context, event_info.get());
 
-  if (!event_info->empty()) {
+  if (!event_info->IsEmpty()) {
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
-    if (event_info->has_event(EventInfo::EventType::kDiscreteUpdate)) {
+    if (event_info->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
       sub.CalcDiscreteVariableUpdates(*context, event_info.get(),
                                       tmp_state->get_mutable_discrete_state());
-    } else if (event_info->has_event(
+    } else if (event_info->HasEvent(
                    EventInfo::EventType::kUnrestrictedUpdate)) {
       sub.CalcUnrestrictedUpdate(*context, event_info.get(), tmp_state.get());
     } else {

@@ -138,13 +138,11 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(events);
     DRAKE_DEMAND(info != nullptr);
     if (translator_ == nullptr) {
-      info->add_event_trigger_pair(
-          EventInfo::EventType::kUnrestrictedUpdate,
-          EventInfo::TriggerType::kPeriodic);
+      info->add_trigger(EventInfo::EventType::kUnrestrictedUpdate,
+          std::make_unique<PeriodicTrigger>());
     } else {
-      info->add_event_trigger_pair(
-          EventInfo::EventType::kDiscreteUpdate,
-          EventInfo::TriggerType::kPeriodic);
+      info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
+          std::make_unique<PeriodicTrigger>());
     }
   } else {
     // Use base class' implementation.

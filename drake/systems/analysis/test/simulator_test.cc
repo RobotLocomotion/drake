@@ -281,13 +281,13 @@ class UnrestrictedUpdater : public LeafSystem<double> {
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    info->add_event_trigger_pair(EventInfo::EventType::kUnrestrictedUpdate,
-        EventInfo::TriggerType::kPeriodic);
+    info->add_trigger(EventInfo::EventType::kUnrestrictedUpdate,
+        std::make_unique<PeriodicTrigger>());
   }
 
   void DoCalcUnrestrictedUpdate(
       const drake::systems::Context<double>& context,
-      EventInfo::TriggerType triggers,
+      const std::vector<const Trigger*>& triggers,
       drake::systems::State<double>* state) const override {
     if (unrestricted_update_callback_ != nullptr)
       unrestricted_update_callback_(context, state);
@@ -463,13 +463,13 @@ class DiscreteSystem : public LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      EventInfo::TriggerType triggers,
+      const std::vector<const Trigger*>& triggers,
       drake::systems::DiscreteValues<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
   void DoPublish(const drake::systems::Context<double>& context,
-      EventInfo::TriggerType triggers) const override {
+      const std::vector<const Trigger*>& triggers) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
@@ -618,19 +618,19 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
         SystemOutput<double>* output) const override {}
 
     void DoCalcDiscreteVariableUpdates(const Context<double>& context,
-        EventInfo::TriggerType triggers,
+        const std::vector<const Trigger*>& triggers,
         DiscreteValues<double>* discrete_state) const override {
       discrete_update_times_.push_back(context.get_time());
     }
 
     void DoCalcUnrestrictedUpdate(const Context<double>& context,
-        EventInfo::TriggerType triggers,
+        const std::vector<const Trigger*>& triggers,
         State<double>* state) const override {
       unrestricted_update_times_.push_back(context.get_time());
     }
 
     void DoPublish(const Context<double>& context,
-        EventInfo::TriggerType triggers) const override {
+        const std::vector<const Trigger*>& triggers) const override {
       publish_times_.push_back(context.get_time());
     }
 

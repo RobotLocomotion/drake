@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
@@ -24,7 +25,7 @@ AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size) {
 }
 
 void AccelerometerTestLogger::DoPublish(const Context<double>& context,
-    EventInfo::TriggerType triggers) const {
+    const std::vector<const Trigger*>& triggers) const {
   if (log_to_console_) {
     std::stringstream buffer;
     buffer <<

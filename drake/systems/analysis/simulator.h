@@ -415,7 +415,7 @@ void Simulator<T>::Initialize() {
 
 template <typename T>
 void Simulator<T>::HandleUnrestrictedUpdate(const EventInfo* events) {
-  if (events->has_event(EventInfo::EventType::kUnrestrictedUpdate)) {
+  if (events->HasEvent(EventInfo::EventType::kUnrestrictedUpdate)) {
     State<T>* x = context_->get_mutable_state();
     DRAKE_DEMAND(x != nullptr);
     // First, compute the unrestricted updates into a temporary buffer.
@@ -430,7 +430,7 @@ void Simulator<T>::HandleUnrestrictedUpdate(const EventInfo* events) {
 
 template <typename T>
 void Simulator<T>::HandleDiscreteUpdate(const EventInfo* events) {
-  if (events->has_event(EventInfo::EventType::kDiscreteUpdate)) {
+  if (events->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
     DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
     // Systems with discrete update events must have discrete state.
     DRAKE_DEMAND(xd != nullptr);
@@ -445,7 +445,7 @@ void Simulator<T>::HandleDiscreteUpdate(const EventInfo* events) {
 
 template <typename T>
 void Simulator<T>::HandlePublish(const EventInfo* events) {
-  if (events->has_event(EventInfo::EventType::kPublish)) {
+  if (events->HasEvent(EventInfo::EventType::kPublish)) {
     system_.Publish(*context_, events);
     ++num_publishes_;
   }
@@ -486,11 +486,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
 
-    merged_events->clear();
+    merged_events->Clear();
     // Merge all the events together.
-    merged_events->merge(per_step_events_.get());
+    merged_events->Merge(per_step_events_.get());
     if (sample_time_hit)
-      merged_events->merge(timed_events.get());
+      merged_events->Merge(timed_events.get());
 
     // Do unrestricted updates first.
     HandleUnrestrictedUpdate(merged_events.get());
@@ -516,11 +516,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // next_sample_time includes an Update action, a Publish action, or both.
     T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
-    if (timed_events->has_event(EventInfo::EventType::kDiscreteUpdate) ||
-        timed_events->has_event(EventInfo::EventType::kUnrestrictedUpdate)) {
+    if (timed_events->HasEvent(EventInfo::EventType::kDiscreteUpdate) ||
+        timed_events->HasEvent(EventInfo::EventType::kUnrestrictedUpdate)) {
       next_update_dt = next_sample_time - step_start_time;
     }
-    if (timed_events->has_event(EventInfo::EventType::kPublish)) {
+    if (timed_events->HasEvent(EventInfo::EventType::kPublish)) {
       next_publish_dt = next_sample_time - step_start_time;
     }
 

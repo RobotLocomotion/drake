@@ -245,6 +245,7 @@ class Diagram : public System<T>,
     return false;
   }
 
+  /// Allocates an DiagramEventInfo for this Diagram.
   std::unique_ptr<EventInfo> AllocateEventInfo() const final {
     const int num_systems = num_subsystems();
     DiagramEventInfo* info = new DiagramEventInfo(num_systems);
