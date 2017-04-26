@@ -49,15 +49,15 @@ class EvaluatorBase {
 
   template <typename DerivedLB, typename DerivedUB>
   EvaluatorBase(size_t num_constraints, int num_vars,
-             Eigen::MatrixBase<DerivedLB> const& lb,
-             Eigen::MatrixBase<DerivedUB> const& ub)
+                Eigen::MatrixBase<DerivedLB> const& lb,
+                Eigen::MatrixBase<DerivedUB> const& ub)
       : EvaluatorBase(num_constraints, num_vars, lb, ub, "") {}
 
   template <typename DerivedLB, typename DerivedUB>
   EvaluatorBase(size_t num_constraints, int num_vars,
-             const Eigen::MatrixBase<DerivedLB>& lb,
-             const Eigen::MatrixBase<DerivedUB>& ub,
-             const std::string& description)
+                const Eigen::MatrixBase<DerivedLB>& lb,
+                const Eigen::MatrixBase<DerivedUB>& ub,
+                const std::string& description)
       : lower_bound_(lb),
         upper_bound_(ub),
         num_vars_(num_vars),
@@ -143,15 +143,15 @@ class EvaluatorBase {
   int num_vars() const { return num_vars_; }
 
  protected:
-  virtual void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                      Eigen::VectorXd &y) const = 0;
+  virtual void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                      Eigen::VectorXd& y) const = 0;
 
-  virtual void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                      AutoDiffVecXd &y) const = 0;
+  virtual void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                      AutoDiffVecXd& y) const = 0;
 
-  virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd> &x,
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                                 const double tol) const {
     Eigen::VectorXd y(num_constraints());
     DoEval(x, y);
@@ -159,12 +159,12 @@ class EvaluatorBase {
            (y.array() <= upper_bound_.array() + tol).all();
   }
 
-  virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd> &x,
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
                                 const double tol) const {
     AutoDiffVecXd y(num_constraints());
     DoEval(x, y);
-    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all()
-        && (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
+    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
+           (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
   }
 
  private:
@@ -250,11 +250,11 @@ class QuadraticConstraint : public Constraint {
   }
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
  private:
   Eigen::MatrixXd Q_;
@@ -309,11 +309,11 @@ class LorentzConeConstraint : public Constraint {
   const Eigen::VectorXd& b() const { return b_; }
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
  private:
   const Eigen::MatrixXd A_;
@@ -362,11 +362,11 @@ class RotatedLorentzConeConstraint : public Constraint {
   ~RotatedLorentzConeConstraint() override {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
  private:
   const Eigen::MatrixXd A_;
@@ -397,18 +397,18 @@ class PolynomialConstraint : public Constraint {
 
   ~PolynomialConstraint() override {}
 
-  const VectorXPoly& polynomials() const {return polynomials_;}
+  const VectorXPoly& polynomials() const { return polynomials_; }
 
   const std::vector<Polynomiald::VarType>& poly_vars() const {
     return poly_vars_;
   }
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
  private:
   const VectorXPoly polynomials_;
@@ -478,11 +478,11 @@ class LinearConstraint : public Constraint {
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 };
 
 /**
@@ -535,11 +535,11 @@ class BoundingBoxConstraint : public LinearConstraint {
   ~BoundingBoxConstraint() override {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 };
 
 /**
@@ -570,16 +570,16 @@ class LinearComplementarityConstraint : public Constraint {
 
  protected:
   /** Return Mx + q (the value of the slack variable). */
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
-  bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd> &x,
+  bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                         const double tol) const override;
 
-  bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd> &x,
+  bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
                         const double tol) const override;
 
  private:
@@ -667,16 +667,16 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * Evaluate the eigen values of the symmetric matrix.
    * @param x The stacked columns of the symmetric matrix.
    */
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
   /**
    * @param x The stacked columns of the symmetric matrix. This function is not
    * supported yet, since Eigen's eigen value solver does not accept
    * AutoDiffScalar.
    */
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
  private:
   int matrix_rows_;  // Number of rows in the symmetric matrix being positive
@@ -720,15 +720,15 @@ class LinearMatrixInequalityConstraint : public Constraint {
   /**
    * Evaluate the eigen values of the linear matrix.
    */
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override;
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
 
   /**
    * This function is not supported, since Eigen's eigen value solver does not
    * accept AutoDiffScalar type.
    */
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-              AutoDiffVecXd &y) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
 
  private:
   std::vector<Eigen::MatrixXd> F_;

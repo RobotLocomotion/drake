@@ -55,8 +55,7 @@ namespace {
 /// need to wrap it and convert the input.
 class RunningCostEndWrapper : public solvers::Cost {
  public:
-  explicit RunningCostEndWrapper(
-      std::shared_ptr<solvers::Cost> cost)
+  explicit RunningCostEndWrapper(std::shared_ptr<solvers::Cost> cost)
       : solvers::Cost(cost->num_vars()), cost_(cost) {}
 
  protected:
@@ -78,12 +77,11 @@ class RunningCostEndWrapper : public solvers::Cost {
 
 class RunningCostMidWrapper : public solvers::Cost {
  public:
-  explicit RunningCostMidWrapper(
-      std::shared_ptr<solvers::Cost> cost)
+  explicit RunningCostMidWrapper(std::shared_ptr<solvers::Cost> cost)
       : Cost(cost->num_vars() + 1),  // We wrap x(0) and x(1) into
-                                    // (x(0) + x(1)) * 0.5, so one
-                                    // less variable when calling
-                                    // Eval.
+                                     // (x(0) + x(1)) * 0.5, so one
+                                     // less variable when calling
+                                     // Eval.
         cost_(cost) {}
 
  protected:

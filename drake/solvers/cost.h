@@ -23,8 +23,7 @@ class Cost : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost)
 
-  explicit Cost(size_t num_vars)
-    : EvaluatorBase(1, num_vars) {}
+  explicit Cost(size_t num_vars) : EvaluatorBase(1, num_vars) {}
 };
 
 class CostShimBase : public Cost {
