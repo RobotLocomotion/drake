@@ -1,5 +1,6 @@
 #include "drake/systems/framework/system.h"
 
+#include <cctype>
 #include <memory>
 #include <stdexcept>
 
@@ -291,6 +292,28 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   // Check for valid content.
   EXPECT_EQ(kAbstractValued, first_input.get_data_type());
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
+}
+
+// Tests GetMemoryObjectName.
+TEST_F(SystemTest, GetMemoryObjectName) {
+  const std::string name = system_.GetMemoryObjectName();
+
+  // The nominal value for 'name' is something like:
+  //   drake/systems/(anonymous namespace)/TestSystem@0123456789abcdef
+  // We check only some platform-agnostic portions of that.
+  EXPECT_TRUE(name.find("drake/systems/") != std::string::npos) << name;
+  EXPECT_TRUE(name.find("/TestSystem@") != std::string::npos) << name;
+  // Working backwards, find 16 hex characters and then an @.
+  const int num_pointer_digits = 16;
+  auto it = name.rbegin();
+  for (int i = 0; i < num_pointer_digits; ++i) {
+    ASSERT_TRUE(it != name.rend()) << i;
+    const char digit = *it;
+    EXPECT_TRUE(std::isxdigit(digit)) << i << " " << digit;
+    ++it;
+  }
+  ASSERT_TRUE(it != name.rend());
+  EXPECT_EQ(*it, '@');
 }
 
 template <typename T>

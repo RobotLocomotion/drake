@@ -1292,16 +1292,24 @@ GTEST_TEST(NonUniqueNamesTest, NonUniqueNames) {
   EXPECT_THROW(builder.Build(), std::runtime_error);
 }
 
-// Tests that an exception is thrown if any system in the Diagram has an empty
-// name.
-GTEST_TEST(NonUniqueNamesTest, EmptyName) {
+// Tests that systems with unset names can be added to a Diagram.
+GTEST_TEST(NonUniqueNamesTest, DefaultEmptyNames) {
   DiagramBuilder<double> builder;
   const int kInputs = 2;
   const int kSize = 1;
-  auto adder0 = builder.AddSystem<Adder<double>>(kInputs, kSize);
-  adder0->set_name("");
-  auto adder1 = builder.AddSystem<Adder<double>>(kInputs, kSize);
-  adder1->set_name("nonempty");
+  builder.AddSystem<Adder<double>>(kInputs, kSize);
+  builder.AddSystem<Adder<double>>(kInputs, kSize);
+  EXPECT_NO_THROW(builder.Build());
+}
+
+// Tests that an exception is thrown if a system is reset to an empty name
+// *after* being added to the diagram builder.
+GTEST_TEST(NonUniqueNamesTest, ForcedEmptyNames) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  builder.AddSystem<Adder<double>>(kInputs, kSize);
+  builder.AddSystem<Adder<double>>(kInputs, kSize)->set_name("");
   EXPECT_THROW(builder.Build(), std::runtime_error);
 }
 

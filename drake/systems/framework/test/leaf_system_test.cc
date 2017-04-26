@@ -717,10 +717,10 @@ GTEST_TEST(GraphvizTest, Attributes) {
   ASSERT_EQ(reinterpret_cast<int64_t>(&system), system.GetGraphvizId());
   const std::string dot = system.GetGraphvizString();
   // Check that left-to-right ranking is imposed.
-  EXPECT_NE(std::string::npos, dot.find("rankdir=LR")) << dot;
+  EXPECT_TRUE(std::string::npos != dot.find("rankdir=LR")) << dot;
   // Check that NiceTypeName is used to compute the label.
-  EXPECT_NE(std::string::npos, dot.find(
-      "label=\"drake::systems::(anonymous)::DefaultFeedthroughSystem|"));
+  EXPECT_TRUE(std::string::npos != dot.find(
+      "label=\"drake/systems/(anonymous)/DefaultFeedthroughSystem@")) << dot;
 }
 
 GTEST_TEST(GraphvizTest, Ports) {
@@ -729,7 +729,8 @@ GTEST_TEST(GraphvizTest, Ports) {
   system.AddAbstractInputPort();
   system.AddAbstractOutputPort();
   const std::string dot = system.GetGraphvizString();
-  EXPECT_NE(std::string::npos, dot.find("{{<u0>u0|<u1>u1} | {<y0>y0}}")) << dot;
+  EXPECT_TRUE(std::string::npos != dot.find(
+      "{{<u0>u0|<u1>u1} | {<y0>y0}}")) << dot;
 }
 
 }  // namespace
