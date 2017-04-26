@@ -7,8 +7,8 @@ add_library_with_exports(LIB_NAME drakeMultibodyTree SOURCE_FILES
 
 target_link_libraries(drakeMultibodyTree
   drakeCommon
-  #TODO(amcastro-tri): Only systems::Context is needed here. 
-  # Split drakeSystemFramework from drakeSystemContext and drakeSystemFramework.
+  #TODO(amcastro-tri): Only systems::Context is needed here.
+  # Split drakeSystemContext from drakeSystemFramework.
   drakeSystemFramework
   Eigen3::Eigen)
 drake_install_libraries(drakeMultibodyTree)
