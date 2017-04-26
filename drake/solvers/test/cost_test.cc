@@ -154,7 +154,9 @@ GTEST_TEST(testCost, testFunctionCost) {
   // Test that we can construct FunctionCosts with different signatures
   Eigen::Vector2d x(1, 2);
   VerifyFunctionCost<false>(GenericTrivialCost2(), x);
-  const GenericTrivialCost2 obj_const;
+  // Ensure that we explictly call the default constructor for a const class
+  // @ref http://stackoverflow.com/a/28338123/7829525
+  const GenericTrivialCost2 obj_const {};
   VerifyFunctionCost<false>(obj_const, x);
   VerifyFunctionCost<true>(make_shared<GenericTrivialCost2>(), x);
   VerifyFunctionCost<true>(make_unique<GenericTrivialCost2>(), x);
