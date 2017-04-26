@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -47,7 +48,7 @@ class RandomSource : public LeafSystem<double> {
   // Computes a random number and stores it in the discrete state.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      EventInfo::TriggerType triggers,
+      const std::vector<const Trigger*>& triggers,
       drake::systems::DiscreteValues<double>* updates) const override {
     const int N = updates->size();
     for (int i = 0; i < N; i++) {

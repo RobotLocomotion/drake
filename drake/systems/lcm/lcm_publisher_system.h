@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -112,7 +113,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * it onto an LCM channel.
    */
   void DoPublish(const Context<double>& context,
-                 EventInfo::TriggerType triggers) const override;
+                 const std::vector<const Trigger*>& triggers) const override;
 
   /**
    * This System has no output ports so CalcOutput() does nothing.
