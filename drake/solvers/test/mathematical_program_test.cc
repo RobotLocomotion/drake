@@ -396,7 +396,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
 // This function is supposed to test these costs added as a derived class
 // from Constraint.
 void VerifyAddedCost1(const MathematicalProgram& prog,
-                      const shared_ptr<Constraint>& cost,
+                      const shared_ptr<Cost>& cost,
                       const Eigen::Ref<const Eigen::VectorXd>& x_value,
                       int num_generic_costs_expected) {
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
@@ -412,7 +412,7 @@ void VerifyAddedCost1(const MathematicalProgram& prog,
 // a class to ConstraintImpl through MakeCost.
 void VerifyAddedCost2(const MathematicalProgram& prog,
                       const GenericTrivialCost2& cost,
-                      const shared_ptr<Constraint>& returned_cost,
+                      const shared_ptr<Cost>& returned_cost,
                       const Eigen::Ref<const Eigen::Vector2d>& x_value,
                       int num_generic_costs_expected) {
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
@@ -443,12 +443,11 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()), num_generic_costs);
   EXPECT_EQ(prog.linear_costs().size(), 0u);
 
-  shared_ptr<Constraint> generic_trivial_cost1 =
-      make_shared<GenericTrivialCost1>();
+  shared_ptr<Cost> generic_trivial_cost1 = make_shared<GenericTrivialCost1>();
 
   // Adds Binding<Constraint>
-  prog.AddCost(Binding<Constraint>(
-      generic_trivial_cost1, VectorDecisionVariable<3>(x(0), x(1), y(1))));
+  prog.AddCost(Binding<Cost>(generic_trivial_cost1,
+                             VectorDecisionVariable<3>(x(0), x(1), y(1))));
   ++num_generic_costs;
   VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 3, 5),
                    num_generic_costs);
@@ -489,7 +488,7 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
 
 void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
                                          const Expression& e,
-                                         const Binding<Constraint>& binding,
+                                         const Binding<Cost>& binding,
                                          int num_linear_costs) {
   EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
   EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
@@ -1828,7 +1827,7 @@ GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
 void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
                                             const Expression& e,
                                             double constant,
-                                            const Binding<Constraint>& binding,
+                                            const Binding<Cost>& binding,
                                             int num_quadratic_cost) {
   EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
   EXPECT_EQ(binding.constraint(), prog.quadratic_costs().back().constraint());
@@ -1979,6 +1978,23 @@ GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
   EXPECT_THROW(prog.AddCost(x(0) + y), runtime_error);
   EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), runtime_error);
 }
+
+GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
+  using GenericPtr = shared_ptr<Cost>;
+  using Matrix1d = Vector1d;
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+
+  GenericPtr linear_cost(new LinearCost(Matrix1d(1)));
+  prog.AddCost(linear_cost, x);
+  EXPECT_EQ(prog.linear_costs().size(), 1);
+
+  GenericPtr quadratic_cost(new QuadraticCost(Matrix1d(1), Vector1d(1)));
+  prog.AddCost(quadratic_cost, x);
+  EXPECT_EQ(prog.quadratic_costs().size(), 1);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

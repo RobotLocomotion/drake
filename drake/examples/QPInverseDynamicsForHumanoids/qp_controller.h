@@ -122,12 +122,12 @@ class QPController {
   drake::solvers::LinearConstraint* ineq_contact_wrench_{nullptr};
   drake::solvers::LinearConstraint* ineq_torque_limit_{nullptr};
 
-  std::vector<drake::solvers::QuadraticConstraint*> cost_contacts_;
-  drake::solvers::QuadraticConstraint* cost_cen_mom_dot_{nullptr};
-  std::vector<drake::solvers::QuadraticConstraint*> cost_body_motion_;
-  drake::solvers::QuadraticConstraint* cost_dof_motion_{nullptr};
+  std::vector<drake::solvers::QuadraticCost*> cost_contacts_;
+  drake::solvers::QuadraticCost* cost_cen_mom_dot_{nullptr};
+  std::vector<drake::solvers::QuadraticCost*> cost_body_motion_;
+  drake::solvers::QuadraticCost* cost_dof_motion_{nullptr};
 
-  drake::solvers::QuadraticConstraint* cost_basis_reg_{nullptr};
+  drake::solvers::QuadraticCost* cost_basis_reg_{nullptr};
 
   // Resize the QP. This resizes the temporary matrices. It also reinitializes
   // prog_ to the correct size, so that Control only updates the
@@ -147,7 +147,7 @@ class QPController {
                   const Eigen::MatrixBase<DerivedB>& b,
                   const Eigen::MatrixBase<DerivedW>& weights,
                   const std::list<int>& idx,
-                  drake::solvers::QuadraticConstraint* cost);
+                  drake::solvers::QuadraticCost* cost);
 
   bool HasFloatingBase(const RigidBodyTree<double>& robot) const;
 

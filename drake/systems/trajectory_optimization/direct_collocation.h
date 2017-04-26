@@ -58,7 +58,7 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
   void DoAddRunningCost(const symbolic::Expression& e) override;
 
   void DoAddRunningCost(
-      std::shared_ptr<solvers::Constraint> constraint) override;
+      std::shared_ptr<solvers::Cost> constraint) override;
 
   const System<double>* system_{nullptr};
   const std::unique_ptr<Context<double>> context_{nullptr};

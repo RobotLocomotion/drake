@@ -52,13 +52,10 @@ struct is_convertible_workaround<std::unique_ptr<A>, std::shared_ptr<B>>
 template <typename F, typename C>
 struct is_binding_compatible
     : std::integral_constant<
-          bool,
-          (is_convertible_workaround<F, C>::value) ||
-          (is_convertible_workaround<
-              F, std::shared_ptr<C>>::value) ||
-          (is_convertible_workaround<
-              F, std::unique_ptr<C>>::value) ||
-          (is_convertible_workaround<F, Binding<C>>::value)> {};
+          bool, (is_convertible_workaround<F, C>::value) ||
+                    (is_convertible_workaround<F, std::shared_ptr<C>>::value) ||
+                    (is_convertible_workaround<F, std::unique_ptr<C>>::value) ||
+                    (is_convertible_workaround<F, Binding<C>>::value)> {};
 
 /**
  * Template condition to check if @p F is a candidate to be used to construct a

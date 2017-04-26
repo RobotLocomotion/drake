@@ -26,12 +26,10 @@ class Cost : public EvaluatorBase {
   using EvaluatorBase::EvaluatorBase;
 };
 
-
 class CostShimBase : public Cost {
  public:
   explicit CostShimBase(const std::shared_ptr<Constraint>& impl)
-      : Cost(impl->num_constraints(), impl->num_vars()),
-        impl_(impl) {
+      : Cost(impl->num_constraints(), impl->num_vars()), impl_(impl) {
     // Costs may only be scalar.
     DRAKE_DEMAND(impl->num_constraints() == 1);
   }
@@ -54,16 +52,17 @@ class CostShimBase : public Cost {
  * detect a difference from results from CreateConstraint and CreateCost.
  * @tparam C Constraint type to inherit from.
  */
-template<typename C>
+template <typename C>
 class CostShim : public CostShimBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CostShim)
 
-  template<typename... Args>
+  template <typename... Args>
   explicit CostShim(Args&&... args)
       : CostShimBase(std::make_shared<C>(std::forward<Args>(args)...)) {
     constraint_ = std::dynamic_pointer_cast<C>(impl_);
   }
+
  protected:
   std::shared_ptr<C> constraint_;
 };
@@ -76,10 +75,11 @@ class LinearCost : public CostShim<LinearConstraint> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost)
 
   // NOLINTNEXTLINE(runtime/explicit).
-  LinearCost(const Eigen::Ref<const Eigen::VectorXd> &c)
-    : CostShim(c.transpose(),
-        Vector1<double>::Constant(-std::numeric_limits<double>::infinity()),
-        Vector1<double>::Constant(std::numeric_limits<double>::infinity())) { }
+  LinearCost(const Eigen::Ref<const Eigen::VectorXd>& c)
+      : CostShim(c.transpose(), Vector1<double>::Constant(
+                                    -std::numeric_limits<double>::infinity()),
+                 Vector1<double>::Constant(
+                     std::numeric_limits<double>::infinity())) {}
 
   Eigen::SparseMatrix<double> GetSparseMatrix() const {
     return constraint_->GetSparseMatrix();
@@ -94,13 +94,11 @@ class QuadraticCost : public CostShim<QuadraticConstraint> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticCost)
 
-  template<typename DerivedQ, typename Derivedb>
-  QuadraticCost(const Eigen::MatrixBase<DerivedQ> &Q,
-                const Eigen::MatrixBase<Derivedb> &f)
-      : CostShim(Q, f,
-          -std::numeric_limits<double>::infinity(),
-          std::numeric_limits<double>::infinity())
-  { }
+  template <typename DerivedQ, typename Derivedb>
+  QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
+                const Eigen::MatrixBase<Derivedb>& f)
+      : CostShim(Q, f, -std::numeric_limits<double>::infinity(),
+                 std::numeric_limits<double>::infinity()) {}
 
   const Eigen::MatrixXd& Q() const { return constraint_->Q(); }
 
@@ -137,8 +135,8 @@ class PolynomialCost : public CostShim<PolynomialConstraint> {
       : CostShim(
             polynomials, poly_vars,
             Vector1<double>::Constant(-std::numeric_limits<double>::infinity()),
-            Vector1<double>::Constant(std::numeric_limits<double>::infinity()))
-  { }
+            Vector1<double>::Constant(
+                std::numeric_limits<double>::infinity())) {}
 
   const VectorXPoly& polynomials() const { return constraint_->polynomials(); }
 

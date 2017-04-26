@@ -428,7 +428,7 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
   }
 }
 
-template<typename To, typename From>
+template <typename To, typename From>
 Binding<To> BindingUpcast(const Binding<From>& binding) {
   return Binding<To>(std::dynamic_pointer_cast<To>(binding.constraint()),
                      binding.variables());
@@ -436,8 +436,7 @@ Binding<To> BindingUpcast(const Binding<From>& binding) {
 
 }  // anonymous namespace
 
-Binding<Cost> MathematicalProgram::AddCost(
-    const Binding<Cost>& binding) {
+Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   // See AddCost(const Binding<Constraint>&) for explanation
   Cost* cost = binding.constraint().get();
   if (dynamic_cast<QuadraticCost*>(cost)) {
@@ -474,8 +473,7 @@ Binding<LinearCost> MathematicalProgram::AddCost(
   return AddCost(Binding<LinearCost>(obj, vars));
 }
 
-Binding<LinearCost> MathematicalProgram::AddLinearCost(
-    const Expression& e) {
+Binding<LinearCost> MathematicalProgram::AddLinearCost(const Expression& e) {
   auto p = ExtractVariablesFromExpression(e);
   const VectorXDecisionVariable& var = p.first;
   const auto& map_var_to_index = p.second;
@@ -490,8 +488,7 @@ Binding<LinearCost> MathematicalProgram::AddLinearCost(
 Binding<LinearCost> MathematicalProgram::AddLinearCost(
     const Eigen::Ref<const Eigen::VectorXd>& c,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto cost = make_shared<LinearCost>(
-      c.transpose());
+  auto cost = make_shared<LinearCost>(c.transpose());
   return AddCost(cost, vars);
 }
 

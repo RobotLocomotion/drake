@@ -638,9 +638,8 @@ class MathematicalProgram {
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
    */
-  Binding<Cost> AddCost(
-      const std::shared_ptr<Cost>& obj,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+  Binding<Cost> AddCost(const std::shared_ptr<Cost>& obj,
+                        const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
    * Adds a generic cost to the optimization program.
@@ -648,7 +647,7 @@ class MathematicalProgram {
    * @param vars The decision variables on which the cost depend.
    */
   Binding<Cost> AddCost(const std::shared_ptr<Cost>& obj,
-               const VariableRefList& vars) {
+                        const VariableRefList& vars) {
     return AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
@@ -668,9 +667,8 @@ class MathematicalProgram {
    * drake::solvers::detail::FunctionTraits for more detail.
    */
   template <typename F>
-  typename std::enable_if<
-      detail::is_cost_functor_candidate<F>::value,
-      Binding<Cost>>::type
+  typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
+                          Binding<Cost>>::type
   AddCost(F&& f, const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
@@ -682,18 +680,16 @@ class MathematicalProgram {
    * drake::solvers::detail::FunctionTraits for more details.
    */
   template <typename F>
-  typename std::enable_if<
-      detail::is_cost_functor_candidate<F>::value,
-      Binding<Cost>>::type
+  typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
+                          Binding<Cost>>::type
   AddCost(F&& f, const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     auto c = CreateFunctionCost(std::forward<F>(f));
     return AddCost(c, vars);
   }
 
   template <typename F, typename Vars>
-  typename std::enable_if<
-      detail::assert_if_is_constraint<F>::value,
-      Binding<Cost>>::type
+  typename std::enable_if<detail::assert_if_is_constraint<F>::value,
+                          Binding<Cost>>::type
   AddCost(F&& f, Vars&& vars) {
     throw(std::runtime_error("This will assert at compile-time."));
   }
@@ -710,9 +706,8 @@ class MathematicalProgram {
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  Binding<LinearCost> AddCost(
-      const std::shared_ptr<LinearCost>& obj,
-      const VariableRefList& vars) {
+  Binding<LinearCost> AddCost(const std::shared_ptr<LinearCost>& obj,
+                              const VariableRefList& vars) {
     return AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
@@ -740,8 +735,8 @@ class MathematicalProgram {
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  Binding<LinearCost> AddLinearCost(
-      const Eigen::Ref<const Eigen::VectorXd>& c, const VariableRefList& vars) {
+  Binding<LinearCost> AddLinearCost(const Eigen::Ref<const Eigen::VectorXd>& c,
+                                    const VariableRefList& vars) {
     return AddLinearCost(c, ConcatenateVariableRefList((vars)));
   }
 
@@ -759,17 +754,15 @@ class MathematicalProgram {
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  Binding<QuadraticCost> AddCost(
-      const Binding<QuadraticCost>& binding);
+  Binding<QuadraticCost> AddCost(const Binding<QuadraticCost>& binding);
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  Binding<QuadraticCost> AddCost(
-      const std::shared_ptr<QuadraticCost>& obj,
-      const VariableRefList& vars) {
+  Binding<QuadraticCost> AddCost(const std::shared_ptr<QuadraticCost>& obj,
+                                 const VariableRefList& vars) {
     return AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
@@ -855,8 +848,7 @@ class MathematicalProgram {
    * @param e A symbolic expression in the polynomial form.
    * @return The newly created cost and the bound variables.
    */
-  Binding<PolynomialCost> AddPolynomialCost(
-      const symbolic::Expression& e);
+  Binding<PolynomialCost> AddPolynomialCost(const symbolic::Expression& e);
 
   /**
    * Adds a cost in the symbolic form.
