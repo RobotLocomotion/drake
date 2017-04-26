@@ -52,11 +52,10 @@ class RgbdCameraTest : public ::testing::Test {
     EXPECT_NEAR(kExpectedWidth * 0.5, dut.center_x(), kTolerance);
     EXPECT_NEAR(kExpectedHeight * 0.5, dut.center_y(), kTolerance);
 
-    // Expected focal values are calculated by hand.
-    const double kExpectedFocalX = 554.25625842204079;
-    const double kExpectedFocalY = 579.41125496954282;
-    EXPECT_NEAR(kExpectedFocalX, dut.focal_x(), kTolerance);
-    EXPECT_NEAR(kExpectedFocalY, dut.focal_y(), kTolerance);
+    // The expected focal value is calculated by hand.
+    const double kExpectedFocal = 579.41125496954282;
+    EXPECT_NEAR(kExpectedFocal, dut.focal_x(), kTolerance);
+    EXPECT_NEAR(kExpectedFocal, dut.focal_y(), kTolerance);
   }
 
  protected:
