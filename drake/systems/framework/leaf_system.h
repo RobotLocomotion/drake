@@ -708,7 +708,7 @@ class LeafSystem : public System<T> {
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    if (info->has_event(EventInfo::EventType::kPublish)) {
+    if (info->HasEvent(EventInfo::EventType::kPublish)) {
       this->DoPublish(context,
           info->get_triggers(EventInfo::EventType::kPublish));
     }
@@ -725,7 +725,7 @@ class LeafSystem : public System<T> {
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    if (info->has_event(EventInfo::EventType::kDiscreteUpdate)) {
+    if (info->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
       this->DoCalcDiscreteVariableUpdates(context,
           info->get_triggers(EventInfo::EventType::kDiscreteUpdate),
           discrete_state);
@@ -743,7 +743,7 @@ class LeafSystem : public System<T> {
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
-    if (info->has_event(EventInfo::EventType::kUnrestrictedUpdate)) {
+    if (info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate)) {
       this->DoCalcUnrestrictedUpdate(context,
           info->get_triggers(EventInfo::EventType::kUnrestrictedUpdate), state);
     }

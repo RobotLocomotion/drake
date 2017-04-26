@@ -5,19 +5,22 @@
 namespace drake {
 namespace systems {
 
-namespace internal {
+//////////////////////////////////////////////////////////////
+// This is probably a really bad idea???
+namespace {
 const ForcedTrigger kGlobalForcedTrigger;
-const std::vector<const Trigger*> kGlobalForcedTriggerVec(1, &kGlobalForcedTrigger);
-}  // namespace internal
+const std::vector<const Trigger*> kGlobalForcedTriggerVec(
+    1, &kGlobalForcedTrigger);
+}  // namespace
 
 const std::vector<const Trigger*>& ForcedTrigger::OneForcedTrigger() {
-  return internal::kGlobalForcedTriggerVec;
+  return kGlobalForcedTriggerVec;
 }
+//////////////////////////////////////////////////////////////
 
-std::unique_ptr<Trigger> AbstractTrigger::Clone() const {
+std::unique_ptr<Trigger> AbstractTrigger::DoClone() const {
   std::unique_ptr<AbstractValue> cloned_data = data_->Clone();
-  return std::unique_ptr<Trigger>(
-      new AbstractTrigger(std::move(cloned_data)));
+  return std::unique_ptr<Trigger>(new AbstractTrigger(std::move(cloned_data)));
 }
 
 }  // namespace systems
