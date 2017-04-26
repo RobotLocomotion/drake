@@ -894,7 +894,8 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_info.
-  auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
+  auto sub_info =
+      dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
 
   EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
 }
@@ -911,12 +912,14 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   // get_sub_event_info.
   auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
   {
-    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
+    auto sub_info =
+        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
     EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
   }
 
   {
-    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
+    auto sub_info =
+        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
     EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
   }
 }
@@ -1074,7 +1077,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 2);
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_info.
-  auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
+  auto sub_info =
+      dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
   EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
 
   // Creates a temp state and does unrestricted updates.
@@ -1095,7 +1099,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->set_time(time);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 6);
   for (int i = 0; i < 2; i++) {
-    auto sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(i));
+    auto sub_info =
+        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(i));
     EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
   }
 

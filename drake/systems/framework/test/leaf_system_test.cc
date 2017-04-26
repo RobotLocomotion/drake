@@ -843,7 +843,8 @@ TEST_F(TriggerTest, AbstractTrigger) {
   dut_.MakeupAnAbstractTriggeredPublishEvent(*context_, info_.get());
   EXPECT_TRUE(leaf_info_->HasEvent(EventInfo::EventType::kPublish));
 
-  const auto& triggers = leaf_info_->get_triggers(EventInfo::EventType::kPublish);
+  const auto& triggers =
+      leaf_info_->get_triggers(EventInfo::EventType::kPublish);
   EXPECT_EQ(triggers.size(), 2);
   for (const Trigger* trigger : triggers) {
     EXPECT_EQ(trigger->get_type(), Trigger::TriggerType::kAbstract);

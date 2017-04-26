@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/value.h"
@@ -106,6 +107,14 @@ class PeriodicTrigger final : public Trigger {
   // should probably save offset and period.
 };
 
+
+// To Evan, Sherm and Eric: this is actually pretty useful for systems that
+// take external inputs, like a LcmSubscriberSystem. The current implementation
+// is not atomic in the sense that it first checks for message arrival, if one
+// arrives, it schedules an unrestricted update event. But, by the time the
+// handler is called, the message in the buffer could be different from the one
+// that triggers the event in the first place. With this, I just can pass the
+// lcm message content in the trigger.
 /**
  * Base class for abstract triggers. This class owns an AbstractValue, and can
  * be used to pass additional information from event triggering mechanisms to
@@ -119,7 +128,7 @@ class AbstractTrigger : public Trigger {
    * Constructor.
    * @param data Data to be owned.
    */
-  AbstractTrigger(std::unique_ptr<AbstractValue> data)
+  explicit AbstractTrigger(std::unique_ptr<AbstractValue> data)
       : Trigger(kAbstract), data_(std::move(data)) {}
 
   /**

@@ -696,8 +696,14 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  void PublishImpl(const Context<T>& context,
-                   const EventInfo* event_info = nullptr) const final {
+  // If @p event_info is null, calls DoPublish() with a vector containing one
+  // Trigger::TriggerType::kForced trigger. Otherwise, checks if a
+  // EventInfo::EventType::kPublish event exists in @p event_info. If one
+  // exists, all its triggers are extracted and passed to DoPublish().
+  //
+  // Assumes @p event_info is an instance of LeafEventInfo.
+  void DispatchPublishHandler(const Context<T>& context,
+      const EventInfo* event_info) const final {
     if (event_info == nullptr) {
       this->DoPublish(context, ForcedTrigger::OneForcedTrigger());
       return;
@@ -711,7 +717,14 @@ class LeafSystem : public System<T> {
     }
   }
 
-  void CalcDiscreteVariableUpdatesImpl(
+  // If @p event_info is null, calls DoCalcDiscreteVariableUpdates() with a
+  // vector containing one Trigger::TriggerType::kForced trigger. Otherwise,
+  // checks if a EventInfo::EventType::kDiscreteUpdate event exists in
+  // @p event_info. If one exists, all its triggers are extracted and passed to
+  // DoCalcDiscreteVariableUpdates().
+  //
+  // Assumes @p event_info is an instance of LeafEventInfo.
+  void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context, const EventInfo* event_info,
       DiscreteValues<T>* discrete_state) const final {
     if (event_info == nullptr) {
@@ -729,9 +742,15 @@ class LeafSystem : public System<T> {
     }
   }
 
-  void CalcUnrestrictedUpdateImpl(const Context<T>& context,
-                                  const EventInfo* event_info,
-                                  State<T>* state) const final {
+  // If @p event_info is null, calls DoCalcUnrestrictedUpdate() with a vector
+  // containing one Trigger::TriggerType::kForced trigger. Otherwise, checks
+  // if a EventInfo::EventType::kDiscreteUpdate event exists in @p event_info.
+  // If one exists, all its triggers are extracted and passed to
+  // DoCalcUnrestrictedUpdate().
+  //
+  // Assumes @p event_info is an instance of LeafEventInfo.
+  void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
+      const EventInfo* event_info, State<T>* state) const final {
     if (event_info == nullptr) {
       this->DoCalcUnrestrictedUpdate(
           context, ForcedTrigger::OneForcedTrigger(), state);
