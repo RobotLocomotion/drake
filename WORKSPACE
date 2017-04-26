@@ -201,21 +201,28 @@ github_archive(
 github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
-    commit = "0.4.0",
-    sha256 = "ef1aa6a368808d3aa18cbe588924f15fb8fac75d80860080355595e75eb9a529",
+    commit = "0.4.3",
+    sha256 = "4ff626151c403eba7256eac6a039ce0e0256bcebe50d3be378f2bf2cb9634098",
 )
 
 # Necessary for buildifier.
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
+load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
 
 # Necessary for buildifier.
 go_repositories()
 
+# Necessary for buildifier.
+new_go_repository(
+    name = "org_golang_x_tools",
+    commit = "3d92dd60033c312e3ae7cac319c792271cf67e37",
+    importpath = "golang.org/x/tools",
+)
+
 github_archive(
     name = "com_github_bazelbuild_buildtools",
     repository = "bazelbuild/buildtools",
-    commit = "93929369232fcda305607a2e0aa7b3cd9cf8912d",
-    sha256 = "2ffb39756767165133f9861d8bf52c76d5474bb462583edfe47d2ea0a759c62b",
+    commit = "0.4.5",
+    sha256 = "7a732ea12d88ddbf9adc99ff5b5c39bfda53b6286ecc79c3bc082d5f53f46f44",
 )
 
 github_archive(
