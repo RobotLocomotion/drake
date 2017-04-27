@@ -290,15 +290,15 @@ class Simulator {
  private:
   // Goes through every event in @p events and calls unrestricted update only
   // if that event's action type is kUnrestrictedUpdateAction.
-  void HandleUnrestrictedUpdate(const EventInfo* events);
+  void HandleUnrestrictedUpdate(const EventInfo& events);
 
   // Goes through every event in @p events and calls discrete update only if
   // that event's action type is kDiscreteUpdateAction.
-  void HandleDiscreteUpdate(const EventInfo* events);
+  void HandleDiscreteUpdate(const EventInfo& events);
 
   // Goes through every event in @p events and calls publish only if that
   // event's action type is kPublishAction.
-  void HandlePublish(const EventInfo* events);
+  void HandlePublish(const EventInfo& events);
 
   // The steady_clock is immune to system clock changes so increases
   // monotonically. We'll work in fractional seconds.
@@ -414,12 +414,12 @@ void Simulator<T>::Initialize() {
 }
 
 template <typename T>
-void Simulator<T>::HandleUnrestrictedUpdate(const EventInfo* events) {
-  if (events->HasEvent(EventInfo::EventType::kUnrestrictedUpdate)) {
+void Simulator<T>::HandleUnrestrictedUpdate(const EventInfo& events) {
+  if (events.HasEvent(EventInfo::EventType::kUnrestrictedUpdate)) {
     State<T>* x = context_->get_mutable_state();
     DRAKE_DEMAND(x != nullptr);
     // First, compute the unrestricted updates into a temporary buffer.
-    system_.CalcUnrestrictedUpdate(*context_, events,
+    system_.CalcUnrestrictedUpdate(*context_, &events,
         unrestricted_updates_.get());
     // TODO(edrumwri): simply swap the states for additional speed.
     // Now write the update back into the context.
@@ -429,13 +429,13 @@ void Simulator<T>::HandleUnrestrictedUpdate(const EventInfo* events) {
 }
 
 template <typename T>
-void Simulator<T>::HandleDiscreteUpdate(const EventInfo* events) {
-  if (events->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
+void Simulator<T>::HandleDiscreteUpdate(const EventInfo& events) {
+  if (events.HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
     DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
     // Systems with discrete update events must have discrete state.
     DRAKE_DEMAND(xd != nullptr);
     // First, compute the discrete updates into a temporary buffer.
-    system_.CalcDiscreteVariableUpdates(*context_, events,
+    system_.CalcDiscreteVariableUpdates(*context_, &events,
         discrete_updates_.get());
     // Then, write them back into the context.
     xd->CopyFrom(*discrete_updates_);
@@ -444,9 +444,9 @@ void Simulator<T>::HandleDiscreteUpdate(const EventInfo* events) {
 }
 
 template <typename T>
-void Simulator<T>::HandlePublish(const EventInfo* events) {
-  if (events->HasEvent(EventInfo::EventType::kPublish)) {
-    system_.Publish(*context_, events);
+void Simulator<T>::HandlePublish(const EventInfo& events) {
+  if (events.HasEvent(EventInfo::EventType::kPublish)) {
+    system_.Publish(*context_, &events);
     ++num_publishes_;
   }
 }
@@ -492,12 +492,15 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     if (sample_time_hit)
       merged_events->Merge(timed_events.get());
 
+    // The general policy here is to do actions in decreasing order of
+    // "violence" to the state, i.e. unrestricted -> discrete -> publish.
+
     // Do unrestricted updates first.
-    HandleUnrestrictedUpdate(merged_events.get());
+    HandleUnrestrictedUpdate(*merged_events);
     // Do restricted (discrete variable) updates next.
-    HandleDiscreteUpdate(merged_events.get());
+    HandleDiscreteUpdate(*merged_events);
     // Do any publishes last.
-    HandlePublish(merged_events.get());
+    HandlePublish(*merged_events);
 
     // TODO(siyuan): transfer per step publish entirely to individual systems.
     // Allow System a chance to produce some output.

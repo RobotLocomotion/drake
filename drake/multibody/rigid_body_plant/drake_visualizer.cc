@@ -44,7 +44,7 @@ void DrakeVisualizer::DoCalcNextUpdateTime(
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(events);
     DRAKE_DEMAND(info != nullptr);
     info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
-        std::make_unique<PeriodicTrigger>());
+        std::make_unique<PeriodicTrigger>(0, *time));
   }
 }
 

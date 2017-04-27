@@ -782,20 +782,20 @@ class TestTriggerSystem : public LeafSystem<double> {
  public:
   TestTriggerSystem() {}
 
-  void MakeupAnAbstractTriggeredPublishEvent(
-      const Context<double>& context, EventInfo* event_info) const {
+  void DoGetPerStepEvents(const Context<double>& context,
+      EventInfo* event_info) const override {
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
 
     {
-      std::unique_ptr<AbstractTrigger> trigger =
-        AbstractTrigger::Make<std::string>("hello");
+      auto trigger = std::make_unique<PerStepTrigger>();
+      trigger->set_data(AbstractValue::Make<std::string>("hello"));
       info->add_trigger(EventInfo::EventType::kPublish, std::move(trigger));
     }
 
     {
-      std::unique_ptr<AbstractTrigger> trigger =
-        AbstractTrigger::Make<int>(42);
+      auto trigger = std::make_unique<PerStepTrigger>();
+      trigger->set_data(AbstractValue::Make<int>(42));
       info->add_trigger(EventInfo::EventType::kPublish, std::move(trigger));
     }
   }
@@ -811,12 +811,8 @@ class TestTriggerSystem : public LeafSystem<double> {
   void DoPublish(const Context<double>& context,
                  const std::vector<const Trigger*>& triggers) const override {
     for (const Trigger* trigger : triggers) {
-      if (trigger->get_type() == Trigger::TriggerType::kAbstract) {
-        const AbstractTrigger* abs_trigger =
-            dynamic_cast<const AbstractTrigger*>(trigger);
-        DRAKE_DEMAND(abs_trigger != nullptr);
-        abs_data_.push_back(abs_trigger->get_data()->Clone());
-      }
+      if (trigger->get_data() != nullptr)
+        abs_data_.push_back(trigger->get_data()->Clone());
     }
   }
 
@@ -840,15 +836,12 @@ class TriggerTest : public ::testing::Test {
 
 TEST_F(TriggerTest, AbstractTrigger) {
   // schedule a publish event with multiple abstract triggers.
-  dut_.MakeupAnAbstractTriggeredPublishEvent(*context_, info_.get());
+  dut_.GetPerStepEvents(*context_, info_.get());
   EXPECT_TRUE(leaf_info_->HasEvent(EventInfo::EventType::kPublish));
 
   const auto& triggers =
       leaf_info_->get_triggers(EventInfo::EventType::kPublish);
   EXPECT_EQ(triggers.size(), 2);
-  for (const Trigger* trigger : triggers) {
-    EXPECT_EQ(trigger->get_type(), Trigger::TriggerType::kAbstract);
-  }
 
   // handle event.
   dut_.Publish(*context_, info_.get());

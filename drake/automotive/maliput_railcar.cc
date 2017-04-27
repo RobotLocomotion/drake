@@ -386,7 +386,7 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
       dynamic_cast<systems::LeafEventInfo*>(event_info);
   DRAKE_ASSERT(info != nullptr);
   info->add_trigger(systems::EventInfo::EventType::kUnrestrictedUpdate,
-      std::make_unique<systems::PeriodicTrigger>());
+      std::make_unique<systems::PeriodicTrigger>(0, *time));
 }
 
 template <typename T>
