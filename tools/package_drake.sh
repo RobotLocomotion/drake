@@ -110,12 +110,8 @@ function install_tree
       mkdir -p "$2/$f"
       install_tree "$1/$f" "$2/$f" "${3-}$f/"
     else
-      # Get file hashes to compare contents.
-      s1="$(sha256sum "$1/$f" 2>&- | cut -d' ' -f1)"
-      s2="$(sha256sum "$2/$f" 2>&- | cut -d' ' -f1)"
-
       # Copy file if different, otherwise do nothing.
-      if [ "$s1" == "$s2" ]; then
+      if cmp "$1/$f" "$2/$f" >/dev/null 2>&1; then
         echo "[Up to Date] ${3-}$f"
       else
         echo "[Installing] ${3-}$f"
