@@ -677,8 +677,8 @@ class MathematicalProgram {
   /**
    * Adds a cost to the optimization program on an Eigen::Vector containing
    * decision variables.
-   * @tparam F it should define functions numInputs, numOutputs and eval. Check
-   * drake::solvers::detail::FunctionTraits for more details.
+   * @tparam F Type that defines functions numInputs, numOutputs and eval.
+   * @see drake::solvers::detail::FunctionTraits.
    */
   template <typename F>
   typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
@@ -688,6 +688,11 @@ class MathematicalProgram {
     return AddCost(c, vars);
   }
 
+  /**
+   * Statically assert if a user inadvertently passes a
+   * binding-compatible Constraint.
+   * @tparam F The type to check.
+   */
   template <typename F, typename Vars>
   typename std::enable_if<detail::assert_if_is_constraint<F>::value,
                           Binding<Cost>>::type
