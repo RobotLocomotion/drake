@@ -77,9 +77,6 @@
 [submodule "externals/bullet"]
 	path = externals/bullet
 	url = https://github.com/RobotLocomotion/bullet3.git
-[submodule "externals/eigen"]
-	path = externals/eigen
-	url = https://github.com/RobotLocomotion/eigen-mirror.git
 [submodule "externals/ccd"]
 	path = externals/ccd
 	url = https://github.com/danfis/libccd.git
