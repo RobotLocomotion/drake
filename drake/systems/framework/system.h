@@ -1015,13 +1015,7 @@ class System {
    * This function dispatches all publish events to the appropriate handlers.
    */
   virtual void DispatchPublishHandler(const Context<T>& context,
-      const EventInfo* event_info) const {
-    if (event_info == nullptr) {
-      DoPublish(context, ForcedTrigger::OneForcedTrigger());
-    } else {
-      DRAKE_ABORT_MSG("need to override this for triggers other than kForced");
-    }
-  }
+      const EventInfo* event_info) const = 0;
 
   /**
    * This function dispatches all discrete update events to the appropriate
@@ -1029,28 +1023,14 @@ class System {
    */
   virtual void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context, const EventInfo* event_info,
-      DiscreteValues<T>* discrete_state) const {
-    if (event_info == nullptr) {
-      DoCalcDiscreteVariableUpdates(
-          context, ForcedTrigger::OneForcedTrigger(), discrete_state);
-    } else {
-      DRAKE_ABORT_MSG("need to override this for triggers other than kForced");
-    }
-  }
+      DiscreteValues<T>* discrete_state) const = 0;
 
   /**
    * This function dispatches all unrestricted update events to the appropriate
    * handlers.
    */
   virtual void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
-      const EventInfo* event_info, State<T>* state) const {
-    if (event_info == nullptr) {
-      DoCalcUnrestrictedUpdate(
-          context, ForcedTrigger::OneForcedTrigger(), state);
-    } else {
-      DRAKE_ABORT_MSG("need to override this for triggers other than kForced");
-    }
-  }
+      const EventInfo* event_info, State<T>* state) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

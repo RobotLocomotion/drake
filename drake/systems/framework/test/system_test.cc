@@ -105,6 +105,44 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 
+  void DispatchPublishHandler(const Context<double>& context,
+      const EventInfo* event_info) const final {
+    if (event_info == nullptr) {
+      this->DoPublish(context, ForcedTrigger::OneForcedTrigger());
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    if (info->HasEvent(EventInfo::EventType::kPublish)) {
+      this->DoPublish(context,
+          info->get_triggers(EventInfo::EventType::kPublish));
+    }
+  }
+
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<double>& context, const EventInfo* event_info,
+      DiscreteValues<double>* discrete_state) const final {
+    if (event_info == nullptr) {
+      this->DoCalcDiscreteVariableUpdates(
+          context, ForcedTrigger::OneForcedTrigger(), discrete_state);
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    if (info->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
+      this->DoCalcDiscreteVariableUpdates(context,
+          info->get_triggers(EventInfo::EventType::kDiscreteUpdate),
+          discrete_state);
+    }
+  }
+
+  void DispatchUnrestrictedUpdateHandler(const Context<double>& context,
+      const EventInfo* event_info, State<double>* state) const final {
+    DRAKE_ABORT_MSG("test should get here");
+  }
+
   // Sets up an arbitrary mapping from the current time to the next discrete
   // action, to exercise several different forms of discrete action.
   void DoCalcNextUpdateTime(const Context<double>& context,
@@ -121,43 +159,6 @@ class TestSystem : public System<double> {
       // Use the default update action.
       info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
           std::make_unique<PeriodicTrigger<double>>(0, *time));
-    }
-  }
-
-  void DispatchPublishHandler(const Context<double>& context,
-      const EventInfo* event_info) const final {
-    if (event_info == nullptr) {
-      ForcedTrigger trigger;
-      std::vector<const Trigger*> triggers(1, &trigger);
-      this->DoPublish(context, triggers);
-      return;
-    }
-
-    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    if (info->HasEvent(EventInfo::EventType::kPublish)) {
-      this->DoPublish(context,
-          info->get_triggers(EventInfo::EventType::kPublish));
-    }
-  }
-
-  void DispatchDiscreteVariableUpdateHandler(const Context<double>& context,
-      const EventInfo* event_info,
-      DiscreteValues<double>* discrete_state) const final {
-    if (event_info == nullptr) {
-      ForcedTrigger trigger;
-      std::vector<const Trigger*> triggers(1, &trigger);
-      this->DoCalcDiscreteVariableUpdates(
-          context, triggers, discrete_state);
-      return;
-    }
-
-    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    if (info->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
-      this->DoCalcDiscreteVariableUpdates(context,
-          info->get_triggers(EventInfo::EventType::kDiscreteUpdate),
-          discrete_state);
     }
   }
 
@@ -364,6 +365,20 @@ class ValueIOTestSystem : public System<T> {
     return true;
   }
 
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const Context<T>& context) const override {
+    std::unique_ptr<LeafSystemOutput<T>> output(
+        new LeafSystemOutput<T>);
+    output->add_port(
+        std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
+
+    output->add_port(std::make_unique<OutputPortValue>(
+        std::make_unique<BasicVector<T>>(1)));
+
+    return std::unique_ptr<SystemOutput<T>>(output.release());
+  }
+
+ private:
   // Append "output" to input(0), and sets output(1) = 2 * input(1).
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {
@@ -380,17 +395,20 @@ class ValueIOTestSystem : public System<T> {
     vec_out->get_mutable_value() = 2 * vec_in->get_value();
   }
 
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
-    std::unique_ptr<LeafSystemOutput<T>> output(
-        new LeafSystemOutput<T>);
-    output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
+  void DispatchPublishHandler(const Context<T>& context,
+      const EventInfo* event_info) const final {
+    DRAKE_ABORT_MSG("test should get here");
+  }
 
-    output->add_port(std::make_unique<OutputPortValue>(
-        std::make_unique<BasicVector<T>>(1)));
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<T>& context, const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const final {
+    DRAKE_ABORT_MSG("test should get here");
+  }
 
-    return std::unique_ptr<SystemOutput<T>>(output.release());
+  void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
+      const EventInfo* event_info, State<T>* state) const final {
+    DRAKE_ABORT_MSG("test should get here");
   }
 };
 

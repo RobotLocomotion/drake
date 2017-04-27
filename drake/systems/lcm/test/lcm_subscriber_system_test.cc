@@ -25,7 +25,7 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
   auto event_info = sub.AllocateEventInfo();
   sub.CalcNextUpdateTime(*context, event_info.get());
 
-  if (!event_info->IsEmpty()) {
+  if (!event_info->HasNoEvents()) {
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
     if (event_info->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
       sub.CalcDiscreteVariableUpdates(*context, event_info.get(),
