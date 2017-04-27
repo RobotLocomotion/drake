@@ -11,9 +11,6 @@
 namespace drake {
 namespace systems {
 
-template <typename T> class LeafSystem;
-template <typename T> class Diagram;
-
 /**
  * Base class that represents all events at a particular time for System.
  * There are several predefined event and trigger types. To represent a concrete
@@ -145,6 +142,20 @@ class DiagramEventInfo final : public EventInfo {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventInfo)
 
   /**
+   * Constructor. Note that this constructor only resizes the containers, but
+   * does not allocate any derived EventInfo instances.
+   *
+   * @note Users should almost never call this explicitly. Use
+   * System::AllocateEventInfo() instead.
+   *
+   * @param num_sub_systems Number of sub systems in the corresponding Diagram.
+   */
+  explicit DiagramEventInfo(int num_sub_systems)
+      : EventInfo(),
+        sub_event_info_(num_sub_systems),
+        owned_sub_event_info_(num_sub_systems) {}
+
+  /**
    * Returns the number of constituent EventInfo that correspond to each sub
    * system.
    */
@@ -188,18 +199,6 @@ class DiagramEventInfo final : public EventInfo {
   // These are protected for doxygen.
 
   /**
-   * Constructor. Note that this constructor only resizes the containers, but
-   * does not allocate any derived EventInfo instances. Users should never call
-   * this explicitly. Only Diagram is about to access this.
-   *
-   * @param num_sub_systems Number of sub systems in the corresponding Diagram.
-   */
-  explicit DiagramEventInfo(int num_sub_systems)
-      : EventInfo(),
-        sub_event_info_(num_sub_systems),
-        owned_sub_event_info_(num_sub_systems) {}
-
-  /**
    * Goes through each sub event info and merges in the corresponding one in
    * @p other_info. Assumes that @p other_info is an instance of
    * DiagramEventInfo and has the same number of sub event info. Aborts
@@ -229,6 +228,11 @@ class DiagramEventInfo final : public EventInfo {
 class LeafEventInfo final : public EventInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventInfo)
+
+  /**
+   * Constructor.
+   */
+  LeafEventInfo() = default;
 
   /**
    * Returns all the triggers that are associated to @p event_type. Aborts if
@@ -287,11 +291,6 @@ class LeafEventInfo final : public EventInfo {
    */
   void DoMerge(const EventInfo* other_info) override;
 
-  /**
-   * Constructor. Only LeafSystem is about to access this.
-   */
-  LeafEventInfo() = default;
-
  private:
   // List just for holding the unique pointers.
   std::list<std::unique_ptr<Trigger>> owned_triggers_;
@@ -299,12 +298,6 @@ class LeafEventInfo final : public EventInfo {
   // A map from event type to its associated triggers. Pointers point to
   // owned_triggers_.
   std::map<EventType, std::vector<const Trigger*>> events_;
-
-  // this has some arcane errors..
-  // ./drake/systems/framework/event_info.h:304:74: warning: dependent nested name specifier 'LeafSystem<T>::' for friend class declaration is not supported; turning off access control for 'LeafEventInfo' [-Wunsupported-friend]
-  //   template <typename T> friend std::unique_ptr<EventInfo> LeafSystem<T>::AllocateEventInfo();
-  // template <typename T> friend std::unique_ptr<EventInfo> LeafSystem<T>::AllocateEventInfo();
-  template <typename T> friend class LeafSystem;
 };
 
 }  // namespace systems
