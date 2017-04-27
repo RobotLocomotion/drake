@@ -1362,8 +1362,12 @@ class Diagram : public System<T>,
     for (const auto& system : sorted_systems_) {
       const std::string& name = system->get_name();
       if (name.empty()) {
+        // This can only happen if someone blanks out the name *after* adding
+        // it to DiagramBuilder; if an empty name is given to DiagramBuilder,
+        // a default non-empty name is automatically assigned.
         log()->error("Subsystem of type {} has no name",
                      NiceTypeName::Get(*system));
+        // We skip names.insert here, so that the return value will be false.
         continue;
       }
       if (names.find(name) != names.end()) {
