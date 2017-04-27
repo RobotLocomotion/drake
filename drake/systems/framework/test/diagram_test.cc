@@ -1099,8 +1099,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->set_time(time);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 6);
   for (int i = 0; i < 2; i++) {
-    auto sub_info =
-        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(i));
+    sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(i));
     EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
   }
 
