@@ -1,20 +1,21 @@
 #pragma once
 
-#include <Eigen/Core>
-#include <vector>
 #include <random>
+#include <vector>
+
+#include <Eigen/Core>
 
 class PiecewiseFunction {
  protected:
-  std::vector<double> segment_times;
+  std::vector<double> breaks;
 
  public:
   /// Minimum delta quantity used for comparing time.
   static constexpr double kEpsilonTime = 1e-10;
 
-  /// @throws std::runtime_exception if `segment_times`'s increments are
+  /// @throws std::runtime_exception if `breaks` increments are
   /// smaller than kEpsilonTime.
-  explicit PiecewiseFunction(std::vector<double> const& segment_times);
+  explicit PiecewiseFunction(std::vector<double> const& breaks);
 
   virtual ~PiecewiseFunction();
 
@@ -33,6 +34,11 @@ class PiecewiseFunction {
   double getStartTime() const;
 
   double getEndTime() const;
+
+  /**
+   * Returns true iff `t >= getStartTime() && t <= getEndTime()`.
+   */
+  bool isTimeInRange(double t) const;
 
   int getSegmentIndex(double t) const;
 

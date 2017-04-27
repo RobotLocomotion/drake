@@ -7,57 +7,40 @@
 
 #include "drake/systems/primitives/zero_order_hold.h"
 
-#include <memory>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-#include "drake/common/drake_assert.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/discrete_state.h"
-#include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/system_port_descriptor.h"
-
 namespace drake {
 namespace systems {
 
 template <typename T>
-ZeroOrderHold<T>::ZeroOrderHold(const T& period_sec, int size) {
+ZeroOrderHold<T>::ZeroOrderHold(double period_sec, int size)
+    : SisoVectorSystem<T>(size, size), period_sec_(period_sec) {
   // TODO(david-german-tri): remove the size parameter from the constructor
   // once #3109 supporting automatic sizes is resolved.
-  this->DeclareInputPort(kVectorValued, size);
-  this->DeclareOutputPort(kVectorValued, size);
-  this->DeclareUpdatePeriodSec(period_sec);
+  this->DeclareDiscreteState(size);
+  this->DeclareDiscreteUpdatePeriodSec(period_sec);
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcOutput(const Context<T>& context,
-                                    SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
-  System<T>::GetMutableOutputVector(output, 0) =
-      context.get_discrete_state(0)->CopyToVector();
+void ZeroOrderHold<T>::DoCalcVectorOutput(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* output) const {
+  *output = state;
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
-    const Context<T>& context, DiscreteState<T>* discrete_state) const {
-  DRAKE_DEMAND(discrete_state->size() == 1);
-  discrete_state->get_mutable_discrete_state(0)->SetFromVector(
-      this->EvalVectorInput(context, 0)->get_value());
+void ZeroOrderHold<T>::DoCalcVectorDiscreteVariableUpdates(
+    const Context<T>& context,
+    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Eigen::VectorBlock<const VectorX<T>>& state,
+    Eigen::VectorBlock<VectorX<T>>* discrete_updates) const {
+  *discrete_updates = input;
 }
 
 template <typename T>
-std::unique_ptr<DiscreteState<T>> ZeroOrderHold<T>::AllocateDiscreteState()
-    const {
-  // The zero-order hold's state is first-order. Its state vector size is the
-  // same as the input (and output) vector size.
-  const int size = System<T>::get_output_port(0).get_size();
-  DRAKE_DEMAND(System<T>::get_input_port(0).get_size() == size);
-  std::vector<std::unique_ptr<BasicVector<T>>> xd;
-  xd.push_back(std::make_unique<BasicVector<T>>(size));
-  return std::make_unique<DiscreteState<T>>(std::move(xd));
+ZeroOrderHold<symbolic::Expression>* ZeroOrderHold<T>::DoToSymbolic() const {
+  return new ZeroOrderHold<symbolic::Expression>(period_sec_,
+                                                 this->get_input_port().size());
 }
 
 }  // namespace systems

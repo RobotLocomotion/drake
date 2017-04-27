@@ -3,6 +3,8 @@
 #include <limits>
 #include <stdexcept>
 
+#include "drake/common/symbolic_expression.h"
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
@@ -14,7 +16,7 @@ VectorXd VectorDiff(const VectorXd& vec) {
   const int len_minus1 = vec.size() - 1;
   return vec.tail(len_minus1) - vec.head(len_minus1);
 }
-}  // anon namespace
+}  // namespace
 
 // DirectTrajectoryOptimization
 // For readability of long lines, these single-letter variables names are
@@ -30,33 +32,25 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
     : num_inputs_(num_inputs),
       num_states_(num_states),
       N_(num_time_samples),
-      h_vars_(opt_problem_.AddContinuousVariables(N_ - 1, "h")),
-      u_vars_(opt_problem_.AddContinuousVariables(num_inputs_ * N_, "u")),
-      x_vars_(opt_problem_.AddContinuousVariables(num_states_ * N_, "x")) {
-  DRAKE_ASSERT(num_inputs_ > 0);
-  DRAKE_ASSERT(num_states_ > 0);
+      h_vars_(NewContinuousVariables(N_ - 1, "h")),
+      x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
+      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
+      placeholder_t_var_(NewContinuousVariables<1>("h")),
+      placeholder_x_vars_(NewContinuousVariables(num_states_, "x")),
+      placeholder_u_vars_(NewContinuousVariables(num_inputs_, "u")) {
   DRAKE_ASSERT(num_time_samples > 1);
+  DRAKE_ASSERT(num_states_ > 0);
+  DRAKE_ASSERT(num_inputs_ >= 0);
   DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
   // Construct total time linear constraint.
   // TODO(Lucy-tri) add case for all timesteps independent (if needed).
-  MatrixXd id_zero(N_ - 2, N_ - 1);
-  id_zero << MatrixXd::Identity(N_ - 2, N_ - 2), MatrixXd::Zero(N_ - 2, 1);
-  MatrixXd zero_id(N_ - 2, N_ - 1);
-  zero_id << MatrixXd::Zero(N_ - 2, 1), MatrixXd::Identity(N_ - 2, N_ - 2);
-  MatrixXd a_time(N_ - 1, N_ - 1);
-  a_time << MatrixXd::Ones(1, N_ - 1), id_zero - zero_id;
-
-  VectorXd lower(N_ - 1);
-  lower << trajectory_time_lower_bound, MatrixXd::Zero(N_ - 2, 1);
-  VectorXd upper(N_ - 1);
-  upper << trajectory_time_upper_bound, MatrixXd::Zero(N_ - 2, 1);
-  opt_problem_.AddLinearConstraint(a_time, lower, upper, {h_vars_});
-
-  // Ensure that all h values are non-negative.
-  VectorXd all_inf(N_ - 1);
-  all_inf.fill(std::numeric_limits<double>::infinity());
-  opt_problem_.AddBoundingBoxConstraint(MatrixXd::Zero(N_ - 1, 1), all_inf,
-                                        {h_vars_});
+  AddLinearConstraint(h_vars_.cast<symbolic::Expression>().sum(),
+                      trajectory_time_lower_bound, trajectory_time_upper_bound);
+  for (int i = 0; i < N_ - 2; ++i) {
+    AddLinearEqualityConstraint(h_vars_(i + 1) - h_vars_(i), 0.0);
+  }
+  // // Ensure that all h values are non-negative.
+  AddLinearConstraint(h_vars_.array() >= 0.0);
 }
 
 void DirectTrajectoryOptimization::AddInputBounds(
@@ -70,22 +64,27 @@ void DirectTrajectoryOptimization::AddInputBounds(
     lb_all.segment(num_inputs_ * i, num_inputs_) = lower_bound;
     ub_all.segment(num_inputs_ * i, num_inputs_) = upper_bound;
   }
-  opt_problem_.AddBoundingBoxConstraint(lb_all, ub_all, {u_vars_});
+  AddBoundingBoxConstraint(lb_all, ub_all, u_vars_);
 }
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
-  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, {h_vars_});
+  AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
     const std::vector<int>& interval_indices) {
-  solvers::VariableListRef h_list;
-  for (const auto& idx : interval_indices) {
-    h_list.push_back(h_vars_.segment<1>(idx));
+  solvers::VectorXDecisionVariable h(interval_indices.size());
+  for (int i = 0; i < static_cast<int>(interval_indices.size()); ++i) {
+    h(i) = h_vars_(interval_indices[i]);
   }
-  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, h_list);
+  AddBoundingBoxConstraint(lower_bound, upper_bound, h);
+}
+
+void DirectTrajectoryOptimization::AddTimeIntervalBounds(double lower_bound,
+                                                         double upper_bound) {
+  AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
 namespace {
@@ -94,27 +93,31 @@ namespace {
 /// time steps and mangle the output appropriately.
 class FinalCostWrapper : public solvers::Constraint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FinalCostWrapper)
+
   FinalCostWrapper(int num_time_samples, int num_states,
                    std::shared_ptr<Constraint> constraint)
-      : Constraint(constraint->num_constraints(), constraint->lower_bound(),
-                   constraint->upper_bound()),
+      : Constraint(constraint->num_constraints(),
+                   (num_time_samples - 1) + num_states,
+                   constraint->lower_bound(), constraint->upper_bound()),
         num_time_samples_(num_time_samples),
         num_states_(num_states),
         constraint_(constraint) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
     // TODO(sam.creasey) If we actually need this, we could cut and
     // paste most of the implementation below (or maybe delegate to a
     // templated version).  I don't expect that scenario to occur.
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
     DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
 
-    TaylorVecXd wrapped_x(num_states_ + 1);
+    AutoDiffVecXd wrapped_x(num_states_ + 1);
     wrapped_x(0) = x.head(num_time_samples_ - 1).sum();
     wrapped_x.tail(num_states_) = x.tail(num_states_);
     DRAKE_ASSERT(wrapped_x(0).derivatives().rows() ==
@@ -130,7 +133,7 @@ class FinalCostWrapper : public solvers::Constraint {
   std::shared_ptr<Constraint> constraint_;
 };
 
-}  // anon namespace
+}  // namespace
 
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
@@ -138,14 +141,14 @@ void DirectTrajectoryOptimization::AddFinalCost(
     std::shared_ptr<solvers::Constraint> constraint) {
   auto wrapper =
       std::make_shared<FinalCostWrapper>(N_, num_states_, constraint);
-  opt_problem_.AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
+  AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
 }
 
 void DirectTrajectoryOptimization::GetInitialVars(
     double timespan_init_in, const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   VectorXd timespan_init{VectorXd::LinSpaced(N_, 0, timespan_init_in)};
-  opt_problem_.SetInitialGuess(h_vars_, VectorDiff(timespan_init));
+  SetInitialGuess(h_vars_, VectorDiff(timespan_init));
 
   VectorXd guess_u(u_vars_.size());
   if (traj_init_u.empty()) {
@@ -156,7 +159,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
           traj_init_u.value(timespan_init[t]);
     }
   }
-  opt_problem_.SetInitialGuess(u_vars_, guess_u);
+  SetInitialGuess(u_vars_, guess_u);
 
   DRAKE_ASSERT(!traj_init_x.empty());  // TODO(Lucy-tri) see below.
   VectorXd guess_x(x_vars_.size());
@@ -169,7 +172,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
           traj_init_x.value(timespan_init[t]);
     }
   }
-  opt_problem_.SetInitialGuess(x_vars_, guess_x);
+  SetInitialGuess(x_vars_, guess_x);
 }
 
 solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
@@ -179,9 +182,9 @@ solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
 
   // If we're using IPOPT, it can't quite solve trajectories to the
   // default precision level.
-  opt_problem_.SetSolverOption("IPOPT", "tol", 1e-7);
+  SetSolverOption(drake::solvers::SolverType::kIpopt, "tol", 1e-7);
 
-  solvers::SolutionResult result = opt_problem_.Solve();
+  solvers::SolutionResult result = Solve();
   return result;
 }
 
@@ -220,6 +223,25 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
     states.push_back(x_values.segment(i * num_states_, num_states_));
   }
   return states;
+}
+
+symbolic::Expression
+DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+    const symbolic::Expression& e, int interval_index) const {
+  symbolic::Substitution sub;
+
+  // time(i) is the sum of h intervals 0...(i-1)
+  const symbolic::Expression time =
+      h_vars_.head(interval_index).cast<symbolic::Expression>().sum();
+
+  sub.emplace(placeholder_t_var_(0), time);
+  for (int i = 0; i < num_states_; i++)
+    sub.emplace(placeholder_x_vars_(i),
+                x_vars_(interval_index * num_states_ + i));
+  for (int i = 0; i < num_inputs_; i++)
+    sub.emplace(placeholder_u_vars_(i),
+                u_vars_(interval_index * num_inputs_ + i));
+  return e.Substitute(sub);
 }
 
 void DirectTrajectoryOptimization::GetResultSamples(

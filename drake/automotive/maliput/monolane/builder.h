@@ -10,20 +10,18 @@
 
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/monolane/junction.h"
-
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
 
-namespace api {
-class RoadGeometry;
-}
-
 namespace monolane {
+class RoadGeometry;
 
-/// @file
-/// Builder for monolane road networks.
+/// @class Builder
+/// Convenient builder class which makes it easy to construct a monolane road
+/// network.
 ///
 /// monolane is a simple road-network implementation:
 ///  - single lane per segment;
@@ -56,11 +54,13 @@ namespace monolane {
 ///  - heading: heading of reference path (radians, zero == x-direction)
 class EndpointXy {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointXy)
+
   // Constructs an EndpointXy with all zero parameters.
-  EndpointXy() {}
+  EndpointXy() = default;
 
   EndpointXy(double x, double y, double heading)
-      :x_(x), y_(y), heading_(heading) {}
+      : x_(x), y_(y), heading_(heading) {}
 
   /// Returns an EndpointXy with reversed direction.
   EndpointXy reverse() const {
@@ -94,8 +94,10 @@ class EndpointXy {
 ///               of the reference path
 class EndpointZ {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointZ)
+
   // Constructs an EndpointZ with all zero parameters.
-  EndpointZ() {}
+  EndpointZ() = default;
 
   EndpointZ(double z, double z_dot, double theta, double theta_dot)
       : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
@@ -128,8 +130,10 @@ class EndpointZ {
 /// out-of-plane aspects of an endpoint.
 class Endpoint {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Endpoint)
+
   // Constructs an Endpoint with all zero parameters.
-  Endpoint() {}
+  Endpoint() = default;
 
   Endpoint(const EndpointXy& xy, const EndpointZ& z) : xy_(xy), z_(z) {}
 
@@ -158,8 +162,10 @@ class Endpoint {
 ///    * d_theta < 0 is clockwise ('veer to right')
 class ArcOffset {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArcOffset)
+
   /// Constructs an ArcOffset with all zero parameters.
-  ArcOffset() {}
+  ArcOffset() = default;
 
   ArcOffset(double radius, double d_theta)
       : radius_(radius), d_theta_(d_theta) {
@@ -190,6 +196,8 @@ class ArcOffset {
 /// of the endpoints.
 class Connection {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Connection)
+
   /// Possible connection geometries:  line- or arc-segment.
   enum Type { kLine, kArc };
 
@@ -247,13 +255,6 @@ class Connection {
     return d_theta_;
   }
 
-  /// @name Deleted Copy/Move Operations
-  /// Connection is neither copyable nor moveable.
-  ///@{
-  explicit Connection(const Connection&) = delete;
-  Connection& operator=(const Connection&) = delete;
-  ///@}
-
  private:
   Type type_{};
   std::string id_;
@@ -274,6 +275,8 @@ class Connection {
 /// corresponding Segments specified by all the Connections in the Group.
 class Group {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Group)
+
   /// Constructs an empty Group with the specified @p id.
   explicit Group(const std::string& id) : id_(id) {}
 
@@ -296,23 +299,17 @@ class Group {
     return connections_;
   }
 
-  /// @name Deleted Copy/Move Operations
-  /// Group is neither copyable nor moveable.
-  ///@{
-  explicit Group(const Group&) = delete;
-  Group& operator=(const Group&) = delete;
-  ///@}
-
  private:
   std::string id_;
   std::set<const Connection*> connections_;
 };
 
 
-/// Convenient builder class which makes it easy to construct a
-/// monolane road network.
+// N.B. The Builder class overview documentation lives at the top of this file.
 class Builder {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Builder)
+
   /// Constructs a Builder which can be used to specify and assemble a
   /// monolane implementation of an api::RoadGeometry.
   ///
@@ -367,13 +364,6 @@ class Builder {
   std::unique_ptr<const api::RoadGeometry> Build(
       const api::RoadGeometryId& id) const;
 
-  /// @name Deleted Copy/Move Operations
-  /// Builder is neither copyable nor moveable.
-  ///@{
-  explicit Builder(const Builder&) = delete;
-  Builder& operator=(const Builder&) = delete;
-  ///@}
-
  private:
   // EndpointFuzzyOrder is an arbitrary strict complete ordering of Endpoints
   // useful for, e.g., std::map.  It provides a comparison operation that
@@ -385,6 +375,8 @@ class Builder {
   // would not be robust given the use of floating-point values in Endpoints.
   class EndpointFuzzyOrder {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointFuzzyOrder)
+
     explicit EndpointFuzzyOrder(const double linear_tolerance)
         : lin_tol_(linear_tolerance) {}
 
@@ -422,11 +414,11 @@ class Builder {
       }
     }
 
-    const double lin_tol_{};
+    double lin_tol_{};
   };
 
   struct DefaultBranch {
-    DefaultBranch() {}
+    DefaultBranch() = default;
 
     DefaultBranch(
         const Connection* ain, const api::LaneEnd::Which ain_end,

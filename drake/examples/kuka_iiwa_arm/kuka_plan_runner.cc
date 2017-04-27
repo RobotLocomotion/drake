@@ -7,10 +7,11 @@
 ///
 /// When a plan is received, it will immediately begin executing that
 /// plan on the arm (replacing any plan in progress).
+
+#include <iostream>
 #include <memory>
 
 #include <lcm/lcm-cpp.hpp>
-
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
@@ -18,12 +19,11 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/lcmt_iiwa_command.hpp"
+#include "drake/lcmt_iiwa_status.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
-
-#include "drake/lcmt_iiwa_command.hpp"
-#include "drake/lcmt_iiwa_status.hpp"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -74,10 +74,10 @@ class RobotPlanRunner {
     iiwa_command.joint_torque.resize(kNumJoints, 0.);
 
     while (true) {
-      // Call lcm handle until at least one message is processed
-      while (0 == lcm_.handleTimeout(10)) { }
+      // Call lcm handle until at least one status message is
+      // processed.
+      while (0 == lcm_.handleTimeout(10) || iiwa_status_.utime == -1) { }
 
-      DRAKE_ASSERT(iiwa_status_.utime != -1);
       cur_time_us = iiwa_status_.utime;
 
       if (plan_) {
@@ -111,6 +111,11 @@ class RobotPlanRunner {
   void HandlePlan(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                   const robotlocomotion::robot_plan_t* plan) {
     std::cout << "New plan received." << std::endl;
+    if (iiwa_status_.utime == -1) {
+      std::cout << "Discarding plan, no status message received yet"
+                << std::endl;
+      return;
+    }
 
     std::vector<Eigen::MatrixXd> knots(plan->num_states,
                                        Eigen::MatrixXd::Zero(kNumJoints, 1));
@@ -123,7 +128,16 @@ class RobotPlanRunner {
           continue;
         }
         // Treat the matrix at knots[i] as a column vector.
-        knots[i](name_to_idx[state.joint_name[j]], 0) = state.joint_position[j];
+        if (i == 0) {
+          // Always start moving from the position which we're
+          // currently commanding.
+          DRAKE_DEMAND(iiwa_status_.utime != -1);
+          knots[0](name_to_idx[state.joint_name[j]], 0) =
+              iiwa_status_.joint_position_commanded[j];
+        } else {
+          knots[i](name_to_idx[state.joint_name[j]], 0) =
+              state.joint_position[j];
+        }
       }
     }
 
@@ -135,8 +149,10 @@ class RobotPlanRunner {
     for (int k = 0; k < static_cast<int>(plan->plan.size()); ++k) {
       input_time.push_back(plan->plan[k].utime / 1e6);
     }
+    const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumJoints, 1);
     plan_.reset(new PiecewisePolynomialTrajectory(
-        PiecewisePolynomial<double>::FirstOrderHold(input_time, knots)));
+        PiecewisePolynomial<double>::Cubic(input_time, knots,
+                                           knot_dot, knot_dot)));
     ++plan_number_;
   }
 
@@ -150,7 +166,8 @@ class RobotPlanRunner {
 int do_main(int argc, const char* argv[]) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf",
       multibody::joints::kFixed, tree.get());
 
   RobotPlanRunner runner(*tree);

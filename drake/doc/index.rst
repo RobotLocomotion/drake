@@ -120,10 +120,19 @@ Next steps
    developers
    Doxygen (C++) <doxygen_cxx/index.html#://>
    Doxygen (MATLAB) <doxygen_matlab/index.html#://>
-   URDF Reference <urdf/drakeURDF.html#://>
+   models
    faq
    issues
    video_tutorials
    Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
    credits
    GitHub <https://github.com/RobotLocomotion/drake>
+
+
+Using Drake from other Programming Languages
+============================================
+.. toctree::
+    :maxdepth: 1
+
+    python_bindings
+    julia_bindings

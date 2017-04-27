@@ -13,7 +13,18 @@ const int IdmPlannerParametersIndices::kB;
 const int IdmPlannerParametersIndices::kS0;
 const int IdmPlannerParametersIndices::kTimeHeadway;
 const int IdmPlannerParametersIndices::kDelta;
-const int IdmPlannerParametersIndices::kLA;
+const int IdmPlannerParametersIndices::kBloatDiameter;
+const int IdmPlannerParametersIndices::kDistanceLowerLimit;
+
+const std::vector<std::string>&
+IdmPlannerParametersIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "v_ref", "a", "b", "s_0", "time_headway", "delta", "bloat_diameter",
+          "distance_lower_limit",
+      });
+  return coordinates.access();
+}
 
 }  // namespace automotive
 }  // namespace drake

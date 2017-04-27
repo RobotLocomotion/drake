@@ -4,16 +4,16 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -37,15 +37,11 @@ GTEST_TEST(testIKpointwise, simpleIKpointwise) {
     q0.col(i) = tree->getZeroConfiguration();
     q0(3, i) = 0.8;
   }
-  Vector3d com_des = Vector3d::Zero();
-  com_des(2) = std::numeric_limits<double>::quiet_NaN();
+  Vector3d com_des(0, 0, std::numeric_limits<double>::quiet_NaN());
   WorldCoMConstraint com_kc(tree.get(), com_des, com_des);
-  Vector3d com_lb = Vector3d::Zero();
-  Vector3d com_ub = Vector3d::Zero();
-  com_lb(2) = 0.9;
-  com_ub(2) = 1.0;
-  Vector2d tspan_end;
-  tspan_end << 0.9, 1;
+  Vector3d com_lb(0, 0, 0.9);
+  Vector3d com_ub(0, 0, 1.0);
+  Vector2d tspan_end(0.9, 1);
 WorldCoMConstraint com_kc_final(tree.get(), com_lb, com_ub, tspan_end);
 
   int num_constraints = 2;

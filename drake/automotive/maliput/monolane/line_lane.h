@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/automotive/maliput/monolane/lane.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -10,6 +11,8 @@ namespace monolane {
 /// in the xy-plane (the ground plane) of the world frame.
 class LineLane : public Lane {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LineLane)
+
   /// Constructs a LineLane, a lane specified by a line segment defined in the
   /// xy-plane (the ground plane) of the world frame.
   ///
@@ -18,7 +21,7 @@ class LineLane : public Lane {
   ///
   /// @param id,segment,lane_bounds,driveable_bounds,elevation,superelevation
   ///        See documentation for the Lane base class.
-  LineLane(const api::LaneId& id, const Segment* segment,
+  LineLane(const api::LaneId& id, const api::Segment* segment,
            const V2& xy0, const V2& dxy,
            const api::RBounds& lane_bounds,
            const api::RBounds& driveable_bounds,
@@ -34,11 +37,13 @@ class LineLane : public Lane {
         dy_(dxy.y()),
         heading_(std::atan2(dy_, dx_)) {}
 
-  virtual ~LineLane() {}
+  ~LineLane() override = default;
 
  private:
   api::LanePosition DoToLanePosition(
-      const api::GeoPosition& geo_pos) const override;
+      const api::GeoPosition& geo_pos,
+      api::GeoPosition* nearest_point,
+      double* distance) const override;
 
   V2 xy_of_p(const double p) const override;
   V2 xy_dot_of_p(const double p) const override;

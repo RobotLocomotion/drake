@@ -12,5 +12,6 @@ def onIiwaStatus(msg):
     lcmUtils.publish('EST_ROBOT_STATE', stateMsg)
 
 
-subscriber = lcmUtils.addSubscriber('IIWA_STATUS', lcmdrake.lcmt_iiwa_status, onIiwaStatus)
+subscriber = lcmUtils.addSubscriber(
+    'IIWA_STATUS', lcmdrake.lcmt_iiwa_status, onIiwaStatus)
 consoleapp.ConsoleApp.start()

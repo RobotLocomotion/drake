@@ -2,6 +2,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 
@@ -17,6 +18,8 @@ class RigidBodyPlant;
 template <typename T>
 class KinematicsResults {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsResults)
+
   /// Constructs a KinematicsResults object associated with @param tree.
   /// An alias to @param tree is maintained so that the tree's lifetime must
   /// exceed this object's lifetime.

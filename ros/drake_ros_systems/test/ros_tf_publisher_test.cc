@@ -1,8 +1,8 @@
 #include "drake/systems/ros_tf_publisher.h"
 
-#include <gtest/gtest.h>
 #include <memory>
 
+#include <gtest/gtest.h>
 #include "ros/ros.h"
 
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -38,7 +38,7 @@ GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
 
   EXPECT_EQ(publisher->get_num_output_ports(), 0);
   EXPECT_EQ(input->size(), 4);
-  EXPECT_EQ(publisher->get_input_port(0).get_size(), input->size());
+  EXPECT_EQ(publisher->get_input_port(0).size(), input->size());
 
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(input->size());
   robot_position << 1.0, -0.5, 0, 0;

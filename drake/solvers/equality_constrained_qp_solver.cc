@@ -58,19 +58,20 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   Eigen::MatrixXd G = Eigen::MatrixXd::Zero(prog.num_vars(), prog.num_vars());
   Eigen::VectorXd c = Eigen::VectorXd::Zero(prog.num_vars());
   for (auto const& binding : prog.quadratic_costs()) {
-    size_t index = 0;
     const auto& Q = binding.constraint()->Q();
     const auto& b = binding.constraint()->b();
-    for (const auto& v : binding.variable_list().variables()) {
-      int num_v_variables = v.rows();
-      DRAKE_ASSERT(v.cols() == 1);
-      for (int i = 0; i < num_v_variables; ++i) {
-        for (int j = 0; j < num_v_variables; ++j) {
-          G(v(i, 0).index(), v(j, 0).index()) += Q(index + i, index + j);
-        }
-        c(v(i, 0).index()) += b(index + i);
+
+    int num_v_variables = binding.variables().rows();
+
+    std::vector<size_t> v_index(num_v_variables);
+    for (int i = 0; i < num_v_variables; ++i) {
+      v_index[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
+    }
+    for (int i = 0; i < num_v_variables; ++i) {
+      for (int j = 0; j < num_v_variables; ++j) {
+        G(v_index[i], v_index[j]) += Q(i, j);
       }
-      index += num_v_variables;
+      c(v_index[i]) += b(i);
     }
   }
 
@@ -81,16 +82,14 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& bc = binding.constraint();
     size_t n = bc->A().rows();
-    size_t var_index = 0;
-    for (const auto& v : binding.variable_list().variables()) {
-      DRAKE_ASSERT(v.cols() == 1);
-      int num_v_variables = v.rows();
-      for (int i = 0; i < num_v_variables; ++i) {
-        A.block(constraint_index, v(i, 0).index(), n, 1) =
-            bc->A().col(var_index + i);
-      }
-      var_index += num_v_variables;
+
+    int num_v_variables = binding.variables().rows();
+    for (int i = 0; i < num_v_variables; ++i) {
+      A.block(constraint_index,
+              prog.FindDecisionVariableIndex(binding.variables()(i)), n, 1) =
+          bc->A().col(i);
     }
+
     b.segment(constraint_index, n) =
         bc->lower_bound().segment(0, n);  // = c->upper_bound() since it's
     //  an equality constraint
@@ -111,8 +110,11 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
 
     // Solve G*x = A'y - c
-    prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
-    prog.SetSolverResult("Equality Constrained QP Solver", 0);
+    const Eigen::VectorXd x = llt.solve(A.transpose() * lambda - c);
+    prog.SetDecisionVariableValues(x);
+    const double optimal_cost = 0.5 * x.dot(G * x + c);
+    prog.SetOptimalCost(optimal_cost);
+    prog.SetSolverResult(solver_type(), 0);
     return SolutionResult::kSolutionFound;
   }
 
@@ -140,9 +142,13 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Compute the least-squares solution.
   Eigen::VectorXd sol =
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
-  prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
+  const Eigen::VectorXd x = sol.segment(0, prog.num_vars());
+  prog.SetDecisionVariableValues(x);
 
-  prog.SetSolverResult(SolverName(), 0);
+  const double optimal_cost = 0.5 * x.dot(G * x + c);
+  prog.SetOptimalCost(optimal_cost);
+
+  prog.SetSolverResult(solver_type(), 0);
   return SolutionResult::kSolutionFound;
 }
 

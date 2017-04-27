@@ -1,6 +1,8 @@
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 
+#include <memory>
 #include <random>
+#include <utility>
 
 #include <Eigen/Dense>
 
@@ -52,4 +54,11 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
 std::string RollPitchYawFloatingJoint::getPositionName(int index)
     const {
   return get_position_name(index);
+}
+
+std::unique_ptr<DrakeJoint> RollPitchYawFloatingJoint::DoClone() const {
+  auto joint = std::make_unique<RollPitchYawFloatingJoint>(
+      get_name(),
+      get_transform_to_parent_body());
+  return std::move(joint);
 }

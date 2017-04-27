@@ -3,17 +3,19 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/value.h"
+#include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -27,6 +29,13 @@ constexpr int kMiscContinuousStateSize = 1;
 
 constexpr double kTime = 12.0;
 
+// Defines a simple class for evaluating abstract types.
+class TestAbstractType {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestAbstractType)
+  TestAbstractType() = default;
+};
+
 class LeafContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -35,9 +44,8 @@ class LeafContextTest : public ::testing::Test {
     // Input
     context_.SetNumInputPorts(kNumInputPorts);
     for (int i = 0; i < kNumInputPorts; ++i) {
-      auto port_data = std::make_unique<BasicVector<double>>(kInputSize[i]);
-      auto port = std::make_unique<FreestandingInputPort>(std::move(port_data));
-      context_.SetInputPort(i, std::move(port));
+      context_.FixInputPort(
+          i, std::make_unique<BasicVector<double>>(kInputSize[i]));
     }
 
     // Reserve a continuous state with five elements.
@@ -51,46 +59,48 @@ class LeafContextTest : public ::testing::Test {
     xd.push_back(BasicVector<double>::Make({128.0}));
     xd.push_back(BasicVector<double>::Make({256.0, 512.0}));
     context_.set_discrete_state(
-        std::make_unique<DiscreteState<double>>(std::move(xd)));
+        std::make_unique<DiscreteValues<double>>(std::move(xd)));
 
     // Reserve an abstract state with one element, which is not owned.
     abstract_state_ = PackValue(42);
-    std::vector<AbstractValue*> xm;
-    xm.push_back(abstract_state_.get());
-    context_.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
+    std::vector<AbstractValue*> xa;
+    xa.push_back(abstract_state_.get());
+    context_.set_abstract_state(
+        std::make_unique<AbstractValues>(std::move(xa)));
 
-    // Reserve two numeric parameters, of size 3 and size 4.
-    std::vector<std::unique_ptr<BasicVector<double>>> params;
-    params.push_back(BasicVector<double>::Make({1.0, 2.0, 4.0}));
-    params.push_back(BasicVector<double>::Make({8.0, 16.0, 32.0, 64.0}));
-    context_.set_parameters(
-        std::make_unique<Parameters<double>>(std::move(params)));
+    // Reserve two numeric parameters of size 3 and size 4, and one abstract
+    // valued parameter of type TestAbstractType.
+    std::vector<std::unique_ptr<BasicVector<double>>> vector_params;
+    vector_params.push_back(BasicVector<double>::Make({1.0, 2.0, 4.0}));
+    vector_params.push_back(BasicVector<double>::Make({8.0, 16.0, 32.0, 64.0}));
+    std::vector<std::unique_ptr<AbstractValue>> abstract_params;
+    abstract_params.push_back(std::make_unique<Value<TestAbstractType>>());
+    context_.set_parameters(std::make_unique<Parameters<double>>(
+        std::move(vector_params),
+        std::move(abstract_params)));
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
-                                            kVectorValued, 0);
+    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const std::string* ReadStringInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
-                                            kAbstractValued, 0);
+    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0);
     return context.EvalInputValue<std::string>(nullptr, descriptor);
   }
 
-  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
   static const AbstractValue* ReadAbstractInputPort(
       const Context<double>& context, int index) {
-    SystemPortDescriptor<double> descriptor(nullptr, kInputPort, index,
-                                            kAbstractValued, 0);
+    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0);
     return context.EvalAbstractInput(nullptr, descriptor);
   }
 
@@ -110,11 +120,9 @@ void VerifyClonedState(const State<double>& clone) {
     EXPECT_EQ(expected, contents);
   }
 
-  EXPECT_EQ(2, clone.get_discrete_state()->size());
-  const BasicVector<double>* xd0 =
-      clone.get_discrete_state()->get_discrete_state(0);
-  const BasicVector<double>* xd1 =
-      clone.get_discrete_state()->get_discrete_state(1);
+  EXPECT_EQ(2, clone.get_discrete_state()->num_groups());
+  const BasicVector<double>* xd0 = clone.get_discrete_state()->get_vector(0);
+  const BasicVector<double>* xd1 = clone.get_discrete_state()->get_vector(1);
   {
     VectorX<double> contents = xd0->CopyToVector();
     VectorX<double> expected(1);
@@ -130,8 +138,8 @@ void VerifyClonedState(const State<double>& clone) {
   }
 
   EXPECT_EQ(1, clone.get_abstract_state()->size());
-  EXPECT_EQ(42,
-            clone.get_abstract_state()->get_abstract_state(0).GetValue<int>());
+  EXPECT_EQ(42, clone.get_abstract_state()->get_value(0).GetValue<int>());
+  EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
   const BasicVector<double>* xc_data =
@@ -177,15 +185,15 @@ TEST_F(LeafContextTest, IsStateless) {
 
 TEST_F(LeafContextTest, HasOnlyContinuousState) {
   EXPECT_FALSE(context_.has_only_continuous_state());
-  context_.set_discrete_state(std::make_unique<DiscreteState<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractState>());
+  context_.set_discrete_state(std::make_unique<DiscreteValues<double>>());
+  context_.set_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_continuous_state());
 }
 
 TEST_F(LeafContextTest, HasOnlyDiscreteState) {
   EXPECT_FALSE(context_.has_only_discrete_state());
   context_.set_continuous_state(std::make_unique<ContinuousState<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractState>());
+  context_.set_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_discrete_state());
 }
 
@@ -194,11 +202,7 @@ TEST_F(LeafContextTest, GetVectorInput) {
   context.SetNumInputPorts(2);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
-  vec->get_mutable_value() << 5, 6;
-  std::unique_ptr<FreestandingInputPort> port(
-      new FreestandingInputPort(std::move(vec)));
-  context.SetInputPort(0, std::move(port));
+  context.FixInputPort(0, BasicVector<double>::Make({5, 6}));
 
   // Test that port 0 is retrievable.
   VectorX<double> expected(2);
@@ -214,10 +218,7 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   context.SetNumInputPorts(2);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  std::unique_ptr<AbstractValue> value(new Value<std::string>("foo"));
-  std::unique_ptr<FreestandingInputPort> port(
-      new FreestandingInputPort(std::move(value)));
-  context.SetInputPort(0, std::move(port));
+  context.FixInputPort(0, AbstractValue::Make<std::string>("foo"));
 
   // Test that port 0 is retrievable.
   EXPECT_EQ("foo", *ReadStringInputPort(context, 0));
@@ -275,6 +276,8 @@ TEST_F(LeafContextTest, Clone) {
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
+  EXPECT_EQ(42, context_.get_abstract_state()->get_value(0).GetValue<int>());
+  EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
   LeafContext<double>* leaf_clone =
@@ -289,6 +292,9 @@ TEST_F(LeafContextTest, Clone) {
   EXPECT_EQ(16.0, param1[1]);
   EXPECT_EQ(32.0, param1[2]);
   EXPECT_EQ(64.0, param1[3]);
+  ASSERT_EQ(1, leaf_clone->num_abstract_parameters());
+  EXPECT_TRUE(is_dynamic_castable<const TestAbstractType>(
+      &leaf_clone->get_abstract_parameter(0).GetValue<TestAbstractType>()));
 
   // Verify that changes to the cloned parameters do not affect the originals.
   (*leaf_clone->get_mutable_numeric_parameter(0))[0] = 76.0;
@@ -316,7 +322,7 @@ TEST_F(LeafContextTest, CopyStateFrom) {
 }
 
 // Tests that a LeafContext<AutoDiffXd> can be initialized from a
-// Leafcontext<double>.
+// LeafContext<double>.
 TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Set up a target with the same geometry as the source, and no
   // interesting values.
@@ -331,12 +337,22 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(1));
   xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(2));
   target.set_discrete_state(
-      std::make_unique<DiscreteState<AutoDiffXd>>(std::move(xd)));
+      std::make_unique<DiscreteValues<AutoDiffXd>>(std::move(xd)));
 
-  std::vector<std::unique_ptr<AbstractValue>> xm;
-  xm.push_back(PackValue(76));
-  target.set_abstract_state(std::make_unique<AbstractState>(std::move(xm)));
+  std::vector<std::unique_ptr<AbstractValue>> xa;
+  xa.push_back(PackValue(76));
+  target.set_abstract_state(std::make_unique<AbstractValues>(std::move(xa)));
 
+  std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> params;
+  params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(3));
+  params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(4));
+  target.get_mutable_parameters().set_numeric_parameters(
+      std::make_unique<DiscreteValues<AutoDiffXd>>(std::move(params)));
+
+  std::vector<std::unique_ptr<AbstractValue>> abstract_params;
+  abstract_params.push_back(std::make_unique<Value<TestAbstractType>>());
+  target.get_mutable_parameters().set_abstract_parameters(
+      std::make_unique<AbstractValues>(std::move(abstract_params)));
 
   // Set the target from the source.
   target.SetTimeStateAndParametersFrom(context_);
@@ -344,11 +360,14 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Verify that time was set.
   EXPECT_EQ(kTime, target.get_time());
   // Verify that state was set.
-  const ContinuousState<AutoDiffXd>& xc = *target.get_continuous_state();
+  const ContinuousState<AutoDiffXd> &xc = *target.get_continuous_state();
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
   EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
   EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());
   EXPECT_EQ(128.0, target.get_discrete_state(0)->GetAtIndex(0));
+  // Verify that parameters were set.
+  target.get_numeric_parameter(0);
+  EXPECT_EQ(2.0, (target.get_numeric_parameter(0)->GetAtIndex(1).value()));
 }
 
 }  // namespace systems

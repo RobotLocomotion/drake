@@ -1,12 +1,12 @@
 {
   "modelName" : "kuka_iiwa",
   "urdfConfig": {
-    "default": "urdf/iiwa14_simplified_collision.urdf",
-    "robotState": "urdf/iiwa14_simplified_collision.urdf",
-    "ik":         "urdf/iiwa14_simplified_collision.urdf",
-    "chull":      "urdf/iiwa14_simplified_collision.urdf",
-    "playback":   "urdf/iiwa14_simplified_collision.urdf",
-    "teleop":     "urdf/iiwa14_simplified_collision.urdf"
+    "default": "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "robotState": "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "ik":         "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "chull":      "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "playback":   "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf",
+    "teleop":     "../../manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf"
   },
 
   "teleopJointGroups" : [
@@ -50,9 +50,9 @@
     "iiwa_joint_7"
   ],
 
+  "planningMode" : "pydrake",
   "fixedPointFile" : "kuka_iiwa_fp.csv",
   "postureDatabaseFile" : "stored_poses.json",
-
 
   "handCombinations": [],
   "userConfig" : ["fixedBaseArm"],

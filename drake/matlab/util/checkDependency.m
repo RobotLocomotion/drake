@@ -70,23 +70,10 @@ else % then try to evaluate the dependency now...
     case 'lcm'
       conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       if (~conf.lcm_enabled)
-        lcm_java_classpath = getCMakeParam('lcm_java_classpath');
-        if ~isempty(lcm_java_classpath)
-          javaaddpathProtectGlobals(lcm_java_classpath);
-          disp(' Added the lcm jar to your javaclasspath (found via cmake)');
-          conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
-        end
-
-        if (~conf.lcm_enabled)
-          [retval,cp] = system(['export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:',fullfile(getCMakeParam('CMAKE_INSTALL_PREFIX'),'lib','pkgconfig'),' && pkg-config --variable=classpath lcm-java']);
-          if (retval==0 && ~isempty(cp))
-            disp(' Added the lcm jar to your javaclasspath (found via pkg-config)');
-            javaaddpathProtectGlobals(strtrim(cp));
-          end
-
-          conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
-        end
-
+        lcm_java_classpath = getCMakeParam('LCM_JAR_FILE');
+        javaaddpathProtectGlobals(lcm_java_classpath);
+        disp(' Added the lcm jar to your javaclasspath (found via cmake)');
+        conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
         if (conf.lcm_enabled)
           [retval,info] = systemWCMakeEnv(fullfile(getDrakePath(),'matlab','util','check_multicast_is_loopback.sh'));
           if (retval)
@@ -97,8 +84,8 @@ else % then try to evaluate the dependency now...
         elseif nargout<1
           disp(' ');
           disp(' LCM not found.  LCM support will be disabled.');
-          disp(' To re-enable, add lcm-###.jar to your matlab classpath');
-          disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.9.2.jar'') into your startup.m .');
+          disp(' To re-enable, add lcm.jar to your matlab classpath');
+          disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm.jar'') into your startup.m .');
           disp(' ');
         end
       end
@@ -115,8 +102,8 @@ else % then try to evaluate the dependency now...
 
       if (lcm_enabled && ~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
-          lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE');
-          javaaddpathProtectGlobals(lcm_java_classpath);
+          lcmgl_java_classpath = getCMakeParam('LCMGL_JAR_FILE');
+          javaaddpathProtectGlobals(lcmgl_java_classpath);
           disp(' Added the lcmgl jar to your javaclasspath (found via cmake)');
         catch err
           if strcmp(err.identifier, 'Drake:CannotClearJava')
@@ -424,9 +411,6 @@ else % then try to evaluate the dependency now...
 
     case 'iris'
       conf.iris_enabled = logical(exist('+iris/inflate_region.m','file'));
-      if (~conf.iris_enabled)
-        conf.iris_enabled = pod_pkg_config('iris');
-      end
       if ~conf.iris_enabled && nargout<1
         disp(' ');
         disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');

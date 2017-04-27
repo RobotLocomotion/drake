@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -15,12 +18,9 @@ namespace systems {
 template <class T>
 class ExplicitEulerIntegrator : public IntegratorBase<T> {
  public:
-  ~ExplicitEulerIntegrator() override = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExplicitEulerIntegrator)
 
-  // Disable copy, assign, and move.
-  ExplicitEulerIntegrator(const ExplicitEulerIntegrator<T>& other) = delete;
-  ExplicitEulerIntegrator& operator=(const ExplicitEulerIntegrator<T>& other) =
-      delete;
+  ~ExplicitEulerIntegrator() override = default;
 
   /**
    * Constructs a fixed-step integrator for a given system using the given
@@ -68,8 +68,7 @@ void ExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
-  IntegratorBase<T>::get_system().CalcTimeDerivatives(
-      IntegratorBase<T>::get_context(), derivs_.get());
+  this->CalcTimeDerivatives(*context, derivs_.get());
 
   // Compute derivative and update configuration and velocity.
   // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))

@@ -1,11 +1,13 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -13,16 +15,18 @@ namespace monolane {
 
 class BranchPoint;
 class Lane;
-class RoadGeometry;
 
 
 /// An implementation of LaneEndSet.
 class LaneEndSet : public api::LaneEndSet {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LaneEndSet)
+
+  LaneEndSet() = default;
+  ~LaneEndSet() override = default;
+
   /// Adds a LaneEnd.
   void add(const api::LaneEnd& end) { ends_.push_back(end); }
-
-  virtual ~LaneEndSet() {}
 
  private:
   int do_size() const override { return ends_.size(); }
@@ -36,10 +40,12 @@ class LaneEndSet : public api::LaneEndSet {
 /// An implementation of api::BranchPoint.
 class BranchPoint : public api::BranchPoint {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BranchPoint)
+
   /// Constructs an empty BranchPoint.
   ///
   /// @p road_geometry must remain valid for the lifetime of this class.
-  BranchPoint(const api::BranchPointId& id, RoadGeometry* road_geometry);
+  BranchPoint(const api::BranchPointId& id, api::RoadGeometry* road_geometry);
 
   /// Adds a LaneEnd to the "A side" of the BranchPoint.
   const api::LaneEnd& AddABranch(const api::LaneEnd& lane_end);
@@ -53,7 +59,7 @@ class BranchPoint : public api::BranchPoint {
   void SetDefault(const api::LaneEnd& lane_end,
                   const api::LaneEnd& default_branch);
 
-  virtual ~BranchPoint() {}
+  ~BranchPoint() override = default;
 
  private:
   const api::BranchPointId do_id() const override { return id_; }
@@ -74,7 +80,7 @@ class BranchPoint : public api::BranchPoint {
   const api::LaneEndSet* DoGetBSide() const override { return &b_side_; }
 
   api::BranchPointId id_;
-  RoadGeometry* road_geometry_{};
+  api::RoadGeometry* road_geometry_{};
   LaneEndSet a_side_;
   LaneEndSet b_side_;
 

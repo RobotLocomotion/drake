@@ -1,5 +1,13 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
+#include <chrono>
+#include <thread>
+#include <utility>
+
+#include "drake/common/text_logging.h"
+#include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
+#include "drake/systems/rendering/drake_visualizer_client.h"
+
 namespace drake {
 namespace systems {
 
@@ -8,32 +16,139 @@ namespace {
 const int kPortIndex = 0;
 }  // namespace
 
-DrakeVisualizer::DrakeVisualizer(
-    const RigidBodyTree<double>& tree, drake::lcm::DrakeLcmInterface* lcm) :
-    lcm_(lcm), load_message_(CreateLoadMessage(tree)),
-    draw_message_translator_(tree) {
+DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
+                                 drake::lcm::DrakeLcmInterface* lcm,
+                                 bool enable_playback)
+    : lcm_(lcm),
+      load_message_(multibody::CreateLoadRobotMessage<double>(tree)),
+      draw_message_translator_(tree) {
   set_name("drake_visualizer");
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
+  this->DeclareDiscreteState(1);
+  if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
 }
 
-void DrakeVisualizer::DoPublish(const Context<double>& context)
-    const {
-  // TODO(liang.fok): Replace the following code once System 2.0's API allows
-  // systems to declare that they need a certain action to be performed at
-  // simulation time t_0.
-  //
-  // Before any draw commands, we need to send the load_robot message.
-  if (context.get_time() == 0.0) {
-    PublishLoadRobot();
+void DrakeVisualizer::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePublishPeriodSec(period);
+}
+
+void DrakeVisualizer::DoCalcNextUpdateTime(
+    const Context<double>& context, UpdateActions<double>* events) const {
+  if (is_load_message_sent(context)) {
+    return LeafSystem<double>::DoCalcNextUpdateTime(context, events);
+  } else {
+    // TODO(siyuan): cleanup after #5725 is resolved.
+    events->time = context.get_time() + 0.0001;
+    DiscreteEvent<double> event;
+    event.action = DiscreteEvent<double>::ActionType::kDiscreteUpdateAction;
+    events->events.push_back(event);
   }
-  DRAKE_DEMAND(sent_load_robot_);
+}
+
+void DrakeVisualizer::DoCalcDiscreteVariableUpdates(
+    const Context<double>& context,
+    DiscreteValues<double>* discrete_state) const {
+  DRAKE_DEMAND(!is_load_message_sent(context));
+
+  PublishLoadRobot();
+  set_is_load_message_sent(discrete_state, true);
+}
+
+void DrakeVisualizer::ReplayCachedSimulation() const {
+  if (log_ != nullptr) {
+    // Build piecewise polynomial
+    auto times = log_->sample_times();
+    // NOTE: The SignalLog can record signal for multiple identical time stamps.
+    //  This culls the duplicates as required by the PiecewisePolynomial.
+    std::vector<int> included_times;
+    included_times.reserve(times.rows());
+    std::vector<double> breaks;
+    included_times.push_back(0);
+    breaks.push_back(times(0));
+    int last = 0;
+    for (int i = 1; i < times.rows(); ++i) {
+      double val = times(i);
+      if (val != breaks[last]) {
+        breaks.push_back(val);
+        included_times.push_back(i);
+        ++last;
+      }
+    }
+
+    auto sample_data = log_->data();
+    std::vector<MatrixX<double>> knots;
+    knots.reserve(sample_data.cols());
+    for (int c : included_times) {
+      knots.push_back(sample_data.col(c));
+    }
+    auto func = PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
+
+    PlaybackTrajectory(func);
+  } else {
+    drake::log()->warn(
+        "DrakeVisualizer::ReplayCachedSimulation() called on instance that "
+        "wasn't initialized to record. Next time, please construct "
+        "DrakeVisualizer with recording enabled.");
+  }
+}
+
+void DrakeVisualizer::PlaybackTrajectory(
+    const PiecewisePolynomial<double>& input_trajectory) const {
+  using Clock = std::chrono::steady_clock;
+  using Duration = std::chrono::duration<double>;
+  using TimePoint = std::chrono::time_point<Clock, Duration>;
+
+  // Target frame length at 60 Hz playback rate.
+  const double kFrameLength = 1 / 60.0;
+  double sim_time = input_trajectory.getStartTime();
+  TimePoint prev_time = Clock::now();
+  BasicVector<double> data(log_->get_input_size());
+  while (sim_time < input_trajectory.getEndTime()) {
+    data.set_value(input_trajectory.value(sim_time));
+
+    // Translates the input vector into an array of bytes representing an LCM
+    // message.
+    std::vector<uint8_t> message_bytes;
+    draw_message_translator_.Serialize(sim_time, data,
+                                       &message_bytes);
+
+    // Publishes onto the specified LCM channel.
+    lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
+                  message_bytes.size());
+
+    const TimePoint earliest_next_frame = prev_time + Duration(kFrameLength);
+    std::this_thread::sleep_until(earliest_next_frame);
+    TimePoint curr_time = Clock::now();
+    sim_time += (curr_time - prev_time).count();
+    prev_time = curr_time;
+  }
+
+  // Final evaluation is at the final time stamp, guaranteeing the final state
+  // is visualized.
+  data.set_value(input_trajectory.value(input_trajectory.getEndTime()));
+  std::vector<uint8_t> message_bytes;
+  draw_message_translator_.Serialize(sim_time, data,
+                                     &message_bytes);
+  lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
+                message_bytes.size());
+}
+
+void DrakeVisualizer::DoPublish(const Context<double>& context) const {
+  if (!is_load_message_sent(context)) {
+    drake::log()->warn(
+        "DrakeVisualizer::Publish() called before PublishLoadRobot()");
+    return;
+  }
 
   // Obtains the input vector, which contains the generalized q,v state of the
   // RigidBodyTree.
   const BasicVector<double>* input_vector = EvalVectorInput(context,
                                                             kPortIndex);
+  if (log_ != nullptr) {
+    log_->AddData(context.get_time(), input_vector->get_value());
+  }
 
   // Translates the input vector into an array of bytes representing an LCM
   // message.
@@ -54,103 +169,6 @@ void DrakeVisualizer::PublishLoadRobot() const {
 
   lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", lcm_message_bytes.data(),
       lcm_message_length);
-  sent_load_robot_ = true;
-}
-
-lcmt_viewer_load_robot DrakeVisualizer::CreateLoadMessage(
-    const RigidBodyTree<double>& tree) {
-  lcmt_viewer_load_robot load_message;
-  load_message.num_links = tree.bodies.size();
-  for (const auto& body : tree.bodies) {
-    lcmt_viewer_link_data link;
-    link.name = body->get_name();
-    link.robot_num = body->get_model_instance_id();
-    link.num_geom = body->get_visual_elements().size();
-    for (const auto& visual_element : body->get_visual_elements()) {
-      lcmt_viewer_geometry_data geometry_data;
-      const DrakeShapes::Geometry& geometry = visual_element.getGeometry();
-
-      // TODO(liang.fok) Do this through virtual methods without introducing any
-      // LCM dependency on the Geometry classes.
-      //
-      // TODO(liang.fok) Add support for the DrakeShapes::MESH_POINTS type.
-      switch (visual_element.getShape()) {
-        case DrakeShapes::BOX: {
-          geometry_data.type = geometry_data.BOX;
-          geometry_data.num_float_data = 3;
-          auto box = dynamic_cast<const DrakeShapes::Box&>(geometry);
-          for (int i = 0; i < 3; ++i)
-            geometry_data.float_data.push_back(static_cast<float>(box.size(i)));
-          break;
-        }
-        case DrakeShapes::SPHERE: {
-          geometry_data.type = geometry_data.SPHERE;
-          geometry_data.num_float_data = 1;
-          auto sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
-          geometry_data.float_data.push_back(static_cast<float>(sphere.radius));
-          break;
-        }
-        case DrakeShapes::CYLINDER: {
-          geometry_data.type = geometry_data.CYLINDER;
-          geometry_data.num_float_data = 2;
-          auto cylinder = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
-          geometry_data.float_data.push_back(static_cast<float>(
-              cylinder.radius));
-          geometry_data.float_data.push_back(static_cast<float>(
-              cylinder.length));
-          break;
-        }
-        case DrakeShapes::MESH: {
-          geometry_data.type = geometry_data.MESH;
-          geometry_data.num_float_data = 3;
-          auto mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
-          geometry_data.float_data.push_back(static_cast<float>(
-              mesh.scale_[0]));
-          geometry_data.float_data.push_back(static_cast<float>(
-              mesh.scale_[1]));
-          geometry_data.float_data.push_back(static_cast<float>(
-              mesh.scale_[2]));
-
-          if (mesh.uri_.find("package://") == 0) {
-            geometry_data.string_data = mesh.uri_;
-          } else {
-            geometry_data.string_data = mesh.resolved_filename_;
-          }
-
-          break;
-        }
-        case DrakeShapes::CAPSULE: {
-          geometry_data.type = geometry_data.CAPSULE;
-          geometry_data.num_float_data = 2;
-          auto c = dynamic_cast<const DrakeShapes::Capsule&>(geometry);
-          geometry_data.float_data.push_back(static_cast<float>(c.radius));
-          geometry_data.float_data.push_back(static_cast<float>(c.length));
-          break;
-        }
-        default: {
-          // Intentionally do nothing.
-          break;
-        }
-      }
-
-      // Saves the location and orientation of the visualization geometry in the
-      // `lcmt_viewer_geometry_data` object. The location and orientation are
-      // specified in the body's frame.
-      Eigen::Isometry3d transform = visual_element.getLocalTransform();
-      Eigen::Map<Eigen::Vector3f> position(geometry_data.position);
-      position = transform.translation().cast<float>();
-      Eigen::Map<Eigen::Vector4f> quaternion(geometry_data.quaternion);
-      quaternion = math::rotmat2quat(transform.rotation()).cast<float>();
-
-      Eigen::Map<Eigen::Vector4f> color(geometry_data.color);
-      color = visual_element.getMaterial().template cast<float>();
-
-      link.geom.push_back(geometry_data);
-    }
-    load_message.link.push_back(link);
-  }
-
-  return load_message;
 }
 
 }  // namespace systems

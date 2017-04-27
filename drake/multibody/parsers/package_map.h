@@ -3,6 +3,8 @@
 #include <map>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace parsers {
 
@@ -11,14 +13,10 @@ namespace parsers {
 /// packages for resources like mesh files.
 class PackageMap {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PackageMap)
+
   /// A constructor that initializes an empty map.
   PackageMap();
-
-  // Disable copy and assignment.
-  PackageMap(const PackageMap&) = delete;
-  PackageMap& operator=(const PackageMap&) = delete;
-  PackageMap(PackageMap&&) = delete;
-  PackageMap& operator=(PackageMap&&) = delete;
 
   /// Adds package @p package_name and its path, @p package_path. Aborts if
   /// @p package_name is already present in this PackageMap, or if
@@ -61,6 +59,9 @@ class PackageMap {
   /// @param[in] model_file The model file whose directory is the start of the
   /// search for `package.xml` files. This file must be an SDF or URDF file.
   void PopulateUpstreamToDrake(const std::string& model_file);
+
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const PackageMap& package_map);
 
  private:
   // Recursively crawls through @p path looking for package.xml files. Adds

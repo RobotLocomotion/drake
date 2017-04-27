@@ -34,6 +34,11 @@ GTEST_TEST(PendulumPlantTest, ToAutoDiff) {
   // At this point, users could initialize the partials as they pleased.
 }
 
+GTEST_TEST(PendulumPlantTest, DirectFeedthrough) {
+  PendulumPlant<double> plant;
+  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+}
+
 }  // namespace
 }  // namespace pendulum
 }  // namespace examples

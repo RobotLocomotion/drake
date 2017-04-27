@@ -5,9 +5,11 @@
 #include <memory>
 #include <set>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -24,7 +26,8 @@ class CacheEntry {
   CacheEntry();
   ~CacheEntry();
 
-  // CacheEntry is copyable.
+  // Implements CopyConstructible and CopyAssignable directly, and
+  // MoveConstructible and MoveAssignable indirectly via copying.
   CacheEntry(const CacheEntry& other);
   CacheEntry& operator=(const CacheEntry& other);
 
@@ -77,6 +80,8 @@ class CacheEntry {
 /// Cache is not thread-safe. It is copyable, assignable, and movable.
 class Cache {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cache)
+
   Cache();
   ~Cache();
 

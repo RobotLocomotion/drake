@@ -1,0 +1,25 @@
+<robot name="simple_anchored">
+
+ <link name="parentless_body">
+   <collision>
+     <origin xyz="1 0 1" rpy="0 0 0"/>
+     <geometry>
+       <box size="1 1 1" />
+     </geometry>
+   </collision>
+  </link>
+
+  <link name="fixed_body">
+    <collision>
+      <origin xyz="1.5 0 1.5" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.5" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="fixed" type="fixed">
+    <parent link="parentless_body"/>
+    <child link="fixed_body"/>
+  </joint>
+</robot>

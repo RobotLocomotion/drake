@@ -2,17 +2,25 @@
 
 #include <functional>
 #include <limits>
+#include <memory>
+#include <sstream>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/nice_type_name.h"
+#include "drake/common/symbolic_expression.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
@@ -30,7 +38,7 @@ namespace systems {
 template <typename T>
 struct DiscreteEvent {
   typedef std::function<void(const Context<T>&)> PublishCallback;
-  typedef std::function<void(const Context<T>&, DiscreteState<T>*)>
+  typedef std::function<void(const Context<T>&, DiscreteValues<T>*)>
       DiscreteUpdateCallback;
   typedef std::function<void(const Context<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
@@ -82,6 +90,18 @@ struct UpdateActions {
   std::vector<DiscreteEvent<T>> events;
 };
 
+/** @cond */
+// Private helper class for System.
+class SystemImpl {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemImpl)
+  SystemImpl() = delete;
+
+  // The implementation of System<T>::GetMemoryObjectName.
+  static std::string GetMemoryObjectName(const std::string&, int64_t);
+};
+/** @endcond */
+
 /// A superclass template for systems that receive input, maintain state, and
 /// produce output of a given mathematical type T.
 ///
@@ -89,6 +109,9 @@ struct UpdateActions {
 template <typename T>
 class System {
  public:
+  // System objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
+
   virtual ~System() {}
 
   //----------------------------------------------------------------------------
@@ -101,6 +124,33 @@ class System {
   /// pointers are not owned by the context, they should simply be initialized
   /// to nullptr.
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
+
+  /// Given a port descriptor, allocates the vector storage.  The default
+  /// implementation in this class allocates a BasicVector.  Subclasses must
+  /// override the NVI implementation of this function, DoAllocateInputVector,
+  /// to return input vector types other than BasicVector. The @p descriptor
+  /// must match a port declared via DeclareInputPort.
+  std::unique_ptr<BasicVector<T>> AllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const {
+    DRAKE_ASSERT(descriptor.get_data_type() == kVectorValued);
+    const int index = descriptor.get_index();
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
+    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(descriptor));
+  }
+
+  /// Given a port descriptor, allocates the abstract storage. Subclasses with a
+  /// abstract input ports must override the NVI implementation of this
+  /// function, DoAllocateInputAbstract, to return an appropriate AbstractValue.
+  /// The @p descriptor must match a port declared via DeclareInputPort.
+  std::unique_ptr<AbstractValue> AllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const {
+    DRAKE_ASSERT(descriptor.get_data_type() == kAbstractValued);
+    const int index = descriptor.get_index();
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    DRAKE_ASSERT(get_input_port(index).get_data_type() == kAbstractValued);
+    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(descriptor));
+  }
 
   /// Returns a default output, initialized with the correct number of
   /// concrete output ports for this System. @p context is provided as
@@ -124,8 +174,7 @@ class System {
   /// as the output argument to Update.
   /// By default, allocates nothing. Systems with discrete state variables
   /// should override.
-  virtual std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
-  const {
+  virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const {
     return nullptr;
   }
 
@@ -146,18 +195,40 @@ class System {
   // override.
   virtual void SetDefaults(Context<T>* context) const = 0;
 
-  /// Evaluates to `true` if any of the inputs to the system is directly
+  /// For each input port, allocates a freestanding input of the concrete type
+  /// that this System requires, and binds it to the port, disconnecting any
+  /// prior input. Does not assign any values to the freestanding inputs.
+  void AllocateFreestandingInputs(Context<T>* context) const {
+    for (const auto& port : input_ports_) {
+      if (port->get_data_type() == kVectorValued) {
+        context->FixInputPort(port->get_index(), AllocateInputVector(*port));
+      } else {
+        DRAKE_DEMAND(port->get_data_type() == kAbstractValued);
+        context->FixInputPort(port->get_index(), AllocateInputAbstract(*port));
+      }
+    }
+  }
+
+  /// Returns `true` if any of the inputs to the system might be directly
   /// fed through to any of its outputs and `false` otherwise.
   ///
-  /// By default we assume that there is direct feedthrough of values from
-  /// every input port to every output port. This is a conservative assumption
-  /// that ensures we detect and can prevent the formation of algebraic loops
-  /// (implicit computations) in system diagrams. Any System for which none of
-  /// the input ports ever feeds through to any of the output ports should
-  /// override this method to return false.
-  // TODO(amcastro-tri): Provide a more descriptive mechanism to specify
-  // pairwise (input_port, output_port) feedthrough.
-  virtual bool has_any_direct_feedthrough() const { return true; }
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasAnyDirectFeedthrough() const = 0;
+
+  /// Returns true if there might be direct-feedthrough from any input port to
+  /// the given @p output_port, and false otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasDirectFeedthrough(int output_port) const = 0;
+
+  /// Returns true if there might be direct-feedthrough from the given
+  /// @p input_port to the given @p output_port, and false otherwise.
+  ///
+  /// This method is virtual for framework purposes only. User code should not
+  /// override it.
+  virtual bool HasDirectFeedthrough(int input_port, int output_port) const = 0;
 
   //@}
 
@@ -221,38 +292,6 @@ class System {
   /// appropriate subsystem evaluate the source output port.
   //@{
 
-  /// This method is called to update *any* state variables in the @p context
-  /// because the given @p event has arrived. Dispatches to
-  /// DoCalcUnrestrictedUpdate() by default, or to
-  /// `event.do_unrestricted_update` if provided. Does not allow the
-  /// dimensionality of the state variables to change.
-  /// @throws std::logic_error if the dimensionality of the state variables
-  ///         changes in the callback.
-  void CalcUnrestrictedUpdate(const Context<T>& context,
-                              const DiscreteEvent<T>& event,
-                              State<T>* state) const {
-    const int64_t continuous_state_dim =
-                       state->get_continuous_state()->size();
-    const int64_t discrete_state_dim = state->get_discrete_state()->size();
-    const int64_t abstract_state_dim = state->get_abstract_state()->size();
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
-
-    // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalclUnrestrictedUpdate().
-    state->CopyFrom(context.get_state());
-
-    if (event.do_unrestricted_update == nullptr) {
-      DoCalcUnrestrictedUpdate(context, state);
-    } else {
-      event.do_unrestricted_update(context, state);
-    }
-    if (continuous_state_dim != state->get_continuous_state()->size() ||
-        discrete_state_dim != state->get_discrete_state()->size() ||
-        abstract_state_dim != state->get_abstract_state()->size())
-      throw std::logic_error("State variable dimensions cannot be changed "
-                               "in CalcUnrestrictedUpdate().");
-  }
-
   /// Returns a reference to the cached value of the conservative power. If
   /// necessary the cache will be updated first using CalcConservativePower().
   /// @see CalcConservativePower()
@@ -276,12 +315,21 @@ class System {
   /// up-to-date, delegating to our parent Diagram if necessary. Returns
   /// the port's value, or nullptr if the port is not connected.
   ///
-  /// Throws std::bad_cast if the port is not vector-valued. Aborts if the port
+  /// Throws std::bad_cast if the port is not vector-valued. Returns nullptr if
+  /// the port is vector valued, but not of type Vec. Aborts if the port
   /// does not exist.
-  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
-                                        int port_index) const {
+  ///
+  /// @tparam Vec The template type of the input vector, which must be a
+  ///             subclass of BasicVector.
+  template <template <typename> class Vec = BasicVector>
+  const Vec<T>* EvalVectorInput(const Context<T>& context,
+                                int port_index) const {
+    static_assert(
+        std::is_base_of<BasicVector<T>, Vec<T>>::value,
+        "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalVectorInput(parent_, get_input_port(port_index));
+    return dynamic_cast<const Vec<T>*>(
+        context.EvalVectorInput(parent_, get_input_port(port_index)));
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
@@ -291,7 +339,7 @@ class System {
       const Context<T>& context, int port_index) const {
     const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
     DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).size());
     return input_vector->get_value();
   }
 
@@ -316,6 +364,88 @@ class System {
     return context.template EvalInputValue<V>(parent_,
                                               get_input_port(port_index));
   }
+  //@}
+
+  //----------------------------------------------------------------------------
+  /// @name                        Constraint-related functions.
+  ///
+  // @{
+
+  /// Gets the number of constraint equations for this system using the given
+  /// context (useful in case the number of constraints is dependent upon the
+  /// current state (as might be the case with a system modeled using piecewise
+  /// differential algebraic equations).
+  int get_num_constraint_equations(const Context<T>& context) const {
+    return do_get_num_constraint_equations(context);
+  }
+
+  /// Evaluates the constraint equations for the system at the generalized
+  /// coordinates and generalized velocity specified by the context. The context
+  /// allows the set of constraints to be dependent upon the current system
+  /// state (as might be the case with a system modeled using piecewise
+  /// differential algebraic equations).
+  /// @returns a vector of dimension get_num_constraint_equations(); the
+  ///          zero vector indicates that the algebraic constraints are all
+  ///          satisfied.
+  Eigen::VectorXd EvalConstraintEquations(const Context<T>& context) const {
+    return DoEvalConstraintEquations(context);
+  }
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the generalized coordinates and generalized velocity specified by the
+  /// context. The context allows the set of constraints to be dependent upon
+  /// the current system state (as might be the case with a system modeled using
+  /// piecewise differential algebraic equations).
+  /// @returns a vector of dimension get_num_constraint_equations().
+  Eigen::VectorXd EvalConstraintEquationsDot(const Context<T>& context) const {
+    return DoEvalConstraintEquationsDot(context);
+  }
+
+  /// Computes the change in velocity from applying the given constraint forces
+  /// to the system at the given context.
+  /// @param context the current system state, provision of which also yields
+  ///        the ability of the constraints to be dependent upon the current
+  ///        system state (as might be the case with a piecewise differential
+  ///        algebraic equation).
+  /// @param J a m × n constraint Jacobian matrix of the `m` constraint
+  ///          equations `g()` differentiated with respect to the `n`
+  ///          configuration variables `q` (i.e., `J` should be `∂g/∂q`). If
+  ///          the time derivatives of the generalized coordinates of the system
+  ///          are not identical to the generalized velocity (in general they
+  ///          need not be, e.g., if generalized coordinates use unit
+  ///          unit quaternions to represent 3D orientation), `J` should instead
+  ///          be defined as `∂g/∂q⋅N`, where `N ≡ ∂q/∂ꝗ` is the Jacobian matrix
+  ///          (dependent on `q`) of the generalized coordinates with respect
+  ///          to the quasi-coordinates (ꝗ, pronounced "qbar", where dꝗ/dt are
+  ///          the generalized velocities).
+  /// @param lambda the vector of constraint forces (of same dimension as the
+  ///        number of rows in the Jacobian matrix, @p J)
+  /// @returns a `n` dimensional vector, where `n` is the dimension of the
+  ///          quasi-coordinates.
+  Eigen::VectorXd CalcVelocityChangeFromConstraintImpulses(
+      const Context<T>& context, const Eigen::MatrixXd& J,
+      const Eigen::VectorXd& lambda) const {
+    DRAKE_ASSERT(lambda.size() == get_num_constraint_equations(context));
+    DRAKE_ASSERT(J.rows() == get_num_constraint_equations(context));
+    DRAKE_ASSERT(
+        J.cols() ==
+        context.get_continuous_state()->get_generalized_velocity().size());
+    return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
+  }
+
+  /// Computes the norm on constraint error (used as a metric for comparing
+  /// errors between the outputs of algebraic equations applied to two
+  /// different state variable instances). This norm need be neither continuous
+  /// nor differentiable.
+  /// @throws std::logic_error if the dimension of @p err is not equivalent to
+  ///         the output of get_num_constraint_equations().
+  double CalcConstraintErrorNorm(const Context<T>& context,
+                                 const Eigen::VectorXd& error) const {
+    if (error.size() != get_num_constraint_equations(context))
+      throw std::logic_error("Error vector is mis-sized.");
+    return DoCalcConstraintErrorNorm(context, error);
+  }
+
   //@}
 
   //----------------------------------------------------------------------------
@@ -356,9 +486,9 @@ class System {
   /// `xd(n)`, because the given `event` has arrived.  Dispatches to
   /// DoCalcDiscreteVariableUpdates by default, or to `event.do_update` if
   /// provided.
-  void CalcDiscreteVariableUpdates(const Context<T> &context,
-                                   const DiscreteEvent<T> &event,
-                                   DiscreteState<T> *discrete_state) const {
+  void CalcDiscreteVariableUpdates(const Context<T>& context,
+                                   const DiscreteEvent<T>& event,
+                                   DiscreteValues<T>* discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
     if (event.do_calc_discrete_variable_update == nullptr) {
@@ -368,7 +498,38 @@ class System {
     }
   }
 
-  // TODO(edrumwri) CalcUnrestrictedUpdate() PR #4382.
+  /// This method is called to update *any* state variables in the @p context
+  /// because the given @p event has arrived. Dispatches to
+  /// DoCalcUnrestrictedUpdate() by default, or to
+  /// `event.do_unrestricted_update` if provided. Does not allow the
+  /// dimensionality of the state variables to change.
+  /// @throws std::logic_error if the dimensionality of the state variables
+  ///         changes in the callback.
+  void CalcUnrestrictedUpdate(const Context<T>& context,
+                              const DiscreteEvent<T>& event,
+                              State<T>* state) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
+    const int continuous_state_dim = state->get_continuous_state()->size();
+    const int discrete_state_dim = state->get_discrete_state()->num_groups();
+    const int abstract_state_dim = state->get_abstract_state()->size();
+
+    // Copy current state to the passed-in state, as specified in the
+    // documentation for DoCalclUnrestrictedUpdate().
+    state->CopyFrom(context.get_state());
+
+    if (event.do_unrestricted_update == nullptr) {
+      DoCalcUnrestrictedUpdate(context, state);
+    } else {
+      event.do_unrestricted_update(context, state);
+    }
+    if (continuous_state_dim != state->get_continuous_state()->size() ||
+        discrete_state_dim != state->get_discrete_state()->num_groups() ||
+        abstract_state_dim != state->get_abstract_state()->size())
+      throw std::logic_error(
+          "State variable dimensions cannot be changed "
+          "in CalcUnrestrictedUpdate().");
+  }
 
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
@@ -385,6 +546,19 @@ class System {
     actions->events.clear();
     DoCalcNextUpdateTime(context, actions);
     return actions->time;
+  }
+
+  /// This method is called by a Simulator in its Initialize() to gather all
+  /// the update and publish events that need to be handled before it computes
+  /// derivatives and performs integration. It is assumed that these events
+  /// remain constant throughout the simulation. The `Step` here refers to the
+  /// major time step taken by the Simulator. @p events cannot be null.
+  void GetPerStepEvents(const Context<T>& context,
+                        std::vector<DiscreteEvent<T>>* events) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_ASSERT(events != nullptr);
+    events->clear();
+    DoGetPerStepEvents(context, events);
   }
 
   /// Computes the output values that should result from the current contents
@@ -506,6 +680,43 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name Functions to avoid RTTI in Diagram. Conceptually, these should be
+  /// protected and should not be directly called.
+  //@{
+
+  /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
+  virtual Context<T>* DoGetMutableTargetSystemContext(
+      const System<T>* target_system, Context<T>* context) const {
+    if (target_system == this) return context;
+    return nullptr;
+  }
+
+  /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
+  virtual const Context<T>* DoGetTargetSystemContext(
+      const System<T>* target_system, const Context<T>* context) const {
+    if (target_system == this) return context;
+    return nullptr;
+  }
+
+  /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
+  virtual State<T>* DoGetMutableTargetSystemState(
+      const System<T>* target_system, State<T>* state) const {
+    if (target_system == this) return state;
+    return nullptr;
+  }
+
+  /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
+  virtual const State<T>* DoGetTargetSystemState(const System<T>* target_system,
+                                                 const State<T>* state) const {
+    if (target_system == this) return state;
+    return nullptr;
+  }
+
+  //----------------------------------------------------------------------------
   /// @name                      Utility methods
   //@{
 
@@ -514,8 +725,20 @@ class System {
   /// Diagram, names of sibling subsystems should be unique.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Retrieves the name last supplied to set_name().
+  /// Returns the name last supplied to set_name(), or empty if set_name() was
+  /// never called.  Systems created through transmogrification have by default
+  /// an identical name to the system they were created from.
   std::string get_name() const { return name_; }
+
+  /// Returns a name for this %System based on a stringification of its type
+  /// name and memory address.  This is intended for use in diagnostic output
+  /// and should not be used for behavioral logic, because the stringification
+  /// of the type name may produce differing results across platforms and
+  /// because the address can vary from run to run.
+  std::string GetMemoryObjectName() const {
+    return SystemImpl::GetMemoryObjectName(
+        NiceTypeName::Get(*this), GetGraphvizId());
+  }
 
   /// Writes the full path of this System in the tree of Systems to @p output.
   /// The path has the form (::ancestor_system_name)*::this_system_name.
@@ -525,8 +748,7 @@ class System {
     if (parent_ != nullptr) {
       parent_->GetPath(output);
     }
-    *output << "::";
-    *output << (get_name().empty() ? "<unnamed System>" : get_name());
+    *output << "::" << (get_name().empty() ? "_" : get_name());
   }
 
   // Returns the full path of the System in the tree of Systems.
@@ -546,37 +768,33 @@ class System {
     return static_cast<int>(output_ports_.size());
   }
 
-  /// Returns descriptors for all the input ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_input_ports() const {
-    return input_ports_;
-  }
-
   /// Returns the descriptor of the input port at index @p port_index.
-  const SystemPortDescriptor<T>& get_input_port(int port_index) const {
-    if (port_index >= get_num_input_ports()) {
-      throw std::out_of_range("port number out of range.");
+  const InputPortDescriptor<T>& get_input_port(int port_index) const {
+    if (port_index < 0 || port_index >= get_num_input_ports()) {
+      throw std::out_of_range(
+          "System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is out of range. There are only " +
+          std::to_string(get_num_input_ports()) + " input ports.");
     }
-    return input_ports_[port_index];
+    return *input_ports_[port_index];
   }
 
   /// Returns the descriptor of the output port at index @p port_index.
-  const SystemPortDescriptor<T>& get_output_port(int port_index) const {
-    if (port_index >= get_num_output_ports()) {
-      throw std::out_of_range("port number out of range.");
+  const OutputPortDescriptor<T>& get_output_port(int port_index) const {
+    if (port_index < 0 || port_index >= get_num_output_ports()) {
+      throw std::out_of_range(
+          "System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is out of range. There are only " +
+          std::to_string(get_num_output_ports()) + " output ports.");
     }
-    return output_ports_[port_index];
-  }
-
-  /// Returns descriptors for all the output ports of this system.
-  const std::vector<SystemPortDescriptor<T>>& get_output_ports() const {
-    return output_ports_;
+    return *output_ports_[port_index];
   }
 
   /// Returns the total dimension of all of the input ports (as if they were
   /// muxed).
   int get_num_total_inputs() const {
     int count = 0;
-    for (const auto& in : input_ports_) count += in.get_size();
+    for (const auto& in : input_ports_) count += in->size();
     return count;
   }
 
@@ -584,7 +802,7 @@ class System {
   /// muxed).
   int get_num_total_outputs() const {
     int count = 0;
-    for (const auto& out : output_ports_) count += out.get_size();
+    for (const auto& out : output_ports_) count += out->size();
     return count;
   }
 
@@ -605,19 +823,22 @@ class System {
       if (get_output_port(i).get_data_type() == kVectorValued) {
         const VectorBase<T>* output_vector = output->get_vector_data(i);
         DRAKE_THROW_UNLESS(output_vector != nullptr);
-        DRAKE_THROW_UNLESS(output_vector->size() ==
-            get_output_port(i).get_size());
+        DRAKE_THROW_UNLESS(output_vector->size() == get_output_port(i).size());
       }
     }
   }
 
-  /// Checks that @p context is consistent for this system.
+  /// Checks that @p context is consistent for this System template. Supports
+  /// any scalar type, but expects T by default.
+  ///
   /// @throw exception unless `context` is valid for this system.
-  void CheckValidContext(const Context<T>& context) const {
+  /// @tparam T1 the scalar type of the Context to check.
+  template <typename T1 = T>
+  void CheckValidContext(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
-        this->get_num_input_ports());
+                       this->get_num_input_ports());
 
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
@@ -647,6 +868,49 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
+  /// @name                      Graphviz methods
+  //@{
+
+  /// Returns a Graphviz string describing this System.  To render the string,
+  /// use the Graphviz tool, ``dot``.
+  /// http://www.graphviz.org/Documentation/dotguide.pdf
+  std::string GetGraphvizString() const {
+    std::stringstream dot;
+    dot << "digraph _" << this->GetGraphvizId() << " {" << std::endl;
+    dot << "rankdir=LR" << std::endl;
+    GetGraphvizFragment(&dot);
+    dot << "}" << std::endl;
+    return dot.str();
+  }
+
+  /// Appends a Graphviz fragment to the @p dot stream.  The fragment must be
+  /// valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
+  /// nothing by default.
+  virtual void GetGraphvizFragment(std::stringstream* dot) const {
+    unused(dot);
+  }
+
+  /// Appends a fragment to the @p dot stream identifying the graphviz node
+  /// representing @p port. Does nothing by default.
+  virtual void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                         std::stringstream* dot) const {
+    unused(port, dot);
+  }
+
+  /// Appends a fragment to the @p dot stream identifying the graphviz node
+  /// representing @p port. Does nothing by default.
+  virtual void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+                                          std::stringstream* dot) const {
+    unused(port, dot);
+  }
+
+  /// Returns an opaque integer that uniquely identifies this system in the
+  /// Graphviz output.
+  int64_t GetGraphvizId() const { return reinterpret_cast<int64_t>(this); }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @name                Automatic differentiation
   /// From a %System templatized by `double`, you can obtain an identical system
   /// templatized by an automatic differentation scalar providing
@@ -662,7 +926,11 @@ class System {
   /// scalar type, with a dynamic-sized vector of partial derivatives.
   /// Concrete Systems may shadow this with a more specific return type.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
-    return std::unique_ptr<System<AutoDiffXd>>(DoToAutoDiffXd());
+    System<AutoDiffXd>* sys = DoToAutoDiffXd();
+    if (sys != nullptr) {
+      sys->set_name(this->get_name());
+    }
+    return std::unique_ptr<System<AutoDiffXd>>(sys);
   }
 
   /// Creates a deep copy of `from`, transmogrified to use the autodiff
@@ -694,57 +962,156 @@ class System {
   }
   //@}
 
+  //----------------------------------------------------------------------------
+  /// @name                Symbolics
+  /// From a %System templatized by `double`, you can obtain an identical system
+  /// templatized by a symbolic expression scalar.
+
+  // This group appears as a top-level heading in Doxygen because it contains
+  // both static and non-static member functions.
+  //@{
+
+  /// Creates a deep copy of this System, transmogrified to use the symbolic
+  /// scalar type. Returns `nullptr` if DoToSymbolic has not been implemented.
+  ///
+  /// Concrete Systems may shadow this with a more specific return type.
+  std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const {
+    System<symbolic::Expression>* sys = DoToSymbolic();
+    if (sys != nullptr) {
+      sys->set_name(this->get_name());
+    }
+    return std::unique_ptr<System<symbolic::Expression>>(sys);
+  }
+
+  /// Creates a deep copy of `from`, transmogrified to use the symbolic
+  /// scalar type. Returns `nullptr` if the template parameter `S` is not the
+  /// type of the concrete system, or a superclass thereof. Returns `nullptr`
+  /// if DoToSymbolic has not been implemented.
+  ///
+  /// Usage: @code
+  ///   MySystem<double> plant;
+  ///   std::unique_ptr<MySystem<symbolic::Expression>> ad_plant =
+  ///       systems::System<double>::ToSymbolic<MySystem>(plant);
+  /// @endcode
+  ///
+  /// @tparam S The specific System pointer type to return.
+  template <template <typename> class S = ::drake::systems::System>
+  static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(
+      const System<double>& from) {
+    // Capture the copy as System<symbolic::Expression>.
+    std::unique_ptr<System<symbolic::Expression>> clone(from.DoToSymbolic());
+    // Attempt to downcast to S<symbolic::Expression>.
+    S<symbolic::Expression>* downcast =
+        dynamic_cast<S<symbolic::Expression>*>(clone.get());
+    // If the downcast fails, return nullptr, letting the copy be deleted.
+    if (downcast == nullptr) {
+      return nullptr;
+    }
+    // If the downcast succeeds, redo it, taking ownership this time.
+    return std::unique_ptr<S<symbolic::Expression>>(
+        dynamic_cast<S<symbolic::Expression>*>(clone.release()));
+  }
+  //@}
+
+  //----------------------------------------------------------------------------
+  /// @name                Transmogrification utilities
+
+  /// Fixes all of the input ports in @p target_context to their current values
+  /// in @p other_context, as evaluated by @p other_system. Throws an exception
+  /// unless `other_context` and `target_context` both have the same shape as
+  /// this System, and the `other_system`. Ignores disconnected inputs.
+  void FixInputPortsFrom(const System<double>& other_system,
+                         const Context<double>& other_context,
+                         Context<T>* target_context) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(other_context));
+    DRAKE_ASSERT_VOID(CheckValidContext(*target_context));
+    DRAKE_ASSERT_VOID(other_system.CheckValidContext(other_context));
+    DRAKE_ASSERT_VOID(other_system.CheckValidContext(*target_context));
+
+    for (int i = 0; i < get_num_input_ports(); ++i) {
+      const auto& descriptor = get_input_port(i);
+
+      if (descriptor.get_data_type() == kVectorValued) {
+        // For vector-valued input ports, we placewise initialize a fixed input
+        // vector using the explicit conversion from double to T.
+        const BasicVector<double>* other_vec =
+            other_system.EvalVectorInput(other_context, i);
+        if (other_vec == nullptr) continue;
+        auto our_vec = this->AllocateInputVector(descriptor);
+        for (int j = 0; j < our_vec->size(); ++j) {
+          our_vec->SetAtIndex(j, T(other_vec->GetAtIndex(j)));
+        }
+        target_context->FixInputPort(i, std::move(our_vec));
+      } else if (descriptor.get_data_type() == kAbstractValued) {
+        // For abstract-valued input ports, we just clone the value and fix
+        // it to the port.
+        const AbstractValue* other_value =
+            other_system.EvalAbstractInput(other_context, i);
+        if (other_value == nullptr) continue;
+        target_context->FixInputPort(i, other_value->Clone());
+      } else {
+        DRAKE_ABORT_MSG("Unknown descriptor type.");
+      }
+    }
+  }
+
+  //@}
+
  protected:
   //----------------------------------------------------------------------------
   /// @name                 System construction
-  /// Authors of concrete %Systems can use these methods in the constructor
+  /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
   /// Constructs an empty %System base class object.
   System() {}
 
-  /// Adds a port with the specified @p descriptor to the input topology.
-  void DeclareInputPort(const SystemPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_input_ports());
-    DRAKE_ASSERT(descriptor.get_face() == kInputPort);
-    input_ports_.emplace_back(descriptor);
-  }
-
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
+  const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
     int port_index = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_index, type, size);
-    return input_ports_.back();
+    input_ports_.push_back(
+        std::make_unique<InputPortDescriptor<T>>(this, port_index, type, size));
+    return *input_ports_.back();
   }
 
   /// Adds an abstract-valued port to the input topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractInputPort() {
+  const InputPortDescriptor<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
-  }
-
-  /// Adds a port with the specified @p descriptor to the output topology.
-  void DeclareOutputPort(const SystemPortDescriptor<T>& descriptor) {
-    DRAKE_ASSERT(descriptor.get_index() == get_num_output_ports());
-    DRAKE_ASSERT(descriptor.get_face() == kOutputPort);
-    output_ports_.emplace_back(descriptor);
   }
 
   /// Adds a port with the specified @p type and @p size to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type,
+  const OutputPortDescriptor<T>& DeclareOutputPort(PortDataType type,
                                                    int size) {
     int port_index = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_index, type, size);
-    return output_ports_.back();
+    output_ports_.push_back(std::make_unique<OutputPortDescriptor<T>>(
+        this, port_index, type, size));
+    return *output_ports_.back();
   }
 
   /// Adds an abstract-valued port with to the output topology.
   /// @return descriptor of declared port.
-  const SystemPortDescriptor<T>& DeclareAbstractOutputPort() {
+  const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
     return DeclareOutputPort(kAbstractValued, 0 /* size */);
   }
+  //@}
+
+  //----------------------------------------------------------------------------
+  /// @name               Virtual methods for input allocation
+  /// Authors of derived %Systems should override these methods to self-describe
+  /// acceptable inputs to the %System.
+
+  /// Allocates an input vector of the leaf type that the System requires on
+  /// the port specified by @p descriptor. Caller owns the returned memory.
+  virtual BasicVector<T>* DoAllocateInputVector(
+      const InputPortDescriptor<T>& descriptor) const = 0;
+
+  /// Allocates an abstract input of the leaf type that the System requires on
+  /// the port specified by @p descriptor. Caller owns the returned memory.
+  virtual AbstractValue* DoAllocateInputAbstract(
+      const InputPortDescriptor<T>& descriptor) const = 0;
   //@}
 
   //----------------------------------------------------------------------------
@@ -765,6 +1132,12 @@ class System {
 
   /// You must override this method to calculate values for output ports into
   /// the supplied argument, based on the contents of the given Context.
+  ///
+  /// This method is called only from the public non-virtual CalcOutput()
+  /// which will already have error-checked the parameters so you don't have to.
+  /// In particular, implementations may assume that the given Context is valid
+  /// for this %System; that the `output` pointer is non-null, and that
+  /// the referenced object is valid for this %System.
   virtual void DoCalcOutput(const Context<T>& context,
                             SystemOutput<T>* output) const = 0;
 
@@ -775,11 +1148,12 @@ class System {
   /// the Context has second-order structure `xc=[q,v,z]`, that same structure
   /// applies to the derivatives.
   ///
-  /// This method is called from the public non-virtual CalcTimeDerivatives()
-  /// which will already have error-checked the parameters so you don't have to.
+  /// This method is called only from the public non-virtual
+  /// CalcTimeDerivatives() which will already have error-checked
+  /// the parameters so you don't have to.
   /// In particular, implementations may assume that the given Context is valid
   /// for this %System; that the `derivatives` pointer is non-null, and that
-  /// the given `derivatives` argument has the same constituent structure as was
+  /// the referenced object has the same constituent structure as was
   /// produced by AllocateTimeDerivatives().
   ///
   /// The default implementation does nothing if the `derivatives` vector is
@@ -788,63 +1162,116 @@ class System {
                                      ContinuousState<T>* derivatives) const {
     // This default implementation is only valid for Systems with no continuous
     // state. Other Systems must override this method!
+    unused(context);
     DRAKE_DEMAND(derivatives->size() == 0);
-    return;
   }
 
   /// Implement this in your concrete System if you want it to take some action
   /// when the Simulator calls the Publish() method. This can be used for
   /// sending messages, producing console output, debugging, logging, saving the
-  /// trajectory to a file, etc. You may assume that the `context` has already
-  /// been validated before it is passed to you here.
-  virtual void DoPublish(const Context<T>& context) const {}
+  /// trajectory to a file, etc.
+  ///
+  /// This method is called only from the public non-virtual Publish() which
+  /// will have already error-checked `context` so you may assume that it is
+  /// valid for this %System.
+  virtual void DoPublish(const Context<T>& context) const { unused(context); }
 
   /// Updates the @p discrete_state on sample events.
-  /// Override it, along with DoCalcNextUpdateTime, if your System has any
+  /// Override it, along with DoCalcNextUpdateTime(), if your System has any
   /// discrete variables.
+  ///
+  /// This method is called only from the public non-virtual
+  /// CalcDiscreteVariableUpdates() which will already have error-checked the
+  /// parameters so you don't have to. In particular, implementations may assume
+  /// that the given Context is valid for this %System; that the
+  /// `discrete_state` pointer is non-null, and that the referenced object
+  /// has the same constituent structure as was produced by
+  /// AllocateDiscreteVariables().
   virtual void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context, DiscreteState<T>* discrete_state) const {}
+      const Context<T>& context, DiscreteValues<T>* discrete_state) const {
+    unused(context, discrete_state);
+  }
 
   /// Updates the @p state *in an unrestricted fashion* on unrestricted update
   /// events. Override this function if you need your System to update
   /// abstract variables or generally make changes to state that cannot be
   /// made using CalcDiscreteVariableUpdates() or via integration of continuous
   /// variables.
-  /// @param[in,out] state the current state of the system on input; the desired
-  ///            state of the system on return.
+  ///
+  /// This method is called only from the public non-virtual
+  /// CalcUnrestrictedUpdate() which will already have error-checked the
+  /// parameters so you don't have to. In particular, implementations may assume
+  /// that the given Context is valid for this %System; that the `state` pointer
+  /// is non-null, and that the referenced object has the same constituent
+  /// structure as the state in `context`.
+  ///
+  /// @param[in]     context The "before" state that is to be used to calculate
+  ///                        the returned state update.
+  /// @param[in,out] state   The current state of the system on input; the
+  ///                        desired state of the system on return.
+  // TODO(sherm1) Shouldn't require preloading of the output state; better to
+  //              note just the changes since usually only a small subset will
+  //              be changed by this method.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
-                                        State<T>* state) const {}
+                                        State<T>* state) const {
+    unused(context, state);
+  }
 
   /// Computes the next time at which this System must perform a discrete
   /// action.
   ///
   /// Override this method if your System has any discrete actions which must
-  /// interrupt the continuous simulation. You may assume that the context
-  /// has already been validated and the `actions` pointer is not nullptr.
+  /// interrupt the continuous simulation. This method is called only from the
+  /// public non-virtual CalcNextUpdateTime() which will already have
+  /// error-checked the parameters so you don't have to. You may assume that
+  /// `context` has already been validated and the `actions` pointer is
+  /// not `nullptr`.
   ///
   /// The default implementation returns with `actions` having a next sample
   /// time of Infinity and no actions to take.  If you declare actions, you may
   /// specify custom do_publish and do_update handlers.  If you do not,
-  /// DoPublish and DoEvalDifferenceUpdates will be used by default.
+  /// DoPublish and DoCalcDifferenceUpdates will be used by default.
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     UpdateActions<T>* actions) const {
+    unused(context);
     actions->time = std::numeric_limits<T>::infinity();
   }
 
+  /// This method is intended to get all the events that need to be handled
+  /// before the simulator can take a step. @p events is cleared in the
+  /// public non-virtual GetPerStepEvents() before calling this function.
+  /// Overriding implementation should not clear @p events, and only append
+  /// to it.
+  ///
+  /// Override this method if your System needs such events. This method is
+  /// called only from the public non-virtual GetPerStepEvents(), which will
+  /// already have error-checked the parameters so you don't have to. You
+  /// may assume that @p context has already been validated and @p events is
+  /// not null, and it can be changed freely by the overriding implementation.
+  ///
+  /// The default implementation returns without changing @p events.
+  virtual void DoGetPerStepEvents(const Context<T>& context,
+      std::vector<DiscreteEvent<T>>* events) const {
+    unused(context);
+  }
 
   /// Override this method for physical systems to calculate the potential
   /// energy currently stored in the configuration provided in the given
   /// Context. The default implementation returns 0 which is correct for
-  /// non-physical systems.
+  /// non-physical systems. You may assume that `context` has already
+  /// been validated before it is passed to you here.
   virtual T DoCalcPotentialEnergy(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
   /// Override this method for physical systems to calculate the kinetic
   /// energy currently present in the motion provided in the given
   /// Context. The default implementation returns 0 which is correct for
-  /// non-physical systems.
+  /// non-physical systems. You may assume that `context` has already
+  /// been validated before it is passed to you here.
   virtual T DoCalcKineticEnergy(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
@@ -854,7 +1281,10 @@ class System {
   /// is *decreasing*. Power is in watts (J/s).
   ///
   /// By default, returns zero. Continuous, physical systems should override.
+  /// You may assume that `context` has already been validated before it is
+  /// passed to you here.
   virtual T DoCalcConservativePower(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
@@ -868,7 +1298,10 @@ class System {
   /// systems; others return zero.
   ///
   /// By default, returns zero. Continuous, physical systems should override.
+  /// You may assume that `context` has already been validated before it is
+  /// passed to you here.
   virtual T DoCalcNonConservativePower(const Context<T>& context) const {
+    unused(context);
     return T(0);
   }
 
@@ -893,6 +1326,7 @@ class System {
   virtual void DoMapQDotToVelocity(const Context<T>& context,
                                    const Eigen::Ref<const VectorX<T>>& qdot,
                                    VectorBase<T>* generalized_velocity) const {
+    unused(context);
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
     // This check will thus not identify cases where the generalized velocity
@@ -926,6 +1360,7 @@ class System {
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const {
+    unused(context);
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
     // This check will thus not identify cases where the generalized velocity
@@ -946,17 +1381,111 @@ class System {
   /// A default implementation is provided in Diagram, which Diagram subclasses
   /// with member data should override.
   virtual System<AutoDiffXd>* DoToAutoDiffXd() const {
-    DRAKE_ABORT_MSG("Override DoToAutoDiffXd before using ToAutoDiffXd.");
+    std::stringstream ss;
+    ss << "Override DoToAutoDiffXd for object named [" << this->get_name()
+       << "] of type " << NiceTypeName::Get(*this)
+       << " before using ToAutoDiffXd.";
+    DRAKE_ABORT_MSG(ss.str().c_str());
     return nullptr;
   }
+
+  /// NVI implementation of ToSymbolic. Caller takes ownership of the returned
+  /// pointer. Overrides should return a more specific covariant type.
+  /// Templated overrides may assume that they are subclasses of System<double>.
+  ///
+  /// Returns `nullptr` by default.  Direct-feedthrough detection relies on
+  /// this behavior.
+  ///
+  /// No default implementation is provided in LeafSystem, since the member data
+  /// of a particular concrete leaf system is not knowable to the framework.
+  /// A default implementation is provided in Diagram, which Diagram subclasses
+  /// with member data should override.
+  virtual System<symbolic::Expression>* DoToSymbolic() const { return nullptr; }
   //@}
+
+  //----------------------------------------------------------------------------
+  /// @name                        Constraint-related functions (protected).
+  ///
+  // @{
+
+  /// Gets the number of constraint equations for this system from the given
+  /// context. The context is supplied in case the number of constraints is
+  /// dependent upon the current state (as might be the case with a piecewise
+  /// differential algebraic equation). Derived classes can override this
+  /// function, which is called by get_num_constraint_equations().
+  /// @sa get_num_constraint_equations() for parameter documentation.
+  /// @returns zero by default
+  virtual int do_get_num_constraint_equations(const Context<T>& context) const {
+    unused(context);
+    return 0;
+  }
+
+  /// Evaluates the constraint equations for the system at the generalized
+  /// coordinates and generalized velocity specified by the context. The context
+  /// allows the set of constraints to be dependent upon the current
+  /// system state (as might be the case with a piecewise differential algebraic
+  /// equation). The default implementation of this function returns a
+  /// zero-dimensional vector. Derived classes can override this function,
+  /// which is called by EvalConstraintEquations().
+  /// @sa EvalConstraintEquations() for parameter documentation.
+  /// @returns a vector of dimension get_num_constraint_equations(); the
+  ///          zero vector indicates that the algebraic constraints are all
+  ///          satisfied.
+  virtual Eigen::VectorXd DoEvalConstraintEquations(
+      const Context<T>& context) const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    return Eigen::VectorXd();
+  }
+
+  /// Computes the time derivative of each constraint equation, evaluated at
+  /// the generalized coordinates and generalized velocity specified by the
+  /// context.  The context allows the set of constraints to be dependent upon
+  /// the current system state (as might be the case with a piecewise
+  /// differential algebraic equation). The default implementation of this
+  /// function returns a zero-dimensional vector. Derived classes can override
+  /// this function, which is called by EvalConstraintEquationsDot().
+  /// @returns a vector of dimension get_num_constraint_equations().
+  /// @sa EvalConstraintEquationsDot() for parameter documentation.
+  virtual Eigen::VectorXd DoEvalConstraintEquationsDot(
+      const Context<T>& context) const {
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    return Eigen::VectorXd();
+  }
+
+  /// Computes the change in velocity from applying the given constraint forces
+  /// to the system at the given context. Derived classes can override this
+  /// function, which is called by CalcVelocityChangeFromConstraintImpulses().
+  /// @returns the zero vector of dimension of the dimension of the
+  ///          quasi-coordinates, by default.
+  /// @sa CalcVelocityChangeFromConstraintImpulses() for parameter
+  ///     documentation.
+  virtual Eigen::VectorXd DoCalcVelocityChangeFromConstraintImpulses(
+      const Context<T>& context, const Eigen::MatrixXd& J,
+      const Eigen::VectorXd& lambda) const {
+    unused(J, lambda);
+    DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
+    const auto& gv = context.get_continuous_state()->get_generalized_velocity();
+    return Eigen::VectorXd::Zero(gv.size());
+  }
+
+  /// Computes the norm of the constraint error. This default implementation
+  /// computes a Euclidean norm of the error. Derived classes can override this
+  /// function, which is called by CalcConstraintErrorNorm(). This norm need be
+  /// neither continuous nor differentiable.
+  /// @sa CalcConstraintErrorNorm() for parameter documentation.
+  virtual double DoCalcConstraintErrorNorm(const Context<T>& context,
+                                           const Eigen::VectorXd& error) const {
+    unused(context);
+    return error.norm();
+  }
 
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
   //@{
+
   /// Returns a mutable Eigen expression for a vector valued output port with
-  /// index @p port_index in this system. All InputPorts that directly depend
-  /// on this OutputPort will be notified that upstream data has changed, and
+  /// index @p port_index in this system. All input ports that directly depend
+  /// on this output port will be notified that upstream data has changed, and
   /// may invalidate cache entries as a result.
   Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
                                                         int port_index) const {
@@ -964,14 +1493,13 @@ class System {
 
     BasicVector<T>* output_vector = output->GetMutableVectorData(port_index);
     DRAKE_ASSERT(output_vector != nullptr);
-    DRAKE_ASSERT(output_vector->size() ==
-        get_output_port(port_index).get_size());
+    DRAKE_ASSERT(output_vector->size() == get_output_port(port_index).size());
 
     return output_vector->get_mutable_value();
   }
 
-  /// Causes an InputPort in the @p context to become up-to-date, delegating to
-  /// the parent Diagram if necessary.
+  /// Causes an InputPortValue in the @p context to become up-to-date,
+  /// delegating to the parent Diagram if necessary.
   ///
   /// This is a framework implementation detail. User code should never call it.
   void EvalInputPort(const Context<T>& context, int port_index) const {
@@ -981,15 +1509,11 @@ class System {
   //@}
 
  private:
-  // System objects are neither copyable nor moveable.
-  System(const System<T>& other) = delete;
-  System& operator=(const System<T>& other) = delete;
-  System(System<T>&& other) = delete;
-  System& operator=(System<T>&& other) = delete;
-
   std::string name_;
-  std::vector<SystemPortDescriptor<T>> input_ports_;
-  std::vector<SystemPortDescriptor<T>> output_ports_;
+  // input_ports_ and output_ports_ are vectors of unique_ptr so that references
+  // to the descriptors will remain valid even if the vector is resized.
+  std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
+  std::vector<std::unique_ptr<OutputPortDescriptor<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.

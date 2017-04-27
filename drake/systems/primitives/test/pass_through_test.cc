@@ -2,12 +2,11 @@
 
 #include <memory>
 
+#include <gtest/gtest.h>
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
@@ -59,6 +58,10 @@ TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
 // Tests that PassThrough allocates no state variables in the context_.
 TEST_F(PassThroughTest, PassThroughIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
+}
+
+TEST_F(PassThroughTest, DirectFeedthrough) {
+  EXPECT_TRUE(pass_through_->HasAnyDirectFeedthrough());
 }
 
 }  // namespace

@@ -1,33 +1,47 @@
 #pragma once
 
+#include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
+#include "drake/automotive/gen/maliput_railcar_state.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput_railcar.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/rendering/pose_aggregator.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace automotive {
 
-/// A helper class to construct and run automotive-related simulations.
+/// AutomotiveSimulator is a helper class for constructing and running
+/// automotive-related simulations.
 ///
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 template <typename T>
 class AutomotiveSimulator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutomotiveSimulator)
+
   /// A constructor that configures this object to use DrakeLcm, which
   /// encapsulates a _real_ LCM instance.
   AutomotiveSimulator();
@@ -41,72 +55,128 @@ class AutomotiveSimulator {
   /// @pre Start() has NOT been called.
   systems::DiagramBuilder<T>* get_builder();
 
-  /// Returns the RigidBodyTree.  Beware that the AutomotiveSimulator::Start()
-  /// method invokes RigidBodyTree::compile, which may substantially update the
-  /// tree representation.
-  const RigidBodyTree<T>& get_rigid_body_tree();
-
-  /// Adds a SimpleCar system to this simulation, including its DrivingCommand
-  /// LCM input and EulerFloatingJoint output.
+  /// Adds a SimpleCar to this simulation visualized as a Toyota Prius. This
+  /// includes its DrivingCommand LCM input and EulerFloatingJoint output.
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param[in] sdf_filename The name of the SDF file to load as the
-  /// visualization for the simple car. This file must contain one free-floating
-  /// model of a vehicle (i.e., a model that's not connected to the world). A
-  /// floating joint of type multibody::joints::kRollPitchYaw is added to
-  /// connect the vehicle model to the world.
-  /// @param name If this string is non-empty, then the simple car will
-  /// subscribe to a channel DRIVING_COMMAND_[@p name] instead of the default
-  /// DRIVING_COMMAND.
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
   ///
-  /// @return The model instance ID of the SimpleCar that was just added to
-  /// the simulation.
-  int AddSimpleCarFromSdf(const std::string& sdf_filename,
-                          const std::string& name = "");
+  /// @param channel_name  The SimpleCar will subscribe to an LCM channel of
+  /// this name to receive commands.  It must be non-empty.
+  ///
+  /// @param initial_state The SimpleCar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddPriusSimpleCar(
+      const std::string& name, const std::string& channel_name,
+      const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
-  /// Adds a TrajectoryCar system to this simulation, including its
-  /// EulerFloatingJoint output.
+  /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
+  /// includes its EulerFloatingJoint output.
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param[in] sdf_filename See the documentation for the parameter of the
-  /// same name in AddSimpleCarFromSdf().
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
   ///
-  /// @param[in] curve See documentation of TrajectoryCar::TrajectoryCar.
+  /// @param curve See documentation of TrajectoryCar::TrajectoryCar.
   ///
-  /// @param[in] speed See documentation of TrajectoryCar::TrajectoryCar.
+  /// @param speed See documentation of TrajectoryCar::TrajectoryCar.
   ///
-  /// @param[in] start_time See documentation of TrajectoryCar::TrajectoryCar.
+  /// @param start_time See documentation of TrajectoryCar::TrajectoryCar.
   ///
-  /// @return The model instance ID of the TrajectoryCar that was just added to
-  /// the simulation.
-  int AddTrajectoryCarFromSdf(const std::string& sdf_filename,
-                              const Curve2<double>& curve, double speed,
-                              double start_time);
+  /// @return The ID of the car that was just added to the simulation.
+  int AddPriusTrajectoryCar(const std::string& name,
+                            const Curve2<double>& curve, double speed,
+                            double start_time);
 
-  /// Adds an LCM publisher for the given @p system.
+  /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
+  ///
   /// @pre Start() has NOT been called.
-  void AddPublisher(const SimpleCar<T>& system, int vehicle_number);
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param initial_lane_direction The MaliputRailcar's initial lane and
+  /// direction on the lane. The lane in this parameter must be part of the
+  /// maliput::api::RoadGeometry that is added via SetRoadGeometry(). Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param params The MaliputRailcar's parameters. This is an optional
+  /// parameter. Defaults are used if this parameter is not provided.
+  ///
+  /// @param initial_state The MaliputRailcar's initial state. This is an
+  /// optional parameter. Defaults are used if this parameter is not provided.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddPriusMaliputRailcar(
+      const std::string& name, const LaneDirection& initial_lane_direction,
+      const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
+      const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 
-  /// Adds an LCM publisher for the given @p system.
+  /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius that
+  /// is controlled via an IdmController.
+  ///
   /// @pre Start() has NOT been called.
-  void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param initial_lane_direction The MaliputRailcar's initial lane and
+  /// direction on the lane. The lane in this parameter must be part of the
+  /// maliput::api::RoadGeometry that is added via SetRoadGeometry(). Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param params The MaliputRailcar's parameters. This is an optional
+  /// parameter. Defaults are used if this parameter is not provided.
+  ///
+  /// @param initial_state The MaliputRailcar's initial state. This is an
+  /// optional parameter. Defaults are used if this parameter is not provided.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddIdmControlledPriusMaliputRailcar(
+      const std::string& name, const LaneDirection& initial_lane_direction,
+      const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
+      const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 
-  /// Adds an LCM publisher for the given @p system.
-  /// @pre Start() has NOT been called.
-  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
-                    int vehicle_number);
+  /// Sets the acceleration command of a particular MaliputRailcar.
+  ///
+  /// @param id The ID of the MaliputRailcar. This is the ID that was returned
+  /// by the method that added the MaliputRailcar to the simulation. If no
+  /// MaliputRailcar with such an ID exists, a std::runtime_error is thrown.
+  ///
+  /// @param acceleration The acceleration command to issue to the
+  /// MaliputRailcar.
+  ///
+  /// @pre Start() has been called.
+  void SetMaliputRailcarAccelerationCommand(int id, double acceleration);
 
-  /// Take ownership of the given @p system.
+  /// Sets the RoadGeometry for this simulation.
+  ///
   /// @pre Start() has NOT been called.
-  void AddSystem(std::unique_ptr<systems::System<T>> system);
+  const maliput::api::RoadGeometry* SetRoadGeometry(
+      std::unique_ptr<const maliput::api::RoadGeometry> road);
+
+  /// Finds and returns a pointer to a lane with the specified name. This method
+  /// throws a std::runtime_error if no such lane exists.
+  ///
+  /// @pre SetRoadGeometry() was called.
+  ///
+  const maliput::api::Lane* FindLane(const std::string& name) const;
 
   /// Returns the System whose name matches @p name.  Throws an exception if no
   /// such system has been added, or multiple such systems have been added.
   //
   /// This is the builder variant of the method.  It can only be used prior to
-  /// Start().
+  /// Start() being called.
   ///
   /// @pre Start() has NOT been called.
   systems::System<T>& GetBuilderSystemByName(std::string name);
@@ -115,74 +185,128 @@ class AutomotiveSimulator {
   /// such system has been added, or multiple such systems have been added.
   ///
   /// This is the diagram variant of the method, which can only be used after
-  /// Start().
+  /// Start() is called.
   ///
   /// @pre Start() has been called.
   const systems::System<T>& GetDiagramSystemByName(std::string name) const;
 
-  /// Build the Diagram and initialize the Simulator.  No further changes to
-  /// the diagram may occur after this has been called.
+  /// Builds the Diagram.  No further changes to the diagram may occur after
+  /// this has been called.
+  ///
+  /// @pre Build() has NOT been called.
+  void Build();
+
+  /// Returns the System containing the entire AutomotiveSimulator diagram.
+  ///
+  /// @pre Build() has been called.
+  const systems::System<T>& GetDiagram() const {
+    DRAKE_DEMAND(diagram_ != nullptr);
+    return *diagram_;
+  }
+
+  /// Calls Build() on the diagram (if it has not been build already) and
+  /// initializes the Simulator.  No further changes to the diagram may occur
+  /// after this has been called.
+  ///
   /// @pre Start() has NOT been called.
-  // TODO(jwnimmer-tri) Perhaps this should be Build(), that returns an
-  // AutomotiveSimulator, and our class should be AutomotiveSimulatorBuilder?
+  ///
+  /// @param target_realtime_rate This value is passed to
+  /// systems::Simulator::set_target_realtime_rate().
+  //
+  // TODO(jwnimmer-tri) Perhaps our class should be AutomotiveSimulatorBuilder?
   // Port a few more demo programs, then decide what looks best.
-  // @param target_realtime_rate This value is passed to the
-  // set_target_realtime_rate method of the simulator.
   void Start(double target_realtime_rate = 0.0);
 
-  /// Advance simulated time by the given @p time_step increment in seconds.
-  void StepBy(const T& time_step);
+  /// Returns whether the automotive simulator has started.
+  bool has_started() const { return simulator_ != nullptr; }
 
-  // We are neither copyable nor moveable.
-  AutomotiveSimulator(const AutomotiveSimulator<T>& other) = delete;
-  AutomotiveSimulator& operator=(const AutomotiveSimulator<T>& other) = delete;
+  /// Advances simulated time by the given @p time_step increment in seconds.
+  void StepBy(const T& time_step);
 
  private:
   int allocate_vehicle_number();
-  int AddSdfModel(const std::string& sdf_filename,
-                  const SimpleCarToEulerFloatingJoint<T>*);
 
-  // Connects the systems that output the pose of each vehicle to the
-  // visualizer. This is done by using multiplexers to connect systems that
-  // output constant vectors containing zero values to specify the states
-  // that are not part of the vehicle poses, and the velocity states of all
-  // vehicles. (The visualizer does not use the velocity state so specifying a
-  // value of zero is harmless.)
-  void ConnectJointStateSourcesToVisualizer();
+  // Verifies that the provided `name` of a car is unique among all cars that
+  // have been added to the `AutomotiveSimulator`. Throws a std::runtime_error
+  // if it is not unique meaning a car of the same name was already added.
+  void CheckNameUniqueness(const std::string& name);
 
-  // Returns a vector containing the number of joint position and velocity
-  // states of each model instance in rigid_body_tree_. A sequence of joint
-  // position states comes first followed by a sequence of joint velocity
-  // states. The length of the returned vector is thus double the number of
-  // model instances since each model instance has two entries: (1) its number
-  // of position states and (2) its number of velocity states.
-  std::vector<int> GetModelJointStateSizes() const;
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const MaliputRailcar<T>& system, int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const SimpleCar<T>& system, int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
+
+  // Adds an LCM publisher for the given @p system.
+  // @pre Start() has NOT been called.
+  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
+                    int vehicle_number);
+
+  // Generates the URDF model of the road network and loads it into the
+  // `RigidBodyTree`. Member variable `road_` must be set prior to calling this
+  // method.
+  void GenerateAndLoadRoadNetworkUrdf();
+
+  // Creates a lcmt_load_robot message containing all visual elements in the
+  // simulation and sends it to the drake-visualizer.
+  void TransmitLoadMessage();
+
+  void SendLoadRobotMessage(const lcmt_viewer_load_robot& message);
+
+  void InitializeSimpleCars();
+  void InitializeMaliputRailcars();
 
   // For both building and simulation.
-  std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
-      std::make_unique<RigidBodyTree<T>>()};
-
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
+  std::unique_ptr<const maliput::api::RoadGeometry> road_{};
 
   // === Start for building. ===
+  std::unique_ptr<RigidBodyTree<T>> tree_{std::make_unique<RigidBodyTree<T>>()};
+
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
 
-  // Holds information about the vehicle models being simulated. The integer is
-  // the vehicle's model instance ID within the RigidBodyTree while the pointer
-  // points to the system that emits the vehicle's RPY pose in the world.
-  // TODO(liang.fok) Update this to support models that connect to the world
-  // via non-RPY floating joints. See #3919.
-  std::vector<std::pair<int, const systems::System<T>*>>
-      rigid_body_tree_publisher_inputs_;
+  // Holds the desired initial states of each SimpleCar. It is used to
+  // initialize the simulation's diagram's state.
+  std::map<const SimpleCar<T>*, SimpleCarState<T>> simple_car_initial_states_;
+
+  // Holds the desired initial states of each MaliputRailcar. It is used to
+  // initialize the simulation's diagram's state.
+  std::map<const MaliputRailcar<T>*,
+           std::pair<MaliputRailcarParams<T>, MaliputRailcarState<T>>>
+      railcar_configs_;
+
   // === End for building. ===
 
+  // Adds the PoseAggregator.
+  systems::rendering::PoseAggregator<T>* aggregator_{};
+
+  // Takes the poses of the vehicles and outputs the poses of the visual
+  // elements that make up the visualization of the vehicles. For a system-level
+  // architecture diagram, see #5541.
+  CarVisApplicator<T>* car_vis_applicator_{};
+
+  // Takes the output of car_vis_applicator_ and creates an lcmt_viewer_draw
+  // message containing the latest poses of the visual elements.
+  systems::rendering::PoseBundleToDrawMessage* bundle_to_draw_{};
+
+  // Takes the output of bundle_to_draw_ and passes it to lcm_ for publishing.
+  systems::lcm::LcmPublisherSystem* lcm_publisher_{};
+
   int next_vehicle_number_{0};
-  bool started_{false};
+
+  // Maps a vehicle id to a pointer to the system that implements the vehicle.
+  std::map<int, systems::System<T>*> vehicles_;
 
   // For simulation.
-  std::unique_ptr<systems::Diagram<T>> diagram_;
-  std::unique_ptr<systems::Simulator<T>> simulator_;
+  std::unique_ptr<systems::Diagram<T>> diagram_{};
+  std::unique_ptr<systems::Simulator<T>> simulator_{};
 };
 
 }  // namespace automotive

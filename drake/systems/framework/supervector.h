@@ -1,13 +1,14 @@
 #pragma once
 
-#include <Eigen/Dense>
-
 #include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
+#include <Eigen/Dense>
+
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -21,6 +22,9 @@ namespace systems {
 template <typename T>
 class Supervector : public VectorBase<T> {
  public:
+  // Supervector objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Supervector)
+
   /// Constructs a supervector consisting of all the vectors in
   /// subvectors, which must live at least as long as this supervector.
   explicit Supervector(const std::vector<VectorBase<T>*>& subvectors)
@@ -80,12 +84,6 @@ class Supervector : public VectorBase<T> {
     const int start_of_subvector = (subvector_id == 0) ? 0 : *(it - 1);
     return std::make_pair(subvector, index - start_of_subvector);
   }
-
-  // Supervector objects are neither copyable nor moveable.
-  Supervector(const Supervector& other) = delete;
-  Supervector& operator=(const Supervector& other) = delete;
-  Supervector(Supervector&& other) = delete;
-  Supervector& operator=(Supervector&& other) = delete;
 
   // An ordered list of all the constituent vectors in this supervector.
   std::vector<VectorBase<T>*> vectors_;

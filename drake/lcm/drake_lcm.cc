@@ -1,6 +1,9 @@
 #include "drake/lcm/drake_lcm.h"
 
+#include <utility>
+
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace lcm {
@@ -11,14 +14,10 @@ namespace lcm {
 // templated on the subscriber type.
 class DrakeLcm::Subscriber {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subscriber)
+
   explicit Subscriber(DrakeLcmMessageHandlerInterface* drake_handler)
       : drake_handler_(drake_handler) {}
-
-  // Disables copy, assign, and move.
-  Subscriber(const Subscriber&) = delete;
-  Subscriber& operator=(const Subscriber&) = delete;
-  Subscriber(Subscriber&&) = delete;
-  Subscriber& operator=(Subscriber&&) = delete;
 
   void LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
                    const std::string& channel) {

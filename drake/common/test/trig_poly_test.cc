@@ -1,9 +1,9 @@
 #include "drake/common/trig_poly.h"
 
-#include <sstream>
 #include <map>
+#include <sstream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/polynomial.h"
 
@@ -51,10 +51,19 @@ GTEST_TEST(TrigPolyTest, SmokeTest) {
   TestSerializationContains(cos(p), "c1=cos(q1)");
 
   // The following results could reasonably change if Polynomial changes its
-  // monomial sorting or fixes #2216.  They are retained here to catch any
-  // inadvertent changes to this behaviour.
+  // monomial sorting.  They are retained here to catch any inadvertent changes
+  // to this behaviour.
   TestSerializationFirstWord(sin(p) * p * p + cos(p), "s1*q1^2+c1");
-  TestSerializationFirstWord(sin(p + p), "s1*c1+c1*s1");
+  TestSerializationFirstWord(sin(p + p), "(2)*s1*c1");
+  TestSerializationFirstWord(sin(p + p + p), "(3)*s1*c1^2-s1^3");
+  TestSerializationFirstWord(sin(-p - p - p), "(-3)*s1*c1^2+s1^3");
+  TestSerializationFirstWord(cos(p + p + p), "c1^3+(-3)*c1*s1^2");
+  TestSerializationFirstWord(cos(-p - p - p), "c1^3+(-3)*c1*s1^2");
+
+  Polynomiald empty_poly;
+  TrigPolyd empty(empty_poly);
+  TestSerializationFirstWord(cos(empty), "(1)");
+  TestSerializationFirstWord(sin(empty), "(0)");
 }
 
 GTEST_TEST(TrigPolyTest, GetVariablesTest) {
@@ -120,11 +129,8 @@ GTEST_TEST(TrigPolyTest, EvaluatePartialTest) {
             phi + sin(phi));
   EXPECT_EQ(multivariate.EvaluatePartial(MapType {{phi_var, 0}}),
             theta + sin(theta));
-  // TODO(#2216) This fails due to a known drake bug:
-#if 0
-  EXPECT_EQ(multivariate.evaluatePartial(MapType {{phi_var, 1}}),
+  EXPECT_EQ(multivariate.EvaluatePartial(MapType {{phi_var, 1}}),
             theta + cos(theta) + sin(theta + 1));
-#endif
 }
 
 }  // anonymous namespace

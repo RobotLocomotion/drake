@@ -1,18 +1,20 @@
 #include "drake/systems/analysis/simulator.h"
+
 #include <cmath>
 #include <complex>
 #include <functional>
 #include <map>
 
+#include <gtest/gtest.h>
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
+#include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-#include "gtest/gtest.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
@@ -232,7 +234,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   // TODO(edrumwri): Remove this when discrete state has been created
   // automatically.
   // Create the discrete state.
-  context->set_discrete_state(std::make_unique<DiscreteState<double>>());
+  context->set_discrete_state(std::make_unique<DiscreteValues<double>>());
 
   // Set initial condition using the Simulator's internal context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
@@ -262,6 +264,8 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 namespace {
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
+
   explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {
   }
 
@@ -335,7 +339,7 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   simulator.StepTo(1.);
 
   // Check that the update occurs at exactly the desired time.
-  EXPECT_EQ(updates.size(), 1);
+  EXPECT_EQ(updates.size(), 1u);
   EXPECT_EQ(updates.front(), t_upd);
 }
 
@@ -438,11 +442,13 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 // DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
 class DiscreteSystem : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteSystem)
+
   DiscreteSystem() {
     // Deliberately choose a period that is identical to, and therefore courts
     // floating-point error with, the default max step size.
     const double offset = 0.0;
-    this->DeclarePeriodicUpdate(kUpdatePeriod, offset);
+    this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
     this->DeclarePublishPeriodSec(kPublishPeriod);
 
     set_name("TestSystem");
@@ -455,7 +461,7 @@ class DiscreteSystem : public LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      drake::systems::DiscreteState<double>* updates) const override {
+      drake::systems::DiscreteValues<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
@@ -578,6 +584,101 @@ GTEST_TEST(SimulatorTest, AutodiffBasic) {
   Simulator<AutoDiffXd> simulator(spring_mass);
   simulator.Initialize();
   simulator.StepTo(1);
+}
+
+// Tests per step publish, discrete and unrestricted update actions. Each
+// action handler logs the context time when it's called, and the test compares
+// the time stamp against the integrator's dt.
+GTEST_TEST(SimulatorTest, PerStepAction) {
+  class PerStepActionTestSystem : public LeafSystem<double> {
+   public:
+    PerStepActionTestSystem() {}
+
+    void AddPerStepAction(
+        const typename DiscreteEvent<double>::ActionType& action) {
+      this->DeclarePerStepAction(action);
+    }
+
+    const std::vector<double>& get_publish_times() const {
+      return publish_times_;
+    }
+
+    const std::vector<double>& get_discrete_update_times() const {
+      return discrete_update_times_;
+    }
+
+    const std::vector<double>& get_unrestricted_update_times() const {
+      return unrestricted_update_times_;
+    }
+
+   private:
+    void DoCalcOutput(const Context<double>& context,
+        SystemOutput<double>* output) const override {}
+
+    void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+        DiscreteValues<double>* discrete_state) const override {
+      discrete_update_times_.push_back(context.get_time());
+    }
+
+    void DoCalcUnrestrictedUpdate(const Context<double>& context,
+        State<double>* state) const override {
+      unrestricted_update_times_.push_back(context.get_time());
+    }
+
+    void DoPublish(const Context<double>& context) const override {
+      publish_times_.push_back(context.get_time());
+    }
+
+    // A hack to test actions easily.
+    // Note that these should really be part of the Context, and users should
+    // NOT use this as an example code.
+    //
+    // Since Publish only takes a const Context, the only way to log time is
+    // through some side effects. Thus, using a mutable vector can be justified.
+    //
+    // One conceptually correct implementation for discrete_update_times_ is
+    // to pre allocate a big DiscreteState in Context, and store all the time
+    // stamps there.
+    //
+    // unrestricted_update_times_ can be put in the AbstractState in Context
+    // and mutated similarly to this implementation.
+    //
+    // The motivation for keeping them as mutable are for simplicity and
+    // easiness to understand.
+    mutable std::vector<double> publish_times_;
+    mutable std::vector<double> discrete_update_times_;
+    mutable std::vector<double> unrestricted_update_times_;
+  };
+
+  PerStepActionTestSystem sys;
+  sys.AddPerStepAction(DiscreteEvent<double>::kPublishAction);
+  sys.AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+  sys.AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+  Simulator<double> sim(sys);
+
+  // Disables all simulator induced publish events, so that all publish calls
+  // are intiated by sys.
+  sim.set_publish_at_initialization(false);
+  sim.set_publish_every_time_step(false);
+  sim.Initialize();
+  sim.StepTo(0.1);
+
+  double dt = sim.get_integrator()->get_maximum_step_size();
+  int N = static_cast<int>(0.1 / dt);
+  // Need to change this if the default integrator step size is not 1ms.
+  EXPECT_EQ(N, 100);
+
+  auto& publish_times = sys.get_publish_times();
+  auto& discrete_update_times = sys.get_discrete_update_times();
+  auto& unrestricted_update_times = sys.get_unrestricted_update_times();
+  EXPECT_EQ(publish_times.size(), N);
+  EXPECT_EQ(sys.get_discrete_update_times().size(), N);
+  EXPECT_EQ(sys.get_unrestricted_update_times().size(), N);
+  for (size_t i = 0; i < publish_times.size(); ++i) {
+    EXPECT_NEAR(publish_times[i], i * dt, 1e-12);
+    EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
+    EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
+  }
 }
 
 }  // namespace

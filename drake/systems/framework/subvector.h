@@ -1,10 +1,11 @@
 #pragma once
 
-#include <Eigen/Dense>
-
 #include <cstdint>
 #include <stdexcept>
 
+#include <Eigen/Dense>
+
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -18,6 +19,9 @@ namespace systems {
 template <typename T>
 class Subvector : public VectorBase<T> {
  public:
+  // Subvector objects are neither copyable nor moveable.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subvector)
+
   /// Constructs a subvector of vector that consists of num_elements starting
   /// at first_element.
   /// @param vector The vector to slice.  Must not be nullptr. Must remain
@@ -52,12 +56,6 @@ class Subvector : public VectorBase<T> {
   }
 
  private:
-  // Subvector objects are neither copyable nor moveable.
-  Subvector(const Subvector& other) = delete;
-  Subvector& operator=(const Subvector& other) = delete;
-  Subvector(Subvector&& other) = delete;
-  Subvector& operator=(Subvector&& other) = delete;
-
   VectorBase<T>* vector_{nullptr};
   int first_element_{0};
   int num_elements_{0};

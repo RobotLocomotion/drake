@@ -27,6 +27,7 @@
 
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/dummy_value.h"
 
 namespace Eigen {
 
@@ -144,6 +145,17 @@ template <typename DerType>
 double ExtractDoubleOrThrow(const Eigen::AutoDiffScalar<DerType>& scalar) {
   return static_cast<double>(scalar.value());
 }
+
+/// Specializes common/dummy_value.h.
+template <typename DerType>
+struct dummy_value<Eigen::AutoDiffScalar<DerType>> {
+  static constexpr Eigen::AutoDiffScalar<DerType> get() {
+    constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+    DerType derivatives;
+    derivatives.fill(kNaN);
+    return Eigen::AutoDiffScalar<DerType>(kNaN, derivatives);
+  }
+};
 
 /// Provides if-then-else expression for Eigen::AutoDiffScalar type. To support
 /// Eigen's generic expressions, we use casting to the plain object after

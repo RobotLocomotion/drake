@@ -1,64 +1,81 @@
 # -*- python -*-
 
-# This file contains rules for the Bazel build system.
-# See http://bazel.io/ .
+def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
+    """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
+    lcm_package, and lcm_struct parameters as documented in lcm_cc_library
+    below).  The filenames will use the given extension.
 
-# In particular, this is a Skylark extension:
-# https://bazel.build/versions/master/docs/skylark/concepts.html
-
-def _lcm_srcs_to_outs(lcm_package, lcm_srcs, extension):
-    """Return the list of filenames (prefixed by the package directory and
-    switched to a new extension), based on the lcm_package= and lcm_srcs=
-    parameters (see lcm_cc_library below for a description of what those
-    parameters mean).
     """
-    result = []
+    # Find and remove the dirname and extension shared by all lcm_srcs.
+    # For srcs in the current directory, the dirname will be empty.
+    basename_start_index = lcm_srcs[0].rfind("/") + 1
+    dirname = lcm_srcs[0][:basename_start_index]
+    lcm_basenames = []
     for item in lcm_srcs:
-        if not item.endswith(".lcm"):
-            fail(item + " does not end with .lcm")
-        result.append(lcm_package + "/" + item[:-len(".lcm")] + extension)
-    return result
+        if not item[:item.rfind("/") + 1] == dirname:
+            fail(item + " doesn't share a dirname with " + lcm_srcs[0])
+        basename_with_ext = item[basename_start_index:]
+        if not basename_with_ext.endswith(".lcm"):
+            fail(item + " doesn't end with .lcm")
+        basename = basename_with_ext[:-len(".lcm")]
+        lcm_basenames.append(basename)
+
+    # Assemble the expected output paths, inferring struct names from what we
+    # got in lcm_srcs, if necessary.
+    struct_outs = [
+        dirname + lcm_package + "/" + lcm_struct + extension
+        for lcm_struct in (lcm_structs or lcm_basenames)]
+
+    # Some languages have extra metadata.
+    extra_outs = []
+    (extension in [".hpp", ".py", ".java"]) or fail(extension)
+    if extension == ".py":
+        extra_outs.append(dirname + lcm_package + "/__init__.py")
+
+    return struct_outs + extra_outs
 
 def _lcmgen_impl(ctx):
-    """The implementation actions to invoke lcmgen.
+    """The implementation actions to invoke lcm-gen.
 
     The ctx parameter comes from Skylark:
     https://bazel.build/versions/master/docs/skylark/lib/ctx.html
     """
     # We are given ctx.outputs.outs, which is the full path and file name of
-    # the generated file we want to create.  However, the lcmgen tool places
+    # the generated file we want to create.  However, the lcm-gen tool places
     # its outputs into a subdirectory of the path we ask for, based on the LCM
     # message's package name.  To set the correct path, we need to both remove
     # the filename from outs (which we do via ".dirname"), as well as the
     # package-name-derived directory name (which we do via slicing off striplen
     # characters), including the '/' right before it (thus the "+ 1" below).
     striplen = len(ctx.attr.lcm_package) + 1
-    for lcm_src, output in zip(ctx.files.lcm_srcs, ctx.outputs.outs):
-        outpath = output.dirname[:-striplen]
-        if ctx.attr.language == "cc":
-            arguments = ["--cpp", "--cpp-std=c++11", "--cpp-hpath=" + outpath]
-        elif ctx.attr.language == "py":
-            arguments = ["--python", "--ppath=" + outpath]
-        else:
-            fail("Unknown language")
-        ctx.action(
-            inputs = [lcm_src],
-            outputs = [output],
-            arguments = arguments + [lcm_src.path],
-            executable = ctx.executable.lcmgen,
-            )
+    outpath = ctx.outputs.outs[0].dirname[:-striplen]
+    if ctx.attr.language == "cc":
+        arguments = ["--cpp", "--cpp-std=c++11", "--cpp-hpath=" + outpath]
+    elif ctx.attr.language == "py":
+        arguments = ["--python", "--ppath=" + outpath]
+    elif ctx.attr.language == "java":
+        arguments = ["--java", "--jpath=" + outpath]
+    else:
+        fail("Unknown language")
+    ctx.action(
+        inputs = ctx.files.lcm_srcs,
+        outputs = ctx.outputs.outs,
+        arguments = arguments + [
+            lcm_src.path for lcm_src in ctx.files.lcm_srcs],
+        executable = ctx.executable.lcmgen,
+    )
     return struct()
 
-# Create rule to invoke lcmgen on some lcm_srcs.
+# Create rule to invoke lcm-gen on some lcm_srcs.
 # https://www.bazel.io/versions/master/docs/skylark/rules.html
 _lcm_library_gen = rule(
     attrs = {
-        "lcm_package": attr.string(),
         "lcm_srcs": attr.label_list(allow_files = True),
+        "lcm_package": attr.string(),
         "lcmgen": attr.label(
             cfg = "host",
             executable = True,
-            default = Label("@lcm//:lcmgen"),
+            default = Label("@lcm//:lcm-gen"),
         ),
         "outs": attr.output_list(),
         "language": attr.string(),
@@ -69,90 +86,115 @@ _lcm_library_gen = rule(
 
 def lcm_cc_library(
         name,
-        lcm_package=None,
         lcm_srcs=None,
-        includes=None,
-        deps=None,
+        lcm_package=None,
+        lcm_structs=None,
+        linkstatic=1,
         **kwargs):
-    """Declares a cc_library target based on C++ message classes generated from
-    `*.lcm` files.  The lcm_srcs= list parameter specifies the `*.lcm` sources.
-    The lcm_package= string parameter must match the `package ...;` statement
-    in all of the `*.lcm` files in lcm_srcs.  The Bazel-standard includes= and
-    deps= parameters are passed through to cc_library after adding the items
-    required by the generated code.
+    """Declares a cc_library on message classes generated from `*.lcm` files.
 
+    The required lcm_srcs list parameter specifies the `*.lcm` source files.
+    All lcm_srcs must reside in the same subdirectory.
+
+    The required lcm_package string parameter must match the `package ...;`
+    statement in all of the files in lcm_srcs.
+
+    The lcm_structs list parameter is optional; if unset, it defaults to the
+    basenames of the files given in lcm_srcs.  If the struct names within the
+    lcm_srcs do not match the basenames, or if the lcm_srcs declare multiple
+    structs per file, then the parameter is required and must list every
+    `struct ...;` declared by lcm_srcs.
+
+    By default, we produce only static libraries, to reduce compilation time
+    on all platforms, and to avoid mysterious dyld errors on OS X. This default
+    could be revisited if binary size becomes a concern.
     """
-    if lcm_package == None:
-        fail("lcm_package must be provided")
     if not lcm_srcs:
-        fail("lcm_srcs must be provided")
+        fail("lcm_srcs is required")
+    if not lcm_package:
+        fail("lcm_package is required")
 
-    outs = _lcm_srcs_to_outs(lcm_package, lcm_srcs, ".hpp")
+    outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".hpp")
     _lcm_library_gen(
         name=name + "_lcm_library_gen",
         language="cc",
-        lcm_package=lcm_package,
         lcm_srcs=lcm_srcs,
+        lcm_package=lcm_package,
         outs=outs)
 
-    newdep = "@lcm//:lcm"
-    deps = list(deps or [])
-    if newdep not in deps:
-        deps.append(newdep)
-
-    newinclude = "."
-    includes = list(includes or [])
-    if newinclude not in includes:
-        includes.append(newinclude)
-
+    deps = set(kwargs.pop('deps', [])) | ["@lcm//:lcm"]
+    includes = set(kwargs.pop('includes', [])) | ["."]
     native.cc_library(
         name=name,
         hdrs=outs,
         deps=deps,
         includes=includes,
+        linkstatic=linkstatic,
         **kwargs)
 
 def lcm_py_library(
         name,
-        lcm_package=None,
         lcm_srcs=None,
-        deps=None,
-        imports=None,
+        lcm_package=None,
+        lcm_structs=None,
         **kwargs):
-    """Declares a py_library target based on python message classes generated
-    from `*.lcm` files.  The lcm_src= list parameter specifies the `*.lcm`
-    sources.  The lcm_package= string parameter must match the `package ...;`
-    statement in all of the `*.lcm` files in lcm_srcs.  The Bazel-standard
-    deps= and imports= parameters are passed through to py_library after
-    adding the items required by the generated code.
+    """Declares a py_library on message classes generated from `*.lcm` files.
 
+    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
+    in lcm_cc_library.
+
+    This library has an ${lcm_package}/__init__.py, which means that this macro
+    should only be used once for a given lcm_package in a given subdirectory.
+    (Bazel will fail-fast with a "duplicate file" error if this is violated.)
     """
-    if lcm_package == None:
-        fail("lcm_package must be provided")
     if not lcm_srcs:
-        fail("lcm_srcs must be provided")
+        fail("lcm_srcs is required")
+    if not lcm_package:
+        fail("lcm_package is required")
 
-    outs = _lcm_srcs_to_outs(lcm_package, lcm_srcs, ".py")
+    outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".py")
     _lcm_library_gen(
         name=name + "_lcm_library_gen",
         language="py",
-        lcm_package=lcm_package,
         lcm_srcs=lcm_srcs,
+        lcm_package=lcm_package,
         outs=outs)
 
-    newdep = "@lcm//:lcm-python"
-    deps = list(deps or [])
-    if newdep not in deps:
-        deps.append(newdep)
-
-    newimport = "."
-    imports = list(imports or [])
-    if newimport not in imports:
-        imports.append(newimport)
-
+    imports = set(kwargs.pop('imports', [])) | ["."]
     native.py_library(
         name=name,
         srcs=outs,
-        deps=deps,
         imports=imports,
+        **kwargs)
+
+def lcm_java_library(
+        name,
+        lcm_srcs=None,
+        lcm_package=None,
+        lcm_structs=None,
+        **kwargs):
+    """Declares a java_library on message classes generated from `*.lcm` files.
+
+    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
+    in lcm_cc_library.
+
+    """
+    if not lcm_srcs:
+        fail("lcm_srcs is required")
+    if not lcm_package:
+        fail("lcm_package is required")
+
+    outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".java")
+    _lcm_library_gen(
+        name=name + "_lcm_library_gen",
+        language="java",
+        lcm_srcs=lcm_srcs,
+        lcm_package=lcm_package,
+        outs=outs)
+
+    deps = set(kwargs.pop('deps', [])) | ["@lcm//:lcm-java"]
+    native.java_library(
+        name=name,
+        srcs=outs,
+        deps=deps,
         **kwargs)

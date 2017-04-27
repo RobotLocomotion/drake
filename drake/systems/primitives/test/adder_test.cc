@@ -4,11 +4,11 @@
 #include <stdexcept>
 #include <string>
 
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include <gtest/gtest.h>
 
-#include "gtest/gtest.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 
 using std::make_unique;
 
@@ -35,19 +35,17 @@ class AdderTest : public ::testing::Test {
 
 // Tests that the system exports the correct topology.
 TEST_F(AdderTest, Topology) {
-  ASSERT_EQ(2u, adder_->get_input_ports().size());
-  for (const auto& descriptor : adder_->get_input_ports()) {
+  ASSERT_EQ(2, adder_->get_num_input_ports());
+  for (int i = 0; i < 2; ++i) {
+    const InputPortDescriptor<double>& descriptor = adder_->get_input_port(i);
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kInputPort, descriptor.get_face());
-    EXPECT_EQ(3, descriptor.get_size());
+    EXPECT_EQ(3, descriptor.size());
   }
 
-  ASSERT_EQ(1u, adder_->get_output_ports().size());
-  for (const auto& descriptor : adder_->get_output_ports()) {
-    EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kOutputPort, descriptor.get_face());
-    EXPECT_EQ(3, descriptor.get_size());
-  }
+  ASSERT_EQ(1, adder_->get_num_output_ports());
+  const OutputPortDescriptor<double>& descriptor = adder_->get_output_port(0);
+  EXPECT_EQ(kVectorValued, descriptor.get_data_type());
+  EXPECT_EQ(3, descriptor.size());
 }
 
 // Tests that the system computes the correct sum.
@@ -64,8 +62,7 @@ TEST_F(AdderTest, AddTwoVectors) {
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_port = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_port);
-  Eigen::Vector3d expected;
-  expected << 5, 7, 9;
+  Eigen::Vector3d expected(5, 7, 9);
   EXPECT_EQ(expected, output_port->get_value());
 }
 
@@ -74,9 +71,12 @@ TEST_F(AdderTest, AdderIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
-// Asserts that adders are systems with direct feedthrough inputs.
+// Asserts that adders have direct-feedthrough from all inputs to the output.
 TEST_F(AdderTest, AdderIsDirectFeedthrough) {
-  EXPECT_TRUE(adder_->has_any_direct_feedthrough());
+  EXPECT_TRUE(adder_->HasAnyDirectFeedthrough());
+  for (int i = 0; i < adder_->get_num_input_ports(); ++i) {
+    EXPECT_TRUE(adder_->HasDirectFeedthrough(i, 0));
+  }
 }
 
 }  // namespace

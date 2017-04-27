@@ -11,8 +11,14 @@ namespace="drake::automotive"
 
 source $drake/tools/lcm_vector_gen.sh
 
-gen_lcm_and_vector_from_yaml "driving command" $drake/automotive/driving_command_fields.yaml
-gen_lcm_and_vector "euler floating joint state" x y z roll pitch yaw
-gen_vector_yaml "idm planner parameters" $drake/automotive/idm_planner_parameters.yaml
-gen_lcm_and_vector "simple car state" x y heading velocity
-gen_lcm_and_vector "simple car config" wheelbase track max_abs_steering_angle max_velocity max_acceleration velocity_lookahead_time velocity_kp
+gen_lcm_and_vector_from_proto "bicycle car parameters" $drake/automotive/bicycle_car_parameters.named_vector
+gen_lcm_and_vector_from_proto "bicycle car state" $drake/automotive/bicycle_car_state.named_vector
+gen_lcm_and_vector_from_proto "driving command" $drake/automotive/driving_command_fields.named_vector
+gen_lcm_and_vector_from_proto "euler floating joint state" $drake/automotive/euler_floating_joint_state.named_vector
+gen_vector_proto "idm planner parameters" $drake/automotive/idm_planner_parameters.named_vector
+gen_lcm_and_vector_from_proto "maliput railcar state" $drake/automotive/maliput_railcar_state.named_vector
+gen_lcm_and_vector_from_proto "maliput railcar params" $drake/automotive/maliput_railcar_params.named_vector
+gen_vector_proto "mobil planner parameters" $drake/automotive/mobil_planner_parameters.named_vector
+gen_vector_proto "pure pursuit params" $drake/automotive/pure_pursuit_params.named_vector
+gen_lcm_and_vector_from_proto "simple car state" $drake/automotive/simple_car_state.named_vector
+gen_lcm_and_vector_from_proto "simple car params" $drake/automotive/simple_car_params.named_vector

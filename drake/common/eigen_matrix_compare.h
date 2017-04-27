@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <string>
 
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_compat.h"
 #include "drake/common/text_logging.h"
@@ -29,24 +29,18 @@ enum class MatrixCompareType { absolute, relative };
  * @return true if the two matrices are equal based on the specified tolerance.
  */
 template <typename DerivedA, typename DerivedB>
-bool CompareMatrices(
+::testing::AssertionResult CompareMatrices(
     const Eigen::MatrixBase<DerivedA>& m1,
     const Eigen::MatrixBase<DerivedB>& m2, double tolerance = 0.0,
-    MatrixCompareType compare_type = MatrixCompareType::absolute,
-    std::string* explanation = nullptr) {
-  bool result = true;
-  std::string error_message;
-
+    MatrixCompareType compare_type = MatrixCompareType::absolute) {
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
-    std::stringstream msg;
-    msg << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
-        << " vs. " << m2.rows() << " x " << m2.cols() << ")";
-    error_message = msg.str();
-    result = false;
+    return ::testing::AssertionFailure()
+           << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
+           << " vs. " << m2.rows() << " x " << m2.cols() << ")";
   }
 
-  for (int ii = 0; result && ii < m1.rows(); ii++) {
-    for (int jj = 0; result && jj < m1.cols(); jj++) {
+  for (int ii = 0; ii < m1.rows(); ii++) {
+    for (int jj = 0; jj < m1.cols(); jj++) {
       // First handle the corner cases of positive infinity, negative infinity,
       // and NaN
       bool both_positive_infinity =
@@ -65,13 +59,10 @@ bool CompareMatrices(
       // Check for case where one value is NaN and the other is not
       if ((std::isnan(m1(ii, jj)) && !std::isnan(m2(ii, jj))) ||
           (!std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj)))) {
-        std::stringstream msg;
-        msg << "NaN missmatch at (" << ii << ", " << jj << "):\nm1 =\n"
-            << m1 << "\nm2 =\n"
-            << m2;
-        error_message = msg.str();
-        result = false;
-        continue;
+        return ::testing::AssertionFailure() << "NaN missmatch at (" << ii
+                                             << ", " << jj << "):\nm1 =\n"
+                                             << m1 << "\nm2 =\n"
+                                             << m2;
       }
 
       // Determine whether the difference between the two matrices is less than
@@ -82,17 +73,14 @@ bool CompareMatrices(
         // Perform comparison using absolute tolerance.
 
         if (delta > tolerance) {
-          std::stringstream msg;
-          msg << "Values at (" << ii << ", " << jj
-              << ") exceed tolerance: " << m1(ii, jj) << " vs. " << m2(ii, jj)
-              << ", diff = " << delta << ", tolerance = " << tolerance
-              << "\nm1 =\n"
-              << m1 << "\nm2 =\n"
-              << m2 << "\ndelta=\n"
-              << (m1 - m2);
-
-          error_message = msg.str();
-          result = false;
+          return ::testing::AssertionFailure()
+                 << "Values at (" << ii << ", " << jj
+                 << ") exceed tolerance: " << m1(ii, jj) << " vs. "
+                 << m2(ii, jj) << ", diff = " << delta
+                 << ", tolerance = " << tolerance << "\nm1 =\n"
+                 << m1 << "\nm2 =\n"
+                 << m2 << "\ndelta=\n"
+                 << (m1 - m2);
         }
       } else {
         // Perform comparison using relative tolerance, see:
@@ -101,29 +89,25 @@ bool CompareMatrices(
         double relative_tolerance = tolerance * std::max(1.0, max_value);
 
         if (delta > relative_tolerance) {
-          std::stringstream msg;
-          msg << "Values at (" << ii << ", " << jj
-              << ") exceed tolerance: " << m1(ii, jj) << " vs. " << m2(ii, jj)
-              << ", diff = " << delta << ", tolerance = " << tolerance
-              << ", relative tolerance = " << relative_tolerance << "\nm1 =\n"
-              << m1 << "\nm2 =\n"
-              << m2 << "\ndelta=\n"
-              << (m1 - m2);
-          error_message = msg.str();
-          result = false;
+          return ::testing::AssertionFailure()
+                 << "Values at (" << ii << ", " << jj
+                 << ") exceed tolerance: " << m1(ii, jj) << " vs. "
+                 << m2(ii, jj) << ", diff = " << delta
+                 << ", tolerance = " << tolerance
+                 << ", relative tolerance = " << relative_tolerance
+                 << "\nm1 =\n"
+                 << m1 << "\nm2 =\n"
+                 << m2 << "\ndelta=\n"
+                 << (m1 - m2);
         }
       }
     }
   }
 
-  if (!result) {
-    if (explanation != nullptr)
-      *explanation = error_message;
-    else
-      drake::log()->error(error_message);
-  }
-
-  return result;
+  return ::testing::AssertionSuccess() << "m1 =\n"
+                                       << m1
+                                       << "\nis approximately equal to m2 =\n"
+                                       << m2;
 }
 
 }  // namespace drake

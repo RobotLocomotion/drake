@@ -3,6 +3,8 @@ option(FIND_PACKAGE_STRICT
   ON)
 mark_as_advanced(FIND_PACKAGE_STRICT)
 
+set(DRAKE_DEPENDENCIES)
+
 #------------------------------------------------------------------------------
 # Find and load settings from an external project. <PACKAGE>_FOUND will be set
 # to indicate whether the package was found.
@@ -60,6 +62,10 @@ macro(drake_find_package PACKAGE)
   if(NOT ${PACKAGE}_FOUND AND FIND_PACKAGE_STRICT AND WITH_${dfp_package_upper})
     message(FATAL_ERROR
       "WITH_${dfp_package_upper} is enabled, but could NOT find ${PACKAGE}")
+  endif()
+
+  if(NOT DFP_PKG_CONFIG AND ${PACKAGE}_FOUND)
+    list(APPEND DRAKE_DEPENDENCIES ${PACKAGE})
   endif()
 
   unset(dfp_package_upper)
@@ -126,9 +132,24 @@ macro(drake_find_packages)
   # BEGIN required packages
 
   drake_find_package(Eigen3 CONFIG REQUIRED)
-  add_definitions(-DEIGEN_MPL2_ONLY)  # Per #4065.
+  set_property(TARGET Eigen3::Eigen APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS EIGEN_MPL2_ONLY)  # Per #4065.
+
+  drake_find_package(fmt CONFIG REQUIRED)
   drake_find_package(gflags CONFIG REQUIRED)
+
+  set(GTEST_DEFINITIONS
+    GTEST_DONT_DEFINE_FAIL=1
+    GTEST_DONT_DEFINE_SUCCEED=1
+    GTEST_DONT_DEFINE_TEST=1)
   drake_find_package(GTest MODULE REQUIRED)
+  set_property(TARGET GTest::GTest APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
+  drake_find_package(GMock MODULE REQUIRED)
+  set_property(TARGET GMock::GMock APPEND PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
+
+  drake_find_package(tinyobjloader CONFIG REQUIRED)
 
   # END required packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,17 +159,22 @@ macro(drake_find_packages)
   drake_find_package(bot2-core CONFIG)
   drake_find_package(bot2-lcmgl-client PKG_CONFIG)
   drake_find_package(Bullet MODULE)
-  drake_find_package(dreal PKG_CONFIG)
+  drake_find_package(ccd CONFIG)
+  drake_find_package(fcl CONFIG)
   drake_find_package(gurobi CONFIG)
+  drake_find_package(ignition-math CONFIG)
+  drake_find_package(ignition-rndf CONFIG)
   drake_find_package(ipopt PKG_CONFIG)
   drake_find_package(lcm CONFIG)
   drake_find_package(meshconverters CONFIG)
   drake_find_package(mosek CONFIG)
   drake_find_package(NLopt CONFIG)
   drake_find_package(octomap CONFIG)
+  drake_find_package(pybind11 CONFIG COMPONENTS NumPy)
   drake_find_package(robotlocomotion-lcmtypes CONFIG)
   drake_find_package(snopt CONFIG)
   drake_find_package(spdlog CONFIG)
+  drake_find_package(VTK CONFIG)
   drake_find_package(xfoil CONFIG)
   drake_find_package(yaml-cpp CONFIG)
 

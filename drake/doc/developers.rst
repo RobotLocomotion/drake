@@ -70,21 +70,27 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
 
-On Ubuntu and OS X, the "Unix Makefiles" and "Ninja" CMake generators are
+For CMake builds, the "Unix Makefiles" and "Ninja" CMake generators are
 supported.
 
-The supported version of MATLAB is R2015b.
+For CMake builds, the supported version of MATLAB is R2015b.
 
-Minimal configuration is defined as the minimal required externals from
-the superbuild. This is configured by turning off all externals using
+For CMake builds,
+minimal configuration is defined as the minimal required externals
+from the superbuild. This is configured by turning off all externals using
 ``ccmake`` or ``cmake-gui`` except for ``WITH_EIGEN``, ``WITH_GOOGLETEST``,
 and  ``WITH_GFLAGS``, which should be set to ``ON``.
+
+Almost all of Drake and Drake's externals are
+supported on Bazel. "Superbuild Deps" are not meaningful in the context
+of Bazel, since there is no configurable superbuild. MATLAB is not supported on
+Bazel, and there are no plans to add support.
 
 +------------------------------+------------------+--------------------+-------------------+---------+
 | Operating System             | Build Systems    | Compilers          | Superbuild Deps   | Build   |
 +==============================+==================+====================+===================+=========+
-| Ubuntu 14.04 LTS ("Trusty")  | CMake 3.5        | | GCC 4.9          | Minimal           | Debug   |
-|                              |                  | | Java 1.8         |                   +---------+
+| Ubuntu 14.04 LTS ("Trusty")  | | CMake 3.5      | | GCC 4.9          | Minimal           | Debug   |
+|                              | | Bazel 0.4.5    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
@@ -98,22 +104,20 @@ and  ``WITH_GFLAGS``, which should be set to ``ON``.
 |                              |                  |                    |                   | Release |
 +------------------------------+------------------+--------------------+-------------------+---------+
 | Ubuntu 16.04 LTS ("Xenial")  | | CMake 3.5      | | GCC 5.4          | Default           | Debug   |
-|                              | | Bazel 0.4.2    | | Java 1.8         |                   +---------+
+|                              | | Bazel 0.4.5    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  +--------------------+-------------------+---------+
 |                              |                  | | Clang 3.9        | Default           | Debug   |
 |                              |                  | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 +------------------------------+------------------+--------------------+-------------------+---------+
-| OS X 10.10                   | CMake 3.5        | | Apple Clang 7.0  | Minimal           | Debug   |
-|                              |                  | | Java 1.8         |                   +---------+
+| OS X 10.10                   | | CMake 3.5      | | Apple Clang 7.0  | Minimal           | Debug   |
+|                              | | Bazel 0.4.5    | | Java 1.8         |                   +---------+
 |                              |                  |                    |                   | Release |
 |                              |                  |                    +-------------------+---------+
 |                              |                  |                    | Default           | Debug   |
 |                              |                  |                    |                   +---------+
 |                              |                  |                    |                   | Release |
-|                              |                  |                    +-------------------+---------+
-|                              |                  |                    | Default + MATLAB  | Release |
 +------------------------------+------------------+--------------------+-------------------+---------+
 
 Code Review
@@ -135,6 +139,12 @@ code review process has two phases: feature review and platform review. You
 are responsible for finding reviewers, and for providing them the information
 they need to review your change effectively. If a reviewer asks you for more
 information, that is a sign you should add more documentation to your PR.
+
+A PR generally should not include more than 500 lines of new code. Larger PRs
+are sometimes allowed, for instance if the change is generated by an easily
+reviewed script. Before sending an oversize PR, check that your reviewers are
+willing to accept it.  Comments and deleted lines do not count toward the
+500-line limit.
 
 We use https://reviewable.io for code reviews. You can sign in for free with
 your GitHub identity. Before your first code review, please take a look at
@@ -162,6 +172,7 @@ make the review faster.
 - @psiorx (MIT)
 - @sammy-tri (Toyota Research Institute)
 - @sherm1 (Toyota Research Institute)
+- @soonho-tri (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
 
 **Merge.** If you have write access to RobotLocomotion/drake, a green
@@ -242,3 +253,4 @@ Version Control
     :maxdepth: 1
 
     no_push_to_origin
+

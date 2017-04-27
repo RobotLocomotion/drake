@@ -1,9 +1,11 @@
+.. _bazel:
+
 ******************
 Bazel build system
 ******************
 
 The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial, and is being tested on Ubuntu Trusty and OS X.
+Ubuntu Xenial, Ubuntu Trusty, and OS X.
 For more information, see:
 
  * https://bazel.build/
@@ -13,7 +15,7 @@ Bazel Installation
 ==================
 
 The Ubuntu Xenial platform setup process installs Bazel for you. On other
-platforms, refer to the Bazel installation instructions. We use Bazel 0.4.2.
+platforms, refer to the Bazel installation instructions. We use Bazel 0.4.5.
 https://bazel.build/versions/master/docs/install.html
 
 Drake clone and platform setup
@@ -38,12 +40,16 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns.
 
+Under Bazel, Clang is the default compiler on all platforms, but command-line
+options are available to use GCC on Ubuntu.
+
 Cheat sheet for operating on the entire project::
 
   cd /path/to/drake-distro
-  bazel build //...                 # Build the entire project.
-  bazel test //...                  # Build and test the entire project.
-  bazel build --config=clang //...  # Build the entire project using clang (on Ubuntu).
+  bazel build //...                     # Build the entire project.
+  bazel test //...                      # Build and test the entire project.
+  bazel build --compiler=gcc-4.9 //...  # Build using gcc 4.9 on Trusty.
+  bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".
@@ -85,6 +91,7 @@ Cheat sheet for operating on specific portions of the project::
   bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
   bazel test --config=fastmemcheck common:*            # Run common's tests under memcheck, with minimal recompiling.
   bazel test --config=asan common:polynomial_test      # Run one test under AddressSanitizer.
+  bazel test --config=kcov common:polynomial_test      # Run one test under kcov (see instructions below).
   bazel build -c dbg common:polynomial_test && \
     gdb ../bazel-bin/drake/common/polynomial_test      # Run one test under gdb.
 
@@ -95,6 +102,20 @@ Cheat sheet for operating on specific portions of the project::
   entire command.  For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 - For the definitions of the "``--config``" options see ``drake-distro/tools/bazel.rc``.
+
+Debugging on OS X
+-----------------
+
+On OS X, DWARF debug symbols are emitted to a ``.dSYM`` file. The Bazel
+``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
+file, so we have implemented a workaround in Drake, ``--config=apple_debug``.
+This config turns off sandboxing, which allows a ``genrule`` to access the
+``.o`` files and process them into a ``.dSYM``.  Use as follows::
+
+  bazel build --config=apple_debug drake/path/to/my:binary_or_test_dsym
+  lldb ./bazel-bin/drake/path/to/my/binary_or_test
+
+For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 Updating BUILD files
 ====================
@@ -112,28 +133,88 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi (on Ubuntu only)
+ * Gurobi
+ * SNOPT
 
 Gurobi
 ------
 
+Install on Ubuntu
+~~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. Download ``gurobi6.0.5_linux64.tar.gz``.
 4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
 5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi605/linux64``
 
-To confirm that your setup was successful, run the tests that require Gurobi.
-Note that this config includes *only* the tests that require Gurobi::
+Install on OSX
+~~~~~~~~~~~~~~
+1. Register for an account on http://www.gurobi.com.
+2. Set up your Gurobi license file in accordance with Gurobi documentation.
+3. Download and install ``gurobi6.05_mac64.pkg``.
 
-  ``bazel test --config gurobi ...``
+
+To confirm that your setup was successful, run the tests that require Gurobi.
+
+  ``bazel test --config gurobi --test_tag_filters=gurobi ...``
+
+The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
+these tests. If you will be developing with Gurobi regularly, you may wish
+to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
+See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+
+SNOPT
+-----
+
+1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
+2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
+
+To confirm that your setup was successful, run the tests that require SNOPT.
+
+  ``bazel test --config snopt --test_tag_filters=snopt ...``
+
+The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
+these tests. If you will be developing with SNOPT regularly, you may wish
+to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
+See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+
+Optional Tools
+==============
+
+The Drake Bazel build system has integration support for some optional
+development tools:
+
+ * kcov -- test coverage analysis
+
+kcov
+----
+
+``kcov`` can analyze coverage for any binary that contains DWARF format
+debuggging symbols, and produce nicely formatted browse-able coverage
+reports. It is supported on Ubuntu and OSX only. Install ``kcov`` from source
+following the instructions here: :ref:`Building kcov <building-kcov>`.
+
+To analyze test coverage, run the tests under ``kcov``::
+
+  bazel test --config kcov //...
+
+Note that it disables compiler-optimization (``-O0``) to have a better and more
+precise coverage report. If you have trouble with kcov and unoptimized programs,
+you can turn it back on by also supplying ``--copt -O2``.
+
+The coverage report is written to the ``drake-distro/bazel-kcov`` directory. To
+view it, browse to ``drake-distro/bazel-kcov/index.html``.
+
+.. toctree::
+   :hidden:
+
+   building_kcov
 
 FAQ
 ===
 
-Q. What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
+Q: What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
 
-   A. Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
+   A: Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
       Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
       your ``$PATH``.
-

@@ -1,0 +1,466 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Import all Gazebo-customization elements, including Gazebo colors -->
+  <xacro:include filename="$(find iiwa_description)/urdf/iiwa.gazebo.xacro" />
+  <!-- Import Transmissions -->
+  <xacro:include filename="$(find iiwa_description)/urdf/iiwa.transmission.xacro" />
+  <!-- Include Utilities -->
+  <xacro:include filename="$(find iiwa_description)/urdf/utilities.xacro" />
+
+  <!-- some constants -->
+  <xacro:property name="safety_controller_k_pos" value="100" />
+  <xacro:property name="safety_controller_k_vel" value="2" />
+  <xacro:property name="joint_damping" value="0.5" />
+  <xacro:property name="max_effort" value="300"/>
+  <xacro:property name="max_velocity" value="10"/>
+
+  <xacro:macro name="iiwa14"
+      params="parent hardware_interface robot_name collision_type *origin">
+
+    <!--joint between {parent} and link_0-->
+    <joint name="${robot_name}_${parent}_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}"/>
+      <child link="${robot_name}_link_0"/>
+    </joint>
+
+    <link name="${robot_name}_link_0">
+      <inertial>
+        <origin xyz="-0.1 0 0.07" rpy="0 0 0"/>
+        <mass value="5"/>
+        <inertia ixx="0.05"  ixy="0"  ixz="0" iyy="0.06" iyz="0" izz="0.03" />
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_0.obj"/>
+        </geometry>
+        <material name="Grey"/>
+      </visual>
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_0.obj"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin xyz="-0.015 0 0.07" rpy="0 0 0"/>
+          <geometry>
+            <cylinder radius="0.139" length="0.17"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}"/>
+
+      <self_collision_checking>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <capsule radius="0.15" length="0.25"/>
+        </geometry>
+      </self_collision_checking>
+    </link>
+
+    <!-- joint between link_0 and link_1 -->
+    <joint name="${robot_name}_joint_1" type="revolute">
+      <parent link="${robot_name}_link_0"/>
+      <child link="${robot_name}_link_1"/>
+      <origin xyz="0 0 0.1575" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}"
+             effort="${max_effort}" velocity="${max_velocity}" />
+         <safety_controller soft_lower_limit="${-168 * PI / 180}"
+           soft_upper_limit="${168 * PI / 180}"
+           k_position="${safety_controller_k_pos}"
+           k_velocity="${safety_controller_k_vel}"/>
+      <dynamics damping="${joint_damping}"/>
+    </joint>
+
+    <link name="${robot_name}_link_1">
+      <inertial>
+        <origin xyz="0 -0.03 0.12" rpy="0 0 0"/>
+        <mass value="5.76"/>
+        <inertia ixx="0.033" ixy="0" ixz="0" iyy="0.0333" iyz="0" izz="0.0123"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_1.obj"/>
+        </geometry>
+        <material name="Grey"/>
+      </visual>
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_1.obj"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0 -0.014 0.14"/>
+          <geometry>
+            <cylinder radius="0.101" length="0.29"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}"/>
+    </link>
+
+    <!-- joint between link_1 and link_2 -->
+    <joint name="${robot_name}_joint_2" type="revolute">
+      <parent link="${robot_name}_link_1"/>
+      <child link="${robot_name}_link_2"/>
+      <origin xyz="0 0 0.2025" rpy="${PI / 2}   0 ${PI}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}"
+             effort="${max_effort}" velocity="${max_velocity}" />
+       <safety_controller soft_lower_limit="${-118 * PI / 180}"
+           soft_upper_limit="${118 * PI / 180}"
+           k_position="${safety_controller_k_pos}"
+           k_velocity="${safety_controller_k_vel}"/>
+      <dynamics damping="${joint_damping}"/>
+    </joint>
+
+    <link name="${robot_name}_link_2">
+      <inertial>
+        <origin xyz="0.0003 0.059 0.042" rpy="0 0 0"/>
+        <mass value="6.35"/> <!-- 3.95 kuka CAD value--> <!--4 Original Drake URDF value-->
+        <inertia ixx="0.0305" ixy="0" ixz="0" iyy="0.0304" iyz="0" izz="0.011"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_2.obj"/>
+        </geometry>
+        <material name="Orange"/>
+      </visual>
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_2.obj"/>
+          </geometry>
+          <material name="Orange"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin rpy="1.57079632679 0 0" xyz="0 0.056 0.035"/>
+          <geometry>
+            <cylinder radius="0.101" length="0.29"/>
+          </geometry>
+          <material name="Orange"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}"/>
+    </link>
+
+    <!-- joint between link_2 and link_3 -->
+    <joint name="${robot_name}_joint_3" type="revolute">
+      <parent link="${robot_name}_link_2"/>
+      <child link="${robot_name}_link_3"/>
+      <origin xyz="0 0.2045 0" rpy="${PI / 2} 0 ${PI}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}"
+             effort="${max_effort}" velocity="${max_velocity}" />
+       <safety_controller soft_lower_limit="${-118 * PI / 180}"
+           soft_upper_limit="${118 * PI / 180}"
+           k_position="${safety_controller_k_pos}"
+           k_velocity="${safety_controller_k_vel}"/>
+      <dynamics damping="${joint_damping}"/>
+    </joint>
+
+    <link name="${robot_name}_link_3">
+      <inertial>
+        <origin xyz="0 0.03 0.13" rpy="0 0 0"/>
+        <mass value="3.5"/> <!--3.18 kuka CAD value--> <!--3 Original Drake URDF value-->
+        <inertia ixx="0.025" ixy="0" ixz="0" iyy="0.0238" iyz="0" izz="0.0076"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_3.obj"/>
+        </geometry>
+        <material name="Grey"/>
+      </visual>
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_3.obj"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0 0.025 0.137"/>
+          <geometry>
+            <cylinder radius="0.092" length="0.29"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}"/>
+    </link>
+
+   <!-- joint between link_3 and link_4 -->
+    <joint name="${robot_name}_joint_4" type="revolute">
+      <parent link="${robot_name}_link_3"/>
+      <child link="${robot_name}_link_4"/>
+      <origin xyz="0 0 0.2155" rpy="${PI / 2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}"
+             effort="${max_effort}" velocity="${max_velocity}" />
+       <safety_controller soft_lower_limit="${-118 * PI / 180}"
+           soft_upper_limit="${118 * PI / 180}"
+           k_position="${safety_controller_k_pos}"
+           k_velocity="${safety_controller_k_vel}"/>
+      <dynamics damping="${joint_damping}"/>
+    </joint>
+
+    <link name="${robot_name}_link_4">
+      <inertial>
+        <origin xyz="0 0.067 0.034" rpy="0 0 0"/>
+        <mass value="3.5"/> <!--2.74 kuka CAD value--> <!--2.7 Original Drake URDF value-->
+        <inertia ixx="0.017" ixy="0" ixz="0" iyy="0.0164" iyz="0" izz="0.006"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_4.obj"/>
+        </geometry>
+        <material name="Orange"/>
+      </visual>
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_4.obj"/>
+          </geometry>
+          <material name="Orange"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin rpy="1.57079632679 0 0" xyz="0 0.056 0.025"/>
+          <geometry>
+            <cylinder radius="0.092" length="0.25"/>
+          </geometry>
+          <material name="Orange"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}"/>
+    </link>
+
+    <!-- joint between link_4 and link_5 -->
+    <joint name="${robot_name}_joint_5" type="revolute">
+      <parent link="${robot_name}_link_4"/>
+      <child link="${robot_name}_link_5"/>
+      <origin xyz="0 0.1845 0" rpy="${-PI / 2} ${PI} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}"
+             effort="${max_effort}" velocity="${max_velocity}" />
+       <safety_controller soft_lower_limit="${-118 * PI / 180}"
+           soft_upper_limit="${118 * PI / 180}"
+           k_position="${safety_controller_k_pos}"
+           k_velocity="${safety_controller_k_vel}"/>
+      <dynamics damping="${joint_damping}"/>
+    </joint>
+
+    <link name="${robot_name}_link_5">
+      <inertial>
+        <origin xyz="0.0001 0.021 0.076" rpy="0 0 0"/>
+        <mass value="3.5"/> <!--1.69 kuka CAD value--> <!--1.7 Original Drake URDF value-->
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.0087" iyz="0" izz="0.00449"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_5.obj"/>
+        </geometry>
+        <material name="Grey"/>
+      </visual>
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_5.obj"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin rpy="-0.3 0 0" xyz="0 0.03 0.13"/>
+          <geometry>
+            <cylinder radius="0.07" length="0.29"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}"/>
+    </link>
+
+ <!-- joint between link_5 and link_6 -->
+    <joint name="${robot_name}_joint_6" type="revolute">
+      <parent link="${robot_name}_link_5"/>
+      <child link="${robot_name}_link_6"/>
+      <origin xyz="0 0 0.2155" rpy="${PI / 2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}"
+             effort="${max_effort}" velocity="${max_velocity}" />
+       <safety_controller soft_lower_limit="${-118 * PI / 180}"
+           soft_upper_limit="${118 * PI / 180}"
+           k_position="${safety_controller_k_pos}"
+           k_velocity="${safety_controller_k_vel}"/>
+      <dynamics damping="${joint_damping}"/>
+    </joint>
+
+    <link name="${robot_name}_link_6">
+      <inertial>
+        <origin xyz="0 0.0006 0.0004" rpy="0 0 0"/>
+       <mass value="1.8"/> <!--1.8 kuka CAD value--> <!--1.8 Original Drake URDF value-->
+      <inertia ixx="0.0049" ixy="0" ixz="0" iyy="0.0047" iyz="0" izz="0.0036"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_6.obj"/>
+        </geometry>
+        <material name="Orange"/>
+      </visual>
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_6.obj"/>
+          </geometry>
+          <material name="Orange"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <!-- Note that the mesh-based collision model is intentionally being
+            used despite being in "primitive" mode. -->
+            <mesh filename="../meshes/collision/link_6.obj"/>
+          </geometry>
+          <material name="Orange"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}"/>
+    </link>
+
+ <!-- joint between link_6 and link_7 -->
+    <joint name="${robot_name}_joint_7" type="revolute">
+      <parent link="${robot_name}_link_6"/>
+      <child link="${robot_name}_link_7"/>
+      <origin xyz="0 0.081 0" rpy="${- PI / 2} ${PI} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-175 * PI / 180}" upper="${175 * PI / 180}"
+             effort="${max_effort}" velocity="${max_velocity}" />
+       <safety_controller soft_lower_limit="${-173 * PI / 180}"
+           soft_upper_limit="${173 * PI / 180}"
+           k_position="${safety_controller_k_pos}"
+           k_velocity="${safety_controller_k_vel}"/>
+      <dynamics damping="${joint_damping}"/>
+    </joint>
+
+    <link name="${robot_name}_link_7">
+      <inertial>
+        <origin xyz="0 0 0.02" rpy="0 0 0"/>
+        <mass value="1.2"/> <!--0.31 kuka CAD value--> <!--0.3 Original Drake URDF value-->
+        <inertia ixx="0.001"  ixy="0"  ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_7.obj"/>
+        </geometry>
+        <material name="Grey"/>
+      </visual>
+
+
+      <xacro:if value="${collision_type == 'mesh'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_7.obj"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'primitive'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <!-- Note that the mesh-based collision model is intentionally being
+            used despite being in "primitive" mode. -->
+            <mesh filename="../meshes/collision/link_7.obj"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${collision_type == 'polytope'}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="../meshes/collision/link_7_polytope.obj"/>
+          </geometry>
+          <material name="Grey"/>
+        </collision>
+      </xacro:if>
+    </link>
+
+    <joint name="${robot_name}_joint_ee" type="fixed">
+      <parent link="${robot_name}_link_7"/>
+      <child link="${robot_name}_link_ee_kuka"/>
+      <origin xyz="0 0 0.045" rpy="${PI} ${PI} ${PI}"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <link name="${robot_name}_link_ee_kuka">
+    </link>
+    <joint name="tool0_joint" type="fixed">
+      <parent link="${robot_name}_link_7"/>
+      <child link="${robot_name}_link_ee"/>
+      <origin rpy="0 -1.57079632679 0" xyz="0 0 0.045"/>
+    </joint>
+    <link name="${robot_name}_link_ee">
+    </link>
+    <frame name="${robot_name}_frame_ee" link="${robot_name}_link_ee"
+           xyz="0.09 0 0" rpy="3.14159265359 0 1.57079632679"/>
+    <!--Extensions -->
+    <xacro:iiwa_gazebo robot_name="${robot_name}" />
+    <xacro:iiwa_transmission hardware_interface="${hardware_interface}"
+        robot_name="${robot_name}"/>
+
+  </xacro:macro>
+
+</robot>

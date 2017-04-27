@@ -1,7 +1,7 @@
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using std::make_unique;
 
@@ -103,6 +103,10 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   // Power.
   EXPECT_EQ(model_->get_plant().EvalConservativePower(*plant_context_),
             plant_xcdot->get_vector().GetAtIndex(2));
+}
+
+TEST_F(SpringMassSystemTest, DirectFeedthrough) {
+  EXPECT_FALSE(model_->HasAnyDirectFeedthrough());
 }
 
 }  // namespace

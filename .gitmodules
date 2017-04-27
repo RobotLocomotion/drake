@@ -9,10 +9,10 @@
 	url = https://github.com/lcm-proj/lcm.git
 [submodule "externals/bot_core_lcmtypes"]
 	path = externals/bot_core_lcmtypes
-	url = https://github.com/mwoehlke-kitware/bot_core_lcmtypes
+	url = https://github.com/openhumanoids/bot_core_lcmtypes
 [submodule "externals/libbot"]
 	path = externals/libbot
-	url = https://github.com/RobotLocomotion/libbot.git
+	url = https://github.com/RobotLocomotion/libbot2.git
 [submodule "externals/spotless"]
 	path = externals/spotless
 	url = https://github.com/RobotLocomotion/spotless-pod.git
@@ -52,12 +52,6 @@
 [submodule "externals/meshconverters"]
 	path = externals/meshconverters
 	url = https://github.com/RobotLocomotion/meshConverters.git
-[submodule "externals/swigmake"]
-	path = externals/swigmake
-	url = https://github.com/rdeits/swigmake.git
-[submodule "externals/swig_matlab"]
-	path = externals/swig_matlab
-	url = https://github.com/jaeandersson/swig.git
 [submodule "externals/yaml_cpp"]
 	path = externals/yaml_cpp
 	url = https://github.com/jbeder/yaml-cpp.git
@@ -73,29 +67,46 @@
 	ignore = untracked
 [submodule "externals/google_styleguide"]
 	path = externals/google_styleguide
-	url = https://github.com/mwoehlke-kitware/styleguide.git
+	url = https://github.com/google/styleguide.git
 [submodule "externals/spdlog"]
 	path = externals/spdlog
 	url = https://github.com/gabime/spdlog.git
 [submodule "externals/gflags"]
 	path = externals/gflags
 	url = https://github.com/gflags/gflags.git
-[submodule "externals/dreal"]
-	path = externals/dreal
-	url = https://github.com/dreal/dreal3.git
-	ignore = untracked
 [submodule "externals/bullet"]
 	path = externals/bullet
 	url = https://github.com/RobotLocomotion/bullet3.git
-[submodule "externals/eigen"]
-	path = externals/eigen
-	url = https://github.com/RobotLocomotion/eigen-mirror.git
 [submodule "externals/ccd"]
 	path = externals/ccd
 	url = https://github.com/danfis/libccd.git
 [submodule "externals/robotlocomotion_lcmtypes"]
 	path = externals/robotlocomotion_lcmtypes
 	url = https://github.com/RobotLocomotion/lcmtypes.git
-[submodule "ros/hsrb_description"]
-	path = ros/hsrb_description
-	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git
+[submodule "externals/fcl"]
+	path = externals/fcl
+	url = https://github.com/flexible-collision-library/fcl.git
+[submodule "externals/pythonqt"]
+	path = externals/pythonqt
+	url = https://github.com/commontk/PythonQt.git
+[submodule "externals/ctk_python_console"]
+	path = externals/ctk_python_console
+	url = https://github.com/patmarion/ctkPythonConsole
+[submodule "externals/qt_property_browser"]
+	path = externals/qt_property_browser
+	url = https://github.com/patmarion/QtPropertyBrowser
+[submodule "externals/tinyobjloader"]
+	path = externals/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader
+[submodule "externals/vtk"]
+	path = externals/vtk
+	url = git://vtk.org/VTK.git
+[submodule "externals/pybind11"]
+	path = externals/pybind11
+	url = https://github.com/RobotLocomotion/pybind11
+[submodule "externals/fmt"]
+	path = externals/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "externals/protobuf"]
+	path = externals/protobuf
+	url = https://github.com/google/protobuf.git

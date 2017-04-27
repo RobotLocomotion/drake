@@ -6,24 +6,32 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
+#include "drake/common/test/symbolic_test_util.h"
 
+using std::count_if;
 using std::domain_error;
 using std::equal_to;
 using std::map;
+using std::ostringstream;
+using std::pair;
 using std::runtime_error;
 using std::set;
+using std::string;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -32,36 +40,42 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-static bool ExpEqual(const Expression& e1, const Expression& e2) {
-  return e1.EqualTo(e2);
-}
-
-static bool ExpNotEqual(const Expression& e1, const Expression& e2) {
-  return !ExpEqual(e1, e2);
-}
-
-static bool ExpLess(const Expression& e1, const Expression& e2) {
-  return e1.Less(e2);
-}
-
-static bool ExpNotLess(const Expression& e1, const Expression& e2) {
-  return !ExpLess(e1, e2);
-}
+using test::ExprEqual;
+using test::ExprLess;
+using test::ExprNotEqual;
+using test::ExprNotLess;
 
 // Checks if a given 'expressions' is ordered by Expression::Less.
 static void CheckOrdering(const vector<Expression>& expressions) {
   for (size_t i{0}; i < expressions.size(); ++i) {
     for (size_t j{0}; j < expressions.size(); ++j) {
       if (i < j) {
-        EXPECT_PRED2(ExpLess, expressions[i], expressions[j])
+        EXPECT_PRED2(ExprLess, expressions[i], expressions[j])
             << "(Expressions[" << i << "] = " << expressions[i] << ")"
             << " is not less than "
             << "(Expressions[" << j << "] = " << expressions[j] << ")";
-      } else {
-        EXPECT_PRED2(ExpNotLess, expressions[i], expressions[j])
+        EXPECT_PRED2(ExprNotLess, expressions[j], expressions[i])
+            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << " is less than "
+            << "(Expressions[" << i << "] = " << expressions[i] << ")";
+      } else if (i > j) {
+        EXPECT_PRED2(ExprLess, expressions[j], expressions[i])
+            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << " is not less than "
+            << "(Expressions[" << i << "] = " << expressions[i] << ")";
+        EXPECT_PRED2(ExprNotLess, expressions[i], expressions[j])
             << "(Expressions[" << i << "] = " << expressions[i] << ")"
             << " is less than "
             << "(Expressions[" << j << "] = " << expressions[j] << ")";
+      } else {
+        EXPECT_PRED2(ExprNotLess, expressions[i], expressions[j])
+            << "(Expressions[" << i << "] = " << expressions[i] << ")"
+            << " is less than "
+            << "(Expressions[" << j << "] = " << expressions[j] << ")";
+        EXPECT_PRED2(ExprNotLess, expressions[j], expressions[i])
+            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << " is less than "
+            << "(Expressions[" << i << "] = " << expressions[i] << ")";
       }
     }
   }
@@ -76,9 +90,7 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
-
   const Expression x_plus_y_{x_ + y_};
-
   const Expression x_plus_z_{x_ + z_};
 
   const Expression zero_{0.0};
@@ -93,37 +105,457 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression c2_{1.0};
   const Expression c3_{3.14159};
   const Expression c4_{-2.718};
+
+  const Expression e_constant_{1.0};
+  const Expression e_var_{var_x_};
+  const Expression e_add_{x_ + y_};
+  const Expression e_neg_{-x_};  // -1 * x_
+  const Expression e_mul_{x_ * y_};
+  const Expression e_div_{x_ / y_};
+  const Expression e_log_{log(x_)};
+  const Expression e_abs_{abs(x_)};
+  const Expression e_exp_{exp(x_)};
+  const Expression e_sqrt_{sqrt(x_)};
+  const Expression e_pow_{pow(x_, y_)};
+  const Expression e_sin_{sin(x_)};
+  const Expression e_cos_{cos(x_)};
+  const Expression e_tan_{tan(x_)};
+  const Expression e_asin_{asin(x_)};
+  const Expression e_acos_{acos(x_)};
+  const Expression e_atan_{atan(x_)};
+  const Expression e_atan2_{atan2(x_, y_)};
+  const Expression e_sinh_{sinh(x_)};
+  const Expression e_cosh_{cosh(x_)};
+  const Expression e_tanh_{tanh(x_)};
+  const Expression e_min_{min(x_, y_)};
+  const Expression e_max_{max(x_, y_)};
+  const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
+  const Expression e_nan_{Expression::NaN()};
+  const Expression e_uf_{uninterpreted_function("uf", {var_x_, var_y_})};
+
+  const vector<Expression> collection_{
+      e_constant_, e_var_,  e_add_,  e_neg_,   e_mul_,  e_div_,  e_log_,
+      e_abs_,      e_exp_,  e_sqrt_, e_pow_,   e_sin_,  e_cos_,  e_tan_,
+      e_asin_,     e_acos_, e_atan_, e_atan2_, e_sinh_, e_cosh_, e_tanh_,
+      e_min_,      e_max_,  e_ite_,  e_nan_,   e_uf_};
 };
 
+TEST_F(SymbolicExpressionTest, Dummy) {
+  EXPECT_TRUE(is_nan(dummy_value<Expression>::get()));
+}
+
+TEST_F(SymbolicExpressionTest, IsConstant1) {
+  EXPECT_TRUE(is_constant(e_constant_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_constant(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsConstant2) {
+  EXPECT_TRUE(is_constant(Expression{}, 0.0));
+  EXPECT_TRUE(is_constant(Expression::Zero(), 0.0));
+  EXPECT_TRUE(is_constant(Expression::One(), 1.0));
+  EXPECT_TRUE(is_constant(Expression::Pi(), M_PI));
+  EXPECT_TRUE(is_constant(Expression::E(), M_E));
+}
+
+TEST_F(SymbolicExpressionTest, IsZero) {
+  EXPECT_TRUE(is_zero(Expression{}));
+  EXPECT_TRUE(is_zero(Expression::Zero()));
+}
+TEST_F(SymbolicExpressionTest, IsOne) {
+  EXPECT_TRUE(is_one(Expression::One()));
+}
+TEST_F(SymbolicExpressionTest, IsNegOne) { EXPECT_TRUE(is_neg_one(neg_one_)); }
+TEST_F(SymbolicExpressionTest, IsTwo) { EXPECT_TRUE(is_two(two_)); }
+
+TEST_F(SymbolicExpressionTest, NaN) {
+  // It's OK to have NaN expression.
+  const Expression nan{NAN};
+  EXPECT_TRUE(is_nan(nan));
+  EXPECT_TRUE(nan.EqualTo(Expression::NaN()));
+  // It's OK to have an expression including NaN inside.
+  const Expression e1{1.0 + nan};
+  // It's OK to display an expression including NaN inside.
+  EXPECT_EQ(e1.to_string(), "(1 + NaN)");
+  // It throws when we evaluate an expression including NaN.
+  EXPECT_THROW(e1.Evaluate(), runtime_error);
+}
+
+TEST_F(SymbolicExpressionTest, IsVariable) {
+  EXPECT_TRUE(is_variable(e_var_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_variable(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsAddition) {
+  EXPECT_TRUE(is_addition(e_add_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_addition(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsMultiplication) {
+  EXPECT_TRUE(is_multiplication(e_mul_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_multiplication(e); })};
+  EXPECT_EQ(cnt, 2);
+}
+
+TEST_F(SymbolicExpressionTest, IsDivision) {
+  EXPECT_TRUE(is_division(e_div_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_division(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsLog) {
+  EXPECT_TRUE(is_log(e_log_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_log(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsAbs) {
+  EXPECT_TRUE(is_abs(e_abs_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_abs(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+TEST_F(SymbolicExpressionTest, IsExp) {
+  EXPECT_TRUE(is_exp(e_exp_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_exp(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+TEST_F(SymbolicExpressionTest, IsSqrt) {
+  EXPECT_TRUE(is_sqrt(e_sqrt_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_sqrt(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+TEST_F(SymbolicExpressionTest, IsPow) {
+  EXPECT_TRUE(is_pow(e_pow_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_pow(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsSin) {
+  EXPECT_TRUE(is_sin(e_sin_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_sin(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsCos) {
+  EXPECT_TRUE(is_cos(e_cos_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_cos(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsTan) {
+  EXPECT_TRUE(is_tan(e_tan_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_tan(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsAsin) {
+  EXPECT_TRUE(is_asin(e_asin_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_asin(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsAcos) {
+  EXPECT_TRUE(is_acos(e_acos_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_acos(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsAtan) {
+  EXPECT_TRUE(is_atan(e_atan_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_atan(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsAtan2) {
+  EXPECT_TRUE(is_atan2(e_atan2_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_atan2(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsSinh) {
+  EXPECT_TRUE(is_sinh(e_sinh_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_sinh(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsCosh) {
+  EXPECT_TRUE(is_cosh(e_cosh_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_cosh(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsTanh) {
+  EXPECT_TRUE(is_tanh(e_tanh_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_tanh(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsMin) {
+  EXPECT_TRUE(is_min(e_min_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_min(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsMax) {
+  EXPECT_TRUE(is_max(e_max_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_max(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsIfThenElse) {
+  EXPECT_TRUE(is_if_then_else(e_ite_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_if_then_else(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsNaN) {
+  EXPECT_TRUE(is_nan(e_nan_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_nan(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsUninterpretedFunction) {
+  EXPECT_TRUE(is_uninterpreted_function(e_uf_));
+  const vector<Expression>::difference_type cnt{count_if(
+      collection_.begin(), collection_.end(),
+      [](const Expression& e) { return is_uninterpreted_function(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, GetConstantValue) {
+  EXPECT_EQ(get_constant_value(c1_), -10.0);
+  EXPECT_EQ(get_constant_value(c2_), 1.0);
+  EXPECT_EQ(get_constant_value(c3_), 3.14159);
+  EXPECT_EQ(get_constant_value(c4_), -2.718);
+}
+
+TEST_F(SymbolicExpressionTest, GetVariable) {
+  EXPECT_EQ(get_variable(x_), var_x_);
+  EXPECT_EQ(get_variable(y_), var_y_);
+  EXPECT_EQ(get_variable(z_), var_z_);
+}
+
+TEST_F(SymbolicExpressionTest, GetArgument) {
+  EXPECT_PRED2(ExprEqual, get_argument(e_log_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_abs_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_exp_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_sqrt_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_sin_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_cos_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_tan_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_asin_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_acos_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_atan_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_sinh_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_cosh_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_tanh_), x_);
+}
+
+TEST_F(SymbolicExpressionTest, GetFirstArgument) {
+  EXPECT_PRED2(ExprEqual, get_first_argument(e_div_), x_);
+  EXPECT_PRED2(ExprEqual, get_first_argument(e_pow_), x_);
+  EXPECT_PRED2(ExprEqual, get_first_argument(e_atan2_), x_);
+  EXPECT_PRED2(ExprEqual, get_first_argument(e_min_), x_);
+  EXPECT_PRED2(ExprEqual, get_first_argument(e_max_), x_);
+}
+
+TEST_F(SymbolicExpressionTest, GetSecondArgument) {
+  EXPECT_PRED2(ExprEqual, get_second_argument(e_div_), y_);
+  EXPECT_PRED2(ExprEqual, get_second_argument(e_pow_), y_);
+  EXPECT_PRED2(ExprEqual, get_second_argument(e_atan2_), y_);
+  EXPECT_PRED2(ExprEqual, get_second_argument(e_min_), y_);
+  EXPECT_PRED2(ExprEqual, get_second_argument(e_max_), y_);
+}
+
+TEST_F(SymbolicExpressionTest, GetConstantTermInAddition) {
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(2 * x_ + 3 * y_), 0.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(3 + 2 * x_ + 3 * y_), 3);
+  EXPECT_PRED2(ExprEqual, get_constant_in_addition(-2 + 2 * x_ + 3 * y_), -2);
+}
+
+TEST_F(SymbolicExpressionTest, GetTermsInAddition) {
+  const Expression e{3 + 2 * x_ + 3 * y_};
+  const map<Expression, double> terms{get_expr_to_coeff_map_in_addition(e)};
+  EXPECT_EQ(terms.at(x_), 2.0);
+  EXPECT_EQ(terms.at(y_), 3.0);
+}
+
+TEST_F(SymbolicExpressionTest, GetConstantFactorInMultiplication) {
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(e_neg_), -1.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(x_ * y_ * y_), 1.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(2 * x_ * y_ * y_),
+               2.0);
+  EXPECT_PRED2(ExprEqual, get_constant_in_multiplication(-3 * x_ * y_ * y_),
+               -3.0);
+}
+
+TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
+  const Expression e{2 * x_ * y_ * y_ * pow(z_, y_)};
+  const map<Expression, Expression> products{
+      get_base_to_exponent_map_in_multiplication(e)};
+  EXPECT_PRED2(ExprEqual, products.at(x_), 1.0);
+  EXPECT_PRED2(ExprEqual, products.at(y_), 2.0);
+  EXPECT_PRED2(ExprEqual, products.at(z_), y_);
+}
+
+TEST_F(SymbolicExpressionTest, IsPolynomial) {
+  const vector<pair<Expression, bool>> test_vec{
+      {e_constant_, true}, {e_var_, true},   {e_neg_, true},
+      {e_add_, true},      {e_mul_, true},   {e_div_, false},
+      {e_log_, false},     {e_abs_, false},  {e_exp_, false},
+      {e_sqrt_, false},    {e_pow_, false},  {e_sin_, false},
+      {e_cos_, false},     {e_tan_, false},  {e_asin_, false},
+      {e_acos_, false},    {e_atan_, false}, {e_atan2_, false},
+      {e_sinh_, false},    {e_cosh_, false}, {e_tanh_, false},
+      {e_min_, false},     {e_max_, false},  {e_ite_, false},
+      {e_nan_, false},     {e_uf_, false}};
+  for (const pair<Expression, bool>& p : test_vec) {
+    EXPECT_EQ(p.first.is_polynomial(), p.second);
+  }
+
+  // x^2 -> polynomial
+  EXPECT_TRUE(pow(x_, 2).is_polynomial());
+  // 3 + x + y + z -> polynomial
+  EXPECT_TRUE((3 + x_ + y_ + z_).is_polynomial());
+  // 1 + x^2 + y^2 -> polynomial
+  EXPECT_TRUE((1 + pow(x_, 2) + pow(y_, 2)).is_polynomial());
+  // x^2 * y^2 -> polynomial
+  EXPECT_TRUE((pow(x_, 2) * pow(y_, 2)).is_polynomial());
+  // (x + y + z)^3 -> polynomial
+  EXPECT_TRUE(pow(x_ + y_ + z_, 3).is_polynomial());
+  // (x + y + z)^3 / 10 -> polynomial
+  EXPECT_TRUE((pow(x_ + y_ + z_, 3) / 10).is_polynomial());
+  // (x^3)^(1/3) -> x -> polynomial
+  EXPECT_TRUE(pow(pow(x_, 3), 1 / 3).is_polynomial());
+
+  // x^-1 -> not polynomial
+  EXPECT_FALSE(pow(x_, -1).is_polynomial());
+  // x^2.1 -> not polynomial
+  EXPECT_FALSE(pow(x_, 2.1).is_polynomial());
+  // x^y -> not polynomial
+  EXPECT_FALSE(pow(x_, y_).is_polynomial());
+  // 3 + x^y -> not polynomial
+  EXPECT_FALSE((3 + pow(x_, y_)).is_polynomial());
+  // 3 + x^2.1 -> not polynomial
+  EXPECT_FALSE((3 + pow(x_, 2.1)).is_polynomial());
+  // x^y / 10 -> not polynomial
+  EXPECT_FALSE((pow(x_, y_) / 10).is_polynomial());
+  // x^2 * y^ 2.1 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, 2.1)).is_polynomial());
+  // x^2 * y^ -1 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, -1)).is_polynomial());
+  // x^2 * y^ 2 * x^y / 10 -> not polynomial
+  EXPECT_FALSE((pow(x_, 2) * pow(y_, 2) * pow(x_, y_) / 10).is_polynomial());
+  // (x + y + z)^3 / x -> not polynomial
+  EXPECT_FALSE((pow(x_ + y_ + z_, 3) / x_).is_polynomial());
+  // sqrt(x^2) -> |x| -> not polynomial
+  EXPECT_FALSE(sqrt(pow(x_, 2)).is_polynomial());
+}
+
+TEST_F(SymbolicExpressionTest, ToPolynomial1) {
+  Environment env{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}};
+  const map<Polynomial<double>::VarType, double> eval_point{
+      {var_x_.get_id(), env[var_x_]},
+      {var_y_.get_id(), env[var_y_]},
+      {var_z_.get_id(), env[var_z_]}};
+
+  const Expression e0{42.0};
+  const Expression e1{pow(x_, 2)};
+  const Expression e2{3 + x_ + y_ + z_};
+  const Expression e3{1 + pow(x_, 2) + pow(y_, 2)};
+  const Expression e4{pow(x_, 2) * pow(y_, 2)};
+  const Expression e5{pow(x_ + y_ + z_, 3)};
+  const Expression e6{pow(x_ + y_ + z_, 3) / 10};
+  const Expression e7{-pow(y_, 3)};
+  const Expression e8{pow(pow(x_, 3), 1.0 / 3)};
+
+  EXPECT_NEAR(e0.Evaluate(env),
+              e0.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e1.Evaluate(env),
+              e1.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e2.Evaluate(env),
+              e2.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e3.Evaluate(env),
+              e3.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e4.Evaluate(env),
+              e4.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e5.Evaluate(env),
+              e5.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e6.Evaluate(env),
+              e6.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e7.Evaluate(env),
+              e7.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+  EXPECT_NEAR(e8.Evaluate(env),
+              e8.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
+}
+
+TEST_F(SymbolicExpressionTest, ToPolynomial2) {
+  const vector<Expression> test_vec{
+      e_log_,  e_abs_,  e_exp_,  e_sqrt_,           e_sin_,  e_cos_,  e_tan_,
+      e_asin_, e_acos_, e_atan_, e_atan2_,          e_sinh_, e_cosh_, e_tanh_,
+      e_min_,  e_max_,  e_ite_,  Expression::NaN(), e_uf_};
+  for (const Expression& e : test_vec) {
+    EXPECT_FALSE(e.is_polynomial());
+    EXPECT_THROW(e.ToPolynomial(), runtime_error);
+  }
+}
+
 TEST_F(SymbolicExpressionTest, LessKind) {
-  const Expression e_constant{1.0};
-  const Expression e_var{var_x_};
-  const Expression e_neg{-x_};
-  const Expression e_add{x_ + y_};
-  const Expression e_mul{x_ * y_};
-  const Expression e_div{x_ / y_};
-  const Expression e_log{log(x_)};
-  const Expression e_abs{abs(x_)};
-  const Expression e_exp{exp(x_)};
-  const Expression e_sqrt{sqrt(x_)};
-  const Expression e_pow{pow(x_, y_)};
-  const Expression e_sin{sin(x_)};
-  const Expression e_cos{cos(x_)};
-  const Expression e_tan{tan(x_)};
-  const Expression e_asin{asin(x_)};
-  const Expression e_acos{acos(x_)};
-  const Expression e_atan{atan(x_)};
-  const Expression e_atan2{atan2(x_, y_)};
-  const Expression e_sinh{sinh(x_)};
-  const Expression e_cosh{cosh(x_)};
-  const Expression e_tanh{tanh(x_)};
-  const Expression e_min{min(x_, y_)};
-  const Expression e_max{max(x_, y_)};
-  const Expression e_ite{if_then_else(x_ < y_, x_, y_)};
-  CheckOrdering({e_constant, e_var,  e_neg,  e_add,  e_mul,  e_div,
-                 e_log,      e_abs,  e_exp,  e_sqrt, e_pow,  e_sin,
-                 e_cos,      e_tan,  e_asin, e_acos, e_atan, e_atan2,
-                 e_sinh,     e_cosh, e_tanh, e_min,  e_max,  e_ite});
+  CheckOrdering({e_constant_, e_var_,  e_add_,  e_neg_,  e_mul_,  e_div_,
+                 e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
+                 e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
+                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_,
+                 e_nan_,      e_uf_});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -140,10 +572,15 @@ TEST_F(SymbolicExpressionTest, LessNeg) {
 
 TEST_F(SymbolicExpressionTest, LessAdd) {
   const Expression add1{c1_ + x_ + y_};
-  const Expression add2{c1_ + y_ + z_};
-  const Expression add3{c3_ + x_ + y_};
-  const Expression add4{c3_ + y_ + z_};
-  CheckOrdering({add1, add2, add3, add4});
+  const Expression add2{c1_ + 2 * x_ + y_};
+  const Expression add3{c1_ - 2 * y_ + z_};
+  const Expression add4{c1_ + y_ + z_};
+  const Expression add5{c1_ + 5 * y_ + z_};
+  const Expression add6{c3_ - 2 * x_ + y_};
+  const Expression add7{c3_ + x_ + y_};
+  const Expression add8{c3_ + y_ + 2 * z_};
+  const Expression add9{c3_ + y_ + 3 * z_};
+  CheckOrdering({add1, add2, add3, add4, add5, add6, add7, add8, add9});
 }
 
 TEST_F(SymbolicExpressionTest, LessSub) {
@@ -312,19 +749,31 @@ TEST_F(SymbolicExpressionTest, LessIfThenElse) {
   CheckOrdering({ite1, ite2, ite3, ite4, ite5});
 }
 
+TEST_F(SymbolicExpressionTest, LessUninterpretedFunction) {
+  const Expression uf1_1{uninterpreted_function("uf1", {var_x_, var_y_})};
+  const Expression uf1_2{uninterpreted_function("uf1", {var_x_, var_z_})};
+  const Expression uf2_1{uninterpreted_function("uf2", {var_x_, var_z_})};
+  const Expression uf2_2{uninterpreted_function("uf2", {var_z_})};
+  CheckOrdering({uf1_1, uf1_2, uf2_1, uf2_2});
+}
+
 TEST_F(SymbolicExpressionTest, Variable) {
   EXPECT_EQ(x_.to_string(), var_x_.get_name());
   EXPECT_EQ(y_.to_string(), var_y_.get_name());
   EXPECT_EQ(z_.to_string(), var_z_.get_name());
-  EXPECT_PRED2(ExpEqual, x_, x_);
-  EXPECT_PRED2(ExpNotEqual, x_, y_);
-  EXPECT_PRED2(ExpNotEqual, x_, z_);
-  EXPECT_PRED2(ExpNotEqual, y_, x_);
-  EXPECT_PRED2(ExpEqual, y_, y_);
-  EXPECT_PRED2(ExpNotEqual, y_, z_);
-  EXPECT_PRED2(ExpNotEqual, z_, x_);
-  EXPECT_PRED2(ExpNotEqual, z_, y_);
-  EXPECT_PRED2(ExpEqual, z_, z_);
+  EXPECT_PRED2(ExprEqual, x_, x_);
+  EXPECT_PRED2(ExprNotEqual, x_, y_);
+  EXPECT_PRED2(ExprNotEqual, x_, z_);
+  EXPECT_PRED2(ExprNotEqual, y_, x_);
+  EXPECT_PRED2(ExprEqual, y_, y_);
+  EXPECT_PRED2(ExprNotEqual, y_, z_);
+  EXPECT_PRED2(ExprNotEqual, z_, x_);
+  EXPECT_PRED2(ExprNotEqual, z_, y_);
+  EXPECT_PRED2(ExprEqual, z_, z_);
+}
+
+TEST_F(SymbolicExpressionTest, Evaluate) {
+  EXPECT_THROW(x_plus_y_.Evaluate(), std::runtime_error);
 }
 
 TEST_F(SymbolicExpressionTest, Constant) {
@@ -332,7 +781,7 @@ TEST_F(SymbolicExpressionTest, Constant) {
   EXPECT_EQ(c2_.Evaluate(), 1);
   EXPECT_EQ(c3_.Evaluate(), 3.14159);
   EXPECT_EQ(c4_.Evaluate(), -2.718);
-  EXPECT_THROW(Expression{NAN}, runtime_error);
+  EXPECT_THROW(Expression{NAN}.Evaluate(), runtime_error);
 }
 
 TEST_F(SymbolicExpressionTest, StaticConstant) {
@@ -397,35 +846,38 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
 }
 
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
-  EXPECT_PRED2(ExpNotEqual, c3_, -c3_);
+  EXPECT_PRED2(ExprNotEqual, c3_, -c3_);
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), -(-c3_).Evaluate());
-  EXPECT_PRED2(ExpEqual, c3_, -(-c3_));
+  EXPECT_PRED2(ExprEqual, c3_, -(-c3_));
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), (-(-c3_)).Evaluate());
   const Expression e{x_ + y_};
   const Environment env{{var_x_, 1.0}, {var_y_, 2.0}};
+  EXPECT_EQ((-x_).Evaluate(env), -1.0);
+  EXPECT_PRED2(ExprEqual, x_, -(-x_));
   // (x + y) and -(-(x + y)) are structurally equal (after simplification)
-  EXPECT_PRED2(ExpEqual, e, -(-e));
+  EXPECT_PRED2(ExprEqual, e, -(-e));
   // and their evaluations should be the same.
   EXPECT_DOUBLE_EQ(e.Evaluate(env), (-(-e)).Evaluate(env));
 
-  EXPECT_PRED2(ExpEqual, -(x_plus_y_ + x_plus_z_ + pi_),
+  EXPECT_PRED2(ExprEqual, -(x_plus_y_ + x_plus_z_ + pi_),
                -x_plus_y_ + (-x_plus_z_) + (-pi_));
+  EXPECT_EQ((-(x_)).to_string(), "(-1 * x)");
 }
 
 TEST_F(SymbolicExpressionTest, Add1) {
-  EXPECT_PRED2(ExpEqual, c3_ + zero_, c3_);
+  EXPECT_PRED2(ExprEqual, c3_ + zero_, c3_);
   EXPECT_EQ((c3_ + zero_).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, zero_ + c3_, c3_);
+  EXPECT_PRED2(ExprEqual, zero_ + c3_, c3_);
   EXPECT_EQ((zero_ + c3_).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, 0.0 + c3_, c3_);
+  EXPECT_PRED2(ExprEqual, 0.0 + c3_, c3_);
   EXPECT_EQ((0.0 + c3_).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, c3_ + 0.0, c3_);
+  EXPECT_PRED2(ExprEqual, c3_ + 0.0, c3_);
   EXPECT_EQ((c3_ + 0.0).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, c3_ + c4_, 3.14159 + -2.718);
+  EXPECT_PRED2(ExprEqual, c3_ + c4_, 3.14159 + -2.718);
   EXPECT_EQ((c3_ + c4_).to_string(), Expression{3.14159 + -2.718}.to_string());
-  EXPECT_PRED2(ExpEqual, c3_ + x_, 3.14159 + x_);
+  EXPECT_PRED2(ExprEqual, c3_ + x_, 3.14159 + x_);
   EXPECT_EQ((c3_ + x_).to_string(), (3.14159 + x_).to_string());
-  EXPECT_PRED2(ExpEqual, x_ + c3_, x_ + 3.14159);
+  EXPECT_PRED2(ExprEqual, x_ + c3_, x_ + 3.14159);
   EXPECT_EQ((x_ + c3_).to_string(), (x_ + 3.14159).to_string());
 }
 
@@ -434,21 +886,34 @@ TEST_F(SymbolicExpressionTest, Add2) {
   Expression e2{e1 + e1};
   const auto str_rep_e2(e2.to_string());
   EXPECT_EQ(str_rep_e2, "(2 * x + 2 * y)");
-  EXPECT_PRED2(ExpEqual, e2, 2 * x_ + 2 * y_);
+  EXPECT_PRED2(ExprEqual, e2, 2 * x_ + 2 * y_);
   e1 += z_;
-  EXPECT_PRED2(ExpEqual, e1, x_ + y_ + z_);
+  EXPECT_PRED2(ExprEqual, e1, x_ + y_ + z_);
   EXPECT_EQ(e2.to_string(), str_rep_e2);  // e2 doesn't change.
+}
+
+TEST_F(SymbolicExpressionTest, Add3) {
+  const Expression e1{2 + x_ + y_};
+  const Expression e2{3 + x_ + y_};
+  EXPECT_PRED2(ExprNotEqual, e1, e2);
+}
+
+TEST_F(SymbolicExpressionTest, Add4) {
+  const Expression e1{-2 - x_ + -3 * y_};
+  const Expression e2{-2 - x_ - 3 * y_};
+  EXPECT_EQ(e1.to_string(), "(-2 - x - 3 * y)");
+  EXPECT_EQ(e2.to_string(), "(-2 - x - 3 * y)");
 }
 
 TEST_F(SymbolicExpressionTest, Inc1) {
   // Prefix increment
   Expression x{var_x_};
   Expression x_prime{var_x_};
-  EXPECT_PRED2(ExpEqual, x, x_prime);
-  EXPECT_PRED2(ExpEqual, x++, x_prime);
-  EXPECT_PRED2(ExpNotEqual, x, x_prime);
-  EXPECT_PRED2(ExpNotEqual, x, x_prime++);
-  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x++, x_prime);
+  EXPECT_PRED2(ExprNotEqual, x, x_prime);
+  EXPECT_PRED2(ExprNotEqual, x, x_prime++);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Inc2) {
@@ -456,11 +921,11 @@ TEST_F(SymbolicExpressionTest, Inc2) {
   Expression x{var_x_};
   Expression x_prime{var_x_};
 
-  EXPECT_PRED2(ExpEqual, x, x_prime);
-  EXPECT_PRED2(ExpNotEqual, ++x, x_prime);
-  EXPECT_PRED2(ExpNotEqual, x, x_prime);
-  EXPECT_PRED2(ExpEqual, x, ++x_prime);
-  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
+  EXPECT_PRED2(ExprNotEqual, ++x, x_prime);
+  EXPECT_PRED2(ExprNotEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x, ++x_prime);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Inc3) {
@@ -475,21 +940,21 @@ TEST_F(SymbolicExpressionTest, Inc3) {
 }
 
 TEST_F(SymbolicExpressionTest, Sub1) {
-  EXPECT_PRED2(ExpEqual, c3_ - zero_, c3_);
+  EXPECT_PRED2(ExprEqual, c3_ - zero_, c3_);
   EXPECT_EQ((c3_ - zero_).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, zero_ - c3_, -c3_);
+  EXPECT_PRED2(ExprEqual, zero_ - c3_, -c3_);
   EXPECT_EQ((zero_ - c3_).to_string(), Expression{-3.14159}.to_string());
-  EXPECT_PRED2(ExpEqual, 0.0 - c3_, -c3_);
+  EXPECT_PRED2(ExprEqual, 0.0 - c3_, -c3_);
   EXPECT_EQ((0.0 - c3_).to_string(), Expression{-3.14159}.to_string());
-  EXPECT_PRED2(ExpEqual, 0.0 - c3_, (-1 * c3_));
+  EXPECT_PRED2(ExprEqual, 0.0 - c3_, (-1 * c3_));
   EXPECT_EQ((0.0 - c3_).to_string(), (-1 * c3_).to_string());
-  EXPECT_PRED2(ExpEqual, c3_ - 0.0, c3_);
+  EXPECT_PRED2(ExprEqual, c3_ - 0.0, c3_);
   EXPECT_EQ((c3_ - 0.0).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, c3_ - c4_, Expression{3.14159 - -2.718});
+  EXPECT_PRED2(ExprEqual, c3_ - c4_, Expression{3.14159 - -2.718});
   EXPECT_EQ((c3_ - c4_).to_string(), Expression{3.14159 - -2.718}.to_string());
-  EXPECT_PRED2(ExpEqual, c3_ - x_, 3.14159 - x_);
+  EXPECT_PRED2(ExprEqual, c3_ - x_, 3.14159 - x_);
   EXPECT_EQ((c3_ - x_).to_string(), (3.14159 - x_).to_string());
-  EXPECT_PRED2(ExpEqual, x_ - c3_, x_ - 3.14159);
+  EXPECT_PRED2(ExprEqual, x_ - c3_, x_ - 3.14159);
   EXPECT_EQ((x_ - c3_).to_string(), (x_ - 3.14159).to_string());
 }
 
@@ -500,7 +965,7 @@ TEST_F(SymbolicExpressionTest, Sub2) {
   const auto str_rep_e3(e3.to_string());
   EXPECT_EQ(str_rep_e3, "( - y + z)");
   e1 -= z_;
-  EXPECT_PRED2(ExpEqual, e1, x_ - y_ - z_);
+  EXPECT_PRED2(ExprEqual, e1, x_ - y_ - z_);
   EXPECT_EQ(e3.to_string(), str_rep_e3);  // e3 doesn't change.
 }
 
@@ -508,7 +973,7 @@ TEST_F(SymbolicExpressionTest, Sub3) {
   const Expression e1{x_ - y_};
   const Expression e2{x_ - y_};
   const Expression e3{e1 - e2};
-  EXPECT_PRED2(ExpEqual, e1, e2);
+  EXPECT_PRED2(ExprEqual, e1, e2);
   EXPECT_EQ(e3.to_string(), "0");  // simplified
 }
 
@@ -517,11 +982,11 @@ TEST_F(SymbolicExpressionTest, Dec1) {
   Expression x{var_x_};
   Expression x_prime{var_x_};
 
-  EXPECT_PRED2(ExpEqual, x, x_prime);
-  EXPECT_PRED2(ExpEqual, x--, x_prime);
-  EXPECT_PRED2(ExpNotEqual, x, x_prime);
-  EXPECT_PRED2(ExpNotEqual, x, x_prime--);
-  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x--, x_prime);
+  EXPECT_PRED2(ExprNotEqual, x, x_prime);
+  EXPECT_PRED2(ExprNotEqual, x, x_prime--);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Dec2) {
@@ -529,11 +994,11 @@ TEST_F(SymbolicExpressionTest, Dec2) {
   Expression x{var_x_};
   Expression x_prime{var_x_};
 
-  EXPECT_PRED2(ExpEqual, x, x_prime);
-  EXPECT_PRED2(ExpNotEqual, --x, x_prime);
-  EXPECT_PRED2(ExpNotEqual, x, x_prime);
-  EXPECT_PRED2(ExpEqual, x, --x_prime);
-  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
+  EXPECT_PRED2(ExprNotEqual, --x, x_prime);
+  EXPECT_PRED2(ExprNotEqual, x, x_prime);
+  EXPECT_PRED2(ExprEqual, x, --x_prime);
+  EXPECT_PRED2(ExprEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Dec3) {
@@ -548,29 +1013,29 @@ TEST_F(SymbolicExpressionTest, Dec3) {
 }
 
 TEST_F(SymbolicExpressionTest, Mul1) {
-  EXPECT_PRED2(ExpEqual, c3_ * zero_, zero_);
-  EXPECT_PRED2(ExpEqual, zero_ * c3_, zero_);
-  EXPECT_PRED2(ExpEqual, c3_ * 0.0, zero_);
-  EXPECT_PRED2(ExpEqual, 0.0 * c3_, zero_);
+  EXPECT_PRED2(ExprEqual, c3_ * zero_, zero_);
+  EXPECT_PRED2(ExprEqual, zero_ * c3_, zero_);
+  EXPECT_PRED2(ExprEqual, c3_ * 0.0, zero_);
+  EXPECT_PRED2(ExprEqual, 0.0 * c3_, zero_);
 
-  EXPECT_PRED2(ExpEqual, c3_ * one_, c3_);
-  EXPECT_PRED2(ExpEqual, one_ * c3_, c3_);
-  EXPECT_PRED2(ExpEqual, 1.0 * c3_, c3_);
-  EXPECT_PRED2(ExpEqual, c3_ * 1.0, c3_);
+  EXPECT_PRED2(ExprEqual, c3_ * one_, c3_);
+  EXPECT_PRED2(ExprEqual, one_ * c3_, c3_);
+  EXPECT_PRED2(ExprEqual, 1.0 * c3_, c3_);
+  EXPECT_PRED2(ExprEqual, c3_ * 1.0, c3_);
 
-  EXPECT_PRED2(ExpEqual, c3_ * c4_, 3.14159 * -2.718);
-  EXPECT_PRED2(ExpEqual, c3_ * x_, (3.14159 * x_));
-  EXPECT_PRED2(ExpEqual, x_ * c3_, (x_ * 3.14159));
+  EXPECT_PRED2(ExprEqual, c3_ * c4_, 3.14159 * -2.718);
+  EXPECT_PRED2(ExprEqual, c3_ * x_, (3.14159 * x_));
+  EXPECT_PRED2(ExprEqual, x_ * c3_, (x_ * 3.14159));
 }
 
 TEST_F(SymbolicExpressionTest, Mul2) {
   Expression e1{x_ * y_};
   Expression e2{e1 * e1};
   EXPECT_EQ(e1.to_string(), "(x * y)");
-  EXPECT_PRED2(ExpEqual, e2, pow(x_, 2) * pow(y_, 2));
+  EXPECT_PRED2(ExprEqual, e2, pow(x_, 2) * pow(y_, 2));
   e1 *= z_;
-  EXPECT_PRED2(ExpEqual, e1, x_ * y_ * z_);
-  EXPECT_PRED2(ExpEqual, e2, pow(x_, 2) * pow(y_, 2));  // e2 doesn't change.
+  EXPECT_PRED2(ExprEqual, e1, x_ * y_ * z_);
+  EXPECT_PRED2(ExprEqual, e2, pow(x_, 2) * pow(y_, 2));  // e2 doesn't change.
 }
 
 TEST_F(SymbolicExpressionTest, Mul3) {
@@ -578,59 +1043,73 @@ TEST_F(SymbolicExpressionTest, Mul3) {
   const Expression e2{(x_ * x_) * (x_ * x_)};
   const Expression e3{x_ * (x_ * x_ * x_)};
   const Expression e4{pow(x_, 4)};
-  EXPECT_PRED2(ExpEqual, e1, e4);
-  EXPECT_PRED2(ExpEqual, e2, e4);
-  EXPECT_PRED2(ExpEqual, e3, e4);
+  EXPECT_PRED2(ExprEqual, e1, e4);
+  EXPECT_PRED2(ExprEqual, e2, e4);
+  EXPECT_PRED2(ExprEqual, e3, e4);
 }
 
 TEST_F(SymbolicExpressionTest, Mul4) {
   // x * y * y * x = x^2 * y^2
-  EXPECT_PRED2(ExpEqual, x_ * y_ * y_ * x_, pow(x_, 2) * pow(y_, 2));
+  EXPECT_PRED2(ExprEqual, x_ * y_ * y_ * x_, pow(x_, 2) * pow(y_, 2));
   // (x * y * y * x) * (x * y * x * y) = x^4 * y^4
-  EXPECT_PRED2(ExpEqual, (x_ * y_ * y_ * x_) * (x_ * y_ * x_ * y_),
+  EXPECT_PRED2(ExprEqual, (x_ * y_ * y_ * x_) * (x_ * y_ * x_ * y_),
                pow(x_, 4) * pow(y_, 4));
-  EXPECT_PRED2(ExpEqual, 3 * (4 * x_), (3 * 4) * x_);
-  EXPECT_PRED2(ExpEqual, (3 * x_) * 4, (3 * 4) * x_);
-  EXPECT_PRED2(ExpEqual, (3 * x_) * (4 * x_), (3 * 4) * x_ * x_);
-  EXPECT_PRED2(ExpEqual, (x_ * 3) * (x_ * 4), (3 * 4) * x_ * x_);
-  EXPECT_PRED2(ExpEqual, (3 * x_) * (4 * y_), (3 * 4) * x_ * y_);
+  EXPECT_PRED2(ExprEqual, 3 * (4 * x_), (3 * 4) * x_);
+  EXPECT_PRED2(ExprEqual, (3 * x_) * 4, (3 * 4) * x_);
+  EXPECT_PRED2(ExprEqual, (3 * x_) * (4 * x_), (3 * 4) * x_ * x_);
+  EXPECT_PRED2(ExprEqual, (x_ * 3) * (x_ * 4), (3 * 4) * x_ * x_);
+  EXPECT_PRED2(ExprEqual, (3 * x_) * (4 * y_), (3 * 4) * x_ * y_);
 }
 
 TEST_F(SymbolicExpressionTest, Mul5) {
   // x^y * x^z = x^(y + z)
-  EXPECT_PRED2(ExpEqual, pow(x_, y_) * pow(x_, z_), pow(x_, y_ + z_));
+  EXPECT_PRED2(ExprEqual, pow(x_, y_) * pow(x_, z_), pow(x_, y_ + z_));
 
   // x^y * x = x^(y + 1)
-  EXPECT_PRED2(ExpEqual, pow(x_, y_) * x_, pow(x_, y_ + 1));
+  EXPECT_PRED2(ExprEqual, pow(x_, y_) * x_, pow(x_, y_ + 1));
 
   // x * pow(x, y) = x^(1 + y)
-  EXPECT_PRED2(ExpEqual, x_ * pow(x_, y_), pow(x_, 1 + y_));
+  EXPECT_PRED2(ExprEqual, x_ * pow(x_, y_), pow(x_, 1 + y_));
 
   // x * y * y * x = x^2 * y^2
-  EXPECT_PRED2(ExpEqual, x_ * y_ * y_ * x_, pow(x_, 2) * pow(y_, 2));
+  EXPECT_PRED2(ExprEqual, x_ * y_ * y_ * x_, pow(x_, 2) * pow(y_, 2));
   // (x * y * y * x) * (x * y * x * y) = x^4 * y^4
-  EXPECT_PRED2(ExpEqual, (x_ * y_ * y_ * x_) * (x_ * y_ * x_ * y_),
+  EXPECT_PRED2(ExprEqual, (x_ * y_ * y_ * x_) * (x_ * y_ * x_ * y_),
                pow(x_, 4) * pow(y_, 4));
-  EXPECT_PRED2(ExpEqual, 3 * (4 * x_), (3 * 4) * x_);
-  EXPECT_PRED2(ExpEqual, (3 * x_) * 4, (3 * 4) * x_);
-  EXPECT_PRED2(ExpEqual, (3 * x_) * (4 * x_), (3 * 4) * x_ * x_);
-  EXPECT_PRED2(ExpEqual, (x_ * 3) * (x_ * 4), (3 * 4) * x_ * x_);
-  EXPECT_PRED2(ExpEqual, (3 * x_) * (4 * y_), (3 * 4) * x_ * y_);
+  EXPECT_PRED2(ExprEqual, 3 * (4 * x_), (3 * 4) * x_);
+  EXPECT_PRED2(ExprEqual, (3 * x_) * 4, (3 * 4) * x_);
+  EXPECT_PRED2(ExprEqual, (3 * x_) * (4 * x_), (3 * 4) * x_ * x_);
+  EXPECT_PRED2(ExprEqual, (x_ * 3) * (x_ * 4), (3 * 4) * x_ * x_);
+  EXPECT_PRED2(ExprEqual, (3 * x_) * (4 * y_), (3 * 4) * x_ * y_);
+}
+
+TEST_F(SymbolicExpressionTest, Mul6) {
+  EXPECT_EQ((x_ * x_ * y_ * y_ * y_).to_string(), "(pow(x, 2) * pow(y, 3))");
+  EXPECT_EQ((2 * x_ * x_ * y_ * y_ * y_).to_string(),
+            "(2 * pow(x, 2) * pow(y, 3))");
+  EXPECT_EQ((-3 * x_ * x_ * y_ * y_ * y_).to_string(),
+            "(-3 * pow(x, 2) * pow(y, 3))");
+}
+
+TEST_F(SymbolicExpressionTest, Mul7) {
+  const Expression e1{2 * pow(x_, 2)};
+  const Expression e2{3 * pow(x_, -2)};
+  EXPECT_PRED2(ExprEqual, e1 * e2, 6);
 }
 
 TEST_F(SymbolicExpressionTest, AddMul1) {
   const Expression e1{(x_ * y_ * y_ * x_) + (x_ * y_ * x_ * y_)};
-  EXPECT_PRED2(ExpEqual, e1, 2 * pow(x_, 2) * pow(y_, 2));
+  EXPECT_PRED2(ExprEqual, e1, 2 * pow(x_, 2) * pow(y_, 2));
 
   const Expression e2{x_ + y_ + (-x_)};
-  EXPECT_PRED2(ExpEqual, e2, y_);
+  EXPECT_PRED2(ExprEqual, e2, y_);
 
   const Expression e3{(2 * x_) + (3 * x_)};
-  EXPECT_PRED2(ExpEqual, e3, 5 * x_);
+  EXPECT_PRED2(ExprEqual, e3, 5 * x_);
 
   const Expression e4{(x_ * 2 * x_) + (x_ * x_ * 3)};
-  EXPECT_PRED2(ExpEqual, e4, 5 * x_ * x_);
-  EXPECT_PRED2(ExpEqual, e4, 5 * pow(x_, 2));
+  EXPECT_PRED2(ExprEqual, e4, 5 * x_ * x_);
+  EXPECT_PRED2(ExprEqual, e4, 5 * pow(x_, 2));
 }
 
 TEST_F(SymbolicExpressionTest, Div1) {
@@ -666,6 +1145,14 @@ TEST_F(SymbolicExpressionTest, Div3) {
   EXPECT_EQ(e1.to_string(), "(x / y)");
   EXPECT_EQ(e2.to_string(), "(x / y)");
   EXPECT_EQ(e3.to_string(), "1");  // simplified
+}
+
+TEST_F(SymbolicExpressionTest, Div4) {
+  const Expression e{x_ / y_};
+  const Environment env1{{var_x_, 1.0}, {var_y_, 5.0}};
+  const Environment env2{{var_x_, 1.0}, {var_y_, 0.0}};
+  EXPECT_EQ(e.Evaluate(env1), 1.0 / 5.0);
+  EXPECT_THROW(e.Evaluate(env2), std::runtime_error);
 }
 
 // This test checks whether symbolic::Expression is compatible with
@@ -722,6 +1209,7 @@ TEST_F(SymbolicExpressionTest, Log) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::log(2 * 3.2 * 3.141592) + std::log(2) + std::log(3.2));
+  EXPECT_EQ((log(x_)).to_string(), "log(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Abs) {
@@ -734,6 +1222,7 @@ TEST_F(SymbolicExpressionTest, Abs) {
   const Environment env{{var_x_, -2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::fabs(-2 * 3.2 * 3.141592) +
                                         std::fabs(-2.0) + std::fabs(3.2));
+  EXPECT_EQ((abs(x_)).to_string(), "abs(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Exp) {
@@ -747,11 +1236,12 @@ TEST_F(SymbolicExpressionTest, Exp) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::exp(2 * 3.2 * 3.141592) +
                                         std::exp(2.0) + std::exp(3.2));
+  EXPECT_EQ((exp(x_)).to_string(), "exp(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Sqrt1) {
   // sqrt(x * x) => |x|
-  EXPECT_PRED2(ExpEqual, sqrt(x_plus_y_ * x_plus_y_), abs(x_plus_y_));
+  EXPECT_PRED2(ExprEqual, sqrt(x_plus_y_ * x_plus_y_), abs(x_plus_y_));
 }
 
 TEST_F(SymbolicExpressionTest, Sqrt2) {
@@ -765,17 +1255,19 @@ TEST_F(SymbolicExpressionTest, Sqrt2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::sqrt(2 * 3.2 * 3.141592) +
                                         std::sqrt(2.0) + std::sqrt(3.2));
+  EXPECT_EQ((sqrt(x_)).to_string(), "sqrt(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Pow1) {
   // pow(x, 0.0) => 1.0
-  EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::Zero()), Expression::One());
+  EXPECT_PRED2(ExprEqual, pow(x_plus_y_, Expression::Zero()),
+               Expression::One());
   // pow(x, 1.0) => x
-  EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::One()), x_plus_y_);
+  EXPECT_PRED2(ExprEqual, pow(x_plus_y_, Expression::One()), x_plus_y_);
   // (x^2)^3 => x^(2*3)
-  EXPECT_PRED2(ExpEqual, pow(pow(x_, 2), 3), pow(x_, 2 * 3));
+  EXPECT_PRED2(ExprEqual, pow(pow(x_, 2.0), 3.0), pow(x_, 2.0 * 3.0));
   // (x^y)^z => x^(y*z)
-  EXPECT_PRED2(ExpEqual, pow(pow(x_, y_), z_), pow(x_, y_ * z_));
+  EXPECT_PRED2(ExprEqual, pow(pow(x_, y_), z_), pow(x_, y_ * z_));
 }
 
 TEST_F(SymbolicExpressionTest, Pow2) {
@@ -821,10 +1313,13 @@ TEST_F(SymbolicExpressionTest, Pow2) {
   EXPECT_DOUBLE_EQ(pow(neg_pi_, neg_one_).Evaluate(), std::pow(-3.141592, -1));
   EXPECT_THROW(pow(neg_pi_, neg_pi_).Evaluate(), domain_error);
 
-  const Expression e{pow(x_ * y_ * pi_, x_ + y_ + pi_)};
+  const Expression e1{pow(x_ * y_ * pi_, x_ + y_ + pi_)};
+  const Expression e2{(pow(x_, 2) * pow(y_, 2) * pow(x_, y_))};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+  EXPECT_DOUBLE_EQ(e1.Evaluate(env),
                    std::pow(2 * 3.2 * 3.141592, 2 + 3.2 + 3.141592));
+  EXPECT_DOUBLE_EQ(e2.Evaluate(env),
+                   std::pow(2, 2) * std::pow(3.2, 2) * std::pow(2, 3.2));
 }
 
 TEST_F(SymbolicExpressionTest, Sin) {
@@ -839,6 +1334,7 @@ TEST_F(SymbolicExpressionTest, Sin) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::sin(2 * 3.2 * 3.141592) + std::sin(2) + std::sin(3.2));
+  EXPECT_EQ((sin(x_)).to_string(), "sin(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Cos) {
@@ -852,6 +1348,7 @@ TEST_F(SymbolicExpressionTest, Cos) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::cos(2 * 3.2 * 3.141592) + std::cos(2) + std::cos(3.2));
+  EXPECT_EQ((cos(x_)).to_string(), "cos(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Tan) {
@@ -866,6 +1363,7 @@ TEST_F(SymbolicExpressionTest, Tan) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::tan(2 * 3.2 * 3.141592) + std::tan(2) + std::tan(3.2));
+  EXPECT_EQ((tan(x_)).to_string(), "tan(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Asin) {
@@ -880,6 +1378,7 @@ TEST_F(SymbolicExpressionTest, Asin) {
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::asin(0.2 * 0.3 * 3.141592) +
                                         std::asin(0.2) + std::asin(0.3));
+  EXPECT_EQ((asin(x_)).to_string(), "asin(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Acos) {
@@ -894,6 +1393,7 @@ TEST_F(SymbolicExpressionTest, Acos) {
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::acos(0.2 * 0.3 * 3.141592) +
                                         std::acos(0.2) + std::acos(0.3));
+  EXPECT_EQ((acos(x_)).to_string(), "acos(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Atan) {
@@ -908,6 +1408,7 @@ TEST_F(SymbolicExpressionTest, Atan) {
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::atan(0.2 * 0.3 * 3.141592) +
                                         std::atan(0.2) + std::atan(0.3));
+  EXPECT_EQ((atan(x_)).to_string(), "atan(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Atan2) {
@@ -962,6 +1463,7 @@ TEST_F(SymbolicExpressionTest, Atan2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::atan2(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+  EXPECT_EQ((atan2(x_, y_)).to_string(), "atan2(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, Sinh) {
@@ -976,6 +1478,7 @@ TEST_F(SymbolicExpressionTest, Sinh) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::sinh(2 * 3.2 * 3.141592) +
                                         std::sinh(2) + std::sinh(3.2));
+  EXPECT_EQ((sinh(x_)).to_string(), "sinh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Cosh) {
@@ -990,6 +1493,7 @@ TEST_F(SymbolicExpressionTest, Cosh) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::cosh(2 * 3.2 * 3.141592) +
                                         std::cosh(2) + std::cosh(3.2));
+  EXPECT_EQ((cosh(x_)).to_string(), "cosh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Tanh) {
@@ -1004,11 +1508,12 @@ TEST_F(SymbolicExpressionTest, Tanh) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::tanh(2 * 3.2 * 3.141592) +
                                         std::tanh(2) + std::tanh(3.2));
+  EXPECT_EQ((tanh(x_)).to_string(), "tanh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Min1) {
   // min(E, E) -> E
-  EXPECT_PRED2(ExpEqual, min(x_plus_y_, x_plus_y_), x_plus_y_);
+  EXPECT_PRED2(ExprEqual, min(x_plus_y_, x_plus_y_), x_plus_y_);
 }
 
 TEST_F(SymbolicExpressionTest, Min2) {
@@ -1061,11 +1566,12 @@ TEST_F(SymbolicExpressionTest, Min2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::min(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+  EXPECT_EQ((min(x_, y_)).to_string(), "min(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, Max1) {
   // max(E, E) -> E
-  EXPECT_PRED2(ExpEqual, max(x_plus_y_, x_plus_y_), x_plus_y_);
+  EXPECT_PRED2(ExprEqual, max(x_plus_y_, x_plus_y_), x_plus_y_);
 }
 
 TEST_F(SymbolicExpressionTest, Max2) {
@@ -1118,21 +1624,22 @@ TEST_F(SymbolicExpressionTest, Max2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::max(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+  EXPECT_EQ((max(x_, y_)).to_string(), "max(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse1) {
   // should be simplified to 1.0 since (x + 1.0 > x) => true.
-  const Expression ite1 = if_then_else(x_ + 1.0 > x_, 1.0, 0.0);
-  EXPECT_PRED2(ExpEqual, ite1, 1.0);
+  const Expression ite1{if_then_else(x_ + 1.0 > x_, 1.0, 0.0)};
+  EXPECT_PRED2(ExprEqual, ite1, 1.0);
 
   // should be simplified to 0.0 since (x > x + 1.0) => false.
-  const Expression ite2 = if_then_else(x_ > x_ + 1.0, 1.0, 0.0);
-  EXPECT_PRED2(ExpEqual, ite2, 0.0);
+  const Expression ite2{if_then_else(x_ > x_ + 1.0, 1.0, 0.0)};
+  EXPECT_PRED2(ExprEqual, ite2, 0.0);
 
   // should not be simplified.
-  const Expression ite3 = if_then_else(x_ > y_, 1.0, 0.0);
-  EXPECT_PRED2(ExpNotEqual, ite3, 1.0);
-  EXPECT_PRED2(ExpNotEqual, ite3, 0.0);
+  const Expression ite3{if_then_else(x_ > y_, 1.0, 0.0)};
+  EXPECT_PRED2(ExprNotEqual, ite3, 1.0);
+  EXPECT_PRED2(ExprNotEqual, ite3, 0.0);
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse2) {
@@ -1146,6 +1653,7 @@ TEST_F(SymbolicExpressionTest, IfThenElse2) {
   const Environment env2{{var_x_, 2.0}, {var_y_, 7.0}};
   EXPECT_EQ(max_fn.Evaluate(env2), std::max(2.0, 7.0));
   EXPECT_EQ(min_fn.Evaluate(env2), std::min(2.0, 7.0));
+  EXPECT_EQ(max_fn.to_string(), "(if (x > y) then x else y)");
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse3) {
@@ -1156,7 +1664,7 @@ TEST_F(SymbolicExpressionTest, IfThenElse3) {
 
 TEST_F(SymbolicExpressionTest, Cond1) {
   const Expression e{cond(x_ >= 10, 10, 0.0)};
-  EXPECT_PRED2(ExpEqual, e, if_then_else(x_ >= 10, 10, 0.0));
+  EXPECT_PRED2(ExprEqual, e, if_then_else(x_ >= 10, 10, 0.0));
 
   EXPECT_EQ(e.Evaluate({{var_x_, 15}}), 10.0);
   EXPECT_EQ(e.Evaluate({{var_x_, 10}}), 10.0);
@@ -1169,7 +1677,7 @@ TEST_F(SymbolicExpressionTest, Cond2) {
                           x_ >= 5,  5.0,
                           x_ >= 2,  2.0,
                                     0.0)};
-  EXPECT_PRED2(ExpEqual, e,
+  EXPECT_PRED2(ExprEqual, e,
                if_then_else(x_ >= 10, 10,
                if_then_else(x_ >= 5,   5,
                if_then_else(x_ >= 2,   2,
@@ -1185,6 +1693,26 @@ TEST_F(SymbolicExpressionTest, Cond2) {
   EXPECT_EQ(e.Evaluate({{var_x_, 1}}), 0.0);
 }
 
+TEST_F(SymbolicExpressionTest, UninterpretedFunction_GetVariables_GetName) {
+  const Expression uf1{uninterpreted_function("uf1", {})};
+  EXPECT_TRUE(uf1.GetVariables().empty());
+  EXPECT_EQ(get_uninterpreted_function_name(uf1), "uf1");
+
+  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
+  EXPECT_EQ(get_uninterpreted_function_name(uf2), "uf2");
+  const Variables vars_in_uf2{uf2.GetVariables()};
+  EXPECT_EQ(vars_in_uf2.size(), 2);
+  EXPECT_TRUE(vars_in_uf2.include(var_x_));
+  EXPECT_TRUE(vars_in_uf2.include(var_y_));
+}
+
+TEST_F(SymbolicExpressionTest, UninterpretedFunction_Evaluate) {
+  const Expression uf1{uninterpreted_function("uf1", {})};
+  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
+  EXPECT_THROW(uf1.Evaluate(), std::runtime_error);
+  EXPECT_THROW(uf2.Evaluate(), std::runtime_error);
+}
+
 TEST_F(SymbolicExpressionTest, GetVariables) {
   const Variables vars1{(x_ + y_ * log(x_ + y_)).GetVariables()};
   EXPECT_TRUE(vars1.include(var_x_));
@@ -1192,9 +1720,9 @@ TEST_F(SymbolicExpressionTest, GetVariables) {
   EXPECT_FALSE(vars1.include(var_z_));
   EXPECT_EQ(vars1.size(), 2u);
 
-  const Variables vars2{
-      (x_ * x_ * z_ - y_ * abs(x_) * log(x_ + y_) + cosh(x_) + cosh(y_))
-          .GetVariables()};
+  const Variables vars2{(x_ * x_ * z_ - y_ * abs(x_) * log(x_ + y_) + cosh(x_) +
+                         cosh(y_) + atan2(x_, y_))
+                            .GetVariables()};
   EXPECT_TRUE(vars2.include(var_x_));
   EXPECT_TRUE(vars2.include(var_y_));
   EXPECT_TRUE(vars2.include(var_z_));
@@ -1208,14 +1736,14 @@ TEST_F(SymbolicExpressionTest, Swap) {
   const Expression e2_copy{e2};
 
   // Before Swap.
-  EXPECT_PRED2(ExpEqual, e1, e1_copy);
-  EXPECT_PRED2(ExpEqual, e2, e2_copy);
+  EXPECT_PRED2(ExprEqual, e1, e1_copy);
+  EXPECT_PRED2(ExprEqual, e2, e2_copy);
 
   swap(e1, e2);
 
   // After Swap.
-  EXPECT_PRED2(ExpEqual, e1, e2_copy);
-  EXPECT_PRED2(ExpEqual, e2, e1_copy);
+  EXPECT_PRED2(ExprEqual, e1, e2_copy);
+  EXPECT_PRED2(ExprEqual, e2, e1_copy);
 }
 
 TEST_F(SymbolicExpressionTest, ToString) {
@@ -1224,128 +1752,9 @@ TEST_F(SymbolicExpressionTest, ToString) {
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
+  EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
 }
 
-class SymbolicExpressionMatrixTest : public ::testing::Test {
- protected:
-  const Variable var_x_{"x"};
-  const Variable var_y_{"y"};
-  const Variable var_z_{"z"};
-  const Expression x_{var_x_};
-  const Expression y_{var_y_};
-  const Expression z_{var_z_};
-
-  const Expression zero_{0.0};
-  const Expression one_{1.0};
-  const Expression two_{2.0};
-  const Expression neg_one_{-1.0};
-  const Expression pi_{3.141592};
-  const Expression neg_pi_{-3.141592};
-  const Expression e_{2.718};
-
-  Eigen::Matrix<Expression, 3, 2> A_;
-  Eigen::Matrix<Expression, 2, 3> B_;
-  Eigen::Matrix<Expression, 3, 2> C_;
-
-  void SetUp() {
-    // clang-format off
-    A_ << x_, one_,       //  [x  1]
-          y_, neg_one_,   //  [y -1]
-          z_, pi_;        //  [z  3.141592]
-
-    B_ << x_, y_,  z_,    //  [x     y        z]
-          e_, pi_, two_;  //  [2.718 3.141592 2]
-
-    C_ << z_, two_,       //  [z  2]
-          x_, e_,         //  [x -2.718]
-          y_, pi_;        //  [y  3.141592]
-    // clang-format on
-  }
-};
-
-TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
-  auto const M(A_ + A_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ + x_), (one_ + one_),
-                (y_ + y_), (neg_one_ + neg_one_),
-                (z_ + z_), (pi_ + pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenSub1) {
-  auto const M(A_ - A_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  EXPECT_EQ(M, M_expected);  // should be all zero.
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenSub2) {
-  auto const M(A_ - C_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ - z_), (one_ - two_),
-                (y_ - x_), (neg_one_ - e_),
-                (z_ - y_), (pi_ - pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);  // should be all zero.
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul1) {
-  auto const M(A_ * B_);
-  Eigen::Matrix<Expression, 3, 3> M_expected;
-  // clang-format off
-  M_expected <<
-    (x_ * x_ + e_),       (x_ * y_ + pi_),       (x_ * z_ + two_),
-    (y_ * x_ + -e_),      (y_ * y_ + - pi_),     (y_ * z_ + - two_),
-    (z_ * x_ + pi_ * e_), (z_ * y_ + pi_ * pi_), (z_ * z_ + pi_ * two_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
-  auto const M(B_ * A_);
-  Eigen::Matrix<Expression, 2, 2> M_expected;
-  // clang-format off
-  M_expected <<
-    (x_ * x_ + (y_ * y_ + z_ * z_)),    (x_ + (-y_ + z_ * pi_)),
-    (e_ * x_ + (pi_ * y_ + two_ * z_)), (e_ * one_ + pi_ * - one_ + two_ * pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
-  auto const M(2.0 * A_);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (2 * x_), (2 * one_),
-                (2 * y_), (2 * neg_one_),
-                (2 * z_), (2 * pi_);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
-  auto const M(A_ * 2.0);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ * 2), (one_ * 2),
-                (y_ * 2), (neg_one_ * 2),
-                (z_ * 2), (pi_ * 2);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
-
-TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
-  auto const M(A_ / 2.0);
-  Eigen::Matrix<Expression, 3, 2> M_expected;
-  // clang-format off
-  M_expected << (x_ / 2), (one_ / 2),
-                (y_ / 2), (neg_one_ / 2),
-                (z_ / 2), (pi_ / 2);
-  // clang-format on
-  EXPECT_EQ(M, M_expected);
-}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

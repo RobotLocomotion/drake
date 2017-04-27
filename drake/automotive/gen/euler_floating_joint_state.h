@@ -3,11 +3,14 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -25,18 +28,28 @@ struct EulerFloatingJointStateIndices {
   static const int kRoll = 3;
   static const int kPitch = 4;
   static const int kYaw = 5;
+
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `EulerFloatingJointStateIndices::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
 class EulerFloatingJointState : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef EulerFloatingJointStateIndices K;
 
   /// Default constructor.  Sets all rows to zero.
   EulerFloatingJointState() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
+  }
+
+  EulerFloatingJointState<T>* DoClone() const override {
+    return new EulerFloatingJointState;
   }
 
   /// @name Getters and Setters
@@ -60,6 +73,24 @@ class EulerFloatingJointState : public systems::BasicVector<T> {
   const T& yaw() const { return this->GetAtIndex(K::kYaw); }
   void set_yaw(const T& yaw) { this->SetAtIndex(K::kYaw, yaw); }
   //@}
+
+  /// See EulerFloatingJointStateIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return EulerFloatingJointStateIndices::GetCoordinateNames();
+  }
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(x());
+    result = result && !isnan(y());
+    result = result && !isnan(z());
+    result = result && !isnan(roll());
+    result = result && !isnan(pitch());
+    result = result && !isnan(yaw());
+    return result;
+  }
 };
 
 }  // namespace automotive

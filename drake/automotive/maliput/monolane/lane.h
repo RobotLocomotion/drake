@@ -1,12 +1,14 @@
 #pragma once
 
 #include <cmath>
+#include <memory>
 
 #include <Eigen/Dense>
 
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -15,7 +17,6 @@ namespace maliput {
 namespace monolane {
 
 class BranchPoint;
-class Segment;
 
 typedef Vector2<double> V2;
 typedef Vector3<double> V3;
@@ -27,6 +28,8 @@ typedef Vector3<double> V3;
 ///   Rot3(yaw,pitch,roll) * V = RotZ(yaw) * RotY(pitch) * RotX(roll) * V
 class Rot3 {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rot3)
+
   Rot3(double roll, double pitch, double yaw) : rpy_(roll, pitch, yaw) {}
 
   /// Applies the rotation to a 3-vector.
@@ -44,6 +47,8 @@ class Rot3 {
 /// A cubic polynomial, f(p) = a + b*p + c*p^2 + d*p^3.
 class CubicPolynomial {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CubicPolynomial)
+
   /// Default constructor, all zero coefficients.
   CubicPolynomial() : CubicPolynomial(0., 0., 0., 0.) {}
 
@@ -118,6 +123,8 @@ class CubicPolynomial {
 /// Base class for the monolane implementation of api::Lane.
 class Lane : public api::Lane {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)
+
   /// Constructs a Lane.
   ///
   /// @param id the ID
@@ -163,7 +170,7 @@ class Lane : public api::Lane {
   ///  * @p p_scale is q_max (and p = q / p_scale);
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
-  Lane(const api::LaneId& id, const Segment* segment,
+  Lane(const api::LaneId& id, const api::Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        double p_scale,
@@ -193,7 +200,7 @@ class Lane : public api::Lane {
 
   BranchPoint* end_bp() { return end_bp_; }
 
-  virtual ~Lane() {}
+  ~Lane() override = default;
 
  private:
   const api::LaneId do_id() const override { return id_; }
@@ -322,7 +329,7 @@ class Lane : public api::Lane {
   V3 r_hat_of_Rabg(const Rot3& Rabg) const;
 
   const api::LaneId id_;
-  const Segment* segment_{};
+  const api::Segment* segment_{};
   BranchPoint* start_bp_{};
   BranchPoint* end_bp_{};
 

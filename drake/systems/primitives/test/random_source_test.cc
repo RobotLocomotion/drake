@@ -1,13 +1,14 @@
+#include "drake/systems/primitives/random_source.h"
+
 #include <stdexcept>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {
@@ -18,7 +19,9 @@ GTEST_TEST(TestSignalLogger, GaussianWhiteNoise) {
   systems::DiagramBuilder<double> builder;
 
   auto source = builder.AddSystem<systems::GaussianRandomSource>(1, 0.0025);
+  source->set_name("source");
   auto logger = builder.AddSystem<systems::SignalLogger<double>>(1);
+  logger->set_name("logger");
   builder.Cascade(*source, *logger);
 
   source->set_random_seed(42);
@@ -49,7 +52,9 @@ GTEST_TEST(TestSignalLogger, UniformWhiteNoise) {
   systems::DiagramBuilder<double> builder;
 
   auto source = builder.AddSystem<systems::UniformRandomSource>(1, 0.0025);
+  source->set_name("source");
   auto logger = builder.AddSystem<systems::SignalLogger<double>>(1);
+  logger->set_name("logger");
   builder.Cascade(*source, *logger);
 
   source->set_random_seed(42);

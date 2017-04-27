@@ -1,4 +1,9 @@
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
+
 #include <cmath>
+
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -9,10 +14,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
-#include "gtest/gtest.h"
-
 
 namespace drake {
 namespace systems {
@@ -62,6 +64,24 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_EQ(integrator_->supports_error_estimation(), true);
   EXPECT_NO_THROW(integrator_->set_target_accuracy(1e-1));
   EXPECT_NO_THROW(integrator_->request_initial_step_size_target(dt));
+}
+
+// Verifies that the stepping works with large magnitude times and small
+// magnitude step sizes.
+TEST_F(RK3IntegratorTest, MagDisparity) {
+  // Set a large magnitude time.
+  context_->set_time(1.0);
+
+  // Set integrator parameters.
+  integrator_->set_maximum_step_size(0.1);
+  integrator_->set_minimum_step_size(1e-40);
+  integrator_->set_target_accuracy(1e-3);
+
+  // Take all the defaults.
+  integrator_->Initialize();
+
+  // Take a variable step.
+  integrator_->StepExactlyVariable(1e-40);
 }
 
 // Test scaling vectors
@@ -281,10 +301,27 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   EXPECT_GE(integrator_->get_smallest_adapted_step_size_taken(), 0.0);
   EXPECT_GE(integrator_->get_num_steps_taken(), 0);
   EXPECT_NE(integrator_->get_error_estimate(), nullptr);
+  EXPECT_GT(integrator_->get_num_derivative_evaluations(), 0);
 
   // Verify that less computation was performed compared to the fixed step
   // integrator.
   EXPECT_LT(integrator_->get_num_steps_taken(), fixed_steps);
+}
+
+// Verify that attempting to take a single fixed step throws an exception.
+TEST_F(RK3IntegratorTest, IllegalFixedStep) {
+  // Set integrator parameters: do error control.
+  integrator_->set_maximum_step_size(dt);
+  integrator_->set_fixed_step_mode(false);
+
+  // Set accuracy to a really small value so that the step is guaranteed to be
+  // small.
+  integrator_->set_target_accuracy(1e-8);
+
+  // Initialize the integrator.
+  integrator_->Initialize();
+
+  EXPECT_THROW(integrator_->StepExactlyFixed(1e-8), std::logic_error);
 }
 
 // Verifies statistics validity for error controlled integrator.
@@ -344,10 +381,6 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   RigidBodyPlant<double> plant(move(tree));
   auto context = plant.CreateDefaultContext();
 
-  // Setup an empty input port.
-  context->SetInputPort(0, std::make_unique<FreestandingInputPort>(
-      std::make_unique<BasicVector<double>>(plant.get_num_actuators())));
-
   Eigen::Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
   Eigen::Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
   BasicVector<double> generalized_velocities(plant.get_num_velocities());
@@ -357,15 +390,24 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
 
-  // Integrate for one second of virtual time using a RK2 integrator with
+  // Set a non-identity position and orientation.
+  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,2,3).
+  plant.set_position(context.get(), 1, 2.0);
+  plant.set_position(context.get(), 2, 3.0);
+  plant.set_position(context.get(), 3, std::sqrt(2)/2);  // Set orientation to
+  plant.set_position(context.get(), 4, 0.0);             // 90 degree rotation
+  plant.set_position(context.get(), 5, std::sqrt(2)/2);  // about y-axis.
+  plant.set_position(context.get(), 6, 0.0);
+
+  // Integrate for ten thousand steps using a RK2 integrator with
   // small step size.
   const double dt = 5e-5;
-  const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> rk2(plant, dt, context.get());
   rk2.Initialize();
   const double t_final = 1.0;
-  for (double t = 0.0; std::abs(t - t_final) > dt; t += dt)
-    rk2.StepOnceAtMost(inf, inf, dt);  // Steps forward by dt.
+  const int n_steps = t_final / dt;
+  for (int i = 0; i< n_steps; ++i)
+    rk2.StepExactlyFixed(dt);
 
   // Get the final state.
   VectorX<double> x_final_rk2 = context->get_continuous_state_vector().
@@ -376,22 +418,28 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   plant.SetDefaultState(*context, context->get_mutable_state());
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
+  // Reset the non-identity position and orientation.
+  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,2,3).
+  plant.set_position(context.get(), 1, 2.0);
+  plant.set_position(context.get(), 2, 3.0);
+  plant.set_position(context.get(), 3, std::sqrt(2)/2);  // Set orientation to
+  plant.set_position(context.get(), 4, 0.0);             // 90 degree rotation
+  plant.set_position(context.get(), 5, std::sqrt(2)/2);  // about y-axis.
+  plant.set_position(context.get(), 6, 0.0);
   RungeKutta3Integrator<double> rk3(plant, context.get());
   rk3.set_maximum_step_size(0.1);
   rk3.set_target_accuracy(1e-6);
   rk3.Initialize();
 
-  // StepOnceAtFixedSize for one second.
-  double t_remaining = t_final - context->get_time();
-  do {
-    rk3.StepOnceAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - context->get_time();
-  } while (t_remaining > 0.0);
+  // Verify that StepExactlyVariable works.
+  const double tol = std::numeric_limits<double>::epsilon();
+  rk3.StepExactlyVariable(t_final - context->get_time());
+  EXPECT_NEAR(context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".
   VectorX<double> x_final_rk3 = context->get_continuous_state_vector().
       CopyToVector();
-  const double close_tol = 1e-6;
+  const double close_tol = 2e-6;
   for (int i=0; i< x_final_rk2.size(); ++i)
     EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);
 }

@@ -1,116 +1,121 @@
 #pragma once
 
+#include <fstream>
 #include <memory>
+#include <utility>
 
+#include "drake/common/drake_copyable.h"
+#include "drake/systems/controllers/state_feedback_controller_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/primitives/adder.h"
-#include "drake/systems/primitives/gain.h"
-#include "drake/systems/primitives/integrator.h"
-#include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
 
-/// A PID controller system. Given an error signal `e` and its time derivative
-/// `edot` the output of this sytem is
-/// <pre>
-///     y = Kp * e + Ki integ(e,dt) + Kd * edot
-/// </pre>
-/// where `integ(e,dt)` is the time integral of `e`.
-/// A PID controller directly feedthroughs the error signal to the output when
-/// the proportional constant is non-zero. It feeds through the rate of change
-/// of the error signal when the derivative constant is non-zero.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in libdrakeSystemFramework.
-/// No other values for T are currently supported.
-/// @ingroup primitive_systems
+// TODO(siyuanfeng): Need to redo the PID controller, then this would go away.
 template <typename T>
-class PidController : public Diagram<T> {
+class PidControllerInternal;
+
+// TODO(siyuanfeng): Lift the assumption that q and v have the same dimension.
+// TODO(siyuanfeng): Generalize "q_d - q", e.g. for rotation.
+
+/**
+ * Implements the PID controller. Given state `(q, v)`, desired state
+ * `(q_d, v_d)`, the output of this controller is
+ * <pre>
+ * y = kp * (q_d - q) + kd * (v_d - v) + ki * integral(q_d - q, dt),
+ * </pre>
+ * where `integral(q_d - q, dt)` is the integrated position error.
+ *
+ * Note that this class assumes q and v have the same dimension.
+ */
+template <typename T>
+class PidController : public StateFeedbackController<T> {
  public:
-  /// Constructs a %PidController system where all of the gains are the same
-  /// value.
-  ///
-  /// @param Kp the proportional constant.
-  /// @param Ki the integral constant.
-  /// @param Kd the derivative constant.
-  /// @param size number of elements in the signal to be processed.
-  PidController(const T& Kp, const T& Ki, const T& Kd, int size);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
-  /// Constructs a %PidController system where each gain can have a different
-  /// value.
-  ///
-  /// @param Kp the vector of proportional gain constants.
-  /// @param Ki the vector of integral gain constants.
-  /// @param Kd the vector of derivative gain constants.
-  PidController(const VectorX<T>& Kp, const VectorX<T>& Ki,
-                const VectorX<T>& Kd);
+  /**
+   * Constructs a PID controller. Assumes that @p kp, @p ki and @p kd have the
+   * same size, the actual and desired state inputs will have the size of
+   * 2 * @p kp's size, and the control output will have @p kp's size.
+   * @param kp P gain.
+   * @param ki I gain.
+   * @param kd D gain.
+   */
+  PidController(const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                const Eigen::VectorXd& kd);
 
-  ~PidController() override {}
+  /**
+   * Constructs a PID controller where some of the input states may not be
+   * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
+   * actual and desired state input's size and the control output's size need
+   * to match @p feedback_selector.
+   * @param feedback_selector, The selection matrix indicating controlled
+   * states, whose size should be 2 * @p kp's size by the size of the full
+   * state.
+   * @param kp P gain.
+   * @param ki I gain.
+   * @param kd D gain.
+   */
+  PidController(std::unique_ptr<MatrixGain<T>> feedback_selector,
+                const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                const Eigen::VectorXd& kd);
 
   /// Returns the proportional gain constant. This method should only be called
   /// if the proportional gain can be represented as a scalar value, i.e., every
   /// element in the proportional gain vector is the same. It will throw a
   /// `std::runtime_error` if the proportional gain cannot be represented as a
   /// scalar value.
-  const T& get_Kp() const;
+  double get_Kp_singleton() const;
 
   /// Returns the integral gain constant. This method should only be called if
   /// the integral gain can be represented as a scalar value, i.e., every
   /// element in the integral gain vector is the same. It will throw a
   /// `std::runtime_error` if the integral gain cannot be represented as a
   /// scalar value.
-  const T& get_Ki() const;
+  double get_Ki_singleton() const;
 
   /// Returns the derivative gain constant. This method should only be called if
   /// the derivative gain can be represented as a scalar value, i.e., every
   /// element in the derivative gain vector is the same. It will throw a
   /// `std::runtime_error` if the derivative gain cannot be represented as a
   /// scalar value.
-  const T& get_Kd() const;
+  double get_Kd_singleton() const;
 
   /// Returns the proportional vector constant.
-  const VectorX<T>& get_Kp_vector() const;
+  const Eigen::VectorXd& get_Kp_vector() const;
 
   /// Returns the integral vector constant.
-  const VectorX<T>& get_Ki_vector() const;
+  const Eigen::VectorXd& get_Ki_vector() const;
 
   /// Returns the derivative vector constant.
-  const VectorX<T>& get_Kd_vector() const;
+  const Eigen::VectorXd& get_Kd_vector() const;
 
-  // System<T> overrides
-  /// A PID controller directly feedthroughs the error signal to the output when
-  /// the proportional constant is non-zero. It feeds through the rate of change
-  /// of the error signal when the derivative constant is non-zero.
-  bool has_any_direct_feedthrough() const override;
-
-  /// Sets the integral of the %PidController to @p value.
+  /// Sets the integral part of the PidController to @p value.
   /// @p value must be a column vector of the appropriate size.
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
-  /// Returns the input port to the error signal.
-  const SystemPortDescriptor<T>& get_error_port() const;
-
-  /// Returns the input port to the time derivative or rate of the error signal.
-  const SystemPortDescriptor<T>& get_error_derivative_port() const;
-
-  /// Returns the output port to the control output.
-  const SystemPortDescriptor<T>& get_control_output_port() const;
+ protected:
+  /// Appends to @p dot a simplified Graphviz representation of the PID
+  /// controller, since the internal wiring is unimportant and hard for human
+  /// viewers to parse.
+  void GetGraphvizFragment(std::stringstream* dot) const override;
+  /// Appends the Graphviz port for @p port to @p dot.
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                 std::stringstream* dot) const override;
+  /// Appends the Graphviz port for @p port to @p dot.
+  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+                                  std::stringstream* dot) const override;
 
  private:
-  Adder<T>* adder_ = nullptr;
-  Integrator<T>* integrator_ = nullptr;
-  PassThrough<T>* pass_through_ = nullptr;
-  Gain<T>* proportional_gain_ = nullptr;
-  Gain<T>* integral_gain_ = nullptr;
-  Gain<T>* derivative_gain_ = nullptr;
+  void ConnectPorts(std::unique_ptr<MatrixGain<T>> feedback_selector,
+                    const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                    const Eigen::VectorXd& kd);
+
+  // TODO(siyuanfeng): Need to redo the PID controller, then this would go away.
+  PidControllerInternal<T>* controller_;
 };
 
 }  // namespace systems

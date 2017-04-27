@@ -2,10 +2,9 @@ option(CHECK_DEPENDENCY_STRICT
   "Fail the test if a MATLAB dependency check fails" OFF)
 mark_as_advanced(CHECK_DEPENDENCY_STRICT)
 
-option(TEST_TIMEOUT_MULTIPLIER
-  "Positive integer by which to multiply test timeouts" 1)
+set(TEST_TIMEOUT_MULTIPLIER 1 CACHE STRING
+  "Positive integer by which to multiply test timeouts")
 mark_as_advanced(TEST_TIMEOUT_MULTIPLIER)
-
 
 #------------------------------------------------------------------------------
 # Compute the timeout of a test given its size.
@@ -84,6 +83,10 @@ function(drake_add_test)
     set_tests_properties(${_NAME} PROPERTIES
       LABELS ${_size}
       TIMEOUT ${_timeout})
+    if(TESTS_ENVIRONMENT)
+      set_tests_properties(${_NAME} PROPERTIES
+        ENVIRONMENT "${TESTS_ENVIRONMENT}")
+    endif()
   else()
     message(STATUS
       "Not running ${_NAME} because ${_size} tests are not enabled")
@@ -130,7 +133,7 @@ function(drake_add_cc_test)
   cmake_parse_arguments("" EXCLUDE_FROM_ALL "NAME;EXTENSION;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
 
   # Set name from first and only (non-keyword) argument in short signature.
-  if(NOT _EXCLUDE_FROM_ALL AND NOT _NAME AND NOT _SIZE AND NOT _WORKING_DIRECTORY AND NOT _CONFIGURATIONS)
+  if(NOT _EXCLUDE_FROM_ALL AND NOT _EXTENSION AND NOT _NAME AND NOT _SIZE AND NOT _WORKING_DIRECTORY AND NOT _CONFIGURATIONS)
     set(_NAME ${ARGV0})
   endif()
 
@@ -141,17 +144,36 @@ function(drake_add_cc_test)
   # Add the executable and link with gtest and gtest-main.
   if(_EXCLUDE_FROM_ALL)
     set(_exclude_from_all EXCLUDE_FROM_ALL)
+  else()
+    set(_exclude_from_all)
   endif()
   add_executable(${_NAME} ${_NAME}.${_EXTENSION} ${_exclude_from_all})
   target_link_libraries(${_NAME} GTest::GTest GTest::Main)
 
   # Add the test to the project.
-  drake_add_test(
-    NAME ${_NAME}
+  if(_CONFIGURATIONS)
+    set(_configurations CONFIGURATIONS ${_CONFIGURATIONS})
+  else()
+    set(_configurations)
+  endif()
+
+  if(_SIZE)
+    set(_size SIZE ${_SIZE})
+  else()
+    set(_size)
+  endif()
+
+  if(_WORKING_DIRECTORY)
+    set(_working_directory WORKING_DIRECTORY ${_WORKING_DIRECTORY})
+  else()
+    set(_working_directory)
+  endif()
+
+  drake_add_test(NAME ${_NAME}
     COMMAND ${_NAME}
-    CONFIGURATIONS ${_CONFIGURATIONS}
-    SIZE ${_SIZE}
-    WORKING_DIRECTORY ${_WORKING_DIRECTORY})
+    ${_configurations}
+    ${_size}
+    ${_working_directory})
 endfunction()
 
 

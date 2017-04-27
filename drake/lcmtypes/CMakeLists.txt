@@ -20,24 +20,34 @@ lcm_wrap_types(
   CPP_HEADERS cpp_install_headers
   ${java_args}
   ${python_args}
+  lcmt_acrobot_u.lcm
+  lcmt_acrobot_x.lcm
+  lcmt_acrobot_y.lcm
   lcmt_body_acceleration.lcm
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
+  lcmt_bicycle_car_parameters_t.lcm
+  lcmt_bicycle_car_state_t.lcm
   lcmt_constrained_values.lcm
   lcmt_contact_information.lcm
+  lcmt_contact_info_for_viz.lcm
+  lcmt_contact_results_for_viz.lcm
   lcmt_desired_body_motion.lcm
   lcmt_desired_centroidal_momentum_dot.lcm
   lcmt_desired_dof_motions.lcm
   lcmt_drake_signal.lcm
   lcmt_driving_command_t.lcm
+  lcmt_endless_road_car_config_t.lcm
+  lcmt_endless_road_car_state_t.lcm
+  lcmt_endless_road_oracle_output_t.lcm
   lcmt_euler_floating_joint_state_t.lcm
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
-  lcmt_matlab_array.lcm
-  lcmt_call_matlab.lcm
+  lcmt_maliput_railcar_params_t.lcm
+  lcmt_maliput_railcar_state_t.lcm
   lcmt_piecewise_polynomial.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
@@ -50,7 +60,7 @@ lcm_wrap_types(
   lcmt_scope_data.lcm
   lcmt_schunk_wsg_command.lcm
   lcmt_schunk_wsg_status.lcm
-  lcmt_simple_car_config_t.lcm
+  lcmt_simple_car_params_t.lcm
   lcmt_simple_car_state_t.lcm
   lcmt_simulation_command.lcm
   lcmt_support_data.lcm

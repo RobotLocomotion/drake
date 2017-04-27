@@ -54,12 +54,20 @@ endfunction()
 # Arguments:
 #   OPTIONAL - Dependency is not required.
 #
+#   PREFER_SYSTEM_VERSION
+#     Default to using the system version of the dependency rather than the
+#     internal version.
+#
 #   REQUIRES <package>
 #     Name of package (as passed to `find_package`) that must be found if the
 #     system version is selected.
 #
 #   VERSION <version>
 #     Required version of the system package (passed to `find_package`).
+#
+#   ADDITIONAL_VERSIONS <version>
+#     Versions of the system package to be accepted in addition to the named
+#     VERSION.
 #
 #   DEPENDS <expression>
 #     A list of expressions which must evaluate to true for the component to
@@ -87,9 +95,9 @@ function(drake_system_dependency NAME)
 
   # Parse arguments
   cmake_parse_arguments("_sd"
-    "OPTIONAL"
+    "OPTIONAL;PREFER_SYSTEM_VERSION;--"
     "REQUIRES;VERSION;DEPENDS"
-    ""
+    "ADDITIONAL_VERSIONS"
     ${_args})
 
   # Check for required arguments.
@@ -106,9 +114,14 @@ function(drake_system_dependency NAME)
   if(DEFINED _sd_DEPENDS)
     set(_sd_DEPENDS DEPENDS "${_sd_DEPENDS}")
   endif()
+  if(_sd_PREFER_SYSTEM_VERSION)
+    set(_default ON)
+  else()
+    set(_default OFF)
+  endif()
 
   # Create option for using system version of external.
-  drake_option(USE_SYSTEM_${NAME} OFF
+  drake_option(USE_SYSTEM_${NAME} ${_default}
     "${_sd_DEPENDS}"
     "Use the system-provided"
     "${_sd_UNPARSED_ARGUMENTS}"
@@ -145,6 +158,17 @@ function(drake_system_dependency NAME)
 
   # If using system version, ensure it is available.
   if(USE_SYSTEM_${NAME})
+    set(_user_dir "${${NAME}_DIR}")
+    foreach(_version ${_sd_ADDITIONAL_VERSIONS})
+      find_package(${_sd_REQUIRES} ${_version} QUIET)
+      if(${NAME}_FOUND)
+        set(HAVE_${NAME} TRUE PARENT_SCOPE)
+        return()
+      endif()
+      set(${NAME}_DIR "${_user_dir}" CACHE PATH
+        "The directory containing a CMake configuration file for ${NAME}."
+        FORCE)
+    endforeach()
     find_package(${_sd_REQUIRES} ${_sd_VERSION} REQUIRED)
     set(HAVE_${NAME} TRUE PARENT_SCOPE)
   endif()
@@ -164,6 +188,25 @@ function(drake_optional_external NAME DEFAULT_STATE)
   drake_option(WITH_${NAME} ${DEFAULT_STATE} ${_args})
   set(WITH_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
   set(HAVE_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
+endfunction()
+
+#------------------------------------------------------------------------------
+# Set internal flag indicating whether or not to build an optional component.
+#
+# This sets the variables WITH_<NAME> and HAVE_<NAME>, indicating if the
+# specified external is available and will be built. These will be true iff
+# <WHEN> is also true.
+#------------------------------------------------------------------------------
+function(drake_dependent_external NAME WHEN)
+  string(REPLACE " " ";" WHEN "${WHEN}") # Force splitting
+  if(${WHEN})
+    set(_value ON)
+  else()
+    set(_value OFF)
+  endif()
+
+  set(WITH_${NAME} "${_value}" PARENT_SCOPE)
+  set(HAVE_${NAME} "${_value}" PARENT_SCOPE)
 endfunction()
 
 #------------------------------------------------------------------------------
@@ -190,8 +233,12 @@ macro(drake_setup_options)
     "Google command-line flags processing library")
 
   drake_system_dependency(
+    PYBIND11 OPTIONAL REQUIRES pybind11
+    DEPENDS "NOT DISABLE_PYTHON"
+    "Python/C++11 interoperability tool")
+
+  drake_system_dependency(
     LCM OPTIONAL REQUIRES lcm
-    DEPENDS "NOT USE_SANITIZER"
     "Lightweight Communications and Marshaling IPC suite")
 
   drake_system_dependency(
@@ -203,6 +250,15 @@ macro(drake_setup_options)
     ROBOTLOCOMOTION_LCMTYPES OPTIONAL REQUIRES robotlocomotion-lcmtypes
     DEPENDS "HAVE_BOT_CORE_LCMTYPES"
     "robotlocomotion LCM types")
+
+  drake_system_dependency(
+    VTK OPTIONAL PREFER_SYSTEM_VERSION REQUIRES VTK VERSION 5.10
+    ADDITIONAL_VERSIONS 5.8 --
+    "Visualization ToolKit")
+
+  drake_system_dependency(
+    TINYOBJLOADER REQUIRES tinyobjloader
+    "library for reading wavefront mesh files")
 
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
     "C++ library for reading and writing YAML configuration files")
@@ -216,15 +272,12 @@ macro(drake_setup_options)
   drake_optional_external(CCD ON "Convex shape Collision Detection library")
 
   drake_optional_external(DIRECTOR ON
-    DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
+    DEPENDS "HAVE_VTK\;HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
     "VTK-based visualization tool and robot user interface")
 
   drake_optional_external(GOOGLE_STYLEGUIDE ON
     DEPENDS "NOT DISABLE_PYTHON"
     "Google code style tools for cpplint.py style checking" ON)
-
-  drake_optional_external(HSRB_DESCRIPTION ON
-    "A ROS package containing a model of Toyota's HSR version B robot.")
 
   # IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB
   # compatibility issues:
@@ -232,6 +285,13 @@ macro(drake_setup_options)
   drake_optional_external(IPOPT ON
     DEPENDS "NOT APPLE OR NOT Matlab_FOUND\;NOT DISABLE_FORTRAN"
     "Interior Point Optimizer, for solving non-linear optimizations")
+
+  drake_optional_external(IGNITION_MATH ON
+    "Math classes and functions for robot applications")
+
+  drake_optional_external(IGNITION_RNDF ON
+    DEPENDS "WITH_IGNITION_MATH"
+    "Classes and functions for parsing RNDF road networks")
 
   drake_optional_external(LIBBOT ON
     DEPENDS "NOT USE_SANITIZER"
@@ -243,17 +303,13 @@ macro(drake_setup_options)
   drake_optional_external(OCTOMAP ON
     "3D occupancy mapping library\; provides oct-tree data structures")
 
+  # Needs to be below ccd and octomap.
+  drake_optional_external(FCL ON
+    DEPENDS "WITH_CCD\;WITH_OCTOMAP"
+    "Flexible collision detection library")
+
   drake_optional_external(SPDLOG ON
     "Fast C++ text logging facility\; disabling will turn off text logging")
-
-  drake_optional_external(SWIG_MATLAB ON
-    DEPENDS "NOT DISABLE_MATLAB OR NOT DISABLE_PYTHON"
-    "A version of SWIG with MATLAB support")
-
-  drake_optional_external(SWIGMAKE ON
-    DEPENDS "NOT DISABLE_MATLAB OR NOT DISABLE_PYTHON\;WITH_SWIG_MATLAB"
-    "Helper tools to build Python & MATLAB wrappers"
-    "for C++ libraries with Eigen")
 
   # END external projects that are ON by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -272,10 +328,6 @@ macro(drake_setup_options)
   # The following projects are default OFF when MATLAB is present and enabled.
   # Otherwise, they are hidden and default OFF. Some of them may also be hidden
   # on Windows regardless of the status of MATLAB.
-  drake_optional_external(IRIS OFF
-    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND\;WITH_MOSEK"
-    "fast approximate convex segmentation")
-
   drake_optional_external(YALMIP OFF
     DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
     "free optimization front-end for MATLAB")
@@ -288,11 +340,12 @@ macro(drake_setup_options)
     DEPENDS "NOT DISABLE_FORTRAN"
     "use w/ AVL to compute aerodynamic coefficients for airfoils")
 
-  drake_optional_external(DREAL OFF
-    "Non-linear SMT solver and automated reasoning tool")
-
   drake_optional_external(GUROBI OFF
     "Convex/integer optimization solver\; free for academics")
+
+  drake_optional_external(IRIS OFF
+    DEPENDS "WITH_MOSEK"
+    "fast approximate convex segmentation")
 
   drake_optional_external(MESHCONVERTERS OFF
     "uses vcglib to convert a few standard filetypes")
@@ -300,7 +353,7 @@ macro(drake_setup_options)
   drake_optional_external(MOSEK OFF
     "Convex optimization solver\; free for academics")
 
-  drake_optional_external(SIGNALSCOPE OFF DEPENDS "WITH_DIRECTOR"
+  drake_optional_external(SIGNALSCOPE OFF
     "Live plotting tool for LCM messages")
 
   drake_optional_external(SNOPT OFF
@@ -316,4 +369,15 @@ macro(drake_setup_options)
 
   # END external projects that are OFF by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # BEGIN indirectly optional external projects
+
+  # The following projects are enabled iff their related externals are enabled.
+  drake_dependent_external(CTK_PYTHON_CONSOLE
+    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
+  drake_dependent_external(PYTHONQT
+    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
+  drake_dependent_external(QT_PROPERTY_BROWSER
+    "WITH_DIRECTOR")
+
+  # END indirectly optional external projects
 endmacro()

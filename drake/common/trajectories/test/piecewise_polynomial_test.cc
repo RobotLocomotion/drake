@@ -1,13 +1,14 @@
+#include "drake/common/trajectories/piecewise_polynomial.h"
+
 #include <iostream>
 #include <random>
 #include <vector>
 
 #include <Eigen/Core>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 
 using Eigen::Matrix;
@@ -37,6 +38,12 @@ void testIntegralAndDerivative() {
   PiecewisePolynomialType piecewise =
       test::MakeRandomPiecewisePolynomial<CoefficientType>(
           rows, cols, num_coefficients, segment_times);
+
+  // derivative(0) should be same as original piecewise.
+  EXPECT_TRUE(
+      CompareMatrices(piecewise.value(piecewise.getStartTime()),
+                      piecewise.derivative(0).value(piecewise.getStartTime()),
+                      1e-10, MatrixCompareType::absolute));
 
   // differentiate integral, get original back
   PiecewisePolynomialType piecewise_back = piecewise.integral().derivative();
@@ -95,6 +102,7 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise1_minus_offset = piecewise1 - offset;
     PiecewisePolynomialType piecewise1_shifted = piecewise1;
     piecewise1_shifted.shiftRight(shift);
+    PiecewisePolynomialType product = piecewise1 * piecewise2;
 
     uniform_real_distribution<double> uniform(piecewise1.getStartTime(),
                                               piecewise1.getEndTime());
@@ -119,6 +127,11 @@ void testBasicFunctionality() {
     EXPECT_TRUE(CompareMatrices(piecewise1_shifted.value(t),
                                 piecewise1.value(t - shift), 1e-8,
                                 MatrixCompareType::absolute));
+
+    EXPECT_TRUE(CompareMatrices(
+        product.value(t),
+        (piecewise1.value(t).array() * piecewise2.value(t).array()).matrix(),
+        1e-8, MatrixCompareType::absolute));
   }
 }
 

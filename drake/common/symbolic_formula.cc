@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <set>
+#include <sstream>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/symbolic_environment.h"
@@ -20,14 +21,13 @@ using std::ostream;
 using std::ostringstream;
 using std::set;
 using std::shared_ptr;
-using std::static_pointer_cast;
 using std::string;
 
 bool operator<(FormulaKind k1, FormulaKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
 }
 
-Formula::Formula(const shared_ptr<FormulaCell> ptr) : ptr_{ptr} {}
+Formula::Formula(shared_ptr<FormulaCell> ptr) : ptr_{std::move(ptr)} {}
 
 FormulaKind Formula::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -39,7 +39,7 @@ size_t Formula::get_hash() const {
   return ptr_->get_hash();
 }
 
-symbolic::Variables Formula::GetFreeVariables() const {
+Variables Formula::GetFreeVariables() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->GetFreeVariables();
 }
@@ -79,6 +79,19 @@ bool Formula::Evaluate(const Environment& env) const {
   return ptr_->Evaluate(env);
 }
 
+Formula Formula::Substitute(const Variable& var, const Expression& e) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Formula{ptr_->Substitute({{var, e}})};
+}
+
+Formula Formula::Substitute(const Substitution& s) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  if (!s.empty()) {
+    return Formula{ptr_->Substitute(s)};
+  }
+  return *this;
+}
+
 string Formula::to_string() const {
   ostringstream oss;
   oss << *this;
@@ -112,34 +125,29 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
     return f1;
   }
   // Flattening
-  if (f1.get_kind() == FormulaKind::And) {
-    set<Formula> formulas1{
-        static_pointer_cast<FormulaAnd>(f1.ptr_)->get_formulas()};
-    if (f2.get_kind() == FormulaKind::And) {
+  if (is_conjunction(f1)) {
+    set<Formula> formulas{get_operands(f1)};
+    if (is_conjunction(f2)) {
       // (f1,1 ∧ ... f1,n) ∧ (f2,1 ∧ ... f2,m)
       // => (f1,1 ∧ ... f1,n ∧ f2,1 ∧ ... f2,m)
-      const set<Formula>& formulas2{
-          static_pointer_cast<FormulaAnd>(f2.ptr_)->get_formulas()};
-      formulas1.insert(formulas2.begin(), formulas2.end());
+      const set<Formula>& formulas2{get_operands(f2)};
+      formulas.insert(formulas2.begin(), formulas2.end());
     } else {
       // (f1,1 ∧ ... f1,n) ∧ f2
       // => (f1,1 ∧ ... f1,n ∧ f2)
-      formulas1.insert(f2);
+      formulas.insert(f2);
     }
-    return Formula{make_shared<FormulaAnd>(formulas1)};
-  } else {
-    if (f2.get_kind() == FormulaKind::And) {
-      // f1 ∧ (f2,1 ∧ ... f2,m)
-      // => (f1 ∧ f2,1 ∧ ... f2,m)
-      set<Formula> formulas2{
-          static_pointer_cast<FormulaAnd>(f2.ptr_)->get_formulas()};
-      formulas2.insert(f1);
-      return Formula{make_shared<FormulaAnd>(formulas2)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaAnd>(f1, f2)};
-    }
+    return Formula{make_shared<FormulaAnd>(formulas)};
   }
+  if (is_conjunction(f2)) {
+    // f1 ∧ (f2,1 ∧ ... f2,m)
+    // => (f1 ∧ f2,1 ∧ ... f2,m)
+    set<Formula> formulas{get_operands(f2)};
+    formulas.insert(f1);
+    return Formula{make_shared<FormulaAnd>(formulas)};
+  }
+  // Nothing to flatten.
+  return Formula{make_shared<FormulaAnd>(f1, f2)};
 }
 
 Formula operator||(const Formula& f1, const Formula& f2) {
@@ -156,14 +164,12 @@ Formula operator||(const Formula& f1, const Formula& f2) {
     return f1;
   }
   // Flattening
-  if (f1.get_kind() == FormulaKind::Or) {
-    set<Formula> formulas{
-        static_pointer_cast<FormulaOr>(f1.ptr_)->get_formulas()};
-    if (f2.get_kind() == FormulaKind::Or) {
+  if (is_disjunction(f1)) {
+    set<Formula> formulas{get_operands(f1)};
+    if (is_disjunction(f2)) {
       // (f1,1 ∨ ... f1,n) ∨ (f2,1 ∨ ... f2,m)
       // => (f1,1 ∨ ... f1,n ∨ f2,1 ∨ ... f2,m)
-      const set<Formula>& formulas2{
-          static_pointer_cast<FormulaOr>(f2.ptr_)->get_formulas()};
+      const set<Formula>& formulas2{get_operands(f2)};
       formulas.insert(formulas2.begin(), formulas2.end());
     } else {
       // (f1,1 ∨ ... f1,n) ∨ f2
@@ -171,19 +177,16 @@ Formula operator||(const Formula& f1, const Formula& f2) {
       formulas.insert(f2);
     }
     return Formula{make_shared<FormulaOr>(formulas)};
-  } else {
-    if (f2.get_kind() == FormulaKind::Or) {
-      // f1 ∨ (f2,1 ∨ ... f2,m)
-      // => (f1 ∨ f2,1 ∨ ... f2,m)
-      set<Formula> formulas{
-          static_pointer_cast<FormulaOr>(f2.ptr_)->get_formulas()};
-      formulas.insert(f1);
-      return Formula{make_shared<FormulaOr>(formulas)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaOr>(f1, f2)};
-    }
   }
+  if (is_disjunction(f2)) {
+    // f1 ∨ (f2,1 ∨ ... f2,m)
+    // => (f1 ∨ f2,1 ∨ ... f2,m)
+    set<Formula> formulas{get_operands(f2)};
+    formulas.insert(f1);
+    return Formula{make_shared<FormulaOr>(formulas)};
+  }
+  // Nothing to flatten.
+  return Formula{make_shared<FormulaOr>(f1, f2)};
 }
 
 Formula operator!(const Formula& f) {
@@ -196,9 +199,9 @@ Formula operator!(const Formula& f) {
   return Formula{make_shared<FormulaNot>(f)};
 }
 
-ostream& operator<<(ostream& os, const Formula& e) {
-  DRAKE_ASSERT(e.ptr_ != nullptr);
-  return e.ptr_->Display(os);
+ostream& operator<<(ostream& os, const Formula& f) {
+  DRAKE_ASSERT(f.ptr_ != nullptr);
+  return f.ptr_->Display(os);
 }
 
 Formula operator==(const Expression& e1, const Expression& e2) {
@@ -210,15 +213,6 @@ Formula operator==(const Expression& e1, const Expression& e2) {
   return Formula{make_shared<FormulaEq>(e1, e2)};
 }
 
-Formula operator==(const double v1, const Expression& e2) {
-  // Uses () to avoid a conflict between cpplint and clang-format.
-  return (Expression{v1}) == e2;
-}
-
-Formula operator==(const Expression& e1, const double v2) {
-  return e1 == Expression{v2};
-}
-
 Formula operator!=(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 != 0  =>  True
   const Expression diff{e1 - e2};
@@ -226,13 +220,6 @@ Formula operator!=(const Expression& e1, const Expression& e2) {
     return diff.Evaluate() != 0.0 ? Formula::True() : Formula::False();
   }
   return Formula{make_shared<FormulaNeq>(e1, e2)};
-}
-Formula operator!=(const double v1, const Expression& e2) {
-  // Uses () to avoid a conflict between cpplint and clang-format.
-  return (Expression{v1}) != e2;
-}
-Formula operator!=(const Expression& e1, const double v2) {
-  return e1 != Expression{v2};
 }
 
 Formula operator<(const Expression& e1, const Expression& e2) {
@@ -243,12 +230,6 @@ Formula operator<(const Expression& e1, const Expression& e2) {
   }
   return Formula{make_shared<FormulaLt>(e1, e2)};
 }
-Formula operator<(const double v1, const Expression& e2) {
-  return Expression{v1} < e2;
-}
-Formula operator<(const Expression& e1, const double v2) {
-  return e1 < Expression{v2};
-}
 
 Formula operator<=(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 <= 0  =>  True
@@ -257,12 +238,6 @@ Formula operator<=(const Expression& e1, const Expression& e2) {
     return diff.Evaluate() <= 0 ? Formula::True() : Formula::False();
   }
   return Formula{make_shared<FormulaLeq>(e1, e2)};
-}
-Formula operator<=(const double v1, const Expression& e2) {
-  return Expression{v1} <= e2;
-}
-Formula operator<=(const Expression& e1, const double v2) {
-  return e1 <= Expression{v2};
 }
 
 Formula operator>(const Expression& e1, const Expression& e2) {
@@ -273,12 +248,6 @@ Formula operator>(const Expression& e1, const Expression& e2) {
   }
   return Formula{make_shared<FormulaGt>(e1, e2)};
 }
-Formula operator>(const double v1, const Expression& e2) {
-  return Expression{v1} > e2;
-}
-Formula operator>(const Expression& e1, const double v2) {
-  return e1 > Expression{v2};
-}
 
 Formula operator>=(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 >= 0  =>  True
@@ -288,11 +257,109 @@ Formula operator>=(const Expression& e1, const Expression& e2) {
   }
   return Formula{make_shared<FormulaGeq>(e1, e2)};
 }
-Formula operator>=(const double v1, const Expression& e2) {
-  return Expression{v1} >= e2;
+
+Formula isnan(const Expression& e) {
+  return Formula{make_shared<FormulaIsnan>(e)};
 }
-Formula operator>=(const Expression& e1, const double v2) {
-  return e1 >= Expression{v2};
+
+Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m) {
+  return Formula{make_shared<FormulaPositiveSemidefinite>(m)};
+}
+
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
+Formula positive_semidefinite(const MatrixX<Expression>& m,
+                              const Eigen::UpLoType mode) {
+  switch (mode) {
+    case Eigen::Lower:
+      return Formula{make_shared<FormulaPositiveSemidefinite>(
+          m.triangularView<Eigen::Lower>())};
+    case Eigen::Upper:
+      return Formula{make_shared<FormulaPositiveSemidefinite>(
+          m.triangularView<Eigen::Upper>())};
+    default:
+      throw std::runtime_error(
+          "positive_semidefinite is called with a mode which is neither "
+          "Eigen::Lower nor Eigen::Upper.");
+  }
+}
+#endif  // EIGEN_VERSION...
+
+Formula operator==(const Variable& v1, const Variable& v2) {
+  return Expression{v1} == Expression{v2};
+}
+Formula operator!=(const Variable& v1, const Variable& v2) {
+  return Expression{v1} != Expression{v2};
+}
+Formula operator<(const Variable& v1, const Variable& v2) {
+  return Expression{v1} < Expression{v2};
+}
+Formula operator<=(const Variable& v1, const Variable& v2) {
+  return Expression{v1} <= Expression{v2};
+}
+Formula operator>(const Variable& v1, const Variable& v2) {
+  return Expression{v1} > Expression{v2};
+}
+Formula operator>=(const Variable& v1, const Variable& v2) {
+  return Expression{v1} >= Expression{v2};
+}
+
+bool is_false(const Formula& f) { return is_false(*f.ptr_); }
+bool is_true(const Formula& f) { return is_true(*f.ptr_); }
+bool is_equal_to(const Formula& f) { return is_equal_to(*f.ptr_); }
+bool is_not_equal_to(const Formula& f) { return is_not_equal_to(*f.ptr_); }
+bool is_greater_than(const Formula& f) { return is_greater_than(*f.ptr_); }
+bool is_greater_than_or_equal_to(const Formula& f) {
+  return is_greater_than_or_equal_to(*f.ptr_);
+}
+bool is_less_than(const Formula& f) { return is_less_than(*f.ptr_); }
+bool is_less_than_or_equal_to(const Formula& f) {
+  return is_less_than_or_equal_to(*f.ptr_);
+}
+bool is_relational(const Formula& f) {
+  return is_equal_to(f) || is_not_equal_to(f) || is_greater_than(f) ||
+         is_greater_than_or_equal_to(f) || is_less_than(f) ||
+         is_less_than_or_equal_to(f);
+}
+bool is_conjunction(const Formula& f) { return is_conjunction(*f.ptr_); }
+bool is_disjunction(const Formula& f) { return is_disjunction(*f.ptr_); }
+bool is_nary(const Formula& f) {
+  return is_conjunction(f) || is_disjunction(f);
+}
+bool is_negation(const Formula& f) { return is_negation(*f.ptr_); }
+bool is_forall(const Formula& f) { return is_forall(*f.ptr_); }
+bool is_isnan(const Formula& f) { return is_isnan(*f.ptr_); }
+bool is_positive_semidefinite(const Formula& f) {
+  return is_positive_semidefinite(*f.ptr_);
+}
+
+const Expression& get_lhs_expression(const Formula& f) {
+  DRAKE_ASSERT(is_relational(f));
+  return to_relational(f)->get_lhs_expression();
+}
+const Expression& get_rhs_expression(const Formula& f) {
+  DRAKE_ASSERT(is_relational(f));
+  return to_relational(f)->get_rhs_expression();
+}
+
+const set<Formula>& get_operands(const Formula& f) {
+  return to_nary(f)->get_operands();
+}
+
+const Formula& get_operand(const Formula& f) {
+  return to_negation(f)->get_operand();
+}
+
+const Variables& get_quantified_variables(const Formula& f) {
+  return to_forall(f)->get_quantified_variables();
+}
+
+const Formula& get_quantified_formula(const Formula& f) {
+  return to_forall(f)->get_quantified_formula();
+}
+
+const MatrixX<Expression>& get_matrix_in_positive_semidefinite(
+    const Formula& f) {
+  return to_positive_semidefinite(f)->get_matrix();
 }
 }  // namespace symbolic
 }  // namespace drake

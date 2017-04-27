@@ -1,8 +1,8 @@
-#include"drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 #include <cmath>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 
@@ -117,6 +117,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+  EXPECT_GT(integrator.get_num_derivative_evaluations(), 0);
 }
 
 }  // namespace

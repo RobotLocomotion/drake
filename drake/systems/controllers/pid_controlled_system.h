@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -60,6 +61,8 @@ namespace systems {
 template <typename T>
 class PidControlledSystem : public Diagram<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSystem)
+
   /// A constructor where the gains are scalar values and all of the plant's
   /// output port zero is part of the feedback signal.
   ///
@@ -67,8 +70,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kp the proportional constant.
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
-  PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      const T& Kp, const T& Ki, const T& Kd);
+  PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
+                      double Kd);
 
   /// A constructor where the gains are vector values and all of the plant's
   /// output port zero is part of the feedback signal. The length of the gain
@@ -83,8 +86,8 @@ class PidControlledSystem : public Diagram<T> {
   ///
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      const VectorX<T>& Kp, const VectorX<T>& Ki,
-                      const VectorX<T>& Kd);
+                      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                      const Eigen::VectorXd& Kd);
 
   /// A constructor where the gains are scalar values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -100,7 +103,7 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       std::unique_ptr<MatrixGain<T>> feedback_selector,
-                      const T& Kp, const T& Ki, const T& Kd);
+                      double Kp, double Ki, double Kd);
 
   /// A constructor where the gains are vector values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -123,47 +126,62 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       std::unique_ptr<MatrixGain<T>> feedback_selector,
-                      const VectorX<T>& Kp, const VectorX<T>& Ki,
-                      const VectorX<T>& Kd);
+                      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                      const Eigen::VectorXd& Kd);
 
   ~PidControlledSystem() override;
 
   System<T>* plant() { return plant_; }
 
   /// @return the input port for the feed forward control input.
-  const SystemPortDescriptor<T>& get_control_input_port() const {
+  const InputPortDescriptor<T>& get_control_input_port() const {
     return this->get_input_port(0);
   }
 
   /// @return the input port for the desired position/velocity state.
-  const SystemPortDescriptor<T>& get_state_input_port() const {
+  const InputPortDescriptor<T>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 
-  /// Creates a PidController and uses @p builder to connect
-  /// @plant_input and @p plant_output from an existing plant, adding
-  /// additional systems (adders, multiplexers, gains, etc.) as
-  /// needed.  Returns a pair of port descriptors.  The first is the
-  /// feed forward control input, the second is the feedback state
-  /// input.  @p controller will be populated with a pointer to the
-  /// newly created PidController.
-  static std::pair<const SystemPortDescriptor<T>,
-                   const SystemPortDescriptor<T>> ConnectController(
-                       const SystemPortDescriptor<T>& plant_input,
-                       const SystemPortDescriptor<T>& plant_output,
-                       std::unique_ptr<MatrixGain<T>> feedback_selector,
-                       const VectorX<T>& Kp, const VectorX<T>& Ki,
-                       const VectorX<T>& Kd,
-                       DiagramBuilder<T>* builder);
+  /// The return type of ConnectController.
+  struct ConnectResult {
+    /// The feed forward control input.
+    const InputPortDescriptor<T>& control_input_port;
+    /// The feedback state input.
+    const InputPortDescriptor<T>& state_input_port;
+  };
+
+  /// Creates a PidController and uses @p builder to connect @p plant_input and
+  /// @p plant_output from an existing plant, adding additional systems
+  /// (adders, multiplexers, gains, etc.) as needed.
+  static ConnectResult ConnectController(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
+      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+      const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
+
+  /// Creates a PidController with input saturation and uses @p builder to
+  /// connect @p plant_input and @p plant_output from an existing plant, adding
+  /// additional systems (adders, multiplexers, gains, saturation etc.) as
+  /// needed. Note that using input limits along with integral gain constant
+  /// may result in integral windup effects.
+  static ConnectResult ConnectControllerWithInputSaturation(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
+      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+      const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
+      const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);
 
  private:
   // A helper function for the constructors. This is necessary to avoid seg
-  // faults caused by simultaneously moving the plant and calling methods on the
-  // plant when one constructor delegates to another constructor.
-  void Initialize(
-    std::unique_ptr<System<T>> plant,
-    std::unique_ptr<MatrixGain<T>> feedback_selector,
-    const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd);
+  // faults caused by simultaneously moving the plant and calling methods on
+  // the plant when one constructor delegates to another constructor.
+  void Initialize(std::unique_ptr<System<T>> plant,
+                  std::unique_ptr<MatrixGain<T>> feedback_selector,
+                  const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                  const Eigen::VectorXd& Kd);
 
   System<T>* plant_{nullptr};
 };

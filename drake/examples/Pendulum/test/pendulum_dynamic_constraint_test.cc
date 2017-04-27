@@ -1,6 +1,4 @@
-
 #include <cmath>
-
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -28,7 +26,7 @@ GTEST_TEST(PendulumDirectCollocationConstraint,
 
   drake::systems::SystemDirectCollocationConstraint dut(pendulum, *context);
 
-  drake::TaylorVecXd result;
+  drake::AutoDiffVecXd result;
   dut.Eval(drake::math::initializeAutoDiff(x), result);
 
   // Expected values came from running the MATLAB code for

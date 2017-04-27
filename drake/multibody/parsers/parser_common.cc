@@ -1,16 +1,17 @@
 #include "drake/multibody/parsers/parser_common.h"
 
 #include <string>
+#include <utility>
 
 #include "spruce.hh"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/joints/drake_joint.h"
-#include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 
 using std::runtime_error;
 using std::string;
@@ -25,6 +26,40 @@ using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
 
+const char* const FloatingJointConstants::kFloatingJointName = "base";
+const char* const FloatingJointConstants::kWeldJointName = "weld";
+
+string GetFullPath(const string& file_name) {
+  string result = file_name;
+  if (result.empty()) {
+    throw std::runtime_error("drake::parsers::GetFullPath: ERROR: file_name is "
+                             "empty.");
+  }
+
+  const string prefix = "/";
+  if (result.substr(0, prefix.size()) == prefix) {
+    // The specified file is already an absolute path. The following code
+    // verifies that the file exists.
+    spruce::path path(file_name);
+    if (!path.isFile()) {
+      throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
+          "file_name \"" + file_name + "\" is not a file.");
+    }
+  } else {
+    // The specified file is a relative path. The following code obtains the
+    // full path and verifies that the file exists.
+    spruce::path path(".");
+    path.setAsCurrent();
+    path.append(file_name);
+    if (path.isFile()) {
+      result = path.getStr();
+    } else {
+      throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
+          "file_name \"" + file_name + "\" is not a file or does not exist.");
+    }
+  }
+  return result;
+}
 
 namespace {
 // Searches for key p package in package_map. If the key exists, this saves the
@@ -44,13 +79,13 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }  // anonymous namespace
 
 // The unit test that most directly covers this method is:
-// drake-distro/drake/multibody/test/parser_urdf_test/parser_urdf_test.cc.
+// drake/multibody/parsers/test/urdf_parser_test/urdf_parser_test.cc.
 string ResolveFilename(const string& filename, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path mesh_filename_spruce;
   spruce::path raw_filename_spruce(filename);
 
-  vector<std::string> split_filename = raw_filename_spruce.split();
+  vector<string> split_filename = raw_filename_spruce.split();
 
   if (split_filename.front() == "package:") {
     // A correctly formatted filename is:
@@ -122,25 +157,25 @@ int AddFloatingJoint(
     // If weld_to_frame is not specified, weld the newly added model(s) to the
     // world with zero offset.
     weld_to_body = tree->bodies[0].get();
-    floating_joint_name = "base";
+    floating_joint_name = FloatingJointConstants::kFloatingJointName;
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
     // If weld_to_frame is specified and the model is being welded to the world,
     // ensure the "body" variable within weld_to_frame is nullptr. Then, only
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
-    if (weld_to_frame->get_name()
-          == string(RigidBodyTree<double>::kWorldName)) {
+    if (weld_to_frame->get_name() ==
+        string(RigidBodyTreeConstants::kWorldName)) {
       if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw runtime_error(
             "AddFloatingJoint: Attempted to weld robot to the world while "
             "specifying a body link!");
       }
       weld_to_body = tree->bodies[0].get();  // the world's body
-      floating_joint_name = "base";
+      floating_joint_name = FloatingJointConstants::kFloatingJointName;
     } else {
       weld_to_body = weld_to_frame->get_mutable_rigid_body();
-      floating_joint_name = "weld";
+      floating_joint_name = FloatingJointConstants::kWeldJointName;
     }
     transform_to_world = weld_to_frame->get_transform_to_body();
   }

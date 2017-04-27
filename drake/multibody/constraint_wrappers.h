@@ -9,10 +9,10 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/solvers/mathematical_program.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace systems {
@@ -45,11 +45,12 @@ class SingleTimeKinematicConstraintWrapper : public drake::solvers::Constraint {
 
   ~SingleTimeKinematicConstraintWrapper() override;
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override;
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &q,
+              Eigen::VectorXd &y) const override;
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &tq,
+              AutoDiffVecXd &ty) const override;
 
  private:
   const SingleTimeKinematicConstraint* rigid_body_constraint_;
@@ -69,11 +70,12 @@ class QuasiStaticConstraintWrapper : public drake::solvers::Constraint {
 
   virtual ~QuasiStaticConstraintWrapper();
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override;
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &q,
+              Eigen::VectorXd &y) const override;
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd> &tq,
+              AutoDiffVecXd &ty) const override;
 
  private:
   const QuasiStaticConstraint* rigid_body_constraint_;

@@ -1,5 +1,8 @@
 #include "drake/multibody/rigid_body_frame.h"
 
+#include <memory>
+#include <utility>
+
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -14,6 +17,17 @@ RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
                                const Eigen::Vector3d& rpy)
     : name_(name), body_(body) {
   transform_to_body_.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+}
+
+template <typename T>
+std::shared_ptr<RigidBodyFrame<T>> RigidBodyFrame<T>::Clone(RigidBody<T>* body)
+    const {
+  auto frame = std::make_shared<RigidBodyFrame<T>>();
+  frame->set_name(name_);
+  frame->set_rigid_body(body);
+  frame->set_transform_to_body(transform_to_body_);
+  frame->set_frame_index(frame_index_);
+  return move(frame);
 }
 
 template <typename T>

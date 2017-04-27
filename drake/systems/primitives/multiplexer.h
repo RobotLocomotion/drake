@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -16,13 +17,15 @@ namespace systems {
 /// Instantiated templates for the following `T` values are provided:
 /// - double
 ///
-/// They are already available to link against in `libdrakeSystemsFramework`.
+/// They are already available to link against in the containing library.
 /// Currently, no other values for `T` are supported.
 ///
 /// @ingroup primitive_systems
 template <typename T>
 class Multiplexer : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Multiplexer)
+
   /// Constructs a %Multiplexer with `num_scalar_inputs` scalar-valued input
   /// ports, and one vector-valued output port of size `num_scalar_inputs`.
   explicit Multiplexer(int num_scalar_inputs);
@@ -31,10 +34,6 @@ class Multiplexer : public LeafSystem<T> {
   /// ports where the i-th input has size `input_sizes[i]`, and one vector-
   /// valued output port of size `sum(input_sizes)`.
   explicit Multiplexer(std::vector<int> input_sizes);
-
-  // Non-copyable.
-  Multiplexer(const Multiplexer<T>&) = delete;
-  Multiplexer& operator=(const Multiplexer<T>&) = delete;
 
  private:
   void DoCalcOutput(const Context<T>& context,

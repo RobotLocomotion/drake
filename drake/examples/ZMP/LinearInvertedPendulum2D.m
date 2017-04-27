@@ -20,8 +20,11 @@ classdef LinearInvertedPendulum2D < LinearSystem
       obj.h = h; 
       obj.g = g;
       
-      cartstateframe = CartTable2DState;
-      obj = setInputFrame(obj,CartTable2DInput);
+      path_to_this_file = fileparts(which(mfilename));
+      obj.manip = PlanarRigidBodyManipulator(fullfile(path_to_this_file,'CartTable.urdf'),struct('floating',true,'view','right'));
+      cartstateframe = obj.manip.getStateFrame();
+      
+      obj = setInputFrame(obj,obj.manip.getInputFrame());
       sframe = SingletonCoordinateFrame('LIMP2DState',2,'x',{'x_com','xdot_com'});
       if isempty(findTransform(sframe,cartstateframe))
         addTransform(sframe,AffineTransform(sframe,cartstateframe,sparse([4 8],[1 2],[1 1],8,2),zeros(8,1)));
@@ -35,7 +38,7 @@ classdef LinearInvertedPendulum2D < LinearSystem
     end
     
     function v = constructVisualizer(obj)
-      v = MultiVisualizer({CartTable2DVisualizer,ZMP2DVisualizer,desiredZMP2DVisualizer});
+      v = constructVisualizer(obj.manip);
     end
     
     function varargout = lqr(obj,com0)
@@ -214,7 +217,9 @@ classdef LinearInvertedPendulum2D < LinearSystem
       v = r.constructVisualizer();
       dZMP = setOutputFrame(ConstantTrajectory([0]),desiredZMP1D); 
       ytraj = r.simulate([0 3],[0;.1]);
-      v.playback([ytraj;dZMP]);
+      figure(2); clf; hold on;
+      fnplt(ytraj(3));
+      v.playback(ytraj);
     end
     
     function runLQR
@@ -231,7 +236,9 @@ classdef LinearInvertedPendulum2D < LinearSystem
 
       for i=1:5;
         ytraj = sys.simulate([0 5],randn(2,1));
-        v.playback([ytraj;dZMP]);
+        figure(2); clf; hold on;
+        fnplt(ytraj(3));
+        v.playback(ytraj);
       end
     end
     
@@ -249,12 +256,16 @@ classdef LinearInvertedPendulum2D < LinearSystem
       v = r.constructVisualizer();
       
       ytraj = sys.simulate(dZMP.tspan,randn(2,1));
-      v.playback([ytraj;dZMP]);
+      figure(2); clf; hold on;
+      h = fnplt(dZMP); set(h,'Color','r');
+      fnplt(ytraj(3));
+      v.playback(ytraj);
     end
   end
   
   properties
     h
     g
+    manip
   end
 end

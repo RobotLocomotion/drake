@@ -3,17 +3,20 @@
 build -c opt
 
 # Default build options.
+build --force_pic
 build --strip=never
-build --copt -Werror=all
-build --cxxopt -std=c++1y
+build --crosstool_top=//tools:default-toolchain
+# Only show warnings from Drake, not from externals.
+build --output_filter="^//"
 
 # Default test options.
 test --test_output=errors
 
-# By default, disable targets that require proprietary software.
-# -- Any targets that require Gurobi must have the tag "gurobi".
-build --build_tag_filters=-gurobi
-test --test_tag_filters=-gurobi
+# By default, disable execution of tests that require proprietary software.
+# Individual targets that use proprietary software are responsible for ensuring
+# they can also build without it, typically by using a select statement.
+# config_setting rules for proprietary software are provided in //tools.
+test --test_tag_filters=-gurobi,-mosek,-snopt
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GUROBI_PATH environment variable must be the
@@ -25,63 +28,157 @@ test --test_tag_filters=-gurobi
 # -- the tag "exclusive", to rate-limit license servers with a small number of
 # -- licenses.
 # -- TODO(david-german-tri): Find a better fix for the license server problem.
+#
+# -- To run tests that require Gurobi, also specify a custom set of
+# -- test_tag_filters that does not exclude the "gurobi" tag.
 build:gurobi --define=WITH_GUROBI=ON
 # -- By default, Gurobi looks for the license file in the homedir.
 test:gurobi --test_env=HOME
 # -- If set, the GRB_LICENSE_FILE path takes precedence.
 test:gurobi --test_env=GRB_LICENSE_FILE
-# -- This configuration runs only tests that require Gurobi.
-test:gurobi --test_tag_filters=gurobi
+
+### A configuration that enables MOSEK. ###
+# -- To use this config, you must have a MOSEK license file installed to
+# -- $HOME/mosek/mosek.lic.
+#
+# -- To run tests that require MOSEK, also specify a set of test_tag_filters
+# -- that does not exclude the "mosek" tag.
+build:mosek --define=WITH_MOSEK=ON
+# -- MOSEK looks for its license file at $HOME/mosek/mosek.lic
+test:mosek --test_env=HOME
+
+### A configuration that enables SNOPT. ###
+# -- To use this config, you must have access to the private repository
+# -- RobotLocomotion/snopt on GitHub, and your local git must be configured
+# -- with SSH keys as documented at http://drake.mit.edu/from_source.html.
+#
+# -- To run tests that require SNOPT, also specify a set of test_tag_filters
+# -- that does not exclude the "snopt" tag.
+build:snopt --define=WITH_SNOPT=ON
 
 ### A configuration that enables all optional dependencies. ###
-# This is probably only useful for CI.
 test:everything --test_tag_filters=
 
 # -- Options for Gurobi.
 build:everything --define=WITH_GUROBI=ON
-test:everything --test_env=HOME
 test:everything --test_env=GRB_LICENSE_FILE
+# -- Options for MOSEK.
+build:everything --define=WITH_MOSEK=ON
+# -- Options for Gurobi and MOSEK.
+test:everything --test_env=HOME
+# -- Options for SNOPT.
+build:everything --define=WITH_SNOPT=ON
 
-### Clang. ###
-build:clang --compiler=clang-3.9
-build:clang --crosstool_top=//tools:default-toolchain
+### Unsupported Crosstool ###
+# Use the default Bazel-generated CROSSTOOL.
+# This may be useful for developers with unsupported workstation configurations.
+build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 
-### Coverage build. ###
-build:coverage --copt -g
-build:coverage --copt -fprofile-arcs -ftest-coverage
-build:coverage --linkopt -fprofile-arcs -ftest-coverage
+### git submodules
+# If a CMake build is performed from the same source tree, it will checkout git
+# submodules, and if they have BUILD files then `bazel build //...` will find
+# them and complain that the paths don't line up correctly anymore.  Here, we
+# manually list out all git submodule externals' BUILD files.
+#
+# TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
+build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c,externals/protobuf,externals/protobuf/util/python
+
+### Cpplint. ###
+# By default, cpplint tests are run as part of `bazel test` alongside all of
+# the other compilation and test targets.  This is a convenience shortcut to
+# only do the cpplint testing and nothing else.
+test:cpplint --build_tests_only
+test:cpplint --test_tag_filters=cpplint
+
+### Debug symbols on OS X. ###
+# See https://github.com/bazelbuild/bazel/issues/2537
+build:apple_debug --spawn_strategy=standalone
+build:apple_debug --genrule_strategy=standalone
+build:apple_debug --compilation_mode=dbg
+
+# We don't actually use APPLE_DEBUG in code. It's just here to invalidate any
+# sandboxed .o files that might be in cache if a developer tried to build
+# with --compilation_mode=dbg instead of --config=apple_debug.
+build:apple_debug --copt="-DAPPLE_DEBUG"
+
+### Kcov coverage build. ###
+build:kcov --copt -g
+build:kcov --copt -O0
+test:kcov --spawn_strategy=standalone
+test:kcov --run_under //tools:kcov
+test:kcov --local_test_jobs=1
+test:kcov --test_tag_filters=-cpplint,-gurobi,-pycodestyle
+test:kcov --nocache_test_results
 
 ### ASan build. ###
 build:asan --action_env=ASAN_OPTIONS
+build:asan --copt -g
 build:asan --copt -fsanitize=address
 build:asan --copt -O1
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
+test:asan --test_env=ASAN_OPTIONS
+test:asan --test_env=ASAN_SYMBOLIZER_PATH
+test:asan --test_tag_filters=-cpplint,-pycodestyle
+# Typical slowdown introduced by AddressSanitizer is 2x.
+# See https://clang.llvm.org/docs/AddressSanitizer.html
+test:asan --test_timeout=120,600,1800,7200
 
 ### LSan build. ###
 build:lsan --action_env=LSAN_OPTIONS
+build:lsan --copt -g
 build:lsan --copt -fsanitize=leak
 build:lsan --copt -O1
 build:lsan --copt -fno-omit-frame-pointer
 build:lsan --linkopt -fsanitize=leak
+test:lsan --test_env=LSAN_OPTIONS
+test:lsan --test_env=LSAN_SYMBOLIZER_PATH
+test:lsan --test_tag_filters=-cpplint,-pycodestyle
+
+### MSan build. ###
+build:msan --action_env=MSAN_OPTIONS
+build:msan --copt -g
+build:msan --copt -fsanitize=memory
+build:msan --copt -O1
+build:msan --copt -fno-omit-frame-pointer
+build:msan --linkopt -fsanitize=memory
+test:msan --test_tag_filters=-cpplint,-pycodestyle
+test:msan --test_env=MSAN_OPTIONS
+test:msan --test_env=MSAN_SYMBOLIZER_PATH
+# Typical slowdown introduced by MemorySanitizer is 3x.
+# See https://clang.llvm.org/docs/MemorySanitizer.html
+test:msan --test_timeout=180,900,2700,10800
 
 ### TSan build. ###
 build:tsan --action_env=TSAN_OPTIONS
+build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
 build:tsan --linkopt -fsanitize=thread
+test:tsan --test_env=TSAN_OPTIONS
+test:tsan --test_tag_filters=-cpplint,-pycodestyle
+# Typical slowdown introduced by ThreadSanitizer is about 5x-15x
+# See https://clang.llvm.org/docs/ThreadSanitizer.html
+test:tsan --test_timeout=300,1500,5400,18000
 
 ### UBSan build. ###
 build:ubsan --action_env=UBSAN_OPTIONS
+build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
+test:ubsan --test_env=UBSAN_OPTIONS
+test:ubsan --test_tag_filters=-cpplint,-pycodestyle
 
 ### Memcheck build. ###
 build:memcheck --copt -g
 build:memcheck --run_under=//tools:valgrind
+test:memcheck --test_tag_filters=-cpplint,-pycodestyle,-sh_script
+# Slowdown factor can range from 5-100.
+# See http://valgrind.org/info/about.html
+test:memcheck --test_timeout=300,1500,5400,18000
 
 # Fast memcheck.
 #
@@ -93,3 +190,7 @@ build:memcheck --run_under=//tools:valgrind
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools:valgrind
+test:fastmemcheck --test_tag_filters=-cpplint,-pycodestyle,-sh_script
+# Slowdown factor can range from 5-100.
+# See http://valgrind.org/info/about.html
+test:fastmemcheck --test_timeout=300,1500,5400,18000

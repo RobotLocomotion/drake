@@ -1,20 +1,40 @@
-#include <typeinfo>
+#include "drake/solvers/mathematical_program.h"
 
-#include "gtest/gtest.h"
+#include <algorithm>
+#include <functional>
+#include <limits>
+#include <map>
+#include <memory>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/monomial.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/test/is_dynamic_castable.h"
+#include "drake/common/test/symbolic_test_util.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
-#include "drake/solvers/ipopt_solver.h"
-#include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/nlopt_solver.h"
-#include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/test/generic_trivial_costs.h"
+#include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
 using Eigen::Matrix;
 using Eigen::Matrix2d;
+using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -24,10 +44,33 @@ using Eigen::VectorXd;
 
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
+using drake::symbolic::Expression;
+using drake::symbolic::Formula;
+using drake::symbolic::Variable;
+using drake::symbolic::test::ExprEqual;
+
+using std::all_of;
+using std::cref;
+using std::enable_if;
+using std::endl;
+using std::is_permutation;
+using std::is_same;
+using std::make_shared;
+using std::map;
+using std::move;
+using std::numeric_limits;
+using std::ostringstream;
+using std::runtime_error;
+using std::set;
+using std::shared_ptr;
+using std::static_pointer_cast;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 
 namespace drake {
 namespace solvers {
-namespace {
+namespace test {
 
 struct Movable {
   Movable() = default;
@@ -60,1051 +103,1882 @@ struct Unique {
 };
 // TODO(naveenoid) : tests need to be purged of Random initializations.
 
+// Check the index, type and name etc of the newly added variables.
+// This function only works if the only variables contained in @p prog are @p
+// var.
+template <typename Derived>
+void CheckAddedVariable(const MathematicalProgram& prog,
+                        const Eigen::MatrixBase<Derived>& var,
+                        const string& var_name, bool is_symmetric,
+                        MathematicalProgram::VarType type_expected) {
+  // Checks the name of the newly added variables.
+  ostringstream msg_buff;
+  msg_buff << var << endl;
+  EXPECT_EQ(msg_buff.str(), var_name);
+  // Checks num_vars() function.
+  const int num_new_vars =
+      is_symmetric ? var.rows() * (var.rows() + 1) / 2 : var.size();
+  EXPECT_EQ(prog.num_vars(), num_new_vars);
+  // Checks if the newly added variable is symmetric.
+  EXPECT_EQ(math::IsSymmetric(var), is_symmetric);
+  // Checks the indices of the newly added variables.
+  if (is_symmetric) {
+    int var_count = 0;
+    for (int j = 0; j < var.cols(); ++j) {
+      for (int i = j; i < var.rows(); ++i) {
+        EXPECT_EQ(prog.FindDecisionVariableIndex(var(i, j)), var_count);
+        ++var_count;
+      }
+    }
+  } else {
+    for (int i = 0; i < var.rows(); ++i) {
+      for (int j = 0; j < var.cols(); ++j) {
+        EXPECT_EQ(prog.FindDecisionVariableIndex(var(i, j)),
+                  j * var.rows() + i);
+      }
+    }
+  }
+
+  // Checks the type of the newly added variables.
+  const auto& variable_types = prog.DecisionVariableTypes();
+  for (int i = 0; i < var.rows(); ++i) {
+    for (int j = 0; j < var.cols(); ++j) {
+      EXPECT_EQ(variable_types[prog.FindDecisionVariableIndex(var(i, j))],
+                type_expected);
+      EXPECT_EQ(prog.DecisionVariableType(var(i, j)), type_expected);
+    }
+  }
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
+  // Adds a dynamic-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables(2, 3, "X");
+  static_assert(is_same<decltype(X), MatrixXDecisionVariable>::value,
+                "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
+                     false, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariable2) {
+  // Adds a static-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables<2, 3>("X");
+  static_assert(is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
+                "should be a static sized matrix");
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
+                     false, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariable3) {
+  // Adds a dynamic-sized vector of continuous variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  static_assert(is_same<decltype(x), VectorXDecisionVariable>::value,
+                "Should be a VectorXDecisionVariable object.");
+  EXPECT_EQ(x.rows(), 4);
+  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false,
+                     MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
+  // Adds a static-sized vector of continuous variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  static_assert(is_same<decltype(x), VectorDecisionVariable<4>>::value,
+                "Should be a VectorXDecisionVariable object.");
+  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false,
+                     MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddSymmetricVariable1) {
+  // Adds a static-sized symmetric matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>("X");
+  static_assert(is_same<decltype(X), MatrixDecisionVariable<3, 3>>::value,
+                "should be a MatrixDecisionVariable<3> object");
+  CheckAddedVariable(
+      prog, X,
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)\n",
+      true, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddSymmetricVariable2) {
+  // Adds a dynamic-sized symmetric matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables(3, "X");
+  static_assert(is_same<decltype(X), MatrixXDecisionVariable>::value,
+                "should be a MatrixXDecisionVariable object");
+  EXPECT_EQ(X.rows(), 3);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(
+      prog, X,
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)\n",
+      true, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddBinaryVariable1) {
+  // Adds a dynamic-sized matrix of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables(2, 3, "B");
+  static_assert(is_same<decltype(X), MatrixXDecisionVariable>::value,
+                "wrong type");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n",
+                     false, MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddVariable, testAddBinaryVariable3) {
+  // Adds dynamic-sized vector of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables(4, "B");
+  static_assert(is_same<decltype(X), VectorXDecisionVariable>::value,
+                "wrong type");
+  EXPECT_EQ(X.rows(), 4);
+  CheckAddedVariable(prog, X, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
+                     MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
+  // Adds static-sized vector of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables<4>("B");
+  static_assert(is_same<decltype(X), VectorDecisionVariable<4>>::value,
+                "wrong type");
+  CheckAddedVariable(prog, X, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
+                     MathematicalProgram::VarType::BINARY);
+}
+
+template <typename Derived1, typename Derived2>
+typename enable_if<is_same<typename Derived1::Scalar, Variable>::value &&
+                   is_same<typename Derived2::Scalar, double>::value>::type
+CheckGetSolution(const MathematicalProgram& prog,
+                 const Eigen::MatrixBase<Derived1>& vars,
+                 const Eigen::MatrixBase<Derived2>& val_expected) {
+  auto val = prog.GetSolution(vars);
+  static_assert(
+      is_same<decltype(val), Eigen::Matrix<double, Derived1::RowsAtCompileTime,
+                                           Derived1::ColsAtCompileTime>>::value,
+      "GetSolution does not return the right type of matrix");
+  EXPECT_TRUE(CompareMatrices(val, val_expected));
+
+  // Checks getting solution for a single variable.
+  for (int i = 0; i < vars.rows(); ++i) {
+    for (int j = 0; j < vars.cols(); ++j) {
+      EXPECT_NEAR(prog.GetSolution(vars(i, j)), val(i, j), 1E-14);
+    }
+  }
+}
+
+GTEST_TEST(testGetSolution, testSetSolution1) {
+  // Tests setting and getting solution for
+  // 1. A static-sized  matrix of decision variables.
+  // 2. A dynamic-sized matrix of decision variables.
+  // 3. A static-sized  vector of decision variables.
+  // 4. A dynamic-sized vector of decision variables.
+  MathematicalProgram prog;
+  auto X1 = prog.NewContinuousVariables<2, 3>("X");
+  auto X2 = prog.NewContinuousVariables(2, 3, "X");
+  auto x3 = prog.NewContinuousVariables<4>("x");
+  auto x4 = prog.NewContinuousVariables(4, "x");
+
+  Eigen::Matrix<double, 2, 3> X1_value{};
+  X1_value << 0, 1, 2, 3, 4, 5;
+  Eigen::Matrix<double, 2, 3> X2_value{};
+  X2_value = -X1_value;
+  Eigen::Vector4d x3_value(3, 4, 5, 6);
+  Eigen::Vector4d x4_value = -x3_value;
+  for (int i = 0; i < 3; ++i) {
+    prog.SetDecisionVariableValues(X1.col(i), X1_value.col(i));
+    prog.SetDecisionVariableValues(X2.col(i), X2_value.col(i));
+  }
+  prog.SetDecisionVariableValues(x3, x3_value);
+  prog.SetDecisionVariableValues(x4, x4_value);
+
+  CheckGetSolution(prog, X1, X1_value);
+  CheckGetSolution(prog, X2, X2_value);
+  CheckGetSolution(prog, x3, x3_value);
+  CheckGetSolution(prog, x4, x4_value);
+
+  // Check a variable that is not a decision variable of the mathematical
+  // program.
+  Variable z1("z1");
+  Variable z2("z2");
+  EXPECT_THROW(prog.GetSolution(z1), runtime_error);
+  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, z2)),
+               runtime_error);
+  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
+               runtime_error);
+}
+
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
-  prog.AddContinuousVariables<1>();
+  auto x = prog.NewContinuousVariables<1>();
 
   Movable movable;
-  prog.AddCost(std::move(movable));
-  prog.AddCost(Movable());
+  prog.AddCost(std::move(movable), x);
+  prog.AddCost(Movable(), x);
 
   Copyable copyable;
-  prog.AddCost(copyable);
+  prog.AddCost(copyable, x);
 
   Unique unique;
-  prog.AddCost(std::cref(unique));
-  prog.AddCost(std::make_shared<Unique>());
-  prog.AddCost(std::unique_ptr<Unique>(new Unique));
+  prog.AddCost(cref(unique), x);
+  prog.AddCost(make_shared<Unique>(), x);
+  prog.AddCost(unique_ptr<Unique>(new Unique), x);
 }
 
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-void CheckSolverType(MathematicalProgram& prog,
-                     std::string desired_solver_name) {
-  std::string solver_name;
-  int solver_result;
-  prog.GetSolverResult(&solver_name, &solver_result);
-  EXPECT_EQ(solver_name, desired_solver_name);
-}
+GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
+  // Test the scalar version of the bounding box constraint methods.
 
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-void RunNonlinearProgram(MathematicalProgram& prog,
-                         std::function<void(void)> test_func) {
-  IpoptSolver ipopt_solver;
-  NloptSolver nlopt_solver;
-  SnoptSolver snopt_solver;
-
-  std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-      std::make_pair("SNOPT", &snopt_solver),
-      std::make_pair("NLopt", &nlopt_solver),
-      std::make_pair("Ipopt", &ipopt_solver)};
-
-  for (const auto& solver : solvers) {
-    if (!solver.second->available()) {
-      continue;
-    }
-    SolutionResult result = SolutionResult::kUnknownError;
-    ASSERT_NO_THROW(result = solver.second->Solve(prog)) << "Using solver: "
-                                                         << solver.first;
-    EXPECT_EQ(result, SolutionResult::kSolutionFound) << "Using solver: "
-                                                      << solver.first;
-    EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
-  }
-}
-
-GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
-  // A simple test program to test if the bounding box constraints are added
-  // correctly.
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(4);
+  auto x1 = prog.NewContinuousVariables<2, 2>("x1");
+  MatrixXDecisionVariable x2(2, 2);
+  x2 = x1;
+  VectorDecisionVariable<4> x3;
+  x3 << x1.col(0), x1.col(1);
+  VectorXDecisionVariable x4(4);
+  x4 = x3;
+  // Six different ways to construct an equivalent constraint.
+  // 1. Imposes constraint on a static-sized matrix of decision variables.
+  // 2. Imposes constraint on a list of vectors of decision variables.
+  // 3. Imposes constraint on a dynamic-sized matrix of decision variables.
+  // 4. Imposes constraint on a static-sized vector of decision variables.
+  // 5. Imposes constraint on a dynamic-sized vector of decision variables.
+  // 6. Imposes constraint using a vector of lower/upper bound, as compared
+  //    to the previous three cases which use a scalar lower/upper bound.
+  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1).constraint();
+  auto constraint2 =
+      prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)}).constraint();
+  auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2).constraint();
+  auto constraint4 = prog.AddBoundingBoxConstraint(0, 1, x3).constraint();
+  auto constraint5 = prog.AddBoundingBoxConstraint(0, 1, x4).constraint();
+  auto constraint6 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
+                                                   Eigen::Vector4d::Ones(), x3)
+                         .constraint();
 
-  // Deliberately add two constraints on overlapped decision variables.
-  // For x(1), the lower bound of the second constraint are used; while
-  // the upper bound of the first variable is used.
-  DecisionVariableVector<2> variable_vec(x(1), x(3));
-  prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(-0.2, -1),
-                                {variable_vec});
-  prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, 1, -0.1),
-                                {x.head(3)});
-
-  Vector4d lb(-1, -0.5, -3, -2);
-  Vector4d ub(2, -0.2, -0.1, -1);
-  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
+  // Checks that the bound variables are correct.
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    EXPECT_EQ(binding.GetNumElements(), 4u);
+    VectorDecisionVariable<4> x_expected;
+    x_expected << x1(0, 0), x1(1, 0), x1(0, 1), x1(1, 1);
     for (int i = 0; i < 4; ++i) {
-      EXPECT_GE(x_value(i), lb(i) - 1E-10);
-      EXPECT_LE(x_value(i), ub(i) + 1E-10);
+      EXPECT_EQ(binding.variables()(i), x_expected(i));
     }
-  });
-}
-
-GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
-  MathematicalProgram prog;
-
-  // First, add four variables set equal by four equations
-  // to equal a random vector
-  auto x = prog.AddContinuousVariables<4>();
-
-  auto x2 = x(2);
-  auto xhead = x.head(3);
-
-  Vector4d b = Vector4d::Random();
-  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
-
-  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
-  prog.Solve();
-  auto x_value = GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
-
-  EXPECT_NEAR(b(2), x2.value(), 1e-10);
-
-  const auto& xhead_value = GetSolution(xhead);
-  EXPECT_TRUE(CompareMatrices(b.head(3), xhead_value, 1e-10,
-                              MatrixCompareType::absolute));
-
-  EXPECT_NEAR(b(2), xhead_value(2), 1e-10);  // a segment of a segment.
-
-  CheckSolverType(prog, "Linear System Solver");
-
-  // Add two more variables with a very slightly more complicated
-  // constraint and solve again. Should still be a linear system.
-  auto y = prog.AddContinuousVariables<2>();
-  prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
-  prog.Solve();
-  const auto& y_value = GetSolution(y);
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y_value, 1e-10,
-                              MatrixCompareType::absolute));
-  x_value = GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
-  CheckSolverType(prog, "Linear System Solver");
-
-  // Now modify the original constraint by its handle
-  con->UpdateConstraint(3 * Matrix4d::Identity(), b);
-  prog.Solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
-                              GetSolution(y), 1e-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x),
-                              1e-10, MatrixCompareType::absolute));
-  CheckSolverType(prog, "Linear System Solver");
-
-  std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
-      Vector2d::Constant(-1000.0), Vector2d::Constant(1000.0)));
-  prog.AddConstraint(bbcon, {x.head(2)});
-
-  // Now solve as a nonlinear program.
-  RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
-                                GetSolution(y), 1e-10,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(b / 3, GetSolution(x),
-                                1e-10, MatrixCompareType::absolute));
-  });
-}
-
-GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
-  MathematicalProgram prog;
-
-  auto vars = prog.AddContinuousVariables<2>();
-
-  // Use a non-square matrix to catch row/column mistakes in the solvers.
-  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(0, 1),
-                                   Vector1d::Constant(1));
-  prog.SetInitialGuess(vars, Vector2d(2, 2));
-  RunNonlinearProgram(prog, [&]() {
-    const auto& vars_value = GetSolution(vars);
-    EXPECT_DOUBLE_EQ(vars_value(0), 2);
-    EXPECT_DOUBLE_EQ(vars_value(1), 1);
-  });
-}
-
-// Tests a quadratic optimization problem, with only quadratic cost
-// 0.5 *x'*Q*x + b'*x
-// The optimal solution is -inverse(Q)*b
-GTEST_TEST(testMathematicalProgram, QuadraticCost) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<4>();
-
-  Vector4d Qdiag(1.0, 2.0, 3.0, 4.0);
-  Matrix4d Q = Qdiag.asDiagonal();
-  Q(1, 2) = 0.1;
-  Q(2, 3) = -0.02;
-
-  Vector4d b(1.0, -0.5, 1.3, 2.5);
-  prog.AddQuadraticCost(Q, b);
-
-  Matrix4d Q_transpose = Q;
-  Q_transpose.transposeInPlace();
-  Matrix4d Q_symmetric = 0.5 * (Q + Q_transpose);
-  Vector4d expected = -Q_symmetric.ldlt().solve(b);
-  prog.SetInitialGuess(x, Vector4d::Zero());
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-6, MatrixCompareType::absolute));
-  });
-}
-
-// This test comes from Section 2.2 of "Handbook of Test Problems in
-// Local and Global Optimization."
-class TestProblem1Cost {
- public:
-  static size_t numInputs() { return 5; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
-           (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
-           (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
-           (47.5 * x(4));
   }
-};
-
-GTEST_TEST(testMathematicalProgram, testProblem1) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<5>();
-  prog.AddCost(TestProblem1Cost());
-  VectorXd constraint(5);
-  constraint << 20, 12, 11, 7, 4;
-  prog.AddLinearConstraint(
-      constraint.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(40));
-  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
-                                MatrixXd::Constant(5, 1, 1));
-  VectorXd expected(5);
-  expected << 1, 1, 0, 1, 0;
-
-  // IPOPT has difficulty with this problem depending on the initial
-  // conditions, which is why the initial guess varies so little.
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
-  });
-}
-
-// This test is identical to testProblem1 above but the cost is
-// framed as a QP instead.
-GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<5>();
-
-  Eigen::MatrixXd Q = -100 * Eigen::Matrix<double, 5, 5>::Identity();
-  Eigen::VectorXd c(5);
-  c << 42, 44, 45, 47, 47.5;
-
-  prog.AddQuadraticCost(Q, c);
-
-  VectorXd constraint(5);
-  constraint << 20, 12, 11, 7, 4;
-  prog.AddLinearConstraint(constraint.transpose(),
-                           -std::numeric_limits<double>::infinity(), 40);
-  EXPECT_EQ(prog.linear_constraints().size(), 1u);
-  EXPECT_EQ(prog.generic_constraints().size(), 0u);
-
-  prog.AddBoundingBoxConstraint(MatrixXd::Constant(5, 1, 0),
-                                MatrixXd::Constant(5, 1, 1));
-  VectorXd expected(5);
-  expected << 1, 1, 0, 1, 0;
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
-  });
-}
-
-// This test comes from Section 2.3 of "Handbook of Test Problems in
-// Local and Global Optimization."
-class TestProblem2Cost {
- public:
-  static size_t numInputs() { return 6; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
-           (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
-           (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
-           (-1.5 * x(4)) + (-10.0 * x(5));
-  }
-};
-
-GTEST_TEST(testMathematicalProgram, testProblem2) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<6>();
-  prog.AddCost(TestProblem2Cost());
-  VectorXd constraint1(6), constraint2(6);
-  constraint1 << 6, 3, 3, 2, 1, 0;
-  prog.AddLinearConstraint(
-      constraint1.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6.5));
-  constraint2 << 10, 0, 10, 0, 0, 1;
-  prog.AddLinearConstraint(
-      constraint2.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(20));
-  Eigen::VectorXd lower(6);
-  lower << 0, 0, 0, 0, 0, 0;
-  Eigen::VectorXd upper(6);
-  upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
-  prog.AddBoundingBoxConstraint(lower, upper);
-  VectorXd expected(6);
-  expected << 0, 1, 0, 1, 1, 20;
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
-  // This test seems to be fairly sensitive to how much the randomness
-  // causes the initial guess to deviate, so the tolerance is a bit
-  // larger than others.  IPOPT is particularly sensitive here.
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
-  });
-}
-
-// This test is identical to testProblem2 above but the cost is
-// framed as a QP instead.
-GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<6>();
-  MatrixXd Q = -100.0 * MatrixXd::Identity(6, 6);
-  Q(5, 5) = 0.0;
-  VectorXd c(6);
-  c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
-
-  prog.AddQuadraticCost(Q, c);
-
-  VectorXd constraint1(6), constraint2(6);
-  constraint1 << 6, 3, 3, 2, 1, 0;
-  prog.AddLinearConstraint(constraint1.transpose(),
-                           -std::numeric_limits<double>::infinity(), 6.5);
-  constraint2 << 10, 0, 10, 0, 0, 1;
-  prog.AddLinearConstraint(constraint2.transpose(),
-                           -std::numeric_limits<double>::infinity(), 20);
-
-  Eigen::VectorXd lower(6);
-  lower << 0, 0, 0, 0, 0, 0;
-  Eigen::VectorXd upper(6);
-  upper << 1, 1, 1, 1, 1, std::numeric_limits<double>::infinity();
-  prog.AddBoundingBoxConstraint(lower, upper);
-
-  VectorXd expected(6);
-  expected << 0, 1, 0, 1, 1, 20;
-  std::srand(0);
-  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
-
-  // This test seems to be fairly sensitive to how much the randomness
-  // causes the initial guess to deviate, so the tolerance is a bit
-  // larger than others.  IPOPT is particularly sensitive here.
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
-  });
-}
-
-// This test comes from Section 3.4 of "Handbook of Test Problems in
-// Local and Global Optimization."
-class LowerBoundTestCost {
- public:
-  static size_t numInputs() { return 6; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
-           (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
-           (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
-  }
-};
-
-class LowerBoundTestConstraint : public Constraint {
- public:
-  LowerBoundTestConstraint(int i1, int i2)
-      : Constraint(1, Vector1d::Constant(4),
-                   Vector1d::Constant(std::numeric_limits<double>::infinity())),
-        i1_(i1),
-        i2_(i2) {}
-
-  // for just these two types, implementing this locally is almost cleaner...
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    EvalImpl(x, y);
-  }
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    EvalImpl(x, y);
-  }
-
- private:
-  template <typename ScalarType>
-  void EvalImpl(
-      const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
-    y.resize(1);
-    y(0) = (x(i1_) - 3) * (x(i1_) - 3) + x(i2_);
-  }
-
-  int i1_;
-  int i2_;
-};
-
-GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(6);
-  prog.AddCost(LowerBoundTestCost());
-  std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
-  prog.AddConstraint(con1);
-  std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
-  prog.AddConstraint(con2);
-
-  Eigen::VectorXd c1(6);
-  c1 << 1, -3, 0, 0, 0, 0;
-  prog.AddLinearConstraint(
-      c1.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(2));
-  Eigen::VectorXd c2(6);
-  c2 << -1, 1, 0, 0, 0, 0;
-  prog.AddLinearConstraint(
-      c2.transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(2));
-  Eigen::VectorXd c3(6);
-  c3 << 1, 1, 0, 0, 0, 0;
-  prog.AddLinearConstraint(c3.transpose(), Vector1d::Constant(2),
-                           Vector1d::Constant(6));
-  Eigen::VectorXd lower(6);
-  lower << 0, 0, 1, 0, 1, 0;
-  Eigen::VectorXd upper(6);
-  upper << std::numeric_limits<double>::infinity(),
-      std::numeric_limits<double>::infinity(), 5, 6, 5, 10;
-  prog.AddBoundingBoxConstraint(lower, upper);
-
-  Eigen::VectorXd expected(6);
-  expected << 5, 1, 5, 0, 5, 10;
-  std::srand(0);
-  Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
-  prog.SetInitialGuess(x, expected + delta);
-
-  // This test seems to be fairly sensitive to how much the randomness
-  // causes the initial guess to deviate, so the tolerance is a bit
-  // larger than others.  IPOPT is particularly sensitive here.
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
-  });
-
-  // Try again with the offsets in the opposite direction.
-  prog.SetInitialGuess(x, expected - delta);
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    EXPECT_TRUE(
-        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
-  });
-}
-
-class SixHumpCamelCost {
- public:
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) =
-        x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
-        x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
-  }
-};
-
-GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost());
-
-  prog.SetInitialGuess(x, Vector2d::Random());
-  RunNonlinearProgram(prog, [&]() {
-    // check (numerically) if it is a local minimum
-    VectorXd ystar, y;
-    const auto& x_value = GetSolution(x);
-    cost->Eval(x_value, ystar);
-    for (int i = 0; i < 10; i++) {
-      cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), y);
-      if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
-    }
-  });
-}
-
-class GloptipolyConstrainedExampleCost {
- public:
-  static size_t numInputs() { return 3; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = -2 * x(0) + x(1) - x(2);
-  }
-};
-
-class GloptipolyConstrainedExampleConstraint
-    : public Constraint {  // want to also support deriving directly from
-                           // constraint without going through drake::Function
- public:
-  GloptipolyConstrainedExampleConstraint()
-      : Constraint(
-            1, Vector1d::Constant(0),
-            Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
-
-  // for just these two types, implementing this locally is almost cleaner...
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
-    EvalImpl(x, y);
-  }
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
-    EvalImpl(x, y);
-  }
-
- private:
-  template <typename ScalarType>
-  void EvalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
-                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                Matrix<ScalarType, Dynamic, 1>& y) const {
-    y.resize(1);
-    y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
-           4 * x(0) * x(1) + 4 * x(0) * x(2) + 2 * x(1) * x(1) -
-           2 * x(1) * x(2) + 2 * x(2) * x(2);
-  }
-};
-
-// gloptiPolyConstrainedMinimization
-// @brief from section 5.8.2 of the gloptipoly3 documentation
-//
-// Which is from section 3.5 in
-//   Handbook of Test Problems in Local and Global Optimization
-GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
-  MathematicalProgram prog;
-
-  // This test is run twice on different collections of continuous
-  // variables to make sure that the solvers correctly handle mapping
-  // variables to constraints/costs.
-  auto x = prog.AddContinuousVariables(3);
-  auto y = prog.AddContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {x});
-  prog.AddCost(GloptipolyConstrainedExampleCost(), {y});
-  std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
-      new GloptipolyConstrainedExampleConstraint());
-  prog.AddConstraint(qp_con, {x});
-  prog.AddConstraint(qp_con, {y});
-  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, {x});
-  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 4, {y});
-  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, {x});
-  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
-                           -std::numeric_limits<double>::infinity(), 6, {y});
-  prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
-  prog.AddBoundingBoxConstraint(
-      Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {y});
-
-  // IPOPT has difficulty with this problem depending on the initial
-  // conditions, which is why the initial guess varies so little.
-  Vector3d initial_guess = Vector3d(.5, 0, 3) + .01 * Vector3d::Random();
-  prog.SetInitialGuess(x, initial_guess);
-  prog.SetInitialGuess(y, initial_guess);
-  RunNonlinearProgram(prog, [&]() {
-    const auto& x_value = GetSolution(x);
-    const auto& y_value = GetSolution(y);
-    EXPECT_TRUE(CompareMatrices(x_value, Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
-  });
-}
-
-//
-// Test that the Eval() method of LinearComplementarityConstraint correctly
-// returns the slack.
-GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
-  MathematicalProgram prog;
-  Eigen::Matrix<double, 2, 2> M;
-
-  // clang-format off
-  M << 1, 0,
-       0, 1;
-  // clang-format on
-
-  Eigen::Vector2d q(-1, -1);
-
-  LinearComplementarityConstraint c(M, q);
-  Eigen::VectorXd x;
-  c.Eval(Eigen::Vector2d(1, 1), x);
+  EXPECT_TRUE(
+      CompareMatrices(constraint1->lower_bound(), constraint2->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint2->lower_bound(), constraint3->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint3->lower_bound(), constraint4->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint4->lower_bound(), constraint5->lower_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint5->lower_bound(), constraint6->lower_bound()));
 
   EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
-  c.Eval(Eigen::Vector2d(1, 2), x);
-
+      CompareMatrices(constraint1->upper_bound(), constraint2->upper_bound()));
   EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+      CompareMatrices(constraint2->upper_bound(), constraint3->upper_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint3->upper_bound(), constraint4->upper_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint4->upper_bound(), constraint5->upper_bound()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint5->upper_bound(), constraint6->upper_bound()));
 }
 
-// Simple linear complementarity problem example.
-// @brief a hand-created LCP easily solved.
-//
-// Note: This test is meant to test that MathematicalProgram.Solve() works in
-// this case; tests of the correctness of the Moby LCP solver itself live in
-// testMobyLCP.
-GTEST_TEST(testMathematicalProgram, simpleLCP) {
+// Verifies if the added cost evaluates the same as the original cost.
+// This function is supposed to test these costs added as a derived class
+// from Constraint.
+void VerifyAddedCost1(const MathematicalProgram& prog,
+                      const shared_ptr<Constraint>& cost,
+                      const Eigen::Ref<const Eigen::VectorXd>& x_value,
+                      int num_generic_costs_expected) {
+  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
+            num_generic_costs_expected);
+  Eigen::VectorXd y, y_expected;
+  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  cost->Eval(x_value, y_expected);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+}
+
+// Verifies if the added cost evaluates the same as the original cost.
+// This function is supposed to test these costs added by converting
+// a class to ConstraintImpl through MakeCost.
+void VerifyAddedCost2(const MathematicalProgram& prog,
+                      const GenericTrivialCost2& cost,
+                      const shared_ptr<Constraint>& returned_cost,
+                      const Eigen::Ref<const Eigen::Vector2d>& x_value,
+                      int num_generic_costs_expected) {
+  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
+            num_generic_costs_expected);
+  Eigen::VectorXd y(1), y_expected(1), y_returned;
+  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  cost.eval<double>(x_value, y_expected);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+  returned_cost->Eval(x_value, y_returned);
+  EXPECT_TRUE(CompareMatrices(y, y_returned));
+}
+
+GTEST_TEST(testMathematicalProgram, AddCostTest) {
+  // Test if the costs are added correctly.
+
+  // There are ways to add a generic cost
+  // 1. Add Binding<Constraint>
+  // 2. Add shared_ptr<Constraint> on a VectorDecisionVariable object.
+  // 3. Add shared_ptr<Constraint> on a VariableRefList.
+  // 4. Add a ConstraintImpl object on a VectorDecisionVariable object.
+  // 5. Add a ConstraintImpl object on a VariableRefList object.
+  // 6. Add a unique_ptr of object that can be converted to a ConstraintImpl
   MathematicalProgram prog;
-  Eigen::Matrix<double, 2, 2> M;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewContinuousVariables<2>("y");
+  // No cost yet.
+  int num_generic_costs = 0;
+  EXPECT_EQ(static_cast<int>(prog.generic_costs().size()), num_generic_costs);
+  EXPECT_EQ(prog.linear_costs().size(), 0u);
+
+  shared_ptr<Constraint> generic_trivial_cost1 =
+      make_shared<GenericTrivialCost1>();
+
+  // Adds Binding<Constraint>
+  prog.AddCost(Binding<Constraint>(
+      generic_trivial_cost1, VectorDecisionVariable<3>(x(0), x(1), y(1))));
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 3, 5),
+                   num_generic_costs);
+
+  // Adds a std::shared_ptr<Constraint> on a VectorDecisionVariable object.
+  prog.AddCost(generic_trivial_cost1,
+               VectorDecisionVariable<3>(x(0), x(1), y(1)));
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 2, 3),
+                   num_generic_costs);
+
+  // Adds a std::shared_ptr<Constraint> on a VariableRefList object.
+  prog.AddCost(generic_trivial_cost1, {x, y.tail<1>()});
+  ++num_generic_costs;
+  VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(2, 3, 4),
+                   num_generic_costs);
+
+  GenericTrivialCost2 generic_trivial_cost2;
+
+  // Add an object that can be converted to a ConstraintImpl object on a
+  // VectorDecisionVariable object.
+  auto returned_cost3 =
+      prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(0), y(1)))
+          .constraint();
+  ++num_generic_costs;
+  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost3,
+                   Eigen::Vector2d(1, 2), num_generic_costs);
+
+  // Add an object that can be converted to a ConstraintImpl object on a
+  // VariableRefList object.
+  auto returned_cost4 =
+      prog.AddCost(generic_trivial_cost2, {x.head<1>(), y.tail<1>()})
+          .constraint();
+  ++num_generic_costs;
+  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost4,
+                   Eigen::Vector2d(1, 2), num_generic_costs);
+}
+
+void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
+                                         const Expression& e,
+                                         const Binding<Constraint>& binding,
+                                         int num_linear_costs) {
+  EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
+  EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
+  EXPECT_TRUE(CheckStructuralEquality(prog.linear_costs().back().variables(),
+                                      binding.variables()));
+  EXPECT_EQ(binding.constraint()->num_constraints(), 1);
+  auto cnstr = prog.linear_costs().back().constraint();
+  auto vars = prog.linear_costs().back().variables();
+  const Expression cx{(cnstr->A() * vars)(0)};
+  double constant_term{0};
+  if (is_addition(e)) {
+    constant_term = get_constant_in_addition(e);
+  } else if (is_constant(e)) {
+    constant_term = get_constant_value(e);
+  }
+  EXPECT_TRUE((e - cx).EqualTo(constant_term));
+}
+
+void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
+                                  const Expression& e) {
+  int num_linear_costs = prog->linear_costs().size();
+  auto binding1 = prog->AddLinearCost(e);
+  CheckAddedSymbolicLinearCostUserFun(*prog, e, binding1, ++num_linear_costs);
+  auto binding2 = prog->AddCost(e);
+  CheckAddedSymbolicLinearCostUserFun(*prog, e, binding2, ++num_linear_costs);
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  // Add linear cost 2 * x(0) + 3 * x(1)
+  CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1));
+  // Add linear cost x(1)
+  CheckAddedSymbolicLinearCost(&prog, +x(1));
+  // Add linear cost x(0) + 2
+  CheckAddedSymbolicLinearCost(&prog, x(0) + 2);
+  // Add linear cost 2 * x(0) + 3 * x(1) + 2
+  CheckAddedSymbolicLinearCost(&prog, 2 * x(0) + 3 * x(1) + 2);
+  // Add linear cost 2 * x(1)
+  CheckAddedSymbolicLinearCost(&prog, 2 * x(1));
+  // Add linear (constant) cost 3
+  CheckAddedSymbolicLinearCost(&prog, 3);
+  // Add linear cost -x(0)
+  CheckAddedSymbolicLinearCost(&prog, -x(0));
+  // Add linear cost -(x(1) + 3 * x(0))
+  CheckAddedSymbolicLinearCost(&prog, -(x(1) + 3 * x(0)));
+  // Add linear cost x(1)*x(1) + x(0) - x(1)*x(1)
+  CheckAddedSymbolicLinearCost(&prog, x(1) * x(1) + x(0) - x(1) * x(1));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
+  // Add linear constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  const Expression e{3 - 5 * x(0) + 10 * x(2) - 7 * y(1)};
+  const double lb{-10};
+  const double ub{+10};
+  const auto binding = prog.AddLinearConstraint(e, lb, ub);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
+  const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
+  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
+  // Add linear constraint: -10 <= x0 <= 10
+  // Note that this constraint is a bounding-box constraint which is a sub-class
+  // of linear-constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  const Expression e{x(0)};
+  const auto binding = prog.AddLinearConstraint(e, -10, 10);
+
+  // Check that the constraint in the binding is of BoundingBoxConstraint.
+  ASSERT_TRUE(is_dynamic_castable<BoundingBoxConstraint>(binding.constraint()));
+  const shared_ptr<BoundingBoxConstraint> constraint_ptr{
+      static_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
+  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
+  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
+  // Add linear constraints
+  //     3 <=  3 - 5*x0 +      + 10*x2        - 7*y1        <= 9
+  //   -10 <=                       x2                      <= 10
+  //    -7 <= -5 + 2*x0 + 3*x2         + 3*y0 - 2*y1 + 6*y2 <= 12
+  //     2 <=                     2*x2                      <= 3
+  //     1 <=                                 -   y1        <= 3
+  //
+  // Note: the second, fourth and fifth rows are actually a bounding-box
+  // constraints but we still process the five symbolic-constraints into a
+  // single linear-constraint whose coefficient matrix is the following.
+  //
+  //         [-5 0 10 0 -7 0]
+  //         [ 0 0  1 0  0 0]
+  //         [ 2 3  0 3 -2 6]
+  //         [ 0 0  2 0  0 0]
+  //         [ 0 0  0 0 -1 0]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<Expression, 5, 1> M_e;
+  Matrix<double, 5, 1> M_lb;
+  Matrix<double, 5, 1> M_ub;
 
   // clang-format off
-  M << 1, 4,
-       3, 1;
+  M_e  <<  3 - 5 * x(0) + 10 * x(2) - 7 * y(1),
+      +x(2),
+      -5 + 2 * x(0) + 3 * x(2) + 3 * y(0) - 2 * y(1) + 6 * y(2),
+      2 * x(2),
+      -y(1);
+  M_lb <<  3,
+      -10,
+      -7,
+       2,
+      1;
+  M_ub << -7,
+      10,
+      12,
+      3,
+      3;
   // clang-format on
 
-  Eigen::Vector2d q(-16, -15);
+  // Check if the binding includes the correct linear constraint.
+  const auto binding = prog.AddLinearConstraint(M_e, M_lb, M_ub);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 5u);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
 
-  auto x = prog.AddContinuousVariables<2>();
-
-  prog.AddLinearComplementarityConstraint(M, q, {x});
-  EXPECT_NO_THROW(prog.Solve());
-  const auto& x_value = GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
+  for (int i = 0; i < M_e.size(); ++i) {
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_lb(i), Ax(i) - lb_in_ctr(i));
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_ub(i), Ax(i) - ub_in_ctr(i));
+  }
 }
 
-// Multiple LC constraints in a single optimization problem
-// @brief Just two copies of the simpleLCP example, to make sure that the
-// write-through of LCP results to the solution vector works correctly.
-GTEST_TEST(testMathematicalProgram, multiLCP) {
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
+  // Check the linear constraint 2  <= 2 * x <= 4.
+  // Note: this is a bounding box constraint
   MathematicalProgram prog;
-  Eigen::Matrix<double, 2, 2> M;
+  auto x = prog.NewContinuousVariables<2>("x");
+  const Expression e(2 * x(1));
+  const auto& binding = prog.AddLinearConstraint(e, 2, 4);
 
+  EXPECT_TRUE(prog.linear_constraints().empty());
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
+  EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(2)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
+  // Check the linear constraint 2  <= -2 * x <= 4.
+  // Note: this is a bounding box constraint
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  const Expression e(-2 * x(1));
+  const auto& binding = prog.AddLinearConstraint(e, 2, 4);
+
+  EXPECT_TRUE(prog.linear_constraints().empty());
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
+  EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-2)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
+  // Checks the linear constraint 1 <= -x <= 3.
+  // Note: this is a bounding box constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  const Expression e(-x(0));
+  const auto& binding = prog.AddLinearConstraint(e, 1, 3);
+  EXPECT_TRUE(prog.linear_constraints().empty());
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
+            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
+            binding.variables());
+  EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-3)));
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
+  // Checks the linear constraints
+  // 1 <= -2 * x0 <= 3
+  // 3 <= 4 * x0 + 2<= 5
+  // 2 <= x1 + 2 * (x2 - 0.5*x1) + 3 <= 4;
+  // 3 <= -4 * x1 + 3 <= inf
+  // Note: these are all bounding box constraints.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  Vector4<Expression> e;
   // clang-format off
-  M << 1, 4,
-       3, 1;
+  e << -2 * x(0),
+    4 * x(0) + 2,
+    x(1) + 2 * (x(2) - 0.5 * x(1)) + 3,
+    -4 * x(1) + 3;
   // clang-format on
+  prog.AddLinearConstraint(
+      e, Vector4d(1, 3, 2, 3),
+      Vector4d(3, 5, 4, numeric_limits<double>::infinity()));
 
-  Eigen::Vector2d q(-16, -15);
-
-  auto x = prog.AddContinuousVariables<2>();
-  auto y = prog.AddContinuousVariables<2>();
-
-  prog.AddLinearComplementarityConstraint(M, q, {x});
-  prog.AddLinearComplementarityConstraint(M, q, {y});
-  EXPECT_NO_THROW(prog.Solve());
-  const auto& x_value = GetSolution(x);
-  const auto& y_value = GetSolution(y);
-  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
-
-  EXPECT_TRUE(CompareMatrices(y_value, Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  const auto& binding = prog.bounding_box_constraints().back();
+  EXPECT_EQ(binding.variables(),
+            VectorDecisionVariable<4>(x(0), x(0), x(2), x(1)));
+  EXPECT_TRUE(CompareMatrices(
+      binding.constraint()->lower_bound(),
+      Vector4d(-1.5, 0.25, -0.5, -numeric_limits<double>::infinity())));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                              Vector4d(-0.5, 0.75, 0.5, 0)));
 }
 
-//
-// Test that linear polynomial constraints get turned into linear constraints.
-GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
-  const Polynomiald x("x");
-  MathematicalProgram problem;
-  static const double kEpsilon = 1e-7;
-  const auto x_var = problem.AddContinuousVariables(1);
-  const std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable()};
-  std::shared_ptr<Constraint> resulting_constraint =
-      problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
-                                      Vector1d::Constant(2),
-                                      Vector1d::Constant(2));
-  // Check that the resulting constraint is a LinearConstraint.
-  EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
-            nullptr);
-  // Check that it gives the correct answer as well.
-  problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
-  RunNonlinearProgram(problem,
-                      [&]() { EXPECT_NEAR(x_var(0).value(), 2, kEpsilon); });
-}
-
-// The current windows CI build has no solver for generic constraints.  The
-// DISABLED_ logic below ensures that we still at least get compile-time
-// checking of the test and resulting template instantiations.
-#if !defined(WIN32) && !defined(WIN64)
-#define POLYNOMIAL_CONSTRAINT_TEST_NAME polynomialConstraint
-#else
-#define POLYNOMIAL_CONSTRAINT_TEST_NAME DISABLED_polynomialConstraint
-#endif
-
-// Simple test of polynomial constraints.
-GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
-  static const double kInf = std::numeric_limits<double>::infinity();
-  // Generic constraints in nlopt require a very generous epsilon.
-  static const double kEpsilon = 1e-4;
-
-  // Given a degenerate polynomial, get the trivial solution.
-  {
-    const Polynomiald x("x");
-    MathematicalProgram problem;
-    const auto x_var = problem.AddContinuousVariables(1);
-    const std::vector<Polynomiald::VarType> var_mapping = {
-        x.GetSimpleVariable()};
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
-                                    Vector1d::Constant(2),
-                                    Vector1d::Constant(2));
-    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
-    RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var(0).value(), 2, kEpsilon);
-      // TODO(ggould-tri) test this with a two-sided constraint, once
-      // the nlopt wrapper supports those.
-    });
-  }
-
-  // Given a small univariate polynomial, find a low point.
-  {
-    const Polynomiald x("x");
-    const Polynomiald poly = (x - 1) * (x - 1);
-    MathematicalProgram problem;
-    const auto x_var = problem.AddContinuousVariables(1);
-    const std::vector<Polynomiald::VarType> var_mapping = {
-        x.GetSimpleVariable()};
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
-                                    Eigen::VectorXd::Zero(1),
-                                    Eigen::VectorXd::Zero(1));
-    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
-    RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var(0).value(), 1, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var(0).value()), kEpsilon);
-    });
-  }
-
-  // Given a small multivariate polynomial, find a low point.
-  {
-    const Polynomiald x("x");
-    const Polynomiald y("y");
-    const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
-    MathematicalProgram problem;
-    const auto xy_var = problem.AddContinuousVariables(2);
-    const std::vector<Polynomiald::VarType> var_mapping = {
-        x.GetSimpleVariable(), y.GetSimpleVariable()};
-    problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
-                                    Eigen::VectorXd::Zero(1),
-                                    Eigen::VectorXd::Zero(1));
-    problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
-    RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(xy_var(0).value(), 1, 0.2);
-      EXPECT_NEAR(xy_var(1).value(), -2, 0.2);
-      std::map<Polynomiald::VarType, double> eval_point = {
-          {x.GetSimpleVariable(), xy_var(0).value()},
-          {y.GetSimpleVariable(), xy_var(1).value()}};
-      EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
-    });
-  }
-
-  // Given two polynomial constraints, satisfy both.
-  {
-    // (x^4 - x^2 + 0.2 has two minima, one at 0.5 and the other at -0.5;
-    // constrain x < 0 and EXPECT that the solver finds the negative one.)
-    const Polynomiald x("x");
-    const Polynomiald poly = x * x * x * x - x * x + 0.2;
-    MathematicalProgram problem;
-    const auto x_var = problem.AddContinuousVariables(1);
-    problem.SetInitialGuess(x_var, Vector1d::Constant(-0.1));
-    const std::vector<Polynomiald::VarType> var_mapping = {
-        x.GetSimpleVariable()};
-    VectorXPoly polynomials_vec(2, 1);
-    polynomials_vec << poly, x;
-    problem.AddPolynomialConstraint(polynomials_vec, var_mapping,
-                                    Eigen::VectorXd::Constant(2, -kInf),
-                                    Eigen::VectorXd::Zero(2));
-    RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var(0).value(), -0.7, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var(0).value()), kEpsilon);
-    });
-  }
-}
-
-//
-// Test how an unconstrained QP is dispatched and solved:
-//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
-//     at (x1=1, x2=1).
-//   - on the same problem plus the additional problem
-//     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
-//     with the first problem, has min at (x1=1, x2=2, x3=1)
-// The first case tests a single quadratic cost, and the
-// second case tests multiple quadratic costs affecting
-// different variable views. All fall under the
-// umbrella of the Equality Constrained QP Solver.
-GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic8) {
+  // Test the failure cases for adding linear constraint.
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables<2>();
-  MatrixXd Q(2, 2);
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Non-polynomial.
+  EXPECT_THROW(prog.AddLinearConstraint(sin(x(0)), 1, 2), runtime_error);
+
+  // Non-linear.
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) * x(0), 1, 2), runtime_error);
+
+  // Trivial (and infeasible) case 1 <= 0 <= 2
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) - x(0), 1, 2), runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
+  // Test trivial constraint with no variables, such as 1 <= 2 <= 3
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddLinearConstraint(Expression(2), 1, 3);
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  auto binding = prog.linear_constraints().back();
+  EXPECT_EQ(binding.constraint()->A().rows(), 1);
+  EXPECT_EQ(binding.constraint()->A().cols(), 0);
+
+  Vector2<Expression> expr;
+  expr << 2, x(0);
+  prog.AddLinearConstraint(expr, Vector2d(1, 2), Vector2d(3, 4));
+  EXPECT_EQ(prog.linear_constraints().size(), 2);
+  binding = prog.linear_constraints().back();
+  EXPECT_TRUE(
+      CompareMatrices(binding.constraint()->A(), Eigen::Vector2d(0, 1)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                              Eigen::Vector2d(-1, 2)));
+  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                              Eigen::Vector2d(1, 4)));
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_bounding_box_constraint = 0;
+
+  // x(0) <= 3
+  vector<Formula> f;
+  f.push_back(x(0) <= 3);
+  f.push_back(3 >= x(0));
+  f.push_back(x(0) + 2 <= 5);
+  f.push_back(4 + x(0) >= 1 + 2 * x(0));
+  f.push_back(2 * x(0) + 1 <= 4 + x(0));
+  f.push_back(3 * x(0) + x(1) <= 6 + x(0) + x(1));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_bounding_box_constraint,
+              prog.bounding_box_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    auto binding = prog.bounding_box_constraints().back();
+    EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->upper_bound(), Vector1d(3)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                                Vector1d(-numeric_limits<double>::infinity())));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_bounding_box_constraint = 0;
+  // x0 >= 2
+  vector<Formula> f;
+  f.push_back(x(0) >= 2);
+  f.push_back(2 <= x(0));
+  f.push_back(-x(0) <= -2);
+  f.push_back(-2 >= -x(0));
+  f.push_back(2 + 2 * x(0) >= x(0) + 4);
+  f.push_back(3 + 3 * x(0) >= x(0) + 7);
+  f.push_back(x(0) + 7 + 2 * x(1) <= 3 * x(0) + 3 + 2 * x(1));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_bounding_box_constraint,
+              prog.bounding_box_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    auto binding = prog.bounding_box_constraints().back();
+    EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(2)));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(numeric_limits<double>::infinity())));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
+  // x(0) + x(2) == 1
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_linear_equality_constraint = 0;
+
+  vector<Formula> f;
+  f.push_back(x(0) + x(2) == 1);
+  f.push_back(x(0) + 2 * x(2) == 1 + x(2));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_linear_equality_constraint,
+              prog.linear_equality_constraints().size());
+    EXPECT_EQ(prog.linear_constraints().size(), 0);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
+    auto binding = prog.linear_equality_constraints().back();
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables() -
+                               binding.constraint()->lower_bound();
+    EXPECT_EQ(expr.size(), 1);
+    EXPECT_PRED2(ExprEqual, expr(0), x(0) + x(2) - 1);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
+  // x(0) + 2 * x(2) <= 1
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  int num_linear_constraint = 0;
+
+  vector<Formula> f;
+  f.push_back(x(0) + 2 * x(2) <= 1);
+  f.push_back(x(0) + 3 * x(2) <= 1 + x(2));
+  f.push_back(-1 <= -x(0) - 2 * x(2));
+  f.push_back(-1 - x(2) <= -x(0) - 3 * x(2));
+  f.push_back(2 * (x(0) + x(2)) - x(0) <= 1);
+  f.push_back(1 >= x(0) + 2 * x(2));
+  f.push_back(1 + x(2) >= x(0) + 3 * x(2));
+  f.push_back(-x(0) - 2 * x(2) >= -1);
+  f.push_back(-x(0) - 3 * x(2) >= -1 - x(2));
+  f.push_back(1 >= 2 * (x(0) + x(2)) - x(0));
+  for (const auto& fi : f) {
+    prog.AddLinearConstraint(fi);
+    EXPECT_EQ(++num_linear_constraint, prog.linear_constraints().size());
+    EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
+    auto binding = prog.linear_constraints().back();
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+                                Vector1d(numeric_limits<double>::infinity())));
+    EXPECT_TRUE(
+        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-1)));
+
+    VectorX<Expression> expr = binding.constraint()->A() * binding.variables() -
+                               binding.constraint()->lower_bound();
+    EXPECT_EQ(expr.size(), 1);
+    EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
+  // Add linear constraints
+  //
+  //   (A*x == b) = |1 2| * |x0| == |5|
+  //                |3 4|   |x1|    |6|
+  //
+  //              = |  x0 + 2*x1 == 5|
+  //                |3*x0 + 4*x1 == 6|
+  //
+  // where A = |1 2|, x = |x0|, b = |5|
+  //           |3 4|      |x1|      |6|.
+  //
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  Matrix<Expression, 2, 2> A;
+  Eigen::Vector2d b;
   // clang-format off
-  Q << 1.0, 0.0,
-       0.0, 1.0;
+  A << 1, 2,
+       3, 4;
+  b << 5,
+       6;
   // clang-format on
-  VectorXd c(2);
-  c << -1.0, -1.0;
+  const auto binding = prog.AddLinearConstraint(A * x == b);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  // Checks that we have LinearEqualityConstraint instead of LinearConstraint.
+  EXPECT_TRUE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
+  EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
 
-  prog.AddQuadraticCost(Q, c);
-
-  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
-  prog.Solve();
-
-  VectorXd expected_answer(2);
-  expected_answer << 1.0, 1.0;
-  auto x_value = GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
-                              MatrixCompareType::absolute));
-  // There are no inequality constraints, and only quadratic costs,
-  // so this should hold:
-  CheckSolverType(prog, "Equality Constrained QP Solver");
-
-  // Add one more variable and constrain a view into them.
-  auto y = prog.AddContinuousVariables<1>("y");
-  Q << 2.0, 0.0, 0.0, 2.0;
-  c << -5.0, -2.0;
-  VariableListRef vars;
-  vars.push_back(x.segment<1>(1));
-  vars.push_back(y);
-
-  prog.AddQuadraticCost(Q, c, vars);
-  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
-  prog.Solve();
-  expected_answer.resize(3);
-  expected_answer << 1.0, 2.0, 1.0;
-  VectorXd actual_answer(3);
-  x_value = GetSolution(x);
-  const auto& y_value = GetSolution(y);
-  actual_answer << x_value, y_value;
-  EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
-                              MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
-
-  // Problem still has only quadratic costs, so solver should be the same.
-  CheckSolverType(prog, "Equality Constrained QP Solver");
+  set<Expression> constraint_set;
+  constraint_set.emplace(x(0) + 2 * x(1) - 5);
+  constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
+  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_ctr(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_ctr(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_ctr(1)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_ctr(1)), 1);
 }
 
-// Test how an equality-constrained QP is dispatched
-//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
-//     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
-//     The resulting constrained min is at (x1=0.5, x2=0.5).
-//   - on the same problem with an additional variable x3,
-//     with (2*x1 - x3 = 0). Resulting solution should be
-//     (x1=0.5, x2=0.5, x3=1.0)
-GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
+  // Add linear constraints f1 && f2 && f3 where
+  //   f1 := (x0 + 2*x1 >= 3)
+  //   f2 := (3*x0 + 4*x1 <= 5)
+  //   f3 := (7*x0 + 2*x1 == 9).
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2);
-  MatrixXd Q(2, 2);
-  Q << 1, 0.0, 0.0, 1.0;
-  VectorXd c(2);
-  c << -1.0, -1.0;
+  auto x = prog.NewContinuousVariables(2, "x");
+  const Expression e11{x(0) + 2 * x(1)};
+  const Expression e12{3};
+  const Formula f1{e11 >= e12};
+  const Expression e21{3 * x(0) + 4 * x(1)};
+  const Expression e22{5};
+  const Formula f2{e21 <= e22};
+  const Expression e31{7 * x(0) + 2 * x(1)};
+  const Expression e32{9};
+  const Formula f3{e31 == e32};
 
-  prog.AddQuadraticCost(Q, c);
+  const auto binding = prog.AddLinearConstraint(f1 && f2 && f3);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  // Checks that we do not have LinearEqualityConstraint.
+  EXPECT_FALSE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
+  EXPECT_EQ(constraint_ptr->num_constraints(), 3);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
 
-  VectorXd constraint1(2);
-  // x1 + x2 = 1
-  constraint1 << 1, 1;
-  prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0);
-
-  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
-  prog.Solve();
-
-  VectorXd expected_answer(2);
-  expected_answer << 0.5, 0.5;
-  auto x_value = GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
-                              MatrixCompareType::absolute));
-
-  // This problem is now an Equality Constrained QP and should
-  // use this solver:
-  CheckSolverType(prog, "Equality Constrained QP Solver");
-
-  // Add one more variable and constrain it in a different way
-  auto y = prog.AddContinuousVariables(1);
-  Vector2d constraint2(2);
-  constraint2 << 2., -1.;
-  // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableListRef vars;
-  vars.push_back(x.segment(0, 1));
-  vars.push_back(y);
-
-  prog.AddLinearEqualityConstraint(constraint2.transpose(), 0.0, vars);
-  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
-  prog.Solve();
-  expected_answer.resize(3);
-  expected_answer << 0.5, 0.5, 1.0;
-  VectorXd actual_answer(3);
-  x_value = GetSolution(x);
-  auto y_value = GetSolution(y);
-  actual_answer << x_value, y_value;
-  EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
-                              MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
+  set<Expression> constraint_set;
+  constraint_set.emplace(e11 - e12);
+  constraint_set.emplace(e21 - e22);
+  constraint_set.emplace(e31 - e32);
+  for (int i = 0; i < 3; ++i) {
+    if (!std::isinf(lb_in_ctr(i))) {
+      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)), 1);
+    }
+    if (!std::isinf(ub_in_ctr(i))) {
+      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)), 1);
+    }
+  }
 }
 
-// Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
-// nonlinear optimization problem.
-// The objective is to find the smallest distance from a hyperplane
-// A * x = b to the origin.
-// We can solve the following SOCP with Lorentz cone constraint
-// min  t
-//  s.t t >= sqrt(x'*x)
-//      A * x = b.
-// Alternatively, we can solve the following SOCP with rotated Lorentz cone
-// constraint
-// min t
-// s.t t >= x'*x
-//     A * x = b.
-//
-// The optimal solution of this equality constrained QP can be found using
-// Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
-// satisfy
-// A_hat * [x*; z*] = [b; 0]
-// where A_hat = [A 0; 2*I A'].
-void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
-  DRAKE_ASSERT(A.rows() == b.rows());
-  const int xDim = A.cols();
-  MathematicalProgram prog_lorentz;
-  auto t_lorentz = prog_lorentz.AddContinuousVariables(1, "t");
-  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim, "x");
-  prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
-  prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
-  prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
-
-  // A_hat = [A 0; 2*I A']
-  MatrixXd A_hat(A.rows() + A.cols(), A.rows() + A.cols());
-  A_hat.topLeftCorner(A.rows(), A.cols()) = A;
-  A_hat.topRightCorner(A.rows(), A.rows()) = MatrixXd::Zero(A.rows(), A.rows());
-  A_hat.bottomLeftCorner(A.cols(), A.cols()) =
-      2 * MatrixXd::Identity(A.cols(), A.cols());
-  A_hat.bottomRightCorner(A.cols(), A.rows()) = A.transpose();
-  VectorXd b_hat(A.rows() + A.cols());
-  b_hat << b, VectorXd::Zero(A.cols());
-  VectorXd xz_expected = A_hat.colPivHouseholderQr().solve(b_hat);
-  VectorXd x_expected = xz_expected.head(xDim);
-
-  double cost_expected_lorentz = x_expected.norm();
-  // NLopt needs a really good starting point to solve SOCP, while SNOPT and
-  // IPOPT seems OK with starting point not so close to optimal solution.
-  prog_lorentz.SetInitialGuess(t_lorentz,
-                               drake::Vector1d(cost_expected_lorentz + 0.1));
-  VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
-  prog_lorentz.SetInitialGuess(x_lorentz, x_lorentz_guess);
-  RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value =
-        GetSolution(x_lorentz);
-    EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
-                                MatrixCompareType::absolute));
-    const auto& t_lorentz_value =
-        GetSolution(t_lorentz);
-    EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
-  });
-
-  MathematicalProgram prog_rotated_lorentz;
-  auto t_rotated_lorentz = prog_rotated_lorentz.AddContinuousVariables(1, "t");
-  auto x_rotated_lorentz =
-      prog_rotated_lorentz.AddContinuousVariables(xDim, "x");
-  auto slack_rotated_lorentz =
-      prog_rotated_lorentz.AddContinuousVariables<1>("slack");
-  prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
-      {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
-  prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
-  prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
-                                                slack_rotated_lorentz(0));
-  prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
-
-  double cost_expected_rotated_lorentz = x_expected.squaredNorm();
-  // NLopt needs a really good starting point to solve SOCP, while SNOPT and
-  // IPOPT seems OK with starting point not so close to optimal solution.
-  prog_rotated_lorentz.SetInitialGuess(
-      t_rotated_lorentz, drake::Vector1d(cost_expected_rotated_lorentz + 0.1));
-  prog_rotated_lorentz.SetInitialGuess(slack_rotated_lorentz,
-                                       drake::Vector1d(1.0));
-  VectorXd x_rotated_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
-  prog_rotated_lorentz.SetInitialGuess(x_rotated_lorentz,
-                                       x_rotated_lorentz_guess);
-  RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    const auto& x_rotated_lorentz_value =
-        GetSolution(x_rotated_lorentz);
-    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
-                                MatrixCompareType::absolute));
-    const auto& t_rotated_lorentz_value =
-        GetSolution(t_rotated_lorentz);
-    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
-                1E-3);
-  });
-
-  // Now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
-  // The optimal solution and the costs are still the same, but now we test
-  // Lorentz cone (rotated Lorentz cone) constraints with generic nonlinear
-  // constraints.
-  std::shared_ptr<QuadraticConstraint> quadratic_constraint(
-      new QuadraticConstraint(MatrixXd::Identity(xDim, xDim),
-                              VectorXd::Zero(xDim), 0,
-                              x_expected.squaredNorm()));
-
-  prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
-  RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value =
-        GetSolution(x_lorentz);
-    EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
-                                MatrixCompareType::absolute));
-    const auto& t_lorentz_value =
-        GetSolution(t_lorentz);
-    EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
-  });
-
-  prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
-  RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    const auto& x_rotated_lorentz_value =
-        GetSolution(x_rotated_lorentz);
-    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
-                                MatrixCompareType::absolute));
-    const auto& t_rotated_lorentz_value =
-        GetSolution(t_rotated_lorentz);
-    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
-                1E-3);
-  });
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicFormulaAndException) {
+  // Add linear constraints:
+  //   (x0 + 2*x1 > 3)
+  //   (3*x0 + 4*x1 < 5)
+  //   (7*x0 + 2*x1 == 9)
+  //
+  // It includes relational formulas with strict inequalities (> and <). It will
+  // throw std::runtime_error.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  const Expression e11{x(0) + 2 * x(1)};
+  const Expression e12{3};
+  const Formula f1{e11 > e12};
+  const Expression e21{3 * x(0) + 4 * x(1)};
+  const Expression e22{5};
+  const Formula f2{e21 < e22};
+  const Expression e31{7 * x(0) + 2 * x(1)};
+  const Expression e32{9};
+  const Formula f3{e31 == e32};
+  EXPECT_THROW(prog.AddLinearConstraint(f1 && f2 && f3), runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
-  MatrixXd A = Matrix<double, 1, 2>::Ones();
-  VectorXd b = drake::Vector1d(2);
-  MinDistanceFromPlaneToOrigin(A, b);
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
+  // Add linear constraints
+  //    3 - 5*x0 +      + 10*x2        - 7*y1         >= 3
+  //                         x2                       >= -10
+  //   -5 + 2*x0 + 3*x1         + 3*y0 - 2*y1 + 6*y2  <= -7
+  //                       2*x2                       == 2
+  //                                   -   y1         >= 1
+  //
+  // Note: the second, fourth and fifth rows are actually a bounding-box
+  // constraints but we still process the five symbolic-constraints into a
+  // single linear-constraint whose coefficient matrix is the following.
+  //
+  //         [-5 0 10 0 -7 0]
+  //         [ 0 0  1 0  0 0]
+  //         [ 2 3  0 3 -2 6]
+  //         [ 0 0  2 0  0 0]
+  //         [ 0 0  0 0 -1 0]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<Formula, 5, 1> M_f;
+  // clang-format off
+  M_f << (3 - 5 * x(0) + 10 * x(2) - 7 * y(1) >= 3),
+         x(2) >= -10,
+         -5 + 2 * x(0) + 3 * x(1) + 3 * y(0) - 2 * y(1) + 6 * y(2) <= -7,
+         2 * x(2) == 2,
+         -y(1) >= 1;
+  // clang-format on
 
-  A = Matrix<double, 2, 3>::Zero();
-  A << 0, 1, 2, -1, 2, 3;
-  b = Vector2d(1.0, 3.0);
-  MinDistanceFromPlaneToOrigin(A, b);
+  // Check if the binding includes the correct linear constraint.
+  const auto binding = prog.AddLinearConstraint(M_f.array());
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 5u);
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  for (int i{0}; i < M_f.size(); ++i) {
+    if (!std::isinf(lb_in_ctr(i))) {
+      EXPECT_PRED2(ExprEqual,
+                   get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
+                   Ax(i) - lb_in_ctr(i));
+    }
+    if (!std::isinf(ub_in_ctr(i))) {
+      EXPECT_PRED2(ExprEqual,
+                   get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
+                   Ax(i) - ub_in_ctr(i));
+    }
+  }
+}
+
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+// This test uses operator>= provided for Eigen::Array<Expression> and
+// Eigen::Array<double>.
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
+  // Add linear constraints
+  //
+  //     M_f = |f1 f2|
+  //           |f3 f4|
+  //
+  // where
+  //   f1 =  3 - 5*x0        +10*x2        - 7*y1        >= 3
+  //   f2 =                      x2                      >= -10
+  //   f3 = -5 + 2*x0 + 3*x1        + 3*y0 - 2*y1 + 6*y2 >= -7
+  //   f4 =                    2*x2                      >= 2
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<Expression, 2, 2> M_e;
+  Matrix<double, 2, 2> M_lb;
+  // clang-format off
+  M_e << 3 - 5 * x(0) + 10 * x(2) - 7 * y(1),                       x(2),
+        -5 + 2 * x(0) +  3 * x(1) + 3 * y(0) - 2 * y(1) + 6 * y(2), 2 * x(2);
+  M_lb << 3, -10,
+         -7,   2;
+  // clang-format on
+  Eigen::Array<Formula, 2, 2> M_f{M_e.array() >= M_lb.array()};
+
+  // Check if the binding includes the correct linear constraint.
+  const auto binding = prog.AddLinearConstraint(M_f);
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), M_e.rows() * M_e.cols());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  int k{0};
+  for (int i{0}; i < M_e.rows(); ++i) {
+    for (int j{0}; j < M_e.cols(); ++j, ++k) {
+      EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j), Ax(k) - lb_in_ctr(k));
+    }
+  }
+}
+
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
+  // Add linear constraints
+  //
+  //   (A*x >= b) = |1 2| * |x0| >= |5|
+  //                |3 4|   |x1|    |6|
+  //
+  //              = |  x0 + 2*x1 >= 5|
+  //                |3*x0 + 4*x1 >= 6|
+  //
+  // where A = |1 2|, x = |x0|, b = |5|
+  //           |3 4|      |x1|      |6|.
+  //
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2, "x");
+  Matrix<Expression, 2, 2> A;
+  Eigen::Vector2d b;
+  // clang-format off
+  A << 1, 2,
+       3, 4;
+  b << 5,
+       6;
+  // clang-format on
+  const auto binding = prog.AddLinearConstraint((A * x).array() >= b.array());
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.constraint();
+  EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
+  const auto Ax = constraint_ptr->A() * var_vec;
+  const auto lb_in_ctr = constraint_ptr->lower_bound();
+  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_ctr(0));
+  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - lb_in_ctr(1));
+}
+
+// Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicArrayFormulaException) {
+  // Add linear constraints
+  //    3 - 5*x0 + 10*x2 - 7*y1 >  3
+  //                  x2        > -10
+  // Note that this includes strict inequality (>) and results in an exception.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  Matrix<Formula, 2, 1> M_f;
+  // clang-format off
+  M_f << (3 - 5 * x(0) + 10 * x(2) - 7 * y(1) > 3),
+                              x(2)            > -10;
+  // clang-format on
+  EXPECT_THROW(prog.AddLinearConstraint(M_f.array()), runtime_error);
+}
+
+namespace {
+void CheckAddedLinearEqualityConstraintCommon(
+    const Binding<LinearEqualityConstraint>& binding,
+    const MathematicalProgram& prog, int num_linear_eq_cnstr) {
+  // Checks if the number of linear equality constraints get incremented by 1.
+  EXPECT_EQ(prog.linear_equality_constraints().size(), num_linear_eq_cnstr + 1);
+  // Checks if the newly added linear equality constraint in prog is the same as
+  // that returned from AddLinearEqualityConstraint.
+  EXPECT_EQ(prog.linear_equality_constraints().back().constraint(),
+            binding.constraint());
+  // Checks if the bound variables of the newly added linear equality constraint
+  // in prog is the same as that returned from AddLinearEqualityConstraint.
+  EXPECT_EQ(prog.linear_equality_constraints().back().variables(),
+            binding.variables());
+}
+
+template <typename DerivedV, typename DerivedB>
+void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Eigen::MatrixBase<DerivedV>& v,
+    const Eigen::MatrixBase<DerivedB>& b) {
+  const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddLinearEqualityConstraint(v, b);
+  CheckAddedLinearEqualityConstraintCommon(binding, *prog, num_linear_eq_cnstr);
+  // Checks if the number of rows in the newly added constraint is the same as
+  // the input expression.
+  int num_constraints_expected = v.size();
+
+  EXPECT_EQ(binding.constraint()->num_constraints(), num_constraints_expected);
+  // Check if the newly added linear equality constraint matches with the input
+  // expression.
+  VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
+                               binding.constraint()->lower_bound();
+
+  EXPECT_EQ(flat_V.size(), v.size());
+  MatrixX<Expression> v_resize = flat_V;
+  v_resize.resize(v.rows(), v.cols());
+  for (int i = 0; i < v.rows(); ++i) {
+    for (int j = 0; j < v.cols(); ++j) {
+      EXPECT_EQ(v_resize(i, j).Expand(), (v(i, j) - b(i, j)).Expand());
+    }
+  }
+}
+
+template <typename DerivedV, typename DerivedB>
+void CheckAddedSymmetricSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Eigen::MatrixBase<DerivedV>& v,
+    const Eigen::MatrixBase<DerivedB>& b) {
+  const int num_linear_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddLinearEqualityConstraint(v, b, true);
+  CheckAddedLinearEqualityConstraintCommon(binding, *prog, num_linear_eq_cnstr);
+  // Checks if the number of rows in the newly added constraint is the same as
+  // the input expression.
+  int num_constraints_expected = v.rows() * (v.rows() + 1) / 2;
+  EXPECT_EQ(binding.constraint()->num_constraints(), num_constraints_expected);
+  // Check if the newly added linear equality constraint matches with the input
+  // expression.
+  VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
+                               binding.constraint()->lower_bound();
+  EXPECT_EQ(math::ToSymmetricMatrixFromLowerTriangularColumns(flat_V), v - b);
+}
+
+void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+    MathematicalProgram* prog, const Expression& e, double b) {
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      prog, Vector1<Expression>(e), Vector1d(b));
 }
 }  // namespace
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
+  // Checks the single row linear equality constraint one by one:
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+
+  // Checks x(0) = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, +x(0), 1);
+  // Checks x(1) = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, +x(1), 1);
+  // Checks x(0) + x(1) = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + x(1), 1);
+  // Checks x(0) + 2 * x(1) = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 2 * x(1),
+                                                         1);
+  // Checks 3 * x(0) - 2 * x(1) = 2
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 3 * x(0) - 2 * x(1), 2);
+  // Checks 2 * x(0) = 2
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, 2 * x(0), 2);
+  // Checks x(0) + 3 * x(2) = 3
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 3 * x(2),
+                                                         3);
+  // Checks 2 * x(1) - 3 * x(2) = 4
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 2 * x(1) - 3 * x(2), 4);
+  // Checks x(0) + 2 = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + 2, 1);
+  // Checks x(1) - 2 = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(1) - 2, 1);
+  // Checks 3 * x(1) + 4 = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, 3 * x(1) + 4,
+                                                         1);
+  // Checks x(0) + x(2) + 3 = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, x(0) + x(2) + 3,
+                                                         1);
+  // Checks 2 * x(0) + x(2) - 3 = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 2 * x(0) + x(2) - 3, 1);
+  // Checks 3 * x(0) + x(1) + 4 * x(2) + 1 = 2
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, 3 * x(0) + x(1) + 4 * x(2) + 1, 2);
+  // Checks -x(1) = 3
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, -x(1), 3);
+  // Checks -(x(0) + 2 * x(1)) = 2
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog,
+                                                         -(x(0) + 2 * x(1)), 2);
+
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, x(0) + 2 * (x(0) + x(2)) + 3 * (x(0) - x(1)), 3);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
+  // Checks adding multiple rows of linear equality constraints.
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+
+  // Checks x(1) = 2
+  //        x(0) = 1
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, Vector2<Expression>(+x(1), +x(0)), Eigen::Vector2d(2, 1));
+
+  // Checks 2 * x(1) = 3
+  //        x(0) + x(2) = 4
+  //        x(0) + 3 * x(1) + 7 = 1
+  Vector3<Expression> v{};
+  v << 2 * x(1), x(0) + x(2), x(0) + 3 * x(1) + 7;
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, v, Eigen::Vector3d(3, 4, 1));
+
+  // Checks x(0) = 4
+  //          1  = 1
+  //       -x(1) = 2
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
+      &prog, Vector3<Expression>(+x(0), 1, -x(1)), Eigen::Vector3d(4, 1, 2));
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint3) {
+  // Checks adding a matrix of linear equality constraints. This matrix is not
+  // symmetric.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables<2, 2>("X");
+
+  // Checks A * X = [1, 2; 3, 4], both A * X and B are static sized.
+  Eigen::Matrix2d A{};
+  A << 1, 3, 4, 2;
+  Eigen::Matrix2d B{};
+  B << 1, 2, 3, 4;
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A * X, B);
+
+  // Checks A * X = B, with A*X being dynamic sized, and B being static sized.
+  MatrixX<Expression> A_times_X = A * X;
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A_times_X, B);
+
+  // Checks A * X = B, with A*X being static sized, and B being dynamic sized.
+  Eigen::MatrixXd B_dynamic = B;
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A * X,
+                                                         B_dynamic);
+
+  // Checks A * X = B, with both A*X and B being dynamic sized.
+  CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(&prog, A_times_X,
+                                                         B_dynamic);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
+  // Checks adding a symmetric matrix of linear equality constraints.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<2>("X");
+  Eigen::Matrix2d A{};
+  A << 1, 3, 4, 2;
+  Eigen::Matrix2d B{};
+  B << 1, 2, 2, 1;
+  Eigen::MatrixXd B_dynamic = B;
+  Matrix2<Expression> M = A.transpose() * X + X * A;
+  MatrixX<Expression> M_dynamic = M;
+
+  // Checks Aᵀ * X + X * A = B, both the left and right hand-side are static
+  // sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M, B);
+
+  // Checks Aᵀ * X + X * A = B, the left hand-side being static sized, while the
+  // right hand-side being dynamic sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M, B_dynamic);
+
+  // Checks Aᵀ * X + X * A = B, the left hand-side being dynamic sized, while
+  // the
+  // right hand-side being static sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M_dynamic, B);
+
+  // Checks Aᵀ * X + X * A = B, bot the left and right hand-side are dynamic
+  // sized.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(&prog, M_dynamic,
+                                                      B_dynamic);
+
+  // Checks Aᵀ * X + X * A = E.
+  CheckAddedSymmetricSymbolicLinearEqualityConstraint(
+      &prog, M, Eigen::Matrix2d::Identity());
+}
+
+// Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
+// case where `f` is a linear-equality formula (instead of a conjunction of
+// them).
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  // f = (3x₀ + 2x₁ + 3 == 5).
+  const Formula f{3 * x(0) + 2 * x(1) + 3 == 5};
+  const Binding<LinearEqualityConstraint> binding{
+      prog.AddLinearEqualityConstraint(f)};
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
+
+  const Expression expr_in_added_constraint{
+      (binding.constraint()->A() * binding.variables() -
+       binding.constraint()->lower_bound())(0)};
+  // expr_in_added_constraint should be:
+  //    lhs(f) - rhs(f)
+  //  = (3x₀ + 2x₁ + 3) - 5
+  //  = 3x₀ + 2x₁ - 2.
+  EXPECT_PRED2(ExprEqual, expr_in_added_constraint, 3 * x(0) + 2 * x(1) - 2);
+  EXPECT_PRED2(ExprEqual, expr_in_added_constraint,
+               get_lhs_expression(f) - get_rhs_expression(f));
+}
+
+// Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
+// case where `f` is a conjunction of linear-equality formulas .
+GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
+  // Test problem: Ax = b where
+  //
+  // A = |-3.0  0.0  2.0|  x = |x0|  b = | 9.0|
+  //     | 0.0  7.0 -3.0|      |x1|      | 3.0|
+  //     | 2.0  5.0  0.0|      |x2|      |-5.0|
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Eigen::Matrix3d A;
+  Vector3d b;
+  // clang-format off
+  A << -3.0, 0.0,  2.0,
+        0.0, 7.0, -3.0,
+        2.0, 5.0,  0.0;
+  b << 9.0,
+       3.0,
+      -5.0;
+  // clang-format on
+  const Formula f{A * x == b};
+  const Binding<LinearEqualityConstraint> binding{
+      prog.AddLinearEqualityConstraint(f)};
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
+
+  // Checks if AddLinearEqualityConstraint added the constraint correctly.
+  const Eigen::Matrix<Expression, 3, 1> exprs_in_added_constraint{
+      binding.constraint()->A() * binding.variables() -
+      binding.constraint()->lower_bound()};
+  const Eigen::Matrix<Expression, 3, 1> expected_exprs{A * x - b};
+
+  // Since a conjunctive symbolic formula uses `std::set` as an internal
+  // representation, we need to check if `exprs_in_added_constraint` is a
+  // permutation of `expected_exprs`.
+  EXPECT_TRUE(is_permutation(
+      exprs_in_added_constraint.data(), exprs_in_added_constraint.data() + 3,
+      expected_exprs.data(), expected_exprs.data() + 3, ExprEqual));
+}
+
+// Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
+// is a non-linear equality formula.
+GTEST_TEST(testMathematicalProgram,
+           AddSymbolicLinearEqualityConstraintException1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  // f = (3x₀² + 2x₁ + 3 == 5).
+  const Formula f{3 * x(0) * x(0) + 2 * x(1) + 3 == 5};
+  EXPECT_THROW(prog.AddLinearEqualityConstraint(f), runtime_error);
+}
+
+// Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if a
+// conjunctive formula `f` includes a relational formula other than equality.
+GTEST_TEST(testMathematicalProgram,
+           AddSymbolicLinearEqualityConstraintException2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  // f = (3x₀ + 2x₁ + 3 >= 5 && 7x₀ - 5x₁ == 0).
+  const Formula f{3 * x(0) + 2 * x(1) + 3 >= 5 && 7 * x(0) - 5 * x(1) == 0};
+  EXPECT_THROW(prog.AddLinearEqualityConstraint(f), runtime_error);
+}
+
+// Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
+// is neither a linear-equality formula nor a conjunctive formula.
+GTEST_TEST(testMathematicalProgram,
+           AddSymbolicLinearEqualityConstraintException3) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  // f = (3x₀ + 2x₁ + 3 == 5 || 7x₀ - 5x₁ == 0).
+  const Formula f{3 * x(0) + 2 * x(1) + 3 == 5 || 7 * x(0) - 5 * x(1) == 0};
+  EXPECT_THROW(prog.AddLinearEqualityConstraint(f), runtime_error);
+}
+
+namespace {
+bool AreTwoPolynomialsNear(const symbolic::MonomialToCoefficientMap& poly1,
+                           const symbolic::MonomialToCoefficientMap& poly2,
+                           double tol = numeric_limits<double>::epsilon()) {
+  // TODO(hongkai.dai): rewrite this part when we have function to add and
+  // subtract two polynomials.
+  symbolic::MonomialToCoefficientMap poly_diff;
+  poly_diff.reserve(poly1.size() + poly2.size());
+  poly_diff.insert(poly1.begin(), poly1.end());
+  for (const auto& p2 : poly2) {
+    const auto it = poly_diff.find(p2.first);
+    if (it == poly_diff.end()) {
+      poly_diff.emplace_hint(it, p2.first, -p2.second);
+    } else {
+      it->second -= p2.second;
+    }
+  }
+  return all_of(poly_diff.begin(), poly_diff.end(), [&tol](const auto& p) {
+    return std::abs(symbolic::get_constant_value(p.second)) <= tol;
+  });
+}
+
+void CheckParsedSymbolicLorentzConeConstraint(
+    MathematicalProgram* prog, const Expression& linear_expr,
+    const Expression& quadratic_expr) {
+  const auto& binding1 =
+      prog->AddLorentzConeConstraint(linear_expr, quadratic_expr);
+  const auto& binding2 = prog->lorentz_cone_constraints().back();
+  EXPECT_EQ(binding1.constraint(), binding2.constraint());
+  EXPECT_EQ(binding1.variables(), binding2.variables());
+  // Now check if the linear and quadratic constraints are parsed correctly.
+  const VectorX<Expression> e_parsed =
+      binding1.constraint()->A() * binding1.variables() +
+      binding1.constraint()->b();
+  EXPECT_PRED2(ExprEqual, (e_parsed(0) * e_parsed(0)).Expand(),
+               (linear_expr * linear_expr).Expand());
+  Expression quadratic_expr_parsed =
+      e_parsed.tail(e_parsed.rows() - 1).squaredNorm();
+  // Due to the small numerical error, quadratic_expr and quadratic_expr_parsed
+  // do not match exactly.So we will compare each term in the two polynomials,
+  // and regard them to be equal if the error in the coefficient is sufficiently
+  // small.
+  const auto& monomial_to_coeff_map_parsed =
+      symbolic::DecomposePolynomialIntoMonomial(
+          quadratic_expr_parsed, quadratic_expr_parsed.GetVariables());
+  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
+      quadratic_expr, quadratic_expr.GetVariables());
+  double tol = 100 * numeric_limits<double>::epsilon();
+  EXPECT_TRUE(AreTwoPolynomialsNear(monomial_to_coeff_map_parsed,
+                                    monomial_to_coeff_map, tol));
+}
+
+void CheckParsedSymbolicLorentzConeConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
+  const auto& binding1 = prog->AddLorentzConeConstraint(e);
+  const auto& binding2 = prog->lorentz_cone_constraints().back();
+
+  EXPECT_EQ(binding1.constraint(), binding2.constraint());
+  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
+                binding1.constraint()->b(),
+            e);
+  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
+                binding2.constraint()->b(),
+            e);
+
+  CheckParsedSymbolicLorentzConeConstraint(prog, e(0),
+                                           e.tail(e.rows() - 1).squaredNorm());
+}
+
+void CheckParsedSymbolicRotatedLorentzConeConstraint(
+    MathematicalProgram* prog, const Eigen::Ref<const VectorX<Expression>>& e) {
+  const auto& binding1 = prog->AddRotatedLorentzConeConstraint(e);
+  const auto& binding2 = prog->rotated_lorentz_cone_constraints().back();
+
+  EXPECT_EQ(binding1.constraint(), binding2.constraint());
+  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
+                binding1.constraint()->b(),
+            e);
+  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
+                binding2.constraint()->b(),
+            e);
+}
+}  // namespace
+
+class SymbolicLorentzConeTest : public ::testing::Test {
+ public:
+  SymbolicLorentzConeTest() : prog_(), x_() {
+    x_ = prog_.NewContinuousVariables<3>("x");
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  VectorDecisionVariable<3> x_;
+};
+
+TEST_F(SymbolicLorentzConeTest, Test1) {
+  // Add Lorentz cone constraint:
+  // x is in Lorentz cone
+  Matrix<Expression, 3, 1> e;
+  e << 1 * x_(0), 1.0 * x_(1), 1.0 * x_(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test2) {
+  // Add Lorentz cone constraint:
+  // x + [1, 2, 0] is in Lorentz cone.
+  Matrix<Expression, 3, 1> e;
+  e << x_(0) + 1, x_(1) + 2, +x_(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test3) {
+  // Add Lorentz cone constraint:
+  // [2 * x(0) + 3 * x(2)]
+  // [  - x(0) + 2 * x(2)]    is in Lorentz cone
+  // [               x(2)]
+  // [  -x(1)            ]
+  Matrix<Expression, 4, 1> e;
+  // clang-format on
+  e << 2 * x_(0) + 3 * x_(2), -x_(0) + 2 * x_(2), +x_(2), -x_(1);
+  // clang-format off;
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test4) {
+  // Add Lorentz cone constraint:
+  // [ 2 * x(0) + 3 * x(1) +            5]
+  // [ 4 * x(0)            + 4 * x(2) - 7]
+  // [                                 10]
+  // [                       2 * x(2)    ]
+  Matrix<Expression, 4, 1> e;
+  // clang-format off
+  e << 2 * x_(0) + 3 * x_(1) + 5,
+       4 * x_(0) + 4 * x_(2) - 7,
+       10,
+       2 * x_(2);
+  // clang-format on
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test5) {
+  // Add Lorentz cone constraint:
+  // [x(0); x(1); x(2); 0] is in the Lorentz cone.
+  Vector4<Expression> e;
+  e << x_(0), x_(1), x_(2), 0;
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test6) {
+  // Add Lorentz cone constraint:
+  // [x(0); x(1) + x(2)] is in the Lorentz cone.
+  Vector2<Expression> e;
+  e << x_(0), x_(1) + x_(2);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test7) {
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2, pow(x_(0), 2) + 4 * x_(0) * x_(1) + 4 * pow(x_(1), 2));
+}
+
+TEST_F(SymbolicLorentzConeTest, Test8) {
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2,
+      pow(x_(0), 2) - (x_(0) - x_(1)) * (x_(0) + x_(1)) + 2 * x_(1) + 3);
+}
+
+TEST_F(SymbolicLorentzConeTest, Test9) {
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, 2,
+                                           pow(x_(0), 2) + pow(x_(1), 2));
+}
+
+TEST_F(SymbolicLorentzConeTest, TestLinearConstraint) {
+  // Actually adding linear constraint, that the quadratic expression is
+  // actually a constant.
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, x_(0) + 2, 1);
+  CheckParsedSymbolicLorentzConeConstraint(&prog_, x_(0) + 2,
+                                           x_(0) - 2 * (0.5 * x_(0) + 1) + 3);
+}
+
+TEST_F(SymbolicLorentzConeTest, TestError) {
+  // Check the cases to add with invalid quadratic expression.
+
+  // Check polynomial with order no smaller than 2
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3, pow(x_(1), 3)),
+               runtime_error);
+
+  // The quadratic expression is actually affine.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0), 3 * x_(1) + 2),
+               runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0), x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
+                         x_(0) * x_(0) + 2 * x_(1) + 3),
+      runtime_error);
+
+  // The Hessian matrix is not positive semidefinite.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
+                                              x_(1) * x_(1) - x_(2) * x_(2)),
+               runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0) + 3, x_(1) * x_(1) + x_(2) * x_(2) + 3 * x_(1) * x_(2)),
+      runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0) + 3, x_(1) * x_(1) + x_(2) * x_(2) + 3 * x_(0) * x_(2)),
+      runtime_error);
+
+  // The quadratic expression is not always non-negative.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, x_(1) * x_(1) + x_(2) * x_(2) - 1),
+               runtime_error);
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, pow(2 * x_(0) + 3 * x_(1) + 2, 2) - 1),
+               runtime_error);
+
+  // The quadratic expression is a negative constant.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, pow(x_(0), 2) - pow(x_(1), 2) -
+                                      (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
+               runtime_error);
+
+  // The first expression is not actually linear.
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) * x_(1), pow(x_(0), 2)),
+               runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
+  // Add rotated Lorentz cone constraint:
+  // x is in the rotated Lorentz cone constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<Expression, 3, 1> e;
+  e << +x(0), +x(1), +x(2);
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint2) {
+  // Add rotated Lorentz cone constraint:
+  // [x(0) + 2 * x(2)]
+  // [x(0)           ] is in the rotated Lorentz cone
+  // [           x(2)]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  Matrix<Expression, 3, 1> e;
+  e << x(0) + 2 * x(2), +x(0), +x(2);
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint3) {
+  // Add rotated Lorentz cone constraint:
+  // [x(0) + 1]
+  // [x(1) + 2] is in the rotated Lorentz cone
+  // [x(2)    ]
+  // [x(3) - 1]
+  // [-x(1)   ]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  Matrix<Expression, 5, 1> e;
+  e << x(0) + 1, x(1) + 2, +x(2), x(3) - 1, -x(1);
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
+  // Add rotated Lorentz cone constraint:
+  // [2 * x(0) + 3 * x(2) + 3]
+  // [    x(0) - 4 * x(2)    ] is in the rotated Lorentz cone
+  // [           2 * x(2)    ]
+  // [3 * x(0)            + 1]
+  // [                      4]
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  Matrix<Expression, 5, 1> e;
+  e << 2 * x(0) + 3 * x(2) + 3, x(0) - 4 * x(2), 2 * x(2), 3 * x(0) + 1, 4;
+  CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+namespace {
+template <typename Derived>
+typename enable_if<is_same<typename Derived::Scalar, Expression>::value>::type
+CheckAddedSymbolicPositiveSemidefiniteConstraint(
+    MathematicalProgram* prog, const Eigen::MatrixBase<Derived>& V) {
+  int num_psd_cnstr = prog->positive_semidefinite_constraints().size();
+  int num_lin_eq_cnstr = prog->linear_equality_constraints().size();
+  auto binding = prog->AddPositiveSemidefiniteConstraint(V);
+  // Check if number of linear equality constraints and positive semidefinite
+  // constraints are both incremented by 1.
+  EXPECT_EQ(num_psd_cnstr + 1,
+            prog->positive_semidefinite_constraints().size());
+  EXPECT_EQ(num_lin_eq_cnstr + 1, prog->linear_equality_constraints().size());
+  // Check if the returned binding is the correct one.
+  EXPECT_EQ(
+      binding.constraint().get(),
+      prog->positive_semidefinite_constraints().back().constraint().get());
+  // Check if the added linear constraint is correct. M is the newly added
+  // variables representing the psd matrix.
+  const Eigen::Map<const MatrixX<Variable>> M(&binding.variables()(0), V.rows(),
+                                              V.cols());
+  // The linear equality constraint is only imposed on the lower triangular
+  // part of the psd matrix.
+  const auto& new_lin_eq_cnstr = prog->linear_equality_constraints().back();
+  auto V_minus_M = math::ToSymmetricMatrixFromLowerTriangularColumns(
+      new_lin_eq_cnstr.constraint()->A() * new_lin_eq_cnstr.variables() -
+      new_lin_eq_cnstr.constraint()->lower_bound());
+  EXPECT_EQ(V_minus_M, V - M);
+}
+}  // namespace
+
+GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<4>("X");
+
+  auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X).constraint();
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+  const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
+  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.constraint().get());
+  Eigen::Map<Eigen::Matrix<Variable, 16, 1>> X_flat(&X(0, 0));
+  EXPECT_TRUE(CheckStructuralEquality(X_flat, new_psd_cnstr.variables()));
+
+  // Adds X is psd.
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
+                                                   Matrix4d::Identity() * X);
+
+  // Adds 2 * X + Identity() is psd.
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(
+      &prog, 2.0 * X + Matrix4d::Identity());
+
+  // Adds a linear matrix expression Aᵀ * X + X * A is psd.
+  Matrix4d A{};
+  // clang-format off
+  A << 1, 2, 3, 4,
+       0, 1, 2, 3,
+       0, 0, 2, 3,
+       0, 0, 0, 1;
+  // clang-format on
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
+                                                   A.transpose() * X + X * A);
+
+  // Adds [X.topLeftCorner<2, 2>()  0                        ] is psd
+  //      [ 0                     X.bottomRightCorner<2, 2>()]
+  Eigen::Matrix<Expression, 4, 4> Y{};
+  // clang-format off
+  Y << Matrix2d::Identity() * X.topLeftCorner<2, 2>(), Matrix2d::Zero(),
+       Matrix2d::Zero(), Matrix2d::Identity() * X.bottomRightCorner<2, 2>();
+  // clang-format on
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, Y);
+}
+
+void CheckAddedQuadraticCost(MathematicalProgram* prog,
+                             const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
+                             const VectorXDecisionVariable& x) {
+  int num_quadratic_cost = prog->quadratic_costs().size();
+  auto cnstr = prog->AddQuadraticCost(Q, b, x).constraint();
+
+  EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
+  // Check if the newly added quadratic constraint, and the returned
+  // quadratic constraint, both match 0.5 * x' * Q * x + b' * x
+  EXPECT_EQ(cnstr, prog->quadratic_costs().back().constraint());
+  EXPECT_EQ(cnstr->Q(), Q);
+  EXPECT_EQ(cnstr->b(), b);
+}
+
+GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d::Zero(), x);
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+}
+
+void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
+                                            const Expression& e,
+                                            double constant,
+                                            const Binding<Constraint>& binding,
+                                            int num_quadratic_cost) {
+  EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
+  EXPECT_EQ(binding.constraint(), prog.quadratic_costs().back().constraint());
+  EXPECT_EQ(binding.variables(), prog.quadratic_costs().back().variables());
+
+  auto cnstr = prog.quadratic_costs().back().constraint();
+  // Check the added cost is 0.5 * x' * Q * x + b' * x
+  const auto& x_bound = binding.variables();
+  const Expression e_added =
+      0.5 * x_bound.dot(cnstr->Q() * x_bound) + cnstr->b().dot(x_bound);
+  EXPECT_PRED2(ExprEqual, e_added.Expand() + constant, e.Expand());
+}
+
+void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
+                                     const Expression& e, double constant) {
+  int num_quadratic_cost = prog->quadratic_costs().size();
+  auto binding1 = prog->AddQuadraticCost(e);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding1,
+                                         ++num_quadratic_cost);
+  auto binding2 = prog->AddCost(e);
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding2,
+                                         ++num_quadratic_cost);
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  // Identity diagonal term.
+  Expression e1 = x.transpose() * x;
+  CheckAddedSymbolicQuadraticCost(&prog, e1, 0);
+
+  // Identity diagonal term.
+  Expression e2 = x.transpose() * x + 1;
+  CheckAddedSymbolicQuadraticCost(&prog, e2, 1);
+
+  // Identity diagonal term.
+  Expression e3 = x(0) * x(0) + x(1) * x(1) + 2;
+  CheckAddedSymbolicQuadraticCost(&prog, e3, 2);
+
+  // Non-identity diagonal term.
+  Expression e4 = x(0) * x(0) + 2 * x(1) * x(1) + 3 * x(2) * x(2) + 3;
+  CheckAddedSymbolicQuadraticCost(&prog, e4, 3);
+
+  // Cross terms.
+  Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
+  CheckAddedSymbolicQuadraticCost(&prog, e5, 2);
+
+  // Linear terms.
+  Expression e6 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0);
+  CheckAddedSymbolicQuadraticCost(&prog, e6, 0);
+
+  // Cross terms and linear terms.
+  Expression e7 = (x(0) + 2 * x(1) + 3) * (x(0) + x(1) + 4) + 3 * x(0) * x(0) +
+                  6 * pow(x(1) + 1, 2);
+  CheckAddedSymbolicQuadraticCost(&prog, e7, 18);
+
+  // Cubic polynomial case.
+  Expression e8 = pow(x(0), 3) + 1;
+  EXPECT_THROW(prog.AddQuadraticCost(e8), runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // |Ax - b|^2 = (x-xd)'Q(x-xd) => Q = A'*A and b = A*xd.
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  Eigen::Matrix2d Q = A.transpose() * A;
+  Eigen::Vector2d x_desired;
+  x_desired << 5, 6;
+  Eigen::Vector2d b = A * x_desired;
+
+  auto obj1 = prog.AddQuadraticErrorCost(Q, x_desired, x).constraint();
+  auto obj2 = prog.AddL2NormCost(A, b, x).constraint();
+
+  // Test the objective at a 6 arbitrary values (to guarantee correctness
+  // of the six-parameter quadratic form.
+  Eigen::Vector2d x0;
+  Eigen::VectorXd y1, y2;
+  x0 << 7, 8;
+
+  for (int i = 0; i < 6; i++) {
+    obj1->Eval(x0, y1);
+    obj2->Eval(x0, y2);
+
+    EXPECT_TRUE(CompareMatrices(y1, y2));
+    EXPECT_TRUE(CompareMatrices(
+        y2, (A * x0 - b).transpose() * (A * x0 - b) - b.transpose() * b));
+    // Note: Currently have to subtract out the constant term (b'*b) due to
+    // issue #3500.
+
+    x0 += Eigen::Vector2d::Constant(2);
+  }
+}
+
+void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
+  int num_cost = prog->generic_costs().size();
+  const auto binding = prog->AddPolynomialCost(e);
+  EXPECT_EQ(prog->generic_costs().size(), ++num_cost);
+  EXPECT_EQ(binding.constraint(), prog->generic_costs().back().constraint());
+  // Now reconstruct the symbolic expression from `binding`.
+  const auto polynomial = binding.constraint()->polynomials()(0);
+  symbolic::MonomialToCoefficientMap map_expected;
+  for (const auto& m : polynomial.GetMonomials()) {
+    map<Variable::Id, int> map_var_to_power;
+    for (const auto& term : m.terms) {
+      map_var_to_power.emplace(term.var, term.power);
+    }
+    symbolic::Monomial m_symbolic(map_var_to_power);
+    map_expected.emplace(m_symbolic, m.coefficient);
+  }
+  // Now compare the reconstructed symbolic polynomial with `e`.
+  const auto map =
+      symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
+  EXPECT_EQ(map.size(), map_expected.size());
+  for (const auto& m : map) {
+    const auto m_expected_it = map_expected.find(m.first);
+    EXPECT_NE(m_expected_it, map_expected.end());
+    EXPECT_EQ(m_expected_it->second, m.second);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, testAddPolynomialCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  // Add a cubic cost
+  CheckAddedPolynomialCost(&prog, pow(x(0), 3));
+
+  // Add a cubic cost
+  CheckAddedPolynomialCost(&prog, pow(x(0), 2) * x(1));
+
+  // Add a 4th order cost
+  CheckAddedPolynomialCost(
+      &prog, x(0) * x(0) * x(1) * x(1) + pow(x(0), 3) * x(1) + 2 * x(1));
+}
+
+GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Add a non-polynomial cost.
+  EXPECT_THROW(prog.AddCost(sin(x(0))), runtime_error);
+
+  // Add a cost containing variable not included in the mathematical program.
+  Variable y("y");
+  EXPECT_THROW(prog.AddCost(x(0) + y), runtime_error);
+  EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), runtime_error);
+}
+}  // namespace test
 }  // namespace solvers
 }  // namespace drake

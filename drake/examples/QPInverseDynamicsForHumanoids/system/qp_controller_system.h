@@ -1,9 +1,10 @@
 #pragma once
 
-#include <iostream>
+#include <memory>
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -11,83 +12,66 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- * A wrapper around qp inverse dynamics controller.
- *
- * Input: HumanoidStatus
- * Input: QPInput
- * Output: QPOutput
+ * A discrete time system block for an inverse dynamics controller.
  */
-class QPControllerSystem : public systems::LeafSystem<double> {
+class QpControllerSystem : public systems::LeafSystem<double> {
  public:
-  explicit QPControllerSystem(const RigidBodyTree<double>& robot)
-      : robot_(robot) {
-    input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
-    input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
-    output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
-
-    DRAKE_ASSERT(this->get_num_input_ports() == 2);
-    DRAKE_ASSERT(this->get_num_output_ports() == 1);
-
-    set_name("qp_controller");
-  }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {
-    // Inputs:
-    const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(
-        context, input_port_index_humanoid_status_);
-
-    const lcmt_qp_input* qp_input_msg =
-        EvalInputValue<lcmt_qp_input>(context, input_port_index_qp_input_);
-
-    QPInput qp_input(robot_);
-    DecodeQPInput(robot_, *qp_input_msg, &qp_input);
-
-    // Output:
-    QPOutput& qp_output = output->GetMutableData(output_port_index_qp_input_)
-                              ->GetMutableValue<QPOutput>();
-
-    if (qp_controller_.Control(*rs, qp_input, &qp_output) < 0) {
-      std::cout << rs->position().transpose() << std::endl;
-      std::cout << rs->velocity().transpose() << std::endl;
-      std::cout << qp_input << std::endl;
-      throw std::runtime_error("System2QP: QP cannot solve\n");
-    }
-  }
-
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override {
-    std::unique_ptr<LeafSystemOutput<double>> output(
-        new LeafSystemOutput<double>);
-    QPOutput out(robot_);
-    output->add_port(std::unique_ptr<AbstractValue>(new Value<QPOutput>(out)));
-    return std::move(output);
-  }
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpControllerSystem)
 
   /**
-   * @return Port for the input: HumanoidStatus.
+   * Constructor for the inverse dynamics controller.
+   * @param robot Reference to a RigidBodyTree. Its lifespan must be longer
+   * than this object.
+   * @param dt Control cycle period.
    */
-  inline const SystemPortDescriptor<double>& get_input_port_humanoid_status()
-      const {
+  QpControllerSystem(const RigidBodyTree<double>& robot, double dt);
+
+  void DoCalcOutput(const systems::Context<double>& context,
+                    systems::SystemOutput<double>* output) const override;
+
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
+
+  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
+                                systems::State<double>* state) const override;
+
+  /**
+   * Returns the input port for HumanoidStatus.
+   */
+  inline const systems::InputPortDescriptor<double>&
+  get_input_port_humanoid_status() const {
     return get_input_port(input_port_index_humanoid_status_);
   }
 
   /**
-   * @return Port for the input: QPInput.
+   * Returns the input port for QpInput.
    */
-  inline const SystemPortDescriptor<double>& get_input_port_qp_input() const {
+  inline const systems::InputPortDescriptor<double>& get_input_port_qp_input()
+      const {
     return get_input_port(input_port_index_qp_input_);
   }
 
   /**
-   * @return Port for the output: QPOutput.
+   * Returns the output port for QpOutput.
    */
-  inline const SystemPortDescriptor<double>& get_output_port_qp_output() const {
-    return get_output_port(output_port_index_qp_input_);
+  inline const systems::OutputPortDescriptor<double>&
+  get_output_port_qp_output() const {
+    return get_output_port(output_port_index_qp_output_);
   }
+
+  /**
+   * Returns the output port for lcmt_inverse_dynamics_debug_info.
+   */
+  inline const systems::OutputPortDescriptor<double>&
+  get_output_port_debug_info() const {
+    return get_output_port(output_port_index_debug_info_);
+  }
+
+  inline double get_control_dt() const { return control_dt_; }
 
  private:
   const RigidBodyTree<double>& robot_;
+  const double control_dt_{};
 
   // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
   // CalcOutput. It is because qp controller needs to allocate mutable workspace
@@ -96,9 +80,13 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   // This should be taken care of with the new system2 cache.
   mutable QPController qp_controller_;
 
-  int input_port_index_humanoid_status_;
-  int input_port_index_qp_input_;
-  int output_port_index_qp_input_;
+  int input_port_index_humanoid_status_{0};
+  int input_port_index_qp_input_{0};
+  int output_port_index_qp_output_{0};
+  int output_port_index_debug_info_{0};
+
+  int abs_state_index_qp_output_{0};
+  int abs_state_index_debug_info_{0};
 };
 
 }  // namespace qp_inverse_dynamics

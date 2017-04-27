@@ -1,7 +1,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system_port_descriptor.h"
@@ -18,6 +18,7 @@ namespace {
 GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   DiagramBuilder<double> builder;
   auto adder = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  adder->set_name("adder");
   // Connect the output port to the input port.
   builder.Connect(adder->get_output_port(), adder->get_input_port(0));
   EXPECT_THROW(builder.Build(), std::logic_error);
@@ -35,11 +36,13 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoop) {
   //        |->| 1       |                 |---> output
   //        |------------------------------|
   auto adder = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+  adder->set_name("adder");
   auto integrator = builder.AddSystem<Integrator>(1 /* size */);
+  integrator->set_name("integrator");
 
-  builder.Connect(integrator->get_output_port(0), adder->get_input_port(1));
+  builder.Connect(integrator->get_output_port(), adder->get_input_port(1));
   builder.ExportInput(adder->get_input_port(0));
-  builder.ExportOutput(integrator->get_output_port(0));
+  builder.ExportOutput(integrator->get_output_port());
 
   // There is no algebraic loop, so we should not throw.
   EXPECT_NO_THROW(builder.Build());
@@ -51,12 +54,14 @@ GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
   DiagramBuilder<double> builder;
 
   auto integrator1 = builder.AddSystem<Integrator>(1 /* size */);
+  integrator1->set_name("integrator1");
   auto integrator2 = builder.AddSystem<Integrator>(1 /* size */);
+  integrator2->set_name("integrator2");
 
-  builder.Connect(integrator1->get_output_port(0),
-                  integrator2->get_input_port(0));
-  builder.ExportInput(integrator1->get_input_port(0));
-  builder.ExportOutput(integrator2->get_output_port(0));
+  builder.Connect(integrator1->get_output_port(),
+                  integrator2->get_input_port());
+  builder.ExportInput(integrator1->get_input_port());
+  builder.ExportOutput(integrator2->get_output_port());
 
   // There is no algebraic loop, so we should not throw.
   EXPECT_NO_THROW(builder.Build());
@@ -89,10 +94,15 @@ class DiagramBuilderSolePortsTest : public ::testing::Test {
  protected:
   void SetUp() override {
     out1_ = builder_.AddSystem<ConstantVectorSource>(Vector1d::Ones());
+    out1_->set_name("constant");
     in1_ = builder_.AddSystem<Sink>();
+    in1_->set_name("sink");
     in1out1_ = builder_.AddSystem<Gain>(1.0 /* gain */, 1 /* size */);
+    in1out1_->set_name("gain");
     in2out1_ = builder_.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+    in2out1_->set_name("adder");
     in1out2_ = builder_.AddSystem<Demultiplexer>(2 /* size */);
+    in1out2_->set_name("demux");
   }
 
   DiagramBuilder<double> builder_;
@@ -144,9 +154,31 @@ TEST_F(DiagramBuilderSolePortsTest, TooManySrcInputs) {
 GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
   DiagramBuilder<double> builder;
   auto adder1 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  adder1->set_name("adder1");
   auto adder2 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  adder2->set_name("adder2");
   EXPECT_EQ((std::vector<System<double>*>{adder1, adder2}),
             builder.GetMutableSystems());
+}
+
+// Tests that the returned exported input / output port id matches the
+// number of ExportInput() / ExportOutput() calls.
+GTEST_TEST(DiagramBuilderTest, ExportInputOutputIndex) {
+  DiagramBuilder<double> builder;
+  auto adder1 = builder.AddSystem<Adder>(3 /* inputs */, 1 /* size */);
+  adder1->set_name("adder1");
+  auto adder2 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  adder2->set_name("adder2");
+
+  EXPECT_EQ(builder.ExportInput(
+        adder1->get_input_port(0)), 0 /* exported input port id */);
+  EXPECT_EQ(builder.ExportInput(
+        adder1->get_input_port(1)), 1 /* exported input port id */);
+
+  EXPECT_EQ(builder.ExportOutput(
+        adder1->get_output_port()), 0 /* exported output port id */);
+  EXPECT_EQ(builder.ExportOutput(
+        adder2->get_output_port()), 1 /* exported output port id */);
 }
 
 }  // namespace

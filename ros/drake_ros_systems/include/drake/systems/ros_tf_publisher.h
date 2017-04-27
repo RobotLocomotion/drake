@@ -8,12 +8,12 @@
 #include "ros/ros.h"
 #include "tf/transform_broadcaster.h"
 
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_output.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/output_port_value.h"
 
 namespace drake {
 namespace systems {

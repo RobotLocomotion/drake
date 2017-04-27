@@ -5,18 +5,22 @@
 #include <fstream>
 #include <stdexcept>
 
-#include "spruce.hh"
+#include <spruce.hh>
+#include <tiny_obj_loader.h>
 
-using std::string;
-using std::ostream;
-using std::istringstream;
+#include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
+
 using std::ifstream;
+using std::istringstream;
+using std::ostream;
+using std::string;
 
-using Eigen::Vector3i;
-using Eigen::Vector3d;
-using Eigen::RowVectorXd;
 using Eigen::Matrix3Xd;
 using Eigen::Matrix3Xi;
+using Eigen::RowVectorXd;
+using Eigen::Vector3d;
+using Eigen::Vector3i;
 
 namespace DrakeShapes {
 const int Geometry::NUM_BBOX_POINTS = 8;
@@ -64,6 +68,14 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
                                     Eigen::Matrix3Xd& points) const {
   // Return axis-aligned bounding-box vertices
   points.resize(3, NUM_BBOX_POINTS);
+
+  // Order:                +y
+  //       3------2          |
+  //      /|     /|          |
+  //     / 4----/-5          ------  +x
+  //    0------1 /          /
+  //    |/     |/          /
+  //    7------6        +z
 
   RowVectorXd cx(NUM_BBOX_POINTS), cy(NUM_BBOX_POINTS), cz(NUM_BBOX_POINTS);
   cx << -1, 1, 1, -1, -1, 1, 1, -1;
@@ -113,6 +125,32 @@ Box* Box::clone() const { return new Box(*this); }
 void Box::getPoints(Matrix3Xd& points) const {
   Geometry::getBoundingBoxPoints(size(0) / 2.0, size(1) / 2.0, size(2) / 2.0,
                                  points);
+}
+
+void Box::getFaces(TrianglesVector* faces) const {
+  faces->resize(12);
+  // Here, the vertex indices index into the getBoundingBox vertex order.
+  // (See the documentation in that function for a picture.) For each face,
+  // vertices are supplied in counterclockwise order when viewed from
+  // the "outside" of the face.
+  // +y face:
+  faces->at(0) = Vector3i(0, 1, 2);
+  faces->at(1) = Vector3i(0, 2, 3);
+  // +x face:
+  faces->at(2) = Vector3i(5, 2, 1);
+  faces->at(3) = Vector3i(6, 5, 1);
+  // +z face:
+  faces->at(4) = Vector3i(7, 6, 1);
+  faces->at(5) = Vector3i(7, 1, 0);
+  // -y face:
+  faces->at(6) = Vector3i(4, 5, 6);
+  faces->at(7) = Vector3i(4, 6, 7);
+  // -x face:
+  faces->at(8) = Vector3i(3, 4, 7);
+  faces->at(9) = Vector3i(0, 3, 7);
+  // -z face:
+  faces->at(10) = Vector3i(5, 4, 2);
+  faces->at(11) = Vector3i(4, 3, 2);
 }
 
 void Box::getBoundingBoxPoints(Matrix3Xd& points) const { getPoints(points); }
@@ -181,6 +219,8 @@ ostream& operator<<(ostream& out, const Capsule& cc) {
   return out;
 }
 
+const double Mesh::kCosThreshold = std::cos(30.0 / 180.0 * M_PI);
+
 Mesh::Mesh(const string& uri, const string& resolved_filename)
     : Geometry(MESH),
       scale_(1.0, 1.0, 1.0),
@@ -226,7 +266,8 @@ bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const {
     if (iss >> type && type == "v") {
       int i = 0;
       while (iss >> d) {
-        vertex_coordinates(i++, j) = d;
+        vertex_coordinates(i, j) = d * scale_(i);
+        i++;
       }
       ++j;
     }
@@ -258,81 +299,163 @@ string Mesh::FindFileWithObjExtension() const {
   return spath.getStr();
 }
 
-void Mesh::LoadObjFile(PointsVector* vertices,
-                       TrianglesVector* triangles) const {
+void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
+                       TriangulatePolicy triangulate) const {
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
   if (!file) {
     throw std::runtime_error("Error opening file \"" + obj_file_name + "\".");
   }
 
-  std::string line;
-  int line_number = 0;
+  string path;
+  const size_t idx = obj_file_name.rfind('/');
+  if (idx != string::npos) {
+    path = obj_file_name.substr(0, idx + 1);
+  }
+
+  tinyobj::attrib_t attrib;
+  std::vector<tinyobj::shape_t> shapes;
+  std::vector<tinyobj::material_t> materials;
+  std::string err;
+
+  // Would be nice to hand off triangulation of non-triangular faces
+  // to tinyobjloader, however tinyobjloader does no checking that
+  // the triangulation is in fact correct.
+  bool do_tinyobj_triangulation = false;
+  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+      obj_file_name.c_str(), path.c_str(), do_tinyobj_triangulation);
+
+  // Use the boolean return value and the error string to determine
+  // if we should proceeed.
+  if (!ret || !err.empty()) {
+    throw std::runtime_error("Error parsing file \""
+        + obj_file_name + "\" : " + err);
+  }
+
+  // Store the vertices.
+  for (int index = 0;
+       index < static_cast<int>(attrib.vertices.size());
+       index += 3) {
+    vertices->push_back(Vector3d(attrib.vertices[index] * scale_[0],
+                                 attrib.vertices[index + 1] * scale_[1],
+                                 attrib.vertices[index + 2] * scale_[2]));
+  }
+
+  // Counter for triangles added to compensate for non-triangular faces.
+  int added_triangles = 0;
+  // Counter keeping track of indices, used to check against the number
+  // of vertices later to ensure all is correct.
   int maximum_index = 0;
-  while (!file.eof()) {
-    ++line_number;
-    std::getline(file, line);
-    std::stringstream ss(line);
-    std::string key;
-    ss >> key;
 
-    if (key == "v") {
-      // Reads a 3D vertex.
-      double x, y, z;
-      ss >> x; ss >> y; ss >> z;
-      if (ss.fail()) {
-        throw std::runtime_error(
-            "In file \"" + obj_file_name + "\" "
-            "(line " + std::to_string(line_number) + "). "
-            "Vertex in the wrong format.");
-      }
-      vertices->push_back(Vector3d(x, y, z));
-    } else if (key == "f") {
-      // Reads the connectivity for a single triangle.
+  // Iterate over the shapes.
+  for (auto const& shape : shapes) {
+    int index_offset = 0;
+
+    // For each face in the shape.
+    for (int face = 0;
+         face < static_cast<int>(shape.mesh.num_face_vertices.size()); ++face) {
+      const int vert_count = shape.mesh.num_face_vertices[face];
+
       std::vector<int> indices;
-      int index;
-      while (ss >> index) {
-        // Checks that index >= 1.
-        if (index < 1) {
-          throw std::runtime_error(
-              "In file \"" + obj_file_name + "\" "
-              "(line " + std::to_string(line_number) + "). "
-              "Invalid vertex index is " + std::to_string(index) + " < 1.");
-        }
-        maximum_index = std::max(maximum_index, index);
+      for (int vert = 0; vert < vert_count; ++vert) {
+        // Store the vertex index.
+        int vertex_index = shape.mesh.indices[index_offset + vert].vertex_index;
+        maximum_index = std::max(maximum_index, vertex_index);
+        indices.push_back(vertex_index);
+      }
 
-        // Ignores line until the next whitespace.
-        // This effectively ignores texture coordinates and normals.
-        // The first entry always corresponds to an index in the face.
-        ss.ignore(line.size(), ' ');
-        if (ss.fail()) {
-          throw std::runtime_error(
-              "In file \"" + obj_file_name + "\" "
-              "(line " + std::to_string(line_number) + "). "
-              "Triangle face in the wrong format.");
-        }
-        indices.push_back(index);
-      }
+      // Make sure the face has three vertices. This can only occur if
+      // do_tiny_obj_triangulation is false and faces are non triangular.
       if (indices.size() != 3) {
-        throw std::runtime_error(
-            "In file \"" + obj_file_name + "\" "
-            "(line " + std::to_string(line_number) + "). "
-            "Only triangular faces supported. However "
-            + std::to_string(indices.size()) + " indices are provided.");
+        if (triangulate == TriangulatePolicy::kTry && indices.size() > 3) {
+          // This is a very naive triangulation.  It simply creates a fan
+          // around the 0th vertex through the loop of vertices in the polygon.
+          // The fan won't necessarily produce triangles with the best aspect
+          // ratio.
+          //
+          // The requirement that two adjacent, generated triangles have normals
+          // that deviate by no more than 30° will implicitly catch the
+          // degenerate case where applying this algorithm to a concave face
+          // would cause changes in triangle winding and, therefore, normal
+          // directions.
+          //
+          // For a polygon with n vertices indexed in the range [0, n - 1] we
+          // create triangles built on those indices in the pattern:
+          //    (0, 1, 2), (0, 2, 3), (0, 3, 4), ..., (0, n-2, n-1).
+          // The triangle consisting of (0, 1, 2) is handled below, so this
+          // starts with (0, 2, 3).
+          Vector3d lastNormal;
+          bool valid = GetNormal(*vertices, indices[0], indices[1],
+                                 indices[2], &lastNormal, kMinArea);
+          const int index_size = static_cast<int>(indices.size());
+          for (int i = 2; valid && i < index_size - 1; ++i) {
+            // OBJ file indices are 1-based; subtracting 1 makes them 0-based.
+            Vector3d testNormal;
+            valid = GetNormal(*vertices, indices[0], indices[i],
+                              indices[i + 1], &testNormal, kMinArea);
+            if (valid) {
+              double dot_product = lastNormal.dot(testNormal);
+              if (dot_product < 0) {
+                throw std::runtime_error("Trying to triangulate face number " +
+                    std::to_string(face) + " in '" + obj_file_name +
+                    "' led to bad triangles. The triangle based " +
+                    "on vertices " + std::to_string(indices[0]) +
+                    ", " + std::to_string(indices[i]) + ", and " +
+                    std::to_string(indices[i + 1]) +
+                    " (0-indexed) is wound in the opposite " +
+                    "direction from the previous triangle. " +
+                    "Consider triangulating by hand.");
+              } else if (dot_product < kCosThreshold) {
+                throw std::runtime_error("Trying to triangulate face number " +
+                    std::to_string(face) + " in '" + obj_file_name +
+                    "'.  The face is not sufficiently planar. " +
+                    "Consider triangulating by hand.");
+              }
+            }
+            lastNormal = testNormal;
+            triangles->push_back(
+                Vector3i(indices[0], indices[i], indices[i + 1]));
+          }
+          if (!valid) {
+            // Problems in computing the normal are logged in GetNormal.
+            throw std::runtime_error("Unable to triangulate face number " +
+                std::to_string(face) + " in '" + obj_file_name +
+                "'. See log for details.");
+          }
+          // A polygon of n vertices produces a fan of n - 2 triangles.
+          // One of those is a given, so we're "adding" n - 3 triangles.
+          added_triangles += index_size - 3;
+        } else {
+          throw std::runtime_error(
+              "In file \"" + obj_file_name + "\" (face " +
+                  std::to_string(face) +
+                  "). Only triangular faces are supported. However "
+                  + std::to_string(vert_count) + " indices are provided.");
+        }
       }
-      triangles->push_back(Vector3i(indices[0]-1, indices[1]-1, indices[2]-1));
+
+      triangles->push_back(Vector3i(indices[0], indices[1], indices[2]));
+
+      index_offset += vert_count;
     }
   }
 
   // Verifies that the maximum index referenced when defining faces does not
-  // exceed the number of vertices.
-  if (maximum_index > static_cast<int>(vertices->size())) {
+  // exceed the number of vertices (note max index starts from zero).
+  if (maximum_index >= static_cast<int>(vertices->size())) {
     throw std::runtime_error(
         "In file \"" + obj_file_name + "\". "
-        "The maximum index referenced in defining faces (" +
+            "The maximum index referenced in defining faces (" +
             std::to_string(maximum_index) + ") "
-        "exceeds the number of vertices (" +
+            "exceeds the number of vertices (" +
             std::to_string(vertices->size()) + ". ");
+  }
+
+  if (added_triangles > 0) {
+    drake::log()->info("Encountered non-triangular faces in '" + obj_file_name +
+                       "'. Triangulation was applied, adding " +
+                       std::to_string(added_triangles) +
+                       " new triangles to the mesh.");
   }
 }
 
@@ -340,6 +463,11 @@ Mesh* Mesh::clone() const { return new Mesh(*this); }
 
 void Mesh::getPoints(Eigen::Matrix3Xd& point_matrix) const {
   extractMeshVertices(point_matrix);
+}
+
+void Mesh::getFaces(TrianglesVector* faces) const {
+  PointsVector points;
+  LoadObjFile(&points, faces, Mesh::TriangulatePolicy::kTry);
 }
 
 void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
@@ -355,6 +483,40 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
       max_pos(1), min_pos(1), min_pos(1), max_pos(1), max_pos(1), min_pos(2),
       max_pos(2), min_pos(2), max_pos(2), min_pos(2), max_pos(2), min_pos(2),
       max_pos(2);
+}
+
+bool Mesh::GetNormal(const PointsVector& vertices, int i0, int i1, int i2,
+                     Eigen::Vector3d* normal, double minArea) {
+  DRAKE_ASSERT(normal != nullptr);
+  DRAKE_ASSERT(i0 >= 0 && i1 >= 0 && i2 >= 0);
+  const int kNumVertex = static_cast<int>(vertices.size());
+  if (i0 >= kNumVertex || i1 >= kNumVertex || i2 >= kNumVertex) {
+    drake::log()->warn(
+        "Unable to compute normal. At least one OBJ index reference: " +
+        std::to_string(i0 + 1) + ", " + std::to_string(i1 + 1) + ", " +
+        std::to_string(i2 + 1) + " is beyond the parsed number of vertices: " +
+        std::to_string(kNumVertex) + ". Make sure the OBJ file defines the " +
+        "vertices before referencing them.");
+    return false;
+  }
+  const Vector3d& v0 = vertices[i0];
+  const Vector3d& v1 = vertices[i1];
+  const Vector3d& v2 = vertices[i2];
+  *normal = (v1 - v0).cross(v2 - v0);
+
+  // The magnitude of this normal is *twice* the area of the triangle formed by
+  // v0, v1, and v2.  The normal is only considered valid if the area is at
+  // at least that specified by the caller.
+  double length = normal->norm();
+  if (length < 2 * minArea) {
+    drake::log()->warn(
+        "Unable to compute normal. Triangle with OBJ indices: " +
+            std::to_string(i0 + 1) + ", " + std::to_string(i1 + 1) + ", " +
+            std::to_string(i2 + 1) + " is too small.");
+    return false;
+  }
+  *normal /= length;
+  return true;
 }
 
 ostream& operator<<(ostream& out, const Mesh& mm) {

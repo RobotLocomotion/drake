@@ -4,10 +4,10 @@
 #include <stdexcept>
 #include <string>
 
-#include "drake/systems/framework/system_input.h"
-#include "drake/systems/framework/value.h"
+#include <gtest/gtest.h>
 
-#include "gtest/gtest.h"
+#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/value.h"
 
 using Eigen::Matrix;
 using std::make_unique;
@@ -38,8 +38,9 @@ TEST_F(ConstantValueSourceTest, Output) {
 
   source_->CalcOutput(*context_, output_.get());
 
-  EXPECT_EQ("foo",
-            output_->get_port(0).get_abstract_data()->GetValue<std::string>());
+  EXPECT_EQ(
+      "foo",
+      output_->get_port_value(0).get_abstract_data()->GetValue<std::string>());
   EXPECT_EQ("foo", output_->get_data(0)->GetValue<std::string>());
 }
 

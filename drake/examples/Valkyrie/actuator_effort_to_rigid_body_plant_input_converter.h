@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <map>
+#include <vector>
 
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/rigid_body_actuator.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -33,7 +33,7 @@ class ActuatorEffortToRigidBodyPlantInputConverter : public LeafSystem<T> {
 
   /// Returns the descriptor of the effort input port corresponding for
   /// @param actuator
-  const SystemPortDescriptor<T>& effort_input_port(
+  const InputPortDescriptor<T>& effort_input_port(
       const RigidBodyActuator& actuator);
 
  private:

@@ -3,8 +3,26 @@
 drake_add_cc_test(autodiff_overloads_test)
 target_link_libraries(autodiff_overloads_test drakeCommon)
 
+drake_add_cc_test(copyable_unique_ptr_test)
+target_link_libraries(copyable_unique_ptr_test drakeCommon)
+
 drake_add_cc_test(double_overloads_test)
 target_link_libraries(double_overloads_test drakeCommon)
+
+drake_add_cc_test(drake_optional_test)
+target_link_libraries(double_overloads_test drakeCommon)
+
+drake_add_cc_test(drake_throw_test)
+target_link_libraries(drake_throw_test drakeCommon)
+
+drake_add_cc_test(dummy_value_test)
+target_link_libraries(dummy_value_test drakeCommon)
+
+drake_add_cc_test(eigen_matrix_compare_test)
+target_link_libraries(eigen_matrix_compare_test drakeCommon)
+
+drake_add_cc_test(eigen_stl_types_test)
+target_link_libraries(eigen_stl_types_test Eigen3::Eigen)
 
 drake_add_cc_test(extract_double_test)
 target_link_libraries(extract_double_test drakeCommon)
@@ -15,20 +33,50 @@ target_link_libraries(functional_form_test drakeCommon)
 drake_add_cc_test(is_approx_equal_abstol_test)
 target_link_libraries(is_approx_equal_abstol_test drakeCommon)
 
+drake_add_cc_test(is_cloneable_test)
+target_link_libraries(is_cloneable_test drakeCommon)
+
+drake_add_cc_test(never_destroyed_test)
+target_link_libraries(never_destroyed_test drakeCommon)
+
+drake_add_cc_test(monomial_test)
+target_link_libraries(monomial_test drakeCommon)
+
+drake_add_cc_test(is_dynamic_castable_test)
+target_link_libraries(is_dynamic_castable_test drakeCommon)
+
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
-
-drake_add_cc_test(symbolic_variable_test)
-target_link_libraries(symbolic_variable_test drakeCommon)
-
-drake_add_cc_test(symbolic_variables_test)
-target_link_libraries(symbolic_variables_test drakeCommon)
 
 drake_add_cc_test(symbolic_environment_test)
 target_link_libraries(symbolic_environment_test drakeCommon)
 
+drake_add_cc_test(symbolic_expansion_test)
+target_link_libraries(symbolic_expansion_test drakeCommon)
+
 drake_add_cc_test(symbolic_expression_test)
 target_link_libraries(symbolic_expression_test drakeCommon)
+
+drake_add_cc_test(decompose_polynomial_test)
+target_link_libraries(decompose_polynomial_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_differentiation_test)
+target_link_libraries(symbolic_expression_differentiation_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_jacobian_test)
+target_link_libraries(symbolic_expression_jacobian_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_array_test)
+target_link_libraries(symbolic_expression_array_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_matrix_test)
+target_link_libraries(symbolic_expression_matrix_test drakeCommon)
+
+drake_add_cc_test(symbolic_substitution_test)
+target_link_libraries(symbolic_substitution_test drakeCommon)
+
+drake_add_cc_test(symbolic_mixing_scalar_types_test)
+target_link_libraries(symbolic_mixing_scalar_types_test drakeCommon)
 
 drake_add_cc_test(symbolic_formula_test)
 target_link_libraries(symbolic_formula_test drakeCommon)
@@ -42,14 +90,17 @@ target_link_libraries(trig_poly_test drakeCommon)
 drake_add_cc_test(polynomial_test)
 target_link_libraries(polynomial_test drakeCommon)
 
-drake_add_cc_test(eigen_matrix_compare_test)
-target_link_libraries(eigen_matrix_compare_test drakeCommon)
+drake_add_cc_test(symbolic_variable_test)
+target_link_libraries(symbolic_variable_test drakeCommon)
 
-drake_add_cc_test(eigen_stl_types_test)
-target_link_libraries(eigen_stl_types_test Eigen3::Eigen)
+drake_add_cc_test(symbolic_variable_overloading_test)
+target_link_libraries(symbolic_variable_overloading_test drakeCommon)
 
-drake_add_cc_test(drake_throw_test)
-target_link_libraries(drake_throw_test drakeCommon)
+drake_add_cc_test(symbolic_variables_test)
+target_link_libraries(symbolic_variables_test drakeCommon)
+
+drake_add_cc_test(type_safe_index_test type_safe_index_test.cc)
+target_link_libraries(type_safe_index_test drakeCommon)
 
 # Adds "drake_assert.h" unit testing.
 add_executable(drake_assert_test_default drake_assert_test.cc)

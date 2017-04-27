@@ -1,7 +1,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -98,8 +98,6 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
   const string file_no_conflict_1 = root + "non_conflicting_materials_1.urdf";
   const string file_no_conflict_2 = root + "non_conflicting_materials_2.urdf";
   const string file_no_conflict_3 = root + "non_conflicting_materials_3.urdf";
-  const string file_duplicate = root + "duplicate_materials.urdf";
-  const string file_conflict = root + "conflicting_materials.urdf";
 
   auto tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
@@ -113,20 +111,33 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_no_conflict_3, tree.get()));
 
-  tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_duplicate, tree.get()), ".*");
-
-  tree = make_unique<RigidBodyTree<double>>();
-  EXPECT_DEATH(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-      file_conflict, tree.get()), ".*");
-
   // This URDF defines the same color multiple times in different links.
   const string file_same_color_diff_links = root +
       "/duplicate_but_same_materials.urdf";
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_same_color_diff_links, tree.get()));
+}
+
+
+GTEST_TEST(URDFParserTest, TestDuplicateMaterials) {
+  const string root = GetDrakePath() +
+       "/multibody/parsers/test/urdf_parser_test/";
+  const string file_duplicate = root + "duplicate_materials.urdf";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_duplicate, tree.get()), std::runtime_error);
+}
+
+GTEST_TEST(URDFParserTest, TestConflictingMaterials) {
+  const string root = GetDrakePath() +
+       "/multibody/parsers/test/urdf_parser_test/";
+  const string file_conflict = root + "conflicting_materials.urdf";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+      file_conflict, tree.get()), std::runtime_error);
 }
 
 string ReadTextFile(const string& file) {
@@ -189,6 +200,38 @@ GTEST_TEST(URDFParserTest,
   EXPECT_EQ(tree->get_num_velocities(), 36);
 }
 
+// Tests that AddModelInstanceFromUrdfString()'s weld_to_frame parameter works.
+// This prevents a regression of #5928.
+GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfStringWeldToFrame) {
+  const string model_file = GetDrakePath() + "/multibody/parsers/test/"
+      "urdf_parser_test/non_conflicting_materials_1.urdf";
+  const string model_string = ReadTextFile(model_file);
+  const string kModelName = "non_conflicting_materials_1";
+
+  auto tree = make_unique<RigidBodyTree<double>>();
+  const ModelInstanceIdTable table1 = AddModelInstanceFromUrdfString(
+      model_string, "." /* root_dir */, kQuaternion,
+      nullptr /* weld_to_frame */, tree.get());
+  const int model_instance_id_1 = table1.at(kModelName);
+  // In the following variable, "B" represents the base_link's frame while "F"
+  // is the frame in which the new model instance identified by
+  // `model_instance_id_2` is defined.
+  const Eigen::Isometry3d X_BF = Eigen::Isometry3d::Identity();
+  RigidBody<double>* base_body = tree->FindBody("base_link",
+      kModelName, model_instance_id_1);
+  auto F = std::make_shared<RigidBodyFrame<double>>("base_frame",
+    base_body, X_BF);
+  const ModelInstanceIdTable table2 = AddModelInstanceFromUrdfString(
+      model_string, "." /* root_dir */, kQuaternion, F /* weld_to_frame */,
+      tree.get());
+  const int model_instance_id_2 = table2.at(kModelName);
+
+  // If the URDF parser's weld_to_frame parameter wasn't working, there would be
+  // two base bodies, one for each model instance in the tree.
+  EXPECT_EQ(tree->FindBaseBodies().size(), 1u);
+  EXPECT_EQ(tree->FindBaseBodies(model_instance_id_1).size(), 1u);
+  EXPECT_EQ(tree->FindBaseBodies(model_instance_id_2).size(), 0u);
+}
 
 }  // namespace
 }  // namespace parsers

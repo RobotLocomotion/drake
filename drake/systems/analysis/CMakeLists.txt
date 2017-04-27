@@ -12,6 +12,7 @@ set(installed_headers
     runge_kutta2_integrator.h
     runge_kutta3_integrator.h
     runge_kutta3_integrator-inl.h
+    semi_explicit_euler_integrator.h
     simulator.h
 )
 

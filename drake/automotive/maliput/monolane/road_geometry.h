@@ -8,6 +8,7 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/monolane/branch_point.h"
 #include "drake/automotive/maliput/monolane/junction.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -18,6 +19,8 @@ namespace monolane {
 /// a sensible road network.
 class RoadGeometry : public api::RoadGeometry {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
+
   /// Constructs an empty RoadGeometry with the specified tolerances.
   RoadGeometry(const api::RoadGeometryId& id,
                const double linear_tolerance,
@@ -32,7 +35,7 @@ class RoadGeometry : public api::RoadGeometry {
   /// Creates and adds a new BranchPoint with the specified @p id.
   BranchPoint* NewBranchPoint(api::BranchPointId id);
 
-  virtual ~RoadGeometry() {}
+  ~RoadGeometry() override = default;
 
  private:
   const api::RoadGeometryId do_id() const override { return id_; }
@@ -47,15 +50,13 @@ class RoadGeometry : public api::RoadGeometry {
 
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_pos,
-      const api::RoadPosition& hint) const override;
+      const api::RoadPosition* hint,
+      api::GeoPosition* nearest_position,
+      double* distance) const override;
 
-  double do_linear_tolerance() const override {
-    return linear_tolerance_;
-  }
+  double do_linear_tolerance() const override { return linear_tolerance_; }
 
-  double do_angular_tolerance() const override {
-    return angular_tolerance_;
-  }
+  double do_angular_tolerance() const override { return angular_tolerance_; }
 
   api::RoadGeometryId id_;
   double linear_tolerance_{};

@@ -1,11 +1,13 @@
 #pragma once
 
-#include <atomic>
 #include <cstddef>
 #include <functional>
 #include <ostream>
 #include <string>
 
+#include <Eigen/Core>
+
+#include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -14,49 +16,104 @@ namespace symbolic {
 /** Represents a symbolic variable. */
 class Variable {
  public:
-  /** Default constructor (DELETED). */
-  Variable() = delete;
+  typedef size_t Id;
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
+
+  /** Default constructor. Constructs a dummy variable. This is needed to have
+   *  Eigen::Matrix<Variable>. The objects created by the default constructor
+   *  share the same ID, zero. As a result, they all are identified as a single
+   *  variable by equality operator (==). They all have the same hash value as
+   *  well.
+   *
+   *  It is allowed to construct a dummy variable but it should not be used to
+   *  construct a symbolic expression.
+   */
+  Variable() : id_{0}, name_{std::string()} {}
 
   /** Constructs a variable with a string . */
-  explicit Variable(const std::string& name);
+  explicit Variable(std::string name);
 
-  /** Move-construct a set from an rvalue. */
-  Variable(Variable&& v) = default;
-
-  /** Copy-construct a set from an lvalue. */
-  Variable(const Variable& v) = default;
-
-  /** Move-assign (DELETED). */
-  Variable& operator=(Variable&& v) = delete;
-
-  /** Copy-assign (DELETED). */
-  Variable& operator=(const Variable& v) = delete;
-
-  size_t get_id() const;
-  size_t get_hash() const { return std::hash<size_t>{}(id_); }
+  /** Checks if this is a dummy variable (ID = 0) which is created by
+   *  the default constructor. */
+  bool is_dummy() const { return get_id() == 0; }
+  Id get_id() const;
+  size_t get_hash() const { return std::hash<Id>{}(id_); }
   std::string get_name() const;
   std::string to_string() const;
+
+  /// Checks the equality of two variables based on their ID values.
+  bool equal_to(const Variable& v) const { return get_id() == v.get_id(); }
+
+  /// Compares two variables based on their ID values.
+  bool less(const Variable& v) const { return get_id() < v.get_id(); }
 
   friend std::ostream& operator<<(std::ostream& os, const Variable& var);
 
  private:
   // Produces a unique ID for a variable.
-  static size_t get_next_id();
-  const size_t id_{};       // Unique identifier.
-  const std::string name_;  // Name of variable.
+  static Id get_next_id();
+  Id id_{};           // Unique identifier.
+  std::string name_;  // Name of variable.
 };
-
-/// Compare two variables based on their ID values
-bool operator<(const Variable& lhs, const Variable& rhs);
-
-/// Check equality
-bool operator==(const Variable& lhs, const Variable& rhs);
-
 }  // namespace symbolic
 
-/** Computes the hash value of a symbolic variable. */
+/** Computes the hash value of a variable. */
 template <>
 struct hash_value<symbolic::Variable> {
   size_t operator()(const symbolic::Variable& v) const { return v.get_hash(); }
 };
+
+}  // namespace drake
+
+namespace std {
+/* Provides std::less<drake::symbolic::Variable>. */
+template <>
+struct less<drake::symbolic::Variable> {
+  bool operator()(const drake::symbolic::Variable& lhs,
+                  const drake::symbolic::Variable& rhs) const {
+    return lhs.less(rhs);
+  }
+};
+
+/* Provides std::equal_to<drake::symbolic::Variable>. */
+template <>
+struct equal_to<drake::symbolic::Variable> {
+  bool operator()(const drake::symbolic::Variable& lhs,
+                  const drake::symbolic::Variable& rhs) const {
+    return lhs.equal_to(rhs);
+  }
+};
+}  // namespace std
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+// Eigen scalar type traits for Matrix<drake::symbolic::Variable>.
+template <>
+struct NumTraits<drake::symbolic::Variable>
+    : GenericNumTraits<drake::symbolic::Variable> {
+  static inline int digits10() { return 0; }
+};
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+namespace drake {
+namespace symbolic {
+/// Checks if two Eigen::Matrix<Variable> @p m1 and @p m2 are structurally
+/// equal. That is, it returns true if and only if `m1(i, j)` is structurally
+/// equal to `m2(i, j)` for all `i`, `j`.
+template <typename DerivedA, typename DerivedB>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
+        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
+        std::is_same<typename DerivedA::Scalar, Variable>::value &&
+        std::is_same<typename DerivedB::Scalar, Variable>::value,
+    bool>::type
+CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
+  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
+  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
+  DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
+  return m1.binaryExpr(m2, std::equal_to<Variable>{}).all();
+}
+}  // namespace symbolic
 }  // namespace drake

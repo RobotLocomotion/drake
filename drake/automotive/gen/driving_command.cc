@@ -8,8 +8,15 @@ namespace automotive {
 
 const int DrivingCommandIndices::kNumCoordinates;
 const int DrivingCommandIndices::kSteeringAngle;
-const int DrivingCommandIndices::kThrottle;
-const int DrivingCommandIndices::kBrake;
+const int DrivingCommandIndices::kAcceleration;
+
+const std::vector<std::string>& DrivingCommandIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "steering_angle", "acceleration",
+      });
+  return coordinates.access();
+}
 
 }  // namespace automotive
 }  // namespace drake

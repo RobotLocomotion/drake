@@ -1,7 +1,9 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
@@ -11,11 +13,13 @@ namespace analysis_test {
 template <class T>
 class MySpringMassSystem : public SpringMassSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySpringMassSystem)
+
   // Pass through to SpringMassSystem, except add update rate
   MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
     if (update_rate > 0.0) {
-      this->DeclareUpdatePeriodSec(1.0 / update_rate);
+      this->DeclareDiscreteUpdatePeriodSec(1.0 / update_rate);
     }
   }
 
@@ -28,9 +32,9 @@ class MySpringMassSystem : public SpringMassSystem<T> {
    * is a kludge until discrete variables are automatically allocated in
    * a system.
    */
-  std::unique_ptr<DiscreteState<T>> AllocateDiscreteVariables()
-    const override {
-    return std::make_unique<DiscreteState<T>>();
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
+      const override {
+    return std::make_unique<DiscreteValues<T>>();
   }
 
  private:
@@ -41,9 +45,9 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
   // The discrete equation update here is for the special case of zero
   // discrete variables- in other words, this is just a counter.
-  void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-                                     DiscreteState<T>* discrete_state)
-    const override {
+  void DoCalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      DiscreteValues<T>* discrete_state) const override {
     ++update_count_;
   }
 

@@ -1,9 +1,10 @@
-#!/usr/bin/env python
+# Do not run this program directly; only use the compiled form in bazel-bin.
 
 """Publishes steering commands over LCM.
 """
 
 import argparse
+import collections
 import copy
 import math
 import sys
@@ -14,13 +15,11 @@ except ImportError:
     # We will flag this as an error later, and only if we really needed it.
     pass
 
-from drake_paths import add_module_search_paths
-
-add_module_search_paths()  # So we can find lcm stuff.
-
 import lcm
 
 from drake.lcmt_driving_command_t import lcmt_driving_command_t as lcm_msg
+SteeringThrottleBrake = collections.namedtuple(
+    'SteeringThrottleBrake', ['steering_angle', 'throttle', 'brake'])
 
 STEERING_AXIS = 0
 ACCEL_AXIS = 1
@@ -45,14 +44,16 @@ def _limit_steering(requested_value):
     else:
         return math.copysign(MAX_STEERING_ANGLE, requested_value)
 
-# Applies the lower and upper limits to @p requested value.
+
 def _limit_throttle(requested_value):
+    """Apply the lower and upper limits to @p requested value."""
     if 0 <= requested_value <= MAX_VELOCITY:
         return requested_value
     elif requested_value < 0:
         return 0
     else:
         return MAX_VELOCITY
+
 
 def _limit_brake(requested_value):
     if 0 <= requested_value <= MAX_BRAKE:
@@ -62,14 +63,15 @@ def _limit_brake(requested_value):
     else:
         return MAX_BRAKE
 
+
 class KeyboardEventProcessor:
     def __init__(self):
         pygame.event.set_allowed(None)
         pygame.event.set_allowed([pygame.QUIT, pygame.KEYUP, pygame.KEYDOWN])
         pygame.key.set_repeat(100, 10)
-        self.throttle_gradient = 0;
-        self.brake_gradient = 0;
-        self.keep_current_throttle_brake = False;
+        self.throttle_gradient = 0
+        self.brake_gradient = 0
+        self.keep_current_throttle_brake = False
 
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
@@ -91,9 +93,9 @@ class KeyboardEventProcessor:
                 pygame.event.post(dummyKeyUpEvent)
 
         if (event.type == pygame.KEYDOWN):
-            self.keep_current_throttle_brake = False;
+            self.keep_current_throttle_brake = False
             if (event.key == pygame.K_SPACE):
-                self.keep_current_throttle_brake = True;
+                self.keep_current_throttle_brake = True
                 self.throttle_gradient = 0
                 self.brake_gradient = 0
             elif (event.key == pygame.K_UP):
@@ -101,18 +103,19 @@ class KeyboardEventProcessor:
             elif (event.key == pygame.K_DOWN):
                 self.brake_gradient = 1
             elif (event.key == pygame.K_LEFT):
-                new_msg.steering_angle = _limit_steering(
-                last_msg.steering_angle + (
-                    STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN))
-            elif (event.key == pygame.K_RIGHT):
-                new_msg.steering_angle = _limit_steering(
+                new_msg = new_msg._replace(steering_angle=_limit_steering(
                     last_msg.steering_angle + (
-                        STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN))
+                        STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN)))
+            elif (event.key == pygame.K_RIGHT):
+                new_msg = new_msg._replace(steering_angle=_limit_steering(
+                    last_msg.steering_angle + (
+                        STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN)))
 
-        new_msg.throttle = _limit_throttle(
-                last_msg.throttle + self.throttle_gradient * THROTTLE_SCALE)
-        new_msg.brake = _limit_brake(
-                last_msg.brake + self.brake_gradient * BRAKE_SCALE)
+        new_msg = new_msg._replace(
+            throttle=_limit_throttle(
+                new_msg.throttle + self.throttle_gradient * THROTTLE_SCALE),
+            brake=_limit_brake(
+                new_msg.brake + self.brake_gradient * BRAKE_SCALE))
 
         return new_msg
 
@@ -149,32 +152,32 @@ class JoystickEventProcessor:
         return new_msg
 
 
-
 class bcolors:
     OKBLUE = '\033[94m'
     ENDC = '\033[0m'
+
 
 class SteeringCommandPublisher:
     def __init__(self, input_method, lcm_tag, joy_name):
         print 'Initializing...'
         pygame.init()
         self.screen = pygame.display.set_mode((300, 70))
-        pygame.display.set_caption('Steering Command Driver')
+        pygame.display.set_caption(lcm_tag)
         self.font = pygame.font.SysFont('Courier', 20)
         if input_method == 'keyboard':
             self.event_processor = KeyboardEventProcessor()
             print bcolors.OKBLUE + '--- Keyboard Control Instruction --- '\
-                    + bcolors.ENDC
+                + bcolors.ENDC
             print 'To increase the throttle/brake: press and hold the Up/Down'\
-                    + ' Arrow'
+                + ' Arrow'
             print 'To decrease the throttle/brake: release the Up/Down Arrow'
             print 'To keep the the current throttle/brake: press the Space Bar'
             print 'To increase left/right steering: press the Left/Right Arrow'
             print bcolors.OKBLUE + '------------------------------------ ' \
-                    + bcolors.ENDC
+                + bcolors.ENDC
         else:
             self.event_processor = JoystickEventProcessor(joy_name)
-        self.last_msg = lcm_msg()
+        self.last_value = SteeringThrottleBrake(0, 0, 0)
         self.lc = lcm.LCM()
         self.lcm_tag = lcm_tag
         print 'Ready'
@@ -182,15 +185,15 @@ class SteeringCommandPublisher:
     def printLCMValues(self):
         self.screen.fill(5)
         surface = self.font.render(
-            'Steering Angle: %f' % (self.last_msg.steering_angle),
+            'Steering Angle: %f' % (self.last_value.steering_angle),
             True, (250, 250, 250))
         self.screen.blit(surface, (2, 0))
         surface = self.font.render(
-            'Throttle Value: %f' % (self.last_msg.throttle),
+            'Throttle Value: %f' % (self.last_value.throttle),
             True, (250, 250, 250))
         self.screen.blit(surface, (2, 22))
         surface = self.font.render(
-            'Brake Value   : %f' % (self.last_msg.brake),
+            'Brake Value   : %f' % (self.last_value.brake),
             True, (250, 250, 250))
         self.screen.blit(surface, (2, 44))
         pygame.display.flip()
@@ -203,16 +206,20 @@ class SteeringCommandPublisher:
                 pygame.quit()
                 sys.exit()
             else:
-                self.last_msg = self.event_processor.processEvent(
-                  event, self.last_msg)
-                self.lc.publish(self.lcm_tag, self.last_msg.encode())
+                self.last_value = self.event_processor.processEvent(
+                    event, self.last_value)
+                msg = lcm_msg()
+                msg.steering_angle = self.last_value.steering_angle
+                msg.acceleration = (self.last_value.throttle -
+                                    self.last_value.brake)
+                self.lc.publish(self.lcm_tag, msg.encode())
                 self.printLCMValues()
 
 
 def publish_driving_command(lcm_tag, throttle, steering_angle):
     lc = lcm.LCM()
     last_msg = lcm_msg()
-    last_msg.throttle = throttle
+    last_msg.accleration = throttle
     last_msg.steering_angle = steering_angle
     lc.publish(lcm_tag, last_msg.encode())
 
@@ -222,20 +229,20 @@ def main():
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-      '--lcm_tag', default='DRIVING_COMMAND',
-      help='tag to publish the LCM messages with')
+        '--lcm_tag', default='DRIVING_COMMAND',
+        help='tag to publish the LCM messages with')
     parser.add_argument(
-      '--mode', choices=['interactive', 'one-time'], default='interactive',
-      help='whether to run interactively with pygame input,'
-           ' or just send a single command')
+        '--mode', choices=['interactive', 'one-time'], default='interactive',
+        help='whether to run interactively with pygame input,'
+        ' or just send a single command')
     parser.add_argument(
-      '--input_method', choices=['joystick', 'keyboard'], default='keyboard',
-      help='the interactive input method to use for publishing LCM commands')
+        '--input_method', choices=['joystick', 'keyboard'], default='keyboard',
+        help='the interactive input method to use for publishing LCM commands')
     parser.add_argument(
         '--joy_name', default='Driving Force GT',
         help='system name of the joystick')
     parser.add_argument(
-      '--throttle', type=float, default='0.0', help='initial throttle')
+        '--throttle', type=float, default='0.0', help='initial throttle')
     parser.add_argument(
         '--steering-angle', type=float, default='0.0',
         help='initial steering angle (in radians), positive-left')
@@ -252,7 +259,7 @@ def main():
         return 1
 
     publisher = SteeringCommandPublisher(
-      args.input_method, args.lcm_tag, args.joy_name)
+        args.input_method, args.lcm_tag, args.joy_name)
     publisher.start()
 
     return 0

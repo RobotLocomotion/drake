@@ -1,9 +1,8 @@
 #include "drake/math/autodiff.h"
 
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
 #include <unsupported/Eigen/AutoDiff>
-
-#include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"

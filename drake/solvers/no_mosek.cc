@@ -1,5 +1,6 @@
-
+/* clang-format off */
 #include "drake/solvers/mosek_solver.h"
+/* clang-format on */
 
 #include <stdexcept>
 

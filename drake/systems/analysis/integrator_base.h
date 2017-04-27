@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -29,6 +31,8 @@ solution, so must be avoided.
 template <class T>
 class IntegratorBase {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
+
   /**
    * Status returned by StepOnceAtMost().
    * When a step is successful, it will return an indication of what caused it
@@ -88,10 +92,6 @@ class IntegratorBase {
 
   /** Destructor. */
   virtual ~IntegratorBase() = default;
-
-  // Disable copy, assign, and move.
-  IntegratorBase(const IntegratorBase<T>& other) = delete;
-  IntegratorBase& operator=(const IntegratorBase<T>& other) = delete;
 
   /**
    * Indicates whether an integrator supports error estimation.
@@ -342,7 +342,7 @@ class IntegratorBase {
    *
    * @param publish_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next publish will occur.
-   * @param update_dt The step size, >= 0.0 (exception will be thrown
+   * @param update_dt The step size, > 0.0 (exception will be thrown
    *        if this is not the case) at which the next update will occur.
    * @param boundary_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) marking the end of the user-designated
@@ -351,10 +351,79 @@ class IntegratorBase {
    *                          of publish_dt, update_dt, or boundary_dt is
    *                          negative.
    * @return The reason for the integration step ending.
+   * @warning Users should generally not call this function directly; within
+   *          simulation circumstances, users will typically call
+   *          `Simulator::StepTo()`. In other circumstances, users will
+   *          typically call `IntegratorBase::StepExactlyFixed()`.
    */
   // TODO(edrumwri): Make the stretch size configurable.
   StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt,
                             const T& boundary_dt);
+
+  /// Stepping function for integrators operating outside of simulation
+  /// circumstances. This method is designed for integrator
+  /// users that do not wish to consider publishing or discontinuous,
+  /// mid-interval updates _and_ are using integrators with error control.
+  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  ///          place of this function (which was created for off-simulation
+  ///          purposes), generally.
+  /// @note Users desiring this functionality for integrators operating in
+  ///       fixed step mode should use StepExactlyFixed().
+  /// @param dt The non-negative integration step to take.
+  /// @throws std::logic_error If the integrator has not been initialized or
+  ///                          dt is negative **or** if the integrator
+  ///                          is operating in fixed step mode.
+  /// @sa StepExactlyFixed()
+  void StepExactlyVariable(const T& dt) {
+    using std::max;
+
+    if (this->get_fixed_step_mode()) {
+      throw std::logic_error("StepExactlyVariable() requires variable "
+                             "stepping.");
+    }
+    const Context<T>& context = get_context();
+    const T inf = std::numeric_limits<double>::infinity();
+    T t_remaining = dt;
+
+    // Note: A concern below is that the while loop while run forever because
+    // t_remaining could be small, but not quite zero, if dt is relatively
+    // small compared to the context time. In such a case, t_final will be
+    // equal to context.get_time() in the expression immediately below,
+    // context.get_time() will not change during the call to StepOnceAtMost(),
+    // and t_remaining will be equal to zero.
+    const T t_final = context.get_time() + t_remaining;
+    do {
+      StepOnceAtMost(inf, inf, t_remaining);
+      t_remaining = t_final - context.get_time();
+    } while (t_remaining > 0);
+  }
+
+  /// Stepping function for integrators operating outside of simulation
+  /// circumstances. This method is designed for integrator
+  /// users that do not wish to consider publishing or discontinuous,
+  /// mid-interval updates. One such example application is that of direct
+  /// transcription for trajectory optimization. In keeping with the naming
+  /// semantics of this function, error controlled integration is not supported
+  /// (though error estimates will be computed for integrators that support that
+  /// feature).
+  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  ///          place of this function (which was created for off-simulation
+  ///          purposes), generally.
+  /// @note Users desiring this functionality for integrators not operating in
+  ///       fixed step mode should use StepExactlyVariable()- these functions
+  ///       are kept distinct to make clear to the caller which of these
+  ///       functions uses fixed integration steps.
+  /// @param dt The non-negative integration step to take.
+  /// @throws std::logic_error If the integrator has not been initialized or
+  ///                          dt is negative **or** if the integrator
+  ///                          is not operating in fixed step mode.
+  /// @sa StepExactlyVariable()
+  void StepExactlyFixed(const T& dt) {
+    if (!this->get_fixed_step_mode())
+      throw std::logic_error("StepExactlyFixed() requires fixed stepping.");
+    const T inf = std::numeric_limits<double>::infinity();
+    StepOnceAtMost(inf, inf, dt);
+  }
 
   /**
    * @name Integrator statistics methods.
@@ -375,8 +444,20 @@ class IntegratorBase {
     smallest_adapted_step_size_taken_ = nan();
     largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
+    num_ode_evals_ = 0;
     error_check_failures_ = 0;
   }
+
+  /**
+   * Returns the number of ODE function evaluations (calls to
+   * CalcTimeDerivatives()) since the last call to ResetStatistics() or
+   * Initialize(). This count includes *all* such calls including (1)
+   * those necessary to compute Jacobian matrices; (2) those used in rejected
+   * integrated steps (for, e.g., purposes of error control); (3) those used
+   * strictly for integrator error estimation; and (4) calls that exhibit little
+   * cost (due to results being cached).
+   */
+  int64_t get_num_derivative_evaluations() const { return num_ode_evals_; }
 
   /**
    * Returns the number of failures to accept an integration step due to
@@ -737,6 +818,15 @@ class IntegratorBase {
    */
 
  protected:
+  /// Evaluates the derivative function (and updates call statistics).
+  /// Subclasses should call this function rather than calling
+  /// system.CalcTimeDerivatives() directly.
+  void CalcTimeDerivatives(const Context<T>& context,
+                           ContinuousState<T>* dxdt) {
+    get_system().CalcTimeDerivatives(context, dxdt);
+    ++num_ode_evals_;
+  }
+
   /**
    * Sets the working ("in use") accuracy for this integrator. The working
    * accuracy may not be equivalent to the target accuracy when the latter is
@@ -948,6 +1038,7 @@ class IntegratorBase {
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
   int64_t error_check_failures_{0};
+  int64_t num_ode_evals_{0};
 
   // Applied as diagonal matrices to weight error estimates.
   Eigen::VectorXd qbar_weight_, z_weight_;
@@ -1210,12 +1301,15 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
-  // Verify that update dt is positive
-  DRAKE_DEMAND(update_dt > 0.0);
+  // Verify that update dt is positive.
+  if (update_dt <= 0.0)
+    throw std::logic_error("Update dt must be strictly positive.");
 
-  // Verify that other dt's are non-negative
-  DRAKE_DEMAND(publish_dt >= 0.0);
-  DRAKE_DEMAND(boundary_dt >= 0.0);
+  // Verify that other dt's are non-negative.
+  if (publish_dt < 0.0)
+    throw std::logic_error("Publish dt is negative.");
+  if (boundary_dt < 0.0)
+    throw std::logic_error("Boundary dt is negative.");
 
   // The size of the integration step is the minimum of the time until the next
   // update event, the time until the next publish event, the boundary time

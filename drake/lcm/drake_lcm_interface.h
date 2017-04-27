@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
@@ -12,7 +13,9 @@ namespace lcm {
  */
 class DrakeLcmInterface {
  public:
-  virtual ~DrakeLcmInterface() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmInterface)
+  DrakeLcmInterface() = default;
+  virtual ~DrakeLcmInterface() = default;
 
   /**
    * Starts the receive thread. This must be called for subscribers to receive

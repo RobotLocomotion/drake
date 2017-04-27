@@ -1,18 +1,24 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/automotive/gen/driving_command.h"
-#include "drake/automotive/gen/simple_car_config.h"
+#include "drake/automotive/gen/simple_car_params.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/frame_velocity.h"
+#include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
 namespace automotive {
 
-/// SimpleCar -- model an idealized response to driving commands, neglecting
-/// all physics.
+/// SimpleCar models an idealized response to driving commands, neglecting all
+/// physics. Note that SimpleCar can move forward, stop, turn left, and turn
+/// right but *cannot* travel in reverse.
 ///
-/// configuration:
-/// * see lcmt_SimpleCarConfig_t
+/// parameters:
+/// * uses systems::Parameters wrapping a SimpleCarParams
 ///
 /// state vector (planar for now):
 /// * position: x, y, heading;
@@ -27,50 +33,55 @@ namespace automotive {
 /// * throttle (0-1)
 /// * brake (0-1)
 ///
-/// output vector: same as state vector.
+/// output port 0: same as state vector.
+/// output port 1: A PoseVector containing X_WC, where C is the car frame.
+/// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
 ///
 /// @tparam T must support certain arithmetic operations;
-/// for details, see ./test/simple_car_scalartype_test.cc.
+/// for details, see drake::symbolic::Expression.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
-/// They are already available to link against in libdrakeAutomotive.
+/// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_systems
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:
-  explicit SimpleCar(const SimpleCarConfig<T>& config = get_default_config());
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCar)
 
-  static SimpleCarConfig<T> get_default_config();
-  const SimpleCarConfig<T>& config() const { return config_; }
+  SimpleCar();
 
- public:
   // System<T> overrides
-  bool has_any_direct_feedthrough() const override;
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  const systems::OutputPortDescriptor<T>& state_output() const;
+  const systems::OutputPortDescriptor<T>& pose_output() const;
+  const systems::OutputPortDescriptor<T>& velocity_output() const;
+
  protected:
-  // LeafSystem<T> overrides
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+  // System<T> overrides
+  systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
+  systems::System<symbolic::Expression>* DoToSymbolic() const override;
 
  private:
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
-  void ImplCalcTimeDerivatives(const SimpleCarState<T>&,
-                               const DrivingCommand<T>&,
-                               SimpleCarState<T>*) const;
-
-  const SimpleCarConfig<T> config_;
+  void ImplCalcPose(const SimpleCarState<T>& state,
+                    systems::rendering::PoseVector<T>* pose) const;
+  void ImplCalcVelocity(const SimpleCarParams<T>& params,
+                        const SimpleCarState<T>& state,
+                        systems::rendering::FrameVelocity<T>* velocity) const;
+  void ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
+                               const SimpleCarState<T>& state,
+                               const DrivingCommand<T>& input,
+                               SimpleCarState<T>* rates) const;
 };
 
 }  // namespace automotive

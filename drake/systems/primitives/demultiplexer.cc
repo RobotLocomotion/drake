@@ -25,11 +25,8 @@ Demultiplexer<T>::Demultiplexer(int size, int output_ports_sizes) {
 template <typename T>
 void Demultiplexer<T>::DoCalcOutput(const Context<T>& context,
                                     SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
   // All output ports have the same size as defined in the constructor.
-  const int out_size = this->get_output_port(0).get_size();
+  const int out_size = this->get_output_port(0).size();
 
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
@@ -38,6 +35,13 @@ void Demultiplexer<T>::DoCalcOutput(const Context<T>& context,
     auto out_vector = System<T>::GetMutableOutputVector(output, iport);
     out_vector = in_vector.segment(iport * out_size, out_size);
   }
+}
+
+template <typename T>
+Demultiplexer<symbolic::Expression>* Demultiplexer<T>::DoToSymbolic() const {
+  const int size = this->get_input_port(0).size();
+  return new Demultiplexer<symbolic::Expression>(
+      size, size / this->get_num_output_ports());
 }
 
 template class Demultiplexer<double>;

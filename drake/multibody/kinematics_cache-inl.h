@@ -21,15 +21,6 @@ KinematicsCacheElement<T>::KinematicsCacheElement(
 }
 
 template <typename T>
-KinematicsCache<T>::KinematicsCache(int num_positions, int num_velocities)
-    : num_positions_(num_positions), num_velocities_(num_velocities),
-      q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions_)),
-      v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities_)),
-      velocity_vector_valid(false) {
-  invalidate();
-}
-
-template <typename T>
 void KinematicsCache<T>::CreateCacheElement(
     int num_positions, int num_velocities) {
   elements_.emplace_back(num_positions, num_velocities);

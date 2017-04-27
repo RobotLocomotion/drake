@@ -1,11 +1,11 @@
+#include "drake/systems/framework/supervector.h"
+
 #include <memory>
 
 #include <Eigen/Dense>
-
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -17,17 +17,17 @@ const int kLength = 9;
 class SupervectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    vec1_ = BasicVector<int>::Make({0, 1, 2, 3});
-    vec2_ = BasicVector<int>::Make({4, 5});
-    vec3_ = BasicVector<int>::Make({});
-    vec4_ = BasicVector<int>::Make({6, 7, 8});
+    vec1_ = BasicVector<double>::Make({0, 1, 2, 3});
+    vec2_ = BasicVector<double>::Make({4, 5});
+    vec3_ = BasicVector<double>::Make({});
+    vec4_ = BasicVector<double>::Make({6, 7, 8});
     supervector_ =
-        std::make_unique<Supervector<int>>(std::vector<VectorBase<int>*>{
+        std::make_unique<Supervector<double>>(std::vector<VectorBase<double>*>{
             vec1_.get(), vec2_.get(), vec3_.get(), vec4_.get()});
   }
 
-  std::unique_ptr<VectorBase<int>> vec1_, vec2_, vec3_, vec4_;
-  std::unique_ptr<Supervector<int>> supervector_;
+  std::unique_ptr<VectorBase<double>> vec1_, vec2_, vec3_, vec4_;
+  std::unique_ptr<Supervector<double>> supervector_;
 };
 
 TEST_F(SupervectorTest, GetAtIndex) {
@@ -71,7 +71,7 @@ TEST_F(SupervectorTest, OutOfRange) {
 }
 
 TEST_F(SupervectorTest, Empty) {
-  Supervector<int> supervector(std::vector<VectorBase<int>*>{});
+  Supervector<double> supervector(std::vector<VectorBase<double>*>{});
   EXPECT_EQ(0, supervector.size());
 }
 

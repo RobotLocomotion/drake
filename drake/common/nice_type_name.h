@@ -6,17 +6,26 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/never_destroyed.h"
+
 namespace drake {
 
 /** @brief Obtains canonicalized, platform-independent, human-readable names for
 arbitrarily-complicated C++ types.
 
 Usage: @code
+// For types:
 using std::pair; using std::string;
 using MyVectorType = pair<int,string>;
 std::cout << "Type MyVectorType was: "
           << drake::NiceTypeName::Get<MyVectorType>() << std::endl;
 // Output: std::pair<int,std::string>
+
+// For expressions:
+std::unique_ptr<AbstractThing> thing;  // Assume actual type is ConcreteThing.
+std::cout << "Actual type of 'thing' was: "
+          << drake::NiceTypeName::Get(*thing) << std::endl;
+// Output: ConcreteThing
 @endcode
 
 We demangle and attempt to canonicalize the compiler-generated type names as
@@ -39,14 +48,23 @@ class NiceTypeName {
   operation but is only done once per instantiation of NiceTypeName::Get<T>()
   for a given type `T`. The returned reference will not be deleted even at
   program termination, so feel free to use it in error messages even in
-  destructors that may be invoked during program tear-down. You may safely
-  ignore any valgrind complaints that this memory is still allocated at
-  program termination. **/
+  destructors that may be invoked during program tear-down. **/
   template <typename T>
   static const std::string& Get() {
-    static const std::string* canonical =  // never deleted
-        new std::string(Canonicalize(Demangle(typeid(T).name())));
-    return *canonical;
+    static const never_destroyed<std::string> canonical(
+        Canonicalize(Demangle(typeid(T).name())));
+    return canonical.access();
+  }
+
+  /** Returns the type name of the most-derived type of an object of type T,
+  typically but not necessarily polymorphic. This must be calculated on the fly
+  so is expensive whenever called, though very reasonable for use in error
+  messages. For non-polymorphic types this produces the same result as would
+  `Get<decltype(thing)>()` but for polymorphic types the results will
+  differ. **/
+  template <typename T>
+  static std::string Get(const T& thing) {
+    return Canonicalize(Demangle(typeid(thing).name()));
   }
 
   /** Using the algorithm appropriate to the current compiler, demangles a type

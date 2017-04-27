@@ -1,54 +1,63 @@
 #include "drake/solvers/constraint.h"
 
+#include <cmath>
+
 #include "drake/math/matrix_util.h"
+
+using std::abs;
 
 namespace drake {
 namespace solvers {
-void QuadraticConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                               Eigen::VectorXd& y) const {
+
+void QuadraticConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+                                 Eigen::VectorXd &y) const {
   y.resize(num_constraints());
   y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
 }
 
-void QuadraticConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                               TaylorVecXd& y) const {
+void QuadraticConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
+                                 AutoDiffVecXd &y) const {
   y.resize(num_constraints());
-  y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
-      b_.cast<TaylorVarXd>().transpose() * x;
+  y = .5 * x.transpose() * Q_.cast<AutoDiffXd>() * x +
+      b_.cast<AutoDiffXd>().transpose() * x;
 }
 
-void LorentzConeConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                 Eigen::VectorXd& y) const {
+void LorentzConeConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
+  Eigen::VectorXd z = A_ * x + b_;
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+  y(0) = z(0);
+  y(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
 }
 
-void LorentzConeConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                                 TaylorVecXd& y) const {
+void LorentzConeConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
+                                   AutoDiffVecXd &y) const {
+  AutoDiffVecXd z = A_.cast<AutoDiffXd>() * x + b_.cast<AutoDiffXd>();
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = pow(x(0), 2) - x.tail(x.size() - 1).squaredNorm();
+  y(0) = z(0);
+  y(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
 }
 
-void RotatedLorentzConeConstraint::Eval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+void RotatedLorentzConeConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
+  Eigen::VectorXd z = A_ * x + b_;
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = x(1);
-  y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+  y(0) = z(0);
+  y(1) = z(1);
+  y(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
 }
 
-void RotatedLorentzConeConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                                        TaylorVecXd& y) const {
+void RotatedLorentzConeConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
+  AutoDiffVecXd z = A_.cast<AutoDiffXd>() * x + b_.cast<AutoDiffXd>();
   y.resize(num_constraints());
-  y(0) = x(0);
-  y(1) = x(1);
-  y(2) = x(0) * x(1) - x.tail(x.size() - 2).squaredNorm();
+  y(0) = z(0);
+  y(1) = z(1);
+  y(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
 }
 
-void PolynomialConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                Eigen::VectorXd& y) const {
+void PolynomialConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+                                  Eigen::VectorXd &y) const {
   double_evaluation_point_.clear();
   for (size_t i = 0; i < poly_vars_.size(); i++) {
     double_evaluation_point_[poly_vars_[i]] = x[i];
@@ -59,8 +68,8 @@ void PolynomialConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
   }
 }
 
-void PolynomialConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                                TaylorVecXd& y) const {
+void PolynomialConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
+                                  AutoDiffVecXd &y) const {
   taylor_evaluation_point_.clear();
   for (size_t i = 0; i < poly_vars_.size(); i++) {
     taylor_evaluation_point_[poly_vars_[i]] = x[i];
@@ -71,42 +80,61 @@ void PolynomialConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
   }
 }
 
-void LinearConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                            Eigen::VectorXd& y) const {
+void LinearConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
+                              Eigen::VectorXd &y) const {
   y.resize(num_constraints());
   y = A_ * x;
 }
-void LinearConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                            TaylorVecXd& y) const {
+void LinearConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
+                              AutoDiffVecXd &y) const {
   y.resize(num_constraints());
-  y = A_.cast<TaylorVarXd>() * x;
+  y = A_.cast<AutoDiffXd>() * x;
 }
 
-void BoundingBoxConstraint::Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                 Eigen::VectorXd& y) const {
+void BoundingBoxConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
   y.resize(num_constraints());
   y = x;
 }
-void BoundingBoxConstraint::Eval(const Eigen::Ref<const TaylorVecXd>& x,
-                                 TaylorVecXd& y) const {
+void BoundingBoxConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
+                                   AutoDiffVecXd &y) const {
   y.resize(num_constraints());
   y = x;
 }
 
-void LinearComplementarityConstraint::Eval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+void LinearComplementarityConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
   y.resize(num_constraints());
   y = (M_ * x) + q_;
 }
 
-void LinearComplementarityConstraint::Eval(
-    const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const {
+void LinearComplementarityConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
   y.resize(num_constraints());
-  y = (M_.cast<TaylorVarXd>() * x) + q_.cast<TaylorVarXd>();
+  y = (M_.cast<AutoDiffXd>() * x) + q_.cast<AutoDiffXd>();
 }
 
-void PositiveSemidefiniteConstraint::Eval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+bool LinearComplementarityConstraint::DoCheckSatisfied(
+    const Eigen::Ref<const Eigen::VectorXd> &x,
+    const double tol) const {
+  // Check: x >= 0 && Mx + q >= 0 && x'(Mx + q) == 0
+  Eigen::VectorXd y(num_constraints());
+  DoEval(x, y);
+  return (x.array() > -tol).all() && (y.array() > -tol).all() &&
+         (abs(x.dot(y)) < tol);
+}
+
+bool LinearComplementarityConstraint::DoCheckSatisfied(
+    const Eigen::Ref<const AutoDiffVecXd> &x,
+    const double tol) const {
+  AutoDiffVecXd y(num_constraints());
+  DoEval(x, y);
+  return (x.array() > -tol).all() && (y.array() > -tol).all() &&
+         (abs(x.dot(y)) < tol);
+}
+
+void PositiveSemidefiniteConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
   DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                num_constraints() * num_constraints());
   Eigen::MatrixXd S(num_constraints(), num_constraints());
@@ -122,15 +150,15 @@ void PositiveSemidefiniteConstraint::Eval(
   y = eigen_solver.eigenvalues();
 }
 
-void PositiveSemidefiniteConstraint::Eval(
-    const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const {
+void PositiveSemidefiniteConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
   throw std::runtime_error(
       "The Eval function for positive semidefinite constraint is not defined, "
       "since the eigen solver does not work for AutoDiffScalar.");
 }
 
-void LinearMatrixInequalityConstraint::Eval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+void LinearMatrixInequalityConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
   DRAKE_ASSERT(x.rows() == static_cast<int>(F_.size()) - 1);
   Eigen::MatrixXd S = F_[0];
   for (int i = 1; i < static_cast<int>(F_.size()); ++i) {
@@ -140,8 +168,8 @@ void LinearMatrixInequalityConstraint::Eval(
   y = eigen_solver.eigenvalues();
 }
 
-void LinearMatrixInequalityConstraint::Eval(
-    const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const {
+void LinearMatrixInequalityConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
   throw std::runtime_error(
       "The Eval function for positive semidefinite constraint is not defined, "
       "since the eigen solver does not work for AutoDiffScalar.");
@@ -150,7 +178,8 @@ void LinearMatrixInequalityConstraint::Eval(
 LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
     double symmetry_tolerance)
-    : Constraint(F.empty() ? 0 : F.front().rows()),
+    : Constraint(F.empty() ? 0 : F.front().rows(),
+                 F.empty() ? 0 : F.size() - 1),
       F_(F.begin(), F.end()),
       matrix_rows_(F.empty() ? 0 : F.front().rows()) {
   DRAKE_DEMAND(!F.empty());

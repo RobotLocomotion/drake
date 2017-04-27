@@ -175,6 +175,9 @@ macro(drake_add_cmake_external PROJECT)
     Java_JAVAH_EXECUTABLE
     Java_VERSION_STRING
     CMAKE_JAVA_COMPILE_FLAGS
+    CMAKE_MACOSX_RPATH
+    CMAKE_INSTALL_RPATH
+    CMAKE_INSTALL_RPATH_USE_LINK_PATH
     LIB_SUFFIX)
 
   if(_ext_FORTRAN)
@@ -199,16 +202,27 @@ macro(drake_add_cmake_external PROJECT)
       PYTHON_LIBRARY)
   endif()
 
+  if(_ext_QT)
+    find_package(Qt 4.8 REQUIRED)
+    list(APPEND _ext_PROPAGATE_CACHE_VARS QT_QMAKE_EXECUTABLE)
+  endif()
+
+  if(_ext_VTK AND USE_SYSTEM_VTK)
+    list(APPEND _ext_PROPAGATE_CACHE_VARS VTK_DIR)
+  endif()
+
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
     ${_ext_PROPAGATE_CACHE_VARS})
 
   # Set up the external project build
   ExternalProject_Add(${PROJECT}
     LIST_SEPARATOR "${_ext_LIST_SEPARATOR}"
+    URL ${_ext_URL}
+    URL_HASH ${_ext_URL_HASH}
     SOURCE_SUBDIR ${_ext_SOURCE_SUBDIR}
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
-    DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}
+    DOWNLOAD_DIR ${_ext_DOWNLOAD_DIR}
     DOWNLOAD_COMMAND ${_ext_DOWNLOAD_COMMAND}
     UPDATE_COMMAND ${_ext_UPDATE_COMMAND}
     ${_ext_EXTRA_COMMANDS}
@@ -315,9 +329,11 @@ macro(drake_add_foreign_external PROJECT)
   endif()
 
   ExternalProject_Add(${PROJECT}
+    URL ${_ext_URL}
+    URL_HASH ${_ext_URL_HASH}
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
-    DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}
+    DOWNLOAD_DIR ${_ext_DOWNLOAD_DIR}
     DOWNLOAD_COMMAND "${_ext_DOWNLOAD_COMMAND}"
     UPDATE_COMMAND "${_ext_UPDATE_COMMAND}"
     PATCH_COMMAND "${_ext_PATCH_COMMAND}"
@@ -343,6 +359,8 @@ endmacro()
 #   FORTRAN   - External uses Fortran
 #   MATLAB    - External uses MATLAB
 #   PYTHON    - External uses Python
+#   QT        - External uses Qt
+#   VTK       - External uses VTK
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -391,12 +409,25 @@ function(drake_add_external PROJECT)
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND)
-  set(_ext_flags LOCAL PUBLIC CMAKE AUTOTOOLS ALWAYS TEST FORTRAN MATLAB PYTHON)
+  set(_ext_flags
+    LOCAL
+    PUBLIC
+    CMAKE
+    AUTOTOOLS
+    ALWAYS
+    TEST
+    FORTRAN
+    MATLAB
+    PYTHON
+    QT
+    VTK)
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR
     BINARY_DIR
     GENERATOR
+    URL
+    URL_HASH
   )
   set(_ext_mv_args
     AUTOTOOLS_CONFIGURE_ARGS
@@ -458,11 +489,18 @@ function(drake_add_external PROJECT)
   drake_fixup_commands(_ext ${_ext_extra_commands})
 
   # Set source directory for external project
-  if(NOT DEFINED _ext_SOURCE_DIR)
+  if(NOT DEFINED _ext_SOURCE_DIR AND NOT DEFINED _ext_URL)
     set(_ext_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/${PROJECT})
+  elseif(DEFINED _ext_URL)
+    set(_ext_SOURCE_DIR ${PROJECT_BINARY_DIR}/externals/${PROJECT}-src)
   endif()
   if(NOT DEFINED _ext_SOURCE_SUBDIR)
     set(_ext_SOURCE_SUBDIR .)
+  endif()
+  if(DEFINED _ext_URL)
+    set(_ext_DOWNLOAD_DIR ${PROJECT_BINARY_DIR})
+  else()
+    set(_ext_DOWNLOAD_DIR ${PROJECT_SOURCE_DIR})
   endif()
 
   # Compute project dependencies
@@ -476,7 +514,7 @@ function(drake_add_external PROJECT)
   endif()
 
   # Manage updates to the submodule
-  if(NOT _ext_LOCAL)
+  if(NOT _ext_LOCAL AND NOT DEFINED _ext_URL)
     # Compute the path to the submodule for this external
     file(RELATIVE_PATH _ext_GIT_SUBMODULE_PATH
       ${PROJECT_SOURCE_DIR} ${_ext_SOURCE_DIR})
@@ -484,7 +522,7 @@ function(drake_add_external PROJECT)
     # Set up submodule and commands for synchronizing submodule
     drake_add_submodule(${_ext_GIT_SUBMODULE_PATH}
       _ext_DOWNLOAD_COMMAND _ext_UPDATE_COMMAND)
-  else()
+  elseif(_ext_LOCAL)
     # Local "externals" have no download or update step
     set(_ext_DOWNLOAD_COMMAND "")
     set(_ext_UPDATE_COMMAND "")
@@ -500,7 +538,7 @@ function(drake_add_external PROJECT)
     drake_add_foreign_external(${PROJECT})
   endif()
 
-  if(NOT _ext_LOCAL)
+  if(NOT _ext_LOCAL AND NOT DEFINED _ext_URL)
     # Set up build step to ensure project is updated before build
     drake_forceupdate(${PROJECT})
 

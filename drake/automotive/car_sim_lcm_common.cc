@@ -1,5 +1,7 @@
 #include "drake/automotive/car_sim_lcm_common.h"
 
+#include <utility>
+
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -24,14 +26,22 @@ using systems::RigidBodyPlant;
 
 namespace automotive {
 
-std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
+std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
     const DrivingCommandTranslator& driving_command_translator,
     std::unique_ptr<RigidBodyTree<double>> tree, lcm::DrakeLcmInterface* lcm) {
   DiagramBuilder<double> builder;
   // Instantiates a RigidBodyPlant to simulate the model.
   auto plant = make_unique<RigidBodyPlant<double>>(move(tree));
-  plant->set_contact_parameters(1000000.0 /* penetration_stiffness */,
-      2000.0 /* penetration_damping */, 10.0 /* friction_coefficient */);
+
+  // Contact parameters
+  const double kStiffness = 500000;
+  const double kDissipation = 2;
+  const double kStaticFriction = 10;
+  const double kDynamicFriction = 5;
+  const double kStictionSlipTolerance = 0.001;
+  plant->set_normal_contact_parameters(kStiffness, kDissipation);
+  plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                         kStictionSlipTolerance);
 
   // Instantiates a PID controller for controlling the actuators in the
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
@@ -118,21 +128,17 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
 
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
       std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
+  controller->set_name("controller");
 
   // Instantiates a system for visualizing the model.
   const RigidBodyTreed& tree_ptr =
       dynamic_cast<const RigidBodyPlant<double>*>(controller->plant())->
           get_rigid_body_tree();
   auto publisher = builder.AddSystem<DrakeVisualizer>(tree_ptr, lcm);
+  publisher->set_name("publisher");
 
-  // Instantiates a system for receiving user commands. The user command
-  // consists of the following three-vector:
-  //
-  // [steering angle position, throttle speed, brake speed]
-  //
-  // The throttle and brake speeds are with respect to the vehicle's
-  // longitudinal position.
-  //
+  // Instantiates a system for receiving user commands, of type
+  // DrivingCommand.
   auto command_subscriber =
       builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
           "DRIVING_COMMAND", driving_command_translator, lcm);
@@ -168,10 +174,9 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
   const double kWheelRadius = 0.323342;
 
   // Instantiates a MatrixGain system to covert from user command space to
-  // actuator command space. As mentioned above, the user command space consists
-  // of the following three-vector:
+  // actuator command space.  The user command space consists of:
   //
-  // [steering angle position, throttle speed, brake speed]
+  // [steering angle position, acceleration]
   //
   // The actuator command space consists of a six-vector:
   //
@@ -184,22 +189,22 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
   //   y = Du
   //
   // The user's steering angle position command can be passed straight
-  // through using a gain of 1. The user's throttle and brake commands need to
-  // be multiplied by a gain of 1 / kWheelRadius and -1. / kWheelRadius to get
+  // through using a gain of 1. The user's acceleration command needs to
+  // be multiplied by a gain of 1 / kWheelRadius to get
   // the reference rotational velocities for the left and right wheels,
   // respectively (see calculations above that relate vehicle longitudinal speed
   // with wheel rotational speed). Thus, the gain (`D`) should be:
   //
-  // ---------------------------------------------------------------------
-  // Index |   kSteeringAngle   |   kThrottle         |    kBrake
-  // ---------------------------------------------------------------------
-  //   0   |         1          |       0             |      0
-  //   1   |         0          |       0             |      0
-  //   2   |         0          |       0             |      0
-  //   3   |         0          |       0             |      0
-  //   4   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
-  //   5   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
-  // ---------------------------------------------------------------------
+  // -------------------------------------------------
+  // Index |   kSteeringAngle   |   kAcceleration
+  // -------------------------------------------------
+  //   0   |         1          |       0
+  //   1   |         0          |       0
+  //   2   |         0          |       0
+  //   3   |         0          |       0
+  //   4   |         0          |  1. / kWheelRadius
+  //   5   |         0          |  1. / kWheelRadius
+  // -------------------------------------------------
   //
   // TODO(liang.fok): Add a system that accounts for the difference in reference
   // wheel rotational velocities necessary in vehicles with Ackermann steering.
@@ -208,18 +213,18 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
   // outer side of the turn.
   //
   MatrixX<double> matrix_gain(
-      controller->get_input_port(1).get_size(),
-      command_subscriber->get_output_port(0).get_size());
+      controller->get_input_port(1).size(),
+      command_subscriber->get_output_port(0).size());
   matrix_gain <<
-      1,                 0,                  0,
-      0,                 0,                  0,
-      0,                 0,                  0,
-      0,                 0,                  0,
-      0, 1. / kWheelRadius, -1. / kWheelRadius,
-      0, 1. / kWheelRadius, -1. / kWheelRadius;
-  DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).get_size());
+      1,                 0,
+      0,                 0,
+      0,                 0,
+      0,                 0,
+      0, 1. / kWheelRadius,
+      0, 1. / kWheelRadius;
+  DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).size());
   DRAKE_ASSERT(matrix_gain.cols() ==
-      command_subscriber->get_output_port(0).get_size());
+      command_subscriber->get_output_port(0).size());
 
   // TODO(liang.fok): Consider replacing the the MatrixGain system below with a
   // custom system that converts the user's commands to the vehicle's actuator's
@@ -228,13 +233,15 @@ std::unique_ptr<systems::Diagram<double>> CreatCarSimLcmDiagram(
   // with immediately-relevant units and scale comments.
   auto user_to_actuator_cmd_sys =
       builder.template AddSystem<MatrixGain<double>>(matrix_gain);
+  user_to_actuator_cmd_sys->set_name("user_to_actuator_command");
 
   // Instantiates a constant vector source for the feed-forward torque command.
   // The feed-forward torque is zero.
-  VectorX<double> constant_vector(controller->get_input_port(0).get_size());
+  VectorX<double> constant_vector(controller->get_input_port(0).size());
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
+  constant_zero_source->set_name("zero");
 
   // Connects the feed-forward torque command.
   builder.Connect(constant_zero_source->get_output_port(),

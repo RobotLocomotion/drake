@@ -1,76 +1,75 @@
 #include <chrono>
 #include <thread>
 
+#include "drake/common/call_matlab.h"
 #include "drake/examples/ZMP/zmp_test_util.h"
 
-#include "drake/lcm/lcm_call_matlab.h"
-
 void PlotResults(const drake::examples::zmp::ZMPTestTraj& traj) {
-  using drake::lcm::LcmCallMatlab;
+  using drake::common::CallMatlab;
 
-  LcmCallMatlab("figure", 1);
-  LcmCallMatlab("clf");
-  LcmCallMatlab("subplot", 2, 1, 1);
-  LcmCallMatlab("hold", "on");
-  LcmCallMatlab("plot", traj.time, traj.desired_zmp.row(0), "r");
-  LcmCallMatlab("plot", traj.time, traj.nominal_com.row(0), "b");
-  LcmCallMatlab("plot", traj.time, traj.cop.row(0), "g");
-  LcmCallMatlab("plot", traj.time, traj.x.row(0), "c");
-  LcmCallMatlab("xlabel", "time [s]");
-  LcmCallMatlab("ylabel", "x [m]");
-  LcmCallMatlab("legend", "desired zmp", "planned com", "planned cop",
+  CallMatlab("figure", 1);
+  CallMatlab("clf");
+  CallMatlab("subplot", 2, 1, 1);
+  CallMatlab("hold", "on");
+  CallMatlab("plot", traj.time, traj.desired_zmp.row(0), "r");
+  CallMatlab("plot", traj.time, traj.nominal_com.row(0), "b");
+  CallMatlab("plot", traj.time, traj.cop.row(0), "g");
+  CallMatlab("plot", traj.time, traj.x.row(0), "c");
+  CallMatlab("xlabel", "time [s]");
+  CallMatlab("ylabel", "x [m]");
+  CallMatlab("legend", "desired zmp", "planned com", "planned cop",
                 "actual com");
 
-  LcmCallMatlab("subplot", 2, 1, 2);
-  LcmCallMatlab("hold", "on");
-  LcmCallMatlab("plot", traj.time, traj.desired_zmp.row(1), "r");
-  LcmCallMatlab("plot", traj.time, traj.nominal_com.row(1), "b");
-  LcmCallMatlab("plot", traj.time, traj.cop.row(1), "g");
-  LcmCallMatlab("plot", traj.time, traj.x.row(1), "c");
-  LcmCallMatlab("xlabel", "time [s]");
-  LcmCallMatlab("ylabel", "y [m]");
-  LcmCallMatlab("legend", "desired zmp", "planned com", "planned cop",
+  CallMatlab("subplot", 2, 1, 2);
+  CallMatlab("hold", "on");
+  CallMatlab("plot", traj.time, traj.desired_zmp.row(1), "r");
+  CallMatlab("plot", traj.time, traj.nominal_com.row(1), "b");
+  CallMatlab("plot", traj.time, traj.cop.row(1), "g");
+  CallMatlab("plot", traj.time, traj.x.row(1), "c");
+  CallMatlab("xlabel", "time [s]");
+  CallMatlab("ylabel", "y [m]");
+  CallMatlab("legend", "desired zmp", "planned com", "planned cop",
                 "actual com");
   // Give time for matlab to plot.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  LcmCallMatlab("figure", 2);
-  LcmCallMatlab("clf");
-  LcmCallMatlab("subplot", 2, 1, 1);
-  LcmCallMatlab("hold", "on");
-  LcmCallMatlab("plot", traj.time, traj.nominal_com.row(2), "b");
-  LcmCallMatlab("plot", traj.time, traj.x.row(2), "c");
-  LcmCallMatlab("xlabel", "time [s]");
-  LcmCallMatlab("ylabel", "xd [m/s]");
-  LcmCallMatlab("legend", "planned comd", "actual comd");
+  CallMatlab("figure", 2);
+  CallMatlab("clf");
+  CallMatlab("subplot", 2, 1, 1);
+  CallMatlab("hold", "on");
+  CallMatlab("plot", traj.time, traj.nominal_com.row(2), "b");
+  CallMatlab("plot", traj.time, traj.x.row(2), "c");
+  CallMatlab("xlabel", "time [s]");
+  CallMatlab("ylabel", "xd [m/s]");
+  CallMatlab("legend", "planned comd", "actual comd");
 
-  LcmCallMatlab("subplot", 2, 1, 2);
-  LcmCallMatlab("hold", "on");
-  LcmCallMatlab("plot", traj.time, traj.nominal_com.row(3), "b");
-  LcmCallMatlab("plot", traj.time, traj.x.row(3), "c");
-  LcmCallMatlab("xlabel", "time [s]");
-  LcmCallMatlab("ylabel", "yd [m/s]");
-  LcmCallMatlab("legend", "planned comd", "actual comd");
+  CallMatlab("subplot", 2, 1, 2);
+  CallMatlab("hold", "on");
+  CallMatlab("plot", traj.time, traj.nominal_com.row(3), "b");
+  CallMatlab("plot", traj.time, traj.x.row(3), "c");
+  CallMatlab("xlabel", "time [s]");
+  CallMatlab("ylabel", "yd [m/s]");
+  CallMatlab("legend", "planned comd", "actual comd");
   // Give time for matlab to plot.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  LcmCallMatlab("figure", 3);
-  LcmCallMatlab("clf");
-  LcmCallMatlab("subplot", 2, 1, 1);
-  LcmCallMatlab("hold", "on");
-  LcmCallMatlab("plot", traj.time, traj.u.row(0), "r");
-  LcmCallMatlab("plot", traj.time, traj.nominal_com.row(4), "b.");
-  LcmCallMatlab("xlabel", "time [s]");
-  LcmCallMatlab("ylabel", "xdd [m/s2]");
-  LcmCallMatlab("legend", "comdd from policy", "nominal comdd");
+  CallMatlab("figure", 3);
+  CallMatlab("clf");
+  CallMatlab("subplot", 2, 1, 1);
+  CallMatlab("hold", "on");
+  CallMatlab("plot", traj.time, traj.u.row(0), "r");
+  CallMatlab("plot", traj.time, traj.nominal_com.row(4), "b.");
+  CallMatlab("xlabel", "time [s]");
+  CallMatlab("ylabel", "xdd [m/s2]");
+  CallMatlab("legend", "comdd from policy", "nominal comdd");
 
-  LcmCallMatlab("subplot", 2, 1, 2);
-  LcmCallMatlab("hold", "on");
-  LcmCallMatlab("plot", traj.time, traj.u.row(1), "r");
-  LcmCallMatlab("plot", traj.time, traj.nominal_com.row(5), "b.");
-  LcmCallMatlab("xlabel", "time [s]");
-  LcmCallMatlab("ylabel", "ydd [m/s2]");
-  LcmCallMatlab("legend", "comdd from policy", "nominal comdd");
+  CallMatlab("subplot", 2, 1, 2);
+  CallMatlab("hold", "on");
+  CallMatlab("plot", traj.time, traj.u.row(1), "r");
+  CallMatlab("plot", traj.time, traj.nominal_com.row(5), "b.");
+  CallMatlab("xlabel", "time [s]");
+  CallMatlab("ylabel", "ydd [m/s2]");
+  CallMatlab("legend", "comdd from policy", "nominal comdd");
   // Give time for matlab to plot.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 }

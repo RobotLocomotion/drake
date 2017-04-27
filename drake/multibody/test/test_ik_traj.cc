@@ -3,15 +3,15 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -57,10 +57,10 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   Vector3d com_lb = com0;
   com_lb(0) = std::numeric_limits<double>::quiet_NaN();
   com_lb(1) = std::numeric_limits<double>::quiet_NaN();
-  Vector3d com_ub = com0;
-  com_ub(0) = std::numeric_limits<double>::quiet_NaN();
-  com_ub(1) = std::numeric_limits<double>::quiet_NaN();
-  com_ub(2) = com0(2) + 0.5;
+  Vector3d com_ub(
+      std::numeric_limits<double>::quiet_NaN(),
+      std::numeric_limits<double>::quiet_NaN(),
+      com0(2) + 0.5);
   WorldCoMConstraint com_kc(model.get(), com_lb, com_ub);
   Vector3d rhand_pos_lb = rhand_pos0;
   rhand_pos_lb(0) += 0.1;

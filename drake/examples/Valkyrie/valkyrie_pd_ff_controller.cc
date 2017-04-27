@@ -1,27 +1,28 @@
+#include "drake/examples/Valkyrie/valkyrie_pd_ff_controller.h"
+
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <string>
 
+#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
+
 #include "drake/common/drake_path.h"
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
-#include "drake/examples/Valkyrie/valkyrie_pd_ff_controller.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/util/drakeUtil.h"
 
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
-
 namespace drake {
 using lcm::DrakeLcm;
-using examples::valkyrie::kRPYValkyrieDoF;
+using examples::valkyrie::kRPYValkyrieDof;
 
 namespace systems {
 
@@ -136,7 +137,7 @@ void run_valkyrie_pd_ff_controller() {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kRollPitchYaw, robot.get());
 
-  VectorX<double> Kp(kRPYValkyrieDoF);
+  VectorX<double> Kp(kRPYValkyrieDof);
   Kp << 0, 0, 0, 0, 0, 0,            // base
       100, 300, 300,                 // spine
       10,                            // neck
@@ -147,7 +148,7 @@ void run_valkyrie_pd_ff_controller() {
       100, 100, 300, 300, 300, 100,  // r leg
       100, 100, 300, 300, 300, 100;  // l leg
 
-  VectorX<double> Kd(kRPYValkyrieDoF);
+  VectorX<double> Kd(kRPYValkyrieDof);
   Kd << 0, 0, 0, 0, 0, 0,      // base
       10, 10, 10,              // spine
       3,                       // neck
@@ -165,7 +166,7 @@ void run_valkyrie_pd_ff_controller() {
   ValkyriePDAndFeedForwardController* controller =
       builder.AddSystem(std::make_unique<ValkyriePDAndFeedForwardController>(
           *robot, examples::valkyrie::RPYValkyrieFixedPointState().head(
-                     kRPYValkyrieDoF),
+                     kRPYValkyrieDof),
           examples::valkyrie::RPYValkyrieFixedPointTorque(), Kp, Kd));
 
   // lcm

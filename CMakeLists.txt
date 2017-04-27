@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake-superbuild)
+project(drake-superbuild VERSION 0.0.0)
 
 include(CTest)
 
@@ -7,6 +7,7 @@ include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/examples.cmake)
 include(cmake/options.cmake)
+include(cmake/package.cmake)
 include(cmake/tools.cmake)
 include(cmake/git/hooks.cmake)
 
@@ -20,15 +21,24 @@ drake_setup_options()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(eigen PUBLIC CMAKE)
+drake_add_external(avl PUBLIC CMAKE FORTRAN)
+drake_add_external(fmt PUBLIC CMAKE ALWAYS)
 drake_add_external(meshconverters PUBLIC CMAKE)
-drake_add_external(spdlog PUBLIC CMAKE)
-drake_add_external(swigmake PUBLIC CMAKE MATLAB PYTHON)
+drake_add_external(qt_property_browser CMAKE QT)
+drake_add_external(sedumi PUBLIC CMAKE MATLAB)
+drake_add_external(spotless PUBLIC CMAKE MATLAB)
+drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
 
-# avl
-# The Ninja generator does not support Fortran.
-drake_add_external(avl PUBLIC CMAKE FORTRAN)
+# eigen
+# N.B. See #5785; do your best not to have to bump this to a newer commit.
+drake_add_external(eigen PUBLIC CMAKE
+  URL https://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz
+  URL_HASH SHA256=94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f)
+
+# spdlog
+drake_add_external(spdlog PUBLIC CMAKE
+  DEPENDS fmt)
 
 # bullet
 drake_add_external(bullet PUBLIC CMAKE
@@ -52,14 +62,6 @@ drake_add_external(ccd PUBLIC CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DBUILD_TESTING=OFF
     -DENABLE_DOUBLE_PRECISION=ON)
-
-# dreal
-drake_add_external(dreal PUBLIC CMAKE PYTHON
-  CMAKE_ARGS
-    -DBUILD_TESTING=OFF
-    -DSUPPORT_ODE=OFF
-    -DUSE_NLOPT=OFF
-  SOURCE_SUBDIR src)
 
 # gflags
 drake_add_external(gflags PUBLIC CMAKE
@@ -125,8 +127,27 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
-# sedumi
-drake_add_external(sedumi PUBLIC CMAKE MATLAB)
+# protobuf
+drake_add_external(protobuf PUBLIC CMAKE ALWAYS
+  SOURCE_SUBDIR cmake
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -Dprotobuf_BUILD_TESTS=OFF
+    -Dprotobuf_MODULE_COMPATIBLE=ON)
+
+# pybind11
+drake_add_external(pybind11 CMAKE
+  CMAKE_ARGS
+    -DPYBIND11_PYTHON_VERSION=${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
+    -DPYBIND11_TEST=OFF)
+
+# pythonqt
+drake_add_external(pythonqt CMAKE PYTHON QT
+  CMAKE_ARGS
+    -DPythonQt_Wrap_Qtcore:BOOL=ON
+    -DPythonQt_Wrap_Qtgui:BOOL=ON
+    -DPythonQt_Wrap_Qtuitools:BOOL=ON
+)
 
 # snopt
 drake_add_external(snopt CMAKE MATLAB
@@ -137,9 +158,6 @@ drake_add_external(snopt CMAKE MATLAB
     -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
-# spotless
-drake_add_external(spotless PUBLIC CMAKE MATLAB)
-
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
   CMAKE_ARGS
@@ -147,17 +165,35 @@ drake_add_external(octomap PUBLIC CMAKE
     -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
   SOURCE_SUBDIR octomap)
 
-# swig_matlab
-drake_add_external(swig_matlab PUBLIC AUTOTOOLS
-  PATCH_COMMAND ./autogen.sh
-  AUTOTOOLS_CONFIGURE_ARGS
-    --without-alllang)
+# vtk
+drake_add_external(vtk PUBLIC CMAKE PYTHON QT
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    -DBUILD_EXAMPLES=OFF
+    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -DGLX_GLXEXT_LEGACY=1"
+    -DVTK_USE_GUISUPPORT=ON
+    -DVTK_USE_QT=ON
+    -DVTK_WRAP_PYTHON=ON
+    -DVTK_WRAP_TCL=OFF
+    -DVTK_USE_TK=OFF)
+
+# fcl
+drake_add_external(fcl PUBLIC CMAKE
+  CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
+  DEPENDS ccd eigen octomap)
 
 # textbook
 drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
   CMAKE_ARGS -DBUILD_TESTING=${Matlab_FOUND}
   INSTALL_COMMAND :
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
+
+# tinyobjloader
+drake_add_external(tinyobjloader PUBLIC CMAKE
+  CMAKE_ARGS
+    -DTINYOBJLOADER_COMPILATION_SHARED=ON
+  )
 
 # yaml_cpp
 drake_add_external(yaml_cpp PUBLIC CMAKE
@@ -167,14 +203,34 @@ drake_add_external(yaml_cpp PUBLIC CMAKE
    -DYAML_CPP_BUILD_CONTRIB=OFF
    -DYAML_CPP_BUILD_TOOLS=OFF)
 
+# ctk_python_console
+drake_add_external(ctk_python_console CMAKE PYTHON QT
+  DEPENDS pythonqt)
+
 # iris
 drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
   CMAKE_ARGS
     -DBUILD_TESTING=OFF
     -DIRIS_WITH_CDD=ON
     -DIRIS_WITH_EIGEN=OFF
+    -DIRIS_WITH_MATLAB=${Matlab_FOUND}
     -DIRIS_WITH_MOSEK=OFF
-  DEPENDS eigen mosek)
+    -DIRIS_WITH_PYBIND11=OFF
+    -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+    -DPYTHON_INCLUDE_DIR=${PYTHON_INCLUDE_DIR}
+    -DPYTHON_LIBRARY=${PYTHON_LIBRARY}
+  DEPENDS eigen mosek pybind11)
+
+# ignition_math
+drake_add_external(ignition_math PUBLIC CMAKE
+  URL https://bitbucket.org/ignitionrobotics/ign-math/get/ignition-math3_3.0.0.tar.gz
+  URL_HASH SHA256=9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd)
+
+# ignition_rndf
+drake_add_external(ignition_rndf PUBLIC CMAKE
+  URL https://bitbucket.org/ignitionrobotics/ign-rndf/get/ignition-rndf_0.1.2.tar.gz
+  URL_HASH SHA256=e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a
+  DEPENDS ignition_math)
 
 # lcm
 drake_add_external(lcm PUBLIC CMAKE PYTHON
@@ -197,8 +253,9 @@ drake_add_external(bot_core_lcmtypes PUBLIC CMAKE PYTHON
 drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE PYTHON
   DEPENDS bot_core_lcmtypes lcm)
 
-# xfoil
-drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
+# signalscope
+drake_add_external(signalscope PUBLIC CMAKE PYTHON QT
+  DEPENDS ctk_python_console lcm pythonqt)
 
 # Option to skip building drake proper via the superbuild. This allows the
 # superbuild to build everything BUT drake, which can still be built separately
@@ -212,7 +269,7 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
 # TODO: re-add TEST to drake flags when subprojects arrive
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS
@@ -223,14 +280,14 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_BOT_CORE_LCMTYPES:BOOL=${WITH_BOT_CORE_LCMTYPES}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_CCD:BOOL=${WITH_CCD}
-    -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
-    -DWITH_DREAL:BOOL=${WITH_DREAL}
     -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_FCL:BOOL=${WITH_FCL}
     -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
-    -DWITH_HSRB_DESCRIPTION:BOOL=${WITH_HSRB_DESCRIPTION}
+    -DWITH_IGNITION_MATH:BOOL=${WITH_IGNITION_MATH}
+    -DWITH_IGNITION_RNDF:BOOL=${WITH_IGNITION_RNDF}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
@@ -239,15 +296,16 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     -DWITH_MOSEK:BOOL=${WITH_MOSEK}
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
+    -DWITH_PROTOBUF:BOOL=${WITH_PROTOBUF}
+    -DWITH_PYBIND11:BOOL=${WITH_PYBIND11}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
     -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
-    -DWITH_SWIG:BOOL=${WITH_SWIG_MATLAB}   # TODO(jamiesnape): Fix naming inconsistency
-    -DWITH_SWIGMAKE:BOOL=${WITH_SWIGMAKE}
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
+    -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
@@ -261,12 +319,15 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     bot_core_lcmtypes
     bullet
     ccd
-    dreal
     eigen
+    fcl
+    fmt
     gflags
     google_styleguide
     googletest
     gurobi
+    ignition-math
+    ignition-rndf
     ipopt
     iris
     lcm
@@ -275,34 +336,39 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON
     mosek
     nlopt
     octomap
+    protobuf
+    pybind11
     robotlocomotion_lcmtypes
     sedumi
     snopt
     spdlog
     spotless
-    swig_matlab
-    swigmake
     textbook
+    tinyobjloader
+    vtk
     xfoil
     yalmip
     yaml_cpp
 )
 
 # director
-drake_add_external(director PUBLIC CMAKE TEST PYTHON
-  SOURCE_SUBDIR distro/superbuild
+drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
   CMAKE_ARGS
     -DUSE_DRAKE=ON
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
-    -DUSE_SYSTEM_LCM=ON
-    -DUSE_EXTERNAL_INSTALL=ON
-  INSTALL_COMMAND :
-  DEPENDS bot_core_lcmtypes drake lcm libbot)
-
-# signalscope
-drake_add_external(signalscope PUBLIC
-  DEPENDS director)
+    -DUSE_LIBBOT=OFF
+    -DENABLE_TESTING=ON
+  DEPENDS
+    bot_core_lcmtypes
+    ctk_python_console
+    drake
+    lcm
+    libbot
+    pythonqt
+    qt_property_browser
+    vtk
+)
 
 # END external projects
 ###############################################################################
@@ -314,14 +380,9 @@ drake_add_example(LittleDog OFF
 
 # END examples
 ###############################################################################
+# BEGIN ros packages
 
-# hsrb_description is a ROS package that contains a model of Toyota's Human
-# Support Robot (HSR). The following method call downloads hsrb_description as a
-# submodule in drake-distro/ros/ but does not build or install it since it uses
-# the Catkin build system and should only be compiled when Drake is installed as
-# a ROS Catkin package. For details on how to do this, see:
-# http://drake.mit.edu/from_source_ros.html.
-drake_add_external(hsrb_description PUBLIC
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ros/hsrb_description
-  BUILD_COMMAND :
-  INSTALL_COMMAND :)
+# END ros packages
+###############################################################################
+
+drake_setup_cpack()

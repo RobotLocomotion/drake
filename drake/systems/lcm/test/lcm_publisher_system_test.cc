@@ -1,13 +1,20 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
-#include "gtest/gtest.h"
+#include <cmath>
+#include <memory>
+
+#include <gtest/gtest.h>
 
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+
+using std::make_unique;
+using std::unique_ptr;
 
 namespace drake {
 namespace systems {
@@ -24,8 +31,8 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
                    LcmPublisherSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmPublisherSystem(" + channel_name + ")");
 
-  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+  unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // Verifies that the context has one input port.
   EXPECT_EQ(context->get_num_input_ports(), 1);
@@ -33,26 +40,15 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   // Instantiates a BasicVector with known state. This is the basic vector that
   // we want the LcmPublisherSystem to publish as a drake::lcmt_drake_signal
   // message.
-  std::unique_ptr<BasicVector<double>> vec(
-      new BasicVector<double>(kDim));
+  auto vec = make_unique<BasicVector<double>>(kDim);
+  Eigen::VectorBlock<VectorX<double>> vector_value =
+      vec->get_mutable_value();
 
-  {
-    Eigen::VectorBlock<VectorX<double>> vector_value =
-        vec->get_mutable_value();
-
-    for (int i = 0; i < kDim; ++i) {
-      vector_value[i] = i;
-    }
+  for (int i = 0; i < kDim; ++i) {
+    vector_value[i] = i;
   }
 
-  // Sets the value in the context's input port to be the above-defined
-  // VectorBase. Note that we need to overwrite the original input port
-  // created by the LcmPublisherSystem since we do not have write access to its
-  // input vector.
-  std::unique_ptr<InputPort> input_port(
-      new FreestandingInputPort(std::move(vec)));
-
-  context->SetInputPort(kPortNumber, std::move(input_port));
+  context->FixInputPort(kPortNumber, std::move(vec));
 
   // Sets the timestamp within the context. This timestamp should be transmitted
   // by the LCM message.
@@ -112,7 +108,7 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
   LcmTranslatorDictionary dictionary;
   dictionary.AddEntry(
       channel_name,
-      std::make_unique<const LcmtDrakeSignalTranslator>(kDim));
+      make_unique<const LcmtDrakeSignalTranslator>(kDim));
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 
@@ -137,14 +133,14 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   ASSERT_NE(dut.get(), nullptr);
 
   // Establishes the context, output, and input for the dut.
-  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+  unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
   const lcmt_drake_signal sample_data{
     2, { 1.0, 2.0, }, { "x", "y", }, 12345,
   };
-  context->SetInputPort(
-      kPortNumber, std::make_unique<FreestandingInputPort>(
-          std::make_unique<Value<lcmt_drake_signal>>(sample_data)));
+  context->SetInputPortValue(
+      kPortNumber, make_unique<FreestandingInputPortValue>(
+          make_unique<Value<lcmt_drake_signal>>(sample_data)));
 
   // Verifies that a correct message is published.
   dut->Publish(*context.get());
@@ -152,6 +148,38 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   drake::lcmt_drake_signal received_message{};
   received_message.decode(bytes.data(), 0, bytes.size());
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message, sample_data));
+}
+
+// Tests that the published LCM message has the expected timestamps.
+GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
+  const double kPublishPeriod = 1.5;  // Seconds between publications.
+
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  LcmtDrakeSignalTranslator translator(kDim);
+
+  // Instantiates the "device under test".
+  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm);
+  dut->set_publish_period(kPublishPeriod);
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+
+  context->FixInputPort(kPortNumber,
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(kDim)));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(*dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.Initialize();
+
+  for (double time = 0; time < 4; time += 0.01) {
+    simulator.StepTo(time);
+    EXPECT_NEAR(simulator.get_mutable_context()->get_time(), time, 1e-10);
+    // Note that the expected time is in milliseconds.
+    const double expected_time =
+        std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
+    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
+      channel_name).timestamp, expected_time);
+  }
 }
 
 }  // namespace

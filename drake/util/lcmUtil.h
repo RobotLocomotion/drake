@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include <Eigen/Core>
-
 #include "bot_core/position_3d_t.hpp"
 #include "bot_core/quaternion_t.hpp"
 #include "bot_core/twist_t.hpp"

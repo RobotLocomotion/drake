@@ -19,18 +19,26 @@ if(lcm_FOUND)
     drakeSystemPrimitives
     drakeRobotCommandToDesiredEffortConverter)
 
-  add_executable(valkyrie_ik_test valkyrie_ik_test.cc)
+  drake_add_cc_test(NAME valkyrie_ik_test
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
   target_link_libraries(valkyrie_ik_test
-    GTest::GTest GTest::Main
     drakeCommon
     drakeIK
     drakeLcm
     drakeMultibodyParsers
     drakeRBM
-    drakeRigidBodyPlant
-    drakeSystemFramework
-    drakeSystemAnalysis
-    drakeSystemFramework
-    drakeSystemPrimitives)
-  drake_add_test(NAME valkyrie_ik_test WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND valkyrie_ik_test)
+    drakeRigidBodyPlant)
+
+  drake_add_cc_test(valkyrie_simulation_test)
+  target_link_libraries(valkyrie_simulation_test
+      drakeLcmSystem
+      drakeMultibodyParsers
+      drakeRigidBodyPlant
+      drakeRobotStateEncoder
+      drakeSystemAnalysis
+      drakeSystemFramework
+      drakeSystemPrimitives
+      drakeActuatorEffortToRigidBodyPlantInputConverter
+      drakeRobotCommandToDesiredEffortConverter
+      drakeValkyrieConstants)
 endif()

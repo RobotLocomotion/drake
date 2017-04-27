@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <algorithm>
+#include <string>
 
 /*** getCommandLineOption
  * @brief Provides a platform-independent way to parse command line options

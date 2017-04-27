@@ -26,7 +26,7 @@ template <typename It>
 size_t hash_range(It first, It last) {
   size_t seed{};
   for (; first != last; ++first) {
-    seed = hash_combine<typename It::value_type>(seed, *first);
+    seed = hash_combine(seed, *first);
   }
   return seed;
 }

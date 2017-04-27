@@ -2,6 +2,7 @@
 
 #include <random>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -28,18 +29,16 @@ namespace systems {
 template <typename Distribution>
 class RandomSource : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
+
   /// Constructs the RandomSource system.
   /// @param num_outputs The dimension of the (single) vector output port.
   /// @param sampling_interval_sec The sampling interval in seconds.
   RandomSource(int num_outputs, double sampling_interval_sec) {
-    this->DeclareUpdatePeriodSec(sampling_interval_sec);
+    this->DeclareDiscreteUpdatePeriodSec(sampling_interval_sec);
     this->DeclareOutputPort(drake::systems::kVectorValued, num_outputs);
     this->DeclareDiscreteState(num_outputs);
   }
-
-  // Non-copyable.
-  RandomSource(const RandomSource<Distribution>&) = delete;
-  RandomSource& operator=(const RandomSource<Distribution>&) = delete;
 
   /// Initializes the random number generator.
   void set_random_seed(double seed) { generator_.seed(seed); }
@@ -48,11 +47,11 @@ class RandomSource : public LeafSystem<double> {
   // Computes a random number and stores it in the discrete state.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      drake::systems::DiscreteState<double>* updates) const override {
-    const int N = updates->get_discrete_state(0)->size();
+      drake::systems::DiscreteValues<double>* updates) const override {
+    const int N = updates->size();
     for (int i = 0; i < N; i++) {
       double random_value = distribution_(generator_);
-      updates->get_mutable_discrete_state(0)->SetAtIndex(0, random_value);
+      (*updates)[0] = random_value;
     }
   }
 

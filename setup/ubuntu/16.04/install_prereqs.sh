@@ -22,15 +22,15 @@ while true; do
   echo "The Ubuntu 16.04 distribution includes Clang 3.8 by default."
   echo "To install Clang 3.9 it is necessary to add a Personal Package Archive (PPA)."
   echo "This script will add the repository
-    'deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main'"
+    'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main'"
   read -p "Do you want to continue? [Y/n] " yn
   case $yn in
     [Yy]*)
       apt-get install --no-install-recommends lsb-core software-properties-common wget
       wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-      add-apt-repository -y "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main"
+      add-apt-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
       apt-get update
-      apt install --no-install-recommends clang-3.9
+      apt install --no-install-recommends clang-3.9 lldb-3.9
       break
       ;;
     [Nn]*) break ;;
@@ -59,19 +59,24 @@ apt update -y
 # TODO(david-german-tri): Can we remove libvtk-java?
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
+alien
 autoconf
 automake
 bash-completion
 bison
+clang-format
 default-jdk
 doxygen
+fakeroot
 flex
 freeglut3-dev
+g++
 g++-5
 g++-5-multilib
 gdb
 gfortran
 gfortran-5
+gfortran-5-multilib
 git
 graphviz
 libgtk2.0-dev
@@ -81,12 +86,10 @@ libpng12-dev
 libqt4-dev
 libqt4-opengl-dev
 libqwt-dev
-libterm-readkey-perl
 libtool
 libvtk-java
 libvtk5-dev
 libvtk5-qt4-dev
-libwww-perl
 libxmu-dev
 make
 ninja-build
@@ -96,7 +99,10 @@ python-bs4
 python-dev
 python-gtk2
 python-html5lib
+python-lxml
 python-numpy
+python-pygame
+python-scipy
 python-sphinx
 python-vtk
 python-yaml
@@ -109,15 +115,20 @@ EOF
     )
 
 # Install Bazel.
-wget -O /tmp/bazel_0.4.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.2/bazel_0.4.2-linux-x86_64.deb
-if echo "de12abbf8bf1b5ec5f7676afb32019e10e144fe986fb170ebb7d976bb2229539 /tmp/bazel_0.4.2-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.4.2-linux-x86_64.deb
+wget -O /tmp/bazel_0.4.5-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.5/bazel_0.4.5-linux-x86_64.deb
+if echo "b494d0a413e4703b6cd5312403bea4d92246d6425b3be68c9bfbeb8cc4db8a55 /tmp/bazel_0.4.5-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.4.5-linux-x86_64.deb
 else
   echo "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
   exit 1
 fi
 
-rm /tmp/bazel_0.4.2-linux-x86_64.deb
+rm /tmp/bazel_0.4.5-linux-x86_64.deb
+
+# Repair a bad Bazel/ccache interaction.
+# See https://github.com/RobotLocomotion/drake/issues/4464.
+# See https://github.com/bazelbuild/bazel/issues/1322.
+$(dirname $0)/ccache-bazel-wrapper-mkdeb.sh --install
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab

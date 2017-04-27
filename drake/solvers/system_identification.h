@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trig_poly.h"
 
@@ -151,7 +152,8 @@ class SystemIdentification {
 
  private:
   /// This class is not constructable.
-  SystemIdentification() {}
+  SystemIdentification() = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemIdentification)
 
   /// Return every combination of the given variables in the polynomials.
   /**

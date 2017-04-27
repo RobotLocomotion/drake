@@ -7,12 +7,13 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace automotive {
 
-/// Curve2 -- a path through two-dimensional Cartesian space.
-///
-/// Given a list of waypoints, traces a path between them.
+/// Curve2 represents a path through two-dimensional Cartesian space. Given a
+/// list of waypoints, it traces a path between them.
 ///
 /// TODO(jwnimmer-tri) We will soon trace the path using a spline, but
 /// for now it's easiest to just interpolate straight segments, as a
@@ -22,6 +23,8 @@ namespace automotive {
 template <typename T>
 class Curve2 {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Curve2)
+
   /// A two-dimensional Cartesian point that is alignment-safe.
   typedef Eigen::Matrix<T, 2, 1, Eigen::DontAlign> Point2;
 
@@ -33,10 +36,6 @@ class Curve2 {
     // waypoints (derivative problems); this will probably come for
     // free as part of the spline refactoring.
   }
-
-  // Copyable.
-  Curve2(const Curve2&) = default;
-  Curve2& operator=(const Curve2&) = default;
 
   /// @return the length of this curve (the total distance traced).
   T path_length() const { return path_length_; }
@@ -125,8 +124,8 @@ class Curve2 {
     return result;
   }
 
-  const std::vector<Point2> waypoints_;
-  const T path_length_;
+  std::vector<Point2> waypoints_;
+  T path_length_;
 };
 
 }  // namespace automotive

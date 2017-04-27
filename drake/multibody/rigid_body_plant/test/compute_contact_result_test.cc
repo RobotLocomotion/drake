@@ -1,24 +1,26 @@
+/* clang-format off */
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+/* clang-format on */
 
 #include <memory>
 
-#include <gtest/gtest.h>
 #include <Eigen/Geometry>
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/quaternion_floating_joint.h"
 
 // The ContactResult class is largely a container for the data that is computed
-//  by the RigidBodyPlant while determining contact forces.  This test confirms
-//  that for a known set of contacts, that the expected contact forces are
-//  generated and stashed into the ContactResult data structure.
+// by the RigidBodyPlant while determining contact forces.  This test confirms
+// that for a known set of contacts, that the expected contact forces are
+// generated and stashed into the ContactResult data structure.
 //
-//  Thus, a rigid body tree is created with a known configuration such that the
-//  contacts and corresponding contact forces are known.  The RigidBodyPlant's
-//  CalcOutput is invoked on the ContactResult port and the ContactResult
-//  contents are evaluated to see if they contain the expected results.
+// Thus, a rigid body tree is created with a known configuration such that the
+// contacts and corresponding contact forces are known.  The RigidBodyPlant's
+// CalcOutput is invoked on the ContactResult port and the ContactResult
+// contents are evaluated to see if they contain the expected results.
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -64,6 +66,13 @@ class ContactResultTest : public ::testing::Test {
   unique_ptr<SystemOutput<double>> output_{};
   const double kRadius = 1.0;
 
+  // Contact parameters
+  const double kStiffness = 150;
+  const double kDissipation = 2.0;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kVStictionTolerance = 0.01;
+
   // Places two spheres are on the x-y plane mirrored across the origin from
   //  each other such there is 2 * `distance` units gap between them.  Negative
   //  numbers imply collision.
@@ -72,8 +81,7 @@ class ContactResultTest : public ::testing::Test {
     tree_ = unique_tree.get();
 
     x_anchor_ = 1.5;
-    Vector3d pos;
-    pos << x_anchor_ - (kRadius + distance), 0, 0;
+    Vector3d pos(x_anchor_ - (kRadius + distance), 0, 0);
     body1_ = AddSphere(pos, "sphere1");
     pos << x_anchor_ + (kRadius + distance), 0, 0;
     body2_ = AddSphere(pos, "sphere2");
@@ -84,15 +92,15 @@ class ContactResultTest : public ::testing::Test {
     // Note: This is done here instead of the SetUp method because it appears
     //  the plant requires a *compiled* tree at constructor time.
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
+    plant_->set_normal_contact_parameters(kStiffness, kDissipation);
+    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                            kVStictionTolerance);
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
-    context_->FixInputPort(0, make_unique<BasicVector<double>>(0));
     plant_->CalcOutput(*context_.get(), output_.get());
 
-    // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,
-    //  there is no mechanism for finding out the port id for a known port
-    //  (e.g., contact results). Update when such a mechanism exists.
-    return output_->get_data(2)->GetValue<ContactResults<double>>();
+    const int port_index = plant_->contact_results_output_port().get_index();
+    return output_->get_data(port_index)->GetValue<ContactResults<double>>();
   }
 
   // Add a sphere with default radius, placed at the given position.
@@ -144,18 +152,26 @@ TEST_F(ContactResultTest, SingleCollision) {
   const RigidBody<double>* b1 = tree_->FindBody(e1);
   const RigidBody<double>* b2 = tree_->FindBody(e2);
   ASSERT_NE(e1, e2);
-  ASSERT_TRUE(b1 == body1_ || b1 == body2_);
-  ASSERT_TRUE(b2 == body1_ || b2 == body2_);
+  ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
+
+  // The direction of the force depends on which body is 1 and which is 2. We
+  // assume b1 is body1_, if not, we reverse the sign of the force.
+  double force_sign = -1;
+  if (b2 == body1_) {
+    force_sign = 1;
+  }
 
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
-  // Note: This is fragile.  This is the value copied from rigid_body_plant.h
-  //  If the hard-coded value changes, or the code changes for the value to
-  //  be set in some other manner, then this test may fail.
-  const double stiffness = 150.0;
-  double force = stiffness * offset * 2;
-  expected_spatial_force << 0, 0, 0, -force, 0, 0;
+  // Note: This is fragile. It assumes a particular collision model.  Once the
+  // model has been generalized, this will have to adapt to account for that.
+
+  // NOTE: Because there is zero velocity, there is no frictional force and no
+  // damping on the normal force.  Simply the kx term.  Penetration is twice
+  // the offset.
+  double force = kStiffness * offset * 2;
+  expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
   ASSERT_TRUE(
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
 

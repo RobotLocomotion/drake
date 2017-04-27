@@ -1,8 +1,5 @@
 #include "drake/automotive/maliput/monolane/junction.h"
 
-#include "drake/automotive/maliput/monolane/road_geometry.h"
-#include "drake/automotive/maliput/monolane/segment.h"
-
 namespace drake {
 namespace maliput {
 namespace monolane {

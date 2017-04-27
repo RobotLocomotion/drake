@@ -63,13 +63,11 @@ class KinematicsCacheElement {
  public:
   KinematicsCacheElement(int num_positions_joint, int num_velocities_joint);
 
-  int get_num_positions() const { return v_to_qdot.rows(); }
-  int get_num_velocities() const { return v_to_qdot.cols(); }
+  int get_num_positions() const { return static_cast<int>(v_to_qdot.rows()); }
+  int get_num_velocities() const { return static_cast<int>(v_to_qdot.cols()); }
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 template <typename T>
@@ -87,8 +85,6 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
-  KinematicsCache(int num_positions, int num_velocities);
-
   /// Constructor for a KinematicsCache given the number of positions and
   /// velocities per body in the vectors @p num_joint_positions and
   /// @p num_joint_velocities, respectively.
@@ -97,6 +93,16 @@ class KinematicsCache {
   /// and `num_joint_velocities` are vectors of size `nbodies` containing in
   /// the i-th entry the number of positions and the number of velocities for
   /// the i-th RigidBody in the RigidBodyTree.
+  ///
+  /// Note that you will typically not create a KinematicsCache object using
+  /// this constructor. Instead, you usually obtain a KinematicsCache object
+  /// by calling RigidBodyTree::CreateKinematicsCache() or
+  /// RigidBodyTree::CreateKinematicsCacheWithType(). The second option is
+  /// useful if you need a particular type for your cache like
+  /// Eigen::AutoDiffScalar.
+  ///
+  /// For examples on how to create and use the KinematicsCache, see
+  /// rigid_body_tree_dynamics_test.cc and rigid_body_tree_kinematics_test.cc.
   ///
   /// @param num_positions Total number of positions in the RigidBodyTree.
   /// @param num_velocities Total number of velocities in the RigidBodyTree.
@@ -129,12 +135,24 @@ class KinematicsCache {
                                      bool jdot_times_v_required,
                                      const std::string& method_name) const;
 
+  /// Returns `q`, the generalized position vector of the RigidBodyTree that was
+  /// used to compute this KinematicsCache.
   const Eigen::Matrix<T, Eigen::Dynamic, 1>& getQ() const;
 
+  /// Returns `v`, the generalized velocity vector of the RigidBodyTree that was
+  /// used to compute this KinematicsCache.
   const Eigen::Matrix<T, Eigen::Dynamic, 1>& getV() const;
 
+  /// Returns `x`, the state vector of the RigidBodyTree that was used to
+  /// compute this KinematicsCache. This is the concatenation of `q`, the
+  /// RigidBodyTree's generalized position vector, and `v` the RigidBodyTree's
+  /// generalized velocity vector into a single vector. Within `x`, `q` precedes
+  /// `v`.
   Eigen::Matrix<T, Eigen::Dynamic, 1> getX() const;
 
+  /// Returns `true` if this KinematicsCache object has a valid `v` vector. `v`
+  /// is the generalized velocity vector of the RigidBodyTree that was used to
+  /// compute this KinematicsCache.
   bool hasV() const;
 
   void setInertiasCached();
@@ -150,24 +168,18 @@ class KinematicsCache {
   int get_num_positions() const;
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_positions().")
-#endif
   int getNumPositions() const;
 
   int get_num_velocities() const;
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_velocities().")
-#endif
   int getNumVelocities() const;
 
  private:
   void invalidate();
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };

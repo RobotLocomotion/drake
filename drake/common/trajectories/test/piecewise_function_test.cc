@@ -2,8 +2,9 @@
 
 #include <random>
 
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_assert.h"
-#include "gtest/gtest.h"
 
 // Dummy implementation of PiecewiseFunction to test the basic indexing
 // functions.
@@ -18,7 +19,7 @@ class PiecewiseFunctionTester : public PiecewiseFunction {
 void TestPiecewiseFunctionTimeRelatedGetters(
     const PiecewiseFunctionTester& traj,
     const std::vector<double>& time) {
-  EXPECT_EQ(traj.getNumberOfSegments(), time.size() - 1);
+  EXPECT_EQ(traj.getNumberOfSegments(), static_cast<int>(time.size()) - 1);
 
   EXPECT_EQ(traj.getStartTime(), time.front());
   EXPECT_EQ(traj.getEndTime(), time.back());

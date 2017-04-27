@@ -4,8 +4,7 @@
 #include <sstream>
 
 #include <Eigen/Core>
-
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace core {
@@ -263,6 +262,8 @@ GTEST_TEST(FunctionalFormVariablesTest, Basic) {
 GTEST_TEST(FunctionalFormTest, Construct) {
   FunctionalForm default_constructed;
   EXPECT_TRUE(default_constructed.IsUndefined());
+
+  EXPECT_TRUE(dummy_value<FunctionalForm>::get().IsUndefined());
 
   FunctionalForm double_zero(0.0);
   EXPECT_TRUE(double_zero.IsZero());

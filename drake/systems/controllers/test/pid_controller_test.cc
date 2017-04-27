@@ -1,12 +1,13 @@
 #include "drake/systems/controllers/pid_controller.h"
 
 #include <memory>
+#include <string>
+
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using std::make_unique;
 
@@ -23,14 +24,14 @@ class PidControllerTest : public ::testing::Test {
     output_ = controller_.AllocateOutput(*context_);
     derivatives_ = controller_.AllocateTimeDerivatives();
 
-    // Error signal input port.
-    auto vec0 = std::make_unique<BasicVector<double>>(port_size_);
-    vec0->get_mutable_value() << error_signal_;
+    // State:
+    auto vec0 = std::make_unique<BasicVector<double>>(port_size_ * 2);
+    vec0->get_mutable_value().setZero();
     context_->FixInputPort(0, std::move(vec0));
 
-    // Error signal rate input port.
-    auto vec1 = std::make_unique<BasicVector<double>>(port_size_);
-    vec1->get_mutable_value() << error_rate_signal_;
+    // Desired state:
+    auto vec1 = std::make_unique<BasicVector<double>>(port_size_ * 2);
+    vec1->get_mutable_value() << error_signal_, error_rate_signal_;
     context_->FixInputPort(1, std::move(vec1));
   }
 
@@ -43,6 +44,7 @@ class PidControllerTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
+  // Error = estimated - desired.
   Vector3d error_signal_{1.0, 2.0, 3.0};
   Vector3d error_rate_signal_{1.3, 0.9, 3.14};
 };
@@ -53,9 +55,9 @@ TEST_F(PidControllerTest, Getters) {
   ASSERT_EQ(ki_, controller_.get_Ki_vector());
   ASSERT_EQ(kd_, controller_.get_Kd_vector());
 
-  EXPECT_NO_THROW(controller_.get_Kp());
-  EXPECT_NO_THROW(controller_.get_Ki());
-  EXPECT_NO_THROW(controller_.get_Kd());
+  EXPECT_NO_THROW(controller_.get_Kp_singleton());
+  EXPECT_NO_THROW(controller_.get_Ki_singleton());
+  EXPECT_NO_THROW(controller_.get_Kd_singleton());
 }
 
 TEST_F(PidControllerTest, GetterVectors) {
@@ -72,9 +74,31 @@ TEST_F(PidControllerTest, GetterVectors) {
   ASSERT_EQ(ki, controller.get_Ki_vector());
   ASSERT_EQ(kd, controller.get_Kd_vector());
 
-  EXPECT_DEATH(controller.get_Kp(), ".*");
-  EXPECT_DEATH(controller.get_Ki(), ".*");
-  EXPECT_DEATH(controller.get_Kd(), ".*");
+  EXPECT_THROW(controller.get_Kp_singleton(), std::runtime_error);
+}
+
+TEST_F(PidControllerTest, GetterVectorKi) {
+  const Eigen::Vector2d kp{1.0, 2.0};
+  const Eigen::Vector2d ki{1.0, 2.0};
+  const Eigen::Vector2d kd{1.0, 2.0};
+  PidController<double> controller{kp, ki, kd};
+
+  EXPECT_THROW(controller.get_Ki_singleton(), std::runtime_error);
+}
+
+TEST_F(PidControllerTest, GetterVectorKd) {
+  const Eigen::Vector2d kp{1.0, 2.0};
+  const Eigen::Vector2d ki{1.0, 2.0};
+  const Eigen::Vector2d kd{1.0, 2.0};
+  PidController<double> controller{kp, ki, kd};
+
+  EXPECT_THROW(controller.get_Kd_singleton(), std::runtime_error);
+}
+
+TEST_F(PidControllerTest, Graphviz) {
+  const std::string dot = controller_.GetGraphvizString();
+  EXPECT_NE(std::string::npos, dot.find(
+      "label=\"PID Controller | { {<u0> q |<u1> q_d} |<y0> y}\"")) << dot;
 }
 
 // Evaluates the output and asserts correctness.
@@ -117,7 +141,23 @@ TEST_F(PidControllerTest, CalcTimeDerivatives) {
 
   // The only state in the PID controller_ is the integral of the input signal.
   // Therefore the time derivative of the state equals the input error signal.
-  EXPECT_EQ(error_signal_, derivatives_->CopyToVector());
+  // TODO(siyuanfeng): need to get rid of the - once we switch the integrator
+  // to be int(q_d - q), right not it's (q - q_d). so the derivative is flipped.
+  EXPECT_EQ(error_signal_, -derivatives_->CopyToVector());
+}
+
+TEST_F(PidControllerTest, DirectFeedthrough) {
+  // When the proportional or derivative gain is nonzero, there is direct
+  // feedthrough from both the state and error inputs to the output.
+  EXPECT_TRUE(controller_.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(controller_.HasDirectFeedthrough(0, 0));
+  EXPECT_TRUE(controller_.HasDirectFeedthrough(1, 0));
+
+  // When the gains are all zero, there is no direct feedthrough from any
+  // input to any output.
+  const VectorX<double> zero{VectorX<double>::Zero(port_size_)};
+  PidController<double> zero_controller(zero, zero, zero);
+  EXPECT_FALSE(zero_controller.HasAnyDirectFeedthrough());
 }
 
 }  // namespace

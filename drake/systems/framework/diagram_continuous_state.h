@@ -1,5 +1,8 @@
+#include <memory>
+#include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/supervector.h"
 
@@ -13,6 +16,8 @@ namespace systems {
 template <typename T>
 class DiagramContinuousState : public ContinuousState<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContinuousState)
+
   /// Constructs a ContinuousState that is composed of other ContinuousStates,
   /// which are not owned by this object and must outlive it.
   ///
@@ -50,34 +55,30 @@ class DiagramContinuousState : public ContinuousState<T> {
   // substate in @p substates, as indicated by @p selector.
   static std::unique_ptr<VectorBase<T>> Span(
       const std::vector<ContinuousState<T>*>& substates,
-      std::function<VectorBase<T>*(ContinuousState<T>&)> selector) {
+      std::function<VectorBase<T>*(ContinuousState<T>*)> selector) {
     std::vector<VectorBase<T>*> sub_xs;
     for (const auto& substate : substates) {
       DRAKE_DEMAND(substate != nullptr);
-      sub_xs.push_back(selector(*substate));
+      sub_xs.push_back(selector(substate));
     }
     return std::make_unique<Supervector<T>>(sub_xs);
   }
 
   // Returns the entire state vector in @p xc.
-  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
-  static VectorBase<T>* x_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_vector();
+  static VectorBase<T>* x_selector(ContinuousState<T>* xc) {
+    return xc->get_mutable_vector();
   }
   // Returns the generalized position vector in @p xc.
-  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
-  static VectorBase<T>* q_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_generalized_position();
+  static VectorBase<T>* q_selector(ContinuousState<T>* xc) {
+    return xc->get_mutable_generalized_position();
   }
   // Returns the generalized velocity vector in @p xc.
-  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
-  static VectorBase<T>* v_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_generalized_velocity();
+  static VectorBase<T>* v_selector(ContinuousState<T>* xc) {
+    return xc->get_mutable_generalized_velocity();
   }
   // Returns the misc continuous state vector in @p xc.
-  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
-  static VectorBase<T>* z_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_misc_continuous_state();
+  static VectorBase<T>* z_selector(ContinuousState<T>* xc) {
+    return xc->get_mutable_misc_continuous_state();
   }
 
   std::vector<ContinuousState<T>*> substates_;

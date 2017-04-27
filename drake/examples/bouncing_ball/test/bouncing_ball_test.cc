@@ -1,10 +1,11 @@
 #include "drake/examples/bouncing_ball/bouncing_ball.h"
-#include "drake/systems/analysis/simulator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
 
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace bouncing_ball {

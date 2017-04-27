@@ -5,23 +5,18 @@
 #include <memory>
 #include <numeric>
 
-#include "gtest/gtest.h"
-
-// Includes for IK solver.
-#include "drake/multibody/ik_options.h"
-#include "drake/multibody/rigid_body_ik.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
+#include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
+#include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -263,20 +258,26 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   EXPECT_GT(com(2), 0);
 
   // show it in drake visualizer
-  VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
-  x.setZero();
+  VectorX<double> x = VectorX<double>::Zero(tree->get_num_positions() +
+                                            tree->get_num_velocities());
   x.head(q_sol.size()) = q_sol;
+  systems::BasicVector<double> q_draw(x);
 
   lcm::DrakeLcm lcm;
-  systems::DiagramBuilder<double> builder;
-  auto source = builder.AddSystem<systems::ConstantVectorSource>(x);
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  builder.Connect(source->get_output_port(), publisher->get_input_port(0));
-  auto diagram = builder.Build();
+  std::vector<uint8_t> message_bytes;
 
-  auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
-  diagram->Publish(*context);
+  lcmt_viewer_load_robot load_msg =
+      multibody::CreateLoadRobotMessage<double>(*tree);
+  const int length = load_msg.getEncodedSize();
+  message_bytes.resize(length);
+  load_msg.encode(message_bytes.data(), 0, length);
+  lcm.Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(),
+              message_bytes.size());
+
+  systems::ViewerDrawTranslator posture_drawer(*tree);
+  posture_drawer.Serialize(0, q_draw, &message_bytes);
+  lcm.Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
+              message_bytes.size());
 }
 
 }  // namespace

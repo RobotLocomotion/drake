@@ -2,6 +2,9 @@
 # Drake common library
 #
 
+drake_find_package(Protobuf REQUIRED)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS matlab_rpc.proto)
+
 # Generated code.
 set(drake_path_cc ${PROJECT_BINARY_DIR}/generated/drake/common/test/drake_path.cc)
 set(THIS_FILE_IS_USED_BY_CMAKE_TO_CREATE_GENERATED_CODE
@@ -10,18 +13,22 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 
 # List all source files used to build libdrakeCommon.
 set(sources
+  call_matlab.cc ${PROTO_SRCS}
   double_overloads.cc
   drake_assert.cc
   ${drake_path_cc}
   drake_throw.cc
   functional_form.cc
+  monomial.cc
   nice_type_name.cc
   polynomial.cc
   symbolic_environment.cc
   symbolic_expression.cc
   symbolic_expression_cell.cc
+  symbolic_expression_cell.h
   symbolic_formula.cc
   symbolic_formula_cell.cc
+  symbolic_formula_cell.h
   symbolic_variable.cc
   symbolic_variables.cc
   text_logging.cc
@@ -31,14 +38,20 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   autodiff_overloads.h
+  call_matlab.h ${PROTO_HDRS}
   cond.h
   constants.h
+  copyable_unique_ptr.h
   double_overloads.h
   drake_assert.h
   drake_compat.h
+  drake_copyable.h
   drake_deprecated.h
+  drake_optional.h
   drake_path.h
   drake_throw.h
+  dummy_value.h
+  eigen_autodiff_limits.h
   eigen_autodiff_types.h
   eigen_matrix_compare.h
   eigen_stl_types.h
@@ -47,20 +60,23 @@ set(installed_headers
   functional_form.h
   hash.h
   is_approx_equal_abstol.h
+  is_cloneable.h
+  monomial.h
+  never_destroyed.h
   nice_type_name.h
   number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
-  symbolic_expression_cell.h
+  symbolic_expression_visitor.h
   symbolic_formula.h
-  symbolic_formula_cell.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
   text_logging_gflags.h
   trig_poly.h
+  unused.h
   )
 
 # List headers that are needed by code here but should not
@@ -71,18 +87,23 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+target_include_directories(drakeCommon PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(drakeCommon
   Eigen3::Eigen
+  fmt
   gflags
-  Threads::Threads)
+  Threads::Threads
+  ${PROTOBUF_LIBRARIES})
 
 set(drakeCommon_CFLAGS)
 set(drakeCommon_REQUIRES)
 
 if(spdlog_FOUND)
-  target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
+  target_compile_definitions(drakeCommon
+    PUBLIC HAVE_SPDLOG
+    SPDLOG_FMT_EXTERNAL)
   target_link_libraries(drakeCommon spdlog::spdlog)
-  set(drakeCommon_CFLAGS -DHAVE_SPDLOG)
+  set(drakeCommon_CFLAGS -DHAVE_SPDLOG -DSPDLOG_FMT_EXTERNAL)
   set(drakeCommon_REQUIRES spdlog)
 endif()
 

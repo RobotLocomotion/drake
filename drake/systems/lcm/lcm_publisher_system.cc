@@ -1,11 +1,12 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/input_port_value.h"
 
 namespace drake {
 namespace systems {
@@ -20,8 +21,8 @@ const int kPortIndex = 0;
 // TODO(jwnimmer-tri) The "serializer xor translator" disjoint implementations
 // within the method bodies below are not ideal, because of the code smell, and
 // because it is likely confusing for users.  We should take further steps to
-// make the Value<LcmMessage> port the primary output port, and find a better
-// phrasing for the vector-valued output port for users.  For now though, this
+// make the Value<LcmMessage> port the primary input port, and find a better
+// phrasing for the vector-valued input port for users.  For now though, this
 // implementation serves as a transition point where we don't have to rewrite
 // the old code yet, but still can supply the AbstractValue port for new code.
 
@@ -75,6 +76,10 @@ std::string LcmPublisherSystem::make_name(const std::string& channel) {
 
 const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
+}
+
+void LcmPublisherSystem::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePublishPeriodSec(period);
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {

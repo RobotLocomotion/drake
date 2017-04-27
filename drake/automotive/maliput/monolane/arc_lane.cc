@@ -10,7 +10,7 @@ namespace drake {
 namespace maliput {
 namespace monolane {
 
-ArcLane::ArcLane(const api::LaneId& id, const Segment* segment,
+ArcLane::ArcLane(const api::LaneId& id, const api::Segment* segment,
                  const V2& center, double radius,
                  const double theta0, const double d_theta,
                  const api::RBounds& lane_bounds,
@@ -135,7 +135,9 @@ double ArcLane::heading_dot_of_p(const double p) const {
 }
 
 
-api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&) const {
+api::LanePosition ArcLane::DoToLanePosition(const api::GeoPosition&,
+                                            api::GeoPosition*,
+                                            double*) const {
   DRAKE_ABORT();  // TODO(maddog@tri.global) Implement me.
 }
 

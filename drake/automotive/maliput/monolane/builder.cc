@@ -1,12 +1,12 @@
 #include "drake/automotive/maliput/monolane/builder.h"
 
 #include <cmath>
+#include <utility>
 
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/branch_point.h"
 #include "drake/automotive/maliput/monolane/line_lane.h"
 #include "drake/automotive/maliput/monolane/road_geometry.h"
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 

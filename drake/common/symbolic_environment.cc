@@ -17,24 +17,42 @@ using std::runtime_error;
 using std::string;
 using std::initializer_list;
 
+namespace {
+void throw_if_dummy(const Variable& var) {
+  if (var.is_dummy()) {
+    ostringstream oss;
+    oss << "Dummy variable (ID = 0) is detected"
+        << "in the initialization of an environment.";
+    throw runtime_error(oss.str());
+  }
+}
+
+void throw_if_nan(const double v) {
+  if (std::isnan(v)) {
+    ostringstream oss;
+    oss << "NaN is detected in the initialization of an environment.";
+    throw runtime_error(oss.str());
+  }
+}
+}  // anonymous namespace
+
 Environment::Environment(const initializer_list<value_type> init) : map_(init) {
   for (const auto& p : init) {
-    if (std::isnan(p.second)) {
-      ostringstream oss;
-      oss << "(" << p.first << ", " << p.second << ")"
-          << " is detected in the initialization of a symbolic environment.";
-      throw runtime_error(oss.str());
-    }
+    throw_if_dummy(p.first);
+    throw_if_nan(p.second);
   }
 }
 
 Environment::Environment(const initializer_list<key_type> vars) {
   for (const auto& var : vars) {
+    throw_if_dummy(var);
     map_.emplace(var, 0.0);
   }
 }
 
 void Environment::insert(const key_type& key, const mapped_type& elem) {
+  throw_if_dummy(key);
+  throw_if_nan(elem);
   map_.emplace(key, elem);
 }
 
@@ -45,6 +63,11 @@ string Environment::to_string() const {
 }
 
 Environment::mapped_type& Environment::operator[](const key_type& key) {
+  if (key.is_dummy()) {
+    ostringstream oss;
+    oss << "Environment::operator[] is called with a dummy variable.";
+    throw runtime_error(oss.str());
+  }
   return map_[key];
 }
 

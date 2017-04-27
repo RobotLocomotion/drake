@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace bouncing_ball {
@@ -39,9 +39,8 @@ TEST_F(BallTest, Topology) {
   ASSERT_EQ(0, dut_->get_num_input_ports());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
-  const auto& output_descriptor = dut_->get_output_ports().at(0);
+  const auto& output_descriptor = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
 }
 
 TEST_F(BallTest, Output) {

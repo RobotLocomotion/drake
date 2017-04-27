@@ -2,13 +2,16 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
-#include "QPCommon.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_stl_types.h"
-#include "drake/solvers/gurobi_qp.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/solvers/gurobi_qp.h"
+#include "drake/systems/controllers/QPCommon.h"
 
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0
@@ -20,6 +23,8 @@
 
 class InstantaneousQPController {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InstantaneousQPController)
+
   InstantaneousQPController(
       std::unique_ptr<RigidBodyTree<double>> robot_in,
       const drake::eigen_aligned_std_map<std::string, QPControllerParams>&

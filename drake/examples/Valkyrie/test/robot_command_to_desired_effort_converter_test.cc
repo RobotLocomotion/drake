@@ -1,7 +1,6 @@
 #include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
 
-#include "gtest/gtest.h"
-
+#include <gtest/gtest.h>
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 
 #include "drake/common/drake_path.h"
@@ -33,6 +32,7 @@ void TestCommandToDesiredEffortConverter(
   auto robot_command = make_unique<Value<bot_core::atlas_command_t>>(message);
   auto& robot_command_source =
       *builder.AddSystem<ConstantValueSource<double>>(move(robot_command));
+  robot_command_source.set_name("command_source");
 
   // Device under test.
   auto& converter =

@@ -2,9 +2,13 @@
 
 #include <iostream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-using namespace Eigen;
+using Eigen::Dynamic;
+using Eigen::Matrix;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::VectorXd;
 
 GTEST_TEST(TestConvexHull, testConvexHull) {
   Matrix<double, 2, Dynamic> pts(2, 4);

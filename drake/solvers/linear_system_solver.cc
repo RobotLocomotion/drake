@@ -32,15 +32,10 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
-    size_t var_index = 0;
-    for (const auto& v : binding.variable_list().variables()) {
-      DRAKE_ASSERT(v.cols() == 1);
-      int num_v_variables = v.rows();
-      for (int i = 0; i < num_v_variables; ++i) {
-        Aeq.block(constraint_index, v(i, 0).index(), n, 1) =
-            c->A().col(var_index);
-        ++var_index;
-      }
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      size_t variable_index =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
+      Aeq.block(constraint_index, variable_index, n, 1) = c->A().col(i);
     }
     beq.segment(constraint_index, n) =
         c->lower_bound();  // = c->upper_bound() since it's an equality
@@ -51,8 +46,9 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   // least-squares solution
   prog.SetDecisionVariableValues(
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
+  prog.SetOptimalCost(0.);
 
-  prog.SetSolverResult(SolverName(), 0);
+  prog.SetSolverResult(solver_type(), 0);
   return SolutionResult::kSolutionFound;
 }
 

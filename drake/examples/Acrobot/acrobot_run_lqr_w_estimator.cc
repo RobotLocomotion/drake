@@ -3,11 +3,11 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/call_matlab.h"
 #include "drake/common/drake_path.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcm/lcm_call_matlab.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -40,6 +40,7 @@ int do_main(int argc, char* argv[]) {
   // Make the robot.
   systems::DiagramBuilder<double> builder;
   auto acrobot_w_encoder = builder.AddSystem<AcrobotWEncoder<double>>(true);
+  acrobot_w_encoder->set_name("acrobot_w_encoder");
 
   // Get a pointer to the actual plant subsystem (will be used below).
   auto acrobot = acrobot_w_encoder->acrobot_plant();
@@ -51,6 +52,7 @@ int do_main(int argc, char* argv[]) {
       GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  publisher->set_name("publisher");
   builder.Connect(acrobot_w_encoder->get_output_port(1),
                   publisher->get_input_port(0));
 
@@ -77,6 +79,7 @@ int do_main(int argc, char* argv[]) {
   auto observer =
       builder.AddSystem(systems::estimators::SteadyStateKalmanFilter(
           std::move(observer_acrobot), std::move(observer_context), W, V));
+  observer->set_name("observer");
   builder.Connect(acrobot_w_encoder->get_output_port(0),
                   observer->get_input_port(0));
 
@@ -92,7 +95,8 @@ int do_main(int argc, char* argv[]) {
   }
 
   // Make the LQR Controller.
-  auto controller = builder.AddSystem(BalancingLQRController(acrobot));
+  auto controller = builder.AddSystem(BalancingLQRController(*acrobot));
+  controller->set_name("controller");
   builder.Connect(observer->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(),
                   acrobot_w_encoder->get_input_port(0));
@@ -100,9 +104,11 @@ int do_main(int argc, char* argv[]) {
 
   // Log the true state and the estimated state.
   auto x_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  x_logger->set_name("x_logger");
   builder.Connect(acrobot_w_encoder->get_output_port(1),
                   x_logger->get_input_port(0));
   auto xhat_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  xhat_logger->set_name("xhat_logger");
   builder.Connect(observer->get_output_port(0), xhat_logger->get_input_port(0));
 
   // Build the system/simulator.
@@ -141,22 +147,22 @@ int do_main(int argc, char* argv[]) {
   simulator.StepTo(5);
 
   // Plot the results (launch lcm_call_matlab_client to see the plots).
-  using lcm::LcmCallMatlab;
-  LcmCallMatlab("figure", 1);
-  LcmCallMatlab("plot", x_logger->sample_times(),
+  using common::CallMatlab;
+  CallMatlab("figure", 1);
+  CallMatlab("plot", x_logger->sample_times(),
                 (x_logger->data().row(0).array() - M_PI).matrix(),
                 x_logger->sample_times(), x_logger->data().row(1));
-  LcmCallMatlab("legend", "theta1 - PI", "theta2");
-  LcmCallMatlab("axis", "tight");
+  CallMatlab("legend", "theta1 - PI", "theta2");
+  CallMatlab("axis", "tight");
 
-  LcmCallMatlab("figure", 2);
-  LcmCallMatlab("plot", x_logger->sample_times(),
+  CallMatlab("figure", 2);
+  CallMatlab("plot", x_logger->sample_times(),
                 (x_logger->data().array() - xhat_logger->data().array())
                     .matrix()
                     .transpose());
-  LcmCallMatlab("ylabel", "error");
-  LcmCallMatlab("legend", "theta1", "theta2", "theta1dot", "theta2dot");
-  LcmCallMatlab("axis", "tight");
+  CallMatlab("ylabel", "error");
+  CallMatlab("legend", "theta1", "theta2", "theta1dot", "theta2dot");
+  CallMatlab("axis", "tight");
 
   return 0;
 }

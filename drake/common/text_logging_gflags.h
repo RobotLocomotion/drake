@@ -22,7 +22,8 @@ inline void HandleSpdlogGflags() {
   const bool want_unchanged = (FLAGS_spdlog_level == "unchanged");
   const bool want_trace = (FLAGS_spdlog_level == "trace");
   const bool want_debug = (FLAGS_spdlog_level == "debug");
-  if (!want_unchanged && !want_trace && !want_debug) {
+  const bool want_warn = (FLAGS_spdlog_level == "warn");
+  if (!want_unchanged && !want_trace && !want_debug && !want_warn) {
     log()->critical("Unknown spdlog_level {}", FLAGS_spdlog_level);
     throw std::runtime_error("Unknown spdlog level");
   }
@@ -31,6 +32,8 @@ inline void HandleSpdlogGflags() {
     log()->set_level(spdlog::level::trace);
   } else if (want_debug) {
     log()->set_level(spdlog::level::debug);
+  } else if (want_warn) {
+    log()->set_level(spdlog::level::warn);
   }
 #endif
 }

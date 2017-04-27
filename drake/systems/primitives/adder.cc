@@ -21,16 +21,13 @@ Adder<T>::Adder(int num_inputs, int size) {
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& Adder<T>::get_output_port() const {
+const OutputPortDescriptor<T>& Adder<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 
 template <typename T>
 void Adder<T>::DoCalcOutput(const Context<T>& context,
                             SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
 
   // Zeroes the output.
@@ -48,12 +45,19 @@ void Adder<T>::DoCalcOutput(const Context<T>& context,
 template <typename T>
 Adder<AutoDiffXd>* Adder<T>::DoToAutoDiffXd() const {
   return new Adder<AutoDiffXd>(this->get_num_input_ports(),
-                               this->get_input_port(0).get_size());
+                               this->get_input_port(0).size());
+}
+
+template <typename T>
+Adder<symbolic::Expression>* Adder<T>::DoToSymbolic() const {
+  return new Adder<symbolic::Expression>(this->get_num_input_ports(),
+                                         this->get_input_port(0).size());
 }
 
 // Explicitly instantiates on the most common scalar types.
 template class Adder<double>;
 template class Adder<AutoDiffXd>;
+template class Adder<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake

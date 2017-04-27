@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include <Eigen/Dense>
@@ -23,7 +24,7 @@ class XMLElement;
 /// - AutoDiffXd
 /// - AutoDiffUpTo73d
 ///
-/// They are already available to link against in drakeRBM.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class RigidBodyFrame {
@@ -56,6 +57,20 @@ class RigidBodyFrame {
   // described in #4407.
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
+
+  virtual ~RigidBodyFrame() {}
+
+  // TODO(liang.fok) Update this to return a unique_ptr. This is related to
+  // #3093.
+  /**
+   * Returns a clone of this RigidBodyFrame. It is admittedly awkward for a
+   * clone method to have an input parameter. This parameter, however, is
+   * necessary to ensure the returned clone is fully initialized.
+   *
+   * @param[in] body A pointer to the body to include in the returned clone.
+   * This pointer must remain valid for the duration of the clone's lifetime.
+   */
+  virtual std::shared_ptr<RigidBodyFrame<T>> Clone(RigidBody<T>* body) const;
 
   /**
    * Returns the ID of the model instance to which this rigid body frame
@@ -162,9 +177,7 @@ class RigidBodyFrame {
   // #4407. Fix parsers to use construtor instead.
   void set_transform_to_body(const Eigen::Isometry3d& transform_to_body);
 
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 
  private:
   std::string name_;

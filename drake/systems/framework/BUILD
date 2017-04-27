@@ -1,15 +1,15 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "framework",
     srcs = [],
-    hdrs = [],
-    linkstatic = 1,
+    hdrs = ["systems.h"],
     deps = [
         ":cache",
         ":context",
@@ -19,6 +19,9 @@ cc_library(
         ":leaf_context",
         ":leaf_system",
         ":parameters",
+        ":single_output_vector_source",
+        ":siso_vector_system",
+        ":sparsity_matrix",
         ":state",
         ":system",
         ":value",
@@ -26,7 +29,7 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "vector",
     srcs = [
         "basic_vector.cc",
@@ -40,39 +43,50 @@ cc_library(
         "supervector.h",
         "vector_base.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:dummy_value",
+        "//drake/common:symbolic",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "value",
     srcs = ["value.cc"],
     hdrs = ["value.h"],
-    linkstatic = 1,
     deps = [
         ":vector",
         "//drake/common",
     ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "value_checker",
+    srcs = [],
+    hdrs = ["value_checker.h"],
+    visibility = [":__subpackages__"],
+    deps = [
+        ":value",
+        "//drake/common",
+        "//drake/common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "cache",
     srcs = ["cache.cc"],
     hdrs = ["cache.h"],
-    linkstatic = 1,
     deps = [
         ":value",
         "//drake/common",
     ],
 )
 
-cc_library(
-    name = "abstract_state",
-    srcs = ["abstract_state.cc"],
-    hdrs = ["abstract_state.h"],
-    linkstatic = 1,
+drake_cc_library(
+    name = "abstract_values",
+    srcs = ["abstract_values.cc"],
+    hdrs = ["abstract_values.h"],
     deps = [
         ":value",
         "//drake/common",
@@ -80,11 +94,10 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "continuous_state",
     srcs = ["continuous_state.cc"],
     hdrs = ["continuous_state.h"],
-    linkstatic = 1,
     deps = [
         ":vector",
         "//drake/common",
@@ -92,11 +105,10 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "discrete_state",
-    srcs = ["discrete_state.cc"],
-    hdrs = ["discrete_state.h"],
-    linkstatic = 1,
+drake_cc_library(
+    name = "discrete_values",
+    srcs = ["discrete_values.cc"],
+    hdrs = ["discrete_values.h"],
     deps = [
         ":value",
         ":vector",
@@ -105,15 +117,14 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "state",
     srcs = ["state.cc"],
     hdrs = ["state.h"],
-    linkstatic = 1,
     deps = [
-        ":abstract_state",
+        ":abstract_values",
         ":continuous_state",
-        ":discrete_state",
+        ":discrete_values",
         ":value",
         ":vector",
         "//drake/common",
@@ -121,68 +132,63 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
-    linkstatic = 1,
     deps = [
-        ":abstract_state",
-        ":discrete_state",
+        ":abstract_values",
+        ":discrete_values",
         "//drake/common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system_port_descriptor",
     srcs = ["system_port_descriptor.cc"],
     hdrs = ["system_port_descriptor.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "output_port_listener_interface",
     srcs = ["output_port_listener_interface.cc"],
     hdrs = ["output_port_listener_interface.h"],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
 )
 
-cc_library(
-    name = "system_output",
-    srcs = ["system_output.cc"],
-    hdrs = ["system_output.h"],
-    linkstatic = 1,
+drake_cc_library(
+    name = "output_port_value",
+    srcs = ["output_port_value.cc"],
+    hdrs = ["output_port_value.h"],
     deps = [
         ":output_port_listener_interface",
         ":value",
+        ":value_checker",
         ":vector",
         "//drake/common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "input_port_evaluator_interface",
     srcs = ["input_port_evaluator_interface.cc"],
     hdrs = ["input_port_evaluator_interface.h"],
-    linkstatic = 1,
     deps = [
-        ":system_output",
+        ":output_port_value",
         ":system_port_descriptor",
         "//drake/common",
     ],
 )
 
-cc_library(
-    name = "system_input",
-    srcs = ["system_input.cc"],
-    hdrs = ["system_input.h"],
-    linkstatic = 1,
+drake_cc_library(
+    name = "input_port_value",
+    srcs = ["input_port_value.cc"],
+    hdrs = ["input_port_value.h"],
     deps = [
         ":input_port_evaluator_interface",
         ":vector",
@@ -190,24 +196,23 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "context",
     srcs = ["context.cc"],
     hdrs = ["context.h"],
-    linkstatic = 1,
     deps = [
         ":input_port_evaluator_interface",
+        ":input_port_value",
+        ":parameters",
         ":state",
-        ":system_input",
         "//drake/common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "leaf_context",
     srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
-    linkstatic = 1,
     deps = [
         ":cache",
         ":context",
@@ -217,48 +222,62 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "system",
     srcs = ["system.cc"],
     hdrs = ["system.h"],
-    linkstatic = 1,
     deps = [
         ":cache",
         ":context",
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:symbolic",
+        "//drake/common:unused",
     ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "model_values",
+    srcs = ["model_values.cc"],
+    hdrs = ["model_values.h"],
+    visibility = [":__subpackages__"],
+    deps = [
+        ":value",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
-    linkstatic = 1,
     deps = [
         ":leaf_context",
+        ":model_values",
+        ":sparsity_matrix",
         ":system",
+        ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
+        "//drake/common:unused",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram_continuous_state",
     srcs = ["diagram_continuous_state.cc"],
     hdrs = ["diagram_continuous_state.h"],
-    linkstatic = 1,
     deps = [
         ":state",
         "//drake/common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram_context",
     srcs = ["diagram_context.cc"],
     hdrs = ["diagram_context.h"],
-    linkstatic = 1,
     deps = [
         ":context",
         ":diagram_continuous_state",
@@ -267,11 +286,10 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram",
     srcs = ["diagram.cc"],
     hdrs = ["diagram.h"],
-    linkstatic = 1,
     deps = [
         ":cache",
         ":diagram_context",
@@ -281,31 +299,60 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "diagram_builder",
     srcs = ["diagram_builder.cc"],
     hdrs = ["diagram_builder.h"],
-    linkstatic = 1,
     deps = [
         ":diagram",
         "//drake/common",
     ],
 )
 
+drake_cc_library(
+    name = "sparsity_matrix",
+    srcs = ["sparsity_matrix.cc"],
+    hdrs = ["sparsity_matrix.h"],
+    deps = [
+        ":context",
+        ":system",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "single_output_vector_source",
+    srcs = ["single_output_vector_source.cc"],
+    hdrs = ["single_output_vector_source.h"],
+    deps = [
+        ":leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "siso_vector_system",
+    srcs = ["siso_vector_system.cc"],
+    hdrs = ["siso_vector_system.h"],
+    deps = [
+        ":leaf_system",
+        "//drake/common:unused",
+    ],
+)
+
 # === test/ ===
 
-cc_googletest(
+drake_cc_googletest(
     name = "basic_vector_test",
     deps = [
         ":vector",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:eigen_matrix_compare",
-        "//drake/common:functional_form",
+        "//drake/common:symbolic",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "cache_test",
     deps = [
         ":cache",
@@ -314,7 +361,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "continuous_state_test",
     deps = [
         ":continuous_state",
@@ -322,7 +369,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "diagram_builder_test",
     deps = [
         ":diagram_builder",
@@ -335,7 +382,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "diagram_context_test",
     deps = [
         ":diagram_context",
@@ -349,11 +396,12 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "diagram_test",
     deps = [
         ":diagram",
         "//drake/common",
+        "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:gain",
@@ -362,25 +410,26 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
-    name = "discrete_state_test",
+drake_cc_googletest(
+    name = "discrete_values_test",
     deps = [
-        ":discrete_state",
+        ":discrete_values",
         "//drake/common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
         ":leaf_context",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "leaf_system_test",
     deps = [
         ":leaf_system",
@@ -389,16 +438,26 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
-    name = "abstract_state_test",
+drake_cc_googletest(
+    name = "model_values_test",
     deps = [
-        ":abstract_state",
+        ":model_values",
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
+        "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "abstract_values_test",
+    deps = [
+        ":abstract_values",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "parameters_test",
     deps = [
         ":parameters",
@@ -407,7 +466,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "subvector_test",
     deps = [
         ":vector",
@@ -416,7 +475,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "supervector_test",
     deps = [
         ":vector",
@@ -424,35 +483,68 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
-    name = "system_input_test",
+drake_cc_googletest(
+    name = "input_port_value_test",
     deps = [
-        ":system_input",
+        ":input_port_value",
         "//drake/common",
     ],
 )
 
-cc_googletest(
-    name = "system_output_test",
+drake_cc_googletest(
+    name = "output_port_value_test",
     deps = [
-        ":system_output",
+        ":output_port_value",
         "//drake/common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "system_test",
     deps = [
         ":leaf_context",
         ":system",
         "//drake/common",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "value_test",
     deps = [
         ":value",
         "//drake/common",
+        "//drake/systems/framework/test_utilities",
     ],
 )
+
+drake_cc_googletest(
+    name = "value_checker_test",
+    deps = [
+        ":value_checker",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sparsity_matrix_test",
+    deps = [
+        ":leaf_system",
+        ":sparsity_matrix",
+    ],
+)
+
+drake_cc_googletest(
+    name = "single_output_vector_source_test",
+    deps = [
+        ":single_output_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "siso_vector_system_test",
+    deps = [
+        ":siso_vector_system",
+    ],
+)
+
+cpplint()

@@ -1,5 +1,6 @@
-
+/* clang-format off */
 #include "drake/solvers/snopt_solver.h"
+/* clang-format on */
 
 #include <stdexcept>
 

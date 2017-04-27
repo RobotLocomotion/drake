@@ -74,7 +74,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
   DRAKE_DEMAND(system.get_num_input_ports() == 1);
-  const int num_inputs = system.get_input_port(0).get_size(),
+  const int num_inputs = system.get_input_port(0).size(),
             num_states = context.get_continuous_state()->size();
   DRAKE_DEMAND(num_states > 0);
   DRAKE_DEMAND(context.has_only_continuous_state());

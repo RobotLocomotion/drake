@@ -12,9 +12,12 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_schunk_wsg_command.hpp"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -27,9 +30,6 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/multiplexer.h"
-
-#include "drake/lcmt_schunk_wsg_command.hpp"
-#include "drake/lcmt_schunk_wsg_status.hpp"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -66,21 +66,9 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
     // express external commanded force to the PidControlledSystem.
     auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
         Eigen::VectorXd::Zero(1));
+    zero_source->set_name("zero_source");
 
-    const RigidBodyTree<T>& tree = plant->get_rigid_body_tree();
-    const std::map<std::string, int> index_map =
-        tree.computePositionNameToIndexMap();
-    const int left_finger_position_index =
-        index_map.at("left_finger_sliding_joint");
-    position_index_ = left_finger_position_index;
-    velocity_index_ = left_finger_position_index +
-        plant->get_num_positions();
-
-    Eigen::MatrixXd feedback_matrix = Eigen::MatrixXd::Zero(
-        2 * plant->get_num_actuators(),
-        2 * plant->get_num_positions());
-    feedback_matrix(0, position_index_) = 1.;
-    feedback_matrix(1, velocity_index_) = 1.;
+    const Eigen::MatrixXd feedback_matrix = GetSchunkWsgFeedbackSelector<T>();
     std::unique_ptr<MatrixGain<T>> feedback_selector =
         std::make_unique<MatrixGain<T>>(feedback_matrix);
 
@@ -92,6 +80,7 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
     const T kd = 5.0;
     controller_ = builder.template AddSystem<PidControlledSystem<T>>(
         std::move(plant), std::move(feedback_selector), kp, ki, kd);
+    controller_->set_name("controller");
 
     builder.Connect(zero_source->get_output_port(),
                     controller_->get_control_input_port());
@@ -115,6 +104,7 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
 int DoMain() {
   systems::DiagramBuilder<double> builder;
   auto model = builder.AddSystem<PidControlledSchunkWsg<double>>();
+  model->set_name("model");
 
   const RigidBodyTree<double>& tree =
       model->get_plant().get_rigid_body_tree();
@@ -122,20 +112,26 @@ int DoMain() {
   drake::lcm::DrakeLcm lcm;
   DrakeVisualizer* visualizer =
       builder.AddSystem<DrakeVisualizer>(tree, &lcm);
-
+  visualizer->set_name("visualizer");
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
+  command_sub->set_name("command_subscriber");
   auto trajectory_generator = builder.AddSystem<SchunkWsgTrajectoryGenerator>(
       tree.get_num_positions() + tree.get_num_velocities(),
       model->position_index());
+  trajectory_generator->set_name("trajectory_generator");
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
+  status_pub->set_name("status_publisher");
+  status_pub->set_publish_period(kSchunkWsgLcmStatusPeriod);
+
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       tree.get_num_positions() + tree.get_num_velocities(),
       model->position_index(), model->velocity_index());
+  status_sender->set_name("status_sender");
 
   builder.Connect(command_sub->get_output_port(0),
                   trajectory_generator->get_command_input_port());
@@ -151,6 +147,7 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.Initialize();
+  simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
   return 0;
 }

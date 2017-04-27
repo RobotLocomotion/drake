@@ -269,25 +269,6 @@ void ParseSdfCollision(RigidBody<double>* body, XMLElement* node,
 
   DrakeCollision::Element element(
       transform_parent_to_model.inverse() * transform_to_model, body);
-  // By default all collision elements added to the world from an SDF file are
-  // flagged as static.
-  // We would also like to flag as static bodies connected to the world with a
-  // FloatingBaseType::kFixed joint.
-  // However this is not possible at this stage since joints were not parsed
-  // yet.
-  // Solutions to this problem would be:
-  //  1. To load the model with DrakeCollision::Element's here but flag them as
-  //     static later at a the compile stage. This means that Bullet objects are
-  //     not created here (with addCollisionElement) but later on with the call
-  //     to RBT::compile when all the connectivity information is available.
-  //  2. Load collision elements on a separate pass after links and joints were
-  //     already loaded.
-  //  Issue 2661 was created to track this problem.
-  // TODO(amcastro-tri): fix the above issue tracked by 2661. Similarly for
-  // parseCollision in RigidBodyTreeURDF.cpp.
-  if (body->get_name().compare(
-      string(RigidBodyTree<double>::kWorldName)) == 0)
-    element.set_static();
 
   if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(string(__FILE__) + ": " + __func__ +
@@ -320,7 +301,7 @@ bool ParseSdfLink(RigidBodyTree<double>* model, string model_name,
   }
   body->set_name(string(attr));
 
-  if (body->get_name() == string(RigidBodyTree<double>::kWorldName)) {
+  if (body->get_name() == string(RigidBodyTreeConstants::kWorldName)) {
     throw runtime_error(
         string(__FILE__) + ": " + __func__ +
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
@@ -521,8 +502,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
     pose_map.insert(pair<string, Isometry3d>(child_name, transform_to_model));
   }
 
-  Vector3d axis;
-  axis << 1, 0, 0;
+  Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0) {
@@ -597,21 +577,19 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
   } else {
     // Update the reference frames of the child link's inertia, visual,
     // and collision elements to be this joint's frame.
+    // This is required because Drake requires that link frames be defined
+    // by their parent joint frames.
     child->ApplyTransformToJointFrame(transform_to_model.inverse() *
                                       transform_child_to_model);
 
-    for (const auto& c : child->get_collision_element_ids()) {
-      if (!model->transformCollisionFrame(
-              c, transform_to_model.inverse() * transform_child_to_model)) {
-        stringstream ss;
-        ss << string(__FILE__) << ": " << __func__
-           << ": ERROR: Collision element with ID " << c
-           << " not found! Cannot update its local frame to be that of joint.";
-        throw std::runtime_error(ss.str());
-      }
-      // This log statement is required for users to work around #3673, and
-      // can be removed when that issue is resolved.
-      drake::log()->info("Adding joint {} to the plant.", name);
+    if (!model->transformCollisionFrame(
+            child, transform_to_model.inverse() * transform_child_to_model)) {
+      std::stringstream ss;
+      ss << std::string(__FILE__) << ": " << __func__
+         << ": ERROR: Unable to update collision elements for body "
+         << child->get_name() << " from model " << child->get_model_name()
+         << "to the body's parent joint frame.";
+      throw std::runtime_error(ss.str());
     }
 
     // Update pose_map with child's new frame, which is now the same as this
@@ -678,6 +656,10 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
     unique_ptr<DrakeJoint> joint_unique_ptr(joint);
     child->setJoint(move(joint_unique_ptr));
     child->set_parent(parent);
+
+    // This log statement is required for users to work around #3673, and
+    // can be removed when that issue is resolved.
+    drake::log()->info("Adding joint {} to the plant.", name);
   }
 }
 
@@ -780,7 +762,7 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
           Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-          string(RigidBodyTree<double>::kWorldName),
+          string(RigidBodyTreeConstants::kWorldName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -831,11 +813,11 @@ ModelInstanceIdTable ParseSdf(XMLDocument* xml_doc,
 
   // Loads the world if it is defined.
   XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree<double>::kWorldName);
+      node->FirstChildElement(RigidBodyTreeConstants::kWorldName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes to use.
-    if (world_node->NextSiblingElement(RigidBodyTree<double>::kWorldName)) {
+    if (world_node->NextSiblingElement(RigidBodyTreeConstants::kWorldName)) {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
                           ": ERROR: Multiple worlds in one file.");
     }
@@ -861,9 +843,10 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileToWorld(
     const string& filename, const FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  const string full_path_filename = GetFullPath(filename);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(filename);
-  return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
+  package_map.PopulateUpstreamToDrake(full_path_filename);
+  return AddModelInstancesFromSdfFileSearchingInRosPackages(full_path_filename,
       package_map, floating_base_type, nullptr /* weld_to_frame */, tree);
 }
 
@@ -882,9 +865,10 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree && "You must provide a valid RigidBodyTree pointer.");
+  const string full_path_filename = GetFullPath(filename);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(filename);
-  return AddModelInstancesFromSdfFileSearchingInRosPackages(filename,
+  package_map.PopulateUpstreamToDrake(full_path_filename);
+  return AddModelInstancesFromSdfFileSearchingInRosPackages(full_path_filename,
       package_map, floating_base_type, weld_to_frame, tree);
 }
 

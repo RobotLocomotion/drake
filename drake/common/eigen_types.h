@@ -74,6 +74,13 @@ using Matrix6X = Eigen::Matrix<Scalar, 6, Eigen::Dynamic>;
 template <typename Scalar>
 using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
+/// A matrix of dynamic size templated on scalar type, up to a maximum of 6 rows
+/// and 6 columns. Rectangular matrices, with different number of rows and
+/// columns, are allowed.
+template <typename Scalar>
+using MatrixUpTo6 =
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
+
 /// A quaternion templated on scalar type.
 template <typename Scalar>
 using Quaternion = Eigen::Quaternion<Scalar>;
@@ -115,4 +122,45 @@ using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
 template <typename Scalar>
 using SpatialForce = Eigen::Matrix<Scalar, 6, 1>;
 
+/// EigenSizeMinPreferDynamic<a, b>::value gives the min between compile-time
+/// sizes @p a and @p b. 0 has absolute priority, followed by 1, followed by
+/// Dynamic, followed by other finite values.
+///
+/// Note that this is a type-trait version of EIGEN_SIZE_MIN_PREFER_DYNAMIC
+/// macro in "Eigen/Core/util/Macros.h".
+template <int a, int b>
+struct EigenSizeMinPreferDynamic {
+  // clang-format off
+  static constexpr int value = (a == 0 || b == 0) ? 0 :
+                               (a == 1 || b == 1) ? 1 :
+     (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic :
+                                           a <= b ? a : b;
+  // clang-format on
+};
+
+/// EigenSizeMinPreferFixed is a variant of EigenSizeMinPreferDynamic. The
+/// difference is that finite values now have priority over Dynamic, so that
+/// EigenSizeMinPreferFixed<3, Dynamic>::value gives 3.
+///
+/// Note that this is a type-trait version of EIGEN_SIZE_MIN_PREFER_FIXED macro
+/// in "Eigen/Core/util/Macros.h".
+template <int a, int b>
+struct EigenSizeMinPreferFixed {
+  // clang-format off
+  static constexpr int value = (a == 0 || b == 0) ? 0 :
+                               (a == 1 || b == 1) ? 1 :
+     (a == Eigen::Dynamic && b == Eigen::Dynamic) ? Eigen::Dynamic :
+                            (a == Eigen::Dynamic) ? b :
+                            (b == Eigen::Dynamic) ? a :
+                                           a <= b ? a : b;
+  // clang-format on
+};
+
+/// MultiplyEigenSizes<a, b> gives a * b if both of a and b are fixed
+/// sizes. Otherwise it gives Eigen::Dynamic.
+template <int a, int b>
+struct MultiplyEigenSizes {
+  static constexpr int value =
+      (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic : a * b;
+};
 }  // namespace drake

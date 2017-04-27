@@ -1,6 +1,4 @@
 if(Matlab_FOUND)
-  add_rbm_mex(compareParsersmex)
-
   macro(add_ikoptions_mex)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV}
@@ -24,7 +22,6 @@ drake_add_matlab_test(NAME systems/plants/test/collisionDetectCHullTest REQUIRES
 drake_add_matlab_test(NAME systems/plants/test/collisionDetectCapsuleTest REQUIRES bullet lcm libbot COMMAND collisionDetectCapsuleTest)
 drake_add_matlab_test(NAME systems/plants/test/collisionDetectGradTest REQUIRES lcm libbot OPTIONAL bullet COMMAND collisionDetectGradTest)
 drake_add_matlab_test(NAME systems/plants/test/collisionDetectSphereTest REQUIRES bullet lcm libbot COMMAND collisionDetectSphereTest)
-drake_add_matlab_test(NAME systems/plants/test/compareParsers REQUIRES avl spotless xfoil OPTIONAL bullet COMMAND compareParsers SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/contactNormalsTest OPTIONAL bullet COMMAND contactNormalsTest)
 drake_add_matlab_test(NAME systems/plants/test/contactSensorTest REQUIRES snopt OPTIONAL gurobi COMMAND contactSensorTest)
 drake_add_matlab_test(NAME systems/plants/test/coordinateSystemTest OPTIONAL bullet gurobi COMMAND coordinateSystemTest SIZE large)
@@ -42,7 +39,6 @@ drake_add_matlab_test(NAME systems/plants/test/testCOM OPTIONAL bullet COMMAND t
 drake_add_matlab_test(NAME systems/plants/test/testCenterOfMassJacobianDotTimesV OPTIONAL bullet COMMAND testCenterOfMassJacobianDotTimesV)
 drake_add_matlab_test(NAME systems/plants/test/testCentroidalMomentumMatrix OPTIONAL bullet COMMAND testCentroidalMomentumMatrix)
 drake_add_matlab_test(NAME systems/plants/test/testCentroidalMomentumMatrixDotTimesV OPTIONAL bullet COMMAND testCentroidalMomentumMatrixDotTimesV)
-drake_add_matlab_test(NAME systems/plants/test/testCollisionDetectFromPoints REQUIRES bullet snopt OPTIONAL gurobi COMMAND testCollisionDetectFromPoints)
 drake_add_matlab_test(NAME systems/plants/test/testCollisionFilterGroups OPTIONAL bullet COMMAND testCollisionFilterGroups)
 drake_add_matlab_test(NAME systems/plants/test/testContactConstraintsMex REQUIRES bullet COMMAND testContactConstraintsMex)
 drake_add_matlab_test(NAME systems/plants/test/testFindAncestorBodies OPTIONAL bullet COMMAND testFindAncestorBodies)
@@ -51,8 +47,6 @@ drake_add_matlab_test(NAME systems/plants/test/testFloatingBaseDynamics OPTIONAL
 drake_add_matlab_test(NAME systems/plants/test/testFloatingMassSpringDamperForceGradients OPTIONAL bullet COMMAND testFloatingMassSpringDamperForceGradients)
 drake_add_matlab_test(NAME systems/plants/test/testForwardJacDotTimesV OPTIONAL bullet COMMAND testForwardJacDotTimesV)
 drake_add_matlab_test(NAME systems/plants/test/testForwardKinRot OPTIONAL bullet COMMAND testForwardKinRot)
-drake_add_matlab_test(NAME systems/plants/test/testFrameParser OPTIONAL bullet COMMAND testFrameParser)
-drake_add_matlab_test(NAME systems/plants/test/testGeometricJacobian OPTIONAL bullet COMMAND testGeometricJacobian)
 drake_add_matlab_test(NAME systems/plants/test/testGeometricJacobianDotTimesV OPTIONAL bullet COMMAND testGeometricJacobianDotTimesV)
 drake_add_matlab_test(NAME systems/plants/test/testGeometricJacobianDotV OPTIONAL bullet COMMAND testGeometricJacobianDotV)
 drake_add_matlab_test(NAME systems/plants/test/testGradients OPTIONAL bullet COMMAND testGradients)
@@ -98,7 +92,11 @@ drake_add_matlab_test(NAME systems/plants/test/springPendulum COMMAND springPend
 drake_add_matlab_test(NAME systems/plants/test/terrainInterpTest COMMAND terrainInterpTest)
 drake_add_matlab_test(NAME systems/plants/test/terrainTest COMMAND terrainTest)
 drake_add_matlab_test(NAME systems/plants/test/testAnalyticalJacobian COMMAND testAnalyticalJacobian)
-drake_add_matlab_test(NAME systems/plants/test/testForwardKin COMMAND testForwardKin SIZE large)
+# Removing this test to address issue #4981
+# The old C++ and MATLAB qdot to angular velocity codes were buggy, and
+# the correct conversion was addressed by PR #4965. This test relies on the
+# (buggy) MATLAB code matching the correct C++ code and, hence, now fails.
+# drake_add_matlab_test(NAME systems/plants/test/testForwardKin COMMAND testForwardKin SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/testIK REQUIRES snopt COMMAND testIK)
 drake_add_matlab_test(NAME systems/plants/test/testIKtraj COMMAND testIKtraj SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND testInertiasInWorldFrame)

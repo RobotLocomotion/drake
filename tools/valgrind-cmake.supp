@@ -1,13 +1,5 @@
 {
-    <1>
-    Memcheck:Leak
-    ...
-    fun:g_slice_alloc
-    ...
-}
-
-{
-    <1>
+    <dl-1>
     Memcheck:Leak
     ...
     fun:_dl_init
@@ -15,99 +7,148 @@
 }
 
 {
-    <1>
+    <dl-2>
     Memcheck:Leak
     ...
     fun:_dlerror_run
 }
 
 {
-    <1>
+    <dyld-1>
     Memcheck:Cond
     ...
     fun:_ZN4dyld4loadEPKcRKNS_11LoadContextE
 }
 
 {
-    <1>
+    <dyld-2>
     Memcheck:Value8
     ...
     fun:_ZN4dyld4loadEPKcRKNS_11LoadContextE
 }
 
 {
-    <1>
+    <glib-1>
+    Memcheck:Leak
+    ...
+    fun:g_slice_alloc
+    ...
+}
+
+{
+   <mosek-1>
+   Memcheck:Addr4
+   ...
+   fun:checkout_from_flexlm
+   ...
+}
+
+{
+   <mosek-2>
+   Memcheck:Addr16
+   ...
+   fun:checkout_from_flexlm
+   ...
+}
+
+{
+   <mosek-3>
+   Memcheck:Cond
+   ...
+   fun:MSK_sysenv_getsysinfo
+   ...
+}
+
+{
+    <python-1>
     Memcheck:Addr4
     fun:PyObject_Free
     ...
 }
 
 {
-    <1>
+    <python-2>
     Memcheck:Cond
     fun:PyObject_Free
     ...
 }
 
 {
-    <1>
+    <python-3>
     Memcheck:Value8
     fun:PyObject_Free
     ...
 }
 
 {
-    <1>
+    <python-4>
     Memcheck:Addr4
     obj:/usr/bin/python2.7
     ...
 }
 
 {
-    <1>
+    <python-5>
     Memcheck:Addr4
     obj:/usr/local/bin/python
     ...
 }
 
 {
-    <1>
+    <python-6>
     Memcheck:Cond
     obj:/usr/bin/python2.7
     ...
 }
 
 {
-    <1>
+    <python-7>
     Memcheck:Cond
     obj:/usr/local/bin/python
     ...
 }
 
 {
-    <1>
+    <python-8>
     Memcheck:Leak
     ...
     obj:/usr/bin/python2.7
 }
 
 {
-    <1>
+    <python-9>
     Memcheck:Leak
     ...
     obj:/usr/local/bin/python
 }
 
 {
-    <1>
+    <python-10>
     Memcheck:Value8
     obj:/usr/bin/python2.7
     ...
 }
 
 {
-    <1>
+    <python-11>
     Memcheck:Value8
     obj:/usr/local/bin/python
     ...
 }
+
+# This suppresses "possibly lost" warnings for valgrind memchecks.
+# The cause of the error seems to be in the btAlignedAllocDefault function
+# in btAlignedAllocator.cpp file of the bullet3 library.  We believe that the function
+# may return a pointer not pointing at the head of the allocated memory, which
+# causes the "possibly lost" warnings. [ *((void **)(ret)-1) = (void *)(real); ]
+{
+    <bullet3-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:_ZL14btAllocDefaultm
+    fun:_ZL21btAlignedAllocDefaultmi
+    fun:_Z22btAlignedAllocInternalmi
+}
+
+

@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/Polynomials>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
@@ -230,22 +231,22 @@ class Polynomial {
     return value;
   }
 
-  /** Specialization of EvaluateMultivariate on TaylorVarXd.
+  /** Specialization of EvaluateMultivariate on AutoDiffXd.
    *
-   * Specialize EvaluateMultivariate on TaylorVarXd because Eigen autodiffs
+   * Specialize EvaluateMultivariate on AutoDiffXd because Eigen autodiffs
    * implement a confusing subset of operators and conversions that makes a
    * strictly generic approach too confusing and unreadable.
    *
-   * Note that it is up to the caller to ensure that all of the TaylorVarXds
+   * Note that it is up to the caller to ensure that all of the AutoDiffXds
    * in var_values correctly correspond to one another, because Polynomial has
    * no knowledge of what partial derivative terms the indices of a given
-   * TaylorVarXd correspond to.
+   * AutoDiffXd correspond to.
    */
-  drake::TaylorVarXd EvaluateMultivariate(
-      const std::map<VarType, drake::TaylorVarXd>& var_values) const {
-    drake::TaylorVarXd value(0);
+  drake::AutoDiffXd EvaluateMultivariate(
+      const std::map<VarType, drake::AutoDiffXd>& var_values) const {
+    drake::AutoDiffXd value(0);
     for (const Monomial& monomial : monomials_) {
-      drake::TaylorVarXd monomial_value(monomial.coefficient);
+      drake::AutoDiffXd monomial_value(monomial.coefficient);
       for (const Term& term : monomial.terms) {
         monomial_value *= pow(var_values.at(term.var), term.power);
       }
@@ -278,7 +279,7 @@ class Polynomial {
    * If derivative_order is given, takes the nth derivative of this
    * Polynomial.
    */
-  Polynomial Derivative(unsigned int derivative_order = 1) const;
+  Polynomial Derivative(int derivative_order = 1) const;
 
   /** Takes the integral of this (univariate, non-constant) Polynomial.
    *
@@ -432,12 +433,17 @@ class Polynomial {
   static std::string IdToVariableName(const VarType id);
   //@}
 
+  template <typename CoefficientType>
+  friend Polynomial<CoefficientType> pow(
+      const Polynomial<CoefficientType>& p,
+      typename Polynomial<CoefficientType>::PowerType n);
+
  private:
   //@{
   /** Local version of pow to deal with autodiff.
    *
    * A version of std::pow that uses std::pow for arithmetic types and
-   * repeated multiplication for non-arithmetic types (e.g., autodiff).
+   * recursive multiplication for non-arithmetic types (e.g., autodiff).
    */
   template <bool B, typename T = void>
   using enable_if_t = typename std::enable_if<B, T>::type;
@@ -450,17 +456,30 @@ class Polynomial {
 
   template <typename Base>
   static Base Pow(const Base& base, const PowerType& exponent) {
-    Base result = base;
-    for (int i = 1; i < exponent; i++) {
-      result = result * base;
+    DRAKE_DEMAND(exponent >= 0);
+    if (exponent == 0) {
+      return Base{1.0};
     }
-    return result;
+    const Base pow_half{Pow(base, exponent / 2)};
+    if (exponent % 2 == 1) {
+      return base * pow_half * pow_half;  // Odd exponent case.
+    } else {
+      return pow_half * pow_half;  // Even exponent case.
+    }
   }
   //@}
 
   /// Sorts through Monomial list and merges any that have the same powers.
   void MakeMonomialsUnique(void);
 };
+
+/** Provides power function for Polynomial. */
+template <typename CoefficientType>
+Polynomial<CoefficientType> pow(
+    const Polynomial<CoefficientType>& p,
+    typename Polynomial<CoefficientType>::PowerType n) {
+  return Polynomial<CoefficientType>::Pow(p, n);
+}
 
 template <typename CoefficientType, int Rows, int Cols>
 std::ostream& operator<<(

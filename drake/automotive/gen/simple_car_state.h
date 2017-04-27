@@ -3,11 +3,14 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -23,19 +26,27 @@ struct SimpleCarStateIndices {
   static const int kY = 1;
   static const int kHeading = 2;
   static const int kVelocity = 3;
+
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `SimpleCarStateIndices::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
 class SimpleCarState : public systems::BasicVector<T> {
  public:
-  // An abbreviation for our row index constants.
+  /// An abbreviation for our row index constants.
   typedef SimpleCarStateIndices K;
 
   /// Default constructor.  Sets all rows to zero.
   SimpleCarState() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
+
+  SimpleCarState<T>* DoClone() const override { return new SimpleCarState; }
 
   /// @name Getters and Setters
   //@{
@@ -54,6 +65,22 @@ class SimpleCarState : public systems::BasicVector<T> {
     this->SetAtIndex(K::kVelocity, velocity);
   }
   //@}
+
+  /// See SimpleCarStateIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return SimpleCarStateIndices::GetCoordinateNames();
+  }
+
+  /// Returns whether the current values of this vector are well-formed.
+  decltype(T() < T()) IsValid() const {
+    using std::isnan;
+    auto result = (T(0) == T(0));
+    result = result && !isnan(x());
+    result = result && !isnan(y());
+    result = result && !isnan(heading());
+    result = result && !isnan(velocity());
+    return result;
+  }
 };
 
 }  // namespace automotive

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,15 @@
 
 namespace drake {
 namespace parsers {
+
+// Obtains the full path of @file_name. If @p file_name is already a full path
+// (i.e., it starts with a "/"), this method returns it unmodified after
+// verifying that the file exists. If @p file_name is a relative path, this
+// method converts it into an absolute path based on the current working
+// directory, and then, if the file exists, returns the full path. In either
+// scenario, if the file does not exist, this method will throw a
+// std::runtime_error exception.
+std::string GetFullPath(const std::string& file_name);
 
 /// Resolves the fully-qualified name of a file. If @p filename starts with
 /// "package:", the ROS packages specified in @p package_map are searched.
@@ -32,6 +42,12 @@ namespace parsers {
 std::string ResolveFilename(const std::string& filename,
                             const PackageMap& package_map,
                             const std::string& root_dir);
+
+/// Defines constants used by AddFloatingJoint().
+struct FloatingJointConstants {
+  static const char* const kFloatingJointName;
+  static const char* const kWeldJointName;
+};
 
 // TODO(liang.fok): Deprecate this method. See: #3361.
 /**

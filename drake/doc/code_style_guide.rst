@@ -60,9 +60,13 @@ Clarifications
 * Classes and methods should be documented using
   `Doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
 
-  * Only use Doxygen comments (``///`` or ``/** */``) on published APIs (public
-    or protected classes and methods).  Code with private access or declared in
-    ``.cc`` files should not use the Doxygen format.
+  * Only use Doxygen special comment blocks (comments declared with ``///`` or
+    ``/**``) on published APIs (public or protected classes and methods).  Code
+    with private access or declared in ``.cc`` files should not use the Doxygen
+    block format.  However, note that markup such as ``@return`` may still be
+    used for non-Doxygen (``//`` or ``/*``) comment blocks when it improves
+    readability of the source code for developers, even though it will never be
+    processed by Doxygen.
   * If you decide to use Doxygen formatting hints, then those *must* render
     correctly. For instructions on how to generate the Doxygen website, click
     :ref:`here <documentation-generation-instructions>`. For additional
@@ -149,6 +153,16 @@ Clarifications
   "``const MyClass &foo;``". This is what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For additional context, see
   `this comment thread <https://github.com/robotlocomotion/drake/pull/3830#issuecomment-254849776>`_.
 
+* For the `Copyable and Movable Types <https://google.github.io/styleguide/cppguide.html#Copyable_Movable_Types>`_,
+  we clarify that a class must declare its own copy and move operations, and
+  must not silently inherit the disposition of a base class.
+  Prefer to use ``drake/common/drake_copyable.h`` macros (either
+  ``DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN`` or
+  ``DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN``) whenever practical.  When not
+  using the macros, the copy constructor and copy-assignment operator at least
+  must be either deleted, defaulted, or implemented.  For discussion, see
+  `issue #4861 <https://github.com/RobotLocomotion/drake/issues/4861>`_.
+
 .. _code-style-guide-cpp-exceptions:
 
 Exceptions
@@ -200,14 +214,15 @@ Exceptions
 
 Additional Rules
 ----------------
+
 * Use the ``GTEST`` prefix in unit test declarations. For instance, use
   ``GTEST_TEST(Group, Name)`` instead of ``TEST(Group, Name)``.
   (`#2181 <https://github.com/RobotLocomotion/drake/issues/2181>`_)
 * Always use `in-class member initialization
-  <http://www.stroustrup.com/C++11FAQ.html#member-init>`_ for built-in data
-  types that would would otherwise be uninitialized, including numerical
-  types, pointers, and enumerations. The syntax ``int count_{};`` (called
-  `value initialization
+  <http://www.stroustrup.com/C++11FAQ.html#member-init>`_ for built-in
+  non-``const`` data types that would would otherwise be uninitialized,
+  including numerical types, pointers, and enumerations. The syntax
+  ``int count_{};`` (called `value initialization
   <http://en.cppreference.com/w/cpp/language/value_initialization>`_)
   ensures that these types are zero-initialized rather than left with
   unpredictable content (informally known as "garbage"). You may also
@@ -220,7 +235,9 @@ Additional Rules
   behavior you want. Note that fixed-size Eigen objects are intentionally
   left uninitialized; if you want yours zero-initialized you can
   member-initialize it by passing an appropriate ``Zero``, for example:
-  ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
+  ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``. Member variables that are
+  declared ``const`` need not be initialized in this manner since the compiler
+  requires that they be initialized in the constructor's initializer list.
 * After including ``<cstddef>``, assume that ``size_t``
   is defined in the global namespace. Do not preface it with ``std::``
   and do not write ``using std::size_t`` in
@@ -251,6 +268,73 @@ Additional Rules
   "``main()``" since it is allowed by the style guide's
   `exceptions to naming rules <https://google.github.io/styleguide/cppguide.html#Exceptions_to_Naming_Rules>`_, though other method names like
   "``exec()``" are also acceptable.
+
+* Use `MKS <https://en.wikipedia.org/wiki/MKS_system_of_units>`_ units whenever
+  possible. When it is not possible, the code must clearly convey the units
+  used.
+
+.. _code-style-guide-python:
+
+Python Style
+============
+
+Drake Python code uses Python 2.7.
+
+Drake strictly follows `PEP 8 -- Style Guide for Python Code
+<https://www.python.org/dev/peps/pep-0008/>`_ except for the specific
+clarifications, exceptions, and additional rules noted below. Since PEP 8
+incorporates `PEP 257 -- Docstring Conventions
+<https://www.python.org/dev/peps/pep-0257/>`_, Drake follows its
+recommendations as well.
+
+In addition, Drake recommends use of ``pylint`` for automatic error
+checking. See :ref:`tools for complying with coding style <code-style-tools>`
+for full guidance.
+
+Sadly ``pylint`` does not check all the conditions enumerated by
+PEP 8. Therefore, Drake recommends the use of ``pep8.py`` as well. See
+:ref:`tools for complying with coding style <code-style-tools>` for details.`
+
+.. _code-style-guide-python-clarifications:
+
+Clarifications
+--------------
+
+* External, third-party, and auto-generated source files are not to be checked
+  for style.
+* Always prefer long, human-readable variable/method/class names to short
+  acronyms.
+
+.. _code-style-guide-python-exceptions:
+
+Exceptions
+----------
+
+* Lines containing a long URL may be longer than 80 columns if necessary to
+  avoid splitting the URL.
+
+.. _code-style-guide-python-addon-rules:
+
+Additional Rules
+----------------
+
+* When importing in-tree modules, always use absolute import paths; explicit
+  relative import paths are disallowed. See the `PEP 8 discussion of imports
+  <https://www.python.org/dev/peps/pep-0008/#imports>`_ for more detail.
+* Sometimes ``__init__.py`` files are necessary, for Python's ``import``
+  mechanism; these files should be non-empty (via a copyright notice, for
+  example). Rationale: 0-byte files can be mistakenly perceived as the result
+  of some error or accident.
+* When using the ``logging`` module, avoid its lazy-formatting
+  syntax. Rationale: exceptions raised in lazy formatting get printed to
+  ``stderr``, but are otherwise ignored, and thus may escape notice.
+* Executable files should use the following "shebang" line::
+
+    #!/usr/bin/env python
+
+  Rationale: ``/usr/bin/env`` enables a ``PATH`` search for python. On OSX
+  systems configured for Drake, this gives a better result than
+  ``/usr/bin/python``.
 
 .. _code-style-guide-matlab:
 
@@ -335,7 +419,7 @@ is sufficient::
     Method:
       searchDirectory()
     -->
-    
+
     <package format="2">
       <name>package_name</name>
     </package>

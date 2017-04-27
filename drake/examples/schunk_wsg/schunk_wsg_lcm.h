@@ -3,6 +3,8 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the Schunk WSG gripper.
 
+#include <memory>
+
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/examples/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -29,11 +31,11 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// which contains the position of the actuated finger.
   SchunkWsgTrajectoryGenerator(int input_size, int position_index);
 
-  const systems::SystemPortDescriptor<double>& get_command_input_port() const {
+  const systems::InputPortDescriptor<double>& get_command_input_port() const {
     return this->get_input_port(0);
   }
 
-  const systems::SystemPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPortDescriptor<double>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 
@@ -44,9 +46,9 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// Latches the input port into the discrete state.
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      systems::DiscreteState<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const override;
 
-  std::unique_ptr<systems::DiscreteState<double>> AllocateDiscreteState()
+  std::unique_ptr<systems::DiscreteValues<double>> AllocateDiscreteState()
       const override;
 
  private:
@@ -62,7 +64,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   const int position_index_{};
   // TODO(sam.creasey) I'd prefer to store the trajectory as
   // discrete state, but unfortunately that's not currently possible
-  // as DiscreteState may only contain BasicVector.
+  // as DiscreteValues may only contain BasicVector.
   mutable std::unique_ptr<Trajectory> trajectory_;
 };
 
@@ -74,8 +76,9 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
   SchunkWsgStatusSender(int input_size,
                         int position_index, int velocity_index);
 
-  std::unique_ptr<systems::SystemOutput<double>> AllocateOutput(
-      const systems::Context<double>& context) const override;
+ protected:
+  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
+      const systems::OutputPortDescriptor<double>& descriptor) const override;
 
  private:
   void DoCalcOutput(const systems::Context<double>& context,

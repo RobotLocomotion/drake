@@ -4,8 +4,9 @@
 #include <mutex>
 #include <thread>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
@@ -22,6 +23,8 @@ using std::this_thread::sleep_for;
 // accessor to the latest message received.
 class MessageSubscriber {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MessageSubscriber)
+
   // A constructor that sets up the LCM message subscription and initializes the
   // member variable that will be used to store received LCM messages.
   MessageSubscriber(const std::string& channel_name, ::lcm::LCM* lcm)
@@ -43,6 +46,14 @@ class MessageSubscriber {
     drake::lcmt_drake_signal message_copy;
     std::lock_guard<std::mutex> lock(message_mutex_);
     message_copy = received_message_;
+
+    // g++-4.9 on Trusty is still follows copy-on-write on strings.
+    // So, message_copy.coord[0] references the same memory location as
+    // received_message_.coord[0].  To prevent data-race we make a deep copy.
+    // COW is not followed by g++-5 and the loop may be removed when Trusty
+    // support is terminated.
+    for (size_t i = 0; i < received_message_.coord.size(); ++i)
+          message_copy.coord[i] = received_message_.coord[i].c_str();
     return message_copy;
   }
 
@@ -131,6 +142,8 @@ TEST_F(DrakeLcmTest, PublishTest) {
 // Handles received LCM messages.
 class MessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MessageHandler)
+
   // A constructor that initializes the memory for storing received LCM
   // messages.
   MessageHandler() {
@@ -145,8 +158,8 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
   // This is the callback method.
   void HandleMessage(const std::string& channel, const void* message_buffer,
       int message_size) override {
-    channel_ = channel;
     std::lock_guard<std::mutex> lock(message_mutex_);
+    channel_ = channel;
     received_message_.decode(message_buffer, 0, message_size);
   }
 
@@ -155,11 +168,21 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
     drake::lcmt_drake_signal message_copy;
     std::lock_guard<std::mutex> lock(message_mutex_);
     message_copy = received_message_;
+
+    // g++-4.9 on Trusty is still follows copy-on-write on strings.
+    // So, message_copy.coord[0] references the same memory location as
+    // received_message_.coord[0].  To prevent data-race we make a deep copy.
+    // COW is not followed by g++-5 and the loop may be removed when Trusty
+    // support is terminated.
+    for (size_t i = 0; i < received_message_.coord.size(); ++i)
+      message_copy.coord[i] = received_message_.coord[i].c_str();
+
     return message_copy;
   }
 
   // Returns the channel on which the most recent message was received.
-  const std::string& get_receive_channel() {
+  std::string get_receive_channel() {
+    std::lock_guard<std::mutex> lock(message_mutex_);
     return channel_;
   }
 

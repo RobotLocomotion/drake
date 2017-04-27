@@ -1,13 +1,15 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:drake.bzl", "cc_googletest")
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
-cc_library(
+drake_cc_library(
     name = "common",
     srcs = [
         "drake_assert.cc",
@@ -18,13 +20,15 @@ cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_compat.h",
+        "drake_copyable.h",
         "drake_deprecated.h",
+        "drake_optional.h",
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
+        "never_destroyed.h",
         "text_logging.h",
     ],
-    linkstatic = 1,
     deps = [
         "@eigen//:eigen",
         "@spdlog//:spdlog",
@@ -32,43 +36,54 @@ cc_library(
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
-cc_library(
+drake_cc_library(
     name = "cond",
+    srcs = ["cond.cc"],
     hdrs = ["cond.h"],
-    linkstatic = 1,
+    deps = [
+        ":double",
+    ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "dummy_value",
+    hdrs = ["dummy_value.h"],
+)
+
+drake_cc_library(
     name = "number_traits",
     hdrs = ["number_traits.h"],
-    linkstatic = 1,
 )
 
 # Drake's specific ScalarType-providing libraries.
-cc_library(
+drake_cc_library(
     name = "double",
     srcs = ["double_overloads.cc"],
     hdrs = ["double_overloads.h"],
-    linkstatic = 1,
 )
 
-cc_library(
+drake_cc_library(
     name = "autodiff",
     hdrs = [
         "autodiff_overloads.h",
         "eigen_autodiff_types.h",
     ],
-    linkstatic = 1,
     deps = [
         ":common",
         ":cond",
+        ":dummy_value",
+        ":eigen_autodiff_limits",
     ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "eigen_autodiff_limits",
+    hdrs = ["eigen_autodiff_limits.h"],
+)
+
+drake_cc_library(
     name = "extract_double",
     hdrs = ["extract_double.h"],
-    linkstatic = 1,
     deps = [
         ":common",
         ":nice_type_name",
@@ -76,38 +91,40 @@ cc_library(
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "functional_form",
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],
-    linkstatic = 1,
     deps = [
         ":common",
+        ":dummy_value",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
     hdrs = [
         "polynomial.h",
         "trig_poly.h",
     ],
-    linkstatic = 1,
     deps = [
         ":autodiff",
         ":common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "symbolic",
     srcs = [
         "symbolic_environment.cc",
         "symbolic_expression.cc",
         "symbolic_expression_cell.cc",
+        "symbolic_expression_cell.h",
+        "symbolic_expression_visitor.cc",
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
+        "symbolic_formula_cell.h",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -115,29 +132,41 @@ cc_library(
         "hash.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
-        "symbolic_expression_cell.h",
+        "symbolic_expression_visitor.h",
         "symbolic_formula.h",
-        "symbolic_formula_cell.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
-    linkstatic = 1,
     deps = [
         ":common",
         ":cond",
+        ":dummy_value",
         ":number_traits",
+        ":polynomial",
+        "//drake/math:matrix_util",
+    ],
+)
+
+drake_cc_library(
+    name = "symbolic_test_util",
+    testonly = 1,
+    hdrs = [
+        "test/symbolic_test_util.h",
+    ],
+    deps = [
+        ":symbolic",
     ],
 )
 
 # Miscellaneous utilities.
-cc_library(
+
+drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
     # drake_path are removed.
     # testonly = 1,
     srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
@@ -159,78 +188,155 @@ genrule(
 
 # TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
 # stanza below the "test/" comment marker).
-cc_library(
+drake_cc_library(
     name = "eigen_matrix_compare",
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "is_dynamic_castable",
+    testonly = 1,
+    hdrs = ["test/is_dynamic_castable.h"],
+    deps = [
+        ":nice_type_name",
+    ],
+)
+
+cc_proto_library(
+    name = "matlab_rpc",
+    srcs = [
+        "matlab_rpc.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "call_matlab",
+    testonly = 1,
+    srcs = ["call_matlab.cc"],
+    hdrs = ["call_matlab.h"],
+    deps = [
+        "common",
+        "matlab_rpc",
+    ],
+)
+
+drake_cc_library(
+    name = "monomial",
+    srcs = ["monomial.cc"],
+    hdrs = ["monomial.h"],
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
 )
 
-cc_library(
+drake_cc_library(
+    name = "is_cloneable",
+    srcs = [],
+    hdrs = ["is_cloneable.h"],
+)
+
+drake_cc_library(
+    name = "copyable_unique_ptr",
+    srcs = [],
+    hdrs = ["copyable_unique_ptr.h"],
+    deps = [":is_cloneable"],
+)
+
+drake_cc_library(
+    name = "reinit_after_move",
+    hdrs = ["reinit_after_move.h"],
+)
+
+drake_cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
-    linkstatic = 1,
     deps = [
         ":common",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "text_logging_gflags",
     hdrs = ["text_logging_gflags.h"],
     # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
     # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
     # throughout our code.
-    linkopts = ["-pthread"],
-    linkstatic = 1,
+    linkopts = select({
+        "//tools:linux": ["-pthread"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":common",
         "@gflags//:gflags",
     ],
 )
 
+drake_cc_library(
+    name = "type_safe_index",
+    hdrs = ["type_safe_index.h"],
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "unused",
+    hdrs = ["unused.h"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_library(
+    name = "protobuf",
+    srcs = ["protobuf.cc"],
+    hdrs = ["protobuf.h"],
+    deps = [
+        "@protobuf//:protobuf",
+    ],
+)
+
 # === test/ ===
 
-cc_library(
+drake_cc_library(
     name = "random_polynomial_matrix",
     testonly = 1,
     hdrs = ["test/random_polynomial_matrix.h"],
-    linkstatic = 1,
     deps = [
         ":polynomial",
     ],
 )
 
-cc_library(
+drake_cc_library(
     name = "measure_execution",
     testonly = 1,
     hdrs = ["test/measure_execution.h"],
-    linkstatic = 1,
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "autodiff_overloads_test",
     deps = [
         ":autodiff",
@@ -240,7 +346,38 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "call_matlab_test",
+    deps = [
+        ":call_matlab",
+    ],
+)
+
+drake_cc_googletest(
+    name = "reinit_after_move_test",
+    deps = [
+        ":reinit_after_move",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cond_test",
+    deps = [
+        ":cond",
+    ],
+)
+
+drake_cc_googletest(
+    name = "decompose_polynomial_test",
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "double_overloads_test",
     deps = [
         ":common",
@@ -249,21 +386,36 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_assert_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "drake_assert_test_compile",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "is_cloneable_test",
+    deps = [
+        ":is_cloneable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "copyable_unique_ptr_test",
+    deps = [
+        ":copyable_unique_ptr",
+        ":is_dynamic_castable",
+    ],
+)
+
+drake_cc_googletest(
     name = "drake_deprecated_test",
     # Remove spurious warnings from the default build output.
     copts = ["-Wno-deprecated-declarations"],
@@ -272,14 +424,28 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "drake_optional_test",
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "dummy_value_test",
+    deps = [
+        ":dummy_value",
+    ],
+)
+
+drake_cc_googletest(
     name = "eigen_matrix_compare_test",
     deps = [
         ":common",
@@ -287,14 +453,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "eigen_stl_types_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "extract_double_test",
     deps = [
         ":common",
@@ -302,7 +468,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "functional_form_test",
     deps = [
         ":common",
@@ -310,7 +476,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":common",
@@ -318,7 +484,24 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "monomial_test",
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "never_destroyed_test",
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_googletest(
     name = "nice_type_name_test",
     deps = [
         ":common",
@@ -326,7 +509,14 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "is_dynamic_castable_test",
+    deps = [
+        ":is_dynamic_castable",
+    ],
+)
+
+drake_cc_googletest(
     name = "polynomial_test",
     deps = [
         ":common",
@@ -335,7 +525,17 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "protobuf_test",
+    data = [
+        "test/test_string.txt",
+    ],
+    deps = [
+        ":protobuf",
+    ],
+)
+
+drake_cc_googletest(
     name = "sorted_vectors_have_intersection_test",
     deps = [
         ":common",
@@ -343,7 +543,7 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "symbolic_environment_test",
     deps = [
         ":common",
@@ -351,31 +551,105 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "symbolic_expansion_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
+    name = "symbolic_expression_differentiation_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_jacobian_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_array_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_matrix_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_mixing_scalar_types_test",
+    deps = [
+        ":common",
+        ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_substitution_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_variable_overloading_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_formula_test",
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "symbolic_variable_test",
     deps = [
         ":common",
         ":symbolic",
+        ":symbolic_test_util",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "symbolic_variables_test",
     deps = [
         ":common",
@@ -383,18 +657,26 @@ cc_googletest(
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "text_logging_test",
     deps = [
         ":common",
     ],
 )
 
-cc_googletest(
+drake_cc_googletest(
     name = "trig_poly_test",
     deps = [
         ":common",
         ":polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "type_safe_index_test",
+    deps = [
+        ":type_safe_index",
+        ":unused",
     ],
 )
 
@@ -404,3 +686,5 @@ cc_googletest(
 # - text_logging_test in fancy variants
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
+
+cpplint()

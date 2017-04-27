@@ -1,7 +1,8 @@
+#include "drake/examples/Valkyrie/robot_state_encoder.h"
+
 #include <list>
 
 #include "drake/common/constants.h"
-#include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
@@ -78,32 +79,27 @@ void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
   SetForceTorque(kinematics_results, contact_results, &message);
 }
 
-std::unique_ptr<SystemOutput<double>> RobotStateEncoder::AllocateOutput(
-    const Context<double>& context) const {
-  auto output = make_unique<LeafSystemOutput<double>>();
-
-  auto data = make_unique<Value<robot_state_t>>(robot_state_t());
-  output->add_port(move(data));
-
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
+    const OutputPortDescriptor<double>& descriptor) const {
+  return make_unique<Value<robot_state_t>>(robot_state_t());
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
+const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
     const {
   return get_output_port(lcm_message_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
+const InputPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
     const {
   return get_input_port(kinematics_results_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::contact_results_port()
+const InputPortDescriptor<double>& RobotStateEncoder::contact_results_port()
     const {
   return get_input_port(contact_results_port_index_);
 }
 
-const SystemPortDescriptor<double>& RobotStateEncoder::effort_port(
+const InputPortDescriptor<double>& RobotStateEncoder::effort_port(
     const RigidBodyActuator& actuator) const {
   return get_input_port(effort_port_indices_.at(&actuator));
 }

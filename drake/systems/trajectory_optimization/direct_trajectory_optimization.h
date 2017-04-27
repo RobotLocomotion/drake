@@ -1,10 +1,14 @@
 #pragma once
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/solvers/mathematical_program.h"
@@ -19,7 +23,7 @@ namespace systems {
  * approaches to trajectory optimization.
  *
  * Subclasses must implement the abstract method:
- *  AddRunningCost()
+ *  DoAddRunningCost()
  * and should add any dynamic constraints in their constructor.
  *
  * This class assumes that there are a fixed number (N) time steps/samples, and
@@ -30,16 +34,94 @@ namespace systems {
  * implementation assumes that all constraints and costs are
  * time-invariant.
  */
-class DirectTrajectoryOptimization {
+class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
  public:
-  /**
-   * Adds an integrated cost to all time steps.
-   *
-   * @param constraint A constraint which expects a timestep, state,
-   * and input as the elements of x when Eval is invoked.
-   */
-  virtual void AddRunningCost(
-      std::shared_ptr<solvers::Constraint> constraint) = 0;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTrajectoryOptimization)
+
+  ~DirectTrajectoryOptimization() override {}
+
+  /// Returns the decision variable associated with the timestep, h, at time
+  /// index @p index.
+  const solvers::VectorDecisionVariable<1> timestep(int index) const {
+    DRAKE_DEMAND(index >= 0 && index < N_);
+    return h_vars_.segment<1>(index);
+  }
+
+  /// Returns a placeholder decision variable (not actually declared as a
+  /// decision variable in the MathematicalProgram) associated with the time, t.
+  /// This variable will be substituted for real decision variables at
+  /// particular times in methods like AddRunningCost.  Passing this variable
+  /// directly into objectives/constraints for the parent classes will result
+  /// in an error.
+  const solvers::VectorDecisionVariable<1>& time() const {
+    return placeholder_t_var_;
+  }
+
+  /// Returns placeholder decision variables (not actually declared as decision
+  /// variables in the MathematicalProgram) associated with the state, x, but
+  /// with the time-index undetermined.  These variables will be substituted
+  /// for real decision variables at particular times in methods like
+  /// AddRunningCost.  Passing these variables directly into
+  /// objectives/constraints for the parent classes will result in an error.
+  const solvers::VectorXDecisionVariable& state() const {
+    return placeholder_x_vars_;
+  }
+
+  /// Returns placeholder decision variables (not actually declared as decision
+  /// variables in the MathematicalProgram) associated with the input, u, but
+  /// with the time-index undetermined.  These variables will be substituted
+  /// for real decision variables at particular times in methods like
+  /// AddRunningCost.  Passing these variables directly into
+  /// objectives/constraints for the parent classes will result in an error.
+  const solvers::VectorXDecisionVariable& input() const {
+    return placeholder_u_vars_;
+  }
+
+  /// Returns the decision variables associated with the state, x, at time
+  /// index @p index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> state(
+      int index) const {
+    DRAKE_DEMAND(index >= 0 && index < N_);
+    return x_vars_.segment(index * num_states_, num_states_);
+  }
+
+  /// Returns the decision variables associated with the state, x, at the
+  /// initial time index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> initial_state()
+      const {
+    return state(0);
+  }
+
+  /// Returns the decision variables associated with the state, x, at the final
+  /// time index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> final_state()
+      const {
+    return state(N_ - 1);
+  }
+
+  /// Returns the decision variables associated with the input, u, at time
+  /// index @p index.
+  Eigen::VectorBlock<const solvers::VectorXDecisionVariable> input(
+      int index) const {
+    DRAKE_DEMAND(index >= 0 && index < N_);
+    return u_vars_.segment(index * num_inputs_, num_inputs_);
+  }
+
+  /// Adds an integrated cost to all time steps, of the form
+  ///    @f[ cost = \int_0^T g(t,x,u) dt, @f]
+  /// where any instances of time(), state(), and/or input() placeholder
+  /// variables are substituted with the relevant variables for each current
+  /// time index.  The particular integration scheme is determined by the
+  /// derived class implementation.
+  void AddRunningCost(const symbolic::Expression& g) { DoAddRunningCost(g); }
+
+  /// Adds support for passing in a (scalar) matrix Expression, which is a
+  /// common output of most symbolic linear algebra operations.
+  template <typename Derived>
+  void AddRunningCost(const Eigen::MatrixBase<Derived>& g) {
+    DRAKE_DEMAND(g.rows() == 1 && g.cols() == 1);
+    DoAddRunningCost(g(0, 0));
+  }
 
   /**
    * Adds an integrated cost to all time steps.
@@ -48,13 +130,27 @@ class DirectTrajectoryOptimization {
    * MathematicalProgram::AddCost().
    */
   template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
+  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
+                          std::shared_ptr<solvers::Constraint>>::type
   AddRunningCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::CreateFunctionCost(std::forward<F>(f));
     AddRunningCost(c);
     return c;
+  }
+
+  // TODO(russt): Remove the methods below that add constraints without
+  // requesting the variable list to be passed in.  We should force the user
+  // to specify the variables to provide clarity and robustness.
+  // The "add to a list of times" utilities are still useful... we can replace
+  // them with methods of the form AddCost(..., MatrixXDecisionVariable), which
+  // adds the same constraint to each column of the variable matrix.
+
+  // Adds an integrated cost to all time steps.
+  //
+  // @param constraint A constraint which expects a timestep, state, and input
+  // as the elements of x when Eval is invoked.
+  void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) {
+    DoAddRunningCost(constraint);
   }
 
   /**
@@ -78,8 +174,7 @@ class DirectTrajectoryOptimization {
                           const std::vector<int>& time_indices) {
     for (const int i : time_indices) {
       DRAKE_ASSERT(i < N_);
-      opt_problem_.AddConstraint(
-          constraint, {u_vars_.segment(i * num_inputs_, num_inputs_)});
+      AddConstraint(constraint, u_vars_.segment(i * num_inputs_, num_inputs_));
     }
   }
 
@@ -96,8 +191,7 @@ class DirectTrajectoryOptimization {
                           const std::vector<int>& time_indices) {
     for (const int i : time_indices) {
       DRAKE_ASSERT(i < N_);
-      opt_problem_.AddConstraint(
-          constraint, {x_vars_.segment(i * num_states_, num_states_)});
+      AddConstraint(constraint, x_vars_.segment(i * num_states_, num_states_));
     }
   }
 
@@ -128,28 +222,13 @@ class DirectTrajectoryOptimization {
                              const Eigen::VectorXd& upper_bound);
 
   /**
-   * Add a cost to the initial state.
+   * Add bounds on all time intervals, such that
+   * lower_bound <= h_vars_(i) <= upper_bound
+   * for all time intervals.
+   * @param lower_bound  A scalar double lower bound.
+   * @param upper_bound  A scalar double upper bound.
    */
-  template <typename ConstraintT>
-  void AddInitialCost(std::shared_ptr<ConstraintT> constraint) {
-    opt_problem_.AddCost(constraint, {x_vars_.head(num_states_)});
-  }
-
-  /**
-   * Add a cost to the initial state.
-   *
-   * @param f A callable which meets the requirments of
-   * MathematicalProgram::AddCost().
-  */
-  template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
-  AddInitialCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
-    AddInitialCost(c);
-    return c;
-  }
+  void AddTimeIntervalBounds(double lower_bound, double upper_bound);
 
   /**
    * Add a cost to the final state and total time.
@@ -160,6 +239,25 @@ class DirectTrajectoryOptimization {
    */
   void AddFinalCost(std::shared_ptr<solvers::Constraint> constraint);
 
+  /// Adds a cost to the final time, of the form
+  ///    @f[ cost = e(t,x,u), @f]
+  /// where any instances of time(), state(), and/or input() placeholder
+  /// variables are substituted with the relevant variables for each current
+  /// time index.
+  void AddFinalCost(const symbolic::Expression& e) {
+    AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
+  }
+
+  /// Adds support for passing in a (scalar) matrix Expression, which is a
+  /// common output of most symbolic linear algebra operations.
+  /// Note: Derived classes will need to type
+  ///    using DirectTrajectoryOptimization::AddFinalCost;
+  /// to "unhide" this method.
+  void AddFinalCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
+    DRAKE_DEMAND(e.rows() == 1 && e.cols() == 1);
+    AddFinalCost(e(0, 0));
+  }
+
   /**
    * Add a cost to the final state and total time.
    *
@@ -167,11 +265,10 @@ class DirectTrajectoryOptimization {
    * MathematicalProgram::AddCost().
    */
   template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
+  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
+                          std::shared_ptr<solvers::Constraint>>::type
   AddFinalCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::CreateFunctionCost(std::forward<F>(f));
     AddFinalCost(c);
     return c;
   }
@@ -195,11 +292,6 @@ class DirectTrajectoryOptimization {
       const PiecewisePolynomial<double>& traj_init_x);
   // TODO(Lucy-tri) If timespan_init has any relationship to
   // trajectory_time_{lower,upper}_bound, then add doc and asserts.
-
-  // Disable copy and assign.
-  DirectTrajectoryOptimization(const DirectTrajectoryOptimization&) = delete;
-  DirectTrajectoryOptimization& operator=(const DirectTrajectoryOptimization&) =
-      delete;
 
   /**
    * Extract the result of the trajectory solution as a set of
@@ -260,17 +352,19 @@ class DirectTrajectoryOptimization {
    */
   std::vector<Eigen::MatrixXd> GetStateVector() const;
 
-  // TODO(russt): Add accessors to a (mutable or not) raw pointer to the
-  // AutoDiffXd system and context used in the dynamic constraints.  This would
-  // allow folks to e.g. update the system parameters and then re-solve.
+  /**
+   * Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
+   * @p interval_index, for all placeholder variables.
+   */
+  symbolic::Expression SubstitutePlaceholderVariables(
+      const symbolic::Expression& e, int interval_index) const;
 
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
   int N() const { return N_; }
-  solvers::MathematicalProgram* opt_problem() { return &opt_problem_; }
-  const solvers::DecisionVariableVectorX& h_vars() const { return h_vars_; }
-  const solvers::DecisionVariableVectorX& u_vars() const { return u_vars_; }
-  const solvers::DecisionVariableVectorX& x_vars() const { return x_vars_; }
+  const solvers::VectorXDecisionVariable& h_vars() const { return h_vars_; }
+  const solvers::VectorXDecisionVariable& u_vars() const { return u_vars_; }
+  const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
 
  private:
   /**
@@ -291,15 +385,25 @@ class DirectTrajectoryOptimization {
                       const PiecewisePolynomial<double>& traj_init_u,
                       const PiecewisePolynomial<double>& traj_init_x);
 
-  const int num_inputs_;
-  const int num_states_;
-  const int N_;  // Number of time samples
+  virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
 
-  solvers::MathematicalProgram opt_problem_;
-  solvers::DecisionVariableVectorX h_vars_;  // Time deltas between each
+  virtual void DoAddRunningCost(
+      std::shared_ptr<solvers::Constraint> constraint) = 0;
+
+  const int num_inputs_{};
+  const int num_states_{};
+  const int N_{};  // Number of time samples
+
+  solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
                                              // input/state sample.
-  solvers::DecisionVariableVectorX u_vars_;
-  solvers::DecisionVariableVectorX x_vars_;
+  solvers::VectorXDecisionVariable x_vars_;
+  solvers::VectorXDecisionVariable u_vars_;
+
+  // See description of the public time(), state(), and input() accessor methods
+  // for details about the placeholder variables.
+  solvers::VectorDecisionVariable<1> placeholder_t_var_;
+  solvers::VectorXDecisionVariable placeholder_x_vars_;
+  solvers::VectorXDecisionVariable placeholder_u_vars_;
 };
 
 }  // namespace systems

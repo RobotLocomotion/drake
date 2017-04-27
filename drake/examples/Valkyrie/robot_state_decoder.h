@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "drake/multibody/rigid_body_tree.h"
@@ -29,13 +30,14 @@ class RobotStateDecoder : public LeafSystem<double> {
 
   RobotStateDecoder& operator=(const RobotStateDecoder&) = delete;
 
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override;
+ protected:
+  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
+      const OutputPortDescriptor<double>& descriptor) const override;
 
- private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override;
 
+ private:
   std::map<std::string, const RigidBody<double>*> CreateJointNameToBodyMap(
       const RigidBodyTree<double>& tree);
 

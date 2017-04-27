@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/value.h"
 
@@ -20,6 +21,8 @@ namespace lcm {
  */
 class SerializerInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SerializerInterface)
+
   virtual ~SerializerInterface();
 
   /**
@@ -41,10 +44,6 @@ class SerializerInterface {
   virtual void Serialize(const AbstractValue& abstract_value,
                          std::vector<uint8_t>* message_bytes) const = 0;
 
-  // Disable copy and assign.
-  SerializerInterface(const SerializerInterface&) = delete;
-  SerializerInterface& operator=(const SerializerInterface&) = delete;
-
  protected:
   SerializerInterface() {}
 };
@@ -58,6 +57,8 @@ class SerializerInterface {
 template <typename LcmMessage>
 class Serializer : public SerializerInterface {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Serializer)
+
   Serializer() {}
   ~Serializer() override {}
 
@@ -86,10 +87,6 @@ class Serializer : public SerializerInterface {
     int consumed = message.encode(message_bytes->data(), 0, message_length);
     DRAKE_THROW_UNLESS(consumed == message_length);
   }
-
-  // Disable copy and assign.
-  Serializer(const Serializer&) = delete;
-  Serializer& operator=(const Serializer&) = delete;
 };
 
 }  // namespace lcm

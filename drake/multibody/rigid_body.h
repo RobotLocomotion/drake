@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -19,6 +20,24 @@ template <typename T>
 class RigidBody {
  public:
   RigidBody();
+
+  /**
+   * Returns a clone of this RigidBody.
+   *
+   * *Important note!* The following are not cloned:
+   *    - the joint
+   *    - the parent %RigidBody
+   *    - the visual elements
+   *    - the collision elements
+   *
+   * The parent is *not* cloned because the reference to it can only be
+   * determined by the RigidBodyTree (which owns both this body and the parent
+   * body). Both the parent and the joint are expected to be set by calling
+   * add_joint().
+   *
+   * The visual and collision elements will be cloned pending identified need.
+   */
+  std::unique_ptr<RigidBody<T>> Clone() const;
 
   /**
    * Returns the name of this rigid body.
@@ -100,6 +119,11 @@ class RigidBody {
   const DrakeJoint& getJoint() const;
 
   /**
+   * Reports if the body has a parent joint.
+   */
+  bool has_joint() const { return joint_ != nullptr; }
+
+  /**
    * Sets the parent rigid body. This is the rigid body that is connected to
    * this rigid body's joint.
    *
@@ -123,9 +147,7 @@ class RigidBody {
   bool has_parent_body() const;
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use has_parent_body().")
-#endif
   bool hasParent() const;
 
   /**
@@ -189,16 +211,11 @@ class RigidBody {
 
   const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
-  /**
-   * Sets the rigid body's self-collision logic.
-   *
-   * The body may or may not require a self-collision clique. If not, the
-   * provided clique id will remain unused.
-   * @param[in] clique_id  An available clique id.
-   * @returns true if the clique id was used.
-   */
-  bool SetSelfCollisionClique(int clique_id);
-
+  // TODO(SeanCurtis-TRI): This shouldn't be called publicly. Collision elements
+  // have to be processed in the context of the rigid body tree.  Long term,
+  // this will be displaced into GeometryWorld.  Short term, just don't call it.
+  // If you need to add a collision element to a body, add it through
+  // RigidBodyTree::addCollisionElement.
   /**
    * Adds the given collision @p element to the body with the given group name.
    * @param[in] group_name The collision element's group name.
@@ -236,23 +253,42 @@ class RigidBody {
   std::map<std::string, std::vector<DrakeCollision::ElementId>>&
     get_mutable_group_to_collision_ids_map();
 
+  /**
+   * Reports if there is a path in this tree from this body to the world where
+   * all joints are *fixed*. This method throws an exception if the
+   * RigidBodyTree is invalid in that:
+   *    - This node is the descendant of a parentless node that is *not* the
+   *      world node, or
+   *    - This node does not have a valid DrakeJoint.
+   */
+  bool IsRigidlyFixedToWorld() const;
 
-  void setCollisionFilter(const DrakeCollision::bitmask& group,
-                          const DrakeCollision::bitmask& ignores);
-
-  const DrakeCollision::bitmask& getCollisionFilterGroup() const;
-
-  void setCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
-  const DrakeCollision::bitmask& getCollisionFilterIgnores() const;
-
-  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores);
-
-  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
-  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group);
-
-  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
+  /**
+   * Reports `X_WBₙ`, the pose of this body, `Bₙ`, in the world frame based on
+   * the *rigid* kinematic path from `Bₙ` to `W`.  As such,
+   * the world-fixed pose is only defined for bodies that are rigidly fixed to
+   * the world.
+   *
+   * For this body, with depth `n` in the tree, `Bₙ`, `X_WBₙ` is defined as:
+   *
+   * `X_WBₙ ≡ X_WB₁ * X_B₁B₂ * ... * X_Bₙ₋₂Bₙ₋₁ * X_Bₙ₋₁Bₙ`
+   *
+   * `X_Bₖ₋₁Bₖ` represents the transform from one body's frame
+   * (`Bₖ`) to its parent's frame (Bₖ₋₁). By construction, body `Bₖ` has a
+   * single inboard joint. This joint defines several frames, discussed in
+   * @ref rigid_body_tree_frames, including its parent frame: `Pₖ ≡ Bₖ₋₁`. This
+   * allows us to compute `X_Bₖ₋₁Bₖ` as follows:
+   * - `X_Bₖ₋₁Bₖ = X_PₖBₖ` because `Pₖ ≡ Bₖ₋₁`
+   * - `X_PₖBₖ ≡ X_PₖFₖ * X_FₖMₖ(q) * X_MₖBₖ`, where:
+   *    - `X_MₖBₖ = I` in Drake's implementation.
+   *    - `X_FₖMₖ(q) = I` because we only follow FixedJoint instances.
+   *
+   *
+   * If the body is not rigidly fixed to the world, an exception will be thrown.
+   * @return `X_WBₙ`.
+   * @see IsRigidlyFixedToWorld
+   */
+  Eigen::Isometry3d ComputeWorldFixedPose() const;
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
   // TODO(SeanCurtis-TRI): This method is only used by the collision clique
@@ -354,23 +390,31 @@ class RigidBody {
   void ApplyTransformToJointFrame(
       const Eigen::Isometry3d& transform_body_to_joint);
 
-  /** Adds body to a given collision clique by clique id.
-   *
-   * This call adds each of the collision elements in this body to the provided
-   * collision clique.
-   * @param[in] clique_id Collision clique id.
-   * @see Element::AddToCollisionClique.
-   */
-  void AddCollisionElementsToClique(int clique_id);
-
  public:
   friend std::ostream& operator<<(
       std::ostream& out, const RigidBody<double>& b);
 
  public:
-#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
+
+  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
+  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
+
+  CollisionElementsIterator collision_elements_begin() {
+    return collision_elements_.begin();
+  }
+
+  CollisionElementsIterator collision_elements_end() {
+    return collision_elements_.end();
+  }
+
+  /**
+   * Reports the total number of *registered* collision elements attached to
+   * this body. See Model::AddElement() for definition of "registered".
+   */
+  int get_num_collision_elements() const {
+    return static_cast<int>(collision_elements_.size());
+  }
 
  private:
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
@@ -380,16 +424,6 @@ class RigidBody {
   // The "parent" joint of this rigid body. This is the joint through which this
   // rigid body connects to the rest of the rigid body tree.
   std::unique_ptr<DrakeJoint> joint_;
-
-  // A bitmask that determines the collision groups that this rigid body is part
-  // of. If the i-th bit is set this rigid body belongs to the i-th collision
-  // group. A rigid body can belong to several collision groups.
-  DrakeCollision::bitmask collision_filter_group_;
-
-  // A bitmask that determines which collision groups this rigid body does not
-  // collide with. Thus, if the i-th bit is set this rigid body is not checked
-  // for collisions with bodies in the i-th group.
-  DrakeCollision::bitmask collision_filter_ignores_;
 
   // The name of this rigid body.
   std::string name_;
@@ -428,17 +462,6 @@ class RigidBody {
   // anything in terms of how the collision elements relate to each other.
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
-
-  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
-  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
-
-  CollisionElementsIterator collision_elements_begin() {
-    return collision_elements_.begin();
-  }
-
-  CollisionElementsIterator collision_elements_end() {
-    return collision_elements_.end();
-  }
 
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;

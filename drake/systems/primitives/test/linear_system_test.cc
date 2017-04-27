@@ -1,9 +1,10 @@
+#include "drake/systems/primitives/linear_system.h"
+
 #include <stdexcept>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -100,8 +101,7 @@ GTEST_TEST(TestLinearize, FromAffine) {
   y0 << 24, 25;
   AffineSystem<double> system(A, B, f0, C, D, y0);
   auto context = system.CreateDefaultContext();
-  Eigen::Vector3d x0;
-  x0 << 26, 27, 28;
+  Eigen::Vector3d x0(26, 27, 28);
   context->get_mutable_continuous_state_vector()->SetFromVector(x0);
   double u0 = 29;
   context->FixInputPort(0, Vector1d::Constant(u0));

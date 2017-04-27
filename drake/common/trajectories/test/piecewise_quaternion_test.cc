@@ -2,10 +2,11 @@
 
 #include <random>
 
+#include <gtest/gtest.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace {
@@ -163,6 +164,31 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
       rot_spline.orientation(t).coeffs(),
       internal_quats[1].coeffs(), 1e-10,
       MatrixCompareType::absolute));
+}
+
+GTEST_TEST(TestPiecewiseQuaternionSlerp, TestIsApprox) {
+  std::vector<double> time = {0, 1.6};
+  std::vector<double> ang = {-1.3, 1};
+  Vector3<double> axis = Vector3<double>(1, 2, 3).normalized();
+  eigen_aligned_std_vector<Quaternion<double>> quat(ang.size());
+  for (size_t i = 0; i < ang.size(); ++i) {
+    quat[i] = Quaternion<double>(AngleAxis<double>(ang[i], axis));
+  }
+  PiecewiseQuaternionSlerp<double> traj0(time, quat);
+
+  // -q represents the same orientation, so it should result in equality.
+  eigen_aligned_std_vector<Quaternion<double>> quat_neg = quat;
+  for (size_t i = 0; i < ang.size(); ++i) {
+    quat_neg[i].coeffs() *= -1;
+  }
+  PiecewiseQuaternionSlerp<double> traj1(time, quat_neg);
+  EXPECT_TRUE(traj0.is_approx(traj1, 1e-12));
+
+  // Mutates a bit, should not be equal anymore.
+  quat[0] = Quaternion<double>(AngleAxis<double>(ang[0] + 1e-6, axis));
+  PiecewiseQuaternionSlerp<double> traj2(time, quat);
+  EXPECT_FALSE(traj0.is_approx(traj2, 1e-7));
+  EXPECT_TRUE(traj0.is_approx(traj2, 1e-5));
 }
 
 }  // namespace

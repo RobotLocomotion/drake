@@ -1,6 +1,6 @@
 #include "drake/solvers/constraint.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
@@ -16,126 +16,133 @@ namespace drake {
 namespace solvers {
 namespace {
 // Tests if the Lorentz Cone constraint is imposed correctly.
-void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  LorentzConeConstraint cnstr;
+void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
+                         const Eigen::Ref<const Eigen::VectorXd> b,
+                         const VectorXd& x_test, bool is_in_cone) {
+  LorentzConeConstraint cnstr(A, b);
   VectorXd y;
   // Test Eval with VectorXd.
   cnstr.Eval(x_test, y);
   Vector2d y_expected;
-  y_expected(0) = x_test(0);
-  y_expected(1) =
-      x_test(0) * x_test(0) - x_test.tail(x_test.size() - 1).squaredNorm();
+  VectorXd z = A * x_test + b;
+  y_expected(0) = z(0);
+  y_expected(1) = z(0) * z(0) - z.tail(z.size() - 1).squaredNorm();
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
   bool is_in_cone_expected = (y(0) >= 0) & (y(1) >= 0);
-  EXPECT_TRUE(is_in_cone == is_in_cone_expected);
+  EXPECT_EQ(is_in_cone, is_in_cone_expected);
+  EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 
   auto tx = drake::math::initializeAutoDiff(x_test);
-  TaylorVecXd x_taylor = tx;
-  TaylorVecXd y_taylor;
-  // Test Eval with TaylorVar.
+  AutoDiffVecXd x_taylor = tx;
+  AutoDiffVecXd y_taylor;
+  // Test Eval with AutoDiff.
   cnstr.Eval(x_taylor, y_taylor);
 
-  // Check if the gradient is correct.
-  Eigen::Matrix<double, 2, Eigen::Dynamic> y_grad_expected(2, x_test.size());
-  y_grad_expected.setZero();
-  y_grad_expected(0, 0) = 1.0;
-  y_grad_expected(1, 0) = 2 * x_test(0);
-  for (int i = 1; i < x_test.size(); i++) {
-    y_grad_expected(1, i) = -2 * x_test(i);
-  }
-  EXPECT_TRUE(CompareMatrices(y_grad_expected,
-                              drake::math::autoDiffToGradientMatrix(y_taylor),
-                              1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
+  EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
 }
 
-void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
-  RotatedLorentzConeConstraint cnstr;
+void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
+                                const Eigen::Ref<const Eigen::VectorXd> b,
+                                const VectorXd& x_test, bool is_in_cone) {
+  RotatedLorentzConeConstraint cnstr(A, b);
   VectorXd y;
   cnstr.Eval(x_test, y);
-  Vector3d y_expected;
-  y_expected(0) = x_test(0);
-  y_expected(1) = x_test(1);
-  y_expected(2) =
-      x_test(0) * x_test(1) - x_test.tail(x_test.size() - 2).squaredNorm();
+  Eigen::VectorXd z = A * x_test + b;
+  Vector3d y_expected(
+      z(0),
+      z(1),
+      z(0) * z(1) - z.tail(z.size() - 2).squaredNorm());
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
   bool is_in_cone_expected =
-      (x_test(0) >= 0) & (x_test(1) >= 0) &
-      (x_test(0) * x_test(1) >= x_test.tail(x_test.size() - 2).norm());
-  EXPECT_TRUE(is_in_cone == is_in_cone_expected);
+      (z(0) >= 0) & (z(1) >= 0) & (z(0) * z(1) >= z.tail(z.size() - 2).norm());
+  EXPECT_EQ(is_in_cone, is_in_cone_expected);
+  EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 
   // Eval with taylor var.
   auto tx = drake::math::initializeAutoDiff(x_test);
-  TaylorVecXd x_taylor = tx;
-  TaylorVecXd y_taylor;
+  AutoDiffVecXd x_taylor = tx;
+  AutoDiffVecXd y_taylor;
   cnstr.Eval(x_taylor, y_taylor);
 
-  // Check if the gradient is correct.
-  Eigen::Matrix<double, 3, Eigen::Dynamic> y_grad_expected(3, x_test.size());
-  y_grad_expected.setZero();
-  y_grad_expected(0, 0) = 1.0;
-  y_grad_expected(1, 1) = 1.0;
-  y_grad_expected(2, 0) = x_test(1);
-  y_grad_expected(2, 1) = x_test(0);
-  for (int i = 2; i < x_test.size(); ++i) {
-    y_grad_expected(2, i) = -2 * x_test(i);
-  }
-  EXPECT_TRUE(CompareMatrices(y_grad_expected,
-                              drake::math::autoDiffToGradientMatrix(y_taylor),
-                              1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
+  EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
 }
 
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
-  LorentzConeConstraint cnstr;
-  auto lb = cnstr.lower_bound();
-  auto ub = cnstr.upper_bound();
-  EXPECT_TRUE(CompareMatrices(Eigen::Vector2d(0.0, 0.0), lb, 1E-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), ub,
-      1e-10, MatrixCompareType::absolute));
-
   // [3;1;1] is in the interior of the Lorentz cone.
   Eigen::Vector3d x1(3.0, 1.0, 1.0);
-  TestLorentzConeEval(x1, true);
+  TestLorentzConeEval(Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero(), x1,
+                      true);
 
   // [3;2;2;1] is on the boundary of the Lorentz cone.
-  Eigen::Vector4d x2(3.0, 2.0, 2.0, 1.0);
-  TestLorentzConeEval(x2, true);
+  Eigen::Vector2d x2(1, 3);
+  Eigen::Matrix<double, 4, 2> A2;
+  // clang-format off
+  A2 << 1, 0,
+       1, 1,
+       -1, 1,
+       1, -2;
+  // clang-format on
+  Eigen::Vector4d b2(2, -2, 0, 6);
+  TestLorentzConeEval(A2, b2, x2, true);
 
   // [3; 3; 1] is outside of the Lorentz cone.
-  Eigen::Vector3d x3(3.0, 3.0, 1.0);
-  TestLorentzConeEval(x3, false);
+  Eigen::Vector4d x3(1, -1, 2, 3);
+  Eigen::Matrix<double, 3, 4> A3;
+  // clang-format off
+  A3 << 1, 0, -1, 2,
+        -1, 2, 0, 1,
+        0, -2, 3, 1;
+  // clang-format on
+  Eigen::Vector3d b3 = Eigen::Vector3d(3, 3, 1) - A3 * x3;
+  TestLorentzConeEval(A3, b3, x3, false);
 
   // [-3; 1; 1] is outside of the Lorentz cone.
-  Eigen::Vector3d x4(-3.0, 1.0, 1.0);
-  TestLorentzConeEval(x4, false);
+  Vector1d x4 = Vector1d::Constant(4);
+  Eigen::Vector3d A4(-1, 3, 2);
+  Eigen::Vector3d b4 = Eigen::Vector3d(-3, 1, 1) - A4 * x4;
+  TestLorentzConeEval(A4, b4, x4, false);
 }
 
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
-  RotatedLorentzConeConstraint cnstr;
-  auto lb = cnstr.lower_bound();
-  auto ub = cnstr.upper_bound();
-  EXPECT_TRUE(CompareMatrices(Eigen::Vector3d::Zero(), lb, 1E-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()), ub,
-      1e-10, MatrixCompareType::absolute));
-
   // [1;2;1] is in the interior of the rotated lorentz cone.
-  TestRotatedLorentzConeEval(Vector3d(1, 2, 1), true);
+  TestRotatedLorentzConeEval(Eigen::Matrix3d::Identity(),
+                             Eigen::Vector3d::Zero(), Vector3d(1, 2, 1), true);
 
   // [1;2;1;1] is on the boundary of the rotated Lorentz cone.
-  TestRotatedLorentzConeEval(Eigen::Vector4d(1, 2, 1, 1), true);
+  Eigen::Vector2d x2(1, 2);
+  Eigen::Matrix<double, 4, 2> A2;
+  // clang-format off
+  A2 << 1, -1,
+        0, 2,
+        -1, 3,
+        -2, 4;
+  // clang-format on
+  Eigen::Vector4d b2 = Eigen::Vector4d(1, 2, 1, 1) - A2 * x2;
+  TestRotatedLorentzConeEval(A2, b2, x2, true);
 
   // [1;2;2;2] is outside of the rotated Lorentz cone.
-  TestRotatedLorentzConeEval(Eigen::Vector4d(1, 2, 2, 2), false);
+  Eigen::Vector4d x3(1, 3, -1, 2);
+  Eigen::Matrix4d A3;
+  // clang-format off
+  A3 << 1, 2, 3, 4,
+        -1, 2, 4, 2,
+        -3, 2, 1, 4,
+        2, 1, 3, 2;
+  // clang-format on
+  Eigen::Vector4d b3 = Eigen::Vector4d(1, 2, 2, 2) - A3 * x3;
+  TestRotatedLorentzConeEval(A3, b3, x3, false);
 
   // [-1; -2; 1] is outside of the rotated Lorentz cone.
-  TestRotatedLorentzConeEval(Vector3d(-1, -2, 1), false);
+  Vector1d x4 = Vector1d::Constant(10);
+  Eigen::Vector3d A4(1, 3, 2);
+  Eigen::Vector3d b4 = Eigen::Vector3d(-1, -2, 1) - A4 * x4;
+  TestRotatedLorentzConeEval(A4, b4, x4, false);
 }
 
 GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
@@ -151,6 +158,7 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   cnstr.Eval(X1, y);
   EXPECT_TRUE((y.array() >= cnstr.lower_bound().array()).all());
   EXPECT_TRUE((y.array() <= cnstr.upper_bound().array()).all());
+  EXPECT_TRUE(cnstr.CheckSatisfied(X1));
 
   Eigen::Matrix<double, 9, 1> X2;
   // clang-format off
@@ -161,6 +169,8 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
   cnstr.Eval(X2, y);
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());
+  EXPECT_EQ(cnstr.matrix_rows(), 3);
+  EXPECT_FALSE(cnstr.CheckSatisfied(X2));
 }
 
 GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
@@ -174,15 +184,40 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   // [4, 3]
   // [3, 4] is positive semidefinite
   Eigen::VectorXd y;
-  cnstr.Eval(Eigen::Vector2d(1, 1), y);
+  Eigen::Vector2d x1(1, 1);
+  cnstr.Eval(x1, y);
   EXPECT_TRUE((y.array() >= cnstr.lower_bound().array()).all());
   EXPECT_TRUE((y.array() <= cnstr.upper_bound().array()).all());
+  EXPECT_TRUE(cnstr.CheckSatisfied(x1));
 
   // [1 -2]
   // [-2 1] is not p.s.d
-  cnstr.Eval(Eigen::Vector2d(0, -1), y);
+  Eigen::Vector2d x2(0, -1);
+  cnstr.Eval(x2, y);
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());
+  EXPECT_FALSE(cnstr.CheckSatisfied(x2));
+}
+// Test that the Eval() method of LinearComplementarityConstraint correctly
+// returns the slack.
+GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
+  Eigen::Matrix2d M = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d q(-1, -1);
+
+  LinearComplementarityConstraint c(M, q);
+  Eigen::VectorXd w;
+
+  Eigen::Vector2d x1(1, 1);
+  c.Eval(x1, w);
+  EXPECT_TRUE(
+      CompareMatrices(w, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(c.CheckSatisfied(x1));
+
+  Eigen::Vector2d x2(1, 2);
+  c.Eval(x2, w);
+  EXPECT_TRUE(
+      CompareMatrices(w, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+  EXPECT_FALSE(c.CheckSatisfied(x2));
 }
 }  // namespace
 }  // namespace solvers

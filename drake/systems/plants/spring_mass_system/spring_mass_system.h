@@ -3,10 +3,11 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -21,11 +22,13 @@ namespace systems {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
 class SpringMassStateVector : public BasicVector<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassStateVector)
+
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
   SpringMassStateVector(const T& initial_position, const T& initial_velocity);
@@ -66,13 +69,15 @@ class SpringMassStateVector : public BasicVector<T> {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - const T&
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 ///
 /// @ingroup rigid_body_systems
 template <typename T>
 class SpringMassSystem : public LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassSystem)
+
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
   /// @param[in] name The name of the system.
@@ -88,16 +93,13 @@ class SpringMassSystem : public LeafSystem<T> {
   using MyContinuousState = ContinuousState<T>;
   using MyOutput = SystemOutput<T>;
 
-  /// The input force to this system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
-
   // Provide methods specific to this System.
 
   /// Returns the input port to the externally applied force.
-  const SystemPortDescriptor<T>& get_force_port() const;
+  const InputPortDescriptor<T>& get_force_port() const;
 
   /// Returns the port to output state.
-  const SystemPortDescriptor<T>& get_output_port() const;
+  const OutputPortDescriptor<T>& get_output_port() const;
 
   /// Returns the spring constant k that was provided at construction, in N/m.
   const T& get_spring_constant() const { return spring_constant_N_per_m_; }
@@ -201,21 +203,17 @@ class SpringMassSystem : public LeafSystem<T> {
   T DoCalcNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides.
-  /// Allocates a single output port of type SpringMassStateVector<T>.
-  std::unique_ptr<MyOutput> AllocateOutput(
-      const MyContext& context) const override;
-
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
-
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
 
- protected:
-  // LeafSystem<T> override.
-  std::unique_ptr<ContinuousState<T>>
-  AllocateContinuousState() const override;
-
  private:
+  /// This system is not direct feedthrough.
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
+                              int output_port) const override {
+    return false;
+  }
+
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
   // and static_cast in Release mode.
 

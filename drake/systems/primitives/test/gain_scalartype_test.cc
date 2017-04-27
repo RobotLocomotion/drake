@@ -4,14 +4,14 @@
 #include <stdexcept>
 #include <string>
 
-#include <unsupported/Eigen/AutoDiff>
+#include <gtest/gtest.h>
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
@@ -89,16 +89,14 @@ class SymbolicGainTest : public ::testing::Test {
                                                     3 /* length */);
     context_ = gain_->CreateDefaultContext();
     output_ = gain_->AllocateOutput(*context_);
-    input0_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
-    input1_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
+    input_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
   }
 
-  const symbolic::Expression kGain_{2.0};
+  double kGain_{2.0};
   unique_ptr<System<symbolic::Expression>> gain_;
   unique_ptr<Context<symbolic::Expression>> context_;
   unique_ptr<SystemOutput<symbolic::Expression>> output_;
-  unique_ptr<BasicVector<symbolic::Expression>> input0_;
-  unique_ptr<BasicVector<symbolic::Expression>> input1_;
+  unique_ptr<BasicVector<symbolic::Expression>> input_;
 };
 
 TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
@@ -109,10 +107,10 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
   Eigen::Matrix<symbolic::Expression, 3, 1> input_vector(
       drake::symbolic::Expression{1.0}, drake::symbolic::Expression{3.14},
       drake::symbolic::Expression{2.18});
-  input0_->get_mutable_value() << input_vector;
+  input_->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
-  context_->FixInputPort(0, move(input0_));
+  context_->FixInputPort(0, move(input_));
   gain_->CalcOutput(*context_, output_.get());
 
   // Checks that the number of output ports in the Gain system and the
@@ -123,9 +121,9 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
   EXPECT_NE(nullptr, output_vector);
   Eigen::Matrix<symbolic::Expression, 3, 1> expected{kGain_ * input_vector};
   EXPECT_EQ(expected, output_vector->get_value());
-  EXPECT_EQ(expected(0).Evaluate(), kGain_.Evaluate() * 1.0);
-  EXPECT_EQ(expected(1).Evaluate(), kGain_.Evaluate() * 3.14);
-  EXPECT_EQ(expected(2).Evaluate(), kGain_.Evaluate() * 2.18);
+  EXPECT_EQ(expected(0).Evaluate(), kGain_ * 1.0);
+  EXPECT_EQ(expected(1).Evaluate(), kGain_ * 3.14);
+  EXPECT_EQ(expected(2).Evaluate(), kGain_ * 2.18);
 }
 }  // namespace
 }  // namespace systems

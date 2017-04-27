@@ -1,3 +1,12 @@
+drake_add_cc_test(bicycle_car_test)
+target_link_libraries(bicycle_car_test drakeAutomotive)
+
+drake_add_cc_test(calc_smooth_acceleration_test)
+target_link_libraries(calc_smooth_acceleration_test drakeAutomotive)
+
+drake_add_cc_test(simple_powertrain_test)
+target_link_libraries(simple_powertrain_test drakeAutomotive)
+
 drake_add_cc_test(curve2_test)
 target_link_libraries(curve2_test drakeAutomotive)
 
@@ -10,19 +19,28 @@ target_link_libraries(simple_car_to_euler_floating_joint_test drakeAutomotive)
 drake_add_cc_test(trajectory_car_test)
 target_link_libraries(trajectory_car_test drakeAutomotive)
 
-drake_add_cc_test(linear_car_test)
-target_link_libraries(linear_car_test drakeAutomotive)
-
 drake_add_cc_test(idm_planner_test)
 target_link_libraries(idm_planner_test drakeAutomotive)
 
-drake_add_cc_test(single_lane_ego_and_agent_test)
-target_link_libraries(single_lane_ego_and_agent_test drakeAutomotive)
+drake_add_cc_test(monolane_onramp_merge_test)
+target_link_libraries(monolane_onramp_merge_test drakeAutomotive)
+
+drake_add_cc_test(pose_selector_test)
+target_link_libraries(pose_selector_test drakeAutomotive)
+
+drake_add_cc_test(pure_pursuit_test)
+target_link_libraries(pure_pursuit_test drakeAutomotive)
+
+drake_add_cc_test(pure_pursuit_controller_test)
+target_link_libraries(pure_pursuit_controller_test drakeAutomotive)
+
+drake_add_cc_test(idm_controller_test)
+target_link_libraries(idm_controller_test drakeAutomotive)
+
+drake_add_cc_test(road_path_test)
+target_link_libraries(road_path_test drakeAutomotive)
 
 if(lcm_FOUND)
-  drake_add_cc_test(simple_car_state_translator_test)
-  target_link_libraries(simple_car_state_translator_test drakeAutomotiveLcm)
-
-  drake_add_cc_test(automotive_simulator_test automotive_simulator_test.cc)
+  drake_add_cc_test(automotive_simulator_test)
   target_link_libraries(automotive_simulator_test drakeAutomotiveLcm)
 endif()

@@ -1,7 +1,8 @@
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
@@ -10,6 +11,10 @@ namespace {
 
 // This is a test fixture.
 class LcmtDrakeSignalUtilsTest : public ::testing::Test {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmtDrakeSignalUtilsTest)
+  LcmtDrakeSignalUtilsTest() = default;
+
  protected:
   void SetUp() override {
     message1_.dim = 2;

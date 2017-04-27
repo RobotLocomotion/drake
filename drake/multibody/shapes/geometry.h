@@ -21,6 +21,10 @@ typedef std::vector<Eigen::Vector3i> TrianglesVector;
 
 std::string ShapeToString(Shape ss);
 
+// TODO(SeanCurtis-TRI): Magic number here.  It also leads to issues where the
+// distance between two points (ostensibly represented with zero-radius spheres)
+// will differ by this minimum radius (because they're not truly zero radius).
+// https://github.com/RobotLocomotion/drake/issues/4555
 const double MIN_RADIUS = 1e-7;
 
 class Geometry {
@@ -36,6 +40,25 @@ class Geometry {
 
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  /**
+   * @returns `true` if this geometry can return faces.
+   */
+  virtual bool hasFaces() const {
+    // By default, arbitary geometry doesn't know how to provide faces.
+    return false;
+  }
+  /**
+   * Returns the faces making up this geometry as a vector of triangles.
+   * Each triangle contains three indices into the vertex list returned
+   * by the Geometry getPoints() method.
+   * @param[out] faces Returns a vector of triangles describing 
+   * this geometry.
+   */
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  virtual void getFaces(TrianglesVector* faces) const {
+    throw std::runtime_error("Error: getFaces() not implemented"
+      " for this geometry type.\n");
+  }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -84,13 +107,18 @@ class Box : public Geometry {
  public:
   explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
-  virtual Box* clone() const;
+  Box* clone() const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  void getPoints(Eigen::Matrix3Xd& points) const override;
+  bool hasFaces() const override {
+    return true;
+  }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  void getFaces(TrianglesVector* faces) const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
+  void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const override;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void getTerrainContactPoints(Eigen::Matrix3Xd& points) const override;
 
   /**
    * A toString method for this class.
@@ -142,16 +170,28 @@ class Capsule : public Geometry {
 
 class Mesh : public Geometry {
  public:
+  /** Specification of how the Mesh should process faces during parsing. */
+  enum class TriangulatePolicy {
+    kFailOnNonTri,    ///< Non-triangular faces cause an exception to be thrown.
+    kTry,             ///< The parser will attempt to triangulate non-triangular
+                      ///< faces, throwing an exception if the attempt fails.
+  };
+
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
   with BotVisualizer. **/
   Mesh(const std::string& uri, const std::string& resolved_filename);
   virtual ~Mesh() {}
-  virtual Mesh* clone() const;
+  Mesh* clone() const override;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  void getPoints(Eigen::Matrix3Xd& points) const override;
+  bool hasFaces() const override {
+    return true;
+  }
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  void getFaces(TrianglesVector* faces) const override;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const override;
 
   /**
    * A toString method for this class.
@@ -167,17 +207,51 @@ class Mesh : public Geometry {
   /** Loads triangle mesh from an obj file into the provided vectors of vertices
   and triangles.
 
+  This method can optionally attempt to triangulate the mesh as it is read.
+  This triangulation is conservative. Non-triangular faces are decomposed into
+  a set of *equivalent* triangles. It places certain requirements on the
+  mesh for the triangulation to be valid.  If these requirements are not met,
+  an exception is thrown.  These requirements are:
+     1. Non-triangular faces cannot contain a sequence of co-linear vertices.
+     2. Non-triangular faces must be close to planar; the decomposed triangles
+        normals can deviate by no more than 30 degrees from their edge-adjacent
+        neighbors.
+     3. Decomposed triangles must have an area larger than 10⁻¹⁰ m².
+
+  NOTE: The triangulation method is simple.  Even if these requirements are met,
+  triangulation might fail.
+
   @param[out] vertices Vector of 3D vertices in the mesh.
   @param[out] triangles Vector of indices for each triangle in the mesh.
   The i-th entry of @p triangles holds a 3D vector of integer indices into
   @p vertices corresponding to the vertices forming the i-th triangle.
+  @param[in] triangulate  Specifies the triangulation policy.
 
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
   **/
-  void LoadObjFile(PointsVector* vertices, TrianglesVector* triangles) const;
+  void LoadObjFile(
+      PointsVector* vertices, TrianglesVector* triangles,
+      TriangulatePolicy triangulate = TriangulatePolicy::kFailOnNonTri) const;
 
  private:
+  // Lower limit on generated triangle area (as documented).
+  static constexpr double kMinArea = 1e-10;
+
+  // cosine(30°) -- used to determine if normal deviation of decomposed
+  // triangles lies within the documented threshold.
+  static const double kCosThreshold;
+
+  // Given a list of vertex values and three indices into that set, computes a
+  // unit-length normal vector to the triangle defined by the vertices.
+  // Returns false if the indices are invalid, the points are co-linear, or
+  // the triangle is "too small".  "Small" is an arbitrary value. By design
+  // the triangulation process behaves conservatively. A user-defined mesh can
+  // include arbitrarily small triangles, but the triangulation process will
+  // not.
+  static bool GetNormal(const PointsVector& vertices, int i0, int i1, int i2,
+                        Eigen::Vector3d* normal, double minArea);
+
   // This method finds a juxtaposed obj file from the `resolved_filename_`
   // member. If unable to resolve an obj file it throws an exception.
   // If `resolved_filename_` already is an obj file then it returns

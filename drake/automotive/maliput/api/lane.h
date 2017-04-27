@@ -1,9 +1,10 @@
 #pragma once
 
-#include "drake/automotive/maliput/api/lane_data.h"
-
 #include <memory>
 #include <string>
+
+#include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -31,7 +32,9 @@ struct LaneId {
 /// parameterizations (e.g., each Lane has its own reference curve).
 class Lane {
  public:
-  virtual ~Lane() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)
+
+  virtual ~Lane() = default;
 
   /// Returns the persistent identifier.
   const LaneId id() const { return do_id(); }
@@ -86,14 +89,22 @@ class Lane {
     return DoToGeoPosition(lane_pos);
   }
 
-  /// Calculates position in the LANE-space domain of the Lane which maps to
-  /// the GEO-space point closest (per Cartesian metric) to the specified
-  /// @p geo_pos.
-  // TODO(maddog@tri.global)  UNDER CONSTRUCTION
-  // TODO(maddog@tri.global)  Return the minimal-distance, too?
-  // TODO(maddog@tri.global)  Select between lane_bounds and driveable_bounds?
-  LanePosition ToLanePosition(const GeoPosition& geo_pos) const {
-    return DoToLanePosition(geo_pos);
+  /// Determines the LanePosition corresponding to GeoPosition @p geo_position.
+  ///
+  /// The return value is the LanePosition of the point within the Lane's
+  /// driveable-bounds which is closest to @p geo_position (as measured by
+  /// the Cartesian metric in the world frame).  If @p nearest_point is
+  /// non-null, then it will be populated with the GeoPosition of that
+  /// nearest point.  If @p distance is non-null, then it will be populated
+  /// with the Cartesian distance from @p geo_position to that nearest point.
+  ///
+  /// This method guarantees that its result satisfies the condition that
+  /// `ToGeoPosition(result)` is within `linear_tolerance()` of
+  /// `*nearest_position`.
+  LanePosition ToLanePosition(const GeoPosition& geo_position,
+                              GeoPosition* nearest_point,
+                              double* distance) const {
+    return DoToLanePosition(geo_position, nearest_point, distance);
   }
 
   // TODO(maddog@tri.global) Method to convert LanePosition to that of
@@ -103,14 +114,14 @@ class Lane {
   //           LanePosition ToOtherLane(const LanePosition& in_this_lane,
   //                                    const Lane* other_lane) const;
 
-  /// Return the rotation which expresses the orientation of the
+  /// Returns the rotation which expresses the orientation of the
   /// LANE-space basis at @p lane_pos with regards to the (single, global)
   /// GEO-space basis.
   Rotation GetOrientation(const LanePosition& lane_pos) const {
     return DoGetOrientation(lane_pos);
   }
 
-  /// Compute derivatives of LanePosition given a velocity vector @p velocity.
+  /// Computes derivatives of LanePosition given a velocity vector @p velocity.
   /// @p velocity is a isometric velocity vector oriented in the LANE-space
   /// reference frame at @p position.
   ///
@@ -155,15 +166,8 @@ class Lane {
     return DoGetDefaultBranch(which_end);
   }
 
-  /// @name Deleted Copy/Move Operations
-  /// Lane is neither copyable nor moveable.
-  ///@{
-  explicit Lane(const Lane&) = delete;
-  Lane& operator=(const Lane&) = delete;
-  ///@}
-
  protected:
-  Lane() {}
+  Lane() = default;
 
  private:
   /// @name NVI implementations of the public methods.
@@ -188,7 +192,9 @@ class Lane {
 
   virtual GeoPosition DoToGeoPosition(const LanePosition& lane_pos) const = 0;
 
-  virtual LanePosition DoToLanePosition(const GeoPosition& geo_pos) const = 0;
+  virtual LanePosition DoToLanePosition(const GeoPosition& geo_position,
+                                        GeoPosition* nearest_point,
+                                        double* distance) const = 0;
 
   virtual Rotation DoGetOrientation(const LanePosition& lane_pos) const = 0;
 

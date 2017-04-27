@@ -18,6 +18,8 @@ then
   exit 1
 fi
 
+workspace=$(dirname "$drake")
+
 mkdir -p $drake/lcmtypes
 mkdir -p $mydir/gen
 
@@ -39,30 +41,32 @@ gen_lcm_and_vector () {
     title="$1"
     snake=$(echo "$title" | tr " " _)
     shift
-    $drake/tools/lcm_vector_gen.py \
+    bazel run //drake/tools:lcm_vector_gen -- \
         --lcmtype-dir=$drake/lcmtypes \
         --cxx-dir=$mydir/gen \
         --namespace="$namespace" \
+        --workspace="$workspace" \
         --title="$title" "$@"
     $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
 }
 
 # Call the code generator to produce an LCM message, a translator, and
-# a Drake BasicVector based on specifications contained within a YAML file.
+# a Drake BasicVector based on specifications contained in a NamedVector proto.
 #
 # @param1 title -- used to create class/type names
-# @param2 yaml_file --- the YAML specification of vector fields
-gen_lcm_and_vector_from_yaml () {
+# @param2 named_vector_file --- the file containing a text NamedVector proto.
+gen_lcm_and_vector_from_proto() {
     title="$1"
-    yaml_file="$2"
+    named_vector_file="$2"
     snake=$(echo "$title" | tr " " _)
     shift
-    $drake/tools/lcm_vector_gen.py \
+    bazel run //drake/tools:lcm_vector_gen -- \
         --lcmtype-dir=$drake/lcmtypes \
         --cxx-dir=$mydir/gen \
         --namespace="$namespace" \
         --title="$title"  \
-        --yaml_file="$yaml_file"
+        --workspace="$workspace" \
+        --named_vector_file="$named_vector_file"
     $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
 }
 
@@ -74,26 +78,28 @@ gen_vector () {
     title="$1"
     snake=$(echo "$title" | tr " " _)
     shift
-    $drake/tools/lcm_vector_gen.py \
+    bazel run //drake/tools:lcm_vector_gen -- \
         --cxx-dir=$mydir/gen \
         --namespace="$namespace" \
+        --workspace="$workspace" \
         --title="$title" "$@"
     $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
 }
 
-# Call the code generator to produce just a Drake BasicVector based on a YAML
-# spec.
+# Call the code generator to produce just a Drake BasicVector based on a
+# NamedVector proto spec.
 #
 # @param1 title -- used to create class/type names
-# @param2 yaml_file --- the YAML specification of vector fields
-gen_vector_yaml () {
+# @param2 named_vector_file --- the NamedVector specification of vector fields
+gen_vector_proto () {
     title="$1"
-    yaml_file="$2"
+    named_vector_file="$2"
     snake=$(echo "$title" | tr " " _)
-    $drake/tools/lcm_vector_gen.py \
+    bazel run //drake/tools:lcm_vector_gen -- \
         --cxx-dir=$mydir/gen \
         --namespace="$namespace" \
+        --workspace="$workspace" \
         --title="$title" \
-        --yaml_file="$yaml_file"
+        --named_vector_file="$named_vector_file"
     $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
 }

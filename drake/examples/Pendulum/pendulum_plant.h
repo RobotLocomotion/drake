@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/symbolic_formula.h"
 #include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -28,14 +29,11 @@ class PendulumPlant : public systems::LeafSystem<T> {
   using MyContinuousState = systems::ContinuousState<T>;
   using MyOutput = systems::SystemOutput<T>;
 
-  /// The input force to this system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
-
   /// Returns the input port to the externally applied force.
-  const systems::SystemPortDescriptor<T>& get_tau_port() const;
+  const systems::InputPortDescriptor<T>& get_tau_port() const;
 
   /// Returns the port to output state.
-  const systems::SystemPortDescriptor<T>& get_output_port() const;
+  const systems::OutputPortDescriptor<T>& get_output_port() const;
 
   void set_theta(MyContext* context, const T& theta) const {
     get_mutable_state(context)->set_theta(theta);
@@ -60,15 +58,9 @@ class PendulumPlant : public systems::LeafSystem<T> {
   PendulumPlant& operator=(PendulumPlant&& other) = delete;
 
  protected:
-  // LeafSystem<T> override.
-  std::unique_ptr<MyContinuousState>
-  AllocateContinuousState() const override;
-
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
-
   // System<T> override.
   PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
+  PendulumPlant<symbolic::Expression>* DoToSymbolic() const override;
 
  private:
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;

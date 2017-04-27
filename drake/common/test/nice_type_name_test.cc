@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using std::string;
 
@@ -21,7 +21,13 @@ struct ForTesting {
   enum MyEnum { One, Two, Three };
   enum class MyEnumClass { Four, Five, Six };
 };
-}
+
+class Base {
+ public:
+  virtual ~Base() = default;
+};
+class Derived : public Base {};
+}  // namespace nice_type_name_test
 
 namespace {
 // Can't test much of NiceTypeName::Demangle because its behavior is compiler-
@@ -127,6 +133,41 @@ GTEST_TEST(NiceTypeNameTest, Enum) {
   EXPECT_EQ(NiceTypeName::Get<decltype(
                 nice_type_name_test::ForTesting::MyEnumClass::Four)>(),
             "drake::nice_type_name_test::ForTesting::MyEnumClass");
+}
+
+// Test the expression-accepting form of NiceTypeName::Get().
+GTEST_TEST(NiceTypeNameTest, Expressions) {
+  using nice_type_name_test::Derived;
+  using nice_type_name_test::Base;
+  const int i = 10;
+  const double d = 3.14;
+  EXPECT_EQ(NiceTypeName::Get(i), "int");
+  EXPECT_EQ(NiceTypeName::Get(d), "double");
+  EXPECT_EQ(NiceTypeName::Get(i * d), "double");
+
+  Derived derived;
+  Base* base = &derived;
+
+  // These both have the same name despite different declarations because
+  // they resolve to the same concrete type.
+  EXPECT_EQ(NiceTypeName::Get(derived), "drake::nice_type_name_test::Derived");
+  EXPECT_EQ(NiceTypeName::Get(*base), "drake::nice_type_name_test::Derived");
+
+  // OTOH, these differ because we get only the declared types.
+  EXPECT_NE(NiceTypeName::Get<decltype(*base)>(),
+            NiceTypeName::Get<decltype(derived)>());
+
+  auto derived_uptr = std::make_unique<Derived>();
+  auto base_uptr = std::unique_ptr<Base>(new Derived());
+  EXPECT_EQ(NiceTypeName::Get(*derived_uptr),
+            "drake::nice_type_name_test::Derived");
+  EXPECT_EQ(NiceTypeName::Get(*base_uptr),
+            "drake::nice_type_name_test::Derived");
+
+  // unique_ptr is not polymorphic (unlike its contents) so its declared type
+  // and runtime type are the same.
+  EXPECT_EQ(NiceTypeName::Get<decltype(base_uptr)>(),
+            NiceTypeName::Get(base_uptr));
 }
 
 }  // namespace

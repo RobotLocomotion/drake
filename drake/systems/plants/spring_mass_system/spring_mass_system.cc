@@ -1,5 +1,7 @@
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
+#include <utility>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -71,11 +73,14 @@ SpringMassSystem<T>::SpringMassSystem(const T& spring_constant_N_per_m,
   if (system_is_forced_) this->DeclareInputPort(kVectorValued, 1);
 
   // Declares output port for q, qdot, Energy.
-  this->DeclareOutputPort(kVectorValued, 3);
+  this->DeclareVectorOutputPort(SpringMassStateVector<T>());
+
+  this->DeclareContinuousState(SpringMassStateVector<T>(),
+      1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
+const InputPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
   if (system_is_forced_) {
     return this->get_input_port(0);
   } else {
@@ -86,7 +91,7 @@ const SystemPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
+const OutputPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 
@@ -122,27 +127,6 @@ template <typename T>
 T SpringMassSystem<T>::DoCalcNonConservativePower(const MyContext&) const {
   const T& power_nc = 0.;
   return power_nc;
-}
-
-template <typename T>
-std::unique_ptr<SystemOutput<T>> SpringMassSystem<T>::AllocateOutput(
-    const Context<T>& context) const {
-  std::unique_ptr<LeafSystemOutput<T>> output(
-      new LeafSystemOutput<T>);
-  {
-    std::unique_ptr<BasicVector<T>> data(new SpringMassStateVector<T>());
-    std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
-    output->get_mutable_ports()->push_back(std::move(port));
-  }
-  return std::unique_ptr<SystemOutput<T>>(output.release());
-}
-
-template <typename T>
-std::unique_ptr<ContinuousState<T>>
-SpringMassSystem<T>::AllocateContinuousState() const {
-  return std::make_unique<ContinuousState<T>>(
-      std::make_unique<SpringMassStateVector<T>>(),
-      1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
 
 // Assign the state to the output.

@@ -1,5 +1,7 @@
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 
+#include <utility>
+
 #include "drake/common/drake_path.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 

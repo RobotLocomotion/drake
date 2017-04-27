@@ -5,8 +5,7 @@
 #include <iostream>
 
 #include <Eigen/Dense>
-
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/axis_angle.h"
@@ -587,6 +586,10 @@ TEST_F(RotationConversionTest, RPYAxis) {
   }
 }
 
+// Verifies the correctness of the method drake::math::rpy2quat() by comparing
+// its output to a quaternion obtained using the composition of
+// Eigen::AngleAxisd transformations in the method
+// BodyZYXAnglesToEigenQuaternion() local in this file.
 TEST_F(RotationConversionTest, RPYQuat) {
   // Compute the quaternion representation using Eigen's geometry model,
   // compare the result with rpy2quat
@@ -601,6 +604,23 @@ TEST_F(RotationConversionTest, RPYQuat) {
     EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
     EXPECT_TRUE(
         AreRollPitchYawForSameOrientation(rpyi, rotmat2rpy(rpy2rotmat(rpyi))));
+  }
+}
+
+// Verifies the correctness of the method
+// drake::math::RollPitchYawToQuaternion() by comparing
+// its output to a quaternion obtained using the composition of
+// Eigen::AngleAxisd transformations in the method
+// BodyZYXAnglesToEigenQuaternion() local in this file.
+TEST_F(RotationConversionTest, RollPitchYawToQuaternion) {
+  // Compute the quaternion representation using Eigen's geometry model,
+  // compare the result with rpy2quat
+  for (const auto& rpyi : rpy_test_cases_) {
+    Vector3d bodyZYX_angles(rpyi(2), rpyi(1), rpyi(0));
+    auto quat_expected = BodyZYXAnglesToEigenQuaternion(bodyZYX_angles);
+    auto quat = RollPitchYawToQuaternion(rpyi);
+    EXPECT_TRUE(
+        quat.isApprox(quat_expected, Eigen::NumTraits<double>::epsilon()));
   }
 }
 

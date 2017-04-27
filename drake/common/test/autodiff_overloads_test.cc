@@ -3,9 +3,8 @@
 #include <type_traits>
 
 #include <Eigen/Dense>
+#include <gtest/gtest.h>
 #include <unsupported/Eigen/AutoDiff>
-
-#include "gtest/gtest.h"
 
 #include "drake/common/cond.h"
 #include "drake/common/eigen_matrix_compare.h"
@@ -19,7 +18,7 @@ namespace drake {
 namespace common {
 namespace {
 
-// Test ExtractDoubleOrThrow on autodiff.
+// Tests ExtractDoubleOrThrow on autodiff.
 GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
   // On autodiff.
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
@@ -31,7 +30,7 @@ GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
   EXPECT_EQ(ExtractDoubleOrThrow(y), 1.0);
 }
 
-// Tests correctness of isinf
+// Tests correctness of isinf.
 GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 1.0 / 0.0;
@@ -40,7 +39,7 @@ GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   EXPECT_EQ(isinf(x), false);
 }
 
-// Tests correctness of isnan
+// Tests correctness of isnan.
 GTEST_TEST(AutodiffOverloadsTest, IsNaN) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 0.0 / 0.0;
@@ -322,6 +321,26 @@ GTEST_TEST(AutodiffOverloadsTest, CheckEigenLiteral) {
   static_assert(std::is_same<Literald, double>::value &&
                     std::is_same<Literalf, float>::value,
                 "Eigen::NumTraits<T>::Literal didn't behave as expected.");
+}
+
+GTEST_TEST(AutodiffOverloadsTest, DummyValueX) {
+  using T = Eigen::AutoDiffScalar<Eigen::VectorXd>;
+  const T dummy_xd = dummy_value<T>::get();
+  const double value = dummy_xd.value();
+  EXPECT_TRUE(std::isnan(value));
+  const Eigen::VectorXd derivatives = dummy_xd.derivatives();
+  EXPECT_EQ(derivatives.rows(), 0);
+}
+
+GTEST_TEST(AutodiffOverloadsTest, DummyValue2) {
+  using T = Eigen::AutoDiffScalar<Eigen::Vector2d>;
+  const T dummy_2d = dummy_value<T>::get();
+  const double value = dummy_2d.value();
+  EXPECT_TRUE(std::isnan(value));
+  const Eigen::Vector2d derivatives = dummy_2d.derivatives();
+  EXPECT_EQ(derivatives.rows(), 2);
+  EXPECT_TRUE(std::isnan(derivatives(0)));
+  EXPECT_TRUE(std::isnan(derivatives(1)));
 }
 
 }  // namespace

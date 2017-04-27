@@ -1,9 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+load("//tools:cpplint.bzl", "cpplint")
+load("//tools:drake.bzl", "drake_cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+drake_cc_library(
     name = "api",
     srcs = [
         "road_geometry.cc",
@@ -16,8 +19,9 @@ cc_library(
         "road_geometry.h",
         "segment.h",
     ],
-    linkstatic = 1,
     deps = [
         "//drake/common",
     ],
 )
+
+cpplint()

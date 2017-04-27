@@ -3,10 +3,10 @@
 #include <cstdint>
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/siso_vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -17,14 +17,16 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
-/// They are already available to link against in libdrakeSystemFramework.
+/// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
-
 template <typename T>
-class Integrator : public LeafSystem<T> {
+class Integrator : public SisoVectorSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator)
+
   /// Constructs an %Integrator system.
   /// @param size number of elements in the signal to be processed.
   explicit Integrator(int size);
@@ -35,9 +37,6 @@ class Integrator : public LeafSystem<T> {
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
-  // System<T> override.
-  bool has_any_direct_feedthrough() const override;
-
   // Returns an Integrator<AutoDiffXd> with the same dimensions as this
   // Integrator.
   std::unique_ptr<Integrator<AutoDiffXd>> ToAutoDiffXd() const {
@@ -45,19 +44,27 @@ class Integrator : public LeafSystem<T> {
   }
 
  protected:
-  // System<T> overrides.
-
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-  void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const override;
-
-  // Returns an Integrator<AutoDiffXd> with the same dimensions as this
-  // Integrator.
+  // System<T> override.  Returns an Integrator<AutoDiffXd> with the same
+  // dimensions as this Integrator.
   Integrator<AutoDiffXd>* DoToAutoDiffXd() const override;
 
-  // LeafSystem<T> override
-  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
+  // System<T> override.  Returns an Integrator<symbolic::Expression> with the
+  // same dimensions as this Integrator.
+  Integrator<symbolic::Expression>* DoToSymbolic() const override;
+
+  // SisoVectorSystem<T> override.
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* output) const override;
+
+  // SisoVectorSystem<T> override.
+  void DoCalcVectorTimeDerivatives(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* derivatives) const override;
 };
 
 }  // namespace systems

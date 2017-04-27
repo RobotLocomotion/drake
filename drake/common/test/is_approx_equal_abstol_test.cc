@@ -1,7 +1,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -57,8 +57,46 @@ GTEST_TEST(IsApproxEqualMatrixTest, BasicTest) {
   EXPECT_FALSE(is_approx_equal_abstol(nan2, ones2, tolerance));
 }
 
+GTEST_TEST(IsApproxEqualAbstolPermutationTest, PermutationTest) {
+  MatrixXd test(2, 3);
+  // clang-format off
+  test << 1, 2, 3,
+          4, 5, 6;
+  // clang-format on
+
+  const double tol = 1e-8;
+  EXPECT_TRUE(IsApproxEqualAbsTolWithPermutedColumns(test, test, tol));
+  EXPECT_FALSE(
+      IsApproxEqualAbsTolWithPermutedColumns(test, test.leftCols<2>(), tol));
+  EXPECT_FALSE(
+      IsApproxEqualAbsTolWithPermutedColumns(test.leftCols<2>(), test, tol));
+
+  MatrixXd test2(2, 3);
+
+  // Switch cols 2 and 3.
+  // clang-format off
+  test2 << 1, 3, 2,
+           4, 6, 5;
+  // clang-format on
+  EXPECT_TRUE(IsApproxEqualAbsTolWithPermutedColumns(test, test2, tol));
+
+  // All columns in test2 are in test1, but one is repeated.
+  // clang-format off
+  test2 << 1, 1, 2,
+           4, 4, 5;
+  // clang-format on
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test, test2, tol));
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test2, test, tol));
+
+  // Matching but with one duplicated columns.
+  test2.resize(2, 4);
+  // clang-format off
+  test2 << 1, 1, 2, 3,
+           4, 4, 5, 6;
+  // clang-format on
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test, test2, tol));
+  EXPECT_FALSE(IsApproxEqualAbsTolWithPermutedColumns(test2, test, tol));
+}
 
 }  // namespace
 }  // namespace drake
-
-

@@ -16,6 +16,9 @@ target_link_libraries(demultiplexer_test drakeSystemPrimitives)
 drake_add_cc_test(gain_test)
 target_link_libraries(gain_test drakeSystemPrimitives)
 
+drake_add_cc_test(first_order_low_pass_filter_test)
+target_link_libraries(first_order_low_pass_filter_test drakeSystemPrimitives)
+
 drake_add_cc_test(gain_scalartype_test)
 target_link_libraries(gain_scalartype_test drakeSystemPrimitives)
 
@@ -39,6 +42,9 @@ target_link_libraries(pass_through_scalartype_test drakeSystemPrimitives)
 
 drake_add_cc_test(random_source_test)
 target_link_libraries(random_source_test drakeSystemPrimitives drakeSystemAnalysis)
+
+drake_add_cc_test(saturation_test)
+target_link_libraries(saturation_test drakeSystemPrimitives)
 
 drake_add_cc_test(signal_logger_test)
 target_link_libraries(signal_logger_test drakeSystemPrimitives drakeSystemAnalysis)

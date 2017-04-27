@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <random>
 #include <string>
 
@@ -9,6 +10,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
@@ -102,17 +104,22 @@ class DrakeJoint {
   virtual ~DrakeJoint();
 
   /**
-   * Returns the transform `T_PF` giving the pose of the joint's "fixed" frame
+   * Returns a clone of this DrakeJoint.
+   */
+  std::unique_ptr<DrakeJoint> Clone() const;
+
+  /**
+   * Returns the transform `X_PF` giving the pose of the joint's "fixed" frame
    * `F` in its parent body frame `P`. Frame `F` is the joint frame that is
-   * fixed to the parent body; thus `T_PF` is not configuration dependent.
+   * fixed to the parent body; thus `X_PF` is not configuration dependent.
    *
-   * To clarify the sense of the returned transform `T_PF`, consider the
+   * To clarify the sense of the returned transform `X_PF`, consider the
    * location of a point `Q` somewhere in space. Let `p_PQ` be point `Q`
    * measured and expressed in frame `P` and `p_FQ` be point `Q` measured and
    * expressed in frame `F`. Then `p_PQ` is given by:
    *
    * <pre>
-   * p_PQ = T_PF * p_FQ
+   * p_PQ = X_PF * p_FQ
    * </pre>
    */
   const Eigen::Isometry3d& get_transform_to_parent_body() const;
@@ -149,47 +156,33 @@ class DrakeJoint {
   virtual std::string get_velocity_name(int index) const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_transform_to_parent_body().")
-#endif
   const Eigen::Isometry3d& getTransformToParentBody() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_positions().")
-#endif
   int getNumPositions() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_velocities().")
-#endif
   int getNumVelocities() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_name().")
-#endif
   const std::string& getName() const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_position_name().")
-#endif
   virtual std::string getPositionName(int index) const = 0;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use get_velocity_name().")
-#endif
   virtual std::string getVelocityName(int index) const;
 
   virtual bool is_floating() const { return false; }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-#ifndef SWIG
   DRAKE_DEPRECATED("Please use is_floating().")
-#endif
   virtual bool isFloating() const { return is_floating(); }
 
   /**
@@ -227,8 +220,19 @@ class DrakeJoint {
   Eigen::VectorXd joint_limit_stiffness_;
   Eigen::VectorXd joint_limit_dissipation_;
 
+ protected:
+  /// Allows descendent classes to perform the actual clone operation.
+  virtual std::unique_ptr<DrakeJoint> DoClone() const = 0;
+
+  /// Initializes the private member variables within the provided `clone`.
+  void InitializeClone(DrakeJoint* clone) const;
+
+  /// Initializes any additional members within @p clone that could not be set
+  /// during construction.
+  virtual void DoInitializeClone(DrakeJoint* clone) const = 0;
+
  private:
   const Eigen::Isometry3d transform_to_parent_body;
-  const int num_positions;
-  const int num_velocities;
+  const int num_positions{};
+  const int num_velocities{};
 };

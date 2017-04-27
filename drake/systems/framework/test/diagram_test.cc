@@ -1,13 +1,14 @@
 #include "drake/systems/framework/diagram.h"
 
 #include <Eigen/Dense>
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/gain.h"
@@ -46,16 +47,16 @@ class ExampleDiagram : public Diagram<double> {
     builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
     builder.Connect(adder0_->get_output_port(),
-                    integrator0_->get_input_port(0));
-    builder.Connect(integrator0_->get_output_port(0),
-                    integrator1_->get_input_port(0));
+                    integrator0_->get_input_port());
+    builder.Connect(integrator0_->get_output_port(),
+                    integrator1_->get_input_port());
 
     builder.ExportInput(adder0_->get_input_port(0));
     builder.ExportInput(adder0_->get_input_port(1));
     builder.ExportInput(adder1_->get_input_port(1));
     builder.ExportOutput(adder1_->get_output_port());
     builder.ExportOutput(adder2_->get_output_port());
-    builder.ExportOutput(integrator1_->get_output_port(0));
+    builder.ExportOutput(integrator1_->get_output_port());
 
     builder.BuildInto(this);
   }
@@ -112,15 +113,18 @@ class DiagramTest : public ::testing::Test {
   // Asserts that output_ is what it should be for the default values
   // of input0_, input1_, and input2_.
   void ExpectDefaultOutputs() {
-    Eigen::Vector3d expected_output0;
-    expected_output0 << 1 + 8 + 64, 2 + 16 + 128, 4 + 32 + 256;  // B
+    Eigen::Vector3d expected_output0(
+        1 + 8 + 64,
+        2 + 16 + 128,
+        4 + 32 + 256);  // B
 
-    Eigen::Vector3d expected_output1;
-    expected_output1 << 1 + 8, 2 + 16, 4 + 32;  // A
+    Eigen::Vector3d expected_output1(
+        1 + 8,
+        2 + 16,
+        4 + 32);  // A
     expected_output1 += expected_output0;       // A + B
 
-    Eigen::Vector3d expected_output2;
-    expected_output2 << 81, 243, 729;  // state of integrator1_
+    Eigen::Vector3d expected_output2(81, 243, 729);  // state of integrator1_
 
     const BasicVector<double>* output0 = output_->get_vector_data(0);
     ASSERT_TRUE(output0 != nullptr);
@@ -166,28 +170,70 @@ class DiagramTest : public ::testing::Test {
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
   ASSERT_EQ(kSize, diagram_->get_num_input_ports());
-  for (const auto& descriptor : diagram_->get_input_ports()) {
+  for (int i = 0; i < kSize; ++i) {
+    const auto& descriptor = diagram_->get_input_port(i);
     EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kInputPort, descriptor.get_face());
-    EXPECT_EQ(kSize, descriptor.get_size());
+    EXPECT_EQ(kSize, descriptor.size());
   }
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
-  for (const auto& descriptor : diagram_->get_output_ports()) {
+  for (int i = 0; i < kSize; ++i) {
+    const auto& descriptor = diagram_->get_output_port(i);
     EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kOutputPort, descriptor.get_face());
-    EXPECT_EQ(kSize, descriptor.get_size());
+    EXPECT_EQ(kSize, descriptor.size());
   }
 
   // The diagram has direct feedthrough.
-  EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
+  EXPECT_TRUE(diagram_->HasAnyDirectFeedthrough());
+  // Specifically, outputs 0 and 1 have direct feedthrough, but not output 2.
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(0));
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(1));
+  EXPECT_FALSE(diagram_->HasDirectFeedthrough(2));
+  // Specifically, outputs 0 and 1 have direct feedthrough from all inputs.
+  for (int i = 0; i < kSize; ++i) {
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 0));
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 1));
+    EXPECT_FALSE(diagram_->HasDirectFeedthrough(i, 2));
+  }
 }
 
 TEST_F(DiagramTest, Path) {
   const std::string path = adder0()->GetPath();
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
+}
+
+TEST_F(DiagramTest, Graphviz) {
+  const std::string id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_.get()));
+  const std::string dot = diagram_->GetGraphvizString();
+  // Check that the Diagram is labeled with its name.
+  EXPECT_NE(std::string::npos, dot.find(
+      "label=\"Unicode Snowman's Favorite Diagram!!1!☃!\";")) << dot;
+  // Check that input ports are declared in blue, and output ports in green.
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_u1[color=blue, label=\"u1\"")) << dot;
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_y2[color=green, label=\"y2\"")) << dot;
+  // Check that subsystem records appear.
+  EXPECT_NE(std::string::npos, dot.find(
+      "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>y0}}\"]")) << dot;
+  // Check that internal edges appear.
+  const std::string adder1_id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_->adder1()));
+  const std::string adder2_id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_->adder2()));
+  // [Adder 1, output 0] -> [Adder 2, input 1]
+  EXPECT_NE(std::string::npos,
+            dot.find(adder1_id + ":y0 -> " + adder2_id + ":u1;")) << dot;
+  // Check that synthetic I/O edges appear: inputs in blue, outputs in green.
+  // [Diagram Input 2] -> [Adder 1, input 1]
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];")) << dot;
+  // [Adder 2, output 0] -> [Diagram Output 1]
+  EXPECT_NE(std::string::npos, dot.find(
+      adder2_id + ":y0 -> _" + id + "_y1 [color=green];")) << dot;
 }
 
 // Tests that both variants of GetMutableSubsystemState do what they say on
@@ -207,6 +253,7 @@ TEST_F(DiagramTest, GetMutableSubsystemState) {
   EXPECT_EQ(9, xc[1]);
   EXPECT_EQ(27, xc[2]);
 }
+
 // Tests that the diagram computes the correct sum.
 TEST_F(DiagramTest, CalcOutput) {
   AttachInputs();
@@ -243,6 +290,24 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   EXPECT_EQ(3, integrator1_xcdot->get_vector().GetAtIndex(0));
   EXPECT_EQ(9, integrator1_xcdot->get_vector().GetAtIndex(1));
   EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
+}
+
+// Tests the AllocateInput logic.
+TEST_F(DiagramTest, AllocateInputs) {
+  auto context = diagram_->CreateDefaultContext();
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_EQ(vec, nullptr);
+  }
+
+  diagram_->AllocateFreestandingInputs(context.get());
+
+  for (int port = 0; port < 3; port++) {
+    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
+    EXPECT_NE(vec, nullptr);
+    EXPECT_EQ(vec->size(), kSize);
+  }
 }
 
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
@@ -327,16 +392,20 @@ TEST_F(DiagramTest, Clone) {
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
 
-  Eigen::Vector3d expected_output0;
-  expected_output0 << 3 + 8 + 64, 6 + 16 + 128, 9 + 32 + 256;  // B
+  Eigen::Vector3d expected_output0(
+      3 + 8 + 64,
+      6 + 16 + 128,
+      9 + 32 + 256);  // B
   const BasicVector<double>* output0 = output_->get_vector_data(0);
   ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
-  Eigen::Vector3d expected_output1;
-  expected_output1 << 3 + 8, 6 + 16, 9 + 32;  // A
+  Eigen::Vector3d expected_output1(
+      3 + 8,
+      6 + 16,
+      9 + 32);  // A
   expected_output1 += expected_output0;       // A + B
   const BasicVector<double>* output1 = output_->get_vector_data(1);
   ASSERT_TRUE(output1 != nullptr);
@@ -430,6 +499,19 @@ class DiagramOfDiagramsTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
+TEST_F(DiagramOfDiagramsTest, Graphviz) {
+  const std::string dot = diagram_->GetGraphvizString();
+  // Check that both subdiagrams appear.
+  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram0\""));
+  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram1\""));
+  // Check that edges between the two subdiagrams exist.
+  const std::string id0 = std::to_string(
+      reinterpret_cast<int64_t>(subdiagram0_));
+  const std::string id1 = std::to_string(
+      reinterpret_cast<int64_t>(subdiagram1_));
+  EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
+}
+
 // Tests that a diagram composed of diagrams can be evaluated.
 TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   diagram_->CalcOutput(*context_, output_.get());
@@ -447,6 +529,21 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
 }
 
+TEST_F(DiagramOfDiagramsTest, DirectFeedthrough) {
+  // The diagram has direct feedthrough.
+  EXPECT_TRUE(diagram_->HasAnyDirectFeedthrough());
+  // Specifically, outputs 0 and 1 have direct feedthrough, but not output 2.
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(0));
+  EXPECT_TRUE(diagram_->HasDirectFeedthrough(1));
+  EXPECT_FALSE(diagram_->HasDirectFeedthrough(2));
+  // Specifically, outputs 0 and 1 have direct feedthrough from all inputs.
+  for (int i = 0; i < kSize; ++i) {
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 0));
+    EXPECT_TRUE(diagram_->HasDirectFeedthrough(i, 1));
+    EXPECT_FALSE(diagram_->HasDirectFeedthrough(i, 2));
+  }
+}
+
 // A Diagram that adds a constant to an input, and outputs the sum.
 class AddConstantDiagram : public Diagram<double> {
  public:
@@ -454,7 +551,9 @@ class AddConstantDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     constant_ = builder.AddSystem<ConstantVectorSource>(Vector1d{constant});
+    constant_->set_name("constant");
     adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+    adder_->set_name("adder");
 
     builder.Connect(constant_->get_output_port(), adder_->get_input_port(1));
     builder.ExportInput(adder_->get_input_port(0));
@@ -500,7 +599,6 @@ class PublishingSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context) const override {
-    CheckValidContext(context);
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
@@ -516,8 +614,10 @@ class PublishNumberDiagram : public Diagram<double> {
 
     constant_ =
         builder.AddSystem<ConstantVectorSource<double>>(Vector1d{constant});
+    constant_->set_name("constant");
     publisher_ =
         builder.AddSystem<PublishingSystem>([this](double v) { this->set(v); });
+    publisher_->set_name("publisher");
 
     builder.Connect(constant_->get_output_port(),
                     publisher_->get_input_port(0));
@@ -552,15 +652,19 @@ class FeedbackDiagram : public Diagram<double> {
 
     DiagramBuilder<double> integrator_builder;
     integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
-    integrator_builder.ExportInput(integrator_->get_input_port(0));
-    integrator_builder.ExportOutput(integrator_->get_output_port(0));
+    integrator_->set_name("integrator");
+    integrator_builder.ExportInput(integrator_->get_input_port());
+    integrator_builder.ExportOutput(integrator_->get_output_port());
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
+    integrator_diagram_->set_name("integrator_diagram");
 
     DiagramBuilder<double> gain_builder;
     gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
+    gain_->set_name("gain");
     gain_builder.ExportInput(gain_->get_input_port());
     gain_builder.ExportOutput(gain_->get_output_port());
     gain_diagram_ = builder.AddSystem(gain_builder.Build());
+    gain_diagram_->set_name("gain_diagram");
 
     builder.Connect(*integrator_diagram_, *gain_diagram_);
     builder.Connect(*gain_diagram_, *integrator_diagram_);
@@ -577,7 +681,7 @@ class FeedbackDiagram : public Diagram<double> {
 // Tests that since there are no outputs, there is no direct feedthrough.
 GTEST_TEST(FeedbackDiagramTest, HasDirectFeedthrough) {
   FeedbackDiagram diagram;
-  EXPECT_FALSE(diagram.has_any_direct_feedthrough());
+  EXPECT_FALSE(diagram.HasAnyDirectFeedthrough());
 }
 
 // Tests that a FeedbackDiagram's context can be deleted without accessing
@@ -598,6 +702,11 @@ class SecondOrderStateVector : public BasicVector<double> {
 
   void set_q(double q) { SetAtIndex(0, q); }
   void set_v(double v) { SetAtIndex(1, v); }
+
+ protected:
+  SecondOrderStateVector* DoClone() const override {
+    return new SecondOrderStateVector;
+  }
 };
 
 // A minimal system that has second-order state.
@@ -646,7 +755,9 @@ class SecondOrderStateDiagram : public Diagram<double> {
   SecondOrderStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     sys1_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys1_->set_name("sys1");
     sys2_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys2_->set_name("sys2");
     builder.ExportInput(sys1_->get_input_port(0));
     builder.ExportInput(sys2_->get_input_port(0));
     builder.BuildInto(this);
@@ -738,10 +849,13 @@ class DiscreteStateDiagram : public Diagram<double> {
   DiscreteStateDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
+    hold1_->set_name("hold1");
     hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
+    hold2_->set_name("hold2");
     publisher_ = builder.template AddSystem<TestPublishingSystem>();
-    builder.ExportInput(hold1_->get_input_port(0));
-    builder.ExportInput(hold2_->get_input_port(0));
+    publisher_->set_name("publisher");
+    builder.ExportInput(hold1_->get_input_port());
+    builder.ExportInput(hold2_->get_input_port());
     builder.BuildInto(this);
   }
 
@@ -807,7 +921,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
 
   // Allocate the discrete variables.
-  std::unique_ptr<DiscreteState<double>> updates =
+  std::unique_ptr<DiscreteValues<double>> updates =
       diagram_.AllocateDiscreteVariables();
 
   // Set the time to 8.5, so only hold2 updates.
@@ -864,6 +978,481 @@ TEST_F(DiscreteStateTest, Publish) {
   diagram_.Publish(*context_, actions.events[0]);
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
+}
+
+class SystemWithAbstractState : public LeafSystem<double> {
+ public:
+  SystemWithAbstractState(int id, double update_period) : id_(id) {
+    DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+  }
+
+  ~SystemWithAbstractState() override {}
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
+    std::vector<std::unique_ptr<AbstractValue>> values;
+    values.push_back({PackValue<double>(id_)});
+    return std::make_unique<AbstractValues>(std::move(values));
+  }
+
+  // Abstract state is set to time + id.
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                State<double>* state) const override {
+    double& state_num = state->get_mutable_abstract_state()
+                            ->get_mutable_value(0)
+                            .GetMutableValue<double>();
+    state_num = id_ + context.get_time();
+  }
+
+  int get_id() const { return id_; }
+
+ private:
+  int id_{0};
+};
+
+class AbstractStateDiagram : public Diagram<double> {
+ public:
+  AbstractStateDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    sys0_ = builder.template AddSystem<SystemWithAbstractState>(0, 2.);
+    sys0_->set_name("sys0");
+    sys1_ = builder.template AddSystem<SystemWithAbstractState>(1, 3.);
+    sys1_->set_name("sys1");
+    builder.BuildInto(this);
+  }
+
+  SystemWithAbstractState* get_mutable_sys0() { return sys0_; }
+  SystemWithAbstractState* get_mutable_sys1() { return sys1_; }
+
+ private:
+  SystemWithAbstractState* sys0_{nullptr};
+  SystemWithAbstractState* sys1_{nullptr};
+};
+
+class AbstractStateDiagramTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    context_ = diagram_.CreateDefaultContext();
+  }
+
+  double get_sys0_abstract_data_as_double() {
+    const Context<double>& sys_context =
+        diagram_.GetSubsystemContext(*context_, diagram_.get_mutable_sys0());
+    return sys_context.get_abstract_state<double>(0);
+  }
+
+  double get_sys1_abstract_data_as_double() {
+    const Context<double>& sys_context =
+        diagram_.GetSubsystemContext(*context_, diagram_.get_mutable_sys1());
+    return sys_context.get_abstract_state<double>(0);
+  }
+
+  AbstractStateDiagram diagram_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
+  double time = 1;
+  context_->set_time(time);
+
+  // The abstract data should be initialized to their ids.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // First action time should be 2 sec, and only sys0 will be updating.
+  systems::UpdateActions<double> update_actions;
+  diagram_.CalcNextUpdateTime(*context_, &update_actions);
+  EXPECT_EQ(update_actions.time, 2);
+  EXPECT_EQ(update_actions.events.size(), 1u);
+  EXPECT_EQ(update_actions.events.front().action,
+      DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction);
+
+  // Creates a temp state and does unrestricted updates.
+  std::unique_ptr<State<double>> x_buf = context_->CloneState();
+  diagram_.CalcUnrestrictedUpdate(*context_, update_actions.events.front(),
+                                  x_buf.get());
+
+  // The abstract data in the current context should be the same as before.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // Swaps in the new state, and the abstract data for sys0 should be updated.
+  context_->get_mutable_state()->CopyFrom(*x_buf);
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // Sets time to 5.5, both system should be updating at 6 sec.
+  time = 5.5;
+  context_->set_time(time);
+  diagram_.CalcNextUpdateTime(*context_, &update_actions);
+  EXPECT_EQ(update_actions.time, 6);
+  // One action to update all subsystems' state.
+  EXPECT_EQ(update_actions.events.size(), 1u);
+
+  diagram_.CalcUnrestrictedUpdate(*context_, update_actions.events.front(),
+                                  x_buf.get());
+  // Both sys0 and sys1's abstract data should be updated.
+  context_->get_mutable_state()->CopyFrom(*x_buf);
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
+}
+
+// Test diagram. Top level diagram (big_diagram) has 3 components:
+// diagram0, int2, diagram1, where diagram0 has int0 and int1, and
+// diagram1 has int3.
+class NestedDiagramContextTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    DiagramBuilder<double> big_diagram_builder;
+    integrator2_ = big_diagram_builder.AddSystem<Integrator<double>>(1);
+    integrator2_->set_name("int2");
+
+    {
+      DiagramBuilder<double> builder;
+      integrator0_ = builder.AddSystem<Integrator<double>>(1);
+      integrator0_->set_name("int0");
+      integrator1_ = builder.AddSystem<Integrator<double>>(1);
+      integrator1_->set_name("int1");
+
+      builder.ExportOutput(integrator0_->get_output_port());
+      builder.ExportOutput(integrator1_->get_output_port());
+      builder.ExportInput(integrator0_->get_input_port());
+      builder.ExportInput(integrator1_->get_input_port());
+
+      diagram0_ = big_diagram_builder.AddSystem(builder.Build());
+      diagram0_->set_name("diagram0");
+    }
+
+    {
+      DiagramBuilder<double> builder;
+      integrator3_ = builder.AddSystem<Integrator<double>>(1);
+      integrator3_->set_name("int3");
+
+      builder.ExportOutput(integrator3_->get_output_port());
+      builder.ExportInput(integrator3_->get_input_port());
+
+      diagram1_ = big_diagram_builder.AddSystem(builder.Build());
+      diagram1_->set_name("diagram1");
+    }
+
+    big_diagram_builder.ExportOutput(diagram0_->get_output_port(0));
+    big_diagram_builder.ExportOutput(diagram0_->get_output_port(1));
+    big_diagram_builder.ExportOutput(integrator2_->get_output_port());
+
+    big_diagram_builder.ExportOutput(diagram1_->get_output_port(0));
+
+    auto src = big_diagram_builder.AddSystem<ConstantVectorSource<double>>(1);
+    src->set_name("constant");
+    big_diagram_builder.Connect(src->get_output_port(),
+                                integrator2_->get_input_port());
+    big_diagram_builder.Connect(src->get_output_port(),
+                                diagram0_->get_input_port(0));
+    big_diagram_builder.Connect(src->get_output_port(),
+                                diagram0_->get_input_port(1));
+
+    big_diagram_builder.Connect(src->get_output_port(),
+                                diagram1_->get_input_port(0));
+
+    big_diagram_ = big_diagram_builder.Build();
+    big_diagram_->set_name("big_diagram");
+    big_context_ = big_diagram_->CreateDefaultContext();
+    big_output_ = big_diagram_->AllocateOutput(*big_context_);
+  }
+
+  Integrator<double>* integrator0_;
+  Integrator<double>* integrator1_;
+  Integrator<double>* integrator2_;
+  Integrator<double>* integrator3_;
+
+  Diagram<double>* diagram0_;
+  Diagram<double>* diagram1_;
+
+  std::unique_ptr<Diagram<double>> big_diagram_;
+  std::unique_ptr<Context<double>> big_context_;
+  std::unique_ptr<SystemOutput<double>> big_output_;
+};
+
+// Sets the continuous state of all the integrators through
+// GetMutableSubsystemContext(), and check that they are correctly set.
+TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
+
+  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator0_)
+      ->get_mutable_continuous_state_vector()
+      ->SetAtIndex(0, 1);
+  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator1_)
+      ->get_mutable_continuous_state_vector()
+      ->SetAtIndex(0, 2);
+  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator2_)
+      ->get_mutable_continuous_state_vector()
+      ->SetAtIndex(0, 3);
+  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator3_)
+      ->get_mutable_continuous_state_vector()
+      ->SetAtIndex(0, 4);
+
+  // Checks states.
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator0_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            1);
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator1_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            2);
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator2_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            3);
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator3_)
+                .get_continuous_state_vector()
+                .GetAtIndex(0),
+            4);
+
+  // Checks output.
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
+  EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
+}
+
+// Sets the continuous state of all the integrators through
+// GetMutableSubsystemState(), and check that they are correctly set.
+TEST_F(NestedDiagramContextTest, GetSubsystemState) {
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
+  EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
+
+  State<double>* big_state = big_context_->get_mutable_state();
+  big_diagram_
+      ->GetMutableSubsystemState(big_state, integrator0_)
+      ->get_mutable_continuous_state()
+      ->get_mutable_vector()
+      ->SetAtIndex(0, 1);
+  big_diagram_
+      ->GetMutableSubsystemState(big_state, integrator1_)
+      ->get_mutable_continuous_state()
+      ->get_mutable_vector()
+      ->SetAtIndex(0, 2);
+  big_diagram_
+      ->GetMutableSubsystemState(big_state, integrator2_)
+      ->get_mutable_continuous_state()
+      ->get_mutable_vector()
+      ->SetAtIndex(0, 3);
+  big_diagram_
+      ->GetMutableSubsystemState(big_state, integrator3_)
+      ->get_mutable_continuous_state()
+      ->get_mutable_vector()
+      ->SetAtIndex(0, 4);
+
+  // Checks state.
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator0_)
+                .get_continuous_state()->get_vector()[0],
+            1);
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator1_)
+                .get_continuous_state()->get_vector()[0],
+            2);
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator2_)
+                .get_continuous_state()->get_vector()[0],
+            3);
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator3_)
+                .get_continuous_state()->get_vector()[0],
+            4);
+
+  // Checks output.
+  big_diagram_->CalcOutput(*big_context_, big_output_.get());
+
+  EXPECT_EQ(big_output_->get_vector_data(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(big_output_->get_vector_data(1)->GetAtIndex(0), 2);
+  EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 3);
+  EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 4);
+}
+
+// Tests that an exception is thrown if the systems in a Diagram do not have
+// unique names.
+GTEST_TEST(NonUniqueNamesTest, NonUniqueNames) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  auto adder0 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder0->set_name("unoriginal");
+  auto adder1 = builder.AddSystem<Adder<double>>(kInputs, kSize);
+  adder1->set_name("unoriginal");
+  EXPECT_THROW(builder.Build(), std::runtime_error);
+}
+
+// Tests that systems with unset names can be added to a Diagram.
+GTEST_TEST(NonUniqueNamesTest, DefaultEmptyNames) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  builder.AddSystem<Adder<double>>(kInputs, kSize);
+  builder.AddSystem<Adder<double>>(kInputs, kSize);
+  EXPECT_NO_THROW(builder.Build());
+}
+
+// Tests that an exception is thrown if a system is reset to an empty name
+// *after* being added to the diagram builder.
+GTEST_TEST(NonUniqueNamesTest, ForcedEmptyNames) {
+  DiagramBuilder<double> builder;
+  const int kInputs = 2;
+  const int kSize = 1;
+  builder.AddSystem<Adder<double>>(kInputs, kSize);
+  builder.AddSystem<Adder<double>>(kInputs, kSize)->set_name("");
+  EXPECT_THROW(builder.Build(), std::runtime_error);
+}
+
+// A system for testing per step actions.
+class PerStepActionTestSystem : public LeafSystem<double> {
+ public:
+  PerStepActionTestSystem() {
+    DeclareDiscreteState(1);
+    DeclareAbstractState(AbstractValue::Make<std::string>(""));
+  }
+
+  void AddPerStepAction(
+      const typename DiscreteEvent<double>::ActionType& action) {
+    this->DeclarePerStepAction(action);
+  }
+
+  int get_publish_ctr() const {
+    return publish_ctr_;
+  }
+
+ private:
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {
+    (*state->get_mutable_discrete_state())[0] = 0;
+    state->get_mutable_abstract_state<std::string>(0) = "wow";
+  }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const override {
+    (*discrete_state)[0] =
+        context.get_discrete_state(0)->GetAtIndex(0) + 1;
+  }
+
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                State<double>* state) const override {
+    int int_num = static_cast<int>(
+        context.get_discrete_state(0)->GetAtIndex(0));
+    state->get_mutable_abstract_state<std::string>(0) =
+        "wow" + std::to_string(int_num);
+  }
+
+  void DoPublish(const Context<double>& context) const override {
+    publish_ctr_++;
+  }
+
+  // A hack to test publish calls easily.
+  mutable int publish_ctr_{0};
+};
+
+// Builds a nested diagram and tests per step publish, discrete and
+// unrestricted updates.
+GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
+  std::unique_ptr<Diagram<double>> sub_diagram;
+  PerStepActionTestSystem* sys0;
+  PerStepActionTestSystem* sys1;
+  PerStepActionTestSystem* sys2;
+
+  // Sub diagram. Has sys0, and sys1.
+  // sys0 does not have any per step actions.
+  // sys1 has discrete and unrestricted updates.
+  {
+    DiagramBuilder<double> builder;
+    sys0 = builder.AddSystem<PerStepActionTestSystem>();
+    sys0->set_name("sys0");
+    sys1 = builder.AddSystem<PerStepActionTestSystem>();
+    sys1->set_name("sys1");
+
+    sys1->AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
+    sys1->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+    sub_diagram = builder.Build();
+    sub_diagram->set_name("sub_diagram");
+  }
+
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram));
+  sys2 = builder.AddSystem<PerStepActionTestSystem>();
+  sys2->set_name("sys2");
+
+  // sys2 has publish and unrestricted updates.
+  sys2->AddPerStepAction(DiscreteEvent<double>::kPublishAction);
+  sys2->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  diagram->set_name("diagram");
+
+  std::vector<DiscreteEvent<double>> events;
+  diagram->GetPerStepEvents(*context, &events);
+
+  EXPECT_EQ(events.size(), 3);
+
+  auto tmp_discrete_state = diagram->AllocateDiscreteVariables();
+  std::unique_ptr<State<double>> tmp_state;
+
+  // Does unrestricted update first.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kUnrestrictedUpdateAction) {
+      tmp_state = context->CloneState();
+      diagram->CalcUnrestrictedUpdate(*context, event,
+          tmp_state.get());
+      context->get_mutable_state()->CopyFrom(*tmp_state);
+    }
+  }
+
+  // Does discrete updates second.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kDiscreteUpdateAction) {
+      diagram->CalcDiscreteVariableUpdates(*context, event,
+          tmp_discrete_state.get());
+      context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
+    }
+  }
+
+  // Publishes last.
+  for (const auto& event : events) {
+    if (event.action == DiscreteEvent<double>::kPublishAction) {
+      diagram->Publish(*context, event);
+    }
+  }
+
+  // Only sys2 published once.
+  EXPECT_EQ(sys0->get_publish_ctr(), 0);
+  EXPECT_EQ(sys1->get_publish_ctr(), 0);
+  EXPECT_EQ(sys2->get_publish_ctr(), 1);
+
+  // sys0 doesn't have any updates.
+  auto& sys0_context = diagram->GetSubsystemContext(*context, sys0);
+  EXPECT_EQ(sys0_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
+
+  // sys1 should have an unrestricted update then a discrete update.
+  auto& sys1_context = diagram->GetSubsystemContext(*context, sys1);
+  EXPECT_EQ(sys1_context.get_discrete_state(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
+
+  // sys2 should have a unrestricted update then a publish.
+  auto& sys2_context = diagram->GetSubsystemContext(*context, sys2);
+  EXPECT_EQ(sys2_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }
 
 }  // namespace

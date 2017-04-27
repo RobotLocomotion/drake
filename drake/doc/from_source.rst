@@ -1,17 +1,17 @@
 .. _build_from_source:
 
-********************************
-Source installation (mac, linux)
-********************************
+**********************************
+Source installation (OS X, Ubuntu)
+**********************************
 
 Optional: Setting up the MATLAB Compiler
 ========================================
 
 Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab``
- at the system command line should start an instance of MATLAB).  For example,
- on Mac you might consider
- ``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``,
- or you can actually add the MATLAB/bin directory to your system path.
+at the system command line should start an instance of MATLAB).  For example,
+on Mac you might consider
+``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``,
+or you can actually add the MATLAB/bin directory to your system path.
 
 .. _getting_drake:
 
@@ -51,9 +51,13 @@ setup steps:
 .. toctree::
     :maxdepth: 1
 
-    homebrew
+    mac
     ubuntu_trusty
     ubuntu_xenial
+
+See :ref:`supported configurations <supported-configurations>`
+for the configurations and platforms that Drake officially supports.
+All else being equal, we would recommend developers use Ubuntu Xenial.
 
 .. _build_the_collection:
 
@@ -310,3 +314,11 @@ Drake is adding support for the Bazel build system.
     :maxdepth: 1
 
     bazel
+
+
+Troubleshooting
+===============
+
+If you're unable to launch ``drake-visualizer`` due to a
+"No module named vtkCommonCorePython" error, see
+:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.

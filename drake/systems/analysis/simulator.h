@@ -3,14 +3,17 @@
 #include <algorithm>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
@@ -51,7 +54,7 @@ namespace systems {
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * Instantiated templates for the following kinds of T's are provided and
- * available to link against in libdrakeSystemAnalysis:
+ * available to link against in the containing library:
  * - double
  * - AutoDiffXd
  *
@@ -62,6 +65,8 @@ namespace systems {
 template <typename T>
 class Simulator {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Simulator)
+
   /** Create a %Simulator that can advance a given System through time to
    * produce a trajectory consisting of a sequence of Context values. The System
    * must not have unresolved input ports if the values of those ports are
@@ -173,6 +178,12 @@ class Simulator {
     publish_every_time_step_ = publish;
   }
 
+  /** Sets whether the simulation should invoke Publish in Initialize().
+   */
+  void set_publish_at_initialization(bool publish) {
+    publish_at_initialization_ = publish;
+  }
+
   /** Returns true if the simulation should invoke Publish on the System under
    * simulation every time step.  By default, returns true.
    */
@@ -268,6 +279,8 @@ class Simulator {
     return static_cast<U*>(integrator_.get());
   }
 
+
+
   /**
    * Gets a constant reference to the system.
    * @note a mutable reference is not available.
@@ -275,14 +288,23 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  // Goes through every event in @p events and calls unrestricted update only
+  // if that event's action type is kUnrestrictedUpdateAction.
+  void HandleUnrestrictedUpdate(const std::vector<DiscreteEvent<T>>& events);
+
+  // Goes through every event in @p events and calls discrete update only if
+  // that event's action type is kDiscreteUpdateAction.
+  void HandleDiscreteUpdate(const std::vector<DiscreteEvent<T>>& events);
+
+  // Goes through every event in @p events and calls publish only if that
+  // event's action type is kPublishAction.
+  void HandlePublish(const std::vector<DiscreteEvent<T>>& events);
+
   // The steady_clock is immune to system clock changes so increases
   // monotonically. We'll work in fractional seconds.
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;
-
-  Simulator(const Simulator& s) = delete;
-  Simulator& operator=(const Simulator& s) = delete;
 
   // If the simulated time in the context is ahead of real time, pause long
   // enough to let real time catch up (approximately).
@@ -310,6 +332,8 @@ class Simulator {
 
   bool publish_every_time_step_{true};
 
+  bool publish_at_initialization_{true};
+
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
   TimePoint initial_realtime_;     // Real time at start of period.
@@ -326,12 +350,14 @@ class Simulator {
   // The number of integration steps since the last call to Initialize().
   int64_t num_steps_taken_{0};
 
-
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
+  // Per step events that need to be handled. This is set by Initialize().
+  std::vector<DiscreteEvent<T>> per_step_actions_;
+
   // Pre-allocated temporaries for updated discrete states.
-  std::unique_ptr<DiscreteState<T>> discrete_updates_;
+  std::unique_ptr<DiscreteValues<T>> discrete_updates_;
 
   // Pre-allocated temporaries for states from unrestricted updates.
   std::unique_ptr<State<T>> unrestricted_updates_;
@@ -367,15 +393,74 @@ void Simulator<T>::Initialize() {
   // Initialize the integrator.
   integrator_->Initialize();
 
+  // Gets all the events that need handling.
+  system_.GetPerStepEvents(*context_, &per_step_actions_);
+
   // Restore default values.
   ResetStatistics();
 
+  // TODO(siyuan): transfer publish entirely to individual systems.
   // Do a publish before the simulation starts.
-  system_.Publish(*context_);
-  ++num_publishes_;
+  if (publish_at_initialization_) {
+    system_.Publish(*context_);
+    ++num_publishes_;
+  }
 
   // Initialize runtime variables.
   initialization_done_ = true;
+}
+
+template <typename T>
+void Simulator<T>::HandleUnrestrictedUpdate(
+    const std::vector<DiscreteEvent<T>>& events) {
+  for (const DiscreteEvent<T>& event : events) {
+    if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
+      State<T>* x = context_->get_mutable_state();
+      DRAKE_DEMAND(x != nullptr);
+      // First, compute the unrestricted updates into a temporary buffer.
+      system_.CalcUnrestrictedUpdate(*context_, event,
+          unrestricted_updates_.get());
+      // TODO(edrumwri): simply swap the states for additional speed.
+      // Now write the update back into the context.
+      x->CopyFrom(*unrestricted_updates_);
+      ++num_unrestricted_updates_;
+    } else if (event.action == DiscreteEvent<T>::kUnknownAction) {
+      throw std::logic_error("kUnknownAction encountered.");
+    }
+  }
+}
+
+template <typename T>
+void Simulator<T>::HandleDiscreteUpdate(
+    const std::vector<DiscreteEvent<T>>& events) {
+  for (const DiscreteEvent<T>& event : events) {
+    if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
+      DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
+      // Systems with discrete update events must have discrete state.
+      DRAKE_DEMAND(xd != nullptr);
+      // First, compute the discrete updates into a temporary buffer.
+      system_.CalcDiscreteVariableUpdates(*context_, event,
+          discrete_updates_.get());
+      // Then, write them back into the context.
+      xd->CopyFrom(*discrete_updates_);
+      ++num_discrete_updates_;
+    } else if (event.action == DiscreteEvent<T>::kUnknownAction) {
+      throw std::logic_error("kUnknownAction encountered.");
+    }
+  }
+}
+
+template <typename T>
+void Simulator<T>::HandlePublish(
+    const std::vector<DiscreteEvent<T>>& events) {
+  for (const DiscreteEvent<T>& event : events) {
+    if (event.action == DiscreteEvent<T>::kPublishAction) {
+      system_.Publish(*context_, event);
+      ++num_publishes_;
+    } else if (event.action == DiscreteEvent<T>::kUnknownAction) {
+      throw std::logic_error("kUnknownAction encountered.");
+    }
+  }
 }
 
 /**
@@ -401,6 +486,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // Integrate until desired interval has completed.
   UpdateActions<T> update_actions;
+
   while (context_->get_time() < boundary_time || sample_time_hit) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
@@ -409,61 +495,31 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
 
-    // First take any necessary discrete actions.
-    if (sample_time_hit) {
-      // Do unrestricted updates first.
-      for (const DiscreteEvent<T>& event : update_actions.events) {
-        if (event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction) {
-          State<T>* x = context_->get_mutable_state();
-          DRAKE_DEMAND(x != nullptr);
-          // First, compute the unrestricted updates into a temporary buffer.
-          system_.CalcUnrestrictedUpdate(*context_, event,
-                                         unrestricted_updates_.get());
-          // TODO(edrumwri): simply swap the states for additional speed.
-          // Now write the update back into the context.
-          x->CopyFrom(*unrestricted_updates_);
-          ++num_unrestricted_updates_;
-        } else {
-          if (event.action == DiscreteEvent<T>::kUnknownAction) {
-              throw std::logic_error("kUnknownAction encountered.");
-          }
-        }
-      }
+    // The general policy here is to do actions in decreasing order of
+    // "violence" to the state, i.e. unrestricted -> discrete -> publish.
+    // The "timed" actions happen before the "per step" ones.
 
-      // Do restricted (discrete variable) updates next.
-      for (const DiscreteEvent<T>& event : update_actions.events) {
-        if (event.action == DiscreteEvent<T>::kDiscreteUpdateAction) {
-          DiscreteState<T> *xd = context_->get_mutable_discrete_state();
-          // Systems with discrete update events must have discrete state.
-          DRAKE_DEMAND(xd != nullptr);
-          // First, compute the discrete updates into a temporary buffer.
-          system_.CalcDiscreteVariableUpdates(*context_, event,
-                                              discrete_updates_.get());
-          // Then, write them back into the context.
-          xd->CopyFrom(*discrete_updates_);
-          ++num_discrete_updates_;
-        }
-      }
+    // Do unrestricted updates first.
+    if (sample_time_hit)
+      HandleUnrestrictedUpdate(update_actions.events);
+    HandleUnrestrictedUpdate(per_step_actions_);
 
-      // Do any publishes last.
-      for (const DiscreteEvent<T>& event : update_actions.events) {
-        if (event.action == DiscreteEvent<T>::kPublishAction) {
-            system_.Publish(*context_, event);
-            ++num_publishes_;
-          }
-        }
-    }
+    // Do restricted (discrete variable) updates next.
+    if (sample_time_hit)
+      HandleDiscreteUpdate(update_actions.events);
+    HandleDiscreteUpdate(per_step_actions_);
 
-    // TODO(edrumwri): Add every step updates in the same manner as every step
-    //                 publishes.
+    // Do any publishes last.
+    if (sample_time_hit)
+      HandlePublish(update_actions.events);
+    HandlePublish(per_step_actions_);
+
+    // TODO(siyuan): transfer per step publish entirely to individual systems.
     // Allow System a chance to produce some output.
     if (get_publish_every_time_step()) {
       system_.Publish(*context_);
       ++num_publishes_;
     }
-
-    // Remove old events
-    update_actions.events.clear();
 
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =

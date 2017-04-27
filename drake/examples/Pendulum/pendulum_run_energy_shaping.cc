@@ -5,13 +5,13 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace examples {
@@ -27,9 +27,9 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
         b_(pendulum.b()),
         g_(pendulum.g()) {
     this->DeclareInputPort(systems::kVectorValued,
-                           pendulum.get_output_port().get_size());
+                           pendulum.get_output_port().size());
     this->DeclareOutputPort(systems::kVectorValued,
-                            pendulum.get_tau_port().get_size());
+                            pendulum.get_tau_port().size());
   }
 
  private:
@@ -65,13 +65,16 @@ int do_main(int argc, char* argv[]) {
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();
+  pendulum->set_name("pendulum");
   auto controller =
       builder.AddSystem<PendulumEnergyShapingController>(*pendulum);
+  controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
 
   auto publisher =
       builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  publisher->set_name("publisher");
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
   auto diagram = builder.Build();

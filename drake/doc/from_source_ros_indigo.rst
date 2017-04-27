@@ -10,8 +10,12 @@ Step 1: Install Prerequisites
 =============================
 
 Install `Ubuntu 14.04.4 LTS (Trusty Tahr) <http://releases.ubuntu.com/14.04/>`_
-and `ROS Indigo <http://wiki.ros.org/indigo>`_. We recommend installing the
-"desktop-full" version of ROS to get its full feature set.
+and `ROS Indigo <http://wiki.ros.org/indigo>`_. We recommend initially
+installing the "desktop-full" version of ROS, but then uninstalling the
+following two packages due to incompatibility with Drake (see
+`issue #3814 <https://github.com/RobotLocomotion/drake/issues/3814>`_)::
+
+    sudo apt-get remove ros-indigo-octomap ros-indigo-fcl
 
 Add your public SSH key to your github.com account by following
 `these instructions <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_. This is necessary because the
@@ -89,3 +93,12 @@ This concludes the instructions for how to install and build Drake using ROS
 Indigo on Ubuntu 14.04. See
 :ref:`these additional notes <drake_ros_additional_notes>` on where to proceed
 from here.
+
+.. _drake_ros_indigo_troubleshooting:
+
+Troubleshooting
+===============
+
+If you're unable to launch ``drake-visualizer`` due to a
+"No module named vtkCommonCorePython" error, see
+:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python_ros_indigo>`.

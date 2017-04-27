@@ -252,11 +252,14 @@ void Polynomial<CoefficientType>::Subs(const VarType& orig,
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
-    unsigned int derivative_order) const {
+    int derivative_order) const {
+  DRAKE_DEMAND(derivative_order >= 0);
   if (!is_univariate_)
     throw runtime_error(
-        "getCoefficients is only defined for univariate polynomials");
-
+        "Derivative is only defined for univariate polynomials");
+  if (derivative_order == 0) {
+    return *this;
+  }
   Polynomial<CoefficientType> ret;
 
   for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
@@ -264,7 +267,7 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Derivative(
     if (!iter->terms.empty() && (
             iter->terms[0].power >= static_cast<PowerType>(derivative_order))) {
       Monomial m = *iter;
-      for (unsigned int k = 0; k < derivative_order;
+      for (int k = 0; k < derivative_order;
            k++) {  // take the remaining derivatives
         m.coefficient = m.coefficient * m.terms[0].power;
         m.terms[0].power -= 1;
@@ -282,7 +285,7 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Integral(
     const CoefficientType& integration_constant) const {
   if (!is_univariate_)
     throw runtime_error(
-        "getCoefficients is only defined for univariate polynomials");
+        "Integral is only defined for univariate polynomials");
   Polynomial<CoefficientType> ret = *this;
 
   for (typename vector<Monomial>::iterator iter = ret.monomials_.begin();
@@ -484,7 +487,7 @@ typename Polynomial<CoefficientType>::RootsType
 Polynomial<CoefficientType>::Roots() const {
   if (!is_univariate_)
     throw runtime_error(
-        "getCoefficients is only defined for univariate polynomials");
+        "Roots is only defined for univariate polynomials");
 
   auto coefficients = GetCoefficients();
 
@@ -514,6 +517,7 @@ bool Polynomial<CoefficientType>::IsApprox(const Polynomial& other,
   return GetCoefficients().isApprox(other.GetCoefficients(), tol);
 }
 
+// TODO(jwnimmer-tri) Replace with never_destroyed<std::string>?
 const char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";
 const unsigned int kNumNameChars = sizeof(kNameChars) - 1;
 const unsigned int kNameLength = 4;
@@ -594,7 +598,7 @@ void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
         }
       }
     }
-    for (int j = 0; j < (i - 1); j++) {
+    for (int j = 0; j <= (i - 1); j++) {
       Monomial& mj = monomials_[j];
       if (mi.HasSameExponents(mj)) {
         // it's a match, so delete monomial i

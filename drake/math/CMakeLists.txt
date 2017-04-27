@@ -5,14 +5,15 @@ set(sources
   axis_angle.cc
   continuous_algebraic_ricatti_equation.cc
   cross_product.cc
+  discrete_algebraic_riccati_equation.cc
   eigen_sparse_triplet.cc
+  evenly_distributed_pts_on_sphere.cc
   expmap.cc
   gradient.cc
   jacobian.cc
   matrix_util.cc
   normalize_vector.cc
   quaternion.cc
-  random_rotation.cc
   roll_pitch_yaw.cc
   rotation_conversion_gradient.cc
   rotation_matrix.cc)
@@ -25,7 +26,9 @@ set(installed_headers
   axis_angle.h
   continuous_algebraic_ricatti_equation.h
   cross_product.h
+  discrete_algebraic_riccati_equation.h
   eigen_sparse_triplet.h
+  evenly_distributed_pts_on_sphere.h
   expmap.h
   gradient.h
   gradient_util.h
@@ -38,7 +41,8 @@ set(installed_headers
   roll_pitch_yaw_using_quaternion.h
   roll_pitch_yaw_not_using_quaternion.h
   rotation_conversion_gradient.h
-  rotation_matrix.h)
+  rotation_matrix.h
+  saturate.h)
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.

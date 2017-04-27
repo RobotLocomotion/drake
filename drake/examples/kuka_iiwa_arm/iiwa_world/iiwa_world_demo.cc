@@ -34,7 +34,8 @@ int DoMain() {
 
   iiwa_world->StoreModel(
       "iiwa",
-      "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
+      "/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf");
 
   iiwa_world->StoreModel(
       "table", "/examples/kuka_iiwa_arm/models/table/"
@@ -71,9 +72,15 @@ int DoMain() {
 
   lcm::DrakeLcm lcm;
 
-  auto visualized_plant = std::make_unique<VisualizedPlant<double>>(
-      iiwa_world->Build(), 4500 /* penetration_stiffness */,
-      1.0 /* penetration_damping */, 1.0 /* contact friction */, &lcm);
+  // Contact parameters
+  const double kStiffness = 10000;
+  const double kDissipation = 2.0;
+  const double kStaticFriction = 0.9;
+  const double kDynamicFriction = 0.5;
+  const double kStictionSlipTolerance = 0.01;
+  auto visualized_plant = std::make_unique<PlantAndVisualizerDiagram<double>>(
+      iiwa_world->Build(), kStiffness, kDissipation,
+      kStaticFriction, kDynamicFriction, kStictionSlipTolerance, &lcm);
 
   auto demo_plant = std::make_unique<PassiveVisualizedPlant<double>>(
       std::move(visualized_plant));

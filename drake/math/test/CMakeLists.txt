@@ -4,14 +4,23 @@ target_link_libraries(autodiff_test drakeCommon)
 drake_add_cc_test(cross_product_test)
 target_link_libraries(cross_product_test drakeCommon)
 
+drake_add_cc_test(discrete_algebraic_riccati_equation_test)
+target_link_libraries(discrete_algebraic_riccati_equation_test drakeCommon drakeMath)
+
 drake_add_cc_test(eigen_sparse_triplet_test)
 target_link_libraries(eigen_sparse_triplet_test Eigen3::Eigen)
+
+drake_add_cc_test(evenly_distributed_pts_on_sphere_test)
+target_link_libraries(evenly_distributed_pts_on_sphere_test drakeCommon drakeMath)
 
 drake_add_cc_test(expmap_test)
 target_link_libraries(expmap_test drakeCommon)
 
 drake_add_cc_test(NAME gradient_util_test SIZE medium)
 target_link_libraries(gradient_util_test drakeGeometryUtil)
+
+drake_add_cc_test(quaternion_test)
+target_link_libraries(quaternion_test drakeCommon)
 
 drake_add_cc_test(NAME rotation_conversion_test SIZE medium)
 target_link_libraries(rotation_conversion_test drakeCommon)

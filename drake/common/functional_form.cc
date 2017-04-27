@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <ostream>
 #include <type_traits>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 

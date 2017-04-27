@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
@@ -15,9 +14,8 @@ namespace examples {
 namespace schunk_wsg {
 
 using systems::Context;
-using systems::DiscreteState;
+using systems::DiscreteValues;
 using systems::SystemOutput;
-using systems::SystemPortDescriptor;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
     int input_size, int position_index)
@@ -28,7 +26,7 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
   this->DeclareOutputPort(systems::kVectorValued, 2);
   // The update period below matches the polling rate from
   // drake-schunk-driver.
-  this->DeclareUpdatePeriodSec(0.05);
+  this->DeclareDiscreteUpdatePeriodSec(0.05);
 }
 
 void SchunkWsgTrajectoryGenerator::DoCalcOutput(
@@ -53,7 +51,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcOutput(
 
 void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    DiscreteState<double>* discrete_state) const {
+    DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
@@ -76,7 +74,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
           context.get_discrete_state(0));
   SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
       dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          discrete_state->get_mutable_discrete_state(0));
+          discrete_state->get_mutable_vector(0));
 
   if (std::abs(last_traj_state->last_target_position() - target_position) >
       kTargetEpsilon) {
@@ -91,9 +89,9 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
   }
 }
 
-std::unique_ptr<DiscreteState<double>>
+std::unique_ptr<DiscreteValues<double>>
 SchunkWsgTrajectoryGenerator::AllocateDiscreteState() const {
-  return std::make_unique<DiscreteState<double>>(
+  return std::make_unique<DiscreteValues<double>>(
       std::make_unique<SchunkWsgTrajectoryGeneratorStateVector<double>>());
 }
 
@@ -166,13 +164,11 @@ SchunkWsgStatusSender(int input_size,
   this->DeclareAbstractOutputPort();
 }
 
-std::unique_ptr<SystemOutput<double>> SchunkWsgStatusSender::AllocateOutput(
-    const Context<double>& context) const {
-  auto output = std::make_unique<systems::LeafSystemOutput<double>>();
+std::unique_ptr<systems::AbstractValue>
+SchunkWsgStatusSender::AllocateOutputAbstract(
+    const systems::OutputPortDescriptor<double>& descriptor) const {
   lcmt_schunk_wsg_status msg{};
-  output->add_port(
-      std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg));
-  return std::unique_ptr<SystemOutput<double>>(output.release());
+  return std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg);
 }
 
 void SchunkWsgStatusSender::DoCalcOutput(const Context<double>& context,

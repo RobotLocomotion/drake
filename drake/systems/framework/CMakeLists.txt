@@ -1,6 +1,6 @@
 # Source files used to build drakeSystemFramework.
 set(sources
-  abstract_state.cc
+  abstract_values.cc
   basic_vector.cc
   cache.cc
   context.cc
@@ -9,21 +9,26 @@ set(sources
   diagram_builder.cc
   diagram_context.cc
   diagram_continuous_state.cc
-  discrete_state.cc
+  discrete_values.cc
   input_port_evaluator_interface.cc
+  input_port_value.cc
   leaf_context.cc
   leaf_system.cc
+  model_values.cc
   output_port_listener_interface.cc
+  output_port_value.cc
   parameters.cc
+  single_output_vector_source.cc
+  siso_vector_system.cc
+  sparsity_matrix.cc
   state.cc
   subvector.cc
   supervector.cc
   system.cc
-  system_input.cc
-  system_output.cc
   system_port_descriptor.cc
   value.cc
-  vector_base.cc)
+  vector_base.cc
+  )
 
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
@@ -35,7 +40,7 @@ set(sources
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
-  abstract_state.h
+  abstract_values.h
   basic_vector.h
   cache.h
   context.h
@@ -44,22 +49,28 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   diagram_continuous_state.h
-  discrete_state.h
+  discrete_values.h
   input_port_evaluator_interface.h
+  input_port_value.h
   leaf_context.h
   leaf_system.h
+  model_values.h
   output_port_listener_interface.h
+  output_port_value.h
   parameters.h
+  single_output_vector_source.h
+  siso_vector_system.h
+  sparsity_matrix.h
   state.h
   subvector.h
   supervector.h
   system.h
-  systems.h
-  system_input.h
-  system_output.h
   system_port_descriptor.h
+  systems.h
   value.h
-  vector_base.h)
+  value_checker.h
+  vector_base.h
+  )
 
 # Headers that are needed by code here but should not
 # be exposed anywhere else.

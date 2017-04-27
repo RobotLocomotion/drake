@@ -1,12 +1,13 @@
 #include "drake/systems/primitives/linear_system.h"
 
+#include <utility>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
@@ -38,10 +39,10 @@ std::unique_ptr<LinearSystem<double>> Linearize(
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
 
   const int num_inputs = (system.get_num_input_ports() > 0)
-                             ? system.get_input_port(0).get_size()
+                             ? system.get_input_port(0).size()
                              : 0,
             num_outputs = (system.get_num_output_ports() > 0)
-                              ? system.get_output_port(0).get_size()
+                              ? system.get_output_port(0).size()
                               : 0;
 
   // Create an autodiff version of the system.
@@ -69,8 +70,9 @@ std::unique_ptr<LinearSystem<double>> Linearize(
   if (num_inputs > 0) {
     auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
     input_vector->SetFromVector(std::get<1>(autodiff_args));
-    autodiff_context->SetInputPort(
-        0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
+    autodiff_context->SetInputPortValue(
+        0,
+        std::make_unique<FreestandingInputPortValue>(std::move(input_vector)));
   }
 
   std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =

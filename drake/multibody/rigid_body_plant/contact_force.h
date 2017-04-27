@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -34,6 +35,8 @@ namespace systems {
 template <typename T>
 class ContactForce {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactForce)
+
   /** Default constructor.  All values are initialized to NaN. */
   ContactForce();
 
@@ -67,12 +70,6 @@ class ContactForce {
   ContactForce get_reaction_force() const {
     return ContactForce(application_point_, -normal_, -force_, -torque_);
   }
-
-  // Contact force is copyable and movable
-  ContactForce(const ContactForce& other) = default;
-  ContactForce& operator=(const ContactForce& other) = default;
-  ContactForce(ContactForce&& other) = default;
-  ContactForce& operator=(ContactForce&& other) = default;
 
   const Vector3<T>& get_application_point() const { return application_point_; }
 

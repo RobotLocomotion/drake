@@ -4,6 +4,9 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
+
+#include "drake/common/never_destroyed.h"
 
 using std::atomic;
 using std::ostream;
@@ -13,25 +16,23 @@ using std::string;
 namespace drake {
 namespace symbolic {
 
-size_t Variable::get_next_id() {
-  // Purposefully never freed to avoid static initialization fiasco.
-  static atomic<size_t>* next_id = new atomic<size_t>{0};
-  return (*next_id)++;
+Variable::Id Variable::get_next_id() {
+  // Note that id 0 is reserved for anonymous variable which is created by the
+  // default constructor, Variable(). As a result, we have an invariant
+  // "get_next_id() > 0".
+  static never_destroyed<atomic<Id>> next_id(1);
+  return next_id.access()++;
 }
 
-Variable::Variable(const string& name) : id_(get_next_id()), name_(name) {}
-size_t Variable::get_id() const { return id_; }
+Variable::Variable(string name) : id_{get_next_id()}, name_{std::move(name)} {
+  DRAKE_ASSERT(id_ > 0);
+}
+Variable::Id Variable::get_id() const { return id_; }
 string Variable::get_name() const { return name_; }
 string Variable::to_string() const {
   ostringstream oss;
   oss << *this;
   return oss.str();
-}
-bool operator<(const Variable& lhs, const Variable& rhs) {
-  return lhs.get_id() < rhs.get_id();
-}
-bool operator==(const Variable& lhs, const Variable& rhs) {
-  return lhs.get_id() == rhs.get_id();
 }
 
 ostream& operator<<(ostream& os, const Variable& var) {

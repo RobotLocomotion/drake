@@ -1,5 +1,6 @@
 #include "drake/multibody/inverse_kinematics_backend.h"
 
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -26,7 +27,7 @@ using Eigen::VectorXi;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
-using drake::solvers::DecisionVariableMatrixX;
+using drake::solvers::MatrixXDecisionVariable;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::SolutionResult;
 
@@ -40,11 +41,12 @@ namespace systems {
 namespace plants {
 
 int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
-  std::string solver_name;
+  solvers::SolverType solver_type;
   int solver_result = 0;
-  prog.GetSolverResult(&solver_name, &solver_result);
+  prog.GetSolverResult(&solver_type, &solver_result);
 
-  if (solver_name == "SNOPT") {
+  if (solver_type ==
+      solvers::SolverType::kSnopt) {
     // We can return SNOPT results directly.
     return solver_result;
   }
@@ -60,8 +62,17 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
     case SolutionResult::kInfeasibleConstraints: {
       return 13;
     }
+    case SolutionResult::kInfeasible_Or_Unbounded: {
+      return 13;
+    }
+    case SolutionResult::kUnbounded: {
+      return 21;
+    }
     case SolutionResult::kUnknownError: {
       return 100;  // Not a real SNOPT error.
+    }
+    case SolutionResult::kIterationLimit: {
+      return 3;
     }
   }
 
@@ -70,22 +81,23 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
 
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption("SNOPT", "Derivative option", 1);
-  prog->SetSolverOption("SNOPT", "Major optimality tolerance",
-                        ikoptions.getMajorOptimalityTolerance());
-  prog->SetSolverOption("SNOPT", "Major feasibility tolerance",
-                        ikoptions.getMajorFeasibilityTolerance());
-  prog->SetSolverOption("SNOPT", "Superbasics limit",
-                        ikoptions.getSuperbasicsLimit());
-  prog->SetSolverOption("SNOPT", "Major iterations limit",
-                        ikoptions.getMajorIterationsLimit());
-  prog->SetSolverOption("SNOPT", "Iterations limit",
-                        ikoptions.getIterationsLimit());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Derivative option", 1);
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Major optimality tolerance", ikoptions.getMajorOptimalityTolerance());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Major feasibility tolerance", ikoptions.getMajorFeasibilityTolerance());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Superbasics limit", ikoptions.getSuperbasicsLimit());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Major iterations limit", ikoptions.getMajorIterationsLimit());
+  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+      "Iterations limit", ikoptions.getIterationsLimit());
 }
 
 void AddSingleTimeLinearPostureConstraint(
     const double* t, const RigidBodyConstraint* constraint, int nq,
-    const drake::solvers::DecisionVariableMatrixX& vars,
+    const drake::solvers::MatrixXDecisionVariable& vars,
     MathematicalProgram* prog) {
   DRAKE_ASSERT(constraint->getCategory() ==
                RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory);
@@ -115,7 +127,7 @@ void AddSingleTimeLinearPostureConstraint(
 
   Eigen::SparseMatrix<double> A_sparse(st_lpc->getNumConstraint(t), nq);
   A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
-  prog->AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {vars});
+  prog->AddLinearConstraint(MatrixXd(A_sparse), lb, ub, vars);
 }
 
 /// Add a single time linear posture constraint to @p prog at time @p
@@ -124,7 +136,7 @@ void AddSingleTimeLinearPostureConstraint(
 void AddQuasiStaticConstraint(
     const double* t, const RigidBodyConstraint* constraint,
     KinematicsCacheHelper<double>* kin_helper,
-    const drake::solvers::DecisionVariableMatrixX& vars,
+    const drake::solvers::MatrixXDecisionVariable& vars,
     drake::solvers::MathematicalProgram* prog) {
   DRAKE_ASSERT(constraint->getCategory() ==
                RigidBodyConstraint::QuasiStaticConstraintCategory);
@@ -135,17 +147,17 @@ void AddQuasiStaticConstraint(
     return;
   }
   int num_vars = qsc->getNumWeights();
-  drake::solvers::DecisionVariableVectorX qsc_vars =
-      prog->AddContinuousVariables(num_vars, "qsc");
+  drake::solvers::VectorXDecisionVariable qsc_vars =
+      prog->NewContinuousVariables(num_vars, "qsc");
   auto wrapper =
       std::make_shared<QuasiStaticConstraintWrapper>(qsc, kin_helper);
   prog->AddConstraint(wrapper, {vars, qsc_vars});
   prog->AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
-                                 VectorXd::Constant(num_vars, 1.), {qsc_vars});
+                                 VectorXd::Constant(num_vars, 1.), qsc_vars);
   VectorXd constraint_eq(num_vars);
   constraint_eq.fill(1.);
   prog->AddLinearEqualityConstraint(constraint_eq.transpose(),
-                                    Vector1d::Constant(1.), {qsc_vars});
+                                    Vector1d::Constant(1.), qsc_vars);
   prog->SetInitialGuess(qsc_vars, VectorXd::Constant(num_vars, 1.0 / num_vars));
 }
 
@@ -155,16 +167,22 @@ class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
   InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
-      : Constraint(model->get_num_positions()), Q_(Q) {}
+      : Constraint(model->get_num_positions(), Q.rows()), Q_(Q) {}
 
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd& y) const override {
+  /// Set the nominal posture.  This should be invoked before any
+  /// calls to Eval() (the output of Eval() is undefined if this has
+  /// not been set.)
+  void set_q_nom(const VectorXd& q_nom_i) { q_nom_i_ = q_nom_i; }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                 Eigen::VectorXd& y) const override {
     VectorXd q_err = x - q_nom_i_;
     y(0) = q_err.transpose() * Q_ * q_err;
   }
 
-  void Eval(const Eigen::Ref<const TaylorVecXd>& x,
-            TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                 AutoDiffVecXd& y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;
     VectorXd y_val = q_err.transpose() * Q_ * q_err;
@@ -173,11 +191,6 @@ class InverseKinObjective : public Constraint {
     math::initializeAutoDiffGivenGradientMatrix(
         y_val, (dy_vec * gradient_mat).eval(), y);
   }
-
-  /// Set the nominal posture.  This should be invoked before any
-  /// calls to Eval() (the output of Eval() is undefined if this has
-  /// not been set.)
-  void set_q_nom(const VectorXd& q_nom_i) { q_nom_i_ = q_nom_i; }
 
  private:
   const MatrixXd& Q_;
@@ -214,13 +227,13 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     MathematicalProgram prog;
     SetIKSolverOptions(ikoptions, &prog);
 
-    drake::solvers::DecisionVariableVectorX vars =
-        prog.AddContinuousVariables(model->get_num_positions());
+    drake::solvers::VectorXDecisionVariable vars =
+        prog.NewContinuousVariables(model->get_num_positions());
 
     MatrixXd Q;
     ikoptions.getQ(Q);
     auto objective = std::make_shared<InverseKinObjective>(model, Q);
-    prog.AddCost(objective, {vars});
+    prog.AddCost(objective, vars);
 
     for (int i = 0; i < num_constraints; i++) {
       const RigidBodyConstraint* constraint = constraint_array[i];
@@ -234,7 +247,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
         }
         auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
             stc, &kin_helper);
-        prog.AddConstraint(wrapper, {vars});
+        prog.AddConstraint(wrapper, vars);
       } else if (constraint_category ==
                  RigidBodyConstraint::PostureConstraintCategory) {
         const PostureConstraint* pc =
@@ -245,7 +258,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
         VectorXd lb;
         VectorXd ub;
         pc->bounds(&t[t_index], lb, ub);
-        prog.AddBoundingBoxConstraint(lb, ub, {vars});
+        prog.AddBoundingBoxConstraint(lb, ub, vars);
       } else if (constraint_category ==
                  RigidBodyConstraint::
                      SingleTimeLinearPostureConstraintCategory) {
@@ -271,7 +284,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
 
     // Add a bounding box constraint from the model.
     prog.AddBoundingBoxConstraint(model->joint_limit_min,
-                                  model->joint_limit_max, {vars});
+                                  model->joint_limit_max, vars);
 
     // TODO(sam.creasey) would this be faster if we stored the view
     // instead of copying into a VectorXd?
@@ -283,8 +296,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     }
 
     SolutionResult result = prog.Solve();
-    const VectorXd& vars_value =
-        drake::solvers::GetSolution(vars);
+    const VectorXd& vars_value = prog.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
     info[t_index] = GetIKSolverInfo(prog, result);
   }

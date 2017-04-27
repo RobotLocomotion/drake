@@ -2,12 +2,11 @@
 
 #include <memory>
 
+#include <gtest/gtest.h>
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
+#include "drake/systems/framework/input_port_value.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
@@ -109,6 +108,13 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
 // Tests that Demultiplexer allocates no state variables in the context_.
 TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
+}
+
+TEST_F(DemultiplexerTest, DirectFeedthrough) {
+  EXPECT_TRUE(demux_->HasAnyDirectFeedthrough());
+  for (int i = 0; i < demux_->get_num_output_ports(); ++i) {
+    EXPECT_TRUE(demux_->HasDirectFeedthrough(0, i));
+  }
 }
 
 }  // namespace

@@ -4,10 +4,13 @@
 #include "drake/math/random_rotation.h"
 #include "drake/util/lcmUtil.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Dynamic;
+using Eigen::Sequential;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace {
@@ -15,9 +18,9 @@ namespace {
 // TODO(jwnimmer-tri) Unit tests should not use unseeded randomness.
 
 GTEST_TEST(TestLcmUtil, testPolynomial) {
-  default_random_engine generator;
+  std::default_random_engine generator;
   int max_num_coefficients = 5;
-  uniform_int_distribution<> int_distribution(1, max_num_coefficients);
+  std::uniform_int_distribution<> int_distribution(1, max_num_coefficients);
   int num_coefficients = int_distribution(generator);
   VectorXd coefficients = VectorXd::Random(num_coefficients);
   Polynomial<double> poly(coefficients);
@@ -45,7 +48,7 @@ GTEST_TEST(TestLcmUtil, testPolynomialMatrix) {
 }
 
 GTEST_TEST(TestLcmUtil, testPiecewisePolynomial) {
-  default_random_engine generator;
+  std::default_random_engine generator;
   int num_segments = 6;
   int rows = 4;
   int cols = 7;
@@ -71,7 +74,7 @@ GTEST_TEST(TestLcmUtil, testVector3d) {
 }
 
 GTEST_TEST(TestLcmUtil, testQuaternion) {
-  default_random_engine generator;
+  std::default_random_engine generator;
   generator.seed(0);
   const auto quaternion = drake::math::UniformlyRandomQuat(generator);
   bot_core::quaternion_t msg;
@@ -82,7 +85,7 @@ GTEST_TEST(TestLcmUtil, testQuaternion) {
 }
 
 GTEST_TEST(TestLcmUtil, testPose) {
-  default_random_engine generator;
+  std::default_random_engine generator;
   generator.seed(0);
   Eigen::Isometry3d pose;
   pose.linear() = drake::math::UniformlyRandomRotmat(generator);

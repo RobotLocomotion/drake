@@ -1,26 +1,50 @@
 #include "drake/systems/primitives/trajectory_source.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace systems {
 
 template <typename T>
-TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory)
-    : trajectory_(trajectory) {
-  this->DeclareOutputPort(kVectorValued, trajectory_.rows());
+TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory,
+                                      int output_derivative_order,
+                                      bool zero_derivatives_beyond_limits)
+    : SingleOutputVectorSource<T>(trajectory.rows() *
+                                  (1 + output_derivative_order)),
+      // Make a copy of the input trajectory.
+      trajectory_(trajectory.Clone()),
+      clamp_derivatives_(zero_derivatives_beyond_limits) {
   // This class does not currently support trajectories which output
   // more complicated matrices.
   DRAKE_DEMAND(trajectory.cols() == 1);
+  DRAKE_DEMAND(output_derivative_order >= 0);
+
+  for (int i = 0; i < output_derivative_order; i++) {
+    if (i == 0)
+      derivatives_.push_back(trajectory_->derivative());
+    else
+      derivatives_.push_back(derivatives_[i - 1]->derivative());
+  }
 }
 
 template <typename T>
-void TrajectorySource<T>::DoCalcOutput(const Context<T>& context,
-                                       SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-  T time = context.get_time();
-  System<T>::GetMutableOutputVector(output, 0) = trajectory_.value(time);
+void TrajectorySource<T>::DoCalcVectorOutput(
+    const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
+  int len = trajectory_->rows();
+  output->head(len) = trajectory_->value(context.get_time());
+
+  double time = context.get_time();
+  bool set_zero = clamp_derivatives_ && (time > trajectory_->get_end_time() ||
+      time < trajectory_->get_start_time());
+
+  for (size_t i = 0; i < derivatives_.size(); ++i) {
+    if (set_zero) {
+      output->segment(len * (i + 1), len).setZero();
+    } else {
+      output->segment(len * (i + 1), len) =
+          derivatives_[i]->value(context.get_time());
+    }
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.

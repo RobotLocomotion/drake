@@ -20,7 +20,7 @@ void AddFlatTerrainToWorld(RigidBodyTreed* tree, double box_size,
   tree->addCollisionElement(
       DrakeCollision::Element(geom, T_element_to_link, &world), world,
       "terrain");
-  tree->updateStaticCollisionElements();
+  tree->compile();
 }
 
 }  // namespace multibody

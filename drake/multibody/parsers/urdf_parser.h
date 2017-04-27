@@ -1,16 +1,17 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "drake/common/drake_deprecated.h"
-#include "drake/multibody/rigid_body_frame.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/parser_common.h"
 #include "drake/multibody/parsers/xml_util.h"
+#include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 namespace drake {
@@ -74,10 +75,8 @@ std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
 ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
     const std::string& urdf_string, RigidBodyTree<double>* tree);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED(
-      "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
-#endif
+DRAKE_DEPRECATED(
+  "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, RigidBodyTree<double>* tree);
 
@@ -117,9 +116,7 @@ AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
 
-#ifndef SWIG
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
-#endif
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
@@ -207,9 +204,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
-#endif
+DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const PackageMap& package_map,
     const std::string& root_dir,
@@ -243,9 +238,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
     const std::string& urdf_filename, RigidBodyTree<double>* tree);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileWithRpyJointToWorld().")  // NOLINT(whitespace/line_length)
-#endif
+DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileWithRpyJointToWorld().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename, RigidBodyTree<double>* tree);
 
@@ -283,9 +276,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileToWorld().")
-#endif
+DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileToWorld().")
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
@@ -307,8 +298,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
- * @param[in] urdf_filename The name of the file containing the URDF model. A
- * new instance of this model is created and added to @p tree.
+ * @param[in] urdf_filename The name of the file containing the URDF model.
+ * A new instance of this model is created and added to @p tree.
  *
  * @param[in] floating_base_type The type of joint that connects the model
  * instance's root to the @p tree.
@@ -368,9 +359,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
-#endif
+DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename, const PackageMap& package_map,
      const drake::multibody::joints::FloatingBaseType floating_base_type,

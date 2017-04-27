@@ -1,5 +1,7 @@
 #include "drake/multibody/parsers/package_map.h"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
@@ -31,7 +33,7 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   };
 
   PackageMap package_map;
-  for (auto const& it : expected_packages) {
+  for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
 
@@ -103,6 +105,35 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   };
 
   VerifyMatch(package_map, expected_packages);
+}
+
+// Tests that PackageMap's streaming to-string operator works.
+GTEST_TEST(PackageMapTest, TestStreamingToString) {
+  map<string, string> expected_packages = {
+    {"package_foo", GetDrakePath() + "/multibody/parsers"},
+    {"my_package", GetDrakePath() + "/multibody"}
+  };
+
+  PackageMap package_map;
+  for (const auto& it : expected_packages) {
+    package_map.Add(it.first, it.second);
+  }
+
+  std::stringstream string_buffer;
+  string_buffer << package_map;
+  const std::string resulting_string = string_buffer.str();
+
+  // The following simply tests that the package names and their relative
+  // paths exist in the resulting string. It does not check GetDrakePath() since
+  // that's system dependent or the actual formatting of the text.
+  for (const auto& it : expected_packages) {
+    EXPECT_NE(resulting_string.find(it.first), std::string::npos);
+    EXPECT_NE(resulting_string.find(it.second), std::string::npos);
+  }
+
+  // Verifies that there are three lines in the resulting string.
+  EXPECT_EQ(std::count(resulting_string.begin(), resulting_string.end(), '\n'),
+            3);
 }
 
 }  // namespace

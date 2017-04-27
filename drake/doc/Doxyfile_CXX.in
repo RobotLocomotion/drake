@@ -96,7 +96,7 @@ SHOW_USED_FILES        = YES
 SHOW_FILES             = YES
 SHOW_NAMESPACES        = YES
 FILE_VERSION_FILTER    =
-LAYOUT_FILE            =
+LAYOUT_FILE            = "@drake_SOURCE_DIR@/doc/DoxygenLayout.xml"
 CITE_BIB_FILES         =
 #---------------------------------------------------------------------------
 # Configuration options related to warning and progress messages
@@ -133,7 +133,7 @@ EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
-IMAGE_PATH             =
+IMAGE_PATH             = "@drake_SOURCE_DIR@"
 INPUT_FILTER           =
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
@@ -171,7 +171,7 @@ HTML_EXTRA_FILES       =
 HTML_COLORSTYLE_HUE    = 220
 HTML_COLORSTYLE_SAT    = 100
 HTML_COLORSTYLE_GAMMA  = 80
-HTML_TIMESTAMP         = YES
+HTML_TIMESTAMP         = NO
 HTML_DYNAMIC_SECTIONS  = NO
 HTML_INDEX_NUM_ENTRIES = 100
 GENERATE_DOCSET        = NO
@@ -286,9 +286,30 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED             = \
-  DRAKE_DOXYGEN_CXX=1
-
+PREDEFINED += DRAKE_DOXYGEN_CXX=1
+# =============================================================================
+# N.B. The spelling of the macro names between common/drake_copyable.h and this
+# file must be kept in sync!
+# =============================================================================
+# The following macros are carefully crafted to retain good markup when they
+# pass through Doxygen's preprocesor.
+PREDEFINED += DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(X):=" \
+/** \name Does not allow copy, move, or assignment */ \
+/** \{ */ \
+X(const X&) = delete; \
+X& operator=(const X&) = delete; \
+X(X&&) = delete; \
+X& operator=(X&&) = delete; \
+/** \} */"
+PREDEFINED += DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(X):=" \
+/** \name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */ \
+/** \{ */ \
+X(const X&) = default; \
+X& operator=(const X&) = default; \
+X(X&&) = default; \
+X& operator=(X&&) = default; \
+/** \} */"
+# =============================================================================
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------

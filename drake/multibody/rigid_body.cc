@@ -3,12 +3,15 @@
 #include <stdexcept>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;
 using Eigen::Vector3d;
 
+using std::make_unique;
+using std::move;
 using std::ostream;
 using std::runtime_error;
 using std::string;
@@ -16,11 +19,25 @@ using std::stringstream;
 using std::vector;
 
 template <typename T>
-RigidBody<T>::RigidBody()
-    : collision_filter_group_(DrakeCollision::DEFAULT_GROUP),
-      collision_filter_ignores_(DrakeCollision::NONE_MASK) {
+RigidBody<T>::RigidBody() {
   center_of_mass_ = Vector3d::Zero();
   spatial_inertia_ << drake::SquareTwistMatrix<double>::Zero();
+}
+
+template <typename T>
+std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
+  auto body = make_unique<RigidBody<T>>();
+  body->set_name(get_name());
+  body->set_model_name(get_model_name());
+  body->set_model_instance_id(get_model_instance_id());
+  body->set_body_index(body_index_);
+  body->set_position_start_index(position_start_index_);
+  body->set_velocity_start_index(velocity_start_index_);
+  body->set_contact_points(contact_points_);
+  body->set_mass(mass_);
+  body->set_center_of_mass(center_of_mass_);
+  body->set_spatial_inertia(spatial_inertia_);
+  return move(body);
 }
 
 template <typename T>
@@ -106,13 +123,6 @@ void RigidBody<T>::AddVisualElement(const DrakeShapes::VisualElement& element) {
 }
 
 template <typename T>
-void RigidBody<T>::AddCollisionElementsToClique(int clique_id) {
-  for (const auto& element : collision_elements_) {
-    element->AddToCollisionClique(clique_id);
-  }
-}
-
-template <typename T>
 const DrakeShapes::VectorOfVisualElements& RigidBody<T>::get_visual_elements()
     const {
   return visual_elements_;
@@ -152,51 +162,44 @@ std::map<std::string, std::vector<DrakeCollision::ElementId>>&
 }
 
 template <typename T>
-void RigidBody<T>::setCollisionFilter(const DrakeCollision::bitmask& group,
-                                   const DrakeCollision::bitmask& ignores) {
-  setCollisionFilterGroup(group);
-  setCollisionFilterIgnores(ignores);
+bool RigidBody<T>::IsRigidlyFixedToWorld() const {
+  if (parent_ == nullptr) {
+    // We assume that the world frame is the root of the tree, and, as such, the
+    // first body in the vector of bodies.  The body_index_ member is defined
+    // to be that position in the vector.
+    if (body_index_ != 0) {
+      throw std::runtime_error(
+          "Found a rigid body without a parent that is "
+          "not the world frame: " +
+          name_);
+    }
+    return true;
+  }
+  if (joint_ == nullptr) {
+    throw std::runtime_error("Found a rigid body without a parent joint:  " +
+                              name_);
+  }
+  if (joint_->is_fixed()) return parent_->IsRigidlyFixedToWorld();
+  return false;
 }
 
 template <typename T>
-const DrakeCollision::bitmask& RigidBody<T>::getCollisionFilterGroup() const {
-  return collision_filter_group_;
-}
+Isometry3d RigidBody<T>::ComputeWorldFixedPose() const {
+  if (parent_ == nullptr) {
+    return Isometry3d::Identity();
+  }
 
-template <typename T>
-void RigidBody<T>::setCollisionFilterGroup(
-  const DrakeCollision::bitmask& group) {
-  collision_filter_group_ = group;
-}
+  // RigidBodyTree::compile should enforce this property.
+  DRAKE_ASSERT(joint_ != nullptr);
 
-template <typename T>
-const DrakeCollision::bitmask& RigidBody<T>::getCollisionFilterIgnores() const {
-  return collision_filter_ignores_;
-}
-
-template <typename T>
-void RigidBody<T>::setCollisionFilterIgnores(const DrakeCollision::bitmask&
-    ignores) {
-  collision_filter_ignores_ = ignores;
-}
-
-template <typename T>
-void RigidBody<T>::addToCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
-  collision_filter_group_ |= group;
-}
-
-template <typename T>
-void RigidBody<T>::ignoreCollisionFilterGroup(const DrakeCollision::bitmask&
-    group) {
-  collision_filter_ignores_ |= group;
-}
-
-template <typename T>
-void RigidBody<T>::collideWithCollisionFilterGroup(
-  const DrakeCollision::bitmask&
-    group) {
-  collision_filter_ignores_ &= ~group;
+  if (!joint_->is_fixed()) {
+    throw std::runtime_error(
+        "Trying to compute world pose for a body with a "
+        "non-fixed parent joint:  " +
+        name_);
+  }
+  return parent_->ComputeWorldFixedPose() *
+         joint_->get_transform_to_parent_body();
 }
 
 template <typename T>
@@ -208,10 +211,7 @@ bool RigidBody<T>::adjacentTo(const RigidBody& other) const {
 
 template <typename T>
 bool RigidBody<T>::CanCollideWith(const RigidBody& other) const {
-  bool ignored =
-      this == &other || adjacentTo(other) ||
-      (collision_filter_group_ & other.getCollisionFilterIgnores()).any() ||
-      (other.getCollisionFilterGroup() & collision_filter_ignores_).any();
+  bool ignored = this == &other || adjacentTo(other);
   return !ignored;
 }
 
@@ -312,15 +312,6 @@ ostream& operator<<(ostream& out, const RigidBody<double>& b) {
       << "  - Collision elements IDs: " << collision_element_str.str();
 
   return out;
-}
-
-template <typename T>
-bool RigidBody<T>::SetSelfCollisionClique(int clique_id) {
-  if (collision_elements_.size() > 1) {
-    AddCollisionElementsToClique(clique_id);
-    return true;
-  }
-  return false;
 }
 
 // Explicitly instantiates on the most common scalar types.

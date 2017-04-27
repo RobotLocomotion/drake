@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "drake/common/drake_assert.h"
@@ -12,10 +13,6 @@
  * A prismatic joint moves linearly along one axis.
  */
 class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
-  // disable copy construction and assignment
-  // PrismaticJoint(const PrismaticJoint&) = delete;
-  // PrismaticJoint& operator=(const PrismaticJoint&) = delete;
-
  public:
   /**
    * The constructor that intializes the name, position, and axis of motion
@@ -51,13 +48,17 @@ class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
 
   virtual ~PrismaticJoint() {}
 
+  const Eigen::Vector3d& translation_axis() const { return translation_axis_; }
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  std::unique_ptr<DrakeJoint> DoClone() const final;
 
  private:
   static drake::TwistVector<double> spatialJointAxis(
       const Eigen::Vector3d& translation_axis);
 
- private:
   Eigen::Vector3d translation_axis_;
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

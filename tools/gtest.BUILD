@@ -3,12 +3,19 @@
 cc_library(
     name = "main",
     srcs = glob(
-        ["src/*.cc"],
-        exclude = ["src/gtest-all.cc"],
+        [
+            "googlemock/src/*.cc",
+            "googletest/src/*.cc",
+            "googletest/src/*.h",
+        ],
+        exclude = [
+            "googlemock/src/gmock-all.cc",
+            "googletest/src/gtest-all.cc",
+        ],
     ),
     hdrs = glob([
-        "include/**/*.h",
-        "src/*.h",
+        "googlemock/include/**/*.h",
+        "googletest/include/**/*.h",
     ]),
     copts = ["-Wno-unused-const-variable"],
     defines = [
@@ -16,8 +23,16 @@ cc_library(
         "GTEST_DONT_DEFINE_SUCCEED=1",
         "GTEST_DONT_DEFINE_TEST=1",
     ],
-    includes = ["include"],
-    linkopts = ["-pthread"],
+    includes = [
+        "googlemock",
+        "googlemock/include",
+        "googletest",
+        "googletest/include",
+    ],
+    linkopts = select({
+        "@//tools:linux": ["-pthread"],
+        "@//conditions:default": [],
+    }),
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )
