@@ -4,31 +4,40 @@
 #include <type_traits>
 #include <utility>
 
+#include "drake/common/monomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/solvers/binding.h"
-#include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/function.h"
 
 namespace drake {
 namespace solvers {
+namespace internal {
 
-/** \addtogroup FunctionCostCreators */
-/*@{*/
-
-/**
- * Converts an input of type @p F to a FunctionCost object.
- * @tparam F This class should have functions numInputs(), numOutputs and
- * eval(x, y).
- * @see detail::FunctionTraits
+/*
+ * Assist MathematicalProgram::AddLinearCost(...).
  */
-template <typename F>
-std::shared_ptr<Cost> CreateFunctionCost(F&& f) {
-  return std::make_shared<
-      FunctionCost<typename std::remove_reference<F>::type>>(
-      std::forward<F>(f));
-}
+Binding<LinearCost> ParseLinearCost(const symbolic::Expression& e);
 
+/*
+ * Assist MathematicalProgram::AddQuadraticCost(...).
+ */
+Binding<QuadraticCost> ParseQuadraticCost(const symbolic::Expression& e);
+
+/*
+ * Assist MathematicalProgram::AddPolynomialCost(...).
+ */
+Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e);
+
+/*
+ * Assist MathematicalProgram::AddCost(...).
+ */
+Binding<Cost> ParseCost(const symbolic::Expression& e);
+
+}  // namespace internal
+
+// TODO(eric.cousineau): Remove this when functor cost is no longer exposed
+// externally, and must be explicitly called.
 namespace detail {
 
 // From: drake-distro (git sha: 24452c1)
@@ -67,10 +76,9 @@ struct is_binding_compatible
  */
 template <typename F>
 struct is_cost_functor_candidate
-    : std::integral_constant<
-          bool,
-              (!is_binding_compatible<F, Cost>::value) &&
-              (!is_convertible_workaround<F, symbolic::Expression>::value)> {};
+    : std::integral_constant<bool, (!is_binding_compatible<F, Cost>::value) &&
+                                       (!is_convertible_workaround<
+                                           F, symbolic::Expression>::value)> {};
 
 /**
  * Template condition to only catch when Constraints are inadvertently passed
@@ -84,30 +92,13 @@ template <typename F>
 struct assert_if_is_constraint {
   static constexpr bool value = is_binding_compatible<F, Constraint>::value;
   // Use deferred evaluation
-  static_assert(!value, "You cannot pass a Constraint to "
+  static_assert(
+      !value,
+      "You cannot pass a Constraint to "
       "create a FunctionCost object. Please ensure you are passing a Cost.");
 };
 
-};  // namespace detail
-
-// TODO(eric.cousineau): For is_cost_functor_candidate, consider
-// changing implementation to simply check if F is callable (after removing
-// pointers, decaying, etc.)
-// @ref http://stackoverflow.com/a/5117641/7829525
-
-/**
- * Creates a cost that may be specified using a callable object.
- * @tparam F The function / functor's type.
- * @see FunctionCost, detail::FunctionTraits
- */
-template <typename F>
-typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
-                        std::shared_ptr<Cost>>::type
-CreateCost(F&& f) {
-  return CreateFunctionCost(std::forward<F>(f));
-}
-
-/*@}*/  // \addtogroup FunctionCostCreators
+}  // namespace detail
 
 }  // namespace solvers
 }  // namespace drake
