@@ -22,7 +22,6 @@ drake_setup_options()
 
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
-drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(fmt PUBLIC CMAKE ALWAYS)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(qt_property_browser CMAKE QT)
@@ -30,6 +29,12 @@ drake_add_external(sedumi PUBLIC CMAKE MATLAB)
 drake_add_external(spotless PUBLIC CMAKE MATLAB)
 drake_add_external(xfoil PUBLIC CMAKE FORTRAN)
 drake_add_external(yalmip PUBLIC CMAKE MATLAB)
+
+# eigen
+# N.B. See #5785; do your best not to have to bump this to a newer commit.
+drake_add_external(eigen PUBLIC CMAKE
+  URL https://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz
+  URL_HASH SHA256=94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f)
 
 # spdlog
 drake_add_external(spdlog PUBLIC CMAKE
