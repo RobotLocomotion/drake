@@ -93,12 +93,6 @@ TEST_F(KukaTest, ReachableWithCost) {
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-    // The position tolerance and the orientation tolerance is chosen
-    // according to the Gurobi solver tolerance.
-    double position_error = 1E-5;
-    double orientation_error = 2E-5;
-    CheckGlobalIKSolution(position_error, orientation_error);
-
     const Eigen::VectorXd q_w_cost =
         global_ik_.ReconstructGeneralizedPositionSolution();
     // There is extra error introduced from gurobi optimality condition and SVD,

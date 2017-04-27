@@ -174,6 +174,11 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // Normalizes the revolute vector.
                 v_C /= v_C_norm;
 
+                // The constraint would be tighter, if we choose many unit
+                // length vector `v`, perpendicular to the joint axis, in the
+                // joint frame. Here to balance between the size of the
+                // optimization problem, and the tightness of the convex
+                // relaxation, we just use two vectors in `v`.
                 std::array<Eigen::Vector3d, 2> v = {{v_C, axis_F.cross(v_C)}};
                 v[1] /= v[1].norm();
 
@@ -193,7 +198,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                           rotmat_joint_offset * v[j];
                   AddLorentzConeConstraint(joint_limit_expr);
                 }
-                if(robot_->get_body(parent_idx).IsRigidlyFixedToWorld()) {
+                if (robot_->get_body(parent_idx).IsRigidlyFixedToWorld()) {
                   // If the parent body is rigidly fixed to the world. Then we
                   // can impose a tighter linear constraint. Based on the
                   // derivation above, we have
