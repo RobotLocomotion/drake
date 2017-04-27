@@ -31,23 +31,6 @@ class EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorBase)
 
-  /// Constructs a constraint which has \p num_constraints rows, with input
-  /// variables to Eval a \p num_vars x 1 vector.
-  /// @param num_constraints. The number of rows in the constraints, namely
-  /// in Constraint::Eval(x, y), y should be a \p num_constraints x 1 vector.
-  /// @param num_vars. The number of rows in the input, namely in
-  /// Constraint::Eval(x, y), x should be a \p num_vars x 1 vector.
-  /// If the input dimension is not known, then set \p num_vars to
-  /// Eigen::Dynamic.
-  EvaluatorBase(size_t num_constraints, int num_vars)
-      : lower_bound_(num_constraints),
-        upper_bound_(num_constraints),
-        num_vars_(num_vars) {
-    check(num_constraints);
-    lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
-    upper_bound_.setConstant(std::numeric_limits<double>::infinity());
-  }
-
   template <typename DerivedLB, typename DerivedUB>
   EvaluatorBase(size_t num_constraints, int num_vars,
                 Eigen::MatrixBase<DerivedLB> const& lb,
@@ -166,6 +149,24 @@ class EvaluatorBase {
     DoEval(x, y);
     return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
            (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
+  }
+
+ protected:
+  /// Constructs a constraint which has \p num_constraints rows, with input
+  /// variables to Eval a \p num_vars x 1 vector.
+  /// @param num_constraints. The number of rows in the constraints, namely
+  /// in Constraint::Eval(x, y), y should be a \p num_constraints x 1 vector.
+  /// @param num_vars. The number of rows in the input, namely in
+  /// Constraint::Eval(x, y), x should be a \p num_vars x 1 vector.
+  /// If the input dimension is not known, then set \p num_vars to
+  /// Eigen::Dynamic.
+  EvaluatorBase(size_t num_constraints, int num_vars)
+      : lower_bound_(num_constraints),
+        upper_bound_(num_constraints),
+        num_vars_(num_vars) {
+    check(num_constraints);
+    lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
+    upper_bound_.setConstant(std::numeric_limits<double>::infinity());
   }
 
  private:
