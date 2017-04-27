@@ -48,11 +48,13 @@ void PidControlledSystem<T>::Initialize(
     std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd) {
   DRAKE_DEMAND(plant != nullptr);
+
+  if (plant->get_name().empty()) {
+    plant->set_name("plant");
+  }
+
   DiagramBuilder<T> builder;
   plant_ = builder.template AddSystem(std::move(plant));
-  if (plant_->get_name().empty()) {
-    plant_->set_name("plant");
-  }
   DRAKE_ASSERT(plant_->get_num_input_ports() >= 1);
   DRAKE_ASSERT(plant_->get_num_output_ports() >= 1);
 

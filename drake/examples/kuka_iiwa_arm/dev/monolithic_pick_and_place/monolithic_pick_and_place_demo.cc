@@ -20,7 +20,10 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
-              "Number of seconds to simulate.");
+"Number of seconds to simulate.");
+DEFINE_uint64(box_choice, 1, "ID of the box to pick.");
+DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
+
 
 using robotlocomotion::robot_plan_t;
 
@@ -40,7 +43,9 @@ int DoMain(void) {
   auto plant = builder.template AddSystem<
       IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
       std::make_unique<IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
-          &lcm));
+          &lcm, FLAGS_box_choice, 0.001, Vector3<double>(
+              1 + -0.43, -0.65, kTableTopZInWorld + 0.1),
+          Vector3<double>(0, 0, FLAGS_orientation) ));
 
   auto iiwa_base_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
@@ -87,7 +92,7 @@ int DoMain(void) {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
-  drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
-  return 0;
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
 }

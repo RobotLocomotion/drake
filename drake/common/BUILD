@@ -72,7 +72,13 @@ drake_cc_library(
         ":common",
         ":cond",
         ":dummy_value",
+        ":eigen_autodiff_limits",
     ],
+)
+
+drake_cc_library(
+    name = "eigen_autodiff_limits",
+    hdrs = ["eigen_autodiff_limits.h"],
 )
 
 drake_cc_library(
@@ -668,7 +674,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "type_safe_index_test",
-    deps = [":type_safe_index"],
+    deps = [
+        ":type_safe_index",
+        ":unused",
+    ],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...

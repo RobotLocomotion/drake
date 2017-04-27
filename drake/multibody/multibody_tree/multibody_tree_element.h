@@ -153,8 +153,9 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
   const MultibodyTree<T>* parent_tree_{nullptr};
 
-  // ElementIndexType requires a valid initialization.
-  ElementIndexType index_{0};
+  // The default index value is *invalid*. This must be set to a valid index
+  // value before the element is released to the wild.
+  ElementIndexType index_;
 };
 
 }  // namespace multibody

@@ -130,11 +130,10 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    * MathematicalProgram::AddCost().
    */
   template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
+  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
+                          std::shared_ptr<solvers::Constraint>>::type
   AddRunningCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::CreateFunctionCost(std::forward<F>(f));
     AddRunningCost(c);
     return c;
   }
@@ -266,11 +265,10 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    * MathematicalProgram::AddCost().
    */
   template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
+  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
+                          std::shared_ptr<solvers::Constraint>>::type
   AddFinalCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::CreateFunctionCost(std::forward<F>(f));
     AddFinalCost(c);
     return c;
   }

@@ -286,6 +286,13 @@ macro(drake_setup_options)
     DEPENDS "NOT APPLE OR NOT Matlab_FOUND\;NOT DISABLE_FORTRAN"
     "Interior Point Optimizer, for solving non-linear optimizations")
 
+  drake_optional_external(IGNITION_MATH ON
+    "Math classes and functions for robot applications")
+
+  drake_optional_external(IGNITION_RNDF ON
+    DEPENDS "WITH_IGNITION_MATH"
+    "Classes and functions for parsing RNDF road networks")
+
   drake_optional_external(LIBBOT ON
     DEPENDS "NOT USE_SANITIZER"
     "libbot2 robotics suite\;"
