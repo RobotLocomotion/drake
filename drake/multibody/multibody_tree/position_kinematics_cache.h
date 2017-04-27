@@ -11,17 +11,15 @@ namespace drake {
 namespace multibody {
 
 /// This class is one of the cache entries in MultibodyTreeContext. It holds the
-/// kinematics results of compuatations that only depend on the generalized
+/// kinematics results of computations that only depend on the generalized
 /// positions of the system.
-/// These results are internally stored as arrays with BSF (Breadth-First
-/// Search) ordering in order to minimize cache misses (in this context we mean
-/// **hardware cache**) during MultibodyTree traversals. Cache misses result in
-/// memory access with a much longer latency.
 /// Kinematics results include:
 /// - Body frame B poses X_WB measured and expressed in the world frame W.
 /// - Pose X_FM of a mobilizer's outboard frame M measured and expressed in the
 ///   inboard frame F.
-/// - Mobilizer's Jacobian matrices H_FM, H_PB.
+/// - Mobilizer's matrices H_FM (with F and M defined above) that map the
+///   mobilizer's generalized velocities v to cross-joint spatial velocities
+///   V_FM = H_FM * v.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
@@ -44,30 +42,36 @@ class PositionKinematicsCache {
   }
 
   /// Returns a constant reference to the pose `X_WB` of the body `B`
-  /// (associated with node @p body_node_id) as measured and expressed in the
+  /// (associated with node @p body_node_index) as measured and expressed in the
   /// world frame `W`.
-  /// @param[in] body_node_id The unique identifier for the computational
-  ///                         BodyNode object associated with body `B`.
+  /// @param[in] body_node_index The unique index for the computational
+  ///                            BodyNode object associated with body `B`.
   /// @returns `X_WB` the pose of the the body frame `B` measured and
   ///                 expressed in the world frame `W`.
-  const Isometry3<T>& get_X_WB(BodyNodeIndex body_node_id) const {
-    DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
-    return X_WB_pool_[body_node_id];
+  const Isometry3<T>& get_X_WB(BodyNodeIndex body_node_index) const {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return X_WB_pool_[body_node_index];
   }
 
   /// Returns a mutable reference to the pose `X_WB` of the body `B`
-  /// (associated with node @p body_node_id) as measured and expressed in the
+  /// (associated with node @p body_node_index) as measured and expressed in the
   /// world frame `W`.
-  /// @param[in] body_node_id The unique identifier for the computational
-  ///                         BodyNode object associated with body `B`.
+  /// @param[in] body_node_index The unique index for the computational
+  ///                            BodyNode object associated with body `B`.
   /// @returns `X_WB` the pose of the the body frame `B` measured and
   ///                 expressed in the world frame `W`.
-  Isometry3<T>& get_mutable_X_WB(BodyNodeIndex body_node_id) {
-    DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
-    return X_WB_pool_[body_node_id];
+  Isometry3<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return X_WB_pool_[body_node_index];
   }
 
  private:
+  // Pool types:
+  // Pools are stored as arrays with BSF (Breadth-First Search) ordering in
+  // order to minimize cache misses (in this context we mean **hardware cache**)
+  // during MultibodyTree traversals. Cache misses result in memory access with
+  // a much longer latency.
+
   // The type of pools for storing poses.
   typedef eigen_aligned_std_vector<Isometry3<T>> X_PoolType;
 

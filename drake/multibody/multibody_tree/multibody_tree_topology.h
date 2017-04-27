@@ -49,7 +49,7 @@ struct BodyTopology {
   /// Unique index to the frame associated with this body.
   FrameIndex body_frame{0};
 
-  /// The unique index indentifying the BodyNode this Body is associated within
+  /// The unique index identifying the BodyNode this Body is associated within
   /// a MultibodyTree.
   BodyNodeIndex body_node{0};
 
