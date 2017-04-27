@@ -216,6 +216,17 @@ drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
     -DPYTHON_LIBRARY=${PYTHON_LIBRARY}
   DEPENDS eigen mosek pybind11)
 
+# ignition_math
+drake_add_external(ignition_math PUBLIC CMAKE
+  URL https://bitbucket.org/ignitionrobotics/ign-math/get/ignition-math3_3.0.0.tar.gz
+  URL_HASH SHA256=9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd)
+
+# ignition_rndf
+drake_add_external(ignition_rndf PUBLIC CMAKE
+  URL https://bitbucket.org/ignitionrobotics/ign-rndf/get/ignition-rndf_0.1.2.tar.gz
+  URL_HASH SHA256=e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a
+  DEPENDS ignition_math)
+
 # lcm
 drake_add_external(lcm PUBLIC CMAKE PYTHON
   CMAKE_ARGS
@@ -270,6 +281,8 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
+    -DWITH_IGNITION_MATH:BOOL=${WITH_IGNITION_MATH}
+    -DWITH_IGNITION_RNDF:BOOL=${WITH_IGNITION_RNDF}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
@@ -308,6 +321,8 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     google_styleguide
     googletest
     gurobi
+    ignition-math
+    ignition-rndf
     ipopt
     iris
     lcm
