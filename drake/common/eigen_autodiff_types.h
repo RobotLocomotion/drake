@@ -11,6 +11,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/eigen_autodiff_limits.h"
 
 namespace drake {
 
