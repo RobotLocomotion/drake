@@ -64,6 +64,8 @@ std::pair<bool, T> RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& max_dt) {
   // Call the generic error controlled stepper unless error control is
   // disabled.
   if (this->get_fixed_step_mode()) {
+    this->get_mutable_interval_start_state() =
+        context.get_continuous_state_vector().CopyToVector();
     this->DoStepOnceFixedSize(max_dt);
     return std::make_pair(true, max_dt);
   } else {
@@ -91,9 +93,6 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Get the context.
   auto& context = this->get_context();
 
-  // Store the start state
-  x0_ = context.get_continuous_state_vector().CopyToVector();
-
   // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
   this->get_mutable_context()->set_time(ta + dt * 0.5);
   xc->PlusEqScaled(dt * 0.5, xcdot0);
@@ -102,14 +101,14 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // Compute the second intermediate state and derivative (at t=1, x(1)).
   this->get_mutable_context()->set_time(tb);
-  xc->SetFromVector(x0_);
+  xc->SetFromVector(this->get_interval_start_state());
   xc->PlusEqScaled({{-dt, xcdot0}, {dt * 2, xcdot1}});
   this->CalcTimeDerivatives(context, derivs2_.get());
   const auto& xcdot2 = derivs2_->get_vector();
 
   // calculate the state at dt.
   const double kOneSixth = 1.0 / 6.0;
-  xc->SetFromVector(x0_);
+  xc->SetFromVector(this->get_interval_start_state());
   xc->PlusEqScaled({{dt * kOneSixth, xcdot0},
                     {4.0 * dt * kOneSixth, xcdot1},
                     {dt * kOneSixth, xcdot2}});
@@ -122,7 +121,7 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Calculate the error estimate using an Eigen vector then copy it to the
   // continuous state vector, where the various state components can be
   // analyzed.
-  err_est_vec_ = -x0_;
+  err_est_vec_ = -this->get_interval_start_state();
   xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
   xc->ScaleAndAddToVector(1.0, err_est_vec_);
   err_est_vec_ = err_est_vec_.cwiseAbs();
