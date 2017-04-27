@@ -43,6 +43,9 @@ class CostShimBase : public Cost {
               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               AutoDiffVecXd& y) const override;
 
+  const std::shared_ptr<Constraint>& impl() const { return impl_; }
+
+ private:
   std::shared_ptr<Constraint> impl_;
 };
 
@@ -59,10 +62,13 @@ class CostShim : public CostShimBase {
   template <typename... Args>
   explicit CostShim(Args&&... args)
       : CostShimBase(std::make_shared<C>(std::forward<Args>(args)...)) {
-    constraint_ = std::dynamic_pointer_cast<C>(impl_);
+    constraint_ = std::dynamic_pointer_cast<C>(impl());
   }
 
  protected:
+  const std::shared_ptr<C>& constraint() const { return constraint_; }
+
+ private:
   std::shared_ptr<C> constraint_;
 };
 
@@ -81,9 +87,9 @@ class LinearCost : public CostShim<LinearConstraint> {
                      std::numeric_limits<double>::infinity())) {}
 
   Eigen::SparseMatrix<double> GetSparseMatrix() const {
-    return constraint_->GetSparseMatrix();
+    return constraint()->GetSparseMatrix();
   }
-  const Eigen::MatrixXd& A() const { return constraint_->A(); }
+  const Eigen::MatrixXd& A() const { return constraint()->A(); }
 };
 
 /**
@@ -99,9 +105,9 @@ class QuadraticCost : public CostShim<QuadraticConstraint> {
       : CostShim(Q, f, -std::numeric_limits<double>::infinity(),
                  std::numeric_limits<double>::infinity()) {}
 
-  const Eigen::MatrixXd& Q() const { return constraint_->Q(); }
+  const Eigen::MatrixXd& Q() const { return constraint()->Q(); }
 
-  const Eigen::VectorXd& b() const { return constraint_->b(); }
+  const Eigen::VectorXd& b() const { return constraint()->b(); }
 
   /**
    * Updates the quadratic and linear term of the constraint. The new
@@ -112,7 +118,7 @@ class QuadraticCost : public CostShim<QuadraticConstraint> {
   template <typename DerivedQ, typename DerivedB>
   void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
                                      const Eigen::MatrixBase<DerivedB>& new_b) {
-    constraint_->UpdateQuadraticAndLinearTerms(new_Q, new_b);
+    constraint()->UpdateQuadraticAndLinearTerms(new_Q, new_b);
   }
 };
 
@@ -137,10 +143,10 @@ class PolynomialCost : public CostShim<PolynomialConstraint> {
             Vector1<double>::Constant(
                 std::numeric_limits<double>::infinity())) {}
 
-  const VectorXPoly& polynomials() const { return constraint_->polynomials(); }
+  const VectorXPoly& polynomials() const { return constraint()->polynomials(); }
 
   const std::vector<Polynomiald::VarType>& poly_vars() const {
-    return constraint_->poly_vars();
+    return constraint()->poly_vars();
   }
 };
 
