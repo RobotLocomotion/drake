@@ -173,25 +173,49 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // Normalizes the revolute vector.
                 v_C /= v_C_norm;
 
-                // joint_limit_expr is going to be within the Lorentz cone.
-                Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
-                joint_limit_expr(0) = 2 * sin(joint_bound / 2);
-                // rotmat_joint_offset is R(k, (a+b)/2) explained above.
-                Matrix3d rotmat_joint_offset =
-                    Eigen::AngleAxisd((joint_lb + joint_ub) / 2, axis_F)
-                        .toRotationMatrix();
-
                 std::array<Eigen::Vector3d, 2> v = {{v_C, axis_F.cross(v_C)}};
                 v[1] /= v[1].norm();
-                for (int j = 0; j < static_cast<int>(v.size()); ++j) {
-                  // joint_limit_expr.tail<3> is
-                  // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
-                  joint_limit_expr.tail<3>() = R_WB_[body_idx] * v[j] -
-                      R_WB_[parent_idx] * X_PF.linear() *
-                          rotmat_joint_offset * v[j];
-                  AddLorentzConeConstraint(joint_limit_expr);
-                }
 
+                // rotmat_joint_offset is R(k, (a+b)/2) explained above.
+                const Matrix3d rotmat_joint_offset =
+                    Eigen::AngleAxisd((joint_lb + joint_ub) / 2, axis_F)
+                        .toRotationMatrix();
+                if (!robot_->get_body(parent_idx).IsRigidlyFixedToWorld()) {
+                  // joint_limit_expr is going to be within the Lorentz cone.
+                  Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
+                  joint_limit_expr(0) = 2 * sin(joint_bound / 2);
+                  for (int j = 0; j < static_cast<int>(v.size()); ++j) {
+                    // joint_limit_expr.tail<3> is
+                    // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
+                    joint_limit_expr.tail<3>() = R_WB_[body_idx] * v[j] -
+                        R_WB_[parent_idx] * X_PF.linear() *
+                            rotmat_joint_offset * v[j];
+                    AddLorentzConeConstraint(joint_limit_expr);
+                  }
+                } else {
+                  // If the parent body is rigidly fixed to the world. Then we
+                  // can impose a tighter linear constraint. Based on the
+                  // derivation above, we have
+                  // R(k, θ-(a+b)/2)) = [R_WP * R_PF * R(k, (a+b)/2)]ᵀ * R_WC
+                  // as a linear expression of the decision variable R_WC
+                  // (notice that R_WP is constant, since the parent body is
+                  // rigidly fixed to the world.
+                  // For a unit length vector `v` perpendicular to the rotation
+                  // axis, in the joint frame, we know
+                  //   vᵀ * R(k, θ-(a+b)/2)) * v = cos(θ - (a+b)/2)
+                  //                            >= cos((b-a)/2)
+                  const Isometry3d X_WP =
+                      robot_->get_body(parent_idx).ComputeWorldFixedPose();
+                  // R_joint_angle is R(k, θ-(a+b)/2)) in the documentation.
+                  Eigen::Matrix<symbolic::Expression, 3, 3> R_joint_angle =
+                      (X_WP.linear() * X_PF.linear() * rotmat_joint_offset)
+                          .transpose() *
+                      R_WB_[body_idx];
+                  for (int j = 0; j < static_cast<int>(v.size()); ++j) {
+                    AddLinearConstraint(v[j].dot(R_joint_angle * v[j]),
+                                        std::cos(joint_bound), 1.0);
+                  }
+                }
               }
             } else {
               // TODO(hongkai.dai): Add prismatic and helical joint.
