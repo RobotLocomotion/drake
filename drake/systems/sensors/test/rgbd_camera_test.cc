@@ -52,11 +52,11 @@ class RgbdCameraTest : public ::testing::Test {
     EXPECT_NEAR(kExpectedWidth * 0.5, dut.center_x(), kTolerance);
     EXPECT_NEAR(kExpectedHeight * 0.5, dut.center_y(), kTolerance);
 
-    // Expected focal values are calculated by hand.
-    const double kExpectedFocalX = 554.25625842204079;
-    const double kExpectedFocalY = 579.41125496954282;
-    EXPECT_NEAR(kExpectedFocalX, dut.focal_x(), kTolerance);
-    EXPECT_NEAR(kExpectedFocalY, dut.focal_y(), kTolerance);
+    // The expected focal value is calculated by the equation here:
+    // https://github.com/RobotLocomotion/drake/blob/master/drake/systems/sensors/camera_info.h#L87
+    const double kExpectedFocal = 579.41125496954282;
+    EXPECT_NEAR(kExpectedFocal, dut.focal_x(), kTolerance);
+    EXPECT_NEAR(kExpectedFocal, dut.focal_y(), kTolerance);
   }
 
  protected:
@@ -99,6 +99,7 @@ class RenderingSim : public systems::Diagram<double> {
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     plant_ = builder_.AddSystem<RigidBodyPlant<double>>(std::move(tree));
+    plant_->set_name("rigid_body_plant");
     const double kPenetrationStiffness = 3000.;
     const double kPenetrationDamping = 10.;
     const double kStaticFriction = 0.9;
@@ -116,6 +117,7 @@ class RenderingSim : public systems::Diagram<double> {
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(),
         position, orientation, kFovY, kShowWindow);
+    rgbd_camera_->set_name("rgbd_camera");
     Connect();
   }
 
@@ -129,6 +131,7 @@ class RenderingSim : public systems::Diagram<double> {
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(), *rgbd_camera_frame_.get(),
         kFovY, kShowWindow);
+    rgbd_camera_->set_name("rgbd_camera");
     Connect();
   }
 
