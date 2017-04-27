@@ -157,12 +157,15 @@ github_archive(
     sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
 )
 
-github_archive(
+new_http_archive(
     name = "nlopt",
-    repository = "stevengj/nlopt",
-    commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
-    build_file = "tools/nlopt.BUILD",
+    urls = [
+        "https://d2tbce6hkathzp.cloudfront.net/github/stevengj/nlopt/516aca7e96405939726648e00faeb26bd2c9b29f.tar.gz",
+        "https://s3.amazonaws.com/drake-mirror/github/stevengj/nlopt/516aca7e96405939726648e00faeb26bd2c9b29f.tar.gz",
+    ],
+    strip_prefix="nlopt-516aca7e96405939726648e00faeb26bd2c9b29f",
     sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",
+    build_file = "tools/nlopt.BUILD",
 )
 
 github_archive(
