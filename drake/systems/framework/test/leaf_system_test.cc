@@ -116,7 +116,7 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
   context_.set_time(25.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(std::numeric_limits<double>::infinity(), time);
-  EXPECT_TRUE(leaf_info_->IsEmpty());
+  EXPECT_TRUE(leaf_info_->HasNoEvents());
 }
 
 // Tests that if the current time is smaller than the offset, the next

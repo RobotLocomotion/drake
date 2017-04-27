@@ -35,22 +35,22 @@ void DiagramEventInfo::DoMerge(const EventInfo* other_info) {
   }
 }
 
-void DiagramEventInfo::DoClear() {
+void DiagramEventInfo::Clear() {
   for (EventInfo* sub_event : sub_event_info_) {
     sub_event->Clear();
   }
 }
 
-bool DiagramEventInfo::DoHasEvent(EventType event_type) const {
+bool DiagramEventInfo::HasEvent(EventType event_type) const {
   for (const EventInfo* sub_event : sub_event_info_) {
     if (sub_event->HasEvent(event_type)) return true;
   }
   return false;
 }
 
-bool DiagramEventInfo::DoIsEmpty() const {
+bool DiagramEventInfo::HasNoEvents() const {
   for (const EventInfo* sub_event : sub_event_info_) {
-    if (!sub_event->IsEmpty()) return false;
+    if (!sub_event->HasNoEvents()) return false;
   }
   return true;
 }

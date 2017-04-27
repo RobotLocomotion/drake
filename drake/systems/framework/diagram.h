@@ -1385,6 +1385,9 @@ class Diagram : public System<T>,
   // Diagram<double> can provide transmogrification methods to more flavorful
   // scalar types.  See Diagram<T>::ConvertScalarType.
   friend class Diagram<double>;
+
+  // To access DiagramEventInfo's constructor.
+  friend class DiagramEventInfo;
 };
 
 }  // namespace systems

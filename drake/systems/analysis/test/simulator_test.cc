@@ -282,7 +282,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     info->add_trigger(EventInfo::EventType::kUnrestrictedUpdate,
-        std::make_unique<PeriodicTrigger>(0, *time));
+        std::make_unique<PeriodicTrigger<double>>(0, *time));
   }
 
   void DoCalcUnrestrictedUpdate(

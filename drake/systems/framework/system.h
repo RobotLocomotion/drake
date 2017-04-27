@@ -65,8 +65,6 @@ class System {
   /// Allocates an EventInfo for this system. The allocated EventInfo instance
   /// is used for registering and handling events (e.g. CalcNextUpdateTime(),
   /// Publish()).
-  /// @note The users should never directly call constructors of derived
-  /// EventInfo classes. This method should be used instead.
   virtual std::unique_ptr<EventInfo> AllocateEventInfo() const = 0;
 
   /// Given a port descriptor, allocates the vector storage.  The default
@@ -187,7 +185,10 @@ class System {
   //@{
 
   /// This method is the event handler for EventInfo::EventType::kPublish type
-  /// events.
+  /// events. The Simulator calls this at the start of each continuous
+  /// integration step, after discrete variables have been updated to the values
+  /// they will hold throughout the step. @p event_info can be null, which is
+  /// equivalent to force publish.
   ///
   /// @note When publishing is scheduled at particular times, those times likely
   /// will not coincide with integrator step times. A Simulator may interpolate
@@ -201,6 +202,9 @@ class System {
     DispatchPublishHandler(context, event_info);
   }
 
+  /// Forces a publish event on the system. The Simulator can be configured to
+  /// call this in Simulator::Initialize() and at the start of each continuous
+  /// integration step. See the Simulator API for more details.
   void Publish(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DispatchPublishHandler(context, nullptr);
@@ -416,6 +420,8 @@ class System {
   /// EventInfo::EventType::kDiscreteUpdate type events. Given @p event_info,
   /// it calculates the correct update `xd(n+1)` to discrete variables `xd(n)`
   /// in @p context, and outputs the results to @p discrete_state.
+  /// @p event_info can be null, which is equivalent to a forced discrete
+  /// update.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
       const EventInfo* event_info,
       DiscreteValues<T>* discrete_state) const {
@@ -431,10 +437,11 @@ class System {
   }
 
   /// This method is the event handler for
-  /// EventInfo::EventType::kUnrestrictedUpdate type events. Given
-  /// @p event_info, it updates *any* state variables in the @p context, and
-  /// outputs the results to @p state. It does not allow the dimensionality
-  /// of the state variables to change.
+  /// EventInfo::EventType::kUnrestrictedUpdate type events. It updates *any*
+  /// state variables in the @p context, and outputs the results to @p state.
+  /// It does not allow the dimensionality of the state variables to change.
+  /// @p event_info can be null, which is equivalent to a forced unrestricted
+  /// update.
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes in the callback.
   void CalcUnrestrictedUpdate(const Context<T>& context,
@@ -459,6 +466,7 @@ class System {
           "in CalcUnrestrictedUpdate().");
   }
 
+  /// This method forces a unrestricted update.
   void CalcUnrestrictedUpdate(const Context<T>& context,
                               State<T>* state) const {
     CalcUnrestrictedUpdate(context, nullptr, state);

@@ -98,8 +98,8 @@ std::ostream& operator<<(std::ostream& out, const Trigger::TriggerType& type);
  * contrast to the normal event trigger mechanisms in System such as
  * System::CalcNextUpdateTime() or System::GetPerStepEvents(). An example
  * usage is to directly invoke the event handlers. Calling
- * System::Publish(context) as opposed to System::Publish(context, triggers)
- * is a very common and useful typical use case.
+ * System::Publish(context) as opposed to System::Publish(context, events)
+ * is a common and useful use case.
  */
 class ForcedTrigger final : public Trigger {
  public:
@@ -144,25 +144,26 @@ class PerStepTrigger final : public Trigger {
  * most common use case is to represent periodic reoccurring events. However,
  * one-shot events triggered by a timer can also be represented with a 0 period.
  */
+template <typename T>
 class PeriodicTrigger final : public Trigger {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PeriodicTrigger)
 
-  PeriodicTrigger(double period_sec, double offset_sec)
+  PeriodicTrigger(T period_sec, T offset_sec)
       : Trigger(TriggerType::kPeriodic),
         period_sec_(period_sec), offset_sec_(offset_sec) {}
 
-  double get_period_sec() const { return period_sec_; }
-  double get_offset_sec() const { return offset_sec_; }
+  T get_period_sec() const { return period_sec_; }
+  T get_offset_sec() const { return offset_sec_; }
 
  private:
   std::unique_ptr<Trigger> DoClone() const override {
     return std::unique_ptr<Trigger>(
-        new PeriodicTrigger(period_sec_, offset_sec_));
+        new PeriodicTrigger<T>(period_sec_, offset_sec_));
   }
 
-  double period_sec_{0};
-  double offset_sec_{0};
+  T period_sec_{0};
+  T offset_sec_{0};
 };
 
 }  // namespace systems

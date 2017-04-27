@@ -116,11 +116,11 @@ class TestSystem : public System<double> {
     if (context.get_time() < 10.0) {
       // Use the default publish action.
       info->add_trigger(EventInfo::EventType::kPublish,
-          std::make_unique<PeriodicTrigger>(0, *time));
+          std::make_unique<PeriodicTrigger<double>>(0, *time));
     } else {
       // Use the default update action.
       info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
-          std::make_unique<PeriodicTrigger>(0, *time));
+          std::make_unique<PeriodicTrigger<double>>(0, *time));
     }
   }
 

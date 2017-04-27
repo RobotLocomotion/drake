@@ -823,8 +823,8 @@ class LeafSystem : public System<T> {
     for (const PeriodicEvent* event : next_events) {
       EventInfo::EventType e = event->event;
       info->add_trigger(e,
-          std::make_unique<PeriodicTrigger>(event->period_sec,
-                                            event->offset_sec));
+          std::make_unique<PeriodicTrigger<T>>(
+              event->period_sec, event->offset_sec));
     }
   }
 

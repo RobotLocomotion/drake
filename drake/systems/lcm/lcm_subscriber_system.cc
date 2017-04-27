@@ -139,10 +139,10 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
     DRAKE_DEMAND(info != nullptr);
     if (translator_ == nullptr) {
       info->add_trigger(EventInfo::EventType::kUnrestrictedUpdate,
-          std::make_unique<PeriodicTrigger>(0, *time));
+          std::make_unique<PeriodicTrigger<double>>(0, *time));
     } else {
       info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
-          std::make_unique<PeriodicTrigger>(0, *time));
+          std::make_unique<PeriodicTrigger<double>>(0, *time));
     }
   } else {
     // Use base class' implementation.

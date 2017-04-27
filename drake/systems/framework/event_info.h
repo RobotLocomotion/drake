@@ -11,11 +11,14 @@
 namespace drake {
 namespace systems {
 
+template <typename T> class LeafSystem;
+template <typename T> class Diagram;
+
 /**
- * Base class that represents events for System. There are several predefined
- * event and trigger types. To represent a concrete event, a pair of event
- * type and Trigger is necessary. The former specifies the event type, and the
- * latter captures all the details of the actual event.
+ * Base class that represents all events at a particular time for System.
+ * There are several predefined event and trigger types. To represent a concrete
+ * event, a pair of event type and Trigger is necessary. The former specifies
+ * the event type, and the latter captures all the details of the actual event.
  *
  * For each event type, the System API provides a unique customizable function
  * for handling all the simultaneous events of that type, such as
@@ -95,11 +98,11 @@ class EventInfo {
   virtual ~EventInfo() {}
 
   /**
-   * Merges @p other's event information into this.
-   *
-   * See derived DoMerge() for more details.
+   * Merges @p other's event information into this. See derived DoMerge() for
+   * more details. @p other cannot be null.
    */
   void Merge(const EventInfo* other) {
+    DRAKE_DEMAND(other != nullptr);
     if (other == this) return;
     DoMerge(other);
   }
@@ -107,17 +110,17 @@ class EventInfo {
   /**
    * Clears all the triggers associated with all the event types.
    */
-  void Clear() { DoClear(); }
+  virtual void Clear() = 0;
 
   /**
    * Returns true if an event of @p event_type exists.
    */
-  bool HasEvent(EventType event_type) const { return DoHasEvent(event_type); }
+  virtual bool HasEvent(EventType event_type) const = 0;
 
   /**
    * Returns true if no event exists.
    */
-  bool IsEmpty() const { return DoIsEmpty(); }
+  virtual bool HasNoEvents() const = 0;
 
  protected:
   /**
@@ -125,10 +128,11 @@ class EventInfo {
    */
   EventInfo() = default;
 
+  /**
+   * Derived implementation can assume that @p is not null, and it is does not
+   * equal to this.
+   */
   virtual void DoMerge(const EventInfo* other) = 0;
-  virtual void DoClear() = 0;
-  virtual bool DoHasEvent(EventType event_type) const = 0;
-  virtual bool DoIsEmpty() const = 0;
 };
 
 /**
@@ -139,19 +143,6 @@ class EventInfo {
 class DiagramEventInfo final : public EventInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventInfo)
-
-  /**
-   * Constructor. Note that this constructor only resizes the containers, but
-   * does not allocate any derived EventInfo instances. Users should never call
-   * this explicitly. Instead, they should call System::AllocateEventInfo() on
-   * the given Diagram.
-   *
-   * @param num_sub_systems Number of sub systems in the corresponding Diagram.
-   */
-  explicit DiagramEventInfo(int num_sub_systems)
-      : EventInfo(),
-        sub_event_info_(num_sub_systems),
-        owned_sub_event_info_(num_sub_systems) {}
 
   /**
    * Returns the number of constituent EventInfo that correspond to each sub
@@ -178,8 +169,35 @@ class DiagramEventInfo final : public EventInfo {
    */
   EventInfo* get_mutable_sub_event_info(int index);
 
+  /**
+   * Goes through each sub event info and clears its content.
+   */
+  void Clear() override;
+
+  /**
+   * Returns true if any sub event info contains @p event_type.
+   */
+  bool HasEvent(EventType event_type) const override;
+
+  /**
+   * Returns true if all sub event info are empty.
+   */
+  bool HasNoEvents() const override;
+
  protected:
   // These are protected for doxygen.
+
+  /**
+   * Constructor. Note that this constructor only resizes the containers, but
+   * does not allocate any derived EventInfo instances. Users should never call
+   * this explicitly. Only Diagram is about to access this.
+   *
+   * @param num_sub_systems Number of sub systems in the corresponding Diagram.
+   */
+  explicit DiagramEventInfo(int num_sub_systems)
+      : EventInfo(),
+        sub_event_info_(num_sub_systems),
+        owned_sub_event_info_(num_sub_systems) {}
 
   /**
    * Goes through each sub event info and merges in the corresponding one in
@@ -189,24 +207,11 @@ class DiagramEventInfo final : public EventInfo {
    */
   void DoMerge(const EventInfo* other_info) override;
 
-  /**
-   * Goes through each sub event info and clears its content.
-   */
-  void DoClear() override;
-
-  /**
-   * Returns true if any sub event info contains @p event_type.
-   */
-  bool DoHasEvent(EventType event_type) const override;
-
-  /**
-   * Returns true if all sub event info are empty.
-   */
-  bool DoIsEmpty() const override;
-
  private:
   std::vector<EventInfo*> sub_event_info_;
   std::vector<std::unique_ptr<EventInfo>> owned_sub_event_info_;
+
+  template <typename T> friend class Diagram;
 };
 
 /**
@@ -225,8 +230,6 @@ class LeafEventInfo final : public EventInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventInfo)
 
-  LeafEventInfo() = default;
-
   /**
    * Returns all the triggers that are associated to @p event_type. Aborts if
    * @p event_type does not exist.
@@ -238,6 +241,23 @@ class LeafEventInfo final : public EventInfo {
    * does not have a @p event_type event. Ownership of @p trigger is transfered.
    */
   void add_trigger(EventType event_type, std::unique_ptr<Trigger> trigger);
+
+  /**
+   * Returns true if an event of @p event_type exists.
+   */
+  bool HasEvent(EventType event_type) const override {
+    return events_.find(event_type) != events_.end();
+  }
+
+  /**
+   * Returns true if no event exists.
+   */
+  bool HasNoEvents() const override { return events_.empty(); }
+
+  /**
+   * Clears all events.
+   */
+  void Clear() override { events_.clear(); }
 
  protected:
   // These are protected for doxygen.
@@ -268,21 +288,9 @@ class LeafEventInfo final : public EventInfo {
   void DoMerge(const EventInfo* other_info) override;
 
   /**
-   * Returns true if an event of @p event_type exists.
+   * Constructor. Only LeafSystem is about to access this.
    */
-  bool DoHasEvent(EventType event_type) const override {
-    return events_.find(event_type) != events_.end();
-  }
-
-  /**
-   * Returns true if no event exists.
-   */
-  bool DoIsEmpty() const override { return events_.empty(); }
-
-  /**
-   * Clears all events.
-   */
-  void DoClear() override { events_.clear(); }
+  LeafEventInfo() = default;
 
  private:
   // List just for holding the unique pointers.
@@ -291,6 +299,12 @@ class LeafEventInfo final : public EventInfo {
   // A map from event type to its associated triggers. Pointers point to
   // owned_triggers_.
   std::map<EventType, std::vector<const Trigger*>> events_;
+
+  // this has some arcane errors..
+  // ./drake/systems/framework/event_info.h:304:74: warning: dependent nested name specifier 'LeafSystem<T>::' for friend class declaration is not supported; turning off access control for 'LeafEventInfo' [-Wunsupported-friend]
+  //   template <typename T> friend std::unique_ptr<EventInfo> LeafSystem<T>::AllocateEventInfo();
+  // template <typename T> friend std::unique_ptr<EventInfo> LeafSystem<T>::AllocateEventInfo();
+  template <typename T> friend class LeafSystem;
 };
 
 }  // namespace systems
