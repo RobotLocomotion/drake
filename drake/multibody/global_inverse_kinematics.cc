@@ -181,12 +181,17 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                     Eigen::AngleAxisd((joint_lb + joint_ub) / 2, axis_F)
                         .toRotationMatrix();
 
-                // joint_limit_expr.tail<3> is
-                // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
-                joint_limit_expr.tail<3>() = R_WB_[body_idx] * v_C -
-                                             R_WB_[parent_idx] * X_PF.linear() *
-                                                 rotmat_joint_offset * v_C;
-                AddLorentzConeConstraint(joint_limit_expr);
+                std::array<Eigen::Vector3d, 2> v = {{v_C, axis_F.cross(v_C)}};
+                v[1] /= v[1].norm();
+                for (int j = 0; j < static_cast<int>(v.size()); ++j) {
+                  // joint_limit_expr.tail<3> is
+                  // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
+                  joint_limit_expr.tail<3>() = R_WB_[body_idx] * v[j] -
+                      R_WB_[parent_idx] * X_PF.linear() *
+                          rotmat_joint_offset * v[j];
+                  AddLorentzConeConstraint(joint_limit_expr);
+                }
+
               }
             } else {
               // TODO(hongkai.dai): Add prismatic and helical joint.
