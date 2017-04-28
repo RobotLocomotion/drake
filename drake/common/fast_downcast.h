@@ -18,7 +18,7 @@ namespace detail {
 
 /// The doc here.
 ///
-// Const type version.
+// Reference version
 template<class Derived, class Base>
 static Derived fast_downcast(Base& from) {
   static_assert(std::is_convertible<Derived, Base&>::value,
@@ -31,7 +31,7 @@ static Derived fast_downcast(Base& from) {
 #endif
 }
 
-// Mutable type version.
+// Pointer version.
 template<class Derived, class Base>
 static Derived fast_downcast(Base* from) {
   static_assert(std::is_convertible<Derived, Base*>::value,
