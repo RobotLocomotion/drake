@@ -40,7 +40,7 @@ GTEST_TEST(FastDownCastSucceeds, DowncastMutablePointer) {
   DerivedFromBase original(2);  // Instantiates a derived class.
   Base* base = &original;  // Somewhere in the process we get a Base pointer.
   // Attempt to retrieve the derived class as a pointer.
-  DerivedFromBase* derived = fast_downcast<DerivedFromBase>(base);
+  DerivedFromBase* derived = fast_downcast<DerivedFromBase*>(base);
   EXPECT_EQ(derived->value(), 2);
 }
 
@@ -50,7 +50,7 @@ GTEST_TEST(FastDownCastSucceeds, DowncastConstReference) {
   // Somewhere in the process we get a Base reference.
   const Base& base = original;
   // Attempt to retrieve the derived class as a reference.
-  const DerivedFromBase& derived = fast_downcast<DerivedFromBase>(base);
+  const DerivedFromBase& derived = fast_downcast<const DerivedFromBase&>(base);
   EXPECT_EQ(derived.value(), 2);
 }
 
@@ -62,7 +62,7 @@ GTEST_TEST(FastDownCastFails, DowncastMutablePointer) {
   // Somewhere in the process we get a pointer to the wrong Base.
   Base* base = &original;
   // Attempt to retrieve the derived class as a pointer.
-  EXPECT_EQ(fast_downcast<DerivedFromBase>(base), nullptr);
+  EXPECT_EQ(fast_downcast<DerivedFromBase*>(base), nullptr);
 }
 #endif
 

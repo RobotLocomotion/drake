@@ -19,26 +19,28 @@ namespace detail {
 /// The doc here.
 ///
 // Const type version.
-template<class ToType, class FromType>
-static const ToType& fast_downcast(const FromType& from) {
-  static_assert(std::is_convertible<const ToType&, const FromType&>::value,
-                "FromType is not convertible to ToType.");
+template<class Derived, class Base>
+static Derived fast_downcast(Base& from) {
+  static_assert(std::is_convertible<Derived, Base&>::value,
+                "The requested type is not a derived class of the input "
+                "object type.");
 #ifndef NDEBUG
-  return dynamic_cast<const ToType&>(from);
+  return dynamic_cast<Derived>(from);
 #else
-  return static_cast<const ToType&>(from);
+  return static_cast<Derived>(from);
 #endif
 }
 
 // Mutable type version.
-template<class ToType, class FromType>
-static ToType* fast_downcast(FromType* from) {
-  static_assert(std::is_convertible<ToType*, FromType*>::value,
-                "FromType is not convertible to ToType.");
+template<class Derived, class Base>
+static Derived fast_downcast(Base* from) {
+  static_assert(std::is_convertible<Derived, Base*>::value,
+                "The requested type is not a derived class of the input "
+                "object type.");
 #ifndef NDEBUG
-  return dynamic_cast<ToType*>(from);
+  return dynamic_cast<Derived>(from);
 #else
-  return static_cast<ToType*>(from);
+  return static_cast<Derived>(from);
 #endif
 }
 
