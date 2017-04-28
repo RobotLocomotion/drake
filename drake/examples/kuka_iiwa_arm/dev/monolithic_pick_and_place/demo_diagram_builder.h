@@ -8,7 +8,7 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
@@ -187,7 +187,7 @@ class StateMachineAndPrimitives : public systems::Diagram<T> {
 /**
  * A `systems::Diagram` that encapsulates a
  * `IiwaAndWsgPlanGeneratorsEstimatorsAndVisualizer`, a
- * `systems::DrakeVisualizer`, `IiwaPlanSource`,
+ * `systems::DrakeVisualizer`, `RobotPlanInterpolator`,
  * `SchunkWsgTrajectoryGenerator` and  a `SchunkWsgStatusSender`. This
  * `systems::Diagram`system serves as the "low-level" logic needed to execute
  * a pick-and-place demo. All of the input and output ports carry abstract data
@@ -207,7 +207,7 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
    * @param lcm : A reference to the lcm object to be passed onto the
    * Visualizer
    * @param update_interval : The update interval of the unrestricted update of
-   * `IiwaPlanSource`. This should be smaller than that of
+   * `RobotPlanInterpolator`. This should be smaller than that of
    * components
    * commanding new plans.
    * @param chosen_box : The choice of which box ...
@@ -252,7 +252,7 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
   IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
   schunk_wsg::SchunkWsgStatusSender* wsg_status_sender_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
-  IiwaPlanSource* iiwa_trajectory_generator_{nullptr};
+  RobotPlanInterpolator* iiwa_trajectory_generator_{nullptr};
   schunk_wsg::SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
 
   int input_port_iiwa_plan_{-1};

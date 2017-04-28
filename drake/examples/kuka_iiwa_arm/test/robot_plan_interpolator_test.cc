@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 
 #include <gtest/gtest.h>
 
@@ -15,10 +15,10 @@ const char* const kIiwaUrdf =
     "/manipulation/models/iiwa_description/urdf/"
         "iiwa14_polytope_collision.urdf";
 
-GTEST_TEST(IiwaPlanSourceTest, InstanceTest) {
+GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
   // Test that the constructor works and that the expected ports are
   // present.
-  IiwaPlanSource dut(GetDrakePath() + kIiwaUrdf);
+  RobotPlanInterpolator dut(GetDrakePath() + kIiwaUrdf);
   EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
   EXPECT_EQ(dut.get_state_input_port().get_data_type(),
@@ -45,8 +45,8 @@ struct TrajectoryTestCase {
 };
 
 
-GTEST_TEST(IiwaPlanSourceTest, TrajectoryTest) {
-  IiwaPlanSource dut(GetDrakePath() + kIiwaUrdf);
+GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
+  RobotPlanInterpolator dut(GetDrakePath() + kIiwaUrdf);
 
   std::vector<double> t{0, 1, 2, 3, 4};
   Eigen::MatrixXd q = Eigen::MatrixXd::Zero(kNumJoints, t.size());
