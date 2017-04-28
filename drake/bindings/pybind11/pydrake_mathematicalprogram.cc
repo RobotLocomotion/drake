@@ -12,13 +12,11 @@ namespace py = pybind11;
 using std::string;
 
 template <typename C>
-// NOLINTNEXTLINE(runtime/references).
-auto RegisterBinding(py::module &m, const string& name) {
+auto RegisterBinding(py::handle scope, const string& name) {
   using drake::solvers::Binding;
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
-  return py::class_<B>(
-    m, pyname.c_str())
+  return py::class_<B>(scope, pyname.c_str())
     .def("constraint", &B::constraint)
     .def("variables", &B::variables);
 }
