@@ -15,6 +15,8 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+constexpr int kIiwaArmNumJoints = 7;
+
 /// Computes the lumped inertia parameters of the gripper and the end effector
 /// link expressed in the end effector frame.
 /// @param world_tree The RigidBodyTree that contains the arm and the gripper
