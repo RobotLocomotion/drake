@@ -706,8 +706,9 @@ class LeafSystem : public System<T> {
   void DispatchPublishHandler(const Context<T>& context,
       const EventInfo* event_info) const final {
     if (event_info == nullptr) {
-      this->DoPublish(context, ForcedTrigger::OneForcedTrigger());
-      return;
+      //this->DoPublish(context, ForcedTrigger::OneForcedTrigger());
+      //return;
+      DRAKE_ABORT_MSG("AHAHHA");
     }
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
@@ -729,9 +730,10 @@ class LeafSystem : public System<T> {
       const Context<T>& context, const EventInfo* event_info,
       DiscreteValues<T>* discrete_state) const final {
     if (event_info == nullptr) {
-      this->DoCalcDiscreteVariableUpdates(
-          context, ForcedTrigger::OneForcedTrigger(), discrete_state);
-      return;
+//      this->DoCalcDiscreteVariableUpdates(
+  //        context, ForcedTrigger::OneForcedTrigger(), discrete_state);
+      //return;
+      DRAKE_ABORT_MSG("AHAHHA");
     }
 
     const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
@@ -753,8 +755,9 @@ class LeafSystem : public System<T> {
   void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
       const EventInfo* event_info, State<T>* state) const final {
     if (event_info == nullptr) {
-      this->DoCalcUnrestrictedUpdate(
-          context, ForcedTrigger::OneForcedTrigger(), state);
+      //this->DoCalcUnrestrictedUpdate(
+        //  context, ForcedTrigger::OneForcedTrigger(), state);
+      DRAKE_ABORT_MSG("AHAHHA");
       return;
     }
 
@@ -771,7 +774,25 @@ class LeafSystem : public System<T> {
     LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     for (const auto& event : per_step_events_) {
-      info->add_trigger(event, std::make_unique<PerStepTrigger>());
+      switch (event) {
+        case EventInfo::EventType::kPublish:
+          info->add_trigger(std::make_unique<PerStepTrigger>(),
+              std::make_unique<PublishHandler<T>>());
+          break;
+
+        case EventInfo::EventType::kDiscreteUpdate:
+          info->add_trigger(std::make_unique<PerStepTrigger>(),
+              std::make_unique<DiscreteUpdateHandler<T>>());
+          break;
+
+        case EventInfo::EventType::kUnrestrictedUpdate:
+          info->add_trigger(std::make_unique<PerStepTrigger>(),
+              std::make_unique<UnrestrictedUpdateHandler<T>>());
+          break;
+
+        default:
+          DRAKE_ABORT_MSG("asdf");
+      }
     }
   }
 
@@ -823,9 +844,26 @@ class LeafSystem : public System<T> {
     *time = min_time;
     for (const PeriodicEvent* event : next_events) {
       EventInfo::EventType e = event->event;
-      info->add_trigger(e,
-          std::make_unique<PeriodicTrigger<T>>(
-              event->period_sec, event->offset_sec));
+      auto trigger = std::make_unique<PeriodicTrigger<T1>>(event->period_sec, event->offset_sec);
+      switch (e) {
+        case EventInfo::EventType::kPublish:
+          info->add_trigger(std::move(trigger),
+              std::make_unique<PublishHandler<T>>());
+          break;
+
+        case EventInfo::EventType::kDiscreteUpdate:
+          info->add_trigger(std::move(trigger),
+              std::make_unique<DiscreteUpdateHandler<T>>());
+          break;
+
+        case EventInfo::EventType::kUnrestrictedUpdate:
+          info->add_trigger(std::move(trigger),
+              std::make_unique<UnrestrictedUpdateHandler<T>>());
+          break;
+
+        default:
+          DRAKE_ABORT_MSG("asdf");
+      }
     }
   }
 

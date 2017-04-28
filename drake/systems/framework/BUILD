@@ -145,6 +145,7 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":value",
+        ":context",
         "//drake/common",
         "//drake/common:autodiff",
     ],

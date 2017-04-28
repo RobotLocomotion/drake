@@ -60,14 +60,15 @@ void LeafEventInfo::DoMerge(const EventInfo* other_info) {
   DRAKE_DEMAND(other != nullptr);
 
   for (const auto& other_pair : other->events_) {
-    for (const auto& trigger : other_pair.second) {
-      add_trigger(other_pair.first, trigger->Clone());
+    for (const auto& trigger_handler_pair : other_pair.second) {
+      add_trigger(trigger_handler_pair.first->Clone(),
+                  trigger_handler_pair.second->Clone());
     }
   }
 }
 
-const std::vector<const Trigger*>& LeafEventInfo::get_triggers(
-    EventType event) const {
+const std::vector<std::pair<const Trigger*, const Handler*>>&
+LeafEventInfo::get_triggers(EventType event) const {
   auto it = events_.find(event);
   if (it == events_.end()) {
     DRAKE_ABORT_MSG("no such event");
@@ -75,15 +76,24 @@ const std::vector<const Trigger*>& LeafEventInfo::get_triggers(
   return it->second;
 }
 
-void LeafEventInfo::add_trigger(EventType event_type,
-                                std::unique_ptr<Trigger> trigger) {
+void LeafEventInfo::add_trigger(std::unique_ptr<Trigger> trigger,
+                                std::unique_ptr<Handler> handler) {
   owned_triggers_.push_back(std::move(trigger));
+  owned_handlers_.push_back(std::move(handler));
+
+  // HACK
+  EventType event_type = static_cast<EventType>(owned_handlers_.back()->get_type());
+
   auto it = events_.find(event_type);
+
+  TriggerHandlerPair pair(owned_triggers_.back().get(),
+                          owned_handlers_.back().get());
+
   if (it == events_.end()) {
-    std::vector<const Trigger*> triggers(1, owned_triggers_.back().get());
+    std::vector<TriggerHandlerPair> triggers(1, pair);
     events_.emplace(event_type, triggers);
   } else {
-    it->second.push_back(owned_triggers_.back().get());
+    it->second.push_back(pair);
   }
 }
 

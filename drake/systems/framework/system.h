@@ -1175,7 +1175,7 @@ class System {
   /// @param[in] context Const current context.
   /// @param[in] triggers All the triggers that fired a publish event.
   virtual void DoPublish(const Context<T>& context,
-      const std::vector<const Trigger*>& triggers) const {
+      const std::vector<std::pair<const Trigger*, const Handler*>>& triggers) const {
     unused(context, triggers);
   }
 
@@ -1199,7 +1199,7 @@ class System {
   /// @param[in,out] discrete_state The current state of the system on input;
   /// the desired state of the system on return.
   virtual void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-      const std::vector<const Trigger*>& triggers,
+      const std::vector<std::pair<const Trigger*, const Handler*>>& triggers,
       DiscreteValues<T>* discrete_state) const {
     unused(context, triggers, discrete_state);
   }
@@ -1231,7 +1231,7 @@ class System {
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
-      const std::vector<const Trigger*>& triggers, State<T>* state) const {
+      const std::vector<std::pair<const Trigger*, const Handler*>>& triggers, State<T>* state) const {
     unused(context, triggers, state);
   }
 

@@ -130,7 +130,8 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   const auto& triggers =
       leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
   EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+  EXPECT_EQ(triggers.front().first->get_type(),
+            Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is smaller than the offset, the next
@@ -148,13 +149,15 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+    EXPECT_EQ(triggers.front().first->get_type(),
+              Trigger::TriggerType::kPeriodic);
   }
   {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kUnrestrictedUpdate);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+    EXPECT_EQ(triggers.front().first->get_type(),
+              Trigger::TriggerType::kPeriodic);
   }
 }
 
@@ -169,7 +172,8 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
   const auto& triggers =
       leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
   EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+  EXPECT_EQ(triggers.front().first->get_type(),
+            Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is larger than the offset, the next
@@ -183,7 +187,8 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
   const auto& triggers =
       leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
   EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+  EXPECT_EQ(triggers.front().first->get_type(),
+            Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is exactly an update time, the next update
@@ -197,7 +202,8 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   const auto& triggers =
       leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
   EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+  EXPECT_EQ(triggers.front().first->get_type(),
+            Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that if a LeafSystem has both a discrete update and a periodic Publish,
@@ -214,7 +220,8 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kPublish);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+    EXPECT_EQ(triggers.front().first->get_type(),
+              Trigger::TriggerType::kPeriodic);
   }
 
   // The update event fires at 15sec.
@@ -225,7 +232,8 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+    EXPECT_EQ(triggers.front().first->get_type(),
+              Trigger::TriggerType::kPeriodic);
   }
 
   // Both events fire at 60sec.
@@ -236,13 +244,15 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+    EXPECT_EQ(triggers.front().first->get_type(),
+              Trigger::TriggerType::kPeriodic);
   }
   {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kPublish);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+    EXPECT_EQ(triggers.front().first->get_type(),
+              Trigger::TriggerType::kPeriodic);
   }
 }
 
@@ -365,19 +375,19 @@ TEST_F(LeafSystemTest, DeclarePerStepActions) {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kPublish);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPerStep);
+    EXPECT_EQ(triggers.front().first->get_type(), Trigger::TriggerType::kPerStep);
   }
   {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPerStep);
+    EXPECT_EQ(triggers.front().first->get_type(), Trigger::TriggerType::kPerStep);
   }
   {
     const auto& triggers =
         leaf_info_->get_triggers(EventInfo::EventType::kUnrestrictedUpdate);
     EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPerStep);
+    EXPECT_EQ(triggers.front().first->get_type(), Trigger::TriggerType::kPerStep);
   }
 }
 
@@ -790,13 +800,21 @@ class TestTriggerSystem : public LeafSystem<double> {
     {
       auto trigger = std::make_unique<PerStepTrigger>();
       trigger->set_data(AbstractValue::Make<std::string>("hello"));
-      info->add_trigger(EventInfo::EventType::kPublish, std::move(trigger));
+      auto handler = std::make_unique<PublishHandler<double>>();
+      handler->Handle =
+          std::bind(&TestTriggerSystem::CopyString,
+              this, std::placeholders::_1, std::placeholders::_2);
+      info->add_trigger(std::move(trigger), std::move(handler));
     }
 
     {
       auto trigger = std::make_unique<PerStepTrigger>();
       trigger->set_data(AbstractValue::Make<int>(42));
-      info->add_trigger(EventInfo::EventType::kPublish, std::move(trigger));
+      auto handler = std::make_unique<PublishHandler<double>>();
+      handler->Handle =
+          std::bind(&TestTriggerSystem::CopyInt,
+              this, std::placeholders::_1, std::placeholders::_2);
+      info->add_trigger(std::move(trigger), std::move(handler));
     }
   }
 
@@ -804,20 +822,48 @@ class TestTriggerSystem : public LeafSystem<double> {
     return abs_data_;
   }
 
+  const std::vector<std::string>& get_string_data() const {
+    return string_data_;
+  }
+
+  const std::vector<int>& get_int_data() const {
+    return int_data_;
+  }
+
  private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context,
-                 const std::vector<const Trigger*>& triggers) const override {
-    for (const Trigger* trigger : triggers) {
+                 const std::vector<std::pair<const Trigger*, const Handler*>>& triggers) const override {
+    for (const auto& pair : triggers) {
+      const Trigger* trigger = pair.first;
       if (trigger->get_data() != nullptr)
         abs_data_.push_back(trigger->get_data()->Clone());
+
+      DRAKE_DEMAND(pair.second->get_type() == Handler::HandlerType::kPublish);
+      auto handler = dynamic_cast<const PublishHandler<double>*>(pair.second);
+      handler->Handle(context, *trigger);
     }
+  }
+
+  void CopyString(const Context<double>& context,
+                  const Trigger& trigger) const {
+    if (trigger.get_data() != nullptr)
+      string_data_.push_back(trigger.get_data()->GetValue<std::string>());
+  }
+
+  void CopyInt(const Context<double>& context,
+               const Trigger& trigger) const {
+    if (trigger.get_data() != nullptr)
+      int_data_.push_back(trigger.get_data()->GetValue<int>());
   }
 
   // the data in AbstractTrigger are copied to here in the DoPublish handler.
   mutable std::vector<std::unique_ptr<AbstractValue>> abs_data_;
+
+  mutable std::vector<std::string> string_data_;
+  mutable std::vector<int> int_data_;
 };
 
 class TriggerTest : public ::testing::Test {
@@ -850,6 +896,14 @@ TEST_F(TriggerTest, AbstractTrigger) {
   EXPECT_EQ(data.size(), triggers.size());
   EXPECT_EQ(data[0]->GetValue<std::string>(), "hello");
   EXPECT_EQ(data[1]->GetValue<int>(), 42);
+
+  const auto& string_data = dut_.get_string_data();
+  const auto& int_data = dut_.get_int_data();
+  EXPECT_EQ(string_data.size(), 1);
+  EXPECT_EQ(int_data.size(), 1);
+
+  EXPECT_EQ(string_data.front(), "hello");
+  EXPECT_EQ(int_data.front(), 42);
 }
 
 }  // namespace

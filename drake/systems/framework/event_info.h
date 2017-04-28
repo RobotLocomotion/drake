@@ -7,9 +7,95 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/trigger.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/state.h"
 
 namespace drake {
 namespace systems {
+
+class Handler {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Handler)
+
+  enum class HandlerType {
+    kUnknownEvent = 0,
+
+    /// On publish actions, state does not change.
+    kPublish = 1,
+
+    /// On discrete updates, discrete state may change.
+    kDiscreteUpdate = 2,
+
+    /// On unrestricted updates, the state variables may change arbitrarily.
+    kUnrestrictedUpdate = 3,
+  };
+
+  HandlerType get_type() const { return type_; }
+
+  virtual ~Handler() {}
+
+  virtual std::unique_ptr<Handler> Clone() const = 0;
+
+ protected:
+  Handler(HandlerType type) : type_(type) {}
+
+ private:
+  HandlerType type_{HandlerType::kUnknownEvent};
+};
+
+template <typename T>
+class PublishHandler : public Handler {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PublishHandler)
+  typedef std::function<void(const Context<T>&, const Trigger&)> PublishCallback;
+
+  PublishHandler() : Handler(Handler::HandlerType::kPublish) {}
+
+  PublishCallback Handle{nullptr};
+
+ private:
+  std::unique_ptr<Handler> Clone() const final {
+    PublishHandler* clone = new PublishHandler();
+    clone->Handle = this->Handle;
+    return std::unique_ptr<Handler>(clone);
+  }
+};
+
+template <typename T>
+class DiscreteUpdateHandler : public Handler {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteUpdateHandler)
+  typedef std::function<void(const Context<T>&, const Trigger&, DiscreteValues<T>*)> DiscreteUpdateCallback;
+
+  DiscreteUpdateHandler() : Handler(Handler::HandlerType::kDiscreteUpdate) {}
+
+  DiscreteUpdateCallback Handle{nullptr};
+
+ private:
+  std::unique_ptr<Handler> Clone() const final {
+    DiscreteUpdateHandler* clone = new DiscreteUpdateHandler();
+    clone->Handle = this->Handle;
+    return std::unique_ptr<Handler>(clone);
+  }
+};
+
+template <typename T>
+class UnrestrictedUpdateHandler : public Handler {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdateHandler)
+  typedef std::function<void(const Context<T>&, const Trigger&, State<T>*)> UnrestrictedUpdateCallback;
+
+  UnrestrictedUpdateHandler() : Handler(Handler::HandlerType::kUnrestrictedUpdate) {}
+
+  UnrestrictedUpdateCallback Handle{nullptr};
+
+ private:
+  std::unique_ptr<Handler> Clone() const final {
+    UnrestrictedUpdateHandler* clone = new UnrestrictedUpdateHandler();
+    clone->Handle = this->Handle;
+    return std::unique_ptr<Handler>(clone);
+  }
+};
 
 /**
  * Base class that represents all events at a particular time for System.
@@ -232,6 +318,8 @@ class LeafEventInfo final : public EventInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventInfo)
 
+  typedef std::pair<const Trigger*, const Handler*> TriggerHandlerPair;
+
   /**
    * Constructor.
    */
@@ -241,13 +329,13 @@ class LeafEventInfo final : public EventInfo {
    * Returns all the triggers that are associated to @p event_type. Aborts if
    * @p event_type does not exist.
    */
-  const std::vector<const Trigger*>& get_triggers(EventType event_type) const;
+  const std::vector<std::pair<const Trigger*, const Handler*>>& get_triggers(EventType event_type) const;
 
   /**
    * Adds a trigger to @p event_type. @p event_type will also be added if this
    * does not have a @p event_type event. Ownership of @p trigger is transfered.
    */
-  void add_trigger(EventType event_type, std::unique_ptr<Trigger> trigger);
+  void add_trigger(std::unique_ptr<Trigger> trigger, std::unique_ptr<Handler> handler);
 
   /**
    * Returns true if an event of @p event_type exists.
@@ -264,7 +352,11 @@ class LeafEventInfo final : public EventInfo {
   /**
    * Clears all events.
    */
-  void Clear() override { events_.clear(); }
+  void Clear() override {
+    owned_triggers_.clear();
+    owned_handlers_.clear();
+    events_.clear();
+  }
 
  protected:
   // These are protected for doxygen.
@@ -298,9 +390,12 @@ class LeafEventInfo final : public EventInfo {
   // List just for holding the unique pointers.
   std::list<std::unique_ptr<Trigger>> owned_triggers_;
 
+  // List just for holding the unique pointers.
+  std::list<std::unique_ptr<Handler>> owned_handlers_;
+
   // A map from event type to its associated triggers. Pointers point to
   // owned_triggers_.
-  std::map<EventType, std::vector<const Trigger*>> events_;
+  std::map<EventType, std::vector<TriggerHandlerPair>> events_;
 };
 
 }  // namespace systems
