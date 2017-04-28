@@ -29,17 +29,6 @@ void ContactResultantForceCalculator<T>::AddForce(
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
-    copyable_unique_ptr<ContactDetail<T>> contact_detail) {
-  forces_.push_back(contact_detail->ComputeContactForce());
-  if (detail_accumulator_ != nullptr) {
-    detail_accumulator_->emplace_back(move(contact_detail));
-  }
-  // No accumulator means the contact detail can be destroyed; it has served its
-  // purpose.
-}
-
-template <typename T>
-void ContactResultantForceCalculator<T>::AddForce(
     unique_ptr<ContactDetail<T>> contact_detail) {
   forces_.push_back(contact_detail->ComputeContactForce());
   if (detail_accumulator_ != nullptr) {

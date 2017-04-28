@@ -182,18 +182,6 @@ class ContactResultantForceCalculator {
    @param contact_detail        The contact detail which will provide a
                                 ContactForce for computation.
    */
-  void AddForce(copyable_unique_ptr<ContactDetail<T>> contact_detail);
-
-  /**
-   Adds a new force to the calculator from a contact detail.  The result of
-   ContactDetail::ComputeContactForce will be used in the calculation.
-
-   If the calculator was initialized with a detail accumulator, the detail will
-   be appended to that accumulator. Otherwise, the detail will be destroyed
-   at the conclusion of this method invocation.
-   @param contact_detail        The contact detail which will provide a
-                                ContactForce for computation.
-   */
   void AddForce(std::unique_ptr<ContactDetail<T>> contact_detail);
 
   /**
