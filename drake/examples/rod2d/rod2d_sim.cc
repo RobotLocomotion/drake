@@ -48,7 +48,7 @@ using drake::systems::Simulator;
 // Simulation parameters.
 DEFINE_bool(logging, false, "Activates/deactivates logging");
 DEFINE_string(simulation_type, "timestepping",
-              "Type of simulation, valid values are 'pDAE',"
+              "Type of simulation, valid values are "
                   "'timestepping','compliant'");
 DEFINE_double(dt, 1e-2, "Integration step size");
 DEFINE_double(rod_radius, 5e-2, "Radius of the rod (for visualization only)");
@@ -79,10 +79,7 @@ int main(int argc, char* argv[]) {
 
   // Create the rod and add it to the diagram.
   Rod2D<double>* rod;
-  if (FLAGS_simulation_type == "pDAE") {
-    rod = builder.template AddSystem<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
-  } else if (FLAGS_simulation_type == "timestepping") {
+  if (FLAGS_simulation_type == "timestepping") {
     rod = builder.template AddSystem<Rod2D<double>>(
         Rod2D<double>::SimulationType::kTimeStepping, FLAGS_dt);
   } else if (FLAGS_simulation_type == "compliant") {
@@ -122,17 +119,6 @@ int main(int argc, char* argv[]) {
   aggregator->set_name("aggregator");
   converter->set_name("converter");
 
-  /*
-  DrivingCommandTranslator driving_command_translator;
-  for (int i = 0; i < 5; ++i) {
-    auto command_subscriber =
-        builder.template AddSystem<LcmSubscriberSystem>(
-            "DRIVING_COMMAND_" + names[i], driving_command_translator, &lcm);
-    SimpleCar<double>* car = builder.template AddSystem<SimpleCar>();
-    builder.Connect(*command_subscriber, *car);
-    builder.Connect(car->pose_output(), aggregator->AddSingleInput(names[i], i));
-  }
-*/
   builder.Connect(rod->pose_output(), aggregator->AddSingleInput("rod", 0));
   builder.Connect(*aggregator, *converter);
   builder.Connect(*converter, *publisher);
