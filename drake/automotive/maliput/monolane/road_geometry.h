@@ -48,8 +48,12 @@ class RoadGeometry : public api::RoadGeometry {
 
   const api::BranchPoint* do_branch_point(int index) const override;
 
+  // Returns a RoadPosition for a lane containing the provided `geo_position`.
+  // If there is no containing lane, the position is returned for the lane
+  // closest to the centerline curve.  If `hint` is non-null, then the search is
+  // restricted to the `hint->lane` and lanes adjacent to `hint->lane`.
   api::RoadPosition DoToRoadPosition(
-      const api::GeoPosition& geo_pos,
+      const api::GeoPosition& geo_position,
       const api::RoadPosition* hint,
       api::GeoPosition* nearest_position,
       double* distance) const override;
