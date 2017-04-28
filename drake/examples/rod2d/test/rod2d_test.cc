@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
 using drake::systems::VectorBase;
@@ -16,6 +17,7 @@ using drake::systems::SystemOutput;
 using drake::systems::AbstractValues;
 using drake::systems::Simulator;
 using drake::systems::Context;
+using drake::systems::ImplicitEulerIntegrator;
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -1264,6 +1266,48 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
 // Validates the number of witness functions is determined correctly.
 TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
+}
+
+// Integrates the rod system starting from the Painleve configuration. This is
+// a stiff system.
+GTEST_TEST(StiffTest, Rod2d) {
+  examples::rod2d::Rod2D<double> rod(
+      examples::rod2d::Rod2D<double>::SimulationType::kCompliant,
+      0.0 /* no time stepping */);
+
+  // Make the system stiff.
+  rod.set_mu_coulomb(1);
+  rod.set_stiffness(1e8);
+  rod.set_dissipation(1e3);
+  rod.set_stiction_speed_tolerance(1e-6);
+  rod.set_mu_static(1.5);
+
+  // Create the context.
+  auto context = rod.CreateDefaultContext();
+
+  // Set a zero input force (this is the default).
+  std::unique_ptr<systems::BasicVector<double>> ext_input =
+      std::make_unique<systems::BasicVector<double>>(3);
+  ext_input->SetAtIndex(0, 0.0);
+  ext_input->SetAtIndex(1, 0.0);
+  ext_input->SetAtIndex(2, 0.0);
+  context->FixInputPort(0, std::move(ext_input));
+
+  // Use a relatively large maximum step size.
+  const double max_dt = 1e-2;
+
+  // Create and initialize the integrator.
+  ImplicitEulerIntegrator<double> integrator(rod, context.get());
+  integrator.set_target_accuracy(1e-2);
+  integrator.set_maximum_step_size(max_dt);
+  integrator.Initialize();
+
+  // Integrate for 1 second.
+  const double t_final = 1.0;
+  integrator.IntegrateExactly(t_final);
+
+  // TODO: Verify that the compliant test approximately matches the time 
+  // stepping output for large stiffness.
 }
 
 }  // namespace

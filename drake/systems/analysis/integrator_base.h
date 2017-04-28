@@ -538,7 +538,6 @@ class IntegratorBase {
     largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
     num_ode_evals_ = 0;
-    error_check_failures_ = 0;
     num_shrinkages_from_error_control_ = 0;
     num_shrinkages_from_substep_failures_ = 0;
     num_substep_failures_ = 0;
@@ -552,33 +551,29 @@ class IntegratorBase {
     return num_substep_failures_;
   }
 
-  /// Gets the number of step size shrinkages due to sub-step failures.
+  /// Gets the number of step size shrinkages due to sub-step failures (e.g.,
+  /// integrator convergence failures) since the last call to ResetStatistics()
+  /// or Initialize().
   int64_t get_num_step_shrinkages_from_substep_failures() const {
     return num_shrinkages_from_substep_failures_;
   }
 
-  /// Gets the number of step size shrinkages due to error control.
+  /// Gets the number of step size shrinkages due to failure to meet targeted
+  /// error tolerances, since the last call to ResetStatistics or Initialize().
   int64_t get_num_step_shrinkages_from_error_control() const {
     return num_shrinkages_from_error_control_;
   }
 
-  /**
-   * Returns the number of ODE function evaluations (calls to
-   * CalcTimeDerivatives()) since the last call to ResetStatistics() or
-   * Initialize(). This count includes *all* such calls including (1)
-   * those necessary to compute Jacobian matrices; (2) those used in rejected
-   * integrated steps (for, e.g., purposes of error control); (3) those used
-   * strictly for integrator error estimation; and (4) calls that exhibit little
-   * cost (due to results being cached).
-   */
+/**
+ * Returns the number of ODE function evaluations (calls to
+ * CalcTimeDerivatives()) since the last call to ResetStatistics() or
+ * Initialize(). This count includes *all* such calls including (1)
+ * those necessary to compute Jacobian matrices; (2) those used in rejected
+ * integrated steps (for, e.g., purposes of error control); (3) those used
+ * strictly for integrator error estimation; and (4) calls that exhibit little
+ * cost (due to results being cached).
+ */
   int64_t get_num_derivative_evaluations() const { return num_ode_evals_; }
-
-  /**
-   * Returns the number of failures to accept an integration step due to
-   * not meeting error tolerances since the last call to ResetStatistics()
-   * or Initialize().
-  */
-  int64_t get_error_check_failures() const { return error_check_failures_; }
 
   /**
    * The actual size of the successful first step.
@@ -984,12 +979,6 @@ class IntegratorBase {
   void set_accuracy_in_use(double accuracy) { accuracy_in_use_ = accuracy; }
 
   /**
-   * Increments the count of integration step failures due to error tolerance
-   * failure.
-   */
-  void report_error_check_failure() { ++error_check_failures_; }
-
-  /**
    * Default code for advancing the continuous state of the system by a single
    * step of @p dt_max (or smaller, depending on error control). This particular
    * function is designed to be called directly by an error estimating
@@ -1165,7 +1154,6 @@ class IntegratorBase {
   T smallest_adapted_step_size_taken_{nan()};
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
-  int64_t error_check_failures_{0};
   int64_t num_ode_evals_{0};
   int64_t num_shrinkages_from_error_control_{0};
   int64_t num_shrinkages_from_substep_failures_{0};
@@ -1258,6 +1246,7 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
 
     // Keep attempting to step until stepping successful.
     while (!Step(current_step_size)) {
+      SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", current_step_size);
       current_step_size /= 2;
       dt_was_artificially_limited = true;
       ++num_shrinkages_from_substep_failures_;
@@ -1268,6 +1257,7 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
     T err_norm = CalcStateChangeNorm(*get_error_estimate());
     std::tie(step_succeeded, current_step_size) = CalcAdjustedStepSize(
         err_norm, dt_was_artificially_limited, current_step_size);
+    SPDLOG_DEBUG(drake::log(), "Adjusted step size: {}", current_step_size);
 
     if (step_succeeded) {
       ideal_next_step_size_ = current_step_size;
@@ -1281,7 +1271,6 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
         set_smallest_adapted_step_size_taken(current_step_size);
     } else {
       ++num_shrinkages_from_error_control_;
-      report_error_check_failure();
 
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
@@ -1424,10 +1413,13 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
   if (get_minimum_step_size() > 0) {
-    if (new_step_size < get_minimum_step_size() && min_step_exceeded_throws_) {
-        throw std::runtime_error(
-            "Error control wants to select step smaller "
-                "than minimum allowed for this integrator.");
+    if (new_step_size < get_minimum_step_size()) {
+      SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
+          "size of {}", new_step_size);
+      if (min_step_exceeded_throws_) {
+        throw std::runtime_error("Error control wants to select step smaller "
+                                     "than minimum allowed.");
+      }
     }
     new_step_size = max(new_step_size, get_minimum_step_size());
   }

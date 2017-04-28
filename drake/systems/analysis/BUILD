@@ -99,6 +99,22 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_library(
+    name = "robertson_system",
+    testonly = 1,
+    hdrs = ["test/robertson_system.h"],
+    deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "stiff_double_mass_spring_system",
+    testonly = 1,
+    hdrs = ["test/stiff_double_mass_spring_system.h"],
+    deps = [
+    ],
+)
+
+drake_cc_library(
     name = "spring_mass_damper_system",
     testonly = 1,
     hdrs = ["test/spring_mass_damper_system.h"],
@@ -145,8 +161,10 @@ drake_cc_googletest(
     name = "implicit_euler_integrator_test",
     deps = [
         ":discontinuous_spring_mass_damper_system",
-        ":spring_mass_damper_system",
         ":implicit_euler_integrator",
+        ":robertson_system",
+        ":spring_mass_damper_system",
+        ":stiff_double_mass_spring_system",
         "//drake/systems/plants/spring_mass_system",
     ],
 )

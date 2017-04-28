@@ -375,6 +375,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       const double kappa = 0.05;
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
+      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
+                   i, theta, eta);
 
       // Look for divergence.
       if (theta > 1)
@@ -442,6 +444,13 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& dt) {
 //        step.
 // @param xtplus the state computed by the implicit Euler method.
 // @returns `true` if the step was successful and `false` otherwise.
+// @pre The time and state in the system's context (stored within the
+//      integrator) are set to those at t0 (the beginning of the integration
+//      step).
+// @post The time and state in the system's context (stored within the
+//       integrator) are set to those at t0+dt on successful return (i.e., when
+//       the function returns `true`). State will be indeterminate on `false`
+//       return.
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
                                                     const VectorX<T>& dx0,
@@ -644,13 +653,15 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
   const T t0 = context->get_time();
   const VectorX<T> xt0 = context->get_continuous_state()->CopyToVector();
 
-  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}",
-               dt, t0);
+  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={} x(t)={}",
+               dt, t0, xt0);
 
   // If the requested dt is less than or equal to the minimum step size, an
   // explicit Euler step will be taken. We compute the error estimate using two
   // half steps.
-  if (dt < this->get_minimum_step_size()) {
+  if (dt <= this->get_minimum_step_size()) {
+    SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
+        "step instead");
     const T half_dt = dt / 2;
 
     // TODO(edrumwri): Investigate replacing this with an explicit trapezoid
