@@ -13,7 +13,10 @@ namespace {
 static const int kNumJoints = 7;
 const char* const kIiwaUrdf =
     "/manipulation/models/iiwa_description/urdf/"
-        "iiwa14_polytope_collision.urdf";
+    "iiwa14_polytope_collision.urdf";
+const char* const kDualIiwaUrdf =
+    "/manipulation/models/iiwa_description/urdf/"
+    "dual_iiwa14_polytope_collision.urdf";
 
 GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
   // Test that the constructor works and that the expected ports are
@@ -30,6 +33,26 @@ GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
   EXPECT_EQ(dut.get_acceleration_output_port().get_data_type(),
             systems::kVectorValued);
   EXPECT_EQ(dut.get_acceleration_output_port().size(), kNumJoints);
+}
+
+GTEST_TEST(RobotPlanInterpolatorTest, DualInstanceTest) {
+  // Check that the port sizes come out appropriately for a dual armed
+  // model.
+  RobotPlanInterpolator dut(GetDrakePath() + kDualIiwaUrdf);
+  EXPECT_EQ(dut.tree().get_num_positions(), kNumJoints * 2);
+  EXPECT_EQ(dut.tree().get_num_velocities(), kNumJoints * 2);
+
+  EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
+            systems::kAbstractValued);
+  EXPECT_EQ(dut.get_state_input_port().get_data_type(),
+            systems::kVectorValued);
+  EXPECT_EQ(dut.get_state_input_port().size(), kNumJoints * 4);
+  EXPECT_EQ(dut.get_state_output_port().get_data_type(),
+            systems::kVectorValued);
+  EXPECT_EQ(dut.get_state_output_port().size(), kNumJoints * 4);
+  EXPECT_EQ(dut.get_acceleration_output_port().get_data_type(),
+            systems::kVectorValued);
+  EXPECT_EQ(dut.get_acceleration_output_port().size(), kNumJoints * 2);
 }
 
 struct TrajectoryTestCase {
