@@ -1,0 +1,10 @@
+--- a/CMakeLists.txt	2017-04-13 19:06:38.000000000 -0400
++++ b/CMakeLists.txt	2017-04-28 12:00:00.000000000 -0400
+@@ -289,7 +289,6 @@
+     set(TEST_TYPE "UNIT")
+     add_subdirectory(src)
+     add_subdirectory(include)
+-    add_subdirectory(test)
+   endif (BUILD_IGNITION)
+
+   ########################################
