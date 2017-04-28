@@ -79,10 +79,8 @@ TEST_F(LongitudinalTrajectoryOptimizationTest, TrajectoryCarDircolTest) {
                                              kTrajectoryTimeUpperBound);
 
   // Limits on the acceleration input value.
-  auto lower_limit = systems::BasicVector<double>::Make(
-      -std::numeric_limits<double>::infinity());
-  auto upper_limit = systems::BasicVector<double>::Make(
-      std::numeric_limits<double>::infinity());
+  auto lower_limit = systems::BasicVector<double>::Make(-5.);
+  auto upper_limit = systems::BasicVector<double>::Make(5.);
   prog.AddInputBounds(lower_limit->get_value(), upper_limit->get_value());
 
   // Ensure that time intervals are (relatively) evenly spaced.
@@ -132,7 +130,6 @@ TEST_F(LongitudinalTrajectoryOptimizationTest, TrajectoryCarDircolTest) {
 
   // Checks that the input commands found are not too large.
   EXPECT_LE(inputs.row(0).lpNorm<1>(), 0.1);
-  EXPECT_LE(inputs.row(1).lpNorm<1>(), 1);
 }
 
 }  // namespace

@@ -196,9 +196,9 @@ GTEST_TEST(MonolaneLanesTest, HintWithDisconnectedLanes) {
   api::RoadPosition actual_position{};
   EXPECT_NO_THROW(actual_position =
       rg->ToRoadPosition(geo_pos, &hint, nullptr, &distance));
-  EXPECT_NE(actual_position.lane->id().id, "l:lane0");  // Point is in lane0,
-                                                        // but not found there.
-  EXPECT_GT(distance, 0.);  // The `hint` lane does not contain the point.
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane1");  // The search is
+                                                        // confined to lane1.
+  EXPECT_GT(distance, 0.);  // lane1 does not contain the point.
 }
 
 }  // namespace monolane

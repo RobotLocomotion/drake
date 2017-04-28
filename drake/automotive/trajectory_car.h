@@ -29,7 +29,7 @@ namespace automotive {
 /// input vector:
 /// * desired acceleration, a systems::BasicVector of size 1 (optional input).
 ///   If left unconnected, the trajectory car will travel at the initial
-///   velocity, specifed via the `speed` input argument.
+///   velocity, specifed via the `initial_speed` input argument.
 ///
 /// output port 0:
 /// * position: x, y, heading;
@@ -52,10 +52,14 @@ class TrajectoryCar : public systems::LeafSystem<T> {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
 
-  /// Constructs a TrajectoryCar system that traces the given @p curve, at the
-  /// given constant @p speed, starting at the given @p start_position - the
-  /// initial position along the (possibly extrapolated) curve.  Throws an error
-  /// if the curve is empty (a zero @p path_length).
+  /// Constructs a TrajectoryCar system that traces the given @p curve,
+  /// initially traveling at the speed given by @p initial_speed, starting at
+  /// the given @p start_position - the initial position along the (possibly
+  /// extrapolated) curve.  Throws an error if the curve is empty (a zero @p
+  /// path_length).
+  //
+  // TODO(jadecastro): Replace the input parameters with proper initial states
+  // declaration via context, now that we have dynamics.
   TrajectoryCar(const Curve2<T>& curve, T initial_speed, T start_position)
       : curve_(curve),
         initial_speed_(initial_speed),

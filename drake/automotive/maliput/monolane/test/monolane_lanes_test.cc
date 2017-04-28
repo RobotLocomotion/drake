@@ -1,12 +1,12 @@
+#include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/lane.h"
+#include "drake/automotive/maliput/monolane/line_lane.h"
 
 #include <cmath>
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/junction.h"
-#include "drake/automotive/maliput/monolane/line_lane.h"
 #include "drake/automotive/maliput/monolane/road_geometry.h"
 #include "drake/automotive/maliput/monolane/segment.h"
 #include "drake/automotive/maliput/monolane/test/monolane_test_utils.h"
