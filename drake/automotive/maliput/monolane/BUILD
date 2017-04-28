@@ -96,6 +96,7 @@ drake_cc_googletest(
     srcs = ["test/monolane_lanes_test.cc"],
     deps = [
         ":lanes",
+        ":builder",
         "//drake/common:eigen_matrix_compare",
     ],
 )

@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/monolane/arc_lane.h"
+#include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/automotive/maliput/monolane/junction.h"
 #include "drake/automotive/maliput/monolane/lane.h"
 #include "drake/automotive/maliput/monolane/line_lane.h"
@@ -495,6 +496,7 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
                 + (8. * std::sin(kTheta)))) * 1., 1., 1.), kVeryExact);
 }
 
+
 namespace {
 api::LanePosition IntegrateTrivially(const api::Lane* lane,
                                      const api::LanePosition& lp_initial,
@@ -576,6 +578,158 @@ GTEST_TEST(MonolaneLanesTest, HillIntegration) {
                    -100. + ((100. + 10.) * std::sin(theta1)),
                    z1), kIntegrationTolerance);
 }
+
+
+const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
+                                     const std::string& junction_id) {
+  for (int i = 0; i < rg.num_junctions(); ++i) {
+    if (rg.junction(i)->id().id == junction_id) {
+      return rg.junction(i)->segment(0)->lane(0);
+    }
+  }
+  throw std::runtime_error("No matching junction name in the road network");
+}
+
+
+GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
+  using api::RBounds;
+  using monolane::ArcOffset;
+
+  const double kWidth{2.};  // Lane and drivable width.
+
+  // Define a serpentine road with multiple segments and branches.
+  std::unique_ptr<monolane::Builder> rb(
+      new monolane::Builder(RBounds(-kWidth, kWidth), RBounds(-kWidth, kWidth),
+                                     0.01, /* linear tolerance */
+                                     0.01 * M_PI /* angular tolerance */));
+
+  // Initialize the road from the origin.
+  const monolane::EndpointXy kOriginXy{0., 0., 0.};
+  const monolane::EndpointZ kFlatZ{0., 0., 0., 0.};
+  const monolane::Endpoint kRoadOrigin{kOriginXy, kFlatZ};
+
+  // Construct the post-merge road.
+  const double kArcDeltaTheta{M_PI / 2.};
+  const double kArcRadius{50.};
+  const double kLength{50.};
+  const auto& lane0 = rb->Connect(
+      "lane0", kRoadOrigin, ArcOffset(kArcRadius, -kArcDeltaTheta), kFlatZ);
+  const auto& lane1 = rb->Connect("lane1", lane0->end(), kLength, kFlatZ);
+  const auto& lane2 = rb->Connect(
+      "lane2", lane1->end(), ArcOffset(kArcRadius, kArcDeltaTheta), kFlatZ);
+  rb->Connect("lane3a", lane2->end(), kLength, kFlatZ);
+  rb->Connect(
+      "lane3b", lane2->end(), ArcOffset(kArcRadius, kArcDeltaTheta), kFlatZ);
+  rb->Connect(
+      "lane3c", lane2->end(), ArcOffset(kArcRadius, -kArcDeltaTheta), kFlatZ);
+
+  std::unique_ptr<const api::RoadGeometry> rg =
+      rb->Build({"multi_lane_with_branches"});
+
+  // Place a point at the middle of lane1.
+  api::GeoPosition geo_pos{kArcRadius, -kArcRadius - kLength / 2., 0.};
+
+  api::GeoPosition nearest_position{};
+  double distance;
+  api::RoadPosition actual_position =
+      rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
+
+  // Expect to locate the point centered within lane1 (straight segment).
+  EXPECT_LANE_NEAR(actual_position.pos,
+                   (kLength / 2. /* s */, 0. /* r */, 0. /* h */), kVeryExact);
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane1");
+  EXPECT_EQ(distance, 0.);
+  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
+                  kVeryExact);
+
+  // Tests the integrity of ToRoadPosition() with various other null argument
+  // combinations for the case where the point is within a lane.
+  EXPECT_NO_THROW(rg->ToRoadPosition(geo_pos, nullptr, &nearest_position,
+                                     nullptr));
+  EXPECT_NO_THROW(rg->ToRoadPosition(geo_pos, nullptr, nullptr, &distance));
+  EXPECT_NO_THROW(rg->ToRoadPosition(geo_pos, nullptr, nullptr, nullptr));
+
+  // Place a point halfway to the end of lane1, just to the outside (left side)
+  // of the lane bounds.
+  geo_pos = api::GeoPosition(kArcRadius + 2. * kWidth,
+                             -kArcRadius - kLength / 2., 0.);
+
+  actual_position =
+      rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
+
+  // Expect to locate the point just outside (to the left) of lane1, by an
+  // amount kWidth.
+  EXPECT_LANE_NEAR(actual_position.pos,
+                   (kLength / 2. /* s */, kWidth /* r */, 0. /* h */),
+                   kVeryExact);
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane1");
+  EXPECT_EQ(distance, kWidth);
+  EXPECT_GEO_NEAR(nearest_position,
+                  (geo_pos.x() - kWidth, geo_pos.y(), geo_pos.z()),
+                  kVeryExact);
+
+  // Tests the integrity of ToRoadPosition() with various other null argument
+  // combinations for the case where the point is outside all lanes.
+  EXPECT_NO_THROW(rg->ToRoadPosition(geo_pos, nullptr, &nearest_position,
+                                     nullptr));
+  EXPECT_NO_THROW(rg->ToRoadPosition(geo_pos, nullptr, nullptr, &distance));
+  EXPECT_NO_THROW(rg->ToRoadPosition(geo_pos, nullptr, nullptr, nullptr));
+
+  // Place a point at the middle of lane3a (straight segment).
+  geo_pos = api::GeoPosition(2. * kArcRadius + kLength / 2.,
+                             -2. * kArcRadius - kLength, 0.);
+
+  actual_position =
+      rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
+
+  // Expect to locate the point centered within lane3a.
+  EXPECT_LANE_NEAR(actual_position.pos,
+                   (kLength / 2. /* s */, 0. /* r */, 0. /* h */), kVeryExact);
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane3a");
+  EXPECT_EQ(distance, 0.);
+  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
+                  kVeryExact);
+
+  // Place a point at the end of lane3b (arc segment).
+  geo_pos = api::GeoPosition(2. * kArcRadius + kLength, -kArcRadius - kLength,
+                             0.);
+
+  actual_position =
+      rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
+
+  // Expect to locate the point at the end of lane3b.
+  EXPECT_LANE_NEAR(actual_position.pos,
+                   (kArcRadius * M_PI / 2. /* s */, 0. /* r */, 0. /* h */),
+                   kVeryExact);
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane3b");
+  EXPECT_EQ(distance, 0.);
+  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
+                  kVeryExact);
+
+  // Supply a hint with a position at the start of lane3c to determine the
+  // RoadPosition for a point at the end of lane3b.
+  api::RoadPosition hint{GetLaneByJunctionId(*rg, "j:lane3c"), {0., 0., 0.}};
+  actual_position =
+      rg->ToRoadPosition(geo_pos, &hint, &nearest_position, &distance);
+
+  // Expect to locate the point outside of lane lane3a.
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane3c");
+  EXPECT_GT(distance, 0.);  // geo_pos is not within this lane.
+
+  // Supply a hint with a position at the start of lane2 to determine the
+  // RoadPosition for a point at the end of lane3b.
+  hint = api::RoadPosition{GetLaneByJunctionId(*rg, "j:lane2"), {0., 0., 0.}};
+  actual_position =
+      rg->ToRoadPosition(geo_pos, &hint, &nearest_position, &distance);
+
+  // Expect to traverse to lane3b (an ongoing lane) and then locate the point
+  // within lane lane3b.
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane3b");
+  EXPECT_EQ(distance, 0.);  // geo_pos is inside lane3b.
+  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
+                  kVeryExact);
+}
+
 
 }  // namespace monolane
 }  // namespace maliput
