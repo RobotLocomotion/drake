@@ -488,9 +488,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     merged_events->Clear();
     // Merge all the events together.
-    merged_events->Merge(per_step_events_.get());
+    merged_events->Merge(*per_step_events_);
     if (sample_time_hit)
-      merged_events->Merge(timed_events.get());
+      merged_events->Merge(*timed_events);
 
     // The general policy here is to do actions in decreasing order of
     // "violence" to the state, i.e. unrestricted -> discrete -> publish.

@@ -232,9 +232,10 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Implementations of System<T> methods.
 
-  /// Computes the next update time based on the configured periodic events, for
-  /// scalar types that are arithmetic, or aborts for scalar types that are not
-  /// arithmetic. Subclasses that require aperiodic events should override.
+  /// The default implementation computes the next update time based on the
+  /// configured periodic events, for scalar types that are arithmetic, or
+  /// aborts for scalar types that are not arithmetic. Subclasses that require
+  /// aperiodic events should override.
   void DoCalcNextUpdateTime(const Context<T>& context,
                             EventInfo* event_info, T* time) const override {
     DoCalcNextUpdateTimeImpl(context, event_info, time);
@@ -787,8 +788,8 @@ class LeafSystem : public System<T> {
         "only works with types that are drake::is_numeric.");
   }
 
-  // Computes the next update time across all the scheduled events, for
-  // scalar types that are numeric.
+  // Computes the next update time across all the scheduled periodic events,
+  // for scalar types that are numeric.
   //
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>

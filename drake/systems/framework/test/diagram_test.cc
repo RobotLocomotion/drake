@@ -1516,8 +1516,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   double time = dut->CalcNextUpdateTime(*context, periodic_event_info.get());
   dut->GetPerStepEvents(*context, perstep_event_info.get());
 
-  event_info->Merge(periodic_event_info.get());
-  event_info->Merge(perstep_event_info.get());
+  event_info->Merge(*periodic_event_info);
+  event_info->Merge(*perstep_event_info);
 
   context->set_time(time);
   dut->Publish(*context, event_info.get());

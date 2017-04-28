@@ -833,22 +833,22 @@ class Diagram : public System<T>,
       const EventInfo* event_info) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
-    if (event_info == nullptr) {
-      for (int i = 0; i < num_subsystems(); ++i) {
-        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-        DRAKE_DEMAND(subcontext != nullptr);
-        sorted_systems_[i]->Publish(*subcontext);
-      }
-      return;
+    const DiagramEventInfo* info = nullptr;
+    if (event_info != nullptr) {
+      info = dynamic_cast<const DiagramEventInfo*>(event_info);
+      DRAKE_DEMAND(info != nullptr);
     }
 
-    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      const EventInfo* subinfo = info->get_sub_event_info(i);
       DRAKE_DEMAND(subcontext != nullptr);
-      sorted_systems_[i]->Publish(*subcontext, subinfo);
+      if (info != nullptr) {
+        const EventInfo* subinfo = info->get_sub_event_info(i);
+        DRAKE_DEMAND(subinfo != nullptr);
+        sorted_systems_[i]->Publish(*subcontext, subinfo);
+      } else {
+        sorted_systems_[i]->Publish(*subcontext);
+      }
     }
   }
 
@@ -871,32 +871,28 @@ class Diagram : public System<T>,
           context.get_discrete_state(i)->get_value());
     }
 
-    if (event_info == nullptr) {
-      for (int i = 0; i < num_subsystems(); ++i) {
-        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-        DRAKE_DEMAND(subcontext != nullptr);
-        DiscreteValues<T>* subdifference =
-            diagram_differences->get_mutable_subdifference(i);
-        DRAKE_DEMAND(subdifference != nullptr);
-
-        sorted_systems_[i]->CalcDiscreteVariableUpdates(
-            *subcontext, subdifference);
-      }
-      return;
+    const DiagramEventInfo* info = nullptr;
+    if (event_info != nullptr) {
+      info = dynamic_cast<const DiagramEventInfo*>(event_info);
+      DRAKE_DEMAND(info != nullptr);
     }
 
-    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       DRAKE_DEMAND(subcontext != nullptr);
       DiscreteValues<T>* subdifference =
           diagram_differences->get_mutable_subdifference(i);
       DRAKE_DEMAND(subdifference != nullptr);
-      const EventInfo* subinfo = info->get_sub_event_info(i);
 
-      sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, subinfo,
-                                                      subdifference);
+      if (info != nullptr) {
+        const EventInfo* subinfo = info->get_sub_event_info(i);
+        DRAKE_DEMAND(subinfo != nullptr);
+        sorted_systems_[i]->CalcDiscreteVariableUpdates(
+            *subcontext, subinfo, subdifference);
+      } else {
+        sorted_systems_[i]->CalcDiscreteVariableUpdates(
+            *subcontext, subdifference);
+      }
     }
   }
 
@@ -913,29 +909,25 @@ class Diagram : public System<T>,
     // No need to set state to context's state, since it has already been done
     // in System::CalcUnrestrictedUpdate().
 
-    if (event_info == nullptr) {
-      for (int i = 0; i < num_subsystems(); ++i) {
-        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-        DRAKE_DEMAND(subcontext != nullptr);
-        State<T>* substate = diagram_state->get_mutable_substate(i);
-        DRAKE_DEMAND(substate != nullptr);
-
-        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, substate);
-      }
-      return;
+    const DiagramEventInfo* info = nullptr;
+    if (event_info != nullptr) {
+      info = dynamic_cast<const DiagramEventInfo*>(event_info);
+      DRAKE_DEMAND(info != nullptr);
     }
 
-    auto info = dynamic_cast<const DiagramEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       DRAKE_DEMAND(subcontext != nullptr);
       State<T>* substate = diagram_state->get_mutable_substate(i);
       DRAKE_DEMAND(substate != nullptr);
-      const EventInfo* subinfo = info->get_sub_event_info(i);
-
-      sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, subinfo,
-                                                 substate);
+      if (info != nullptr) {
+        const EventInfo* subinfo = info->get_sub_event_info(i);
+        DRAKE_DEMAND(subinfo != nullptr);
+        sorted_systems_[i]->CalcUnrestrictedUpdate(
+            *subcontext, subinfo, substate);
+      } else {
+        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, substate);
+      }
     }
   }
 

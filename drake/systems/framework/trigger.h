@@ -17,6 +17,8 @@ namespace systems {
  * Trigger also owns an optional AbstractValue to facilitate passing additional
  * information from event triggering to event handlers. This is especially
  * useful for systems with external inputs (e.g. a LCM message subscriber).
+ * The underlying data in AbstractValue needs to be copy-constructible and
+ * assignable.
  */
 class Trigger {
  public:
@@ -25,6 +27,8 @@ class Trigger {
   /**
    * Predefined types of triggers. Used at run time to distinguish derived
    * Trigger type. See the corresponding class documentation for more details.
+   * Any user introduced triggers need to have their unique type ids defined
+   * here as well.
    */
   enum class TriggerType {
     kUnknown = 0,
@@ -47,6 +51,8 @@ class Trigger {
 
   /**
    * Returns a const reference to the underlying data.
+   *
+   * @tparam DataType Needs to be copy-constructible and assignable.
    */
   template <typename DataType>
   const DataType& get_data() const {
@@ -107,6 +113,11 @@ class ForcedTrigger final : public Trigger {
 
   ForcedTrigger() : Trigger(TriggerType::kForced) {}
 
+  /**
+   * Returns a const reference of a static global vector of exactly one const
+   * Trigger pointer, which points to a static global ForcedTrigger. This is
+   * to support "force" calls of event handlers in System.
+   */
   static const std::vector<const Trigger*>& OneForcedTrigger();
 
  private:
@@ -117,15 +128,17 @@ class ForcedTrigger final : public Trigger {
 
 /**
  * This trigger means that any associated event is triggered whenever the
- * `evaluator` takes a `step`. An `evaluator` can be any code that controls
- * the time and state evolution of a System. The Simulator is an instance of
- * an `evaluator`, and a `step` in the Simulator case corresponds to its
- * underlying Integrator taking a major time step. Per step events are most
- * commonly triggered in System::GetPerStepEvents(). A common use case is to
- * trigger a publish event whenever the Simulator takes a major time step.
- * Another example is to implement feedback controllers interfaced with real
- * hardware. The controller can be implemented in the event handler, and
- * the `step` corresponds to receiving sensor data from the hardware.
+ * `solver` takes a `step`. A `solver` can be any code that controls the time
+ * and state evolution of a System. The Simulator is an instance of a `solver`,
+ * and a `step` in the Simulator case corresponds to its underlying Integrator
+ * taking a major time step. Per step events are most commonly triggered in
+ * System::GetPerStepEvents(). A very common use of this is to update a
+ * discrete or abstract state variable that changes whenever the trajectory
+ * advances, such as the "min" or "max" of some quantity, recording of a signal
+ * in a delay buffer, or publishing. Another example is to implement feedback
+ * controllers interfaced with physical devices. The controller can be
+ * implemented in the event handler, and the `step` corresponds to receiving
+ * sensor data from the hardware.
  */
 class PerStepTrigger final : public Trigger {
  public:

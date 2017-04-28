@@ -31,7 +31,7 @@ void DiagramEventInfo::DoMerge(const EventInfo* other_info) {
   DRAKE_DEMAND(num_sub_event_info() == other->num_sub_event_info());
 
   for (int i = 0; i < num_sub_event_info(); i++) {
-    sub_event_info_[i]->Merge(other->get_sub_event_info(i));
+    sub_event_info_[i]->Merge(*(other->get_sub_event_info(i)));
   }
 }
 
