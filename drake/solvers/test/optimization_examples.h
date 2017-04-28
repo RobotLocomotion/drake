@@ -35,11 +35,11 @@ class OptimizationProgram {
 
   OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form);
 
-  virtual ~OptimizationProgram() {}
+  ~OptimizationProgram() override {}
 
   CostForm cost_form() const {return cost_form_;}
 
-  ConstraintForm cnstr_form() const {return cnstr_form_;}
+  ConstraintForm constraint_form() const {return cnstr_form_;}
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
