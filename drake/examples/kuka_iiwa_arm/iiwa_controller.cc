@@ -11,7 +11,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -58,7 +58,7 @@ int DoMain() {
   plan_sub->set_name("plan_sub");
 
   auto plan_source =
-      builder.AddSystem<IiwaPlanSource>(GetDrakePath() + kIiwaUrdf);
+      builder.AddSystem<RobotPlanInterpolator>(GetDrakePath() + kIiwaUrdf);
   plan_source->set_name("plan_source");
 
   auto target_demux =

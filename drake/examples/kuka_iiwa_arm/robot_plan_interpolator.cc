@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 
 #include <map>
 #include <memory>
@@ -11,7 +11,6 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/lcmt_iiwa_command.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
@@ -27,17 +26,17 @@ constexpr int kNumJoints = 7;
 // This corresponds to the actual plan.
 constexpr int kAbsStateIdxPlan = 0;
 // This corresponds to a flag that indicates whether the plan has been
-// initialized properly by IiwaPlanSource::Initialize().
+// initialized properly by RobotPlanInterpolator::Initialize().
 constexpr int kAbsStateIdxInitFlag = 1;
 
 }  // namespace
 
-constexpr double IiwaPlanSource::kDefaultPlanUpdateInterval;
+constexpr double RobotPlanInterpolator::kDefaultPlanUpdateInterval;
 
 // TODO(sam.creasey) If we had version of Trajectory which supported
 // outputting the derivatives in value(), we could avoid keeping track
 // of multiple polynomials below.
-struct IiwaPlanSource::PlanData {
+struct RobotPlanInterpolator::PlanData {
   PlanData() {}
   ~PlanData() {}
 
@@ -48,8 +47,8 @@ struct IiwaPlanSource::PlanData {
   PiecewisePolynomial<double> pp_double_deriv;
 };
 
-IiwaPlanSource::IiwaPlanSource(const std::string& model_path,
-                               double update_interval)
+RobotPlanInterpolator::RobotPlanInterpolator(
+    const std::string& model_path, double update_interval)
     : plan_input_port_(this->DeclareAbstractInputPort().get_index()),
       state_input_port_(
           this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2)
@@ -60,37 +59,40 @@ IiwaPlanSource::IiwaPlanSource(const std::string& model_path,
       acceleration_output_port_(
           this->DeclareOutputPort(systems::kVectorValued, kNumJoints)
           .get_index()) {
-  this->set_name("IiwaPlanSource");
+  this->set_name("RobotPlanInterpolator");
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
-IiwaPlanSource::~IiwaPlanSource() {}
+RobotPlanInterpolator::~RobotPlanInterpolator() {}
 
-std::unique_ptr<systems::AbstractValues> IiwaPlanSource::AllocateAbstractState()
-    const {
+std::unique_ptr<systems::AbstractValues>
+RobotPlanInterpolator::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
   const PlanData default_plan;
   // Actual plan.
   abstract_vals[kAbsStateIdxPlan] =
       systems::AbstractValue::Make<PlanData>(default_plan);
-  // Flag indicating whether IiwaPlanSource::Initialize() has been called.
+  // Flag indicating whether RobotPlanInterpolator::Initialize() has
+  // been called.
   abstract_vals[kAbsStateIdxInitFlag] =
       systems::AbstractValue::Make<bool>(false);
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
-void IiwaPlanSource::SetDefaultState(const systems::Context<double>&,
-                                     systems::State<double>* state) const {
+void RobotPlanInterpolator::SetDefaultState(
+    const systems::Context<double>&,
+    systems::State<double>* state) const {
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
   plan = PlanData();
   state->get_mutable_abstract_state<bool>(kAbsStateIdxInitFlag) = false;
 }
 
-void IiwaPlanSource::DoCalcOutput(const systems::Context<double>& context,
-                                  systems::SystemOutput<double>* output) const {
+void RobotPlanInterpolator::DoCalcOutput(
+    const systems::Context<double>& context,
+    systems::SystemOutput<double>* output) const {
   const PlanData& plan = context.get_abstract_state<PlanData>(kAbsStateIdxPlan);
   const bool inited = context.get_abstract_state<bool>(kAbsStateIdxInitFlag);
   DRAKE_DEMAND(inited);
@@ -107,9 +109,9 @@ void IiwaPlanSource::DoCalcOutput(const systems::Context<double>& context,
       plan.pp_double_deriv.value(current_plan_time);
 }
 
-void IiwaPlanSource::MakeFixedPlan(double plan_start_time,
-                                   const VectorX<double>& q0,
-                                   systems::State<double>* state) const {
+void RobotPlanInterpolator::MakeFixedPlan(
+    double plan_start_time, const VectorX<double>& q0,
+    systems::State<double>* state) const {
   DRAKE_DEMAND(state != nullptr);
   DRAKE_DEMAND(q0.size() == kNumJoints);
   PlanData& plan =
@@ -124,15 +126,15 @@ void IiwaPlanSource::MakeFixedPlan(double plan_start_time,
   drake::log()->info("Generated fixed plan at {}", q0.transpose());
 }
 
-void IiwaPlanSource::Initialize(double plan_start_time,
-                                const VectorX<double>& q0,
-                                systems::State<double>* state) const {
+void RobotPlanInterpolator::Initialize(double plan_start_time,
+                                       const VectorX<double>& q0,
+                                       systems::State<double>* state) const {
   DRAKE_DEMAND(state != nullptr);
   MakeFixedPlan(plan_start_time, q0, state);
   state->get_mutable_abstract_state<bool>(kAbsStateIdxInitFlag) = true;
 }
 
-void IiwaPlanSource::DoCalcUnrestrictedUpdate(
+void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
   PlanData& plan =
