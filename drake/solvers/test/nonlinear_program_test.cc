@@ -155,8 +155,9 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
 
 GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
   for (const auto& cost_form : NonConvexQPproblem1::cost_forms()) {
-    for (const auto& cnstr_form : NonConvexQPproblem1::constraint_forms()) {
-      NonConvexQPproblem1 prob(cost_form, cnstr_form);
+    for (const auto& constraint_form :
+         NonConvexQPproblem1::constraint_forms()) {
+      NonConvexQPproblem1 prob(cost_form, constraint_form);
       RunNonlinearProgram(prob.prog(),
                           [&]() { prob.CheckSolution(); });
     }
@@ -165,8 +166,9 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
 
 GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
   for (const auto& cost_form : NonConvexQPproblem2::cost_forms()) {
-    for (const auto& cnstr_form : NonConvexQPproblem2::constraint_forms()) {
-      NonConvexQPproblem2 prob(cost_form, cnstr_form);
+    for (const auto& constraint_form :
+         NonConvexQPproblem2::constraint_forms()) {
+      NonConvexQPproblem2 prob(cost_form, constraint_form);
       RunNonlinearProgram(prob.prog(),
                           [&]() { prob.CheckSolution(); });
     }
@@ -174,8 +176,8 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem2) {
 }
 
 GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
-  for (const auto& cnstr_form : LowerBoundedProblem::constraint_forms()) {
-    LowerBoundedProblem prob(cnstr_form);
+  for (const auto& constraint_form : LowerBoundedProblem::constraint_forms()) {
+    LowerBoundedProblem prob(constraint_form);
     prob.SetInitialGuess1();
     RunNonlinearProgram(prob.prog(),
                         [&]() { prob.CheckSolution(); });
@@ -226,9 +228,9 @@ GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
 GTEST_TEST(testNonlinearProgram, testGloptiPolyConstrainedMinimization) {
   for (const auto& cost_form :
        GloptiPolyConstrainedMinimizationProblem::cost_forms()) {
-    for (const auto& cnstr_form :
+    for (const auto& constraint_form :
          GloptiPolyConstrainedMinimizationProblem::constraint_forms()) {
-      GloptiPolyConstrainedMinimizationProblem prob(cost_form, cnstr_form);
+      GloptiPolyConstrainedMinimizationProblem prob(cost_form, constraint_form);
       RunNonlinearProgram(prob.prog(),
                           [&]() { prob.CheckSolution(); });
     }
@@ -360,11 +362,11 @@ GTEST_TEST(testNonlinearProgram, MinDistanceFromPlaneToOrigin) {
   A[1] << 0, 1, 2, -1, 2, 3;
   b[1] = Vector2d(1.0, 3.0);
   for (const auto& cost_form : MinDistanceFromPlaneToOrigin::cost_forms()) {
-    for (const auto& cnstr_form :
+    for (const auto& constraint_form :
          MinDistanceFromPlaneToOrigin::constraint_forms()) {
       for (int k = 0; k < 2; ++k) {
         MinDistanceFromPlaneToOrigin prob(
-            A[k], b[k], cost_form, cnstr_form);
+            A[k], b[k], cost_form, constraint_form);
         prob.SetInitialGuess();
         RunNonlinearProgram(prob.prog_lorentz(),
                             [&]() { prob.CheckSolution(false); });
