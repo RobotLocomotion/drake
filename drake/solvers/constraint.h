@@ -19,22 +19,22 @@
 namespace drake {
 namespace solvers {
 
+/**
+ * An evaluator base provides an abstract interface to store an expression
+ * and then evaluate it, either on a double or a AutoDiff Scalar type.
+ *
+ * EvaluateBase is not copyable, nor movable.
+ */
 class EvaluatorBase {
-  void check(size_t num_constraints) {
-    static_cast<void>(num_constraints);
-    DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
-                 "Size of lower bound must match number of constraints.");
-    DRAKE_ASSERT(static_cast<size_t>(upper_bound_.size()) == num_constraints &&
-                 "Size of upper bound must match number of constraints.");
-  }
-
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorBase)
+  // TODO(eric.cousineau): Refactor to move constraint-only functionality to
+  // Constraint. Move this case to a separate file.
 
   template <typename DerivedLB, typename DerivedUB>
   EvaluatorBase(size_t num_constraints, int num_vars,
-                Eigen::MatrixBase<DerivedLB> const& lb,
-                Eigen::MatrixBase<DerivedUB> const& ub)
+                const Eigen::MatrixBase<DerivedLB>& lb,
+                const Eigen::MatrixBase<DerivedUB>& ub)
       : EvaluatorBase(num_constraints, num_vars, lb, ub, "") {}
 
   template <typename DerivedLB, typename DerivedUB>
@@ -170,6 +170,14 @@ class EvaluatorBase {
   }
 
  private:
+  void check(size_t num_constraints) {
+    static_cast<void>(num_constraints);
+    DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
+                 "Size of lower bound must match number of constraints.");
+    DRAKE_ASSERT(static_cast<size_t>(upper_bound_.size()) == num_constraints &&
+                 "Size of upper bound must match number of constraints.");
+  }
+
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
   int num_vars_{0};
@@ -197,7 +205,8 @@ class Constraint : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
 
-  // TODO(eric.cousineau): Move Constraint-only functionality here.
+  // TODO(eric.cousineau): Move Constraint-only functionality from
+  // EvaluatorBase here.
 
   using EvaluatorBase::EvaluatorBase;
 };
@@ -443,6 +452,8 @@ class LinearConstraint : public Constraint {
   ~LinearConstraint() override {}
 
   virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
+    // TODO(eric.cousineau): Consider storing or caching sparse matrix, such
+    // that we can return a const lvalue reference.
     return A_.sparseView();
   }
   virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& A()

@@ -431,8 +431,9 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
 
 template <typename To, typename From>
 Binding<To> BindingUpcast(const Binding<From>& binding) {
-  return Binding<To>(std::dynamic_pointer_cast<To>(binding.constraint()),
-                     binding.variables());
+  auto constraint = std::dynamic_pointer_cast<To>(binding.constraint());
+  DRAKE_DEMAND(constraint != nullptr);
+  return Binding<To>(constraint, binding.variables());
 }
 
 }  // anonymous namespace

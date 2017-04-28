@@ -27,6 +27,10 @@ class Cost : public EvaluatorBase {
   explicit Cost(size_t num_vars) : EvaluatorBase(1, num_vars) {}
 };
 
+/**
+ * Stopgap definition that permits CostShim to pass a constructed Constraint
+ * instance, and propogate the information to the Cost-wrapped Constraint.
+ */
 class CostShimBase : public Cost {
  protected:
   explicit CostShimBase(const std::shared_ptr<Constraint>& impl)
@@ -46,7 +50,7 @@ class CostShimBase : public Cost {
   const std::shared_ptr<Constraint>& impl() const { return impl_; }
 
  private:
-  std::shared_ptr<Constraint> impl_;
+  const std::shared_ptr<Constraint> impl_;
 };
 
 /**
@@ -59,17 +63,18 @@ class CostShim : public CostShimBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CostShim)
 
+  // By construction, this will be the correct instance, so we will use a
+  // static cast rather than dynamic cast.
   template <typename... Args>
   explicit CostShim(Args&&... args)
-      : CostShimBase(std::make_shared<C>(std::forward<Args>(args)...)) {
-    constraint_ = std::dynamic_pointer_cast<C>(impl());
-  }
+      : CostShimBase(std::make_shared<C>(std::forward<Args>(args)...)),
+        constraint_(std::static_pointer_cast<C>(impl())) {}
 
  protected:
   const std::shared_ptr<C>& constraint() const { return constraint_; }
 
  private:
-  std::shared_ptr<C> constraint_;
+  const std::shared_ptr<C> constraint_;
 };
 
 /**
@@ -79,8 +84,7 @@ class LinearCost : public CostShim<LinearConstraint> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost)
 
-  // NOLINTNEXTLINE(runtime/explicit).
-  LinearCost(const Eigen::Ref<const Eigen::VectorXd>& c)
+  explicit LinearCost(const Eigen::Ref<const Eigen::VectorXd>& c)
       : CostShim(c.transpose(), Vector1<double>::Constant(
                                     -std::numeric_limits<double>::infinity()),
                  Vector1<double>::Constant(
@@ -112,8 +116,8 @@ class QuadraticCost : public CostShim<QuadraticConstraint> {
   /**
    * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
-   * @param new_Q new quadratic term
-   * @param new_b new linear term
+   * @param new_Q New quadratic term.
+   * @param new_b New linear term.
    */
   template <typename DerivedQ, typename DerivedB>
   void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,

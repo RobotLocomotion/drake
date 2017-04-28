@@ -239,7 +239,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   prog_socp.AddLinearConstraint(A, b_lb, b_ub, x_socp);
 
-  std::shared_ptr<LinearCost> cost_socp1(new LinearCost(c.transpose()));
+  auto cost_socp1 = CreateLinearCost(c.transpose());
   prog_socp.AddCost(cost_socp1, x_socp);
   prog_socp.AddLinearCost(drake::Vector1d(1.0), y);
   RunSolver(&prog_socp, solver);

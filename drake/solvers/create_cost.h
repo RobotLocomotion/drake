@@ -45,7 +45,7 @@ struct is_convertible_workaround<std::unique_ptr<A>, std::shared_ptr<B>>
     : std::is_convertible<A*, B*> {};
 
 /**
- * Enable us to catch and provide a meaningful assertion if a Constraint is
+ * Enables us to catch and provide a meaningful assertion if a Constraint is
  * passed in, when we should have a Cost.
  * @tparam F The class to test if it is convertible to variants of C.
  * @tparam C Intended to be either Cost or Constraint.

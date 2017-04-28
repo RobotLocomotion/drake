@@ -653,9 +653,10 @@ class MathematicalProgram {
   }
 
   /**
-   * Convert an input of type @tparam F to a FunctionCost object.
+   * Convert an input of type @p F to a FunctionCost object.
    * @tparam F This class should have functions numInputs(), numOutputs and
-   * eval(x, y). Check drake::solvrs::detail::FunctionTraits for more details.
+   * eval(x, y).
+   * @see drake::solvers::detail::FunctionTraits.
    */
   template <typename F>
   static std::shared_ptr<Cost> MakeCost(F&& f) {
@@ -663,7 +664,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add costs to the optimization program on a list of variables.
+   * Adds a cost to the optimization program on a list of variables.
    * @tparam F it should define functions numInputs, numOutputs and eval. Check
    * drake::solvers::detail::FunctionTraits for more detail.
    */
@@ -696,8 +697,8 @@ class MathematicalProgram {
   template <typename F, typename Vars>
   typename std::enable_if<detail::assert_if_is_constraint<F>::value,
                           Binding<Cost>>::type
-  AddCost(F&& f, Vars&& vars) {
-    throw(std::runtime_error("This will assert at compile-time."));
+  AddCost(F&&, Vars&&) {
+    throw std::runtime_error("This will assert at compile-time.");
   }
 
   /**
