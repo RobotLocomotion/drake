@@ -273,28 +273,43 @@ class IntegratorBase {
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
-   * Sets the minimum step size that may be taken by this integrator.
+   * Sets the requested minimum step size that may be taken by this integrator.
    * All integration steps will be at least this large *except those
-   * specifically requested by users*.
+   * specifically requested by users*. This requested minimum step size is an
+   * absolute number, which can make the behavior appear to be strange when
+   * times are large. For example, an integration step of 1e-14 when the current
+   * time in the context is 1e+14 will appear to cause time to fail to advance
+   * (because `double` types possess approximately 16 digits of precision).
    * @param min_step_size a non-negative value. Setting this value to zero
-   *                      is equivalent to saying "I don't know what the
-   *                      practical limit on step size is, but I don't want
-   *                      the integrator to stop shrinking the step size because
-   *                      of my ignorance." Practically speaking, setting this
-   *                      value to zero can effectively make an integration
-   *                      "hang".
-   * @sa get_minimum_step_size()
+   *                      will cause the integrator to use a reasonable value
+   *                      instead (see get_working_minimum_step_size()).
+   * @sa get_requested_minimum_step_size()
+   * @sa get_working_minimum_step_size()
    */
-  void set_minimum_step_size(const T& min_step_size) {
+  void set_requested_minimum_step_size(const T& min_step_size) {
     DRAKE_ASSERT(min_step_size >= 0.0);
-    min_step_size_ = min_step_size;
+    req_min_step_size_ = min_step_size;
   }
 
   /**
-   * Gets the minimum step size that may be taken by this integrator.
-   * @sa set_minimum_step_size()
+   * Gets the requested minimum step size setting for this integrator. The
+   * *working* minimum step size that is dependent upon the current system time
+   * (stored in the integrator's context).
+   * @sa set_requested_minimum_step_size()
+   * @sa get_working_minimum_step_size(T)
    */
-  const T& get_minimum_step_size() const { return min_step_size_; }
+  const T& get_requested_minimum_step_size() const {
+    return req_min_step_size_; }
+
+  /// Gets the working minimum step size for this integrator. The working
+  /// minimum step size is the maximum of get_requested_minimum_step_size() and
+  /// t*1e-14 (where t is the current system time stored in the integrator's
+  /// context.
+  T get_working_minimum_step_size() const {
+    using std::max;
+    const T smart_minimum = get_context().get_time()*1e-14;
+    return max(smart_minimum, req_min_step_size_);
+  }
 
   /**
    * Resets the integrator to initial values, i.e., default construction
@@ -316,7 +331,7 @@ class IntegratorBase {
     ResetStatistics();
 
     // Wipe out settings.
-    min_step_size_ = nan();
+    req_min_step_size_ = nan();
     max_step_size_ = nan();
     accuracy_in_use_ = nan();
 
@@ -350,7 +365,7 @@ class IntegratorBase {
     if (!context_) throw std::logic_error("Context has not been set.");
 
     // Verify that user settings are reasonable.
-    if (max_step_size_ < min_step_size_) {
+    if (max_step_size_ < req_min_step_size_) {
       throw std::logic_error("Integrator maximum step size is less than the "
                              "minimum step size");
     }
@@ -358,7 +373,7 @@ class IntegratorBase {
       throw std::logic_error("Requested integrator initial step size is larger "
                              "than the maximum step size.");
     }
-    if (req_initial_step_size_ < min_step_size_) {
+    if (req_initial_step_size_ < req_min_step_size_) {
       throw std::logic_error("Requested integrator initial step size is smaller"
                              " than the minimum step size.");
     }
@@ -1137,7 +1152,7 @@ class IntegratorBase {
   T max_step_size_{nan()};
 
   // The minimum step size.
-  T min_step_size_{nan()};
+  T req_min_step_size_{nan()};
 
   // The last step taken by the integrator.
   T prev_step_size_{nan()};
@@ -1199,7 +1214,7 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
   using std::isnan;
 
   // If the directed step is less than the minimum, just go ahead and take it.
-  if (dt_max < get_minimum_step_size()) {
+  if (dt_max < get_requested_minimum_step_size()) {
     Step(dt_max);
     return true;
   }
@@ -1412,17 +1427,17 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   // a special status from IntegrateAtMost().
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
-  if (get_minimum_step_size() > 0) {
-    if (new_step_size < get_minimum_step_size()) {
-      SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
-          "size of {}", new_step_size);
-      if (min_step_exceeded_throws_) {
-        throw std::runtime_error("Error control wants to select step smaller "
-                                     "than minimum allowed.");
-      }
-    }
-    new_step_size = max(new_step_size, get_minimum_step_size());
+  if (new_step_size < get_working_minimum_step_size() &&
+      min_step_exceeded_throws_) {
+    SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
+        "size of {}; working minimum is ", new_step_size,
+                 get_working_minimum_step_size());
+    std::ostringstream str;
+    str << "Error control wants to select step smaller than minimum allowed" <<
+           "(" << get_working_minimum_step_size() << ")";
+    throw std::runtime_error(str.str());
   }
+  new_step_size = max(new_step_size, get_working_minimum_step_size());
 
   return std::make_pair(new_step_size >= current_step_size, new_step_size);
 }

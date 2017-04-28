@@ -17,7 +17,6 @@ namespace {
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 
-/*
 GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   std::unique_ptr<analysis_test::RobertsonSystem<double>> robertson =
     std::make_unique<analysis_test::RobertsonSystem<double>>();
@@ -39,7 +38,6 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   // Very large step is necessary for this problem since given solution is
   // at t = 1e11.
   integrator.set_maximum_step_size(10000000.0);
-  integrator.set_minimum_step_size(1e-6);
   integrator.set_minimum_step_size_exceeded_throws(false);
   integrator.set_target_accuracy(tol);
 
@@ -53,7 +51,6 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   EXPECT_NEAR(state->GetAtIndex(1), sol(1), tol);
   EXPECT_NEAR(state->GetAtIndex(2), sol(2), tol);
 }
-*/
 
 class ImplicitIntegratorTest : public ::testing::Test {
  public:
@@ -133,7 +130,7 @@ TEST_F(ImplicitIntegratorTest, AutoDiff) {
   integrator.set_maximum_step_size(large_dt_);
   integrator.request_initial_step_size_target(large_dt_);
   integrator.set_target_accuracy(1e-5);
-  integrator.set_minimum_step_size(small_dt_);
+  integrator.set_requested_minimum_step_size(small_dt_);
   integrator.Initialize();
 
   // Integrate for one step.
@@ -296,7 +293,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*spring_damper, context.get());
   integrator.set_maximum_step_size(large_dt_);
-  integrator.set_minimum_step_size(small_dt_);
+  integrator.set_requested_minimum_step_size(small_dt_);
   integrator.set_minimum_step_size_exceeded_throws(false);
 
   // Set error controlled integration parameters.
@@ -400,7 +397,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   integrator.set_maximum_step_size(large_dt_);
   integrator.request_initial_step_size_target(large_dt_);
   integrator.set_target_accuracy(5e-5);
-  integrator.set_minimum_step_size(1e-6);
+  integrator.set_requested_minimum_step_size(1e-6);
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
@@ -580,7 +577,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   // Spring-mass system is necessary only to setup the problem.
   ImplicitEulerIntegrator<double> integrator(spring_mass, context.get());
   integrator.set_maximum_step_size(large_dt_);
-  integrator.set_minimum_step_size(small_dt_);
+  integrator.set_requested_minimum_step_size(small_dt_);
   integrator.set_minimum_step_size_exceeded_throws(false);
 
   // Turn fixed stepping on.
@@ -632,7 +629,7 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
   // Setting the minimum step size speeds the unit test without (in this case)
   // affecting solution accuracy.
-  integrator.set_minimum_step_size(1e-3);
+  integrator.set_requested_minimum_step_size(1e-3);
 
   // Set the initial position and initial velocity.
   const double initial_position = 1e-8;
@@ -711,7 +708,7 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  drake::log()->set_level(spdlog::level::debug);
+//  drake::log()->set_level(spdlog::level::debug);
   return RUN_ALL_TESTS();
 }
 

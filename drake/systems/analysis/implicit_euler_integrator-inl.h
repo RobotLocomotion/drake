@@ -659,7 +659,7 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
   // If the requested dt is less than or equal to the minimum step size, an
   // explicit Euler step will be taken. We compute the error estimate using two
   // half steps.
-  if (dt <= this->get_minimum_step_size()) {
+  if (dt < this->get_working_minimum_step_size()) {
     SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
         "step instead");
     const T half_dt = dt / 2;

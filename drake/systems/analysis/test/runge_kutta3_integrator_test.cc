@@ -74,7 +74,7 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
 
   // Set integrator parameters.
   integrator_->set_maximum_step_size(0.1);
-  integrator_->set_minimum_step_size(1e-40);
+  integrator_->set_requested_minimum_step_size(1e-40);
   integrator_->set_target_accuracy(1e-3);
 
   // Take all the defaults.
@@ -131,12 +131,12 @@ TEST_F(RK3IntegratorTest, BulletProofSetup) {
   // Attempt to initialize the integrator: should throw logic error because
   // maximum step size smaller than minimum step size.
   integrator_->set_maximum_step_size(dt);
-  integrator_->set_minimum_step_size(big_dt);
+  integrator_->set_requested_minimum_step_size(big_dt);
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
 
   // Set step sizes to cogent values and try to initialize again but now using
   // bad requested initial step sizes.
-  integrator_->set_minimum_step_size(1e-8);
+  integrator_->set_requested_minimum_step_size(1e-8);
   integrator_->set_maximum_step_size(big_dt);
   integrator_->request_initial_step_size_target(1e-10);
   EXPECT_THROW(integrator_->Initialize(), std::logic_error);
@@ -270,7 +270,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // error control.
   integrator_->Reset();
   integrator_->set_maximum_step_size(0.1);
-  integrator_->set_minimum_step_size(1e-6);
+  integrator_->set_requested_minimum_step_size(1e-6);
   integrator_->set_target_accuracy(1e-3);
 
   // Re-initialize the integrator.
