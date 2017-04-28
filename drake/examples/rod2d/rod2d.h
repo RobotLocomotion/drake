@@ -415,6 +415,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                        systems::State<T>* state) const override;
 
  private:
+  Vector3<T> ComputeExternalForces(const systems::Context<T>& context) const;
   Matrix3<T> get_inverse_inertia_matrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
                                     Vector2<T>* fN, Vector2<T>* fF) const;
