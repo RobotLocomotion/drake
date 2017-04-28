@@ -22,13 +22,13 @@ namespace kuka_iiwa_arm {
 ///
 /// If a plan is received with no knot points, the system will create
 /// a plan which commands the arm to hold at the measured position.
-class IiwaPlanSource : public systems::LeafSystem<double> {
+class RobotPlanInterpolator : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaPlanSource)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator)
 
-  IiwaPlanSource(const std::string& model_path,
-                 double update_interval = kDefaultPlanUpdateInterval);
-  ~IiwaPlanSource() override;
+  RobotPlanInterpolator(const std::string& model_path,
+                        double update_interval = kDefaultPlanUpdateInterval);
+  ~RobotPlanInterpolator() override;
 
   const systems::InputPortDescriptor<double>& get_plan_input_port() const {
     return this->get_input_port(plan_input_port_);
