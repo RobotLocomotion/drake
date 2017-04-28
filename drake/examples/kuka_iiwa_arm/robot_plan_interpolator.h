@@ -79,9 +79,9 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
 
   static constexpr double kDefaultPlanUpdateInterval = 0.1;
   const int plan_input_port_{};
-  const int state_input_port_{};
-  const int state_output_port_{};
-  const int acceleration_output_port_{};
+  int state_input_port_{-1};
+  int state_output_port_{-1};
+  int acceleration_output_port_{-1};
   RigidBodyTree<double> tree_;
 };
 
