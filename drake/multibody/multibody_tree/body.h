@@ -170,6 +170,8 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // In Debug builds it throws a std::bad_cast exception.
   static const MultibodyTreeContext<T>& get_multibody_tree_context(
       const systems::Context<T>& context) {
+    // TODO(amcastro-tri): Switch to the fast_cast introduced in #5964 once it
+    // gets merged into master.
 #ifndef NDEBUG
     return dynamic_cast<const MultibodyTreeContext<T>&>(context);
 #else

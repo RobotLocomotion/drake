@@ -303,7 +303,7 @@ class MultibodyTree {
   /// state of the multibody system.
   ///
   /// @pre The method Finalize() must be called before attempting to create a
-  /// context in order for the %MulitbodyTree topology to be valid at the moment
+  /// context in order for the %MultibodyTree topology to be valid at the moment
   /// of allocating resources.
   ///
   /// @throws std::logic_error If users attempt to call this method on a

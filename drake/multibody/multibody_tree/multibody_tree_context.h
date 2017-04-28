@@ -66,11 +66,8 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // TODO(amcastro-tri): provide dependency on the generalized positions
     // vector.
     position_kinematics_ticket_ = this->CreateCacheEntry({});
-    this->InitCachedValue(
-        position_kinematics_ticket_,
-        std::make_unique<Value<PositionKinematicsCache<T>>>(topology));
-    // Forces cache entry invalidation.
-    this->invalidate_cache_entry(position_kinematics_ticket_);
+    position_kinematics_ticket_ =
+        this->template MakeCacheEntry<PositionKinematicsCache<T>>({}, topology);
   }
 
   /// Returns the size of the generalized positions vector.
@@ -112,7 +109,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
   /// Validates cache entry corresponding to the PositionKinematicsCache.
   void validate_position_kinematics_cache() {
-    this->validate_cache_entry(position_kinematics_ticket_);
+    this->ValidateCacheEntry(position_kinematics_ticket_);
   }
 
   /// Returns a constant reference to the position kinematics cache entry.
@@ -176,6 +173,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
   // Helper methods to safely switch between static_cast in Release builds to
   // dynamic_cast in Debug builds.
+  // TODO(amcastro-tri): Switch to the version in drake/common introduced in
+  // #5964 once it gets merged into master. For now use this version since a
+  // safe_cast search will quickly show the places that need to be updated.
 
   // Const type version.
   template<class ToType, class FromType>
