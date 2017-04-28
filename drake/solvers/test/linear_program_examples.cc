@@ -89,7 +89,7 @@ LinearProgram0::LinearProgram0(CostForm cost_form, ConstraintForm cnstr_form)
   Vector3d b_lb(-numeric_limits<double>::infinity(), 2.0,
                 -numeric_limits<double>::infinity());
   Vector3d b_ub(1.0, numeric_limits<double>::infinity(), 4.0);
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       Eigen::Matrix<double, 3, 2> A;
       // clang-format off
@@ -150,7 +150,7 @@ LinearProgram1::LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form)
     default:
       throw std::runtime_error("Unsupported cost form.");
   }
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic:
     case ConstraintForm::kSymbolic: {
       prog()->AddBoundingBoxConstraint(Vector2d(0, -1), Vector2d(2, 4), x_);
@@ -175,8 +175,9 @@ void LinearProgram1::CheckSolution(SolverType solver_type) const {
   ExpectSolutionCostAccurate(*prog(), tol);
 }
 
-LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form),
+LinearProgram2::LinearProgram2(CostForm cost_form,
+                               ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form),
       x_(),
       x_expected_(0, 0, 15, 25.0 / 3.0) {
   x_ = prog()->NewContinuousVariables<4>();
@@ -199,7 +200,7 @@ LinearProgram2::LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form)
                 -numeric_limits<double>::infinity(), -100);
   Vector4d b_ub(numeric_limits<double>::infinity(), 25,
                 numeric_limits<double>::infinity(), 40);
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       prog()->AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 2), 30,
                                           x_.head<3>());
@@ -281,7 +282,7 @@ LinearProgram3::LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form)
   Eigen::Vector3d b_lb(11, -numeric_limits<double>::infinity(), 35);
   Eigen::Vector3d b_ub(numeric_limits<double>::infinity(), 5,
                        numeric_limits<double>::infinity());
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       prog()->AddLinearEqualityConstraint(Eigen::RowVector3d(1, -1, -1), 0,
                                           {x_.segment<1>(2), x_.head<2>()});
@@ -343,26 +344,26 @@ void LinearProgram3::CheckSolution(SolverType solver_type) const {
 
 LinearProgramTest::LinearProgramTest() {
   auto cost_form = std::get<0>(GetParam());
-  auto cnstr_form = std::get<1>(GetParam());
+  auto constraint_form = std::get<1>(GetParam());
   switch (std::get<2>(GetParam())) {
     case LinearProblems::kLinearFeasibilityProgram : {
-      prob_ = std::make_unique<LinearFeasibilityProgram>(cnstr_form);
+      prob_ = std::make_unique<LinearFeasibilityProgram>(constraint_form);
       break;
     }
     case LinearProblems::kLinearProgram0 : {
-      prob_ = std::make_unique<LinearProgram0>(cost_form, cnstr_form);
+      prob_ = std::make_unique<LinearProgram0>(cost_form, constraint_form);
       break;
     }
     case LinearProblems::kLinearProgram1 : {
-      prob_ = std::make_unique<LinearProgram1>(cost_form, cnstr_form);
+      prob_ = std::make_unique<LinearProgram1>(cost_form, constraint_form);
       break;
     }
     case LinearProblems::kLinearProgram2 : {
-      prob_ = std::make_unique<LinearProgram2>(cost_form, cnstr_form);
+      prob_ = std::make_unique<LinearProgram2>(cost_form, constraint_form);
       break;
     }
     case LinearProblems::kLinearProgram3 : {
-      prob_ = std::make_unique<LinearProgram3>(cost_form, cnstr_form);
+      prob_ = std::make_unique<LinearProgram3>(cost_form, constraint_form);
       break;
     }
     default : throw std::runtime_error("Un-recognized linear problem.");

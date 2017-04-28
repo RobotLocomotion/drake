@@ -19,7 +19,7 @@ class LinearFeasibilityProgram : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
 
-  explicit LinearFeasibilityProgram(ConstraintForm cnstr_form);
+  explicit LinearFeasibilityProgram(ConstraintForm constraint_form);
 
   ~LinearFeasibilityProgram() override {};
 
@@ -43,7 +43,7 @@ class LinearProgram0 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0)
 
-  LinearProgram0(CostForm cost_form, ConstraintForm cnstr_form);
+  LinearProgram0(CostForm cost_form, ConstraintForm constraint_form);
 
   ~LinearProgram0() override {};
 
@@ -64,7 +64,7 @@ class LinearProgram1 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram1)
 
-  LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form);
+  LinearProgram1(CostForm cost_form, ConstraintForm constraint_form);
 
   ~LinearProgram1() override {};
 
@@ -92,7 +92,7 @@ class LinearProgram2 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram2)
 
-  LinearProgram2(CostForm cost_form, ConstraintForm cnstr_form);
+  LinearProgram2(CostForm cost_form, ConstraintForm constraint_form);
 
   ~LinearProgram2() override {};
 
@@ -117,7 +117,7 @@ class LinearProgram3 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram3)
 
-  LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form);
+  LinearProgram3(CostForm cost_form, ConstraintForm constraint_form);
 
   ~LinearProgram3() override {};
 
