@@ -31,14 +31,14 @@ namespace systems {
 namespace plants {
 namespace {
 
-class IKTrajectoryCost : public drake::solvers::Constraint {
+class IKTrajectoryCost : public drake::solvers::Cost {
  public:
   /// @p helper is aliased, and must remain valid for the life of
   /// this class.
   template <typename Derived>
   IKTrajectoryCost(const IKTrajectoryHelper& helper,
                    const Eigen::MatrixBase<Derived>& q_nom)
-      : Constraint(1, helper.nq() * (helper.nT() + 2)),
+      : Cost(helper.nq() * (helper.nT() + 2)),
         helper_(helper),
         q_nom_(q_nom) {}
 
@@ -382,7 +382,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   VectorXDecisionVariable qdot0 = prog.NewContinuousVariables(nq, "qdot0");
   VectorXDecisionVariable qdotf = prog.NewContinuousVariables(nq, "qdotf");
 
-  std::shared_ptr<drake::solvers::Constraint> cost =
+  std::shared_ptr<drake::solvers::Cost> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);
   prog.AddCost(cost, {q, qdot0, qdotf});
 

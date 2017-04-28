@@ -30,7 +30,7 @@ void QPController::AddAsCosts(const Eigen::MatrixBase<DerivedA>& A,
                               const Eigen::MatrixBase<DerivedB>& b,
                               const Eigen::MatrixBase<DerivedW>& weights,
                               const std::list<int>& idx,
-                              drake::solvers::QuadraticConstraint* cost) {
+                              drake::solvers::QuadraticCost* cost) {
   if (idx.empty()) return;
   if (A.rows() != b.rows() || A.rows() != weights.rows() ||
       A.rows() > tmp_vd_mat_.rows() || b.cols() != 1 || weights.cols() != 1 ||

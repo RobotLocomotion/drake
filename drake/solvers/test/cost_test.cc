@@ -10,7 +10,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/create_cost.h"
-#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 
 using std::cout;
@@ -90,11 +89,14 @@ auto make_vector(std::initializer_list<T> items) {
   return vector<std::decay_t<T>>(items);
 }
 
-template <typename C, typename... Args>
+template <typename C, typename BoundType, typename... Args>
 void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
   // Ensure that a constraint constructed in a particular fashion yields
   // equivalent results to its shim, and the related cost
-  C constraint(std::forward<Args>(args)...);
+  const auto inf = std::numeric_limits<double>::infinity();
+  auto lb = -BoundType(-inf);
+  auto ub = BoundType(inf);
+  C constraint(std::forward<Args>(args)..., lb, ub);
   typename related_cost<C>::type cost(std::forward<Args>(args)...);
   VectorXd y_expected, y;
   constraint.Eval(x_value, y);
@@ -104,21 +106,17 @@ void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
 
 GTEST_TEST(testCost, testCostShim) {
   // Test CostShim's by means of the related constraints
-  const auto inf = std::numeric_limits<double>::infinity();
 
-  VerifyRelatedCost<LinearConstraint>(Vector1d(2), Vector1d(3),
-                                      -Vector1d::Constant(inf),
-                                      Vector1d::Constant(inf));
+  VerifyRelatedCost<LinearConstraint, Vector1d>(Vector1d(2), Vector1d(3));
 
-  VerifyRelatedCost<QuadraticConstraint>(Vector1d(2), Vector1d(3), Vector1d(4),
-                                         -inf, inf);
+  VerifyRelatedCost<QuadraticConstraint, double>(Vector1d(2), Vector1d(3),
+                                                 Vector1d(4));
 
   const Polynomiald x("x");
   const auto poly = (x - 1) * (x - 1);
   const auto var_mapping = make_vector({x.GetSimpleVariable()});
-  VerifyRelatedCost<PolynomialConstraint>(
-      Vector1d(2), VectorXPoly::Constant(1, poly), var_mapping,
-      Vector1d::Constant(2), Vector1d::Constant(2));
+  VerifyRelatedCost<PolynomialConstraint, Vector1d>(
+      Vector1d(2), VectorXPoly::Constant(1, poly), var_mapping);
 }
 
 template <typename T, bool is_dereferencable>
@@ -141,8 +139,6 @@ template <bool is_pointer, typename F>
 void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
   auto cost = CreateFunctionCost(std::forward<F>(f));
   EXPECT_TRUE(is_dynamic_castable<Cost>(cost));
-  // TODO(eric.cousineau): Remove when shim is removed
-  EXPECT_TRUE(is_dynamic_castable<Constraint>(cost));
   // Compare values
   Eigen::VectorXd y_expected(1), y;
   to_const_ref<is_pointer>(f).eval(x_value, y_expected);
@@ -156,7 +152,7 @@ GTEST_TEST(testCost, testFunctionCost) {
   VerifyFunctionCost<false>(GenericTrivialCost2(), x);
   // Ensure that we explictly call the default constructor for a const class
   // @ref http://stackoverflow.com/a/28338123/7829525
-  const GenericTrivialCost2 obj_const {};
+  const GenericTrivialCost2 obj_const{};
   VerifyFunctionCost<false>(obj_const, x);
   VerifyFunctionCost<true>(make_shared<GenericTrivialCost2>(), x);
   VerifyFunctionCost<true>(make_unique<GenericTrivialCost2>(), x);
