@@ -107,8 +107,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return this->is_cache_entry_valid(position_kinematics_ticket_);
   }
 
-  /// Validates cache entry corresponding to the PositionKinematicsCache.
-  void validate_position_kinematics_cache() {
+  /// Validates the cache entry corresponding to the PositionKinematicsCache and
+  /// recursively invalidate its dependents.
+  void ValidatePositionKinematicsCache() {
     this->ValidateCacheEntry(position_kinematics_ticket_);
   }
 
@@ -126,7 +127,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   }
 
   /// Returns a mutable reference to the position kinematics cache entry.
-  PositionKinematicsCache<T>* get_mutable_position_kinematics() const {
+  /// This call has the effect of recursively invalidating all other cache
+  /// entries depending on the position kinematics.
+  PositionKinematicsCache<T>* GetMutablePositionKinematics() const {
     using systems::AbstractValue;
     using systems::Value;
     AbstractValue* value =

@@ -129,11 +129,11 @@ class PendulumTests : public ::testing::Test {
     auto mbt_context = dynamic_cast<MultibodyTreeContext<double>*>(context);
     DRAKE_DEMAND(mbt_context != nullptr);
     PositionKinematicsCache<double>* pc =
-        mbt_context->get_mutable_position_kinematics();
+        mbt_context->GetMutablePositionKinematics();
     pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
     // MultibodyTree methods re-computing the PositionKinematicsCache will
-    // validate as so:
-    mbt_context->validate_position_kinematics_cache();
+    // validate this entry after they are done with their computing.
+    mbt_context->ValidatePositionKinematicsCache();
   }
 };
 
