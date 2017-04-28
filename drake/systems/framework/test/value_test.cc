@@ -23,6 +23,12 @@ struct NoDefaultCtor {
   int data;
 };
 
+struct AnotherStruct {
+  AnotherStruct(int i, double d) : data{i}, more_data{d} {}
+  int data;
+  double more_data;
+};
+
 struct BareStruct {
   int data;
 };
@@ -41,6 +47,11 @@ GTEST_TEST(ValueTest, ForwardingConstructor) {
   // Value<NoDefaultCtor>(int) should work using forwarding.
   const AbstractValue& abstract_value = Value<NoDefaultCtor>(22);
   EXPECT_EQ(22, abstract_value.GetValue<NoDefaultCtor>().data);
+
+  // Value<NoDefaultCtor>(int, double) should work using forwarding.
+  const AbstractValue& another_abstract_value = Value<AnotherStruct>(2, 3.14);
+  EXPECT_EQ(2, another_abstract_value.GetValue<AnotherStruct>().data);
+  EXPECT_EQ(3.14, another_abstract_value.GetValue<AnotherStruct>().more_data);
 
   // Value<BareStruct>(BareStruct&&) should use the `(const T&)` constructor,
   // not the forwarding constructor.
