@@ -21,8 +21,6 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-constexpr int kNumJoints = 7;
-
 // This corresponds to the actual plan.
 constexpr int kAbsStateIdxPlan = 0;
 // This corresponds to a flag that indicates whether the plan has been
@@ -49,19 +47,24 @@ struct RobotPlanInterpolator::PlanData {
 
 RobotPlanInterpolator::RobotPlanInterpolator(
     const std::string& model_path, double update_interval)
-    : plan_input_port_(this->DeclareAbstractInputPort().get_index()),
-      state_input_port_(
-          this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2)
-          .get_index()),
-      state_output_port_(
-          this->DeclareOutputPort(systems::kVectorValued, kNumJoints * 2)
-          .get_index()),
-      acceleration_output_port_(
-          this->DeclareOutputPort(systems::kVectorValued, kNumJoints)
-          .get_index()) {
+    : plan_input_port_(this->DeclareAbstractInputPort().get_index()) {
   this->set_name("RobotPlanInterpolator");
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
+
+  // TODO(sam.creasey) This implementation doesn't know how to
+  // calculate velocities/accelerations for differing numbers of
+  // positions and velocities.
+  DRAKE_DEMAND(tree_.get_num_positions() == tree_.get_num_velocities());
+
+  state_input_port_ = this->DeclareInputPort(
+      systems::kVectorValued,
+      tree_.get_num_positions() + tree_.get_num_velocities()).get_index();
+  state_output_port_ = this->DeclareOutputPort(
+      systems::kVectorValued,
+      tree_.get_num_positions() + tree_.get_num_velocities()).get_index();
+  acceleration_output_port_ = this->DeclareOutputPort(
+      systems::kVectorValued, tree_.get_num_velocities()).get_index();
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
@@ -103,8 +106,10 @@ void RobotPlanInterpolator::DoCalcOutput(
       this->GetMutableOutputVector(output, acceleration_output_port_);
 
   const double current_plan_time = context.get_time() - plan.start_time;
-  output_vec.head(kNumJoints) = plan.pp.value(current_plan_time);
-  output_vec.tail(kNumJoints) = plan.pp_deriv.value(current_plan_time);
+  output_vec.head(tree_.get_num_positions()) =
+      plan.pp.value(current_plan_time);
+  output_vec.tail(tree_.get_num_velocities()) =
+      plan.pp_deriv.value(current_plan_time);
   output_acceleration_vec =
       plan.pp_double_deriv.value(current_plan_time);
 }
@@ -113,7 +118,7 @@ void RobotPlanInterpolator::MakeFixedPlan(
     double plan_start_time, const VectorX<double>& q0,
     systems::State<double>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  DRAKE_DEMAND(q0.size() == kNumJoints);
+  DRAKE_DEMAND(q0.size() == tree_.get_num_positions());
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
 
@@ -152,8 +157,9 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
     plan.encoded_msg.swap(encoded_msg);
     if (plan_input.num_states) {
       plan.start_time = context.get_time();
-      std::vector<Eigen::MatrixXd> knots(plan_input.num_states,
-                                         Eigen::MatrixXd::Zero(kNumJoints, 1));
+      std::vector<Eigen::MatrixXd> knots(
+          plan_input.num_states,
+          Eigen::MatrixXd::Zero(tree_.get_num_positions(), 1));
       std::map<std::string, int> name_to_idx =
           tree_.computePositionNameToIndexMap();
       for (int i = 0; i < plan_input.num_states; ++i) {
@@ -173,7 +179,8 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       }
 
       if (knots.size() >= 3) {
-        const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumJoints, 1);
+        const Eigen::MatrixXd knot_dot =
+            Eigen::MatrixXd::Zero(tree_.get_num_velocities(), 1);
         plan.pp = PiecewisePolynomial<double>::Cubic(
             input_time, knots, knot_dot, knot_dot);
       } else {
@@ -189,7 +196,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
           this->EvalVectorInput(context, state_input_port_);
       DRAKE_DEMAND(state_input);
       MakeFixedPlan(context.get_time(),
-                    state_input->get_value().head(kNumJoints),
+                    state_input->get_value().head(tree_.get_num_positions()),
                     state);
     }
   }
