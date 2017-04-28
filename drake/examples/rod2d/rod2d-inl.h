@@ -1639,15 +1639,15 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
     DRAKE_ASSERT(fN2 > -10*std::numeric_limits<double>::epsilon());
 
     // Calculate candidate tangential accelerations.
-    auto calc_tan_accel = [=](int d, const T N, const T F) {
+    auto calc_tan_accel = [=](const T N, const T F) {
       const T thetaddot = ((cx - x) * N - (cy - y) * F + tau) / J;
       return (F + fX) / mass +
           r * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
     };
 
     // Compute two tangential acceleration candidates.
-    const T cxddot1 = calc_tan_accel(+1, fN1, fF1);
-    const T cxddot2 = calc_tan_accel(-1, fN2, fF2);
+    const T cxddot1 = calc_tan_accel(fN1, fF1);
+    const T cxddot2 = calc_tan_accel(fN2, fF2);
 
     // Pick the one that is smaller in magnitude.
     if (abs(cxddot1) < abs(cxddot2)) {
