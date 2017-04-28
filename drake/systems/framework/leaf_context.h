@@ -74,6 +74,24 @@ class LeafContext : public Context<T> {
     return cache_.MakeCacheTicket(prerequisites);
   }
 
+  /// Creates a new cache entry of type `EntryType` and returns the new ticket
+  /// to it, marking the entry itself as **invalid**. This entry will
+  /// depend on the list of passed @p prerequisites.
+  /// As an example of usage consider the code below:
+  ///
+  /// @code
+  ///   LeafContext<double> context;
+  ///   auto foo = context.MakeCacheEntry<Foo<double>>(
+  ///       {ticket1, ticket2}, /* Entry prerequisites. */
+  ///       "name", 3.14);      /* Foo<double>'s constructor parameters. */
+  /// @endcode
+  template<class EntryType, typename... Args>
+  CacheTicket MakeCacheEntry(const std::set<CacheTicket>& prerequisites,
+                             Args&&... args) {
+    return cache_.MakeCacheEntry<EntryType>(
+        prerequisites, std::forward<Args>(args)...);
+  }
+
   /// Stores the given @p value in the cache entry for the given @p ticket,
   /// and returns a bare pointer to @p value.  That pointer will be invalidated
   /// whenever any of the @p ticket's declared prerequisites change, and
@@ -113,17 +131,17 @@ class LeafContext : public Context<T> {
     return cache_.Get(ticket);
   }
 
-  // Returns the mutable cached value for the given @p ticket.
+  // Returns the mutable cached value for the cache entry referenced by
+  // @p ticket, invalidating this entry itself and recursively invalidating all
+  // of its dependents.
   AbstractValue* GetMutableCachedValue(CacheTicket ticket) const {
     return cache_.GetMutable(ticket);
   }
 
-  void validate_cache_entry(CacheTicket ticket) {
-    cache_.validate(ticket);
-  }
-
-  void invalidate_cache_entry(CacheTicket ticket) {
-    cache_.Invalidate(ticket);
+  /// Validates the cache entry corresponding to the provided @p ticket and
+  /// recursively invalidates all dependents.
+  void ValidateCacheEntry(CacheTicket ticket) {
+    cache_.Validate(ticket);
   }
 
   // =========================================================================
