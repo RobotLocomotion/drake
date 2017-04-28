@@ -35,7 +35,7 @@ class OptimizationProgram {
 
   OptimizationProgram(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~OptimizationProgram() override {}
+  virtual ~OptimizationProgram() {}
 
   CostForm cost_form() const {return cost_form_;}
 
@@ -51,7 +51,7 @@ class OptimizationProgram {
 
  private:
   CostForm cost_form_;
-  ConstraintForm cnstr_form_;
+  ConstraintForm constraint_form_;
   std::unique_ptr<MathematicalProgram> prog_;
 };
 

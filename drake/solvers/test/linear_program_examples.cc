@@ -19,10 +19,11 @@ using drake::symbolic::Expression;
 namespace drake {
 namespace solvers {
 namespace test {
-LinearFeasibilityProgram::LinearFeasibilityProgram(ConstraintForm cnstr_form)
-    : OptimizationProgram(CostForm::kSymbolic, cnstr_form), x_() {
+LinearFeasibilityProgram::LinearFeasibilityProgram(
+    ConstraintForm constraint_form)
+    : OptimizationProgram(CostForm::kSymbolic, constraint_form), x_() {
   x_ = prog()->NewContinuousVariables<3>();
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       Matrix3d A;
       // clang-format off
@@ -72,8 +73,9 @@ void LinearFeasibilityProgram::CheckSolution(SolverType solver_type) const {
   EXPECT_GE(prog()->GetSolution(x_(1)), 1 - 1E-10);
 }
 
-LinearProgram0::LinearProgram0(CostForm cost_form, ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form), x_(), x_expected_(1, 2) {
+LinearProgram0::LinearProgram0(CostForm cost_form,
+                               ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form), x_(), x_expected_(1, 2) {
   x_ = prog()->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic: {
@@ -135,8 +137,9 @@ void LinearProgram0::CheckSolution(SolverType solver_type) const {
   ExpectSolutionCostAccurate(*prog(), tol);
 }
 
-LinearProgram1::LinearProgram1(CostForm cost_form, ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_(0, 4) {
+LinearProgram1::LinearProgram1(CostForm cost_form,
+                               ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form), x_{}, x_expected_(0, 4) {
   x_ = prog()->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic: {
@@ -263,8 +266,11 @@ void LinearProgram2::CheckSolution(SolverType solver_type) const {
   ExpectSolutionCostAccurate(*prog(), tol);
 }
 
-LinearProgram3::LinearProgram3(CostForm cost_form, ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form), x_(), x_expected_(8, 3, 11) {
+LinearProgram3::LinearProgram3(CostForm cost_form,
+                               ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form),
+      x_(),
+      x_expected_(8, 3, 11) {
   x_ = prog()->NewContinuousVariables<3>("x");
   switch (cost_form) {
     case CostForm::kNonSymbolic: {

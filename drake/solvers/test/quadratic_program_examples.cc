@@ -209,8 +209,8 @@ void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
 }
 
 QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_{} {
+                                     ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form), x_{}, x_expected_{} {
   x_ = prog()->NewContinuousVariables<5>();
 
   Eigen::Matrix<double, 5, 1> Q_diag{};
@@ -249,8 +249,8 @@ void QuadraticProgram2::CheckSolution(SolverType solver_type) const {
 }
 
 QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-: OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_{} {
+                                     ConstraintForm constraint_form)
+: OptimizationProgram(cost_form, constraint_form), x_{}, x_expected_{} {
   x_ = prog()->NewContinuousVariables<6>();
   Vector4d Q1_diag;
   Q1_diag << 5.5, 6.5, 6.0, 7.0;
@@ -305,8 +305,10 @@ void QuadraticProgram3::CheckSolution(SolverType solver_type) const {
 }
 
 QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-: OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_(0.8, 0.2, 0.6) {
+                                     ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form),
+      x_{},
+      x_expected_(0.8, 0.2, 0.6) {
   x_ = prog()->NewContinuousVariables<3>();
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
