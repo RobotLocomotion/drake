@@ -5,6 +5,7 @@
 
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
 namespace examples {
@@ -147,10 +148,9 @@ States: planar position (state indices 0 and 1) and orientation (state
         endpoint Rr, and k=0 indicates that both endpoints of the rod are
         contacting the halfspace).
 
-Outputs: planar position (state indices 0 and 1) and orientation (state
-         index 2), and planar linear velocity (state indices 3 and 4) and
-         scalar angular velocity (state index 5) in units of m, radians,
-         m/s, and rad/s, respectively.
+Outputs: Output Port 0 corresponds to the state vector; Output Port 1
+         corresponds to a PoseVector giving the 3D pose of the rod in the world
+         frame.
 
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
                    Impact". SIAM Rev., 42(1), 3-39, 2000. **/
@@ -399,6 +399,11 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   /// for a given state (using @p context).
   int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
 
+  /// Returns the 3D pose of this rod.
+  const systems::OutputPortDescriptor<T>& pose_output() const {
+    return this->get_output_port(1);
+  }
+
  protected:
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
@@ -415,6 +420,8 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                        systems::State<T>* state) const override;
 
  private:
+  void ConvertStateToPose(const VectorX<T>& state,
+                          systems::rendering::PoseVector<T>* pose) const;
   Matrix3<T> get_inverse_inertia_matrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
                                     Vector2<T>* fN, Vector2<T>* fF) const;
