@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
@@ -157,8 +158,8 @@ class ContactResultantForceCalculator {
    @param detail_accumulator If non-null, ContactDetail instances will be
    appended to the vector as they are assigned to the calculator.
    */
-  ContactResultantForceCalculator(
-      std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator);
+  explicit ContactResultantForceCalculator(
+      std::vector<copyable_unique_ptr<ContactDetail<T>>>* detail_accumulator);
 
   /**
    Adds a new contact force to the calculator.
@@ -170,6 +171,18 @@ class ContactResultantForceCalculator {
    @param force     The contact force.
    */
   void AddForce(const ContactForce<T>& force);
+
+  /**
+   Adds a new force to the calculator from a contact detail.  The result of
+   ContactDetail::ComputeContactForce will be used in the calculation.
+
+   If the calculator was initialized with a detail accumulator, the detail will
+   be appended to that accumulator. Otherwise, the detail will be destroyed
+   at the conclusion of this method invocation.
+   @param contact_detail        The contact detail which will provide a
+                                ContactForce for computation.
+   */
+  void AddForce(copyable_unique_ptr<ContactDetail<T>> contact_detail);
 
   /**
    Adds a new force to the calculator from a contact detail.  The result of
@@ -249,7 +262,7 @@ class ContactResultantForceCalculator {
   std::vector<ContactForce<T>> forces_{};
 
   // The optional accumulator into which contact details will be added.
-  std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator_{};
+  std::vector<copyable_unique_ptr<ContactDetail<T>>>* detail_accumulator_{};
 
   // Given a ContactForce, adds a PointContactDetail to the accumulator if
   // one is provided.

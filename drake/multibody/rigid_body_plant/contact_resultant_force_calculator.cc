@@ -7,9 +7,9 @@
 namespace drake {
 namespace systems {
 
+using std::move;
 using std::unique_ptr;
 using std::vector;
-using std::move;
 
 template <typename T>
 ContactResultantForceCalculator<T>::ContactResultantForceCalculator()
@@ -17,7 +17,7 @@ ContactResultantForceCalculator<T>::ContactResultantForceCalculator()
 
 template <typename T>
 ContactResultantForceCalculator<T>::ContactResultantForceCalculator(
-    vector<unique_ptr<ContactDetail<T>>>* detail_accumulator)
+    vector<copyable_unique_ptr<ContactDetail<T>>>* detail_accumulator)
     : detail_accumulator_(detail_accumulator) {}
 
 template <typename T>
@@ -29,7 +29,18 @@ void ContactResultantForceCalculator<T>::AddForce(
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
-    std::unique_ptr<ContactDetail<T>> contact_detail) {
+    copyable_unique_ptr<ContactDetail<T>> contact_detail) {
+  forces_.push_back(contact_detail->ComputeContactForce());
+  if (detail_accumulator_ != nullptr) {
+    detail_accumulator_->emplace_back(move(contact_detail));
+  }
+  // No accumulator means the contact detail can be destroyed; it has served its
+  // purpose.
+}
+
+template <typename T>
+void ContactResultantForceCalculator<T>::AddForce(
+    unique_ptr<ContactDetail<T>> contact_detail) {
   forces_.push_back(contact_detail->ComputeContactForce());
   if (detail_accumulator_ != nullptr) {
     detail_accumulator_->emplace_back(move(contact_detail));
