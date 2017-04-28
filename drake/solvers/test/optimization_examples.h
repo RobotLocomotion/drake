@@ -35,11 +35,11 @@ class OptimizationProgram : public MathematicalProgram {
 
   OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form);
 
-  virtual ~OptimizationProgram() {}
+  ~OptimizationProgram() override {}
 
   CostForm cost_form() const {return cost_form_;}
 
-  ConstraintForm cnstr_form() const {return cnstr_form_;}
+  ConstraintForm constraint_form() const {return cnstr_form_;}
 
   virtual void CheckSolution(SolverType solver_type) const = 0;
 
