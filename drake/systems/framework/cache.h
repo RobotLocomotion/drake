@@ -85,12 +85,43 @@ class Cache {
   Cache();
   ~Cache();
 
+  /// Creates a new cache entry of type `EntryType` and returns the new ticket
+  /// to it, marking the entry itself as **invalid**. This entry will
+  /// be invalidated whenever any of the @p prerequisites are invalidated.
+  /// As an example of usage consider the code below:
+  ///
+  /// @code
+  ///   Cache<double> cache;
+  ///   auto foo = cache.MakeCacheEntry<Foo<double>>(
+  ///       {ticket1, ticket2}, /* Entry prerequisites. */
+  ///       "name", 3.14);  /* Foo<double>'s constructor parameters. */
+  /// @endcode
+  template<class EntryType, typename... Args>
+  CacheTicket MakeCacheEntry(const std::set<CacheTicket>& prerequisites,
+                             Args&&... args) {
+    CacheTicket ticket = MakeCacheTicket(prerequisites);
+    store_[ticket].set_value(
+        std::make_unique<Value<EntryType>>(std::forward<Args>(args)...));
+    InvalidateRecursively(store_[ticket].dependents());
+    return ticket;
+  }
+
   /// Creates a new cache ticket, which will be invalidated whenever any of
   /// the @p prerequisites are invalidated.
   CacheTicket MakeCacheTicket(const std::set<CacheTicket>& prerequisites);
 
   /// Invalidates the value for @p ticket, and all entries that depend on it.
   void Invalidate(CacheTicket ticket);
+
+  /// Validates the cache entry corresponding to the provided @p ticket and
+  /// recursively invalidates all dependents.
+  void Validate(CacheTicket ticket);
+
+  /// Returns `true` if the cache entry referenced to by @p ticket is valid.
+  /// Returns `false` otherwise.
+  bool is_entry_valid(CacheTicket ticket) {
+    return store_[ticket].is_valid();
+  }
 
   /// Takes ownership of a cached item, and returns a bare pointer to the item.
   /// Marks the entry itself as valid, and invalidates all entries that depend
@@ -127,6 +158,14 @@ class Cache {
   /// The bare pointer should not be held, because the data may become invalid
   /// if the ticket's prerequisites are modified.
   const AbstractValue* Get(CacheTicket ticket) const;
+
+  /// Returns the mutable cached item for the entry referenced to by @p ticket,
+  /// invalidating this entry itself and recursively invalidating all of its
+  /// dependents.
+  ///
+  /// The bare pointer should not be held, because the data may become invalid
+  /// if the ticket's prerequisites are modified.
+  AbstractValue* GetMutable(CacheTicket ticket);
 
  private:
   // Invalidates all tickets that depend on the tickets in @p to_invalidate.

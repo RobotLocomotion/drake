@@ -51,6 +51,12 @@ void Cache::Invalidate(CacheTicket ticket) {
   InvalidateRecursively({ticket});
 }
 
+void Cache::Validate(CacheTicket ticket) {
+  DRAKE_DEMAND(ticket >= 0 && ticket < static_cast<int>(store_.size()));
+  store_[ticket].set_is_valid(true);
+  InvalidateRecursively(store_[ticket].dependents());
+}
+
 void Cache::InvalidateRecursively(const std::set<CacheTicket>& to_invalidate) {
   for (CacheTicket ticket : to_invalidate) {
     // Invalidate the ticket.
@@ -62,7 +68,7 @@ void Cache::InvalidateRecursively(const std::set<CacheTicket>& to_invalidate) {
 
 AbstractValue* Cache::Init(CacheTicket ticket,
                            std::unique_ptr<AbstractValue> value) {
-  DRAKE_DEMAND(ticket < static_cast<int>(store_.size()));
+  DRAKE_DEMAND(ticket >= 0 && ticket < static_cast<int>(store_.size()));
   store_[ticket].set_is_valid(true);
   store_[ticket].set_value(std::move(value));
   InvalidateRecursively(store_[ticket].dependents());
@@ -70,12 +76,18 @@ AbstractValue* Cache::Init(CacheTicket ticket,
 }
 
 const AbstractValue* Cache::Get(CacheTicket ticket) const {
-  DRAKE_DEMAND(ticket < static_cast<int>(store_.size()));
+  DRAKE_DEMAND(ticket >= 0 && ticket < static_cast<int>(store_.size()));
   if (store_[ticket].is_valid()) {
     return store_[ticket].value();
   } else {
     return nullptr;
   }
+}
+
+AbstractValue* Cache::GetMutable(CacheTicket ticket) {
+  DRAKE_DEMAND(ticket >= 0 && ticket < static_cast<int>(store_.size()));
+  Invalidate(ticket);
+  return store_[ticket].value();
 }
 
 }  // namespace systems
