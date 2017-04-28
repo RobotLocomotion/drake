@@ -51,6 +51,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "fast_downcast",
+    hdrs = ["fast_downcast.h"],
+)
+
+drake_cc_library(
     name = "number_traits",
     hdrs = ["number_traits.h"],
 )
@@ -282,8 +287,8 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        ":common",
         "@gflags//:gflags",
+        ":common",
     ],
 )
 
@@ -436,6 +441,14 @@ drake_cc_googletest(
     name = "dummy_value_test",
     deps = [
         ":dummy_value",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fast_downcast_test",
+    deps = [
+        ":fast_downcast",
+        ":unused",
     ],
 )
 
