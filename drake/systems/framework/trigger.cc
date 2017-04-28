@@ -15,6 +15,9 @@ std::ostream& operator<<(std::ostream& out, const Trigger::TriggerType& type) {
       out << "ForcedTrigger";
       break;
 
+    case Trigger::TriggerType::kTimed:
+      out << "TimedTrigger";
+
     case Trigger::TriggerType::kPeriodic:
       out << "PeriodicTrigger";
       break;

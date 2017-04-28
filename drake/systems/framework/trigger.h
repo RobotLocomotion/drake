@@ -33,8 +33,9 @@ class Trigger {
   enum class TriggerType {
     kUnknown = 0,
     kForced = 1,
-    kPeriodic = 2,
-    kPerStep = 3,
+    kTimed = 2,
+    kPeriodic = 3,
+    kPerStep = 4,
   };
 
   virtual ~Trigger() {}
