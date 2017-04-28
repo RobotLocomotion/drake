@@ -47,6 +47,7 @@ drake_cc_library(
     srcs = ["iiwa_lcm.cc"],
     hdrs = ["iiwa_lcm.h"],
     deps = [
+        ":iiwa_common",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/lcmtypes:iiwa",
         "//drake/multibody:inverse_kinematics",
