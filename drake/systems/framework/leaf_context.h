@@ -140,9 +140,10 @@ class LeafContext : public Context<T> {
 
   /// Validates the cache entry corresponding to the provided @p ticket and
   /// recursively invalidates all dependents.
-  /// Users should use SetCachedValue() whenever copies of the particular entry
-  /// type are cheap to perform since SetCachedValue() automatically invalidates
-  /// dependents.
+  /// In order to make use of the automatic validation capability of cache
+  /// entries provided by the caching system, users should use SetCachedValue()
+  /// whenever copies of the particular entry type are cheap to perform since
+  /// SetCachedValue() automatically invalidates dependents.
   /// However, in many cases cache entries are large complex data structures and
   /// it might be more convenient to first retrieve a mutable entry with
   /// GetMutableCachedValue(), make the necessary updates to the entry and

@@ -12,6 +12,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/value.h"
 
+#include "drake/common/nice_type_name.h"
+#include <iostream>
+
 namespace drake {
 namespace systems {
 
@@ -100,8 +103,16 @@ class Cache {
   CacheTicket MakeCacheEntry(const std::set<CacheTicket>& prerequisites,
                              Args&&... args) {
     CacheTicket ticket = MakeCacheTicket(prerequisites);
+    //store_[ticket].set_value(
+    //    std::make_unique<Value<EntryType>>(std::forward<Args>(args)...));
+
+    std::cout << "MakeCacheEntry buchon" << std::endl << std::boolalpha;
+    std::cout << NiceTypeName::Get<EntryType>() << std::endl;
+    std::cout << std::is_constructible<EntryType, Args...>::value << std::endl;
+    std::cout << std::is_constructible<EntryType, int, double>::value << std::endl;
+
     store_[ticket].set_value(
-        std::make_unique<Value<EntryType>>(std::forward<Args>(args)...));
+        std::unique_ptr<Value<EntryType>>(new Value<EntryType>(std::forward<Args>(args)...)));
     InvalidateRecursively(store_[ticket].dependents());
     return ticket;
   }
@@ -115,6 +126,16 @@ class Cache {
 
   /// Validates the cache entry corresponding to the provided @p ticket and
   /// recursively invalidates all dependents.
+  /// In order to make use of the automatic validation capability of cache
+  /// entries provided by %Cache, users should use Set() whenever copies of the
+  /// particular entry type are cheap to perform since Set() automatically
+  /// invalidates dependents. However, in many cases cache entries are large
+  /// complex data structures and it might be more convenient to first retrieve
+  /// a mutable entry with GetMutable(), make the necessary updates to the entry
+  /// and finally, validate it with a call to this method.
+  ///
+  /// @warning Only advanced, careful users should call this method since
+  /// validating cache entries by hand can be error prone. Use with care.
   void Validate(CacheTicket ticket);
 
   /// Returns `true` if the cache entry referenced to by @p ticket is valid.

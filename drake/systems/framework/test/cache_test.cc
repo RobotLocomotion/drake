@@ -12,6 +12,18 @@ namespace drake {
 namespace systems {
 namespace {
 
+class SomeBeefyDataStructure {
+  //DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SomeBeefyDataStructure);
+ public:
+  SomeBeefyDataStructure() {}
+  SomeBeefyDataStructure(int i, int d) : i_(i), d_(d) {}
+  int get_i() {return i_;}
+  int get_d() { return d_;}
+ private:
+  int i_{0};
+  int d_{0};
+};
+
 class CacheTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -22,6 +34,11 @@ class CacheTest : public ::testing::Test {
     cache_.Init(ticket0_, PackValue(0));
     cache_.Init(ticket1_, PackValue(1));
     cache_.Init(ticket2_, PackValue(2));
+
+    // Make a new (invalid yet) cache entry with MakeCacheEntry<EntryType>():
+    cache_.MakeCacheEntry<SomeBeefyDataStructure>(
+        {ticket0_, ticket2_}, /* Prerequisites. */
+        3, 3 /* SomeBeefyDataStructure constructor's parameters. */ );
   }
 
   Cache cache_;

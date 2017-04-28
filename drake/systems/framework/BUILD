@@ -80,6 +80,7 @@ drake_cc_library(
     deps = [
         ":value",
         "//drake/common",
+        "//drake/common:nice_type_name",
     ],
 )
 
