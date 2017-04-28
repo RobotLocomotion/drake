@@ -42,7 +42,7 @@ class QuadraticProgram0 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram0)
 
-  QuadraticProgram0(CostForm cost_form, ConstraintForm cnstr_form);
+  QuadraticProgram0(CostForm cost_form, ConstraintForm constraint_form);
 
   ~QuadraticProgram0() override {};
 
@@ -66,7 +66,7 @@ class QuadraticProgram1 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram1)
 
-  QuadraticProgram1(CostForm cost_form, ConstraintForm cnstr_form);
+  QuadraticProgram1(CostForm cost_form, ConstraintForm constraint_form);
 
   ~QuadraticProgram1() override {};
 
@@ -88,7 +88,7 @@ class QuadraticProgram2 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram2)
 
-  QuadraticProgram2(CostForm cost_form, ConstraintForm cnstr_form);
+  QuadraticProgram2(CostForm cost_form, ConstraintForm constraint_form);
 
   ~QuadraticProgram2() override {};
 
@@ -114,7 +114,7 @@ class QuadraticProgram3 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram3);
 
-  QuadraticProgram3(CostForm cost_form, ConstraintForm cnstr_form);
+  QuadraticProgram3(CostForm cost_form, ConstraintForm constraint_form);
 
   ~QuadraticProgram3() override {};
 
@@ -135,7 +135,7 @@ class QuadraticProgram4 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticProgram4)
 
-  QuadraticProgram4(CostForm cost_form, ConstraintForm cnstr_form);
+  QuadraticProgram4(CostForm cost_form, ConstraintForm constraint_form);
 
   ~QuadraticProgram4() override {};
 
