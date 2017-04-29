@@ -5,6 +5,9 @@
 #include <utility>
 #include <vector>
 
+#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
+
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/Valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
@@ -26,9 +29,6 @@
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/pass_through.h"
-
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
 
 namespace drake {
 namespace examples {
