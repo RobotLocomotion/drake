@@ -85,7 +85,7 @@ double GetSVelocity(const RoadOdometry<double>& road_odom) {
   const double vx = road_odom.vel.get_velocity().translational().x();
   const double vy = road_odom.vel.get_velocity().translational().y();
 
-  return vx * std::cos(rot.yaw) + vy * std::sin(rot.yaw);
+  return vx * std::cos(rot.yaw()) + vy * std::sin(rot.yaw());
 }
 
 }  // namespace pose_selector

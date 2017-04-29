@@ -31,15 +31,15 @@ GeoPosition LaneEndGeoPosition(const LaneEnd& lane_end) {
 // orientation of (-s,-r,h).  This is equivalent to a pre-rotation by PI in
 // the s/r plane.
 Rotation ReverseOrientation(const Rotation& rot) {
-  const double ca = std::cos(rot.roll);
-  const double sa = std::sin(rot.roll);
-  const double cb = std::cos(rot.pitch);
-  const double sb = std::sin(rot.pitch);
-  const double cg = std::cos(rot.yaw);
-  const double sg = std::sin(rot.yaw);
-  return Rotation(std::atan2(-sa, ca),  // roll
-                  std::atan2(-sb, cb),  // pitch
-                  std::atan2(-sg, -cg));  // yaw
+  const double ca = std::cos(rot.roll());
+  const double sa = std::sin(rot.roll());
+  const double cb = std::cos(rot.pitch());
+  const double sb = std::sin(rot.pitch());
+  const double cg = std::cos(rot.yaw());
+  const double sg = std::sin(rot.yaw());
+  return Rotation::FromRpy(std::atan2(-sa, ca),  // roll
+                           std::atan2(-sb, cb),  // pitch
+                           std::atan2(-sg, -cg));  // yaw
 }
 
 
@@ -68,12 +68,12 @@ double Distance(const GeoPosition& a, const GeoPosition& b) {
 // TODO(maddog@tri.global)  This should probably be a method of Rotation, and or
 //                          consolidated with something else somehow.
 GeoPosition Rotate(const Rotation& rot, const GeoPosition& in) {
-  const double sa = std::sin(rot.roll);
-  const double ca = std::cos(rot.roll);
-  const double sb = std::sin(rot.pitch);
-  const double cb = std::cos(rot.pitch);
-  const double sg = std::sin(rot.yaw);
-  const double cg = std::cos(rot.yaw);
+  const double sa = std::sin(rot.roll());
+  const double ca = std::cos(rot.roll());
+  const double sb = std::sin(rot.pitch());
+  const double cb = std::cos(rot.pitch());
+  const double sg = std::sin(rot.yaw());
+  const double cg = std::cos(rot.yaw());
 
   return GeoPosition(
       ((cb * cg) * in.x()) +

@@ -170,7 +170,7 @@ api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
   const double alpha =
       std::atan2(r_hat.z() / cb,
                  ((r_hat.y() * s_hat.x()) - (r_hat.x() * s_hat.y())) / cb);
-  return api::Rotation(alpha, beta, gamma);
+  return api::Rotation::FromRpy(alpha, beta, gamma);
 }
 
 

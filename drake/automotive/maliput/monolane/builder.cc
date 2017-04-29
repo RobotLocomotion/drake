@@ -109,10 +109,10 @@ double HeadingIntoLane(const api::Lane* const lane,
                        const api::LaneEnd::Which end) {
   switch (end) {
     case api::LaneEnd::kStart: {
-      return lane->GetOrientation({0., 0., 0.}).yaw;
+      return lane->GetOrientation({0., 0., 0.}).yaw();
     }
     case api::LaneEnd::kFinish: {
-      return lane->GetOrientation({lane->length(), 0., 0.}).yaw + M_PI;
+      return lane->GetOrientation({lane->length(), 0., 0.}).yaw() + M_PI;
     }
     default: { DRAKE_ABORT(); }
   }

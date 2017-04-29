@@ -188,13 +188,13 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarParams<T>& params,
   // against s.
   const Rotation adjusted_rotation =
       (lane_direction.with_s ? rotation :
-          Rotation(-rotation.roll,
-                   -rotation.pitch,
-                   atan2(-sin(rotation.yaw), -cos(rotation.yaw))));
+       Rotation::FromRpy(-rotation.roll(),
+                         -rotation.pitch(),
+                         atan2(-sin(rotation.yaw()), -cos(rotation.yaw()))));
   pose->set_translation(Eigen::Translation<T, 3>(geo_position.xyz()));
   pose->set_rotation(RollPitchYawToQuaternion(
-      Vector3<T>(adjusted_rotation.roll, adjusted_rotation.pitch,
-                 adjusted_rotation.yaw)));
+      Vector3<T>(adjusted_rotation.roll(), adjusted_rotation.pitch(),
+                 adjusted_rotation.yaw())));
 }
 
 template <typename T>
@@ -215,9 +215,7 @@ void MaliputRailcar<T>::ImplCalcVelocity(const MaliputRailcarParams<T>& params,
   const Rotation rotation =
       lane_direction.lane->GetOrientation(
           LanePosition(state.s(), params.r(), params.h()));
-  const Quaternion<T> q = RollPitchYawToQuaternion(
-      Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw));
-  const Eigen::Matrix<T, 3, 3> R_WL = q.matrix();
+  const Eigen::Matrix<T, 3, 3> R_WL = rotation.quat().matrix();
   const Vector3<T> v_WC_W = R_WL * v_LC_L;
 
   // TODO(liang.fok) Add support for non-zero rotational velocity. See #5751.
