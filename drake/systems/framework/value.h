@@ -174,8 +174,8 @@ class Value : public AbstractValue {
   template <typename... Args,
             typename = typename std::enable_if<
                 std::is_constructible<T, Args...>::value &&
-                !std::is_same<T, Args...>::value &&
-                !std::is_same<T&, Args...>::value &&
+                //!std::is_same<T, Args...>::value &&
+                //!std::is_same<T&, Args...>::value &&
                 !std::is_fundamental<T>::value>::type>
   explicit Value(Args&&... args) : value_{std::forward<Args>(args)...} {}
 
