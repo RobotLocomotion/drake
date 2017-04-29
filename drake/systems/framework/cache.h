@@ -95,30 +95,31 @@ class Cache {
   ///
   /// @code
   ///   Cache<double> cache;
-  ///   auto foo = cache.MakeCacheEntry<Foo<double>>(
-  ///       {ticket1, ticket2}, /* Entry prerequisites. */
-  ///       "name", 3.14);  /* Foo<double>'s constructor parameters. */
+  ///   CacheTicket foos_ticket =
+  ///       cache.MakeCacheEntry<Foo<double>>(
+  ///           {ticket1, ticket2}, /* Entry prerequisites. */
+  ///           "name", 3.14);  /* Foo<double>'s constructor parameters. */
   /// @endcode
+  ///
+  /// @param[in] prerequisites A list of cache tickets corresponding to the
+  ///                          cache entries the newly created entry depends on.
+  /// @param[in] args The list of arguments to EntryType's constructor.
+  ///
+  /// @tparam EntryType The type of the cache entry to be created. It must be
+  ///                   copy-constructible and assignable.
   template<class EntryType, typename... Args>
   CacheTicket MakeCacheEntry(const std::set<CacheTicket>& prerequisites,
                              Args&&... args) {
     CacheTicket ticket = MakeCacheTicket(prerequisites);
-    //store_[ticket].set_value(
-    //    std::make_unique<Value<EntryType>>(std::forward<Args>(args)...));
-
-    std::cout << "MakeCacheEntry buchon" << std::endl << std::boolalpha;
-    std::cout << NiceTypeName::Get<EntryType>() << std::endl;
-    std::cout << std::is_constructible<EntryType, Args...>::value << std::endl;
-    std::cout << std::is_constructible<EntryType, int, double>::value << std::endl;
-
     store_[ticket].set_value(
-        std::unique_ptr<Value<EntryType>>(new Value<EntryType>(std::forward<Args>(args)...)));
-    InvalidateRecursively(store_[ticket].dependents());
+        std::make_unique<Value<EntryType>>(std::forward<Args>(args)...));
+    store_[ticket].set_is_valid(false);
     return ticket;
   }
 
   /// Creates a new cache ticket, which will be invalidated whenever any of
-  /// the @p prerequisites are invalidated.
+  /// the @p prerequisites are invalidated. The new cache entry is marked as
+  /// **invalid**.
   CacheTicket MakeCacheTicket(const std::set<CacheTicket>& prerequisites);
 
   /// Invalidates the value for @p ticket, and all entries that depend on it.
