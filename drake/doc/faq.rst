@@ -8,6 +8,34 @@ Frequently Asked Questions
    :depth: 3
    :local:
 
+.. _faq_osx_build_failure_missing_dependency_declarations:
+
+Why Does Build Fail with "this rule is missing dependency declarations" on OSX?
+======================================================================
+
+Symptom: After upgrading Xcode on OSX, you encounter an error similar to the
+following::
+
+    $ bazel build ...
+    WARNING: /Users/liang/dev/drake-distro-1/drake/util/BUILD:63:1: target
+    '//drake/util:app_util' is deprecated: Please use gflags instead of
+    drakeAppUtil.h.
+    INFO: Found 2491 targets...
+    ERROR: /private/var/tmp/_bazel_liang/6afb2531e78184cc48f3db789230c79d/
+    external/libbot/BUILD.bazel:59:1: undeclared inclusion(s) in rule
+    '@libbot//:ldpc':
+    this rule is missing dependency declarations for the following files
+    included by 'external/libbot/bot2-lcm-utils/src/tunnel/ldpc/getopt.cpp':
+      '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/
+      Developer/SDKs/MacOSX10.12.sdk/usr/include/ctype.h'
+
+Solution: Reinstall Xcode's command-line tools::
+
+    $ xcode-select --install
+
+Once installed, you should have ``bin/``, ``include/``, ``lib/``, and
+``libexec/`` directories within ``/Library/Developer/CommandLineTools/usr/``.
+
 .. _faq_missing_or_stray_characters_in_generate_urdf_test:
 
 Why Does Build Fail With Missing or Stray Character Error in generate_urdf_test.cc?
