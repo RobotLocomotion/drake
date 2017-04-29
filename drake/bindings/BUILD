@@ -13,9 +13,13 @@ drake_cc_binary(
         "pybind11/pydrake_autodiff_types.h",
         "pybind11/pydrake_autodiffutils.cc",
     ],
+    copts = [
+        "-Wno-#warnings",
+        "-Wno-cpp",
+        "-Wno-unknown-warning-option",
+    ],
     linkshared = 1,
     linkstatic = 1,
-    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "@eigen//:eigen",
         "@pybind11//:pybind11",
@@ -28,9 +32,13 @@ drake_cc_binary(
         "pybind11/pydrake_autodiff_types.h",
         "pybind11/pydrake_rbtree.cc",
     ],
+    copts = [
+        "-Wno-#warnings",
+        "-Wno-cpp",
+        "-Wno-unknown-warning-option",
+    ],
     linkshared = 1,
     linkstatic = 1,
-    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
@@ -53,9 +61,13 @@ drake_cc_binary(
 drake_cc_binary(
     name = "python/pydrake/solvers/_pydrake_ik.so",
     srcs = ["pybind11/pydrake_ik.cc"],
+    copts = [
+        "-Wno-#warnings",
+        "-Wno-cpp",
+        "-Wno-unknown-warning-option",
+    ],
     linkshared = 1,
     linkstatic = 1,
-    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
@@ -69,9 +81,13 @@ drake_cc_binary(
         "pybind11/pydrake_mathematicalprogram.cc",
         "pybind11/pydrake_symbolic_types.h",
     ],
+    copts = [
+        "-Wno-#warnings",
+        "-Wno-cpp",
+        "-Wno-unknown-warning-option",
+    ],
     linkshared = 1,
     linkstatic = 1,
-    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/common:symbolic",
         "//drake/solvers:mathematical_program",
@@ -107,9 +123,13 @@ drake_cc_binary(
         "pybind11/pydrake_symbolic.cc",
         "pybind11/pydrake_symbolic_types.h",
     ],
+    copts = [
+        "-Wno-#warnings",
+        "-Wno-cpp",
+        "-Wno-unknown-warning-option",
+    ],
     linkshared = 1,
     linkstatic = 1,
-    copts = ["-Wno-#warnings", "-Wno-cpp", "-Wno-unknown-warning-option"],
     deps = [
         "//drake/common:symbolic",
         "@pybind11//:pybind11",
