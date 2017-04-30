@@ -174,7 +174,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
   for (int bpi = 0; bpi < num_branch_points(); ++bpi) {
     const BranchPoint* bp = branch_point(bpi);
     // For each BranchPoint:
-    //  - all branches should map to same GEO-space (x,y,z);
+    //  - all branches should map to same world frame (x,y,z);
     //  - orientation *into* BranchPoint should be the same for all A-side
     //     branches;
     //  - orientation *into* BranchPoint should be the same for all B-side
@@ -193,7 +193,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         (bp->GetASide()->size() > 0)
         ? bp->GetASide()->get(0)
         : bp->GetBSide()->get(0);
-    // ...test GEO-space position similarity.
+    // ...test world frame position similarity.
     const GeoPosition ref_geo = LaneEndGeoPosition(ref_end);
     const auto test_geo_position = [&](const LaneEndSet& ends) {
       for (int bi = 0; bi < ends.size(); ++bi) {

@@ -63,7 +63,7 @@ class UniqueIndexer {
 };
 
 
-// A GEO-space (world-frame) vertex.
+// A world frame vertex.
 class GeoVertex {
  public:
   // A hasher operation suitable for std::unordered_map.
@@ -96,7 +96,7 @@ class GeoVertex {
 };
 
 
-// A GEO-space (world-frame) normal vector.
+// A world frame normal vector.
 class GeoNormal {
  public:
   // A hasher operation suitable for std::unordered_map.
@@ -131,8 +131,7 @@ class GeoNormal {
 };
 
 
-// A GEO-space (world-frame) face:  a sequence of vertices with corresponding
-// normals.
+// A world frame face:  a sequence of vertices with corresponding normals.
 class GeoFace {
  public:
   GeoFace() {}
@@ -182,7 +181,7 @@ class IndexFace {
 };
 
 
-// A GEO-space (world-frame) mesh:  a collection of GeoFaces.
+// A world frame mesh:  a collection of GeoFaces.
 class GeoMesh {
  public:
   GeoMesh() {}
