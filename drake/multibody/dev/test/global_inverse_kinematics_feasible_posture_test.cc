@@ -73,12 +73,11 @@ TEST_F(KukaTest, FeasiblePostureTest) {
           rotmat_lb_flat);
       body_orientation_constraint[body - 1].constraint()->UpdateUpperBound(
           rotmat_ub_flat);
-
-      solvers::GurobiSolver gurobi_solver;
-      const solvers::SolutionResult
-          sol_result = gurobi_solver.Solve(global_ik_);
-      EXPECT_EQ(sol_result, solvers::SolutionResult::kSolutionFound);
     }
+    solvers::GurobiSolver gurobi_solver;
+    const solvers::SolutionResult
+        sol_result = gurobi_solver.Solve(global_ik_);
+    EXPECT_EQ(sol_result, solvers::SolutionResult::kSolutionFound);
   }
 }
 }  // namespace multibody
