@@ -34,6 +34,10 @@ if(BUILD_TESTING)
     drake_add_python_test(pydrake.test.testGurobiSolver)
   endif()
 
+  drake_add_matlab_test(NAME pydrake.test.testMathematicalProgram.m
+          COMMAND testMathematicalProgram
+          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pydrake/test)
+
   if(mosek_FOUND)
     drake_add_python_test(pydrake.test.testMosekSolver)
   endif()

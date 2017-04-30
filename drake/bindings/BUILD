@@ -202,6 +202,9 @@ py_test(
 #    deps = [":pydrake"],
 #)
 
+# NOTE: testMathematicalProgram.m (testing pydrake bindings from matlab) is added
+# as a test in CMakeLists.txt, but matlab tests are not supported in bazel yet.
+
 py_test(
     name = "pydrake_pr2ik_test",
     size = "small",
