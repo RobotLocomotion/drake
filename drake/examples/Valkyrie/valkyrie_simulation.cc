@@ -4,9 +4,8 @@
 /// sends measured robot state through LCM traffic. See valkyrie_simulator.h
 /// for more details.
 
-#include "drake/examples/Valkyrie/valkyrie_simulator.h"
-
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/Valkyrie/valkyrie_simulator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
