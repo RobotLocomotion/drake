@@ -108,7 +108,16 @@ drake_cc_binary(
         "//drake/systems/framework",
         "//drake/systems/primitives:trajectory_source",
         "//drake/systems/trajectory_optimization:direct_collocation",
-        "@gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "print_symbolic_dynamics",
+    srcs = ["print_symbolic_dynamics.cc"],
+    add_test_rule = 1,
+    deps = [
+        ":pendulum_plant",
+        "//drake/common:symbolic",
     ],
 )
 
