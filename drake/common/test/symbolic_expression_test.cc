@@ -21,6 +21,7 @@
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
+#include "drake/common/test/is_memcpy_movable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 using std::count_if;
@@ -37,6 +38,9 @@ using std::unordered_set;
 using std::vector;
 
 namespace drake {
+
+using test::IsMemcpyMovable;
+
 namespace symbolic {
 namespace {
 
@@ -1755,6 +1759,13 @@ TEST_F(SymbolicExpressionTest, ToString) {
   EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
 }
 
+// Checks for compatibility with a memcpy primitive move operation.
+// See https://github.com/RobotLocomotion/drake/issues/5974.
+TEST_F(SymbolicExpressionTest, MemcpyKeepsExpressionIntact) {
+  for (const Expression& expr : collection_) {
+    EXPECT_TRUE(IsMemcpyMovable(expr));
+  }
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
