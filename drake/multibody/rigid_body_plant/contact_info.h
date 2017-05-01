@@ -79,6 +79,7 @@ class ContactInfo {
 
   void set_contact_details(
       std::vector<std::unique_ptr<ContactDetail<T>>>&& details) {
+    contact_details_.clear();
     for (size_t i = 0; i < details.size(); ++i) {
       contact_details_.emplace_back(std::move(details[i]));
     }
