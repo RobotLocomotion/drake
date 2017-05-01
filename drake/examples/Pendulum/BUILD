@@ -112,6 +112,15 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "print_symbolic_dynamics",
+    srcs = ["print_symbolic_dynamics.cc"],
+    deps = [
+        ":pendulum_plant",
+        "//drake/common:symbolic",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
