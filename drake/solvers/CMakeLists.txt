@@ -37,6 +37,7 @@ list(APPEND optimization_files
   mathematical_program_solver_interface.cc
   moby_lcp_solver.cc
   no_dreal.cc
+  symbolic_extraction.cc
   system_identification.cc
   )
 if(ipopt_FOUND)
@@ -84,6 +85,7 @@ drake_install_headers(
   mathematical_program.h
   mathematical_program_solver_interface.h
   decision_variable.h
+  symbolic_extraction.h
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
