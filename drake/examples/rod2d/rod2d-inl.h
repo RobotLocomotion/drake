@@ -53,12 +53,17 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
 }
 
 // Computes the external forces on the rod.
+// @returns a three dimensional vector corresponding to the forces acting at
+//          the center-of-mass of the rod (first two components) and the
+//          last corresponding to the torque acting on the rod (final
+//          component). All forces and torques are expressed in the world
+//          frame.
 template <class T>
 Vector3<T> Rod2D<T>::ComputeExternalForces(
     const systems::Context<T>& context) const {
   // Compute the external forces (expressed in the world frame).
   const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
+  const VectorX<T> input = this->EvalEigenVectorInput(context, port_index);
   const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
   const Vector3<T> fapplied = input.segment(0, 3);
   return fgrav + fapplied;
