@@ -46,8 +46,7 @@ class SignalLogger : public LeafSystem<T> {
 
  private:
   // No output.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {}
+  void DoCalcOutput(const Context<T>&, SystemOutput<T>*) const override {}
 
   // Logging is done in this method.
   void DoPublish(const Context<T>& context) const override;
