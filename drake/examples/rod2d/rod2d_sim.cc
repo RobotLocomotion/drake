@@ -32,7 +32,7 @@ template class Rod2D<double>;
 }  // namespace examples
 }  // namespace drake
 
-using drake::examples::rod2d::Rod2D;
+using Rod2D = drake::examples::rod2d::Rod2D<double>;
 using drake::lcm::DrakeLcm;
 using drake::systems::BasicVector;
 using drake::systems::Context;
@@ -52,6 +52,7 @@ DEFINE_string(simulation_type, "timestepping",
                   "'timestepping','compliant'");
 DEFINE_double(dt, 1e-2, "Integration step size");
 DEFINE_double(rod_radius, 5e-2, "Radius of the rod (for visualization only)");
+DEFINE_double(sim_duration, 10, "Simulation duration in virtual seconds");
 
 int main(int argc, char* argv[]) {
   // Parse any flags.
@@ -78,13 +79,13 @@ int main(int argc, char* argv[]) {
   publisher->set_publish_period(0.01);
 
   // Create the rod and add it to the diagram.
-  Rod2D<double>* rod;
+  Rod2D* rod;
   if (FLAGS_simulation_type == "timestepping") {
-    rod = builder.template AddSystem<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kTimeStepping, FLAGS_dt);
+    rod = builder.template AddSystem<Rod2D>(
+        Rod2D::SimulationType::kTimeStepping, FLAGS_dt);
   } else if (FLAGS_simulation_type == "compliant") {
-    rod = builder.template AddSystem<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kCompliant, 0.0);
+    rod = builder.template AddSystem<Rod2D>(
+        Rod2D::SimulationType::kCompliant, 0.0);
   } else {
     std::cerr << "Invalid simulation type '" << FLAGS_simulation_type <<
               "'; note that types are case sensitive." << std::endl;
@@ -124,7 +125,7 @@ int main(int argc, char* argv[]) {
   builder.Connect(*converter, *publisher);
   auto diagram = builder.Build();
 
-  // Give the rod no inputs.
+  // Make no external forces act on the rod.
   auto context = diagram->CreateDefaultContext();
   Context<double>* rod_context = diagram->GetMutableSubsystemContext(
       context.get(), rod);
@@ -139,11 +140,9 @@ int main(int argc, char* argv[]) {
   Simulator<double> simulator(*diagram, std::move(context));
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
   simulator.set_target_realtime_rate(1.0);
-  double t = 1.0;
-  lcm.StartReceiveThread();
-  while (true) {
-    simulator.StepTo(t);
-    t += 1.0;
+  while (simulator.get_context().get_time() < FLAGS_sim_duration) {
+    const double t = simulator.get_context().get_time();
+    simulator.StepTo(std::min(t + 1, FLAGS_sim_duration));
   }
 }
 

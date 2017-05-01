@@ -158,6 +158,8 @@ Outputs: Output Port 0 corresponds to the state vector; Output Port 1
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
+  virtual ~Rod2D() {}
+
   /// Simulation model and approach for the system.
   enum class SimulationType {
     /// For simulating the system using rigid contact, Coulomb friction, and
@@ -401,7 +403,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
 
   /// Returns the 3D pose of this rod.
   const systems::OutputPortDescriptor<T>& pose_output() const {
-    return this->get_output_port(1);
+    return *pose_output_descriptor_;
   }
 
  protected:
@@ -420,8 +422,8 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                        systems::State<T>* state) const override;
 
  private:
-  void ConvertStateToPose(const VectorX<T>& state,
-                          systems::rendering::PoseVector<T>* pose) const;
+  static void ConvertStateToPose(const VectorX<T>& state,
+                                 systems::rendering::PoseVector<T>* pose);
   Matrix3<T> get_inverse_inertia_matrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
                                     Vector2<T>* fN, Vector2<T>* fF) const;
@@ -456,7 +458,6 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                         systems::VectorBase<T>* const f) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
-
 
   // Utility method for determining the World frame location of one of three
   // points on the rod whose origin is Ro. Let r be the half-length of the rod.
@@ -514,6 +515,10 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   double mu_s_{mu_};          // Static coefficient of friction (>= mu).
   double v_stick_tol_{1e-3};  // Slip speed below which the compliant model
                               //   considers the rod to be in stiction.
+
+  // Output port descriptors.
+  const systems::OutputPortDescriptor<T>* pose_output_descriptor_{nullptr};
+  const systems::OutputPortDescriptor<T>* state_output_descriptor_{nullptr};
 };
 
 }  // namespace rod2d

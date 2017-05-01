@@ -49,8 +49,10 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
   }
 
   this->DeclareInputPort(systems::kVectorValued, 3);
-  this->DeclareOutputPort(systems::kVectorValued, 6);
-  this->DeclareVectorOutputPort(systems::rendering::PoseVector<T>());
+  state_output_descriptor_ = &this->DeclareOutputPort(systems::kVectorValued,
+                                                      6);
+  pose_output_descriptor_ = &this->DeclareVectorOutputPort(
+      systems::rendering::PoseVector<T>());
 }
 
 template <class T>
@@ -302,23 +304,30 @@ Vector2<T> Rod2D<T>::CalcCoincidentRodPointVelocity(
 template <typename T>
 void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
                                systems::SystemOutput<T>* output) const {
-  // Obtain the structure we need to write into.
-  systems::BasicVector<T>* const port0 = output->GetMutableVectorData(0);
-  systems::rendering::PoseVector<T>* const port1 = dynamic_cast<
-      systems::rendering::PoseVector<T>*>(output->GetMutableVectorData(1));
-  DRAKE_ASSERT(port0 != nullptr);
-  DRAKE_ASSERT(port1 != nullptr);
+  // Get the indices for the output ports.
+  const int state_output_port_index = state_output_descriptor_->get_index();
+  const int pose_output_port_index = pose_output_descriptor_->get_index();
 
-  // Output port 0 value is just the state.
-  if (simulation_type_ == SimulationType::kTimeStepping) {
-    const VectorX<T> state = context.get_discrete_state(0)->CopyToVector();
-    port0->SetFromVector(state);
-    ConvertStateToPose(state, port1);
-  } else {
-    const VectorX<T> state = context.get_continuous_state()->CopyToVector();
-    port0->SetFromVector(state);
-    ConvertStateToPose(state, port1);
-  }
+  // Obtain the structure we need to write into.
+  systems::BasicVector<T>* const state_port_value = output->
+      GetMutableVectorData(state_output_port_index);
+  systems::rendering::PoseVector<T>* const pose_port_value = dynamic_cast<
+      systems::rendering::PoseVector<T>*>(output->GetMutableVectorData(
+          pose_output_port_index));
+  DRAKE_ASSERT(state_port_value != nullptr);
+  DRAKE_ASSERT(pose_port_value != nullptr);
+
+  // Lambda function for converting either discrete or continuous state.
+  std::function<void(const VectorX<T>&)> SetValues =
+      [state_port_value, pose_port_value](const VectorX<T>& state) {
+    state_port_value->SetFromVector(state);
+    ConvertStateToPose(state, pose_port_value);
+  };
+
+  if (simulation_type_ == SimulationType::kTimeStepping)
+    SetValues(context.get_discrete_state(0)->CopyToVector());
+  else
+    SetValues(context.get_continuous_state()->CopyToVector());
 }
 
 /// Integrates the Rod 2D example forward in time using a
@@ -1905,8 +1914,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
 // Converts a state vector to a rendering PoseVector.
 template <class T>
 void Rod2D<T>::ConvertStateToPose(const VectorX<T>& state,
-                                  systems::rendering::PoseVector<T>* pose)
-                                  const {
+                                  systems::rendering::PoseVector<T>* pose) {
   // Converts the configuration of the rod to a pose, accounting for both
   // the change to a y+ up coordinate system and the fact that Drake's cylinder
   // up-direction defaults to +z.

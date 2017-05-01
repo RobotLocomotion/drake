@@ -2,19 +2,25 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library", 
-     "drake_cc_binary")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_binary(
     name = "rod2d_sim",
     srcs = ["rod2d_sim.cc"],
+    add_test_rule = 1,
+    test_rule_args = " --sim_duration=0.01",
     deps = [
         ":rod2d",
         "//drake/common",
-        "//drake/lcmtypes:viewer",
         "//drake/lcm",
+        "//drake/lcmtypes:viewer",
         "//drake/systems/analysis",
         "//drake/systems/framework",
         "//drake/systems/lcm",
