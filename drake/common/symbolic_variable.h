@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -29,10 +30,10 @@ class Variable {
    *  It is allowed to construct a dummy variable but it should not be used to
    *  construct a symbolic expression.
    */
-  Variable() : id_{0}, name_{std::string()} {}
+  Variable() : id_{0} {}
 
   /** Constructs a variable with a string . */
-  explicit Variable(std::string name);
+  explicit Variable(const std::string& name);
 
   /** Checks if this is a dummy variable (ID = 0) which is created by
    *  the default constructor. */
@@ -53,8 +54,8 @@ class Variable {
  private:
   // Produces a unique ID for a variable.
   static Id get_next_id();
-  Id id_{};           // Unique identifier.
-  std::string name_;  // Name of variable.
+  Id id_{};                                     // Unique identifier.
+  std::shared_ptr<std::string> name_{nullptr};  // Name of variable.
 };
 }  // namespace symbolic
 
