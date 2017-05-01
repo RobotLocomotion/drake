@@ -306,13 +306,13 @@ MaliputRailcar<T>::AllocateAbstractState() const {
 }
 
 template <typename T>
-bool MaliputRailcar<T>::DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
-    int input_port, int output_port) const {
+bool MaliputRailcar<T>::DoHasDirectFeedthrough(
+    const SparsityMatrix*, int, int) const {
   return false;
 }
 
 template <typename T>
-void MaliputRailcar<T>::SetDefaultState(const Context<T>& context,
+void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
     State<T>* state) const {
   MaliputRailcarState<T>* railcar_state =
       dynamic_cast<MaliputRailcarState<T>*>(
