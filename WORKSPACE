@@ -331,3 +331,12 @@ bitbucket_archive(
     build_file = "tools/ignition_rndf.BUILD",
     strip_prefix = "ignitionrobotics-ign-rndf-b20a4f68333f",
 )
+
+bitbucket_archive(
+    name = "sdformat",
+    repository = "osrf/sdformat",
+    commit = "e52c48cc0820",
+    sha256 = "473320e1352e232f7bdd20b445c15604e242af010ed0c9c69ad518c0b363669b",
+    build_file = "tools/sdformat.BUILD",
+    strip_prefix = "osrf-sdformat-e52c48cc0820",
+)
