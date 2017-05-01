@@ -75,43 +75,6 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "iiwa_world_demo",
-    srcs = ["iiwa_world_demo.cc"],
-    add_test_rule = 1,
-    data = [
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    test_rule_args = ["--simulation_sec=0.1"],
-    deps = [
-        ":world_sim_diagram_factory",
-        ":world_sim_tree_builder",
-        "//drake/common",
-        "@gflags//:gflags",
-    ],
-)
-
-drake_cc_binary(
-    name = "controlled_iiwa_world_demo",
-    srcs = ["controlled_iiwa_world_demo.cc"],
-    add_test_rule = 1,
-    data = [
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    test_rule_args = ["--simulation_sec=0.1"],
-    deps = [
-        ":world_sim_diagram_factory",
-        ":world_sim_tree_builder",
-        "//drake/common",
-        "//drake/common:drake_path",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "@gflags//:gflags",
-    ],
-)
-
-drake_cc_binary(
     name = "multi_arm_with_gripper_demo",
     srcs = ["multi_arm_with_gripper_demo.cc"],
     data = [
