@@ -72,16 +72,17 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "global_inverse_kinematics_feasible_posture_test",
-    srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
-    data = [
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    tags = ["gurobi"],
-    deps = [
-        ":global_inverse_kinematics_test_util",
-    ],
-)
+#drake_cc_googletest(
+#    name = "global_inverse_kinematics_feasible_posture_test",
+#    size = "medium",
+#    srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
+#    data = [
+#        "//drake/manipulation/models/iiwa_description:models",
+#    ],
+#    tags = ["gurobi"],
+#    deps = [
+#        ":global_inverse_kinematics_test_util",
+#    ],
+#)
 
 cpplint()
