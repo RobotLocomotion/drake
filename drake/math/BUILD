@@ -13,6 +13,7 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:unused",
     ],
 )
 
