@@ -278,4 +278,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "optitrack_test",
+    deps = [
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
 cpplint()
