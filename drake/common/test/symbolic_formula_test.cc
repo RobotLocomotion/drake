@@ -18,9 +18,13 @@
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
+#include "drake/common/test/is_memcpy_movable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
+
+using test::IsMemcpyMovable;
+
 namespace symbolic {
 namespace {
 
@@ -1106,6 +1110,17 @@ GTEST_TEST(FormulaTest, NoThrowMoveConstructible) {
   // it can be moved (not copied) when a STL container (i.e. vector<Formula>)
   // is resized.
   EXPECT_TRUE(std::is_nothrow_move_constructible<Formula>::value);
+}
+
+// Checks for compatibility with a memcpy primitive move operation.
+// See https://github.com/RobotLocomotion/drake/issues/5974.
+TEST_F(SymbolicFormulaTest, MemcpyKeepsFomrulaIntact) {
+  for (const Formula& formula :
+       {tt_, ff_, f_eq_, f_neq_, f_lt_, f_lte_, f_gt_, f_gte_, f_and_, f_or_,
+        not_f_or_, f_forall_, f_isnan_, f_psd_static_2x2_, f_psd_dynamic_2x2_,
+        f_psd_static_3x3_}) {
+    EXPECT_TRUE(IsMemcpyMovable(formula));
+  }
 }
 
 }  // namespace
