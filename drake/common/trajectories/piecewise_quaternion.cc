@@ -136,7 +136,7 @@ Vector3<Scalar> PiecewiseQuaternionSlerp<Scalar>::angular_velocity(
 
 template <typename Scalar>
 Vector3<Scalar> PiecewiseQuaternionSlerp<Scalar>::angular_acceleration(
-    double t) const {
+    double) const {
   return Vector3<Scalar>::Zero();
 }
 

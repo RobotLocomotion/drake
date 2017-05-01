@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/matlab_rpc.pb.h"
+#include "drake/common/unused.h"
 
 /// @file Utilities for calling Matlab from C++
 ///
@@ -58,6 +59,7 @@ void ToMatlabArray(const std::string& str, MatlabArray* matlab_array);
 namespace internal {
 inline void AssembleCallMatlabMsg(MatlabRPC* msg) {
   // Intentionally left blank.  Base case for template recursion.
+  unused(msg);
 }
 
 template <typename T, typename... Types>
@@ -143,6 +145,7 @@ class MatlabRemoteVariable {
   // Helper methods for variadic template call in CallMatlab.
   inline void AssembleSubsPrepMsg(MatlabRPC* msg) const {
     // Intentionally left blank.  Base case for template recursion.
+    unused(msg);
   }
 
   template <typename T, typename... Types>
