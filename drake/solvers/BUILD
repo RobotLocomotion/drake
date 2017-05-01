@@ -342,6 +342,7 @@ drake_cc_library(
         "//conditions:default": [
             "@ipopt//:lib",
             ":mathematical_program_api",
+            "//drake/common:unused",
             "//drake/math:autodiff",
         ],
         "//tools:no_ipopt": [
