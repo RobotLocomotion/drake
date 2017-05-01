@@ -173,7 +173,7 @@ double ArcLane::heading_of_p(const double p) const {
   return theta + std::copysign(M_PI / 2.0, d_theta_);
 }
 
-double ArcLane::heading_dot_of_p(const double p) const {
+double ArcLane::heading_dot_of_p(const double) const {
   // Given:
   //      H = θ ± (π / 2)
   // and:
