@@ -15,7 +15,7 @@ drake_cc_binary(
     name = "rod2d_sim",
     srcs = ["rod2d_sim.cc"],
     add_test_rule = 1,
-    test_rule_args = " --sim_duration=0.01",
+    test_rule_args = [" --sim_duration=0.01"],
     deps = [
         ":rod2d",
         "//drake/common",
