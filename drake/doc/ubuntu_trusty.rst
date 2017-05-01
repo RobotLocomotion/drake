@@ -84,9 +84,10 @@ Other prerequisites may be installed as follows::
     sudo apt-get install --no-install-recommends \
       autoconf automake bison doxygen freeglut3-dev git graphviz \
       libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev libpng-dev \
-      libterm-readkey-perl libtool libvtk5-dev libwww-perl make ninja-build \
-      perl pkg-config python-bs4 python-dev python-gtk2 python-html5lib \
-      python-numpy python-pip python-sphinx python-yaml unzip valgrind
+      libterm-readkey-perl libtinyxml-dev libtool libvtk5-dev libwww-perl make \
+      ninja-build perl pkg-config python-bs4 python-dev python-gtk2 \
+      python-html5lib python-numpy python-pip python-sphinx python-yaml \
+      ruby-1.9 unzip valgrind
 
 If you will be building/using Director, some additional prerequisites may be
 installed as follows::
