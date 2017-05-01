@@ -3,7 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
@@ -159,7 +158,7 @@ class ContactResultantForceCalculator {
    appended to the vector as they are assigned to the calculator.
    */
   explicit ContactResultantForceCalculator(
-      std::vector<copyable_unique_ptr<ContactDetail<T>>>* detail_accumulator);
+      std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator);
 
   /**
    Adds a new contact force to the calculator.
@@ -250,7 +249,7 @@ class ContactResultantForceCalculator {
   std::vector<ContactForce<T>> forces_{};
 
   // The optional accumulator into which contact details will be added.
-  std::vector<copyable_unique_ptr<ContactDetail<T>>>* detail_accumulator_{};
+  std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator_{};
 
   // Given a ContactForce, adds a PointContactDetail to the accumulator if
   // one is provided.

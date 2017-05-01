@@ -834,7 +834,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // TODO(SeanCurtis-TRI): Future feature: test against user-set flag
         // for whether the details should generally be captured or not and
         // make this function dependent.
-        vector<copyable_unique_ptr<ContactDetail<T>>> details;
+        vector<unique_ptr<ContactDetail<T>>> details;
         ContactResultantForceCalculator<T> calculator(&details);
 
         // This contact model produces responses that only have a force

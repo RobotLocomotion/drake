@@ -17,7 +17,7 @@ ContactResultantForceCalculator<T>::ContactResultantForceCalculator()
 
 template <typename T>
 ContactResultantForceCalculator<T>::ContactResultantForceCalculator(
-    vector<copyable_unique_ptr<ContactDetail<T>>>* detail_accumulator)
+    vector<unique_ptr<ContactDetail<T>>>* detail_accumulator)
     : detail_accumulator_(detail_accumulator) {}
 
 template <typename T>

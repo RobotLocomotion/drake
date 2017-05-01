@@ -152,7 +152,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
 
   // Case 1: The ContactForce interface -- pass an instance of ContactForce.
   {
-    std::vector<copyable_unique_ptr<ContactDetail<double>>> details;
+    std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     ContactForce<double> cforce(pos, normal, force, torque);
     calc.AddForce(cforce);
@@ -169,7 +169,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
 
   // Case 2: The interface for components without pure torque.
   {
-    std::vector<copyable_unique_ptr<ContactDetail<double>>> details;
+    std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force);
     EXPECT_EQ(details.size(), 1u);
@@ -185,7 +185,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
 
   // Case 3: The interface for components with all data.
   {
-    std::vector<copyable_unique_ptr<ContactDetail<double>>> details;
+    std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force, torque);
     EXPECT_EQ(details.size(), 1u);
@@ -201,7 +201,7 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
 
   // Case 4: The ContactDetail interface.
   {
-    std::vector<copyable_unique_ptr<ContactDetail<double>>> details;
+    std::vector<unique_ptr<ContactDetail<double>>> details;
     ContactResultantForceCalculator<double> calc(&details);
     ContactForce<double> cforce(pos, normal, force, torque);
     unique_ptr<ContactDetail<double>> input_detail(

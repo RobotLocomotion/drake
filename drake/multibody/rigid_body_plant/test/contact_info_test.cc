@@ -53,7 +53,7 @@ GTEST_TEST(ContactInfoTests, CloneDetails) {
   DrakeCollision::ElementId element_a = 10;
   DrakeCollision::ElementId element_b = 20;
   ContactInfo<double> contact_info(element_a, element_b);
-  std::vector<copyable_unique_ptr<ContactDetail<double>>> details;
+  std::vector<unique_ptr<ContactDetail<double>>> details;
 
   const int kDetailCount = 3;
   for (int i = 0; i < kDetailCount; ++i) {

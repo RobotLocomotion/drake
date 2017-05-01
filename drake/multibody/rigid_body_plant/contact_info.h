@@ -77,6 +77,14 @@ class ContactInfo {
     contact_details_ = std::move(details);
   }
 
+  void set_contact_details(
+      std::vector<std::unique_ptr<ContactDetail<T>>>&& details) {
+    for (size_t i = 0; i < details.size(); ++i) {
+      contact_details_.emplace_back(std::move(details[i]));
+    }
+    details.clear();
+  }
+
  private:
   DrakeCollision::ElementId element1_{};
   DrakeCollision::ElementId element2_{};
