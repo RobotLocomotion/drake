@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -75,6 +77,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /// may override this for performance reasons.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
+      const std::vector<const Trigger*>& triggers,
       drake::systems::DiscreteValues<T>* updates) const override;
 
  private:
@@ -169,6 +172,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
+      const std::vector<const Trigger*>& triggers,
       drake::systems::DiscreteValues<T>* updates) const final;
 
   // System<T> override.

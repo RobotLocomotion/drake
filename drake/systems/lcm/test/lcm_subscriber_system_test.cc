@@ -22,20 +22,17 @@ constexpr int64_t kTimestamp = 123456;
 
 void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
                       SystemOutput<double>* output) {
-  UpdateActions<double> actions;
-  sub.CalcNextUpdateTime(*context, &actions);
+  auto event_info = sub.AllocateEventInfo();
+  sub.CalcNextUpdateTime(*context, event_info.get());
 
-  if (!actions.events.empty()) {
-    DRAKE_DEMAND(actions.events.size() == 1);
+  if (!event_info->HasNoEvents()) {
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
-    if (actions.events.front().action ==
-        DiscreteEvent<double>::kDiscreteUpdateAction) {
-      sub.CalcDiscreteVariableUpdates(*context, actions.events.front(),
-          tmp_state->get_mutable_discrete_state());
-    } else if (actions.events.front().action ==
-        DiscreteEvent<double>::kUnrestrictedUpdateAction) {
-      sub.CalcUnrestrictedUpdate(*context, actions.events.front(),
-          tmp_state.get());
+    if (event_info->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
+      sub.CalcDiscreteVariableUpdates(*context, event_info.get(),
+                                      tmp_state->get_mutable_discrete_state());
+    } else if (event_info->HasEvent(
+                   EventInfo::EventType::kUnrestrictedUpdate)) {
+      sub.CalcUnrestrictedUpdate(*context, event_info.get(), tmp_state.get());
     } else {
       DRAKE_DEMAND(false);
     }

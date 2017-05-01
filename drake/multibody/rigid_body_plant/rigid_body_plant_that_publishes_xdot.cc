@@ -37,8 +37,8 @@ RigidBodyPlantThatPublishesXdot<T>::~RigidBodyPlantThatPublishesXdot() {}
 // Ideally, switch to outputting the derivatives in an output port. This can
 // only be done once #2890 is resolved.
 template <typename T>
-void RigidBodyPlantThatPublishesXdot<T>::DoPublish(const Context<T>& context)
-    const {
+void RigidBodyPlantThatPublishesXdot<T>::DoPublish(const Context<T>& context,
+    const std::vector<const Trigger*>& triggers) const {
   RigidBodyPlant<T>::CalcTimeDerivatives(context, derivatives_.get());
   const auto xdot = derivatives_->CopyToVector();
   const int num_states = RigidBodyPlant<T>::get_num_states();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include <utility>
 
 #include "drake/solvers/moby_lcp_solver.h"
@@ -410,6 +411,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                                const override;
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<T>& context,
+      const std::vector<const systems::Trigger*>& triggers,
       systems::DiscreteValues<T>* discrete_state) const override;
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;

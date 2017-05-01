@@ -26,11 +26,16 @@ class ZeroOrderHoldTest : public ::testing::Test {
     context_ = hold_->CreateDefaultContext();
     output_ = hold_->AllocateOutput(*context_);
     context_->FixInputPort(0, BasicVector<double>::Make({1.0, 1.0, 3.0}));
+
+    event_info_ = hold_->AllocateEventInfo();
+    leaf_info_ = dynamic_cast<const LeafEventInfo*>(event_info_.get());
   }
 
   std::unique_ptr<System<double>> hold_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<EventInfo> event_info_;
+  const LeafEventInfo* leaf_info_;
 };
 
 // Tests that the zero-order hold has one input and one output.
@@ -71,17 +76,16 @@ TEST_F(ZeroOrderHoldTest, Output) {
 TEST_F(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   // Calculate the next update time.
   context_->set_time(0.0);
-  UpdateActions<double> actions;
-  double next_t = hold_->CalcNextUpdateTime(*context_, &actions);
+  double next_t = hold_->CalcNextUpdateTime(*context_, event_info_.get());
 
   // Check that the time is correct.
   EXPECT_NEAR(0.1, next_t, 10e-8);
-  EXPECT_EQ(next_t, actions.time);
 
   // Check that the action is to update.
-  ASSERT_EQ(1u, actions.events.size());
-  const DiscreteEvent<double>& event = actions.events[0];
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, event.action);
+  const auto& triggers =
+      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
+  EXPECT_EQ(triggers.size(), 1);
+  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that when the current time is between updates, a update is requested
@@ -89,28 +93,24 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
 TEST_F(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   // Calculate the next update time.
   context_->set_time(76.32);
-  UpdateActions<double> actions;
 
   // Check that the time is correct.
-  double next_t = hold_->CalcNextUpdateTime(*context_, &actions);
+  double next_t = hold_->CalcNextUpdateTime(*context_, event_info_.get());
   EXPECT_NEAR(76.4, next_t, 10e-8);
-  EXPECT_EQ(next_t, actions.time);
 
   // Check that the action is to update.
-  ASSERT_EQ(1u, actions.events.size());
-  const DiscreteEvent<double>& event = actions.events[0];
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction, event.action);
+  const auto& triggers =
+      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
+  EXPECT_EQ(triggers.size(), 1);
+  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that discrete updates update the state.
 TEST_F(ZeroOrderHoldTest, Update) {
   // Fire off an update event.
-  DiscreteEvent<double> update_event;
-  update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-
   std::unique_ptr<DiscreteValues<double>> update =
       hold_->AllocateDiscreteVariables();
-  hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update.get());
+  hold_->CalcDiscreteVariableUpdates(*context_, nullptr, update.get());
 
   // Check that the state has been updated to the input.
   const VectorBase<double>* xd = update->get_vector(0);
@@ -152,11 +152,7 @@ TEST_F(SymbolicZeroOrderHoldTest, Output) {
 }
 
 TEST_F(SymbolicZeroOrderHoldTest, Update) {
-  DiscreteEvent<symbolic::Expression> update_event;
-  update_event.action =
-      DiscreteEvent<symbolic::Expression>::kDiscreteUpdateAction;
-
-  hold_->CalcDiscreteVariableUpdates(*context_, {update_event}, update_.get());
+  hold_->CalcDiscreteVariableUpdates(*context_, nullptr, update_.get());
   const auto& xd = *update_->get_vector(0);
   EXPECT_EQ("u0", xd[0].to_string());
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -118,6 +119,7 @@ class SisoVectorSystem : public LeafSystem<T> {
   /// DoCalcVectorDiscreteVariableUpdates().
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
+      const std::vector<const Trigger*>& triggers,
       DiscreteValues<T>* discrete_state) const final {
     // Short-circuit when there's no work to do.
     if (discrete_state->num_groups() == 0) {

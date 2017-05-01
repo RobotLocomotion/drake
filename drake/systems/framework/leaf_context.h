@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <set>
 #include <utility>
@@ -126,6 +127,21 @@ class LeafContext : public Context<T> {
   Parameters<T>& get_mutable_parameters() final {
     return *parameters_;
   }
+
+  /*
+  const EventTriggers<T>& get_event_triggers(const Event<T>& event) const final {
+    switch(event.event) {
+      case Event<T>::kPublish:
+        return publish_triggers_;
+      case Event<T>::kDiscreteUpdate:
+        return discrete_update_triggers_;
+      case Event<T>::kUnrestrictedUpdate:
+        return unrestricted_update_triggers_;
+      default:
+        DRAKE_ABORT_MSG("unknown event type.");
+    }
+  }
+  */
 
  protected:
   /// The caller owns the returned memory.

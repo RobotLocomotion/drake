@@ -598,7 +598,8 @@ class PublishingSystem : public LeafSystem<double> {
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
-  void DoPublish(const Context<double>& context) const override {
+  void DoPublish(const Context<double>& context,
+                 const std::vector<const Trigger*>& triggers) const override {
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
@@ -828,14 +829,14 @@ class TestPublishingSystem : public LeafSystem<double> {
 
   ~TestPublishingSystem() override {}
 
-
   bool published() { return published_; }
 
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
-  void DoPublish(const Context<double>& context) const override {
+  void DoPublish(const Context<double>& context,
+                 const std::vector<const Trigger*>& triggers) const override {
     published_ = true;
   }
 
@@ -886,27 +887,41 @@ class DiscreteStateTest : public ::testing::Test {
 // Tests that the next update time after 0.05 is 2.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   context_->set_time(0.05);
-  UpdateActions<double> actions;
-  diagram_.CalcNextUpdateTime(*context_, &actions);
+  auto event_info = diagram_.AllocateEventInfo();
+  double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
 
-  EXPECT_EQ(2.0, actions.time);
-  ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
-            actions.events[0].action);
+  EXPECT_EQ(2.0, time);
+  auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
+  // TODO(siyuan): don't have hard code event index, need to implement
+  // get_sub_event_info.
+  auto sub_info =
+      dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
+
+  EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
 }
 
 // Tests that the next update time after 5.1 is 6.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   context_->set_time(5.1);
-  UpdateActions<double> actions;
-  diagram_.CalcNextUpdateTime(*context_, &actions);
+  auto event_info = diagram_.AllocateEventInfo();
+  double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
 
-  // Even though two subsystems are updating, there is only one update action
-  // on the Diagram.
-  EXPECT_EQ(6.0, actions.time);
-  ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kDiscreteUpdateAction,
-            actions.events[0].action);
+  EXPECT_EQ(6.0, time);
+  // Both zoh should have an update event.
+  // TODO(siyuan): don't have hard code event index, need to implement
+  // get_sub_event_info.
+  auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
+  {
+    auto sub_info =
+        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
+    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
+  }
+
+  {
+    auto sub_info =
+        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
+    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
+  }
 }
 
 // Tests that on the 9-second tick, only hold2 latches its inputs. Then, on
@@ -928,15 +943,14 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(8.5);
 
   // Request the next update time.
-  UpdateActions<double> actions;
-  diagram_.CalcNextUpdateTime(*context_, &actions);
-  EXPECT_EQ(9.0, actions.time);
-  ASSERT_EQ(1u, actions.events.size());
+  auto event_info = diagram_.AllocateEventInfo();
+  double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
+  EXPECT_EQ(9.0, time);
 
   // Fast forward to 9.0 sec and do the update.
   context_->set_time(9.0);
   diagram_.CalcDiscreteVariableUpdates(*context_,
-                                       actions.events[0],
+                                       event_info.get(),
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
   EXPECT_EQ(1001.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
@@ -946,16 +960,13 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
   // Set the time to 11.5, so both hold1 and hold2 update.
   context_->set_time(11.5);
-  diagram_.CalcNextUpdateTime(*context_, &actions);
-  EXPECT_EQ(12.0, actions.time);
-  // A single update event on the Diagram is expanded to update events on
-  // each constituent system.
-  ASSERT_EQ(1u, actions.events.size());
+  time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
+  EXPECT_EQ(12.0, time);
 
   // Fast forward to 12.0 sec and do the update again.
   context_->set_time(12.0);
   diagram_.CalcDiscreteVariableUpdates(*context_,
-                                       actions.events[0],
+                                       event_info.get(),
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
   EXPECT_EQ(17.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
@@ -965,17 +976,15 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 // Tests that a publish action is taken at 19 sec.
 TEST_F(DiscreteStateTest, Publish) {
   context_->set_time(18.5);
-  UpdateActions<double> actions;
-  diagram_.CalcNextUpdateTime(*context_, &actions);
+  auto event_info = diagram_.AllocateEventInfo();
+  double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
 
-  EXPECT_EQ(19.0, actions.time);
-  ASSERT_EQ(1u, actions.events.size());
-  EXPECT_EQ(DiscreteEvent<double>::kPublishAction, actions.events[0].action);
+  EXPECT_EQ(19.0, time);
 
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
   context_->set_time(19.0);
-  diagram_.Publish(*context_, actions.events[0]);
+  diagram_.Publish(*context_, event_info.get());
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
@@ -999,6 +1008,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
 
   // Abstract state is set to time + id.
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                const std::vector<const Trigger*>& triggers,
                                 State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
                             ->get_mutable_value(0)
@@ -1062,17 +1072,18 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // First action time should be 2 sec, and only sys0 will be updating.
-  systems::UpdateActions<double> update_actions;
-  diagram_.CalcNextUpdateTime(*context_, &update_actions);
-  EXPECT_EQ(update_actions.time, 2);
-  EXPECT_EQ(update_actions.events.size(), 1u);
-  EXPECT_EQ(update_actions.events.front().action,
-      DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction);
+  auto event_info = diagram_.AllocateEventInfo();
+  auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
+  EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 2);
+  // TODO(siyuan): don't have hard code event index, need to implement
+  // get_sub_event_info.
+  auto sub_info =
+      dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
+  EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
 
   // Creates a temp state and does unrestricted updates.
   std::unique_ptr<State<double>> x_buf = context_->CloneState();
-  diagram_.CalcUnrestrictedUpdate(*context_, update_actions.events.front(),
-                                  x_buf.get());
+  diagram_.CalcUnrestrictedUpdate(*context_, event_info.get(), x_buf.get());
 
   // The abstract data in the current context should be the same as before.
   EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
@@ -1086,13 +1097,13 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   // Sets time to 5.5, both system should be updating at 6 sec.
   time = 5.5;
   context_->set_time(time);
-  diagram_.CalcNextUpdateTime(*context_, &update_actions);
-  EXPECT_EQ(update_actions.time, 6);
-  // One action to update all subsystems' state.
-  EXPECT_EQ(update_actions.events.size(), 1u);
+  EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 6);
+  for (int i = 0; i < 2; i++) {
+    sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(i));
+    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
+  }
 
-  diagram_.CalcUnrestrictedUpdate(*context_, update_actions.events.front(),
-                                  x_buf.get());
+  diagram_.CalcUnrestrictedUpdate(*context_, event_info.get(), x_buf.get());
   // Both sys0 and sys1's abstract data should be updated.
   context_->get_mutable_state()->CopyFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
@@ -1321,9 +1332,8 @@ class PerStepActionTestSystem : public LeafSystem<double> {
     DeclareAbstractState(AbstractValue::Make<std::string>(""));
   }
 
-  void AddPerStepAction(
-      const typename DiscreteEvent<double>::ActionType& action) {
-    this->DeclarePerStepAction(action);
+  void AddPerStepAction(EventInfo::EventType type) {
+    this->DeclarePerStepAction(type);
   }
 
   int get_publish_ctr() const {
@@ -1341,12 +1351,14 @@ class PerStepActionTestSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+      const std::vector<const Trigger*>& triggers,
       DiscreteValues<double>* discrete_state) const override {
     (*discrete_state)[0] =
         context.get_discrete_state(0)->GetAtIndex(0) + 1;
   }
 
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                const std::vector<const Trigger*>& triggers,
                                 State<double>* state) const override {
     int int_num = static_cast<int>(
         context.get_discrete_state(0)->GetAtIndex(0));
@@ -1354,7 +1366,8 @@ class PerStepActionTestSystem : public LeafSystem<double> {
         "wow" + std::to_string(int_num);
   }
 
-  void DoPublish(const Context<double>& context) const override {
+  void DoPublish(const Context<double>& context,
+                 const std::vector<const Trigger*>& triggers) const override {
     publish_ctr_++;
   }
 
@@ -1380,8 +1393,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
     sys1 = builder.AddSystem<PerStepActionTestSystem>();
     sys1->set_name("sys1");
 
-    sys1->AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
-    sys1->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+    sys1->AddPerStepAction(EventInfo::EventType::kDiscreteUpdate);
+    sys1->AddPerStepAction(EventInfo::EventType::kUnrestrictedUpdate);
 
     sub_diagram = builder.Build();
     sub_diagram->set_name("sub_diagram");
@@ -1393,46 +1406,31 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   sys2->set_name("sys2");
 
   // sys2 has publish and unrestricted updates.
-  sys2->AddPerStepAction(DiscreteEvent<double>::kPublishAction);
-  sys2->AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+  sys2->AddPerStepAction(EventInfo::EventType::kPublish);
+  sys2->AddPerStepAction(EventInfo::EventType::kUnrestrictedUpdate);
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
   diagram->set_name("diagram");
 
-  std::vector<DiscreteEvent<double>> events;
-  diagram->GetPerStepEvents(*context, &events);
-
-  EXPECT_EQ(events.size(), 3);
-
   auto tmp_discrete_state = diagram->AllocateDiscreteVariables();
-  std::unique_ptr<State<double>> tmp_state;
+  std::unique_ptr<State<double>> tmp_state = context->CloneState();
+
+  auto event_info = diagram->AllocateEventInfo();
+  diagram->GetPerStepEvents(*context, event_info.get());
 
   // Does unrestricted update first.
-  for (const auto& event : events) {
-    if (event.action == DiscreteEvent<double>::kUnrestrictedUpdateAction) {
-      tmp_state = context->CloneState();
-      diagram->CalcUnrestrictedUpdate(*context, event,
-          tmp_state.get());
-      context->get_mutable_state()->CopyFrom(*tmp_state);
-    }
-  }
+  diagram->CalcUnrestrictedUpdate(*context, event_info.get(),
+      tmp_state.get());
+  context->get_mutable_state()->CopyFrom(*tmp_state);
 
   // Does discrete updates second.
-  for (const auto& event : events) {
-    if (event.action == DiscreteEvent<double>::kDiscreteUpdateAction) {
-      diagram->CalcDiscreteVariableUpdates(*context, event,
-          tmp_discrete_state.get());
-      context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
-    }
-  }
+  diagram->CalcDiscreteVariableUpdates(*context, event_info.get(),
+      tmp_discrete_state.get());
+  context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
 
   // Publishes last.
-  for (const auto& event : events) {
-    if (event.action == DiscreteEvent<double>::kPublishAction) {
-      diagram->Publish(*context, event);
-    }
-  }
+  diagram->Publish(*context, event_info.get());
 
   // Only sys2 published once.
   EXPECT_EQ(sys0->get_publish_ctr(), 0);
@@ -1453,6 +1451,76 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   auto& sys2_context = diagram->GetSubsystemContext(*context, sys2);
   EXPECT_EQ(sys2_context.get_discrete_state(0)->GetAtIndex(0), 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
+}
+
+class MyEventTestSystem : public LeafSystem<double> {
+ public:
+  MyEventTestSystem(const std::string& name, double p) {
+    if (p > 0)
+      DeclarePublishPeriodSec(p);
+    else
+      DeclarePerStepAction(EventInfo::EventType::kPublish);
+    set_name(name);
+  }
+
+ private:
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
+
+  void DoPublish(const Context<double>& context,
+                 const std::vector<const Trigger*>& triggers) const override {
+    std::cout << get_name() << ": " <<
+                 context.get_time() << ", trigger: ";
+    for (const auto trigger : triggers) {
+      std::cout << trigger->get_type() << " ";
+    }
+    std::cout << std::endl;
+  }
+};
+
+GTEST_TEST(MyEventTest, MyEventTestLeaf) {
+  MyEventTestSystem dut("sys", 0.2);
+  auto event_info = dut.AllocateEventInfo();
+  auto context = dut.CreateDefaultContext();
+
+  double time = dut.CalcNextUpdateTime(*context, event_info.get());
+  context->set_time(time);
+  dut.Publish(*context, event_info.get());
+}
+
+GTEST_TEST(MyEventTest, MyEventTestDiagram) {
+  std::unique_ptr<Diagram<double>> sub_diagram;
+  {
+    DiagramBuilder<double> builder;
+
+    builder.AddSystem<MyEventTestSystem>("sys0", 0.2);
+    builder.AddSystem<MyEventTestSystem>("sys1", 0.1);
+    builder.AddSystem<MyEventTestSystem>("sys2", 0.1);
+
+    sub_diagram = builder.Build();
+    sub_diagram->set_name("sub_diagram");
+  }
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram));
+  builder.AddSystem<MyEventTestSystem>("sys3", 0.1);
+  builder.AddSystem<MyEventTestSystem>("sys4", 0.);
+
+  auto dut = builder.Build();
+
+  auto periodic_event_info = dut->AllocateEventInfo();
+  auto perstep_event_info = dut->AllocateEventInfo();
+  auto event_info = dut->AllocateEventInfo();
+
+  auto context = dut->CreateDefaultContext();
+
+  double time = dut->CalcNextUpdateTime(*context, periodic_event_info.get());
+  dut->GetPerStepEvents(*context, perstep_event_info.get());
+
+  event_info->Merge(*periodic_event_info);
+  event_info->Merge(*perstep_event_info);
+
+  context->set_time(time);
+  dut->Publish(*context, event_info.get());
 }
 
 }  // namespace

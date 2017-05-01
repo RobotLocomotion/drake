@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
@@ -39,7 +40,8 @@ class AccelerometerTestLogger : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   // Logging is done in this method.
-  void DoPublish(const Context<double>& context) const override;
+  void DoPublish(const Context<double>& context,
+      const std::vector<const Trigger*>& triggers) const override;
 
   bool log_to_console_{false};
   int plant_state_derivative_port_index_{};

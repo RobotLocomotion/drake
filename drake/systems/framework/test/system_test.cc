@@ -19,8 +19,6 @@ namespace systems {
 namespace {
 
 const int kSize = 3;
-const int kNumberToPublish = 1776;
-const int kNumberToUpdate = 2001;
 
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
@@ -37,6 +35,10 @@ class TestSystem : public System<double> {
 
   std::unique_ptr<Context<double>> AllocateContext() const override {
     return nullptr;
+  }
+
+  std::unique_ptr<EventInfo> AllocateEventInfo() const override {
+    return std::unique_ptr<EventInfo>(new LeafEventInfo());
   }
 
   void SetDefaultState(const Context<double>& context,
@@ -79,6 +81,12 @@ class TestSystem : public System<double> {
     return updated_numbers_;
   }
 
+  // The default publish function.
+  void DoPublish(const Context<double>& context,
+                 const std::vector<const Trigger*>& triggers) const override {
+    ++publish_count_;
+  }
+
  protected:
   BasicVector<double>* DoAllocateInputVector(
       const InputPortDescriptor<double>& descriptor) const override {
@@ -97,59 +105,69 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 
-  // Sets up an arbitrary mapping from the current time to the next discrete
-  // action, to exercise several different forms of discrete action.
-  void DoCalcNextUpdateTime(const Context<double>& context,
-                            UpdateActions<double>* actions) const override {
-    actions->time = context.get_time() + 1;
-    actions->events.emplace_back();
-    DiscreteEvent<double>& event = actions->events.back();
-    if (context.get_time() < 10.0) {
-      // Use the default publish action.
-      event.action = DiscreteEvent<double>::kPublishAction;
-    } else if (context.get_time() < 20.0) {
-      // Use the default update action.
-      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-    } else if (context.get_time() < 30.0) {
-      // Use a custom publish action.
-      event.action = DiscreteEvent<double>::kPublishAction;
-      event.do_publish = std::bind(&TestSystem::DoPublishNumber, this,
-                                   std::placeholders::_1 /* context */);
-    } else {
-      // Use a custom update action.
-      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-      event.do_calc_discrete_variable_update = std::bind(
-                                  &TestSystem::DoCalcDiscreteUpdatesNumber,
-                                  this, std::placeholders::_1 /* context */,
-                                  std::placeholders::_2 /* discrete state */,
-                                  kNumberToUpdate);
+  void DispatchPublishHandler(const Context<double>& context,
+      const EventInfo* event_info) const final {
+    if (event_info == nullptr) {
+      this->DoPublish(context, ForcedTrigger::OneForcedTrigger());
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    if (info->HasEvent(EventInfo::EventType::kPublish)) {
+      this->DoPublish(context,
+          info->get_triggers(EventInfo::EventType::kPublish));
     }
   }
 
-  // The default publish function.
-  void DoPublish(const Context<double>& context) const override {
-    ++publish_count_;
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<double>& context, const EventInfo* event_info,
+      DiscreteValues<double>* discrete_state) const final {
+    if (event_info == nullptr) {
+      this->DoCalcDiscreteVariableUpdates(
+          context, ForcedTrigger::OneForcedTrigger(), discrete_state);
+      return;
+    }
+
+    const LeafEventInfo* info = dynamic_cast<const LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+    if (info->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
+      this->DoCalcDiscreteVariableUpdates(context,
+          info->get_triggers(EventInfo::EventType::kDiscreteUpdate),
+          discrete_state);
+    }
+  }
+
+  void DispatchUnrestrictedUpdateHandler(const Context<double>& context,
+      const EventInfo* event_info, State<double>* state) const final {
+    DRAKE_ABORT_MSG("test should get here");
+  }
+
+  // Sets up an arbitrary mapping from the current time to the next discrete
+  // action, to exercise several different forms of discrete action.
+  void DoCalcNextUpdateTime(const Context<double>& context,
+      EventInfo* event_info, double* time) const override {
+    *time = context.get_time() + 1;
+    LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
+    DRAKE_DEMAND(info != nullptr);
+
+    if (context.get_time() < 10.0) {
+      // Use the default publish action.
+      info->add_trigger(EventInfo::EventType::kPublish,
+          std::make_unique<PeriodicTrigger<double>>(0, *time));
+    } else {
+      // Use the default update action.
+      info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
+          std::make_unique<PeriodicTrigger<double>>(0, *time));
+    }
   }
 
   // The default update function.
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
+      const std::vector<const Trigger*>& triggers,
       DiscreteValues<double>* discrete_state) const override {
     ++update_count_;
-  }
-
- private:
-  // A custom publish function with no additional arguments.
-  void DoPublishNumber(const Context<double>& context) const {
-    published_numbers_.push_back(kNumberToPublish);
-  }
-
-  // A custom update function with additional argument @p num, which may be
-  // bound in DoCalcNextUpdateTime.
-  void DoCalcDiscreteUpdatesNumber(const Context<double>& context,
-                                   DiscreteValues<double>* discrete_state,
-                                   int num) const {
-    updated_numbers_.push_back(num);
   }
 
  private:
@@ -217,12 +235,16 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscretePublish) {
   context_.set_time(5.0);
-  UpdateActions<double> actions;
+  auto event_info = system_.AllocateEventInfo();
+  auto info = dynamic_cast<const LeafEventInfo*>(event_info.get());
+  DRAKE_DEMAND(info != nullptr);
 
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
+  system_.CalcNextUpdateTime(context_, event_info.get());
+  const auto& triggers = info->get_triggers(EventInfo::EventType::kPublish);
+  EXPECT_EQ(triggers.size(), 1);
+  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
 
-  system_.Publish(context_, actions.events[0]);
+  system_.Publish(context_, event_info.get());
   EXPECT_EQ(1, system_.get_publish_count());
 }
 
@@ -231,47 +253,15 @@ TEST_F(SystemTest, DiscretePublish) {
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
   context_.set_time(15.0);
-  UpdateActions<double> actions;
 
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
+  auto event_info = system_.AllocateEventInfo();
+  system_.CalcNextUpdateTime(context_, event_info.get());
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
+  system_.CalcDiscreteVariableUpdates(context_, event_info.get(),
                                       update.get());
   EXPECT_EQ(1, system_.get_update_count());
-}
-
-// Tests that custom do_publish handlers registered in DoCalcNextUpdateTime
-// are invoked.
-TEST_F(SystemTest, CustomDiscretePublish) {
-  context_.set_time(25.0);
-  UpdateActions<double> actions;
-
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
-
-  system_.Publish(context_, actions.events[0]);
-  ASSERT_EQ(1u, system_.get_published_numbers().size());
-  EXPECT_EQ(kNumberToPublish, system_.get_published_numbers()[0]);
-}
-
-// Tests that custom do_update handlers registered in DoCalcNextUpdateTime
-// are invoked.
-TEST_F(SystemTest, CustomDiscreteUpdate) {
-  context_.set_time(35.0);
-  UpdateActions<double> actions;
-
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
-
-  std::unique_ptr<DiscreteValues<double>> update =
-      system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
-                                      update.get());
-  ASSERT_EQ(1u, system_.get_updated_numbers().size());
-  EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
 }
 
 // Tests that descriptor references remain valid even if lots of other
@@ -354,6 +344,10 @@ class ValueIOTestSystem : public System<T> {
     return std::unique_ptr<Context<T>>(context.release());
   }
 
+  std::unique_ptr<EventInfo> AllocateEventInfo() const override {
+    return std::unique_ptr<EventInfo>(new LeafEventInfo());
+  }
+
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {}
 
@@ -371,6 +365,20 @@ class ValueIOTestSystem : public System<T> {
     return true;
   }
 
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const Context<T>& context) const override {
+    std::unique_ptr<LeafSystemOutput<T>> output(
+        new LeafSystemOutput<T>);
+    output->add_port(
+        std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
+
+    output->add_port(std::make_unique<OutputPortValue>(
+        std::make_unique<BasicVector<T>>(1)));
+
+    return std::unique_ptr<SystemOutput<T>>(output.release());
+  }
+
+ private:
   // Append "output" to input(0), and sets output(1) = 2 * input(1).
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {
@@ -387,17 +395,20 @@ class ValueIOTestSystem : public System<T> {
     vec_out->get_mutable_value() = 2 * vec_in->get_value();
   }
 
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
-    std::unique_ptr<LeafSystemOutput<T>> output(
-        new LeafSystemOutput<T>);
-    output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
+  void DispatchPublishHandler(const Context<T>& context,
+      const EventInfo* event_info) const final {
+    DRAKE_ABORT_MSG("test should get here");
+  }
 
-    output->add_port(std::make_unique<OutputPortValue>(
-        std::make_unique<BasicVector<T>>(1)));
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<T>& context, const EventInfo* event_info,
+      DiscreteValues<T>* discrete_state) const final {
+    DRAKE_ABORT_MSG("test should get here");
+  }
 
-    return std::unique_ptr<SystemOutput<T>>(output.release());
+  void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
+      const EventInfo* event_info, State<T>* state) const final {
+    DRAKE_ABORT_MSG("test should get here");
   }
 };
 

@@ -27,10 +27,6 @@ std::string SystemImpl::GetMemoryObjectName(
   return result.str();
 }
 
-template struct DiscreteEvent<double>;
-
-template struct UpdateActions<double>;
-
 template class System<double>;
 
 }  // namespace systems

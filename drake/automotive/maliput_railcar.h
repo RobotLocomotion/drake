@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/automotive/gen/maliput_railcar_params.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
@@ -129,9 +130,10 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
                               int input_port, int output_port) const override;
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
-                            systems::UpdateActions<T>* actions) const override;
+      systems::EventInfo* event_info, T* time) const override;
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
-                                systems::State<T>* state) const override;
+      const std::vector<const systems::Trigger*>& triggers,
+      systems::State<T>* state) const override;
 
  private:
   void ImplCalcOutput(

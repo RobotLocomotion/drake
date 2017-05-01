@@ -519,6 +519,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
 template <typename T>
 void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
+    const std::vector<const Trigger*>& triggers,
     drake::systems::DiscreteValues<T>* updates) const {
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");

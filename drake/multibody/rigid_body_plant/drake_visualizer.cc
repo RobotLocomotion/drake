@@ -35,20 +35,21 @@ void DrakeVisualizer::set_publish_period(double period) {
 }
 
 void DrakeVisualizer::DoCalcNextUpdateTime(
-    const Context<double>& context, UpdateActions<double>* events) const {
+    const Context<double>& context, EventInfo* events, double* time) const {
   if (is_load_message_sent(context)) {
-    return LeafSystem<double>::DoCalcNextUpdateTime(context, events);
+    return LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   } else {
     // TODO(siyuan): cleanup after #5725 is resolved.
-    events->time = context.get_time() + 0.0001;
-    DiscreteEvent<double> event;
-    event.action = DiscreteEvent<double>::ActionType::kDiscreteUpdateAction;
-    events->events.push_back(event);
+    *time = context.get_time() + 0.0001;
+    LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(events);
+    DRAKE_DEMAND(info != nullptr);
+    info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
+        std::make_unique<PeriodicTrigger<double>>(0, *time));
   }
 }
 
 void DrakeVisualizer::DoCalcDiscreteVariableUpdates(
-    const Context<double>& context,
+    const Context<double>& context, const std::vector<const Trigger*>& triggers,
     DiscreteValues<double>* discrete_state) const {
   DRAKE_DEMAND(!is_load_message_sent(context));
 
@@ -135,7 +136,8 @@ void DrakeVisualizer::PlaybackTrajectory(
                 message_bytes.size());
 }
 
-void DrakeVisualizer::DoPublish(const Context<double>& context) const {
+void DrakeVisualizer::DoPublish(const Context<double>& context,
+    const std::vector<const Trigger*>& triggers) const {
   if (!is_load_message_sent(context)) {
     drake::log()->warn(
         "DrakeVisualizer::Publish() called before PublishLoadRobot()");

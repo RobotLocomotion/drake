@@ -134,6 +134,7 @@ void IiwaPlanSource::Initialize(double plan_start_time,
 
 void IiwaPlanSource::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
+    const std::vector<const systems::Trigger*>& triggers,
     systems::State<double>* state) const {
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
