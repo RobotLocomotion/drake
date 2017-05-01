@@ -76,18 +76,26 @@ class LeafContext : public Context<T> {
 
   /// Creates a new cache entry of type `EntryType` and returns the new ticket
   /// to it, marking the entry itself as **invalid**. This entry will
-  /// depend on the list of passed @p prerequisites.
+  /// be invalidated whenever any of the @p prerequisites are invalidated.
   /// As an example of usage consider the code below:
   ///
   /// @code
   ///   LeafContext<double> context;
-  ///   auto foo = context.MakeCacheEntry<Foo<double>>(
-  ///       {ticket1, ticket2}, /* Entry prerequisites. */
-  ///       "name", 3.14);      /* Foo<double>'s constructor parameters. */
+  ///   CacheTicket foos_ticket =
+  ///       context.MakeCacheEntry<Foo<double>>(
+  ///           {ticket1, ticket2}, /* Entry prerequisites. */
+  ///           "name", 3.14);      /* Foo<double>'s constructor parameters. */
   /// @endcode
+  ///
+  /// @param[in] prerequisites A list of cache tickets corresponding to the
+  ///                          cache entries the newly created entry depends on.
+  /// @param[in] args The list of arguments to EntryType's constructor.
+  ///
+  /// @tparam EntryType The type of the cache entry to be created. It must be
+  ///                   copy-constructible and assignable.
   template<class EntryType, typename... Args>
   CacheTicket MakeCacheEntry(const std::set<CacheTicket>& prerequisites,
-                             Args&&... args) {
+                             Args&&... args) const {
     return cache_.MakeCacheEntry<EntryType>(
         prerequisites, std::forward<Args>(args)...);
   }
@@ -131,11 +139,24 @@ class LeafContext : public Context<T> {
     return cache_.Get(ticket);
   }
 
-  /// Returns the mutable cached value for the cache entry referenced by
-  /// @p ticket, invalidating this entry itself and recursively invalidating all
-  /// of its dependents.
-  AbstractValue* GetMutableCachedValue(CacheTicket ticket) const {
-    return cache_.GetMutable(ticket);
+  /// Returns a mutable reference to the value contained in the cache entry
+  /// identified by @p ticket, which must be of exactly type `EntryType`.
+  /// This call invalidates this cache entry itself and recursively invalidates
+  /// all of its dependents.
+  /// In Debug builds, if the types don't match, std::bad_cast will be
+  /// thrown.  In Release builds, this is not guaranteed.
+  template <class EntryType>
+  EntryType& GetMutableCachedValue(CacheTicket ticket) const {
+    return cache_.GetMutable(ticket)->template GetMutableValue<EntryType>();
+  }
+
+  /// Returns a const reference to the value contained in the cache entry
+  /// identified by @p ticket, which must be of exactly type `EntryType`.
+  /// In Debug builds, if the types don't match, std::bad_cast will be
+  /// thrown.  In Release builds, this is not guaranteed.
+  template <class EntryType>
+  const EntryType& GetCachedValue(CacheTicket ticket) const {
+    return cache_.Get(ticket)->template GetValue<EntryType>();
   }
 
   /// Validates the cache entry corresponding to the provided @p ticket and
@@ -151,7 +172,7 @@ class LeafContext : public Context<T> {
   ///
   /// @warning Only advanced, careful users should call this method since
   /// validating cache entries by hand can be error prone. Use with care.
-  void ValidateCacheEntry(CacheTicket ticket) {
+  void ValidateCacheEntry(CacheTicket ticket) const {
     cache_.Validate(ticket);
   }
 

@@ -98,7 +98,7 @@ class Cache {
   ///   CacheTicket foos_ticket =
   ///       cache.MakeCacheEntry<Foo<double>>(
   ///           {ticket1, ticket2}, /* Entry prerequisites. */
-  ///           "name", 3.14);  /* Foo<double>'s constructor parameters. */
+  ///           "name", 3.14);      /* Foo<double>'s constructor parameters. */
   /// @endcode
   ///
   /// @param[in] prerequisites A list of cache tickets corresponding to the
