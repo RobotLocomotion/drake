@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 #include <functional>
 #include <map>
 #include <memory>
@@ -44,6 +46,7 @@ using test::ExprEqual;
 using test::ExprLess;
 using test::ExprNotEqual;
 using test::ExprNotLess;
+using test::VarEqual;
 
 // Checks if a given 'expressions' is ordered by Expression::Less.
 static void CheckOrdering(const vector<Expression>& expressions) {
@@ -1755,6 +1758,22 @@ TEST_F(SymbolicExpressionTest, ToString) {
   EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
 }
 
+// Checks for compatibility with a memcpy primitive move operation.
+// See https://github.com/RobotLocomotion/drake/issues/5974.
+TEST_F(SymbolicExpressionTest, MemcpyKeepsIntact) {
+  for (const Variable& var : {var_x_, var_y_, var_z_}) {
+    Variable* new_var{static_cast<Variable*>(malloc(sizeof(Variable)))};
+    memcpy(new_var, &var, sizeof(Variable));
+    EXPECT_PRED2(VarEqual, var, *new_var);
+    free(new_var);
+  }
+  for (const Expression& expr : collection_) {
+    Expression* new_expr{static_cast<Expression*>(malloc(sizeof(Expression)))};
+    memcpy(new_expr, &expr, sizeof(Expression));
+    EXPECT_PRED2(ExprEqual, expr, *new_expr);
+    free(new_expr);
+  }
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

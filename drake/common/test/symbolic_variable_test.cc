@@ -156,6 +156,7 @@ TEST_F(VariableTest, EigenVariableMatrixOutput) {
 
   EXPECT_EQ(oss1.str(), oss2.str());
 }
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
