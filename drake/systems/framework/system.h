@@ -1174,10 +1174,12 @@ class System {
   ///
   /// @param[in] context Const current context.
   /// @param[in] triggers All the triggers that fired a publish event.
+  /*
   virtual void DoPublish(const Context<T>& context,
-      const std::vector<std::pair<const Trigger*, const Handler*>>& triggers) const {
-    unused(context, triggers);
+      const std::vector<const PublishEvent<T>*>& events) const {
+    unused(context, events);
   }
+  */
 
   /// User supplemented event handler for EventInfo::EventType::kDiscreteUpdate.
   /// This method updates the @p discrete_state on discrete update events.
@@ -1198,11 +1200,13 @@ class System {
   /// @param[in] triggers All the triggers that fired a discrete update event.
   /// @param[in,out] discrete_state The current state of the system on input;
   /// the desired state of the system on return.
+  /*
   virtual void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-      const std::vector<std::pair<const Trigger*, const Handler*>>& triggers,
+      const std::vector<const DiscreteUpdateEvent<T>*>& events,
       DiscreteValues<T>* discrete_state) const {
-    unused(context, triggers, discrete_state);
+    unused(context, events, discrete_state);
   }
+  */
 
   /// User supplemented event handler for
   /// EventInfo::EventType::kUnrestrictedUpdate. This function updates the
@@ -1230,10 +1234,13 @@ class System {
   // TODO(sherm1) Shouldn't require preloading of the output state; better to
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
+  /*
   virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
-      const std::vector<std::pair<const Trigger*, const Handler*>>& triggers, State<T>* state) const {
-    unused(context, triggers, state);
+      const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
+      State<T>* state) const {
+    unused(context, events, state);
   }
+  */
 
   /// Computes the next time at which this System must perform a discrete
   /// action.

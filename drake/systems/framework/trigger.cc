@@ -6,7 +6,7 @@ namespace drake {
 namespace systems {
 
 std::ostream& operator<<(std::ostream& out, const Trigger::TriggerType& type) {
-  switch (type) {
+   switch (type) {
     case Trigger::TriggerType::kUnknown:
       out << "UnknownTrigger";
       break;
@@ -25,12 +25,17 @@ std::ostream& operator<<(std::ostream& out, const Trigger::TriggerType& type) {
     case Trigger::TriggerType::kPerStep:
       out << "PerStepTrigger";
       break;
+
+    case Trigger::TriggerType::kWitness:
+      out << "WitnessTrigger";
+      break;
   }
   return out;
 }
 
 //////////////////////////////////////////////////////////////
 // This is probably a really bad idea???
+/*
 namespace {
 const ForcedTrigger kGlobalForcedTrigger;
 const std::vector<const Trigger*> kGlobalForcedTriggerVec(
@@ -40,6 +45,7 @@ const std::vector<const Trigger*> kGlobalForcedTriggerVec(
 const std::vector<const Trigger*>& ForcedTrigger::OneForcedTrigger() {
   return kGlobalForcedTriggerVec;
 }
+*/
 //////////////////////////////////////////////////////////////
 
 }  // namespace systems

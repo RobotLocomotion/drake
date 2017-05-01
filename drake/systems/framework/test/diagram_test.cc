@@ -599,7 +599,7 @@ class PublishingSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context,
-                 const std::vector<const Trigger*>& triggers) const override {
+      const std::vector<const PublishEvent<double>*>&) const override {
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
@@ -836,7 +836,7 @@ class TestPublishingSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context,
-                 const std::vector<const Trigger*>& triggers) const override {
+      const std::vector<const PublishEvent<double>*>& events) const override {
     published_ = true;
   }
 
@@ -894,10 +894,9 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_info.
-  auto sub_info =
-      dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
+  auto sub_info = info->get_sub_event_info(2);
 
-  EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
+  EXPECT_TRUE(sub_info->HasDiscreteUpdateEvents());
 }
 
 // Tests that the next update time after 5.1 is 6.0.
@@ -912,15 +911,13 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   // get_sub_event_info.
   auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
   {
-    auto sub_info =
-        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
-    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
+    auto sub_info = info->get_sub_event_info(1);
+    EXPECT_TRUE(sub_info->HasDiscreteUpdateEvents());
   }
 
   {
-    auto sub_info =
-        dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(2));
-    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kDiscreteUpdate));
+    auto sub_info = info->get_sub_event_info(2);
+    EXPECT_TRUE(sub_info->HasDiscreteUpdateEvents());
   }
 }
 
@@ -1008,8 +1005,8 @@ class SystemWithAbstractState : public LeafSystem<double> {
 
   // Abstract state is set to time + id.
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
-                                const std::vector<const Trigger*>& triggers,
-                                State<double>* state) const override {
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
                             ->get_mutable_value(0)
                             .GetMutableValue<double>();
@@ -1077,9 +1074,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 2);
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_info.
-  auto sub_info =
-      dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(1));
-  EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
+  auto sub_info = info->get_sub_event_info(1);
+  EXPECT_TRUE(sub_info->HasUnrestrictedUpdateEvents());
 
   // Creates a temp state and does unrestricted updates.
   std::unique_ptr<State<double>> x_buf = context_->CloneState();
@@ -1099,8 +1095,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->set_time(time);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 6);
   for (int i = 0; i < 2; i++) {
-    sub_info = dynamic_cast<const LeafEventInfo*>(info->get_sub_event_info(i));
-    EXPECT_TRUE(sub_info->HasEvent(EventInfo::EventType::kUnrestrictedUpdate));
+    sub_info = info->get_sub_event_info(i);
+    EXPECT_TRUE(sub_info->HasUnrestrictedUpdateEvents());
   }
 
   diagram_.CalcUnrestrictedUpdate(*context_, event_info.get(), x_buf.get());
@@ -1332,8 +1328,10 @@ class PerStepActionTestSystem : public LeafSystem<double> {
     DeclareAbstractState(AbstractValue::Make<std::string>(""));
   }
 
-  void AddPerStepAction(EventInfo::EventType type) {
-    this->DeclarePerStepAction(type);
+  template <typename EventType>
+  void AddPerStepEvent() {
+    EventType event(Trigger::TriggerType::kPerStep);
+    this->DeclarePerStepEvent(event);
   }
 
   int get_publish_ctr() const {
@@ -1351,15 +1349,15 @@ class PerStepActionTestSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoCalcDiscreteVariableUpdates(const Context<double>& context,
-      const std::vector<const Trigger*>& triggers,
+      const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const override {
     (*discrete_state)[0] =
         context.get_discrete_state(0)->GetAtIndex(0) + 1;
   }
 
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
-                                const std::vector<const Trigger*>& triggers,
-                                State<double>* state) const override {
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>* state) const override {
     int int_num = static_cast<int>(
         context.get_discrete_state(0)->GetAtIndex(0));
     state->get_mutable_abstract_state<std::string>(0) =
@@ -1367,7 +1365,8 @@ class PerStepActionTestSystem : public LeafSystem<double> {
   }
 
   void DoPublish(const Context<double>& context,
-                 const std::vector<const Trigger*>& triggers) const override {
+      const std::vector<const PublishEvent<double>*>& events) const override {
+    std::cout << get_name() << " publishing " << events.size() << std::endl;
     publish_ctr_++;
   }
 
@@ -1393,8 +1392,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
     sys1 = builder.AddSystem<PerStepActionTestSystem>();
     sys1->set_name("sys1");
 
-    sys1->AddPerStepAction(EventInfo::EventType::kDiscreteUpdate);
-    sys1->AddPerStepAction(EventInfo::EventType::kUnrestrictedUpdate);
+    sys1->AddPerStepEvent<DiscreteUpdateEvent<double>>();
+    sys1->AddPerStepEvent<UnrestrictedUpdateEvent<double>>();
 
     sub_diagram = builder.Build();
     sub_diagram->set_name("sub_diagram");
@@ -1406,8 +1405,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   sys2->set_name("sys2");
 
   // sys2 has publish and unrestricted updates.
-  sys2->AddPerStepAction(EventInfo::EventType::kPublish);
-  sys2->AddPerStepAction(EventInfo::EventType::kUnrestrictedUpdate);
+  sys2->AddPerStepEvent<PublishEvent<double>>();
+  sys2->AddPerStepEvent<UnrestrictedUpdateEvent<double>>();
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -1418,6 +1417,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
   auto event_info = diagram->AllocateEventInfo();
   diagram->GetPerStepEvents(*context, event_info.get());
+  event_info->print();
 
   // Does unrestricted update first.
   diagram->CalcUnrestrictedUpdate(*context, event_info.get(),
@@ -1456,10 +1456,12 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 class MyEventTestSystem : public LeafSystem<double> {
  public:
   MyEventTestSystem(const std::string& name, double p) {
-    if (p > 0)
+    if (p > 0) {
       DeclarePublishPeriodSec(p);
-    else
-      DeclarePerStepAction(EventInfo::EventType::kPublish);
+    } else {
+      DeclarePerStepEvent<PublishEvent<double>>(
+          PublishEvent<double>(Trigger::TriggerType::kPerStep));
+    }
     set_name(name);
   }
 
@@ -1468,11 +1470,11 @@ class MyEventTestSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoPublish(const Context<double>& context,
-                 const std::vector<const Trigger*>& triggers) const override {
+      const std::vector<const PublishEvent<double>*>& events) const override {
     std::cout << get_name() << ": " <<
                  context.get_time() << ", trigger: ";
-    for (const auto trigger : triggers) {
-      std::cout << trigger->get_type() << " ";
+    for (const PublishEvent<double>* event : events) {
+      std::cout << event->get_trigger().get_type() << " ";
     }
     std::cout << std::endl;
   }

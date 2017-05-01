@@ -52,8 +52,10 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePublishPeriodSec(period);
   }
 
-  void AddPerStepAction(EventInfo::EventType type) {
-    this->DeclarePerStepAction(type);
+  template <typename EventType>
+  void AddPerStepEvent() {
+    EventType event(Trigger::TriggerType::kPerStep);
+    this->DeclarePerStepEvent(event);
   }
 
   void DoCalcOutput(const Context<T>& context,
@@ -101,14 +103,14 @@ class LeafSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
     event_info_ = system_.AllocateEventInfo();
-    leaf_info_ = dynamic_cast<const LeafEventInfo*>(event_info_.get());
+    leaf_info_ = dynamic_cast<const LeafEventInfo<double>*>(event_info_.get());
   }
 
   TestSystem<double> system_;
   LeafContext<double> context_;
 
   std::unique_ptr<EventInfo> event_info_;
-  const LeafEventInfo* leaf_info_;
+  const LeafEventInfo<double>* leaf_info_;
 };
 
 // Tests that if no update events are configured, none are reported.
@@ -127,10 +129,9 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(5.0, time);
-  const auto& triggers =
-      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-  EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front().first->get_type(),
+  const auto& events = leaf_info_->get_discrete_update_events();
+  EXPECT_EQ(events.size(), 1);
+  EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
 }
 
@@ -146,18 +147,16 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
 
   EXPECT_EQ(5.0, time);
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(),
-              Trigger::TriggerType::kPeriodic);
+    const auto& events = leaf_info_->get_discrete_update_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPeriodic);
   }
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kUnrestrictedUpdate);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(),
-              Trigger::TriggerType::kPeriodic);
+    const auto& events = leaf_info_->get_unrestricted_update_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPeriodic);
   }
 }
 
@@ -169,10 +168,9 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(15.0, time);
-  const auto& triggers =
-      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-  EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front().first->get_type(),
+  const auto& events = leaf_info_->get_discrete_update_events();
+  EXPECT_EQ(events.size(), 1);
+  EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
 }
 
@@ -184,10 +182,9 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(25.0, time);
-  const auto& triggers =
-      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-  EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front().first->get_type(),
+  const auto& events = leaf_info_->get_discrete_update_events();
+  EXPECT_EQ(events.size(), 1);
+  EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
 }
 
@@ -199,10 +196,9 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(35.0, time);
-  const auto& triggers =
-      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-  EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front().first->get_type(),
+  const auto& events = leaf_info_->get_discrete_update_events();
+  EXPECT_EQ(events.size(), 1);
+  EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
 }
 
@@ -217,11 +213,10 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(12.0, time);
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kPublish);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(),
-              Trigger::TriggerType::kPeriodic);
+    const auto& events = leaf_info_->get_publish_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPeriodic);
   }
 
   // The update event fires at 15sec.
@@ -229,11 +224,10 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(15.0, time);
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(),
-              Trigger::TriggerType::kPeriodic);
+    const auto& events = leaf_info_->get_discrete_update_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPeriodic);
   }
 
   // Both events fire at 60sec.
@@ -241,18 +235,16 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(60.0, time);
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(),
-              Trigger::TriggerType::kPeriodic);
+    const auto& events = leaf_info_->get_discrete_update_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPeriodic);
   }
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kPublish);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(),
-              Trigger::TriggerType::kPeriodic);
+    const auto& events = leaf_info_->get_publish_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPeriodic);
   }
 }
 
@@ -365,29 +357,29 @@ TEST_F(LeafSystemTest, DeclareAbstractOutput) {
 TEST_F(LeafSystemTest, DeclarePerStepActions) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
 
-  system_.AddPerStepAction(EventInfo::EventType::kPublish);
-  system_.AddPerStepAction(EventInfo::EventType::kDiscreteUpdate);
-  system_.AddPerStepAction(EventInfo::EventType::kUnrestrictedUpdate);
+  system_.AddPerStepEvent<PublishEvent<double>>();
+  system_.AddPerStepEvent<DiscreteUpdateEvent<double>>();
+  system_.AddPerStepEvent<UnrestrictedUpdateEvent<double>>();
 
   system_.GetPerStepEvents(*context, event_info_.get());
 
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kPublish);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(), Trigger::TriggerType::kPerStep);
+    const auto& events = leaf_info_->get_publish_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPerStep);
   }
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(), Trigger::TriggerType::kPerStep);
+    const auto& events = leaf_info_->get_discrete_update_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPerStep);
   }
   {
-    const auto& triggers =
-        leaf_info_->get_triggers(EventInfo::EventType::kUnrestrictedUpdate);
-    EXPECT_EQ(triggers.size(), 1);
-    EXPECT_EQ(triggers.front().first->get_type(), Trigger::TriggerType::kPerStep);
+    const auto& events = leaf_info_->get_unrestricted_update_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger().get_type(),
+        Trigger::TriggerType::kPerStep);
   }
 }
 
@@ -792,29 +784,35 @@ class TestTriggerSystem : public LeafSystem<double> {
  public:
   TestTriggerSystem() {}
 
+  void DoPublish(const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const override {
+    for (const PublishEvent<double>* event : events) {
+      DRAKE_DEMAND(event->Handle != nullptr);
+      event->Handle(context, event->get_trigger());
+      abs_data_.push_back(event->get_trigger().get_data()->Clone());
+    }
+
+    std::cout << "ha!\n";
+  }
+
   void DoGetPerStepEvents(const Context<double>& context,
       EventInfo* event_info) const override {
-    LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-
     {
-      auto trigger = std::make_unique<PerStepTrigger>();
+      auto trigger = std::make_unique<Trigger>(Trigger::TriggerType::kPerStep);
       trigger->set_data(AbstractValue::Make<std::string>("hello"));
-      auto handler = std::make_unique<PublishHandler<double>>();
-      handler->Handle =
-          std::bind(&TestTriggerSystem::CopyString,
-              this, std::placeholders::_1, std::placeholders::_2);
-      info->add_trigger(std::move(trigger), std::move(handler));
+
+      PublishEvent<double> event(std::move(trigger),
+          std::bind(&TestTriggerSystem::CopyString, this, std::placeholders::_1, std::placeholders::_2));
+      event.add_to(event_info);
     }
 
     {
-      auto trigger = std::make_unique<PerStepTrigger>();
+      auto trigger = std::make_unique<Trigger>(Trigger::TriggerType::kPerStep);
       trigger->set_data(AbstractValue::Make<int>(42));
-      auto handler = std::make_unique<PublishHandler<double>>();
-      handler->Handle =
-          std::bind(&TestTriggerSystem::CopyInt,
-              this, std::placeholders::_1, std::placeholders::_2);
-      info->add_trigger(std::move(trigger), std::move(handler));
+
+      PublishEvent<double> event(std::move(trigger),
+          std::bind(&TestTriggerSystem::CopyInt, this, std::placeholders::_1, std::placeholders::_2));
+      event.add_to(event_info);
     }
   }
 
@@ -833,19 +831,6 @@ class TestTriggerSystem : public LeafSystem<double> {
  private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
-
-  void DoPublish(const Context<double>& context,
-                 const std::vector<std::pair<const Trigger*, const Handler*>>& triggers) const override {
-    for (const auto& pair : triggers) {
-      const Trigger* trigger = pair.first;
-      if (trigger->get_data() != nullptr)
-        abs_data_.push_back(trigger->get_data()->Clone());
-
-      DRAKE_DEMAND(pair.second->get_type() == Handler::HandlerType::kPublish);
-      auto handler = dynamic_cast<const PublishHandler<double>*>(pair.second);
-      handler->Handle(context, *trigger);
-    }
-  }
 
   void CopyString(const Context<double>& context,
                   const Trigger& trigger) const {
@@ -871,29 +856,29 @@ class TriggerTest : public ::testing::Test {
   void SetUp() override {
     context_ = dut_.CreateDefaultContext();
     info_ = dut_.AllocateEventInfo();
-    leaf_info_ = dynamic_cast<const LeafEventInfo*>(info_.get());
+    leaf_info_ = dynamic_cast<const LeafEventInfo<double>*>(info_.get());
   }
 
   TestTriggerSystem dut_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<EventInfo> info_;
-  const LeafEventInfo* leaf_info_;
+  const LeafEventInfo<double>* leaf_info_;
 };
 
 TEST_F(TriggerTest, AbstractTrigger) {
   // schedule a publish event with multiple abstract triggers.
   dut_.GetPerStepEvents(*context_, info_.get());
-  EXPECT_TRUE(leaf_info_->HasEvent(EventInfo::EventType::kPublish));
+  EXPECT_TRUE(leaf_info_->HasPublishEvents());
 
-  const auto& triggers =
-      leaf_info_->get_triggers(EventInfo::EventType::kPublish);
-  EXPECT_EQ(triggers.size(), 2);
+  const auto& events =
+      leaf_info_->get_publish_events();
+  EXPECT_EQ(events.size(), 2);
 
   // handle event.
   dut_.Publish(*context_, info_.get());
 
   const auto& data = dut_.get_abstract_data();
-  EXPECT_EQ(data.size(), triggers.size());
+  EXPECT_EQ(data.size(), 2);
   EXPECT_EQ(data[0]->GetValue<std::string>(), "hello");
   EXPECT_EQ(data[1]->GetValue<int>(), 42);
 
@@ -904,6 +889,8 @@ TEST_F(TriggerTest, AbstractTrigger) {
 
   EXPECT_EQ(string_data.front(), "hello");
   EXPECT_EQ(int_data.front(), 42);
+
+  dut_.Publish(*context_);
 }
 
 }  // namespace

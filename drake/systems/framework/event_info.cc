@@ -41,9 +41,23 @@ void DiagramEventInfo::Clear() {
   }
 }
 
-bool DiagramEventInfo::HasEvent(EventType event_type) const {
+bool DiagramEventInfo::HasPublishEvents() const {
   for (const EventInfo* sub_event : sub_event_info_) {
-    if (sub_event->HasEvent(event_type)) return true;
+    if (sub_event->HasPublishEvents()) return true;
+  }
+  return false;
+}
+
+bool DiagramEventInfo::HasDiscreteUpdateEvents() const {
+  for (const EventInfo* sub_event : sub_event_info_) {
+    if (sub_event->HasDiscreteUpdateEvents()) return true;
+  }
+  return false;
+}
+
+bool DiagramEventInfo::HasUnrestrictedUpdateEvents() const {
+  for (const EventInfo* sub_event : sub_event_info_) {
+    if (sub_event->HasUnrestrictedUpdateEvents()) return true;
   }
   return false;
 }
@@ -55,47 +69,7 @@ bool DiagramEventInfo::HasNoEvents() const {
   return true;
 }
 
-void LeafEventInfo::DoMerge(const EventInfo* other_info) {
-  const LeafEventInfo* other = dynamic_cast<const LeafEventInfo*>(other_info);
-  DRAKE_DEMAND(other != nullptr);
-
-  for (const auto& other_pair : other->events_) {
-    for (const auto& trigger_handler_pair : other_pair.second) {
-      add_trigger(trigger_handler_pair.first->Clone(),
-                  trigger_handler_pair.second->Clone());
-    }
-  }
-}
-
-const std::vector<std::pair<const Trigger*, const Handler*>>&
-LeafEventInfo::get_triggers(EventType event) const {
-  auto it = events_.find(event);
-  if (it == events_.end()) {
-    DRAKE_ABORT_MSG("no such event");
-  }
-  return it->second;
-}
-
-void LeafEventInfo::add_trigger(std::unique_ptr<Trigger> trigger,
-                                std::unique_ptr<Handler> handler) {
-  owned_triggers_.push_back(std::move(trigger));
-  owned_handlers_.push_back(std::move(handler));
-
-  // HACK
-  EventType event_type = static_cast<EventType>(owned_handlers_.back()->get_type());
-
-  auto it = events_.find(event_type);
-
-  TriggerHandlerPair pair(owned_triggers_.back().get(),
-                          owned_handlers_.back().get());
-
-  if (it == events_.end()) {
-    std::vector<TriggerHandlerPair> triggers(1, pair);
-    events_.emplace(event_type, triggers);
-  } else {
-    it->second.push_back(pair);
-  }
-}
+template class LeafEventInfo<double>;
 
 }  // namespace systems
 }  // namespace drake
