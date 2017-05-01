@@ -277,6 +277,7 @@ drake_cc_library(
         ":monolane_onramp_merge",
         "//drake/automotive/maliput/api",
         "//drake/common",
+        "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories/qp_spline:spline_generation",
         "//drake/math:saturate",

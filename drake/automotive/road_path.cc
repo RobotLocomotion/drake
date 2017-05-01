@@ -7,6 +7,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/unused.h"
 #include "drake/math/saturate.h"
 
 namespace drake {
@@ -37,6 +38,7 @@ const PiecewisePolynomial<T>& RoadPath<T>::get_path() const {
 template <typename T>
 const T RoadPath<T>::GetClosestPathPosition(const Vector3<T>& geo_pos,
                                             const T& s_guess) const {
+  unused(geo_pos, s_guess);
   DRAKE_ABORT();
 }
 
