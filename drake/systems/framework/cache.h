@@ -12,9 +12,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/value.h"
 
-#include "drake/common/nice_type_name.h"
-#include <iostream>
-
 namespace drake {
 namespace systems {
 
