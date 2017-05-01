@@ -70,7 +70,7 @@ struct GeoPosition {
 };
 
 
-/// A 3-dimensional position in LANE-space, consisting of three components:
+/// A 3-dimensional position in a `Lane`-frame, consisting of three components:
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
 ///  * r is lateral position, perpendicular to the reference line at s.
 ///  * h is height above the road surface.
@@ -87,7 +87,7 @@ struct LanePosition {
 };
 
 
-/// Isometric velocity vector in LANE-space.
+/// Isometric velocity vector in a `Lane`-frame.
 ///
 /// sigma_v, rho_v, and eta_v are the components of velocity in a
 /// (sigma, rho, eta) coordinate system.  (sigma, rho, eta) have the same
@@ -110,7 +110,7 @@ struct IsoLaneVelocity {
 
 
 /// A position in the road network, consisting of a pointer to a specific
-/// Lane and a LANE-space position on that Lane.
+/// Lane and a `Lane`-frame position in that Lane.
 struct RoadPosition {
   /// Default constructor.
   RoadPosition() = default;
@@ -124,7 +124,7 @@ struct RoadPosition {
 };
 
 
-/// Bounds in the lateral dimension (r component) of LANE-space, consisting
+/// Bounds in the lateral dimension (r component) of a `Lane`-frame, consisting
 /// of a pair of minimum and maximum r value.  The bounds must straddle r = 0,
 /// i.e., the minimum must be <= 0 and the maximum must be >= 0.
 struct RBounds {

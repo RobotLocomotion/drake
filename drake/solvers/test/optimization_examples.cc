@@ -52,8 +52,10 @@ void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol) {
 }
 
 OptimizationProgram::OptimizationProgram(CostForm cost_form,
-                                         ConstraintForm cnstr_form)
-    : prog_(std::make_unique<MathematicalProgram>()) {}
+                                         ConstraintForm constraint_form)
+    : cost_form_(cost_form),
+      constraint_form_(constraint_form),
+      prog_(std::make_unique<MathematicalProgram>()) {}
 
 void OptimizationProgram::RunProblem(
     MathematicalProgramSolverInterface* solver) {
@@ -219,7 +221,7 @@ void NonConvexQPproblem1::AddQuadraticCost() {
 }
 
 NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
-                                         ConstraintForm cnstr_form)
+                                         ConstraintForm constraint_form)
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, x_expected_{} {
   x_ = prog_->NewContinuousVariables<6>("x");
 
@@ -239,7 +241,7 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
       throw std::runtime_error("Unsupported cost form");
   }
 
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;
@@ -293,7 +295,7 @@ void NonConvexQPproblem2::AddSymbolicConstraint() {
                              20);
 }
 
-LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
+LowerBoundedProblem::LowerBoundedProblem(ConstraintForm constraint_form)
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, x_expected_{} {
   x_ = prog_->NewContinuousVariables<6>("x");
 
@@ -310,7 +312,7 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm cnstr_form)
   std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
   prog_->AddConstraint(con2, x_);
 
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;
@@ -367,7 +369,7 @@ void LowerBoundedProblem::AddNonSymbolicConstraint() {
 
 GloptiPolyConstrainedMinimizationProblem::
     GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
-                                             ConstraintForm cnstr_form)
+                                             ConstraintForm constraint_form)
     : prog_(std::make_unique<MathematicalProgram>()),
       x_{},
       y_{},
@@ -405,7 +407,7 @@ GloptiPolyConstrainedMinimizationProblem::
   prog_->AddConstraint(qp_con, x_);
   prog_->AddConstraint(qp_con, y_);
 
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;
@@ -481,7 +483,7 @@ void GloptiPolyConstrainedMinimizationProblem::AddSymbolicConstraint() {
 
 MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
     const Eigen::MatrixXd& A, const Eigen::VectorXd& b, CostForm cost_form,
-    ConstraintForm cnstr_form)
+    ConstraintForm constraint_form)
     : A_(A),
       b_(b),
       prog_lorentz_(std::make_unique<MathematicalProgram>()),
@@ -512,7 +514,7 @@ MinDistanceFromPlaneToOrigin::MinDistanceFromPlaneToOrigin(
       throw std::runtime_error("Not a supported cost form");
   }
 
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic: {
       AddNonSymbolicConstraint();
       break;

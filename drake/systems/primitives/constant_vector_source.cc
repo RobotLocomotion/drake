@@ -29,7 +29,7 @@ ConstantVectorSource<T>::~ConstantVectorSource() = default;
 
 template <typename T>
 void ConstantVectorSource<T>::DoCalcVectorOutput(
-    const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
+    const Context<T>&, Eigen::VectorBlock<VectorX<T>>* output) const {
   *output = source_value_;
 }
 

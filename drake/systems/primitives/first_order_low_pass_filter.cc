@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace systems {
@@ -53,7 +54,7 @@ void FirstOrderLowPassFilter<T>::set_initial_output_value(
 
 template <typename T>
 void FirstOrderLowPassFilter<T>::DoCalcVectorTimeDerivatives(
-    const Context<T>& context,
+    const Context<T>&,
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* derivatives) const {
@@ -62,10 +63,11 @@ void FirstOrderLowPassFilter<T>::DoCalcVectorTimeDerivatives(
 
 template <typename T>
 void FirstOrderLowPassFilter<T>::DoCalcVectorOutput(
-    const Context<T>& context,
+    const Context<T>&,
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
+  unused(input);
   *output = state;
 }
 

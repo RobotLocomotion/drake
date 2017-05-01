@@ -6,6 +6,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -31,19 +32,21 @@ void Integrator<T>::set_integral_value(
 
 template <typename T>
 void Integrator<T>::DoCalcVectorTimeDerivatives(
-    const Context<T>& context,
+    const Context<T>&,
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* derivatives) const {
+  unused(state);
   *derivatives = input;
 }
 
 template <typename T>
 void Integrator<T>::DoCalcVectorOutput(
-    const Context<T>& context,
+    const Context<T>&,
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
+  unused(input);
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   *output = state;

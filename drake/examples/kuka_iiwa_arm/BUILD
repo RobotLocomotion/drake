@@ -186,53 +186,6 @@ drake_cc_binary(
     ],
 )
 
-drake_cc_binary(
-    name = "kuka_ik_demo",
-    srcs = ["kuka_ik_demo.cc"],
-    data = [
-        ":models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":iiwa_common",
-        "//drake/lcm",
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/solvers:mathematical_program",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
-    ],
-)
-
-drake_cc_binary(
-    name = "run_kuka_iiwa_arm_dynamics",
-    srcs = ["run_kuka_iiwa_arm_dynamics.cc"],
-    add_test_rule = 1,
-    data = [
-        ":models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    test_rule_args = ["--duration=0.5"],
-    test_rule_size = "medium",
-    deps = [
-        ":iiwa_common",
-        ":sim_diagram_builder",
-        "//drake/common:drake_path",
-        "//drake/common:text_logging_gflags",
-        "//drake/lcm",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:context",
-        "//drake/systems/framework:diagram",
-        "//drake/systems/primitives:constant_vector_source",
-        "@gflags//:gflags",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -275,6 +228,13 @@ drake_cc_googletest(
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "optitrack_test",
+    deps = [
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 

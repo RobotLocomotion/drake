@@ -12,3 +12,6 @@ drake_add_matlab_test(NAME matlab/solvers/test/testMultipleTaskSpaceRRTStar REQU
 drake_add_matlab_test(NAME matlab/solvers/test/testNLP OPTIONAL ipopt snopt COMMAND testNLP)
 drake_add_matlab_test(NAME matlab/solvers/test/testQP OPTIONAL gurobi snopt COMMAND testQP)
 drake_add_matlab_test(NAME matlab/solvers/test/testTaskSpaceRRT REQUIRES lcm snopt OPTIONAL bullet COMMAND testTaskSpaceRRT SIZE large)
+
+drake_add_matlab_test(NAME matlab/solvers/test/testMathematicalProgram COMMAND testMathematicalProgram)
+

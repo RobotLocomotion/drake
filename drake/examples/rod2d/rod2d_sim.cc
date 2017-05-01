@@ -144,5 +144,6 @@ int main(int argc, char* argv[]) {
     const double t = simulator.get_context().get_time();
     simulator.StepTo(std::min(t + 1, FLAGS_sim_duration));
   }
+  std::cout << "Time: " << simulator.get_context().get_time() << std::endl;
 }
 

@@ -22,6 +22,7 @@
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
@@ -32,7 +33,12 @@ using maliput::api::LaneEnd;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadGeometryId;
 using multibody::joints::kRollPitchYaw;
+using systems::AbstractValue;
 using systems::lcm::LcmPublisherSystem;
+using systems::OutputPortDescriptor;
+using systems::rendering::PoseBundle;
+using systems::System;
+using systems::SystemOutput;
 
 namespace automotive {
 
@@ -76,6 +82,19 @@ systems::DiagramBuilder<T>* AutomotiveSimulator<T>::get_builder() {
   return builder_.get();
 }
 
+template <typename T>
+void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
+    int id,
+    const OutputPortDescriptor<T>& pose_output,
+    const OutputPortDescriptor<T>& velocity_output) {
+  DRAKE_DEMAND(pose_output.get_system() == velocity_output.get_system());
+  const std::string name = pose_output.get_system()->get_name();
+  auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
+  builder_->Connect(pose_output, ports.first);
+  builder_->Connect(velocity_output, ports.second);
+  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
+}
+
 // TODO(jwnimmer-tri): Modify the various vehicle model systems to be more
 // uniform so common code from the following AddFooCar() methods can be moved
 // into a shared method.
@@ -102,16 +121,15 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   coord_transform->set_name(name + "_transform");
-  const auto& descriptor = aggregator_->AddSingleInput(name, id);
-  builder_->Connect(simple_car->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
+
+  ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
+      simple_car->velocity_output());
 
   builder_->Connect(*command_subscriber, *simple_car);
   builder_->Connect(simple_car->state_output(),
                     coord_transform->get_input_port(0));
   AddPublisher(*simple_car, id);
   AddPublisher(*coord_transform, id);
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   return id;
 }
 
@@ -133,15 +151,14 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   coord_transform->set_name(name + "_transform");
-  const auto& descriptor = aggregator_->AddSingleInput(name, id);
-  builder_->Connect(trajectory_car->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
+
+  ConnectCarOutputsAndPriusVis(id, trajectory_car->pose_output(),
+      trajectory_car->velocity_output());
 
   builder_->Connect(trajectory_car->raw_pose_output(),
                     coord_transform->get_input_port(0));
   AddPublisher(*trajectory_car, id);
   AddPublisher(*coord_transform, id);
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   return id;
 }
 
@@ -179,11 +196,8 @@ int AutomotiveSimulator<T>::AddPriusMaliputRailcar(
   railcar_configs_[railcar].first.set_value(params.get_value());
   railcar_configs_[railcar].second.set_value(initial_state.get_value());
 
-  const auto& descriptor = aggregator_->AddSingleInput(name, id);
-  builder_->Connect(railcar->pose_output(),
-                    aggregator_->get_input_port(descriptor.get_index()));
-
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
+  ConnectCarOutputsAndPriusVis(id, railcar->pose_output(),
+      railcar->velocity_output());
   return id;
 }
 
@@ -408,6 +422,8 @@ void AutomotiveSimulator<T>::Build() {
   builder_->Connect(
       bundle_to_draw_->get_output_port(0),
       lcm_publisher_->get_input_port(0));
+  pose_bundle_output_port_ =
+      builder_->ExportOutput(aggregator_->get_output_port(0));
 
   diagram_ = builder_->Build();
   diagram_->set_name("AutomotiveSimulator");
@@ -498,6 +514,20 @@ void AutomotiveSimulator<T>::CheckNameUniqueness(const std::string& name) {
           "exists. It has id " + std::to_string(vehicle.first) + ".");
     }
   }
+}
+
+template <typename T>
+PoseBundle<T> AutomotiveSimulator<T>::GetCurrentPoses() const {
+  DRAKE_DEMAND(has_started());
+  const auto& context = simulator_->get_context();
+  std::unique_ptr<SystemOutput<T>> system_output = diagram_->AllocateOutput(
+      context);
+  diagram_->CalcOutput(context, system_output.get());
+  DRAKE_DEMAND(system_output->get_num_ports() == 1);
+  const AbstractValue* abstract_value = system_output->get_data(0);
+  const PoseBundle<T>& pose_bundle =
+      abstract_value->GetValueOrThrow<PoseBundle<T>>();
+  return pose_bundle;
 }
 
 template class AutomotiveSimulator<double>;

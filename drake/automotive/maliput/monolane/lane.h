@@ -170,6 +170,9 @@ class Lane : public api::Lane {
   ///  * @p p_scale is q_max (and p = q / p_scale);
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
+  ///
+  /// N.B. The override Lane::ToLanePosition() is currently restricted to lanes
+  /// in which superelevation and elevation change are both zero.
   Lane(const api::LaneId& id, const api::Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
@@ -271,7 +274,7 @@ class Lane : public api::Lane {
   //
   //    W: (p,r,h) --> (x,y,z)
   //
-  // which maps a LANE-space position to its corresponding representation in
+  // which maps a `Lane`-frame position to its corresponding representation in
   // world coordinates (with the caveat that instead of the lane's native
   // longitudinal coordinate 's', the reference curve parameter 'p' is used).
   //
@@ -291,7 +294,7 @@ class Lane : public api::Lane {
   //   β = -atan(dZ/dp) at p
   //   γ = atan2(dG_y/dp, dG_x/dp) at p
   //
-  // (R_αβγ is essentially the orientation of the (s,r,h) LANE-space frame
+  // (R_αβγ is essentially the orientation of the (s,r,h) `Lane`-frame
   // at a location (s,0,0) on the reference-line of the lane.  However, it
   // is *not* necessarily the correct orientation at r != 0 or h != 0.)
   //
@@ -314,7 +317,7 @@ class Lane : public api::Lane {
                     const Rot3& Rabg) const;
 
   // Returns the s-axis unit-vector, expressed in the world frame,
-  // of the (s,r,h) LANE-space frame (with respect to the world frame).
+  // of the (s,r,h) `Lane`-frame (with respect to the world frame).
   //
   // (@p Rabg must be the result of Rabg_of_p(p) --- passed in here to
   // avoid recomputing it.)
@@ -322,7 +325,7 @@ class Lane : public api::Lane {
                   const Rot3& Rabg) const;
 
   // Returns the r-axis unit-vector, expressed in the world frame,
-  // of the (s,r,h) LANE-space frame (with respect to the world frame).
+  // of the (s,r,h) `Lane`-frame (with respect to the world frame).
   //
   // (@p Rabg must be the result of Rabg_of_p(p) --- passed in here to
   // avoid recomputing it.)

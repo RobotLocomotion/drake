@@ -169,6 +169,13 @@ new_http_archive(
 )
 
 github_archive(
+    name = "optitrack_driver",
+    repository = "RobotLocomotion/optitrack-driver",
+    commit = "3a5da8d7c66c95ca98cda4dc7ca604f681464168",
+    sha256 = "a4d4c61ed5af59f12a273629eb28fa95ac2349abffe8912468bc5cf6dff34d28",
+)
+
+github_archive(
     name = "pybind11",
     repository = "RobotLocomotion/pybind11",
     commit = "6d72785766558047ee2e2075198c07d8c25eb631",

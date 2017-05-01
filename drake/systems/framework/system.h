@@ -1250,9 +1250,10 @@ class System {
   /// not null, and it can be changed freely by the overriding implementation.
   ///
   /// The default implementation returns without changing @p events.
-  virtual void DoGetPerStepEvents(const Context<T>& context,
+  virtual void DoGetPerStepEvents(
+      const Context<T>& context,
       std::vector<DiscreteEvent<T>>* events) const {
-    unused(context);
+    unused(context, events);
   }
 
   /// Override this method for physical systems to calculate the potential

@@ -224,12 +224,20 @@ drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
 # ignition_math
 drake_add_external(ignition_math PUBLIC CMAKE
   URL https://bitbucket.org/ignitionrobotics/ign-math/get/ignition-math3_3.0.0.tar.gz
-  URL_HASH SHA256=9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd)
+  URL_HASH SHA256=9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd
+  CMAKE_ARGS
+    -DENABLE_TESTS_COMPILATION=OFF
+    -DUSE_HOST_CFLAGS=OFF
+    -DUSE_UPSTREAM_CFLAGS=OFF)
 
 # ignition_rndf
 drake_add_external(ignition_rndf PUBLIC CMAKE
   URL https://bitbucket.org/ignitionrobotics/ign-rndf/get/ignition-rndf_0.1.2.tar.gz
   URL_HASH SHA256=e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a
+  CMAKE_ARGS
+    -DENABLE_TESTS_COMPILATION=OFF
+    -DUSE_HOST_CFLAGS=OFF
+    -DUSE_UPSTREAM_CFLAGS=OFF
   DEPENDS ignition_math)
 
 # lcm

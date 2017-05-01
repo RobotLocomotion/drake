@@ -29,7 +29,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main(int argc, char* argv[]) {
+int do_main() {
   systems::DiagramBuilder<double> builder;
 
   PendulumPlant<double>* pendulum{nullptr};
@@ -128,5 +128,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::pendulum::do_main(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::pendulum::do_main();
 }

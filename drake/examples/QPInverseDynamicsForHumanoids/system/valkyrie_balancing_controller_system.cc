@@ -1,6 +1,5 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_controller.h"
-
 #include "drake/common/drake_path.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_controller.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/systems/lcm/lcm_driven_loop.h"
 

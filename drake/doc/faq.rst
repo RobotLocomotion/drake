@@ -8,6 +8,44 @@ Frequently Asked Questions
    :depth: 3
    :local:
 
+.. _faq_osx_build_failure_missing_dependency_declarations:
+
+Why Does Build Fail with "this rule is missing dependency declarations" on macOS?
+=================================================================================
+
+Symptom: After upgrading Xcode on macOS, you encounter an error similar to the
+following::
+
+    $ bazel build ...
+    ...
+    ERROR: /private/var/tmp/_bazel_liang/6afb2531e78184cc48f3db789230c79d/
+    external/libbot/BUILD.bazel:59:1: undeclared inclusion(s) in rule
+    '@libbot//:ldpc':
+    this rule is missing dependency declarations for the following files
+    included by 'external/libbot/bot2-lcm-utils/src/tunnel/ldpc/getopt.cpp':
+      '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/
+      Developer/SDKs/MacOSX10.12.sdk/usr/include/ctype.h'
+
+Solution: Install Xcode's command-line tools and reset the tools' path to be
+the default. To install Xcode's command-line tools::
+
+    $ xcode-select --install
+
+Once installed, you should have ``bin/``, ``include/``, ``lib/``, and
+``libexec/`` directories within ``/Library/Developer/CommandLineTools/usr/``.
+
+Check the Xcode command line tools' path::
+
+    $ xcode-select -p
+
+Drake's Bazel-based build system is currently
+`hard-coded <https://github.com/RobotLocomotion/drake/blob/c8b974baee3144acecb063607e90287ca009734c/tools/CROSSTOOL#L362-L366>`_
+to assume the Xcode command line tools are in the default location of
+``/Applications/Xcode.app/Contents/Developer``. If the path is not the
+default, reset it to be the default by executing the following command::
+
+    $ sudo xcode-select --reset
+
 .. _faq_missing_or_stray_characters_in_generate_urdf_test:
 
 Why Does Build Fail With Missing or Stray Character Error in generate_urdf_test.cc?

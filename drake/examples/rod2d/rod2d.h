@@ -424,6 +424,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
  private:
   static void ConvertStateToPose(const VectorX<T>& state,
                                  systems::rendering::PoseVector<T>* pose);
+  Vector3<T> ComputeExternalForces(const systems::Context<T>& context) const;
   Matrix3<T> get_inverse_inertia_matrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
                                     Vector2<T>* fN, Vector2<T>* fF) const;
