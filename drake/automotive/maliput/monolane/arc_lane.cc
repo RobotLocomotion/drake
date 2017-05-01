@@ -124,7 +124,7 @@ double ArcLane::heading_of_p(const double p) const {
 }
 
 
-double ArcLane::heading_dot_of_p(const double p) const {
+double ArcLane::heading_dot_of_p(const double) const {
   // Given:
   //      H = θ ± (π / 2)
   // and:

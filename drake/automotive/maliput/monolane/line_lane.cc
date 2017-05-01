@@ -14,7 +14,7 @@ V2 LineLane::xy_of_p(const double p) const {
 }
 
 
-V2 LineLane::xy_dot_of_p(const double p) const {
+V2 LineLane::xy_dot_of_p(const double) const {
   return V2(dx_,
             dy_);
 }

@@ -48,7 +48,7 @@ void Lane::set_lane_to_right(api::Lane* lane_to_right) {
 }
 
 const api::BranchPoint* Lane::DoGetBranchPoint(
-    const api::LaneEnd::Which which_end) const {
+    const api::LaneEnd::Which) const {
   return branch_point_.get();
 }
 
@@ -76,7 +76,7 @@ api::RBounds Lane::do_driveable_bounds(double) const {
 }
 
 api::LanePosition Lane::DoEvalMotionDerivatives(
-    const api::LanePosition& position,
+    const api::LanePosition&,
     const api::IsoLaneVelocity& velocity) const {
   return api::LanePosition(velocity.sigma_v, velocity.rho_v, velocity.eta_v);
 }
@@ -87,7 +87,7 @@ api::GeoPosition Lane::DoToGeoPosition(
 }
 
 api::Rotation Lane::DoGetOrientation(
-    const api::LanePosition& lane_pos) const {
+    const api::LanePosition&) const {
   return api::Rotation(0, 0, 0);  // roll, pitch, yaw.
 }
 

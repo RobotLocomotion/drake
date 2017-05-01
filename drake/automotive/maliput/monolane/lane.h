@@ -10,6 +10,7 @@
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
@@ -107,6 +108,7 @@ class CubicPolynomial {
   //                         derivative of the actual linear function
   //                         involved in our bogus path-length approximation.
   double fake_gprime(double p) const {
+    unused(p);
     // return df;  which is...
     return f_p(1.) - f_p(0.);
   }
