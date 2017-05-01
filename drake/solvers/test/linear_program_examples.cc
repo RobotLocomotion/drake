@@ -61,7 +61,7 @@ LinearFeasibilityProgram::LinearFeasibilityProgram(
   }
 }
 
-void LinearFeasibilityProgram::CheckSolution(SolverType solver_type) const {
+void LinearFeasibilityProgram::CheckSolution(SolverType) const {
   auto x_val = prog()->GetSolution(x_);
   Vector3d A_times_x(x_val(0) + 2 * x_val(1) + 3 * x_val(2),
                      x_val(1) - 2 * x_val(2), 0);
