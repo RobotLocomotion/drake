@@ -117,7 +117,7 @@ namespace internal {
 template <typename Derived, typename Scalar>
 struct ResizeDerivativesToMatchScalarImpl {
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar){}
+  static void run(Eigen::MatrixBase<Derived>&, const Scalar&) {}
 };
 
 template <typename Derived, typename DerivType>
