@@ -247,6 +247,10 @@ macro(drake_setup_options)
     "libbot2 robotics suite LCM types")
 
   drake_system_dependency(
+    PROTOBUF REQUIRES Protobuf
+    "Google protocol buffers")
+
+  drake_system_dependency(
     ROBOTLOCOMOTION_LCMTYPES OPTIONAL REQUIRES robotlocomotion-lcmtypes
     DEPENDS "HAVE_BOT_CORE_LCMTYPES"
     "robotlocomotion LCM types")

@@ -2,7 +2,6 @@
 # Drake common library
 #
 
-drake_find_package(Protobuf REQUIRED)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS matlab_rpc.proto)
 
 # Generated code.
