@@ -108,6 +108,7 @@ drake_cc_binary(
         "//drake/systems/framework",
         "//drake/systems/primitives:trajectory_source",
         "//drake/systems/trajectory_optimization:direct_collocation",
+        "@gflags//:gflags",
     ],
 )
 
