@@ -146,7 +146,7 @@ class LeafContext : public Context<T> {
   /// In Debug builds, if the types don't match, std::bad_cast will be
   /// thrown.  In Release builds, this is not guaranteed.
   ///
-  /// @warning It is responsability of the caller to call validate_cache_entry()
+  /// @warning It is responsibility of the caller to call validate_cache_entry()
   /// on this entry once done with the necessary updates. Failure to do so will
   /// have no effect on the final result of the computation, but it might have
   /// an impact on efficiency since the entry will be recomputed every time is
