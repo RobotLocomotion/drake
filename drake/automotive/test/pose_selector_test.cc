@@ -195,8 +195,8 @@ GTEST_TEST(PoseSelectorTest, IdenticalSValues) {
 
   // Verifies that the if the cars are side-by-side, then the traffic car is
   // classified as a trailing car.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s);
-  EXPECT_EQ(kEgoSPosition, trailing_odometry.pos.s);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s());
+  EXPECT_EQ(kEgoSPosition, trailing_odometry.pos.s());
 }
 
 GTEST_TEST(PoseSelectorTest, TestGetSVelocity) {
