@@ -62,9 +62,9 @@ class System {
   /// to nullptr.
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
 
-  /// Allocates an EventCollection for this system. The allocated EventCollection instance
-  /// is used for registering and handling events (e.g. CalcNextUpdateTime(),
-  /// Publish()).
+  /// Allocates an EventCollection for this system. The allocated EventCollection
+  /// instance is used for registering and handling events
+  /// (e.g. CalcNextUpdateTime(), Publish()).
   virtual std::unique_ptr<EventCollection> AllocateEventCollection() const = 0;
 
   /// Given a port descriptor, allocates the vector storage.  The default
@@ -184,11 +184,16 @@ class System {
   /// on the progress of a simulation.
   //@{
 
-  /// This method is the event handler for EventCollection::EventType::kPublish type
-  /// events. The Simulator calls this at the start of each continuous
+  /// This method is the public entry point for dispatching all publish event
+  /// handlers. The Simulator calls this at the start of each continuous
   /// integration step, after discrete variables have been updated to the values
-  /// they will hold throughout the step. @p event_info can be null, which is
-  /// equivalent to force publish.
+  /// they will hold throughout the step. See the documentation for
+  /// DispatchPublishHandler() for more details.
+  ///
+  /// @p event_info can be null, which is equivalent to force publish.
+  /// @p event_info may contain events other than publish. The derived classes'
+  /// implementation of DispatchPublishHandler is responsible for filtering out
+  /// only the publish events.
   ///
   /// @note When publishing is scheduled at particular times, those times likely
   /// will not coincide with integrator step times. A Simulator may interpolate
@@ -416,12 +421,17 @@ class System {
     DoCalcTimeDerivatives(context, derivatives);
   }
 
-  /// This method is the event handler for
-  /// EventCollection::EventType::kDiscreteUpdate type events. Given @p event_info,
+  /// This method is the public entry point for dispatching all discrete update
+  /// event handlers. Using all the discrete update handlers in @p event_info,
   /// it calculates the correct update `xd(n+1)` to discrete variables `xd(n)`
-  /// in @p context, and outputs the results to @p discrete_state.
-  /// @p event_info can be null, which is equivalent to a forced discrete
-  /// update.
+  /// in @p context, and outputs the results to @p discrete_state. See the
+  /// documentation for DispatchDiscreteVariableUpdateHandler() for more
+  /// details.
+  ///
+  /// @p event_info can be null, which is equivalent to force discrete update.
+  /// @p event_info may contain events other than discrete update. The derived
+  /// classes' implementation of DispatchDiscreteVariableUpdateHandler is
+  /// responsible for filtering out only the discrete update events.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
       const EventCollection* event_info,
       DiscreteValues<T>* discrete_state) const {
@@ -436,12 +446,18 @@ class System {
     DispatchDiscreteVariableUpdateHandler(context, nullptr, discrete_state);
   }
 
-  /// This method is the event handler for
-  /// EventCollection::EventType::kUnrestrictedUpdate type events. It updates *any*
-  /// state variables in the @p context, and outputs the results to @p state.
-  /// It does not allow the dimensionality of the state variables to change.
+  /// This method is the public entry point for dispatching all unrestricted
+  /// update event handlers. Using all the unrestricted update handers in
+  /// @p event_info, it updates *any* state variables in the @p context, and
+  /// outputs the results to @p state. It does not allow the dimensionality
+  /// of the state variables to change. See the documentation for
+  /// DispatchUnrestrictedUpdateHandler() for more details.
+  ///
   /// @p event_info can be null, which is equivalent to a forced unrestricted
-  /// update.
+  /// update. @p event_info may contain events other than discrete update. The
+  /// derived classes' implementation of DispatchUnrestrictedUpdateHandler is
+  /// responsible for filtering out only the unrestricted update events.
+  ///
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes in the callback.
   void CalcUnrestrictedUpdate(const Context<T>& context,
@@ -1011,34 +1027,52 @@ class System {
   //----------------------------------------------------------------------------
   /// @name                 Event handler dispatch mechanism
   /// For a LeafSystem (or user implemented equivalent classes), these functions
-  /// need to get the triggers from @p event_info that correspond to the event
-  /// type it is handling, and call the appropriate event handler (e.g.
-  /// DoPublish for publish events).
+  /// need to get the vector of events from @p event_info that correspond to the
+  /// event type it is handling, and call the appropriate LeafSystem::DoStuff
+  /// event handler. For example, LeafSystem::DispatchPublishHandler() need to
+  /// extract a vector of all the publish events from @p event_info, and pass
+  /// it to LeafSystem::DoPublish(). User supplied custom event callbacks
+  /// embedded in each individual Event need to be further dispatched in the
+  /// LeafSystem::DoStuff handlers if desired.
+  /// For a LeafSystem, the pseudo code of the complete default publish event
+  /// handler dispatching is roughly:
+  /// <pre>
+  ///   leaf_sys.Publish(context, event_collection)
+  ///   -> leaf_sys.DispatchPublishHandler(context, event_collection)
+  ///      -> leaf_sys.DoPublish(context, event_collection.get_publish_events())
+  ///         -> for (event : event_collection.get_publish_events()):
+  ///              if (event.has_handler)
+  ///                event.handler(context)
+  /// </pre>
+  /// Discrete update events and unrestricted update events are dispatched
+  /// similarly for a LeafSystem.
   ///
   /// For a Diagram (or user implemented equivalent classes), these functions
   /// need to iterate through all its sub systems, extract their corresponding
-  /// sub context and sub event information from @p context and @p event_info,
+  /// sub context and sub event collection from @p context and @p event_info,
   /// and pass those to the sub systems' public non-virtual event handlers (e.g.
-  /// Publish for publish events).
+  /// System::Publish() for publish events).
   ///
-  /// @p event_info can be null, which is semantically equivalent to force call
-  /// of the event handlers.
+  /// @p event_info can be null. For a Diagram, the nullptr is passed down to
+  /// the subsystems as an event collection. For a LeafSystem, it is equivalent
+  /// to call LeafSystem::DoStuff() handlers with empty event list.
   ///
   /// All of these functions are only called from their corresponding public
   /// non-virtual event handlers, where @p context is error checked. The derived
   /// implementations can assume that @p context is valid. See
-  /// LeafSystem::DispatchPublishHandler() and Diagram::DispatchPublishHandler()
+  /// LeafSystem::DispatchStuffHandler() and Diagram::DispatchStuffHandler()
   /// for more details.
   //@{
   /**
    * This function dispatches all publish events to the appropriate handlers.
+   * @p event_info can be null.
    */
   virtual void DispatchPublishHandler(const Context<T>& context,
       const EventCollection* event_info) const = 0;
 
   /**
    * This function dispatches all discrete update events to the appropriate
-   * handlers. @p discrete_state cannot be null.
+   * handlers. @p event_info can be null. @p discrete_state cannot be null.
    */
   virtual void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context, const EventCollection* event_info,
@@ -1046,7 +1080,7 @@ class System {
 
   /**
    * This function dispatches all unrestricted update events to the appropriate
-   * handlers. @p state cannot be null.
+   * handlers. @p event_info can be null. @p state cannot be null.
    */
   virtual void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
       const EventCollection* event_info, State<T>* state) const = 0;

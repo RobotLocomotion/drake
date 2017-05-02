@@ -828,7 +828,9 @@ class Diagram : public System<T>,
 
  private:
   // For each sub system, extracts its corresponding sub context from
-  // @p context, and sub event info from @p event_info, and calls Publish().
+  // @p context, and sub event info from @p event_info, and passes them to the
+  // sub system's Publish(). @p event_info can be null, in which case, the
+  // force call version of Publish() is invoked on all sub systems.
   void DispatchPublishHandler(const Context<T>& context,
       const EventCollection* event_info) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -853,8 +855,10 @@ class Diagram : public System<T>,
   }
 
   // For each sub system, extracts its corresponding sub context from
-  // @p context, and sub event info from @p event_info, and calls
-  // CalcDiscreteVariableUpdates().
+  // @p context, and sub event info from @p event_info, and passes them to the
+  // sub system's CalcDiscreteVariableUpdates(). @p event_info can be null, in
+  // which case, the force call version of CalcDiscreteVariableUpdates() is
+  // invoked on all sub systems.
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context, const EventCollection* event_info,
       DiscreteValues<T>* discrete_state) const final {
@@ -897,8 +901,10 @@ class Diagram : public System<T>,
   }
 
   // For each sub system, extracts its corresponding sub context from
-  // @p context, and sub event info from @p event_info, and calls
-  // CalcUnrestrictedUpdate().
+  // @p context, and sub event info from @p event_info, and pases them to the
+  // sub system's CalcUnrestrictedUpdate(). @p event_info can be null, in which
+  // case, the force call version of CalcUnrestrictedUpdate() is invoked on all
+  // sub systems.
   void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
       const EventCollection* event_info, State<T>* state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);

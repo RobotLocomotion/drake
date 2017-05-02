@@ -38,7 +38,6 @@ struct PeriodicEvent {
   /// The time after zero when this event should first occur.
   double offset_sec{0.0};
   /// The action that should be taken when this event occurs.
-  // EventCollection::HandlerType event;
   std::unique_ptr<Event> event;
 };
 
@@ -495,10 +494,14 @@ class LeafSystem : public System<T> {
     return params;
   }
 
-  /// Declares that this System has a simple, fixed-period discrete action.
-  /// The first tick will be at t = period_sec, and it will recur at every
-  /// period_sec thereafter. On the discrete tick, the system may perform
-  /// the given type of action.
+  /// Declares that this System has a simple, fixed-period event specified by
+  /// @p event. A deep copy of @p event will be made and maintained by this.
+  /// @p's associated Trigger must have type Trigger::TriggerType::kPeriodic.
+  /// The first tick will be at t = @p period_sec, and it will recur at every
+  /// @p period_sec thereafter.
+  ///
+  /// @tparam EventType Need to be a derived class of Event. Currently, it can
+  /// be PublishEvent, DiscreteUpdateEvent, UnrestrictedUpdateEvent.
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
       const EventType& event) {
@@ -510,51 +513,52 @@ class LeafSystem : public System<T> {
     periodic_events_.push_back(std::move(periodic_event));
   }
 
-  /// Declares that this System has a simple, fixed-period discrete update.
-  /// The first tick will be at t = period_sec, and it will recur at every
-  /// period_sec thereafter. On the discrete tick, the system may update
-  /// the discrete state.
+  /// Declares a periodic discrete update event with period = @p period_sec and
+  /// 0 offset. The event does not have a custom callback function, and it's
+  /// associated Trigger has type Trigger::TriggerType::kPeriodic but does not
+  /// contain an abstract value.
   void DeclareDiscreteUpdatePeriodSec(double period_sec) {
     DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
         period_sec, 0.0,
         DiscreteUpdateEvent<T>(Trigger::TriggerType::kPeriodic));
   }
 
-  /// Declares that this System has a simple, fixed-period discrete update.
-  /// The first tick will be at t = offset_sec, and it will recur at every
-  /// period_sec thereafter. On the discrete tick, the system may update the
-  /// discrete state.
+  /// Declares a periodic discrete update event with period = @p period_sec and
+  /// offset = @p offset_sec. The event does not have a custom callback
+  /// function, and its associated Trigger has type
+  /// Trigger::TriggerType::kPeriodic but does not contain an abstract value.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
         period_sec, offset_sec,
         DiscreteUpdateEvent<T>(Trigger::TriggerType::kPeriodic));
   }
 
-  /// Declares that this System has a simple, fixed-period unrestricted state
-  /// update. The first tick will be at t = offset_sec, and it will recur at
-  /// every period_sec thereafter. On the discrete tick, the system may perform
-  /// unrestricted updates.
+  /// Declares a periodic unrestricted update event with period = @p period_sec
+  /// and offset = @p offset_sec. The event does not have a custom callback
+  /// function, and its associated Trigger has type
+  /// Trigger::TriggerType::kPeriodic but does not contain an abstract value.
   void DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicEvent<UnrestrictedUpdateEvent<T>>(
         period_sec, offset_sec,
         UnrestrictedUpdateEvent<T>(Trigger::TriggerType::kPeriodic));
   }
 
-  /// Declares that this System has a simple, fixed-period publish.
-  /// The first tick will be at t = period_sec, and it will recur at every
-  /// period_sec thereafter. On the discrete tick, the system may update
-  /// the discrete state.
+  /// Declares a periodic unrestricted update event with period = @p period_sec
+  /// and 0 offset. The event does not have a custom callback function, and its
+  /// associated Trigger has type Trigger::TriggerType::kPeriodic but does not
+  /// contain an abstract value.
   void DeclarePublishPeriodSec(double period_sec) {
     DeclarePeriodicEvent<PublishEvent<T>>(
         period_sec, 0, PublishEvent<T>(Trigger::TriggerType::kPeriodic));
   }
 
-  /// Declares a per step action using the default handlers given type
-  /// @p action. This method aborts if the same type has already been declared.
-  // TODO(siyuan): provide a API for declaration with custom handlers.
+  /// Declares a per step event using @p event, which is deep copied and the
+  /// copy is maintained by this. @p event's associated Trigger must of type
+  /// Trigger::TriggerType::kPerStep.
   template <typename EventType>
   void DeclarePerStepEvent(const EventType& event) {
-    DRAKE_DEMAND(event.get_trigger().get_type() == Trigger::TriggerType::kPerStep);
+    DRAKE_DEMAND(event.get_trigger().get_type() ==
+                 Trigger::TriggerType::kPerStep);
     event.add_to(&per_step_events_);
   }
 
@@ -694,15 +698,16 @@ class LeafSystem : public System<T> {
     return next_index;
   }
 
-  /// User supplemented event handler for publish events. Implement this in your
-  /// derived LeafSystem if you want it to take some action when the Simulator
-  /// calls the Publish() method. This can be used for sending messages,
-  /// producing console output, debugging, logging, saving the trajectory to a
-  /// file, etc.
+  /// User supplemented event handler for all the simultaneous publish events
+  /// in @p events. Implement this in your derived LeafSystem if you want it
+  /// to take some action when the Simulator calls the Publish() method. This
+  /// can be used for sending messages, producing console output, debugging,
+  /// logging, saving the trajectory to a file, etc.
   ///
   /// The default implementation traverses @p events in order, and for each
   /// event that has a callback function, it will invoke it with @p context,
-  /// and the trigger in that event.
+  /// and the trigger in that event. Feel free to override this function to
+  /// implement custom event handling.
   ///
   /// This method is called only from the virtual DispatchPublishHandler, which
   /// is only called from the public non-virtual Publish(), which will have
@@ -719,14 +724,16 @@ class LeafSystem : public System<T> {
     }
   }
 
-  /// User supplemented event handler for discrete update events.
-  /// This method updates the @p discrete_state on discrete update events.
-  /// Override it, along with DoCalcNextUpdateTime(), if your System has any
-  /// discrete variables.
+  /// User supplemented event handler for all the simultaneous discrete update
+  /// events. This method updates the @p discrete_state on discrete update
+  /// events. Override it, along with DoCalcNextUpdateTime(), if your System
+  /// has any discrete variables.
   ///
   /// The default implementation traverses @p events in order, and for each
   /// event that has a callback function, it will invoke it with @p context,
-  /// the trigger in that event and @p discrete_state.
+  /// the trigger in that event and @p discrete_state. Note that the same
+  /// @p discrete_state is passed to subsequent callbacks. Feel free to
+  /// override this function to implement custom event handling.
   ///
   /// This method is called only from the virtual
   /// DispatchDiscreteVariableUpdateHandler(), which is only called from
@@ -750,16 +757,18 @@ class LeafSystem : public System<T> {
     }
   }
 
-  /// User supplemented event handler for
-  /// EventCollection::EventType::kUnrestrictedUpdate. This function updates the
-  /// @p state *in an unrestricted fashion* on unrestricted update events.
-  /// Override this function if you need your System to update abstract
-  /// variables or generally make changes to state that cannot be made using
-  /// CalcDiscreteVariableUpdates() or via integration of continuous variables.
+  /// User supplemented event handler for all the simultaneous unrestricted
+  /// update events. This function updates the @p state *in an unrestricted
+  /// fashion* on unrestricted update events. Override this function if you
+  /// need your System to update abstract variables or generally make changes
+  /// to state that cannot be made using CalcDiscreteVariableUpdates() or
+  /// via integration of continuous variables.
   ///
   /// The default implementation traverses @p events in order, and for each
   /// event that has a callback function, it will invoke it with @p context,
-  /// the trigger in that event and @p discrete_state.
+  /// the trigger in that event and @p discrete_state. Note that the same
+  /// @p state is passed to subsequent callbacks. Feel free to override this
+  /// function to implement custom event handling.
   ///
   /// This method is called only from the virtual
   /// DispatchUnrestrictedUpdateHandler(), which is only called from the
@@ -796,16 +805,18 @@ class LeafSystem : public System<T> {
   // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchPublishHandler(const Context<T>& context,
       const EventCollection* event_info) const final {
+    // Force call DoPublish.
     if (event_info == nullptr) {
       std::vector<const PublishEvent<T>*> empty;
       this->DoPublish(context, empty);
-      return;
-    }
-    const LeafEventCollection<T>* info =
+    } else {
+      const LeafEventCollection<T>* info =
         dynamic_cast<const LeafEventCollection<T>*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    if (info->HasPublishEvents()) {
-      this->DoPublish(context, info->get_publish_events());
+      DRAKE_DEMAND(info != nullptr);
+      // Only call DoPublish if there are publish events.
+      if (info->HasPublishEvents()) {
+        this->DoPublish(context, info->get_publish_events());
+      }
     }
   }
 
@@ -818,18 +829,20 @@ class LeafSystem : public System<T> {
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context, const EventCollection* event_info,
       DiscreteValues<T>* discrete_state) const final {
+    // Force call DoCalcDiscreteVariableUpdates.
     if (event_info == nullptr) {
       std::vector<const DiscreteUpdateEvent<T>*> empty;
       this->DoCalcDiscreteVariableUpdates(context, empty, discrete_state);
-      return;
-    }
-
-    const LeafEventCollection<T>* info =
+    } else {
+      const LeafEventCollection<T>* info =
         dynamic_cast<const LeafEventCollection<T>*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    if (info->HasDiscreteUpdateEvents()) {
-      this->DoCalcDiscreteVariableUpdates(context,
-          info->get_discrete_update_events(), discrete_state);
+      DRAKE_DEMAND(info != nullptr);
+      // Only call DoCalcDiscreteVariableUpdates if there are discrete update
+      // events.
+      if (info->HasDiscreteUpdateEvents()) {
+        this->DoCalcDiscreteVariableUpdates(context,
+            info->get_discrete_update_events(), discrete_state);
+      }
     }
   }
 
@@ -841,16 +854,20 @@ class LeafSystem : public System<T> {
   // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
       const EventCollection* event_info, State<T>* state) const final {
+    // Force call DoCalcUnrestrictedUpdate.
     if (event_info == nullptr) {
       std::vector<const UnrestrictedUpdateEvent<T>*> empty;
       this->DoCalcUnrestrictedUpdate(context, empty, state);
-      return;
-    }
-
-    const LeafEventCollection<T>* info = dynamic_cast<const LeafEventCollection<T>*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    if (info->HasUnrestrictedUpdateEvents()) {
-      this->DoCalcUnrestrictedUpdate(context, info->get_unrestricted_update_events(), state);
+    } else {
+      const LeafEventCollection<T>* info =
+        dynamic_cast<const LeafEventCollection<T>*>(event_info);
+      DRAKE_DEMAND(info != nullptr);
+      // Only call DoCalcUnrestrictedUpdate if there are unrestricted update
+      // events.
+      if (info->HasUnrestrictedUpdateEvents()) {
+        this->DoCalcUnrestrictedUpdate(context,
+            info->get_unrestricted_update_events(), state);
+      }
     }
   }
 
