@@ -4,6 +4,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
@@ -33,8 +34,9 @@ Acrobot<T>::Acrobot(const Vector3<T>& normal, const Vector3<T>& up) {
 }
 
 template <typename T>
-Matrix2<T> Acrobot<T>::CalcMassMatrix(const T& theta1, const T& theta2)
-const {
+Matrix2<T> Acrobot<T>::CalcMassMatrix(const T& theta1, const T& theta2) const {
+  unused(theta1);
+
   const T I1 = Ic1 + m1 * lc1 * lc1;
   const T I2 = Ic2 + m2 * lc2 * lc2;
   const T m2l1lc2 = m2 * l1 * lc2;  // occurs often!
@@ -52,6 +54,8 @@ const {
 template <typename T>
 Isometry3<T> Acrobot<T>::CalcLink1PoseInWorldFrame(
     const T& theta1, const T& theta2) const {
+  unused(theta2);
+
   using std::sin;
   using std::cos;
 
@@ -92,6 +96,8 @@ template <typename T>
 Vector6<T> Acrobot<T>::CalcLink1SpatialVelocityInWorldFrame(
     const T& theta1, const T& theta2,
     const T& theta1dot, const T& theta2dot) const {
+  unused(theta2, theta2dot);
+
   using std::sin;
   using std::cos;
 
