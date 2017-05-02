@@ -1,148 +1,16 @@
 #pragma once
 
-#include <map>
 #include <memory>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/trigger.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/framework/state.h"
+#include "drake/systems/framework/trigger.h"
 
 namespace drake {
 namespace systems {
-
-class EventInfo;
-template <typename T> class LeafEventInfo;
-
-class Event {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Event)
-
-  virtual ~Event() {}
-
-  std::unique_ptr<Event> Clone() const {
-    std::unique_ptr<Event> clone = this->DoClone();
-    return clone;
-  }
-
-  const Trigger& get_trigger() const { return *trigger_; }
-
-  virtual void add_to(EventInfo* events) const = 0;
-
- protected:
-  explicit Event(std::unique_ptr<Trigger> trigger) : trigger_(std::move(trigger)) {}
-
-  virtual std::unique_ptr<Event> DoClone() const = 0;
-
- private:
-  std::unique_ptr<Trigger> trigger_;
-};
-
-template <typename T>
-class PublishEvent : public Event {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PublishEvent)
-  typedef std::function<void(const Context<T>&, const Trigger&)> PublishCallback;
-
-  PublishEvent(std::unique_ptr<Trigger> trigger, PublishCallback callback)
-      : Event(std::move(trigger)), Handle(callback) {}
-
-  PublishEvent(Trigger::TriggerType trigger_type, PublishCallback callback)
-      : PublishEvent(std::make_unique<Trigger>(trigger_type), callback) {}
-
-  PublishEvent(Trigger::TriggerType trigger_type)
-      : PublishEvent(trigger_type, nullptr) {}
-
-  PublishEvent(std::unique_ptr<Trigger> trigger)
-      : PublishEvent(std::move(trigger), nullptr) {}
-
-  PublishCallback Handle{nullptr};
-
-  void add_to(EventInfo* events) const override {
-    LeafEventInfo<T>* leaf_events = dynamic_cast<LeafEventInfo<T>*>(events);
-    DRAKE_DEMAND(leaf_events != nullptr);
-
-    auto me = std::make_unique<PublishEvent<T>>(get_trigger().Clone(), Handle);
-    leaf_events->add_event(std::move(me));
-  }
-
- private:
-  std::unique_ptr<Event> DoClone() const override {
-    PublishEvent* clone = new PublishEvent(get_trigger().Clone(), Handle);
-    return std::unique_ptr<Event>(clone);
-  }
-};
-
-template <typename T>
-class DiscreteUpdateEvent : public Event {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteUpdateEvent)
-  typedef std::function<void(const Context<T>&, const Trigger&, DiscreteValues<T>*)> DiscreteUpdateCallback;
-
-  DiscreteUpdateEvent(std::unique_ptr<Trigger> trigger, DiscreteUpdateCallback callback)
-      : Event(std::move(trigger)), Handle(callback) {}
-
-  DiscreteUpdateEvent(Trigger::TriggerType trigger_type, DiscreteUpdateCallback callback)
-      : DiscreteUpdateEvent(std::make_unique<Trigger>(trigger_type), callback) {}
-
-  DiscreteUpdateEvent(Trigger::TriggerType trigger_type)
-      : DiscreteUpdateEvent(trigger_type, nullptr) {}
-
-  DiscreteUpdateEvent(std::unique_ptr<Trigger> trigger)
-      : DiscreteUpdateEvent(std::move(trigger), nullptr) {}
-
-  DiscreteUpdateCallback Handle{nullptr};
-
-  void add_to(EventInfo* events) const override {
-    LeafEventInfo<T>* leaf_events = dynamic_cast<LeafEventInfo<T>*>(events);
-    DRAKE_DEMAND(leaf_events != nullptr);
-
-    auto me = std::make_unique<DiscreteUpdateEvent<T>>(get_trigger().Clone(), Handle);
-    leaf_events->add_event(std::move(me));
-  }
-
- private:
-  std::unique_ptr<Event> DoClone() const override {
-    DiscreteUpdateEvent* clone = new DiscreteUpdateEvent(get_trigger().Clone(), Handle);
-    return std::unique_ptr<Event>(clone);
-  }
-};
-
-template <typename T>
-class UnrestrictedUpdateEvent : public Event {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdateEvent)
-  typedef std::function<void(const Context<T>&, const Trigger&, State<T>*)> UnrestrictedUpdateCallback;
-
-  UnrestrictedUpdateEvent(std::unique_ptr<Trigger> trigger, UnrestrictedUpdateCallback callback)
-      : Event(std::move(trigger)), Handle(callback) {}
-
-  UnrestrictedUpdateEvent(Trigger::TriggerType trigger_type, UnrestrictedUpdateCallback callback)
-      : UnrestrictedUpdateEvent(std::make_unique<Trigger>(trigger_type), callback) {}
-
-  UnrestrictedUpdateEvent(Trigger::TriggerType trigger_type)
-      : UnrestrictedUpdateEvent(trigger_type, nullptr) {}
-
-  UnrestrictedUpdateEvent(std::unique_ptr<Trigger> trigger)
-      : UnrestrictedUpdateEvent(std::move(trigger), nullptr) {}
-
-  UnrestrictedUpdateCallback Handle{nullptr};
-
-  void add_to(EventInfo* events) const override {
-    LeafEventInfo<T>* leaf_events = dynamic_cast<LeafEventInfo<T>*>(events);
-    DRAKE_DEMAND(leaf_events != nullptr);
-
-    auto me = std::make_unique<UnrestrictedUpdateEvent<T>>(get_trigger().Clone(), Handle);
-    leaf_events->add_event(std::move(me));
-  }
-
- private:
-  std::unique_ptr<Event> DoClone() const override  {
-    UnrestrictedUpdateEvent* clone = new UnrestrictedUpdateEvent(get_trigger().Clone(), Handle);
-    return std::unique_ptr<Event>(clone);
-  }
-};
 
 /**
  * Base class that represents all events at a particular time for System.
@@ -210,9 +78,13 @@ class EventInfo {
 
   virtual ~EventInfo() {}
 
+  /**
+   * Clears all the events maintained by this, and adds all the events in
+   * @p other to this.
+   */
   void SetFrom(const EventInfo& other) {
-    this->Clear();
-    this->Merge(other);
+    Clear();
+    Merge(other);
   }
 
   /**
@@ -225,25 +97,29 @@ class EventInfo {
   }
 
   /**
-   * Clears all the triggers associated with all the event types.
+   * Clears all the events.
    */
   virtual void Clear() = 0;
 
   /**
-   * Returns true if an event of @p event_type exists.
+   * Returns true if this has any publish event.
    */
   virtual bool HasPublishEvents() const = 0;
 
+  /**
+   * Returns true if this has any discrete update event.
+   */
   virtual bool HasDiscreteUpdateEvents() const = 0;
 
+  /**
+   * Returns true if this has any unrestricted update event.
+   */
   virtual bool HasUnrestrictedUpdateEvents() const = 0;
 
   /**
    * Returns true if no event exists.
    */
   virtual bool HasNoEvents() const = 0;
-
-  virtual void print() const = 0;
 
  protected:
   /**
@@ -312,28 +188,24 @@ class DiagramEventInfo final : public EventInfo {
   void Clear() override;
 
   /**
-   * Returns true if any sub event info contains @p event_type.
+   * Returns true if this has any publish event.
    */
   bool HasPublishEvents() const override;
 
+  /**
+   * Returns true if this has any discrete update event.
+   */
   bool HasDiscreteUpdateEvents() const override;
 
+  /**
+   * Returns true if this has any unrestricted update event.
+   */
   bool HasUnrestrictedUpdateEvents() const override;
 
   /**
-   * Returns true if all sub event info are empty.
+   * Returns true if none of the sub event info has any events.
    */
   bool HasNoEvents() const override;
-
-  void print() const override {
-    int ctr = 0;
-    for (const EventInfo* info : sub_event_info_) {
-      std::cout << "sub system " << ctr << ":\n\t";
-      info->print();
-      std::cout << "\n";
-      ctr++;
-    }
-  }
 
  protected:
   // These are protected for doxygen.
@@ -350,20 +222,19 @@ class DiagramEventInfo final : public EventInfo {
   std::vector<EventInfo*> sub_event_info_;
   std::vector<std::unique_ptr<EventInfo>> owned_sub_event_info_;
 
-  template <typename T> friend class Diagram;
+  template <typename T>
+  friend class Diagram;
 };
 
 /**
  * A concrete class that holds event related information for a LeafSystem.
- * This class is essentially a map from EventType to a list of active Triggers.
+ * For each derived type of Event, all events of that type are represented by a
+ * separate vector.
  * <pre>
- *   event_type1: {trigger1, trigger2, ...}
- *   event_type2: {trigger3, trigger4, ...}
+ *   PublishEvent: {event1, event2, ...}
+ *   DiscreteUpdateEvent: {event3, event4, ...}
  *   ...
  * </pre>
- * Unique event type is assumed, however multiple events of the same type
- * occurring simultaneously can be represented by associating multiple
- * Triggers with that event type.
  */
 template <typename T>
 class LeafEventInfo final : public EventInfo {
@@ -376,44 +247,77 @@ class LeafEventInfo final : public EventInfo {
   LeafEventInfo() = default;
 
   /**
-   * Returns all the triggers that are associated to @p event_type. Aborts if
-   * @p event_type does not exist.
+   * Returns a const reference to the vector of const pointers to all the
+   * publish update events.
    */
   const std::vector<const PublishEvent<T>*>& get_publish_events() const {
     return publish_events_;
   }
 
-  const std::vector<const DiscreteUpdateEvent<T>*>& get_discrete_update_events() const {
+  /**
+   * Returns a const reference to the vector of const pointers to all the
+   * discrete update events.
+   */
+  const std::vector<const DiscreteUpdateEvent<T>*>& get_discrete_update_events()
+      const {
     return discrete_update_events_;
   }
 
-  const std::vector<const UnrestrictedUpdateEvent<T>*>& get_unrestricted_update_events() const {
+  /**
+   * Returns a const reference to the vector of const pointers to all the
+   * unrestricted update events.
+   */
+  const std::vector<const UnrestrictedUpdateEvent<T>*>&
+  get_unrestricted_update_events() const {
     return unrestricted_update_events_;
   }
 
+  /**
+   * Add @p event to the existing publish event. Ownership of
+   * @p event is transfered.
+   */
   void add_event(std::unique_ptr<PublishEvent<T>> event) {
     owned_publish_events_.push_back(std::move(event));
     publish_events_.push_back(owned_publish_events_.back().get());
   }
 
+  /**
+   * Add @p event to the existing discrete update event. Ownership of
+   * @p event is transfered.
+   */
   void add_event(std::unique_ptr<DiscreteUpdateEvent<T>> event) {
     owned_discrete_update_events_.push_back(std::move(event));
-    discrete_update_events_.push_back(owned_discrete_update_events_.back().get());
+    discrete_update_events_.push_back(
+        owned_discrete_update_events_.back().get());
   }
 
+  /**
+   * Add @p event to the existing unrestricted update event. Ownership of
+   * @p event is transfered.
+   */
   void add_event(std::unique_ptr<UnrestrictedUpdateEvent<T>> event) {
     owned_unrestricted_update_events_.push_back(std::move(event));
-    unrestricted_update_events_.push_back(owned_unrestricted_update_events_.back().get());
+    unrestricted_update_events_.push_back(
+        owned_unrestricted_update_events_.back().get());
   }
 
+  /**
+   * Returns true if this has any publish event.
+   */
   bool HasPublishEvents() const override {
     return !publish_events_.empty();
   }
 
+  /**
+   * Returns true if this has any discrete update event.
+   */
   bool HasDiscreteUpdateEvents() const override {
     return !discrete_update_events_.empty();
   }
 
+  /**
+   * Returns true if this has any unrestricted update event.
+   */
   bool HasUnrestrictedUpdateEvents() const override {
     return !unrestricted_update_events_.empty();
   }
@@ -422,7 +326,8 @@ class LeafEventInfo final : public EventInfo {
    * Returns true if no event exists.
    */
   bool HasNoEvents() const override {
-    return (publish_events_.empty() && discrete_update_events_.empty() && unrestricted_update_events_.empty());
+    return (publish_events_.empty() && discrete_update_events_.empty() &&
+            unrestricted_update_events_.empty());
   }
 
   /**
@@ -437,36 +342,28 @@ class LeafEventInfo final : public EventInfo {
     unrestricted_update_events_.clear();
   }
 
-  void print() const override {
-    std::cout << "pub size: " << publish_events_.size() <<
-        ", discrete size: " << discrete_update_events_.size() <<
-        ", unrestricted size: " << unrestricted_update_events_.size() << std::endl;
-  }
-
  protected:
   // These are protected for doxygen.
 
   /**
-   * For each event type in @p other_info, adds all its associated triggers to
-   * this. Assumes that @p other_info is an instance of LeafEventInfo. Aborts
-   * otherwise.
+   * For each event type in @p other_info, adds all its events to this. Assumes
+   * that @p other_info is an instance of LeafEventInfo. Aborts otherwise.
    *
-   * Here is an example. Suppose this has the following event types and their
-   * associated triggers:
+   * Here is an example. Suppose this has the following events:
    * <pre>
-   *   event_type1: {trigger1, trigger2, trigger3}
-   *   event_type2: {trigger4, trigger5}
+   *   PublishEvent: {event1, event2, event3}
+   *   DiscreteUpdateEvent: {event4, event5}
    * </pre>
    * @p other_info has:
    * <pre>
-   *   event_type1: {trigger6}
-   *   event_type3: {trigger7, trigger8}
+   *   PublishEvent: {event6}
+   *   UnrestrictedUpdateEvent: {event7, event8}
    * </pre>
    * After calling DoMerge(other_info), this looks like this:
    * <pre>
-   *   event_type1: {trigger1, trigger2, trigger3, trigger6}
-   *   event_type2: {trigger4, trigger5}
-   *   event_type3: {trigger7, trigger8}
+   *   PublishEvent: {event1, event2, event3, event6}
+   *   DiscreteUpdateEvent: {event4, event5}
+   *   UnrestrictedUpdateEvent: {event7, event8}
    * </pre>
    */
   void DoMerge(const EventInfo* other_info) override {
@@ -479,28 +376,31 @@ class LeafEventInfo final : public EventInfo {
       other_event->add_to(this);
     }
 
-    const std::vector<const DiscreteUpdateEvent<T>*>& other_discrete_update = other->get_discrete_update_events();
+    const std::vector<const DiscreteUpdateEvent<T>*>& other_discrete_update =
+        other->get_discrete_update_events();
     for (const DiscreteUpdateEvent<T>* other_event : other_discrete_update) {
       other_event->add_to(this);
     }
 
-    const std::vector<const UnrestrictedUpdateEvent<T>*>& other_unrestricted_update = other->get_unrestricted_update_events();
-    for (const UnrestrictedUpdateEvent<T>* other_event : other_unrestricted_update) {
+    const std::vector<const UnrestrictedUpdateEvent<T>*>&
+        other_unrestricted_update = other->get_unrestricted_update_events();
+    for (const UnrestrictedUpdateEvent<T>* other_event :
+         other_unrestricted_update) {
       other_event->add_to(this);
     }
   }
 
  private:
+  // Owned event unique pointers.
   std::vector<std::unique_ptr<PublishEvent<T>>> owned_publish_events_;
+  std::vector<std::unique_ptr<DiscreteUpdateEvent<T>>>
+      owned_discrete_update_events_;
+  std::vector<std::unique_ptr<UnrestrictedUpdateEvent<T>>>
+      owned_unrestricted_update_events_;
 
-  std::vector<std::unique_ptr<DiscreteUpdateEvent<T>>> owned_discrete_update_events_;
-
-  std::vector<std::unique_ptr<UnrestrictedUpdateEvent<T>>> owned_unrestricted_update_events_;
-
+  // Points to the corresponding unique pointers.
   std::vector<const PublishEvent<T>*> publish_events_;
-
   std::vector<const DiscreteUpdateEvent<T>*> discrete_update_events_;
-
   std::vector<const UnrestrictedUpdateEvent<T>*> unrestricted_update_events_;
 };
 

@@ -139,6 +139,7 @@ drake_cc_library(
         "trigger.cc",
     ],
     hdrs = [
+        "event.h",
         "event_info.h",
         "trigger.h",
     ],

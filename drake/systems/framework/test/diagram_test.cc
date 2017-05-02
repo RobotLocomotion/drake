@@ -1417,7 +1417,6 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
   auto event_info = diagram->AllocateEventInfo();
   diagram->GetPerStepEvents(*context, event_info.get());
-  event_info->print();
 
   // Does unrestricted update first.
   diagram->CalcUnrestrictedUpdate(*context, event_info.get(),

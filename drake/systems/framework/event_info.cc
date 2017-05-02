@@ -2,7 +2,9 @@
 
 #include <utility>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace systems {
@@ -69,7 +71,17 @@ bool DiagramEventInfo::HasNoEvents() const {
   return true;
 }
 
+template class PublishEvent<double>;
+template class PublishEvent<AutoDiffXd>;
+
+template class DiscreteUpdateEvent<double>;
+template class DiscreteUpdateEvent<AutoDiffXd>;
+
+template class UnrestrictedUpdateEvent<double>;
+template class UnrestrictedUpdateEvent<AutoDiffXd>;
+
 template class LeafEventInfo<double>;
+template class LeafEventInfo<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
