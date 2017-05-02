@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
@@ -208,6 +209,8 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
                        const IKoptions& ikoptions, MatrixBase<DerivedC>* q_sol,
                        int* info,
                        std::vector<std::string>* infeasible_constraint) {
+  unused(infeasible_constraint);  // Per the TODO in the header file.
+
   // Validate some basic parameters of the input.
   if (q_seed.rows() != model->get_num_positions() || q_seed.cols() != nT ||
       q_nom.rows() != model->get_num_positions() || q_nom.cols() != nT) {
