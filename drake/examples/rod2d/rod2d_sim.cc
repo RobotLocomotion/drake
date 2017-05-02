@@ -46,11 +46,16 @@ DEFINE_double(sim_duration, 10, "Simulation duration in virtual seconds");
 int main(int argc, char* argv[]) {
   // Parse any flags.
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
 
   // Emit a one-time load message.
   Serializer<drake::lcmt_viewer_load_robot> load_serializer;
   std::vector<uint8_t> message_bytes;
 
+  // TODO(edrumwri): Remove the DRAKE_VIEWER_DRAW, DRAKE_VIEWER_LOAD_ROBOT
+  //                 magic strings as soon as they are a named constant within
+  //                 Drake (or, even better, remove as much of this
+  //                 copy/pasted visualization code when possible).
   // Build the simulation diagram.
   DrakeLcm lcm;
   DiagramBuilder<double> builder;
