@@ -11,15 +11,16 @@
 namespace drake {
 namespace systems {
 
-// Forward declaration of event container classes.
-class EventInfo;
-template <typename T> class LeafEventInfo;
+// Forward declaration of the event container classes.
+class EventCollection;
+template <typename T> class LeafEventCollection;
 
 /**
  * Base class that represents an event. The base event contains two main pieces
  * of information: a reason for event occurrence and additional data that needs
  * to be passed to the event handler. Both are encapsulated by the Trigger
- * class.
+ * class. Derived classes should contain an optional function pointer to the
+ * callback function that handles the event.
  */
 class Event {
  public:
@@ -38,9 +39,14 @@ class Event {
   const Trigger& get_trigger() const { return *trigger_; }
 
   /**
+   * Returns a mutable pointer to the trigger.
+   */
+  Trigger* get_mutable_trigger() { return trigger_.get(); }
+
+  /**
    * Adds this to @p events. See derived implementation for more details.
    */
-  virtual void add_to(EventInfo* events) const = 0;
+  virtual void add_to(EventCollection* events) const = 0;
 
  protected:
   /**
@@ -57,6 +63,10 @@ class Event {
   std::unique_ptr<Trigger> trigger_;
 };
 
+/**
+ * This class represents a publish event. It has an optional callback function
+ * to do custom handling of this event given a const Context and const Trigger.
+ */
 template <typename T>
 class PublishEvent : public Event {
  public:
@@ -97,14 +107,15 @@ class PublishEvent : public Event {
       : PublishEvent(std::move(trigger), nullptr) {}
 
   /**
-   * Assuming that @p events is not null and is of type LeafEventInfo<T>*,
+   * Assuming that @p events is not null and is of type LeafEventCollection<T>*,
    * this function makes a deep copy of this event and uses
-   * LeafEventInfo::add_event(std::unique_ptr<PublishEvent<T>>) to insert the
-   * deep copy into @p events's collection of publish events. This aborts if
+   * LeafEventCollection::add_event(std::unique_ptr<PublishEvent<T>>) to insert
+   * the deep copy into @p events's collection of publish events. This aborts if
    * the assumptions are not met.
    */
-  void add_to(EventInfo* events) const override {
-    LeafEventInfo<T>* leaf_events = dynamic_cast<LeafEventInfo<T>*>(events);
+  void add_to(EventCollection* events) const override {
+    LeafEventCollection<T>* leaf_events =
+        dynamic_cast<LeafEventCollection<T>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
     auto me = std::make_unique<PublishEvent<T>>(get_trigger().Clone(), Handle);
@@ -119,9 +130,17 @@ class PublishEvent : public Event {
     return std::unique_ptr<Event>(clone);
   }
 
+  /**
+   * Optional callback function that handles this publish event.
+   */
   PublishCallback Handle{nullptr};
 };
 
+/**
+ * This class represents a discrete update event. It has an optional callback
+ * function to do custom handling of this event given a const Context, a const
+ * Trigger and writes the updates to a mutable DiscreteValues.
+ */
 template <typename T>
 class DiscreteUpdateEvent : public Event {
  public:
@@ -166,14 +185,15 @@ class DiscreteUpdateEvent : public Event {
       : DiscreteUpdateEvent(std::move(trigger), nullptr) {}
 
   /**
-   * Assuming that @p events is not null and is of type LeafEventInfo<T>*,
+   * Assuming that @p events is not null and is of type LeafEventCollection<T>*,
    * this function makes a deep copy of this event and uses
-   * LeafEventInfo::add_event(std::unique_ptr<DiscreteUpdateEvent<T>>)
+   * LeafEventCollection::add_event(std::unique_ptr<DiscreteUpdateEvent<T>>)
    * to insert the deep copy into @p events's collection of discrete update
    * events. This aborts if the assumptions are not met.
    */
-  void add_to(EventInfo* events) const override {
-    LeafEventInfo<T>* leaf_events = dynamic_cast<LeafEventInfo<T>*>(events);
+  void add_to(EventCollection* events) const override {
+    LeafEventCollection<T>* leaf_events =
+        dynamic_cast<LeafEventCollection<T>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
     auto me =
@@ -190,9 +210,17 @@ class DiscreteUpdateEvent : public Event {
     return std::unique_ptr<Event>(clone);
   }
 
+  /**
+   * Optional callback function that handles this discrete update event.
+   */
   DiscreteUpdateCallback Handle{nullptr};
 };
 
+/**
+ * This class represents a unrestricted update event. It has an optional
+ * callback function to do custom handling of this event given a const Context,
+ * a const Trigger and writes the updates to a mutable State.
+ */
 template <typename T>
 class UnrestrictedUpdateEvent : public Event {
  public:
@@ -236,14 +264,15 @@ class UnrestrictedUpdateEvent : public Event {
       : UnrestrictedUpdateEvent(std::move(trigger), nullptr) {}
 
   /**
-   * Assuming that @p events is not null and is of type LeafEventInfo<T>*,
+   * Assuming that @p events is not null and is of type LeafEventCollection<T>*,
    * this function makes a deep copy of this event and uses
-   * LeafEventInfo::add_event(std::unique_ptr<UnrestrictedUpdateEvent<T>>)
+   * LeafEventCollection::add_event(std::unique_ptr<UnrestrictedUpdateEvent<T>>)
    * to insert the deep copy into @p events's collection of unrestricted update
    * events. This aborts if the assumptions are not met.
    */
-  void add_to(EventInfo* events) const override {
-    LeafEventInfo<T>* leaf_events = dynamic_cast<LeafEventInfo<T>*>(events);
+  void add_to(EventCollection* events) const override {
+    LeafEventCollection<T>* leaf_events =
+        dynamic_cast<LeafEventCollection<T>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
     auto me = std::make_unique<UnrestrictedUpdateEvent<T>>(
@@ -260,6 +289,9 @@ class UnrestrictedUpdateEvent : public Event {
     return std::unique_ptr<Event>(clone);
   }
 
+  /**
+   * Optional callback function that handles this unrestricted update event.
+   */
   UnrestrictedUpdateCallback Handle{nullptr};
 };
 

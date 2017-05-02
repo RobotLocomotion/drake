@@ -135,12 +135,12 @@ drake_cc_library(
 drake_cc_library(
     name = "events_and_triggers",
     srcs = [
-        "event_info.cc",
+        "event_collection.cc",
         "trigger.cc",
     ],
     hdrs = [
         "event.h",
-        "event_info.h",
+        "event_collection.h",
         "trigger.h",
     ],
     deps = [

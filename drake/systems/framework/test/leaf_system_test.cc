@@ -102,15 +102,15 @@ class TestSystem : public LeafSystem<T> {
 class LeafSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    event_info_ = system_.AllocateEventInfo();
-    leaf_info_ = dynamic_cast<const LeafEventInfo<double>*>(event_info_.get());
+    event_info_ = system_.AllocateEventCollection();
+    leaf_info_ = dynamic_cast<const LeafEventCollection<double>*>(event_info_.get());
   }
 
   TestSystem<double> system_;
   LeafContext<double> context_;
 
-  std::unique_ptr<EventInfo> event_info_;
-  const LeafEventInfo<double>* leaf_info_;
+  std::unique_ptr<EventCollection> event_info_;
+  const LeafEventCollection<double>* leaf_info_;
 };
 
 // Tests that if no update events are configured, none are reported.
@@ -618,7 +618,7 @@ GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   context.set_time(21.0);
   system.AddPeriodicUpdate();
 
-  auto event_info = system.AllocateEventInfo();
+  auto event_info = system.AllocateEventCollection();
   auto time = system.CalcNextUpdateTime(context, event_info.get());
 
   EXPECT_EQ(25.0, time);
@@ -796,7 +796,7 @@ class TestTriggerSystem : public LeafSystem<double> {
   }
 
   void DoGetPerStepEvents(const Context<double>& context,
-      EventInfo* event_info) const override {
+      EventCollection* event_info) const override {
     {
       auto trigger = std::make_unique<Trigger>(Trigger::TriggerType::kPerStep);
       trigger->set_data(AbstractValue::Make<std::string>("hello"));
@@ -855,14 +855,14 @@ class TriggerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_ = dut_.CreateDefaultContext();
-    info_ = dut_.AllocateEventInfo();
-    leaf_info_ = dynamic_cast<const LeafEventInfo<double>*>(info_.get());
+    info_ = dut_.AllocateEventCollection();
+    leaf_info_ = dynamic_cast<const LeafEventCollection<double>*>(info_.get());
   }
 
   TestTriggerSystem dut_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<EventInfo> info_;
-  const LeafEventInfo<double>* leaf_info_;
+  std::unique_ptr<EventCollection> info_;
+  const LeafEventCollection<double>* leaf_info_;
 };
 
 TEST_F(TriggerTest, AbstractTrigger) {

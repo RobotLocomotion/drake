@@ -34,7 +34,7 @@ namespace systems {
  * generation such as System::DoCalcNextUpdateTime() or
  * System::DoGetPerStepEvents(). These functions can generate any number of
  * events of arbitrary types, and the resulting events are stored in separate
- * EventInfo instances. Before calling the event handlers, all these EventInfo
+ * EventCollection instances. Before calling the event handlers, all these EventCollection
  * objects need to be merged, so that the handlers have a complete set of
  * the simultaneous events.
  *
@@ -72,17 +72,17 @@ namespace systems {
  *   sys.DoPublish(context, {trigger1, trigger3})
  * </pre>
  */
-class EventInfo {
+class EventCollection {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventInfo)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventCollection)
 
-  virtual ~EventInfo() {}
+  virtual ~EventCollection() {}
 
   /**
    * Clears all the events maintained by this, and adds all the events in
    * @p other to this.
    */
-  void SetFrom(const EventInfo& other) {
+  void SetFrom(const EventCollection& other) {
     Clear();
     Merge(other);
   }
@@ -91,7 +91,7 @@ class EventInfo {
    * Merges @p other's event information into this. See derived DoMerge() for
    * more details.
    */
-  void Merge(const EventInfo& other) {
+  void Merge(const EventCollection& other) {
     if (&other == this) return;
     DoMerge(&other);
   }
@@ -125,40 +125,40 @@ class EventInfo {
   /**
    * Constructor only accessible by derived class.
    */
-  EventInfo() = default;
+  EventCollection() = default;
 
   /**
    * Derived implementation can assume that @p is not null, and it is does not
    * equal to this.
    */
-  virtual void DoMerge(const EventInfo* other) = 0;
+  virtual void DoMerge(const EventCollection* other) = 0;
 };
 
 /**
  * A concrete class that holds event related information for a Diagram.
- * For each sub system in the corresponding Diagram, a derived EventInfo
+ * For each sub system in the corresponding Diagram, a derived EventCollection
  * instance is maintained internally.
  */
-class DiagramEventInfo final : public EventInfo {
+class DiagramEventCollection final : public EventCollection {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventInfo)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramEventCollection)
 
   /**
    * Constructor. Note that this constructor only resizes the containers, but
-   * does not allocate any derived EventInfo instances.
+   * does not allocate any derived EventCollection instances.
    *
    * @note Users should almost never call this explicitly. Use
-   * System::AllocateEventInfo() instead.
+   * System::AllocateEventCollection() instead.
    *
    * @param num_sub_systems Number of sub systems in the corresponding Diagram.
    */
-  explicit DiagramEventInfo(int num_sub_systems)
-      : EventInfo(),
+  explicit DiagramEventCollection(int num_sub_systems)
+      : EventCollection(),
         sub_event_info_(num_sub_systems),
         owned_sub_event_info_(num_sub_systems) {}
 
   /**
-   * Returns the number of constituent EventInfo that correspond to each sub
+   * Returns the number of constituent EventCollection that correspond to each sub
    * system.
    */
   int num_sub_event_info() const {
@@ -170,17 +170,17 @@ class DiagramEventInfo final : public EventInfo {
    * system identified by @p index.
    */
   void set_and_own_sub_event_info(int index,
-                                  std::unique_ptr<EventInfo> sub_event_info);
+                                  std::unique_ptr<EventCollection> sub_event_info);
 
   /**
-   * Returns a const pointer to sub system's EventInfo at @p index.
+   * Returns a const pointer to sub system's EventCollection at @p index.
    */
-  const EventInfo* get_sub_event_info(int index) const;
+  const EventCollection* get_sub_event_info(int index) const;
 
   /**
-   * Returns a mutable pointer to sub system's EventInfo at @p index.
+   * Returns a mutable pointer to sub system's EventCollection at @p index.
    */
-  EventInfo* get_mutable_sub_event_info(int index);
+  EventCollection* get_mutable_sub_event_info(int index);
 
   /**
    * Goes through each sub event info and clears its content.
@@ -213,14 +213,14 @@ class DiagramEventInfo final : public EventInfo {
   /**
    * Goes through each sub event info and merges in the corresponding one in
    * @p other_info. Assumes that @p other_info is an instance of
-   * DiagramEventInfo and has the same number of sub event info. Aborts
+   * DiagramEventCollection and has the same number of sub event info. Aborts
    * otherwise.
    */
-  void DoMerge(const EventInfo* other_info) override;
+  void DoMerge(const EventCollection* other_info) override;
 
  private:
-  std::vector<EventInfo*> sub_event_info_;
-  std::vector<std::unique_ptr<EventInfo>> owned_sub_event_info_;
+  std::vector<EventCollection*> sub_event_info_;
+  std::vector<std::unique_ptr<EventCollection>> owned_sub_event_info_;
 
   template <typename T>
   friend class Diagram;
@@ -237,14 +237,14 @@ class DiagramEventInfo final : public EventInfo {
  * </pre>
  */
 template <typename T>
-class LeafEventInfo final : public EventInfo {
+class LeafEventCollection final : public EventCollection {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventInfo)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventCollection)
 
   /**
    * Constructor.
    */
-  LeafEventInfo() = default;
+  LeafEventCollection() = default;
 
   /**
    * Returns a const reference to the vector of const pointers to all the
@@ -347,7 +347,7 @@ class LeafEventInfo final : public EventInfo {
 
   /**
    * For each event type in @p other_info, adds all its events to this. Assumes
-   * that @p other_info is an instance of LeafEventInfo. Aborts otherwise.
+   * that @p other_info is an instance of LeafEventCollection. Aborts otherwise.
    *
    * Here is an example. Suppose this has the following events:
    * <pre>
@@ -366,8 +366,8 @@ class LeafEventInfo final : public EventInfo {
    *   UnrestrictedUpdateEvent: {event7, event8}
    * </pre>
    */
-  void DoMerge(const EventInfo* other_info) override {
-    const LeafEventInfo* other = dynamic_cast<const LeafEventInfo*>(other_info);
+  void DoMerge(const EventCollection* other_info) override {
+    const LeafEventCollection* other = dynamic_cast<const LeafEventCollection*>(other_info);
     DRAKE_DEMAND(other != nullptr);
 
     const std::vector<const PublishEvent<T>*>& other_publish =

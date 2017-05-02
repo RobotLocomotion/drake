@@ -1,4 +1,4 @@
-#include "drake/systems/framework/event_info.h"
+#include "drake/systems/framework/event_collection.h"
 
 #include <utility>
 
@@ -9,26 +9,26 @@
 namespace drake {
 namespace systems {
 
-void DiagramEventInfo::set_and_own_sub_event_info(
-    int index, std::unique_ptr<EventInfo> sub_event_info) {
+void DiagramEventCollection::set_and_own_sub_event_info(
+    int index, std::unique_ptr<EventCollection> sub_event_info) {
   DRAKE_DEMAND(index >= 0 && index < num_sub_event_info());
   owned_sub_event_info_[index] = std::move(sub_event_info);
   sub_event_info_[index] = owned_sub_event_info_[index].get();
 }
 
-const EventInfo* DiagramEventInfo::get_sub_event_info(int index) const {
+const EventCollection* DiagramEventCollection::get_sub_event_info(int index) const {
   DRAKE_DEMAND(index >= 0 && index < num_sub_event_info());
   return sub_event_info_[index];
 }
 
-EventInfo* DiagramEventInfo::get_mutable_sub_event_info(int index) {
+EventCollection* DiagramEventCollection::get_mutable_sub_event_info(int index) {
   DRAKE_DEMAND(index >= 0 && index < num_sub_event_info());
   return sub_event_info_[index];
 }
 
-void DiagramEventInfo::DoMerge(const EventInfo* other_info) {
-  const DiagramEventInfo* other =
-      dynamic_cast<const DiagramEventInfo*>(other_info);
+void DiagramEventCollection::DoMerge(const EventCollection* other_info) {
+  const DiagramEventCollection* other =
+      dynamic_cast<const DiagramEventCollection*>(other_info);
   DRAKE_DEMAND(other != nullptr);
   DRAKE_DEMAND(num_sub_event_info() == other->num_sub_event_info());
 
@@ -37,35 +37,35 @@ void DiagramEventInfo::DoMerge(const EventInfo* other_info) {
   }
 }
 
-void DiagramEventInfo::Clear() {
-  for (EventInfo* sub_event : sub_event_info_) {
+void DiagramEventCollection::Clear() {
+  for (EventCollection* sub_event : sub_event_info_) {
     sub_event->Clear();
   }
 }
 
-bool DiagramEventInfo::HasPublishEvents() const {
-  for (const EventInfo* sub_event : sub_event_info_) {
+bool DiagramEventCollection::HasPublishEvents() const {
+  for (const EventCollection* sub_event : sub_event_info_) {
     if (sub_event->HasPublishEvents()) return true;
   }
   return false;
 }
 
-bool DiagramEventInfo::HasDiscreteUpdateEvents() const {
-  for (const EventInfo* sub_event : sub_event_info_) {
+bool DiagramEventCollection::HasDiscreteUpdateEvents() const {
+  for (const EventCollection* sub_event : sub_event_info_) {
     if (sub_event->HasDiscreteUpdateEvents()) return true;
   }
   return false;
 }
 
-bool DiagramEventInfo::HasUnrestrictedUpdateEvents() const {
-  for (const EventInfo* sub_event : sub_event_info_) {
+bool DiagramEventCollection::HasUnrestrictedUpdateEvents() const {
+  for (const EventCollection* sub_event : sub_event_info_) {
     if (sub_event->HasUnrestrictedUpdateEvents()) return true;
   }
   return false;
 }
 
-bool DiagramEventInfo::HasNoEvents() const {
-  for (const EventInfo* sub_event : sub_event_info_) {
+bool DiagramEventCollection::HasNoEvents() const {
+  for (const EventCollection* sub_event : sub_event_info_) {
     if (!sub_event->HasNoEvents()) return false;
   }
   return true;
@@ -80,8 +80,8 @@ template class DiscreteUpdateEvent<AutoDiffXd>;
 template class UnrestrictedUpdateEvent<double>;
 template class UnrestrictedUpdateEvent<AutoDiffXd>;
 
-template class LeafEventInfo<double>;
-template class LeafEventInfo<AutoDiffXd>;
+template class LeafEventCollection<double>;
+template class LeafEventCollection<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

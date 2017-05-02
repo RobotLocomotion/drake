@@ -887,11 +887,11 @@ class DiscreteStateTest : public ::testing::Test {
 // Tests that the next update time after 0.05 is 2.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   context_->set_time(0.05);
-  auto event_info = diagram_.AllocateEventInfo();
+  auto event_info = diagram_.AllocateEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
 
   EXPECT_EQ(2.0, time);
-  auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
+  auto info = dynamic_cast<const DiagramEventCollection*>(event_info.get());
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_info.
   auto sub_info = info->get_sub_event_info(2);
@@ -902,14 +902,14 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
 // Tests that the next update time after 5.1 is 6.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   context_->set_time(5.1);
-  auto event_info = diagram_.AllocateEventInfo();
+  auto event_info = diagram_.AllocateEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
 
   EXPECT_EQ(6.0, time);
   // Both zoh should have an update event.
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_info.
-  auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
+  auto info = dynamic_cast<const DiagramEventCollection*>(event_info.get());
   {
     auto sub_info = info->get_sub_event_info(1);
     EXPECT_TRUE(sub_info->HasDiscreteUpdateEvents());
@@ -940,7 +940,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(8.5);
 
   // Request the next update time.
-  auto event_info = diagram_.AllocateEventInfo();
+  auto event_info = diagram_.AllocateEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
   EXPECT_EQ(9.0, time);
 
@@ -973,7 +973,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 // Tests that a publish action is taken at 19 sec.
 TEST_F(DiscreteStateTest, Publish) {
   context_->set_time(18.5);
-  auto event_info = diagram_.AllocateEventInfo();
+  auto event_info = diagram_.AllocateEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, event_info.get());
 
   EXPECT_EQ(19.0, time);
@@ -1069,8 +1069,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // First action time should be 2 sec, and only sys0 will be updating.
-  auto event_info = diagram_.AllocateEventInfo();
-  auto info = dynamic_cast<const DiagramEventInfo*>(event_info.get());
+  auto event_info = diagram_.AllocateEventCollection();
+  auto info = dynamic_cast<const DiagramEventCollection*>(event_info.get());
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, event_info.get()), 2);
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_info.
@@ -1415,7 +1415,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   auto tmp_discrete_state = diagram->AllocateDiscreteVariables();
   std::unique_ptr<State<double>> tmp_state = context->CloneState();
 
-  auto event_info = diagram->AllocateEventInfo();
+  auto event_info = diagram->AllocateEventCollection();
   diagram->GetPerStepEvents(*context, event_info.get());
 
   // Does unrestricted update first.
@@ -1481,7 +1481,7 @@ class MyEventTestSystem : public LeafSystem<double> {
 
 GTEST_TEST(MyEventTest, MyEventTestLeaf) {
   MyEventTestSystem dut("sys", 0.2);
-  auto event_info = dut.AllocateEventInfo();
+  auto event_info = dut.AllocateEventCollection();
   auto context = dut.CreateDefaultContext();
 
   double time = dut.CalcNextUpdateTime(*context, event_info.get());
@@ -1508,9 +1508,9 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   auto dut = builder.Build();
 
-  auto periodic_event_info = dut->AllocateEventInfo();
-  auto perstep_event_info = dut->AllocateEventInfo();
-  auto event_info = dut->AllocateEventInfo();
+  auto periodic_event_info = dut->AllocateEventCollection();
+  auto perstep_event_info = dut->AllocateEventCollection();
+  auto event_info = dut->AllocateEventCollection();
 
   auto context = dut->CreateDefaultContext();
 

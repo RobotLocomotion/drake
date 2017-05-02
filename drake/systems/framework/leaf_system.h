@@ -38,7 +38,7 @@ struct PeriodicEvent {
   /// The time after zero when this event should first occur.
   double offset_sec{0.0};
   /// The action that should be taken when this event occurs.
-  // EventInfo::HandlerType event;
+  // EventCollection::HandlerType event;
   std::unique_ptr<Event> event;
 };
 
@@ -54,9 +54,9 @@ class LeafSystem : public System<T> {
 
   ~LeafSystem() override {}
 
-  std::unique_ptr<EventInfo> AllocateEventInfo() const final {
-    LeafEventInfo<T>* ptr = new LeafEventInfo<T>();
-    return std::unique_ptr<EventInfo>(ptr);
+  std::unique_ptr<EventCollection> AllocateEventCollection() const final {
+    LeafEventCollection<T>* ptr = new LeafEventCollection<T>();
+    return std::unique_ptr<EventCollection>(ptr);
   }
 
   // =========================================================================
@@ -233,7 +233,7 @@ class LeafSystem : public System<T> {
   /// aborts for scalar types that are not arithmetic. Subclasses that require
   /// aperiodic events should override.
   void DoCalcNextUpdateTime(const Context<T>& context,
-                            EventInfo* event_info, T* time) const override {
+                            EventCollection* event_info, T* time) const override {
     DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
@@ -697,19 +697,19 @@ class LeafSystem : public System<T> {
  private:
   // If @p event_info is null, calls DoPublish() with a vector containing one
   // Trigger::TriggerType::kForced trigger. Otherwise, checks if a
-  // EventInfo::HandlerType::kPublish event exists in @p event_info. If one
+  // EventCollection::HandlerType::kPublish event exists in @p event_info. If one
   // exists, all its triggers are extracted and passed to DoPublish().
   //
-  // Assumes @p event_info is an instance of LeafEventInfo.
+  // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchPublishHandler(const Context<T>& context,
-      const EventInfo* event_info) const final {
+      const EventCollection* event_info) const final {
     if (event_info == nullptr) {
       std::vector<const PublishEvent<T>*> empty;
       this->DoPublish(context, empty);
       return;
     }
-    const LeafEventInfo<T>* info =
-        dynamic_cast<const LeafEventInfo<T>*>(event_info);
+    const LeafEventCollection<T>* info =
+        dynamic_cast<const LeafEventCollection<T>*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     if (info->HasPublishEvents()) {
       this->DoPublish(context, info->get_publish_events());
@@ -747,13 +747,13 @@ class LeafSystem : public System<T> {
 
   // If @p event_info is null, calls DoCalcDiscreteVariableUpdates() with a
   // vector containing one Trigger::TriggerType::kForced trigger. Otherwise,
-  // checks if a EventInfo::HandlerType::kDiscreteUpdate event exists in
+  // checks if a EventCollection::HandlerType::kDiscreteUpdate event exists in
   // @p event_info. If one exists, all its triggers are extracted and passed to
   // DoCalcDiscreteVariableUpdates().
   //
-  // Assumes @p event_info is an instance of LeafEventInfo.
+  // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchDiscreteVariableUpdateHandler(
-      const Context<T>& context, const EventInfo* event_info,
+      const Context<T>& context, const EventCollection* event_info,
       DiscreteValues<T>* discrete_state) const final {
     if (event_info == nullptr) {
       std::vector<const DiscreteUpdateEvent<T>*> empty;
@@ -761,7 +761,7 @@ class LeafSystem : public System<T> {
       return;
     }
 
-    const LeafEventInfo<T>* info = dynamic_cast<const LeafEventInfo<T>*>(event_info);
+    const LeafEventCollection<T>* info = dynamic_cast<const LeafEventCollection<T>*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     if (info->HasDiscreteUpdateEvents()) {
       this->DoCalcDiscreteVariableUpdates(context,
@@ -771,20 +771,20 @@ class LeafSystem : public System<T> {
 
   // If @p event_info is null, calls DoCalcUnrestrictedUpdate() with a vector
   // containing one Trigger::TriggerType::kForced trigger. Otherwise, checks
-  // if a EventInfo::HandlerType::kDiscreteUpdate event exists in @p event_info.
+  // if a EventCollection::HandlerType::kDiscreteUpdate event exists in @p event_info.
   // If one exists, all its triggers are extracted and passed to
   // DoCalcUnrestrictedUpdate().
   //
-  // Assumes @p event_info is an instance of LeafEventInfo.
+  // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
-      const EventInfo* event_info, State<T>* state) const final {
+      const EventCollection* event_info, State<T>* state) const final {
     if (event_info == nullptr) {
       std::vector<const UnrestrictedUpdateEvent<T>*> empty;
       this->DoCalcUnrestrictedUpdate(context, empty, state);
       return;
     }
 
-    const LeafEventInfo<T>* info = dynamic_cast<const LeafEventInfo<T>*>(event_info);
+    const LeafEventCollection<T>* info = dynamic_cast<const LeafEventCollection<T>*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     if (info->HasUnrestrictedUpdateEvents()) {
       this->DoCalcUnrestrictedUpdate(context, info->get_unrestricted_update_events(), state);
@@ -792,8 +792,8 @@ class LeafSystem : public System<T> {
   }
 
   void DoGetPerStepEvents(const Context<T>& context,
-                          EventInfo* event_info) const override {
-    LeafEventInfo<T>* info = dynamic_cast<LeafEventInfo<T>*>(event_info);
+                          EventCollection* event_info) const override {
+    LeafEventCollection<T>* info = dynamic_cast<LeafEventCollection<T>*>(event_info);
     DRAKE_DEMAND(info != nullptr);
 
     event_info->SetFrom(per_step_events_);
@@ -806,7 +806,7 @@ class LeafSystem : public System<T> {
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
   DoCalcNextUpdateTimeImpl(const Context<T1>& context,
-                           EventInfo* event_info, T1* time) const {
+                           EventCollection* event_info, T1* time) const {
     DRAKE_ABORT_MSG(
         "The default implementation of LeafSystem<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");
@@ -818,7 +818,7 @@ class LeafSystem : public System<T> {
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
-      const Context<T1>& context, EventInfo* event_info, T1* time) const {
+      const Context<T1>& context, EventCollection* event_info, T1* time) const {
     T1 min_time = std::numeric_limits<double>::infinity();
     // No periodic events events.
     if (periodic_events_.empty()) {
@@ -894,9 +894,9 @@ class LeafSystem : public System<T> {
 
   // Update or Publish events registered on this system for every simulator
   // major time step.
-  // std::vector<EventInfo::HandlerType> per_step_events_;
+  // std::vector<EventCollection::HandlerType> per_step_events_;
 
-  LeafEventInfo<T> per_step_events_;
+  LeafEventCollection<T> per_step_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
