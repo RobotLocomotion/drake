@@ -158,7 +158,7 @@ Outputs: Output Port 0 corresponds to the state vector; Output Port 1
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
-  virtual ~Rod2D() {}
+  ~Rod2D() override {}
 
   /// Simulation model and approach for the system.
   enum class SimulationType {

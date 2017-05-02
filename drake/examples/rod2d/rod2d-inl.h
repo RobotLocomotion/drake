@@ -334,17 +334,12 @@ void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
   DRAKE_ASSERT(state_port_value != nullptr);
   DRAKE_ASSERT(pose_port_value != nullptr);
 
-  // Lambda function for converting either discrete or continuous state.
-  std::function<void(const VectorX<T>&)> SetValues =
-      [state_port_value, pose_port_value](const VectorX<T>& state) {
-    state_port_value->SetFromVector(state);
-    ConvertStateToPose(state, pose_port_value);
-  };
-
-  if (simulation_type_ == SimulationType::kTimeStepping)
-    SetValues(context.get_discrete_state(0)->CopyToVector());
-  else
-    SetValues(context.get_continuous_state()->CopyToVector());
+  // Convert state to pose.
+  const VectorX<T>& state = (simulation_type_ ==
+      SimulationType::kTimeStepping) ?
+          context.get_discrete_state(0)->CopyToVector() :
+          context.get_continuous_state()->CopyToVector();
+  state_port_value->SetFromVector(state);
 }
 
 /// Integrates the Rod 2D example forward in time using a

@@ -19,6 +19,7 @@ drake_cc_binary(
     deps = [
         ":rod2d",
         "//drake/common",
+        "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/lcmtypes:viewer",
         "//drake/systems/analysis",
