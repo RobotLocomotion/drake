@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -29,7 +30,7 @@ class Variable {
    *  It is allowed to construct a dummy variable but it should not be used to
    *  construct a symbolic expression.
    */
-  Variable() : id_{0}, name_{std::string()} {}
+  Variable() : id_{0}, name_{std::make_shared<std::string>()} {}
 
   /** Constructs a variable with a string . */
   explicit Variable(std::string name);
@@ -53,8 +54,13 @@ class Variable {
  private:
   // Produces a unique ID for a variable.
   static Id get_next_id();
-  Id id_{};           // Unique identifier.
-  std::string name_;  // Name of variable.
+  Id id_{};  // Unique identifier.
+
+  // Variable class has shared_ptr<string> instead of string to be
+  // drake::test::IsMemcpyMovable.
+  // Please check https://github.com/RobotLocomotion/drake/issues/5974
+  // for more information.
+  std::shared_ptr<std::string> name_;  // Name of variable.
 };
 }  // namespace symbolic
 
