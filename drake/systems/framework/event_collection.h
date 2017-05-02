@@ -13,6 +13,276 @@
 namespace drake {
 namespace systems {
 
+template <typename EventType>
+class NewEventCollection {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NewEventCollection)
+
+  virtual ~NewEventCollection() {}
+
+  /**
+   * Clears all the events maintained by this, and adds all the events in
+   * @p other to this.
+   */
+  void SetFrom(const NewEventCollection<EventType>& other) {
+    Clear();
+    Merge(other);
+  }
+
+  /**
+   * Merges all of @p other's events into this. See derived DoMerge() for more
+   * details.
+   */
+  void Merge(const NewEventCollection<EventType>& other) {
+    if (&other == this) return;
+    DoMerge(&other);
+  }
+
+  /**
+   * Clears all the maintained events.
+   */
+  virtual void Clear() = 0;
+
+  /**
+   * Returns true if no event exists.
+   */
+  virtual bool HasNoEvents() const = 0;
+
+ protected:
+  /**
+   * Constructor only accessible by derived class.
+   */
+  NewEventCollection() = default;
+
+  /**
+   * Derived implementation can assume that @p is not null, and it is does not
+   * equal to this.
+   */
+  virtual void DoMerge(const NewEventCollection<EventType>* other) = 0;
+};
+
+template <typename EventType>
+class DiagramNewEventCollection final : public NewEventCollection<EventType> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramNewEventCollection)
+
+  /**
+   * Constructor. Note that this constructor only resizes the containers, but
+   * does not allocate any derived NewEventCollection instances.
+   *
+   * @note Users should almost never call this explicitly. Use
+   * System::AllocateNewEventCollection() instead.
+   *
+   * @param num_sub_systems Number of sub systems in the corresponding Diagram.
+   */
+  explicit DiagramNewEventCollection(int num_sub_systems)
+      : NewEventCollection<EventType>(),
+        sub_event_collection_(num_sub_systems),
+        owned_sub_event_collection_(num_sub_systems) {}
+
+  /**
+   * Returns the number of constituent NewEventCollection that correspond to each
+   * sub system.
+   */
+  int num_sub_event_collection() const {
+    return static_cast<int>(sub_event_collection_.size());
+  }
+
+  /**
+   * Transfers @p sub_event_collection ownership to this, and associate it with
+   * sub system identified by @p index.
+   */
+  void set_and_own_sub_event_collection(int index,
+      std::unique_ptr<NewEventCollection<EventType>> sub_event_collection);
+
+  /**
+   * Returns a const pointer to sub system's NewEventCollection at @p index.
+   */
+  const NewEventCollection<EventType>* get_sub_event_collection(int index) const;
+
+  /**
+   * Returns a mutable pointer to sub system's NewEventCollection at @p index.
+   */
+  NewEventCollection<EventType>* get_mutable_sub_event_collection(int index);
+
+  /**
+   * Goes through each sub event collection and clears its content.
+   */
+  void Clear() override;
+
+  /**
+   * Returns true if none of the sub event collection has any events.
+   */
+  bool HasNoEvents() const override;
+
+ protected:
+  // These are protected for doxygen.
+
+  /**
+   * Goes through each sub event collection and merges in the corresponding one
+   * in @p other_collection. Assumes that @p other_collection is an instance of
+   * DiagramNewEventCollection and has the same number of sub event collections.
+   * Aborts otherwise.
+   */
+  void DoMerge(const NewEventCollection<EventType>* other_collection) override;
+
+ private:
+  std::vector<NewEventCollection<EventType>*> sub_event_collection_;
+  std::vector<std::unique_ptr<NewEventCollection<EventType>>> owned_sub_event_collection_;
+};
+
+template <typename EventType>
+class LeafNewEventCollection final : public NewEventCollection<EventType> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafNewEventCollection)
+
+  /**
+   * Constructor.
+   */
+  LeafNewEventCollection() = default;
+
+  /**
+   * Returns a const reference to the vector of const pointers to all the
+   * publish update events.
+   */
+  const std::vector<const PublishEvent<T>*>& get_publish_events() const {
+    return publish_events_;
+  }
+
+  /**
+   * Returns a const reference to the vector of const pointers to all the
+   * discrete update events.
+   */
+  const std::vector<const DiscreteUpdateEvent<T>*>& get_discrete_update_events()
+      const {
+    return discrete_update_events_;
+  }
+
+  /**
+   * Returns a const reference to the vector of const pointers to all the
+   * unrestricted update events.
+   */
+  const std::vector<const UnrestrictedUpdateEvent<T>*>&
+  get_unrestricted_update_events() const {
+    return unrestricted_update_events_;
+  }
+
+  /**
+   * Add @p event to the existing publish event. Ownership of
+   * @p event is transfered.
+   */
+  void add_event(std::unique_ptr<PublishEvent<T>> event) {
+    owned_publish_events_.push_back(std::move(event));
+    publish_events_.push_back(owned_publish_events_.back().get());
+  }
+
+  /**
+   * Add @p event to the existing discrete update event. Ownership of
+   * @p event is transfered.
+   */
+  void add_event(std::unique_ptr<DiscreteUpdateEvent<T>> event) {
+    owned_discrete_update_events_.push_back(std::move(event));
+    discrete_update_events_.push_back(
+        owned_discrete_update_events_.back().get());
+  }
+
+  /**
+   * Add @p event to the existing unrestricted update event. Ownership of
+   * @p event is transfered.
+   */
+  void add_event(std::unique_ptr<UnrestrictedUpdateEvent<T>> event) {
+    owned_unrestricted_update_events_.push_back(std::move(event));
+    unrestricted_update_events_.push_back(
+        owned_unrestricted_update_events_.back().get());
+  }
+
+  /**
+   * Returns true if this has any publish event.
+   */
+  bool HasPublishEvents() const override {
+    return !publish_events_.empty();
+  }
+
+  /**
+   * Returns true if this has any discrete update event.
+   */
+  bool HasDiscreteUpdateEvents() const override {
+    return !discrete_update_events_.empty();
+  }
+
+  /**
+   * Returns true if this has any unrestricted update event.
+   */
+  bool HasUnrestrictedUpdateEvents() const override {
+    return !unrestricted_update_events_.empty();
+  }
+
+  /**
+   * Returns true if no event exists.
+   */
+  bool HasNoEvents() const override {
+    return (publish_events_.empty() && discrete_update_events_.empty() &&
+            unrestricted_update_events_.empty());
+  }
+
+  /**
+   * Clears all events.
+   */
+  void Clear() override {
+    owned_publish_events_.clear();
+    owned_discrete_update_events_.clear();
+    owned_unrestricted_update_events_.clear();
+    publish_events_.clear();
+    discrete_update_events_.clear();
+    unrestricted_update_events_.clear();
+  }
+
+ protected:
+  // These are protected for doxygen.
+  void DoMerge(const NewEventCollection* other_info) override {
+    const LeafNewEventCollection* other =
+        dynamic_cast<const LeafNewEventCollection*>(other_info);
+    DRAKE_DEMAND(other != nullptr);
+
+    const std::vector<const PublishEvent<T>*>& other_publish =
+        other->get_publish_events();
+    for (const PublishEvent<T>* other_event : other_publish) {
+      other_event->add_to(this);
+    }
+
+    const std::vector<const DiscreteUpdateEvent<T>*>& other_discrete_update =
+        other->get_discrete_update_events();
+    for (const DiscreteUpdateEvent<T>* other_event : other_discrete_update) {
+      other_event->add_to(this);
+    }
+
+    const std::vector<const UnrestrictedUpdateEvent<T>*>&
+        other_unrestricted_update = other->get_unrestricted_update_events();
+    for (const UnrestrictedUpdateEvent<T>* other_event :
+         other_unrestricted_update) {
+      other_event->add_to(this);
+    }
+  }
+
+ private:
+  // Owned event unique pointers.
+  std::vector<std::unique_ptr<PublishEvent<T>>> owned_publish_events_;
+  std::vector<std::unique_ptr<DiscreteUpdateEvent<T>>>
+      owned_discrete_update_events_;
+  std::vector<std::unique_ptr<UnrestrictedUpdateEvent<T>>>
+      owned_unrestricted_update_events_;
+
+  // Points to the corresponding unique pointers.
+  std::vector<const PublishEvent<T>*> publish_events_;
+  std::vector<const DiscreteUpdateEvent<T>*> discrete_update_events_;
+  std::vector<const UnrestrictedUpdateEvent<T>*> unrestricted_update_events_;
+};
+
+
+
+
+
+
 /**
  * Base class that represents simultaneous events at a particular time for
  * System. Each concrete event has an optional callback function for event
@@ -228,9 +498,6 @@ class DiagramEventCollection final : public EventCollection {
  private:
   std::vector<EventCollection*> sub_event_collection_;
   std::vector<std::unique_ptr<EventCollection>> owned_sub_event_collection_;
-
-  template <typename T>
-  friend class Diagram;
 };
 
 /**
