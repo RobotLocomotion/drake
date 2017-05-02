@@ -4,15 +4,49 @@
 
 namespace drake {
 
-/// Documents the argument(s) as unused, thus suppressing GCC's -Wunused-param
+/// Documents the argument(s) as unused, suppressing GCC's -Wunused-parameter
 /// warning.  This can be called within function bodies to mark that certain
 /// parameters are unused.
 ///
 /// When possible, removing the unused parameter is better than suppressing the
-/// warning.  However, in some cases the dead parameter serves as documentation
-/// (e.g., when the parameter is in a header file and forms part of a virtual
-/// base API declaration), so we can't remove it.  In those cases, this
-/// function is an appropriate work-around.
+/// warning.  However, in some cases the parameter is part of a virtual API or
+/// template concept that is used elsewhere, so we can't remove it.  In those
+/// cases, this function might be an appropriate work-around.
+///
+/// Here's rough advice on how to fix Wunused-parameter warnings:
+///
+/// (1) If the parameter can be removed entirely, prefer that as the first
+///     choice.  (This may not be possible if, e.g., a method must match some
+///     virtual API or template concept.)
+///
+/// (2) Unless the parameter name has acute value, prefer to omit the name of
+///     the parameter, leaving only the type, e.g.
+/// @code
+/// void Print(const State& state) override { /* No state to print. */ }
+/// @endcode
+///     changes to
+/// @code
+/// void Print(const State&) override { /* No state to print. */}
+/// @endcode
+///     This silences the warning and further makes it clear to a reader that a
+///     parameter required by the API is definitively unused in the function.
+///
+///     This is an especially good solution in the context of method
+///     definitions (vs declarations); the parameter name used in a definition
+///     is entirely irrelevant to Doxygen and most readers.
+///
+/// (3) When leaving the parameter name intact has acute value, it is
+///     acceptable to keep the name and mark it `unused`.  For example, when
+///     the name appears as part of a virtual method's base class declaration,
+///     the name is used by Doxygen to document the method, e.g.,
+/// @code
+/// /* Subclasses must override and do something with @p state. */
+/// virtual void DoFoo(const State& state) {
+///   unused(state);
+///   throw std::runtime_error("DoFoo must be overridden");
+/// }
+/// @endcode
+///
 template <typename ... Args>
 void unused(const Args& ...) {}
 
