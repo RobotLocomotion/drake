@@ -217,5 +217,6 @@ def drake_header_tar(name, deps=[], **kwargs):
   # relative and not absolute paths.
   pkg_tar(name=name,
           extension="tar.gz",
+          mode="0644",
           files=[":" + name + "_gather"],
           strip_prefix="/")
