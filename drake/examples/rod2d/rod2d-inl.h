@@ -49,7 +49,10 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
   }
 
   this->DeclareInputPort(systems::kVectorValued, 3);
-  this->DeclareOutputPort(systems::kVectorValued, 6);
+  state_output_descriptor_ = &this->DeclareOutputPort(systems::kVectorValued,
+                                                      6);
+  pose_output_descriptor_ = &this->DeclareVectorOutputPort(
+      systems::rendering::PoseVector<T>());
 }
 
 // Computes the external forces on the rod.
@@ -318,14 +321,25 @@ Vector2<T> Rod2D<T>::CalcCoincidentRodPointVelocity(
 template <typename T>
 void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
                                systems::SystemOutput<T>* output) const {
-  // Obtain the structure we need to write into.
-  systems::BasicVector<T>* const output_vector =
-      output->GetMutableVectorData(0);
-  DRAKE_ASSERT(output_vector != nullptr);
+  // Get the indices for the output ports.
+  const int state_output_port_index = state_output_descriptor_->get_index();
+  const int pose_output_port_index = pose_output_descriptor_->get_index();
 
-  // Output port value is just the continuous state.
-  output_vector->get_mutable_value() =
-      context.get_continuous_state()->CopyToVector();
+  // Obtain the structure we need to write into.
+  systems::BasicVector<T>* const state_port_value = output->
+      GetMutableVectorData(state_output_port_index);
+  systems::rendering::PoseVector<T>* const pose_port_value = dynamic_cast<
+      systems::rendering::PoseVector<T>*>(output->GetMutableVectorData(
+          pose_output_port_index));
+  DRAKE_ASSERT(state_port_value != nullptr);
+  DRAKE_ASSERT(pose_port_value != nullptr);
+
+  // Convert state to pose.
+  const VectorX<T>& state = (simulation_type_ ==
+      SimulationType::kTimeStepping) ?
+          context.get_discrete_state(0)->CopyToVector() :
+          context.get_continuous_state()->CopyToVector();
+  state_port_value->SetFromVector(state);
 }
 
 /// Integrates the Rod 2D example forward in time using a
@@ -1878,6 +1892,20 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
           .template GetMutableValue<int>() = k;
     }
   }
+}
+
+// Converts a state vector to a rendering PoseVector.
+template <class T>
+void Rod2D<T>::ConvertStateToPose(const VectorX<T>& state,
+                                  systems::rendering::PoseVector<T>* pose) {
+  // Converts the configuration of the rod to a pose, accounting for both
+  // the change to a y+ up coordinate system and the fact that Drake's cylinder
+  // up-direction defaults to +z.
+  const T theta = state[2] + M_PI_2;
+  pose->set_translation(Eigen::Translation<T, 3>(state[0], 0, state[1]));
+  const Vector3<T> y_axis{0, 1, 0};
+  const Eigen::AngleAxis<T> rotation(theta, y_axis);
+  pose->set_rotation(Eigen::Quaternion<T>(rotation));
 }
 
 }  // namespace rod2d

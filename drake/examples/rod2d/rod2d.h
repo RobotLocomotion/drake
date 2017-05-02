@@ -5,6 +5,7 @@
 
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
 namespace examples {
@@ -147,10 +148,9 @@ States: planar position (state indices 0 and 1) and orientation (state
         endpoint Rr, and k=0 indicates that both endpoints of the rod are
         contacting the halfspace).
 
-Outputs: planar position (state indices 0 and 1) and orientation (state
-         index 2), and planar linear velocity (state indices 3 and 4) and
-         scalar angular velocity (state index 5) in units of m, radians,
-         m/s, and rad/s, respectively.
+Outputs: Output Port 0 corresponds to the state vector; Output Port 1
+         corresponds to a PoseVector giving the 3D pose of the rod in the world
+         frame.
 
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
                    Impact". SIAM Rev., 42(1), 3-39, 2000. **/
@@ -158,6 +158,8 @@ Outputs: planar position (state indices 0 and 1) and orientation (state
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
+  ~Rod2D() override {}
+
   /// Simulation model and approach for the system.
   enum class SimulationType {
     /// For simulating the system using rigid contact, Coulomb friction, and
@@ -399,6 +401,11 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   /// for a given state (using @p context).
   int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
 
+  /// Returns the 3D pose of this rod.
+  const systems::OutputPortDescriptor<T>& pose_output() const {
+    return *pose_output_descriptor_;
+  }
+
  protected:
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
@@ -415,6 +422,8 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                        systems::State<T>* state) const override;
 
  private:
+  static void ConvertStateToPose(const VectorX<T>& state,
+                                 systems::rendering::PoseVector<T>* pose);
   Vector3<T> ComputeExternalForces(const systems::Context<T>& context) const;
   Matrix3<T> get_inverse_inertia_matrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
@@ -450,7 +459,6 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                         systems::VectorBase<T>* const f) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
-
 
   // Utility method for determining the World frame location of one of three
   // points on the rod whose origin is Ro. Let r be the half-length of the rod.
@@ -508,6 +516,10 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   double mu_s_{mu_};          // Static coefficient of friction (>= mu).
   double v_stick_tol_{1e-3};  // Slip speed below which the compliant model
                               //   considers the rod to be in stiction.
+
+  // Output port descriptors.
+  const systems::OutputPortDescriptor<T>* pose_output_descriptor_{nullptr};
+  const systems::OutputPortDescriptor<T>* state_output_descriptor_{nullptr};
 };
 
 }  // namespace rod2d
