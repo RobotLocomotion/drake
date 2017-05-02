@@ -519,9 +519,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "wow");
 }
 
-/*
- * Cant do custom cb func anymore!
- *
 // Tests both that an unrestricted update callback is called and that
 // modifications to state dimension are caught.
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
@@ -544,30 +541,44 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   std::unique_ptr<State<double>> x = context->CloneState();
 
   // Create an unrestricted update callback that just copies the state.
-  DiscreteEvent<double> event;
-  event.action = DiscreteEvent<double>::kUnrestrictedUpdateAction;
-  event.do_unrestricted_update = [](const Context<double>& c,
-                                  State<double>* s) {
-    s->CopyFrom(*c.CloneState());
-  };
+  LeafEventCollection<double> leaf_events;
+  {
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
+      [](const Context<double>& c, const Trigger&, State<double>* s) {
+        s->CopyFrom(*c.CloneState());
+    };
+
+    UnrestrictedUpdateEvent<double> event(
+        Trigger::TriggerType::kPeriodic, callback);
+
+    event.add_to(&leaf_events);
+  }
 
   // Verify no exception is thrown.
-  EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()));
+  EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()));
 
   // Change the function to change the continuous state dimension.
   // Call the unrestricted update function again, now verifying that an
   // exception is thrown.
-  event.do_unrestricted_update = [](const Context<double>& c,
-                                  State<double>* s) {
-    s->CopyFrom(*c.CloneState());
-    s->set_continuous_state(
-      std::make_unique<ContinuousState<double>>(
-        std::make_unique<BasicVector<double>>(4), 4, 0, 0));
-  };
+  leaf_events.Clear();
+  {
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
+      [](const Context<double>& c, const Trigger&, State<double>* s) {
+        s->CopyFrom(*c.CloneState());
+        s->set_continuous_state(
+            std::make_unique<ContinuousState<double>>(
+              std::make_unique<BasicVector<double>>(4), 4, 0, 0));
+    };
+
+    UnrestrictedUpdateEvent<double> event(
+        Trigger::TriggerType::kPeriodic, callback);
+
+    event.add_to(&leaf_events);
+  }
 
   // Call the unrestricted update function, verifying that an exception
   // is thrown
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()),
                std::logic_error);
 
   // Restore the continuous state (size).
@@ -576,19 +587,27 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
 
   // Change the event to indicate to change the discrete state dimension.
-  event.do_unrestricted_update = [](const Context<double>& c,
-                                  State<double>* s) {
-    std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
-    s->CopyFrom(*c.CloneState());
-    disc_data.push_back(std::make_unique<BasicVector<double>>(1));
-    disc_data.push_back(std::make_unique<BasicVector<double>>(1));
-    s->set_discrete_state(
-        std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
-  };
+  leaf_events.Clear();
+  {
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
+      [](const Context<double>& c, const Trigger&, State<double>* s) {
+        std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
+        s->CopyFrom(*c.CloneState());
+        disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+        disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+        s->set_discrete_state(
+            std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
+    };
+
+    UnrestrictedUpdateEvent<double> event(
+        Trigger::TriggerType::kPeriodic, callback);
+
+    event.add_to(&leaf_events);
+  }
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()),
                std::logic_error);
 
   // Restore the discrete state (size).
@@ -596,18 +615,25 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       std::make_unique<BasicVector<double>>(1)));
 
   // Change the event to indicate to change the abstract state dimension.
-  event.do_unrestricted_update = [](const Context<double>& c,
-                                  State<double>* s) {
-    s->CopyFrom(*c.CloneState());
-    s->set_abstract_state(std::make_unique<AbstractValues>());
-  };
+  leaf_events.Clear();
+  {
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
+      [](const Context<double>& c, const Trigger&, State<double>* s) {
+        s->CopyFrom(*c.CloneState());
+        s->set_abstract_state(std::make_unique<AbstractValues>());
+    };
+
+    UnrestrictedUpdateEvent<double> event(
+        Trigger::TriggerType::kPeriodic, callback);
+
+    event.add_to(&leaf_events);
+  }
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, event, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()),
                std::logic_error);
 }
-*/
 
 // Tests that the next update time is computed correctly for LeafSystems
 // templated on AutoDiffXd. Protects against regression on #4431.
@@ -791,8 +817,6 @@ class TestTriggerSystem : public LeafSystem<double> {
       event->Handle(context, event->get_trigger());
       abs_data_.push_back(event->get_trigger().get_data()->Clone());
     }
-
-    std::cout << "ha!\n";
   }
 
   void DoGetPerStepEvents(const Context<double>& context,
