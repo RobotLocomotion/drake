@@ -290,15 +290,15 @@ class Simulator {
  private:
   // Goes through every event in @p events and calls unrestricted update only
   // if that event's action type is kUnrestrictedUpdateAction.
-  void HandleUnrestrictedUpdate(const EventInfo& events);
+  void HandleUnrestrictedUpdate(const EventCollection& events);
 
   // Goes through every event in @p events and calls discrete update only if
   // that event's action type is kDiscreteUpdateAction.
-  void HandleDiscreteUpdate(const EventInfo& events);
+  void HandleDiscreteUpdate(const EventCollection& events);
 
   // Goes through every event in @p events and calls publish only if that
   // event's action type is kPublishAction.
-  void HandlePublish(const EventInfo& events);
+  void HandlePublish(const EventCollection& events);
 
   // The steady_clock is immune to system clock changes so increases
   // monotonically. We'll work in fractional seconds.
@@ -354,7 +354,7 @@ class Simulator {
   bool initialization_done_{false};
 
   // Per step events that need to be handled. This is set by Initialize().
-  std::unique_ptr<EventInfo> per_step_events_;
+  std::unique_ptr<EventCollection> per_step_events_;
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;
@@ -394,7 +394,7 @@ void Simulator<T>::Initialize() {
   integrator_->Initialize();
 
   // Gets all the events that need handling.
-  per_step_events_ = system_.AllocateEventInfo();
+  per_step_events_ = system_.AllocateEventCollection();
   DRAKE_DEMAND(per_step_events_ != nullptr);
 
   system_.GetPerStepEvents(*context_, per_step_events_.get());
@@ -414,8 +414,8 @@ void Simulator<T>::Initialize() {
 }
 
 template <typename T>
-void Simulator<T>::HandleUnrestrictedUpdate(const EventInfo& events) {
-  if (events.HasEvent(EventInfo::EventType::kUnrestrictedUpdate)) {
+void Simulator<T>::HandleUnrestrictedUpdate(const EventCollection& events) {
+  if (events.HasUnrestrictedUpdateEvents()) {
     State<T>* x = context_->get_mutable_state();
     DRAKE_DEMAND(x != nullptr);
     // First, compute the unrestricted updates into a temporary buffer.
@@ -429,8 +429,8 @@ void Simulator<T>::HandleUnrestrictedUpdate(const EventInfo& events) {
 }
 
 template <typename T>
-void Simulator<T>::HandleDiscreteUpdate(const EventInfo& events) {
-  if (events.HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
+void Simulator<T>::HandleDiscreteUpdate(const EventCollection& events) {
+  if (events.HasDiscreteUpdateEvents()) {
     DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
     // Systems with discrete update events must have discrete state.
     DRAKE_DEMAND(xd != nullptr);
@@ -444,8 +444,8 @@ void Simulator<T>::HandleDiscreteUpdate(const EventInfo& events) {
 }
 
 template <typename T>
-void Simulator<T>::HandlePublish(const EventInfo& events) {
-  if (events.HasEvent(EventInfo::EventType::kPublish)) {
+void Simulator<T>::HandlePublish(const EventCollection& events) {
+  if (events.HasPublishEvents()) {
     system_.Publish(*context_, &events);
     ++num_publishes_;
   }
@@ -473,8 +473,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   bool sample_time_hit = false;
 
   // Integrate until desired interval has completed.
-  auto timed_events = system_.AllocateEventInfo();
-  auto merged_events = system_.AllocateEventInfo();
+  auto timed_events = system_.AllocateEventCollection();
+  auto merged_events = system_.AllocateEventCollection();
   DRAKE_DEMAND(timed_events != nullptr);
   DRAKE_DEMAND(merged_events != nullptr);
 
@@ -519,11 +519,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // next_sample_time includes an Update action, a Publish action, or both.
     T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
-    if (timed_events->HasEvent(EventInfo::EventType::kDiscreteUpdate) ||
-        timed_events->HasEvent(EventInfo::EventType::kUnrestrictedUpdate)) {
+    if (timed_events->HasDiscreteUpdateEvents() ||
+        timed_events->HasUnrestrictedUpdateEvents()) {
       next_update_dt = next_sample_time - step_start_time;
     }
-    if (timed_events->HasEvent(EventInfo::EventType::kPublish)) {
+    if (timed_events->HasPublishEvents()) {
       next_publish_dt = next_sample_time - step_start_time;
     }
 

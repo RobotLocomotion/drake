@@ -27,15 +27,16 @@ class ZeroOrderHoldTest : public ::testing::Test {
     output_ = hold_->AllocateOutput(*context_);
     context_->FixInputPort(0, BasicVector<double>::Make({1.0, 1.0, 3.0}));
 
-    event_info_ = hold_->AllocateEventInfo();
-    leaf_info_ = dynamic_cast<const LeafEventInfo*>(event_info_.get());
+    event_info_ = hold_->AllocateEventCollection();
+    leaf_info_ =
+        dynamic_cast<const LeafEventCollection<double>*>(event_info_.get());
   }
 
   std::unique_ptr<System<double>> hold_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
-  std::unique_ptr<EventInfo> event_info_;
-  const LeafEventInfo* leaf_info_;
+  std::unique_ptr<EventCollection> event_info_;
+  const LeafEventCollection<double>* leaf_info_;
 };
 
 // Tests that the zero-order hold has one input and one output.
@@ -82,10 +83,10 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   EXPECT_NEAR(0.1, next_t, 10e-8);
 
   // Check that the action is to update.
-  const auto& triggers =
-      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-  EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+  const auto& events = leaf_info_->get_discrete_update_events();
+  EXPECT_EQ(events.size(), 1);
+  EXPECT_EQ(events.front()->get_trigger().get_type(),
+      Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that when the current time is between updates, a update is requested
@@ -99,10 +100,10 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   EXPECT_NEAR(76.4, next_t, 10e-8);
 
   // Check that the action is to update.
-  const auto& triggers =
-      leaf_info_->get_triggers(EventInfo::EventType::kDiscreteUpdate);
-  EXPECT_EQ(triggers.size(), 1);
-  EXPECT_EQ(triggers.front()->get_type(), Trigger::TriggerType::kPeriodic);
+  const auto& events = leaf_info_->get_discrete_update_events();
+  EXPECT_EQ(events.size(), 1);
+  EXPECT_EQ(events.front()->get_trigger().get_type(),
+      Trigger::TriggerType::kPeriodic);
 }
 
 // Tests that discrete updates update the state.

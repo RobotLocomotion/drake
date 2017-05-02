@@ -22,7 +22,7 @@ LcmDrivenLoop::LcmDrivenLoop(
   sub_context_ = driving_sub_.CreateDefaultContext();
   sub_output_ = driving_sub_.AllocateOutput(*sub_context_);
   sub_swap_state_ = sub_context_->CloneState();
-  sub_events_ = driving_sub_.AllocateEventInfo();
+  sub_events_ = driving_sub_.AllocateEventCollection();
 
   // Disables simulator's publish on its internal time step.
   stepper_->set_publish_every_time_step(false);
@@ -41,12 +41,11 @@ const AbstractValue& LcmDrivenLoop::WaitForMessage() {
 
   // If driving_sub_.WaitForMessage() returned, a message should be received
   // and an event should be queued by driving_sub_.CalcNextUpdateTime().
-  if (sub_events_->HasEvent(EventInfo::EventType::kDiscreteUpdate)) {
+  if (sub_events_->HasDiscreteUpdateEvents()) {
     driving_sub_.CalcDiscreteVariableUpdates(
         *sub_context_, sub_events_.get(),
         sub_swap_state_->get_mutable_discrete_state());
-  } else if (sub_events_->HasEvent(
-                 EventInfo::EventType::kUnrestrictedUpdate)) {
+  } else if (sub_events_->HasUnrestrictedUpdateEvents()) {
     driving_sub_.CalcUnrestrictedUpdate(*sub_context_, sub_events_.get(),
                                         sub_swap_state_.get());
   } else {

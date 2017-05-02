@@ -113,7 +113,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * it onto an LCM channel.
    */
   void DoPublish(const Context<double>& context,
-                 const std::vector<const Trigger*>& triggers) const override;
+      const std::vector<const PublishEvent<double>*>& events) const override;
 
   /**
    * This System has no output ports so CalcOutput() does nothing.

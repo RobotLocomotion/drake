@@ -13,7 +13,7 @@ SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
 
 template <typename T>
 void SignalLogger<T>::DoPublish(const Context<T>& context,
-    const std::vector<const Trigger*>& triggers) const {
+    const std::vector<const PublishEvent<T>*>& events) const {
   log_.AddData(context.get_time(),
                this->EvalVectorInput(context, 0)->get_value());
 }

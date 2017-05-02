@@ -25,7 +25,7 @@ AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size) {
 }
 
 void AccelerometerTestLogger::DoPublish(const Context<double>& context,
-    const std::vector<const Trigger*>& triggers) const {
+    const std::vector<const PublishEvent<double>*>& events) const {
   if (log_to_console_) {
     std::stringstream buffer;
     buffer <<

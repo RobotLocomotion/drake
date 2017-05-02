@@ -52,7 +52,7 @@ class SignalLogger : public LeafSystem<T> {
 
   // Logging is done in this method.
   void DoPublish(const Context<T>& context,
-      const std::vector<const Trigger*>& triggers) const override;
+      const std::vector<const PublishEvent<T>*>& events) const override;
 
   mutable SignalLog<T> log_;
 };

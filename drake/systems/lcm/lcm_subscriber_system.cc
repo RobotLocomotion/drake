@@ -117,7 +117,7 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
 
 void LcmSubscriberSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
-    EventInfo* events, double* time) const {
+    EventCollection* events, double* time) const {
   // Gets the last message count from either abstract state or discrete state.
   int last_message_count;
   if (translator_ == nullptr) {
@@ -135,14 +135,15 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   if (last_message_count != received_message_count_) {
     // TODO(siyuan): should be context.get_time() once #5725 is resolved.
     *time = context.get_time() + 0.0001;
-    LeafEventInfo* info = dynamic_cast<LeafEventInfo*>(events);
+    LeafEventCollection<double>* info =
+        dynamic_cast<LeafEventCollection<double>*>(events);
     DRAKE_DEMAND(info != nullptr);
     if (translator_ == nullptr) {
-      info->add_trigger(EventInfo::EventType::kUnrestrictedUpdate,
-          std::make_unique<PeriodicTrigger<double>>(0, *time));
+      info->add_event(std::make_unique<UnrestrictedUpdateEvent<double>>(
+          Trigger::TriggerType::kTimed));
     } else {
-      info->add_trigger(EventInfo::EventType::kDiscreteUpdate,
-          std::make_unique<PeriodicTrigger<double>>(0, *time));
+      info->add_event(std::make_unique<DiscreteUpdateEvent<double>>(
+          Trigger::TriggerType::kTimed));
     }
   } else {
     // Use base class' implementation.
