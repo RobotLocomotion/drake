@@ -232,7 +232,7 @@ class LeafSystem : public System<T> {
   /// aborts for scalar types that are not arithmetic. Subclasses that require
   /// aperiodic events should override.
   void DoCalcNextUpdateTime(const Context<T>& context,
-                            EventCollection* event_info, T* time) const override {
+      EventCollection* event_info, T* time) const override {
     DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
@@ -505,7 +505,8 @@ class LeafSystem : public System<T> {
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
       const EventType& event) {
-    DRAKE_DEMAND(event.get_trigger().get_type() == Trigger::TriggerType::kPeriodic);
+    DRAKE_DEMAND(event.get_trigger().get_type() ==
+                 Trigger::TriggerType::kPeriodic);
     PeriodicEvent periodic_event;
     periodic_event.period_sec = period_sec;
     periodic_event.offset_sec = offset_sec;
@@ -798,9 +799,9 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  // If @p event_info is null, calls DoPublish() with an empty vector. Otherwise,
-  // checks if @p event_info has any publish events, if so, all publish events
-  // are extracted and passed to DoPublish().
+  // If @p event_info is null, calls DoPublish() with an empty vector.
+  // Otherwise, checks if @p event_info has any publish events, if so, all
+  // publish events are extracted and passed to DoPublish().
   //
   // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchPublishHandler(const Context<T>& context,
@@ -873,7 +874,8 @@ class LeafSystem : public System<T> {
 
   void DoGetPerStepEvents(const Context<T>& context,
                           EventCollection* event_info) const override {
-    LeafEventCollection<T>* info = dynamic_cast<LeafEventCollection<T>*>(event_info);
+    LeafEventCollection<T>* info =
+        dynamic_cast<LeafEventCollection<T>*>(event_info);
     DRAKE_DEMAND(info != nullptr);
 
     event_info->SetFrom(per_step_events_);

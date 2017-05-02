@@ -96,14 +96,14 @@ class PublishEvent : public Event {
    * Makes a Trigger of type @p trigger_type with no optional data, and
    * uses it to construct a PublishEvent with no specified callback function.
    */
-  PublishEvent(Trigger::TriggerType trigger_type)
+  explicit PublishEvent(Trigger::TriggerType trigger_type)
       : PublishEvent(trigger_type, nullptr) {}
 
   /**
    * Constructs a PublishEvent with Trigger @p trigger and no specified callback
    * function. @p trigger cannot be null.
    */
-  PublishEvent(std::unique_ptr<Trigger> trigger)
+  explicit PublishEvent(std::unique_ptr<Trigger> trigger)
       : PublishEvent(std::move(trigger), nullptr) {}
 
   /**
@@ -174,14 +174,14 @@ class DiscreteUpdateEvent : public Event {
    * Makes a Trigger of type @p trigger_type with no optional data, and uses
    * it to construct a DiscreteUpdateEvent with no specified callback function.
    */
-  DiscreteUpdateEvent(Trigger::TriggerType trigger_type)
+  explicit DiscreteUpdateEvent(Trigger::TriggerType trigger_type)
       : DiscreteUpdateEvent(trigger_type, nullptr) {}
 
   /**
    * Constructs a DiscreteUpdateEvent with Trigger @p trigger and no specified
    * callback function. @p trigger cannot be null.
    */
-  DiscreteUpdateEvent(std::unique_ptr<Trigger> trigger)
+  explicit DiscreteUpdateEvent(std::unique_ptr<Trigger> trigger)
       : DiscreteUpdateEvent(std::move(trigger), nullptr) {}
 
   /**
@@ -253,14 +253,14 @@ class UnrestrictedUpdateEvent : public Event {
    * Makes a Trigger of type @p trigger_type with no optional data, and uses it
    * to construct a UnrestrictedUpdateEvent with no specified callback function.
    */
-  UnrestrictedUpdateEvent(Trigger::TriggerType trigger_type)
+  explicit UnrestrictedUpdateEvent(Trigger::TriggerType trigger_type)
       : UnrestrictedUpdateEvent(trigger_type, nullptr) {}
 
   /**
    * Constructs a UnrestrictedUpdateEvent with Trigger @p trigger and no
    * specified callback function. @p trigger cannot be null.
    */
-  UnrestrictedUpdateEvent(std::unique_ptr<Trigger> trigger)
+  explicit UnrestrictedUpdateEvent(std::unique_ptr<Trigger> trigger)
       : UnrestrictedUpdateEvent(std::move(trigger), nullptr) {}
 
   /**

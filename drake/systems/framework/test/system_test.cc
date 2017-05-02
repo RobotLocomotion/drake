@@ -148,7 +148,8 @@ class TestSystem : public System<double> {
   void DoCalcNextUpdateTime(const Context<double>& context,
       EventCollection* event_info, double* time) const override {
     *time = context.get_time() + 1;
-    LeafEventCollection<double>* info = dynamic_cast<LeafEventCollection<double>*>(event_info);
+    LeafEventCollection<double>* info =
+        dynamic_cast<LeafEventCollection<double>*>(event_info);
     DRAKE_DEMAND(info != nullptr);
 
     if (context.get_time() < 10.0) {
@@ -236,7 +237,8 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
 TEST_F(SystemTest, DiscretePublish) {
   context_.set_time(5.0);
   auto event_info = system_.AllocateEventCollection();
-  auto info = dynamic_cast<const LeafEventCollection<double>*>(event_info.get());
+  auto info =
+      dynamic_cast<const LeafEventCollection<double>*>(event_info.get());
   DRAKE_DEMAND(info != nullptr);
 
   system_.CalcNextUpdateTime(context_, event_info.get());

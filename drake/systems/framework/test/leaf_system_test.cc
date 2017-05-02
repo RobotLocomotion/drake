@@ -103,7 +103,8 @@ class LeafSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
     event_info_ = system_.AllocateEventCollection();
-    leaf_info_ = dynamic_cast<const LeafEventCollection<double>*>(event_info_.get());
+    leaf_info_ =
+        dynamic_cast<const LeafEventCollection<double>*>(event_info_.get());
   }
 
   TestSystem<double> system_;
@@ -555,7 +556,8 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   }
 
   // Verify no exception is thrown.
-  EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()));
+  EXPECT_NO_THROW(
+      system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()));
 
   // Change the function to change the continuous state dimension.
   // Call the unrestricted update function again, now verifying that an
@@ -826,7 +828,8 @@ class TestTriggerSystem : public LeafSystem<double> {
       trigger->set_data(AbstractValue::Make<std::string>("hello"));
 
       PublishEvent<double> event(std::move(trigger),
-          std::bind(&TestTriggerSystem::CopyString, this, std::placeholders::_1, std::placeholders::_2));
+          std::bind(&TestTriggerSystem::CopyString, this,
+                    std::placeholders::_1, std::placeholders::_2));
       event.add_to(event_info);
     }
 
@@ -835,7 +838,8 @@ class TestTriggerSystem : public LeafSystem<double> {
       trigger->set_data(AbstractValue::Make<int>(42));
 
       PublishEvent<double> event(std::move(trigger),
-          std::bind(&TestTriggerSystem::CopyInt, this, std::placeholders::_1, std::placeholders::_2));
+          std::bind(&TestTriggerSystem::CopyInt, this,
+                    std::placeholders::_1, std::placeholders::_2));
       event.add_to(event_info);
     }
   }

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
@@ -373,7 +374,8 @@ class LeafEventCollection final : public EventCollection {
    * </pre>
    */
   void DoMerge(const EventCollection* other_info) override {
-    const LeafEventCollection* other = dynamic_cast<const LeafEventCollection*>(other_info);
+    const LeafEventCollection* other =
+        dynamic_cast<const LeafEventCollection*>(other_info);
     DRAKE_DEMAND(other != nullptr);
 
     const std::vector<const PublishEvent<T>*>& other_publish =

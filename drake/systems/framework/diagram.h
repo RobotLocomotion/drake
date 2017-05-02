@@ -771,7 +771,7 @@ class Diagram : public System<T>,
   /// types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic.
   void DoCalcNextUpdateTime(const Context<T>& context,
-                            EventCollection* event_info, T* time) const override {
+      EventCollection* event_info, T* time) const override {
     DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
@@ -1068,7 +1068,8 @@ class Diagram : public System<T>,
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
-  DoCalcNextUpdateTimeImpl(const Context<T1>&, EventCollection*, T1* time) const {
+  DoCalcNextUpdateTimeImpl(
+      const Context<T1>&, EventCollection*, T1* time) const {
     DRAKE_ABORT_MSG(
         "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");

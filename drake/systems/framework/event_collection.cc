@@ -16,12 +16,14 @@ void DiagramEventCollection::set_and_own_sub_event_collection(
   sub_event_collection_[index] = owned_sub_event_collection_[index].get();
 }
 
-const EventCollection* DiagramEventCollection::get_sub_event_collection(int index) const {
+const EventCollection* DiagramEventCollection::get_sub_event_collection(
+    int index) const {
   DRAKE_DEMAND(index >= 0 && index < num_sub_event_collection());
   return sub_event_collection_[index];
 }
 
-EventCollection* DiagramEventCollection::get_mutable_sub_event_collection(int index) {
+EventCollection* DiagramEventCollection::get_mutable_sub_event_collection(
+    int index) {
   DRAKE_DEMAND(index >= 0 && index < num_sub_event_collection());
   return sub_event_collection_[index];
 }
