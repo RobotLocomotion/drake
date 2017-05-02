@@ -227,8 +227,8 @@ drake_cc_library(
     srcs = ["call_matlab.cc"],
     hdrs = ["call_matlab.h"],
     deps = [
-        "common",
-        "matlab_rpc",
+        ":common",
+        ":matlab_rpc",
     ],
 )
 
