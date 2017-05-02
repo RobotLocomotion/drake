@@ -26,9 +26,9 @@ solution, so must be avoided.
 */
 
 /**
- * An abstract class for an integrator for ODEs. Integrators solve
- * initial value problems of the form:<pre>
- * x'(t) = f(t, y(t)) with f : ℝ × ℝⁿ → ℝⁿ
+ * An abstract class for an integrator for ODEs and DAEs as represented by a
+ * Drake System. Integrators solve initial value problems of the form:<pre>
+ * ẋ(t) = f(t, x(t)) with f : ℝ × ℝⁿ → ℝⁿ
  * </pre>
  * (i.e., `f()` is an ordinary differential equation) given initial conditions
  * (t₀, x₀). Thus, integrators advance the continuous state of a dynamical
@@ -92,13 +92,6 @@ solution, so must be avoided.
  * a plethora of statistics that can be used to diagnose poor integration
  * performance. For example, a large number of shrinkages due to error control
  * could indicate that a system is computationally stiff.
- *
- * Derived classes are tasked with providing a method, DoStep(), to (1) take a
- * *single integration step* from time/state (t₀, x₀) to time/state (t₁, x₁), or
- * reporting failure (which might occur if t₁-t₀ is too large of a step) and
- * (2) computing an estimate of the error, if possible, over that step. Such
- * derived classes may provide special routines for any bespoke initialization
- * or statistics collection.
  *
  *  - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
  *                     Equations II (Stiff and Differential-Algebraic Problems).
@@ -438,11 +431,12 @@ class IntegratorBase {
   }
 
   /**
-   * Integrates the system forward in time. Integrator must already have
+   * Integrates the system forward in time by a single step with step size
+   * subject to integration error tolerances (assuming that the integrator
+   * supports error estimation). The integrator must already have
    * been initialized or an exception will be thrown. The context will be
    * integrated forward by an amount that will never exceed the minimum of
    * `publish_dt`, `update_dt`, and `1.01 * get_maximum_step_size()`.
-   * Error controlled integrators may take smaller steps.
    *
    * @param publish_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next publish will occur.
@@ -458,7 +452,7 @@ class IntegratorBase {
    * @warning Users should generally not call this function directly; within
    *          simulation circumstances, users will typically call
    *          `Simulator::StepTo()`. In other circumstances, users will
-   *          typically call `IntegratorBase::StepExactlyFixed()`.
+   *          typically call `IntegratorBase::IntegrateExactly()`.
    */
   // TODO(edrumwri): Make the stretch size configurable.
   StepResult IntegrateAtMost(const T& publish_dt, const T& update_dt,
@@ -467,7 +461,9 @@ class IntegratorBase {
   /// Stepping function for integrators operating outside of Simulator that
   /// advances the continuous state exactly by @p dt. This method is designed
   /// for integrator users that do not wish to consider publishing or
-  /// discontinuous, mid-interval updates.
+  /// discontinuous, mid-interval updates. This method will step the integrator
+  /// multiple times, as necessary, to attain requested error tolerances and
+  /// to ensure the integrator converges.
   /// @warning Users should simulate systems using `Simulator::StepTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
@@ -475,6 +471,11 @@ class IntegratorBase {
   /// @throws std::logic_error If the integrator has not been initialized or
   ///                          dt is negative **or** if the integrator
   ///                          is operating in fixed step mode.
+  /// @sa IntegrateAtMost(), which is designed to be operated by Simulator and
+  ///     accounts for publishing and state reinitialization.
+  /// @sa IntegrateWithSingleStep(), which is also designed to be operated
+  ///     *outside of* Simulator, but throws an exception if the integrator
+  ///     cannot advance time by @p dt in a single step.
   void IntegrateExactly(const T& dt) {
     using std::max;
     using std::min;
@@ -517,6 +518,11 @@ class IntegratorBase {
   ///                          is not operating in fixed step mode.
   /// @throws std::runtime_error If the integrator was unable to take a step
   ///         of the requested size.
+  /// @sa IntegrateAtMost(), which is designed to be operated by Simulator and
+  ///     accounts for publishing and state reinitialization.
+  /// @sa IntegrateExactly(), which is also designed to be operated
+  ///     *outside of* Simulator, but will take as many integration steps as
+  ///     necessary until time has been stepped forward by @p dt.
   void IntegrateWithSingleFixedStep(const T& dt) {
     if (dt < 0) {
       throw std::logic_error("IntegrateWithSingleFixedStep() called with a "
@@ -553,7 +559,6 @@ class IntegratorBase {
     largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
     num_ode_evals_ = 0;
-    error_check_failures_ = 0;
     num_shrinkages_from_error_control_ = 0;
     num_shrinkages_from_substep_failures_ = 0;
     num_substep_failures_ = 0;
@@ -567,33 +572,29 @@ class IntegratorBase {
     return num_substep_failures_;
   }
 
-  /// Gets the number of step size shrinkages due to sub-step failures.
+  /// Gets the number of step size shrinkages due to sub-step failures (e.g.,
+  /// integrator convergence failures) since the last call to ResetStatistics()
+  /// or Initialize().
   int64_t get_num_step_shrinkages_from_substep_failures() const {
     return num_shrinkages_from_substep_failures_;
   }
 
-  /// Gets the number of step size shrinkages due to error control.
+  /// Gets the number of step size shrinkages due to failure to meet targeted
+  /// error tolerances, since the last call to ResetStatistics or Initialize().
   int64_t get_num_step_shrinkages_from_error_control() const {
     return num_shrinkages_from_error_control_;
   }
 
-  /**
-   * Returns the number of ODE function evaluations (calls to
-   * CalcTimeDerivatives()) since the last call to ResetStatistics() or
-   * Initialize(). This count includes *all* such calls including (1)
-   * those necessary to compute Jacobian matrices; (2) those used in rejected
-   * integrated steps (for, e.g., purposes of error control); (3) those used
-   * strictly for integrator error estimation; and (4) calls that exhibit little
-   * cost (due to results being cached).
-   */
+/**
+ * Returns the number of ODE function evaluations (calls to
+ * CalcTimeDerivatives()) since the last call to ResetStatistics() or
+ * Initialize(). This count includes *all* such calls including (1)
+ * those necessary to compute Jacobian matrices; (2) those used in rejected
+ * integrated steps (for, e.g., purposes of error control); (3) those used
+ * strictly for integrator error estimation; and (4) calls that exhibit little
+ * cost (due to results being cached).
+ */
   int64_t get_num_derivative_evaluations() const { return num_ode_evals_; }
-
-  /**
-   * Returns the number of failures to accept an integration step due to
-   * not meeting error tolerances since the last call to ResetStatistics()
-   * or Initialize().
-  */
-  int64_t get_error_check_failures() const { return error_check_failures_; }
 
   /**
    * The actual size of the successful first step.
@@ -961,6 +962,13 @@ class IntegratorBase {
    */
 
  protected:
+  // Derived classes are tasked with providing a method, DoStep(), to (1) take a
+  // *single integration step* from time/state (t₀, x₀) to time/state (t₁, x₁),
+  // or reporting failure (which might occur if t₁-t₀ is too large of a step)
+  // and (2) computing an estimate of the error, if possible, over that step.
+  // Such derived classes may provide special routines for any bespoke
+  // initialization or statistics collection.
+
   /// Resets any statistics particular to a specific integrator. The default
   /// implementation of this function does nothing. If your integrator
   /// collects its own statistics, you should re-implement this method and
@@ -999,12 +1007,6 @@ class IntegratorBase {
   void set_accuracy_in_use(double accuracy) { accuracy_in_use_ = accuracy; }
 
   /**
-   * Increments the count of integration step failures due to error tolerance
-   * failure.
-   */
-  void report_error_check_failure() { ++error_check_failures_; }
-
-  /**
    * Default code for advancing the continuous state of the system by a single
    * step of @p dt_max (or smaller, depending on error control). This particular
    * function is designed to be called directly by an error estimating
@@ -1015,11 +1017,11 @@ class IntegratorBase {
    * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
    *               requirements.
-   * @param[in,out] derivs0 A pointer to the state derivatives at the system's
-   *                current time (t0), *which must have already been evaluated
-   *                at t0*. These values may be modified on return.
    * @throws std::logic_error if integrator does not support error
    *                          estimation.
+   * @note This function will shrink the integration step as necessary whenever
+   *       the integrator's DoStepAtMost() fails to take the requested step
+   *       e.g., due to integrator convergence failure.
    * @returns `true` if the full step of size @p dt_max is taken and `false`
    *          otherwise (i.e., a smaller step than @p dt_max was taken).
    */
@@ -1072,7 +1074,7 @@ class IntegratorBase {
 
   /**
    * Derived classes must implement this method to (1) integrate the continuous
-   * portion of this system forward *exactly* by a single step of size @p dt and
+   * portion of this system forward by a single step of size @p dt and
    * (2) set the error estimate (via get_mutable_error_estimate()). This
    * method is called during the default DoIntegrateAtMost() method.
    * @param dt The integration step to take.
@@ -1180,7 +1182,6 @@ class IntegratorBase {
   T smallest_adapted_step_size_taken_{nan()};
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
-  int64_t error_check_failures_{0};
   int64_t num_ode_evals_{0};
   int64_t num_shrinkages_from_error_control_{0};
   int64_t num_shrinkages_from_substep_failures_{0};
@@ -1231,10 +1232,6 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
     return true;
   }
 
-  // Constants for step size growth and shrinkage.
-  const double kDTShrink = 0.95;
-  const double kDTGrow = 1.001;
-
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation())
     throw std::logic_error("StepErrorControlled() requires error estimation.");
@@ -1258,21 +1255,26 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
 
   bool step_succeeded = false;
   do {
+    // Constants for step size growth and shrinkage.
+    const double shrink_fraction_limit = 0.95;
+    const double growth_fraction_limit = 1.001;
+
     // If we lose more than a small fraction of the step size we wanted
     // to take due to a need to stop at dt_max, make a note of that so the
     // step size adjuster won't try to grow from the current step.
     bool dt_was_artificially_limited = false;
-    if (dt_max < kDTShrink * current_step_size) {
+    if (dt_max < shrink_fraction_limit * current_step_size) {
       // dt_max much smaller than current step size.
       dt_was_artificially_limited = true;
       current_step_size = dt_max;
     } else {
-      if (dt_max < kDTGrow * current_step_size)
+      if (dt_max < growth_fraction_limit * current_step_size)
         current_step_size = dt_max;  // dt_max is roughly current step.
     }
 
     // Keep attempting to step until stepping successful.
     while (!Step(current_step_size)) {
+      SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", current_step_size);
       current_step_size /= 2;
       dt_was_artificially_limited = true;
       ++num_shrinkages_from_substep_failures_;
@@ -1283,6 +1285,7 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
     T err_norm = CalcStateChangeNorm(*get_error_estimate());
     std::tie(step_succeeded, current_step_size) = CalcAdjustedStepSize(
         err_norm, dt_was_artificially_limited, current_step_size);
+    SPDLOG_DEBUG(drake::log(), "Adjusted step size: {}", current_step_size);
 
     if (step_succeeded) {
       ideal_next_step_size_ = current_step_size;
@@ -1296,7 +1299,6 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
         set_smallest_adapted_step_size_taken(current_step_size);
     } else {
       ++num_shrinkages_from_error_control_;
-      report_error_check_failure();
 
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
@@ -1438,13 +1440,17 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   // a special status from IntegrateAtMost().
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
-  if (new_step_size < get_working_minimum_step_size()) {
-    if (min_step_exceeded_throws_) {
-      throw std::runtime_error("Error control wants to select step smaller "
-                "than minimum allowed for this integrator.");
-    }
-    new_step_size = max(new_step_size, get_working_minimum_step_size());
+  if (new_step_size < get_working_minimum_step_size() &&
+      min_step_exceeded_throws_) {
+    SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
+        "size of {}; working minimum is ", new_step_size,
+                 get_working_minimum_step_size());
+    std::ostringstream str;
+    str << "Error control wants to select step smaller than minimum allowed" <<
+           "(" << get_working_minimum_step_size() << ")";
+    throw std::runtime_error(str.str());
   }
+  new_step_size = max(new_step_size, get_working_minimum_step_size());
 
   return std::make_pair(new_step_size >= current_step_size, new_step_size);
 }
