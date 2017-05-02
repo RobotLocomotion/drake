@@ -122,19 +122,20 @@ class Cache {
   /// Invalidates the value for @p ticket, and all entries that depend on it.
   void Invalidate(CacheTicket ticket);
 
-  /// Validates the cache entry corresponding to the provided @p ticket and
-  /// recursively invalidates all dependents.
+  /// Validates the cache entry corresponding to the provided @p ticket.
   /// In order to make use of the automatic validation capability of cache
   /// entries provided by %Cache, users should use Set() whenever copies of the
-  /// particular entry type are cheap to perform since Set() automatically
-  /// invalidates dependents. However, in many cases cache entries are large
-  /// complex data structures and it might be more convenient to first retrieve
-  /// a mutable entry with GetMutable(), make the necessary updates to the entry
-  /// and finally, validate it with a call to this method.
+  /// particular entry type are cheap to perform since Set() validates the entry
+  /// being modified and invalidates dependents automatically. However, in many
+  /// cases cache entries are large complex data structures and it might be more
+  /// convenient to first retrieve a mutable entry with GetMutable() (which
+  /// automatically invalidates the requested entry and its dependents), make
+  /// the necessary updates to the entry and finally, validate it with a call to
+  /// this method.
   ///
   /// @warning Only advanced, careful users should call this method since
   /// validating cache entries by hand can be error prone. Use with care.
-  void Validate(CacheTicket ticket);
+  void validate(CacheTicket ticket);
 
   /// Returns `true` if the cache entry referenced to by @p ticket is valid.
   /// Returns `false` otherwise.
@@ -174,16 +175,21 @@ class Cache {
   /// Returns the cached item for the given @p ticket, or nullptr if the item
   /// has been invalidated.
   ///
-  /// The bare pointer should not be held, because the data may become invalid
-  /// if the ticket's prerequisites are modified.
+  /// @warning The bare pointer should not be held, because the data may become
+  /// invalid if the ticket's prerequisites are modified.
   const AbstractValue* Get(CacheTicket ticket) const;
 
   /// Returns the mutable cached item for the entry referenced to by @p ticket,
   /// invalidating this entry itself and recursively invalidating all of its
   /// dependents.
   ///
-  /// The bare pointer should not be held, because the data may become invalid
-  /// if the ticket's prerequisites are modified.
+  /// @warning The bare pointer should not be held, because the data may become
+  /// invalid if the ticket's prerequisites are modified.
+  ///
+  /// @warning It is responsability of the caller to call validate() on this
+  /// entry once done with the necessary updates. Failure to do so will have no
+  /// effect on the final result of the computation, but it might have an impact
+  /// on efficiency since the entry will be recomputed every time is accessed.
   AbstractValue* GetMutable(CacheTicket ticket);
 
  private:

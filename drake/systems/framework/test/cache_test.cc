@@ -45,7 +45,7 @@ class CacheTest : public ::testing::Test {
     // MakeCacheEntry() only creates cache entry but marks it as invalid.
     // Since the constructor for SomeBeefyDataStructure already does some
     // initialization we'll mark this entry as valid.
-    cache_.Validate(ticket3_);
+    cache_.validate(ticket3_);
     cache_.Init(ticket2_, PackValue(2));
   }
 
@@ -90,7 +90,7 @@ TEST_F(CacheTest, GetMutableReturnsValueAndInvalidates) {
   mutable_value3.set_d(21);
   // We are done computing; validate after setting the entry's value.
   // Note: Get() below returns nullptr for invalid entries.
-  cache_.Validate(ticket3_);
+  cache_.validate(ticket3_);
   // Verify we can retrieve the modified value.
   const AbstractValue* abstract_value3 = cache_.Get(ticket3_);
   const SomeBeefyDataStructure& value3 =

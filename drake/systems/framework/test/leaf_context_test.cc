@@ -257,7 +257,7 @@ TEST_F(LeafContextTest, MakeCacheEntry) {
   TestAbstractType& cached_value =
       ctx.GetMutableCachedValue<TestAbstractType>(ticket0);
   cached_value.set_data(21);  // Do some work with this entry.
-  ctx.ValidateCacheEntry(ticket0);  // Intentionally validate.
+  ctx.validate_cache_entry(ticket0);  // Intentionally validate.
   // Initialize dependent cache entry, and therefore validate it.
   ctx.InitCachedValue(ticket1, PackValue(4));
   EXPECT_TRUE(ctx.is_cache_entry_valid(ticket0));

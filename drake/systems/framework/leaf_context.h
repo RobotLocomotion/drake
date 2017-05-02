@@ -145,6 +145,12 @@ class LeafContext : public Context<T> {
   /// all of its dependents.
   /// In Debug builds, if the types don't match, std::bad_cast will be
   /// thrown.  In Release builds, this is not guaranteed.
+  ///
+  /// @warning It is responsability of the caller to call validate_cache_entry()
+  /// on this entry once done with the necessary updates. Failure to do so will
+  /// have no effect on the final result of the computation, but it might have
+  /// an impact on efficiency since the entry will be recomputed every time is
+  /// accessed.
   template <class EntryType>
   EntryType& GetMutableCachedValue(CacheTicket ticket) const {
     return cache_.GetMutable(ticket)->template GetMutableValue<EntryType>();
@@ -159,21 +165,22 @@ class LeafContext : public Context<T> {
     return cache_.Get(ticket)->template GetValue<EntryType>();
   }
 
-  /// Validates the cache entry corresponding to the provided @p ticket and
-  /// recursively invalidates all dependents.
+  /// Validates the cache entry corresponding to the provided @p ticket.
   /// In order to make use of the automatic validation capability of cache
   /// entries provided by the caching system, users should use SetCachedValue()
   /// whenever copies of the particular entry type are cheap to perform since
-  /// SetCachedValue() automatically invalidates dependents.
+  /// SetCachedValue() validates the entry being modified and invalidates its
+  /// dependents automatically.
   /// However, in many cases cache entries are large complex data structures and
   /// it might be more convenient to first retrieve a mutable entry with
-  /// GetMutableCachedValue(), make the necessary updates to the entry and
+  /// GetMutableCachedValue() (which automatically invalidates the requested
+  /// entry and its dependents), make the necessary updates to the entry and
   /// finally, validate it with a call to this method.
   ///
   /// @warning Only advanced, careful users should call this method since
   /// validating cache entries by hand can be error prone. Use with care.
-  void ValidateCacheEntry(CacheTicket ticket) const {
-    cache_.Validate(ticket);
+  void validate_cache_entry(CacheTicket ticket) const {
+    cache_.validate(ticket);
   }
 
   // =========================================================================

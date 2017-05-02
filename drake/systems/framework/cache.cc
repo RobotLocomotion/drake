@@ -51,10 +51,9 @@ void Cache::Invalidate(CacheTicket ticket) {
   InvalidateRecursively({ticket});
 }
 
-void Cache::Validate(CacheTicket ticket) {
+void Cache::validate(CacheTicket ticket) {
   DRAKE_DEMAND(ticket >= 0 && ticket < static_cast<int>(store_.size()));
   store_[ticket].set_is_valid(true);
-  InvalidateRecursively(store_[ticket].dependents());
 }
 
 void Cache::InvalidateRecursively(const std::set<CacheTicket>& to_invalidate) {
