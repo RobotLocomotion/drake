@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/maliput_railcar_state_translator.h"
@@ -25,6 +26,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/primitives/multiplexer.h"
 
 namespace drake {
 
@@ -128,6 +130,75 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   builder_->Connect(*command_subscriber, *simple_car);
   builder_->Connect(simple_car->state_output(),
                     coord_transform->get_input_port(0));
+  AddPublisher(*simple_car, id);
+  AddPublisher(*coord_transform, id);
+  return id;
+}
+
+template <typename T>
+int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
+    const std::string& name, bool initial_with_s,
+    const SimpleCarState<T>& initial_state) {
+  DRAKE_DEMAND(!has_started());
+  DRAKE_DEMAND(aggregator_ != nullptr);
+  CheckNameUniqueness(name);
+  if (road_ == nullptr) {
+    throw std::runtime_error(
+        "AutomotiveSimulator::AddMobilControlledSimpleCar(): "
+        "RoadGeometry not set. Please call SetRoadGeometry() first before "
+        "calling this method.");
+  }
+  const int id = allocate_vehicle_number();
+
+  auto mobil_planner =
+      builder_->template AddSystem<MobilPlanner<T>>(*road_, initial_with_s);
+  mobil_planner->set_name(name + "_mobil_planner");
+  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
+  idm_controller->set_name(name + "_idm_controller");
+
+  auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
+  simple_car->set_name(name + "_simple_car");
+  vehicles_[id] = simple_car;
+  simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
+  auto pursuit = builder_->template AddSystem<PurePursuitController<T>>();
+  pursuit->set_name(name + "_pure_pursuit_controller");
+  auto mux = builder_->template AddSystem<systems::Multiplexer<T>>(
+      DrivingCommand<T>());
+  mux->set_name(name + "_mux");
+  auto coord_transform =
+      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+  coord_transform->set_name(name + "_transform");
+  builder_->Connect(simple_car->state_output(),
+                    coord_transform->get_input_port(0));
+
+  // Wire up MobilPlanner and IdmController.
+  builder_->Connect(simple_car->pose_output(), mobil_planner->ego_pose_input());
+  builder_->Connect(simple_car->velocity_output(),
+                    mobil_planner->ego_velocity_input());
+  builder_->Connect(idm_controller->acceleration_output(),
+                    mobil_planner->ego_acceleration_input());
+  builder_->Connect(aggregator_->get_output_port(0),
+                    mobil_planner->traffic_input());
+
+  builder_->Connect(simple_car->pose_output(),
+                    idm_controller->ego_pose_input());
+  builder_->Connect(simple_car->velocity_output(),
+                    idm_controller->ego_velocity_input());
+  builder_->Connect(aggregator_->get_output_port(0),
+                    idm_controller->traffic_input());
+
+  builder_->Connect(simple_car->pose_output(), pursuit->ego_pose_input());
+  builder_->Connect(mobil_planner->lane_output(), pursuit->lane_input());
+  // Build DrivingCommand via a mux of two scalar outputs (a BasicVector where
+  // row 0 = steering command, row 1 = acceleration command).
+  builder_->Connect(pursuit->steering_command_output(), mux->get_input_port(0));
+  builder_->Connect(idm_controller->acceleration_output(),
+                    mux->get_input_port(1));
+  builder_->Connect(mux->get_output_port(0), simple_car->get_input_port(0));
+
+  ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
+                               simple_car->velocity_output());
+
   AddPublisher(*simple_car, id);
   AddPublisher(*coord_transform, id);
   return id;

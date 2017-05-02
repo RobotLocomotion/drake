@@ -24,6 +24,11 @@ DEFINE_string(simple_car_names, "",
               "would spawn 3 cars subscribed to DRIVING_COMMAND_Russ, "
               "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang). If this "
               "option is provided, num_simple_car must not be provided.");
+DEFINE_int32(num_mobil_car, 0,
+             "Number of MOBIL-controlled SimpleCar vehicles. This option is "
+             "currently only applied when the road network is a dragway. "
+             "MOBIL-controlled vehicles are placed behind any idm-controlled "
+             "railcars and any fixed-speed railcars.");
 DEFINE_int32(num_trajectory_car, 0, "Number of TrajectoryCar vehicles. This "
              "option is currently only applied when the road network is a flat "
              "plane or a dragway.");
@@ -88,10 +93,11 @@ using maliput::api::Lane;
 namespace automotive {
 namespace {
 
-// The distance between the coordinates of consecutive rows of railcars on a
-// dragway. 5 m ensures a gap between consecutive rows of Prius vehicles. It was
-// empirically chosen.
+// The distance between the coordinates of consecutive rows of railcars and
+// other controlled cars (e.g. MOBIL) on a dragway. 5 m ensures a gap between
+// consecutive rows of Prius vehicles. It was empirically chosen.
 constexpr double kRailcarRowSpacing{5};
+constexpr double kControlledCarRowSpacing{5};
 
 enum class RoadNetworkType {
   flat = 0,
@@ -215,12 +221,33 @@ void AddVehicles(RoadNetworkType road_network_type,
                                        std::get<1>(params),
                                        std::get<2>(params));
     }
+
+    for (int i = 0; i < FLAGS_num_mobil_car; ++i) {
+      const int lane_index = i % FLAGS_num_dragway_lanes;
+      const std::string name = "MOBIL" + std::to_string(i);
+      SimpleCarState<double> state;
+      const int row = i / FLAGS_num_dragway_lanes;
+      const double x_offset = kControlledCarRowSpacing * row;
+      const Lane* lane =
+          dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
+      if (x_offset >= lane->length()) {
+        throw std::runtime_error(
+            "Ran out of lane length to add new MOBIL-controlled SimpleCars.");
+      }
+      const double y_offset = lane->ToGeoPosition({0., 0., 0.}).y;
+      state.set_x(x_offset);
+      state.set_y(y_offset);
+      simulator->AddMobilControlledSimpleCar(name, true /* with_s */, state);
+    }
+
     AddMaliputRailcar(FLAGS_num_idm_controlled_maliput_railcar,
         true /* IDM controlled */, 0 /* initial s offset */,
         dragway_road_geometry, simulator);
     const double initial_s_offset =
-      std::ceil(FLAGS_num_idm_controlled_maliput_railcar /
-          FLAGS_num_dragway_lanes) * kRailcarRowSpacing;
+        std::ceil(FLAGS_num_idm_controlled_maliput_railcar /
+                  FLAGS_num_dragway_lanes) * kRailcarRowSpacing +
+        std::ceil(FLAGS_num_mobil_car /
+                  FLAGS_num_dragway_lanes) * kControlledCarRowSpacing;
     AddMaliputRailcar(FLAGS_num_maliput_railcar, false /* IDM controlled */,
         initial_s_offset, dragway_road_geometry, simulator);
     if (FLAGS_with_stalled_cars) {
@@ -237,6 +264,7 @@ void AddVehicles(RoadNetworkType road_network_type,
             "StalledCarChannel" + std::to_string(i), state);
       }
     }
+
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {

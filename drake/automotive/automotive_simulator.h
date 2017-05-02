@@ -9,8 +9,12 @@
 #include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
+#include "drake/automotive/idm_controller.h"
+#include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput_railcar.h"
+#include "drake/automotive/mobil_planner.h"
+#include "drake/automotive/pure_pursuit_controller.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -73,6 +77,29 @@ class AutomotiveSimulator {
   /// @return The ID of the car that was just added to the simulation.
   int AddPriusSimpleCar(
       const std::string& name, const std::string& channel_name,
+      const SimpleCarState<T>& initial_state = SimpleCarState<T>());
+
+  /// Adds a SimpleCar to this simulation controlled by a MOBIL planner coupled
+  /// with a PurePursuitController to perform lateral control of the vehicle,
+  /// along with an IDM longitudinal controller.  The car is visualized as a
+  /// Toyota Prius.
+  ///
+  /// @pre Start() has NOT been called.
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param name The car's name, which must be unique among all cars.
+  /// Otherwise a std::runtime_error will be thrown.
+  ///
+  /// @param initial_with_s Initial travel direction in the lane. (See
+  /// MobilPlanner documentation.)
+  ///
+  /// @param initial_state The SimpleCar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddMobilControlledSimpleCar(
+      const std::string& name, bool initial_with_s,
       const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
