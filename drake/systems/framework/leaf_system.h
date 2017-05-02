@@ -694,11 +694,104 @@ class LeafSystem : public System<T> {
     return next_index;
   }
 
+  /// User supplemented event handler for publish events. Implement this in your
+  /// derived LeafSystem if you want it to take some action when the Simulator
+  /// calls the Publish() method. This can be used for sending messages,
+  /// producing console output, debugging, logging, saving the trajectory to a
+  /// file, etc.
+  ///
+  /// The default implementation traverses @p events in order, and for each
+  /// event that has a callback function, it will invoke it with @p context,
+  /// and the trigger in that event.
+  ///
+  /// This method is called only from the virtual DispatchPublishHandler, which
+  /// is only called from the public non-virtual Publish(), which will have
+  /// already error-checked @p context so you may assume that it is valid.
+  ///
+  /// @param[in] context Const current context.
+  /// @param[in] events All the publish events that need handling.
+  virtual void DoPublish(const Context<T>& context,
+      const std::vector<const PublishEvent<T>*>& events) const {
+    for (const PublishEvent<T>* event : events) {
+      if (event->Handle != nullptr) {
+        event->Handle(context, event->get_trigger());
+      }
+    }
+  }
+
+  /// User supplemented event handler for discrete update events.
+  /// This method updates the @p discrete_state on discrete update events.
+  /// Override it, along with DoCalcNextUpdateTime(), if your System has any
+  /// discrete variables.
+  ///
+  /// The default implementation traverses @p events in order, and for each
+  /// event that has a callback function, it will invoke it with @p context,
+  /// the trigger in that event and @p discrete_state.
+  ///
+  /// This method is called only from the virtual
+  /// DispatchDiscreteVariableUpdateHandler(), which is only called from
+  /// the public non-virtual CalcDiscreteVariableUpdates(), which will already
+  /// have error-checked the parameters so you don't have to. In particular,
+  /// implementations may assume that @p context is valid; that
+  /// @p discrete_state is non-null, and that the referenced object has the
+  /// same constituent structure as was produced by AllocateDiscreteVariables().
+  ///
+  /// @param[in] context The "before" state.
+  /// @param[in] events All the discrete update events that need handling.
+  /// @param[in,out] discrete_state The current state of the system on input;
+  /// the desired state of the system on return.
+  virtual void DoCalcDiscreteVariableUpdates(const Context<T>& context,
+      const std::vector<const DiscreteUpdateEvent<T>*>& events,
+      DiscreteValues<T>* discrete_state) const {
+    for (const DiscreteUpdateEvent<T>* event : events) {
+      if (event->Handle != nullptr) {
+        event->Handle(context, event->get_trigger(), discrete_state);
+      }
+    }
+  }
+
+  /// User supplemented event handler for
+  /// EventCollection::EventType::kUnrestrictedUpdate. This function updates the
+  /// @p state *in an unrestricted fashion* on unrestricted update events.
+  /// Override this function if you need your System to update abstract
+  /// variables or generally make changes to state that cannot be made using
+  /// CalcDiscreteVariableUpdates() or via integration of continuous variables.
+  ///
+  /// The default implementation traverses @p events in order, and for each
+  /// event that has a callback function, it will invoke it with @p context,
+  /// the trigger in that event and @p discrete_state.
+  ///
+  /// This method is called only from the virtual
+  /// DispatchUnrestrictedUpdateHandler(), which is only called from the
+  /// non-virtual public CalcUnrestrictedUpdate(), which will already have
+  /// error-checked the parameters so you don't have to. In particular,
+  /// implementations may assume that the @p context is valid; that @p state
+  /// is non-null, and that the referenced object has the same constituent
+  /// structure as the state in @p context.
+  ///
+  /// @param[in]     context The "before" state that is to be used to calculate
+  ///                        the returned state update.
+  /// @param[in]     events All the unrestricted update events that need
+  ///                       handling.
+  /// @param[in,out] state   The current state of the system on input; the
+  ///                        desired state of the system on return.
+  // TODO(sherm1) Shouldn't require preloading of the output state; better to
+  //              note just the changes since usually only a small subset will
+  //              be changed by this method.
+  virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
+      const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
+      State<T>* state) const {
+    for (const UnrestrictedUpdateEvent<T>* event : events) {
+      if (event->Handle != nullptr) {
+        event->Handle(context, event->get_trigger(), state);
+      }
+    }
+  }
+
  private:
-  // If @p event_info is null, calls DoPublish() with a vector containing one
-  // Trigger::TriggerType::kForced trigger. Otherwise, checks if a
-  // EventCollection::HandlerType::kPublish event exists in @p event_info. If one
-  // exists, all its triggers are extracted and passed to DoPublish().
+  // If @p event_info is null, calls DoPublish() with an empty vector. Otherwise,
+  // checks if @p event_info has any publish events, if so, all publish events
+  // are extracted and passed to DoPublish().
   //
   // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchPublishHandler(const Context<T>& context,
@@ -716,40 +809,10 @@ class LeafSystem : public System<T> {
     }
   }
 
-  virtual void DoPublish(const Context<T>& context,
-      const std::vector<const PublishEvent<T>*>& events) const {
-    for (const PublishEvent<T>* event : events) {
-      if (event->Handle != nullptr) {
-        event->Handle(context, event->get_trigger());
-      }
-    }
-  }
-
-  virtual void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>& events,
-      DiscreteValues<T>* discrete_state) const {
-    for (const DiscreteUpdateEvent<T>* event : events) {
-      if (event->Handle != nullptr) {
-        event->Handle(context, event->get_trigger(), discrete_state);
-      }
-    }
-  }
-
-  virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
-      const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
-      State<T>* state) const {
-    for (const UnrestrictedUpdateEvent<T>* event : events) {
-      if (event->Handle != nullptr) {
-        event->Handle(context, event->get_trigger(), state);
-      }
-    }
-  }
-
-  // If @p event_info is null, calls DoCalcDiscreteVariableUpdates() with a
-  // vector containing one Trigger::TriggerType::kForced trigger. Otherwise,
-  // checks if a EventCollection::HandlerType::kDiscreteUpdate event exists in
-  // @p event_info. If one exists, all its triggers are extracted and passed to
-  // DoCalcDiscreteVariableUpdates().
+  // If @p event_info is null, calls DoCalcDiscreteVariableUpdates() with an
+  // empty vector. Otherwise, checks if any discrete update event exists in
+  // @p event_info. If so, all discrete update events are extracted and passed
+  // to DoCalcDiscreteVariableUpdates().
   //
   // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchDiscreteVariableUpdateHandler(
@@ -761,7 +824,8 @@ class LeafSystem : public System<T> {
       return;
     }
 
-    const LeafEventCollection<T>* info = dynamic_cast<const LeafEventCollection<T>*>(event_info);
+    const LeafEventCollection<T>* info =
+        dynamic_cast<const LeafEventCollection<T>*>(event_info);
     DRAKE_DEMAND(info != nullptr);
     if (info->HasDiscreteUpdateEvents()) {
       this->DoCalcDiscreteVariableUpdates(context,
@@ -769,11 +833,10 @@ class LeafSystem : public System<T> {
     }
   }
 
-  // If @p event_info is null, calls DoCalcUnrestrictedUpdate() with a vector
-  // containing one Trigger::TriggerType::kForced trigger. Otherwise, checks
-  // if a EventCollection::HandlerType::kDiscreteUpdate event exists in @p event_info.
-  // If one exists, all its triggers are extracted and passed to
-  // DoCalcUnrestrictedUpdate().
+  // If @p event_info is null, calls DoCalcUnrestrictedUpdate() with an empty
+  // vector. Otherwise, checks if any unrestricted update event exists in
+  // @p event_info. If so, all unrestricted update events are extracted and
+  // passed to DoCalcUnrestrictedUpdate().
   //
   // Assumes @p event_info is an instance of LeafEventCollection.
   void DispatchUnrestrictedUpdateHandler(const Context<T>& context,

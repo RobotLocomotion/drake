@@ -252,7 +252,7 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_systems; ++i) {
       std::unique_ptr<EventCollection> sub_info =
           sorted_systems_[i]->AllocateEventCollection();
-      info->set_and_own_sub_event_info(i, std::move(sub_info));
+      info->set_and_own_sub_event_collection(i, std::move(sub_info));
     }
 
     return std::unique_ptr<EventCollection>(info);
@@ -843,7 +843,7 @@ class Diagram : public System<T>,
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       DRAKE_DEMAND(subcontext != nullptr);
       if (info != nullptr) {
-        const EventCollection* subinfo = info->get_sub_event_info(i);
+        const EventCollection* subinfo = info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
         sorted_systems_[i]->Publish(*subcontext, subinfo);
       } else {
@@ -885,7 +885,7 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(subdifference != nullptr);
 
       if (info != nullptr) {
-        const EventCollection* subinfo = info->get_sub_event_info(i);
+        const EventCollection* subinfo = info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
         sorted_systems_[i]->CalcDiscreteVariableUpdates(
             *subcontext, subinfo, subdifference);
@@ -921,7 +921,7 @@ class Diagram : public System<T>,
       State<T>* substate = diagram_state->get_mutable_substate(i);
       DRAKE_DEMAND(substate != nullptr);
       if (info != nullptr) {
-        const EventCollection* subinfo = info->get_sub_event_info(i);
+        const EventCollection* subinfo = info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
         sorted_systems_[i]->CalcUnrestrictedUpdate(
             *subcontext, subinfo, substate);
@@ -1086,14 +1086,14 @@ class Diagram : public System<T>,
     // imminent updates.
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
-      EventCollection* subinfo = info->get_mutable_sub_event_info(i);
+      EventCollection* subinfo = info->get_mutable_sub_event_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
       const T1 sub_time =
           sorted_systems_[i]->CalcNextUpdateTime(*subcontext, subinfo);
       if (sub_time < *time) {
         // i is the earliest, need to clear all the previous ones.
         for (int j = 0; j < i; ++j) {
-          info->get_mutable_sub_event_info(j)->Clear();
+          info->get_mutable_sub_event_collection(j)->Clear();
         }
         *time = sub_time;
       } else if (sub_time > *time) {
@@ -1112,7 +1112,7 @@ class Diagram : public System<T>,
 
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      EventCollection* subinfo = info->get_mutable_sub_event_info(i);
+      EventCollection* subinfo = info->get_mutable_sub_event_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
 
       sorted_systems_[i]->GetPerStepEvents(*subcontext, subinfo);
