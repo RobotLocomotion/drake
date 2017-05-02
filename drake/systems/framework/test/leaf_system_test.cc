@@ -806,8 +806,10 @@ GTEST_TEST(GraphvizTest, Ports) {
       "{{<u0>u0|<u1>u1} | {<y0>y0}}"));
 }
 
-// This system schedules an Publish event triggered by 2 simultaneous
-// AbstractTriggers.
+// This system schedules two simultaneous publish events with
+// GetPerStepEvents(). Both events have abstract data, but of different types.
+// Both events have different custom handler callbacks. And DoPublish() is also
+// overriding.
 class TestTriggerSystem : public LeafSystem<double> {
  public:
   TestTriggerSystem() {}
@@ -816,9 +818,13 @@ class TestTriggerSystem : public LeafSystem<double> {
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
       DRAKE_DEMAND(event->Handle != nullptr);
+      // Call custom callback handler.
       event->Handle(context, event->get_trigger());
+      // Also clone the abstract value and store it in abs_data_.
       abs_data_.push_back(event->get_trigger().get_data()->Clone());
     }
+
+    publish_count_++;
   }
 
   void DoGetPerStepEvents(const Context<double>& context,
@@ -856,27 +862,34 @@ class TestTriggerSystem : public LeafSystem<double> {
     return int_data_;
   }
 
+  int get_publish_count() const {
+    return publish_count_;
+  }
+
  private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 
+  // Casts the data in @p trigger as string and store it in string_data_.
   void CopyString(const Context<double>& context,
                   const Trigger& trigger) const {
     if (trigger.get_data() != nullptr)
       string_data_.push_back(trigger.get_data()->GetValue<std::string>());
   }
 
+  // Casts the data in @p trigger as int and store it in int_data_.
   void CopyInt(const Context<double>& context,
                const Trigger& trigger) const {
     if (trigger.get_data() != nullptr)
       int_data_.push_back(trigger.get_data()->GetValue<int>());
   }
 
-  // the data in AbstractTrigger are copied to here in the DoPublish handler.
+  // Stores data copied from the abstract values in handled events.
   mutable std::vector<std::unique_ptr<AbstractValue>> abs_data_;
-
   mutable std::vector<std::string> string_data_;
   mutable std::vector<int> int_data_;
+
+  mutable int publish_count_{0};
 };
 
 class TriggerTest : public ::testing::Test {
@@ -885,6 +898,7 @@ class TriggerTest : public ::testing::Test {
     context_ = dut_.CreateDefaultContext();
     info_ = dut_.AllocateEventCollection();
     leaf_info_ = dynamic_cast<const LeafEventCollection<double>*>(info_.get());
+    DRAKE_DEMAND(leaf_info_ != nullptr);
   }
 
   TestTriggerSystem dut_;
@@ -893,32 +907,42 @@ class TriggerTest : public ::testing::Test {
   const LeafEventCollection<double>* leaf_info_;
 };
 
+// After handling of the events, the abs_data_ should be {"hello", 42},
+// int_data_ should be {42}, string_data_ should be {"hello"}.
+// Then forces a Publish() call on dut_, which should only increase
+// publish_count_ without changing any of the data_ vectors.
 TEST_F(TriggerTest, AbstractTrigger) {
-  // schedule a publish event with multiple abstract triggers.
+  // Schedules two publish events.
   dut_.GetPerStepEvents(*context_, info_.get());
-  EXPECT_TRUE(leaf_info_->HasPublishEvents());
-
-  const auto& events =
-      leaf_info_->get_publish_events();
+  const auto& events = leaf_info_->get_publish_events();
   EXPECT_EQ(events.size(), 2);
 
-  // handle event.
+  // Calls handler.
   dut_.Publish(*context_, info_.get());
 
+  // Checks abs_data_ in dut.
   const auto& data = dut_.get_abstract_data();
   EXPECT_EQ(data.size(), 2);
   EXPECT_EQ(data[0]->GetValue<std::string>(), "hello");
   EXPECT_EQ(data[1]->GetValue<int>(), 42);
 
+  // Checks string_data_ in dut.
   const auto& string_data = dut_.get_string_data();
-  const auto& int_data = dut_.get_int_data();
   EXPECT_EQ(string_data.size(), 1);
-  EXPECT_EQ(int_data.size(), 1);
-
   EXPECT_EQ(string_data.front(), "hello");
+
+  // Checks int_data_ in dut.
+  const auto& int_data = dut_.get_int_data();
+  EXPECT_EQ(int_data.size(), 1);
   EXPECT_EQ(int_data.front(), 42);
 
+  // Now force a publish call, this should only increment the counter, without
+  // touching any of the x_data_ in dut.
   dut_.Publish(*context_);
+  EXPECT_EQ(dut_.get_publish_count(), 2);
+  EXPECT_EQ(string_data.size(), 1);
+  EXPECT_EQ(int_data.size(), 1);
+  EXPECT_EQ(data.size(), 2);
 }
 
 }  // namespace
