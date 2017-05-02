@@ -81,7 +81,7 @@ std::unique_ptr<systems::AbstractValues> IiwaPlanSource::AllocateAbstractState()
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
-void IiwaPlanSource::SetDefaultState(const systems::Context<double>& context,
+void IiwaPlanSource::SetDefaultState(const systems::Context<double>&,
                                      systems::State<double>* state) const {
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
