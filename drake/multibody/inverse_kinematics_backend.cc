@@ -167,7 +167,7 @@ namespace {
 class InverseKinObjective : public solvers::Cost {
  public:
   // All references are aliased for the life of the objective.
-  InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
+  explicit InverseKinObjective(const MatrixXd& Q)
       : Cost(Q.rows()), Q_(Q) {}
 
   /// Set the nominal posture.  This should be invoked before any
@@ -235,7 +235,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
 
     MatrixXd Q;
     ikoptions.getQ(Q);
-    auto objective = std::make_shared<InverseKinObjective>(model, Q);
+    auto objective = std::make_shared<InverseKinObjective>(Q);
     prog.AddCost(objective, vars);
 
     for (int i = 0; i < num_constraints; i++) {
