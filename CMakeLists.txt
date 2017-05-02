@@ -22,7 +22,6 @@ drake_setup_options()
 
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
-drake_add_external(fmt PUBLIC CMAKE ALWAYS)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
@@ -62,6 +61,12 @@ drake_add_external(ccd PUBLIC CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DBUILD_TESTING=OFF
     -DENABLE_DOUBLE_PRECISION=ON)
+
+# fmt
+drake_add_external(fmt PUBLIC CMAKE ALWAYS
+  CMAKE_ARGS
+    -DFMT_DOC=OFF
+    -DFMT_TEST=OFF)
 
 # gflags
 drake_add_external(gflags PUBLIC CMAKE
