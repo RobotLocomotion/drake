@@ -32,6 +32,7 @@ drake_cc_googletest(
     srcs = ["test/api_lane_data_test.cc"],
     deps = [
         ":api",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
