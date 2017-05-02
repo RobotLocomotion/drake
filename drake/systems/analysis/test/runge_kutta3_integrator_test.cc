@@ -66,10 +66,10 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_NO_THROW(integrator_->request_initial_step_size_target(dt));
 }
 
-// Verifies that the stepping works with large magnitude times and small
+// Verifies that the stepping works with relatively small
 // magnitude step sizes.
 TEST_F(RK3IntegratorTest, MagDisparity) {
-  // Set a large magnitude time.
+  // Set a unit magnitude time.
   context_->set_time(1.0);
 
   // Set integrator parameters.
@@ -80,8 +80,8 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
   // Take all the defaults.
   integrator_->Initialize();
 
-  // Take a variable step.
-  integrator_->IntegrateExactly(1e-40);
+  // Attempt to take a variable step- should throw an exception.
+  EXPECT_THROW(integrator_->IntegrateExactly(1e-40), std::runtime_error);
 }
 
 // Test scaling vectors
