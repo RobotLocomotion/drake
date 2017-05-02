@@ -72,8 +72,8 @@ class ActionPrimitive : public systems::LeafSystem<double> {
   }
 
   // This kind of a system is not direct feedthrough.
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
-                              int input_port, int output_port) const final {
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
+                              int, int) const final {
     return false;
   }
 

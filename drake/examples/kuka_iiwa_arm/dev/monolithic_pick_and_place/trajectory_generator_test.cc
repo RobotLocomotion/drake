@@ -196,7 +196,7 @@ int DoMain(void) {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main() {
   drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
   return 0;
 }

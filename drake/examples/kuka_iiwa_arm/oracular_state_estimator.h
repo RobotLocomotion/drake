@@ -92,7 +92,7 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
   }
 
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<T>& descriptor) const override {
+      const systems::OutputPortDescriptor<T>&) const override {
     return systems::AbstractValue::Make<bot_core::robot_state_t>(
         bot_core::robot_state_t());
   }
