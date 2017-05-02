@@ -166,7 +166,7 @@ SchunkWsgStatusSender(int input_size,
 
 std::unique_ptr<systems::AbstractValue>
 SchunkWsgStatusSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
+    const systems::OutputPortDescriptor<double>&) const {
   lcmt_schunk_wsg_status msg{};
   return std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg);
 }

@@ -180,8 +180,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "valkyrie_simulation_test",
-    data = [":models"],
     srcs = ["test/valkyrie_simulation_test.cc"],
+    data = [":models"],
     deps = [":valkyrie_simulator"],
 )
 

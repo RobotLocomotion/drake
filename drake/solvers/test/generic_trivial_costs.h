@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/solvers/constraint.h"
-
 #include <cstddef>
 #include <limits>
 
@@ -11,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/math/autodiff.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/function.h"
 
 namespace drake {
@@ -20,14 +19,11 @@ namespace test {
 // A generic cost derived from Constraint class. This is meant for testing
 // adding a cost to optimization program, and the cost is in the form of a
 // derived class of Constraint.
-class GenericTrivialCost1 : public Constraint {
+class GenericTrivialCost1 : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1)
 
-  GenericTrivialCost1()
-      : Constraint(1, 3, -Vector1d(std::numeric_limits<double>::infinity()),
-                   Vector1d(std::numeric_limits<double>::infinity())),
-        private_val_(2) {}
+  GenericTrivialCost1() : Cost(3), private_val_(2) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

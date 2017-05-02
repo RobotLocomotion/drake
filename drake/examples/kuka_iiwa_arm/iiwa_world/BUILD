@@ -14,6 +14,7 @@ drake_cc_library(
     hdrs = ["world_sim_tree_builder.h"],
     visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
     deps = [
+        "//drake/common:unused",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -71,43 +72,6 @@ drake_cc_library(
         "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:matrix_gain",
-    ],
-)
-
-drake_cc_binary(
-    name = "iiwa_world_demo",
-    srcs = ["iiwa_world_demo.cc"],
-    add_test_rule = 1,
-    data = [
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    test_rule_args = ["--simulation_sec=0.1"],
-    deps = [
-        ":world_sim_diagram_factory",
-        ":world_sim_tree_builder",
-        "//drake/common",
-        "@gflags//:gflags",
-    ],
-)
-
-drake_cc_binary(
-    name = "controlled_iiwa_world_demo",
-    srcs = ["controlled_iiwa_world_demo.cc"],
-    add_test_rule = 1,
-    data = [
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    test_rule_args = ["--simulation_sec=0.1"],
-    deps = [
-        ":world_sim_diagram_factory",
-        ":world_sim_tree_builder",
-        "//drake/common",
-        "//drake/common:drake_path",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "@gflags//:gflags",
     ],
 )
 

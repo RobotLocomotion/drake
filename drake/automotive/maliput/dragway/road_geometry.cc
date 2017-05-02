@@ -7,6 +7,7 @@
 #include "drake/automotive/maliput/dragway/junction.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 #include "drake/math/saturate.h"
 
 using std::make_unique;
@@ -117,6 +118,8 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
     const api::RoadPosition* hint,
     api::GeoPosition* nearest_position,
     double* distance) const {
+  unused(hint);
+
   // Computes the dragway's (x,y) driveable region coordinates.
   DRAKE_ASSERT(junction_.num_segments() > 0);
   const api::Segment* segment = junction_.segment(0);

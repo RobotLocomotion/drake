@@ -63,7 +63,7 @@ GripperAction::ExtendedAllocateOutputAbstract(
 }
 
 void GripperAction::SetExtendedDefaultState(
-    const systems::Context<double>& context,
+    const systems::Context<double>&,
     systems::State<double>* state) const {
   InternalState& wsg_action_state =
       state->get_mutable_abstract_state<InternalState>(

@@ -11,7 +11,7 @@ bool MosekSolver::available() const {
   return false;
 }
 
-SolutionResult MosekSolver::Solve(MathematicalProgram &prog) const {
+SolutionResult MosekSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(
       "Mosek is not installed in your build. You'll need to use a different "
       "solver.");

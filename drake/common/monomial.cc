@@ -278,7 +278,7 @@ class DecomposePolynomialVisitor {
   }
 
   MonomialToCoefficientMap operator()(const shared_ptr<ExpressionConstant>& e,
-                                      const Variables& vars) const {
+                                      const Variables&) const {
     if (e->get_value() != 0) {
       return MonomialToCoefficientMap({{Monomial(), e->get_value()}});
     }
@@ -489,8 +489,8 @@ class DegreeVisitor {
     return vars.include(e->get_variable()) ? 1 : 0;
   }
 
-  int operator()(const shared_ptr<ExpressionConstant>& e,
-                 const Variables& vars) const {
+  int operator()(const shared_ptr<ExpressionConstant>&,
+                 const Variables&) const {
     return 0;
   }
 

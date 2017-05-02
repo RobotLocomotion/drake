@@ -163,11 +163,11 @@ void AddQuasiStaticConstraint(
 
 namespace {
 
-class InverseKinObjective : public Constraint {
+class InverseKinObjective : public solvers::Cost {
  public:
   // All references are aliased for the life of the objective.
   InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
-      : Constraint(model->get_num_positions(), Q.rows()), Q_(Q) {}
+      : Cost(Q.rows()), Q_(Q) {}
 
   /// Set the nominal posture.  This should be invoked before any
   /// calls to Eval() (the output of Eval() is undefined if this has

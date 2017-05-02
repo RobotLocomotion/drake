@@ -41,18 +41,18 @@ const std::pair<RoadOdometry<double>, RoadOdometry<double>> FindClosestPair(
   for (int i = 0; i < traffic_poses.get_num_poses(); ++i) {
     const RoadPosition traffic_position =
         CalcRoadPosition(road, traffic_poses.get_pose(i));
-    const double& s_traffic = traffic_position.pos.s;
+    const double& s_traffic = traffic_position.pos.s();
 
     if (traffic_position.lane->id().id != lane->id().id) continue;
 
     // If this pose is not the ego car and it is in the correct lane, then
     // insert it into the correct "leading" or "trailing" bin.
     if (ego_position.lane->id().id != lane->id().id ||
-        s_traffic != ego_position.pos.s) {
-      if (result_trailing.pos.s < s_traffic &&
-          s_traffic < result_leading.pos.s) {
+        s_traffic != ego_position.pos.s()) {
+      if (result_trailing.pos.s() < s_traffic &&
+          s_traffic < result_leading.pos.s()) {
         // N.B. The ego car and traffic may reside in different lanes.
-        if (s_traffic >= ego_position.pos.s) {
+        if (s_traffic > ego_position.pos.s()) {
           result_leading = RoadOdometry<double>(traffic_position,
                                                 traffic_poses.get_velocity(i));
         } else {

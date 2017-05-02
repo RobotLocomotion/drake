@@ -84,7 +84,7 @@ IiwaCommandSender::IiwaCommandSender()
 
 std::unique_ptr<systems::AbstractValue>
 IiwaCommandSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
+    const systems::OutputPortDescriptor<double>&) const {
   lcmt_iiwa_command msg{};
   return std::make_unique<systems::Value<lcmt_iiwa_command>>(msg);
 }
@@ -184,7 +184,7 @@ IiwaStatusSender::IiwaStatusSender() {
 
 std::unique_ptr<systems::AbstractValue>
 IiwaStatusSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
+    const systems::OutputPortDescriptor<double>&) const {
   lcmt_iiwa_status msg{};
   msg.num_joints = kNumJoints;
   msg.joint_position_measured.resize(msg.num_joints, 0);

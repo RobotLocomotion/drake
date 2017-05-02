@@ -44,6 +44,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "symbolic_extraction",
+    srcs = ["symbolic_extraction.cc"],
+    hdrs = ["symbolic_extraction.h"],
+    deps = [
+        ":decision_variable",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:monomial",
+        "//drake/common:number_traits",
+        "//drake/common:polynomial",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "create_cost",
     srcs = [],
     hdrs = ["create_cost.h"],
@@ -122,6 +137,7 @@ drake_cc_library(
         ":mosek_solver",
         ":nlopt_solver",
         ":snopt_solver",
+        ":symbolic_extraction",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:monomial",
@@ -342,6 +358,7 @@ drake_cc_library(
         "//conditions:default": [
             "@ipopt//:lib",
             ":mathematical_program_api",
+            "//drake/common:unused",
             "//drake/math:autodiff",
         ],
         "//tools:no_ipopt": [
@@ -392,6 +409,15 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/common:is_dynamic_castable",
         "//drake/math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_extraction_test",
+    deps = [
+        ":symbolic_extraction",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
     ],
 )
 

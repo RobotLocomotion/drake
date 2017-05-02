@@ -116,7 +116,7 @@ class IiwaMove : public Action {
 
   // TODO(siyuanfeng): have something meaningful here, like the object slipped
   // out.
-  bool ActionFailed(const WorldState& est_state) const override {
+  bool ActionFailed(const WorldState&) const override {
     return false;
   }
 
@@ -154,7 +154,7 @@ class WsgAction : public Action {
 
   // TODO(siyuanfeng): Implement something meaningful here like a check for a
   // force threshold being crossed.
-  bool ActionFailed(const WorldState& est_state) const override {
+  bool ActionFailed(const WorldState&) const override {
     return false;
   }
 

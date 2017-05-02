@@ -149,6 +149,7 @@ macro(drake_find_packages)
   set_property(TARGET GMock::GMock APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
 
+  drake_find_package(Protobuf MODULE REQUIRED)
   drake_find_package(tinyobjloader CONFIG REQUIRED)
 
   # END required packages
@@ -162,8 +163,8 @@ macro(drake_find_packages)
   drake_find_package(ccd CONFIG)
   drake_find_package(fcl CONFIG)
   drake_find_package(gurobi CONFIG)
-  drake_find_package(ignition-math CONFIG)
-  drake_find_package(ignition-rndf CONFIG)
+  drake_find_package(ignition-math3 CONFIG)
+  drake_find_package(ignition-rndf0 CONFIG)
   drake_find_package(ipopt PKG_CONFIG)
   drake_find_package(lcm CONFIG)
   drake_find_package(meshconverters CONFIG)

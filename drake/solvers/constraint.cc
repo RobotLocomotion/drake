@@ -151,7 +151,7 @@ void PositiveSemidefiniteConstraint::DoEval(
 }
 
 void PositiveSemidefiniteConstraint::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
+    const Eigen::Ref<const AutoDiffVecXd>&, AutoDiffVecXd&) const {
   throw std::runtime_error(
       "The Eval function for positive semidefinite constraint is not defined, "
       "since the eigen solver does not work for AutoDiffScalar.");
@@ -169,7 +169,7 @@ void LinearMatrixInequalityConstraint::DoEval(
 }
 
 void LinearMatrixInequalityConstraint::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd> &x, AutoDiffVecXd &y) const {
+    const Eigen::Ref<const AutoDiffVecXd>&, AutoDiffVecXd&) const {
   throw std::runtime_error(
       "The Eval function for positive semidefinite constraint is not defined, "
       "since the eigen solver does not work for AutoDiffScalar.");

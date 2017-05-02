@@ -56,7 +56,7 @@ void ToMatlabArray(const std::string& str, MatlabArray* matlab_array);
 
 // Helper methods for variadic template call in CallMatlab.
 namespace internal {
-inline void AssembleCallMatlabMsg(MatlabRPC* msg) {
+inline void AssembleCallMatlabMsg(MatlabRPC*) {
   // Intentionally left blank.  Base case for template recursion.
 }
 
@@ -141,7 +141,7 @@ class MatlabRemoteVariable {
 
  private:
   // Helper methods for variadic template call in CallMatlab.
-  inline void AssembleSubsPrepMsg(MatlabRPC* msg) const {
+  inline void AssembleSubsPrepMsg(MatlabRPC*) const {
     // Intentionally left blank.  Base case for template recursion.
   }
 

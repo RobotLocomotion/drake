@@ -63,7 +63,7 @@ class UniqueIndexer {
 };
 
 
-// A GEO-space (world-frame) vertex.
+// A world frame vertex.
 class GeoVertex {
  public:
   // A hasher operation suitable for std::unordered_map.
@@ -96,7 +96,7 @@ class GeoVertex {
 };
 
 
-// A GEO-space (world-frame) normal vector.
+// A world frame normal vector.
 class GeoNormal {
  public:
   // A hasher operation suitable for std::unordered_map.
@@ -131,8 +131,7 @@ class GeoNormal {
 };
 
 
-// A GEO-space (world-frame) face:  a sequence of vertices with corresponding
-// normals.
+// A world frame face:  a sequence of vertices with corresponding normals.
 class GeoFace {
  public:
   GeoFace() {}
@@ -182,7 +181,7 @@ class IndexFace {
 };
 
 
-// A GEO-space (world-frame) mesh:  a collection of GeoFaces.
+// A world frame mesh:  a collection of GeoFaces.
 class GeoMesh {
  public:
   GeoMesh() {}
@@ -255,7 +254,7 @@ class GeoMesh {
 };
 
 
-// A LANE-space face: a sequence of vertices expressed in the (s,r,h)
+// A `Lane`-frame face: a sequence of vertices expressed in the (s,r,h)
 // coordinates of an api::Lane (which is not referenced here).  Each
 // vertex has an implicit unit-length normal vector in the +h
 // direction normal to the road surface.
@@ -265,7 +264,7 @@ class SrhFace {
     // TODO(maddog@tri.global) Provide for explicit normals if we ever
     // consider faces which are not parallel to the road surface.
     for (const api::LanePosition& vertex : v_) {
-      DRAKE_DEMAND(vertex.h == v_[0].h);
+      DRAKE_DEMAND(vertex.h() == v_[0].h());
     }
   }
 
@@ -280,7 +279,8 @@ class SrhFace {
       //                          really use GetOrientation(), and the format
       //                          of the result should have a fixed-point
       //                          precision based on angular_tolerance().
-      api::GeoPosition v1(lane->ToGeoPosition({srh.s, srh.r, srh.h + 1.}));
+      api::GeoPosition v1(lane->ToGeoPosition({
+            srh.s(), srh.r(), srh.h() + 1.}));
       geo_face.push_vn(GeoVertex(v0), GeoNormal(v0, v1));
     }
     return geo_face;
@@ -412,7 +412,7 @@ void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
 
 
 // Adds faces to @p mesh which draw a simple triangular arrow in the
-// LANE-space of @p lane.  The width of the arrow is fixed at 80% of
+// `Lane`-frame of @p lane.  The width of the arrow is fixed at 80% of
 // the lane_bounds() of @p lane at the base of the arrow.
 //
 // @param mesh  the GeoMesh which will receive the faces

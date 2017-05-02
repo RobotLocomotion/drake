@@ -22,7 +22,6 @@ drake_setup_options()
 
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
-drake_add_external(fmt PUBLIC CMAKE ALWAYS)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(qt_property_browser CMAKE QT)
 drake_add_external(sedumi PUBLIC CMAKE MATLAB)
@@ -62,6 +61,12 @@ drake_add_external(ccd PUBLIC CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DBUILD_TESTING=OFF
     -DENABLE_DOUBLE_PRECISION=ON)
+
+# fmt
+drake_add_external(fmt PUBLIC CMAKE ALWAYS
+  CMAKE_ARGS
+    -DFMT_DOC=OFF
+    -DFMT_TEST=OFF)
 
 # gflags
 drake_add_external(gflags PUBLIC CMAKE
@@ -224,12 +229,20 @@ drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
 # ignition_math
 drake_add_external(ignition_math PUBLIC CMAKE
   URL https://bitbucket.org/ignitionrobotics/ign-math/get/ignition-math3_3.0.0.tar.gz
-  URL_HASH SHA256=9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd)
+  URL_HASH SHA256=9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd
+  CMAKE_ARGS
+    -DENABLE_TESTS_COMPILATION=OFF
+    -DUSE_HOST_CFLAGS=OFF
+    -DUSE_UPSTREAM_CFLAGS=OFF)
 
 # ignition_rndf
 drake_add_external(ignition_rndf PUBLIC CMAKE
   URL https://bitbucket.org/ignitionrobotics/ign-rndf/get/ignition-rndf_0.1.2.tar.gz
   URL_HASH SHA256=e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a
+  CMAKE_ARGS
+    -DENABLE_TESTS_COMPILATION=OFF
+    -DUSE_HOST_CFLAGS=OFF
+    -DUSE_UPSTREAM_CFLAGS=OFF
   DEPENDS ignition_math)
 
 # lcm
@@ -286,8 +299,8 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
-    -DWITH_IGNITION_MATH:BOOL=${WITH_IGNITION_MATH}
-    -DWITH_IGNITION_RNDF:BOOL=${WITH_IGNITION_RNDF}
+    -DWITH_IGNITION_MATH3:BOOL=${WITH_IGNITION_MATH}  # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_IGNITION_RNDF0:BOOL=${WITH_IGNITION_RNDF}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}

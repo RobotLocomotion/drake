@@ -74,6 +74,7 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
     std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
+  unused(xyz, rpy);  // TODO(jwnimmer-tri) This seems bad.
 
   spruce::path p(model_map_[model_name]);
 

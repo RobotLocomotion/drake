@@ -157,7 +157,7 @@ class ContactResultantForceCalculator {
    @param detail_accumulator If non-null, ContactDetail instances will be
    appended to the vector as they are assigned to the calculator.
    */
-  ContactResultantForceCalculator(
+  explicit ContactResultantForceCalculator(
       std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator);
 
   /**

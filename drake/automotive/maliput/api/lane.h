@@ -115,17 +115,17 @@ class Lane {
   //                                    const Lane* other_lane) const;
 
   /// Returns the rotation which expresses the orientation of the
-  /// LANE-space basis at @p lane_pos with regards to the (single, global)
-  /// GEO-space basis.
+  /// `Lane`-frame basis at @p lane_pos with respect to the
+  /// world frame basis.
   Rotation GetOrientation(const LanePosition& lane_pos) const {
     return DoGetOrientation(lane_pos);
   }
 
   /// Computes derivatives of LanePosition given a velocity vector @p velocity.
-  /// @p velocity is a isometric velocity vector oriented in the LANE-space
-  /// reference frame at @p position.
+  /// @p velocity is a isometric velocity vector oriented in the `Lane`-frame
+  /// at @p position.
   ///
-  /// @returns LANE-space derivatives packed into a LanePosition struct.
+  /// @returns `Lane`-frame derivatives packed into a LanePosition struct.
   LanePosition EvalMotionDerivatives(const LanePosition& position,
                                      const IsoLaneVelocity& velocity) const {
     return DoEvalMotionDerivatives(position, velocity);

@@ -5,6 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+#include "drake/common/unused.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
@@ -21,19 +22,21 @@ ZeroOrderHold<T>::ZeroOrderHold(double period_sec, int size)
 
 template <typename T>
 void ZeroOrderHold<T>::DoCalcVectorOutput(
-      const Context<T>& context,
+      const Context<T>&,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const {
+  unused(input);
   *output = state;
 }
 
 template <typename T>
 void ZeroOrderHold<T>::DoCalcVectorDiscreteVariableUpdates(
-    const Context<T>& context,
+    const Context<T>&,
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* discrete_updates) const {
+  unused(state);
   *discrete_updates = input;
 }
 

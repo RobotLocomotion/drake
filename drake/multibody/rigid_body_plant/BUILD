@@ -29,6 +29,8 @@ drake_cc_library(
         "rigid_body_plant.h",
     ],
     deps = [
+        "//drake/common",
+        "//drake/common:copyable_unique_ptr",
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",
