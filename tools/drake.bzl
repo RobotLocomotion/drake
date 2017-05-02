@@ -190,7 +190,9 @@ def drake_cc_googletest(
 def _transitive_hdrs_impl(ctx):
   headers = set()
   for dep in ctx.attr.deps:
-    headers += dep.cc.transitive_headers
+    # TODO(mwoehlke-kitware): Figure out a better way to exclude system headers
+    # from being slurped in?
+    headers += [h for h in dep.cc.transitive_headers if not "/_usr_" in h.path]
   return struct(files=headers)
 
 _transitive_hdrs = rule(
