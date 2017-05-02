@@ -92,7 +92,7 @@ class LanePosition {
   }
 
   /// Returns all components as 3-vector `[s, r, h]`.
-  Vector3<double> srh() const { return srh_; }
+  const Vector3<double>& srh() const { return srh_; }
   /// Sets all components from 3-vector `[s, r, h]`.
   void set_srh(const Vector3<double>& srh) { srh_ = srh; }
 
@@ -113,7 +113,7 @@ class LanePosition {
   //@}
 
  private:
-  Eigen::Matrix<double, 3, 1, Eigen::DontAlign> srh_;
+  Vector3<double> srh_;
 
   explicit LanePosition(const Vector3<double>& srh) : srh_(srh) {}
 };
