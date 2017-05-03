@@ -1,4 +1,4 @@
-#include "drake/common/fast_downcast.h"
+#include "drake/common/unsafe_downcast.h"
 
 #include <gtest/gtest.h>
 

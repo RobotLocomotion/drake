@@ -52,7 +52,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "unsafe_downcast",
-    hdrs = ["fast_downcast.h"],
+    hdrs = ["unsafe_downcast.h"],
 )
 
 drake_cc_library(
@@ -445,8 +445,8 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "fast_downcast_is_safe_test",
-    srcs = ["test/fast_downcast_test.cc"],
+    name = "unsafe_downcast_is_safe_test",
+    srcs = ["test/unsafe_downcast_test.cc"],
     defines = ["DRAKE_UNSAFE_DOWNCAST_IS_SAFE"],
     deps = [
         ":unsafe_downcast",
@@ -454,8 +454,8 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "fast_downcast_is_unsafe_test",
-    srcs = ["test/fast_downcast_test.cc"],
+    name = "unsafe_downcast_is_unsafe_test",
+    srcs = ["test/unsafe_downcast_test.cc"],
     defines = ["DRAKE_UNSAFE_DOWNCAST_IS_UNSAFE"],
     deps = [
         ":unsafe_downcast",
