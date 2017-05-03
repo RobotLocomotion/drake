@@ -23,7 +23,6 @@ function canonicalize
 # Copy source artifacts to specified install prefix.
 function copy_source_artifacts
 {
-  cp tools/drake-config.cmake "$1/lib/cmake/drake/"
   cp LICENSE.TXT "$1/"
 }
 
@@ -32,6 +31,7 @@ function copy_source_artifacts
 function copy_build_artifacts
 {
   cp bazel-bin/drake/libdrake.so "$1/lib/"
+  cp bazel-genfiles/tools/drake-config.cmake "$1/lib/cmake/drake/"
 }
 
 #------------------------------------------------------------------------------
