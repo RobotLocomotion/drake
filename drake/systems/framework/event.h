@@ -12,8 +12,8 @@ namespace drake {
 namespace systems {
 
 // Forward declaration of the event container classes.
-class EventCollection;
-template <typename T> class LeafEventCollection;
+template <typename EventType> class EventCollection;
+template <typename EventType> class LeafEventCollection;
 
 /**
  * Base class that represents an event. The base event contains two main pieces
@@ -46,7 +46,7 @@ class Event {
   /**
    * Adds this to @p events. See derived implementation for more details.
    */
-  virtual void add_to(EventCollection* events) const = 0;
+  // virtual void add_to(EventCollection* events) const = 0;
 
  protected:
   /**
@@ -113,9 +113,9 @@ class PublishEvent : public Event {
    * the deep copy into @p events's collection of publish events. This aborts if
    * the assumptions are not met.
    */
-  void add_to(EventCollection* events) const override {
-    LeafEventCollection<T>* leaf_events =
-        dynamic_cast<LeafEventCollection<T>*>(events);
+  void add_to(EventCollection<PublishEvent<T>>* events) const {
+    LeafEventCollection<PublishEvent<T>>* leaf_events =
+        dynamic_cast<LeafEventCollection<PublishEvent<T>>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
     auto me = std::make_unique<PublishEvent<T>>(get_trigger().Clone(), Handle);
@@ -191,9 +191,9 @@ class DiscreteUpdateEvent : public Event {
    * to insert the deep copy into @p events's collection of discrete update
    * events. This aborts if the assumptions are not met.
    */
-  void add_to(EventCollection* events) const override {
-    LeafEventCollection<T>* leaf_events =
-        dynamic_cast<LeafEventCollection<T>*>(events);
+  void add_to(EventCollection<DiscreteUpdateEvent<T>>* events) const {
+    LeafEventCollection<DiscreteUpdateEvent<T>>* leaf_events =
+        dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
     auto me =
@@ -270,9 +270,9 @@ class UnrestrictedUpdateEvent : public Event {
    * to insert the deep copy into @p events's collection of unrestricted update
    * events. This aborts if the assumptions are not met.
    */
-  void add_to(EventCollection* events) const override {
-    LeafEventCollection<T>* leaf_events =
-        dynamic_cast<LeafEventCollection<T>*>(events);
+  void add_to(EventCollection<UnrestrictedUpdateEvent<T>>* events) const {
+    LeafEventCollection<UnrestrictedUpdateEvent<T>>* leaf_events =
+        dynamic_cast<LeafEventCollection<UnrestrictedUpdateEvent<T>>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
     auto me = std::make_unique<UnrestrictedUpdateEvent<T>>(
