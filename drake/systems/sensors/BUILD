@@ -51,6 +51,7 @@ drake_cc_library(
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
     deps = [
+        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
