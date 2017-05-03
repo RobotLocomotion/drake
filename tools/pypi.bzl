@@ -1,0 +1,93 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+
+def pypi_archive(
+        name,
+        package = None,
+        version = None,
+        build_file = None,
+        sha256 = None,
+        **kwargs):
+    """
+    Downloads and unpacks a PyPI package archive and adds it to the WORKSPACE
+    as an external. Additional keyword arguments (except "urls" and
+    "strip_prefix") will be passed through to the native call of
+    new_http_archive.
+
+    Example:
+        WORKSPACE:
+            load("//tools:pypi_archive.bzl", "pypi_archive")
+            pypi_archive(
+                name = "foo",
+                version = "1.2.3",
+                build_file = "foo.BUILD",
+                sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            )
+
+        foo.BUILD:
+            py_library(
+                name = "foo",
+                srcs = ["foo.py"],
+            )
+
+        BUILD:
+            py_binary(
+                name = "foobar",
+                deps = ["@foo//:foo"],
+                srcs = ["foobar.py"],
+            )
+
+    Arguments:
+        name: A unique name for this rule. This argument will be used for the
+            package name if the "package" argument is omitted [Name; required].
+
+        package: The name of the PyPI package to download. The "name" argument
+            will be used if this argument is omitted [String; optional].
+
+        version: The version of the PyPI package to be downloaded
+            [String; required].
+
+        build_file: The file to use as the BUILD file for this repository.
+            This argument is a label relative to the WORKSPACE
+            [String; required].
+
+        sha256: The expected SHA-256 hash of the archive to download. This
+            argument must match the SHA-256 hash of the downloaded archive.
+            The download will fail if omitted, but the checksum-mismatch error
+            message will offer a suggestion for the correct value of this
+            argument [String; required].
+    """
+    if not package:
+        package = name
+
+    if not version:
+        fail("The version argument to pypi_archive is required.")
+
+    if not sha256:
+        # Set an incorrect default value to allow the download attempt to fail
+        # and print a suggested SHA-256 checksum in the checksum-mismatch error
+        # message.
+        sha256 = "0" * 64
+
+    if not build_file:
+        fail("The build_file argument to pypi_archive is required.")
+
+    urls = [
+        "https://files.pythonhosted.org/source/s/{0}/{0}-{1}.tar.gz".format(
+            package, version),
+        "https://d2tbce6hkathzp.cloudfront.net/pypi/{0}/{0}-{1}.tar.gz".format(
+            package, version),
+        "https://s3.amazonaws.com/drake-mirror/pypi/{0}/{0}-{1}.tar.gz".format(
+            package, version),
+    ]
+
+    strip_prefix = "{0}-{1}".format(package, version)
+
+    native.new_http_archive(
+        name=name,
+        urls=urls,
+        sha256=sha256,
+        build_file=build_file,
+        strip_prefix=strip_prefix,
+        **kwargs)
