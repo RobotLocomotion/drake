@@ -1,5 +1,7 @@
 #include "drake/systems/rendering/pose_vector.h"
 
+#include <memory>
+
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
@@ -17,6 +19,31 @@ template <typename T>
 PoseVector<T>::PoseVector() : BasicVector<T>(kSize) {
   set_translation(Eigen::Translation<T, 3>::Identity());
   set_rotation(Eigen::Quaternion<T>::Identity());
+}
+
+template <typename T>
+PoseVector<T>::PoseVector(const PoseVector<T>& vec) : BasicVector<T>(kSize) {
+  this->set_value(vec.get_value());
+}
+
+template <typename T>
+PoseVector<T>& PoseVector<T>::operator=(const PoseVector<T>& vec) {
+  this->set_value(vec.get_value());
+  return *this;
+}
+
+template <typename T>
+PoseVector<T>::PoseVector(PoseVector<T>&& vec) : BasicVector<T>(kSize) {
+  *this = std::move(vec);
+}
+
+template <typename T>
+PoseVector<T>& PoseVector<T>::operator=(PoseVector<T>&& vec) {
+  this->set_value(vec.get_value());
+  // Reset the input vector back to the default constructor state.
+  vec.set_translation(Eigen::Translation<T, 3>::Identity());
+  vec.set_rotation(Eigen::Quaternion<T>::Identity());
+  return *this;
 }
 
 template <typename T>
