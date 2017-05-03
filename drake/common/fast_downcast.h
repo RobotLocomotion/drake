@@ -2,6 +2,27 @@
 
 #include <type_traits>
 
+// Users should NOT set these; only this header should set them.
+#ifdef DRAKE_UNSAFE_DOWNCAST_IS_INDEED_SAFE
+# error Unexpected DRAKE_UNSAFE_DOWNCAST_IS_INDEED_SAFE defined.
+#endif
+#ifdef DRAKE_UNSAFE_DOWNCAST_IS_INDEED_UNSAFE
+# error Unexpected DRAKE_UNSAFE_DOWNCAST_IS_INDEED_UNSAFE defined.
+#endif
+
+// Decide whether Drake unsafe_downcast is safe (meaning it behaves like
+// dynamic_cast).
+// The default is that unsafe_downcast behaves as dynamic_cast in both Release
+// and Debug builds.
+#if defined(DRAKE_UNSAFE_DOWNCAST_IS_SAFE) && \
+    defined(DRAKE_UNSAFE_DOWNCAST_IS_UNSAFE)
+# error Conflicting unsafe downcast toggles.
+#elif defined(DRAKE_UNSAFE_DOWNCAST_IS_UNSAFE)
+# define DRAKE_UNSAFE_DOWNCAST_IS_INDEED_UNSAFE
+#else
+# define DRAKE_UNSAFE_DOWNCAST_IS_INDEED_SAFE
+#endif
+
 namespace drake {
 
 /// Attempts to donwcast a reference of type `Base` to the requested type
@@ -32,7 +53,7 @@ static Derived fast_downcast(Base& from) {
   static_assert(std::is_convertible<Derived, Base&>::value,
                 "The requested type is not a derived class of the input "
                 "object type.");
-#ifndef NDEBUG
+#ifdef DRAKE_UNSAFE_DOWNCAST_IS_INDEED_SAFE
   return dynamic_cast<Derived>(from);
 #else
   return static_cast<Derived>(from);
@@ -64,7 +85,7 @@ static Derived fast_downcast(Base* from) {
   static_assert(std::is_convertible<Derived, Base*>::value,
                 "The requested type is not a derived class of the input "
                 "object type.");
-#ifndef NDEBUG
+#ifdef DRAKE_UNSAFE_DOWNCAST_IS_INDEED_SAFE
   return dynamic_cast<Derived>(from);
 #else
   return static_cast<Derived>(from);

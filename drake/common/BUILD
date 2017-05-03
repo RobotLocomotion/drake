@@ -445,10 +445,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "fast_downcast_test",
+    name = "fast_downcast_is_safe_test",
+    srcs = ["test/fast_downcast_test.cc"],
+    defines = ["DRAKE_UNSAFE_DOWNCAST_IS_SAFE"],
     deps = [
         ":fast_downcast",
-        ":unused",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fast_downcast_is_unsafe_test",
+    srcs = ["test/fast_downcast_test.cc"],
+    defines = ["DRAKE_UNSAFE_DOWNCAST_IS_UNSAFE"],
+    deps = [
+        ":fast_downcast",
     ],
 )
 

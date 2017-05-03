@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/unused.h"
-
 namespace drake {
 namespace {
 
@@ -79,10 +77,12 @@ GTEST_TEST(FastDownCastSucceeds, DowncastConstReference) {
 
 // The following tests fail to downcast because the argument class type B is not
 // a base class of the requested type D.
+// If DRAKE_UNSAFE_DOWNCAST_IS_SAFE is defined, then fast_downcast will behave
+// as a dynamic_cast and then we can check if the downcast was successful;
 // As with dynamic_cast, expect fast_downcast<D*>(B*) (argument is a pointer)
 // to return nullptr and expect fast_downcast<T&>(B&) (argument is a reference)
 // to throw a std::bad_cast exception.
-#ifndef NDEBUG
+#ifdef DRAKE_UNSAFE_DOWNCAST_IS_INDEED_SAFE
 GTEST_TEST(FastDownCastFails, DowncastMutablePointer) {
   // Instantiates derived class.
   DerivedFromBase original(3);
