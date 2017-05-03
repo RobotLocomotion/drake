@@ -45,6 +45,7 @@ drake_cc_library(
     defines = ["BULLET_COLLISION"],
     deps = [
         ":collision_api",
+        "//drake/common:unused",
         "@bullet//:lib",
     ],
 )
@@ -75,6 +76,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_api",
+        "//drake/common:unused",
         "@fcl//:lib",
     ],
 )
