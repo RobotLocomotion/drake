@@ -33,7 +33,10 @@ drake_add_external(yalmip PUBLIC CMAKE MATLAB)
 # N.B. See #5785; do your best not to have to bump this to a newer commit.
 drake_add_external(eigen PUBLIC CMAKE
   URL https://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz
-  URL_HASH SHA256=94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f)
+  URL_HASH SHA256=94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f
+  CMAKE_ARGS
+    -DEIGEN_TEST_NO_OPENGL=ON
+    -DEIGEN_TEST_NOQT=ON)
 
 # spdlog
 drake_add_external(spdlog PUBLIC CMAKE
