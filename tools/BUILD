@@ -40,6 +40,15 @@ alias(
     actual = "@com_github_bazelbuild_buildtools//buildifier",
 )
 
+genrule(
+    name = "cmake_exports",
+    srcs = ["drake.cps"],
+    outs = ["drake-config.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) $(location drake.cps) > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
 # This pulls the otherwise-unused libbot targets into the "//..." label tree.
 genrule(
     name = "force_libbot",
