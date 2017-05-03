@@ -542,7 +542,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   std::unique_ptr<State<double>> x = context->CloneState();
 
   // Create an unrestricted update callback that just copies the state.
-  LeafEventCollection<UnrestrictedUpdateEvent<double>> leaf_events;
+  LeafCombinedEventCollection<double> leaf_events;
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
       [](const Context<double>& c, const Trigger&, State<double>* s) {
@@ -552,12 +552,13 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double> event(
         Trigger::TriggerType::kPeriodic, callback);
 
-    event.add_to(&leaf_events);
+    event.add_to_combined(&leaf_events);
   }
 
   // Verify no exception is thrown.
   EXPECT_NO_THROW(
-      system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()));
+      system_.CalcUnrestrictedUpdate(*context,
+          &leaf_events.get_unrestricted_update_events(), x.get()));
 
   // Change the function to change the continuous state dimension.
   // Call the unrestricted update function again, now verifying that an
@@ -575,13 +576,14 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double> event(
         Trigger::TriggerType::kPeriodic, callback);
 
-    event.add_to(&leaf_events);
+    event.add_to_combined(&leaf_events);
   }
 
   // Call the unrestricted update function, verifying that an exception
   // is thrown
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()),
-               std::logic_error);
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context,
+      &leaf_events.get_unrestricted_update_events(), x.get()),
+          std::logic_error);
 
   // Restore the continuous state (size).
   x->set_continuous_state(
@@ -604,12 +606,13 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double> event(
         Trigger::TriggerType::kPeriodic, callback);
 
-    event.add_to(&leaf_events);
+    event.add_to_combined(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context,
+        &leaf_events.get_unrestricted_update_events(), x.get()),
                std::logic_error);
 
   // Restore the discrete state (size).
@@ -628,12 +631,12 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double> event(
         Trigger::TriggerType::kPeriodic, callback);
 
-    event.add_to(&leaf_events);
+    event.add_to_combined(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events, x.get()),
+  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events.get_unrestricted_update_events(), x.get()),
                std::logic_error);
 }
 

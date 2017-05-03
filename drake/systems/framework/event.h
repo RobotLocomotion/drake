@@ -58,16 +58,6 @@ class Event {
    */
   virtual void add_to_combined(CombinedEventCollection<T>* events) const = 0;
 
-  /////////////////////////////////////////////////////////
-  // NOTE:
-  // I can't make a virtual templated function to add to EventCollection. So the
-  // Event api
-  // is sort of missing this piece. I am assuming that this is provided in the
-  // concrete
-  // derived Event.
-  // virtual void add_to(EventCollection<EventType<T>>* events) const = 0;
-  /////////////////////////////////////////////////////////
-
  protected:
   /**
    * Constructs an Event with @p trigger. Ownership of @p trigger is transfered
@@ -133,16 +123,6 @@ class PublishEvent : public Event<T> {
    * the deep copy into @p events's collection of publish events. This aborts if
    * the assumptions are not met.
    */
-  void add_to(EventCollection<PublishEvent<T>>* events) const {
-    LeafEventCollection<PublishEvent<T>>* leaf_events =
-        dynamic_cast<LeafEventCollection<PublishEvent<T>>*>(events);
-    DRAKE_DEMAND(leaf_events != nullptr);
-
-    auto me =
-        std::make_unique<PublishEvent<T>>(this->get_trigger().Clone(), Handle);
-    leaf_events->add_event(std::move(me));
-  }
-
   void add_to_combined(CombinedEventCollection<T>* events) const override {
     LeafCombinedEventCollection<T>* leaf_events =
         dynamic_cast<LeafCombinedEventCollection<T>*>(events);
@@ -222,16 +202,6 @@ class DiscreteUpdateEvent : public Event<T> {
    * to insert the deep copy into @p events's collection of discrete update
    * events. This aborts if the assumptions are not met.
    */
-  void add_to(EventCollection<DiscreteUpdateEvent<T>>* events) const {
-    LeafEventCollection<DiscreteUpdateEvent<T>>* leaf_events =
-        dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>*>(events);
-    DRAKE_DEMAND(leaf_events != nullptr);
-
-    auto me = std::make_unique<DiscreteUpdateEvent<T>>(
-        this->get_trigger().Clone(), Handle);
-    leaf_events->add_event(std::move(me));
-  }
-
   void add_to_combined(CombinedEventCollection<T>* events) const override {
     LeafCombinedEventCollection<T>* leaf_events =
         dynamic_cast<LeafCombinedEventCollection<T>*>(events);
@@ -311,16 +281,6 @@ class UnrestrictedUpdateEvent : public Event<T> {
    * to insert the deep copy into @p events's collection of unrestricted update
    * events. This aborts if the assumptions are not met.
    */
-  void add_to(EventCollection<UnrestrictedUpdateEvent<T>>* events) const {
-    LeafEventCollection<UnrestrictedUpdateEvent<T>>* leaf_events =
-        dynamic_cast<LeafEventCollection<UnrestrictedUpdateEvent<T>>*>(events);
-    DRAKE_DEMAND(leaf_events != nullptr);
-
-    auto me = std::make_unique<UnrestrictedUpdateEvent<T>>(
-        this->get_trigger().Clone(), Handle);
-    leaf_events->add_event(std::move(me));
-  }
-
   void add_to_combined(CombinedEventCollection<T>* events) const override {
     LeafCombinedEventCollection<T>* leaf_events =
         dynamic_cast<LeafCombinedEventCollection<T>*>(events);
