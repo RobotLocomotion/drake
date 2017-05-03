@@ -102,16 +102,16 @@ class TestSystem : public LeafSystem<T> {
 class LeafSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    event_info_ = system_.AllocateEventCollection();
+    event_info_ = system_.AllocateCombinedEventCollection();
     leaf_info_ =
-        dynamic_cast<const LeafEventCollection<double>*>(event_info_.get());
+        dynamic_cast<const LeafCombinedEventCollection<double>*>(event_info_.get());
   }
 
   TestSystem<double> system_;
   LeafContext<double> context_;
 
-  std::unique_ptr<EventCollection> event_info_;
-  const LeafEventCollection<double>* leaf_info_;
+  std::unique_ptr<CombinedEventCollection<double>> event_info_;
+  const LeafCombinedEventCollection<double>* leaf_info_;
 };
 
 // Tests that if no update events are configured, none are reported.
@@ -130,7 +130,7 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(5.0, time);
-  const auto& events = leaf_info_->get_discrete_update_events();
+  const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
   EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
@@ -148,13 +148,13 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
 
   EXPECT_EQ(5.0, time);
   {
-    const auto& events = leaf_info_->get_discrete_update_events();
+    const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPeriodic);
   }
   {
-    const auto& events = leaf_info_->get_unrestricted_update_events();
+    const auto& events = leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPeriodic);
@@ -169,7 +169,7 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(15.0, time);
-  const auto& events = leaf_info_->get_discrete_update_events();
+  const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
   EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
@@ -183,7 +183,7 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(25.0, time);
-  const auto& events = leaf_info_->get_discrete_update_events();
+  const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
   EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
@@ -197,7 +197,7 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
   EXPECT_EQ(35.0, time);
-  const auto& events = leaf_info_->get_discrete_update_events();
+  const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
   EXPECT_EQ(events.front()->get_trigger().get_type(),
             Trigger::TriggerType::kPeriodic);
@@ -214,7 +214,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(12.0, time);
   {
-    const auto& events = leaf_info_->get_publish_events();
+    const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPeriodic);
@@ -225,7 +225,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(15.0, time);
   {
-    const auto& events = leaf_info_->get_discrete_update_events();
+    const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPeriodic);
@@ -236,13 +236,13 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(60.0, time);
   {
-    const auto& events = leaf_info_->get_discrete_update_events();
+    const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPeriodic);
   }
   {
-    const auto& events = leaf_info_->get_publish_events();
+    const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPeriodic);
@@ -365,19 +365,19 @@ TEST_F(LeafSystemTest, DeclarePerStepActions) {
   system_.GetPerStepEvents(*context, event_info_.get());
 
   {
-    const auto& events = leaf_info_->get_publish_events();
+    const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPerStep);
   }
   {
-    const auto& events = leaf_info_->get_discrete_update_events();
+    const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPerStep);
   }
   {
-    const auto& events = leaf_info_->get_unrestricted_update_events();
+    const auto& events = leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger().get_type(),
         Trigger::TriggerType::kPerStep);
@@ -542,7 +542,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   std::unique_ptr<State<double>> x = context->CloneState();
 
   // Create an unrestricted update callback that just copies the state.
-  LeafEventCollection<double> leaf_events;
+  LeafEventCollection<UnrestrictedUpdateEvent<double>> leaf_events;
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
       [](const Context<double>& c, const Trigger&, State<double>* s) {
@@ -646,7 +646,7 @@ GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   context.set_time(21.0);
   system.AddPeriodicUpdate();
 
-  auto event_info = system.AllocateEventCollection();
+  auto event_info = system.AllocateCombinedEventCollection();
   auto time = system.CalcNextUpdateTime(context, event_info.get());
 
   EXPECT_EQ(25.0, time);
@@ -828,7 +828,7 @@ class TestTriggerSystem : public LeafSystem<double> {
   }
 
   void DoGetPerStepEvents(const Context<double>& context,
-      EventCollection* event_info) const override {
+      CombinedEventCollection<double>* event_info) const override {
     {
       auto trigger = std::make_unique<Trigger>(Trigger::TriggerType::kPerStep);
       trigger->set_data(AbstractValue::Make<std::string>("hello"));
@@ -836,7 +836,7 @@ class TestTriggerSystem : public LeafSystem<double> {
       PublishEvent<double> event(std::move(trigger),
           std::bind(&TestTriggerSystem::CopyString, this,
                     std::placeholders::_1, std::placeholders::_2));
-      event.add_to(event_info);
+      event.add_to_combined(event_info);
     }
 
     {
@@ -846,7 +846,7 @@ class TestTriggerSystem : public LeafSystem<double> {
       PublishEvent<double> event(std::move(trigger),
           std::bind(&TestTriggerSystem::CopyInt, this,
                     std::placeholders::_1, std::placeholders::_2));
-      event.add_to(event_info);
+      event.add_to_combined(event_info);
     }
   }
 
@@ -896,15 +896,15 @@ class TriggerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_ = dut_.CreateDefaultContext();
-    info_ = dut_.AllocateEventCollection();
-    leaf_info_ = dynamic_cast<const LeafEventCollection<double>*>(info_.get());
+    info_ = dut_.AllocateCombinedEventCollection();
+    leaf_info_ = dynamic_cast<const LeafCombinedEventCollection<double>*>(info_.get());
     DRAKE_DEMAND(leaf_info_ != nullptr);
   }
 
   TestTriggerSystem dut_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<EventCollection> info_;
-  const LeafEventCollection<double>* leaf_info_;
+  std::unique_ptr<CombinedEventCollection<double>> info_;
+  const LeafCombinedEventCollection<double>* leaf_info_;
 };
 
 // After handling of the events, the abs_data_ should be {"hello", 42},
@@ -914,11 +914,11 @@ class TriggerTest : public ::testing::Test {
 TEST_F(TriggerTest, AbstractTrigger) {
   // Schedules two publish events.
   dut_.GetPerStepEvents(*context_, info_.get());
-  const auto& events = leaf_info_->get_publish_events();
+  const auto& events = leaf_info_->get_publish_events().get_events();
   EXPECT_EQ(events.size(), 2);
 
   // Calls handler.
-  dut_.Publish(*context_, info_.get());
+  dut_.Publish(*context_, &info_->get_publish_events());
 
   // Checks abs_data_ in dut.
   const auto& data = dut_.get_abstract_data();

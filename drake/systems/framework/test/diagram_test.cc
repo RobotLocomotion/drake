@@ -887,37 +887,37 @@ class DiscreteStateTest : public ::testing::Test {
 // Tests that the next update time after 0.05 is 2.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   context_->set_time(0.05);
-  auto events = diagram_.AllocateEventCollection();
+  auto events = diagram_.AllocateCombinedEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
   EXPECT_EQ(2.0, time);
-  auto info = dynamic_cast<const DiagramEventCollection*>(events.get());
+  auto info = dynamic_cast<const DiagramCombinedEventCollection<double>*>(events.get());
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_collection.
-  auto sub_info = info->get_sub_event_collection(2);
+  auto& sub_info = info->get_sub_event_collection(2);
 
-  EXPECT_TRUE(sub_info->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(sub_info.get_discrete_update_events().HasEvents());
 }
 
 // Tests that the next update time after 5.1 is 6.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   context_->set_time(5.1);
-  auto events = diagram_.AllocateEventCollection();
+  auto events = diagram_.AllocateCombinedEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
   EXPECT_EQ(6.0, time);
   // Both zoh should have an update event.
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_collection.
-  auto info = dynamic_cast<const DiagramEventCollection*>(events.get());
+  auto info = dynamic_cast<const DiagramCombinedEventCollection<double>*>(events.get());
   {
-    auto sub_info = info->get_sub_event_collection(1);
-    EXPECT_TRUE(sub_info->HasDiscreteUpdateEvents());
+    auto& sub_info = info->get_sub_event_collection(1);
+    EXPECT_TRUE(sub_info.get_discrete_update_events().HasEvents());
   }
 
   {
-    auto sub_info = info->get_sub_event_collection(2);
-    EXPECT_TRUE(sub_info->HasDiscreteUpdateEvents());
+    auto& sub_info = info->get_sub_event_collection(2);
+    EXPECT_TRUE(sub_info.get_discrete_update_events().HasEvents());
   }
 }
 
@@ -940,14 +940,14 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(8.5);
 
   // Request the next update time.
-  auto events = diagram_.AllocateEventCollection();
+  auto events = diagram_.AllocateCombinedEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
   EXPECT_EQ(9.0, time);
 
   // Fast forward to 9.0 sec and do the update.
   context_->set_time(9.0);
   diagram_.CalcDiscreteVariableUpdates(*context_,
-                                       events.get(),
+                                       &events->get_discrete_update_events(),
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
   EXPECT_EQ(1001.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
@@ -963,7 +963,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Fast forward to 12.0 sec and do the update again.
   context_->set_time(12.0);
   diagram_.CalcDiscreteVariableUpdates(*context_,
-                                       events.get(),
+                                       &events->get_discrete_update_events(),
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
   EXPECT_EQ(17.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
@@ -973,7 +973,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 // Tests that a publish action is taken at 19 sec.
 TEST_F(DiscreteStateTest, Publish) {
   context_->set_time(18.5);
-  auto events = diagram_.AllocateEventCollection();
+  auto events = diagram_.AllocateCombinedEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
   EXPECT_EQ(19.0, time);
@@ -981,7 +981,7 @@ TEST_F(DiscreteStateTest, Publish) {
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
   context_->set_time(19.0);
-  diagram_.Publish(*context_, events.get());
+  diagram_.Publish(*context_, &events->get_publish_events());
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
@@ -1069,17 +1069,19 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // First action time should be 2 sec, and only sys0 will be updating.
-  auto events = diagram_.AllocateEventCollection();
-  auto info = dynamic_cast<const DiagramEventCollection*>(events.get());
+  auto events = diagram_.AllocateCombinedEventCollection();
+  auto info = dynamic_cast<const DiagramCombinedEventCollection<double>*>(events.get());
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 2);
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_sub_event_collection.
-  auto sub_info = info->get_sub_event_collection(1);
-  EXPECT_TRUE(sub_info->HasUnrestrictedUpdateEvents());
+  {
+    auto& sub_info = info->get_sub_event_collection(1);
+    EXPECT_TRUE(sub_info.get_unrestricted_update_events().HasEvents());
+  }
 
   // Creates a temp state and does unrestricted updates.
   std::unique_ptr<State<double>> x_buf = context_->CloneState();
-  diagram_.CalcUnrestrictedUpdate(*context_, events.get(), x_buf.get());
+  diagram_.CalcUnrestrictedUpdate(*context_, &events->get_unrestricted_update_events(), x_buf.get());
 
   // The abstract data in the current context should be the same as before.
   EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
@@ -1095,11 +1097,11 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->set_time(time);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6);
   for (int i = 0; i < 2; i++) {
-    sub_info = info->get_sub_event_collection(i);
-    EXPECT_TRUE(sub_info->HasUnrestrictedUpdateEvents());
+    auto& sub_info = info->get_sub_event_collection(i);
+    EXPECT_TRUE(sub_info.get_unrestricted_update_events().HasEvents());
   }
 
-  diagram_.CalcUnrestrictedUpdate(*context_, events.get(), x_buf.get());
+  diagram_.CalcUnrestrictedUpdate(*context_, &events->get_unrestricted_update_events(), x_buf.get());
   // Both sys0 and sys1's abstract data should be updated.
   context_->get_mutable_state()->CopyFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
@@ -1415,21 +1417,21 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   auto tmp_discrete_state = diagram->AllocateDiscreteVariables();
   std::unique_ptr<State<double>> tmp_state = context->CloneState();
 
-  auto events = diagram->AllocateEventCollection();
+  auto events = diagram->AllocateCombinedEventCollection();
   diagram->GetPerStepEvents(*context, events.get());
 
   // Does unrestricted update first.
-  diagram->CalcUnrestrictedUpdate(*context, events.get(),
+  diagram->CalcUnrestrictedUpdate(*context, &events->get_unrestricted_update_events(),
       tmp_state.get());
   context->get_mutable_state()->CopyFrom(*tmp_state);
 
   // Does discrete updates second.
-  diagram->CalcDiscreteVariableUpdates(*context, events.get(),
+  diagram->CalcDiscreteVariableUpdates(*context, &events->get_discrete_update_events(),
       tmp_discrete_state.get());
   context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
 
   // Publishes last.
-  diagram->Publish(*context, events.get());
+  diagram->Publish(*context, &events->get_publish_events());
 
   // Only sys2 published once.
   EXPECT_EQ(sys0->get_publish_ctr(), 0);
@@ -1481,12 +1483,12 @@ class MyEventTestSystem : public LeafSystem<double> {
 
 GTEST_TEST(MyEventTest, MyEventTestLeaf) {
   MyEventTestSystem dut("sys", 0.2);
-  auto events = dut.AllocateEventCollection();
+  auto events = dut.AllocateCombinedEventCollection();
   auto context = dut.CreateDefaultContext();
 
   double time = dut.CalcNextUpdateTime(*context, events.get());
   context->set_time(time);
-  dut.Publish(*context, events.get());
+  dut.Publish(*context, &events->get_publish_events());
 }
 
 GTEST_TEST(MyEventTest, MyEventTestDiagram) {
@@ -1508,9 +1510,9 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   auto dut = builder.Build();
 
-  auto periodic_events = dut->AllocateEventCollection();
-  auto perstep_events = dut->AllocateEventCollection();
-  auto events = dut->AllocateEventCollection();
+  auto periodic_events = dut->AllocateCombinedEventCollection();
+  auto perstep_events = dut->AllocateCombinedEventCollection();
+  auto events = dut->AllocateCombinedEventCollection();
 
   auto context = dut->CreateDefaultContext();
 
@@ -1521,7 +1523,7 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   events->Merge(*perstep_events);
 
   context->set_time(time);
-  dut->Publish(*context, events.get());
+  dut->Publish(*context, &events->get_publish_events());
 }
 
 }  // namespace

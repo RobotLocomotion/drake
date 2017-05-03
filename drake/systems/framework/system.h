@@ -65,7 +65,7 @@ class System {
   /// Allocates an EventCollection for this system. The allocated
   /// EventCollection instance is used for registering and handling events
   /// (e.g. CalcNextUpdateTime(), Publish()).
-  virtual std::unique_ptr<EventCollection> AllocateEventCollection() const = 0;
+  virtual std::unique_ptr<CombinedEventCollection<T>> AllocateCombinedEventCollection() const = 0;
 
   /// Given a port descriptor, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses must
@@ -202,7 +202,7 @@ class System {
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
   void Publish(const Context<T>& context,
-      const EventCollection* event_info) const {
+      const EventCollection<PublishEvent<T>>* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DispatchPublishHandler(context, event_info);
   }
@@ -433,7 +433,7 @@ class System {
   /// classes' implementation of DispatchDiscreteVariableUpdateHandler is
   /// responsible for filtering out only the discrete update events.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
-      const EventCollection* event_info,
+      const EventCollection<DiscreteUpdateEvent<T>>* event_info,
       DiscreteValues<T>* discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DispatchDiscreteVariableUpdateHandler(context, event_info, discrete_state);
@@ -461,7 +461,7 @@ class System {
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes in the callback.
   void CalcUnrestrictedUpdate(const Context<T>& context,
-                              const EventCollection* event_info,
+                              const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
                               State<T>* state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     const int continuous_state_dim = state->get_continuous_state()->size();
@@ -498,7 +498,7 @@ class System {
   ///
   /// @p event_info cannot be null. @p event_info will be cleared on entry.
   T CalcNextUpdateTime(const Context<T>& context,
-                       EventCollection* event_info) const {
+                       CombinedEventCollection<T>* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(event_info != nullptr);
     event_info->Clear();
@@ -519,7 +519,7 @@ class System {
   ///
   /// @p event_info cannot be null. @p event_info will be cleared on entry.
   void GetPerStepEvents(const Context<T>& context,
-                        EventCollection* event_info) const {
+                        CombinedEventCollection<T>* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(event_info != nullptr);
     event_info->Clear();
@@ -1067,14 +1067,15 @@ class System {
    * @p event_info can be null.
    */
   virtual void DispatchPublishHandler(const Context<T>& context,
-      const EventCollection* event_info) const = 0;
+      const EventCollection<PublishEvent<T>>* event_info) const = 0;
 
   /**
    * This function dispatches all discrete update events to the appropriate
    * handlers. @p event_info can be null. @p discrete_state cannot be null.
    */
   virtual void DispatchDiscreteVariableUpdateHandler(
-      const Context<T>& context, const EventCollection* event_info,
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>* event_info,
       DiscreteValues<T>* discrete_state) const = 0;
 
   /**
@@ -1082,7 +1083,8 @@ class System {
    * handlers. @p event_info can be null. @p state cannot be null.
    */
   virtual void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
-      const EventCollection* event_info, State<T>* state) const = 0;
+      const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
+      State<T>* state) const = 0;
   //@}
 
   //----------------------------------------------------------------------------
@@ -1206,7 +1208,7 @@ class System {
   /// The default implementation returns with the next sample time being
   /// Infinity and no events added to @p event_info.
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
-      EventCollection* event_info, T* time) const {
+      CombinedEventCollection<T>* event_info, T* time) const {
     unused(context, event_info);
     *time = std::numeric_limits<T>::infinity();
   }
@@ -1225,7 +1227,7 @@ class System {
   ///
   /// The default implementation returns without changing @p event_info.
   virtual void DoGetPerStepEvents(const Context<T>& context,
-                                  EventCollection* event_info) const {
+                                  CombinedEventCollection<T>* event_info) const {
     unused(context, event_info);
   }
 

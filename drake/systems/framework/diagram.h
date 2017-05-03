@@ -246,16 +246,14 @@ class Diagram : public System<T>,
   }
 
   /// Allocates an DiagramEventCollection for this Diagram.
-  std::unique_ptr<EventCollection> AllocateEventCollection() const final {
+  std::unique_ptr<CombinedEventCollection<T>> AllocateCombinedEventCollection() const final {
     const int num_systems = num_subsystems();
-    DiagramEventCollection* info = new DiagramEventCollection(num_systems);
+    std::vector<std::unique_ptr<CombinedEventCollection<T>>> sub_events(num_systems);
     for (int i = 0; i < num_systems; ++i) {
-      std::unique_ptr<EventCollection> sub_info =
-          sorted_systems_[i]->AllocateEventCollection();
-      info->set_and_own_sub_event_collection(i, std::move(sub_info));
+      sub_events[i] = sorted_systems_[i]->AllocateCombinedEventCollection();
     }
 
-    return std::unique_ptr<EventCollection>(info);
+    return std::make_unique<DiagramCombinedEventCollection<T>>(std::move(sub_events));
   }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
@@ -771,7 +769,7 @@ class Diagram : public System<T>,
   /// types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic.
   void DoCalcNextUpdateTime(const Context<T>& context,
-      EventCollection* event_info, T* time) const override {
+      CombinedEventCollection<T>* event_info, T* time) const override {
     DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
@@ -832,12 +830,12 @@ class Diagram : public System<T>,
   // sub system's Publish(). @p event_info can be null, in which case, the
   // force call version of Publish() is invoked on all sub systems.
   void DispatchPublishHandler(const Context<T>& context,
-      const EventCollection* event_info) const final {
+      const EventCollection<PublishEvent<T>>* event_info) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
-    const DiagramEventCollection* info = nullptr;
+    const DiagramEventCollection<PublishEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection*>(event_info);
+      info = dynamic_cast<const DiagramEventCollection<PublishEvent<T>>*>(event_info);
       DRAKE_DEMAND(info != nullptr);
     }
 
@@ -845,7 +843,7 @@ class Diagram : public System<T>,
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       DRAKE_DEMAND(subcontext != nullptr);
       if (info != nullptr) {
-        const EventCollection* subinfo = info->get_sub_event_collection(i);
+        const EventCollection<PublishEvent<T>>* subinfo = info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
         sorted_systems_[i]->Publish(*subcontext, subinfo);
       } else {
@@ -860,7 +858,7 @@ class Diagram : public System<T>,
   // which case, the force call version of CalcDiscreteVariableUpdates() is
   // invoked on all sub systems.
   void DispatchDiscreteVariableUpdateHandler(
-      const Context<T>& context, const EventCollection* event_info,
+      const Context<T>& context, const EventCollection<DiscreteUpdateEvent<T>>* event_info,
       DiscreteValues<T>* discrete_state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -875,9 +873,9 @@ class Diagram : public System<T>,
           context.get_discrete_state(i)->get_value());
     }
 
-    const DiagramEventCollection* info = nullptr;
+    const DiagramEventCollection<DiscreteUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection*>(event_info);
+      info = dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(event_info);
       DRAKE_DEMAND(info != nullptr);
     }
 
@@ -889,7 +887,7 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(subdifference != nullptr);
 
       if (info != nullptr) {
-        const EventCollection* subinfo = info->get_sub_event_collection(i);
+        const EventCollection<DiscreteUpdateEvent<T>>* subinfo = info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
         sorted_systems_[i]->CalcDiscreteVariableUpdates(
             *subcontext, subinfo, subdifference);
@@ -906,7 +904,7 @@ class Diagram : public System<T>,
   // case, the force call version of CalcUnrestrictedUpdate() is invoked on all
   // sub systems.
   void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
-      const EventCollection* event_info, State<T>* state) const final {
+      const EventCollection<UnrestrictedUpdateEvent<T>>* event_info, State<T>* state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
@@ -915,9 +913,9 @@ class Diagram : public System<T>,
     // No need to set state to context's state, since it has already been done
     // in System::CalcUnrestrictedUpdate().
 
-    const DiagramEventCollection* info = nullptr;
+    const DiagramEventCollection<UnrestrictedUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection*>(event_info);
+      info = dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>*>(event_info);
       DRAKE_DEMAND(info != nullptr);
     }
 
@@ -927,7 +925,7 @@ class Diagram : public System<T>,
       State<T>* substate = diagram_state->get_mutable_substate(i);
       DRAKE_DEMAND(substate != nullptr);
       if (info != nullptr) {
-        const EventCollection* subinfo = info->get_sub_event_collection(i);
+        const EventCollection<UnrestrictedUpdateEvent<T>>* subinfo = info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
         sorted_systems_[i]->CalcUnrestrictedUpdate(
             *subcontext, subinfo, substate);
@@ -1069,7 +1067,7 @@ class Diagram : public System<T>,
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
   DoCalcNextUpdateTimeImpl(
-      const Context<T1>&, EventCollection*, T1* time) const {
+      const Context<T1>&, CombinedEventCollection<T1>*, T1* time) const {
     DRAKE_ABORT_MSG(
         "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");
@@ -1081,9 +1079,9 @@ class Diagram : public System<T>,
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
-      const Context<T1>& context, EventCollection* event_info, T1* time) const {
+      const Context<T1>& context, CombinedEventCollection<T1>* event_info, T1* time) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
-    auto info = dynamic_cast<DiagramEventCollection*>(event_info);
+    auto info = dynamic_cast<DiagramCombinedEventCollection<T1>*>(event_info);
     DRAKE_DEMAND(diagram_context != nullptr);
     DRAKE_DEMAND(info != nullptr);
 
@@ -1093,7 +1091,7 @@ class Diagram : public System<T>,
     // imminent updates.
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
-      EventCollection* subinfo = info->get_mutable_sub_event_collection(i);
+      CombinedEventCollection<T1>* subinfo = info->get_mutable_sub_event_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
       const T1 sub_time =
           sorted_systems_[i]->CalcNextUpdateTime(*subcontext, subinfo);
@@ -1111,15 +1109,15 @@ class Diagram : public System<T>,
   }
 
   void DoGetPerStepEvents(const Context<T>& context,
-                          EventCollection* event_info) const override {
+                          CombinedEventCollection<T>* event_info) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    auto info = dynamic_cast<DiagramEventCollection*>(event_info);
+    auto info = dynamic_cast<DiagramCombinedEventCollection<T>*>(event_info);
     DRAKE_DEMAND(diagram_context != nullptr);
     DRAKE_DEMAND(info != nullptr);
 
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      EventCollection* subinfo = info->get_mutable_sub_event_collection(i);
+      CombinedEventCollection<T>* subinfo = info->get_mutable_sub_event_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
 
       sorted_systems_[i]->GetPerStepEvents(*subcontext, subinfo);

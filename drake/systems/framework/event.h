@@ -12,8 +12,17 @@ namespace drake {
 namespace systems {
 
 // Forward declaration of the event container classes.
-template <typename EventType> class EventCollection;
-template <typename EventType> class LeafEventCollection;
+// Containers for homogeneous event type.
+template <typename EventType>
+class EventCollection;
+template <typename EventType>
+class LeafEventCollection;
+
+// Containers for heterogeneous event types.
+template <typename T>
+class CombinedEventCollection;
+template <typename T>
+class LeafCombinedEventCollection;
 
 /**
  * Base class that represents an event. The base event contains two main pieces
@@ -22,6 +31,7 @@ template <typename EventType> class LeafEventCollection;
  * class. Derived classes should contain an optional function pointer to the
  * callback function that handles the event.
  */
+template <typename T>
 class Event {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Event)
@@ -46,7 +56,17 @@ class Event {
   /**
    * Adds this to @p events. See derived implementation for more details.
    */
-  // virtual void add_to(EventCollection* events) const = 0;
+  virtual void add_to_combined(CombinedEventCollection<T>* events) const = 0;
+
+  /////////////////////////////////////////////////////////
+  // NOTE:
+  // I can't make a virtual templated function to add to EventCollection. So the
+  // Event api
+  // is sort of missing this piece. I am assuming that this is provided in the
+  // concrete
+  // derived Event.
+  // virtual void add_to(EventCollection<EventType<T>>* events) const = 0;
+  /////////////////////////////////////////////////////////
 
  protected:
   /**
@@ -68,7 +88,7 @@ class Event {
  * to do custom handling of this event given a const Context and const Trigger.
  */
 template <typename T>
-class PublishEvent : public Event {
+class PublishEvent : public Event<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PublishEvent)
 
@@ -82,7 +102,7 @@ class PublishEvent : public Event {
    * can be null, but @p trigger cannot be null.
    */
   PublishEvent(std::unique_ptr<Trigger> trigger, PublishCallback callback)
-      : Event(std::move(trigger)), Handle(callback) {}
+      : Event<T>(std::move(trigger)), Handle(callback) {}
 
   /**
    * Makes a Trigger of type @p trigger_type with no optional data, and
@@ -118,16 +138,27 @@ class PublishEvent : public Event {
         dynamic_cast<LeafEventCollection<PublishEvent<T>>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
-    auto me = std::make_unique<PublishEvent<T>>(get_trigger().Clone(), Handle);
+    auto me =
+        std::make_unique<PublishEvent<T>>(this->get_trigger().Clone(), Handle);
     leaf_events->add_event(std::move(me));
+  }
+
+  void add_to_combined(CombinedEventCollection<T>* events) const override {
+    LeafCombinedEventCollection<T>* leaf_events =
+        dynamic_cast<LeafCombinedEventCollection<T>*>(events);
+    DRAKE_DEMAND(leaf_events != nullptr);
+
+    auto me =
+        std::make_unique<PublishEvent<T>>(this->get_trigger().Clone(), Handle);
+    leaf_events->add_publish_event(std::move(me));
   }
 
   /**
    * Clones this instance.
    */
-  std::unique_ptr<Event> Clone() const override {
-    PublishEvent* clone = new PublishEvent(get_trigger().Clone(), Handle);
-    return std::unique_ptr<Event>(clone);
+  std::unique_ptr<Event<T>> Clone() const override {
+    PublishEvent* clone = new PublishEvent(this->get_trigger().Clone(), Handle);
+    return std::unique_ptr<Event<T>>(clone);
   }
 
   /**
@@ -142,7 +173,7 @@ class PublishEvent : public Event {
  * Trigger and writes the updates to a mutable DiscreteValues.
  */
 template <typename T>
-class DiscreteUpdateEvent : public Event {
+class DiscreteUpdateEvent : public Event<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteUpdateEvent)
 
@@ -158,7 +189,7 @@ class DiscreteUpdateEvent : public Event {
    */
   DiscreteUpdateEvent(std::unique_ptr<Trigger> trigger,
                       DiscreteUpdateCallback callback)
-      : Event(std::move(trigger)), Handle(callback) {}
+      : Event<T>(std::move(trigger)), Handle(callback) {}
 
   /**
    * Makes a Trigger of type @p trigger_type with no optional data, and uses
@@ -196,18 +227,28 @@ class DiscreteUpdateEvent : public Event {
         dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>*>(events);
     DRAKE_DEMAND(leaf_events != nullptr);
 
-    auto me =
-        std::make_unique<DiscreteUpdateEvent<T>>(get_trigger().Clone(), Handle);
+    auto me = std::make_unique<DiscreteUpdateEvent<T>>(
+        this->get_trigger().Clone(), Handle);
     leaf_events->add_event(std::move(me));
+  }
+
+  void add_to_combined(CombinedEventCollection<T>* events) const override {
+    LeafCombinedEventCollection<T>* leaf_events =
+        dynamic_cast<LeafCombinedEventCollection<T>*>(events);
+    DRAKE_DEMAND(leaf_events != nullptr);
+
+    auto me = std::make_unique<DiscreteUpdateEvent<T>>(
+        this->get_trigger().Clone(), Handle);
+    leaf_events->add_discrete_update_event(std::move(me));
   }
 
   /**
    * Clones this instance.
    */
-  std::unique_ptr<Event> Clone() const override {
+  std::unique_ptr<Event<T>> Clone() const override {
     DiscreteUpdateEvent* clone =
-        new DiscreteUpdateEvent(get_trigger().Clone(), Handle);
-    return std::unique_ptr<Event>(clone);
+        new DiscreteUpdateEvent(this->get_trigger().Clone(), Handle);
+    return std::unique_ptr<Event<T>>(clone);
   }
 
   /**
@@ -222,7 +263,7 @@ class DiscreteUpdateEvent : public Event {
  * a const Trigger and writes the updates to a mutable State.
  */
 template <typename T>
-class UnrestrictedUpdateEvent : public Event {
+class UnrestrictedUpdateEvent : public Event<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdateEvent)
 
@@ -237,7 +278,7 @@ class UnrestrictedUpdateEvent : public Event {
    */
   UnrestrictedUpdateEvent(std::unique_ptr<Trigger> trigger,
                           UnrestrictedUpdateCallback callback)
-      : Event(std::move(trigger)), Handle(callback) {}
+      : Event<T>(std::move(trigger)), Handle(callback) {}
 
   /**
    * Makes a Trigger of type @p trigger_type with no optional data, and uses it
@@ -276,17 +317,27 @@ class UnrestrictedUpdateEvent : public Event {
     DRAKE_DEMAND(leaf_events != nullptr);
 
     auto me = std::make_unique<UnrestrictedUpdateEvent<T>>(
-        get_trigger().Clone(), Handle);
+        this->get_trigger().Clone(), Handle);
     leaf_events->add_event(std::move(me));
+  }
+
+  void add_to_combined(CombinedEventCollection<T>* events) const override {
+    LeafCombinedEventCollection<T>* leaf_events =
+        dynamic_cast<LeafCombinedEventCollection<T>*>(events);
+    DRAKE_DEMAND(leaf_events != nullptr);
+
+    auto me = std::make_unique<UnrestrictedUpdateEvent<T>>(
+        this->get_trigger().Clone(), Handle);
+    leaf_events->add_unrestricted_update_event(std::move(me));
   }
 
   /**
    * Clones this instance.
    */
-  std::unique_ptr<Event> Clone() const override {
+  std::unique_ptr<Event<T>> Clone() const override {
     UnrestrictedUpdateEvent* clone =
-        new UnrestrictedUpdateEvent(get_trigger().Clone(), Handle);
-    return std::unique_ptr<Event>(clone);
+        new UnrestrictedUpdateEvent(this->get_trigger().Clone(), Handle);
+    return std::unique_ptr<Event<T>>(clone);
   }
 
   /**

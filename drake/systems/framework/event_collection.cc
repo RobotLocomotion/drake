@@ -18,15 +18,8 @@ template class DiscreteUpdateEvent<AutoDiffXd>;
 template class UnrestrictedUpdateEvent<double>;
 template class UnrestrictedUpdateEvent<AutoDiffXd>;
 
-template class DiagramEventCollection<PublishEvent<double>>;
-template class DiagramEventCollection<DiscreteUpdateEvent<double>>;
-template class DiagramEventCollection<UnrestrictedUpdateEvent<double>>;
-
-template class LeafEventCollection<PublishEvent<double>>;
-template class LeafEventCollection<DiscreteUpdateEvent<double>>;
-template class LeafEventCollection<UnrestrictedUpdateEvent<double>>;
-
 template class LeafCombinedEventCollection<double>;
+template class DiagramCombinedEventCollection<double>;
 
 }  // namespace systems
 }  // namespace drake
