@@ -185,11 +185,6 @@ class Cache {
   ///
   /// @warning The bare pointer should not be held, because the data may become
   /// invalid if the ticket's prerequisites are modified.
-  ///
-  /// @warning It is responsibility of the caller to call validate() on this
-  /// entry once done with the necessary updates. Failure to do so will have no
-  /// effect on the final result of the computation, but it might have an impact
-  /// on efficiency since the entry will be recomputed every time is accessed.
   AbstractValue* GetMutable(CacheTicket ticket);
 
  private:
