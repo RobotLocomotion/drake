@@ -379,6 +379,18 @@ class CombinedEventCollection {
             unrestricted_update_events_->HasNoEvents());
   }
 
+  bool HasPublishEvents() const {
+    return publish_events_->HasEvents();
+  }
+
+  bool HasDiscreteUpdateEvents() const {
+    return discrete_update_events_->HasEvents();
+  }
+
+  bool HasUnrestrictedUpdateEvents() const {
+    return unrestricted_update_events_->HasEvents();
+  }
+
   /**
    * Merges this' EventCollection<PublishEvent<T>> with @p other's
    * EventCollection<PublishEvent<T>>, and so on.

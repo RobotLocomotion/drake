@@ -22,16 +22,18 @@ constexpr int64_t kTimestamp = 123456;
 
 void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
                       SystemOutput<double>* output) {
-  auto event_info = sub.AllocateEventCollection();
+  auto event_info = sub.AllocateCombinedEventCollection();
   sub.CalcNextUpdateTime(*context, event_info.get());
 
   if (!event_info->HasNoEvents()) {
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
     if (event_info->HasDiscreteUpdateEvents()) {
-      sub.CalcDiscreteVariableUpdates(*context, event_info.get(),
-                                      tmp_state->get_mutable_discrete_state());
+      sub.CalcDiscreteVariableUpdates(
+          *context, &event_info->get_discrete_update_events(),
+          tmp_state->get_mutable_discrete_state());
     } else if (event_info->HasUnrestrictedUpdateEvents()) {
-      sub.CalcUnrestrictedUpdate(*context, event_info.get(), tmp_state.get());
+      sub.CalcUnrestrictedUpdate(*context,
+          &event_info->get_unrestricted_update_events(), tmp_state.get());
     } else {
       DRAKE_DEMAND(false);
     }

@@ -290,15 +290,17 @@ class Simulator {
  private:
   // Goes through every event in @p events and calls unrestricted update only
   // if that event's action type is kUnrestrictedUpdateAction.
-  void HandleUnrestrictedUpdate(const EventCollection& events);
+  void HandleUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
   // Goes through every event in @p events and calls discrete update only if
   // that event's action type is kDiscreteUpdateAction.
-  void HandleDiscreteUpdate(const EventCollection& events);
+  void HandleDiscreteUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events);
 
   // Goes through every event in @p events and calls publish only if that
   // event's action type is kPublishAction.
-  void HandlePublish(const EventCollection& events);
+  void HandlePublish(const EventCollection<PublishEvent<T>>& events);
 
   // The steady_clock is immune to system clock changes so increases
   // monotonically. We'll work in fractional seconds.
@@ -354,7 +356,7 @@ class Simulator {
   bool initialization_done_{false};
 
   // Per step events that need to be handled. This is set by Initialize().
-  std::unique_ptr<EventCollection> per_step_events_;
+  std::unique_ptr<CombinedEventCollection<T>> per_step_events_;
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;
@@ -394,7 +396,7 @@ void Simulator<T>::Initialize() {
   integrator_->Initialize();
 
   // Gets all the events that need handling.
-  per_step_events_ = system_.AllocateEventCollection();
+  per_step_events_ = system_.AllocateCombinedEventCollection();
   DRAKE_DEMAND(per_step_events_ != nullptr);
 
   system_.GetPerStepEvents(*context_, per_step_events_.get());
@@ -414,8 +416,9 @@ void Simulator<T>::Initialize() {
 }
 
 template <typename T>
-void Simulator<T>::HandleUnrestrictedUpdate(const EventCollection& events) {
-  if (events.HasUnrestrictedUpdateEvents()) {
+void Simulator<T>::HandleUnrestrictedUpdate(
+    const EventCollection<UnrestrictedUpdateEvent<T>>& events) {
+  if (events.HasEvents()) {
     State<T>* x = context_->get_mutable_state();
     DRAKE_DEMAND(x != nullptr);
     // First, compute the unrestricted updates into a temporary buffer.
@@ -429,8 +432,9 @@ void Simulator<T>::HandleUnrestrictedUpdate(const EventCollection& events) {
 }
 
 template <typename T>
-void Simulator<T>::HandleDiscreteUpdate(const EventCollection& events) {
-  if (events.HasDiscreteUpdateEvents()) {
+void Simulator<T>::HandleDiscreteUpdate(
+    const EventCollection<DiscreteUpdateEvent<T>>& events) {
+  if (events.HasEvents()) {
     DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
     // Systems with discrete update events must have discrete state.
     DRAKE_DEMAND(xd != nullptr);
@@ -444,8 +448,9 @@ void Simulator<T>::HandleDiscreteUpdate(const EventCollection& events) {
 }
 
 template <typename T>
-void Simulator<T>::HandlePublish(const EventCollection& events) {
-  if (events.HasPublishEvents()) {
+void Simulator<T>::HandlePublish(
+    const EventCollection<PublishEvent<T>>& events) {
+  if (events.HasEvents()) {
     system_.Publish(*context_, &events);
     ++num_publishes_;
   }
@@ -473,8 +478,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   bool sample_time_hit = false;
 
   // Integrate until desired interval has completed.
-  auto timed_events = system_.AllocateEventCollection();
-  auto merged_events = system_.AllocateEventCollection();
+  auto timed_events = system_.AllocateCombinedEventCollection();
+  auto merged_events = system_.AllocateCombinedEventCollection();
   DRAKE_DEMAND(timed_events != nullptr);
   DRAKE_DEMAND(merged_events != nullptr);
 
@@ -496,11 +501,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // "violence" to the state, i.e. unrestricted -> discrete -> publish.
 
     // Do unrestricted updates first.
-    HandleUnrestrictedUpdate(*merged_events);
+    HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
     // Do restricted (discrete variable) updates next.
-    HandleDiscreteUpdate(*merged_events);
+    HandleDiscreteUpdate(merged_events->get_discrete_update_events());
     // Do any publishes last.
-    HandlePublish(*merged_events);
+    HandlePublish(merged_events->get_publish_events());
 
     // TODO(siyuan): transfer per step publish entirely to individual systems.
     // Allow System a chance to produce some output.

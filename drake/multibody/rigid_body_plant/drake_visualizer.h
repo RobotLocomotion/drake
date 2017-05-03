@@ -134,7 +134,7 @@ class DrakeVisualizer : public LeafSystem<double> {
   // shortly to perform the initialization. Otherwise, returns
   // LeafSystem<double>::DoCalcNextUpdateTime(context, events)
   void DoCalcNextUpdateTime(const Context<double>& context,
-      EventCollection* events, double* time) const override;
+      CombinedEventCollection<double>* events, double* time) const override;
 
   // Sets the initialization flag to true, and calls PublishLoadRobot().
   void DoCalcDiscreteVariableUpdates(

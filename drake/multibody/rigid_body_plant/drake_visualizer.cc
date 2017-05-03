@@ -36,17 +36,14 @@ void DrakeVisualizer::set_publish_period(double period) {
 
 void DrakeVisualizer::DoCalcNextUpdateTime(
     const Context<double>& context,
-    EventCollection* events, double* time) const {
+    CombinedEventCollection<double>* events, double* time) const {
   if (is_load_message_sent(context)) {
     return LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   } else {
     // TODO(siyuan): cleanup after #5725 is resolved.
     *time = context.get_time() + 0.0001;
-    LeafEventCollection<double>* info =
-        dynamic_cast<LeafEventCollection<double>*>(events);
-    DRAKE_DEMAND(info != nullptr);
-    info->add_event(std::make_unique<DiscreteUpdateEvent<double>>(
-          Trigger::TriggerType::kTimed));
+    DiscreteUpdateEvent<double> event(Trigger::TriggerType::kTimed);
+    event.add_to_combined(events);
   }
 }
 

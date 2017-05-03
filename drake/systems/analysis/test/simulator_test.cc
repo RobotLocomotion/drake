@@ -275,15 +275,12 @@ class UnrestrictedUpdater : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoCalcNextUpdateTime(const systems::Context<double>& context,
-                            EventCollection* event_info, double* time)
-                              const override {
+                            CombinedEventCollection<double>* event_info,
+                            double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
-    LeafEventCollection<double>* info =
-        dynamic_cast<LeafEventCollection<double>*>(event_info);
-    DRAKE_DEMAND(info != nullptr);
-    info->add_event(std::make_unique<UnrestrictedUpdateEvent<double>>(
-          Trigger::TriggerType::kPeriodic));
+    UnrestrictedUpdateEvent<double> event(Trigger::TriggerType::kPeriodic);
+    event.add_to_combined(event_info);
   }
 
   void DoCalcUnrestrictedUpdate(
