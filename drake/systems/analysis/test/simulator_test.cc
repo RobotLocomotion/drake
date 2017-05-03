@@ -14,6 +14,7 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test/square_wave_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 using Eigen::AutoDiffScalar;
