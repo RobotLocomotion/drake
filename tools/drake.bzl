@@ -219,3 +219,15 @@ def drake_header_tar(name, deps=[], **kwargs):
           extension="tar.gz",
           files=[":" + name + "_gather"],
           strip_prefix="/")
+
+# Generate a file with specified content
+def _generate_file_impl(ctx):
+  ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
+
+drake_generate_file = rule(
+  implementation = _generate_file_impl,
+  attrs = {
+    "content": attr.string(),
+    "out": attr.output(mandatory = True),
+  },
+)
