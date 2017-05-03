@@ -651,6 +651,8 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
   // explicit Euler step will be taken. We compute the error estimate using two
   // half steps.
   if (dt < this->get_working_minimum_step_size()) {
+    SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
+        "step instead");
     const T half_dt = dt / 2;
 
     // TODO(edrumwri): Investigate replacing this with an explicit trapezoid
@@ -658,6 +660,30 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
     //                 The mitigating factor is that dt is already small, so a
     //                 test of, e.g., a square wave function, should quantify
     //                 the improvement (if any).
+
+    // The error estimation process for explicit Euler uses two half-steps
+    // of explicit Euler (for a total of two derivative evaluations). The error
+    // estimation process is derived as follows:
+    // x*(t+h) = x(t) + h/2 f(t, x(t)) + h/2 f(t + h/2, x(t) + h/2 f(t, x(t))) +
+    //             2⋅O(h²/2)
+    // where x*(t+h) is the true (generally unknown) answer that we seek.
+    // Designating the computed result as x̅ₑ(t+h), the above equation is
+    // rewritten as:
+    // x*(t+h) = x̅ₑ(t+h) + 2⋅O(h²/2)
+    // Big-Oh notation specifies that O(kg) = O(g) if k is a constant and g()
+    // is a function of the problem input. Therefore O(h²/2) = O(h²).
+    //
+    // Now consider that we have two solutions:
+    // x*(t+h) = xₑ(t+h) + O(h²)       [explicit Euler]
+    // x*(t+h) = x̅ₑ(t+h) + 2⋅O(h²)    [2x half-step explicit Euler]
+    //
+    // It follows that:
+    // xₑ(t+h) + O(h²) = x̅ₑ(t+h) + 2⋅O(h²)
+    // which means that:
+    // x̅ₑ(t+h) - xₑ(t+h) = O(h²)
+    //
+    // Thus, subtracting the two solutions yields the error estimate.
+
     // Compute the Euler step.
     this->CalcTimeDerivatives(*context, derivs_.get());
     xtplus_ie = xt0 + dt*derivs_->CopyToVector();
@@ -678,20 +704,20 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
     // Update the error estimation ODE counts.
     num_err_est_function_evaluations_ += 2;
 
-    // Set the "trapezoid" state.
+    // Set the "trapezoid" state to be the result of taking two explicit Euler
+    // half steps. since the code below the if/then/else block
+    // simply subtracts the two results to obtain the error estimate.
     xtplus_itr = context->get_continuous_state()->CopyToVector();
+  } else {
+    // Try taking the requested step.
+    bool success = AttemptStepPaired(dt, &xtplus_ie, &xtplus_itr);
 
-    return true;
-  }
-
-  // Try taking the requested step.
-  bool success = AttemptStepPaired(dt, &xtplus_ie, &xtplus_itr);
-
-  // If the step was not successful, reset the time and state.
-  if (!success) {
-    context->set_time(t0);
-    context->get_mutable_continuous_state()->SetFromVector(xt0);
-    return false;
+    // If the step was not successful, reset the time and state.
+    if (!success) {
+      context->set_time(t0);
+      context->get_mutable_continuous_state()->SetFromVector(xt0);
+      return false;
+    }
   }
 
   // Reset the error estimate.
