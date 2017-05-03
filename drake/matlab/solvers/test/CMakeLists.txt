@@ -13,5 +13,6 @@ drake_add_matlab_test(NAME matlab/solvers/test/testNLP OPTIONAL ipopt snopt COMM
 drake_add_matlab_test(NAME matlab/solvers/test/testQP OPTIONAL gurobi snopt COMMAND testQP)
 drake_add_matlab_test(NAME matlab/solvers/test/testTaskSpaceRRT REQUIRES lcm snopt OPTIONAL bullet COMMAND testTaskSpaceRRT SIZE large)
 
-drake_add_matlab_test(NAME matlab/solvers/test/testMathematicalProgram COMMAND testMathematicalProgram)
-
+if(ENABLE_PYTHON_BINDINGS)
+  drake_add_matlab_test(NAME matlab/solvers/test/testMathematicalProgram COMMAND testMathematicalProgram)
+endif()
