@@ -25,7 +25,7 @@
 
 namespace drake {
 
-/// Attempts to donwcast a reference of type `Base` to the requested type
+/// Attempts to downcast a reference of type `Base` to the requested type
 /// `Derived`. `Derived` must be a reference and can be more cv-qualified than
 /// `from` (i.e. this method can be used to add constness.)
 /// By default `unsafe_downcast` behaves as `dynamic_cast` in both Debug and
@@ -64,7 +64,7 @@ static Derived unsafe_downcast(Base &from) {
 #endif
 }
 
-/// Attempts to donwcast a pointer of type `Base` to the requested type
+/// Attempts to downcast a pointer of type `Base` to the requested type
 /// `Derived`. `Derived` must be a pointer and can be more cv-qualified than
 /// `from` (i.e. this method can be used to add constness.)
 /// By default `unsafe_downcast` behaves as `dynamic_cast` in both Debug and
