@@ -47,7 +47,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// Latches the input port into the discrete state.
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      const std::vector<const systems::Trigger*>& triggers,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
       systems::DiscreteValues<double>* discrete_state) const override;
 
   std::unique_ptr<systems::DiscreteValues<double>> AllocateDiscreteState()

@@ -42,7 +42,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      const std::vector<const systems::Trigger*>& triggers,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
       systems::DiscreteValues<double>* discrete_state) const override;
 };
 
@@ -119,7 +119,7 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      const std::vector<const systems::Trigger*>& triggers,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
       systems::DiscreteValues<double>* discrete_state) const override;
 
  private:

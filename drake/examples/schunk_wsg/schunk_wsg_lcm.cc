@@ -51,7 +51,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcOutput(
 
 void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const systems::Trigger*>& triggers,
+    const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);

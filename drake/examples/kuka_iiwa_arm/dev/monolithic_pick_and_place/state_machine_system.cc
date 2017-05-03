@@ -147,7 +147,7 @@ void PickAndPlaceStateMachineSystem::DoCalcOutput(
 
 void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
-    const std::vector<const systems::Trigger*>& triggers,
+    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& events,
     systems::State<double>* state) const {
   // Extract Internal state.
   InternalState& internal_state =

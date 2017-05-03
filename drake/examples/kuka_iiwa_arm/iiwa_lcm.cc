@@ -42,7 +42,7 @@ void IiwaCommandReceiver::set_initial_position(
 
 void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const systems::Trigger*>& triggers,
+    const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
@@ -137,7 +137,7 @@ IiwaStatusReceiver::IiwaStatusReceiver()
 
 void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const systems::Trigger*>& triggers,
+    const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
