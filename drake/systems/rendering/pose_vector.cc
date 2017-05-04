@@ -1,6 +1,7 @@
 #include "drake/systems/rendering/pose_vector.h"
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
