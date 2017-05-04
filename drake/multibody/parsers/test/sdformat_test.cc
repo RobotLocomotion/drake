@@ -8,7 +8,7 @@ namespace drake {
   namespace multibody {
     namespace parsers {
       namespace test {
-	namespace {
+        namespace {
 
 	  GTEST_TEST(SDFormatTest, TestBasic) {
 	    const std::string sdf_str("<?xml version='1.0'?><sdf version='1.6'><model name='my_model'><link name='link'/></model></sdf>"); // NOLINT
@@ -26,7 +26,7 @@ namespace drake {
 	    EXPECT_EQ(link_name, std::string("link"));
 	  }
 
-	}  // namespace
+        }  // namespace
       }  // namespace test
     }  // namespace parsers
   }  // namespace multibody
