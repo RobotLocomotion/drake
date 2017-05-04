@@ -13,7 +13,7 @@ namespace drake {
 namespace examples {
 namespace valkyrie {
 
-int main(int argc, const char** argv) {
+int main() {
   // LCM communication.
   lcm::DrakeLcm lcm;
   ValkyrieSimulationDiagram diagram(&lcm);
@@ -45,6 +45,6 @@ int main(int argc, const char** argv) {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
-  return drake::examples::valkyrie::main(argc, argv);
+int main() {
+  return drake::examples::valkyrie::main();
 }
