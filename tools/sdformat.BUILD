@@ -22,12 +22,6 @@ cmake_configure_file(
         "SDF_VERSION_NAME=",
         "CMAKE_INSTALL_FULL_DATAROOTDIR=external/sdformat/sdf/1.6",
         "SDF_PKG_VERSION=",
-        # This symbol comes from within the sdformat library's
-        # cmake/SearchForStuff.cmake.  This is needed because the URDF API
-        # deprecates certain functions.  If URDF_GE_0P3 is *not* specified,
-        # then sdformat attempts to build against the older APIs, which
-        # causes compile failure (this is probably a bug that should be fixed).
-        "URDF_GE_0P3=1",
     ],
     visibility = [],
 )
