@@ -70,7 +70,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
-void LcmSubscriberSystem::SetDefaultState(const Context<double>& context,
+void LcmSubscriberSystem::SetDefaultState(const Context<double>&,
                                           State<double>* state) const {
   if (translator_ != nullptr) {
     DRAKE_DEMAND(serializer_ == nullptr);

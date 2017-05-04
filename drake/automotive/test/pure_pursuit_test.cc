@@ -109,27 +109,27 @@ TEST_F(PurePursuitTest, ComputeGoalPoint) {
       10. /* s_lookahead */, {lane, true /* with_s */}, pose);
 
   // Expect the goal point to lie on the lane ordinate.
-  EXPECT_EQ(60., goal_position.x);
-  EXPECT_EQ(0., goal_position.y);
-  EXPECT_EQ(0., goal_position.z);
+  EXPECT_EQ(60., goal_position.x());
+  EXPECT_EQ(0., goal_position.y());
+  EXPECT_EQ(0., goal_position.z());
 
   // Flip the pose 180 degrees.
   goal_position = PurePursuit<double>::ComputeGoalPoint(
       10. /* s_lookahead */, {lane, false /* with_s */}, pose);
 
   // Expect the goal point to lie on the lane ordinate.
-  EXPECT_EQ(40., goal_position.x);
-  EXPECT_EQ(0., goal_position.y);
-  EXPECT_EQ(0., goal_position.z);
+  EXPECT_EQ(40., goal_position.x());
+  EXPECT_EQ(0., goal_position.y());
+  EXPECT_EQ(0., goal_position.z());
 
   // Take the lookahead distance to be beyond the end of the lane.
   goal_position = PurePursuit<double>::ComputeGoalPoint(
       60. /* s_lookahead */, {lane, true /* with_s */}, pose);
 
   // Expect the result to saturate.
-  EXPECT_EQ(100., goal_position.x);
-  EXPECT_EQ(0., goal_position.y);
-  EXPECT_EQ(0., goal_position.z);
+  EXPECT_EQ(100., goal_position.x());
+  EXPECT_EQ(0., goal_position.y());
+  EXPECT_EQ(0., goal_position.z());
 }
 // TODO(jadecastro): Test with curved lanes once
 // monolane::Lane::ToRoadPosition() is implemented.

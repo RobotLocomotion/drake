@@ -37,7 +37,7 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
   }
 };
 
-int main(int argc, char* argv[]) {
+int main() {
   // Create the simple system.
   SimpleDiscreteTimeSystem system;
 

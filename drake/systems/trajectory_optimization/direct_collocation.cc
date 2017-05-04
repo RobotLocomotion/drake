@@ -60,8 +60,8 @@ class RunningCostEndWrapper : public solvers::Cost {
       : solvers::Cost(cost->num_vars()), cost_(cost) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+              Eigen::VectorXd&) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
@@ -86,8 +86,8 @@ class RunningCostMidWrapper : public solvers::Cost {
         cost_(cost) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+              Eigen::VectorXd&) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 

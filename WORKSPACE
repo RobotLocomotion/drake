@@ -267,13 +267,15 @@ gfortran_repository(
 git_repository(
   name = "snopt",
   remote = "git@github.com:RobotLocomotion/snopt.git",
-  commit = "a9a5f3f209573b96a2b355ef88f00aefa3d7ec7e",
+  commit = "2ec980370eeb72897135b11570033a19bda885a7",
 )
 
 # Python Libraries
-new_http_archive(
+load("//tools:pypi.bzl", "pypi_archive")
+pypi_archive(
     name = "six_archive",
-    url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz",
+    package = "six",
+    version = "1.10.0",
     sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
     build_file = "tools/six.BUILD",
 )

@@ -47,26 +47,12 @@ drake_cc_library(
     srcs = ["iiwa_lcm.cc"],
     hdrs = ["iiwa_lcm.h"],
     deps = [
+        ":iiwa_common",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/lcmtypes:iiwa",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "iiwa_plan_source",
-    srcs = ["iiwa_plan_source.cc"],
-    hdrs = ["iiwa_plan_source.h"],
-    deps = [
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/lcmtypes:iiwa",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework:leaf_system",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
@@ -79,6 +65,21 @@ drake_cc_library(
         "//drake/systems/framework:leaf_system",
         "//drake/util:lcm_util",
         "@bot_core_lcmtypes//:lib",
+    ],
+)
+
+
+drake_cc_library(
+    name = "robot_plan_interpolator",
+    srcs = ["robot_plan_interpolator.cc"],
+    hdrs = ["robot_plan_interpolator.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework:leaf_system",
+        "@bot_core_lcmtypes//:lib",
+        "@robotlocomotion_lcmtypes//:lib",
     ],
 )
 
@@ -104,7 +105,7 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        ":iiwa_plan_source",
+        ":robot_plan_interpolator",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
@@ -198,14 +199,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "iiwa_plan_source_test",
+    name = "robot_plan_interpolator_test",
     data = [
         ":models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":iiwa_common",
-        ":iiwa_plan_source",
+        ":robot_plan_interpolator",
         "//drake/systems/framework",
     ],
 )

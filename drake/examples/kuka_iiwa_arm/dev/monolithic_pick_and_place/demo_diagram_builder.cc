@@ -105,7 +105,7 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<T>::
                   drake_visualizer_->get_input_port(0));
 
   iiwa_trajectory_generator_ =
-      builder.template AddSystem<IiwaPlanSource>(
+      builder.template AddSystem<RobotPlanInterpolator>(
           drake::GetDrakePath() + kIiwaUrdf, update_interval);
   iiwa_trajectory_generator_->set_name("iiwa_trajectory_generator");
 

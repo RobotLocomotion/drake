@@ -37,9 +37,9 @@ GTEST_TEST(MonolaneLanesTest, Rot3) {
     const api::GeoPosition _actual(actual);                  \
     const api::GeoPosition _expected expected;               \
     const double _tolerance = (tolerance);                   \
-    EXPECT_NEAR(_actual.x, _expected.x, _tolerance);         \
-    EXPECT_NEAR(_actual.y, _expected.y, _tolerance);         \
-    EXPECT_NEAR(_actual.z, _expected.z, _tolerance);         \
+    EXPECT_NEAR(_actual.x(), _expected.x(), _tolerance);     \
+    EXPECT_NEAR(_actual.y(), _expected.y(), _tolerance);     \
+    EXPECT_NEAR(_actual.z(), _expected.z(), _tolerance);     \
   } while (0)
 
 #define EXPECT_LANE_NEAR(actual, expected, tolerance)         \
