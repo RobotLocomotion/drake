@@ -60,8 +60,7 @@ Rotation OrientationOutFromLane(const LaneEnd& lane_end) {
 
 // Return the Cartesian distance between two GeoPositions.
 double Distance(const GeoPosition& a, const GeoPosition& b) {
-  const GeoPosition d {a.x - b.x, a.y - b.y, a.z - b.z};
-  return std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
+  return (a.xyz() - b.xyz()).norm();
 }
 
 
@@ -77,17 +76,17 @@ GeoPosition Rotate(const Rotation& rot, const GeoPosition& in) {
   const double cg = std::cos(rot.yaw);
 
   return GeoPosition(
-      ((cb * cg) * in.x) +
-      ((-ca*sg + sa*sb*cg) * in.y) +
-      ((sa*sg + ca*sb*cg) * in.z),
+      ((cb * cg) * in.x()) +
+      ((-ca*sg + sa*sb*cg) * in.y()) +
+      ((sa*sg + ca*sb*cg) * in.z()),
 
-      ((cb*sg) * in.x) +
-      ((ca*cg + sa*sb*sg) * in.y) +
-      ((-sa*cg + ca*sb*sg) * in.z),
+      ((cb*sg) * in.x()) +
+      ((ca*cg + sa*sb*sg) * in.y()) +
+      ((-sa*cg + ca*sb*sg) * in.z()),
 
-      ((-sb) * in.x) +
-      ((sa*cb) * in.y) +
-      ((ca*cb) * in.z));
+      ((-sb) * in.x()) +
+      ((sa*cb) * in.y()) +
+      ((ca*cb) * in.z()));
 }
 
 
@@ -103,9 +102,9 @@ double Distance(const Rotation& a, const Rotation& b) {
   GeoPosition br = Rotate(b, {0., 1., 0.});
   GeoPosition bh = Rotate(b, {0., 0., 1.});
   // Compute angles between pairs of unit vectors.
-  double ds = std::acos((as.x * bs.x) + (as.y * bs.y) + (as.z * bs.z));
-  double dr = std::acos((ar.x * br.x) + (ar.y * br.y) + (ar.z * br.z));
-  double dh = std::acos((ah.x * bh.x) + (ah.y * bh.y) + (ah.z * bh.z));
+  double ds = std::acos(as.xyz().dot(bs.xyz()));
+  double dr = std::acos(ar.xyz().dot(br.xyz()));
+  double dh = std::acos(ah.xyz().dot(bh.xyz()));
 
   return std::sqrt((ds * ds) + (dr * dr) + (dh * dh));
 }

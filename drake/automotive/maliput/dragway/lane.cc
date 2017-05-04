@@ -101,22 +101,21 @@ api::LanePosition Lane::DoToLanePosition(
   const double min_y = driveable_bounds_.r_min + y_offset_;
   const double max_y = driveable_bounds_.r_max + y_offset_;
 
-  const api::GeoPosition closest_point{math::saturate(geo_pos.x, min_x, max_x),
-                                       math::saturate(geo_pos.y, min_y, max_y),
-                                       geo_pos.z};
+  const api::GeoPosition closest_point{
+    math::saturate(geo_pos.x(), min_x, max_x),
+    math::saturate(geo_pos.y(), min_y, max_y),
+    geo_pos.z()};
   if (nearest_point != nullptr) {
     *nearest_point = closest_point;
   }
 
   if (distance != nullptr) {
-    *distance = std::sqrt(std::pow(geo_pos.x - closest_point.x, 2) +
-                          std::pow(geo_pos.y - closest_point.y, 2) +
-                          std::pow(geo_pos.z - closest_point.z, 2));
+    *distance = (geo_pos.xyz() - closest_point.xyz()).norm();
   }
 
-  return api::LanePosition(closest_point.x              /* s */,
-                           closest_point.y - y_offset_  /* r */,
-                           closest_point.z              /* h */);
+  return api::LanePosition(closest_point.x()              /* s */,
+                           closest_point.y() - y_offset_  /* r */,
+                           closest_point.z()              /* h */);
 }
 
 }  // namespace dragway

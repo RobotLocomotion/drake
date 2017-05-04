@@ -234,7 +234,7 @@ void AddVehicles(RoadNetworkType road_network_type,
         throw std::runtime_error(
             "Ran out of lane length to add new MOBIL-controlled SimpleCars.");
       }
-      const double y_offset = lane->ToGeoPosition({0., 0., 0.}).y;
+      const double y_offset = lane->ToGeoPosition({0., 0., 0.}).y();
       state.set_x(x_offset);
       state.set_y(y_offset);
       simulator->AddMobilControlledSimpleCar(name, true /* with_s */, state);
@@ -258,8 +258,8 @@ void AddVehicles(RoadNetworkType road_network_type,
         const maliput::api::GeoPosition position = lane->ToGeoPosition(
             {lane->length() /* s */, 0 /* r */, 0 /* h */});
         SimpleCarState<double> state;
-        state.set_x(position.x);
-        state.set_y(position.y);
+        state.set_x(position.x());
+        state.set_y(position.y());
         simulator->AddPriusSimpleCar("StalledCar" + std::to_string(i),
             "StalledCarChannel" + std::to_string(i), state);
       }

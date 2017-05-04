@@ -58,17 +58,48 @@ struct Rotation {
 };
 
 
-/// A position in 3-dimensional geographical Cartesian space.
-struct GeoPosition {
-  /// Default constructor.
-  GeoPosition() = default;
+/// A position in 3-dimensional geographical Cartesian space, i.e.,
+/// in the world frame, consisting of three components x, y, and z.
+class GeoPosition {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeoPosition)
+
+  /// Default constructor, initializing all components to zero.
+  GeoPosition() : xyz_(0., 0., 0.) {}
 
   /// Fully parameterized constructor.
-  GeoPosition(double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
+  GeoPosition(double x, double y, double z) : xyz_(x, y, z) {}
 
-  double x{};
-  double y{};
-  double z{};
+  /// Constructs a GeoPosition from a 3-vector @p xyz of the form `[x, y, z]`.
+  static GeoPosition FromXyz(const Vector3<double>& xyz) {
+    return GeoPosition(xyz);
+  }
+
+  /// Returns all components as 3-vector `[x, y, z]`.
+  const Vector3<double>& xyz() const { return xyz_; }
+  /// Sets all components from 3-vector `[x, y, z]`.
+  void set_xyz(const Vector3<double>& xyz) { xyz_ = xyz; }
+
+  /// @name Getters and Setters
+  //@{
+  /// Gets `x` value.
+  double x() const { return xyz_.x(); }
+  /// Sets `x` value.
+  void set_x(double x) { xyz_.x() = x; }
+  /// Gets `y` value.
+  double y() const { return xyz_.y(); }
+  /// Sets `y` value.
+  void set_y(double y) { xyz_.y() = y; }
+  /// Gets `z` vaue.
+  double z() const { return xyz_.z(); }
+  /// Sets `z` value.
+  void set_z(double z) { xyz_.z() = z; }
+  //@}
+
+ private:
+  Vector3<double> xyz_;
+
+  explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
 };
 
 
@@ -96,7 +127,7 @@ class LanePosition {
   /// Sets all components from 3-vector `[s, r, h]`.
   void set_srh(const Vector3<double>& srh) { srh_ = srh; }
 
-  /// @name Accessors
+  /// @name Getters and Setters
   //@{
   /// Gets `s` value.
   double s() const { return srh_.x(); }
