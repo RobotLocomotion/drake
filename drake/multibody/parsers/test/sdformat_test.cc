@@ -24,7 +24,7 @@ namespace drake {
 
             std::string link_name = model->GetElement("link")->Get<std::string>("name");
             EXPECT_EQ(link_name, std::string("link"));
-	  }
+          }
 
         }  // namespace
       }  // namespace test
