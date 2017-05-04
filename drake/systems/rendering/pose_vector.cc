@@ -22,10 +22,14 @@ PoseVector<T>::PoseVector() : BasicVector<T>(kSize) {
   set_rotation(Eigen::Quaternion<T>::Identity());
 }
 
+// The copy and move semantics rely on the fact that BasicVector's *only* data
+// members are the values returned by get_value() and set by set_value(). If
+// BasicVector were to add data members that were *not* encapsulated in these
+// two methods, these operations would be rendered incomplete.
+
 template <typename T>
-PoseVector<T>::PoseVector(const PoseVector<T>& vec) : BasicVector<T>(kSize) {
-  this->set_value(vec.get_value());
-}
+PoseVector<T>::PoseVector(const PoseVector<T>& vec)
+    : BasicVector<T>(vec.get_value()) {}
 
 template <typename T>
 PoseVector<T>& PoseVector<T>::operator=(const PoseVector<T>& vec) {
