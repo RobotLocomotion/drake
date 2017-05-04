@@ -44,6 +44,7 @@ drake_cc_library(
     ],
     deps = [
         ":generic_plan",
+        "//drake/common:unused",
         "//drake/lcmtypes:manipulator_plan_move_end_effector",
         "//drake/util:lcm_util",
     ],
