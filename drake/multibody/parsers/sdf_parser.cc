@@ -58,7 +58,7 @@ using tinyxml2::XMLDocument;
 using drake::multibody::joints::FloatingBaseType;
 
 void ParseSdfInertial(
-    RigidBody<double>* body, XMLElement* node, RigidBodyTree<double>* model,
+    RigidBody<double>* body, XMLElement* node,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     PoseMap& pose_map,
     const Isometry3d& T_link) {
@@ -189,7 +189,6 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
 }
 
 void ParseSdfVisual(RigidBody<double>* body, XMLElement* node,
-                    RigidBodyTree<double>* model,
                     const PackageMap& package_map, const string& root_dir,
                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     PoseMap& pose_map,
@@ -317,11 +316,11 @@ bool ParseSdfLink(RigidBodyTree<double>* model, string model_name,
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
-    ParseSdfInertial(body, inertial_node, model, pose_map, transform_to_model);
+    ParseSdfInertial(body, inertial_node, pose_map, transform_to_model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    ParseSdfVisual(body, visual_node, model, package_map, root_dir, pose_map,
+    ParseSdfVisual(body, visual_node, package_map, root_dir, pose_map,
                    transform_to_model);
   }
 
@@ -356,7 +355,7 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
 }
 
 template <typename JointType>
-void setSDFDynamics(RigidBodyTree<double>* model, XMLElement* node,
+void setSDFDynamics(XMLElement* node,
                     FixedAxisOneDoFJoint<JointType>* fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
@@ -419,7 +418,7 @@ void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
   rigid_body_tree->addFrame(frame);
 }
 
-void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
+void ParseSdfJoint(RigidBodyTree<double>* model,
                    XMLElement* node,
                   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                    PoseMap& pose_map,
@@ -611,7 +610,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
       FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
           new RevoluteJoint(name, transform_to_parent_body, axis);
       if (axis_node) {
-        setSDFDynamics(model, axis_node, fjoint);
+        setSDFDynamics(axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
 
         double effort_limit = std::numeric_limits<double>::infinity();
@@ -634,7 +633,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model, string model_name,
       FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
           new PrismaticJoint(name, transform_to_parent_body, axis);
       if (axis_node) {
-        setSDFDynamics(model, axis_node, fjoint);
+        setSDFDynamics(axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
       }
       joint = fjoint;
@@ -746,7 +745,7 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint")) {
-    ParseSdfJoint(tree, model_name, joint_node, pose_map, model_instance_id);
+    ParseSdfJoint(tree, joint_node, pose_map, model_instance_id);
   }
 
   // Parses the model's Drake frame elements.
