@@ -178,11 +178,19 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // length vector `v`, perpendicular to the joint axis, in the
                 // joint frame. Here to balance between the size of the
                 // optimization problem, and the tightness of the convex
-                // relaxation, we just use two vectors in `v`. Notice that
+                // relaxation, we just use four vectors in `v`. Notice that
                 // v_basis contains the orthonormal basis of the null space
                 // null(axis_F).
                 std::array<Eigen::Vector3d, 2> v_basis = {{v_C, axis_F.cross(v_C)}};
                 v_basis[1] /= v_basis[1].norm();
+
+                std::array<Eigen::Vector3d, 4> v_samples;
+                v_samples[0] = v_basis[0];
+                v_samples[1] = v_basis[1];
+                v_samples[2] = v_basis[0] + v_basis[1];
+                v_samples[2] /= v_samples[2].norm();
+                v_samples[3] = v_basis[0] - v_basis[1];
+                v_samples[3] /= v_samples[3].norm();
 
                 // rotmat_joint_offset is R(k, (a+b)/2) explained above.
                 const Matrix3d rotmat_joint_offset =
@@ -192,7 +200,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                 // joint_limit_expr is going to be within the Lorentz cone.
                 Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
                 joint_limit_expr(0) = 2 * sin(joint_bound / 2);
-                for (const auto& v : v_basis) {
+                for (const auto& v : v_samples) {
                   // joint_limit_expr.tail<3> is
                   // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
                   joint_limit_expr.tail<3>() = R_WB_[body_idx] * v -
