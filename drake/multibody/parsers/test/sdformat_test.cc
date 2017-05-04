@@ -22,7 +22,7 @@ namespace drake {
 
             EXPECT_EQ(model_name, std::string("my_model"));
 
-            std::string link_name = model->GetElement("link")->Get<std::string>("name");
+            std::string link_name = model->GetElement("link")->Get<std::string>("name"); // NOLINT
             EXPECT_EQ(link_name, std::string("link"));
           }
 
