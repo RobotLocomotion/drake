@@ -303,8 +303,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "4661857d7e7be00fd4ef66a837083b6e8f875e96",
-    sha256 = "314cfbb3b2bf812bbbc9759171a91049a9f181a8aad90c258c182aa9be5eb4e6",
+    commit = "1b985467d1fe737ed3a43a25f4da3316bd45106f",
+    sha256 = "4491debd18ee40bf9d7eab9b35776eff98a71bc904a339f709273cbad9ac6efb",
     build_file = "tools/pycps.BUILD",
 )
 
