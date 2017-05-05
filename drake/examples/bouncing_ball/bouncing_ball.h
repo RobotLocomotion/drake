@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/examples/bouncing_ball/ball.h"
 
@@ -35,10 +36,11 @@ class BouncingBall : public Ball<T> {
   BouncingBall();
 
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
-                            systems::UpdateActions<T>* actions) const override;
+      systems::CompositeEventCollection<T>* events, T* time) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
-                                systems::State<T>* state) const override;
+      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>& events,
+      systems::State<T>* state) const override;
 
   /// TODO(jadecastro): This is a prototype implementation to be overridden from
   /// the system API, pending further discussions.

@@ -275,17 +275,17 @@ class UnrestrictedUpdater : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   void DoCalcNextUpdateTime(const systems::Context<double>& context,
-                            systems::UpdateActions<double>* actions)
-                              const override {
+                            CompositeEventCollection<double>* event_info,
+                            double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
-    actions->time = (context.get_time() < t_upd_) ? t_upd_ : inf;
-    actions->events.push_back(systems::DiscreteEvent<double>());
-    actions->events.back().action = systems::DiscreteEvent<double>::
-                                               kUnrestrictedUpdateAction;
+    *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
+    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic);
+    event.add_to_composite(event_info);
   }
 
   void DoCalcUnrestrictedUpdate(
       const drake::systems::Context<double>& context,
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       drake::systems::State<double>* state) const override {
     if (unrestricted_update_callback_ != nullptr)
       unrestricted_update_callback_(context, state);
@@ -461,12 +461,13 @@ class DiscreteSystem : public LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>& events,
       drake::systems::DiscreteValues<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
-  void DoPublish(
-      const drake::systems::Context<double>& context) const override {
+  void DoPublish(const drake::systems::Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
@@ -594,9 +595,19 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
    public:
     PerStepActionTestSystem() {}
 
-    void AddPerStepAction(
-        const typename DiscreteEvent<double>::ActionType& action) {
-      this->DeclarePerStepAction(action);
+    void AddPerStepPublishEvent() {
+      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
+      this->DeclarePerStepEvent(event);
+    }
+
+    void AddPerStepDiscreteUpdateEvent() {
+      DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kPerStep);
+      this->DeclarePerStepEvent(event);
+    }
+
+    void AddPerStepUnrestrictedUpdateEvent() {
+      UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPerStep);
+      this->DeclarePerStepEvent(event);
     }
 
     const std::vector<double>& get_publish_times() const {
@@ -616,16 +627,19 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
         SystemOutput<double>* output) const override {}
 
     void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+        const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>* discrete_state) const override {
       discrete_update_times_.push_back(context.get_time());
     }
 
     void DoCalcUnrestrictedUpdate(const Context<double>& context,
+        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>* state) const override {
       unrestricted_update_times_.push_back(context.get_time());
     }
 
-    void DoPublish(const Context<double>& context) const override {
+    void DoPublish(const Context<double>& context,
+        const std::vector<const PublishEvent<double>*>& events) const override {
       publish_times_.push_back(context.get_time());
     }
 
@@ -651,9 +665,9 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   };
 
   PerStepActionTestSystem sys;
-  sys.AddPerStepAction(DiscreteEvent<double>::kPublishAction);
-  sys.AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
-  sys.AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+  sys.AddPerStepPublishEvent();
+  sys.AddPerStepUnrestrictedUpdateEvent();
+  sys.AddPerStepDiscreteUpdateEvent();
   Simulator<double> sim(sys);
 
   // Disables all simulator induced publish events, so that all publish calls

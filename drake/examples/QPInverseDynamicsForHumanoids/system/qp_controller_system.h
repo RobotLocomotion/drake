@@ -33,7 +33,8 @@ class QpControllerSystem : public systems::LeafSystem<double> {
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
+     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& events,
+     systems::State<double>* state) const override;
 
   /**
    * Returns the input port for HumanoidStatus.

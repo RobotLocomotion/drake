@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -52,8 +54,7 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
 
 template <typename T>
 void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
-                                           systems::UpdateActions<T>* actions)
-                                             const {
+    systems::CompositeEventCollection<T>* events, T* time) const {
   using std::sqrt;
 
   // Get the state of the guard function.
@@ -94,17 +95,20 @@ void BouncingBall<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
   // Verify that the impact time is reasonable.
   DRAKE_DEMAND(std::min(r1, r2) > 0.0);
 
+  // Create an event.
+  std::unique_ptr<systems::UnrestrictedUpdateEvent<T>> event = std::make_unique<systems::UnrestrictedUpdateEvent<T>>(systems::Event<T>::TriggerType::kWitness);
+
   // Compute the impact time.
-  actions->time = context.get_time() + std::min(r1, r2);
-  actions->events.push_back(systems::DiscreteEvent<T>());
-  actions->events.back().action = systems::DiscreteEvent<T>::
-                                                  kUnrestrictedUpdateAction;
+  *time = context.get_time() + std::min(r1, r2);
+  systems::EventCollection<systems::UnrestrictedUpdateEvent<T>>* uu_events = events->get_mutable_unrestricted_update_events();
+  uu_events->add_event(std::move(event));
 }
 
 template <typename T>
-void BouncingBall<T>::DoCalcUnrestrictedUpdate(const systems::Context<T>&
-                                               context, systems::State<T>*
-                                               next_state) const {
+void BouncingBall<T>::DoCalcUnrestrictedUpdate(
+    const systems::Context<T>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<T>*>& events,
+    systems::State<T>* next_state) const {
   systems::VectorBase<T>* next_cstate = next_state->
                            get_mutable_continuous_state()->get_mutable_vector();
 

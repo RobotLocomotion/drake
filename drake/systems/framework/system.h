@@ -19,76 +19,13 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/event_collection.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
-
-/// A description of a discrete-time event, which is passed from the Simulator
-/// to the recipient System's appropriate event handling method. Different
-/// DiscreteEvent ActionTypes trigger different event handlers, which are
-/// permitted to modify different state fields. For instance, publish events may
-/// not modify any state at all, discrete update events may modify the discrete
-/// state only, and unrestricted update events may modify any state. The
-/// event handlers do not apply state updates to the Context directly. Instead,
-/// they write the updates into a separate buffer that the Simulator provides.
-
-template <typename T>
-struct DiscreteEvent {
-  typedef std::function<void(const Context<T>&)> PublishCallback;
-  typedef std::function<void(const Context<T>&, DiscreteValues<T>*)>
-      DiscreteUpdateCallback;
-  typedef std::function<void(const Context<T>&, State<T>*)>
-      UnrestrictedUpdateCallback;
-
-  /// These enumerations represent an indication of the type of event that
-  /// triggered the event handler, toward obviating the need to redetermine
-  /// the reason that the event handler is called.
-  enum ActionType {
-    /// A default value that causes the handler to abort.
-    kUnknownAction = 0,
-
-    /// On publish actions, state does not change.
-    kPublishAction = 1,
-
-    /// On discrete updates, discrete state may change.
-    kDiscreteUpdateAction = 2,
-
-    /// On unrestricted updates, the state variables may change arbitrarily.
-    kUnrestrictedUpdateAction = 3,
-  };
-
-  /// The type of action the system must take in response to the event.
-  ActionType action{kUnknownAction};
-
-  /// An optional callback, supplied by the recipient, to carry out a
-  /// kPublishAction. If nullptr, Publish() will be used.
-  PublishCallback do_publish{nullptr};
-
-  /// An optional callback, supplied by the recipient, to carry out a
-  /// kDiscreteUpdateAction. If nullptr, DoCalcDiscreteVariableUpdates() will
-  /// be used.
-  DiscreteUpdateCallback do_calc_discrete_variable_update{nullptr};
-
-  /// An optional callback, supplied by the recipient, to carry out a
-  /// kUpdateUnrestrictedAction. If nullptr, DoCalcUnrestrictedUpdate() will be
-  /// used.
-  UnrestrictedUpdateCallback do_unrestricted_update{nullptr};
-};
-
-/// A token that identifies the next sample time at which a System must
-/// perform some actions, and the actions that must be performed.
-template <typename T>
-struct UpdateActions {
-  /// When the System next requires a discrete action. If the System is
-  /// not discrete, time should be set to infinity.
-  T time{std::numeric_limits<T>::quiet_NaN()};
-
-  /// The events that should occur when the sample time arrives.
-  std::vector<DiscreteEvent<T>> events;
-};
 
 /** @cond */
 // Private helper class for System.
@@ -124,6 +61,11 @@ class System {
   /// pointers are not owned by the context, they should simply be initialized
   /// to nullptr.
   virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
+
+  /// Allocates an EventCollection for this system. The allocated
+  /// EventCollection instance is used for registering and handling events
+  /// (e.g. CalcNextUpdateTime(), Publish()).
+  virtual std::unique_ptr<CompositeEventCollection<T>> AllocateCompositeEventCollection() const = 0;
 
   /// Given a port descriptor, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses must
@@ -242,22 +184,16 @@ class System {
   /// on the progress of a simulation.
   //@{
 
-  /// This method is invoked by the Simulator when every-time step publishing
-  /// is enabled, at the start of each continuous integration step, after
-  /// discrete variables have been updated to the values
-  /// they will hold throughout the step. It will always be called at the start
-  /// of the first step of a simulation (after initialization) and after the
-  /// final simulation step (after a final update to discrete variables).
-  /// Dispatches to DoPublish().
-  void Publish(const Context<T>& context) const {
-    DiscreteEvent<T> event;
-    event.action = DiscreteEvent<T>::kPublishAction;
-    Publish(context, event);
-  }
-
-  /// This method publishes as a result of a specified `event`, such as the
-  /// arrival of the sample time requested by `event`. Dispatches to
-  /// DoPublish() by default, or to `event.do_publish()` if provided.
+  /// This method is the public entry point for dispatching all publish event
+  /// handlers. The Simulator calls this method at the start of each continuous
+  /// integration step, after discrete variables have been updated to the values
+  /// they will hold throughout the step. See the documentation for
+  /// DispatchPublishHandler() for more details.
+  ///
+  /// @p event_info can be null, which is equivalent to force publish.
+  /// @p event_info may contain events other than publish. The derived classes'
+  /// implementation of DispatchPublishHandler is responsible for filtering out
+  /// only the publish events.
   ///
   /// @note When publishing is scheduled at particular times, those times likely
   /// will not coincide with integrator step times. A Simulator may interpolate
@@ -265,14 +201,18 @@ class System {
   /// so that a step begins exactly at the next publication time. In the latter
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
-  void Publish(const Context<T>& context, const DiscreteEvent<T>& event) const {
+  void Publish(const Context<T>& context,
+      const EventCollection<PublishEvent<T>>* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kPublishAction);
-    if (event.do_publish == nullptr) {
-      DoPublish(context);
-    } else {
-      event.do_publish(context);
-    }
+    DispatchPublishHandler(context, event_info);
+  }
+
+  /// Forces a publish event on the system. The Simulator can be configured to
+  /// call this in Simulator::Initialize() and at the start of each continuous
+  /// integration step. See the Simulator API for more details.
+  void Publish(const Context<T>& context) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DispatchPublishHandler(context, nullptr);
   }
   //@}
 
@@ -481,35 +421,49 @@ class System {
     DoCalcTimeDerivatives(context, derivatives);
   }
 
-  /// This method is called to calculate the correct update `xd(n+1)` to
-  /// discrete variables `xd` given a Context containing their current values
-  /// `xd(n)`, because the given `event` has arrived.  Dispatches to
-  /// DoCalcDiscreteVariableUpdates by default, or to `event.do_update` if
-  /// provided.
+  /// This method is the public entry point for dispatching all discrete variable
+  /// update event handlers. Using all the discrete update handlers in
+  ///  @p event_info, the method calculates the update `xd(n+1)` to discrete
+  ///  variables `xd(n)` in @p context and outputs the results to @p 
+  /// discrete_state. See documentation for
+  /// DispatchDiscreteVariableUpdateHandler() for more details.
+  ///
+  /// @p event_info can be null, which is equivalent to force discrete update.
+  /// @p event_info may contain events other than discrete update. The derived
+  /// classes' implementation of DispatchDiscreteVariableUpdateHandler is
+  /// responsible for filtering out only the discrete update events.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
-                                   const DiscreteEvent<T>& event,
-                                   DiscreteValues<T>* discrete_state) const {
+      const EventCollection<DiscreteUpdateEvent<T>>* event_info,
+      DiscreteValues<T>* discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
-    if (event.do_calc_discrete_variable_update == nullptr) {
-      DoCalcDiscreteVariableUpdates(context, discrete_state);
-    } else {
-      event.do_calc_discrete_variable_update(context, discrete_state);
-    }
+    DispatchDiscreteVariableUpdateHandler(context, event_info, discrete_state);
   }
 
-  /// This method is called to update *any* state variables in the @p context
-  /// because the given @p event has arrived. Dispatches to
-  /// DoCalcUnrestrictedUpdate() by default, or to
-  /// `event.do_unrestricted_update` if provided. Does not allow the
-  /// dimensionality of the state variables to change.
+  /// This method forces a discrete update.
+  void CalcDiscreteVariableUpdates(const Context<T>& context,
+      DiscreteValues<T>* discrete_state) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DispatchDiscreteVariableUpdateHandler(context, nullptr, discrete_state);
+  }
+
+  /// This method is the public entry point for dispatching all unrestricted
+  /// update event handlers. Using all the unrestricted update handers in
+  /// @p event_info, it updates *any* state variables in the @p context, and
+  /// outputs the results to @p state. It does not allow the dimensionality
+  /// of the state variables to change. See the documentation for
+  /// DispatchUnrestrictedUpdateHandler() for more details.
+  ///
+  /// @p event_info can be null, which is equivalent to a forced unrestricted
+  /// update. @p event_info may contain events other than discrete update. The
+  /// derived classes' implementation of DispatchUnrestrictedUpdateHandler is
+  /// responsible for filtering out only the unrestricted update events.
+  ///
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes in the callback.
   void CalcUnrestrictedUpdate(const Context<T>& context,
-                              const DiscreteEvent<T>& event,
+                              const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
                               State<T>* state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
     const int continuous_state_dim = state->get_continuous_state()->size();
     const int discrete_state_dim = state->get_discrete_state()->num_groups();
     const int abstract_state_dim = state->get_abstract_state()->size();
@@ -518,11 +472,8 @@ class System {
     // documentation for DoCalclUnrestrictedUpdate().
     state->CopyFrom(context.get_state());
 
-    if (event.do_unrestricted_update == nullptr) {
-      DoCalcUnrestrictedUpdate(context, state);
-    } else {
-      event.do_unrestricted_update(context, state);
-    }
+    DispatchUnrestrictedUpdateHandler(context, event_info, state);
+
     if (continuous_state_dim != state->get_continuous_state()->size() ||
         discrete_state_dim != state->get_discrete_state()->num_groups() ||
         abstract_state_dim != state->get_abstract_state()->size())
@@ -531,34 +482,52 @@ class System {
           "in CalcUnrestrictedUpdate().");
   }
 
+  /// This method forces an unrestricted update, which is able to change *any*
+  /// state variables in the @p context by outputting the results to @p state.
+  /// @sa CalcUnrestrictedUpdate(const Context<T>&, const EventCollection<UnrestrictedUpdateEvent<T>>*, State<T>* state)
+  ///     for more information.
+  void CalcUnrestrictedUpdate(const Context<T>& context,
+                              State<T>* state) const {
+    CalcUnrestrictedUpdate(context, nullptr, state);
+  }
+
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
-  /// ought to be in the given UpdateActions object, which must not be null.
-  /// Upon reaching that time, the Simulator invokes either a publication
-  /// action (with a const Context) or an update action (with a mutable
-  /// Context). The UpdateAction object is retained and returned to the System
-  /// when it is time to take the action.
+  /// ought to be in @p event_info. Upon reaching that time, the simulator will
+  /// merge @p event_info with the other EventCollection instances scheduled
+  /// through mechanisms (e.g. GetPerStepEvents()), and the merged
+  /// EventCollection will be passed to all event handling mechanisms.
+  ///
+  /// @p event_info cannot be null. @p event_info will be cleared on entry.
   T CalcNextUpdateTime(const Context<T>& context,
-                       UpdateActions<T>* actions) const {
+                       CompositeEventCollection<T>* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_ASSERT(actions != nullptr);
-    actions->events.clear();
-    DoCalcNextUpdateTime(context, actions);
-    return actions->time;
+    DRAKE_ASSERT(event_info != nullptr);
+    event_info->Clear();
+    T time;
+    DoCalcNextUpdateTime(context, event_info, &time);
+    return time;
   }
 
-  /// This method is called by a Simulator in its Initialize() to gather all
-  /// the update and publish events that need to be handled before it computes
-  /// derivatives and performs integration. It is assumed that these events
-  /// remain constant throughout the simulation. The `Step` here refers to the
-  /// major time step taken by the Simulator. @p events cannot be null.
+  /// This method is called by Simulator::Initialize() to gather all
+  /// update and publish events that are to be handled in StepTo() at the point
+  /// before Simulator integrates continuous state. It is assumed that these 
+  /// events remain constant throughout the simulation. The "step" here refers
+  /// to the major time step taken by the Simulator. During every simulation
+  /// step, the simulator will merge @p event_info with the other EventCollection
+  /// instances generated by other types of event triggering mechanism (e.g.,
+  /// CalcNextUpdateTime()), and the merged EventCollection objects will be
+  /// passed to the appropriate handlers before Simulator integrates the
+  /// continuous state.
+  ///
+  /// @p event_info cannot be null. @p event_info will be cleared on entry.
   void GetPerStepEvents(const Context<T>& context,
-                        std::vector<DiscreteEvent<T>>* events) const {
+                        CompositeEventCollection<T>* event_info) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_ASSERT(events != nullptr);
-    events->clear();
-    DoGetPerStepEvents(context, events);
+    DRAKE_ASSERT(event_info != nullptr);
+    event_info->Clear();
+    DoGetPerStepEvents(context, event_info);
   }
 
   /// Computes the output values that should result from the current contents
@@ -1059,6 +1028,70 @@ class System {
 
  protected:
   //----------------------------------------------------------------------------
+  /// @name                 Event handler dispatch mechanism
+  /// For a LeafSystem (or user implemented equivalent classes), these functions
+  /// need to get the vector of events from @p event_info that correspond to the
+  /// event type it is handling, and call the appropriate LeafSystem::DoStuff
+  /// event handler. For example, LeafSystem::DispatchPublishHandler() need to
+  /// extract a vector of all the publish events from @p event_info, and pass
+  /// it to LeafSystem::DoPublish(). User supplied custom event callbacks
+  /// embedded in each individual Event need to be further dispatched in the
+  /// LeafSystem::DoStuff handlers if desired.
+  /// For a LeafSystem, the pseudo code of the complete default publish event
+  /// handler dispatching is roughly:
+  /// <pre>
+  ///   leaf_sys.Publish(context, event_collection)
+  ///   -> leaf_sys.DispatchPublishHandler(context, event_collection)
+  ///      -> leaf_sys.DoPublish(context, event_collection.get_publish_events())
+  ///         -> for (event : event_collection.get_publish_events()):
+  ///              if (event.has_handler)
+  ///                event.handler(context)
+  /// </pre>
+  /// Discrete update events and unrestricted update events are dispatched
+  /// similarly for a LeafSystem.
+  ///
+  /// For a Diagram (or user implemented equivalent classes), these functions
+  /// need to iterate through all its sub systems, extract their corresponding
+  /// sub context and sub event collection from @p context and @p event_info,
+  /// and pass those to the sub systems' public non-virtual event handlers (e.g.
+  /// System::Publish() for publish events).
+  ///
+  /// @p event_info can be null. For a Diagram, the nullptr is passed down to
+  /// the subsystems as an event collection. For a LeafSystem, it is equivalent
+  /// to call LeafSystem::DoStuff() handlers with empty event list.
+  ///
+  /// All of these functions are only called from their corresponding public
+  /// non-virtual event handlers, where @p context is error checked. The derived
+  /// implementations can assume that @p context is valid. See
+  /// LeafSystem::DispatchStuffHandler() and Diagram::DispatchStuffHandler()
+  /// for more details.
+  //@{
+  /**
+   * This function dispatches all publish events to the appropriate handlers.
+   * @p event_info can be null.
+   */
+  virtual void DispatchPublishHandler(const Context<T>& context,
+      const EventCollection<PublishEvent<T>>* event_info) const = 0;
+
+  /**
+   * This function dispatches all discrete update events to the appropriate
+   * handlers. @p event_info can be null. @p discrete_state cannot be null.
+   */
+  virtual void DispatchDiscreteVariableUpdateHandler(
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>* event_info,
+      DiscreteValues<T>* discrete_state) const = 0;
+
+  /**
+   * This function dispatches all unrestricted update events to the appropriate
+   * handlers. @p event_info can be null. @p state cannot be null.
+   */
+  virtual void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
+      const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
+      State<T>* state) const = 0;
+  //@}
+
+  //----------------------------------------------------------------------------
   /// @name                 System construction
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
@@ -1166,57 +1199,6 @@ class System {
     DRAKE_DEMAND(derivatives->size() == 0);
   }
 
-  /// Implement this in your concrete System if you want it to take some action
-  /// when the Simulator calls the Publish() method. This can be used for
-  /// sending messages, producing console output, debugging, logging, saving the
-  /// trajectory to a file, etc.
-  ///
-  /// This method is called only from the public non-virtual Publish() which
-  /// will have already error-checked `context` so you may assume that it is
-  /// valid for this %System.
-  virtual void DoPublish(const Context<T>& context) const { unused(context); }
-
-  /// Updates the @p discrete_state on sample events.
-  /// Override it, along with DoCalcNextUpdateTime(), if your System has any
-  /// discrete variables.
-  ///
-  /// This method is called only from the public non-virtual
-  /// CalcDiscreteVariableUpdates() which will already have error-checked the
-  /// parameters so you don't have to. In particular, implementations may assume
-  /// that the given Context is valid for this %System; that the
-  /// `discrete_state` pointer is non-null, and that the referenced object
-  /// has the same constituent structure as was produced by
-  /// AllocateDiscreteVariables().
-  virtual void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context, DiscreteValues<T>* discrete_state) const {
-    unused(context, discrete_state);
-  }
-
-  /// Updates the @p state *in an unrestricted fashion* on unrestricted update
-  /// events. Override this function if you need your System to update
-  /// abstract variables or generally make changes to state that cannot be
-  /// made using CalcDiscreteVariableUpdates() or via integration of continuous
-  /// variables.
-  ///
-  /// This method is called only from the public non-virtual
-  /// CalcUnrestrictedUpdate() which will already have error-checked the
-  /// parameters so you don't have to. In particular, implementations may assume
-  /// that the given Context is valid for this %System; that the `state` pointer
-  /// is non-null, and that the referenced object has the same constituent
-  /// structure as the state in `context`.
-  ///
-  /// @param[in]     context The "before" state that is to be used to calculate
-  ///                        the returned state update.
-  /// @param[in,out] state   The current state of the system on input; the
-  ///                        desired state of the system on return.
-  // TODO(sherm1) Shouldn't require preloading of the output state; better to
-  //              note just the changes since usually only a small subset will
-  //              be changed by this method.
-  virtual void DoCalcUnrestrictedUpdate(const Context<T>& context,
-                                        State<T>* state) const {
-    unused(context, state);
-  }
-
   /// Computes the next time at which this System must perform a discrete
   /// action.
   ///
@@ -1224,36 +1206,31 @@ class System {
   /// interrupt the continuous simulation. This method is called only from the
   /// public non-virtual CalcNextUpdateTime() which will already have
   /// error-checked the parameters so you don't have to. You may assume that
-  /// `context` has already been validated and the `actions` pointer is
-  /// not `nullptr`.
+  /// @p context has already been validated and @p event_info pointer is not
+  /// null.
   ///
-  /// The default implementation returns with `actions` having a next sample
-  /// time of Infinity and no actions to take.  If you declare actions, you may
-  /// specify custom do_publish and do_update handlers.  If you do not,
-  /// DoPublish and DoCalcDifferenceUpdates will be used by default.
+  /// The default implementation returns with the next sample time being
+  /// Infinity and no events added to @p event_info.
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
-                                    UpdateActions<T>* actions) const {
-    unused(context);
-    actions->time = std::numeric_limits<T>::infinity();
+      CompositeEventCollection<T>* event_info, T* time) const {
+    unused(context, event_info);
+    *time = std::numeric_limits<T>::infinity();
   }
 
-  /// This method is intended to get all the events that need to be handled
-  /// before the simulator can take a step. @p events is cleared in the
-  /// public non-virtual GetPerStepEvents() before calling this function.
-  /// Overriding implementation should not clear @p events, and only append
-  /// to it.
+  /// Implement this method to return any events to be handled before the
+  /// simulator integrates the system's continuous state. @p event_info is
+  /// cleared in the public non-virtual GetPerStepEvents() before that method
+  /// calls this function. An overriding implementation of this method should
+  /// not clear @p events, and only append to it. You may assume that
+  /// @p context has already been validated and that @p event_info is not
+  /// null. @p event_info can be changed freely by the overriding
+  /// implementation.
   ///
-  /// Override this method if your System needs such events. This method is
-  /// called only from the public non-virtual GetPerStepEvents(), which will
-  /// already have error-checked the parameters so you don't have to. You
-  /// may assume that @p context has already been validated and @p events is
-  /// not null, and it can be changed freely by the overriding implementation.
-  ///
-  /// The default implementation returns without changing @p events.
-  virtual void DoGetPerStepEvents(
-      const Context<T>& context,
-      std::vector<DiscreteEvent<T>>* events) const {
-    unused(context, events);
+  /// The default implementation returns without changing @p event_info.
+  /// @sa GetPerStepEvents()
+  virtual void DoGetPerStepEvents(const Context<T>& context,
+      CompositeEventCollection<T>* event_info) const {
+    unused(context, event_info);
   }
 
   /// Override this method for physical systems to calculate the potential
