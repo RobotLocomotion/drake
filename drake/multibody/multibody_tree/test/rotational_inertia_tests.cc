@@ -152,7 +152,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   const double I_axial = mass * radius * radius / 2.0;
   const double I_perp = mass * length * length / 12.0;
 
-  // I_RRo_R is rod R's rotational inertia about-point Ro, expressed-in-frame R.
+  // I_RRo_R is rod R's rotational inertia about-point Ro, expressed-in frame R.
   const RotationalInertia<double> I_RRo_R(I_perp, I_perp, I_axial);
 
   // Rotation of +90 degrees about x (F's y-axis is aligned with R's z-axis).
@@ -163,8 +163,8 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   const RotationalInertia<double> I_RRo_F = I_RRo_R.ReExpress(R_FR);
 
   // Verify I_RRo_F(1,1) (rod R's moment of inertia about-point Ro for y-axis of
-  // expressed-in-frame F) is equal to I_RRo_R(2,2) (rod R's moment of inertia
-  // about-point Ro for z-axis of expressed-in-frame R).
+  // expressed-in frame F) is equal to I_RRo_R(2,2) (rod R's moment of inertia
+  // about-point Ro for z-axis of expressed-in frame R).
   EXPECT_NEAR(I_RRo_F(0, 0), I_RRo_R(0, 0), epsilon);   // F x-axis = R +x-axis.
   EXPECT_NEAR(I_RRo_F(1, 1), I_RRo_R(2, 2), epsilon);   // F y-axis = R +z-axis.
   EXPECT_NEAR(I_RRo_F(2, 2), I_RRo_R(1, 1), epsilon);   // F z-axis = R -y-axis.
@@ -194,7 +194,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
           R_BAzx, R_BAzy, R_BAzz;
 
   // Form an arbitrary (but valid) rotational inertia for B about-point Bo,
-  // expressed-in-frame A.  These results are from MotionGenesis and arise by
+  // expressed-in frame A.  These results are from MotionGenesis and arise by
   // starting with I_BBcm_B = [3, 0, 0;  0, 4, 0;  0, 0, 5] and then shifting
   // to point Bo via position vector [1, 1.5, 2], then expressing in A.
   const double I_BBo_Axx = 17.36933842091061;
@@ -209,7 +209,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   // Ensure rotational inertia I_BBo_A is physically valid.
   EXPECT_TRUE(I_BBo_A.CouldBePhysicallyValid());
 
-  // Re-express I_BBo_A from expressed-in-frame A to expressed-in-frame B.
+  // Re-express I_BBo_A from expressed-in frame A to expressed-in frame B.
   const RotationalInertia<double> I_BBo_B = I_BBo_A.ReExpress(R_BA);
 
   // Form rotational inertia I_BBo_B with MotionGenesis.
@@ -226,8 +226,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   // Compare Drake results versus MotionGenesis results using a comparison
   // that tests moments/products of inertia to within epsilon multiplied
   // by trace / 2, where trace is the smallest trace of the two matrices.
-  EXPECT_TRUE(I_BBo_B.IsApproxEqualBasedOnMaximumPossibleMomentOfInertia(
-      expected_I_BBo_B, epsilon));
+  EXPECT_TRUE(I_BBo_B.IsCloseTo(expected_I_BBo_B, epsilon));
 }
 
 // Test the method ShiftFromCenterOfMass for a body B's rotational inertia
@@ -250,8 +249,7 @@ GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
   const double Ixz = I_BBcm_Bxz - mass * xQ*zQ;
   const double Iyz = I_BBcm_Byz - mass * yQ*zQ;
   const RotationalInertia<double> expected_I_BQ_B(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BQ_B.IsApproxEqualBasedOnMaximumPossibleMomentOfInertia(
-      expected_I_BQ_B, 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsCloseTo(expected_I_BQ_B, 2*epsilon));
 }
 
 // Test the method ShiftToCenterOfMass for a body B's rotational inertia
@@ -275,8 +273,7 @@ GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
   const double Iyz = I_BP_Byz + mass * yBcm*zBcm;
   const RotationalInertia<double> expected_I_BBcm_B(
       Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BBcm_B.IsApproxEqualBasedOnMaximumPossibleMomentOfInertia(
-      expected_I_BBcm_B, 2*epsilon));
+  EXPECT_TRUE(I_BBcm_B.IsCloseTo(expected_I_BBcm_B, 2*epsilon));
 }
 
 // Test the method ShiftToThenAwayFromCenterOfMass for a body B's
@@ -304,8 +301,7 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
   // Negating p_PBcm and/or p_QBcm does not affect results.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
-  EXPECT_TRUE(I_BQ_B.IsApproxEqualBasedOnMaximumPossibleMomentOfInertia(
-      expected_I_BQ_B, 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsCloseTo(expected_I_BQ_B, 2*epsilon));
 }
 
 // Test the method CouldBePhysicallyValid after a body B's rotational inertia
@@ -381,7 +377,7 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
       (AngleAxisd(angle, Vector3d::UnitZ()) *
        AngleAxisd(angle, Vector3d::UnitX())).toRotationMatrix();
 
-  // Compute B's rotational inertia about-point Bcm, expressed-in-frame W.
+  // Compute B's rotational inertia about-point Bcm, expressed-in frame W.
   // This rotational inertia has all non-zero entries (not diagonal).
   RotationalInertia<double> I_BBcm_W = I_BBcm_Q.ReExpress(R_WQ);
 
@@ -568,8 +564,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   const Matrix3<ADScalar> R_BW =
       (AngleAxis<ADScalar>(-angle, Vector3d::UnitZ())).toRotationMatrix();
   const RotationalInertia<ADScalar> expectedI_B = I_W.ReExpress(R_BW);
-  EXPECT_TRUE(expectedI_B.IsApproxEqualBasedOnMaximumPossibleMomentOfInertia(
-                      I_B, epsilon));
+  EXPECT_TRUE(expectedI_B.IsCloseTo(I_B, epsilon));
 }
 
 }  // namespace
