@@ -31,14 +31,6 @@ if (lcm_FOUND)
   drake_install_libraries(drakeActuatorEffortToRigidBodyPlantInputConverter)
   drake_install_headers(actuator_effort_to_rigid_body_plant_input_converter.h)
 
-  add_library_with_exports(LIB_NAME drakeRobotStateLcmTypeUtil SOURCE_FILES
-      robot_state_lcmtype_util.cc)
-  target_link_libraries(drakeRobotStateLcmTypeUtil
-      drakeRigidBodyPlant
-      )
-  drake_install_libraries(drakeRobotStateLcmTypeUtil)
-  drake_install_headers(robot_state_lcmtype_util.h)
-
   add_library_with_exports(LIB_NAME drakeRobotStateEncoder SOURCE_FILES
       robot_state_encoder.cc)
   target_link_libraries(drakeRobotStateEncoder
@@ -47,7 +39,7 @@ if (lcm_FOUND)
       drakeLCMUtil
       drakeRigidBodyPlant
       drakeSide
-      drakeRobotStateLcmTypeUtil
+      drakeRobotStateLcmTranslator
       )
   drake_install_libraries(drakeRobotStateEncoder)
   drake_install_headers(robot_state_encoder.h)
@@ -58,7 +50,7 @@ if (lcm_FOUND)
       drakeLcmSystem
       drakeLCMUtil
       drakeRigidBodyPlant
-      drakeRobotStateLcmTypeUtil
+      drakeRobotStateLcmTranslator
       )
   drake_install_libraries(drakeRobotStateDecoder)
   drake_install_headers(robot_state_decoder.h)
