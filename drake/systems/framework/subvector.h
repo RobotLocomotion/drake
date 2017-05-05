@@ -48,6 +48,14 @@ class Subvector : public VectorBase<T> {
 
   int size() const override { return num_elements_; }
 
+  /// Returns `true` if `this` vector has a contiguous in memory layout within
+  /// the range of indexes `start` to `end`.
+  /// @see IsContiguous()
+  bool IsContiguousWithinRange(int start, int end) const override {
+    return vector_->IsContiguousWithinRange(
+        start + first_element_, end + first_element_);
+  }
+
   const T& GetAtIndex(int index) const override {
     DRAKE_THROW_UNLESS(index < size());
     return vector_->GetAtIndex(first_element_ + index);

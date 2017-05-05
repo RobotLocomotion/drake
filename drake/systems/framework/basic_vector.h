@@ -61,6 +61,13 @@ class BasicVector : public VectorBase<T> {
 
   int size() const override { return static_cast<int>(values_.rows()); }
 
+  /// Returns `true` if `this` vector has a contiguous in memory layout within
+  /// the range of indexes `start` to `end`.
+  /// @see IsContiguous()
+  bool IsContiguousWithinRange(int start, int end) const override {
+    return true;
+  }
+
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
   /// Throws std::out_of_range if the new value has different dimensions.

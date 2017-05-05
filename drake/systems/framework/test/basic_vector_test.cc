@@ -28,6 +28,7 @@ GTEST_TEST(BasicVectorTest, SetZero) {
 GTEST_TEST(BasicVectorTest, IsContiguoys) {
   auto vec = BasicVector<double>::Make(1.0, 2.0, 3.0);
   EXPECT_TRUE(vec->is_contiguous());
+  EXPECT_TRUE(vec->IsContiguous());
   EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), vec->get_contiguous_block());
   vec->get_mutable_contiguous_block().coeffRef(1) = -1.0;
   EXPECT_EQ(Eigen::Vector3d(1.0, -1.0, 3.0), vec->get_contiguous_block());

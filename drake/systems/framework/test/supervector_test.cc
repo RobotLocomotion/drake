@@ -7,6 +7,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/vector_base.h"
+#include "drake/systems/framework/subvector.h"
 
 namespace drake {
 namespace systems {
@@ -79,6 +80,7 @@ TEST_F(SupervectorTest, Empty) {
 // memory.
 TEST_F(SupervectorTest, IsNotContiguous) {
   EXPECT_FALSE(supervector_->is_contiguous());
+  EXPECT_FALSE(supervector_->IsContiguous());
 }
 
 // A Supervector could be contiguous in memory if, for instance, only composed
@@ -88,9 +90,42 @@ TEST_F(SupervectorTest, IsContiguous) {
       std::make_unique<Supervector<double>>(
           std::vector<VectorBase<double>*>{vec1_.get()});
   EXPECT_TRUE(contiguous_supervector->is_contiguous());
+  EXPECT_TRUE(contiguous_supervector->IsContiguous());
   for (int i = 0; i < contiguous_supervector->size(); ++i) {
     EXPECT_EQ(vec1_->GetAtIndex(i), contiguous_supervector->GetAtIndex(i));
   }
+}
+
+GTEST_TEST(SupervectorIsContiguous, PatologicalCase) {
+  auto long_basic_vector =
+      BasicVector<double>::Make({0, 1, 2, 3, 4, 5, 6, 7, 8});
+  Subvector<double> subvec1(long_basic_vector.get(),
+                            0 /* first element */, 4 /* size */);
+  Subvector<double> subvec2(long_basic_vector.get(),
+                            4 /* first element */, 5 /* size */);
+  EXPECT_TRUE(subvec1.is_contiguous());
+  EXPECT_TRUE(subvec2.is_contiguous());
+  EXPECT_TRUE(subvec1.IsContiguous());
+  EXPECT_TRUE(subvec2.IsContiguous());
+
+  // The two Subvector objects actually map to an entire contiguous chunk of
+  // memory.
+  auto contiguous_supervector =
+      std::make_unique<Supervector<double>>(
+          std::vector<VectorBase<double>*>{&subvec1, &subvec2});
+  EXPECT_TRUE(contiguous_supervector->is_contiguous());
+  // IsContiguous FAILS IN THIS CASE!
+  EXPECT_FALSE(contiguous_supervector->IsContiguous());
+
+  // A slice into contiguous_supervector. The entire slice fits in a contiguous
+  // chunk of memory. However, since it is created from two Subvector objects,
+  // we lost the information about these two slices being adjacent to each
+  // other.
+  Subvector<double> middle_section(
+      contiguous_supervector.get(), 2 /* first element */, 4 /* size */);
+  EXPECT_TRUE(middle_section.is_contiguous());
+  // IsContiguous FAILS IN THIS CASE!
+  EXPECT_FALSE(middle_section.IsContiguous());
 }
 
 }  // namespace
