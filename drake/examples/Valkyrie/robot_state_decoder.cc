@@ -163,7 +163,7 @@ void RobotStateDecoder::DoCalcOutput(const Context<double>& context,
 }
 
 std::unique_ptr<AbstractValue> RobotStateDecoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& output) const {
+    const OutputPortDescriptor<double>&) const {
   return std::make_unique<Value<KinematicsCache<double>>>(
       tree_.CreateKinematicsCache());
 }

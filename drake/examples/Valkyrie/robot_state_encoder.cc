@@ -80,7 +80,7 @@ void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
 }
 
 std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& descriptor) const {
+    const OutputPortDescriptor<double>&) const {
   return make_unique<Value<robot_state_t>>(robot_state_t());
 }
 
