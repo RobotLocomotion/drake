@@ -1,6 +1,4 @@
-// clang-format off
 #include "drake/automotive/maliput/api/lane_data.h"
-// clang-format on
 
 #include <gtest/gtest.h>
 
