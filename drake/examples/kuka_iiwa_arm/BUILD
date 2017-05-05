@@ -68,7 +68,6 @@ drake_cc_library(
     ],
 )
 
-
 drake_cc_library(
     name = "robot_plan_interpolator",
     srcs = ["robot_plan_interpolator.cc"],
