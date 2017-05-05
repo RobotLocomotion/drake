@@ -470,7 +470,7 @@ class RotationalInertia {
 
     // Test `this` rotational inertia's moments of inertia to be mostly
     // non-negative and also satisfy triangle inequality.
-    const Vector3<double> m = get_moments();
+    const Vector3<T> m = get_moments();
     if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
         m(0), m(1), m(2), epsilon)) return false;
 
@@ -851,7 +851,7 @@ class RotationalInertia {
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
   static bool AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-      const T& Ixx, const T& Iyy, const T&Izz, const double epsilon) {
+      const T& Ixx, const T& Iyy, const T& Izz, const double epsilon) {
     const bool are_moments_near_positive = AreMomentsOfInertiaNearPositive(
         Ixx, Iyy, Izz, epsilon);
     const bool is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
