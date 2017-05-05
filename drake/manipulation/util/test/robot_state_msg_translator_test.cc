@@ -57,7 +57,7 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
         break;
     }
 
-    for (int i = 0; i < kNumTests; ++i) {
+    for (int n = 0; n < kNumTests; ++n) {
       SetRandomQVTorque(&q, &v, &torque);
 
       dut_->EncodeMessageKinematics(q, v, &message_);
