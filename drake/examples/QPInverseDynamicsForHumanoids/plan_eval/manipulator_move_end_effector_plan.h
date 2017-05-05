@@ -63,16 +63,16 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
   GenericPlan<T>* CloneGenericPlanDerived() const override;
 
   void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus& robot_stauts,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override {
+      const HumanoidStatus&,
+      const param_parsers::ParamSet&,
+      const param_parsers::RigidBodyTreeAliasGroups<T>&) override {
   }
 
   void UpdateQpInputGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      QpInput* qp_input) const override {}
+      const HumanoidStatus&,
+      const param_parsers::ParamSet&,
+      const param_parsers::RigidBodyTreeAliasGroups<T>&,
+      QpInput*) const override {}
 };
 
 }  // namespace qp_inverse_dynamics

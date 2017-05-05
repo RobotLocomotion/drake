@@ -190,7 +190,9 @@ def drake_cc_googletest(
 def _transitive_hdrs_impl(ctx):
   headers = set()
   for dep in ctx.attr.deps:
-    headers += dep.cc.transitive_headers
+    # TODO(mwoehlke-kitware): Figure out a better way to exclude system headers
+    # from being slurped in?
+    headers += [h for h in dep.cc.transitive_headers if not "/_usr_" in h.path]
   return struct(files=headers)
 
 _transitive_hdrs = rule(
@@ -220,3 +222,15 @@ def drake_header_tar(name, deps=[], **kwargs):
           mode="0644",
           files=[":" + name + "_gather"],
           strip_prefix="/")
+
+# Generate a file with specified content
+def _generate_file_impl(ctx):
+  ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
+
+drake_generate_file = rule(
+  implementation = _generate_file_impl,
+  attrs = {
+    "content": attr.string(),
+    "out": attr.output(mandatory = True),
+  },
+)
