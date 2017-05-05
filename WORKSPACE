@@ -289,6 +289,22 @@ github_archive(
     sha256 = "0a0ae63cbffc274efb573bdde9a253e3f32e458c41261df51c5dbc5ad541e8f7",
 )
 
+pypi_archive(
+    name = "semantic_version",
+    version = "2.6.0",
+    sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",
+    build_file = "tools/semantic_version.BUILD",
+    strip_prefix = "semantic_version",
+)
+
+github_archive(
+    name = "pycps",
+    repository = "mwoehlke/pycps",
+    commit = "1b985467d1fe737ed3a43a25f4da3316bd45106f",
+    sha256 = "4491debd18ee40bf9d7eab9b35776eff98a71bc904a339f709273cbad9ac6efb",
+    build_file = "tools/pycps.BUILD",
+)
+
 # The "@python_headers//:python_headers" target is required by protobuf
 # during "bazel query" but not "bazel build", so a stub is fine.
 new_local_repository(
