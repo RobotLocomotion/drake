@@ -23,6 +23,9 @@ namespace manipulation {
  *   actuator torques: joint torque for actuated joints.
  *   force torque sensor: foot / wrist mounted force torque sensor readings.
  * </pre>
+ * The pose in the message represents the transformation from the floating
+ * base frame B to the world frame W (X_WB), and the velocity is its spatial
+ * velocity V_WB.
  * For the non-floating joints in bot_core::robot_state_t, the convention is
  * that they (name, position, velocity, effort) are stored in equal length
  * vectors, and the numerical values are identified by the joint name with
@@ -31,7 +34,12 @@ namespace manipulation {
  * layouts in the message and the RigidBodyTree. Note that this class does
  * not require one to one joint matching between the message and the
  * RigidBodyTree. This class only translates information for joints that
- * are shared by the message the RigidBodyTree.
+ * are shared by the message the RigidBodyTree. This design choice is made
+ * to facilitate multiple models (rigid body tree) with different complexity
+ * of the same robot communicating on the same Lcm channel. For example, a
+ * central message publisher generates a Lcm message with the most
+ * comprehensive information, and the individual subscribers can pay attention
+ * to whatever subset of interest using reduced models.
  */
 class RobotStateLcmMessageTranslator {
  public:
@@ -43,18 +51,22 @@ class RobotStateLcmMessageTranslator {
    * that this. The following assumptions must be met by @p robot, otherwise
    * the constructor aborts:
    * <pre>
-   *   1. There are at least one non-world rigid body.
+   *   1. There is at least 1 non-world rigid body.
    *   2. There can be at most 1 floating base.
    *   3. If there is a floating base, it has to be the first non-world body.
-   *   4. The floating joint's position and velocity index has to start from 0.
-   *   5. All the other joints has to be 1 degree of freedom or fixed.
+   *   4. The floating joint's position and velocity index have to start from 0.
+   *   5. All the other joints have to be 1 degree of freedom or fixed.
    * </pre>
    */
   explicit RobotStateLcmMessageTranslator(const RigidBodyTree<double>& robot);
 
   /**
    * Initializes @p msg based on the rigid body tree passed to the constructor.
-   * Sets all numerical values to zero.
+   * It resizes all the vectors for the non-floating joints in the order of
+   * the rigid body tree's generalized coordinate. All numerical values are
+   * initialized to zero. It is highly recommended to initialize
+   * bot_core::robot_state_t with this method before passing it to the rest of
+   * the API in this class.
    */
   void InitializeMessage(bot_core::robot_state_t* msg) const;
 
@@ -130,13 +142,10 @@ class RobotStateLcmMessageTranslator {
   static bool CheckMessageVectorSize(const bot_core::robot_state_t& msg);
 
  private:
-  /// Check that robot_state_t can unambiguously represent the RigidBodyTree's
-  /// state. This method is intended to check preconditions inside a
-  /// constructor's
-  /// intitializer list.
-  /// Aborts when the robot is not compatible with robot_state_t.
-  /// @param robot a RigidBodyTree.
-  /// @return the same RigidBodyTree that was passed in.
+  // Check that robot_state_t can unambiguously represent the RigidBodyTree's
+  // state. This method is intended to check preconditions inside a
+  // constructor's intitializer list. Returns @p robot if the checks pass.
+  // Aborts when @p robot is not compatible with robot_state_t.
   static const RigidBodyTree<double>& CheckTreeIsRobotStateLcmTypeCompatible(
       const RigidBodyTree<double>& robot);
 

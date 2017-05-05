@@ -10,13 +10,14 @@ namespace manipulation {
 
 namespace {
 
+// For every ith name in @p names, if it is present in @p name_to_index, set
+// msg_values[i] = values[name_to_index.find(names[i])]
 void EncodeValue(const std::unordered_map<std::string, int>& name_to_index,
                  const std::vector<std::string>& names,
                  const VectorX<double>& values,
                  std::vector<float>* msg_values) {
   for (size_t i = 0; i < names.size(); ++i) {
     const std::string& q_name = names[i];
-
     // Ignores joints we don't know about.
     auto it = name_to_index.find(q_name);
     if (it != name_to_index.end()) {
@@ -26,13 +27,14 @@ void EncodeValue(const std::unordered_map<std::string, int>& name_to_index,
   }
 }
 
+// For every ith name in @p names, if it is present in @p name_to_index, set
+// values[name_to_index.find(names[i])] = msg_values[i]
 void DecodeJointValue(const std::unordered_map<std::string, int>& name_to_index,
                       const std::vector<std::string>& names,
                       const std::vector<float>& msg_values,
                       VectorX<double>* values) {
   for (size_t i = 0; i < names.size(); ++i) {
     const std::string& q_name = names[i];
-
     // Ignores joints we don't know about.
     auto it = name_to_index.find(q_name);
     if (it != name_to_index.end()) {
@@ -56,12 +58,11 @@ RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
     if (body->has_parent_body()) {
       const auto& joint = body->getJoint();
       if (!joint.is_fixed() && !joint.is_floating()) {
-        // Assuming for non the floating base joints, the sizes for q and v
-        // are both 1.
+        // Assuming for the non floating joints, the sizes for q and v are
+        // both 1.
         int position_index = body->get_position_start_index();
         int velocity_index = body->get_velocity_start_index();
-        // To match usage of robot_state_t throughout OpenHumanoids code, use
-        // position coordinate name as joint name.
+        // The convention is to use position coordinate name as joint name.
         const std::string& name = robot.get_position_name(position_index);
 
         joint_name_to_q_index_[name] = position_index;
@@ -89,10 +90,6 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
   q->resize(robot_.get_num_positions());
   v->resize(robot_.get_num_velocities());
 
-  // Uninitialized, have not got a valid lcm msg yet.
-  // TODO(siyuan.feng): Need better way to check for this.
-  bool valid_lcm_msg = msg.joint_name.size() != 0;
-
   // Floating joint.
   if (floating_base_) {
     auto X_WB = DecodePose(msg.pose);
@@ -103,75 +100,62 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
 
     if (floating_joint.get_num_positions() == 6) {
       // RPY-parameterized floating joint.
-      if (!valid_lcm_msg) {
-        q->setZero();
-        v->setZero();
-      } else {
-        // Translation.
-        q->segment<3>(position_start) = X_WB.translation();
+      // Translation.
+      q->segment<3>(position_start) = X_WB.translation();
 
-        // Orientation.
-        auto rpy = math::rotmat2rpy(X_WB.linear());
-        q->segment<3>(position_start + 3) = rpy;
+      // Orientation.
+      auto rpy = math::rotmat2rpy(X_WB.linear());
+      q->segment<3>(position_start + 3) = rpy;
 
-        // Translational velocity.
-        auto translationdot = V_WB.tail<3>();
-        v->segment<3>(velocity_start) = translationdot;
+      // Translational velocity.
+      auto translationdot = V_WB.tail<3>();
+      v->segment<3>(velocity_start) = translationdot;
 
-        // Rotational velocity.
-        Eigen::Matrix<double, 3, 3> phi;
-        typename math::Gradient<decltype(phi), Eigen::Dynamic>::type* dphi =
-            nullptr;
-        typename math::Gradient<decltype(phi), Eigen::Dynamic, 2>::type* ddphi =
-            nullptr;
-        angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
-        auto angular_velocity_world = V_WB.head<3>();
-        auto rpydot = (phi * angular_velocity_world).eval();
-        v->segment<3>(velocity_start + 3) = rpydot;
-      }
+      // Rotational velocity.
+      Eigen::Matrix<double, 3, 3> phi;
+      typename math::Gradient<decltype(phi), Eigen::Dynamic>::type* dphi =
+          nullptr;
+      typename math::Gradient<decltype(phi), Eigen::Dynamic, 2>::type* ddphi =
+          nullptr;
+      angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
+      auto angular_velocity_world = V_WB.head<3>();
+      auto rpydot = (phi * angular_velocity_world).eval();
+      v->segment<3>(velocity_start + 3) = rpydot;
     } else if (floating_joint.get_num_positions() == 7) {
       // Quaternion-parameterized floating joint.
-      if (!valid_lcm_msg) {
-        q->setZero();
-        v->setZero();
-        // Set quaternion
-        q->segment<4>(position_start + 3) =
-            math::rotmat2quat(Matrix3<double>::Identity());
-      } else {
-        // Translation.
-        q->segment<3>(position_start) = X_WB.translation();
+      // Translation.
+      q->segment<3>(position_start) = X_WB.translation();
 
-        // Orientation.
-        auto quat = math::rotmat2quat(X_WB.linear());
-        q->segment<4>(position_start + 3) = quat;
+      // Orientation.
+      auto quat = math::rotmat2quat(X_WB.linear());
+      q->segment<4>(position_start + 3) = quat;
 
-        // Twist.
-        // Transform twist from world-aligned body frame to body frame.
-        Isometry3<double> world_aligned_body_to_body;
-        world_aligned_body_to_body.linear() = X_WB.linear().transpose();
-        world_aligned_body_to_body.translation().setZero();
-        world_aligned_body_to_body.makeAffine();
-        TwistVector<double> floating_base_twist_in_body =
-            transformSpatialMotion(world_aligned_body_to_body, V_WB);
-        v->segment<kTwistSize>(velocity_start) = floating_base_twist_in_body;
-      }
+      // Twist.
+      // Transform twist from world-aligned body frame to body frame.
+      Isometry3<double> world_aligned_body_to_body;
+      world_aligned_body_to_body.linear() = X_WB.linear().transpose();
+      world_aligned_body_to_body.translation().setZero();
+      world_aligned_body_to_body.makeAffine();
+      TwistVector<double> floating_base_twist_in_body =
+        transformSpatialMotion(world_aligned_body_to_body, V_WB);
+      v->segment<kTwistSize>(velocity_start) = floating_base_twist_in_body;
     } else {
       DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
     }
   }
 
   // Non-floating joints.
-  DecodeJointValue(joint_name_to_q_index_, msg.joint_name, msg.joint_position,
-                   q);
-  DecodeJointValue(joint_name_to_v_index_, msg.joint_name, msg.joint_velocity,
-                   v);
+  DecodeJointValue(joint_name_to_q_index_, msg.joint_name,
+                   msg.joint_position, q);
+  DecodeJointValue(joint_name_to_v_index_, msg.joint_name,
+                   msg.joint_velocity, v);
 }
 
 void RobotStateLcmMessageTranslator::InitializeMessage(
     bot_core::robot_state_t* msg) const {
   DRAKE_DEMAND(msg != nullptr);
 
-  // Encode all the other joints assuming there are all dof1.
+  // Encode all the other joints assuming they are all 1 dof.
   size_t num_1dof_q = robot_.get_num_positions();
   size_t num_1dof_v = robot_.get_num_velocities();
   if (floating_base_) {
@@ -228,7 +212,7 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
   DRAKE_DEMAND(v.size() == robot_.get_num_velocities());
   DRAKE_DEMAND(CheckMessageVectorSize(*msg));
 
-  // Encode floating base.
+  // Encodes the floating base.
   if (floating_base_) {
     Isometry3<double> X_WB;
     Vector6<double> V_WB;
@@ -242,9 +226,9 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
       Vector3<double> rpy = q.segment<3>(position_start + 3);
       Vector3<double> rpydot = v.segment<3>(velocity_start + 3);
 
-      X_WB.fromPositionOrientationScale(q.segment<3>(position_start),
-                                        math::rpy2rotmat(rpy),
-                                        Vector3<double>::Ones());
+      X_WB.translation() = q.segment<3>(position_start);
+      X_WB.linear() = math::rpy2rotmat(rpy);
+      X_WB.makeAffine();
 
       Matrix3<double> phi = Matrix3<double>::Zero();
       angularvel2rpydotMatrix(rpy, phi, static_cast<Matrix3<double>*>(nullptr),

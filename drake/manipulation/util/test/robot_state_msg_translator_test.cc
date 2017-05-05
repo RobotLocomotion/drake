@@ -209,23 +209,23 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestSizeCheck) {
   message_.num_joints++;
   EXPECT_FALSE(
       RobotStateLcmMessageTranslator::CheckMessageVectorSize(message_));
-
   message_.num_joints--;
+
   message_.joint_name.push_back("aa");
   EXPECT_FALSE(
       RobotStateLcmMessageTranslator::CheckMessageVectorSize(message_));
-
   message_.joint_name.pop_back();
+
   message_.joint_position.push_back(0);
   EXPECT_FALSE(
       RobotStateLcmMessageTranslator::CheckMessageVectorSize(message_));
-
   message_.joint_position.pop_back();
+
   message_.joint_velocity.push_back(0);
   EXPECT_FALSE(
       RobotStateLcmMessageTranslator::CheckMessageVectorSize(message_));
-
   message_.joint_velocity.pop_back();
+
   message_.joint_effort.push_back(0);
   EXPECT_FALSE(
       RobotStateLcmMessageTranslator::CheckMessageVectorSize(message_));
@@ -305,7 +305,7 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeLessJointNames) {
   VectorX<double> q, v, torque;
   SetRandomQVTorque(&q, &v, &torque);
 
-  // Add some random joint to the message.
+  // Remove a joint from the message.
   message_.num_joints--;
   const int kExtraIndex = 2;
   message_.joint_name.erase(message_.joint_name.begin() + kExtraIndex);
