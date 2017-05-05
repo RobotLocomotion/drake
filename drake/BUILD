@@ -15,6 +15,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/multibody/parsers",
     "//drake/systems/framework",
     "//drake/systems/primitives",
+    "//drake/lcm",
 ]
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
@@ -43,6 +44,7 @@ pkg_tar(
         "@bullet//:license",
         "@eigen//:license",
         "@fmt//:license",
+        "@lcm//:license",
         "@spdlog//:license",
         "@tinyobjloader//:license",
     ],
