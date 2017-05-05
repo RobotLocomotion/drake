@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@//tools:drake.bzl", "drake_generate_file")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -185,4 +186,12 @@ java_binary(
     runtime_deps = [
         ":lcm-java",
     ],
+)
+
+pkg_tar(
+    name = "license",
+    extension = "tar.gz",
+    mode = "0644",
+    files = ["COPYING"],
+    package_dir = "lcm",
 )
