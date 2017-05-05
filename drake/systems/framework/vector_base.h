@@ -60,6 +60,45 @@ class VectorBase {
     GetAtIndex(index) = value;
   }
 
+  /// Returns `true` if `this` vector has a contiguous in memory layout.
+  /// It returns `false` otherwise.
+  /// @see get_contiguous_block()
+  bool is_contiguous() const {
+    // Vector is contiguous in memory if first and last elements are separated
+    // exactly by size() elements.
+    return
+        static_cast<int>(&GetAtIndex(size()-1) - &GetAtIndex(0) + 1) == size();
+  }
+
+  /// Returns the entire vector as a contiguous in memory Eigen expression.
+  /// This method aborts in Debug builds if the underlying memory layout is not
+  /// contiguous. No check is performed in Release builds. If unsure whether the
+  /// memory layout is contiguous or not, call VectorBase::is_contiguous().
+  ///
+  /// @note The returned Eigen expression cannot be resized and attemps to
+  /// do so will abort your application.
+  ///
+  /// @see is_contiguous()
+  virtual const Eigen::Map<const VectorX<T>> get_contiguous_block() const {
+    DRAKE_ASSERT(this->is_contiguous());
+    return Eigen::Map<const VectorX<T>>(&GetAtIndex(0), size());
+  }
+
+  /// Returns the entire vector as a mutable, contiguous in memory, Eigen
+  /// expression.
+  /// This method aborts in Debug builds if the underlying memory layout is not
+  /// contiguous. No check is performed in Release builds. If unsure whether the
+  /// memory layout is contiguous or not, call VectorBase::is_contiguous().
+  ///
+  /// @note Even though entries are mutable, the returned Eigen expression
+  /// cannot be resized and attemps to do so will abort your application.
+  ///
+  /// @see is_contiguous()
+  virtual Eigen::Map<VectorX<T>> get_mutable_contiguous_block() {
+    DRAKE_ASSERT(this->is_contiguous());
+    return Eigen::Map<VectorX<T>>(&GetAtIndex(0), size());
+  }
+
   /// Replaces the entire vector with the contents of @p value. Throws
   /// std::runtime_error if @p value is not a column vector with size() rows.
   ///

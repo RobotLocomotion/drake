@@ -9,6 +9,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/supervector.h"
 
 namespace drake {
 namespace systems {
@@ -209,6 +210,76 @@ TEST_F(SubvectorTest, PlusEqScaled) {
   orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
   EXPECT_EQ(orig_vec.GetAtIndex(0), 346);
   EXPECT_EQ(orig_vec.GetAtIndex(1), 446);
+}
+
+// Verifies we can request a contiguous in memory Eigen vector from SubVector
+// when the original vector being subdivided is a contiguous BasicVector.
+GTEST_TEST(SubvectorIsContiguous, WithinBasicVector) {
+  auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
+  Subvector<double> subvec(vector.get(), 1 /* first element */, 2 /* size */);
+  EXPECT_TRUE(subvec.is_contiguous());
+  EXPECT_EQ(Eigen::Vector2d(2.0, 3.0), subvec.get_contiguous_block());
+  subvec.get_mutable_contiguous_block().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector2d(2.0, -1.0), subvec.get_contiguous_block());
+}
+
+// Verifies we can request a contiguous in memory Eigen vector from SubVector
+// when the original vector being subdivided is a contiguous Subvector.
+GTEST_TEST(SubvectorIsContiguous, WithinContiguousSubvector) {
+  auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
+  Subvector<double> subvec(vector.get(), 1 /* first element */, 3 /* size */);
+  Subvector<double> subsubvec(&subvec, 1 /* first element */, 2 /* size */);
+  EXPECT_TRUE(subvec.is_contiguous());
+  EXPECT_TRUE(subsubvec.is_contiguous());
+  EXPECT_EQ(Eigen::Vector3d(2.0, 3.0, 4.0), subvec.get_contiguous_block());
+  EXPECT_EQ(Eigen::Vector2d(3.0, 4.0), subsubvec.get_contiguous_block());
+  subsubvec.get_mutable_contiguous_block().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector2d(3.0, -1.0), subsubvec.get_contiguous_block());
+}
+
+// Verify that Subvector still can map a contiguous block of memory within a
+// non-contiguous Supervector if the block actually is contiguous in memory.
+GTEST_TEST(SubvectorIsContiguous, WithinContiguousPartOfASupervector) {
+  auto vector1 = BasicVector<double>::Make({1, 2, 3, 4});
+  auto vector2 = BasicVector<double>::Make({5, 6, 7, 8, 9, 10});
+  // Concatenate into supervector = {vector1, vector2}.
+  auto supervector = std::make_unique<Supervector<double>>(
+      std::vector<VectorBase<double>*>{vector1.get(), vector2.get()});
+
+  // Build a Supervector and verify it indeed is the concatenation of vector1
+  // and vector2.
+  VectorX<double> expected_supervector_value(supervector->size());
+  expected_supervector_value.segment(0, 4) = vector1->get_value();
+  expected_supervector_value.segment(4, 6) = vector2->get_value();
+  EXPECT_EQ(expected_supervector_value.rows(), supervector->size());
+  EXPECT_EQ(expected_supervector_value.cols(), 1);
+  for (int i = 0; i < supervector->size(); ++i) {
+    EXPECT_EQ(expected_supervector_value[i], supervector->GetAtIndex(i));
+  }
+
+  // Create a Subvector into a contiguous chunk of the Supervector.
+  Subvector<double> subvec(
+      supervector.get(), 5 /* first element */, 3 /* size */);
+
+  // Even though the original Supervector is not contiguous in memory, the
+  // Subvector is.
+  EXPECT_TRUE(subvec.is_contiguous());
+
+  // Verify it points to the appropriate chunk of memory.
+  EXPECT_EQ(Eigen::Vector3d(6.0, 7.0, 8.0), subvec.get_contiguous_block());
+
+  // Create an extra layer of indirection to verify correctness.
+  Subvector<double> subsubvec(&subvec, 1 /* first element */, 2 /* size */);
+  EXPECT_TRUE(subsubvec.is_contiguous());
+  EXPECT_EQ(Eigen::Vector2d(7.0, 8.0), subsubvec.get_contiguous_block());
+
+  // Verify we can change an entry through subsubvec and we can see the result
+  // through subvec, supervector and the original vector2.
+  subsubvec.get_mutable_contiguous_block().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector2d(7.0, -1.0), subsubvec.get_contiguous_block());
+  EXPECT_EQ(Eigen::Vector3d(6.0, 7.0, -1.0), subvec.get_contiguous_block());
+  EXPECT_EQ(-1, supervector->GetAtIndex(7));
+  EXPECT_EQ(Eigen::Vector4d({1, 2, 3, 4}), vector1->get_contiguous_block());
 }
 
 }  // namespace

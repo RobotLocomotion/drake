@@ -24,6 +24,15 @@ GTEST_TEST(BasicVectorTest, SetZero) {
   EXPECT_EQ(Eigen::Vector3d(0, 0, 0), vec->get_value());
 }
 
+// Verifies BasicVector is contiguous in memory.
+GTEST_TEST(BasicVectorTest, IsContiguoys) {
+  auto vec = BasicVector<double>::Make(1.0, 2.0, 3.0);
+  EXPECT_TRUE(vec->is_contiguous());
+  EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), vec->get_contiguous_block());
+  vec->get_mutable_contiguous_block().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector3d(1.0, -1.0, 3.0), vec->get_contiguous_block());
+}
+
 // Tests that the BasicVector<double> is initialized to NaN.
 GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
   BasicVector<double> vec(3);

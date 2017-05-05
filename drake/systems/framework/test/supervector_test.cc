@@ -75,6 +75,24 @@ TEST_F(SupervectorTest, Empty) {
   EXPECT_EQ(0, supervector.size());
 }
 
+// A Supervector composed of several chunks is, in general, not contiguous in
+// memory.
+TEST_F(SupervectorTest, IsNotContiguous) {
+  EXPECT_FALSE(supervector_->is_contiguous());
+}
+
+// A Supervector could be contiguous in memory if, for instance, only composed
+// of a single Subvector.
+TEST_F(SupervectorTest, IsContiguous) {
+  auto contiguous_supervector =
+      std::make_unique<Supervector<double>>(
+          std::vector<VectorBase<double>*>{vec1_.get()});
+  EXPECT_TRUE(contiguous_supervector->is_contiguous());
+  for (int i = 0; i < contiguous_supervector->size(); ++i) {
+    EXPECT_EQ(vec1_->GetAtIndex(i), contiguous_supervector->GetAtIndex(i));
+  }
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
