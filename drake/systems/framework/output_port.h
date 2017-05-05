@@ -328,23 +328,6 @@ class LeafOutputPort : public OutputPort<T> {
     set_calculation_function(vector_calc_function);
   }
 
-
-  /** Construct a port without specifying a model. If you provide an allocation
-  function it will be used. Otherwise, if this is a vector port of known size
-  an appropriate `BasicVector<T>` will be allocated. No default allocator is
-  provided for an abstract port.
-  LeafOutputPort(PortDataType data_type, int size,
-                 AllocCallback alloc_function = nullptr)
-      : OutputPort<T>(data_type, size), alloc_function_(alloc_function) {
-    // If this is vector of known size, make a model to use if we don't get
-    // an allocation function.
-    if (data_type == kVectorValued && size >= 0) {
-      model_value_.reset(
-          new VectorValue<T>(std::make_unique<BasicVector<T>>(size)));
-    }
-  }
-  */
-
   /** Set or replace the allocation function for this output port, using
   a function that returns an AbstractValue. **/
   void set_allocation_function(AllocCallback alloc_function) {
