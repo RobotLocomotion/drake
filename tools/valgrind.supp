@@ -39,8 +39,6 @@
    Memcheck:Free
    fun:free
    ...
-   fun:*_ptr
-   ...
    fun:_ZN8pybind116class_I13RigidBodyTreeIdEJEE7deallocEP7_object
    ...
    fun:Py*
@@ -119,9 +117,11 @@
 # may return a pointer not pointing at the head of the allocated memory, which
 # causes the "possibly lost" warnings. [ *((void **)(ret)-1) = (void *)(real); ]
 {
-   <bullet-1>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:_ZL21btAlignedAllocDefaultmi
+    <bullet3-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:_ZL14btAllocDefaultm
+    fun:_ZL21btAlignedAllocDefaultmi
+    fun:_Z22btAlignedAllocInternalmi
 }
