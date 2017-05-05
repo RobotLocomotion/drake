@@ -1,8 +1,7 @@
-#include "drake/examples/Valkyrie/valkyrie_simulator.h"
-
 #include <gtest/gtest.h>
 
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/Valkyrie/valkyrie_simulator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
