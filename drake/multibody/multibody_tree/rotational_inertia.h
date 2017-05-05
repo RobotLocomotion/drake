@@ -100,14 +100,14 @@ class RotationalInertia {
   /// is useful for the rotational inertia of a uniform-density sphere or cube.
   /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
   explicit RotationalInertia(const T& I_triaxial) :
-      RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0, 0, 0) {}
+      RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0) {}
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.
   /// In debug builds, throws std::logic_error if rotational inertia that is
   /// constructed from these arguments violate CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) :
-      RotationalInertia(Ixx, Iyy, Izz, 0, 0, 0) {}
+      RotationalInertia(Ixx, Iyy, Izz, 0.0, 0.0, 0.0) {}
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
