@@ -50,7 +50,7 @@ DEFINE_bool(playback, true,
 // Simple scenario of two blocks being pushed across a plane.  The first block
 // has zero initial velocity.  The second has a small initial velocity in the
 // pushing direction.
-int main(int argc, char**argv) {
+int main() {
   std::cout << "Parameters:\n";
   std::cout << "\tTime step:        " << FLAGS_timestep << "\n";
   std::cout << "\tPushing force:    " << FLAGS_push << "\n";
@@ -141,5 +141,5 @@ int main(int argc, char**argv) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::systems::main(argc, argv);
+  return drake::systems::main();
 }

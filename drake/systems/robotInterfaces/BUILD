@@ -23,6 +23,7 @@ drake_cc_library(
         ":body_motion_data",
         ":side",
         "//drake/common",
+        "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories/qp_spline:spline_generation",
         "//drake/examples/Atlas:atlas_util",

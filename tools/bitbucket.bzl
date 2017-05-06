@@ -39,8 +39,11 @@ def bitbucket_archive(
     if strip_prefix == None :
         fail("Missing strip_prefix=")
 
+    # Packages are mirrored from Bitbucket to CloudFront backed by an S3 bucket.
     urls = [
-        "https://bitbucket.org/%s/get/%s.tar.gz" % (repository, commit)
+        "https://bitbucket.org/%s/get/%s.tar.gz" % (repository, commit),
+        "https://d2tbce6hkathzp.cloudfront.net/bitbucket/%s/%s.tar.gz" % (repository, commit),
+        "https://s3.amazonaws.com/drake-mirror/bitbucket/%s/%s.tar.gz" % (repository, commit),
     ]
 
     repository_split = repository.split("/")

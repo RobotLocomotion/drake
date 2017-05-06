@@ -35,7 +35,7 @@ namespace examples {
 namespace quadrotor {
 namespace {
 
-int do_main(int argc, char* argv[]) {
+int do_main() {
   lcm::DrakeLcm lcm;
 
   DiagramBuilder<double> builder;
@@ -105,5 +105,5 @@ int do_main(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::quadrotor::do_main(argc, argv);
+  return drake::examples::quadrotor::do_main();
 }

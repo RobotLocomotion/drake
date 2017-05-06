@@ -85,8 +85,8 @@ class TrivialJointLevelControllerSystem
       : JointLevelControllerBaseSystem(robot) {}
 
  private:
-  void DoCalcExtendedOutput(const systems::Context<double>& context,
-                            systems::SystemOutput<double>* output) const final {
+  void DoCalcExtendedOutput(const systems::Context<double>&,
+                            systems::SystemOutput<double>*) const final {
   }
 };
 

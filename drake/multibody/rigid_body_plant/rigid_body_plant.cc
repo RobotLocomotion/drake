@@ -160,9 +160,8 @@ void RigidBodyPlant<T>::set_friction_contact_parameters(
 }
 
 template <typename T>
-bool RigidBodyPlant<T>::DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
-                                               int input_port,
-                                               int output_port) const {
+bool RigidBodyPlant<T>::DoHasDirectFeedthrough(const SparsityMatrix*, int, int)
+    const {
   return false;
 }
 

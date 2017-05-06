@@ -10,6 +10,7 @@
 
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/unused.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/zmpUtil.h"
@@ -114,6 +115,8 @@ struct QPLocomotionPlanSettings {
       const RigidBodySupportState& support_state,
       const ContactNameToContactPointsMap& contact_group_name_to_contact_points,
       double duration_in) {
+    drake::unused(duration_in);  // TODO(jwnimmer-tri) This seems bad.
+
     supports.push_back(support_state);
     contact_groups.push_back(contact_group_name_to_contact_points);
     if (support_times.empty()) support_times.push_back(0.0);

@@ -27,9 +27,8 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "api_lane_data_test",
-    size = "small",
-    srcs = ["test/api_lane_data_test.cc"],
+    name = "lane_data_test",
+    srcs = ["test/lane_data_test.cc"],
     deps = [
         ":api",
         "//drake/common:eigen_matrix_compare",

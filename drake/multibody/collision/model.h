@@ -282,7 +282,7 @@ class Model {
    @param element The element that has been added.
 
    @throws std::runtime_error If there was a problem processing the element. **/
-  virtual void DoAddElement(const Element& element) {}
+  virtual void DoAddElement(const Element& element);
 
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use

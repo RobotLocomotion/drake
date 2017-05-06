@@ -52,9 +52,8 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
   /// type because it invokes the Cholesky LDLT decomposition, which uses
   /// conditionals in its implementation. Therefore, we must specify sparsity
   /// by hand.
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
-                              int input_port,
-                              int output_port) const override {
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
+                              int, int) const override {
     return false;
   }
 

@@ -155,7 +155,7 @@ void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
 /// Gets the number of constraint equations used for dynamics.
 template <class T>
 int BeadOnAWire<T>::do_get_num_constraint_equations(
-    const systems::Context<T>& context) const {
+    const systems::Context<T>&) const {
   return (coordinate_type_ == kAbsoluteCoordinates) ? 3 : 0;
 }
 
@@ -167,7 +167,7 @@ int BeadOnAWire<T>::do_get_num_constraint_equations(
 ///          quasi-coordinates.
 template <class T>
 Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
-    const systems::Context<T>& context, const Eigen::MatrixXd& J,
+    const systems::Context<T>&, const Eigen::MatrixXd& J,
     const Eigen::VectorXd& lambda) const {
 
   // TODO(edrumwri): Test this method as soon as DAE solver is available,
@@ -301,7 +301,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 /// for the bead represented in minimal coordinates; for the bead represented
 /// in absolute coordinates, the default state is set to `f(0), ds/dt(0)⋅0 = 0`.
 template <typename T>
-void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>& context,
+void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>&,
                                      systems::State<T>* state) const {
   // Use a consistent default state for the helix bead-on-the-wire
   // example.

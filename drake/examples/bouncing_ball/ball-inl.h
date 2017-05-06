@@ -49,7 +49,7 @@ void Ball<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-void Ball<T>::SetDefaultState(const systems::Context<T>& context,
+void Ball<T>::SetDefaultState(const systems::Context<T>&,
                               systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   Vector2<T> x0;

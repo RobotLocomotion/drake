@@ -53,7 +53,7 @@ void PoseBundleToDrawMessage::DoCalcOutput(const Context<double>& context,
 
 std::unique_ptr<AbstractValue>
 PoseBundleToDrawMessage::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>& descriptor) const {
+    const OutputPortDescriptor<double>&) const {
   return AbstractValue::Make<lcmt_viewer_draw>(lcmt_viewer_draw());
 }
 

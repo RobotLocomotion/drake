@@ -62,7 +62,7 @@ DEFINE_bool(playback, true, "If true, loops playback of simulation");
 
 
 // Bowling ball rolled down a conceptual lane to strike pins.
-int main(int argc, char**argv) {
+int main() {
   using std::cerr;
   using std::cout;
 
@@ -190,5 +190,5 @@ int main(int argc, char**argv) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::systems::main(argc, argv);
+  return drake::systems::main();
 }
