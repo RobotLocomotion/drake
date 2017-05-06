@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/automotive/gen/maliput_railcar_params.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
