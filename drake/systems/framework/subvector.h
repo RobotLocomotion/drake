@@ -48,14 +48,6 @@ class Subvector : public VectorBase<T> {
 
   int size() const override { return num_elements_; }
 
-  /// Returns `true` if `this` vector has a contiguous in memory layout within
-  /// the range of indexes `start` to `end`.
-  /// @see IsContiguous()
-  bool IsContiguousWithinRange(int start, int end) const override {
-    return vector_->IsContiguousWithinRange(
-        start + first_element_, end + first_element_);
-  }
-
   const T& GetAtIndex(int index) const override {
     DRAKE_THROW_UNLESS(index < size());
     return vector_->GetAtIndex(first_element_ + index);
@@ -64,6 +56,25 @@ class Subvector : public VectorBase<T> {
   T& GetAtIndex(int index) override {
     DRAKE_THROW_UNLESS(index < size());
     return vector_->GetAtIndex(first_element_ + index);
+  }
+
+  bool is_contiguous() const override {
+    return vector_->is_contiguous();
+  }
+
+  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
+      int start, int size) const override {
+    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
+    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
+    return vector_->get_contiguous_segment(start + first_element_, size);
+  }
+
+  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
+      int start, int size) override {
+    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
+    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
+    return vector_->get_mutable_contiguous_segment(
+        start + first_element_, size);
   }
 
  private:

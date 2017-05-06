@@ -50,23 +50,18 @@ class Supervector : public VectorBase<T> {
     return target.first->GetAtIndex(target.second);
   }
 
-  /// Returns `true` if `this` vector has a contiguous in memory layout within
-  /// the range of indexes `start` to `end`.
-  /// @throws std::out_of_range for invalid indices.
-  /// @see IsContiguous()
-  bool IsContiguousWithinRange(int start, int end) const override {
-    const auto start_target = GetSubvectorAndOffset(start);
-    const auto end_target = GetSubvectorAndOffset(end);
-    // If indexes fall within two different vectors return false. This assumes
-    // that these two slices cannot be contiguous in memory.
-    // TODO(amcastro-tri): Deal with the case in which two slices actually do
-    // map into a contiguous chunk of memory.
-    if (start_target.first != end_target.first) return false;
-    // If (start, end) falls within the same slice, ask that slice if that range
-    // is contiguous in memory.
-    // Note: if we are here then start_target.first == end_target.first.
-    return start_target.first->IsContiguousWithinRange(
-        start_target.second, end_target.second);
+  bool is_contiguous() const override { return false;}
+
+  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
+      int start, int size) const override {
+    DRAKE_ABORT_MSG("Supervector does not allow to retrieve a contiguous "
+                    "segment of memory");
+  }
+
+  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
+      int start, int size) override {
+    DRAKE_ABORT_MSG("Supervector does not allow to retrieve a contiguous "
+                    "segment of memory");
   }
 
  private:

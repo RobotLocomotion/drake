@@ -61,13 +61,6 @@ class BasicVector : public VectorBase<T> {
 
   int size() const override { return static_cast<int>(values_.rows()); }
 
-  /// Returns `true` if `this` vector has a contiguous in memory layout within
-  /// the range of indexes `start` to `end`.
-  /// @see IsContiguous()
-  bool IsContiguousWithinRange(int start, int end) const override {
-    return true;
-  }
-
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
   /// Throws std::out_of_range if the new value has different dimensions.
@@ -89,6 +82,22 @@ class BasicVector : public VectorBase<T> {
   /// mutation of the values, but does not allow resizing the vector itself.
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
     return values_.head(values_.rows());
+  }
+
+  bool is_contiguous() const override { return true;}
+
+  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
+      int start, int size) const override {
+    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
+    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
+    return values_.segment(start, size);
+  }
+
+  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
+      int start, int size) override {
+    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
+    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
+    return values_.segment(start, size);
   }
 
   const T& GetAtIndex(int index) const override {

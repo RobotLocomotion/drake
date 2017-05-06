@@ -62,23 +62,7 @@ class VectorBase {
 
   /// Returns `true` if `this` vector has a contiguous in memory layout.
   /// @see get_contiguous_block()
-  bool is_contiguous() const {
-    // Vector is contiguous in memory if first and last elements are separated
-    // exactly by size() elements.
-    return
-        static_cast<int>(&GetAtIndex(size()-1) - &GetAtIndex(0) + 1) == size();
-  }
-
-  /// Returns `true` if `this` vector has a contiguous in memory layout.
-  /// @see get_contiguous_block()
-  bool IsContiguous() const {
-    return IsContiguousWithinRange(0, size() - 1);
-  }
-
-  /// Returns `true` if `this` vector has a contiguous in memory layout within
-  /// the range of indexes `start` to `end`.
-  /// @see IsContiguous()
-  virtual bool IsContiguousWithinRange(int start, int end) const = 0;
+  virtual bool is_contiguous() const = 0;
 
   /// Returns the entire vector as an Eigen expression stored in a contiguous
   /// block of memory, if possible.
@@ -90,9 +74,9 @@ class VectorBase {
   /// do so will abort your application.
   ///
   /// @see is_contiguous()
-  virtual const Eigen::Map<const VectorX<T>> get_contiguous_block() const {
+  Eigen::VectorBlock<const VectorX<T>> get_contiguous_vector() const {
     DRAKE_ASSERT(this->is_contiguous());
-    return Eigen::Map<const VectorX<T>>(&GetAtIndex(0), size());
+    return get_contiguous_segment(0, size());
   }
 
   /// Returns the entire vector as a mutable Eigen expression stored in a
@@ -105,10 +89,16 @@ class VectorBase {
   /// cannot be resized and attemps to do so will abort your application.
   ///
   /// @see is_contiguous()
-  virtual Eigen::Map<VectorX<T>> get_mutable_contiguous_block() {
+  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_vector() {
     DRAKE_ASSERT(this->is_contiguous());
-    return Eigen::Map<VectorX<T>>(&GetAtIndex(0), size());
+    return get_mutable_contiguous_segment(0, size());
   }
+
+  virtual Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
+      int start, int size) const = 0;
+
+  virtual Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
+      int start, int size) = 0;
 
   /// Replaces the entire vector with the contents of @p value. Throws
   /// std::runtime_error if @p value is not a column vector with size() rows.
@@ -243,6 +233,16 @@ class VectorBase {
         value += operand.second.GetAtIndex(i) * operand.first;
       SetAtIndex(i, GetAtIndex(i) + value);
     }
+  }
+
+  // Checks if the input `index` is in the valid range 0 <= index < size().
+  // It throws std::runtime_error if the index is out of bounds.
+  void IsIndexWithinBoundsOrThrow(int index) const {
+    DRAKE_THROW_UNLESS(0 <= index && index < size());
+  }
+
+  void IsSizeWithinBoundsOrThrow(int input_size) const {
+    DRAKE_THROW_UNLESS(0 <= input_size && input_size <= size());
   }
 };
 

@@ -218,10 +218,9 @@ GTEST_TEST(SubvectorIsContiguous, WithinBasicVector) {
   auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
   Subvector<double> subvec(vector.get(), 1 /* first element */, 2 /* size */);
   EXPECT_TRUE(subvec.is_contiguous());
-  EXPECT_TRUE(subvec.IsContiguous());
-  EXPECT_EQ(Eigen::Vector2d(2.0, 3.0), subvec.get_contiguous_block());
-  subvec.get_mutable_contiguous_block().coeffRef(1) = -1.0;
-  EXPECT_EQ(Eigen::Vector2d(2.0, -1.0), subvec.get_contiguous_block());
+  EXPECT_EQ(Eigen::Vector2d(2.0, 3.0), subvec.get_contiguous_vector());
+  subvec.get_mutable_contiguous_vector().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector2d(2.0, -1.0), subvec.get_contiguous_vector());
 }
 
 // Verifies we can request a contiguous in memory Eigen vector from SubVector
@@ -231,17 +230,17 @@ GTEST_TEST(SubvectorIsContiguous, WithinContiguousSubvector) {
   Subvector<double> subvec(vector.get(), 1 /* first element */, 3 /* size */);
   Subvector<double> subsubvec(&subvec, 1 /* first element */, 2 /* size */);
   EXPECT_TRUE(subvec.is_contiguous());
-  EXPECT_TRUE(subvec.IsContiguous());
   EXPECT_TRUE(subsubvec.is_contiguous());
-  EXPECT_TRUE(subsubvec.IsContiguous());
-  EXPECT_EQ(Eigen::Vector3d(2.0, 3.0, 4.0), subvec.get_contiguous_block());
-  EXPECT_EQ(Eigen::Vector2d(3.0, 4.0), subsubvec.get_contiguous_block());
-  subsubvec.get_mutable_contiguous_block().coeffRef(1) = -1.0;
-  EXPECT_EQ(Eigen::Vector2d(3.0, -1.0), subsubvec.get_contiguous_block());
+  EXPECT_EQ(Eigen::Vector3d(2.0, 3.0, 4.0), subvec.get_contiguous_vector());
+  EXPECT_EQ(Eigen::Vector2d(3.0, 4.0), subsubvec.get_contiguous_vector());
+  subsubvec.get_mutable_contiguous_vector().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector2d(3.0, -1.0), subsubvec.get_contiguous_vector());
 }
 
-// Verify that Subvector still can map a contiguous block of memory within a
-// non-contiguous Supervector if the block actually is contiguous in memory.
+// Verify that Subvector cannot can map a contiguous block of memory within a
+// non-contiguous Supervector even if the block actually is contiguous in
+// memory. This is a limitation of our current implementation however, there are
+// no use cases like this in our code-base.
 GTEST_TEST(SubvectorIsContiguous, WithinContiguousPartOfASupervector) {
   auto vector1 = BasicVector<double>::Make({1, 2, 3, 4});
   auto vector2 = BasicVector<double>::Make({5, 6, 7, 8, 9, 10});
@@ -264,27 +263,8 @@ GTEST_TEST(SubvectorIsContiguous, WithinContiguousPartOfASupervector) {
   Subvector<double> subvec(
       supervector.get(), 5 /* first element */, 3 /* size */);
 
-  // Even though the original Supervector is not contiguous in memory, the
-  // Subvector is.
-  EXPECT_TRUE(subvec.is_contiguous());
-  EXPECT_TRUE(subvec.IsContiguous());
-
-  // Verify it points to the appropriate chunk of memory.
-  EXPECT_EQ(Eigen::Vector3d(6.0, 7.0, 8.0), subvec.get_contiguous_block());
-
-  // Create an extra layer of indirection to verify correctness.
-  Subvector<double> subsubvec(&subvec, 1 /* first element */, 2 /* size */);
-  EXPECT_TRUE(subsubvec.is_contiguous());
-  EXPECT_TRUE(subsubvec.IsContiguous());
-  EXPECT_EQ(Eigen::Vector2d(7.0, 8.0), subsubvec.get_contiguous_block());
-
-  // Verify we can change an entry through subsubvec and we can see the result
-  // through subvec, supervector and the original vector2.
-  subsubvec.get_mutable_contiguous_block().coeffRef(1) = -1.0;
-  EXPECT_EQ(Eigen::Vector2d(7.0, -1.0), subsubvec.get_contiguous_block());
-  EXPECT_EQ(Eigen::Vector3d(6.0, 7.0, -1.0), subvec.get_contiguous_block());
-  EXPECT_EQ(-1, supervector->GetAtIndex(7));
-  EXPECT_EQ(Eigen::Vector4d({1, 2, 3, 4}), vector1->get_contiguous_block());
+  // subvec is considered non-contiguous since it maps into a Supervector.
+  EXPECT_FALSE(subvec.is_contiguous());
 }
 
 }  // namespace
