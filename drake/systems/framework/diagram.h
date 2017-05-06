@@ -246,14 +246,17 @@ class Diagram : public System<T>,
   }
 
   /// Allocates a DiagramEventCollection for this Diagram.
-  std::unique_ptr<CompositeEventCollection<T>> AllocateCompositeEventCollection() const final {
+  std::unique_ptr<CompositeEventCollection<T>>
+  AllocateCompositeEventCollection() const final {
     const int num_systems = num_subsystems();
-    std::vector<std::unique_ptr<CompositeEventCollection<T>>> sub_events(num_systems);
+    std::vector<std::unique_ptr<CompositeEventCollection<T>>> sub_events(
+        num_systems);
     for (int i = 0; i < num_systems; ++i) {
       sub_events[i] = sorted_systems_[i]->AllocateCompositeEventCollection();
     }
 
-    return std::make_unique<DiagramCompositeEventCollection<T>>(std::move(sub_events));
+    return std::make_unique<DiagramCompositeEventCollection<T>>(
+        std::move(sub_events));
   }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
@@ -456,8 +459,8 @@ class Diagram : public System<T>,
   /// Retrieves the state for a particular subsystem from the @p state for the
   /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
   /// diagram.
-  const State<T>& GetSubsystemState(
-      const State<T>& state, const System<T>* subsystem) const {
+  const State<T>& GetSubsystemState(const State<T>& state,
+                                    const System<T>* subsystem) const {
     auto ret = DoGetTargetSystemState(subsystem, &state);
     DRAKE_DEMAND(ret != nullptr);
     return *ret;
@@ -476,10 +479,12 @@ class Diagram : public System<T>,
 
   /// Returns a Graphviz fragment describing this Diagram. To obtain a complete
   /// Graphviz graph, call System<T>::GetGraphvizString.
-  void GetGraphvizFragment(std::stringstream *dot) const override {
+  void GetGraphvizFragment(std::stringstream* dot) const override {
     // Open the Diagram.
     const int64_t id = this->GetGraphvizId();
-    *dot << "subgraph cluster" << id << "diagram" " {" << std::endl;
+    *dot << "subgraph cluster" << id << "diagram"
+                                        " {"
+         << std::endl;
     *dot << "color=black" << std::endl;
     *dot << "concentrate=true" << std::endl;
     std::string name = this->get_name();
@@ -487,7 +492,8 @@ class Diagram : public System<T>,
     *dot << "label=\"" << name << "\";" << std::endl;
 
     // Add a cluster for the input port nodes.
-    *dot << "subgraph cluster" << id << "inputports" << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "inputports"
+         << " {" << std::endl;
     *dot << "rank=same" << std::endl;
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
@@ -499,7 +505,8 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
 
     // Add a cluster for the output port nodes.
-    *dot << "subgraph cluster" << id << "outputports" << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "outputports"
+         << " {" << std::endl;
     *dot << "rank=same" << std::endl;
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
@@ -511,7 +518,8 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
 
     // Add a cluster for the subsystems.
-    *dot << "subgraph cluster" << id << "subsystems" << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "subsystems"
+         << " {" << std::endl;
     *dot << "color=white" << std::endl;
     *dot << "label=\"\"" << std::endl;
     // -- Add the subsystems themselves.
@@ -558,14 +566,14 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
-                                 std::stringstream *dot) const override {
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                 std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_u" << port.get_index();
   }
 
-  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
-                                  std::stringstream *dot) const override {
+  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+                                  std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_y" << port.get_index();
   }
@@ -611,14 +619,12 @@ class Diagram : public System<T>,
 
   /// Returns a pointer to mutable context if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
-  Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>* target_system, Context<T>* context) const final {
-    if (target_system == this)
-      return context;
+  Context<T>* DoGetMutableTargetSystemContext(const System<T>* target_system,
+                                              Context<T>* context) const final {
+    if (target_system == this) return context;
 
     return GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
-        target_system, context,
-        &System<T>::DoGetMutableTargetSystemContext,
+        target_system, context, &System<T>::DoGetMutableTargetSystemContext,
         &DiagramContext<T>::GetMutableSubsystemContext);
   }
 
@@ -626,38 +632,32 @@ class Diagram : public System<T>,
   /// of this, nullptr is returned otherwise.
   const Context<T>* DoGetTargetSystemContext(
       const System<T>* target_system, const Context<T>* context) const final {
-    if (target_system == this)
-      return context;
+    if (target_system == this) return context;
 
     return GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
-        target_system, context,
-        &System<T>::DoGetTargetSystemContext,
+        target_system, context, &System<T>::DoGetTargetSystemContext,
         &DiagramContext<T>::GetSubsystemContext);
   }
 
   /// Returns a pointer to mutable state if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
-  State<T>* DoGetMutableTargetSystemState(
-      const System<T>* target_system, State<T>* state) const final {
-    if (target_system == this)
-      return state;
+  State<T>* DoGetMutableTargetSystemState(const System<T>* target_system,
+                                          State<T>* state) const final {
+    if (target_system == this) return state;
 
     return GetSubsystemStuff<State<T>*, DiagramState<T>*>(
-        target_system, state,
-        &System<T>::DoGetMutableTargetSystemState,
+        target_system, state, &System<T>::DoGetMutableTargetSystemState,
         &DiagramState<T>::get_mutable_substate);
   }
 
   /// Returns a pointer to const state if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
-  const State<T>* DoGetTargetSystemState(
-      const System<T>* target_system, const State<T>* state) const final {
-    if (target_system == this)
-      return state;
+  const State<T>* DoGetTargetSystemState(const System<T>* target_system,
+                                         const State<T>* state) const final {
+    if (target_system == this) return state;
 
     return GetSubsystemStuff<const State<T>*, const DiagramState<T>*>(
-        target_system, state,
-        &System<T>::DoGetTargetSystemState,
+        target_system, state, &System<T>::DoGetTargetSystemState,
         &DiagramState<T>::get_substate);
   }
 
@@ -716,10 +716,9 @@ class Diagram : public System<T>,
   /// The @p generalized_velocity vector must have the same size and ordering as
   /// the generalized velocity in the ContinuousState that this Diagram reserves
   /// in its context.
-  void DoMapQDotToVelocity(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      VectorBase<T>* generalized_velocity) const override {
+  void DoMapQDotToVelocity(const Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           VectorBase<T>* generalized_velocity) const override {
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
@@ -750,7 +749,7 @@ class Diagram : public System<T>,
       // Select the chunk of qdot belonging to subsystem i.
       const int num_q = sub_xc->get_generalized_position().size();
       const Eigen::Ref<const VectorX<T>>& dq_slice =
-        qdot.segment(q_index, num_q);
+          qdot.segment(q_index, num_q);
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
       const int num_v = sub_xc->get_generalized_velocity().size();
@@ -769,7 +768,8 @@ class Diagram : public System<T>,
   /// types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic.
   void DoCalcNextUpdateTime(const Context<T>& context,
-      CompositeEventCollection<T>* event_info, T* time) const override {
+                            CompositeEventCollection<T>* event_info,
+                            T* time) const override {
     DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
@@ -782,9 +782,7 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<AutoDiffXd>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-      [](const FromType& subsystem) {
-        return subsystem.ToAutoDiffXd();
-      }};
+        [](const FromType& subsystem) { return subsystem.ToAutoDiffXd(); }};
     return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
   }
 
@@ -797,11 +795,9 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<symbolic::Expression>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) {
-          return subsystem.ToSymbolic();
-        }};
-    return ConvertScalarType<symbolic::Expression>(
-        subsystem_converter).release();
+        [](const FromType& subsystem) { return subsystem.ToSymbolic(); }};
+    return ConvertScalarType<symbolic::Expression>(subsystem_converter)
+        .release();
   }
 
   BasicVector<T>* DoAllocateInputVector(
@@ -810,8 +806,8 @@ class Diagram : public System<T>,
     const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
     const System<T>* subsystem = id.first;
     const int subindex = id.second;
-    return subsystem->AllocateInputVector(
-        subsystem->get_input_port(subindex)).release();
+    return subsystem->AllocateInputVector(subsystem->get_input_port(subindex))
+        .release();
   }
 
   AbstractValue* DoAllocateInputAbstract(
@@ -820,8 +816,8 @@ class Diagram : public System<T>,
     const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
     const System<T>* subsystem = id.first;
     const int subindex = id.second;
-    return subsystem->AllocateInputAbstract(
-        subsystem->get_input_port(subindex)).release();
+    return subsystem->AllocateInputAbstract(subsystem->get_input_port(subindex))
+        .release();
   }
 
  private:
@@ -829,13 +825,15 @@ class Diagram : public System<T>,
   // @p context, and sub event info from @p event_info, and passes them to the
   // sub system's Publish(). @p event_info can be null, in which case, the
   // force call version of Publish() is invoked on all sub systems.
-  void DispatchPublishHandler(const Context<T>& context,
+  void DispatchPublishHandler(
+      const Context<T>& context,
       const EventCollection<PublishEvent<T>>* event_info) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     const DiagramEventCollection<PublishEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection<PublishEvent<T>>*>(event_info);
+      info = dynamic_cast<const DiagramEventCollection<PublishEvent<T>>*>(
+          event_info);
       DRAKE_DEMAND(info != nullptr);
     }
 
@@ -843,7 +841,8 @@ class Diagram : public System<T>,
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       DRAKE_DEMAND(subcontext != nullptr);
       if (info != nullptr) {
-        const EventCollection<PublishEvent<T>>* subinfo = info->get_sub_event_collection(i);
+        const EventCollection<PublishEvent<T>>* subinfo =
+            info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
         sorted_systems_[i]->Publish(*subcontext, subinfo);
       } else {
@@ -858,7 +857,8 @@ class Diagram : public System<T>,
   // which case, the force call version of CalcDiscreteVariableUpdates() is
   // invoked on all sub systems.
   void DispatchDiscreteVariableUpdateHandler(
-      const Context<T>& context, const EventCollection<DiscreteUpdateEvent<T>>* event_info,
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>* event_info,
       DiscreteValues<T>* discrete_state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -875,7 +875,9 @@ class Diagram : public System<T>,
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(event_info);
+      info =
+          dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(
+              event_info);
       DRAKE_DEMAND(info != nullptr);
     }
 
@@ -887,13 +889,14 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(subdifference != nullptr);
 
       if (info != nullptr) {
-        const EventCollection<DiscreteUpdateEvent<T>>* subinfo = info->get_sub_event_collection(i);
+        const EventCollection<DiscreteUpdateEvent<T>>* subinfo =
+            info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
-        sorted_systems_[i]->CalcDiscreteVariableUpdates(
-            *subcontext, subinfo, subdifference);
+        sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, subinfo,
+                                                        subdifference);
       } else {
-        sorted_systems_[i]->CalcDiscreteVariableUpdates(
-            *subcontext, subdifference);
+        sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext,
+                                                        subdifference);
       }
     }
   }
@@ -903,8 +906,10 @@ class Diagram : public System<T>,
   // sub system's CalcUnrestrictedUpdate(). @p event_info can be null, in which
   // case, the force call version of CalcUnrestrictedUpdate() is invoked on all
   // sub systems.
-  void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
-      const EventCollection<UnrestrictedUpdateEvent<T>>* event_info, State<T>* state) const final {
+  void DispatchUnrestrictedUpdateHandler(
+      const Context<T>& context,
+      const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
+      State<T>* state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
@@ -915,7 +920,9 @@ class Diagram : public System<T>,
 
     const DiagramEventCollection<UnrestrictedUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>*>(event_info);
+      info = dynamic_cast<
+          const DiagramEventCollection<UnrestrictedUpdateEvent<T>>*>(
+          event_info);
       DRAKE_DEMAND(info != nullptr);
     }
 
@@ -925,10 +932,11 @@ class Diagram : public System<T>,
       State<T>* substate = diagram_state->get_mutable_substate(i);
       DRAKE_DEMAND(substate != nullptr);
       if (info != nullptr) {
-        const EventCollection<UnrestrictedUpdateEvent<T>>* subinfo = info->get_sub_event_collection(i);
+        const EventCollection<UnrestrictedUpdateEvent<T>>* subinfo =
+            info->get_sub_event_collection(i);
         DRAKE_DEMAND(subinfo != nullptr);
-        sorted_systems_[i]->CalcUnrestrictedUpdate(
-            *subcontext, subinfo, substate);
+        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, subinfo,
+                                                   substate);
       } else {
         sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, substate);
       }
@@ -1053,9 +1061,8 @@ class Diagram : public System<T>,
   template <typename NewType, typename T1 = T>
   std::unique_ptr<Diagram<NewType>> ConvertScalarType(
       std::function<std::unique_ptr<System<NewType>>(
-          const System<
-              std::enable_if_t<!std::is_same<T1, double>::value,
-                               double>>&)>) const {
+          const System<std::enable_if_t<!std::is_same<T1, double>::value,
+                                        double>>&)>) const {
     DRAKE_ABORT_MSG(
         "Scalar type conversion is only supported from Diagram<double>.");
   }
@@ -1066,8 +1073,8 @@ class Diagram : public System<T>,
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
-  DoCalcNextUpdateTimeImpl(
-      const Context<T1>&, CompositeEventCollection<T1>*, T1* time) const {
+  DoCalcNextUpdateTimeImpl(const Context<T1>&, CompositeEventCollection<T1>*,
+                           T1* time) const {
     DRAKE_ABORT_MSG(
         "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");
@@ -1079,7 +1086,8 @@ class Diagram : public System<T>,
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
-      const Context<T1>& context, CompositeEventCollection<T1>* event_info, T1* time) const {
+      const Context<T1>& context, CompositeEventCollection<T1>* event_info,
+      T1* time) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
     auto info = dynamic_cast<DiagramCompositeEventCollection<T1>*>(event_info);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -1091,7 +1099,8 @@ class Diagram : public System<T>,
     // imminent updates.
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
-      CompositeEventCollection<T1>* subinfo = info->get_mutable_sub_event_collection(i);
+      CompositeEventCollection<T1>* subinfo =
+          info->get_mutable_sub_event_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
       const T1 sub_time =
           sorted_systems_[i]->CalcNextUpdateTime(*subcontext, subinfo);
@@ -1108,8 +1117,9 @@ class Diagram : public System<T>,
     }
   }
 
-  void DoGetPerStepEvents(const Context<T>& context,
-                          CompositeEventCollection<T>* event_info) const override {
+  void DoGetPerStepEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* event_info) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
     DRAKE_DEMAND(diagram_context != nullptr);
@@ -1117,7 +1127,8 @@ class Diagram : public System<T>,
 
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      CompositeEventCollection<T>* subinfo = info->get_mutable_sub_event_collection(i);
+      CompositeEventCollection<T>* subinfo =
+          info->get_mutable_sub_event_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
 
       sorted_systems_[i]->GetPerStepEvents(*subcontext, subinfo);
@@ -1343,8 +1354,8 @@ class Diagram : public System<T>,
         continue;
       }
       if (names.find(name) != names.end()) {
-        log()->error("Non-unique name \"{}\" for subsystem of type {}",
-                     name, NiceTypeName::Get(*system));
+        log()->error("Non-unique name \"{}\" for subsystem of type {}", name,
+                     NiceTypeName::Get(*system));
       }
       names.insert(name);
     }

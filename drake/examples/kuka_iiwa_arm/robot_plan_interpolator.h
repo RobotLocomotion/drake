@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"

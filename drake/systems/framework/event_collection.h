@@ -125,9 +125,9 @@ class EventCollection {
   virtual bool HasNoEvents() const = 0;
 
   /**
-   * Adds the specified event to the homogeneous event collection. 
+   * Adds the specified event to the homogeneous event collection.
    */
-  virtual void add_event(std::unique_ptr<EventType> event) = 0; 
+  virtual void add_event(std::unique_ptr<EventType> event) = 0;
 
   bool HasEvents() const { return !HasNoEvents(); }
 
@@ -171,11 +171,9 @@ class DiagramEventCollection final : public EventCollection<EventType> {
         owned_sub_event_collection_(num_sub_systems) {}
 
   /**
-   * Aborts if called, because no events should be added at the Diagram level. 
+   * Aborts if called, because no events should be added at the Diagram level.
    */
-  void add_event(std::unique_ptr<EventType> event) override {
-    DRAKE_ABORT(); 
-  }
+  void add_event(std::unique_ptr<EventType> event) override { DRAKE_ABORT(); }
 
   /**
    * Returns the number of constituent EventCollection that correspond to each
@@ -390,9 +388,7 @@ class CompositeEventCollection {
             unrestricted_update_events_->HasNoEvents());
   }
 
-  bool HasPublishEvents() const {
-    return publish_events_->HasEvents();
-  }
+  bool HasPublishEvents() const { return publish_events_->HasEvents(); }
 
   bool HasDiscreteUpdateEvents() const {
     return discrete_update_events_->HasEvents();
@@ -406,7 +402,7 @@ class CompositeEventCollection {
    * Adds a publish event @p event, whose ownership is also transferred to this.
    */
   virtual void add_publish_event(std::unique_ptr<PublishEvent<T>> event) = 0;
- 
+
   /**
    * Adds a discrete_update event @p event, whose ownership is also transferred
    * to this.
@@ -419,7 +415,7 @@ class CompositeEventCollection {
    * transferred to this.
    */
   virtual void add_unrestricted_update_event(
-      std::unique_ptr<UnrestrictedUpdateEvent<T>> event) = 0; 
+      std::unique_ptr<UnrestrictedUpdateEvent<T>> event) = 0;
 
   /**
    * Merges this' EventCollection<PublishEvent<T>> with @p other's
@@ -639,14 +635,14 @@ class DiagramCompositeEventCollection : public CompositeEventCollection<T> {
   }
 
   /**
-   * Disabled for Diagram systems (aborts if called). 
+   * Disabled for Diagram systems (aborts if called).
    */
   void add_publish_event(std::unique_ptr<PublishEvent<T>> event) override {
     DRAKE_ABORT();
-  } 
- 
+  }
+
   /**
-   * Disabled for Diagram systems (aborts if called). 
+   * Disabled for Diagram systems (aborts if called).
    */
   void add_discrete_update_event(
       std::unique_ptr<DiscreteUpdateEvent<T>> event) override {
@@ -654,13 +650,12 @@ class DiagramCompositeEventCollection : public CompositeEventCollection<T> {
   }
 
   /**
-   * Disabled for Diagram systems (aborts if called). 
+   * Disabled for Diagram systems (aborts if called).
    */
   void add_unrestricted_update_event(
       std::unique_ptr<UnrestrictedUpdateEvent<T>> event) override {
     DRAKE_ABORT();
-  } 
-
+  }
 
   /**
    * Returns the number of constituent CompositeEventCollection.

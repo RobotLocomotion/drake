@@ -1,5 +1,6 @@
 #include "drake/systems/framework/leaf_system.h"
 
+#include <list>
 #include <memory>
 #include <stdexcept>
 
@@ -21,7 +22,7 @@ namespace systems {
 namespace {
 
 // A shell System to test the default implementations.
-template<typename T>
+template <typename T>
 class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {
@@ -48,9 +49,7 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePeriodicUnrestrictedUpdate(period, offset);
   }
 
-  void AddPublish(double period) {
-    this->DeclarePublishPeriodSec(period);
-  }
+  void AddPublish(double period) { this->DeclarePublishPeriodSec(period); }
 
   template <typename EventType>
   void AddPerStepEvent() {
@@ -61,13 +60,11 @@ class TestSystem : public LeafSystem<T> {
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {}
 
-  void DoCalcTimeDerivatives(
-      const Context<T>& context,
-      ContinuousState<T>* derivatives) const override {}
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {}
 
   std::unique_ptr<Parameters<T>> AllocateParameters() const override {
-    return std::make_unique<Parameters<T>>(
-        std::make_unique<BasicVector<T>>(2));
+    return std::make_unique<Parameters<T>>(std::make_unique<BasicVector<T>>(2));
   }
 
   std::unique_ptr<BasicVector<T>> AllocateOutputVector(
@@ -103,8 +100,8 @@ class LeafSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
     event_info_ = system_.AllocateCompositeEventCollection();
-    leaf_info_ =
-        dynamic_cast<const LeafCompositeEventCollection<double>*>(event_info_.get());
+    leaf_info_ = dynamic_cast<const LeafCompositeEventCollection<double>*>(
+        event_info_.get());
   }
 
   TestSystem<double> system_;
@@ -151,13 +148,14 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+              Event<double>::TriggerType::kPeriodic);
   }
   {
-    const auto& events = leaf_info_->get_unrestricted_update_events().get_events();
+    const auto& events =
+        leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+              Event<double>::TriggerType::kPeriodic);
   }
 }
 
@@ -217,7 +215,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+              Event<double>::TriggerType::kPeriodic);
   }
 
   // The update event fires at 15sec.
@@ -228,7 +226,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+              Event<double>::TriggerType::kPeriodic);
   }
 
   // Both events fire at 60sec.
@@ -239,13 +237,13 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+              Event<double>::TriggerType::kPeriodic);
   }
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+              Event<double>::TriggerType::kPeriodic);
   }
 }
 
@@ -368,19 +366,20 @@ TEST_F(LeafSystemTest, DeclarePerStepActions) {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPerStep);
+              Event<double>::TriggerType::kPerStep);
   }
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPerStep);
+              Event<double>::TriggerType::kPerStep);
   }
   {
-    const auto& events = leaf_info_->get_unrestricted_update_events().get_events();
+    const auto& events =
+        leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPerStep);
+              Event<double>::TriggerType::kPerStep);
   }
 }
 
@@ -526,8 +525,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
   // vectors.
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  context->set_continuous_state(
-    std::make_unique<ContinuousState<double>>(
+  context->set_continuous_state(std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
   context->set_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
@@ -544,76 +542,75 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Create an unrestricted update callback that just copies the state.
   LeafCompositeEventCollection<double> leaf_events;
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-      [](const Context<double>& c, const Event<double>::TriggerType&, State<double>* s) {
-        s->CopyFrom(*c.CloneState());
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
+        const Context<double>& c, const Event<double>&, State<double>* s) {
+      s->CopyFrom(*c.CloneState());
     };
 
-    UnrestrictedUpdateEvent<double> event(
-        Event<double>::TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
+                                          callback);
 
     event.add_to_composite(&leaf_events);
   }
 
   // Verify no exception is thrown.
-  EXPECT_NO_THROW(
-      system_.CalcUnrestrictedUpdate(*context,
-          &leaf_events.get_unrestricted_update_events(), x.get()));
+  EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(
+      *context, &leaf_events.get_unrestricted_update_events(), x.get()));
 
   // Change the function to change the continuous state dimension.
   // Call the unrestricted update function again, now verifying that an
   // exception is thrown.
   leaf_events.Clear();
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-      [](const Context<double>& c, const Event<double>::TriggerType&, State<double>* s) {
-        s->CopyFrom(*c.CloneState());
-        s->set_continuous_state(
-            std::make_unique<ContinuousState<double>>(
-              std::make_unique<BasicVector<double>>(4), 4, 0, 0));
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
+        const Context<double>& c, const Event<double>&, State<double>* s) {
+      s->CopyFrom(*c.CloneState());
+      s->set_continuous_state(std::make_unique<ContinuousState<double>>(
+          std::make_unique<BasicVector<double>>(4), 4, 0, 0));
     };
 
-    UnrestrictedUpdateEvent<double> event(
-        Event<double>::TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
+                                          callback);
 
     event.add_to_composite(&leaf_events);
   }
 
   // Call the unrestricted update function, verifying that an exception
   // is thrown
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context,
-      &leaf_events.get_unrestricted_update_events(), x.get()),
-          std::logic_error);
+  EXPECT_THROW(
+      system_.CalcUnrestrictedUpdate(
+          *context, &leaf_events.get_unrestricted_update_events(), x.get()),
+      std::logic_error);
 
   // Restore the continuous state (size).
-  x->set_continuous_state(
-    std::make_unique<ContinuousState<double>>(
+  x->set_continuous_state(std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
 
   // Change the event to indicate to change the discrete state dimension.
   leaf_events.Clear();
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-      [](const Context<double>& c, const Event<double>::TriggerType&, State<double>* s) {
-        std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
-        s->CopyFrom(*c.CloneState());
-        disc_data.push_back(std::make_unique<BasicVector<double>>(1));
-        disc_data.push_back(std::make_unique<BasicVector<double>>(1));
-        s->set_discrete_state(
-            std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
+        const Context<double>& c, const Event<double>&, State<double>* s) {
+      std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
+      s->CopyFrom(*c.CloneState());
+      disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+      disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+      s->set_discrete_state(
+          std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
     };
 
-    UnrestrictedUpdateEvent<double> event(
-        Event<double>::TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
+                                          callback);
 
     event.add_to_composite(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context,
-        &leaf_events.get_unrestricted_update_events(), x.get()),
-               std::logic_error);
+  EXPECT_THROW(
+      system_.CalcUnrestrictedUpdate(
+          *context, &leaf_events.get_unrestricted_update_events(), x.get()),
+      std::logic_error);
 
   // Restore the discrete state (size).
   x->set_discrete_state(std::make_unique<DiscreteValues<double>>(
@@ -622,22 +619,24 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Change the event to indicate to change the abstract state dimension.
   leaf_events.Clear();
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-      [](const Context<double>& c, const Event<double>::TriggerType&, State<double>* s) {
-        s->CopyFrom(*c.CloneState());
-        s->set_abstract_state(std::make_unique<AbstractValues>());
+    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
+        const Context<double>& c, const Event<double>&, State<double>* s) {
+      s->CopyFrom(*c.CloneState());
+      s->set_abstract_state(std::make_unique<AbstractValues>());
     };
 
-    UnrestrictedUpdateEvent<double> event(
-        Event<double>::TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
+                                          callback);
 
     event.add_to_composite(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(system_.CalcUnrestrictedUpdate(*context, &leaf_events.get_unrestricted_update_events(), x.get()),
-               std::logic_error);
+  EXPECT_THROW(
+      system_.CalcUnrestrictedUpdate(
+          *context, &leaf_events.get_unrestricted_update_events(), x.get()),
+      std::logic_error);
 }
 
 // Tests that the next update time is computed correctly for LeafSystems
@@ -664,19 +663,14 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
 
   ~DefaultFeedthroughSystem() override {}
 
-  void AddAbstractInputPort() {
-    this->DeclareAbstractInputPort();
-  }
+  void AddAbstractInputPort() { this->DeclareAbstractInputPort(); }
 
-  void AddAbstractOutputPort() {
-    this->DeclareAbstractOutputPort();
-  }
+  void AddAbstractOutputPort() { this->DeclareAbstractOutputPort(); }
 
  protected:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
 };
-
 
 GTEST_TEST(FeedthroughTest, DefaultWithNoInputsOrOutputs) {
   DefaultFeedthroughSystem system;
@@ -717,8 +711,7 @@ class ManualSparsitySystem : public DefaultFeedthroughSystem {
   }
 
  protected:
-  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
-                              int input_port,
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
                               int output_port) const override {
     if (input_port == 0 && output_port == 1) {
       return true;
@@ -795,8 +788,9 @@ GTEST_TEST(GraphvizTest, Attributes) {
   // Check that left-to-right ranking is imposed.
   EXPECT_THAT(dot, ::testing::HasSubstr("rankdir=LR"));
   // Check that NiceTypeName is used to compute the label.
-  EXPECT_THAT(dot, ::testing::HasSubstr(
-      "label=\"drake/systems/(anonymous)/DefaultFeedthroughSystem@"));
+  EXPECT_THAT(
+      dot, ::testing::HasSubstr(
+               "label=\"drake/systems/(anonymous)/DefaultFeedthroughSystem@"));
 }
 
 GTEST_TEST(GraphvizTest, Ports) {
@@ -805,8 +799,7 @@ GTEST_TEST(GraphvizTest, Ports) {
   system.AddAbstractInputPort();
   system.AddAbstractOutputPort();
   const std::string dot = system.GetGraphvizString();
-  EXPECT_THAT(dot, ::testing::HasSubstr(
-      "{{<u0>u0|<u1>u1} | {<y0>y0}}"));
+  EXPECT_THAT(dot, ::testing::HasSubstr("{{<u0>u0|<u1>u1} | {<y0>y0}}"));
 }
 
 // This system schedules two simultaneous publish events with
@@ -817,41 +810,50 @@ class TestTriggerSystem : public LeafSystem<double> {
  public:
   TestTriggerSystem() {}
 
-  void DoPublish(const Context<double>& context,
+  void DoPublish(
+      const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
       DRAKE_DEMAND(event->callback_ != nullptr);
+
       // Call custom callback handler.
-      event->callback_(context, event->get_trigger_type());
+      event->callback_(context, *event);
+
       // Also clone the abstract value and store it in abs_data_.
-//      abs_data_.push_back(event->get_trigger().get_data()->Clone());
+      abs_data_.push_back(event->get_data()->Clone());
     }
 
     publish_count_++;
   }
-/*
-  void DoGetPerStepEvents(const Context<double>& context,
-      CompositeEventCollection<double>* event_info) const override {
+
+  void DoGetPerStepEvents(
+      const Context<double>& context,
+      CompositeEventCollection<double>* events) const override {
     {
       Event<double>::TriggerType trigger = Event<double>::TriggerType::kPerStep;
-      auto event = std::make_unique<PublishEvent<double>>(trigger);
-      event->set_data(AbstractValue::Make<std::string>("hello"));
-      event->callback_ = std::bind(&TestTriggerSystem::CopyString, *event,
-                    std::placeholders::_1, std::placeholders::_2));
-      event->add_to_composite(event_info);
+      events_.push_back(std::make_unique<PublishEvent<double>>(trigger));
+      PublishEvent<double>* pe =
+          static_cast<PublishEvent<double>*>(events_.back().get());
+      pe->set_data(AbstractValue::Make<std::string>("hello"));
+      pe->callback_ = [this](const Context<double>& c, const Event<double>& e) {
+        CopyString(c, e);
+      };
+      events_.back()->add_to_composite(events);
     }
 
     {
       Event<double>::TriggerType trigger = Event<double>::TriggerType::kPerStep;
-      trigger->set_data(AbstractValue::Make<int>(42));
-
-      PublishEvent<double> event(std::move(trigger),
-          std::bind(&TestTriggerSystem::CopyInt, this,
-                    std::placeholders::_1, std::placeholders::_2));
-      event.add_to_composite(event_info);
+      events_.push_back(std::make_unique<PublishEvent<double>>(trigger));
+      PublishEvent<double>* pe =
+          static_cast<PublishEvent<double>*>(events_.back().get());
+      pe->set_data(AbstractValue::Make<int>(42));
+      pe->callback_ = [this](const Context<double>& c, const Event<double>& e) {
+        CopyInt(c, e);
+      };
+      events_.back()->add_to_composite(events);
     }
   }
-*/
+
   const std::vector<std::unique_ptr<AbstractValue>>& get_abstract_data() const {
     return abs_data_;
   }
@@ -860,13 +862,9 @@ class TestTriggerSystem : public LeafSystem<double> {
     return string_data_;
   }
 
-  const std::vector<int>& get_int_data() const {
-    return int_data_;
-  }
+  const std::vector<int>& get_int_data() const { return int_data_; }
 
-  int get_publish_count() const {
-    return publish_count_;
-  }
+  int get_publish_count() const { return publish_count_; }
 
  private:
   void DoCalcOutput(const Context<double>& context,
@@ -880,8 +878,7 @@ class TestTriggerSystem : public LeafSystem<double> {
   }
 
   // Casts the data in @p trigger as int and store it in int_data_.
-  void CopyInt(const Context<double>& context,
-               const Event<double>& e) const {
+  void CopyInt(const Context<double>& context, const Event<double>& e) const {
     if (e.get_data() != nullptr)
       int_data_.push_back(e.get_data()->GetValue<int>());
   }
@@ -890,8 +887,8 @@ class TestTriggerSystem : public LeafSystem<double> {
   mutable std::vector<std::unique_ptr<AbstractValue>> abs_data_;
   mutable std::vector<std::string> string_data_;
   mutable std::vector<int> int_data_;
-
   mutable int publish_count_{0};
+  mutable std::list<std::unique_ptr<Event<double>>> events_;
 };
 
 class TriggerTest : public ::testing::Test {
@@ -899,7 +896,8 @@ class TriggerTest : public ::testing::Test {
   void SetUp() override {
     context_ = dut_.CreateDefaultContext();
     info_ = dut_.AllocateCompositeEventCollection();
-    leaf_info_ = dynamic_cast<const LeafCompositeEventCollection<double>*>(info_.get());
+    leaf_info_ =
+        dynamic_cast<const LeafCompositeEventCollection<double>*>(info_.get());
     DRAKE_DEMAND(leaf_info_ != nullptr);
   }
 

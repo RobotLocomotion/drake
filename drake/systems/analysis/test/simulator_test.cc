@@ -266,8 +266,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
 
-  explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {
-  }
+  explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {}
 
   ~UnrestrictedUpdater() override {}
 
@@ -279,7 +278,8 @@ class UnrestrictedUpdater : public LeafSystem<double> {
                             double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic);
+    UnrestrictedUpdateEvent<double> event(
+        Event<double>::TriggerType::kPeriodic);
     event.add_to_composite(event_info);
   }
 
@@ -310,7 +310,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
  private:
   const double t_upd_{0.0};
   std::function<void(const Context<double>&, State<double>*)>
-                                      unrestricted_update_callback_{nullptr};
+      unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
 }  // namespace
@@ -319,20 +319,20 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 // (i.e., without accumulating floating point error).
 GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   // Create the UnrestrictedUpdater system.
-  const double t_upd = 1e-10;                // Inexact floating point rep.
+  const double t_upd = 1e-10;  // Inexact floating point rep.
   UnrestrictedUpdater unrest_upd(t_upd);
   Simulator<double> simulator(unrest_upd);  // Use default Context.
 
   // Set time to an exact floating point representation; we want t_upd to
   // be much smaller in magnitude than the time, hence the negative time.
-  simulator.get_mutable_context()->set_time(-1.0/1024);
+  simulator.get_mutable_context()->set_time(-1.0 / 1024);
 
   // Capture the time at which an update is done using a callback function.
   std::vector<double> updates;
   unrest_upd.set_unrestricted_update_callback(
       [&updates](const Context<double>& context, State<double>* state) {
-    updates.push_back(context.get_time());
-  });
+        updates.push_back(context.get_time());
+      });
 
   // Simulate forward.
   simulator.Initialize();
@@ -436,7 +436,6 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   EXPECT_NEAR(spring_mass.get_velocity(context), v_final, 1.0e-5);
 }
 
-
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
 // Hz. Calls user-configured callbacks on DoPublish,
 // DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
@@ -466,7 +465,8 @@ class DiscreteSystem : public LeafSystem<double> {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
-  void DoPublish(const drake::systems::Context<double>& context,
+  void DoPublish(
+      const drake::systems::Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
@@ -517,12 +517,12 @@ bool CheckSampleTime(const Context<double>& context, double period) {
 GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   DiscreteSystem system;
   int num_disc_updates = 0;
-  system.set_update_callback([&](const Context<double>& context){
+  system.set_update_callback([&](const Context<double>& context) {
     ASSERT_TRUE(CheckSampleTime(context, system.update_period()));
     num_disc_updates++;
   });
   int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
+  system.set_publish_callback([&](const Context<double>& context) {
     ASSERT_TRUE(CheckSampleTime(context, system.publish_period()));
     num_publishes++;
   });
@@ -540,27 +540,23 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
 GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   DiscreteSystem system;
   drake::systems::Simulator<double> simulator(system);
-  enum EventType {
-    kUpdate = 0,
-    kPublish = 1,
-    kIntegrate = 2
-  };
+  enum EventType { kUpdate = 0, kPublish = 1, kIntegrate = 2 };
 
   // Write down the order in which the DiscreteSystem is asked to compute
   // discrete updates, do publishes, or compute derivatives at each time step.
   std::map<int, std::vector<EventType>> events;
   system.set_update_callback(
       [&events, &simulator](const Context<double>& context) {
-    events[simulator.get_num_steps_taken()].push_back(kUpdate);
-  });
+        events[simulator.get_num_steps_taken()].push_back(kUpdate);
+      });
   system.set_publish_callback(
       [&events, &simulator](const Context<double>& context) {
-    events[simulator.get_num_steps_taken()].push_back(kPublish);
-  });
+        events[simulator.get_num_steps_taken()].push_back(kPublish);
+      });
   system.set_derivatives_callback(
       [&events, &simulator](const Context<double>& context) {
-    events[simulator.get_num_steps_taken()].push_back(kIntegrate);
-  });
+        events[simulator.get_num_steps_taken()].push_back(kIntegrate);
+      });
 
   // Run a simulation.
   simulator.set_publish_every_time_step(true);
@@ -606,7 +602,8 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     }
 
     void AddPerStepUnrestrictedUpdateEvent() {
-      UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPerStep);
+      UnrestrictedUpdateEvent<double> event(
+          Event<double>::TriggerType::kPerStep);
       this->DeclarePerStepEvent(event);
     }
 
@@ -624,21 +621,24 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
 
    private:
     void DoCalcOutput(const Context<double>& context,
-        SystemOutput<double>* output) const override {}
+                      SystemOutput<double>* output) const override {}
 
-    void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+    void DoCalcDiscreteVariableUpdates(
+        const Context<double>& context,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>* discrete_state) const override {
       discrete_update_times_.push_back(context.get_time());
     }
 
-    void DoCalcUnrestrictedUpdate(const Context<double>& context,
+    void DoCalcUnrestrictedUpdate(
+        const Context<double>& context,
         const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>* state) const override {
       unrestricted_update_times_.push_back(context.get_time());
     }
 
-    void DoPublish(const Context<double>& context,
+    void DoPublish(
+        const Context<double>& context,
         const std::vector<const PublishEvent<double>*>& events) const override {
       publish_times_.push_back(context.get_time());
     }

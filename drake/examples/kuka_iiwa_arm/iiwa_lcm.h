@@ -4,6 +4,7 @@
 /// LCM messages related to the iiwa arm.
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"

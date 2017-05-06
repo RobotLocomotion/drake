@@ -131,42 +131,37 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
                             systems::CompositeEventCollection<T>*,
                             T* time) const override;
-  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
-                 const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
-                 systems::State<T>* state) const override;
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<T>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+      systems::State<T>* state) const override;
 
  private:
-  void ImplCalcOutput(
-      const MaliputRailcarState<T>& state,
-      MaliputRailcarState<T>* output) const;
+  void ImplCalcOutput(const MaliputRailcarState<T>& state,
+                      MaliputRailcarState<T>* output) const;
 
-  void ImplCalcLaneOutput(
-      const LaneDirection& lane_direction,
-      LaneDirection* output) const;
+  void ImplCalcLaneOutput(const LaneDirection& lane_direction,
+                          LaneDirection* output) const;
 
-  void ImplCalcPose(
-      const MaliputRailcarParams<T>& params,
-      const MaliputRailcarState<T>& state,
-      const LaneDirection& lane_direction,
-      systems::rendering::PoseVector<T>* pose) const;
+  void ImplCalcPose(const MaliputRailcarParams<T>& params,
+                    const MaliputRailcarState<T>& state,
+                    const LaneDirection& lane_direction,
+                    systems::rendering::PoseVector<T>* pose) const;
 
-  void ImplCalcVelocity(
-      const MaliputRailcarParams<T>& params,
-      const MaliputRailcarState<T>& state,
-      const LaneDirection& lane_direction,
-      systems::rendering::FrameVelocity<T>* pose) const;
+  void ImplCalcVelocity(const MaliputRailcarParams<T>& params,
+                        const MaliputRailcarState<T>& state,
+                        const LaneDirection& lane_direction,
+                        systems::rendering::FrameVelocity<T>* pose) const;
 
-  void ImplCalcTimeDerivatives(
-      const MaliputRailcarParams<T>& params,
-      const MaliputRailcarState<T>& state,
-      const LaneDirection& lane_direction,
-      const systems::BasicVector<T>& input,
-      MaliputRailcarState<T>* rates) const;
+  void ImplCalcTimeDerivatives(const MaliputRailcarParams<T>& params,
+                               const MaliputRailcarState<T>& state,
+                               const LaneDirection& lane_direction,
+                               const systems::BasicVector<T>& input,
+                               MaliputRailcarState<T>* rates) const;
 
-  void ImplCalcTimeDerivativesDouble(
-      const MaliputRailcarParams<double>& params,
-      const MaliputRailcarState<double>& state,
-      MaliputRailcarState<double>* rates) const;
+  void ImplCalcTimeDerivativesDouble(const MaliputRailcarParams<double>& params,
+                                     const MaliputRailcarState<double>& state,
+                                     MaliputRailcarState<double>* rates) const;
 
   // Calculates the vehicle's `r` coordinate based on whether it's traveling
   // with or against `s` in the current lane relative to the initial lane.

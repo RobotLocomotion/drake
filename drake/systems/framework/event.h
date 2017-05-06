@@ -33,11 +33,11 @@ class LeafCompositeEventCollection;
 template <typename T>
 class Event {
  public:
-   /**
-   * Predefined types of triggers. Used at run time to determine why the
-   * associated event has occurred. Any user introduced triggers need to have
-   * their unique type ids defined here as well.
-   */
+  /**
+  * Predefined types of triggers. Used at run time to determine why the
+  * associated event has occurred. Any user introduced triggers need to have
+  * their unique type ids defined here as well.
+  */
   enum class TriggerType {
     kUnknown = 0,
 
@@ -81,8 +81,7 @@ class Event {
   std::unique_ptr<Event> Clone() const {
     std::unique_ptr<Event> clone = DoClone();
     clone->trigger_type_ = trigger_type_;
-    if (data_ != nullptr)
-      clone->set_data(data_->Clone());
+    if (data_ != nullptr) clone->set_data(data_->Clone());
     return clone;
   }
 
@@ -134,9 +133,7 @@ class Event {
    * Constructs an Event with @p trigger. Ownership of @p trigger is transfered
    * to this. @p trigger cannot be null.
    */
-  explicit Event(const TriggerType& trigger)
-      : trigger_type_(trigger) {
-  }
+  explicit Event(const TriggerType& trigger) : trigger_type_(trigger) {}
 
  private:
   TriggerType trigger_type_;
@@ -155,7 +152,7 @@ class PublishEvent : public Event<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PublishEvent)
 
   // Callback function that process a publish event.
-  typedef std::function<void(const Context<T>&, const typename Event<T>::TriggerType&)>
+  typedef std::function<void(const Context<T>&, const Event<T>&)>
       PublishCallback;
 
   /**
@@ -163,7 +160,8 @@ class PublishEvent : public Event<T> {
    * uses it with @p callback to construct a PublishEvent. @p callback can
    * be null.
    */
-  PublishEvent(const typename Event<T>::TriggerType& trigger_type, PublishCallback callback)
+  PublishEvent(const typename Event<T>::TriggerType& trigger_type,
+               PublishCallback callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   /**
@@ -211,7 +209,7 @@ class DiscreteUpdateEvent : public Event<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteUpdateEvent)
 
   // Callback function that process a discrete update event.
-  typedef std::function<void(const Context<T>&, const typename Event<T>::TriggerType&,
+  typedef std::function<void(const Context<T>&, const Event<T>&,
                              DiscreteValues<T>*)>
       DiscreteUpdateCallback;
 
@@ -222,14 +220,14 @@ class DiscreteUpdateEvent : public Event<T> {
    */
   DiscreteUpdateEvent(const typename Event<T>::TriggerType& trigger_type,
                       DiscreteUpdateCallback callback)
-      : Event<T>(trigger_type), callback_(callback) {
-  }
+      : Event<T>(trigger_type), callback_(callback) {}
 
   /**
    * Makes a Trigger of type @p trigger_type with no optional data, and uses
    * it to construct a DiscreteUpdateEvent with no specified callback function.
    */
-  explicit DiscreteUpdateEvent(const typename Event<T>::TriggerType& trigger_type)
+  explicit DiscreteUpdateEvent(
+      const typename Event<T>::TriggerType& trigger_type)
       : DiscreteUpdateEvent(trigger_type, nullptr) {}
 
   /**
@@ -241,8 +239,10 @@ class DiscreteUpdateEvent : public Event<T> {
    */
   void add_to_composite(CompositeEventCollection<T>* events) const override {
     Event<T>* clone = this->Clone().release();
-    DiscreteUpdateEvent<T>* du_clone = static_cast<DiscreteUpdateEvent<T>*>(clone);
-    events->add_discrete_update_event(std::unique_ptr<DiscreteUpdateEvent<T>>(du_clone));
+    DiscreteUpdateEvent<T>* du_clone =
+        static_cast<DiscreteUpdateEvent<T>*>(clone);
+    events->add_discrete_update_event(
+        std::unique_ptr<DiscreteUpdateEvent<T>>(du_clone));
   }
 
   /**
@@ -271,7 +271,7 @@ class UnrestrictedUpdateEvent : public Event<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdateEvent)
 
   // Callback function that process an unrestricted update event.
-  typedef std::function<void(const Context<T>&, const typename Event<T>::TriggerType&, State<T>*)>
+  typedef std::function<void(const Context<T>&, const Event<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
 
   /**
@@ -287,7 +287,8 @@ class UnrestrictedUpdateEvent : public Event<T> {
    * Makes a Trigger of type @p trigger_type with no optional data, and uses it
    * to construct a UnrestrictedUpdateEvent with no specified callback function.
    */
-  explicit UnrestrictedUpdateEvent(const typename Event<T>::TriggerType& trigger_type)
+  explicit UnrestrictedUpdateEvent(
+      const typename Event<T>::TriggerType& trigger_type)
       : UnrestrictedUpdateEvent(trigger_type, nullptr) {}
 
   /**
@@ -299,8 +300,10 @@ class UnrestrictedUpdateEvent : public Event<T> {
    */
   void add_to_composite(CompositeEventCollection<T>* events) const override {
     Event<T>* clone = this->Clone().release();
-    UnrestrictedUpdateEvent<T>* uu_clone = static_cast<UnrestrictedUpdateEvent<T>*>(clone);
-    events->add_unrestricted_update_event(std::unique_ptr<UnrestrictedUpdateEvent<T>>(uu_clone));
+    UnrestrictedUpdateEvent<T>* uu_clone =
+        static_cast<UnrestrictedUpdateEvent<T>*>(clone);
+    events->add_unrestricted_update_event(
+        std::unique_ptr<UnrestrictedUpdateEvent<T>>(uu_clone));
   }
 
   /**

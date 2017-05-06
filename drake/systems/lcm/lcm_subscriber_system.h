@@ -142,12 +142,13 @@ class LcmSubscriberSystem : public LeafSystem<double>,
       const OutputPortDescriptor<double>& descriptor) const override;
 
   void DoCalcNextUpdateTime(const Context<double>& context,
-      systems::CompositeEventCollection<double>* events,
-      double* time) const override;
+                            systems::CompositeEventCollection<double>* events,
+                            double* time) const override;
 
-  void DoCalcUnrestrictedUpdate(const Context<double>& context,
-            const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-            State<double>* state) const override {
+  void DoCalcUnrestrictedUpdate(
+      const Context<double>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+      State<double>* state) const override {
     ProcessMessageAndStoreToAbstractState(state->get_mutable_abstract_state());
   }
 

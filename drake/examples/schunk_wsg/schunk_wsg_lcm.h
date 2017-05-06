@@ -4,6 +4,7 @@
 /// LCM messages related to the Schunk WSG gripper.
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/examples/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"

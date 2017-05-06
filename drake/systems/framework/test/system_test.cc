@@ -23,9 +23,7 @@ const int kSize = 3;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() {
-    this->set_name("TestSystem");
-  }
+  TestSystem() { this->set_name("TestSystem"); }
   ~TestSystem() override {}
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
@@ -56,18 +54,13 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractInputPort();
   }
 
-
   const OutputPortDescriptor<double>& AddAbstractOutputPort() {
     return this->DeclareAbstractOutputPort();
   }
 
-  bool HasAnyDirectFeedthrough() const override {
-    return true;
-  }
+  bool HasAnyDirectFeedthrough() const override { return true; }
 
-  bool HasDirectFeedthrough(int output_port) const override {
-    return true;
-  }
+  bool HasDirectFeedthrough(int output_port) const override { return true; }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -84,7 +77,7 @@ class TestSystem : public System<double> {
 
   // The default publish function.
   void DoPublish(const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const {
+                 const std::vector<const PublishEvent<double>*>& events) const {
     ++publish_count_;
   }
 
@@ -106,7 +99,8 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 
-  void DispatchPublishHandler(const Context<double>& context,
+  void DispatchPublishHandler(
+      const Context<double>& context,
       const EventCollection<PublishEvent<double>>* event_info) const final {
     // Force call DoPublish.
     if (event_info == nullptr) {
@@ -114,7 +108,8 @@ class TestSystem : public System<double> {
       this->DoPublish(context, empty);
     } else {
       const LeafEventCollection<PublishEvent<double>>* info =
-        dynamic_cast<const LeafEventCollection<PublishEvent<double>>*>(event_info);
+          dynamic_cast<const LeafEventCollection<PublishEvent<double>>*>(
+              event_info);
       DRAKE_DEMAND(info != nullptr);
       // Only call DoPublish if there are publish events.
       if (info->HasEvents()) {
@@ -133,18 +128,20 @@ class TestSystem : public System<double> {
       this->DoCalcDiscreteVariableUpdates(context, empty, discrete_state);
     } else {
       const LeafEventCollection<DiscreteUpdateEvent<double>>* info =
-        dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<double>>*>(event_info);
+          dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<double>>*>(
+              event_info);
       DRAKE_DEMAND(info != nullptr);
       // Only call DoCalcDiscreteVariableUpdates if there are discrete update
       // events.
       if (info->HasEvents()) {
-        this->DoCalcDiscreteVariableUpdates(context,
-            info->get_events(), discrete_state);
+        this->DoCalcDiscreteVariableUpdates(context, info->get_events(),
+                                            discrete_state);
       }
     }
   }
 
-  void DispatchUnrestrictedUpdateHandler(const Context<double>& context,
+  void DispatchUnrestrictedUpdateHandler(
+      const Context<double>& context,
       const EventCollection<UnrestrictedUpdateEvent<double>>* event_info,
       State<double>* state) const final {
     DRAKE_ABORT_MSG("test should get here");
@@ -153,7 +150,8 @@ class TestSystem : public System<double> {
   // Sets up an arbitrary mapping from the current time to the next discrete
   // action, to exercise several different forms of discrete action.
   void DoCalcNextUpdateTime(const Context<double>& context,
-      CompositeEventCollection<double>* event_info, double* time) const override {
+                            CompositeEventCollection<double>* event_info,
+                            double* time) const override {
     *time = context.get_time() + 1;
 
     if (context.get_time() < 10.0) {
@@ -239,8 +237,8 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
 TEST_F(SystemTest, DiscretePublish) {
   context_.set_time(5.0);
   auto event_info = system_.AllocateCompositeEventCollection();
-  auto info =
-      dynamic_cast<const LeafCompositeEventCollection<double>*>(event_info.get());
+  auto info = dynamic_cast<const LeafCompositeEventCollection<double>*>(
+      event_info.get());
   DRAKE_DEMAND(info != nullptr);
 
   system_.CalcNextUpdateTime(context_, event_info.get());
@@ -264,8 +262,8 @@ TEST_F(SystemTest, DiscreteUpdate) {
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(context_, &event_info->get_discrete_update_events(),
-                                      update.get());
+  system_.CalcDiscreteVariableUpdates(
+      context_, &event_info->get_discrete_update_events(), update.get());
   EXPECT_EQ(1, system_.get_update_count());
 }
 
@@ -338,8 +336,7 @@ class ValueIOTestSystem : public System<T> {
     return new TestTypedVector<T>();
   }
 
-  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives()
-      const override {
+  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return nullptr;
   }
 
@@ -359,13 +356,9 @@ class ValueIOTestSystem : public System<T> {
 
   void SetDefaults(Context<T>* context) const override {}
 
-  bool HasAnyDirectFeedthrough() const override {
-    return true;
-  }
+  bool HasAnyDirectFeedthrough() const override { return true; }
 
-  bool HasDirectFeedthrough(int output_port) const override {
-    return true;
-  }
+  bool HasDirectFeedthrough(int output_port) const override { return true; }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -373,13 +366,12 @@ class ValueIOTestSystem : public System<T> {
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override {
-    std::unique_ptr<LeafSystemOutput<T>> output(
-        new LeafSystemOutput<T>);
+    std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<std::string>("output")));
 
-    output->add_port(std::make_unique<OutputPortValue>(
-        std::make_unique<BasicVector<T>>(1)));
+    output->add_port(
+        std::make_unique<OutputPortValue>(std::make_unique<BasicVector<T>>(1)));
 
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
@@ -401,19 +393,23 @@ class ValueIOTestSystem : public System<T> {
     vec_out->get_mutable_value() = 2 * vec_in->get_value();
   }
 
-  void DispatchPublishHandler(const Context<T>& context,
+  void DispatchPublishHandler(
+      const Context<T>& context,
       const EventCollection<PublishEvent<T>>* event_info) const final {
     DRAKE_ABORT_MSG("test should get here");
   }
 
   void DispatchDiscreteVariableUpdateHandler(
-      const Context<T>& context, const EventCollection<DiscreteUpdateEvent<T>>* event_info,
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>* event_info,
       DiscreteValues<T>* discrete_state) const final {
     DRAKE_ABORT_MSG("test should get here");
   }
 
-  void DispatchUnrestrictedUpdateHandler(const Context<T>& context,
-      const EventCollection<UnrestrictedUpdateEvent<T>>* event_info, State<T>* state) const final {
+  void DispatchUnrestrictedUpdateHandler(
+      const Context<T>& context,
+      const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
+      State<T>* state) const final {
     DRAKE_ABORT_MSG("test should get here");
   }
 };
