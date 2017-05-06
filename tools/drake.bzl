@@ -22,22 +22,22 @@ GCC_FLAGS = [
 ]
 
 def _platform_copts(rule_copts):
-  """Returns both the rule_copts, and platform-specific copts."""
-  return select({
-      "//tools:gcc4.9-linux": GCC_FLAGS + rule_copts,
-      "//tools:gcc5-linux": GCC_FLAGS + rule_copts,
-      "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
-      "//tools:apple": CLANG_FLAGS + rule_copts,
-      "//conditions:default": rule_copts,
-  })
+    """Returns both the rule_copts, and platform-specific copts."""
+    return select({
+        "//tools:gcc4.9-linux": GCC_FLAGS + rule_copts,
+        "//tools:gcc5-linux": GCC_FLAGS + rule_copts,
+        "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
+        "//tools:apple": CLANG_FLAGS + rule_copts,
+        "//conditions:default": rule_copts,
+    })
 
 def _dsym_command(name):
-  """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
-  return select({
-      "//tools:apple_debug":
-          "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
-      "//conditions:default": "touch $@",
-  })
+    """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
+    return select({
+        "//tools:apple_debug":
+            "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
+        "//conditions:default": "touch $@",
+    })
 
 def drake_cc_library(
         name,
@@ -188,12 +188,13 @@ def drake_cc_googletest(
 
 # Collects the transitive closure of header files from ctx.attr.deps.
 def _transitive_hdrs_impl(ctx):
-  headers = set()
-  for dep in ctx.attr.deps:
-    # TODO(mwoehlke-kitware): Figure out a better way to exclude system headers
-    # from being slurped in?
-    headers += [h for h in dep.cc.transitive_headers if not "/_usr_" in h.path]
-  return struct(files=headers)
+    headers = set()
+    for dep in ctx.attr.deps:
+        # TODO(mwoehlke-kitware): Figure out a better way to exclude system
+        # headers from being slurped in?
+        headers += [h for h in dep.cc.transitive_headers
+                    if not "/_usr_" in h.path]
+    return struct(files=headers)
 
 _transitive_hdrs = rule(
     attrs = {
@@ -208,29 +209,29 @@ _transitive_hdrs = rule(
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 def drake_header_tar(name, deps=[], **kwargs):
-  """Creates a .tar.gz that includes all the headers exported by the deps."""
-  # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`
-  # tacks a spurious `..` onto the paths of external headers, which we then
-  # have to clean up in package_drake.sh. It's not clear whether this is a
-  # Bazel bug, or a bug in these macros.
-  _transitive_hdrs(name=name + "_gather",
-                   deps=deps)
-  # We must specify a non-default strip prefix so that the tarball contains
-  # relative and not absolute paths.
-  pkg_tar(name=name,
-          extension="tar.gz",
-          mode="0644",
-          files=[":" + name + "_gather"],
-          strip_prefix="/")
+    """Creates a .tar.gz that includes all the headers exported by the deps."""
+    # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`
+    # tacks a spurious `..` onto the paths of external headers, which we then
+    # have to clean up in package_drake.sh. It's not clear whether this is a
+    # Bazel bug, or a bug in these macros.
+    _transitive_hdrs(name=name + "_gather",
+                     deps=deps)
+    # We must specify a non-default strip prefix so that the tarball contains
+    # relative and not absolute paths.
+    pkg_tar(name=name,
+            extension="tar.gz",
+            mode="0644",
+            files=[":" + name + "_gather"],
+            strip_prefix="/")
 
 # Generate a file with specified content
 def _generate_file_impl(ctx):
-  ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
+    ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
 
 drake_generate_file = rule(
-  implementation = _generate_file_impl,
-  attrs = {
-    "content": attr.string(),
-    "out": attr.output(mandatory = True),
-  },
+    implementation = _generate_file_impl,
+    attrs = {
+        "content": attr.string(),
+        "out": attr.output(mandatory = True),
+    },
 )
