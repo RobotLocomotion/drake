@@ -1,5 +1,6 @@
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -14,12 +15,12 @@ namespace {
 // msg_values[i] = values[name_to_index.find(names[i])]
 void EncodeValue(const std::unordered_map<std::string, int>& name_to_index,
                  const std::vector<std::string>& names,
-                 const VectorX<double>& values,
+                 const Eigen::Ref<const VectorX<double>>& values,
                  std::vector<float>* msg_values) {
   for (size_t i = 0; i < names.size(); ++i) {
-    const std::string& q_name = names[i];
+    const std::string& name = names[i];
     // Ignores joints we don't know about.
-    auto it = name_to_index.find(q_name);
+    auto it = name_to_index.find(name);
     if (it != name_to_index.end()) {
       DRAKE_ASSERT(it->second < values.size() && it->second >= 0);
       msg_values->at(i) = values(it->second);
@@ -32,14 +33,14 @@ void EncodeValue(const std::unordered_map<std::string, int>& name_to_index,
 void DecodeJointValue(const std::unordered_map<std::string, int>& name_to_index,
                       const std::vector<std::string>& names,
                       const std::vector<float>& msg_values,
-                      VectorX<double>* values) {
+                      Eigen::Ref<VectorX<double>> values) {
   for (size_t i = 0; i < names.size(); ++i) {
-    const std::string& q_name = names[i];
+    const std::string& name = names[i];
     // Ignores joints we don't know about.
-    auto it = name_to_index.find(q_name);
+    auto it = name_to_index.find(name);
     if (it != name_to_index.end()) {
-      DRAKE_ASSERT(it->second < values->size() && it->second >= 0);
-      (*values)(it->second) = msg_values.at(i);
+      DRAKE_ASSERT(it->second < values.size() && it->second >= 0);
+      values(it->second) = msg_values.at(i);
     }
   }
 }
@@ -62,6 +63,9 @@ RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
         // both 1.
         int position_index = body->get_position_start_index();
         int velocity_index = body->get_velocity_start_index();
+        DRAKE_ASSERT(joint.get_num_positions() == 1);
+        DRAKE_ASSERT(joint.get_num_velocities() == 1);
+
         // The convention is to use position coordinate name as joint name.
         const std::string& name = robot.get_position_name(position_index);
 
@@ -81,18 +85,19 @@ RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
 }
 
 void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
-    const bot_core::robot_state_t& msg, VectorX<double>* q,
-    VectorX<double>* v) const {
-  DRAKE_DEMAND(q != nullptr);
-  DRAKE_DEMAND(v != nullptr);
+    const bot_core::robot_state_t& msg,
+    Eigen::Ref<VectorX<double>> q,
+    Eigen::Ref<VectorX<double>> v) const {
   DRAKE_DEMAND(CheckMessageVectorSize(msg));
 
-  q->resize(robot_.get_num_positions());
-  v->resize(robot_.get_num_velocities());
+  DRAKE_DEMAND(q.size() == robot_.get_num_positions());
+  DRAKE_DEMAND(v.size() == robot_.get_num_velocities());
 
   // Floating joint.
   if (floating_base_) {
+    // Pose of floating base in the world frame.
     auto X_WB = DecodePose(msg.pose);
+    // Spatial velocity of base in the world frame.
     auto V_WB = DecodeTwist(msg.twist);
     const DrakeJoint& floating_joint = floating_base_->getJoint();
     int position_start = floating_base_->get_position_start_index();
@@ -101,15 +106,15 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
     if (floating_joint.get_num_positions() == 6) {
       // RPY-parameterized floating joint.
       // Translation.
-      q->segment<3>(position_start) = X_WB.translation();
+      q.segment<3>(position_start) = X_WB.translation();
 
       // Orientation.
       auto rpy = math::rotmat2rpy(X_WB.linear());
-      q->segment<3>(position_start + 3) = rpy;
+      q.segment<3>(position_start + 3) = rpy;
 
       // Translational velocity.
       auto translationdot = V_WB.tail<3>();
-      v->segment<3>(velocity_start) = translationdot;
+      v.segment<3>(velocity_start) = translationdot;
 
       // Rotational velocity.
       Eigen::Matrix<double, 3, 3> phi;
@@ -120,25 +125,23 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
       auto angular_velocity_world = V_WB.head<3>();
       auto rpydot = (phi * angular_velocity_world).eval();
-      v->segment<3>(velocity_start + 3) = rpydot;
+      v.segment<3>(velocity_start + 3) = rpydot;
     } else if (floating_joint.get_num_positions() == 7) {
       // Quaternion-parameterized floating joint.
       // Translation.
-      q->segment<3>(position_start) = X_WB.translation();
+      q.segment<3>(position_start) = X_WB.translation();
 
       // Orientation.
       auto quat = math::rotmat2quat(X_WB.linear());
-      q->segment<4>(position_start + 3) = quat;
+      q.segment<4>(position_start + 3) = quat;
 
-      // Twist.
-      // Transform twist from world-aligned body frame to body frame.
-      Isometry3<double> world_aligned_body_to_body;
-      world_aligned_body_to_body.linear() = X_WB.linear().transpose();
-      world_aligned_body_to_body.translation().setZero();
-      world_aligned_body_to_body.makeAffine();
-      TwistVector<double> floating_base_twist_in_body =
-        transformSpatialMotion(world_aligned_body_to_body, V_WB);
-      v->segment<kTwistSize>(velocity_start) = floating_base_twist_in_body;
+      // Transform V_WB to the floating base's body frame (V_WB_B).
+      // Translational velocity.
+      v.segment<3>(velocity_start + 3) =
+          X_WB.linear().transpose() * V_WB.tail<3>();
+      // Rotational velocity.
+      v.segment<3>(velocity_start) =
+          X_WB.linear().transpose() * V_WB.head<3>();
     } else {
       DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
     }
@@ -178,9 +181,9 @@ void RobotStateLcmMessageTranslator::InitializeMessage(
   // Initialize joints.
   int joint_ctr = 0;
   for (int i = 0; i < robot_.get_num_positions(); i++) {
-    const std::string& q_name = robot_.get_position_name(i);
-    if (joint_name_to_q_index_.find(q_name) != joint_name_to_q_index_.end()) {
-      msg->joint_name[joint_ctr] = q_name;
+    const std::string& name = robot_.get_position_name(i);
+    if (joint_name_to_q_index_.find(name) != joint_name_to_q_index_.end()) {
+      msg->joint_name[joint_ctr] = name;
       msg->joint_position[joint_ctr] = 0;
       msg->joint_velocity[joint_ctr] = 0;
       msg->joint_effort[joint_ctr] = 0;
@@ -205,7 +208,8 @@ void RobotStateLcmMessageTranslator::InitializeMessage(
 }
 
 void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
-    const VectorX<double>& q, const VectorX<double>& v,
+    const Eigen::Ref<const VectorX<double>>& q,
+    const Eigen::Ref<const VectorX<double>>& v,
     bot_core::robot_state_t* msg) const {
   DRAKE_DEMAND(msg != nullptr);
   DRAKE_DEMAND(q.size() == robot_.get_num_positions());
@@ -263,7 +267,8 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
 }
 
 void RobotStateLcmMessageTranslator::EncodeMessageTorque(
-    const VectorX<double>& torque, bot_core::robot_state_t* msg) const {
+    const Eigen::Ref<const VectorX<double>>& torque,
+    bot_core::robot_state_t* msg) const {
   DRAKE_DEMAND(msg != nullptr);
   DRAKE_DEMAND(torque.size() == robot_.get_num_actuators());
   DRAKE_DEMAND(CheckMessageVectorSize(*msg));
@@ -273,11 +278,11 @@ void RobotStateLcmMessageTranslator::EncodeMessageTorque(
 }
 
 void RobotStateLcmMessageTranslator::DecodeMessageTorque(
-    const bot_core::robot_state_t& msg, VectorX<double>* torque) const {
-  DRAKE_DEMAND(torque != nullptr);
+    const bot_core::robot_state_t& msg,
+    Eigen::Ref<VectorX<double>> torque) const {
   DRAKE_DEMAND(CheckMessageVectorSize(msg));
 
-  torque->resize(robot_.get_num_actuators());
+  DRAKE_DEMAND(torque.size() == robot_.get_num_actuators());
   DecodeJointValue(joint_name_to_actuator_index_, msg.joint_name,
                    msg.joint_effort, torque);
 }
@@ -286,7 +291,7 @@ const RigidBodyTree<double>&
 RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
     const RigidBodyTree<double>& robot) {
   if (robot.get_num_bodies() < 2) {
-    DRAKE_ABORT_MSG("This class assumes at least one non-world body.");
+    throw std::logic_error("This class assumes at least one non-world body.");
   }
 
   bool floating_joint_found = false;
@@ -295,25 +300,26 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
       const auto& joint = body_ptr->getJoint();
       if (joint.is_floating()) {
         if (floating_joint_found) {
-          DRAKE_ABORT_MSG("robot_state_t assumes at most one floating joint.");
+          throw std::logic_error(
+              "robot_state_t assumes at most one floating joint.");
         }
         floating_joint_found = true;
 
         if (body_ptr != robot.bodies[1]) {
-          DRAKE_ABORT_MSG(
+          throw std::logic_error(
               "This class assumes that the first non-world body is the "
               "floating body.");
         }
 
         if (body_ptr->get_position_start_index() != 0 ||
             body_ptr->get_velocity_start_index() != 0) {
-          DRAKE_ABORT_MSG(
+          throw std::logic_error(
               "This class assumes that floating joint positions and are at the "
               "head of the position and velocity vectors.");
         }
       } else {
         if (joint.get_num_positions() > 1 || joint.get_num_velocities() > 1) {
-          DRAKE_ABORT_MSG(
+          throw std::logic_error(
               "robot_state_t assumes non-floating joints to be "
               "1-DoF or fixed.");
         }

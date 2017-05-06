@@ -38,6 +38,9 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
   // Tests encode and decode for various floating base types.
   void RunEncodeDecode() {
     VectorX<double> q, v, torque, q_expected, v_expected, torque_expected;
+    q_expected.resize(robot_->get_num_positions());
+    v_expected.resize(robot_->get_num_velocities());
+    torque_expected.resize(robot_->get_num_actuators());
 
     // Finds the first index into q v that is after the floating base.
     int q_non_floating_joint_start_index = 0;
@@ -84,8 +87,8 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
       }
 
       // Tests decode.
-      dut_->DecodeMessageKinematics(message_, &q_expected, &v_expected);
-      dut_->DecodeMessageTorque(message_, &torque_expected);
+      dut_->DecodeMessageKinematics(message_, q_expected, v_expected);
+      dut_->DecodeMessageTorque(message_, torque_expected);
 
       // Checks q.
       if (base_type_ == multibody::joints::FloatingBaseType::kFixed ||
@@ -283,8 +286,8 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeExtraJointNames) {
       VectorX<double>::Ones(robot_->get_num_velocities());
   VectorX<double> torque_expected =
       VectorX<double>::Ones(robot_->get_num_actuators());
-  dut_->DecodeMessageKinematics(message_, &q_expected, &v_expected);
-  dut_->DecodeMessageTorque(message_, &torque_expected);
+  dut_->DecodeMessageKinematics(message_, q_expected, v_expected);
+  dut_->DecodeMessageTorque(message_, torque_expected);
 
   EXPECT_TRUE(
       CompareMatrices(q_expected, q, tolerance_, MatrixCompareType::absolute));
@@ -337,8 +340,8 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeLessJointNames) {
       VectorX<double>::Ones(robot_->get_num_velocities());
   VectorX<double> torque_expected =
       VectorX<double>::Ones(robot_->get_num_actuators());
-  dut_->DecodeMessageKinematics(message_, &q_expected, &v_expected);
-  dut_->DecodeMessageTorque(message_, &torque_expected);
+  dut_->DecodeMessageKinematics(message_, q_expected, v_expected);
+  dut_->DecodeMessageTorque(message_, torque_expected);
 
   for (int i = 0; i < robot_->get_num_positions(); ++i) {
     if (i != kExtraIndex) {

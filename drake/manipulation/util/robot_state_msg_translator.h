@@ -48,8 +48,8 @@ class RobotStateLcmMessageTranslator {
   /**
    * Constructs a translator using the model given in @p robot. A const
    * reference of @p robot is saved, and thus its life span must be longer
-   * that this. The following assumptions must be met by @p robot, otherwise
-   * the constructor aborts:
+   * than this. The following assumptions must be met by @p robot, otherwise
+   * the constructor throws a std::logic_error:
    * <pre>
    *   1. There is at least 1 non-world rigid body.
    *   2. There can be at most 1 floating base.
@@ -72,8 +72,8 @@ class RobotStateLcmMessageTranslator {
 
   /**
    * Decodes only the kinematic values (q, v) from @p msg to @p q and @p v.
-   * @p q and @p v are resized to match the rigid body tree's generalized
-   * position and velocity size. Note that the values in @p p and @p q that
+   * @p q and @p v are assumed to match the rigid body tree's generalized
+   * position and velocity size. Note that the values in @p q and @p v that
    * correspond to the floating base will always be set to the decoded values
    * in @p msg. However, for the non-floating joints, only the ones that are
    * present in the message will be decoded and set. For example, suppose the
@@ -87,7 +87,8 @@ class RobotStateLcmMessageTranslator {
    * @param[out] v Vector to hold the decoded generalized velocity.
    */
   void DecodeMessageKinematics(const bot_core::robot_state_t& msg,
-                               VectorX<double>* q, VectorX<double>* v) const;
+                               Eigen::Ref<VectorX<double>> q,
+                               Eigen::Ref<VectorX<double>> v) const;
 
   /**
    * Encodes only the generalized position @p q and velocity @p v to @p msg.
@@ -106,20 +107,20 @@ class RobotStateLcmMessageTranslator {
    * passed to the constructor.
    * @param[in, out] msg Lcm message to be encoded.
    */
-  void EncodeMessageKinematics(const VectorX<double>& q,
-                               const VectorX<double>& v,
+  void EncodeMessageKinematics(const Eigen::Ref<const VectorX<double>>& q,
+                               const Eigen::Ref<const VectorX<double>>& v,
                                bot_core::robot_state_t* msg) const;
 
   /**
    * Decodes only the non-floating joint torque part from @p msg to @p torque.
-   * @p torque is resized to the rigid body tree's actuator size, and it is
-   * assumed to be in the same order as the rigid body tree's actuators, which
-   * is not necessarily in the same order as its generalized position or
-   * velocity. Only the actuated joints in the rigid body tree will be decoded
-   * (if they are present in @p msg).
+   * @p torque is assumed to have the same size as the rigid body tree's number
+   * of actuators, and it is assumed to be in the same order, which is not
+   * necessarily in the same order as its generalized position or velocity.
+   * Only the actuated joints in the rigid body tree will be decoded (if they
+   * are present in @p msg).
    */
   void DecodeMessageTorque(const bot_core::robot_state_t& msg,
-                           VectorX<double>* torque) const;
+                           Eigen::Ref<VectorX<double>> torque) const;
 
   /**
    * Encodes only the actuated non-floating joint torque to @p msg.
@@ -128,7 +129,7 @@ class RobotStateLcmMessageTranslator {
    * is not necessarily in the same order as its generalized position or
    * velocity. Only the actuated joints listed in @p msg will be encoded.
    */
-  void EncodeMessageTorque(const VectorX<double>& torque,
+  void EncodeMessageTorque(const Eigen::Ref<const VectorX<double>>& torque,
                            bot_core::robot_state_t* msg) const;
 
   /**
@@ -145,7 +146,7 @@ class RobotStateLcmMessageTranslator {
   // Check that robot_state_t can unambiguously represent the RigidBodyTree's
   // state. This method is intended to check preconditions inside a
   // constructor's intitializer list. Returns @p robot if the checks pass.
-  // Aborts when @p robot is not compatible with robot_state_t.
+  // Throws std::logic_error when @p robot is not compatible with robot_state_t.
   static const RigidBodyTree<double>& CheckTreeIsRobotStateLcmTypeCompatible(
       const RigidBodyTree<double>& robot);
 

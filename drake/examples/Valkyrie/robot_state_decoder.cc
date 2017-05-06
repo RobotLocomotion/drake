@@ -28,8 +28,9 @@ void RobotStateDecoder::DoCalcOutput(const Context<double>& context,
   auto& kinematics_cache = output->GetMutableData(kinematics_cache_port_index_)
                                ->GetMutableValue<KinematicsCache<double>>();
 
-  VectorX<double> q, v;
-  translator_.DecodeMessageKinematics(message, &q, &v);
+  VectorX<double> q(translator_.get_robot().get_num_positions());
+  VectorX<double> v(translator_.get_robot().get_num_velocities());
+  translator_.DecodeMessageKinematics(message, q, v);
 
   kinematics_cache.initialize(q, v);
   translator_.get_robot().doKinematics(kinematics_cache, true);
