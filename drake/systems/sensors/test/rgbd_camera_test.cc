@@ -27,13 +27,128 @@ namespace systems {
 namespace sensors {
 namespace {
 
+class DepthImageToPointCloudConversionTest : public ::testing::Test {
+ public:
+  const double kFocal = 500.f;
+  const int kWidth = 6;
+  const int kHeight = 4;
+
+  typedef std::function<void(const Eigen::Vector3f& actual)> Verifier;
+
+  DepthImageToPointCloudConversionTest() : camera_info_(
+      kWidth, kHeight, kFocal, kFocal, kWidth * 0.5, kHeight * 0.5),
+      depth_image_(kWidth, kHeight, 1) {}
+
+ protected:
+  void SetUp() override {}
+  void SetUp(float depth_value) {
+    std::fill(depth_image_.at(0, 0),
+              depth_image_.at(0, 0) + depth_image_.size(),
+              depth_value);
+
+    actual_point_cloud_ = Eigen::Matrix3Xf::Zero(3, depth_image_.size());
+  }
+
+  const CameraInfo camera_info_;
+  Image<float> depth_image_;
+  Eigen::Matrix3Xf actual_point_cloud_;
+};
+
+// Verifies output point cloud when pixel values in depth image are normal.
+TEST_F(DepthImageToPointCloudConversionTest, NormalValueTest) {
+  const float kDepthValue = 1.f;
+  SetUp(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  const float kDistanceTolerance = 1e-9;
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
+          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+
+      EXPECT_NEAR(actual(0), kDepthValue * (u - kWidth * 0.5) / kFocal,
+                  kDistanceTolerance);
+      EXPECT_NEAR(actual(1), kDepthValue * (v - kHeight * 0.5) / kFocal,
+                  kDistanceTolerance);
+      EXPECT_NEAR(actual(2), kDepthValue, kDistanceTolerance);
+    }
+  }
+}
+
+// Verifies output point cloud when pixel values in depth image are kError.
+TEST_F(DepthImageToPointCloudConversionTest, ErrorValueTest) {
+  const float kDepthValue = RgbdCamera::InvalidDepth::kError;
+  SetUp(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
+          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+
+      EXPECT_TRUE(std::isnan(actual(0)));
+      EXPECT_TRUE(std::isnan(actual(1)));
+      EXPECT_TRUE(std::isnan(actual(2)));
+    }
+  }
+}
+
+// Verifies output point cloud when pixel values in depth image are kTooFar.
+TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
+  const float kDepthValue = RgbdCamera::InvalidDepth::kTooFar;
+  SetUp(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
+          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+
+      EXPECT_TRUE(std::isinf(actual(0)));
+      EXPECT_TRUE(std::isinf(actual(1)));
+      EXPECT_TRUE(std::isinf(actual(2)));
+    }
+  }
+}
+
+// Verifies output point cloud when pixel values in depth image are kTooClose.
+TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
+  const float kDepthValue = RgbdCamera::InvalidDepth::kTooClose;
+  SetUp(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
+          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+
+      EXPECT_TRUE(std::isinf(actual(0)));
+      EXPECT_TRUE(std::isinf(actual(1)));
+      EXPECT_TRUE(std::isinf(actual(2)));
+    }
+  }
+}
+
+
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
 const double kColorPixelTolerance = 1.001;
 const double kDepthTolerance = 1e-4;
 const double kFovY = M_PI_4;
-const bool kShowWindow = true;
+const bool kShowWindow = false;
 
 class RgbdCameraTest : public ::testing::Test {
  public:
@@ -430,6 +545,7 @@ class ImageTest : public ::testing::Test {
   std::unique_ptr<systems::SystemOutput<double>> output_;
 };
 
+
 // Verifies the rendered terrain and the camera's pose.
 TEST_F(ImageTest, TerrainRenderingTest) {
   const std::string sdf("/systems/sensors/test/models/nothing.sdf");
@@ -511,6 +627,7 @@ TEST_F(ImageTest, MultipleVisualsTest) {
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyMultipleVisuals);
 }
+
 
 }  // namespace
 }  // namespace sensors
