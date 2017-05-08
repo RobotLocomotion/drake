@@ -92,6 +92,18 @@ class PendulumTests : public ::testing::Test {
         &model_->AddFrame<FixedOffsetFrame>(*upper_link_, X_UEi_);
     elbow_outboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_);
+
+
+    // Adds the shoulder and elbow mobilizers of the pendulum.
+    // Using:
+    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
+    shoulder_mobilizer_ =
+        &model_->AddMobilizer(
+            make_unique<Mobilizer<double>>(
+                *shoulder_inboard_frame_, *shoulder_outboard_frame_));
+    // Using: const MobilizerType<T>& AddMobilizer(Args&&... args)
+    elbow_mobilizer_ = &model_->AddMobilizer<Mobilizer>(
+        *elbow_inboard_frame_, *elbow_outboard_frame_);
   }
 
  protected:
@@ -106,6 +118,9 @@ class PendulumTests : public ::testing::Test {
   const FixedOffsetFrame<double>* shoulder_outboard_frame_;
   const FixedOffsetFrame<double>* elbow_inboard_frame_;
   const FixedOffsetFrame<double>* elbow_outboard_frame_;
+  // Mobilizers:
+  const Mobilizer<double>* shoulder_mobilizer_;
+  const Mobilizer<double>* elbow_mobilizer_;
   // Pendulum parameters:
   const double link_length = 1.0;
   const double half_link_length = link_length / 2;
@@ -131,6 +146,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model_->get_num_bodies(), 3);
   EXPECT_EQ(model_->get_num_frames(), 6);
+  EXPECT_EQ(model_->get_num_mobilizers(), 2);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -144,11 +160,37 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(
       elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
 
+  // Checks that mobilizers connect the right frames.
+  EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().get_index(),
+            world_body_->get_body_frame().get_index());
+  EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().get_index(),
+            shoulder_outboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
+            elbow_inboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
+            elbow_outboard_frame_->get_index());
+
+  // Checks that mobilizers connect the right bodies.
+  EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().get_index(),
+            world_body_->get_index());
+  EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().get_index(),
+            upper_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
+            upper_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
+            lower_link_->get_index());
+
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
   EXPECT_EQ(&shoulder_outboard_frame_->get_body(), upper_link_);
   EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
   EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
+
+  // Checks we can request inboard/outboard bodies to a mobilizer.
+  EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
+  EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
 }
 
 // Frame indexes are assigned by MultibodyTree. The number of frames
@@ -178,11 +220,13 @@ TEST_F(PendulumTests, Finalize) {
   EXPECT_NO_THROW(model_->Finalize());
   EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
 
-  // Asserts that no more bodies can be added after finalize.
+  // Asserts that no more multibody elements can be added after finalize.
   SpatialInertia<double> M_Bo_B;
   EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
                std::logic_error);
+  EXPECT_THROW(model_->AddMobilizer<Mobilizer>(
+      *shoulder_inboard_frame_, *shoulder_outboard_frame_), std::logic_error);
 
   // Asserts re-finalization is not allowed.
   EXPECT_THROW(model_->Finalize(), std::logic_error);

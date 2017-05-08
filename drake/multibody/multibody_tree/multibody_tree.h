@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -238,6 +239,69 @@ class MultibodyTree {
         std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
   }
 
+  /// Takes ownership of `body` and adds it to `this` %MultibodyTree. Returns a
+  /// constant reference to the body just added, which will remain valid for the
+  /// lifetime of `this` %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   const RigidBody<T>& body =
+  ///       model.AddBody(std::make_unique<RigidBody<T>>(spatial_inertia));
+  /// @endcode
+  ///
+  /// @throws std::logic_error if `body` is a nullptr.
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
+  ///
+  /// @param[in] body A unique pointer to a body to add to `this`
+  ///                 %MultibodyTree. The body class must be specialized on the
+  ///                 same scalar type T as this %MultibodyTree.
+  /// @returns A constant reference to the `body` just added, which will remain
+  ///          valid for the lifetime of `this` MultibodyTree.
+  ///
+  /// @tparam BodyType The type of the specific sub-class of Body to add. The
+  ///                  template needs to be specialized on the same scalar type
+  ///                  T of this %MultibodyTree.
+  template <template<typename Scalar> class MobilizerType>
+  const MobilizerType<T>& AddMobilizer(
+      std::unique_ptr<MobilizerType<T>> mobilizer) {
+    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
+                  "MobilizerType must be a sub-class of mobilizer<T>.");
+    if (topology_.is_valid) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more bodies is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+    if (mobilizer == nullptr) {
+      throw std::logic_error("Input mobilizer is an invalid nullptr.");
+    }
+    MobilizerIndex mobilizer_index = topology_.add_mobilizer(
+        mobilizer->get_inboard_frame().get_index(),
+        mobilizer->get_outboard_frame().get_index(),
+        mobilizer->get_inboard_body().get_index(),
+        mobilizer->get_outboard_body().get_index());
+    // These tests MUST be performed BEFORE frames_.push_back() and
+    // owned_bodies_.push_back() below. Do not move them around!
+    DRAKE_ASSERT(mobilizer_index == get_num_mobilizers());
+
+    // TODO(amcastro-tri): consider not depending on setting this pointer at
+    // all. Consider also removing MultimobilizerTreeElement altogether.
+    mobilizer->set_parent_tree(this, mobilizer_index);
+
+    MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
+    owned_mobilizers_.push_back(std::move(mobilizer));
+    return *raw_mobilizer_ptr;
+  }
+
+  template<template<typename Scalar> class MobilizerType, typename... Args>
+  const MobilizerType<T>& AddMobilizer(Args&&... args) {
+    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
+                  "MobilizerType must be a sub-class of Mobilizer<T>.");
+    return AddMobilizer(
+        std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
+  }
+
   /// @}
   // Closes Doxygen section.
 
@@ -249,9 +313,14 @@ class MultibodyTree {
     return static_cast<int>(frames_.size());
   }
 
-  /// Returns the number of bodies in the MultibodyTree including the *world*
+  /// Returns the number of bodies in the %MultibodyTree including the *world*
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
+
+  /// Returns the number of mobilizers in the %MultibodyTree.
+  int get_num_mobilizers() const {
+    return static_cast<int>(owned_mobilizers_.size());
+  }
 
   /// Returns a constant reference to the *world* body.
   const Body<T>& get_world_body() const {
@@ -307,6 +376,8 @@ class MultibodyTree {
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
+  std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
+
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.

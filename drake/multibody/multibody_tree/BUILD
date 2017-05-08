@@ -22,6 +22,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "mobilizers",
+    srcs = [],
+    hdrs = ["mobilizer.h"],
+    deps = [
+        "//drake/common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_tree",
     srcs = [
         "fixed_offset_frame.cc",
@@ -39,6 +48,7 @@ drake_cc_library(
         "rigid_body.h",
     ],
     deps = [
+        ":mobilizers",
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//drake/common:autodiff",

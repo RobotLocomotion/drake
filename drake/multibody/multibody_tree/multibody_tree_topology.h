@@ -74,6 +74,40 @@ struct FrameTopology {
   BodyIndex body{0};
 };
 
+/// Data structure to store the topological information associated with a
+/// Mobilizer object.
+struct MobilizerTopology {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MobilizerTopology);
+
+  /// Default construction to invalid configuration.
+  MobilizerTopology() {}
+
+  MobilizerTopology(
+      MobilizerIndex mobilizer_index,
+      FrameIndex in_frame, FrameIndex out_frame,
+      BodyIndex in_body, BodyIndex out_body) :
+      index(mobilizer_index),
+      inboard_frame(in_frame), outboard_frame(out_frame),
+      inboard_body(in_body), outboard_body(out_body) {}
+
+  /// Unique index in the MultibodyTree.
+  MobilizerIndex index;
+  /// Index to the inboard frame.
+  FrameIndex inboard_frame;
+  /// Index to the outboard frame.
+  FrameIndex outboard_frame;
+  /// Index to the inboard body.
+  BodyIndex inboard_body;
+  /// Index to the outboard body.
+  BodyIndex outboard_body;
+
+  /// MobilizerIndexingInfo
+  int num_positions;
+  int positions_start;
+  int num_velocities;
+  int velocities_start;
+};
+
 /// Data structure to store the topological information associated with an
 /// entire MultibodyTree.
 struct MultibodyTreeTopology {
@@ -92,6 +126,11 @@ struct MultibodyTreeTopology {
   /// Returns the number of physical frames in the multibody tree.
   int get_num_frames() const {
     return static_cast<int>(frames.size());
+  }
+
+  /// Returns the number of mobilizers in the multibody tree.
+  int get_num_mobilizers() const {
+    return static_cast<int>(mobilizers.size());
   }
 
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
@@ -122,6 +161,23 @@ struct MultibodyTreeTopology {
     return frames[index];
   }
 
+  /// Creates and adds a new MobilizerTopology connecting the inboard and
+  /// outboard multibody frames identified by indexes `in_frame` and
+  /// `out_frame`, respectively.
+  /// `in_body` corresponds to the body associated with the inboard frame while
+  /// `out_body` correspoinds to the body associated with the outboard frame.
+  /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
+  MobilizerIndex add_mobilizer(
+      FrameIndex in_frame, FrameIndex out_frame,
+      BodyIndex in_body, BodyIndex out_body)
+  {
+    MobilizerIndex mobilizer_index(get_num_mobilizers());
+    mobilizers.emplace_back(mobilizer_index,
+                            in_frame, out_frame,
+                            in_body, out_body);
+    return mobilizer_index;
+  }
+
   bool is_valid{false};
 
   /// Topology gets validated by MultibodyTree::Finalize().
@@ -129,6 +185,7 @@ struct MultibodyTreeTopology {
 
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;
+  std::vector<MobilizerTopology> mobilizers;
 };
 
 }  // namespace multibody
