@@ -10,5 +10,139 @@
    ...
    fun:g_static_rec_mutex_lock
    fun:lcm_handle
+}
+
+# All python-* suppressions, unless otherwise indicated, are taken from:
+# https://svn.python.org/projects/python/trunk/Misc/valgrind-python.supp
+{
+   <python-1>
+   Memcheck:Addr4
+   fun:PyObject_Free
+}
+
+{
+   <python-2>
+   Memcheck:Cond
+   fun:PyObject_Free
+}
+
+# Value4 modified to Value8
+{
+   <python-3>
+   Memcheck:Value8
+   fun:PyObject_Free
+}
+
+# Not in the list provided by Python. Stemming from RigidBodyTree.
+{
+   <python-4>
+   Memcheck:Free
+   fun:free
    ...
+   fun:_ZN8pybind116class_I13RigidBodyTreeIdEJEE7deallocEP7_object
+   ...
+   fun:Py*
+}
+
+# Not in the list, gets suppressed by the suppression `python-4` if --num_callers=25
+# is used with valgrind.
+{
+   <python-5>
+   Memcheck:Free
+   fun:free
+   fun:_ZN5Eigen8internal12aligned_freeEPv
+   fun:_ZN5Eigen8internal24conditional_aligned_freeILb1EEEvPv
+   fun:_ZN14RigidBodyFrameIdEdlEPv
+   fun:_ZN14RigidBodyFrameIdED0Ev
+   fun:_ZNSt15_Sp_counted_ptrIP14RigidBodyFrameIdELN9__gnu_cxx12_Lock_policyE2EE10_M_disposeEv
+   fun:_ZNSt16_Sp_counted_baseILN9__gnu_cxx12_Lock_policyE2EE10_M_releaseEv
+   fun:_ZNSt14__shared_countILN9__gnu_cxx12_Lock_policyE2EED2Ev
+   fun:_ZNSt12__shared_ptrI14RigidBodyFrameIdELN9__gnu_cxx12_Lock_policyE2EED2Ev
+   fun:_ZNSt10shared_ptrI14RigidBodyFrameIdEED2Ev
+   fun:_ZSt8_DestroyISt10shared_ptrI14RigidBodyFrameIdEEEvPT_
+   fun:_ZNSt12_Destroy_auxILb0EE9__destroyIPSt10shared_ptrI14RigidBodyFrameIdEEEEvT_S7_
+}
+
+
+# Not in the list provided by python, but suppressed by other projects:
+# CERN, LHCb project
+# https://gitlab.cern.ch/lhcb/LHCb/blob/master/GaudiConf/options/valgrind-python.supp
+# Adacore GNAT Programming Studio
+# http://svn.eu.adacore.com/anonsvn/Dev/trunk/gps/gps/valgrind-python-leaks.supp
+{
+   <python-6>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:PyString_FromStringAndSize
+}
+
+{
+   <python-7>
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+}
+
+{
+   <python-8>
+   Memcheck:Cond
+   fun:PyObject_Realloc
+}
+
+# Value4 modified to Value8.
+{
+   <python-9>
+   Memcheck:Value8
+   fun:PyObject_Realloc
+}
+
+# _PyObject_GC_Malloc inserted between malloc and _PyObject_GC_NewVar
+{
+   <python-10>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:_PyObject_GC_Malloc
+   fun:_PyObject_GC_NewVar
+}
+
+{
+   <python-11>
+   Memcheck:Leak
+   fun:realloc
+   fun:_PyObject_GC_Resize
+}
+
+# Not in Python's suppressions List
+{
+   <python-12>
+   Memcheck:Addr4
+   obj:/usr/bin/python2.7
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   obj:/usr/bin/python2.7
+   fun:PyObject_Call
+   obj:/usr/bin/python2.7
+   fun:PyObject_Call
+   obj:/usr/bin/python2.7
+   obj:/usr/bin/python2.7
+   fun:PyObject_Call
+   fun:PyEval_EvalFrameEx
+}
+
+
+# This suppresses "possibly lost" warnings for valgrind memchecks.
+# The cause of the error seems to be in the btAlignedAllocDefault function
+# in btAlignedAllocator.cpp file of the bullet3 library.  We believe that the function
+# may return a pointer not pointing at the head of the allocated memory, which
+# causes the "possibly lost" warnings. [ *((void **)(ret)-1) = (void *)(real); ]
+{
+    <bullet3-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:_ZL14btAllocDefaultm
+    fun:_ZL21btAlignedAllocDefaultmi
+    fun:_Z22btAlignedAllocInternalmi
 }
