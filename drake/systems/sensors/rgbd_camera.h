@@ -64,7 +64,7 @@ class RgbdCamera : public LeafSystem<double> {
   /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
   /// pixel in the depth image has InvalidDepth::kError depth value, all the
   /// `(x, y, z)` values in the converted point will be InvalidDepth::kError.
-  /// Similary, if a pixel has either InvalidDepth::kTooFar or
+  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
   /// InvalidDepth::kTooClose, the converted point will be
   /// InvalidDepth::kTooFar.
   ///
@@ -73,8 +73,7 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param[in] camera_info The input camera info which is used for conversion.
   ///
-  /// @param[out] point_cloud The pointer of output point cloud. The number of
-  /// column must be the same as the size of the input depth image.
+  /// @param[out] point_cloud The pointer of output point cloud.
   static void ConvertDepthImageToPointCloud(const Image<float>& depth_image,
                                             const CameraInfo& camera_info,
                                             Eigen::Matrix3Xf* point_cloud);

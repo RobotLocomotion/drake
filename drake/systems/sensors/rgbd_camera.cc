@@ -208,7 +208,9 @@ void RgbdCamera::ConvertDepthImageToPointCloud(const Image<float>& depth_image,
                                                const CameraInfo& camera_info,
                                                Eigen::Matrix3Xf* point_cloud) {
   DRAKE_DEMAND(depth_image.num_channels() == 1);
-  DRAKE_DEMAND(depth_image.size() == point_cloud->cols());
+  if (depth_image.size() != point_cloud->cols()) {
+    point_cloud->resize(3, depth_image.size());
+  }
 
   const int height = depth_image.height();
   const int width = depth_image.width();

@@ -45,8 +45,6 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
     std::fill(depth_image_.at(0, 0),
               depth_image_.at(0, 0) + depth_image_.size(),
               depth_value);
-
-    actual_point_cloud_ = Eigen::Matrix3Xf::Zero(3, depth_image_.size());
   }
 
   const CameraInfo camera_info_;
