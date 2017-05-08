@@ -13,7 +13,7 @@ V2 LineLane::xy_of_p(const double p) const {
   return V2(x0_ + (p * dx_), y0_ + (p * dy_));
 }
 
-V2 LineLane::xy_dot_of_p(const double p) const { return V2(dx_, dy_); }
+V2 LineLane::xy_dot_of_p(const double) const { return V2(dx_, dy_); }
 
 double LineLane::heading_of_p(const double) const { return heading_; }
 
