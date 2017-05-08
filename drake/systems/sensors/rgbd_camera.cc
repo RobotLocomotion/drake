@@ -803,8 +803,9 @@ RgbdCamera::label_image_output_port() const {
   return *label_image_port_;
 }
 
-void RgbdCamera::OutputPoseVector(const Context<double>& context,
-                                  rendering::PoseVector<double>* pose_vector) const {
+void RgbdCamera::OutputPoseVector(
+    const Context<double>& context,
+    rendering::PoseVector<double>* pose_vector) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, kPortStateInput);
 
