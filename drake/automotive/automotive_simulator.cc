@@ -209,16 +209,23 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
     const std::string& name,
     const Curve2<double>& curve,
     double speed,
-    double start_time) {
+    double start_position) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
   CheckNameUniqueness(name);
   const int id = allocate_vehicle_number();
 
   auto trajectory_car =
-      builder_->template AddSystem<TrajectoryCar<T>>(curve, speed, start_time);
+      builder_->template AddSystem<TrajectoryCar<T>>(curve);
   trajectory_car->set_name(name);
   vehicles_[id] = trajectory_car;
+
+  TrajectoryCarState<double> initial_state;
+  initial_state.set_position(start_position);
+  initial_state.set_speed(speed);
+  trajectory_car_initial_states_[trajectory_car].set_value(
+      initial_state.get_value());
+
   auto coord_transform =
       builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
   coord_transform->set_name(name + "_transform");
@@ -511,6 +518,7 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
 
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
 
+  InitializeTrajectoryCars();
   InitializeSimpleCars();
   InitializeMaliputRailcars();
 
@@ -520,6 +528,23 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   simulator_->get_mutable_integrator()->set_maximum_step_size(0.01);
   simulator_->get_mutable_integrator()->set_minimum_step_size(0.01);
   simulator_->Initialize();
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::InitializeTrajectoryCars() {
+  for (const auto& pair : trajectory_car_initial_states_) {
+    const TrajectoryCar<T>* const car = pair.first;
+    const TrajectoryCarState<T>& initial_state = pair.second;
+
+    systems::VectorBase<T>* context_state =
+        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
+                                             car)
+        ->get_mutable_continuous_state()->get_mutable_vector();
+    TrajectoryCarState<T>* const state =
+        dynamic_cast<TrajectoryCarState<T>*>(context_state);
+    DRAKE_ASSERT(state);
+    state->set_value(initial_state.get_value());
+  }
 }
 
 template <typename T>

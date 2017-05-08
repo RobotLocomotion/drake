@@ -9,6 +9,7 @@
 #include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
+#include "drake/automotive/gen/trajectory_car_state.h"
 #include "drake/automotive/idm_controller.h"
 #include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
@@ -299,6 +300,7 @@ class AutomotiveSimulator {
 
   void SendLoadRobotMessage(const lcmt_viewer_load_robot& message);
 
+  void InitializeTrajectoryCars();
   void InitializeSimpleCars();
   void InitializeMaliputRailcars();
 
@@ -311,6 +313,11 @@ class AutomotiveSimulator {
 
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
+
+  // Holds the desired initial states of each TrajectoryCar. It is used to
+  // initialize the simulation's diagram's state.
+  std::map<const TrajectoryCar<T>*, TrajectoryCarState<T>>
+      trajectory_car_initial_states_;
 
   // Holds the desired initial states of each SimpleCar. It is used to
   // initialize the simulation's diagram's state.
