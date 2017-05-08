@@ -37,7 +37,7 @@ class Acrobot {
   /// x_W = y_W.cross(z_W);
   Acrobot(const Vector3<T>& normal, const Vector3<T>& up);
 
-  Matrix2<T> CalcMassMatrix(const T& theta1, const T& theta2) const;
+  Matrix2<T> CalcMassMatrix(const T& theta2) const;
 
   /// Computes the pose of the center of mass of link 1 measured and expressed
   /// in the world frame.
@@ -45,8 +45,7 @@ class Acrobot {
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WL1 the pose of link 1 measured and expressed in the world
   /// frame.
-  Isometry3<T> CalcLink1PoseInWorldFrame(
-      const T& theta1, const T& theta2) const;
+  Isometry3<T> CalcLink1PoseInWorldFrame(const T& theta1) const;
 
   /// Computes the pose of the center of mass of link 2 measured and expressed
   /// in the world frame.
@@ -66,8 +65,7 @@ class Acrobot {
   /// @returns V_WL1_W the spatial velocity of the center of mass of link 1 with
   /// respect to the world and expressed in the world frame.
   Vector6<T> CalcLink1SpatialVelocityInWorldFrame(
-      const T& theta1, const T& theta2,
-      const T& theta1dot, const T& theta2dot) const;
+      const T& theta1, const T& theta1dot) const;
 
   /// Computes the spatial velocity of the center of mass of link 2 expressed
   /// in the world frame.

@@ -16,7 +16,7 @@ def pypi_archive(
 
     Example:
         Download and use the "foo" package, version 1.2.3, hosted on PyPI at
-        https://files.pythonhosted.org/source/f/foo/foo-1.2.3.tar.gz.
+        https://files.pythonhosted.org/packages/source/f/foo/foo-1.2.3.tar.gz.
 
         WORKSPACE:
             load("//tools:pypi_archive.bzl", "pypi_archive")
@@ -89,7 +89,7 @@ def pypi_archive(
 
     # Packages are mirrored from PyPI to CloudFront backed by an S3 bucket.
     urls = [
-        "https://files.pythonhosted.org/source/{0}/{1}/{1}-{2}.tar.gz".format(
+        "https://files.pythonhosted.org/packages/source/{0}/{1}/{1}-{2}.tar.gz".format(
             package[:1], package, version),
         "https://d2tbce6hkathzp.cloudfront.net/pypi/{0}/{0}-{1}.tar.gz".format(
             package, version),
