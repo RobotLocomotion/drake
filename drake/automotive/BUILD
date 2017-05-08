@@ -636,6 +636,18 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "trajectory_optimization_railcar_test",
+    deps = [
+        ":maliput_railcar",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/dragway",
+        "//drake/common:call_matlab",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/trajectory_optimization:direct_collocation",
+    ],
+)
+
 cpplint()
 
 python_lint()

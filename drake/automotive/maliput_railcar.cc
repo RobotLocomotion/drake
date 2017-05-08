@@ -45,28 +45,36 @@ using systems::rendering::PoseVector;
 
 namespace automotive {
 
-template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialS;
-template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialSpeed;
+//template <typename T> static constexpr T kDefaultInitialS{T(0)};
+//template <typename T> static constexpr T kDefaultInitialSpeed{T(1)};
 template <typename T> constexpr double MaliputRailcar<T>::kLaneEndEpsilon;
 template <typename T> constexpr double MaliputRailcar<T>::kTimeEpsilon;
 
 template <typename T>
-MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
-    : initial_lane_direction_(initial_lane_direction) {
-  command_input_port_index_ =
-      this->DeclareInputPort(systems::kVectorValued, 1).get_index();
-  state_output_port_index_ =
-      this->DeclareVectorOutputPort(MaliputRailcarState<T>()).get_index();
-  lane_state_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-          systems::Value<LaneDirection>(initial_lane_direction)).get_index();
-  pose_output_port_index_ =
-      this->DeclareVectorOutputPort(PoseVector<T>()).get_index();
-  velocity_output_port_index_ =
-      this->DeclareVectorOutputPort(FrameVelocity<T>()).get_index();
+MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction,
+                                  bool has_single_lane)
+    : initial_lane_direction_(initial_lane_direction),
+      has_single_lane_(has_single_lane),
+      // TODO(jadecastro): Do something with nullptr instead?
+      command_input_port_index_(
+          this->DeclareInputPort(systems::kVectorValued, 1).get_index()),
+      state_output_port_index_(
+          this->DeclareVectorOutputPort(MaliputRailcarState<T>()).get_index()),
+      pose_output_port_index_(
+          this->DeclareVectorOutputPort(PoseVector<T>()).get_index()),
+      velocity_output_port_index_(
+          this->DeclareVectorOutputPort(FrameVelocity<T>()).get_index()) {
+  if (!has_single_lane) {
+    lane_state_output_port_index_ = this->DeclareAbstractOutputPort(
+        systems::Value<LaneDirection>(initial_lane_direction)).get_index();
+  }
   this->DeclareContinuousState(MaliputRailcarState<T>());
   this->DeclareNumericParameter(MaliputRailcarParams<T>());
 }
+
+template <typename T>
+MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
+    : MaliputRailcar(initial_lane_direction, false) {}
 
 template <typename T>
 const InputPortDescriptor<T>& MaliputRailcar<T>::command_input() const {
@@ -113,8 +121,12 @@ void MaliputRailcar<T>::DoCalcOutput(const Context<T>& context,
           &context.get_continuous_state_vector());
   DRAKE_ASSERT(state != nullptr);
 
-  const LaneDirection& lane_direction =
-      context.template get_abstract_state<LaneDirection>(0);
+  LaneDirection lane_direction{};
+  if (!has_single_lane_) {
+    lane_direction = context.template get_abstract_state<LaneDirection>(0);
+  } else {
+    lane_direction = initial_lane_direction_;
+  }
 
   // Obtains and updates the output vectors.
   MaliputRailcarState<T>* const state_vector =
@@ -173,12 +185,14 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarParams<T>& params,
     const MaliputRailcarState<T>& state, const LaneDirection& lane_direction,
     PoseVector<T>* pose) const {
 
+  // *******
   const LanePosition lane_position(state.s(), CalcR(params, lane_direction),
                                    params.h());
   const GeoPosition geo_position =
       lane_direction.lane->ToGeoPosition(lane_position);
   const Rotation rotation =
       lane_direction.lane->GetOrientation(lane_position);
+  // *******
 
   using std::atan2;
   using std::sin;
@@ -209,12 +223,14 @@ void MaliputRailcar<T>::ImplCalcVelocity(const MaliputRailcarParams<T>& params,
   //  - W is the world frame.
   //  - R is a rotation matrix.
 
-  const Vector3<T> v_LC_L(lane_direction.with_s ? state.speed() :
-                                                  -state.speed(),
-                          0 /* r_dot */, 0 /* h_dot */);
+  const double s_dot =
+      cond(lane_direction.with_s, state.speed(), -state.speed());
+  const Vector3<T> v_LC_L(s_dot, 0 /* r_dot */, 0 /* h_dot */);
+  // ******
   const Rotation rotation =
       lane_direction.lane->GetOrientation(
           LanePosition(state.s(), params.r(), params.h()));
+  // ******
   const Quaternion<T> q = RollPitchYawToQuaternion(
       Vector3<T>(rotation.roll, rotation.pitch, rotation.yaw));
   const Eigen::Matrix<T, 3, 3> R_WL = q.matrix();
@@ -275,10 +291,12 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
     MaliputRailcarState<T>* rates) const {
   const T speed = state.speed();
   const T sigma_v = cond(lane_direction.with_s, speed, -speed);
+  // ******
   const LanePosition motion_derivatives =
       lane_direction.lane->EvalMotionDerivatives(
           LanePosition(state.s(), CalcR(params, lane_direction), params.h()),
           IsoLaneVelocity(sigma_v, 0 /* rho_v */, 0 /* eta_v */));
+  // ******
   // Since the railcar's IsoLaneVelocity's rho_v and eta_v values are both
   // zero, we expect the resulting motion derivative's r and h values to
   // also be zero. The IsoLaneVelocity's sigma_v, which may be non-zero, maps
@@ -297,11 +315,15 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::AbstractValues>
 MaliputRailcar<T>::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_values;
-  const LaneDirection lane_direction;
-  abstract_values.push_back(std::unique_ptr<systems::AbstractValue>(
-      std::make_unique<systems::Value<LaneDirection>>(lane_direction)));
-  return std::make_unique<systems::AbstractValues>(std::move(abstract_values));
+  if (!has_single_lane_) {
+    std::vector<std::unique_ptr<systems::AbstractValue>> abstract_values;
+    const LaneDirection lane_direction;
+    abstract_values.push_back(std::unique_ptr<systems::AbstractValue>(
+        std::make_unique<systems::Value<LaneDirection>>(lane_direction)));
+    return std::make_unique<systems::AbstractValues>(std::move(
+        abstract_values));
+  }
+  return systems::LeafSystem<T>::AllocateAbstractState();
 }
 
 template <typename T>
@@ -319,17 +341,21 @@ void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
   DRAKE_DEMAND(railcar_state != nullptr);
   SetDefaultState(railcar_state);
 
-  LaneDirection& lane_direction =
-      state->get_mutable_abstract_state()->get_mutable_value(0).
-          template GetMutableValue<LaneDirection>();
-  lane_direction = initial_lane_direction_;
+  if (!has_single_lane_) {
+    LaneDirection& lane_direction =
+        state->get_mutable_abstract_state()->get_mutable_value(0).
+        template GetMutableValue<LaneDirection>();
+    lane_direction = initial_lane_direction_;
+  }
 }
 
 template <typename T>
 void MaliputRailcar<T>::SetDefaultState(
     MaliputRailcarState<T>* railcar_state) {
-  railcar_state->set_s(kDefaultInitialS);
-  railcar_state->set_speed(kDefaultInitialSpeed);
+  //railcar_state->set_s(kDefaultInitialS);
+  //railcar_state->set_speed(kDefaultInitialSpeed);
+  railcar_state->set_s(T(0.));
+  railcar_state->set_speed(T(1.));
 }
 
 // TODO(liang.fok): Switch to guard functions once they are available. The
@@ -364,11 +390,13 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
 
     // Computes `s_dot`, the time derivative of `s`.
     const T sigma_v = cond(with_s, speed, -speed);
+    // ********
     const LanePosition motion_derivatives =
         lane_direction.lane->EvalMotionDerivatives(
             LanePosition(s, CalcR(params, lane_direction), params.h()),
             IsoLaneVelocity(sigma_v, 0 /* rho_v */, 0 /* eta_v */));
     const T s_dot = motion_derivatives.s();
+    // ********
 
     const T distance = cond(with_s, T(lane->length()) - s, -s);
 
@@ -398,7 +426,7 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
       context.template get_abstract_state<LaneDirection>(0);
   DRAKE_ASSERT(current_lane_direction.lane != nullptr);
   const bool current_with_s = current_lane_direction.with_s;
-  const double current_s = current_railcar_state->s();
+  const T current_s = current_railcar_state->s();
   const double current_length = current_lane_direction.lane->length();
 
   // Copies the present state into the new one.
@@ -484,8 +512,16 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
   }
 }
 
+template <typename T>
+systems::System<AutoDiffXd>* MaliputRailcar<T>::DoToAutoDiffXd() const {
+  return new MaliputRailcar<AutoDiffXd>;
+}
+
 // This section must match the API documentation in maliput_railcar.h.
 template class MaliputRailcar<double>;
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
+template class MaliputRailcar<drake::AutoDiffXd>;
+#endif
 
 }  // namespace automotive
 }  // namespace drake

@@ -87,10 +87,14 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// next update time to be strictly after the current time.
   static constexpr double kTimeEpsilon{1e-12};
 
-  /// The constructor.
+  /// Constructs a MaliputRailcar System .......
   ///
   /// @param initial_lane_direction The initial lane and direction of travel.
   ///
+  MaliputRailcar(const LaneDirection& initial_lane_direction,
+                 bool has_single_lane);
+
+  /// 
   explicit MaliputRailcar(const LaneDirection& initial_lane_direction);
 
   // System<T> overrides.
@@ -119,9 +123,6 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   const systems::OutputPortDescriptor<T>& velocity_output() const;
   /// @}
 
-  static constexpr T kDefaultInitialS = T(0);
-  static constexpr T kDefaultInitialSpeed = T(1);
-
  protected:
   // LeafSystem<T> overrides.
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
@@ -132,6 +133,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
                             systems::UpdateActions<T>* actions) const override;
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
                                 systems::State<T>* state) const override;
+  systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
 
  private:
   void ImplCalcOutput(
@@ -172,11 +174,13 @@ class MaliputRailcar : public systems::LeafSystem<T> {
           const LaneDirection& lane_direction) const;
 
   const LaneDirection initial_lane_direction_{};
-  int command_input_port_index_{};
-  int state_output_port_index_{};
+  const bool has_single_lane_{};
+
+  const int command_input_port_index_{};
+  const int state_output_port_index_{};
+  const int pose_output_port_index_{};
+  const int velocity_output_port_index_{};
   int lane_state_output_port_index_{};
-  int pose_output_port_index_{};
-  int velocity_output_port_index_{};
 };
 
 }  // namespace automotive
