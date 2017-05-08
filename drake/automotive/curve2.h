@@ -37,6 +37,9 @@ class Curve2 {
     // free as part of the spline refactoring.
   }
 
+  /// @return the waypoints associated with this curve.
+  std::vector<Point2> waypoints() const { return waypoints_; }
+
   /// @return the length of this curve (the total distance traced).
   T path_length() const { return path_length_; }
 

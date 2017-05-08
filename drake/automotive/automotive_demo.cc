@@ -70,9 +70,9 @@ DEFINE_double(dragway_lane_speed_delta, 2,
               "dragway_base_speed + dragway_lane_speed_delta m/s. Finally, "
               "vehicles in the left-most lane will travel at "
               "dragway_base_speed + 2 * dragway_lane_speed_delta m/s.");
-DEFINE_double(dragway_vehicle_delay, 3,
-              "The starting time delay between consecutive vehicles on a "
-              "lane.");
+DEFINE_double(dragway_vehicle_spacing, 10,
+              "The initial spacing (in meters) between consecutive vehicles"
+              "traveling on a lane.");
 
 DEFINE_bool(with_onramp, false, "Loads the onramp road network. Only one road "
             "network can be enabled. Thus, if this option is enabled, no other "
@@ -212,10 +212,10 @@ void AddVehicles(RoadNetworkType road_network_type,
       const int lane_index = i % FLAGS_num_dragway_lanes;
       const double speed = FLAGS_dragway_base_speed +
           lane_index * FLAGS_dragway_lane_speed_delta;
-      const double start_time = i / FLAGS_num_dragway_lanes *
-           FLAGS_dragway_vehicle_delay;
+      const double start_position = i / FLAGS_num_dragway_lanes *
+           FLAGS_dragway_vehicle_spacing;
       const auto& params = CreateTrajectoryParamsForDragway(
-          *dragway_road_geometry, lane_index, speed, start_time);
+          *dragway_road_geometry, lane_index, speed, start_position);
       simulator->AddPriusTrajectoryCar("TrajectoryCar" + std::to_string(i),
                                        std::get<0>(params),
                                        std::get<1>(params),

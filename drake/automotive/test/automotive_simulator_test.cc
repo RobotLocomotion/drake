@@ -229,13 +229,13 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   };
   const Curve2d curve{waypoints};
 
-  // Set up a basic simulation with a couple Prius TrajectoryCars. The first
-  // car starts a time zero while the second starts at time 10. They both follow
-  // a straight 100 m long line.
+  // Set up a basic simulation with a couple Prius TrajectoryCars. Both cars
+  // start at position zero; the first has a speed of 1 m/s, while the other is
+  // stationary. They both follow a straight 100 m long line.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
   const int id1 = simulator->AddPriusTrajectoryCar("alice", curve, 1.0, 0.0);
-  const int id2 = simulator->AddPriusTrajectoryCar("bob", curve, 1.0, 10.0);
+  const int id2 = simulator->AddPriusTrajectoryCar("bob", curve, 0.0, 0.0);
   EXPECT_EQ(id1, 0);
   EXPECT_EQ(id2, 1);
 
@@ -336,7 +336,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
 
   // Verifies that the first car is about 1 m ahead of the second car. This is
   // expected since the first car is traveling at 1 m/s for a second while the
-  // second car hasn't started to move yet.
+  // second car is immobile.
   const int n = draw_message.num_links / 2;
   for (int i = 0; i < n; ++i) {
     EXPECT_EQ(draw_message.link_name.at(i), draw_message.link_name.at(i + n));
