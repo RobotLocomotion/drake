@@ -9,6 +9,10 @@
 
 #include "drake/math/autodiff.h"
 
+// TODO(jwnimmer-tri) Eventually resolve these warnings.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 namespace snopt {
 // Needs to include snopt.hh BEFORE snfilewrapper.hh, otherwise compiler does
 // not work.
@@ -561,3 +565,5 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
 }  // namespace solvers
 }  // namespace drake
+
+#pragma GCC diagnostic pop  // "-Wunused-parameter"

@@ -8,6 +8,10 @@
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
+// TODO(jwnimmer-tri) Eventually resolve these warnings.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 // NOLINTNEXTLINE(build/include) False positive due to weird include style.
 #include "gurobi_c++.h"
 
@@ -654,3 +658,5 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
 }  // namespace solvers
 }  // namespace drake
+
+#pragma GCC diagnostic pop  // "-Wunused-parameter"
