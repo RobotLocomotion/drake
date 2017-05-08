@@ -20,11 +20,11 @@ if(lcm_FOUND)
         drake-rigid-body-plant
         drake-system-framework)
 
-  add_executable(simple_tree_visualizer_demo simple_tree_visualizer_demo.cc)
-  target_link_libraries(simple_tree_visualizer_demo
+  add_executable(tree_visualizer_demo tree_visualizer_demo.cc)
+  target_link_libraries(tree_visualizer_demo
       drakeSimpleTreeVisualizer)
   drake_add_test(
-      NAME simple_tree_visualizer_demo COMMAND simple_tree_visualizer_demo
+      NAME tree_visualizer_demo COMMAND tree_visualizer_demo
       --num_configurations 1)
 
 endif()

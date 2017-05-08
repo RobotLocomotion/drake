@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_library",
+    "drake_cc_googletest",
 )
 
 drake_cc_library(
@@ -32,15 +33,23 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    test_rule_args = ["--num_configurations=1"],
+    
+drake_cc_library(
+    name = "moving_average_filter",
+    srcs = ["moving_average_filter.cc"],
+    hdrs = ["moving_average_filter.h"],
+    visibility =  ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    deps = ["//drake/common:common"],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "moving_average_filter_test",
+    srcs = ["test/moving_average_filter_test.cc"],
     deps = [
-        ":simple_tree_visualizer",
-        "//drake/common",
-        "//drake/lcm",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework",
-        "@gflags//:gflags",
-    ],
+        ":moving_average_filter", 
+        "//drake/common"],
 )
 
 cpplint()
