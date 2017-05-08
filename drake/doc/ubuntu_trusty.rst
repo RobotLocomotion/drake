@@ -87,7 +87,7 @@ Other prerequisites may be installed as follows::
       libterm-readkey-perl libtinyxml-dev libtool libvtk5-dev libwww-perl make \
       ninja-build perl pkg-config python-bs4 python-dev python-gtk2 \
       python-html5lib python-numpy python-pip python-sphinx python-yaml \
-      ruby-1.9 unzip valgrind
+      unzip valgrind
 
 If you will be building/using Director, some additional prerequisites may be
 installed as follows::
