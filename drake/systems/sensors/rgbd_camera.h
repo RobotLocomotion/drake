@@ -10,6 +10,7 @@
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/camera_info.h"
 
 namespace drake {
@@ -59,6 +60,24 @@ namespace sensors {
 class RgbdCamera : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
+
+  /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
+  /// pixel in the depth image has InvalidDepth::kError depth value, all the
+  /// `(x, y, z)` values in the converted point will be InvalidDepth::kError.
+  /// Similary, if a pixel has either InvalidDepth::kTooFar or
+  /// InvalidDepth::kTooClose, the converted point will be
+  /// InvalidDepth::kTooFar.
+  ///
+  /// @param[in] depth_image The input depth image obtained from RgbdCamera. The
+  /// number of channels must be one.
+  ///
+  /// @param[in] camera_info The input camera info which is used for conversion.
+  ///
+  /// @param[out] point_cloud The pointer of output point cloud. The number of
+  /// column must be the same as the size of the input depth image.
+  static void ConvertDepthImageToPointCloud(const Image<float>& depth_image,
+                                            const CameraInfo& camera_info,
+                                            Eigen::Matrix3Xf* point_cloud);
 
   /// Set of constants used to represent invalid depth values.
   class InvalidDepth {
