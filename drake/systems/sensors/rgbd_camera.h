@@ -110,7 +110,7 @@ class RgbdCamera : public LeafSystem<double> {
   /// @param orientation The roll-pitch-yaw orientation of `B` in `W`. This
   /// defines the orientation component of `X_WB`.
   ///
-  /// @param fov_y The RgdbCamera's vertical field of view.
+  /// @param fov_y The RgbdCamera's vertical field of view.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
@@ -136,7 +136,7 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param frame The frame in @tree to which this camera is attached.
   ///
-  /// @param fov_y The RgdbCamera's vertical field of view.
+  /// @param fov_y The RgbdCamera's vertical field of view.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
