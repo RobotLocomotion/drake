@@ -26,6 +26,8 @@ drake_cc_library(
         "gen/pure_pursuit_params.cc",
         "gen/simple_car_params.cc",
         "gen/simple_car_state.cc",
+        "gen/trajectory_car_params.cc",
+        "gen/trajectory_car_state.cc",
     ],
     hdrs = [
         "gen/bicycle_car_parameters.h",
@@ -39,6 +41,8 @@ drake_cc_library(
         "gen/pure_pursuit_params.h",
         "gen/simple_car_params.h",
         "gen/simple_car_state.h",
+        "gen/trajectory_car_params.h",
+        "gen/trajectory_car_state.h",
     ],
     deps = [
         "//drake/systems/framework",
@@ -56,6 +60,7 @@ drake_cc_library(
         "gen/maliput_railcar_state_translator.cc",
         "gen/simple_car_params_translator.cc",
         "gen/simple_car_state_translator.cc",
+        "gen/trajectory_car_state_translator.cc",
     ],
     hdrs = [
         "gen/bicycle_car_parameters_translator.h",
@@ -66,6 +71,7 @@ drake_cc_library(
         "gen/maliput_railcar_state_translator.h",
         "gen/simple_car_params_translator.h",
         "gen/simple_car_state_translator.h",
+        "gen/trajectory_car_state_translator.h",
     ],
     deps = [
         ":generated_vectors",
@@ -127,6 +133,7 @@ drake_cc_library(
     hdrs = ["curve2.h"],
     deps = [
         ":generated_vectors",
+        "//drake/common:autodiff"
     ],
 )
 
@@ -326,8 +333,10 @@ drake_cc_library(
     srcs = ["trajectory_car.cc"],
     hdrs = ["trajectory_car.h"],
     deps = [
+        ":calc_smooth_acceleration",
         ":curve2",
         ":generated_vectors",
+        "//drake/common:autodiff",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -623,6 +632,7 @@ drake_cc_googletest(
     name = "trajectory_car_test",
     deps = [
         "//drake/automotive:trajectory_car",
+        "//drake/systems/analysis:simulator",
     ],
 )
 

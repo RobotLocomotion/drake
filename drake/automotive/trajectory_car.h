@@ -1,14 +1,20 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/calc_smooth_acceleration.h"
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/automotive/gen/trajectory_car_params.h"
+#include "drake/automotive/gen/trajectory_car_state.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/vector_base.h"
 #include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/pose_vector.h"
 
@@ -17,11 +23,14 @@ namespace automotive {
 
 /// TrajectoryCar models a car that follows a pre-established trajectory.
 ///
-/// state vector
-/// * none
+/// state vector:
+/// * A TrajectoryCarState, consisting of a position and speed,
+///   along a the given curve.
 ///
 /// input vector:
-/// * none
+/// * desired acceleration, a systems::BasicVector of size 1 (optional input).
+///   If left unconnected, the trajectory car will travel at the initial
+///   velocity, specifed via the `speed` input argument.
 ///
 /// output port 0:
 /// * position: x, y, heading;
@@ -32,6 +41,7 @@ namespace automotive {
 ///
 /// output port 1: A PoseVector containing X_WC, where C is the car frame.
 ///   (OutputPortDescriptor getter: pose_output())
+///
 /// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
 ///   (OutputPortDescriptor getter: velocity_output())
 ///
@@ -43,19 +53,29 @@ class TrajectoryCar : public systems::LeafSystem<T> {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
 
-  /// Constructs a TrajectoryCar system that traces the given @p curve,
-  /// at the given constant @p speed, starting at the given @p start_time.
-  /// Throws an error if the curve is empty (a zero @p path_length).
-  TrajectoryCar(const Curve2<double>& curve, double speed, double start_time)
-      : curve_(curve), speed_(speed), start_time_(start_time) {
+  /// Constructs a TrajectoryCar system that traces the given @p curve, at the
+  /// given constant @p speed, starting at the given @p start_position - the
+  /// initial position along the (possibly extrapolated) curve.  Throws an error
+  /// if the curve is empty (a zero @p path_length).
+  TrajectoryCar(const Curve2<T>& curve, T initial_speed, T start_position)
+      : curve_(curve),
+        initial_speed_(initial_speed),
+        start_position_(start_position) {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
+    this->DeclareInputPort(systems::kVectorValued, 1 /* single-valued input */);
     this->DeclareVectorOutputPort(SimpleCarState<T>());
     this->DeclareVectorOutputPort(systems::rendering::PoseVector<T>());
     this->DeclareVectorOutputPort(systems::rendering::FrameVelocity<T>());
+    this->DeclareContinuousState(TrajectoryCarState<T>());
+    this->DeclareNumericParameter(TrajectoryCarParams<T>());
   }
 
+  /// The command input port (optional).
+  const systems::InputPortDescriptor<T>& command_input() const {
+    return this->get_input_port(0);
+  }
   /// See class description for details about the following ports.
   /// @{
   const systems::OutputPortDescriptor<T>& raw_pose_output() const {
@@ -78,80 +98,170 @@ class TrajectoryCar : public systems::LeafSystem<T> {
 
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override {
+    // Obtain the state vector.
+    const TrajectoryCarState<T>* const state =
+        dynamic_cast<const TrajectoryCarState<T>*>(
+            &context.get_continuous_state_vector());
+    DRAKE_ASSERT(state);
+
+    // Compute the pose and velocities.
+    const auto raw_pose = CalcRawPose(*state);
+
     SimpleCarState<T>* const output_vector =
         dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
     DRAKE_ASSERT(output_vector);
-    ImplCalcOutput(context.get_time(), output_vector);
+    ImplCalcOutput(raw_pose, *state, output_vector);
 
     systems::rendering::PoseVector<T>* const pose =
         dynamic_cast<systems::rendering::PoseVector<T>*>(
             output->GetMutableVectorData(1));
     DRAKE_ASSERT(pose);
-    ImplCalcPose(context.get_time(), pose);
+    ImplCalcPose(raw_pose, pose);
 
     systems::rendering::FrameVelocity<T>* const velocity =
-      dynamic_cast<systems::rendering::FrameVelocity<T>*>(
-          output->GetMutableVectorData(2));
+        dynamic_cast<systems::rendering::FrameVelocity<T>*>(
+            output->GetMutableVectorData(2));
     DRAKE_ASSERT(velocity);
-    ImplCalcVelocity(context.get_time(), velocity);
+    ImplCalcVelocity(raw_pose, *state, velocity);
+  }
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override {
+    // Obtain the parameters.
+    const TrajectoryCarParams<T>& params =
+        this->template GetNumericParameter<TrajectoryCarParams>(context, 0);
+
+    // Obtain the state.
+    const TrajectoryCarState<T>* const state =
+        dynamic_cast<const TrajectoryCarState<T>*>(
+            &context.get_continuous_state_vector());
+    DRAKE_ASSERT(state);
+
+    // Obtain the input.
+    const systems::BasicVector<T>* input =
+        this->template EvalVectorInput<systems::BasicVector>(context, 0);
+
+    // If the input is null, then apply a default acceleration setting of zero.
+    const auto default_input = systems::BasicVector<T>::Make(0);
+    if (input == nullptr) {
+      input = default_input.get();
+    }
+    DRAKE_ASSERT(input->size() == 1);  // Expect the input to have only an
+                                       // acceleration value.
+
+    // Obtain the result structure.
+    DRAKE_ASSERT(derivatives != nullptr);
+    systems::VectorBase<T>* const vector_derivatives =
+        derivatives->get_mutable_vector();
+    DRAKE_ASSERT(vector_derivatives);
+    TrajectoryCarState<T>* const rates =
+        dynamic_cast<TrajectoryCarState<T>*>(vector_derivatives);
+    DRAKE_ASSERT(rates);
+
+    ImplCalcTimeDerivatives(params, *state, *input, rates);
   }
 
  private:
-  void ImplCalcOutput(double time, SimpleCarState<T>* output) const {
-    const auto raw_pose = CalcRawPose(time);
-
+  void ImplCalcOutput(const PositionHeading& raw_pose,
+                      const TrajectoryCarState<T>& state,
+                      SimpleCarState<T>* output) const {
     // Convert raw pose to output type.
     output->set_x(raw_pose.position[0]);
     output->set_y(raw_pose.position[1]);
     output->set_heading(raw_pose.heading);
-    output->set_velocity(speed_);
+    output->set_velocity(state.speed());
   }
 
-  void ImplCalcPose(double time, systems::rendering::PoseVector<T>* pose)
-      const {
-    const auto raw_pose = CalcRawPose(time);
-
+  void ImplCalcPose(const PositionHeading& raw_pose,
+                    systems::rendering::PoseVector<T>* pose) const {
     // Convert the raw pose into a pose vector.
-    pose->set_translation(Eigen::Translation<T, 3>(
-        raw_pose.position[0], raw_pose.position[1], 0));
+    pose->set_translation(Eigen::Translation<T, 3>(raw_pose.position[0],
+                                                   raw_pose.position[1], 0));
     const Vector3<T> z_axis{0.0, 0.0, 1.0};
     const Eigen::AngleAxis<T> rotation(raw_pose.heading, z_axis);
     pose->set_rotation(Eigen::Quaternion<T>(rotation));
   }
 
-  void ImplCalcVelocity(double time,
+  void ImplCalcVelocity(const PositionHeading& raw_pose,
+                        const TrajectoryCarState<T>& state,
                         systems::rendering::FrameVelocity<T>* velocity) const {
-    const auto raw_pose = CalcRawPose(time);
+    using std::cos;
+    using std::sin;
 
     // Convert the state derivatives into a spatial velocity.
     multibody::SpatialVelocity<T> output;
-    output.translational().x() = speed_ * std::cos(raw_pose.heading);
-    output.translational().y() = speed_ * std::sin(raw_pose.heading);
+    output.translational().x() = state.speed() * cos(raw_pose.heading);
+    output.translational().y() = state.speed() * sin(raw_pose.heading);
     output.translational().z() = T(0);
     output.rotational().x() = T(0);
     output.rotational().y() = T(0);
-    // N.B. The instantaneous rotation rate is always zero, as the Curve2
-    // implmentation is based on line segments.
+    // N.B. The instantaneous rotation rate is always zero, as the Curve2 is
+    // constructed from line segments.
     output.rotational().z() = T(0);
     velocity->set_velocity(output);
   }
 
-  const PositionHeading CalcRawPose(double time) const {
+  void ImplCalcTimeDerivatives(const TrajectoryCarParams<T>& params,
+                               const TrajectoryCarState<T>& state,
+                               const systems::BasicVector<T>& input,
+                               TrajectoryCarState<T>* rates) const {
+    using std::max;
+
+    // Compute the smooth acceleration that the vehicle actually executes.
+    const T desired_acceleration = input.GetAtIndex(0);
+    const T smooth_acceleration =
+        calc_smooth_acceleration(desired_acceleration, params.max_velocity(),
+                                 params.velocity_limit_kp(), state.speed());
+
+    // Don't allow small negative velocities to affect position.
+    const T nonneg_velocity = max(T(0), state.speed());
+
+    rates->set_position(nonneg_velocity);
+    rates->set_speed(smooth_acceleration);
+  }
+
+  void SetDefaultState(const systems::Context<T>&,
+                       systems::State<T>* state_vector) const override {
+    TrajectoryCarState<T>* state = dynamic_cast<TrajectoryCarState<T>*>(
+        state_vector->get_mutable_continuous_state()->get_mutable_vector());
+    DRAKE_DEMAND(state);
+    state->set_position(start_position_);
+    state->set_speed(initial_speed_);
+  }
+
+  const PositionHeading CalcRawPose(const TrajectoryCarState<T>& state) const {
+    using std::atan2;
+
     PositionHeading result;
 
-    // Trace the curve at a fixed speed.
-    const double distance = speed_ * (time - start_time_);
-    const Curve2<double>::PositionResult pose = curve_.GetPosition(distance);
+    // Compute the curve at the current longitudinal position.
+    const typename Curve2<T>::PositionResult pose =
+        curve_.GetPosition(state.position());
+    // TODO(jadecastro): Now that the curve is a function of position rather
+    // than time, we are not acting on a `trajectory` anymore.  Rename this
+    // System to PathFollowingCar or something similar.
     DRAKE_ASSERT(pose.position_dot.norm() > 0.0);
 
     result.position = pose.position;
-    result.heading = std::atan2(pose.position_dot[1], pose.position_dot[0]);
+    result.heading = atan2(pose.position_dot[1], pose.position_dot[0]);
     return result;
   }
 
-  const Curve2<double> curve_;
-  const double speed_{};
-  const double start_time_{};
+  TrajectoryCar<AutoDiffXd>* DoToAutoDiffXd() const override {
+    std::vector<typename Curve2<T>::Point2> waypoints = curve_.waypoints();
+    std::vector<Curve2<AutoDiffXd>::Point2> autodiff_waypoints{};
+    for (auto point : waypoints) {
+      autodiff_waypoints.emplace_back(Curve2<AutoDiffXd>::Point2(point));
+    }
+    const Curve2<AutoDiffXd> curve(autodiff_waypoints);
+    return new TrajectoryCar<AutoDiffXd>(curve, AutoDiffXd(initial_speed_),
+                                         AutoDiffXd(start_position_));
+  }
+
+  const Curve2<T> curve_;
+  const T initial_speed_{};
+  const T start_position_{};
 };
 
 }  // namespace automotive
