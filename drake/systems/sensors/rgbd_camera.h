@@ -10,7 +10,9 @@
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace systems {
@@ -171,30 +173,37 @@ class RgbdCamera : public LeafSystem<double> {
   /// the RigidBodyTree.
   const InputPortDescriptor<double>& state_input_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that contains an
-  /// BGRA image of the type Image<uint8_t>.
+  /// Returns the abstract valued output port that contains a BGRA image of the
+  /// type Image<uint8_t>.
   const OutputPort<double>& color_image_output_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that contains an
-  /// Image<float>.
+  /// Returns the abstract valued output port that contains an Image<float>.
   const OutputPort<double>& depth_image_output_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that contains an
-  /// label image of the type Image<int16_t>.
+  /// Returns the abstract valued output port that contains an label image of
+  /// the type Image<int16_t>.
   const OutputPort<double>& label_image_output_port() const;
 
-  /// Returns a descriptor of the vector valued output port that contains an
-  /// PoseVector.
+  /// Returns the vector valued output port that contains a PoseVector.
   const OutputPort<double>& camera_base_pose_output_port() const;
-
- protected:
-  /// Updates all the model frames for the renderer and outputs the rendered
-  /// images.
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
 
  private:
   void Init(const std::string& name);
+
+  // These are the calculator methods for the four output ports.
+  void OutputColorImage(const Context<double>& context,
+                        Image<uint8_t>* color_image) const;
+  void OutputDepthImage(const Context<double>& context,
+                        Image<float>* depth_image) const;
+  void OutputLabelImage(const Context<double>& context,
+                        Image<int16_t>* label_image) const;
+  void OutputPoseVector(const Context<double>& context,
+                        rendering::PoseVector<double>* pose_vector) const;
+
+  const OutputPort<double>* color_image_port_{};
+  const OutputPort<double>* depth_image_port_{};
+  const OutputPort<double>* label_image_port_{};
+  const OutputPort<double>* camera_base_pose_port_{};
 
   class Impl;
   std::unique_ptr<Impl> impl_;
