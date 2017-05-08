@@ -49,8 +49,13 @@ class Frame : public FrameBase<T> {
 
  private:
   // Implementation for MultibodyTreeElement::DoFinalize().
-  void DoFinalize(const MultibodyTree<T>& tree) final {
-    topology_ = tree.get_topology().get_frame(this->get_index());
+  //void DoFinalize(const MultibodyTree<T>& tree) final {
+  //  topology_ = tree.get_topology().get_frame(this->get_index());
+  //  DRAKE_ASSERT(topology_.index == this->get_index());
+ // }
+
+  void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
+    topology_ = tree_topology.get_frame(this->get_index());
     DRAKE_ASSERT(topology_.index == this->get_index());
   }
 

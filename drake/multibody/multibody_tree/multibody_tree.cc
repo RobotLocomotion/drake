@@ -37,12 +37,17 @@ void MultibodyTree<T>::Finalize() {
 
   // Give bodies the chance to perform any finalize-time setup.
   for (const auto& body : owned_bodies_) {
-    body->Finalize(*this);
+    body->SetTopology(topology_);
   }
 
   // Give frames the chance to perform any finalize-time setup.
   for (const auto& frame : owned_frames_) {
-    frame->Finalize(*this);
+    frame->SetTopology(topology_);
+  }
+
+  // Give mobilizers the chance to perform any finalize-time setup.
+  for (const auto& mobilizer : owned_mobilizers_) {
+    mobilizer->SetTopology(topology_);
   }
 
   set_valid_topology();

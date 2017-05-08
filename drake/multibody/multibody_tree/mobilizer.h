@@ -25,9 +25,10 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
             const Frame<T>& outboard_frame) :
       inboard_frame_(inboard_frame), outboard_frame_(outboard_frame) {}
 
-  //virtual int get_num_positions() const = 0;
+  // make pure virtual!!!
+  virtual int get_num_positions() const {return 0;};
 
-  //virtual int get_num_velocities() const = 0;
+  virtual int get_num_velocities() const {return 0;};
 
   const Frame<T>& get_inboard_frame() const {
     return inboard_frame_;
@@ -55,8 +56,12 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   // Implementation for MultibodyTreeElement::DoFinalize().
   // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology
   // from the parent MultibodyTree.
-  void DoFinalize(const MultibodyTree<T>& tree) final {
-    topology_ = tree.get_topology().mobilizers[this->get_index()];
+  //void DoFinalize(const MultibodyTree<T>& tree) final {
+  //  topology_ = tree.get_topology().mobilizers[this->get_index()];
+  //}
+
+  void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
+    topology_ = tree_topology.mobilizers[this->get_index()];
   }
 
   const Frame<T>& inboard_frame_;

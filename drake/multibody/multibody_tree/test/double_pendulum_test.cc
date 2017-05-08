@@ -9,6 +9,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
 namespace drake {
@@ -17,6 +18,7 @@ namespace {
 
 using Eigen::Isometry3d;
 using Eigen::Translation3d;
+using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
 
@@ -99,11 +101,13 @@ class PendulumTests : public ::testing::Test {
     //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
     shoulder_mobilizer_ =
         &model_->AddMobilizer(
-            make_unique<Mobilizer<double>>(
-                *shoulder_inboard_frame_, *shoulder_outboard_frame_));
+            make_unique<RevoluteMobilizer<double>>(
+                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+                Vector3d::UnitZ() /*revolute axis*/));
     // Using: const MobilizerType<T>& AddMobilizer(Args&&... args)
-    elbow_mobilizer_ = &model_->AddMobilizer<Mobilizer>(
-        *elbow_inboard_frame_, *elbow_outboard_frame_);
+    elbow_mobilizer_ = &model_->AddMobilizer<RevoluteMobilizer>(
+        *elbow_inboard_frame_, *elbow_outboard_frame_,
+        Vector3d::UnitZ() /*revolute axis*/);
   }
 
  protected:
@@ -119,8 +123,8 @@ class PendulumTests : public ::testing::Test {
   const FixedOffsetFrame<double>* elbow_inboard_frame_;
   const FixedOffsetFrame<double>* elbow_outboard_frame_;
   // Mobilizers:
-  const Mobilizer<double>* shoulder_mobilizer_;
-  const Mobilizer<double>* elbow_mobilizer_;
+  const RevoluteMobilizer<double>* shoulder_mobilizer_;
+  const RevoluteMobilizer<double>* elbow_mobilizer_;
   // Pendulum parameters:
   const double link_length = 1.0;
   const double half_link_length = link_length / 2;
@@ -191,6 +195,10 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
   EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
   EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
+
+  // Request revolute mobilizers' axes.
+  EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
 }
 
 // Frame indexes are assigned by MultibodyTree. The number of frames

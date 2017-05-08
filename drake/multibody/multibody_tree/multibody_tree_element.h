@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -133,12 +134,18 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// Gives MultibodyTree elements the opportunity to perform internal setup
   /// when MultibodyTree::Finalize() is invoked.
   /// NVI to pure virtual method DoFinalize().
-  void Finalize(const MultibodyTree<T>& tree) {
-    DoFinalize(tree);
+  //void Finalize(const MultibodyTree<T>& tree) {
+  //  DoFinalize(tree);
+  //}
+
+  void SetTopology(const MultibodyTreeTopology& tree) {
+    DoSetTopology(tree);
   }
 
   /// Implementation of the NVI Finalize().
-  virtual void DoFinalize(const MultibodyTree<T>& tree) = 0;
+  //virtual void DoFinalize(const MultibodyTree<T>& tree) = 0;
+
+  virtual void DoSetTopology(const MultibodyTreeTopology& tree) = 0;
 
  private:
   void set_parent_tree(
