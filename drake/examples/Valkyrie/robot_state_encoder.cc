@@ -3,7 +3,6 @@
 #include <list>
 
 #include "drake/common/constants.h"
-#include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
@@ -31,10 +30,7 @@ namespace systems {
 RobotStateEncoder::RobotStateEncoder(
     const RigidBodyTree<double>& tree,
     const std::vector<RigidBodyFrame<double>>& ft_sensor_info)
-    : tree_(CheckTreeIsRobotStateLcmTypeCompatible(tree)),
-      floating_body_(tree.bodies[1]->getJoint().is_floating()
-                         ? tree.bodies[1].get()
-                         : nullptr),
+    : translator_(tree),
       lcm_message_port_index_(DeclareAbstractOutputPort().get_index()),
       kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
       contact_results_port_index_(DeclareAbstractInputPort().get_index()),
@@ -81,7 +77,9 @@ void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
 
 std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
     const OutputPortDescriptor<double>&) const {
-  return make_unique<Value<robot_state_t>>(robot_state_t());
+  robot_state_t msg;
+  translator_.InitializeMessage(&msg);
+  return make_unique<Value<robot_state_t>>(msg);
 }
 
 const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
@@ -110,7 +108,7 @@ RobotStateEncoder::DeclareEffortInputPorts() {
 
   // Currently, all RigidBodyActuators are assumed to be one-dimensional.
   const int actuator_effort_length = 1;
-  for (const auto& actuator : tree_.actuators) {
+  for (const auto& actuator : translator_.get_robot().actuators) {
     ret[&actuator] =
         DeclareInputPort(kVectorValued, actuator_effort_length).get_index();
   }
@@ -128,55 +126,21 @@ std::map<Side, int> RobotStateEncoder::DeclareWrenchInputPorts() {
 void RobotStateEncoder::SetStateAndEfforts(
     const KinematicsResults<double>& kinematics_results,
     const Context<double>& context, robot_state_t* message) const {
-  if (floating_body_) {
-    // Pose of floating body with respect to world.
-    Isometry3d floating_body_to_world =
-        kinematics_results.get_pose_in_world(*floating_body_);
-    EncodePose(floating_body_to_world, message->pose);
-
-    // Twist of floating body with respect to world.
-    // To match usage of robot_state_t throughout OpenHumanoids code, use
-    // twist frame that has the same orientation as world
-    // frame, but the same origin as the floating body frame.
-    TwistVector<double> floating_body_twist =
-        kinematics_results.get_twist_in_world_aligned_body_frame(
-            *floating_body_);
-    EncodeTwist(floating_body_twist, message->twist);
-  } else {
-    EncodePose(Isometry3d::Identity(), message->pose);
-    EncodeTwist(Vector6<double>::Zero(), message->twist);
-  }
-
-  // Joint names, positions, velocities, and efforts.
-  // Note: the order of the actuators in the rigid body tree determines the
-  // order of the joint_name, joint_position, joint_velocity, and
-  // joint_effort fields.
-  message->joint_name.clear();
-  message->joint_position.clear();
-  message->joint_velocity.clear();
-  message->joint_effort.clear();
-  for (const auto& actuator : tree_.actuators) {
-    const auto& body = *actuator.body_;
-    int effort_port_index = effort_port_indices_.at(&actuator);
-
-    // To match usage of robot_state_t throughout OpenHumanoids code, set
-    // joint_names field to position coordinate names.
-    int position_index = body.get_position_start_index();
-    message->joint_name.push_back(tree_.get_position_name(position_index));
-
-    auto position =
-        static_cast<float>(kinematics_results.get_joint_position(body)[0]);
-    auto velocity =
-        static_cast<float>(kinematics_results.get_joint_velocity(body)[0]);
-    auto effort = static_cast<float>(
-        EvalVectorInput(context, effort_port_index)->GetAtIndex(0));
-
-    message->joint_position.push_back(position);
-    message->joint_velocity.push_back(velocity);
-    message->joint_effort.push_back(effort);
-  }
-  message->num_joints = static_cast<int16_t>(message->joint_name.size());
   message->utime = static_cast<int64_t>(1e6 * context.get_time());
+  translator_.EncodeMessageKinematics(
+      kinematics_results.get_cache().getQ(),
+      kinematics_results.get_cache().getV(),
+      message);
+
+  VectorX<double> torque(translator_.get_robot().get_num_actuators());
+  int actuator_index = 0;
+  for (const auto& actuator : translator_.get_robot().actuators) {
+    int effort_port_index = effort_port_indices_.at(&actuator);
+    torque(actuator_index++) =
+        EvalVectorInput(context, effort_port_index)->GetAtIndex(0);
+  }
+
+  translator_.EncodeMessageTorque(torque, message);
 }
 
 SpatialForce<double>
@@ -189,9 +153,9 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
     const ContactInfo<double>& contact_info =
         contact_results.get_contact_info(i);
     const RigidBody<double>* b1 =
-        tree_.FindBody(contact_info.get_element_id_1());
+        translator_.get_robot().FindBody(contact_info.get_element_id_1());
     const RigidBody<double>* b2 =
-        tree_.FindBody(contact_info.get_element_id_2());
+        translator_.get_robot().FindBody(contact_info.get_element_id_2());
     // These are point forces in the world frame, and are applied at points
     // in the world frame.
     // TODO(siyuan.feng): replace pointer comparison with a proper one that
@@ -233,7 +197,8 @@ void RobotStateEncoder::SetForceTorque(
         force_torque_sensor_info_[i].get_rigid_body();
     SpatialForce<double> spatial_force =
         GetSpatialForceActingOnBody1ByBody2InBody1Frame(
-            kinematics_results, contact_results, body, tree_.world());
+            kinematics_results, contact_results, body,
+            translator_.get_robot().world());
     Isometry3<double> body_to_sensor =
         force_torque_sensor_info_[i].get_transform_to_body().inverse();
     spatial_force_in_sensor_frame[i] =
