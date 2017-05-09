@@ -27,122 +27,6 @@ namespace systems {
 namespace sensors {
 namespace {
 
-class DepthImageToPointCloudConversionTest : public ::testing::Test {
- public:
-  const float kFocal = 500.f;
-  const int kWidth = 6;
-  const int kHeight = 4;
-
-  typedef std::function<void(const Eigen::Vector3f& actual)> Verifier;
-
-  DepthImageToPointCloudConversionTest() : camera_info_(
-      kWidth, kHeight, kFocal, kFocal, kWidth * 0.5, kHeight * 0.5),
-      depth_image_(kWidth, kHeight, 1) {}
-
- protected:
-  void SetUp() override {}
-
-  void SetUp(float depth_value) {
-    std::fill(depth_image_.at(0, 0),
-              depth_image_.at(0, 0) + depth_image_.size(),
-              depth_value);
-  }
-
-  const CameraInfo camera_info_;
-  Image<float> depth_image_;
-  Eigen::Matrix3Xf actual_point_cloud_;
-};
-
-// Verifies computed point cloud when pixel values in depth image are valid.
-TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
-  const float kDepthValue = 1.f;
-  SetUp(kDepthValue);
-
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
-
-  // This tolerance was determined empirically using Drake's supported
-  // platforms.
-  const float kDistanceTolerance = 1e-9;
-  for (int v = 0; v < depth_image_.height(); ++v) {
-    for (int u = 0; u < depth_image_.width(); ++u) {
-      const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
-          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
-
-      EXPECT_NEAR(actual(0), kDepthValue * (u - kWidth * 0.5) / kFocal,
-                  kDistanceTolerance);
-      EXPECT_NEAR(actual(1), kDepthValue * (v - kHeight * 0.5) / kFocal,
-                  kDistanceTolerance);
-      EXPECT_NEAR(actual(2), kDepthValue, kDistanceTolerance);
-    }
-  }
-}
-
-// Verifies computed point cloud when pixel values in depth image are NaN.
-TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
-  const float kDepthValue = std::numeric_limits<float>::quiet_NaN();
-  SetUp(kDepthValue);
-
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
-
-  for (int v = 0; v < depth_image_.height(); ++v) {
-    for (int u = 0; u < depth_image_.width(); ++u) {
-      const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
-          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
-
-      EXPECT_TRUE(std::isnan(actual(0)));
-      EXPECT_TRUE(std::isnan(actual(1)));
-      EXPECT_TRUE(std::isnan(actual(2)));
-    }
-  }
-}
-
-// Verifies computed point cloud when pixel values in depth image are kTooFar.
-TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
-  const float kDepthValue = RgbdCamera::InvalidDepth::kTooFar;
-  SetUp(kDepthValue);
-
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
-
-  for (int v = 0; v < depth_image_.height(); ++v) {
-    for (int u = 0; u < depth_image_.width(); ++u) {
-      const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
-          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
-
-      EXPECT_EQ(actual(0), RgbdCamera::InvalidDepth::kTooFar);
-      EXPECT_EQ(actual(1), RgbdCamera::InvalidDepth::kTooFar);
-      EXPECT_EQ(actual(2), RgbdCamera::InvalidDepth::kTooFar);
-    }
-  }
-}
-
-// Verifies computed point cloud when pixel values in depth image are kTooClose.
-TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
-  const float kDepthValue = RgbdCamera::InvalidDepth::kTooClose;
-  SetUp(kDepthValue);
-
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
-
-  for (int v = 0; v < depth_image_.height(); ++v) {
-    for (int u = 0; u < depth_image_.width(); ++u) {
-      const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
-          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
-
-      EXPECT_EQ(actual(0), RgbdCamera::InvalidDepth::kTooFar);
-      EXPECT_EQ(actual(1), RgbdCamera::InvalidDepth::kTooFar);
-      EXPECT_EQ(actual(2), RgbdCamera::InvalidDepth::kTooFar);
-    }
-  }
-}
-
-
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
@@ -629,6 +513,111 @@ TEST_F(ImageTest, MultipleVisualsTest) {
   Verify(ImageTest::VerifyMultipleVisuals);
 }
 
+
+class DepthImageToPointCloudConversionTest : public ::testing::Test {
+ public:
+  const float kFocal = 500.f;
+  const int kWidth = 6;
+  const int kHeight = 4;
+
+  DepthImageToPointCloudConversionTest() : camera_info_(
+      kWidth, kHeight, kFocal, kFocal, kWidth * 0.5, kHeight * 0.5),
+      depth_image_(kWidth, kHeight, 1) {}
+
+  void VerifyTooFarTooClose() {
+    for (int v = 0; v < depth_image_.height(); ++v) {
+      for (int u = 0; u < depth_image_.width(); ++u) {
+        const int i = v * depth_image_.width() + u;
+        Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
+            actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+
+        EXPECT_EQ(actual(0), RgbdCamera::InvalidDepth::kTooFar);
+        EXPECT_EQ(actual(1), RgbdCamera::InvalidDepth::kTooFar);
+        EXPECT_EQ(actual(2), RgbdCamera::InvalidDepth::kTooFar);
+      }
+    }
+  }
+
+ protected:
+  void InitDepthImage(float depth_value) {
+    std::fill(depth_image_.at(0, 0),
+              depth_image_.at(0, 0) + depth_image_.size(),
+              depth_value);
+  }
+
+  const CameraInfo camera_info_;
+  Image<float> depth_image_;
+  Eigen::Matrix3Xf actual_point_cloud_;
+};
+
+// Verifies computed point cloud when pixel values in depth image are valid.
+TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
+  const float kDepthValue = 1.f;
+  InitDepthImage(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  // This tolerance was determined empirically using Drake's supported
+  // platforms.
+  const float kDistanceTolerance = 1e-9;
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
+          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+
+      EXPECT_NEAR(actual(0), kDepthValue * (u - kWidth * 0.5) / kFocal,
+                  kDistanceTolerance);
+      EXPECT_NEAR(actual(1), kDepthValue * (v - kHeight * 0.5) / kFocal,
+                  kDistanceTolerance);
+      EXPECT_NEAR(actual(2), kDepthValue, kDistanceTolerance);
+    }
+  }
+}
+
+// Verifies computed point cloud when pixel values in depth image are NaN.
+TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
+  const float kDepthValue = std::numeric_limits<float>::quiet_NaN();
+  InitDepthImage(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
+          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+
+      EXPECT_TRUE(std::isnan(actual(0)));
+      EXPECT_TRUE(std::isnan(actual(1)));
+      EXPECT_TRUE(std::isnan(actual(2)));
+    }
+  }
+}
+
+// Verifies computed point cloud when pixel values in depth image are kTooFar.
+TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
+  const float kDepthValue = RgbdCamera::InvalidDepth::kTooFar;
+  InitDepthImage(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  VerifyTooFarTooClose();
+}
+
+// Verifies computed point cloud when pixel values in depth image are kTooClose.
+TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
+  const float kDepthValue = RgbdCamera::InvalidDepth::kTooClose;
+  InitDepthImage(kDepthValue);
+
+  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
+                                            &actual_point_cloud_);
+
+  VerifyTooFarTooClose();
+}
 
 }  // namespace
 }  // namespace sensors
