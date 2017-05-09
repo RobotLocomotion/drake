@@ -143,7 +143,7 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivativesUsingContext() {
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
-    const System<T>&, const Context<T>&, ContinuousState<T>* state) {
+    const System<T>&, const Context<T>& context, ContinuousState<T>* state) {
   using std::abs;
 
   // Set epsilon to the square root of machine precision.
@@ -158,6 +158,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
   SPDLOG_DEBUG(drake::log(), "  IE Compute Forwarddiff {}-Jacobian t={}",
                n, context.get_time());
   SPDLOG_DEBUG(drake::log(), "  computing from state {}", xtplus.transpose());
+
+  // Prevent compiler warnings for context.
+  unused(context);
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -203,7 +206,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
-    const System<T>&, const Context<T>&, ContinuousState<T>* state) {
+    const System<T>&, const Context<T>& context, ContinuousState<T>* state) {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
@@ -215,6 +218,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
 
   SPDLOG_DEBUG(drake::log(), "  IE Compute Centraldiff {}-Jacobian t={}",
                n, context.get_time());
+
+  // Prevent compiler warnings for context.
+  unused(context);
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
