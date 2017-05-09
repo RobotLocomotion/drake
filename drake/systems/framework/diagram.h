@@ -246,6 +246,7 @@ class Diagram : public System<T>,
   }
 
   /// Allocates a DiagramEventCollection for this Diagram.
+  /// @sa System::AllocateCompositeEventCollection().
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const final {
     const int num_systems = num_subsystems();
@@ -482,9 +483,7 @@ class Diagram : public System<T>,
   void GetGraphvizFragment(std::stringstream* dot) const override {
     // Open the Diagram.
     const int64_t id = this->GetGraphvizId();
-    *dot << "subgraph cluster" << id << "diagram"
-                                        " {"
-         << std::endl;
+    *dot << "subgraph cluster" << id << "diagram" " {" << std::endl;
     *dot << "color=black" << std::endl;
     *dot << "concentrate=true" << std::endl;
     std::string name = this->get_name();
@@ -492,8 +491,7 @@ class Diagram : public System<T>,
     *dot << "label=\"" << name << "\";" << std::endl;
 
     // Add a cluster for the input port nodes.
-    *dot << "subgraph cluster" << id << "inputports"
-         << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "inputports" << " {" << std::endl;
     *dot << "rank=same" << std::endl;
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
@@ -505,8 +503,7 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
 
     // Add a cluster for the output port nodes.
-    *dot << "subgraph cluster" << id << "outputports"
-         << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "outputports" << " {" << std::endl;
     *dot << "rank=same" << std::endl;
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
@@ -518,8 +515,7 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
 
     // Add a cluster for the subsystems.
-    *dot << "subgraph cluster" << id << "subsystems"
-         << " {" << std::endl;
+    *dot << "subgraph cluster" << id << "subsystems" << " {" << std::endl;
     *dot << "color=white" << std::endl;
     *dot << "label=\"\"" << std::endl;
     // -- Add the subsystems themselves.
@@ -828,13 +824,14 @@ class Diagram : public System<T>,
   void DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>* event_info) const final {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_ASSERT(dynamic_cast<const DiagramContext<T>*>(&context));
+    auto diagram_context = static_cast<const DiagramContext<T>*>(&context);
     const DiagramEventCollection<PublishEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection<PublishEvent<T>>*>(
+      DRAKE_ASSERT(dynamic_cast<const DiagramEventCollection<PublishEvent<T>>*>(
+          event_info));
+      info = static_cast<const DiagramEventCollection<PublishEvent<T>>*>(
           event_info);
-      DRAKE_DEMAND(info != nullptr);
     }
 
     for (int i = 0; i < num_subsystems(); ++i) {
@@ -860,11 +857,12 @@ class Diagram : public System<T>,
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>* event_info,
       DiscreteValues<T>* discrete_state) const final {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_ASSERT(dynamic_cast<const DiagramContext<T>*>(&context));
+    auto diagram_context = static_cast<const DiagramContext<T>*>(&context);
+    DRAKE_ASSERT(dynamic_cast<internal::DiagramDiscreteVariables<T>*>(
+                 discrete_state));
     auto diagram_differences =
-        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
-    DRAKE_DEMAND(diagram_differences != nullptr);
+        static_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
 
     // As a baseline, initialize all the difference variables to their
     // current values.
@@ -875,10 +873,10 @@ class Diagram : public System<T>,
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info =
-          dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(
-              event_info);
-      DRAKE_DEMAND(info != nullptr);
+      DRAKE_ASSERT(dynamic_cast<const DiagramEventCollection<
+                   DiscreteUpdateEvent<T>>*>(event_info));
+      info = static_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(
+          event_info);
     }
 
     for (int i = 0; i < num_subsystems(); ++i) {
@@ -910,8 +908,8 @@ class Diagram : public System<T>,
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
       State<T>* state) const final {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_ASSERT(dynamic_cast<const DiagramContext<T>*>(&context));
+    auto diagram_context = static_cast<const DiagramContext<T>*>(&context);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
     DRAKE_DEMAND(diagram_state != nullptr);
 
@@ -920,10 +918,10 @@ class Diagram : public System<T>,
 
     const DiagramEventCollection<UnrestrictedUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<
-          const DiagramEventCollection<UnrestrictedUpdateEvent<T>>*>(
-          event_info);
-      DRAKE_DEMAND(info != nullptr);
+      DRAKE_ASSERT(dynamic_cast<const DiagramEventCollection<
+          UnrestrictedUpdateEvent<T>>*>(event_info));
+      info = static_cast<const DiagramEventCollection<
+          UnrestrictedUpdateEvent<T>>*>(event_info);
     }
 
     for (int i = 0; i < num_subsystems(); ++i) {

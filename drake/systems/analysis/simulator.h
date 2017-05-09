@@ -288,18 +288,12 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
-  // Goes through every event in @p events and calls unrestricted update only
-  // if that event's action type is kUnrestrictedUpdateAction.
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
-  // Goes through every event in @p events and calls discrete update only if
-  // that event's action type is kDiscreteUpdateAction.
   void HandleDiscreteUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events);
 
-  // Goes through every event in @p events and calls publish only if that
-  // event's action type is kPublishAction.
   void HandlePublish(const EventCollection<PublishEvent<T>>& events);
 
   // The steady_clock is immune to system clock changes so increases
@@ -355,7 +349,8 @@ class Simulator {
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
-  // Per step events that need to be handled. This is set by Initialize().
+  // Per step events that are to be handled on every "major time step" (i.e.,
+  // every loop within StepTo()). This collection is set within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> per_step_events_;
 
   // Pre-allocated temporaries for updated discrete states.
@@ -395,10 +390,9 @@ void Simulator<T>::Initialize() {
   // Initialize the integrator.
   integrator_->Initialize();
 
-  // Gets all the events that need handling.
+  // Gets all per-step events to be handled.
   per_step_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(per_step_events_ != nullptr);
-
   system_.GetPerStepEvents(*context_, per_step_events_.get());
 
   // Restore default values.
@@ -415,6 +409,7 @@ void Simulator<T>::Initialize() {
   initialization_done_ = true;
 }
 
+// Processes UnrestrictedUpdateEvent events.
 template <typename T>
 void Simulator<T>::HandleUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events) {
@@ -431,6 +426,7 @@ void Simulator<T>::HandleUnrestrictedUpdate(
   }
 }
 
+// Processes DiscreteEvent events.
 template <typename T>
 void Simulator<T>::HandleDiscreteUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events) {
@@ -447,6 +443,7 @@ void Simulator<T>::HandleDiscreteUpdate(
   }
 }
 
+// Processes Publish events.
 template <typename T>
 void Simulator<T>::HandlePublish(
     const EventCollection<PublishEvent<T>>& events) {
@@ -491,9 +488,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
 
+    // Merge events together.
     merged_events->Clear();
-    // Merge all the events together.
     merged_events->Merge(*per_step_events_);
+
+    // Only merge timed events in if the sample time was hit.
     if (sample_time_hit)
       merged_events->Merge(*timed_events);
 
@@ -521,7 +520,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     DRAKE_DEMAND(next_sample_time >= step_start_time);
 
-    // Determine whether the DiscreteEvent requested by the System at
+    // Determine whether the set of events requested by the System at
     // next_sample_time includes an Update action, a Publish action, or both.
     T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();

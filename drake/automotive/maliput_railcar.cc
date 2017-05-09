@@ -382,7 +382,7 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(
   }
   events->add_unrestricted_update_event(
       std::make_unique<UnrestrictedUpdateEvent<T>>(
-          Event<T>::TriggerType::kPeriodic));
+          Event<T>::TriggerType::kTimed));
 }
 
 template <typename T>
