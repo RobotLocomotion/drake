@@ -39,9 +39,13 @@ solution, so must be avoided.
  * boundary value problems (via numerical methods like the Multiple Shooting
  * Method) and trajectory optimization problems (via numerical methods like
  * direct transcription). This class and its derivatives were developed
- * primarily toward the former application (through Simulator). However,
- * the IntegratorBase architecture was developed to support these ancillary
- * applications as well.
+ * primarily toward the former application (through IntegrateAtMost() and
+ * the Simulator class). However, the IntegratorBase architecture was developed
+ * to support these ancillary applications as well using the
+ * IntegrateWithMultipleSteps() and IntegrateWithSingleFixedStep() methods;
+ * the latter permits the caller to advance time using fixed steps in
+ * applications where variable stepping would be deleterious (e.g., direct
+ * transcription).
  *
  * A natural question for a user to ask of an integrator is: Which scheme
  * (method) should be applied to a particular problem? The answer is whichever
