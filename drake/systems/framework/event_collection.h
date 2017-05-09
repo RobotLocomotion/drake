@@ -623,16 +623,17 @@ class DiagramCompositeEventCollection final
    * passed in @p sub_events, for which ownership is also transferred to `this`.
    */
   explicit DiagramCompositeEventCollection(
-      std::vector<std::unique_ptr<CompositeEventCollection<T>>>& sub_events)
+      std::vector<std::unique_ptr<CompositeEventCollection<T>>>* sub_events)
       : CompositeEventCollection<T>(
             std::make_unique<DiagramEventCollection<PublishEvent<T>>>(
-                sub_events.size()),
+                sub_events->size()),
             std::make_unique<DiagramEventCollection<DiscreteUpdateEvent<T>>>(
-                sub_events.size()),
+                sub_events->size()),
             std::make_unique<
                 DiagramEventCollection<UnrestrictedUpdateEvent<T>>>(
-                sub_events.size())),
-        owned_sub_event_collection_(std::move(sub_events)) {
+                sub_events->size())),
+        owned_sub_event_collection_(std::move(*sub_events)) {
+    DRAKE_DEMAND(sub_events);
     size_t num_sub_systems = owned_sub_event_collection_.size();
 
     for (size_t i = 0; i < num_sub_systems; ++i) {

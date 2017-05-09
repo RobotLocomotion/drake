@@ -256,7 +256,7 @@ class Diagram : public System<T>,
       sub_events[i] = sorted_systems_[i]->AllocateCompositeEventCollection();
     }
 
-    return std::make_unique<DiagramCompositeEventCollection<T>>(sub_events);
+    return std::make_unique<DiagramCompositeEventCollection<T>>(&sub_events);
   }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
@@ -870,8 +870,8 @@ class Diagram : public System<T>,
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      info = dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(
-          event_info);
+      info = dynamic_cast<const DiagramEventCollection<
+                            DiscreteUpdateEvent<T>>*>(event_info);
       DRAKE_DEMAND(info);
     }
 
