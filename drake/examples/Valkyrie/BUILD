@@ -36,21 +36,11 @@ drake_cc_library(
     srcs = ["robot_state_decoder.cc"],
     hdrs = ["robot_state_decoder.h"],
     deps = [
-        ":robot_state_lcmtype_util",
+        "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
         "//drake/util",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
-    ],
-)
-
-drake_cc_library(
-    name = "robot_state_lcmtype_util",
-    srcs = ["robot_state_lcmtype_util.cc"],
-    hdrs = ["robot_state_lcmtype_util.h"],
-    deps = [
-        "//drake/multibody:rigid_body_tree",
         "@bot_core_lcmtypes//:lib",
     ],
 )
@@ -104,7 +94,7 @@ drake_cc_library(
     srcs = ["robot_state_encoder.cc"],
     hdrs = ["robot_state_encoder.h"],
     deps = [
-        ":robot_state_lcmtype_util",
+        "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/robotInterfaces:side",
         "//drake/util",

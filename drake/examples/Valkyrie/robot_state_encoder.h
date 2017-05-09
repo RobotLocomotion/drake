@@ -8,6 +8,7 @@
 
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 
+#include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
@@ -27,6 +28,8 @@ namespace systems {
 /// message, presented on an output port.
 class RobotStateEncoder final : public LeafSystem<double> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotStateEncoder)
+
   static const size_t kTorqueXIndex = 0;
   static const size_t kTorqueYIndex = 1;
   static const size_t kForceZIndex = 5;
@@ -35,11 +38,6 @@ class RobotStateEncoder final : public LeafSystem<double> {
                     const std::vector<RigidBodyFrame<double>>& ft_sensor_info);
 
   ~RobotStateEncoder() override;
-
-  // Disable copy and assign.
-  RobotStateEncoder(const RobotStateEncoder&) = delete;
-
-  RobotStateEncoder& operator=(const RobotStateEncoder&) = delete;
 
   /// Returns descriptor of output port on which the LCM message is presented.
   const OutputPortDescriptor<double>& lcm_message_port() const;
@@ -81,12 +79,7 @@ class RobotStateEncoder final : public LeafSystem<double> {
       const ContactResults<double>& contact_results,
       const RigidBody<double>& body1, const RigidBody<double>& body2) const;
 
-  // Tree to which message corresponds.
-  const RigidBodyTree<double>& tree_;
-
-  // Pointer to the body in @p tree_ that is attached to the world with a
-  // floating joint. Null if there is no such body.
-  const RigidBody<double>* const floating_body_;
+  const manipulation::RobotStateLcmMessageTranslator translator_;
 
   // Output port.
   const int lcm_message_port_index_;

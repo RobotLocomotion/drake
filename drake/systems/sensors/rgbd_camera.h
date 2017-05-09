@@ -11,6 +11,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/sensors/camera_info.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace systems {
@@ -60,13 +61,30 @@ class RgbdCamera : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
 
+  /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
+  /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
+  /// in the converted point will be NaN.
+  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
+  /// InvalidDepth::kTooClose, the converted point will be
+  /// InvalidDepth::kTooFar.
+  /// Note that this matches the convention used by the Point Cloud Library
+  /// (PCL).
+  ///
+  /// @param[in] depth_image The input depth image obtained from RgbdCamera. The
+  /// number of channels must be one.
+  ///
+  /// @param[in] camera_info The input camera info which is used for conversion.
+  ///
+  /// @param[out] point_cloud The pointer of output point cloud.
+  static void ConvertDepthImageToPointCloud(const Image<float>& depth_image,
+                                            const CameraInfo& camera_info,
+                                            Eigen::Matrix3Xf* point_cloud);
+
   /// Set of constants used to represent invalid depth values.
+  /// Note that if a depth is not measurable, NaN will be set.
   class InvalidDepth {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
-    /// The depth value when the depth is not measureable.
-    static constexpr float kError{std::numeric_limits<float>::quiet_NaN()};
-
     /// The depth value when the max sensing range is exceeded.
     static constexpr float kTooFar{std::numeric_limits<float>::infinity()};
 
@@ -110,7 +128,7 @@ class RgbdCamera : public LeafSystem<double> {
   /// @param orientation The roll-pitch-yaw orientation of `B` in `W`. This
   /// defines the orientation component of `X_WB`.
   ///
-  /// @param fov_y The RgdbCamera's vertical field of view.
+  /// @param fov_y The RgbdCamera's vertical field of view.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
@@ -136,7 +154,7 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param frame The frame in @tree to which this camera is attached.
   ///
-  /// @param fov_y The RgdbCamera's vertical field of view.
+  /// @param fov_y The RgbdCamera's vertical field of view.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
