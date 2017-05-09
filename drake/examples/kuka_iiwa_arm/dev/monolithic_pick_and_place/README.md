@@ -3,7 +3,7 @@ The following instructions assume Drake was
 
 It is strongly recommended that you build drake along with SNOPT in order
 to execute this demo. The default demo executable utilizes IPOPT instead
-and the successful execution is not guaranteed.
+and successful execution is not guaranteed.
 
 To run the demo, first you need to launch the drake visualizer and then
 execute the demo itself in the following manner.
@@ -21,8 +21,8 @@ $ cd drake-distro
 $ bazel-bin/external/drake_visualizer/drake-visualizer &
 ```
 
-If the build system is unable to find the ``drake-visualizer``, you will see a
-message like:
+If the bazel build system is unable to find the ``drake-visualizer``, you will
+see a message like:
 
 ```
 soft_failure.bzl: @drake_visualizer//:drake-visualizer does not work because
@@ -42,9 +42,9 @@ monolithic_pick_and_place_demo --box_choice=1
  --orientation=-0.0
 ```
 
-or alternatively, navigate to the
-`drake-distro/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place_demo/`
-directory and then execute :
+or alternatively, you can use ``bazel run`` using the appropriate
+full path/target specifier. For instance, from the current directory, you
+can execute the demo using :
 
 ```
 bazel run :monolithic_pick_and_place_demo --config snopt -- --box_choice=1
