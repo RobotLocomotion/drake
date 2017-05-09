@@ -19,9 +19,6 @@ class DepthSensorOutput : public BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensorOutput)
 
-  /// The depth value when an error occurs in obtaining the measurement.
-  static constexpr double kError{std::numeric_limits<double>::quiet_NaN()};
-
   /// The depth value when the max sensing range is exceeded.
   static constexpr double kTooFar{std::numeric_limits<double>::infinity()};
 
@@ -63,7 +60,7 @@ class DepthSensorOutput : public BasicVector<T> {
   /// Returns the number of valid distance measurements within this output. This
   /// excludes the following depth values:
   ///
-  ///   - DepthSensor::kError
+  ///   - NaN
   ///   - DepthSensor::kTooFar
   ///   - DepthSensor::kTooClose
   ///

@@ -316,6 +316,17 @@ GTEST_TEST(TestDepthSensor, TestDepthSensorSpecIsCopyable) {
   EXPECT_EQ(copied_spec_2, original_spec);
 }
 
+// Tests that DepthSensorOutput is able to correctly ignore NaN values.
+GTEST_TEST(TestDepthSensor, TestOutputIgnoresNaNs) {
+  DepthSensorSpecification spec;
+  DepthSensorSpecification::set_x_linear_spec(&spec);
+
+  DepthSensorOutput<double> dut(spec);  // The Device Under Test (DUT).
+  EXPECT_EQ(dut.GetNumValidDistanceMeasurements(), 0);
+  dut.SetAtIndex(0, spec.min_range());
+  EXPECT_EQ(dut.GetNumValidDistanceMeasurements(), 1);
+}
+
 }  // namespace
 }  // namespace sensors
 }  // namespace systems
