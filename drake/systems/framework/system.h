@@ -1042,7 +1042,7 @@ class System {
   ///   leaf_sys.Publish(context, event_collection)
   ///   -> leaf_sys.DispatchPublishHandler(context, event_collection)
   ///      -> leaf_sys.DoPublish(context, event_collection.get_events())
-  ///         -> for (event : event_collection.get_events()):
+  ///         -> for (event : event_collection_events):
   ///              if (event.has_handler)
   ///                event.handler(context)
   /// </pre>
