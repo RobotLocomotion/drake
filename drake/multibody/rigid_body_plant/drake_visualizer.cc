@@ -137,7 +137,7 @@ void DrakeVisualizer::PlaybackTrajectory(
 }
 
 void DrakeVisualizer::DoPublish(const Context<double>& context,
-    const std::vector<const PublishEvent<double>*>& events) const {
+    const std::vector<const PublishEvent<double>*>&) const {
   if (!is_load_message_sent(context)) {
     drake::log()->warn(
         "DrakeVisualizer::Publish() called before PublishLoadRobot()");
