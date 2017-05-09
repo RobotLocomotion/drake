@@ -62,7 +62,8 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to the state variables using automatic differentiation.
+// respect to the continuous state (at a point specified by @p state) using
+// automatic differentiation.
 template <>
 MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
     ComputeAutoDiffJacobian(const System<AutoDiffXd>& system,
@@ -73,7 +74,8 @@ MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to @p state using automatic differentiation.
+// respect to the continuous state (at a point specified by @p state) using
+// automatic differentiation.
 // @param system The dynamical system.
 // @param context The context at which to compute the time derivatives.
 // @param state The continuous state at which to compute the time derivatives.
@@ -96,8 +98,12 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeAutoDiffJacobian(
     a_xtplus[i].derivatives() = VectorX<T>::Unit(n_state_dim, i);
 
   // Get the system and the context in AutoDiffable format. Inputs must also
-  // be copied to the AutoDiff'd system (which is accomplished using
-  // FixInputPortsFrom()).
+  // be copied to the context used by the AutoDiff'd system (which is
+  // accomplished using FixInputPortsFrom()).
+  // TODO(edrumwri): Investigate means for moving as many of the operations
+  //                 below offline (or with lower frequency than once-per-
+  //                 Jacobian calculation) as is possible. These operations
+  //                 are likely to be expensive.
   const auto adiff_system = system.ToAutoDiffXd();
   std::unique_ptr<Context<Scalar>> adiff_context = adiff_system->
       AllocateContext();
@@ -127,8 +133,8 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivativesUsingContext() {
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to @p state using a first-order forward difference (i.e., numerical
-// differentiation).
+// respect to the continuous state (at a point specified by @p state) using
+// a first-order forward difference (i.e., numerical differentiation).
 // @param system The dynamical system.
 // @param context The context at which to compute the time derivatives.
 // @param state The continuous state at which to compute the time derivatives.
@@ -188,8 +194,8 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to @p state using a second-order central difference (i.e., numerical
-// differentiation).
+// respect to the continuous state (at a point specified by @p state) using
+// a second-order central difference (i.e., numerical differentiation).
 // @param system The dynamical system.
 // @param context The context at which to compute the time derivatives.
 // @param state The continuous state at which to compute the time derivatives.
@@ -338,7 +344,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // The maximum number of Newton-Raphson iterations to take before declaring
   // failure. [Hairer, 1996] states, "It is our experience that the code becomes
   // more efficient when we allow a relatively high number of iterations (e.g.,
-  // [7 or 10])", p. 121.
+  // [7 or 10])", p. 121.  The focus of that quote is a higher order integrator
+  // with a quasi-Newton approach, so our mileage may vary.
   // TODO(edrumwri): Consider making this a settable parameter. Not putting it
   //                 toward staving off parameter overload.
   const int max_iterations = 10;
@@ -664,25 +671,20 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
     // The error estimation process for explicit Euler uses two half-steps
     // of explicit Euler (for a total of two derivative evaluations). The error
     // estimation process is derived as follows:
-    // x*(t+h) = x(t) + h/2 f(t, x(t)) + h/2 f(t + h/2, x(t) + h/2 f(t, x(t))) +
-    //             2⋅O(h²/2)
-    // where x*(t+h) is the true (generally unknown) answer that we seek.
-    // Designating the computed result as x̅ₑ(t+h), the above equation is
-    // rewritten as:
-    // x*(t+h) = x̅ₑ(t+h) + 2⋅O(h²/2)
-    // Big-Oh notation specifies that O(kg) = O(g) if k is a constant and g()
-    // is a function of the problem input. Therefore O(h²/2) = O(h²).
+    // (1) x*(t+h) = xₑ(t+h) + h²/2 f'() + ...              [full step]
+    // (2) x*(t+h) = ̅xₑ(t+h) + h²/8 f() + h²/8 f₊() + ...  [two half-steps]
     //
-    // Now consider that we have two solutions:
-    // x*(t+h) = xₑ(t+h) + O(h²)       [explicit Euler]
-    // x*(t+h) = x̅ₑ(t+h) + 2⋅O(h²)    [2x half-step explicit Euler]
-    //
-    // It follows that:
-    // xₑ(t+h) + O(h²) = x̅ₑ(t+h) + 2⋅O(h²)
-    // which means that:
-    // x̅ₑ(t+h) - xₑ(t+h) = O(h²)
-    //
-    // Thus, subtracting the two solutions yields the error estimate.
+    // where x*(t+h) is the true (generally unknown) answer that we seek, f()
+    // is the derivative evaluated at x(t) and f₊() is the derivative evaluated
+    // at x(t + h/2). Subtracting the right hand side of (1) from the right
+    // hand side of (2), the above equations are rewritten as:
+    // x*(t+h) = x̅ₑ(t+h) - xₑ(t+h) + h²/8 (-3f' + f₊') + h³ (-17f'' + f₊'')
+    //           + h⁴ (-15f''' + f₊''') + ...
+    // The sum of all but the first two terms on the right hand side
+    // of the above equation is less in magnitude than ch², for some
+    // sufficiently large c. Or, written using Big-Oh notation:
+    // x*(t+h) = x̅ₑ(t+h) - xₑ(t+h) + O(h²)
+    // Thus, subtracting the two solutions yields a second order error estimate.
 
     // Compute the Euler step.
     this->CalcTimeDerivatives(*context, derivs_.get());

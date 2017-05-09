@@ -253,7 +253,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> derivs_;
 
   // A simple LU factorization is all that is needed; robustness in the solve
-  // comes naturally as dt << 1.
+  // comes naturally as dt << 1. Keeping this data in the class definition
+  // serves to minimize heap allocations and deallocations.
   Eigen::PartialPivLU<MatrixX<double>> LU_;
 
   // A QR factorization is necessary for automatic differentiation (current
@@ -281,10 +282,15 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   JacobianComputationScheme jacobian_scheme_{
       JacobianComputationScheme::kForwardDifference};
 
-  // The Jacobian matrix.
+  // The last computed Jacobian matrix. Keeping this data in the class
+  // definitions serves to minimize heap allocations and deallocations.
   MatrixX<T> J_;
 
-  // The computed iteration matrix.
+  // The last computed *negation* of the "iteration matrix", equivalent to
+  // J_ * (dt / scale) - 1, where scale is either 1.0 or 2.0, depending on
+  // whether the implicit Euler or implicit trapezoid method was used. Keeping
+  // this data in the class definition serves to minimize heap allocations
+  // and deallocations.
   MatrixX<T> A_;
 
   // Various combined statistics.

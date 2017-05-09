@@ -296,11 +296,14 @@ class IntegratorBase {
 
   /// Gets the working minimum step size for this integrator. The working
   /// minimum step size is the maximum of get_requested_minimum_step_size() and
-  /// t*1e-14 (where t is the current system time stored in the integrator's
-  /// context.
+  /// max(t*tol, tol), where t is the current system time stored in the
+  /// integrator's context and tol is a sufficiently small number chosen so that
+  /// t and (1+tol)*t are sufficiently distinct in order to avoid roundoff
+  /// problems.
   T get_working_minimum_step_size() const {
     using std::max;
-    const T smart_minimum = get_context().get_time()*1e-14;
+    const double tol = 1e-14;
+    const T smart_minimum = max(tol, get_context().get_time()*tol);
     return max(smart_minimum, req_min_step_size_);
   }
 
