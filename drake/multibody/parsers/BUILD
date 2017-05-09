@@ -125,7 +125,7 @@ drake_cc_googletest(
     name = "sdformat_test",
     srcs = ["test/sdformat_test.cc"],
     deps = [
-        "@sdformat//:lib",
+        "@sdformat",
     ],
 )
 

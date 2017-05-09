@@ -61,7 +61,7 @@ genrule(
 # upstream's explicitly listed sources.  The explicitly listed hdrs= matches
 # upstream's explicitly listed headers.
 cc_library(
-    name = "lib",
+    name = "sdformat",
     srcs = [
         "src/Console.cc",
         "src/Converter.cc",
@@ -116,7 +116,7 @@ cc_library(
     visibility = ["//visibility:public"],
     linkopts = ["-lboost_system", "-lboost_filesystem", "-ltinyxml"],
     deps = [
-        "@ignition_math//:lib",
+        "@ignition_math",
     ],
     data = glob(['sdf/1.6/*.sdf']),
 )

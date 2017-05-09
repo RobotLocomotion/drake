@@ -12,6 +12,6 @@ cc_library(
     includes = ["include"],
     visibility = ["//visibility:public"],
     deps = [
-        "@ignition_math//:lib",
+        "@ignition_math",
     ],
 )
