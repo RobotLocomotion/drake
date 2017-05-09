@@ -13,9 +13,6 @@ namespace systems {
 namespace sensors {
 
 template <typename T>
-constexpr double DepthSensorOutput<T>::kError;
-
-template <typename T>
 constexpr double DepthSensorOutput<T>::kTooFar;
 
 template <typename T>
@@ -65,7 +62,7 @@ int DepthSensorOutput<T>::GetNumValidDistanceMeasurements() const {
   int result = 0;
   for (int i = 0; i < spec_.num_depth_readings(); ++i) {
     const double distance = BasicVector<T>::GetAtIndex(i);
-    if (distance != kError && distance != kTooFar && distance != kTooClose) {
+    if (!std::isnan(distance) && distance != kTooFar && distance != kTooClose) {
       ++result;
     }
   }
@@ -82,7 +79,8 @@ Matrix3Xd DepthSensorOutput<T>::GetPointCloud() const {
     for (int pitch_index = 0; pitch_index < spec_.num_pitch_values();
          ++pitch_index) {
       const double distance = GetDistance(yaw_index, pitch_index);
-      if (distance != kError && distance != kTooFar && distance != kTooClose) {
+      if (!std::isnan(distance) && distance != kTooFar &&
+          distance != kTooClose) {
         const double yaw = spec_.min_yaw() + yaw_index * spec_.yaw_increment();
         const double pitch =
             spec_.min_pitch() + pitch_index * spec_.pitch_increment();

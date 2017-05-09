@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -175,7 +176,7 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
       } else {
         drake::log()->warn("Measured distance was < 0 and != -1: " +
                            std::to_string(distances[i]));
-        distances[i] = DepthSensorOutput<double>::kError;
+        distances[i] = std::numeric_limits<double>::quiet_NaN();
       }
     } else if (distances[i] > specification_.max_range()) {
       distances[i] = DepthSensorOutput<double>::kTooFar;
