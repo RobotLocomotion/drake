@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/segment.h"
 
 namespace drake {
 namespace maliput {
@@ -39,6 +41,9 @@ struct ObjFeatures {
   double branch_point_height{0.5};
   /// Origin of OBJ coordinates relative to world-frame
   api::GeoPosition origin{0., 0., 0.};
+  /// ID's of specific segments to be highlighted.  (If non-empty, then the
+  /// Segments *not* specified on this list will be rendered as grayed-out.)
+  std::vector<api::SegmentId> highlighted_segments;
 };
 
 /// Generates a Wavefront OBJ model of the road surface of an api::RoadGeometry.
