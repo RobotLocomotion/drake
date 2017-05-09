@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
@@ -61,44 +62,66 @@ class VectorBase {
   }
 
   /// Returns `true` if `this` vector has a contiguous in memory layout.
+  /// It returns `false` if either `this` vector doesn't have a contiguous in
+  /// memory layout or whenever retrieving such a layout cannot be performed
+  /// with O(1) complexity.
   /// @see get_contiguous_block()
-  virtual bool is_contiguous() const = 0;
+  bool is_contiguous() const {
+    return is_segment_contiguous(0, size());
+  }
 
-  /// Returns the entire vector as an Eigen expression stored in a contiguous
-  /// block of memory, if possible.
-  /// This method aborts in Debug builds if the underlying memory layout is not
-  /// contiguous. No check is performed in Release builds. If unsure whether the
-  /// memory layout is contiguous or not, call VectorBase::is_contiguous().
-  ///
-  /// @note The returned Eigen expression cannot be resized and attemps to
-  /// do so will abort your application.
-  ///
+  /// Returns `true` if the segment of `count` elements with first element at
+  /// `start` in `this` vector has a contiguous in memory layout.
+  /// This method aborts if:
+  ///  - `start` is out-of-bounds,
+  ///  - `count` is either negative or larger than size(),
+  ///  - A contiguous segment cannot be retrieved.
+  /// @see is_contiguous()
+  bool is_segment_contiguous(int start, int count) const {
+    DRAKE_DEMAND(0 <= start && start < size());
+    DRAKE_DEMAND(0 <= count && start <= size());
+    return !!get_contiguous_segment_when_possible(start, count);
+  }
+
+  /// Returns the entire vector as an Eigen::VectorBlock referencing a
+  /// contiguous block of memory, if possible.
+  /// This method aborts if the underlying memory layout is not contiguous or
+  /// could not be retrieved with O(1) complexity.
   /// @see is_contiguous()
   Eigen::VectorBlock<const VectorX<T>> get_contiguous_vector() const {
-    DRAKE_ASSERT(this->is_contiguous());
-    return get_contiguous_segment(0, size());
+    auto result = get_contiguous_segment_when_possible(0, size());
+    DRAKE_DEMAND(!!result &&
+        "This vector does not have a contiguous contiguous in memory layout. "
+        "See is_contiguous()");
+    return *result;
   }
 
-  /// Returns the entire vector as a mutable Eigen expression stored in a
+  /// Returns the entire vector as a mutable Eigen::VectorBlock referencing a
   /// contiguous block of memory, if possible.
-  /// This method aborts in Debug builds if the underlying memory layout is not
-  /// contiguous. No check is performed in Release builds. If unsure whether the
-  /// memory layout is contiguous or not, call VectorBase::is_contiguous().
-  ///
-  /// @note Even though entries are mutable, the returned Eigen expression
-  /// cannot be resized and attemps to do so will abort your application.
-  ///
+  /// This method aborts if the underlying memory layout is not contiguous or
+  /// could not be retrieved with O(1) complexity.
   /// @see is_contiguous()
   Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_vector() {
-    DRAKE_ASSERT(this->is_contiguous());
-    return get_mutable_contiguous_segment(0, size());
+    auto result = get_mutable_contiguous_segment_when_possible(0, size());
+    DRAKE_DEMAND(!!result &&
+        "This vector does not have a contiguous contiguous in memory layout. "
+        "See is_contiguous()");
+    return *result;
   }
 
-  virtual Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
-      int start, int size) const = 0;
+  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
+      int start, int count) const {
+    auto result = get_contiguous_segment_when_possible(start, count);
+    DRAKE_DEMAND(!!result);
+    return *result;
+  }
 
   virtual Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
-      int start, int size) = 0;
+      int start, int count) {
+    auto result = get_mutable_contiguous_segment_when_possible(start, count);
+    DRAKE_DEMAND(!!result);
+    return *result;
+  }
 
   /// Replaces the entire vector with the contents of @p value. Throws
   /// std::runtime_error if @p value is not a column vector with size() rows.
@@ -235,15 +258,11 @@ class VectorBase {
     }
   }
 
-  // Checks if the input `index` is in the valid range 0 <= index < size().
-  // It throws std::runtime_error if the index is out of bounds.
-  void IsIndexWithinBoundsOrThrow(int index) const {
-    DRAKE_THROW_UNLESS(0 <= index && index < size());
-  }
+  virtual optional<Eigen::VectorBlock<const VectorX<T>>>
+  get_contiguous_segment_when_possible(int start, int size) const = 0;
 
-  void IsSizeWithinBoundsOrThrow(int input_size) const {
-    DRAKE_THROW_UNLESS(0 <= input_size && input_size <= size());
-  }
+  virtual optional<Eigen::VectorBlock<VectorX<T>>>
+  get_mutable_contiguous_segment_when_possible(int start, int size) = 0;
 };
 
 }  // namespace systems

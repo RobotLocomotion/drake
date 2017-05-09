@@ -58,23 +58,16 @@ class Subvector : public VectorBase<T> {
     return vector_->GetAtIndex(first_element_ + index);
   }
 
-  bool is_contiguous() const override {
-    return vector_->is_contiguous();
-  }
-
-  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
-      int start, int size) const override {
-    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
-    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
+ protected:
+  optional<Eigen::VectorBlock<const VectorX<T>>>
+  get_contiguous_segment_when_possible(int start, int size) const final {
     return vector_->get_contiguous_segment(start + first_element_, size);
   }
 
-  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
-      int start, int size) override {
-    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
-    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
-    return vector_->get_mutable_contiguous_segment(
-        start + first_element_, size);
+  virtual optional<Eigen::VectorBlock<VectorX<T>>>
+  get_mutable_contiguous_segment_when_possible(int start, int size) final {
+    return vector_->get_mutable_contiguous_segment(start + first_element_,
+                                                   size);
   }
 
  private:

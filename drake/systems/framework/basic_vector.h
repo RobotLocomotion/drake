@@ -84,22 +84,6 @@ class BasicVector : public VectorBase<T> {
     return values_.head(values_.rows());
   }
 
-  bool is_contiguous() const override { return true;}
-
-  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
-      int start, int size) const override {
-    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
-    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
-    return values_.segment(start, size);
-  }
-
-  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
-      int start, int size) override {
-    DRAKE_ASSERT_VOID(this->IsIndexWithinBoundsOrThrow(start));
-    DRAKE_ASSERT_VOID(this->IsSizeWithinBoundsOrThrow(size));
-    return values_.segment(start, size);
-  }
-
   const T& GetAtIndex(int index) const override {
     DRAKE_THROW_UNLESS(index < size());
     return values_[index];
@@ -169,6 +153,16 @@ class BasicVector : public VectorBase<T> {
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg) {
     data->SetAtIndex(index++, T(constructor_arg));
+  }
+
+  optional<Eigen::VectorBlock<const VectorX<T>>>
+  get_contiguous_segment_when_possible(int start, int size) const final {
+    return values_.segment(start, size);
+  }
+
+  virtual optional<Eigen::VectorBlock<VectorX<T>>>
+  get_mutable_contiguous_segment_when_possible(int start, int size) final {
+    return values_.segment(start, size);
   }
 
  private:

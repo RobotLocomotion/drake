@@ -28,9 +28,14 @@ GTEST_TEST(BasicVectorTest, SetZero) {
 GTEST_TEST(BasicVectorTest, IsContiguoys) {
   auto vec = BasicVector<double>::Make(1.0, 2.0, 3.0);
   EXPECT_TRUE(vec->is_contiguous());
+  EXPECT_TRUE(vec->is_segment_contiguous(0, vec->size()));
+  // Any other segment should be contiguous.
+  EXPECT_TRUE(vec->is_segment_contiguous(1, 2));
   EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), vec->get_contiguous_vector());
   vec->get_mutable_contiguous_vector().coeffRef(1) = -1.0;
   EXPECT_EQ(Eigen::Vector3d(1.0, -1.0, 3.0), vec->get_contiguous_vector());
+  // And we are able to get a segment if needed.
+  EXPECT_EQ(Eigen::Vector2d(-1.0, 3.0), vec->get_contiguous_segment(1, 2));
 }
 
 // Tests that the BasicVector<double> is initialized to NaN.

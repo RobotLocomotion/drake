@@ -237,36 +237,6 @@ GTEST_TEST(SubvectorIsContiguous, WithinContiguousSubvector) {
   EXPECT_EQ(Eigen::Vector2d(3.0, -1.0), subsubvec.get_contiguous_vector());
 }
 
-// Verify that Subvector cannot can map a contiguous block of memory within a
-// non-contiguous Supervector even if the block actually is contiguous in
-// memory. This is a limitation of our current implementation however, there are
-// no use cases like this in our code-base.
-GTEST_TEST(SubvectorIsContiguous, WithinContiguousPartOfASupervector) {
-  auto vector1 = BasicVector<double>::Make({1, 2, 3, 4});
-  auto vector2 = BasicVector<double>::Make({5, 6, 7, 8, 9, 10});
-  // Concatenate into supervector = {vector1, vector2}.
-  auto supervector = std::make_unique<Supervector<double>>(
-      std::vector<VectorBase<double>*>{vector1.get(), vector2.get()});
-
-  // Build a Supervector and verify it indeed is the concatenation of vector1
-  // and vector2.
-  VectorX<double> expected_supervector_value(supervector->size());
-  expected_supervector_value.segment(0, 4) = vector1->get_value();
-  expected_supervector_value.segment(4, 6) = vector2->get_value();
-  EXPECT_EQ(expected_supervector_value.rows(), supervector->size());
-  EXPECT_EQ(expected_supervector_value.cols(), 1);
-  for (int i = 0; i < supervector->size(); ++i) {
-    EXPECT_EQ(expected_supervector_value[i], supervector->GetAtIndex(i));
-  }
-
-  // Create a Subvector into a contiguous chunk of the Supervector.
-  Subvector<double> subvec(
-      supervector.get(), 5 /* first element */, 3 /* size */);
-
-  // subvec is considered non-contiguous since it maps into a Supervector.
-  EXPECT_FALSE(subvec.is_contiguous());
-}
-
 }  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -50,18 +50,28 @@ class Supervector : public VectorBase<T> {
     return target.first->GetAtIndex(target.second);
   }
 
-  bool is_contiguous() const override { return false;}
-
-  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
-      int start, int size) const override {
-    DRAKE_ABORT_MSG("Supervector does not allow to retrieve a contiguous "
-                    "segment of memory");
+ protected:
+  /// VectorBase::get_contiguous_segment_when_possible()'s contract is to
+  /// provide a cheap O(1) complexity implementation. Since we currently do not
+  /// support an O(1) implementation, %Supervector's implementation of
+  /// get_contiguous_segment_when_possible() throws an exception.
+  optional<Eigen::VectorBlock<const VectorX<T>>>
+  get_contiguous_segment_when_possible(int start, int size) const final {
+    return {};
+    //DRAKE_ABORT_MSG("Supervector currently does not allow to retrieve a "
+    //                "contiguous segment of memory with O(1) complexity");
   }
 
-  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
-      int start, int size) override {
-    DRAKE_ABORT_MSG("Supervector does not allow to retrieve a contiguous "
-                    "segment of memory");
+  /// VectorBase::get_mutable_contiguous_segment_when_possible()'s contract is
+  /// to provide a cheap O(1) complexity implementation. Since we currently do
+  /// not support an O(1) implementation, %Supervector's implementation of
+  /// get_mutable_contiguous_segment_when_possible() throws an exception.
+  optional<Eigen::VectorBlock<VectorX<T>>>
+  get_mutable_contiguous_segment_when_possible(int start, int size) final
+  {
+    return {};
+    //DRAKE_ABORT_MSG("Supervector currently does not allow to retrieve a "
+    //                "contiguous segment of memory with O(1) complexity");
   }
 
  private:
