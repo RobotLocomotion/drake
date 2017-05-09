@@ -123,7 +123,7 @@ genrule(
 
 # Generates the library exported to users.
 cc_library(
-    name = "lib",
+    name = "ignition_math",
     hdrs = ["include/ignition/math.hh"],  # From :mathhh_genrule above.
     includes = ["include"],
     visibility = ["//visibility:public"],
