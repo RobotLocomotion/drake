@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "geometry_msgs/TransformStamped.h"
 #include "ros/ros.h"

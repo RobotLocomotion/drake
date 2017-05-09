@@ -256,8 +256,7 @@ class Diagram : public System<T>,
       sub_events[i] = sorted_systems_[i]->AllocateCompositeEventCollection();
     }
 
-    return std::make_unique<DiagramCompositeEventCollection<T>>(
-        std::move(sub_events));
+    return std::make_unique<DiagramCompositeEventCollection<T>>(sub_events);
   }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
@@ -824,14 +823,13 @@ class Diagram : public System<T>,
   void DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>* event_info) const final {
-    DRAKE_ASSERT(dynamic_cast<const DiagramContext<T>*>(&context));
-    auto diagram_context = static_cast<const DiagramContext<T>*>(&context);
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context);
     const DiagramEventCollection<PublishEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      DRAKE_ASSERT(dynamic_cast<const DiagramEventCollection<PublishEvent<T>>*>(
-          event_info));
-      info = static_cast<const DiagramEventCollection<PublishEvent<T>>*>(
+      info = dynamic_cast<const DiagramEventCollection<PublishEvent<T>>*>(
           event_info);
+      DRAKE_DEMAND(info);
     }
 
     for (int i = 0; i < num_subsystems(); ++i) {
@@ -857,12 +855,11 @@ class Diagram : public System<T>,
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>* event_info,
       DiscreteValues<T>* discrete_state) const final {
-    DRAKE_ASSERT(dynamic_cast<const DiagramContext<T>*>(&context));
     auto diagram_context = static_cast<const DiagramContext<T>*>(&context);
-    DRAKE_ASSERT(dynamic_cast<internal::DiagramDiscreteVariables<T>*>(
-                 discrete_state));
+    DRAKE_DEMAND(diagram_context);
     auto diagram_differences =
-        static_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
+        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
+    DRAKE_DEMAND(diagram_differences);
 
     // As a baseline, initialize all the difference variables to their
     // current values.
@@ -873,10 +870,9 @@ class Diagram : public System<T>,
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      DRAKE_ASSERT(dynamic_cast<const DiagramEventCollection<
-                   DiscreteUpdateEvent<T>>*>(event_info));
-      info = static_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(
+      info = dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>*>(
           event_info);
+      DRAKE_DEMAND(info);
     }
 
     for (int i = 0; i < num_subsystems(); ++i) {
@@ -908,8 +904,8 @@ class Diagram : public System<T>,
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>* event_info,
       State<T>* state) const final {
-    DRAKE_ASSERT(dynamic_cast<const DiagramContext<T>*>(&context));
-    auto diagram_context = static_cast<const DiagramContext<T>*>(&context);
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
     DRAKE_DEMAND(diagram_state != nullptr);
 
@@ -918,10 +914,9 @@ class Diagram : public System<T>,
 
     const DiagramEventCollection<UnrestrictedUpdateEvent<T>>* info = nullptr;
     if (event_info != nullptr) {
-      DRAKE_ASSERT(dynamic_cast<const DiagramEventCollection<
-          UnrestrictedUpdateEvent<T>>*>(event_info));
-      info = static_cast<const DiagramEventCollection<
+      info = dynamic_cast<const DiagramEventCollection<
           UnrestrictedUpdateEvent<T>>*>(event_info);
+      DRAKE_DEMAND(info);
     }
 
     for (int i = 0; i < num_subsystems(); ++i) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <vector>
 
 #include "ros/ros.h"
 #include "rosgraph_msgs/Clock.h"

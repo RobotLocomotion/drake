@@ -36,8 +36,7 @@ class Event {
  public:
   /**
   * Predefined types of triggers. Used at run time to determine why the
-  * associated event has occurred. Any user-introduced triggers need to have
-  * unique type ids defined here as well.
+  * associated event has occurred.
   */
   enum class TriggerType {
     kUnknown,

@@ -163,9 +163,6 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * Note that this constructor only resizes the containers; it
    * does not allocate any derived EventCollection instances.
    *
-   * @note Users should almost never call this explicitly. Use
-   * System::AllocateEventCollection() instead.
-   *
    * @param num_sub_systems Number of sub systems in the corresponding Diagram.
    */
   explicit DiagramEventCollection(int num_sub_systems)
@@ -190,12 +187,13 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * Transfers @p sub_event_collection ownership to `this` and associates it
    * with the sub system identified by @p index. Aborts if the 0-indexed
    * @p index is greater than or equal to the number of subsystems specified
-   * in this object's construction (see DiagramEventCollection(int)) or if
-   * @p index is negative.
+   * in this object's construction (see DiagramEventCollection(int)); if
+   * @p index is negative; or if @p sub_event_collection is null.
    */
   void set_and_own_sub_event_collection(
       int index,
       std::unique_ptr<EventCollection<EventType>> sub_event_collection) {
+    DRAKE_DEMAND(sub_event_collection);
     DRAKE_DEMAND(index >= 0 && index < num_sub_event_collection());
     owned_sub_event_collection_[index] = std::move(sub_event_collection);
     sub_event_collection_[index] = owned_sub_event_collection_[index].get();
@@ -206,11 +204,12 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * Ownership of the object that @p sub_event_collection is maintained
    * elsewhere, and its life span must be longer than this. Aborts if the
    * 0-indexed @p index is greater than or equal to the number of subsystems
-   * specified in this object's construction (see DiagramEventCollection(int))
-   * or if @p index is negative.
+   * specified in this object's construction (see DiagramEventCollection(int));
+   * if @p index is negative, or if sub_event_collection is null.
    */
   void set_sub_event_collection(
       int index, EventCollection<EventType>* sub_event_collection) {
+    DRAKE_DEMAND(sub_event_collection);
     DRAKE_DEMAND(index >= 0 && index < num_sub_event_collection());
     sub_event_collection_[index] = sub_event_collection;
   }
@@ -513,7 +512,8 @@ class CompositeEventCollection {
 
  protected:
   /**
-   * Takes ownership of @p pub, @p discrete and @p unrestricted.
+   * Takes ownership of @p pub, @p discrete and @p unrestricted. Aborts if any
+   * of these are null.
    */
   CompositeEventCollection(
       std::unique_ptr<EventCollection<PublishEvent<T>>> pub,
@@ -521,7 +521,11 @@ class CompositeEventCollection {
       std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>> unrestricted)
       : publish_events_(std::move(pub)),
         discrete_update_events_(std::move(discrete)),
-        unrestricted_update_events_(std::move(unrestricted)) {}
+        unrestricted_update_events_(std::move(unrestricted)) {
+        DRAKE_DEMAND(publish_events_ != nullptr);
+        DRAKE_DEMAND(discrete_update_events_ != nullptr);
+        DRAKE_DEMAND(unrestricted_update_events_ != nullptr);
+      }
 
  private:
   std::unique_ptr<EventCollection<PublishEvent<T>>> publish_events_{nullptr};
@@ -619,7 +623,7 @@ class DiagramCompositeEventCollection final
    * passed in @p sub_events, for which ownership is also transferred to `this`.
    */
   explicit DiagramCompositeEventCollection(
-      std::vector<std::unique_ptr<CompositeEventCollection<T>>> sub_events)
+      std::vector<std::unique_ptr<CompositeEventCollection<T>>>& sub_events)
       : CompositeEventCollection<T>(
             std::make_unique<DiagramEventCollection<PublishEvent<T>>>(
                 sub_events.size()),
