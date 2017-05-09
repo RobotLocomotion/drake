@@ -62,11 +62,13 @@ class RgbdCamera : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
 
   /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
-  /// pixel in the depth image has InvalidDepth::kError depth value, all the
-  /// `(x, y, z)` values in the converted point will be InvalidDepth::kError.
+  /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
+  /// in the converted point will be NaN.
   /// Similarly, if a pixel has either InvalidDepth::kTooFar or
   /// InvalidDepth::kTooClose, the converted point will be
   /// InvalidDepth::kTooFar.
+  /// Note that this matches the convention used by the Point Cloud Library
+  /// (PCL).
   ///
   /// @param[in] depth_image The input depth image obtained from RgbdCamera. The
   /// number of channels must be one.
@@ -79,12 +81,10 @@ class RgbdCamera : public LeafSystem<double> {
                                             Eigen::Matrix3Xf* point_cloud);
 
   /// Set of constants used to represent invalid depth values.
+  /// Note that if a depth is not measurable, NaN will be set.
   class InvalidDepth {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
-    /// The depth value when the depth is not measureable.
-    static constexpr float kError{std::numeric_limits<float>::quiet_NaN()};
-
     /// The depth value when the max sensing range is exceeded.
     static constexpr float kTooFar{std::numeric_limits<float>::infinity()};
 

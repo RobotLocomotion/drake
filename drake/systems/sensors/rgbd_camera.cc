@@ -2,6 +2,7 @@
 
 #include <array>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -223,11 +224,7 @@ void RgbdCamera::ConvertDepthImageToPointCloud(const Image<float>& depth_image,
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
       float z = depth_image.at(u, v)[0];
-      if (z == InvalidDepth::kError) {
-        pc(0, v * width + u) = InvalidDepth::kError;
-        pc(1, v * width + u) = InvalidDepth::kError;
-        pc(2, v * width + u) = InvalidDepth::kError;
-      } else if (z == InvalidDepth::kTooFar || z == InvalidDepth::kTooClose) {
+      if (z == InvalidDepth::kTooClose || z == InvalidDepth::kTooFar) {
         pc(0, v * width + u) = InvalidDepth::kTooFar;
         pc(1, v * width + u) = InvalidDepth::kTooFar;
         pc(2, v * width + u) = InvalidDepth::kTooFar;
@@ -676,7 +673,7 @@ float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
   // When the depth is either closer than kClippingPlaneNear or further than
   // kClippingPlaneFar, `z_buffer_value` becomes `1.f`.
   if (z_buffer_value == 1.f) {
-    checked_depth = InvalidDepth::kError;
+    checked_depth = std::numeric_limits<float>::quiet_NaN();
   } else {
     // TODO(kunimatsu-tri) Calculate this in a vertex shader.
     float depth = static_cast<float>(kB / (z_buffer_value - kA));
@@ -793,7 +790,6 @@ void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
   impl_->DoCalcOutput(*input_vector, output);
 }
 
-constexpr float RgbdCamera::InvalidDepth::kError;
 constexpr float RgbdCamera::InvalidDepth::kTooFar;
 constexpr float RgbdCamera::InvalidDepth::kTooClose;
 
