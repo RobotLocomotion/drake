@@ -12,10 +12,9 @@ namespace systems {
 
 RobotStateDecoder::RobotStateDecoder(const RigidBodyTree<double>& tree)
     : translator_(tree),
-      robot_state_message_port_index_(DeclareAbstractInputPort().get_index()),
-      joint_name_to_body_(CreateJointNameToBodyMap(tree)) {
+      robot_state_message_port_index_(DeclareAbstractInputPort().get_index()) {
   DeclareAbstractOutputPort(
-      KinematicsCache<double>(tree_.CreateKinematicsCache()),
+      KinematicsCache<double>(translator_.get_robot().CreateKinematicsCache()),
       &RobotStateDecoder::OutputKinematics);
   set_name("RobotStateDecoder");
 }
@@ -36,23 +35,6 @@ void RobotStateDecoder::OutputKinematics(const Context<double>& context,
 
   kinematics_cache.initialize(q, v);
   translator_.get_robot().doKinematics(kinematics_cache, true);
-}
-
-std::map<std::string, const RigidBody<double>*>
-RobotStateDecoder::CreateJointNameToBodyMap(const RigidBodyTree<double>& tree) {
-  map<string, const RigidBody<double>*> ret;
-  for (const auto& body : tree.bodies) {
-    if (body->has_parent_body()) {
-      const auto& joint = body->getJoint();
-      if (!joint.is_fixed() && !joint.is_floating()) {
-        // To match usage of robot_state_t throughout OpenHumanoids code, use
-        // position coordinate name as joint name.
-        int position_index = body->get_position_start_index();
-        ret[tree_.get_position_name(position_index)] = body.get();
-      }
-    }
-  }
-  return ret;
 }
 
 }  // namespace systems

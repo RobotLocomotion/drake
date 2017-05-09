@@ -30,12 +30,10 @@ namespace systems {
 RobotStateEncoder::RobotStateEncoder(
     const RigidBodyTree<double>& tree,
     const std::vector<RigidBodyFrame<double>>& ft_sensor_info)
-    : translator_(tree), tree_(CheckTreeIsRobotStateLcmTypeCompatible(tree)),
-      floating_body_(tree.bodies[1]->getJoint().is_floating()
-                         ? tree.bodies[1].get()
-                         : nullptr),
+    : translator_(tree),
       lcm_message_port_index_(
-          DeclareAbstractOutputPort(&RobotStateEncoder::OutputRobotState)
+          DeclareAbstractOutputPort(&RobotStateEncoder::AllocateRobotState,
+                                    &RobotStateEncoder::OutputRobotState)
               .get_index()),
       kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
       contact_results_port_index_(DeclareAbstractInputPort().get_index()),
@@ -79,11 +77,10 @@ void RobotStateEncoder::OutputRobotState(const Context<double>& context,
   SetForceTorque(kinematics_results, contact_results, &message);
 }
 
-std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>&) const {
+robot_state_t RobotStateEncoder::AllocateRobotState() const {
   robot_state_t msg;
   translator_.InitializeMessage(&msg);
-  return make_unique<Value<robot_state_t>>(msg);
+  return robot_state_t(msg);
 }
 
 const OutputPort<double>& RobotStateEncoder::lcm_message_port()
