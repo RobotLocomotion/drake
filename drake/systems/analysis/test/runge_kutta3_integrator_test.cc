@@ -81,7 +81,8 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
   integrator_->Initialize();
 
   // Attempt to take a variable step- should throw an exception.
-  EXPECT_THROW(integrator_->IntegrateWithMultipleSteps(1e-40), std::runtime_error);
+  EXPECT_THROW(integrator_->IntegrateWithMultipleSteps(1e-40),
+               std::runtime_error);
 }
 
 // Test scaling vectors
