@@ -72,14 +72,14 @@ namespace sensors {
 /// </pre>
 ///
 /// If nothing is detected between min_range and max_range, an invalid value of
-/// DepthSensor::kTooFar is provided. Is something is detected but the
-/// distance is less than  the sensor's minimum sensing range, a value of
-/// DepthSensor::kTooClose is provided.
+/// DepthSensorOutput<T>::GetTooFarDistance() is provided. If something is
+/// detected but the distance is less than the sensor's minimum sensing range,
+/// an invalid value of DepthSensorOutput<T>::GetTooCloseDistance() is provided.
 ///
-/// DepthSensor::kError is defined for use when a sensing error occurs. It is
-/// not expected to occur in this system's output because it models an ideal
-/// sensor in which sensing errors do not occur. It is expected to be used by
-/// non-ideal depth sensors.
+/// Sensing errors are expressed using an invalid distance value of
+/// DepthSensorOutput<T>::GetErrorDistance(). It is not expected to occur in
+/// this system's output because it models an ideal sensor in which sensing
+/// errors do not occur. It is expected to be used by non-ideal depth sensors.
 ///
 /// The second output port contains a PoseVector, which is `X_WS`, i.e., the
 /// transform from this sensor's frame to the world frame. It is useful for

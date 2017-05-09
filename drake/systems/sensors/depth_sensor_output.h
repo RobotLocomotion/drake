@@ -19,27 +19,48 @@ class DepthSensorOutput : public BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensorOutput)
 
-  /// The depth value when an error occurs in obtaining the measurement.
-  static constexpr double kError{std::numeric_limits<double>::quiet_NaN()};
-
-  /// The depth value when the max sensing range is exceeded.
-  static constexpr double kTooFar{std::numeric_limits<double>::infinity()};
-
-  /// The depth value when the min sensing range is violated because the object
-  /// being sensed is too close. Note that this
-  /// <a href="http://www.ros.org/reps/rep-0117.html">differs from ROS</a>,
-  /// which uses negative infinity in this scenario. Drake uses zero because it
-  /// results in less devastating bugs when users fail to check for the lower
-  /// limit being hit and using negative infinity does not prevent users from
-  /// writing bad code.
-  static constexpr double kTooClose{0};
-
   /// Default constructor.  Sets all rows to zero.
   ///
   /// @param[in] spec The sensor specification. A member variable alias is
   /// maintained. Thus, the lifespan of the reference object must exceed the
   /// lifespan of this class' instance.
   explicit DepthSensorOutput(const DepthSensorSpecification& spec);
+
+  /// @name Depth value constant and characterization methods.
+  //@{
+
+  /// Returns the depth value when the max sensing range is exceeded. The
+  /// presence of this value can be determined using IsTooFar().
+  static double GetTooFarDistance();
+
+  /// Returns true if @p distance is the value returned by GetTooFarDistance().
+  static bool IsTooFar(double distance);
+
+  /// Returns the depth value when the min sensing range is violated because the
+  /// object being sensed is too close. Note that this
+  /// <a href="http://www.ros.org/reps/rep-0117.html">differs from ROS</a>,
+  /// which uses negative infinity in this scenario. Drake uses zero because it
+  /// results in less devastating bugs when users fail to check for the lower
+  /// limit being hit and using negative infinity does not prevent users from
+  /// writing bad code. The presence of this value can be determined using
+  /// IsTooClose().
+  static double GetTooCloseDistance();
+
+  /// Returns true if @p distance is the value returned by
+  /// GetTooCloseDistance().
+  static bool IsTooClose(double distance);
+
+  /// Returns the depth value when an error occurs. The presence of this value
+  /// can be determined using IsError().
+  static double GetErrorDistance();
+
+  /// Returns true if @p distance is the value returned by GetErrorDistance().
+  static bool IsError(double distance);
+
+  /// Returns true if @p distance is valid. It is valid when it is not erroneous
+  /// and is in the sensor's sensing range.
+  static bool IsValid(double distance);
+  //@}
 
   /// @name Getters and Setters
   //@{
@@ -63,7 +84,7 @@ class DepthSensorOutput : public BasicVector<T> {
   /// Returns the number of valid distance measurements within this output. This
   /// excludes the following depth values:
   ///
-  ///   - DepthSensor::kError
+  ///   - NaN
   ///   - DepthSensor::kTooFar
   ///   - DepthSensor::kTooClose
   ///
