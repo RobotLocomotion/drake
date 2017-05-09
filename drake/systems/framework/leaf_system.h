@@ -890,7 +890,7 @@ class LeafSystem : public System<T> {
   }
 
   void DoGetPerStepEvents(
-      const Context<T>& context,
+      const Context<T>&,
       CompositeEventCollection<T>* events) const override {
     events->SetFrom(per_step_events_);
   }
