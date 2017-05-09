@@ -1,0 +1,12 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_trajectory_car_params_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double max_velocity;  // The limit on the car's forward speed.
+  double velocity_limit_kp;  // The smoothing constant for min/max velocity limits.
+}
