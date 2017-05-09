@@ -1,3 +1,6 @@
+A simulation demo of a pick-and-place of a box executed by the KUKA IIWA Arm
+with a Schunk WSG gripper attached to its end.
+
 The following instructions assume Drake was
 [built using bazel](http://drake.mit.edu/bazel.html?highlight=bazel).
 
@@ -12,9 +15,10 @@ Prepare and launch the ``drake-visualizer``
 ------------------------------------------
 
 The ``drake-visualizer`` is only available via a CMake build.  We recommend
-that you run a CMake build per the Drake instructions, using the same source
-tree as this demo.  In that case, the ``drake-visualizer`` will automatically
-be discovered by the bazel build system and can be launched by :
+that you first run a CMake build before bazel per the Drake instructions,
+using the same source tree as this demo.  In that case, the
+``drake-visualizer`` will automatically be discovered by the bazel build
+system and can be launched by :
 
 ```
 $ cd drake-distro
@@ -43,8 +47,9 @@ monolithic_pick_and_place_demo --box_choice=1
 ```
 
 or alternatively, you can use ``bazel run`` using the appropriate
-full path/target specifier. For instance, from the current directory, you
-can execute the demo using :
+full path/target specifier. For instance, from the
+``drake-distro/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place``
+directory, you can execute the demo using :
 
 ```
 bazel run :monolithic_pick_and_place_demo --config snopt -- --box_choice=1
