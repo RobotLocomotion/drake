@@ -41,8 +41,8 @@ class RosTfPublisher : public LeafSystem<double> {
    * Takes the current state of the RigidBodyTree and publishes ROS tf messages
    * for the bodies in the RigidBodyTree.
    */
-  void DoPublish(const Context<double>& context) const
-      override;
+  void DoPublish(const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>&) const override;
 
   /**
    * This System has no output ports. Thus, DoCalcOutput() does nothing.
