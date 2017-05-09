@@ -143,8 +143,7 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivativesUsingContext() {
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
-    const System<T>&, const Context<T>& context,
-    ContinuousState<T>* state) {
+    const System<T>&, const Context<T>&, ContinuousState<T>* state) {
   using std::abs;
 
   // Set epsilon to the square root of machine precision.
@@ -204,8 +203,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
-    const System<T>&, const Context<T>& context,
-    ContinuousState<T>* state) {
+    const System<T>&, const Context<T>&, ContinuousState<T>* state) {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
