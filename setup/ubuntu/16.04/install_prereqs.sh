@@ -81,9 +81,6 @@ git
 graphviz
 libboost-dev
 libboost-filesystem-dev
-libboost-iostreams-dev
-libboost-program-options-dev
-libboost-regex-dev
 libboost-system-dev
 libgtk2.0-dev
 libhtml-form-perl
