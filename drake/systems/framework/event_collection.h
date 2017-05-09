@@ -176,7 +176,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   /**
    * Aborts if called, because no events should be added at the Diagram level.
    */
-  void add_event(std::unique_ptr<EventType> event) override { DRAKE_ABORT(); }
+  void add_event(std::unique_ptr<EventType>) override { DRAKE_ABORT(); }
 
   /**
    * Returns the number of constituent EventCollection objects that correspond
@@ -662,7 +662,7 @@ class DiagramCompositeEventCollection final
   /**
    * Disabled for Diagram systems (aborts if called).
    */
-  void add_publish_event(std::unique_ptr<PublishEvent<T>> event) override {
+  void add_publish_event(std::unique_ptr<PublishEvent<T>>) override {
     DRAKE_ABORT();
   }
 
@@ -670,7 +670,7 @@ class DiagramCompositeEventCollection final
    * Disabled for Diagram systems (aborts if called).
    */
   void add_discrete_update_event(
-      std::unique_ptr<DiscreteUpdateEvent<T>> event) override {
+      std::unique_ptr<DiscreteUpdateEvent<T>>) override {
     DRAKE_ABORT();
   }
 
@@ -678,7 +678,7 @@ class DiagramCompositeEventCollection final
    * Disabled for Diagram systems (aborts if called).
    */
   void add_unrestricted_update_event(
-      std::unique_ptr<UnrestrictedUpdateEvent<T>> event) override {
+      std::unique_ptr<UnrestrictedUpdateEvent<T>>) override {
     DRAKE_ABORT();
   }
 

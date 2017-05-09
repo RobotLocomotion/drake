@@ -1072,7 +1072,7 @@ class Diagram : public System<T>,
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
   DoCalcNextUpdateTimeImpl(const Context<T1>&, CompositeEventCollection<T1>*,
-                           T1* time) const {
+                           T1*) const {
     DRAKE_ABORT_MSG(
         "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");
