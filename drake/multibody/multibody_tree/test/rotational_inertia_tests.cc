@@ -298,10 +298,18 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
       I_BBcm_B.ShiftFromCenterOfMass(mass, p_QBcm);
 
   // Calculate with single method that does it slighly more efficiently.
-  // Negating p_PBcm and/or p_QBcm does not affect results.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
   EXPECT_TRUE(I_BQ_B.IsCloseTo(expected_I_BQ_B, 2*epsilon));
+
+  // Test that negating position vectors have no affect on results.
+  EXPECT_TRUE(I_BBcm_B.IsCloseTo(
+              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsCloseTo(
+              I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm), 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsCloseTo(
+              I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, -p_PBcm, -p_QBcm),
+              2*epsilon));
 }
 
 // Test the method CouldBePhysicallyValid after a body B's rotational inertia
