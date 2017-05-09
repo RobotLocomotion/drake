@@ -42,13 +42,6 @@ class RosClockPublisher : public LeafSystem<double> {
       override;
 
   /**
-   * This System has no output ports. Thus, DoCalcOutput() does nothing.
-   */
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const
-      override {}
-
-  /**
    * Returns the number of subscribers to this clock publisher.
    */
   int get_num_subscribers() const;

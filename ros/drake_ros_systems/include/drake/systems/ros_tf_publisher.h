@@ -44,13 +44,6 @@ class RosTfPublisher : public LeafSystem<double> {
   void DoPublish(const Context<double>& context) const
       override;
 
-  /**
-   * This System has no output ports. Thus, DoCalcOutput() does nothing.
-   */
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const
-      override {}
-
   // TODO(liang.fok) Remove this method once we have a proper mock-ROS-topic
   // framework in place.
   /**
