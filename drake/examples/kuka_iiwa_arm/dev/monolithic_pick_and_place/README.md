@@ -6,29 +6,30 @@ to execute this demo. The default demo executable utilizes IPOPT instead
 and the successful execution is not guaranteed.
 
 To run the demo, first you need to launch the drake visualizer and then
-execute from the drake-distro directory :
+execute the demo itself in the following manner.
 
-Prepare the drake-visualizer
-----------------------------
+Prepare and launch the ``drake-visualizer``
+------------------------------------------
 
 The ``drake-visualizer`` is only available via a CMake build.  We recommend
 that you run a CMake build per the Drake instructions, using the same source
 tree as this demo.  In that case, the ``drake-visualizer`` will automatically
-be discovered can be launched by :
+be discovered by the bazel build system and can be launched by :
 
 ```
 $ cd drake-distro
 $ bazel-bin/external/drake_visualizer/drake-visualizer &
 ```
 
-Otherwise, you will see a message like:
+If the build system is unable to find the ``drake-visualizer``, you will see a
+message like:
 
 ```
 soft_failure.bzl: @drake_visualizer//:drake-visualizer does not work because
   drake-distro/build/install/bin/drake-visualizer was missing
 ```
 
-In this case you will have to manually launch some other build of the
+In this case you will have to manually generate some other build of the
 ``drake-visualizer`` and launch the app externally.
 
 Launching the demo
