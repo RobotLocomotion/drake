@@ -24,8 +24,8 @@ GTEST_TEST(BasicVectorTest, SetZero) {
   EXPECT_EQ(Eigen::Vector3d(0, 0, 0), vec->get_value());
 }
 
-// Verifies BasicVector is contiguous in memory.
-GTEST_TEST(BasicVectorTest, IsContiguoys) {
+// Verifies BasicVector is contiguous-in-memory.
+GTEST_TEST(BasicVectorTest, IsContiguous) {
   auto vec = BasicVector<double>::Make(1.0, 2.0, 3.0);
   EXPECT_TRUE(vec->is_contiguous());
   EXPECT_TRUE(vec->is_segment_contiguous(0, vec->size()));

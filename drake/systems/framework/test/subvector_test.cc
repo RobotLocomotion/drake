@@ -212,7 +212,7 @@ TEST_F(SubvectorTest, PlusEqScaled) {
   EXPECT_EQ(orig_vec.GetAtIndex(1), 446);
 }
 
-// Verifies we can request a contiguous in memory Eigen vector from SubVector
+// Verifies we can request a contiguous-in-memory Eigen vector from Subvector
 // when the original vector being subdivided is a contiguous BasicVector.
 GTEST_TEST(SubvectorIsContiguous, WithinBasicVector) {
   auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
@@ -223,7 +223,7 @@ GTEST_TEST(SubvectorIsContiguous, WithinBasicVector) {
   EXPECT_EQ(Eigen::Vector2d(2.0, -1.0), subvec.get_contiguous_vector());
 }
 
-// Verifies we can request a contiguous in memory Eigen vector from SubVector
+// Verifies we can request a contiguous-in-memory Eigen vector from Subvector
 // when the original vector being subdivided is a contiguous Subvector.
 GTEST_TEST(SubvectorIsContiguous, WithinContiguousSubvector) {
   auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});

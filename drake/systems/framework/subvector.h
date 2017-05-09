@@ -23,8 +23,11 @@ class Subvector : public VectorBase<T> {
   // Subvector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subvector)
 
-  /// Constructs a subvector of vector that consists of num_elements starting
-  /// at first_element.
+  /// Constructs a subvector of `vector` that consists of `num_elements`
+  /// starting at `first_element`.
+  /// @param first_element Index into `vector` for the first element of this
+  ///                      slice.
+  /// @param num_elements The size of this slice. Zero-sized slices are allowed.
   /// @param vector The vector to slice.  Must not be nullptr. Must remain
   ///               valid for the lifetime of this object.
   Subvector(VectorBase<T>* vector, int first_element, int num_elements)
@@ -64,7 +67,7 @@ class Subvector : public VectorBase<T> {
     return vector_->get_contiguous_segment(start + first_element_, size);
   }
 
-  virtual optional<Eigen::VectorBlock<VectorX<T>>>
+  optional<Eigen::VectorBlock<VectorX<T>>>
   get_mutable_contiguous_segment_when_possible(int start, int size) final {
     return vector_->get_mutable_contiguous_segment(start + first_element_,
                                                    size);

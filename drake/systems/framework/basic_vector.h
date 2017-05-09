@@ -160,7 +160,7 @@ class BasicVector : public VectorBase<T> {
     return values_.segment(start, size);
   }
 
-  virtual optional<Eigen::VectorBlock<VectorX<T>>>
+  optional<Eigen::VectorBlock<VectorX<T>>>
   get_mutable_contiguous_segment_when_possible(int start, int size) final {
     return values_.segment(start, size);
   }
