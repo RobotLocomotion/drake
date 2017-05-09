@@ -1567,7 +1567,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     while (!Step(dt)) {
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
-      dt *= subdivision_constant;
+      dt *= subdivision_factor;
       full_step = false;
     }
   } else {
