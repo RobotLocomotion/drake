@@ -134,7 +134,7 @@ T SpringMassSystem<T>::DoCalcNonConservativePower(const MyContext&) const {
 
 template <typename T>
 std::unique_ptr<BasicVector<T>> SpringMassSystem<T>::AllocateOutputVector(
-    const OutputPortDescriptor<T>& descriptor) const {
+    const OutputPortDescriptor<T>&) const {
   return std::make_unique<SpringMassStateVector<T>>();
 }
 

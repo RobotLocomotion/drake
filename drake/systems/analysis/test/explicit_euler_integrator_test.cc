@@ -32,7 +32,7 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   EXPECT_THROW(int_dbl.request_initial_step_size_target(1.0), std::logic_error);
 
   // Verify that attempting to integrate in variable step mode fails.
-  EXPECT_THROW(int_dbl.IntegrateExactly(1.0), std::logic_error);
+  EXPECT_THROW(int_dbl.IntegrateWithMultipleSteps(1.0), std::logic_error);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {

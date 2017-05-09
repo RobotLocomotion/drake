@@ -237,11 +237,11 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   bool StepImplicitEuler(const T& dt);
   bool StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
                              VectorX<T>* xtplus);
-  MatrixX<T> ComputeForwardDiffJacobian(const System<T>& system,
-                                        const Context<T>& context,
+  MatrixX<T> ComputeForwardDiffJacobian(const System<T>&,
+                                        const Context<T>&,
                                         ContinuousState<T>* state);
-  MatrixX<T> ComputeCentralDiffJacobian(const System<T>& system,
-                                        const Context<T>& context,
+  MatrixX<T> ComputeCentralDiffJacobian(const System<T>&,
+                                        const Context<T>&,
                                         ContinuousState<T>* state);
   MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
                                      const Context<T>& context,

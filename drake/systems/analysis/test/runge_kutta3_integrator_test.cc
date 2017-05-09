@@ -81,7 +81,7 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
   integrator_->Initialize();
 
   // Attempt to take a variable step- should throw an exception.
-  EXPECT_THROW(integrator_->IntegrateExactly(1e-40), std::runtime_error);
+  EXPECT_THROW(integrator_->IntegrateWithMultipleSteps(1e-40), std::runtime_error);
 }
 
 // Test scaling vectors
@@ -432,9 +432,9 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   rk3.set_target_accuracy(1e-6);
   rk3.Initialize();
 
-  // Verify that IntegrateExactly works.
+  // Verify that IntegrateWithMultipleSteps works.
   const double tol = std::numeric_limits<double>::epsilon();
-  rk3.IntegrateExactly(t_final - context->get_time());
+  rk3.IntegrateWithMultipleSteps(t_final - context->get_time());
   EXPECT_NEAR(context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".

@@ -227,7 +227,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   // Integrate for sufficient time for the spring to go to rest.
   const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
   const double t_final = 2.0;
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check the time.
   EXPECT_NEAR(context->get_time(), t_final, ttol);
@@ -262,7 +262,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Integrate for t_final seconds again.
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
   x_final = xc_final.GetAtIndex(0);
   v_final = xc_final.GetAtIndex(1);
 
@@ -282,7 +282,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Integrate for t_final seconds again.
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
   x_final = xc_final.GetAtIndex(0);
   v_final = xc_final.GetAtIndex(1);
 
@@ -325,7 +325,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   // Integrate for 1 second.
   const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
   const double t_final = 1.0;
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check the time.
   EXPECT_NEAR(context->get_time(), t_final, ttol);
@@ -357,7 +357,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Integrate for t_final seconds again.
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check results again.
   x_final =
@@ -379,7 +379,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Integrate for t_final seconds again.
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check results again.
   x_final =
@@ -560,7 +560,7 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
   // Integrate for 1 second.
   const double t_final = 1.0;
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check the time.
   EXPECT_NEAR(context->get_time(), t_final, ttol);
@@ -584,7 +584,7 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
   mod_spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Integrate again.
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check the solution and the time again.
   x_final =
@@ -604,7 +604,7 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
   mod_spring_damper->set_velocity(context.get(), initial_velocity);
 
   // Integrate again.
-  integrator.IntegrateExactly(t_final);
+  integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check the solution and the time again.
   x_final =

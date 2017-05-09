@@ -66,9 +66,9 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 // automatic differentiation.
 template <>
 MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
-    ComputeAutoDiffJacobian(const System<AutoDiffXd>& system,
-                            const Context<AutoDiffXd>& context,
-                            ContinuousState<AutoDiffXd>* state) {
+    ComputeAutoDiffJacobian(const System<AutoDiffXd>&,
+                            const Context<AutoDiffXd>&,
+                            ContinuousState<AutoDiffXd>*) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitEulerIntegrator");
 }
@@ -143,7 +143,7 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivativesUsingContext() {
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
-    const System<T>& system, const Context<T>& context,
+    const System<T>&, const Context<T>& context,
     ContinuousState<T>* state) {
   using std::abs;
 
@@ -204,7 +204,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
-    const System<T>& system, const Context<T>& context,
+    const System<T>&, const Context<T>& context,
     ContinuousState<T>* state) {
   using std::abs;
 

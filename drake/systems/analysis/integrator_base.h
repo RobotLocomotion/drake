@@ -455,7 +455,7 @@ class IntegratorBase {
    * @warning Users should generally not call this function directly; within
    *          simulation circumstances, users will typically call
    *          `Simulator::StepTo()`. In other circumstances, users will
-   *          typically call `IntegratorBase::IntegrateExactly()`.
+   *          typically call `IntegratorBase::IntegrateWithMultipleSteps()`.
    */
   // TODO(edrumwri): Make the stretch size configurable.
   StepResult IntegrateAtMost(const T& publish_dt, const T& update_dt,
@@ -479,7 +479,7 @@ class IntegratorBase {
   /// @sa IntegrateWithSingleStep(), which is also designed to be operated
   ///     *outside of* Simulator, but throws an exception if the integrator
   ///     cannot advance time by @p dt in a single step.
-  void IntegrateExactly(const T& dt) {
+  void IntegrateWithMultipleSteps(const T& dt) {
     using std::max;
     using std::min;
 
@@ -523,7 +523,7 @@ class IntegratorBase {
   ///         of the requested size.
   /// @sa IntegrateAtMost(), which is designed to be operated by Simulator and
   ///     accounts for publishing and state reinitialization.
-  /// @sa IntegrateExactly(), which is also designed to be operated
+  /// @sa IntegrateWithMultipleSteps(), which is also designed to be operated
   ///     *outside of* Simulator, but will take as many integration steps as
   ///     necessary until time has been stepped forward by @p dt.
   void IntegrateWithSingleFixedStep(const T& dt) {
@@ -539,7 +539,7 @@ class IntegratorBase {
                                    "step of the requested size.");
     }
 
-    UpdateStatistics(dt);
+    UpdateStepStatistics(dt);
   }
 
   /**
@@ -1121,7 +1121,7 @@ class IntegratorBase {
  private:
   // Updates the integrator statistics, accounting for a step just taken of
   // size dt.
-  void UpdateStatistics(const T& dt) {
+  void UpdateStepStatistics(const T& dt) {
     // Handle first step specially.
     if (++num_steps_taken_ == 1) {
       set_actual_initial_step_size_taken(dt);
@@ -1229,12 +1229,6 @@ template <class T>
 bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
   using std::isnan;
 
-  // If the directed step is less than the minimum, just go ahead and take it.
-  if (dt_max < get_requested_minimum_step_size()) {
-    Step(dt_max);
-    return true;
-  }
-
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation())
     throw std::logic_error("StepErrorControlled() requires error estimation.");
@@ -1258,20 +1252,21 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
 
   bool step_succeeded = false;
   do {
-    // Constants for step size growth and shrinkage.
-    const double shrink_fraction_limit = 0.95;
-    const double growth_fraction_limit = 1.001;
+    // Constants used to determine whether modifications to the step size are
+    // close enough to the desired step size to use the unadjusted originals.
+    const double near_enough_smaller = 0.95;
+    const double near_enough_larger = 1.001;
 
     // If we lose more than a small fraction of the step size we wanted
     // to take due to a need to stop at dt_max, make a note of that so the
     // step size adjuster won't try to grow from the current step.
     bool dt_was_artificially_limited = false;
-    if (dt_max < shrink_fraction_limit * current_step_size) {
+    if (dt_max < near_enough_smaller * current_step_size) {
       // dt_max much smaller than current step size.
       dt_was_artificially_limited = true;
       current_step_size = dt_max;
     } else {
-      if (dt_max < growth_fraction_limit * current_step_size)
+      if (dt_max < near_enough_larger * current_step_size)
         current_step_size = dt_max;  // dt_max is roughly current step.
     }
 
@@ -1444,6 +1439,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
   if (new_step_size < get_working_minimum_step_size() &&
+      new_step_size < current_step_size &&
       min_step_exceeded_throws_) {
     SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
         "size of {}; working minimum is ", new_step_size,
@@ -1461,8 +1457,8 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     const T& publish_dt, const T& update_dt, const T& boundary_dt) {
-  // TODO(edrumwri): Allow subdivision constant to be user-tweakable.
-  const double subdivision_constant = 0.5;
+  // TODO(edrumwri): Allow subdivision factor to be user-tweakable.
+  const double subdivision_factor = 0.5;
 
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
@@ -1575,7 +1571,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   }
 
   // Update generic statistics.
-  UpdateStatistics(dt);
+  UpdateStepStatistics(dt);
 
   if (full_step) {
     // If the integrator took the entire maximum step size we allowed above,
