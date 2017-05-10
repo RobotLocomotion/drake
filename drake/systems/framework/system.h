@@ -1011,7 +1011,7 @@ class System {
   /// active at the beginning of a continuous time interval. The default
   /// implementation returns an empty vector.
   virtual std::vector<WitnessFunction<T>*> get_witness_functions(
-      const Context<T>& context) const {
+      const Context<T>&) const {
     return std::vector<WitnessFunction<T>*>();
   }
 
