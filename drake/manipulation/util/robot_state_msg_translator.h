@@ -151,9 +151,8 @@ class RobotStateLcmMessageTranslator {
       const RigidBodyTree<double>& robot);
 
   const RigidBodyTree<double>& robot_;
-
-  // Pointer to the floating base. nullptr if there is no floating base.
-  const RigidBody<double>* const floating_base_;
+  const RigidBody<double>& root_body_;
+  const bool is_floating_base_;
 
   // Maps from non-floating joint's position name to various indices.
   std::unordered_map<std::string, int> joint_name_to_q_index_;
