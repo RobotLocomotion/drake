@@ -723,14 +723,14 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
       witness_functions, w0, t0, x0, tf);
 
     // TODO(edrumwri): Store witness function(s) that triggered.
-    for (WitnessFunction<T>* wf : witness_functions) {
+    for (WitnessFunction<T>* fn : witness_functions) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
-                   wf->get_name(), context.get_time());
+                   fn->get_name(), context.get_time());
       update_actions->time = context.get_time();
       update_actions->events.push_back(DiscreteEvent<T>());
       DiscreteEvent<T>& event = update_actions->events.back();
-      event.action = wf->get_action_type();
-      event.triggered_witness_function = wf;
+      event.action = fn->get_action_type();
+      event.triggered_witness_function = fn;
     }
 
     // Indicate a "sample time was hit". In more understandable terms, this
