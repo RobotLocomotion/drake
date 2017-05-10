@@ -8,7 +8,6 @@
 
 namespace drake {
 namespace systems {
-namespace implicit_integrator_test {
 
 // This is an unforced spring-mass-damper system.
 template <class T>
@@ -136,7 +135,6 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   double damping_constant_N_per_m_;
 };
 
-}  // namespace implicit_integrator_test
 }  // namespace systems
 }  // namespace drake
 

@@ -4,7 +4,6 @@
 
 namespace drake {
 namespace systems {
-namespace implicit_integrator_test {
 
 // This is a modified spring-mass-damper system for which the acceleration
 // component of the derivative function is discontinuous with respect to the
@@ -53,8 +52,8 @@ class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
     const ContinuousState <T>& state = *context.get_continuous_state();
 
     // First element of the derivative is spring velocity.
-    const T xd = state[1];
-    (*derivatives)[0] = xd;
+    const T v = state[1];
+    (*derivatives)[0] = v;
 
     // Compute the force acting on the mass. There is always a constant
     // force pushing the mass toward -inf. The spring and damping forces are
@@ -65,7 +64,7 @@ class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
     const T x0 = 0;
     const T x = state[0];
     if (x <= x0)
-      force -= k * (x - x0) + b * xd;
+      force -= k * (x - x0) + b * v;
 
     // Second element of the derivative is spring acceleration.
     (*derivatives)[1] = force / this->get_mass();
@@ -75,6 +74,5 @@ class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
   double constant_force_;
 };
 
-}  // namespace implicit_integrator_test
 }  // namespace systems
 }  // namespace drake

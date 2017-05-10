@@ -67,7 +67,8 @@ class SpringMassStateVector : public BasicVector<T> {
 /// Units are MKS (meters-kilograms-seconds).
 ///
 /// Instantiated templates for the following kinds of T's are provided:
-/// - const T&
+/// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -235,8 +236,8 @@ class SpringMassSystem : public LeafSystem<T> {
     // d^2x/dt^2 = -kx/m
     // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
     // where omega = sqrt(k/m)
-    // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
-    // for t = 0, x(0) = c1, x'(0) = c2*omega
+    // ẋ(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
+    // for t = 0, x(0) = c1, ẋ(0) = c2*omega
 
     // Setup c1 and c2 for ODE constants.
     const T omega = sqrt(get_spring_constant() / get_mass());

@@ -291,7 +291,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   // whether the implicit Euler or implicit trapezoid method was used. Keeping
   // this data in the class definition serves to minimize heap allocations
   // and deallocations.
-  MatrixX<T> A_;
+  MatrixX<T> iteration_matrix_;
 
   // Various combined statistics.
   int64_t num_jacobian_evaluations_{0};

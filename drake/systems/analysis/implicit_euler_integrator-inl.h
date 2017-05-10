@@ -365,9 +365,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
     // TODO(edrumwri): Allow caller to provide their own solver.
     const int n = xtplus->size();
-    A_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+    iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
     num_iter_factorizations_++;
-    VectorX<T> dx = FactorAndSolve(A_, goutput);
+    VectorX<T> dx = FactorAndSolve(iteration_matrix_, goutput);
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector()->SetFromVector(dx);
@@ -675,20 +675,21 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
     // The error estimation process for explicit Euler uses two half-steps
     // of explicit Euler (for a total of two derivative evaluations). The error
     // estimation process is derived as follows:
-    // (1) x*(t+h) = xₑ(t+h) + h²/2 f'() + ...              [full step]
-    // (2) x*(t+h) = ̅xₑ(t+h) + h²/8 f() + h²/8 f₊() + ...  [two half-steps]
+    // (1) x*(t+h) = xₑ(t+h) + h²/2 d²f/dt² + ...                [full step]
+    // (2) x*(t+h) = ̅xₑ(t+h) + h²/8 (d²f/dt² + d²f₊/dt²) + ...  [two 1/2-steps]
     //
     // where x*(t+h) is the true (generally unknown) answer that we seek, f()
     // is the derivative evaluated at x(t) and f₊() is the derivative evaluated
-    // at x(t + h/2). Subtracting the right hand side of (1) from the right
-    // hand side of (2), the above equations are rewritten as:
-    // x*(t+h) = x̅ₑ(t+h) - xₑ(t+h) + h²/8 (-3f' + f₊') + h³ (-17f'' + f₊'')
-    //           + h⁴ (-15f''' + f₊''') + ...
+    // at x(t + h/2). Subtracting (1) from (2), the above equations are
+    // rewritten as:
+    // 0 = x̅ₑ(t+h) - xₑ(t+h) + h²/8 (-3f' + f₊') + ...
     // The sum of all but the first two terms on the right hand side
     // of the above equation is less in magnitude than ch², for some
     // sufficiently large c. Or, written using Big-Oh notation:
-    // x*(t+h) = x̅ₑ(t+h) - xₑ(t+h) + O(h²)
-    // Thus, subtracting the two solutions yields a second order error estimate.
+    // x̅ₑ(t+h) - xₑ(t+h) = O(h²)
+    // Thus, subtracting the two solutions yields a second order error estimate
+    // (we compute norms on the error estimate, so the apparent sign error
+    // in the algebra when arriving at the final equation is inconsequential).
 
     // Compute the Euler step.
     this->CalcTimeDerivatives(*context, derivs_.get());
