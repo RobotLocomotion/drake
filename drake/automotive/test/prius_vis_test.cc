@@ -23,7 +23,7 @@ namespace {
 // Searches the provided PoseBundle for the pose of "chassis_floor" and returns
 // a reference to it if found. It throws a std::runtime_error exception if it
 // fails to find the pose.
-const Isometry3<double>& GetChassisFloorPose(const PoseBundle<double>& poses) {
+const Isometry3<double> GetChassisFloorPose(const PoseBundle<double>& poses) {
   for (int i = 0; i < poses.get_num_poses(); ++i) {
     if (poses.get_name(i) == "chassis_floor") {
       return poses.get_pose(i);
@@ -151,7 +151,7 @@ GTEST_TEST(PriusVisTest, BasicTest) {
 
   // Tests the visualization's pose when the model is rotated 90 degrees about
   // its +Z axis.
-  const Isometry3<double>& floor_pose_identity =
+  const Isometry3<double> floor_pose_identity =
       GetChassisFloorPose(origin_vis_poses);
   EXPECT_DOUBLE_EQ(floor_pose_identity.translation().x(),
                    PriusVis<double>::kVisOffset);
@@ -168,7 +168,7 @@ GTEST_TEST(PriusVisTest, BasicTest) {
   // its +Y axis. In other words, the vehicle is going down a steep hill.
   const Eigen::Isometry3d X_WM_W_45_about_y = math::RollPitchYawToQuaternion(
       Eigen::Vector3d(0, M_PI_4, 0)) * Eigen::Isometry3d::Identity();
-  const Isometry3<double>& floor_pose_down_hill =
+  const Isometry3<double> floor_pose_down_hill =
       GetChassisFloorPose(dut.CalcPoses(X_WM_W_45_about_y));
   EXPECT_DOUBLE_EQ(
       floor_pose_down_hill.translation().x(),
@@ -183,7 +183,7 @@ GTEST_TEST(PriusVisTest, BasicTest) {
   // to the lane being severely cambered.
   const Eigen::Isometry3d X_WM_W_45_about_x = math::RollPitchYawToQuaternion(
       Eigen::Vector3d(M_PI_4, 0, 0)) * Eigen::Isometry3d::Identity();
-  const Isometry3<double>& floor_pose_severe_camber =
+  const Isometry3<double> floor_pose_severe_camber =
       GetChassisFloorPose(dut.CalcPoses(X_WM_W_45_about_x));
   EXPECT_DOUBLE_EQ(floor_pose_severe_camber.translation().x(),
       PriusVis<double>::kVisOffset);
