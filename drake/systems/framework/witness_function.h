@@ -5,6 +5,9 @@
 namespace drake {
 namespace systems {
 
+/// Abstract class that describes a function that is ...
+/// A good witness function should...
+/// Simulation aims to make it easy to trigger a witness function around zero.
 template <class T>
 class WitnessFunction {
  public:
@@ -67,12 +70,20 @@ class WitnessFunction {
   /// band. This value should generally be non-positive.
   virtual T get_negative_dead_band() const = 0;
 
-  /// Derived classes will override this function to get the time that the
+  /// Derived classes can override this function to get the time that the
   /// witness function should trigger, given two times and two witness function
-  /// evaluations.
+  /// evaluations. This default implementation returns the time with the witness
+  /// function evaluation that is closer to zero.
   virtual T do_get_trigger_time(const std::pair<T, T>& time_and_witness_value0,
                                 const std::pair<T, T>& time_and_witness_valuef)
-                                const = 0;
+                                const {
+    using std::abs;
+    const T& value0 = time_and_witness_value0.second;
+    const T& valuef = time_and_witness_valuef.second;
+    const T& time0 = time_and_witness_value0.first;
+    const T& timef = time_and_witness_valuef.first;
+    return (abs(value0) < abs(valuef)) ? time0 : timef;
+  }
 
   /// Gets the time that the witness function should trigger, given two times
   /// and two function evaluations. Calls do_get_trigger_time().
@@ -113,14 +124,14 @@ class WitnessFunction {
         return false;
 
       case TriggerType::kPositiveThenNegative:
-        return (w0 > positive_dead && wf < negative_dead);
+        return (w0 > positive_dead && wf < positive_dead);
 
       case TriggerType::kNegativeThenPositive:
-        return (w0 < negative_dead && wf > positive_dead);
+        return (w0 < negative_dead && wf > negative_dead);
 
       case TriggerType::kCrossesZero:
-        return ((w0 > positive_dead && wf < negative_dead) ||
-                (w0 < negative_dead && wf > positive_dead));
+        return ((w0 > positive_dead && wf < positive_dead) ||
+                (w0 < negative_dead && wf > negative_dead));
 
       default:
         DRAKE_ABORT();

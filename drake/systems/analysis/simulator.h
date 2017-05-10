@@ -570,8 +570,6 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     const T& t0, const VectorX<T>& x0, const T& tf) {
   using std::max;
 
-  const T inf = std::numeric_limits<double>::infinity();
-
   // TODO(edrumwri): Speed this process using interpolation between states.
   // TODO(edrumwri): Speed this process using more powerful root finding
   //                 methods.
@@ -584,6 +582,19 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
 
   // Will need to alter the context repeatedly.
   Context<T>* context = get_mutable_context();
+
+  // Mini function for integrating the system forward in time.
+  std::function<void(const T&)> fwd_int =
+      [t0, x0, zero_tol, context, this](const T& t_des) {
+    const T inf = std::numeric_limits<double>::infinity();
+    context->set_time(t0);
+    context->get_mutable_continuous_state()->SetFromVector(x0);
+    T t_remaining = t_des - t0;
+    while (t_remaining > zero_tol) {
+      integrator_->StepOnceAtMost(inf, inf, t_remaining);
+      t_remaining = t_des - context->get_time();
+    }
+  };
 
   // Set the first witness function trigger and the witness function that
   // makes that trigger.
@@ -599,14 +610,8 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     // Set the witness function values.
     T fa = w0[i];
 
-    // Restore the state and time to a and then integrate to b.
-    context->set_time(t0);
-    context->get_mutable_continuous_state()->SetFromVector(x0);
-    T t_remaining = t_first - t0;
-    while (t_remaining > zero_tol) {
-      integrator_->StepOnceAtMost(inf, inf, t_remaining);
-      t_remaining = t_first - context->get_time();
-    }
+    // Integrate to b.
+    fwd_int(t_first);
 
     // Evaluate the witness function.
     T fb = system.EvalWitnessFunction(*context, witnesses[i]);
@@ -622,10 +627,15 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     const T neg_dead = witnesses[i]->get_negative_dead_band();
 
     while (true) {
+    /*
       // See whether the solution has been found to the desired tolerance.
-      if (b - a < witnesses[i]->get_time_isolation_tolerance()) {
+      if (b - a < witnesses[i]->get_time_isolation_tolerance() &&
+          fb < pos_dead && fb > neg_dead && fa < pos_dead && fa > neg_dead) {
         T t_trigger = witnesses[i]->get_trigger_time(std::make_pair(a, fa),
                                                      std::make_pair(b, fb));
+
+        // Integrate to the trigger point.
+        fwd_int(t_trigger);
 
         // Only clear the list of witnesses if t_trigger strictly less than
         // t_first.
@@ -638,18 +648,12 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
         t_first = t_trigger;
         break;
       }
-
+*/
       // Determine the midpoint.
       T c = (a + b) / 2;
 
       // Restore the state and time to t0, then integrate to c.
-      context->set_time(t0);
-      context->get_mutable_continuous_state()->SetFromVector(x0);
-      T t_remaining = c - t0;
-      while (t_remaining > zero_tol) {
-        integrator_->StepOnceAtMost(inf, inf, t_remaining);
-        t_remaining = c - context->get_time();
-      }
+      fwd_int(c);
 
       // Evaluate the witness function.
       T fc = system.EvalWitnessFunction(*context, witnesses[i]);
@@ -664,7 +668,8 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
       }
 
       // If fc is within the dead band, quit.
-      if (fc < pos_dead && fc > neg_dead) {
+      if (b - c < witnesses[i]->get_time_isolation_tolerance() &&
+          fc < pos_dead && fc > neg_dead) {
         T t_trigger = witnesses[i]->get_trigger_time(std::make_pair(a, fa),
                                                      std::make_pair(b, fb));
 

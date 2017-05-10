@@ -94,9 +94,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "square_wave_system",
+    name = "logistic_system",
     testonly = 1,
-    hdrs = ["test/square_wave_system.h"],
+    hdrs = ["test/logistic_system.h"],
     deps = [
         "//drake/systems/framework",
     ],
@@ -106,8 +106,9 @@ drake_cc_googletest(
     name = "simulator_test",
     deps = [
         ":explicit_euler_integrator",
+        ":runge_kutta3_integrator",
         ":my_spring_mass_system",
-        ":square_wave_system",
+        ":logistic_system",
         ":simulator",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],
