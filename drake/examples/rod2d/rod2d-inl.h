@@ -340,6 +340,7 @@ void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
           context.get_discrete_state(0)->CopyToVector() :
           context.get_continuous_state()->CopyToVector();
   state_port_value->SetFromVector(state);
+  ConvertStateToPose(state, pose_port_value);
 }
 
 /// Integrates the Rod 2D example forward in time using a
