@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -117,6 +118,7 @@ class RobotStateMsgToHumanoidStatusSystem
   }
 
  private:
+  const manipulation::RobotStateLcmMessageTranslator translator_;
   int input_port_index_lcm_msg_{0};
 };
 
