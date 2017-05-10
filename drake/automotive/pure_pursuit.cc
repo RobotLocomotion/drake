@@ -38,8 +38,8 @@ T PurePursuit<T>::Evaluate(const PurePursuitParams<T>& pp_params,
   const T y = pose.get_translation().translation().y();
   const T heading = pose.get_rotation().z();
 
-  const T delta_r = -(goal_position.x - x) * sin(heading) +
-                    (goal_position.y - y) * cos(heading);
+  const T delta_r = -(goal_position.x() - x) * sin(heading) +
+                    (goal_position.y() - y) * cos(heading);
   const T curvature = 2 * delta_r / pow(pp_params.s_lookahead(), 2.);
 
   // Return the steering angle.
@@ -58,10 +58,10 @@ const GeoPosition PurePursuit<T>::ComputeGoalPoint(
                             pose.get_isometry().translation().z()},
                            nullptr, nullptr);
   const T s_new =
-      cond(with_s, position.s + s_lookahead, position.s - s_lookahead);
+      cond(with_s, position.s() + s_lookahead, position.s() - s_lookahead);
   const T s_goal = math::saturate(s_new, 0., lane->length());
   // TODO(jadecastro): Add support for locating goal points in ongoing lanes.
-  return lane->ToGeoPosition({s_goal, 0., position.h});
+  return lane->ToGeoPosition({s_goal, 0., position.h()});
 }
 
 // These instantiations must match the API documentation in pure_pursuit.h.

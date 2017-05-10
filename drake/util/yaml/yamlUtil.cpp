@@ -177,8 +177,8 @@ void loadJointParams(QPControllerParams& params, const YAML::Node& config,
 }
 
 void loadSingleInputParams(QPControllerParams& params,
-                           Eigen::DenseIndex position_index, YAML::Node config,
-                           const RigidBodyTree<double>& robot) {
+                           Eigen::DenseIndex position_index,
+                           YAML::Node config) {
   YAML::Node hardware_config = get(config, "hardware");
 
   params.hardware.joint_is_force_controlled(position_index) =
@@ -215,7 +215,7 @@ void loadInputParams(QPControllerParams& params, const YAML::Node& config,
        actuator_it != robot.actuators.end(); ++actuator_it) {
     try {
       loadSingleInputParams(params, actuator_it - robot.actuators.begin(),
-                            get(config, actuator_it->name_), robot);
+                            get(config, actuator_it->name_));
     } catch (...) {
       std::cerr << "error loading input params from node: "
                 << get(config, actuator_it->name_) << std::endl;
@@ -235,7 +235,7 @@ void loadInputParams(QPControllerParams& params, const YAML::Node& config,
   //       // std::cout << get(*config_it, "name").as<std::string>() << "
   //       matches " << (*actuator_it).name << std::endl;
   //       loadSingleInputParams(params, actuator_it - robot.actuators.begin(),
-  //       get(*config_it, "params"), robot);
+  //       get(*config_it, "params"));
   //     }
   //   }
   // }

@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/unused.h"
 #include "drake/lcmt_manipulator_plan_move_end_effector.hpp"
 #include "drake/util/lcmUtil.h"
 
@@ -13,6 +14,8 @@ template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+  unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
+
   // Knots are constant, the second time doesn't matter.
   const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
   const RigidBody<T>* ee_body =
@@ -32,6 +35,8 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
     const void* message_bytes, int message_length) {
+  unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
+
   // Tries to decode as a lcmt_manipulator_plan_move_end_effector message.
   lcmt_manipulator_plan_move_end_effector msg;
   int consumed = msg.decode(message_bytes, 0, message_length);

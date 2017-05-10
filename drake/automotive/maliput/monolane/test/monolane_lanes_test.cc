@@ -37,9 +37,9 @@ GTEST_TEST(MonolaneLanesTest, Rot3) {
     const api::GeoPosition _actual(actual);                  \
     const api::GeoPosition _expected expected;               \
     const double _tolerance = (tolerance);                   \
-    EXPECT_NEAR(_actual.x, _expected.x, _tolerance);         \
-    EXPECT_NEAR(_actual.y, _expected.y, _tolerance);         \
-    EXPECT_NEAR(_actual.z, _expected.z, _tolerance);         \
+    EXPECT_NEAR(_actual.x(), _expected.x(), _tolerance);     \
+    EXPECT_NEAR(_actual.y(), _expected.y(), _tolerance);     \
+    EXPECT_NEAR(_actual.z(), _expected.z(), _tolerance);     \
   } while (0)
 
 #define EXPECT_LANE_NEAR(actual, expected, tolerance)         \
@@ -47,9 +47,9 @@ GTEST_TEST(MonolaneLanesTest, Rot3) {
     const api::LanePosition _actual(actual);                  \
     const api::LanePosition _expected expected;               \
     const double _tolerance = (tolerance);                    \
-    EXPECT_NEAR(_actual.s, _expected.s, _tolerance);          \
-    EXPECT_NEAR(_actual.r, _expected.r, _tolerance);          \
-    EXPECT_NEAR(_actual.h, _expected.h, _tolerance);          \
+    EXPECT_NEAR(_actual.s(), _expected.s(), _tolerance);      \
+    EXPECT_NEAR(_actual.r(), _expected.r(), _tolerance);      \
+    EXPECT_NEAR(_actual.h(), _expected.h(), _tolerance);      \
   } while (0)
 
 #define EXPECT_ROT_NEAR(actual, expected, tolerance)                 \
@@ -506,9 +506,7 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
   for (int i = 0; i < step_count; ++i) {
     const api::LanePosition lp_dot =
         lane->EvalMotionDerivatives(lp_current, velocity);
-    lp_current.s += lp_dot.s * time_step;
-    lp_current.r += lp_dot.r * time_step;
-    lp_current.h += lp_dot.h * time_step;
+    lp_current.set_srh(lp_current.srh() + (lp_dot.srh() * time_step));
   }
   return lp_current;
 }

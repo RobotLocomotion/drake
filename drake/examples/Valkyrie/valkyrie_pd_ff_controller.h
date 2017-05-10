@@ -31,7 +31,7 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
 
  protected:
   std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override {
+      const OutputPortDescriptor<double>&) const override {
     return std::make_unique<Value<bot_core::atlas_command_t>>(
         bot_core::atlas_command_t());
   }

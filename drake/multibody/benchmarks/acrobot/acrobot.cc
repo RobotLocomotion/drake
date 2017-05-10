@@ -33,8 +33,7 @@ Acrobot<T>::Acrobot(const Vector3<T>& normal, const Vector3<T>& up) {
 }
 
 template <typename T>
-Matrix2<T> Acrobot<T>::CalcMassMatrix(const T& theta1, const T& theta2)
-const {
+Matrix2<T> Acrobot<T>::CalcMassMatrix(const T& theta2) const {
   const T I1 = Ic1 + m1 * lc1 * lc1;
   const T I2 = Ic2 + m2 * lc2 * lc2;
   const T m2l1lc2 = m2 * l1 * lc2;  // occurs often!
@@ -51,7 +50,8 @@ const {
 
 template <typename T>
 Isometry3<T> Acrobot<T>::CalcLink1PoseInWorldFrame(
-    const T& theta1, const T& theta2) const {
+    const T& theta1) const {
+
   using std::sin;
   using std::cos;
 
@@ -90,8 +90,7 @@ Isometry3<T> Acrobot<T>::CalcLink2PoseInWorldFrame(
 
 template <typename T>
 Vector6<T> Acrobot<T>::CalcLink1SpatialVelocityInWorldFrame(
-    const T& theta1, const T& theta2,
-    const T& theta1dot, const T& theta2dot) const {
+    const T& theta1, const T& theta1dot) const {
   using std::sin;
   using std::cos;
 

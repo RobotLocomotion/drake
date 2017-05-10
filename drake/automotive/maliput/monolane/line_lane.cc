@@ -13,7 +13,7 @@ V2 LineLane::xy_of_p(const double p) const {
   return V2(x0_ + (p * dx_), y0_ + (p * dy_));
 }
 
-V2 LineLane::xy_dot_of_p(const double p) const { return V2(dx_, dy_); }
+V2 LineLane::xy_dot_of_p(const double) const { return V2(dx_, dy_); }
 
 double LineLane::heading_of_p(const double) const { return heading_; }
 
@@ -30,7 +30,7 @@ api::LanePosition LineLane::DoToLanePosition(
   const V2 s_unit_vector = d_xy / d_xy.norm();
   const V2 r_unit_vector{-s_unit_vector(1), s_unit_vector(0)};
 
-  const V2 p{geo_position.x, geo_position.y};
+  const V2 p{geo_position.x(), geo_position.y()};
   const V2 lane_origin_to_p = p - xy0;
 
   // Compute the distance from `p` to the start of the lane.
@@ -41,7 +41,7 @@ api::LanePosition LineLane::DoToLanePosition(
                                   driveable_bounds(s).r_max);
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h = geo_position.z - elevation().a() * length;
+  const double h = geo_position.z() - elevation().a() * length;
 
   const api::LanePosition lane_position{s, r, h};
 
@@ -50,7 +50,7 @@ api::LanePosition LineLane::DoToLanePosition(
     *nearest_position = nearest;
   }
   if (distance != nullptr) {
-    const V2 p_to_nearest{p(0) - nearest.x, p(1) - nearest.y};
+    const V2 p_to_nearest{p(0) - nearest.x(), p(1) - nearest.y()};
     *distance = p_to_nearest.norm();
   }
 

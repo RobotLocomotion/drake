@@ -60,7 +60,7 @@ const PiecewisePolynomial<T> RoadPath<T>::MakePiecewisePolynomial(
 
     GeoPosition geo_pos =
         ld.lane->ToGeoPosition({s_lane /* s */, 0. /* r */, 0. /* h */});
-    geo_knots[i] << T(geo_pos.x), T(geo_pos.y), T(geo_pos.z);
+    geo_knots[i] << T(geo_pos.x()), T(geo_pos.y()), T(geo_pos.z());
 
     // Take a step.
     if (ld.with_s) {
@@ -83,7 +83,7 @@ const PiecewisePolynomial<T> RoadPath<T>::MakePiecewisePolynomial(
           s_lane = cond(ld.with_s, T(ld.lane->length()), T(0.));
           geo_pos =
               ld.lane->ToGeoPosition({s_lane /* s */, 0. /* r */, 0. /* h */});
-          geo_knots[i + 1] << T(geo_pos.x), T(geo_pos.y), T(geo_pos.z);
+          geo_knots[i + 1] << T(geo_pos.x()), T(geo_pos.y()), T(geo_pos.z());
         }
         break;
       }

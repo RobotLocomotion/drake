@@ -1,7 +1,7 @@
 /**
  *
  * @file This is a demo of the functionality of the
- * IiwaPlanSource along with the
+ * RobotPlanInterpolator along with the
  * SchunkWsgTrajectoryGenerator.
  *
  */
@@ -15,8 +15,8 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/demo_diagram_builder.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -70,7 +70,7 @@ class PlanSourceTester : public systems::LeafSystem<double> {
     std::unique_ptr<systems::AbstractValue> return_value;
     std::unique_ptr<systems::AbstractValue> return_val;
 
-    /* allocate outputs for IiwaPlanSource and
+    /* allocate outputs for RobotPlanInterpolator and
      * SchunkWsgTrajectoryGenerator */
     if (descriptor.get_index() == output_port_iiwa_plan_) {
       return_val = systems::AbstractValue::Make<robot_plan_t>(robot_plan_t());

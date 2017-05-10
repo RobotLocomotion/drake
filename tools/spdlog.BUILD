@@ -25,5 +25,6 @@ pkg_tar(
     name = "license",
     extension = "tar.gz",
     files = ["LICENSE"],
+    mode = "0644",
     package_dir = "spdlog",
 )

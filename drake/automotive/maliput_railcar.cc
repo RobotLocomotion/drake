@@ -191,8 +191,7 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarParams<T>& params,
           Rotation(-rotation.roll,
                    -rotation.pitch,
                    atan2(-sin(rotation.yaw), -cos(rotation.yaw))));
-  pose->set_translation(
-      Eigen::Translation<T, 3>(geo_position.x, geo_position.y, geo_position.z));
+  pose->set_translation(Eigen::Translation<T, 3>(geo_position.xyz()));
   pose->set_rotation(RollPitchYawToQuaternion(
       Vector3<T>(adjusted_rotation.roll, adjusted_rotation.pitch,
                  adjusted_rotation.yaw)));
@@ -284,9 +283,9 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
   // zero, we expect the resulting motion derivative's r and h values to
   // also be zero. The IsoLaneVelocity's sigma_v, which may be non-zero, maps
   // to the motion derivative's s value.
-  DRAKE_ASSERT(motion_derivatives.r == 0);
-  DRAKE_ASSERT(motion_derivatives.h == 0);
-  rates->set_s(motion_derivatives.s);
+  DRAKE_ASSERT(motion_derivatives.r() == 0);
+  DRAKE_ASSERT(motion_derivatives.h() == 0);
+  rates->set_s(motion_derivatives.s());
 
   const T desired_acceleration = input.GetAtIndex(0);
   const T smooth_acceleration = calc_smooth_acceleration(
@@ -369,7 +368,7 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
         lane_direction.lane->EvalMotionDerivatives(
             LanePosition(s, CalcR(params, lane_direction), params.h()),
             IsoLaneVelocity(sigma_v, 0 /* rho_v */, 0 /* eta_v */));
-    const T s_dot = motion_derivatives.s;
+    const T s_dot = motion_derivatives.s();
 
     const T distance = cond(with_s, T(lane->length()) - s, -s);
 

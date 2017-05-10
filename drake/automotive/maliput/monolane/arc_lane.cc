@@ -189,7 +189,7 @@ api::LanePosition ArcLane::DoToLanePosition(
   // TODO(jadecastro): Lift the zero superelevation and zero elevation gradient
   // restriction.
   const V2 center{cx_, cy_};
-  const V2 p{geo_position.x, geo_position.y};
+  const V2 p{geo_position.x(), geo_position.y()};
   DRAKE_DEMAND(p != center);
 
   // Define a vector from p to the center of the arc.
@@ -222,7 +222,7 @@ api::LanePosition ArcLane::DoToLanePosition(
   const double p_scale = r_ * d_theta_;
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h = geo_position.z - elevation().a() * p_scale;
+  const double h = geo_position.z() - elevation().a() * p_scale;
 
   const api::LanePosition lane_position{s, r, h};
 
@@ -231,7 +231,7 @@ api::LanePosition ArcLane::DoToLanePosition(
     *nearest_position = nearest;
   }
   if (distance != nullptr) {
-    const V2 p_to_nearest{p(0) - nearest.x, p(1) - nearest.y};
+    const V2 p_to_nearest{p(0) - nearest.x(), p(1) - nearest.y()};
     *distance = p_to_nearest.norm();
   }
 

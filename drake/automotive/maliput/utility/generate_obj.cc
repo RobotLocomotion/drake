@@ -69,9 +69,9 @@ class GeoVertex {
   // A hasher operation suitable for std::unordered_map.
   struct Hash {
     size_t operator()(const GeoVertex& gv) const {
-      const size_t hx(std::hash<double>()(gv.v().x));
-      const size_t hy(std::hash<double>()(gv.v().y));
-      const size_t hz(std::hash<double>()(gv.v().z));
+      const size_t hx(std::hash<double>()(gv.v().x()));
+      const size_t hy(std::hash<double>()(gv.v().y()));
+      const size_t hz(std::hash<double>()(gv.v().z()));
       return hx ^ (hy << 1) ^ (hz << 2);
     }
   };
@@ -79,9 +79,7 @@ class GeoVertex {
   // An equivalence operation suitable for std::unordered_map.
   struct Equiv {
     bool operator()(const GeoVertex& lhs, const GeoVertex& rhs) const {
-      return ((lhs.v().x == rhs.v().x) &&
-              (lhs.v().y == rhs.v().y) &&
-              (lhs.v().z == rhs.v().z));
+      return (lhs.v().xyz() == rhs.v().xyz());
     }
   };
 
@@ -102,9 +100,9 @@ class GeoNormal {
   // A hasher operation suitable for std::unordered_map.
   struct Hash {
     size_t operator()(const GeoNormal& gn) const {
-      const size_t hx(std::hash<double>()(gn.n().x));
-      const size_t hy(std::hash<double>()(gn.n().y));
-      const size_t hz(std::hash<double>()(gn.n().z));
+      const size_t hx(std::hash<double>()(gn.n().x()));
+      const size_t hy(std::hash<double>()(gn.n().y()));
+      const size_t hz(std::hash<double>()(gn.n().z()));
       return hx ^ (hy << 1) ^ (hz << 2);
     }
   };
@@ -112,9 +110,7 @@ class GeoNormal {
   // An equivalence operation suitable for std::unordered_map.
   struct Equiv {
     bool operator()(const GeoNormal& lhs, const GeoNormal& rhs) const {
-      return ((lhs.n().x == rhs.n().x) &&
-              (lhs.n().y == rhs.n().y) &&
-              (lhs.n().z == rhs.n().z));
+      return (lhs.n().xyz() == rhs.n().xyz());
     }
   };
 
@@ -122,7 +118,7 @@ class GeoNormal {
 
   // Construct a GeoNormal as the vector from @p v0 to @p v1.
   GeoNormal(const api::GeoPosition& v0, const api::GeoPosition& v1)
-      : n_({v1.x - v0.x, v1.y - v0.y, v1.z - v0.z}) {}
+      : n_(api::GeoPosition::FromXyz(v1.xyz() - v0.xyz())) {}
 
   const api::GeoPosition& n() const { return n_; }
 
@@ -218,15 +214,15 @@ class GeoMesh {
     fmt::print(os, "# Vertices\n");
     for (const GeoVertex* gv : vertices_.vector()) {
       fmt::print(os, "v {x:.{p}f} {y:.{p}f} {z:.{p}f}\n",
-                 "x"_a = (gv->v().x - origin.x),
-                 "y"_a = (gv->v().y - origin.y),
-                 "z"_a = (gv->v().z - origin.z),
+                 "x"_a = (gv->v().x() - origin.x()),
+                 "y"_a = (gv->v().y() - origin.y()),
+                 "z"_a = (gv->v().z() - origin.z()),
                  "p"_a = precision);
     }
     fmt::print(os, "# Normals\n");
     for (const GeoNormal* gn : normals_.vector()) {
       fmt::print(os, "vn {x:.{p}f} {y:.{p}f} {z:.{p}f}\n",
-                 "x"_a = gn->n().x, "y"_a = gn->n().y, "z"_a = gn->n().z,
+                 "x"_a = gn->n().x(), "y"_a = gn->n().y(), "z"_a = gn->n().z(),
                  "p"_a = precision);
     }
     fmt::print(os, "\n");
@@ -264,7 +260,7 @@ class SrhFace {
     // TODO(maddog@tri.global) Provide for explicit normals if we ever
     // consider faces which are not parallel to the road surface.
     for (const api::LanePosition& vertex : v_) {
-      DRAKE_DEMAND(vertex.h == v_[0].h);
+      DRAKE_DEMAND(vertex.h() == v_[0].h());
     }
   }
 
@@ -279,7 +275,8 @@ class SrhFace {
       //                          really use GetOrientation(), and the format
       //                          of the result should have a fixed-point
       //                          precision based on angular_tolerance().
-      api::GeoPosition v1(lane->ToGeoPosition({srh.s, srh.r, srh.h + 1.}));
+      api::GeoPosition v1(lane->ToGeoPosition({
+            srh.s(), srh.r(), srh.h() + 1.}));
       geo_face.push_vn(GeoVertex(v0), GeoNormal(v0, v1));
     }
     return geo_face;

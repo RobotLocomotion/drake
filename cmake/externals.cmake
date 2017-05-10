@@ -192,7 +192,9 @@ macro(drake_add_cmake_external PROJECT)
   endif()
 
   if(_ext_MATLAB AND Matlab_FOUND)
-    list(APPEND _ext_PROPAGATE_CACHE_VARS Matlab_ROOT_DIR)
+    list(APPEND _ext_PROPAGATE_CACHE_VARS
+      Matlab_ROOT_DIR
+      MATLAB_ADDITIONAL_VERSIONS)
   endif()
 
   if(_ext_PYTHON)

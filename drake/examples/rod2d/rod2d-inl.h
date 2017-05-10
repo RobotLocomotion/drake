@@ -1859,7 +1859,7 @@ std::unique_ptr<systems::AbstractValues> Rod2D<T>::AllocateAbstractState()
 /// Sets the rod to a 45 degree angle with the halfspace and positions the rod
 /// such that it and the halfspace are touching at exactly one point of contact.
 template <typename T>
-void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
+void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
                                   systems::State<T>* state) const {
   using std::sqrt;
   using std::sin;

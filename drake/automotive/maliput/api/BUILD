@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_library", "drake_cc_googletest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -21,6 +21,17 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "lane_data_test",
+    srcs = ["test/lane_data_test.cc"],
+    deps = [
+        ":api",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 

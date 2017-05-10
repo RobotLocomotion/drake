@@ -209,8 +209,7 @@ class SpringMassSystem : public LeafSystem<T> {
 
  private:
   /// This system is not direct feedthrough.
-  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
-                              int output_port) const override {
+  bool DoHasDirectFeedthrough(const SparsityMatrix*, int, int) const override {
     return false;
   }
 

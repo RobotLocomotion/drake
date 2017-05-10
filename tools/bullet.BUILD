@@ -26,5 +26,6 @@ pkg_tar(
     name = "license",
     extension = "tar.gz",
     files = ["LICENSE.txt"],
+    mode = "0644",
     package_dir = "bullet",
 )

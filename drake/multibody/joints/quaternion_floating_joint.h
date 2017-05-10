@@ -5,6 +5,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_conversion_gradient.h"
@@ -101,6 +102,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
+    drake::unused(q);
     motion_subspace.setIdentity(drake::kTwistSize, get_num_velocities());
     if (dmotion_subspace) {
       dmotion_subspace->setZero(motion_subspace.size(), get_num_positions());
@@ -119,6 +121,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
       typename drake::math::Gradient<
           Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
           dmotion_subspace_dot_times_vdv = nullptr) const {
+    drake::unused(q, v);
     motion_subspace_dot_times_v.setZero();
     if (dmotion_subspace_dot_times_vdq) {
       dmotion_subspace_dot_times_vdq->setZero(
@@ -296,6 +299,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(
       const Eigen::MatrixBase<DerivedV>& v) const {
+    drake::unused(v);
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(
         get_num_velocities(), 1);
   }
@@ -325,6 +329,6 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
  protected:
   std::unique_ptr<DrakeJoint> DoClone() const final;
-  void DoInitializeClone(DrakeJoint* clone) const final {}
+  void DoInitializeClone(DrakeJoint*) const final {}
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

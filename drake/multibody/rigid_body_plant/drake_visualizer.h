@@ -125,7 +125,7 @@ class DrakeVisualizer : public LeafSystem<double> {
   }
 
   // Set the default to "initialization phase has not been completed."
-  void SetDefaultState(const Context<double>& context, State<double>* state)
+  void SetDefaultState(const Context<double>&, State<double>* state)
       const override {
     set_is_load_message_sent(state->get_mutable_discrete_state(), false);
   }
@@ -141,8 +141,8 @@ class DrakeVisualizer : public LeafSystem<double> {
       const Context<double>& context,
       DiscreteValues<double>* discrete_state) const override;
 
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override {}
+  void DoCalcOutput(const systems::Context<double>&,
+                    systems::SystemOutput<double>*) const override {}
 
   // Publishes a draw message if initialization is completed. Otherwise, it
   // emits a warning and return.

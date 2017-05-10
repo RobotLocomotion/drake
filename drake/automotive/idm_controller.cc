@@ -107,10 +107,10 @@ void IdmController<T>::ImplDoCalcOutput(
   const RoadPosition ego_position =
       pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
 
-  const T& s_ego = ego_position.pos.s;
+  const T& s_ego = ego_position.pos.s();
   const T& s_dot_ego = pose_selector::GetSVelocity(
       RoadOdometry<double>(ego_position, ego_velocity));
-  const T& s_lead = lead_car_odom.pos.s;
+  const T& s_lead = lead_car_odom.pos.s();
   const T& s_dot_lead = pose_selector::GetSVelocity(lead_car_odom);
 
   // Saturate the net_distance at distance_lower_bound away from the ego car to
