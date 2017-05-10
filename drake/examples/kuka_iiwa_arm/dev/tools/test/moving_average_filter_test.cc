@@ -21,7 +21,7 @@ GTEST_TEST(testMAFilter, instantiation_test) {
 }
 
 GTEST_TEST(MovingAverageDoubleTest, Compute) {
-  auto filter_ = std::make_unique<MovingAverageFilter<double>>(kWindowSize);
+  auto filter = std::make_unique<MovingAverageFilter<double>>(kWindowSize);
   std::vector<double> window;
   window.push_back(0.45);
   window.push_back(7.8);
@@ -30,15 +30,15 @@ GTEST_TEST(MovingAverageDoubleTest, Compute) {
 
   for (size_t i = 0; i < window.size(); ++i) {
     sum += window[i];
-    EXPECT_EQ((1 / 3) * sum, filter_->compute(window[i]));
+    EXPECT_EQ((1 / 3) * sum, filter->compute(window[i]));
   }
   double new_data_point = -23.2;
   EXPECT_EQ((1 / 3) * (sum + new_data_point - window[0]),
-            filter_->compute(new_data_point));
+            filter->compute(new_data_point));
 }
 
 GTEST_TEST(MovingAverageVectorTest, compute_vector_test) {
-  auto filter_ =std::make_unique<MovingAverageFilter<Eigen::Vector3d>>(
+  auto filter =std::make_unique<MovingAverageFilter<Eigen::Vector3d>>(
       kWindowSize);
   std::vector<Eigen::Vector3d> window;
   window.push_back(Eigen::Vector3d(0.3, 0.45, 0.76));
@@ -50,13 +50,13 @@ GTEST_TEST(MovingAverageVectorTest, compute_vector_test) {
   // output represents moving average.
   for (size_t i = 0; i < window.size(); ++i) {
     sum += window[i];
-    EXPECT_EQ((1 / 3) * sum, filter_->compute(window[i]));
+    EXPECT_EQ((1 / 3) * sum, filter->compute(window[i]));
   }
 
   Eigen::Vector3d new_data_point(0.67, -78.9, 3.6);
 
   EXPECT_EQ((1 / 3) * (sum + new_data_point - window[0]),
-            filter_->compute(new_data_point));
+            filter->compute(new_data_point));
 }
 
 }  // namespace
