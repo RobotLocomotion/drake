@@ -32,12 +32,22 @@ using drake::solvers::MathematicalProgramSolverInterface;
 using drake::solvers::SolverType;
 
 template <typename C>
-auto RegisterBinding(py::handle scope, const string& name) {
+auto RegisterBinding(py::handle scope,
+                     py::class_<MathematicalProgram>* pprog_cls,
+                     const string& name) {
+  auto& prog_cls = *pprog_cls;
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
-  return py::class_<B>(scope, pyname.c_str())
+  auto binding_cls = py::class_<B>(scope, pyname.c_str())
     .def("constraint", &B::constraint)
     .def("variables", &B::variables);
+  // Register overloads for MathematicalProgram class
+  prog_cls
+    .def("EvalBindingAtSolution",
+          (Eigen::VectorXd(MathematicalProgram::*)(
+           const B&) const)
+          &MathematicalProgram::EvalBindingAtSolution);
+  return binding_cls;
 }
 
 PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
@@ -69,7 +79,8 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .value("kNlopt", SolverType::kNlopt)
     .value("kSnopt", SolverType::kSnopt);
 
-  py::class_<MathematicalProgram>(m, "MathematicalProgram")
+  py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram");
+  prog_cls
     .def(py::init<>())
     .def("NewContinuousVariables", (VectorXDecisionVariable
           (MathematicalProgram::*)(
@@ -154,14 +165,6 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
             const MatrixXDecisionVariable& var) {
       return prog.GetSolution(var);
     })
-    .def("EvalBindingAtSolution",
-         (Eigen::VectorXd(MathematicalProgram::*)(
-          const Binding<LinearConstraint>&) const)
-         &MathematicalProgram::EvalBindingAtSolution)
-    .def("EvalBindingAtSolution",
-         (Eigen::VectorXd(MathematicalProgram::*)(
-          const Binding<QuadraticConstraint>&) const)
-         &MathematicalProgram::EvalBindingAtSolution)
     .def("SetSolverOption", (void(MathematicalProgram::*)(
          SolverType, const std::string&, double))
          &MathematicalProgram::SetSolverOption)
@@ -208,10 +211,11 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("Q", &QuadraticConstraint::Q)
     .def("b", &QuadraticConstraint::b);
 
-  RegisterBinding<LinearConstraint>(m, "LinearConstraint");
-  RegisterBinding<QuadraticConstraint>(m, "QuadraticConstraint");
-  RegisterBinding<LinearEqualityConstraint>(m, "LinearEqualityConstraint");
-  RegisterBinding<BoundingBoxConstraint>(m, "BoundingBoxConstraint");
+  RegisterBinding<LinearConstraint>(m, &prog_cls, "LinearConstraint");
+  RegisterBinding<QuadraticConstraint>(m, &prog_cls, "QuadraticConstraint");
+  RegisterBinding<LinearEqualityConstraint>(m, &prog_cls,
+                                            "LinearEqualityConstraint");
+  RegisterBinding<BoundingBoxConstraint>(m, &prog_cls, "BoundingBoxConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, std::shared_ptr<Cost>> cost(
@@ -226,8 +230,8 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("Q", &QuadraticCost::Q)
     .def("b", &QuadraticCost::b);
 
-  RegisterBinding<LinearCost>(m, "LinearCost");
-  RegisterBinding<QuadraticCost>(m, "QuadraticCost");
+  RegisterBinding<LinearCost>(m, &prog_cls, "LinearCost");
+  RegisterBinding<QuadraticCost>(m, &prog_cls, "QuadraticCost");
 
   return m.ptr();
 }
