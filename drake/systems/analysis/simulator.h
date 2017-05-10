@@ -627,28 +627,6 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     const T neg_dead = witnesses[i]->get_negative_dead_band();
 
     while (true) {
-    /*
-      // See whether the solution has been found to the desired tolerance.
-      if (b - a < witnesses[i]->get_time_isolation_tolerance() &&
-          fb < pos_dead && fb > neg_dead && fa < pos_dead && fa > neg_dead) {
-        T t_trigger = witnesses[i]->get_trigger_time(std::make_pair(a, fa),
-                                                     std::make_pair(b, fb));
-
-        // Integrate to the trigger point.
-        fwd_int(t_trigger);
-
-        // Only clear the list of witnesses if t_trigger strictly less than
-        // t_first.
-        DRAKE_DEMAND(t_first >= t_trigger);
-        if (t_trigger < t_first)
-          triggered_witnesses.clear();
-
-        // Set the first trigger time and add the witness index.
-        triggered_witnesses.push_back(witnesses[i]);
-        t_first = t_trigger;
-        break;
-      }
-*/
       // Determine the midpoint.
       T c = (a + b) / 2;
 
@@ -667,7 +645,9 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
         fa = fc;
       }
 
-      // If fc is within the dead band, quit.
+      // If the time is sufficiently isolated and fc is within the dead band,
+      // quit. This conjunction on the condition helps find a zero well into
+      // the interior of the dead band.
       if (b - c < witnesses[i]->get_time_isolation_tolerance() &&
           fc < pos_dead && fc > neg_dead) {
         T t_trigger = witnesses[i]->get_trigger_time(std::make_pair(a, fa),
@@ -691,7 +671,10 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
   return triggered_witnesses;
 }
 
-// Integrates the continuous state forward in time.
+// Integrates the continuous state forward in time while attempting to locate
+// the first zero of any triggered witness functions.
+// @returns `true` if integration terminated on a sample time, indicating that
+//          an event needs to be handled at the state/time on return.
 template <class T>
 bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
                                             const T& next_update_dt,

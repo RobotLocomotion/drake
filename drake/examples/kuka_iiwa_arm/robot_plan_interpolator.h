@@ -69,7 +69,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-     systems::State<double>* state) const override;
+                                systems::State<double>* state) const override;
 
  private:
   struct PlanData;
