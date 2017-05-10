@@ -82,6 +82,11 @@ struct MobilizerTopology {
   /// Default construction to invalid configuration.
   MobilizerTopology() {}
 
+  /// Constructs a topology by specifying the the index `mobilizer_index` for
+  /// `this` new topology, the indexes to the inboard and outboard frames the
+  /// Mobilizer will connect, given by in_frame and out_frame respectively, and
+  /// similarly the inboard and outboard bodies being connected, given by
+  /// in_body and out_body, respectively.
   MobilizerTopology(
       MobilizerIndex mobilizer_index,
       FrameIndex in_frame, FrameIndex out_frame,
@@ -169,8 +174,7 @@ struct MultibodyTreeTopology {
   /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
   MobilizerIndex add_mobilizer(
       FrameIndex in_frame, FrameIndex out_frame,
-      BodyIndex in_body, BodyIndex out_body)
-  {
+      BodyIndex in_body, BodyIndex out_body) {
     MobilizerIndex mobilizer_index(get_num_mobilizers());
     mobilizers.emplace_back(mobilizer_index,
                             in_frame, out_frame,

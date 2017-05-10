@@ -233,8 +233,9 @@ TEST_F(PendulumTests, Finalize) {
   EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
                std::logic_error);
-  EXPECT_THROW(model_->AddMobilizer<Mobilizer>(
-      *shoulder_inboard_frame_, *shoulder_outboard_frame_), std::logic_error);
+  EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
+      *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+      Vector3d::UnitZ()), std::logic_error);
 
   // Asserts re-finalization is not allowed.
   EXPECT_THROW(model_->Finalize(), std::logic_error);

@@ -239,30 +239,34 @@ class MultibodyTree {
         std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
   }
 
-  /// Takes ownership of `body` and adds it to `this` %MultibodyTree. Returns a
-  /// constant reference to the body just added, which will remain valid for the
-  /// lifetime of `this` %MultibodyTree.
+  /// Takes ownership of `mobilizer` and adds it to `this` %MultibodyTree.
+  /// Returns a constant reference to the mobilizer just added, which will
+  /// remain valid for the lifetime of `this` %MultibodyTree.
   ///
   /// Example of usage:
   /// @code
   ///   MultibodyTree<T> model;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   const RigidBody<T>& body =
-  ///       model.AddBody(std::make_unique<RigidBody<T>>(spatial_inertia));
+  ///   // ... Code to define inboard and outboard frames by calling
+  ///   // MultibodyTree::AddFrame() ...
+  ///   const RevoluteMobilizer<T>& pin =
+  ///     model.AddMobilizer(std::make_unique<RevoluteMobilizer<T>>(
+  ///       inboard_frame, elbow_outboard_frame,
+  ///       Vector3d::UnitZ() /*revolute axis*/));
   /// @endcode
   ///
-  /// @throws std::logic_error if `body` is a nullptr.
+  /// @throws std::logic_error if `mobilizer` is a nullptr.
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
   ///
-  /// @param[in] body A unique pointer to a body to add to `this`
-  ///                 %MultibodyTree. The body class must be specialized on the
-  ///                 same scalar type T as this %MultibodyTree.
-  /// @returns A constant reference to the `body` just added, which will remain
-  ///          valid for the lifetime of `this` MultibodyTree.
+  /// @param[in] mobilizer A unique pointer to a mobilizer to add to `this`
+  ///                      %MultibodyTree. The mobilizer class must be
+  ///                      specialized on the same scalar type T as this
+  ///                      %MultibodyTree.
+  /// @returns A constant reference to the `mobilizer` just added, which will
+  ///          remain valid for the lifetime of `this` MultibodyTree.
   ///
-  /// @tparam BodyType The type of the specific sub-class of Body to add. The
-  ///                  template needs to be specialized on the same scalar type
-  ///                  T of this %MultibodyTree.
+  /// @tparam MobilizerType The type of the specific sub-class of Mobilizer to
+  ///                       add. The template needs to be specialized on the
+  ///                       same scalar type T of this %MultibodyTree.
   template <template<typename Scalar> class MobilizerType>
   const MobilizerType<T>& AddMobilizer(
       std::unique_ptr<MobilizerType<T>> mobilizer) {
@@ -281,8 +285,8 @@ class MultibodyTree {
         mobilizer->get_outboard_frame().get_index(),
         mobilizer->get_inboard_body().get_index(),
         mobilizer->get_outboard_body().get_index());
-    // These tests MUST be performed BEFORE frames_.push_back() and
-    // owned_bodies_.push_back() below. Do not move them around!
+    // These tests MUST be performed BEFORE owned_mobilizers_.push_back() below.
+    // Do not move them around!
     DRAKE_ASSERT(mobilizer_index == get_num_mobilizers());
 
     // TODO(amcastro-tri): consider not depending on setting this pointer at
@@ -294,6 +298,38 @@ class MultibodyTree {
     return *raw_mobilizer_ptr;
   }
 
+  /// Constructs a new mobilizer with type `MobilizerType` with the given
+  /// `args`, and adds it to `this` %MultibodyTree, which retains ownership.
+  /// The `MobilizerType` will be specialized on the scalar type T of this
+  /// %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define inboard and outboard frames by calling
+  ///   // MultibodyTree::AddFrame() ...
+  ///   // Notice RevoluteMobilizer is a template an a scalar type.
+  ///   const RevoluteMobilizer<T>& pin =
+  ///     model.AddMobilizer<RevoluteMobilizer>(
+  ///       inboard_frame, elbow_outboard_frame,
+  ///       Vector3d::UnitZ() /*revolute axis*/);
+  /// @endcode
+  ///
+  /// Note that for dependent names you must use the template keyword (say for
+  /// instance you have a MultibodyTree<T> member within your custom class).
+  ///
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
+  ///
+  /// @param[in] args The arguments needed to construct a valid Mobilizer of
+  ///                 type `MobilizerType`. `MobilizerType` must provide a
+  ///                 public constructor that takes these arguments.
+  /// @returns A constant reference to the mobilizer with type `MobilizerType`
+  ///          just created, which will remain valid for the lifetime of `this`
+  ///          MultibodyTree.
+  ///
+  /// @tparam MobilizerType A template for the type of Mobilizer to construct.
+  ///                       The template will be specialized on the scalar type
+  ///                       T of `this` %MultibodyTree.
   template<template<typename Scalar> class MobilizerType, typename... Args>
   const MobilizerType<T>& AddMobilizer(Args&&... args) {
     static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,

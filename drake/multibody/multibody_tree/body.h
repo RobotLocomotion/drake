@@ -133,14 +133,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // set of private Body methods.
   friend class internal::BodyAttorney<T>;
 
-  // Implementation for MultibodyTreeElement::DoFinalize().
+  // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
-  //void DoFinalize(const MultibodyTree<T>& tree) final {
-  //  topology_ = tree.get_topology().bodies[this->get_index()];
-  //  body_frame_.Finalize(tree);
-  //}
-
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
     topology_ = tree_topology.bodies[this->get_index()];
     body_frame_.SetTopology(tree_topology);

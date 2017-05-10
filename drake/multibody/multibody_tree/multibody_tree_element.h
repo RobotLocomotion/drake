@@ -131,20 +131,14 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// their default constructors if they need to.
   MultibodyTreeElement() {}
 
-  /// Gives MultibodyTree elements the opportunity to perform internal setup
+  /// Gives MultibodyTree elements the opportunity to retrieve their topology
   /// when MultibodyTree::Finalize() is invoked.
-  /// NVI to pure virtual method DoFinalize().
-  //void Finalize(const MultibodyTree<T>& tree) {
-  //  DoFinalize(tree);
-  //}
-
+  /// NVI to pure virtual method DoSetTopology().
   void SetTopology(const MultibodyTreeTopology& tree) {
     DoSetTopology(tree);
   }
 
-  /// Implementation of the NVI Finalize().
-  //virtual void DoFinalize(const MultibodyTree<T>& tree) = 0;
-
+  /// Implementation of the NVI SetTopology().
   virtual void DoSetTopology(const MultibodyTreeTopology& tree) = 0;
 
  private:

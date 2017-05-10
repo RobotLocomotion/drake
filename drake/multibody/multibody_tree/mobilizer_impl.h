@@ -14,20 +14,41 @@
 namespace drake {
 namespace multibody {
 
+/// Base class for specific Mobilizer implementations with the number of
+/// generalized positions and velocities resolved at compile time as template
+/// parameters. This allows specific mobilizer implementations to only work on
+/// fixed-size Eigen expressions therefore allowing for optimized operations on
+/// fixed-size matrices and discouraging the proliferation of dynamic-sized
+/// Eigen matrices that would otherwise lead to run-time dynamic memory
+/// allocations.
+/// %MobilizerImpl also provides a number of size specific methods to retrieve
+/// multibody quantities of interest from caching structures. These are common
+/// to all mobilizer implementations and therefore they live in this class.
+/// Users should not need to interact with this class directly unless they need
+/// to implement a custom Mobilizer class.
+///
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T, int  num_positions, int num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
-  // static constexpr int i = 42; discouraged.
-  // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {nq = num_positions, nv = num_velocities};
-
+  /// This constructor enforces the minimum requirement to any mobilizer's
+  /// constructor; we must specify the inboard and outboard frames that `this`
+  /// mobilizer connects.
   MobilizerImpl(const Frame<T>& inboard_frame,
                 const Frame<T>& outboard_frame) :
       Mobilizer<T>(inboard_frame, outboard_frame) {}
 
+  /// Returns the number of generalized coordinates granted by this mobilizer.
   int get_num_positions() const final { return nq;}
+
+  /// Returns the number of generalized velocities granted by this mobilizer.
   int get_num_velocities() const final { return nv;}
 
+ protected:
+  // Handy enum to grant specific implementations compile time sizes.
+  // static constexpr int i = 42; discouraged.
+  // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
+  enum : int {nq = num_positions, nv = num_velocities};
 };
 
 }  // namespace multibody
