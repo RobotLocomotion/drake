@@ -30,6 +30,7 @@ function copy_source_artifacts
 # Copy built artifacts to specified install prefix.
 function copy_build_artifacts
 {
+  cp bazel-bin/external/lcm/liblcm.so "$1/lib/"
   cp bazel-bin/drake/libdrake.so "$1/lib/"
   cp bazel-genfiles/tools/drake-config.cmake "$1/lib/cmake/drake/"
 }

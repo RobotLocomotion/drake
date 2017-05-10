@@ -20,10 +20,12 @@ LCM_COPTS = [
     "-Wno-deprecated-declarations",
     "-Wno-format-zero-length",
     "-std=gnu11",
+    "-fvisibility=hidden",
 ]
 
 cc_library(
     name = "lcm",
+    linkstatic = 0,
     srcs = [
         "lcm/eventlog.c",
         "lcm/lcm.c",
