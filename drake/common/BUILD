@@ -51,6 +51,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "unsafe_downcast",
+    hdrs = ["unsafe_downcast.h"],
+)
+
+drake_cc_library(
     name = "number_traits",
     hdrs = ["number_traits.h"],
 )
@@ -294,8 +299,8 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        ":common",
         "@gflags//:gflags",
+        ":common",
     ],
 )
 
@@ -448,6 +453,24 @@ drake_cc_googletest(
     name = "dummy_value_test",
     deps = [
         ":dummy_value",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unsafe_downcast_is_safe_test",
+    srcs = ["test/unsafe_downcast_test.cc"],
+    defines = ["DRAKE_UNSAFE_DOWNCAST_IS_SAFE"],
+    deps = [
+        ":unsafe_downcast",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unsafe_downcast_is_unsafe_test",
+    srcs = ["test/unsafe_downcast_test.cc"],
+    defines = ["DRAKE_UNSAFE_DOWNCAST_IS_UNSAFE"],
+    deps = [
+        ":unsafe_downcast",
     ],
 )
 
