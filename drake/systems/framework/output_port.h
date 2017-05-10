@@ -245,6 +245,7 @@ provided. Allocation can be specified either by providing a model value that
 can be cloned when needed, or by providing an allocation callback function.
 Calculation is specified by providing a calculation callback whose output type
 matches the type returned by the allocation function. **/
+// TODO(sherm1) Implement caching.
 template <typename T>
 class LeafOutputPort : public OutputPort<T> {
  public:
@@ -269,13 +270,11 @@ class LeafOutputPort : public OutputPort<T> {
   using CalcVectorCallback =
       std::function<void(const Context<T>&, BasicVector<T>*)>;
 
-  template <class OutputType>
-  using CalcTypeCallback =
-      std::function<void(const Context<T>&, OutputType*)>;
-
   /** Signature of a function suitable for obtaining the cached value of a
   particular output port. **/
   using EvalCallback = std::function<const AbstractValue&(const Context<T>&)>;
+
+  // There is no EvalVectorCallback.
 
   /** Constructs an abstract-valued output port that uses an explicit allocator
   and an explicit calculator function. The supplied allocator returns a suitable
@@ -359,6 +358,13 @@ class LeafOutputPort : public OutputPort<T> {
   /** Set or replace the calculation function for this vector-valued output
   port, using a function that writes into a `BasicVector<T>`. **/
   void set_calculation_function(CalcVectorCallback vector_calc_function);
+
+  /** (Advanced) Set or replace the evaluation function for this output port,
+  using a function that returns an `AbstractValue`. By default, an evaluation
+  function is automatically provided that calls the calculation function. **/
+  void set_evaluation_function(EvalCallback eval_function) {
+    eval_function_ = eval_function;
+  }
 
  private:
   // Invokes the supplied allocation function if there is one, otherwise clones

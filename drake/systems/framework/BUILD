@@ -529,6 +529,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "output_port_test",
+    deps = [
+        ":leaf_context",
+        ":system",
+        "//drake/common",
+        "//drake/systems/framework/test_utilities",
+        "//drake/systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
     name = "system_test",
     deps = [
         ":leaf_context",
