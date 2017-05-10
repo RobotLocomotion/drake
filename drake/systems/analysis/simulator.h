@@ -290,9 +290,9 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
- void HandleUnrestrictedUpdate(const std::vector<DiscreteEvent<T>>& events);
- void HandleDiscreteUpdate(const std::vector<DiscreteEvent<T>>& events);
- void HandlePublish(const std::vector<DiscreteEvent<T>>& events);
+  void HandleUnrestrictedUpdate(const std::vector<DiscreteEvent<T>>& events);
+  void HandleDiscreteUpdate(const std::vector<DiscreteEvent<T>>& events);
+  void HandlePublish(const std::vector<DiscreteEvent<T>>& events);
 
   bool IntegrateContinuousState(const T& next_publish_dt,
       const T& next_update_dt,
@@ -680,8 +680,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
                                             const T& next_update_dt,
                                             const T& next_sample_time,
                                             const T& boundary_dt,
-                                            UpdateActions<T>* update_actions)
-{
+                                            UpdateActions<T>* update_actions) {
   // Save the time and current state.
   const Context<T>& context = get_context();
   const T t0 = context.get_time();

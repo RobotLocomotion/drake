@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <string>
+
 #include "drake/systems/framework/discrete_event.h"
 
 namespace drake {
@@ -12,7 +15,7 @@ template <class T>
 class WitnessFunction {
  public:
   virtual ~WitnessFunction() {}
-  WitnessFunction(const System<T>* system) { system_ = system; }
+  explicit WitnessFunction(const System<T>* system) { system_ = system; }
 
   enum class TriggerType {
     /// This witness function will never be triggered.

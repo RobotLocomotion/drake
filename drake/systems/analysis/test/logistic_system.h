@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cmath>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/witness_function.h"
@@ -15,10 +18,9 @@ class LogisticSystem;
 /// Witness function for determining when the state of the logistic system
 /// crosses zero.
 template <class T>
-class LogisticWitness : public systems::WitnessFunction<T>
-{
+class LogisticWitness : public systems::WitnessFunction<T> {
  public:
-  LogisticWitness(const LogisticSystem<T>* system) :
+  explicit LogisticWitness(const LogisticSystem<T>* system) :
     systems::WitnessFunction<T>(system), system_(system) {
   }
 
@@ -52,7 +54,7 @@ class LogisticWitness : public systems::WitnessFunction<T>
     return (time_and_witness_value0.first + time_and_witness_valuef.first)/2;
   }
 
-  //.Pointer to the system
+  // Pointer to the system.
   const LogisticSystem<T>* system_;
 };
 
@@ -81,7 +83,7 @@ class LogisticSystem : public LeafSystem<T> {
     const T& x = (*context.get_continuous_state())[0];
 
     // Compute the derivative.
-    (*continuous_state)[0] = alpha_ * (1 - pow(x/k_,nu_)) * t;
+    (*continuous_state)[0] = alpha_ * (1 - pow(x/k_, nu_)) * t;
   }
 
   void DoCalcOutput(const Context<T>& context,
