@@ -69,7 +69,6 @@ class IiwaPlanSource : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& events,
      systems::State<double>* state) const override;
 
  private:
