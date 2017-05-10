@@ -33,6 +33,7 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+)
     
 drake_cc_library(
     name = "moving_average_filter",
