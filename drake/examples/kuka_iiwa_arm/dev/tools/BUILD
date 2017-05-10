@@ -33,6 +33,10 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    deps = [
+        "@gflags//:gflags",
+        ":simple_tree_visualizer"
+    ],        
 )
     
 drake_cc_library(
