@@ -11,9 +11,28 @@
 namespace py = pybind11;
 using std::string;
 
+using drake::symbolic::Variable;
+using drake::symbolic::Expression;
+using drake::symbolic::Formula;
+using drake::solvers::Binding;
+using drake::solvers::MathematicalProgram;
+using drake::solvers::EvaluatorBase;
+using drake::solvers::Constraint;
+using drake::solvers::LinearConstraint;
+using drake::solvers::LinearEqualityConstraint;
+using drake::solvers::BoundingBoxConstraint;
+using drake::solvers::QuadraticConstraint;
+using drake::solvers::Cost;
+using drake::solvers::LinearCost;
+using drake::solvers::QuadraticCost;
+using drake::solvers::VectorXDecisionVariable;
+using drake::solvers::MatrixXDecisionVariable;
+using drake::solvers::SolutionResult;
+using drake::solvers::MathematicalProgramSolverInterface;
+using drake::solvers::SolverType;
+
 template <typename C>
 auto RegisterBinding(py::handle scope, const string& name) {
-  using drake::solvers::Binding;
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
   return py::class_<B>(scope, pyname.c_str())
@@ -22,25 +41,6 @@ auto RegisterBinding(py::handle scope, const string& name) {
 }
 
 PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
-  using drake::symbolic::Variable;
-  using drake::symbolic::Expression;
-  using drake::symbolic::Formula;
-  using drake::solvers::Binding;
-  using drake::solvers::MathematicalProgram;
-  using drake::solvers::Constraint;
-  using drake::solvers::LinearConstraint;
-  using drake::solvers::LinearEqualityConstraint;
-  using drake::solvers::BoundingBoxConstraint;
-  using drake::solvers::QuadraticConstraint;
-  using drake::solvers::Cost;
-  using drake::solvers::LinearCost;
-  using drake::solvers::QuadraticCost;
-  using drake::solvers::VectorXDecisionVariable;
-  using drake::solvers::MatrixXDecisionVariable;
-  using drake::solvers::SolutionResult;
-  using drake::solvers::MathematicalProgramSolverInterface;
-  using drake::solvers::SolverType;
-
   py::module m("_pydrake_mathematicalprogram",
                "Drake MathematicalProgram Bindings");
 
@@ -185,10 +185,11 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   // Assign the wrapped Constraint class to the name 'constraint'
   // so we can use it in this file to indicate that the other constraint
   // types inherit from it.
-  py::class_<Constraint, std::shared_ptr<Constraint>> constraint(
+  py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
+    .def("lower_bound", &EvaluatorBase::lower_bound)
+    .def("upper_bound", &EvaluatorBase::upper_bound);
+  py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
     m, "Constraint");
-  constraint.def("lower_bound", &Constraint::lower_bound)
-            .def("upper_bound", &Constraint::upper_bound);
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
     m, "LinearConstraint")
