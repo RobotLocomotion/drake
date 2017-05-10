@@ -60,12 +60,10 @@ const AbstractValue& eval_string(const Context<double>& context) {
 
 // EvalCallback returning a MyVector3d.
 const AbstractValue& eval_vector3(const Context<double>& context) {
-  static VectorValue<double> fake_cache(MyVector3d::Make(0.,0.,0.));
+  static VectorValue<double> fake_cache(MyVector3d::Make(0., 0., 0.));
   fake_cache.get_mutable_vector().set_value(Vector3d(3., 1., 4.));
   return fake_cache;
 }
-
-
 
 // Check for proper functioning of the four LeafOutputPort constructors.
 GTEST_TEST(LeafOutputPortTest, Construction) {
