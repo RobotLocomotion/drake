@@ -20,10 +20,12 @@ LCM_COPTS = [
     "-Wno-deprecated-declarations",
     "-Wno-format-zero-length",
     "-std=gnu11",
+    "-fvisibility=hidden",
 ]
 
 cc_library(
     name = "lcm",
+    linkstatic = 0,
     srcs = [
         "lcm/eventlog.c",
         "lcm/lcm.c",
@@ -54,8 +56,8 @@ cc_library(
         "lcm/lcm_export.h",  # N.B. This is from generate_export_header above.
     ],
     copts = LCM_COPTS,
-    includes = [".", "lcm"],
     deps = ["@glib//:lib"],
+    includes = [".", "lcm"],
 )
 
 cc_binary(
