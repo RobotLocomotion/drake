@@ -761,6 +761,10 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
 
     // TODO(sherm1) Constraint projection goes here.
   }
+
+  // Should never get here.
+  DRAKE_ABORT();
+  return false;
 }
 
 }  // namespace systems
