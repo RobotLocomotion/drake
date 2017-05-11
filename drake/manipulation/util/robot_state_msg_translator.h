@@ -52,10 +52,16 @@ class RobotStateLcmMessageTranslator {
    * the constructor throws a std::logic_error:
    * <pre>
    *   1. There is at least 1 non-world rigid body.
-   *   2. There can be at most 1 floating base.
-   *   3. If there is a floating base, it has to be the first non-world body.
-   *   4. The floating joint's position and velocity index have to start from 0.
-   *   5. All the other joints have to be 1 degree of freedom or fixed.
+   *   2. The first non-world rigid body has to be attached to the world with
+   *   either a fixed joint or a floating joint.
+   *   3. If the first non-world rigid body is attached with a fixed joints,
+   *   there cannot be another floating joint in the tree.
+   *   4. There is at most 1 floating joint in the tree.
+   *   5. There can be at most 1 rigid body attached to the world with a fixed
+   *   joint.
+   *   6. If there is a floating joint, its position and velocity index have
+   *   to start from 0.
+   *   7. All the other joints have to be 1 degree of freedom or fixed.
    * </pre>
    */
   explicit RobotStateLcmMessageTranslator(const RigidBodyTree<double>& robot);

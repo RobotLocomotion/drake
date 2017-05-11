@@ -88,6 +88,7 @@ if(lcm_FOUND)
       drakeLcmSystem
       drakeLCMUtil
       drakeRBM
+      drakeRobotStateLcmTranslator
       Eigen3::Eigen)
   drake_install_libraries(oracularStateEstimator)
   drake_install_headers(
@@ -95,7 +96,7 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(oracular-state-estimator
       TARGET oracularStateEstimator
       LIBS -loracularStateEstimator
-      REQUIRES drake-lcm-system drake-lcm-util drake-lcmtypes-cpp drake-rbm eigen3)
+      REQUIRES drake-lcm-system drake-lcm-util drake-lcmtypes-cpp drake-rbm drake-robot-state-lcm-translator eigen3)
 
 endif()
 

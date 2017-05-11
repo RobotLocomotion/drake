@@ -85,7 +85,8 @@ void RobotStateMsgToHumanoidStatusSystem::DoCalcOutput(
   r_foot_wrench[1] = msg->force_torque.r_foot_torque_y;
   r_foot_wrench[5] = msg->force_torque.r_foot_force_z;
 
-  humanoid_status.Update(time, pos, vel, joint_torque, l_foot_wrench, r_foot_wrench);
+  humanoid_status.Update(time, pos, vel, joint_torque,
+      l_foot_wrench, r_foot_wrench);
 }
 
 }  // namespace qp_inverse_dynamics

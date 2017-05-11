@@ -50,7 +50,7 @@ void DecodeJointValue(const std::unordered_map<std::string, int>& name_to_index,
 RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
     const RigidBodyTree<double>& robot)
     : robot_(CheckTreeIsRobotStateLcmTypeCompatible(robot)),
-      root_body_(*robot_.bodies[1]),
+      root_body_(robot_.get_body(1)),
       is_floating_base_(root_body_.getJoint().is_floating()) {
   std::unordered_map<const RigidBody<double>*, std::string> body_to_joint_name;
 
@@ -101,11 +101,13 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
 
   // Floating joint.
   if (is_floating_base_) {
+    const DrakeJoint& root_joint = root_body_.getJoint();
+
     // Pose of floating base in the world frame.
     Isometry3<double> X_WB = DecodePose(msg.pose);
     // Spatial velocity of base in the world frame.
     Vector6<double> V_WB = DecodeTwist(msg.twist);
-    Isometry3<double> X_WJ = root_joint_.get_transform_to_parent_body();
+    Isometry3<double> X_WJ = root_joint.get_transform_to_parent_body();
     Isometry3<double> X_JB = X_WJ.inverse() * X_WB;
     Vector6<double> V_JB;
     V_JB.head<3>() = X_WJ.linear().transpose() * V_WB.head<3>();
@@ -312,20 +314,20 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
     throw std::logic_error("This class assumes at least one non-world body.");
   }
 
-  bool floating_joint_found = false;
-  bool fixed_base_found = false;
-
   // Checks the "root_body".
-  const RigidBody<double>* const world = robot.bodies[0].get();
-  const RigidBody<double>& root_body = *robot.bodies[1];
+  const RigidBody<double>& world = robot.get_body(0);
+  const RigidBody<double>& root_body = robot.get_body(1);
   const DrakeJoint& root_joint = root_body.getJoint();
 
   DRAKE_DEMAND(root_body.has_parent_body());
 
-  if (root_body.get_parent() != world) {
+  if (root_body.get_parent() != &world) {
     throw std::logic_error(
         "First body's parent must be the \"world\".");
   }
+
+  bool floating_joint_found = false;
+  bool fixed_base_found = false;
 
   if (root_joint.is_floating()) {
     floating_joint_found = true;
@@ -336,10 +338,19 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
           "This class assumes that floating joint positions and are at the "
           "head of the position and velocity vectors.");
     }
-  } else if (root_joint.is_fixed()) {
+  }
+
+  if (root_joint.is_fixed()) {
     fixed_base_found = true;
     DRAKE_DEMAND(root_joint.get_num_positions() == 0);
     DRAKE_DEMAND(root_joint.get_num_velocities() == 0);
+  }
+
+  // Root body has to be either fixed or floating.
+  if (!(floating_joint_found ^ fixed_base_found)) {
+    throw std::logic_error(
+        "The first body has to be attached to the world with either a fixed "
+        "joint or a floating joint.");
   }
 
   // Skip the "world" and the "root_body".
@@ -350,7 +361,6 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
     const auto& joint = body->getJoint();
 
     if (joint.is_floating()) {
-      // Gets a floating base joint.
       if (fixed_base_found) {
         throw std::logic_error(
             "This does not allow floating base and fixed base to co-exist.");
@@ -368,7 +378,7 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
       }
 
       if (joint.is_fixed()) {
-        if (fixed_base_found && body->get_parent() == world) {
+        if (fixed_base_found && body->get_parent() == &world) {
           throw std::logic_error(
               "robot_state_t assumes at most one fixed root joint.");
         }
