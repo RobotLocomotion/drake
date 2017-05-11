@@ -70,7 +70,7 @@ drake_cc_library(
     ],
     deps = [
         ":builder",
-        "@yaml_cpp//:lib",
+        "@yaml_cpp",
     ],
 )
 

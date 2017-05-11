@@ -296,7 +296,7 @@ drake_cc_library(
         "//tools:with_gurobi": [
             ":mathematical_program_api",
             "//drake/math:eigen_sparse_triplet",
-            "@gurobi//:lib",
+            "@gurobi",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -317,7 +317,7 @@ drake_cc_library(
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
-            "@mosek//:mosek",
+            "@mosek",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -356,7 +356,7 @@ drake_cc_library(
     hdrs = ["ipopt_solver.h"],
     deps = select({
         "//conditions:default": [
-            "@ipopt//:lib",
+            "@ipopt",
             ":mathematical_program_api",
             "//drake/common:unused",
             "//drake/math:autodiff",
@@ -374,7 +374,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program_api",
         "//drake/math:autodiff",
-        "@nlopt//:lib",
+        "@nlopt",
     ],
 )
 

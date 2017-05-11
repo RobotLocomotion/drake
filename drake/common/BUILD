@@ -30,8 +30,8 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
-        "@eigen//:eigen",
-        "@spdlog//:spdlog",
+        "@eigen",
+        "@spdlog",
     ],
 )
 
@@ -295,7 +295,7 @@ drake_cc_library(
     }),
     deps = [
         ":common",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -321,7 +321,7 @@ drake_cc_library(
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
     deps = [
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 

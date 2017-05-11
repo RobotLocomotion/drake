@@ -27,7 +27,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/primitives:constant_vector_source",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -52,7 +52,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -76,7 +76,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/lcm",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 

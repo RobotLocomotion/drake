@@ -53,7 +53,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
         "//drake/systems/primitives:constant_vector_source",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -78,7 +78,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 

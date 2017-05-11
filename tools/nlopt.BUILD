@@ -67,7 +67,7 @@ genrule(
 )
 
 cc_library(
-    name = "lib",
+    name = "nlopt",
     srcs = [
         # This comes from a genrule above.
         "nlopt_config.h",

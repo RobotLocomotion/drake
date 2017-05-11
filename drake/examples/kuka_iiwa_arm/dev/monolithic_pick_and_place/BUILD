@@ -54,8 +54,8 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
-        "@bot_core_lcmtypes//:lib",
-        "@gflags//:gflags",
+        "@bot_core_lcmtypes",
+        "@gflags",
     ],
 )
 
@@ -72,7 +72,7 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/systems/analysis",
         "//drake/systems/framework",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
