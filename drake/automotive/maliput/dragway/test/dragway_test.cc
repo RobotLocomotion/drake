@@ -100,9 +100,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           // Tests Lane::GetOrientation().
           const api::Rotation rotation =
               lane->GetOrientation(lane_position);
-          EXPECT_DOUBLE_EQ(rotation.roll, 0);
-          EXPECT_DOUBLE_EQ(rotation.pitch, 0);
-          EXPECT_DOUBLE_EQ(rotation.yaw, 0);
+          EXPECT_DOUBLE_EQ(rotation.roll(), 0);
+          EXPECT_DOUBLE_EQ(rotation.pitch(), 0);
+          EXPECT_DOUBLE_EQ(rotation.yaw(), 0);
 
           // Tests Lane::EvalMotionDerivatives().
           //
