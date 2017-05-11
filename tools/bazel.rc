@@ -71,7 +71,8 @@ build:everything --define=WITH_SNOPT=ON
 
 ### Unsupported Crosstool ###
 # Use the default Bazel-generated CROSSTOOL.
-# This may be useful for developers with unsupported workstation configurations.
+# This may be useful for developers with unsupported workstation
+# configurations.
 build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 
 ### git submodules
@@ -96,7 +97,8 @@ test:pycodestyle --build_tests_only
 test:pycodestyle --test_tag_filters=pycodestyle
 
 ### Lint. ###
-# Code style compliance for C++ and Python, merging both cpplint and pycodestyle.
+# Code style compliance for C++ and Python, merging both cpplint and
+# pycodestyle.
 test:lint --build_tests_only
 test:lint --test_tag_filters=cpplint,pycodestyle
 
