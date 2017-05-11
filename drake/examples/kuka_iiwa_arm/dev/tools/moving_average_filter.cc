@@ -3,15 +3,13 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
-#include <iostream>
-
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace tools {
 
 template <typename T>
-MovingAverageFilter<T>::MovingAverageFilter(unsigned int window_size)
+MovingAverageFilter<T>::MovingAverageFilter(int window_size)
     : window_size_(window_size) {
   DRAKE_THROW_UNLESS(window_size_ > 0);
 }
@@ -30,7 +28,7 @@ T MovingAverageFilter<T>::compute(const T& new_data) {
     sum_ -= window_.front();
     window_.pop();
   }
-  return (1 / static_cast<double>(window_.size())) * sum_;
+  return (1.0 / window_.size()) * sum_;
 }
 
 template class MovingAverageFilter<double>;
