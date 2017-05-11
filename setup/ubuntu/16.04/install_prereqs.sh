@@ -80,7 +80,6 @@ gfortran-5-multilib
 git
 graphviz
 libboost-dev
-libboost-filesystem-dev
 libboost-system-dev
 libgtk2.0-dev
 libhtml-form-perl
