@@ -12,8 +12,7 @@
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/solvers/binding.h"
-#include "drake/solvers/cost.h"
-#include "drake/solvers/function.h"
+#include "drake/solvers/constraint.h"
 
 namespace drake {
 namespace solvers {

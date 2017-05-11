@@ -64,12 +64,10 @@ drake_cc_library(
     hdrs = ["create_constraint.h"],
     deps = [
         ":binding",
-        ":cost",
+        ":constraint",
         ":symbolic_extraction",
         "//drake/common",
-        "//drake/common:autodiff",
         "//drake/common:monomial",
-        "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
     ],
