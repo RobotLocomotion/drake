@@ -225,8 +225,20 @@ PYBIND11_PLUGIN(symbolic) {
       return Formula{Expression(self) == Expression(other)};
     }, py::is_operator());
 
+  // Cannot overload logical operators: http://stackoverflow.com/a/471561
+  // Can use the bitwise operators, __and__ (&) + __or__ (|):
+  // https://docs.python.org/2/library/operator.html#operator.__and__
+
   py::class_<Formula>(m, "Formula")
-    .def("__repr__", &Formula::to_string);
+    .def("__repr__", &Formula::to_string)
+    .def("__and__", [](const Formula& self,
+                       const Formula& other) {
+      return self && other;
+    }, py::is_operator())
+    .def("__or__", [](const Formula& self,
+                       const Formula& other) {
+      return self || other;
+    }, py::is_operator());
 
   return m.ptr();
 }

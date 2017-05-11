@@ -56,6 +56,10 @@ class TestSymbolicVariables(unittest.TestCase):
         self.assertEqual(str(-x), "(-1 * x)")
         self.assertEqual(str(-(x + 1)), "(-1 - x)")
 
+    def testLogical(self):
+        x = sym.Variable("x")
+        self.assertEqual(str((x >= 1) & (x <= 2)), "((x >= 1) and (x <= 2))")
+        self.assertEqual(str((x <= 1) | (x >= 2)), "((x >= 2) or (x <= 1))")
 
 if __name__ == '__main__':
     unittest.main()
