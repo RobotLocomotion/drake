@@ -335,8 +335,8 @@ bitbucket_archive(
 bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
-    commit = "e52c48cc0820",
-    sha256 = "473320e1352e232f7bdd20b445c15604e242af010ed0c9c69ad518c0b363669b",
+    commit = "deca28cd6cd5",
+    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",
     build_file = "tools/sdformat.BUILD",
-    strip_prefix = "osrf-sdformat-e52c48cc0820",
+    strip_prefix = "osrf-sdformat-deca28cd6cd5",
 )
