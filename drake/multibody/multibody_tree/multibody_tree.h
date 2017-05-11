@@ -84,7 +84,7 @@ class MultibodyTree {
                              "See documentation for Finalize() for details.");
     }
     if (body == nullptr) {
-      throw std::logic_error("Input body is an invalid nullptr.");
+      throw std::logic_error("Input body is a nullptr.");
     }
     BodyIndex body_index(0);
     FrameIndex body_frame_index(0);
@@ -181,7 +181,7 @@ class MultibodyTree {
                              "See documentation for Finalize() for details.");
     }
     if (frame == nullptr) {
-      throw std::logic_error("Input frame is an invalid nullptr.");
+      throw std::logic_error("Input frame is a nullptr.");
     }
     FrameIndex frame_index = topology_.add_frame(frame->get_body().get_index());
     // This test MUST be performed BEFORE frames_.push_back() and
@@ -260,7 +260,10 @@ class MultibodyTree {
   /// @param[in] mobilizer A unique pointer to a mobilizer to add to `this`
   ///                      %MultibodyTree. The mobilizer class must be
   ///                      specialized on the same scalar type T as this
-  ///                      %MultibodyTree.
+  ///                      %MultibodyTree. Notice this is a requirement of this
+  ///                      method's signature and therefore an input mobilzer
+  ///                      specialized on a different sacalar type than that of
+  ///                      this %MultibodyTree's T will fail to compile.
   /// @returns A constant reference to the `mobilizer` just added, which will
   ///          remain valid for the lifetime of `this` MultibodyTree.
   ///
@@ -278,7 +281,7 @@ class MultibodyTree {
                              "See documentation for Finalize() for details.");
     }
     if (mobilizer == nullptr) {
-      throw std::logic_error("Input mobilizer is an invalid nullptr.");
+      throw std::logic_error("Input mobilizer is a nullptr.");
     }
     MobilizerIndex mobilizer_index = topology_.add_mobilizer(
         mobilizer->get_inboard_frame().get_index(),

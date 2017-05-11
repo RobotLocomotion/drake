@@ -18,9 +18,9 @@ namespace multibody {
 /// generalized positions and velocities resolved at compile time as template
 /// parameters. This allows specific mobilizer implementations to only work on
 /// fixed-size Eigen expressions therefore allowing for optimized operations on
-/// fixed-size matrices and discouraging the proliferation of dynamic-sized
-/// Eigen matrices that would otherwise lead to run-time dynamic memory
-/// allocations.
+/// fixed-size matrices. In addition, this layer discourages the proliferation
+/// of dynamic-sized Eigen matrices that would otherwise lead to run-time
+/// dynamic memory allocations.
 /// %MobilizerImpl also provides a number of size specific methods to retrieve
 /// multibody quantities of interest from caching structures. These are common
 /// to all mobilizer implementations and therefore they live in this class.
@@ -28,12 +28,14 @@ namespace multibody {
 /// to implement a custom Mobilizer class.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
-template <typename T, int  num_positions, int num_velocities>
+template <typename T, int num_positions, int num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
-  /// This constructor enforces the minimum requirement to any mobilizer's
-  /// constructor; we must specify the inboard and outboard frames that `this`
-  /// mobilizer connects.
+  /// As with Mobilizer this the only constructor available for this base class.
+  /// The minimum amount of information that we need to define a mobilizer is
+  /// the knowledge of the inboard and outboard frames it connects.
+  /// Subclasses of %MobilizerImpl are therefore forced to provide this
+  /// information in their respective constructors.
   MobilizerImpl(const Frame<T>& inboard_frame,
                 const Frame<T>& outboard_frame) :
       Mobilizer<T>(inboard_frame, outboard_frame) {}

@@ -20,8 +20,8 @@ template<typename T> class BodyNode;
 /// %Mobilizer is a fundamental object within Drake's multibody engine used to
 /// specify the allowed motions between two Frame objects within a
 /// MultibodyTree. Specifying the allowed motions between two Frame objects
-/// effectively also specifies a kinematic relation between the two bodies
-/// associtated with those two frames. Consider the following example to build a
+/// effectively also specifies a kinematic relationship between the two bodies
+/// associated with those two frames. Consider the following example to build a
 /// simple pendulum system:
 ///
 /// @code
@@ -36,7 +36,7 @@ template<typename T> class BodyNode;
 ///   model.AddFrame<FixedOffsetFrame>(
 ///     pendulum.get_body_frame(),
 ///     X_BP /* pose of pin frame P in body frame B */);
-/// // The mobilizer connects the world frame and the pin frame effetively
+/// // The mobilizer connects the world frame and the pin frame effectively
 /// // adding the single degree of freedom describing this system.
 /// const RevoluteMobilizer<double>& revolute_mobilizer =
 ///   model.AddMobilizer<RevoluteMobilizer>(
@@ -65,17 +65,32 @@ template<typename T> class BodyNode;
 template <typename T>
 class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
  public:
-  /// This constructor enforces the minimum requirement to any mobilizer's
-  /// constructor; we must specify the inboard and outboard frames that `this`
-  /// mobilizer connects.
+  /// This is the only constructor available for this base class %Mobilizer.
+  /// The minimum amount of information that we need to define a %Mobilizer is
+  /// the knowledge of the inboard and outboard frames it connects.
+  /// Subclasses of %Mobilizer are therefore forced to provide this information
+  /// in their respective constructors.
   Mobilizer(const Frame<T>& inboard_frame,
             const Frame<T>& outboard_frame) :
       inboard_frame_(inboard_frame), outboard_frame_(outboard_frame) {}
 
-  /// Returns the number of generalized coordinates granted by this mobilizer.
+  /// Returns the number of generalized coordinates admitted by this mobilizer.
+  /// As an example, consider RevoluteMobilizer, for which
+  /// `get_num_positions() == 1` since RevoluteMobilizer adds a single
+  /// rotational degree of freedom about a given axis between the inboard and
+  /// outboard frames. Another example would be a quaternion mobilizer, for
+  /// which this method would return 7 (a quaternion plus a position vector).
+  /// @see get_num_velocities()
   virtual int get_num_positions() const = 0;
 
-  /// Returns the number of generalized velocities granted by this mobilizer.
+  /// Returns the number of generalized velocities admitted by this mobilizer.
+  /// As an example, consider RevoluteMobilizer, for which
+  /// `get_num_velocities() == 1` since for RevoluteMobilizer its one and only
+  /// generalized velocity describes the magnitude of the angular velocity about
+  /// a given axis between the inboard and outboard frames. Another example
+  /// would be a quaternion mobilizer, for which this method would return 6 (an
+  /// angular velocity plus a linear velocity).
+  /// @see get_num_positions()
   virtual int get_num_velocities() const = 0;
 
   /// Returns a constant reference to the inboard frame.
