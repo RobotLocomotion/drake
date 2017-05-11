@@ -67,17 +67,17 @@ class logger {
   logger();
 
   template <typename... Args>
-  void trace(const char* fmt, const Args&... args) {}
+  void trace(const char*, const Args&...) {}
   template <typename... Args>
-  void debug(const char* fmt, const Args&... args) {}
+  void debug(const char*, const Args&...) {}
   template <typename... Args>
-  void info(const char* fmt, const Args&... args) {}
+  void info(const char*, const Args&...) {}
   template <typename... Args>
-  void warn(const char* fmt, const Args&... args) {}
+  void warn(const char*, const Args&...) {}
   template <typename... Args>
-  void error(const char* fmt, const Args&... args) {}
+  void error(const char*, const Args&...) {}
   template <typename... Args>
-  void critical(const char* fmt, const Args&... args) {}
+  void critical(const char*, const Args&...) {}
 
   template <typename T> void trace(const T&) {}
   template <typename T> void debug(const T&) {}

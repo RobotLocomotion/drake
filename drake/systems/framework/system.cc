@@ -19,7 +19,7 @@ std::string SystemImpl::GetMemoryObjectName(
 
   // Replace "::" with "/" because ":" is the System::GetPath separator.
   const std::string default_name = std::regex_replace(
-      type_name_without_templates, std::regex(":+"), "/");
+      type_name_without_templates, std::regex(":+"), std::string("/"));
 
   // Append the address spelled like "@0123456789abcdef".
   std::ostringstream result;

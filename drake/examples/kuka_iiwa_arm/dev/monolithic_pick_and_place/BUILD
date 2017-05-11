@@ -43,6 +43,11 @@ drake_cc_library(
 drake_cc_binary(
     name = "monolithic_pick_and_place_demo",
     srcs = ["monolithic_pick_and_place_demo.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/examples/schunk_wsg:models",
+    ],
     deps = [
         ":kuka_pick_and_place_monolithic",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",

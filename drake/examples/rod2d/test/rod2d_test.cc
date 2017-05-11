@@ -16,9 +16,11 @@ using drake::systems::SystemOutput;
 using drake::systems::AbstractValues;
 using drake::systems::Simulator;
 using drake::systems::Context;
+using drake::systems::rendering::PoseVector;
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using Vector6d = Eigen::Matrix<double, 6, 1>;
 
 namespace drake {
@@ -1264,6 +1266,53 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
 // Validates the number of witness functions is determined correctly.
 TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
+}
+
+// Verifies that output ports give expected values.
+GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
+  // Create two Rod2D systems, one time stepping, one with continuous state.
+  const double dt = 1e-1;
+  Rod2D<double> ts(Rod2D<double>::SimulationType::kTimeStepping, dt);
+  Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
+
+  // Create contexts for both.
+  std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
+  std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
+
+  // Allocate outputs for both.
+  auto output_ts = ts.AllocateOutput(*context_ts);
+  auto output_pdae = pdae.AllocateOutput(*context_pdae);
+
+  // Compute outputs.
+  ts.CalcOutput(*context_ts, output_ts.get());
+  pdae.CalcOutput(*context_pdae, output_pdae.get());
+
+  // Set port indices.
+  const int state_port = 0;
+  const int pose_port = 1;
+
+  // Verify that state outputs are identical.
+  const double eq_tol = 10 * std::numeric_limits<double>::epsilon();
+  const VectorXd x_ts = output_ts->get_vector_data(state_port)->CopyToVector();
+  VectorXd x_pdae = output_pdae->get_vector_data(state_port)->CopyToVector();
+  EXPECT_LT((x_ts - x_pdae).lpNorm<Eigen::Infinity>(), eq_tol);
+
+  // Transform the rod and verify that pose output is as expected.
+  x_pdae[0] = 0;
+  x_pdae[1] = pdae.get_rod_half_length();
+  x_pdae[2] = M_PI_2;
+  context_pdae->get_mutable_continuous_state()->SetFromVector(x_pdae);
+  pdae.CalcOutput(*context_pdae, output_pdae.get());
+
+  // Rotation by theta is converted to rotation around +y by theta + π/2.
+  const PoseVector<double>* const pose = dynamic_cast<
+      PoseVector<double>*>(output_pdae->GetMutableVectorData(pose_port));
+  const Eigen::Quaterniond quat = pose->get_rotation();
+  EXPECT_NEAR(quat.y(), 1, eq_tol);
+
+  // -- Translation along +y is converted to translation along +z.
+  const auto translation = pose->get_translation();
+  EXPECT_NEAR(translation.z(), pdae.get_rod_half_length(), eq_tol);
 }
 
 }  // namespace

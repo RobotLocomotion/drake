@@ -560,6 +560,15 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 }
 }  // anonymous namespace
 
+MosekSolver::~MosekSolver() {
+  if (mosek_env_ != nullptr) {
+    MSKenv_t env = static_cast<MSKenv_t>(mosek_env_);
+    mosek_env_ = nullptr;
+    MSK_deleteenv(&env);
+  }
+}
+
+
 bool MosekSolver::available() const { return true; }
 
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
@@ -578,8 +587,25 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // in MathematicalProgram prog, but added to Mosek solver.
   std::vector<bool> is_new_variable(num_vars, false);
 
-  // Create the Mosek environment.
-  rescode = MSK_makeenv(&env, nullptr);
+  // According to
+  // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
+  // an env between threads is safe, but since we allocate on the
+  // first call to Solve() we need to at least be safe about
+  // allocating the environment initially.
+  {
+    std::lock_guard<std::mutex> lock(env_mutex_);
+    if (mosek_env_ == nullptr) {
+      // Create the Mosek environment.
+      rescode = MSK_makeenv(&env, nullptr);
+      if (rescode == MSK_RES_OK) {
+        mosek_env_ = env;
+      }
+    } else {
+      env = static_cast<MSKenv_t>(mosek_env_);
+      rescode = MSK_RES_OK;
+    }
+  }
+
   if (rescode == MSK_RES_OK) {
     // Create the optimization task.
     rescode = MSK_maketask(env, 0, num_vars, &task);
@@ -712,7 +738,6 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
 
   MSK_deletetask(&task);
-  MSK_deleteenv(&env);
   return result;
 }
 
