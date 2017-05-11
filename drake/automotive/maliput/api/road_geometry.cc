@@ -31,6 +31,9 @@ GeoPosition LaneEndGeoPosition(const LaneEnd& lane_end) {
 // orientation of (-s,-r,h).  This is equivalent to a pre-rotation by PI in
 // the s/r plane.
 Rotation ReverseOrientation(const Rotation& rot) {
+  // TODO(maddog@tri.global)  Find a better way to do this, and probably move
+  //                          it into api::Rotation itself.  seancurtis-tri has
+  //                          volunteered, when the time comes.
   const double ca = std::cos(rot.roll());
   const double sa = std::sin(rot.roll());
   const double cb = std::cos(rot.pitch());
