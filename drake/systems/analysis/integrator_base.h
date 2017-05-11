@@ -270,6 +270,60 @@ class IntegratorBase {
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
+   *  @name Minimum step size related methods.
+   *  @{
+   *  This group of methods is used to set the requested minimum step size
+   *  as well as the desired behavior for when the integrator wishes to exceed
+   *  the minimum step size. Requesting a minimum step size provides two 
+   *  kinds of notifications to the user: (1) the integrator wishes to take
+   *  a smaller integration step than the user expected would be necessary and
+   *  (2) the integration cannot simultaneously advance virtual time and satisfy
+   *  error tolerances/integrator convergence criteria. 
+   *
+   *  The requested minimum step size generally differs from the *working*
+   *  minimum step size because the floating point representation means that a
+   *  step of 1e-4 will not be possible when the current time in the Context is
+   *  1e20: double precision (type `double`) arithmetic yields the result
+   *  `1e20 + 1e-4 = 1e20`. Consequently, the requested minimum step size is
+   *  replaced by a sensible alternative when appropriate. See 
+   *  get_working_minimum_step_size() and set_requested_minimum_step_size() for
+   *  more information. As time becomes too large, however, the integrator will
+   *  be unable to simultaneously take sufficiently (a) small steps to satisfy
+   *  error tolerances and (b) large steps such that time advances. The default
+   *  behavior in such a case is to throw an exception (see 
+   *  get_minimum_step_size_exceeded_throws()). 
+   *
+   *  The requested minimum step size does not automatically apply when the
+   *  *user* requests an integration step smaller than the working minimum;
+   *  it would only apply when the integrator might wish to shrink that step
+   *  even further (e.g., for error control purposes). As an example, consider
+   *  that the user requests that the integrator step forward by `h`. For
+   *  purposes of error control, the integrator takes a step of `h-ε`. A step
+   *  of `ε < γ` (where `γ` is the working minimum step size) would remain. The
+   *  integrator would be free to attempt that step of size `ε`. However, the 
+   *  the minimum step size *would* apply if the integrator then determines
+   *  that `ε` is too large (e.g., to allow the integration process to
+   *  converge).
+   */
+
+  /// Gets whether the integrator should throw an exception when the integrator
+  /// wishes to adjust a user-requested step size to be smaller than the
+  /// minimum step size (for, e.g., purposes of error control). Default is
+  /// `true`. If `false`, the integrator will advance time and state using the
+  /// minimum specified step size in such situations. Note that this behavior
+  /// does not automatically apply when the *user* requests an integration step
+  /// smaller than the designated minimum; in such a case, an exception could
+  /// only be thrown if the integrator requires shrinking the user-requested
+  /// step size.
+  bool get_minimum_step_size_exceeded_throws() const {
+    return min_step_exceeded_throws_; }
+
+  /// Setter corresponding to get_minimum_step_size_exceeded_throws().
+  /// @sa get_minimum_step_size_exceeded_throws().
+  void set_minimum_step_size_exceeded_throws(bool throws) {
+    min_step_exceeded_throws_ = throws; }
+
+  /**
    * Sets the requested minimum step size that may be taken by this integrator.
    * All integration steps will be at least this large *except those
    * specifically requested by users*. This requested minimum step size is an
@@ -310,6 +364,9 @@ class IntegratorBase {
     const T smart_minimum = max(tol, get_context().get_time()*tol);
     return max(smart_minimum, req_min_step_size_);
   }
+  /**
+   *  @}
+   */
 
   /**
    * Resets the integrator to initial values, i.e., default construction
@@ -950,20 +1007,6 @@ class IntegratorBase {
     return z_weight_.head(z_weight_.rows());
   }
 
-  /// Gets whether the integrator should throw an exception when the integrator
-  /// wishes to select a step smaller than the minimum (for, e.g., purposes of
-  /// error control). Default is `true`. If `false`, integrator will advance
-  /// time and state using the minimum specified step size, if necessary. Note
-  /// that the minimum step size behavior is not followed when the *user*
-  /// requests a small integration step (such a step is always taken).
-  bool get_minimum_step_size_exceeded_throws() const {
-    return min_step_exceeded_throws_; }
-
-  /// Setter corresponding to get_minimum_step_size_exceeded_throws().
-  /// @sa get_minimum_step_size_exceeded_throws().
-  void set_minimum_step_size_exceeded_throws(bool throws) {
-    min_step_exceeded_throws_ = throws; }
-
   /**
    * @}
    */
@@ -1107,14 +1150,14 @@ class IntegratorBase {
   }
 
   /**
-   *  Sets the size of the smallest step taken as the result of a controlled
-   *  integration step adjustment.
+   *  Sets the size of the smallest-step-taken statistic as the result of a
+   *  controlled integration step adjustment.
    */
   void set_smallest_adapted_step_size_taken(const T& dt) {
     smallest_adapted_step_size_taken_ = dt;
   }
 
-  // Sets the largest step size taken
+  // Sets the largest-step-size-taken statistic.
   void set_largest_step_size_taken(const T& dt) {
     largest_step_size_taken_ = dt;
   }
@@ -1123,6 +1166,23 @@ class IntegratorBase {
   void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
 
  private:
+  // Validates that a smaller step size does not fall below the working minimum
+  // and throws an exception if desired.
+  void ValidateSmallerStepSize(const T& current_step_size,
+                               const T& new_step_size) const {
+    if (new_step_size < get_working_minimum_step_size() &&
+        new_step_size < current_step_size &&
+        min_step_exceeded_throws_) {
+      SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
+          "size of {}; working minimum is ", new_step_size,
+                   get_working_minimum_step_size());
+      std::ostringstream str;
+      str << "Error control wants to select step smaller than minimum" <<
+           " allowed (" << get_working_minimum_step_size() << ")";
+      throw std::runtime_error(str.str());
+    }
+  }
+
   // Updates the integrator statistics, accounting for a step just taken of
   // size dt.
   void UpdateStepStatistics(const T& dt) {
@@ -1165,6 +1225,12 @@ class IntegratorBase {
   // the next one.
   T ideal_next_step_size_{nan()};  // Indicates that the value is uninitialized.
 
+  // The scaling factor to apply to an integration step size when an integrator
+  // convergence failure occurs (to make convergence more likely on the next
+  // attempt).
+  // TODO(edrumwri): Allow subdivision factor to be user-tweakable.
+  const double subdivision_factor_{0.5};
+
   // The accuracy being used.
   double accuracy_in_use_{nan()};
 
@@ -1193,7 +1259,6 @@ class IntegratorBase {
   int64_t num_shrinkages_from_error_control_{0};
   int64_t num_shrinkages_from_substep_failures_{0};
   int64_t num_substep_failures_{0};
-
 
   // Applied as diagonal matrices to weight state change variables.
   Eigen::VectorXd qbar_weight_, z_weight_;
@@ -1274,14 +1339,18 @@ bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
         current_step_size = dt_max;  // dt_max is roughly current step.
     }
 
-    // Keep attempting to step until stepping successful.
-    while (!Step(current_step_size)) {
-      SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", current_step_size);
-      current_step_size /= 2;
+    // Keep adjusting the integration step size until any integrator
+    // convergence failures disappear.
+    T adjusted_step_size = current_step_size;
+    while (!Step(adjusted_step_size)) {
+      SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", adjusted_step_size);
+      adjusted_step_size *= subdivision_factor_;
+      ValidateSmallerStepSize(current_step_size, adjusted_step_size);
       dt_was_artificially_limited = true;
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
     }
+    current_step_size = adjusted_step_size;
 
     //--------------------------------------------------------------------
     T err_norm = CalcStateChangeNorm(*get_error_estimate());
@@ -1442,17 +1511,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   // a special status from IntegrateAtMost().
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
-  if (new_step_size < get_working_minimum_step_size() &&
-      new_step_size < current_step_size &&
-      min_step_exceeded_throws_) {
-    SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
-        "size of {}; working minimum is ", new_step_size,
-                 get_working_minimum_step_size());
-    std::ostringstream str;
-    str << "Error control wants to select step smaller than minimum allowed" <<
-           "(" << get_working_minimum_step_size() << ")";
-    throw std::runtime_error(str.str());
-  }
+  ValidateSmallerStepSize(current_step_size, new_step_size);
   new_step_size = max(new_step_size, get_working_minimum_step_size());
 
   return std::make_pair(new_step_size >= current_step_size, new_step_size);
@@ -1461,9 +1520,6 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     const T& publish_dt, const T& update_dt, const T& boundary_dt) {
-  // TODO(edrumwri): Allow subdivision factor to be user-tweakable.
-  const double subdivision_factor = 0.5;
-
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
@@ -1564,10 +1620,12 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   // the error controlled method.
   bool full_step = true;
   if (this->get_fixed_step_mode()) {
-    while (!Step(dt)) {
+    T adjusted_dt = dt;
+    while (!Step(adjusted_dt)) {
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
-      dt *= subdivision_factor;
+      adjusted_dt *= subdivision_factor_;
+      ValidateSmallerStepSize(dt, adjusted_dt);
       full_step = false;
     }
   } else {
