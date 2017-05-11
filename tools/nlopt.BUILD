@@ -2,21 +2,12 @@
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
-# Lets other packages inspect the CMake code, e.g., for the version number.
-filegroup(
-    name = "cmakelists_with_version",
-    srcs = ["CMakeLists.txt"],
-    visibility = ["//visibility:public"],
-)
-
 # Chooses the nlopt preprocessor substitutions that we want to use from Bazel.
 cmake_configure_file(
     name = "config",
     src = "nlopt_config.h.in",
     out = "nlopt_config.h",
-    cmakelists = [
-        ":cmakelists_with_version",
-    ],
+    cmakelists = ["CMakeLists.txt"],
     defines = [
         # These end up being unused; empty-string is a fail-fast value.
         "SIZEOF_UNSIGNED_INT=",
@@ -49,7 +40,6 @@ cmake_configure_file(
         # Yes, we are going to build the C++ bindings.
         "WITH_CXX=1",
     ],
-    visibility = [],
 )
 
 # Creates api/nlopt.hpp based on api/nlopt.h.
@@ -63,7 +53,6 @@ genrule(
     cmd = "$(location @//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
           " || (cat log && false)",
     tools = ["@//tools:nlopt-gen-hpp.sh"],
-    visibility = [],
 )
 
 cc_library(
@@ -95,8 +84,7 @@ cc_library(
     ).split(" ", None),
     hdrs = [
         "api/nlopt.h",
-        # This comes from a genrule above.
-        "api/nlopt.hpp",
+        ":nlopt_hpp_genrule",
     ],
     copts = [
         "-Wno-all",
