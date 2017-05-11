@@ -107,6 +107,7 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
     Isometry3<double> X_WB = DecodePose(msg.pose);
     // Spatial velocity of base in the world frame.
     Vector6<double> V_WB = DecodeTwist(msg.twist);
+    // J is the root_joint frame.
     Isometry3<double> X_WJ = root_joint.get_transform_to_parent_body();
     Isometry3<double> X_JB = X_WJ.inverse() * X_WB;
     Vector6<double> V_JB;
@@ -230,6 +231,7 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
 
   // Encodes the floating base.
   const DrakeJoint& root_joint = root_body_.getJoint();
+  // J is the root_joint frame.
   Isometry3<double> X_JB;
   Vector6<double> V_JB;
 

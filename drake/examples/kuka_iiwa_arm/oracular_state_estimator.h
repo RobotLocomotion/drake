@@ -11,6 +11,8 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+// TODO(siyuan): move this to /manipulation/util
+
 /**
  * A class that takes state vector and output a bot_core::robot_state_t message.
  * For the encoded `message`, `message.pose will` always be X_WB (pose of `B`
