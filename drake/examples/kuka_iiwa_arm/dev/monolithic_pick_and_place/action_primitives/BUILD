@@ -34,8 +34,8 @@ drake_cc_library(
         "//drake/systems/analysis",
         "//drake/systems/framework",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 

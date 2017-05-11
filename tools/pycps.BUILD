@@ -8,7 +8,7 @@ genrule(
 py_library(
   name = "cps",
   srcs = ["cps.py"],
-  deps = ["@semantic_version//:semantic_version"],
+  deps = ["@semantic_version"],
   visibility = ["//visibility:private"], # LGPL; don't use externally
 )
 

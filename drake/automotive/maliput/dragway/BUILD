@@ -39,7 +39,7 @@ drake_cc_binary(
         "//drake/common",
         "//drake/common:text_logging_gflags",
         "//drake/thirdParty:spruce",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 

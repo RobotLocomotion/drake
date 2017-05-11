@@ -1,7 +1,7 @@
 # -*- python -*-
 
 cc_library(
-    name = "lib",
+    name = "yaml_cpp",
     srcs = glob([
         "src/**/*.cpp",
         "src/**/*.h",

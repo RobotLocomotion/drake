@@ -104,7 +104,7 @@ drake_cc_library(
         ":depth_sensor",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/rendering:pose_vector",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -175,7 +175,7 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 

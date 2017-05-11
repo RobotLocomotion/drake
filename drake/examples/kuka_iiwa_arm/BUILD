@@ -37,8 +37,8 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 
@@ -64,7 +64,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -77,8 +77,8 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework:leaf_system",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 
@@ -111,9 +111,9 @@ drake_cc_binary(
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
         "//drake/systems/primitives:demultiplexer",
-        "@bot_core_lcmtypes//:lib",
-        "@gflags//:gflags",
-        "@robotlocomotion_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
+        "@gflags",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 
@@ -144,7 +144,7 @@ drake_cc_binary(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:matrix_gain",
         "//drake/util:lcm_util",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -167,7 +167,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:constant_vector_source",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -181,8 +181,8 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 

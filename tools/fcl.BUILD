@@ -25,7 +25,7 @@ cmake_configure_file(
 # Generates the entire FCL library except the fcl/fcl.h generated header.
 # The globbed srcs= and hdrs= matches upstream's explicit globs of the same.
 cc_library(
-    name = "lib_without_fclh",
+    name = "fcl_without_fclh",
     srcs = glob(["src/**/*.cpp"]),
     hdrs = glob(["include/**/*.h"]) + [
         "include/fcl/config.h",  # From :config above.
@@ -34,9 +34,9 @@ cc_library(
     linkstatic = 1,
     visibility = [],
     deps = [
-        "@ccd//:lib",
-        "@eigen//:eigen",
-        "@octomap//:lib",
+        "@ccd",
+        "@eigen",
+        "@octomap",
     ],
 )
 
@@ -57,9 +57,9 @@ genrule(
 
 # Generates the library exported to users.
 cc_library(
-    name = "lib",
+    name = "fcl",
     hdrs = ["include/fcl/fcl.h"],  # From :fclh_genrule above.
     includes = ["include"],
     visibility = ["//visibility:public"],
-    deps = [":lib_without_fclh"],
+    deps = [":fcl_without_fclh"],
 )
