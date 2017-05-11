@@ -36,27 +36,71 @@
 }
 
 {
-   <mosek-1>
-   Memcheck:Addr4
-   ...
-   fun:checkout_from_flexlm
-   ...
+    <mosek-1>
+    Memcheck:Addr4
+    ...
+    fun:checkout_from_flexlm
+    ...
 }
 
 {
-   <mosek-2>
-   Memcheck:Addr16
-   ...
-   fun:checkout_from_flexlm
-   ...
+    <mosek-2>
+    Memcheck:Addr16
+    ...
+    fun:checkout_from_flexlm
+    ...
 }
 
 {
-   <mosek-3>
-   Memcheck:Cond
-   ...
-   fun:MSK_sysenv_getsysinfo
-   ...
+    <mosek-3>
+    Memcheck:Cond
+    ...
+    fun:MSK_sysenv_getsysinfo
+    ...
+}
+
+# One of the other places MOSEK's issues with Valgrind have been suppressed quite sweepingly:
+# https://github.com/casadi/casadi/blob/master/test/internal/valgrind-casadi.supp#L242
+{
+    <mosek-4>
+    Memcheck:Cond
+    fun:__intel_sse2_strcpy
+    fun:MSKP_strdupenv
+    ...
+    fun:MSK_ehajakopr
+    fun:MSK_optimize
+    fun:MSK_optimizetrm
+    fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+}
+
+{
+    <mosek-5>
+    Memcheck:Cond
+    fun:MSK_hom_optlp
+    fun:MSK_hs_optlp
+    fun:MSK_opt_ipmslv
+    fun:MSK_contoptimizer
+    fun:MSK_optimizeunlicensed
+    fun:MSK_optimize
+    fun:MSK_optimizetrm
+    fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+}
+
+{
+    <mosek-6>
+    Memcheck:Cond
+    fun:mkl_lapack_ps_avx2_xdlansy
+    fun:mkl_lapack_ps_xdlansy
+    fun:mkl_lapack_dlansy
+    fun:mkl_lapack_dsyevd
+    fun:DSYEVD
+    fun:MSK_INTEL_P4_mathenv_symeig
+    fun:intpnt_sdp_ntscaling
+    fun:intpnt_inititer
+    fun:intpnt_conicoptimizer
+    fun:MSK_intpnt_optcone
+    fun:MSK_conic_optimizer
+    fun:MSKP_optimizeconic
 }
 
 {
