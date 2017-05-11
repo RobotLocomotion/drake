@@ -114,7 +114,7 @@ cc_library(
     ],
     includes = ["include", "src/urdf"],
     visibility = ["//visibility:public"],
-    linkopts = ["-lboost_system", "-lboost_filesystem", "-ltinyxml"],
+    linkopts = ["-lboost_system", "-ltinyxml"],
     deps = [
         "@ignition_math",
     ],
