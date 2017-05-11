@@ -76,18 +76,25 @@ struct FrameTopology {
 };
 
 /// Data structure to store the topological information associated with a
-/// Mobilizer object.
+/// Mobilizer object. It stores:
+/// - Indexes to the inboard/outboard frames of this mobilizer.
+/// - Indexes to the inboard/outboard bodies of this mobilizer.
+/// - Numbers of dofs admitted by this mobilizer.
+/// - Indexing information to retrive entries from the parent MultibodyTree
+///   Context.
+/// Additional information on topology classes is given in this file's
+/// documentation at the top.
 struct MobilizerTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MobilizerTopology);
 
   /// Default construction to invalid configuration.
   MobilizerTopology() {}
 
-  /// Constructs a topology by specifying the the index `mobilizer_index` for
-  /// `this` new topology, the indexes to the inboard and outboard frames the
-  /// Mobilizer will connect, given by in_frame and out_frame respectively, and
-  /// similarly the inboard and outboard bodies being connected, given by
-  /// in_body and out_body, respectively.
+  /// Constructs a %MobilizerTopology by specifying the the index
+  /// `mobilizer_index` for `this` new topology, the indexes to the inboard and
+  /// outboard frames the Mobilizer will connect, given by `in_frame` and
+  /// `out_frame` respectively, and similarly the inboard and outboard bodies
+  /// being connected, given by `in_body` and `out_body`, respectively.
   MobilizerTopology(
       MobilizerIndex mobilizer_index,
       FrameIndex in_frame, FrameIndex out_frame,
@@ -96,7 +103,7 @@ struct MobilizerTopology {
       inboard_frame(in_frame), outboard_frame(out_frame),
       inboard_body(in_body), outboard_body(out_body) {}
 
-  /// Unique index in the MultibodyTree.
+  /// Unique index in the set of mobilizers.
   MobilizerIndex index;
   /// Index to the inboard frame.
   FrameIndex inboard_frame;
@@ -107,11 +114,17 @@ struct MobilizerTopology {
   /// Index to the outboard body.
   BodyIndex outboard_body;
 
-  /// MobilizerIndexingInfo
-  int num_positions;
-  int positions_start;
-  int num_velocities;
-  int velocities_start;
+  /// Mobilizer indexing info: Set at Finalize() time.
+  // Number of generalized coordinates admitted by this mobilizer.
+  int num_positions{0};
+  // First entry in the global array of generalized coordinates for the parent
+  // MultibodyTree.
+  int positions_start{0};
+  // Number of generalized velocities admitted by this mobilizer.
+  int num_velocities{0};
+  // First entry in the global array of generalized velocities for the parent
+  // MultibodyTree.
+  int velocities_start{0};
 };
 
 /// Data structure to store the topological information associated with an
@@ -171,7 +184,7 @@ struct MultibodyTreeTopology {
   /// outboard multibody frames identified by indexes `in_frame` and
   /// `out_frame`, respectively.
   /// `in_body` corresponds to the body associated with the inboard frame while
-  /// `out_body` correspoinds to the body associated with the outboard frame.
+  /// `out_body` corresponds to the body associated with the outboard frame.
   /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.

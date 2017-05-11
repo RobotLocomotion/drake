@@ -68,8 +68,9 @@ class MultibodyTree {
   /// @param[in] body A unique pointer to a body to add to `this`
   ///                 %MultibodyTree. The body class must be specialized on the
   ///                 same scalar type T as this %MultibodyTree.
-  /// @returns A constant reference to the `body` just added, which will remain
-  ///          valid for the lifetime of `this` MultibodyTree.
+  /// @returns A constant reference of type `BodyType` to the created body.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam BodyType The type of the specific sub-class of Body to add. The
   ///                  template needs to be specialized on the same scalar type
@@ -133,9 +134,9 @@ class MultibodyTree {
   /// @param[in] args The arguments needed to construct a valid Body of type
   ///                 `BodyType`. `BodyType` must provide a public constructor
   ///                 that takes these arguments.
-  /// @returns A constant reference to the body with type `BodyType` just
-  ///          created, which will remain valid for the lifetime of `this`
-  ///          MultibodyTree.
+  /// @returns A constant reference of type `BodyType` to the created body.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam BodyType A template for the type of Body to construct. The
   ///                  template will be specialized on the scalar type T of this
@@ -165,8 +166,9 @@ class MultibodyTree {
   /// @param[in] frame A unique pointer to a frame to be added to `this`
   ///                  %MultibodyTree. The frame class must be specialized on
   ///                  the same scalar type T as this %MultibodyTree.
-  /// @returns A constant reference to the frame just added, which will remain
-  ///          valid for the lifetime of `this` MultibodyTree.
+  /// @returns A constant reference of type `FrameType` to the created frame.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam FrameType The type of the specific sub-class of Frame to add. The
   ///                   template needs to be specialized on the same scalar type
@@ -224,9 +226,9 @@ class MultibodyTree {
   /// @param[in] args The arguments needed to construct a valid Frame of type
   ///                 `FrameType`. `FrameType` must provide a public constructor
   ///                 that takes these arguments.
-  /// @returns A constant reference to the frame with type `FrameType` just
-  ///          created, which will remain valid for the lifetime of `this`
-  ///          MultibodyTree.
+  /// @returns A constant reference of type `FrameType` to the created frame.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam FrameType A template for the type of Frame to construct. The
   ///                   template will be specialized on the scalar type T of
@@ -264,8 +266,9 @@ class MultibodyTree {
   ///                      method's signature and therefore an input mobilzer
   ///                      specialized on a different sacalar type than that of
   ///                      this %MultibodyTree's T will fail to compile.
-  /// @returns A constant reference to the `mobilizer` just added, which will
-  ///          remain valid for the lifetime of `this` MultibodyTree.
+  /// @returns A constant reference of type `MobilizerType` to the created
+  ///          mobilizer. This reference which will remain valid for the
+  ///          lifetime of `this` %MultibodyTree.
   ///
   /// @tparam MobilizerType The type of the specific sub-class of Mobilizer to
   ///                       add. The template needs to be specialized on the
@@ -319,21 +322,32 @@ class MultibodyTree {
   ///   // Notice RevoluteMobilizer is a template an a scalar type.
   ///   const RevoluteMobilizer<T>& pin =
   ///     model.AddMobilizer<RevoluteMobilizer>(
-  ///       inboard_frame, elbow_outboard_frame,
+  ///       inboard_frame, outboard_frame,
   ///       Vector3d::UnitZ() /*revolute axis*/);
   /// @endcode
   ///
   /// Note that for dependent names you must use the template keyword (say for
   /// instance you have a MultibodyTree<T> member within your custom class).
+  /// Like so:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define inboard and outboard frames by calling
+  ///   // MultibodyTree::AddFrame() ...
+  ///   // Notice the usage of the "template" keyword here:
+  ///   const RevoluteMobilizer<T>& pin =
+  ///     model.template AddMobilizer<RevoluteMobilizer>(
+  ///       inboard_frame, outboard_frame,
+  ///       Vector3d::UnitZ() /*revolute axis*/);
+  /// @endcode
   ///
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
   ///
   /// @param[in] args The arguments needed to construct a valid Mobilizer of
   ///                 type `MobilizerType`. `MobilizerType` must provide a
   ///                 public constructor that takes these arguments.
-  /// @returns A constant reference to the mobilizer with type `MobilizerType`
-  ///          just created, which will remain valid for the lifetime of `this`
-  ///          MultibodyTree.
+  /// @returns A constant reference of type `MobilizerType` to the created
+  ///          mobilizer. This reference which will remain valid for the
+  ///          lifetime of `this` %MultibodyTree.
   ///
   /// @tparam MobilizerType A template for the type of Mobilizer to construct.
   ///                       The template will be specialized on the scalar type

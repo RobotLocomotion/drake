@@ -36,8 +36,7 @@ class PendulumTests : public ::testing::Test {
   // Creates an "empty" MultibodyTree that only contains the "world" body and
   // world body frame.
   void SetUp() override {
-    owned_model_ = std::make_unique<MultibodyTree<double>>();
-    model_ = owned_model_.get();
+    model_ = std::make_unique<MultibodyTree<double>>();
 
     // Retrieves the world body.
     world_body_ = &model_->get_world_body();
@@ -111,8 +110,7 @@ class PendulumTests : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<MultibodyTree<double>> owned_model_;
-  MultibodyTree<double>* model_;
+  std::unique_ptr<MultibodyTree<double>> model_;
   const Body<double>* world_body_;
   // Bodies:
   const RigidBody<double>* upper_link_;
