@@ -23,7 +23,11 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/simple_car_state.cc
   idm_controller.cc
   idm_planner.cc
+  maliput/api/junction.cc
+  maliput/api/lane.cc
+  maliput/api/lane_data.cc
   maliput/api/road_geometry.cc
+  maliput/api/segment.cc
   maliput/dragway/branch_point.cc
   maliput/dragway/junction.cc
   maliput/dragway/lane.cc
