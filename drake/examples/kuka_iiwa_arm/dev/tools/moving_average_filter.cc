@@ -3,32 +3,38 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
+#include <iostream>
+
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace tools {
 
 template <typename T>
-MovingAverageFilter<T>::MovingAverageFilter(int window_size)
-    : window_size_(window_size), window_(window_size_) {
-  DRAKE_THROW_UNLESS(window_size_ > 1);
+MovingAverageFilter<T>::MovingAverageFilter(unsigned int window_size)
+    : window_size_(window_size) {
+  DRAKE_THROW_UNLESS(window_size_ > 0);
 }
 
 template <typename T>
 T MovingAverageFilter<T>::compute(const T& new_data) {
-  T sum;
-  size_t i = 0;
-  for (i = 0; i < window_.size() - 1; ++i) {
-    window_[i] = window_[i + 1];
-    sum = sum + window_[i];
+  // First intialize sum (needed when type is not a scalar)
+  if (window_.size() == 0) {
+    sum_ = new_data;
+  } else {
+    sum_ += new_data;
   }
-  window_[i + 1] = new_data;
-  sum = sum + new_data;
-  return (1 / window_size_) * sum;
+  window_.push(new_data);
+
+  if (window_.size() > window_size_) {
+    sum_ -= window_.front();
+    window_.pop();
+  }
+  return (1 / static_cast<double>(window_.size())) * sum_;
 }
 
 template class MovingAverageFilter<double>;
-template class MovingAverageFilter<Eigen::Vector3d>;
+template class MovingAverageFilter<Eigen::Array3d>;
 
 }  // namespace tools
 }  // namespace kuka_iiwa_arm
