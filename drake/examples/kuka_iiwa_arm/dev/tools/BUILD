@@ -44,6 +44,18 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "optitrack_pose_translator",
+    srcs = ["optitrack_pose_translator.cc"],
+    hdrs = ["optitrack_pose_translator.h"],
+    visibility =  ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    deps = ["@optitrack_driver//lcmtypes:optitrack_lcmtypes", 
+            "//drake/common:common",
+            "//drake/util:lcm_util",
+            "//drake/math:geometric_transform",
+            ":moving_average_filter"
+    ],
+)
     
 drake_cc_library(
     name = "moving_average_filter",
