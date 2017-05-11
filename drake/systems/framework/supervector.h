@@ -57,7 +57,7 @@ class Supervector : public VectorBase<T> {
   /// get_contiguous_segment_when_possible() returns a drake::optional with no
   /// value.
   optional<Eigen::VectorBlock<const VectorX<T>>>
-  get_contiguous_segment_when_possible(int start, int size) const final {
+  get_contiguous_segment_when_possible(int, int) const final {
     return {};
   }
 
@@ -67,7 +67,7 @@ class Supervector : public VectorBase<T> {
   /// get_mutable_contiguous_segment_when_possible() returns a drake::optional
   /// with no value.
   optional<Eigen::VectorBlock<VectorX<T>>>
-  get_mutable_contiguous_segment_when_possible(int start, int size) final {
+  get_mutable_contiguous_segment_when_possible(int, int) final {
     return {};
   }
 

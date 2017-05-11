@@ -76,7 +76,7 @@ class VectorBase {
   /// @see is_contiguous()
   bool is_segment_contiguous(int start, int count) const {
     DRAKE_DEMAND(0 <= start && start < size());
-    DRAKE_DEMAND(0 <= count && start <= size());
+    DRAKE_DEMAND(0 <= count && count <= size());
     DRAKE_DEMAND((start + count) <= size());
     return !!get_contiguous_segment_when_possible(start, count);
   }
@@ -108,7 +108,7 @@ class VectorBase {
   Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
       int start, int count) const {
     DRAKE_DEMAND(0 <= start && start < size());
-    DRAKE_DEMAND(0 <= count && start <= size());
+    DRAKE_DEMAND(0 <= count && count <= size());
     DRAKE_DEMAND((start + count) <= size());
     auto result = get_contiguous_segment_when_possible(start, count);
     DRAKE_DEMAND(!!result &&
@@ -126,7 +126,7 @@ class VectorBase {
   virtual Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
       int start, int count) {
     DRAKE_DEMAND(0 <= start && start < size());
-    DRAKE_DEMAND(0 <= count && start <= size());
+    DRAKE_DEMAND(0 <= count && count <= size());
     DRAKE_DEMAND((start + count) <= size());
     auto result = get_mutable_contiguous_segment_when_possible(start, count);
     DRAKE_DEMAND(!!result &&
@@ -270,26 +270,24 @@ class VectorBase {
     }
   }
 
-  /// Returns a segment of `count` elements with first element at `start` in
-  /// `this` vector as an Eigen::VectorBlock referencing a contiguous block of
-  /// memory, if possible.
-  /// Implementations should ensure this operation is O(1) and allocates no
-  /// memory. This method should return a drake::optional with no value if the
-  /// underlying memory layout is not contiguous or could not be retrieved with
-  /// O(1) complexity.
+  /// Returns a drake::optional to a const Eigen::VectorBlock of `count`
+  /// elements, with first element at `start` in `this` vector, if and only if:
+  /// - the vector's values already lie in contiguous memory,
+  /// - no memory allocation is required,
+  /// - the block can be retrieved in O(1) time.
+  /// Otherwise a drake::optional with no value should be returned.
   /// This is the NVI implementation to get_contiguous_segment() and therefore
   /// implementations are guaranteed to be called with valid `start` and `count`
   /// arguments.
   virtual optional<Eigen::VectorBlock<const VectorX<T>>>
   get_contiguous_segment_when_possible(int start, int count) const = 0;
 
-  /// Returns a mutable segment of `count` elements with first element at
-  /// `start` in `this` vector as a mutable Eigen::VectorBlock referencing a
-  /// contiguous block of memory, if possible.
-  /// Implementations should ensure this operation is O(1) and allocates no
-  /// memory. This method should return a drake::optional with no value if the
-  /// underlying memory layout is not contiguous or could not be retrieved with
-  /// O(1) complexity.
+  /// Returns a drake::optional to a mutable Eigen::VectorBlock of `count`
+  /// elements, with first element at `start` in `this` vector, if and only if:
+  /// - the vector's values already lie in contiguous memory,
+  /// - no memory allocation is required,
+  /// - the block can be retrieved in O(1) time.
+  /// Otherwise a drake::optional with no value should be returned.
   /// This is the NVI implementation to get_mutable_contiguous_segment() and
   /// therefore implementations are guaranteed to be called with valid `start`
   /// and `count` arguments.
