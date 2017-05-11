@@ -61,10 +61,8 @@ class VectorBase {
     GetAtIndex(index) = value;
   }
 
-  /// Returns `true` if `this` vector has a contiguous-in-memory layout.
-  /// It returns `false` if either `this` vector doesn't have a contiguous in
-  /// memory layout or whenever retrieving such a layout cannot be performed
-  /// with O(1) complexity.
+  /// @returns `true` if and only if this vector can be expressed as an
+  /// Eigen::VectorBlock in constant time.
   /// @see get_contiguous_vector(), get_mutable_contiguous_vector()
   bool is_contiguous() const {
     return is_segment_contiguous(0, size());
@@ -74,12 +72,12 @@ class VectorBase {
   /// `start` in `this` vector has a contiguous-in-memory layout.
   /// This method aborts if:
   ///  - `start` is out-of-bounds,
-  ///  - `count` is either negative or larger than size(),
-  ///  - A contiguous segment cannot be retrieved.
+  ///  - `count` is either negative or larger than size()
   /// @see is_contiguous()
   bool is_segment_contiguous(int start, int count) const {
     DRAKE_DEMAND(0 <= start && start < size());
     DRAKE_DEMAND(0 <= count && start <= size());
+    DRAKE_DEMAND((start + count) <= size());
     return !!get_contiguous_segment_when_possible(start, count);
   }
 
@@ -102,7 +100,7 @@ class VectorBase {
   }
 
   /// Returns a segment of `count` elements with first element at `start` in
-  /// `this` vector as a Eigen::VectorBlock referencing a contiguous block of
+  /// `this` vector as an Eigen::VectorBlock referencing a contiguous block of
   /// memory, if possible.
   /// This method aborts if the underlying memory layout is not contiguous or
   /// could not be retrieved with O(1) complexity.
@@ -111,6 +109,7 @@ class VectorBase {
       int start, int count) const {
     DRAKE_DEMAND(0 <= start && start < size());
     DRAKE_DEMAND(0 <= count && start <= size());
+    DRAKE_DEMAND((start + count) <= size());
     auto result = get_contiguous_segment_when_possible(start, count);
     DRAKE_DEMAND(!!result &&
         "This vector does not have a contiguous contiguous-in-memory layout. "
@@ -126,6 +125,9 @@ class VectorBase {
   /// @see is_segment_contiguous()
   virtual Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
       int start, int count) {
+    DRAKE_DEMAND(0 <= start && start < size());
+    DRAKE_DEMAND(0 <= count && start <= size());
+    DRAKE_DEMAND((start + count) <= size());
     auto result = get_mutable_contiguous_segment_when_possible(start, count);
     DRAKE_DEMAND(!!result &&
         "This vector does not have a contiguous contiguous-in-memory layout. "
@@ -276,7 +278,7 @@ class VectorBase {
   /// underlying memory layout is not contiguous or could not be retrieved with
   /// O(1) complexity.
   /// This is the NVI implementation to get_contiguous_segment() and therefore
-  /// implementations are guranteed to be called with valid `start` and `count`
+  /// implementations are guaranteed to be called with valid `start` and `count`
   /// arguments.
   virtual optional<Eigen::VectorBlock<const VectorX<T>>>
   get_contiguous_segment_when_possible(int start, int count) const = 0;
@@ -289,7 +291,7 @@ class VectorBase {
   /// underlying memory layout is not contiguous or could not be retrieved with
   /// O(1) complexity.
   /// This is the NVI implementation to get_mutable_contiguous_segment() and
-  /// therefore implementations are guranteed to be called with valid `start`
+  /// therefore implementations are guaranteed to be called with valid `start`
   /// and `count` arguments.
   virtual optional<Eigen::VectorBlock<VectorX<T>>>
   get_mutable_contiguous_segment_when_possible(int start, int count) = 0;

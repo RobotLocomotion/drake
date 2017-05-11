@@ -76,7 +76,7 @@ TEST_F(SupervectorTest, Empty) {
   EXPECT_EQ(0, supervector.size());
 }
 
-// A Supervector is always considered non-contiguous-in-memory.
+// A Supervector is always considered non-contiguous in memory.
 TEST_F(SupervectorTest, IsAlwaysNotContiguous) {
   EXPECT_FALSE(supervector_->is_contiguous());
 }

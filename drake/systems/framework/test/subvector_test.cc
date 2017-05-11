@@ -213,7 +213,7 @@ TEST_F(SubvectorTest, PlusEqScaled) {
 }
 
 // Verifies we can request a contiguous-in-memory Eigen vector from Subvector
-// when the original vector being subdivided is a contiguous BasicVector.
+// when the original vector being sliced is a contiguous BasicVector.
 GTEST_TEST(SubvectorIsContiguous, WithinBasicVector) {
   auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
   Subvector<double> subvec(vector.get(), 1 /* first element */, 2 /* size */);
@@ -224,7 +224,7 @@ GTEST_TEST(SubvectorIsContiguous, WithinBasicVector) {
 }
 
 // Verifies we can request a contiguous-in-memory Eigen vector from Subvector
-// when the original vector being subdivided is a contiguous Subvector.
+// when the original vector being sliced is a contiguous Subvector.
 GTEST_TEST(SubvectorIsContiguous, WithinContiguousSubvector) {
   auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
   Subvector<double> subvec(vector.get(), 1 /* first element */, 3 /* size */);
