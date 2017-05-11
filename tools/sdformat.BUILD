@@ -23,7 +23,6 @@ cmake_configure_file(
         "CMAKE_INSTALL_FULL_DATAROOTDIR=external/sdformat/sdf/1.6",
         "SDF_PKG_VERSION=",
     ],
-    visibility = [],
 )
 
 public_headers = [
@@ -54,7 +53,6 @@ genrule(
         "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g' &&" +
         "echo '#include <sdf/sdf_config.h>'"
     ) + ") > '$@'",
-    visibility = [],
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -74,26 +72,6 @@ cc_library(
         "src/SDF.cc",
         "src/SDFExtension.cc",
         "src/Types.cc",
-        "src/urdf/urdf_parser/joint.cpp",
-        "src/urdf/urdf_parser/link.cpp",
-        "src/urdf/urdf_parser/model.cpp",
-        "src/urdf/urdf_parser/pose.cpp",
-        "src/urdf/urdf_parser/twist.cpp",
-        "src/urdf/urdf_parser/urdf_model_state.cpp",
-        "src/urdf/urdf_parser/urdf_sensor.cpp",
-        "src/urdf/urdf_parser/world.cpp",
-    ],
-    # We need to list the private headers along with the public ones so that
-    # bazel copies them all into the right place during the build phase.
-    hdrs = public_headers + [
-        "include/sdf/Converter.hh",
-        "include/sdf/ExceptionPrivate.hh",
-        "include/sdf/parser_private.hh",
-        "include/sdf/parser_urdf.hh",
-        "include/sdf/SDFExtension.hh",
-        "include/sdf/sdf_config.h", # from cmake_configure_file above
-        "include/sdf/sdf.hh",       # from genrule above
-        "include/sdf/SDFImplPrivate.hh",
         "src/urdf/urdf_exception/exception.h",
         "src/urdf/urdf_model/color.h",
         "src/urdf/urdf_model/joint.h",
@@ -107,15 +85,41 @@ cc_library(
         "src/urdf/urdf_model_state/twist.h",
         "src/urdf/urdf_model_state/types.h",
         "src/urdf/urdf_parser/exportdecl.h",
+        "src/urdf/urdf_parser/joint.cpp",
+        "src/urdf/urdf_parser/link.cpp",
+        "src/urdf/urdf_parser/model.cpp",
+        "src/urdf/urdf_parser/pose.cpp",
+        "src/urdf/urdf_parser/twist.cpp",
+        "src/urdf/urdf_parser/urdf_model_state.cpp",
+        "src/urdf/urdf_parser/urdf_sensor.cpp",
+        "src/urdf/urdf_parser/world.cpp",
         "src/urdf/urdf_parser/urdf_parser.h",
         "src/urdf/urdf_sensor/sensor.h",
         "src/urdf/urdf_sensor/types.h",
         "src/urdf/urdf_world/types.h",
         "src/urdf/urdf_world/world.h",
     ],
-    includes = ["include", "src/urdf"],
+    # We need to list the private headers along with the public ones so that
+    # bazel copies them all into the right place during the build phase.
+    hdrs = public_headers + [
+        "include/sdf/Converter.hh",
+        "include/sdf/ExceptionPrivate.hh",
+        "include/sdf/parser_private.hh",
+        "include/sdf/parser_urdf.hh",
+        "include/sdf/SDFExtension.hh",
+        "include/sdf/sdf_config.h", # from cmake_configure_file above
+        "include/sdf/sdf.hh",       # from genrule above
+        "include/sdf/SDFImplPrivate.hh",
+    ],
+    includes = [
+        "include",
+    ],
     visibility = ["//visibility:public"],
-    linkopts = ["-lboost_system", "-ltinyxml"],
+    linkopts = [
+        "-lboost_system",
+        "-ltinyxml"
+    ],
+    copts = ["-I external/sdformat/src/urdf"],
     deps = [
         "@ignition_math",
     ],
