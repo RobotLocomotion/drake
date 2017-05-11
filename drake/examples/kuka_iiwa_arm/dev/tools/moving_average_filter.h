@@ -33,7 +33,7 @@ class MovingAverageFilter {
    * @param window_size The size of the window which must be greater than
    * 0 or else an error is thrown.
    */
-  MovingAverageFilter(unsigned int window_size);
+  explicit MovingAverageFilter(unsigned int window_size);
 
   T compute(const T& new_data);
 
