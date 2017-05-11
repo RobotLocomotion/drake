@@ -106,6 +106,7 @@ cc_library(
         "src/urdf/urdf_model_state/model_state.h",
         "src/urdf/urdf_model_state/twist.h",
         "src/urdf/urdf_model_state/types.h",
+        "src/urdf/urdf_parser/exportdecl.h",
         "src/urdf/urdf_parser/urdf_parser.h",
         "src/urdf/urdf_sensor/sensor.h",
         "src/urdf/urdf_sensor/types.h",
