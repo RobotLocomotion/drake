@@ -119,7 +119,7 @@ build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
 test:asan --test_env=ASAN_OPTIONS
 test:asan --test_env=ASAN_SYMBOLIZER_PATH
-test:asan --test_tag_filters=-cpplint,-pycodestyle
+test:asan --test_lang_filters=-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
 test:asan --test_timeout=120,600,1800,7200
@@ -133,7 +133,7 @@ build:lsan --copt -fno-omit-frame-pointer
 build:lsan --linkopt -fsanitize=leak
 test:lsan --test_env=LSAN_OPTIONS
 test:lsan --test_env=LSAN_SYMBOLIZER_PATH
-test:lsan --test_tag_filters=-cpplint,-pycodestyle
+test:lsan --test_lang_filters=-py
 
 ### MSan build. ###
 build:msan --action_env=MSAN_OPTIONS
@@ -142,7 +142,7 @@ build:msan --copt -fsanitize=memory
 build:msan --copt -O1
 build:msan --copt -fno-omit-frame-pointer
 build:msan --linkopt -fsanitize=memory
-test:msan --test_tag_filters=-cpplint,-pycodestyle
+test:msan --test_lang_filters=-py
 test:msan --test_env=MSAN_OPTIONS
 test:msan --test_env=MSAN_SYMBOLIZER_PATH
 # Typical slowdown introduced by MemorySanitizer is 3x.
@@ -157,7 +157,7 @@ build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
 build:tsan --linkopt -fsanitize=thread
 test:tsan --test_env=TSAN_OPTIONS
-test:tsan --test_tag_filters=-cpplint,-pycodestyle
+test:tsan --test_lang_filters=-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
 test:tsan --test_timeout=300,1500,5400,18000
@@ -170,13 +170,12 @@ build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
 test:ubsan --test_env=UBSAN_OPTIONS
-test:ubsan --test_tag_filters=-cpplint,-pycodestyle
+test:ubsan --test_lang_filters=-py
 
 ### Memcheck build. ###
 build:memcheck --copt -g
 build:memcheck --run_under=//tools:valgrind
-test:memcheck --test_tag_filters=-cpplint,-pycodestyle
-test:memcheck --test_lang_filters=-sh
+test:memcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:memcheck --test_timeout=300,1500,5400,18000
@@ -191,8 +190,7 @@ test:memcheck --test_timeout=300,1500,5400,18000
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools:valgrind
-test:fastmemcheck --test_tag_filters=-cpplint,-pycodestyle
-test:fastmemcheck --test_lang_filters=-sh
+test:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:fastmemcheck --test_timeout=300,1500,5400,18000
