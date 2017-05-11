@@ -31,6 +31,14 @@ using drake::solvers::SolutionResult;
 using drake::solvers::MathematicalProgramSolverInterface;
 using drake::solvers::SolverType;
 
+/*
+ * Register a Binding template, and add the corresponding overloads to the
+ * pybind11 MathematicalProgram class.
+ * @param scope The scope this will be added to (e.g., the module).
+ * @param pprog_cls Pointer to Python MathematicalProgram class. Overloads will
+ * be added to the binding
+ * @param name Name of the Cost / Constraint class.
+ */
 template <typename C>
 auto RegisterBinding(py::handle scope,
                      py::class_<MathematicalProgram>* pprog_cls,
