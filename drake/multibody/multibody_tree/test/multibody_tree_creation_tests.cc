@@ -7,12 +7,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
 namespace drake {
 namespace multibody {
 namespace {
 
+using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
 
@@ -80,12 +82,28 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   const RigidBody<double>& body1 = model1->AddBody<RigidBody>(M_Bo_B);
   const RigidBody<double>& body2 = model2->AddBody<RigidBody>(M_Bo_B);
 
+  // Verifies we can add a mobilizer between body1 and the world of model1.
+  const RevoluteMobilizer<double>& pin1 =
+      model1->AddMobilizer<RevoluteMobilizer>(
+          model1->get_world_body().get_body_frame(), /*inboard frame*/
+          body1.get_body_frame() /*outboard frame*/,
+          Vector3d::UnitZ() /*axis of rotation*/);
+
+  // Verifies we cannot add a mobilizer between frames that belong to another
+  // tree.
+  EXPECT_THROW((model1->AddMobilizer<RevoluteMobilizer>(
+      model1->get_world_body().get_body_frame(), /*inboard frame*/
+      body2.get_body_frame() /*body2 belongs to model2, not model1!!!*/,
+      Vector3d::UnitZ() /*axis of rotation*/)), std::logic_error);
+
   model1->Finalize();
   model2->Finalize();
 
-  // Tests that the created bodies indeed do have a parent MultibodyTree.
+  // Tests that the created multibody elements indeed do have a parent
+  // MultibodyTree.
   EXPECT_NO_THROW(body1.HasParentTreeOrThrow());
   EXPECT_NO_THROW(body2.HasParentTreeOrThrow());
+  EXPECT_NO_THROW(pin1.HasParentTreeOrThrow());
 
   // Tests the check to verify that two bodies belong to the same MultibodyTree.
   EXPECT_THROW(body1.HasSameParentTreeOrThrow(body2), std::logic_error);

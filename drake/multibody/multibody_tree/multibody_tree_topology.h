@@ -26,6 +26,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -172,13 +173,21 @@ struct MultibodyTreeTopology {
   /// `in_body` corresponds to the body associated with the inboard frame while
   /// `out_body` correspoinds to the body associated with the outboard frame.
   /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
+  /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
+  /// index frame topologies in `this` %MultibodyTreeTopology.
   MobilizerIndex add_mobilizer(
-      FrameIndex in_frame, FrameIndex out_frame,
-      BodyIndex in_body, BodyIndex out_body) {
+      FrameIndex in_frame, FrameIndex out_frame) {
+    // Note: MultibodyTree double checks the mobilizer's frames belong to that
+    // tree. Therefore the validity of in_frame and out_frame is already
+    // guaranteed. We add the checks here for additional security.
+    DRAKE_THROW_UNLESS(in_frame < get_num_frames());
+    DRAKE_THROW_UNLESS(out_frame < get_num_frames());
     MobilizerIndex mobilizer_index(get_num_mobilizers());
+    const BodyIndex inboard_body = frames[in_frame].body;
+    const BodyIndex outboard_body = frames[out_frame].body;
     mobilizers.emplace_back(mobilizer_index,
                             in_frame, out_frame,
-                            in_body, out_body);
+                            inboard_body, outboard_body);
     return mobilizer_index;
   }
 

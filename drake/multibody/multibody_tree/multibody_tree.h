@@ -283,13 +283,18 @@ class MultibodyTree {
     if (mobilizer == nullptr) {
       throw std::logic_error("Input mobilizer is a nullptr.");
     }
+    // Verifies that the inboard/outboard frames provided by the user do belong
+    // to this tree. This is a pathological case, but in theory nothing
+    // (but this test) stops a user from adding frames to a tree1 and attempting
+    // later to define mobilizers between those frames in a second tree2.
+    mobilizer->get_inboard_frame().HasThisParentTreeOrThrow(this);
+    mobilizer->get_outboard_frame().HasThisParentTreeOrThrow(this);
     MobilizerIndex mobilizer_index = topology_.add_mobilizer(
         mobilizer->get_inboard_frame().get_index(),
-        mobilizer->get_outboard_frame().get_index(),
-        mobilizer->get_inboard_body().get_index(),
-        mobilizer->get_outboard_body().get_index());
-    // These tests MUST be performed BEFORE owned_mobilizers_.push_back() below.
-    // Do not move them around!
+        mobilizer->get_outboard_frame().get_index());
+
+    // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
+    // below. Do not move it around!
     DRAKE_ASSERT(mobilizer_index == get_num_mobilizers());
 
     // TODO(amcastro-tri): consider not depending on setting this pointer at
