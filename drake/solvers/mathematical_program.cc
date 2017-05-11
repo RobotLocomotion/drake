@@ -232,12 +232,6 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   }
 }
 
-Binding<Cost> MathematicalProgram::AddCost(
-    const shared_ptr<Cost>& obj,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(CreateBinding(obj, vars));
-}
-
 Binding<LinearCost> MathematicalProgram::AddCost(
     const Binding<LinearCost>& binding) {
   required_capabilities_ |= kLinearCost;
@@ -247,12 +241,6 @@ Binding<LinearCost> MathematicalProgram::AddCost(
   CheckIsDecisionVariable(binding.variables());
   linear_costs_.push_back(binding);
   return linear_costs_.back();
-}
-
-Binding<LinearCost> MathematicalProgram::AddCost(
-    const shared_ptr<LinearCost>& obj,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(CreateBinding(obj, vars));
 }
 
 Binding<LinearCost> MathematicalProgram::AddLinearCost(const Expression& e) {
@@ -275,12 +263,6 @@ Binding<QuadraticCost> MathematicalProgram::AddCost(
   CheckIsDecisionVariable(binding.variables());
   quadratic_costs_.push_back(binding);
   return quadratic_costs_.back();
-}
-
-Binding<QuadraticCost> MathematicalProgram::AddCost(
-    const shared_ptr<QuadraticCost>& obj,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(CreateBinding(obj, vars));
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
@@ -368,12 +350,6 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   return AddConstraint(internal::ParseLinearConstraint(f));
 }
 
-Binding<Constraint> MathematicalProgram::AddConstraint(
-    shared_ptr<Constraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(CreateBinding(con, vars));
-}
-
 Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearConstraint>& binding) {
   // Because the ParseLinearConstraint methods can return instances of
@@ -399,12 +375,6 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   }
 }
 
-Binding<LinearConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(CreateBinding(con, vars));
-}
-
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -420,12 +390,6 @@ Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
                static_cast<int>(binding.GetNumElements()));
   linear_equality_constraints_.push_back(binding);
   return linear_equality_constraints_.back();
-}
-
-Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearEqualityConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(CreateBinding(con, vars));
 }
 
 Binding<LinearEqualityConstraint>
@@ -461,12 +425,6 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
   return bbox_constraints_.back();
 }
 
-Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<BoundingBoxConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<BoundingBoxConstraint>(con, vars));
-}
-
 Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
   required_capabilities_ |= kLorentzConeConstraint;
@@ -486,12 +444,6 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
       internal::ParseLorentzConeConstraint(linear_expr, quadratic_expr));
 }
 
-Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LorentzConeConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LorentzConeConstraint>(con, vars));
-}
-
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
@@ -507,12 +459,6 @@ Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
   CheckIsDecisionVariable(binding.variables());
   rotated_lorentz_cone_constraint_.push_back(binding);
   return rotated_lorentz_cone_constraint_.back();
-}
-
-Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<RotatedLorentzConeConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<RotatedLorentzConeConstraint>(con, vars));
 }
 
 Binding<RotatedLorentzConeConstraint>
@@ -570,12 +516,6 @@ Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
   return linear_complementarity_constraints_.back();
 }
 
-Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearComplementarityConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LinearComplementarityConstraint>(con, vars));
-}
-
 Binding<LinearComplementarityConstraint>
 MathematicalProgram::AddLinearComplementarityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& M,
@@ -609,18 +549,16 @@ Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
 Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     shared_ptr<PositiveSemidefiniteConstraint> con,
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var) {
-  required_capabilities_ |= kPositiveSemidefiniteConstraint;
   DRAKE_ASSERT(math::IsSymmetric(symmetric_matrix_var));
   int num_rows = symmetric_matrix_var.rows();
   // TODO(hongkai.dai): this dynamic memory allocation/copying is ugly.
+  // TODO(eric.cousineau): See if Eigen::Map<> can be used (column-major)
   VectorXDecisionVariable flat_symmetric_matrix_var(num_rows * num_rows);
   for (int i = 0; i < num_rows; ++i) {
     flat_symmetric_matrix_var.segment(i * num_rows, num_rows) =
         symmetric_matrix_var.col(i);
   }
-  positive_semidefinite_constraint_.push_back(
-      Binding<PositiveSemidefiniteConstraint>(con, flat_symmetric_matrix_var));
-  return positive_semidefinite_constraint_.back();
+  return AddConstraint(CreateBinding(con, flat_symmetric_matrix_var));
 }
 
 Binding<PositiveSemidefiniteConstraint>
@@ -638,12 +576,6 @@ Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
                static_cast<int>(binding.GetNumElements()) + 1);
   linear_matrix_inequality_constraint_.push_back(binding);
   return linear_matrix_inequality_constraint_.back();
-}
-
-Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearMatrixInequalityConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LinearMatrixInequalityConstraint>(con, vars));
 }
 
 Binding<LinearMatrixInequalityConstraint>
