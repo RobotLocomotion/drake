@@ -31,6 +31,8 @@ namespace multibody {
 template <typename T, int num_positions, int num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl)
+
   /// As with Mobilizer this the only constructor available for this base class.
   /// The minimum amount of information that we need to define a mobilizer is
   /// the knowledge of the inboard and outboard frames it connects.

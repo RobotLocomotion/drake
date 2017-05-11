@@ -65,6 +65,8 @@ template<typename T> class BodyNode;
 template <typename T>
 class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
+
   /// This is the only constructor available for this base class %Mobilizer.
   /// The minimum amount of information that we need to define a %Mobilizer is
   /// the knowledge of the inboard and outboard frames it connects.

@@ -33,6 +33,8 @@ namespace multibody {
 template <typename T>
 class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer)
+
   /// Constructor for a %RevoluteMobilizer between the inboard frame F
   /// `inboard_frame` and the outboard frame M `outboard_frame` granting a
   /// single rotational degree of freedom about axis `axis_F` expressed in the
