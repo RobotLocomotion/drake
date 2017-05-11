@@ -7,7 +7,6 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace tools {
-
 namespace {
 
 const unsigned int kWindowSize{3};
@@ -29,11 +28,10 @@ GTEST_TEST(MovingAverageDoubleTest, ComputeTest) {
   double sum = 0;
   for (size_t i = 0; i < window.size(); ++i) {
     sum += window[i];
-    EXPECT_EQ((1 / static_cast<double>(i + 1)) * sum,
-              filter->compute(window[i]));
+    EXPECT_EQ((1.0 / (i + 1)) * sum, filter->compute(window[i]));
   }
-  double new_data_point = -12.8;
-  EXPECT_EQ((1 / static_cast<double>(3)) * (sum + new_data_point - window[0]),
+  const double new_data_point = -12.8;
+  EXPECT_EQ((1.0 / kWindowSize) * (sum + new_data_point - window[0]),
             filter->compute(new_data_point));
 }
 
@@ -50,19 +48,17 @@ GTEST_TEST(MovingAverageVectorTest, ComputeArrayTest) {
   // output represents moving average.
   for (size_t i = 0; i < window.size(); ++i) {
     sum += window[i];
-    EXPECT_EQ(((1 / static_cast<double>(i + 1)) * sum).matrix(),
+    EXPECT_EQ(((1.0 / (i + 1)) * sum).matrix(),
               (filter->compute(window[i])).matrix());
   }
 
-  Eigen::Array3d new_data_point(0.67, -78.9, 3.6);
+  const Eigen::Array3d new_data_point(0.67, -78.9, 3.6);
 
-  EXPECT_EQ(((1 / static_cast<double>(3)) * (sum + new_data_point - window[0]))
-                .matrix(),
+  EXPECT_EQ(((1.0 / kWindowSize) * (sum + new_data_point - window[0])).matrix(),
             (filter->compute(new_data_point)).matrix());
 }
 
 }  // namespace
-
 }  // namespace tools
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

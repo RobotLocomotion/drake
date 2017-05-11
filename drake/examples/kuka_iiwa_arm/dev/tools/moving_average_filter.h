@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <queue>
 
 namespace drake {
@@ -10,10 +11,10 @@ namespace tools {
 /**
  * The implementation of a Moving Average Filter. This discrete time filter
  * outputs the average of the last n samples i.e.
- *  y(j) = 1/n ∑ⱼ x(j) ∀ j = k-n..k, k>0,
- *  y(j) = 1/n ∑ⱼ x(j) ∀ j = k otherwise,
- * where `n` is the window size and 'x' being the discrete-time signal that is
- * to be filtered, y is the filtered signal and `k` is the index of latest
+ *  y(k) = 1/n ∑ⱼ x(k-j) ∀ j = 0..n, when n<k and,
+ *       = 1/k ∑ⱼ x(j) ∀ j = 0..k otherwise;
+ * where n is the window size and x being the discrete-time signal that is
+ * to be filtered, y is the filtered signal and k is the index of latest
  * element in the signal time-series.
  *
  * Note that this class is meant to serve as a standalone simple utility and
@@ -31,9 +32,9 @@ class MovingAverageFilter {
   /**
    * Constructs the filter with the specified `window_size`.
    * @param window_size The size of the window which must be greater than
-   * 0 or else an error is thrown.
+   * 0 or else @throws a std::runtime_error.
    */
-  explicit MovingAverageFilter(unsigned int window_size);
+  explicit MovingAverageFilter(int window_size);
 
   T compute(const T& new_data);
 
