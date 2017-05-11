@@ -189,6 +189,7 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   // so we can use it in this file to indicate that the other constraint
   // types inherit from it.
   py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
+    .def("num_constraints", &EvaluatorBase::num_constraints)
     .def("lower_bound", &EvaluatorBase::lower_bound)
     .def("upper_bound", &EvaluatorBase::upper_bound);
   py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
