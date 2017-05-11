@@ -510,6 +510,10 @@ class LinearEqualityConstraint : public LinearConstraint {
                            const Eigen::MatrixBase<DerivedB>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
 
+  LinearEqualityConstraint(const Eigen::Ref<const Eigen::RowVectorXd>& a,
+                           double beq)
+      : LinearEqualityConstraint(a, Vector1d(beq)) {}
+
   ~LinearEqualityConstraint() override {}
 
   /*

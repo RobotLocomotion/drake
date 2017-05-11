@@ -137,7 +137,7 @@ const auto& to_const_ref(T&& t) {
 // Verifies that FunctionCost form can be constructed correctly
 template <bool is_pointer, typename F>
 void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
-  auto cost = CreateFunctionCost(std::forward<F>(f));
+  auto cost = MakeFunctionCost(std::forward<F>(f));
   EXPECT_TRUE(is_dynamic_castable<Cost>(cost));
   // Compare values
   Eigen::VectorXd y_expected(1), y;

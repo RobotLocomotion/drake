@@ -127,6 +127,20 @@ class QuadraticCost : public CostShim<QuadraticConstraint> {
 };
 
 /**
+ * Creates a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+ */
+std::shared_ptr<QuadraticCost> MakeQuadraticErrorCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& x_desired);
+
+/**
+ * Creates a cost term of the form | Ax - b |^2.
+ */
+std::shared_ptr<QuadraticCost> MakeL2NormCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b);
+
+/**
  *  Implements a cost of the form P(x, y...) where P is a multivariate
  *  polynomial in x, y...
  *
@@ -221,6 +235,18 @@ class FunctionCost : public CostShim<FunctionConstraint<F>> {
   using Base = CostShim<FunctionConstraint<F>>;
   using Base::Base;
 };
+
+/**
+ * Converts an input of type @p F to a FunctionCost object.
+ * @tparam F This class should have functions numInputs(), numOutputs and
+ * eval(x, y).
+ * @see detail::FunctionTraits
+ */
+template <typename F>
+std::shared_ptr<Cost> MakeFunctionCost(F&& f) {
+  using FC = FunctionCost<std::decay_t<F>>;
+  return std::make_shared<FC>(std::forward<F>(f));
+}
 
 }  // namespace solvers
 }  // namespace drake
