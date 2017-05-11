@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <memory>
 
 #include "drake/common/eigen_types.h"
 #include "drake/examples/kuka_iiwa_arm/dev/tools/moving_average_filter.h"
