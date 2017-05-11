@@ -156,12 +156,12 @@ class BasicVector : public VectorBase<T> {
   }
 
   optional<Eigen::VectorBlock<const VectorX<T>>>
-  get_contiguous_segment_when_possible(int start, int size) const final {
+  try_getting_contiguous_segment(int start, int size) const final {
     return values_.segment(start, size);
   }
 
   optional<Eigen::VectorBlock<VectorX<T>>>
-  get_mutable_contiguous_segment_when_possible(int start, int size) final {
+  try_getting_mutable_contiguous_segment(int start, int size) final {
     return values_.segment(start, size);
   }
 

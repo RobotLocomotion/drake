@@ -51,23 +51,23 @@ class Supervector : public VectorBase<T> {
   }
 
  protected:
-  /// VectorBase::get_contiguous_segment_when_possible()'s contract is to
+  /// VectorBase::try_getting_contiguous_segment()'s contract is to
   /// provide a cheap O(1) complexity implementation. Since we currently do not
   /// support an O(1) implementation, %Supervector's implementation of
-  /// get_contiguous_segment_when_possible() returns a drake::optional with no
+  /// try_getting_contiguous_segment() returns a drake::optional with no
   /// value.
   optional<Eigen::VectorBlock<const VectorX<T>>>
-  get_contiguous_segment_when_possible(int, int) const final {
+  try_getting_contiguous_segment(int, int) const final {
     return {};
   }
 
-  /// VectorBase::get_mutable_contiguous_segment_when_possible()'s contract is
+  /// VectorBase::try_getting_mutable_contiguous_segment()'s contract is
   /// to provide a cheap O(1) complexity implementation. Since we currently do
   /// not support an O(1) implementation, %Supervector's implementation of
-  /// get_mutable_contiguous_segment_when_possible() returns a drake::optional
+  /// try_getting_mutable_contiguous_segment() returns a drake::optional
   /// with no value.
   optional<Eigen::VectorBlock<VectorX<T>>>
-  get_mutable_contiguous_segment_when_possible(int, int) final {
+  try_getting_mutable_contiguous_segment(int, int) final {
     return {};
   }
 

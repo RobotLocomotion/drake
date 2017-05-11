@@ -63,12 +63,12 @@ class Subvector : public VectorBase<T> {
 
  protected:
   optional<Eigen::VectorBlock<const VectorX<T>>>
-  get_contiguous_segment_when_possible(int start, int size) const final {
+  try_getting_contiguous_segment(int start, int size) const final {
     return vector_->get_contiguous_segment(start + first_element_, size);
   }
 
   optional<Eigen::VectorBlock<VectorX<T>>>
-  get_mutable_contiguous_segment_when_possible(int start, int size) final {
+  try_getting_mutable_contiguous_segment(int start, int size) final {
     return vector_->get_mutable_contiguous_segment(start + first_element_,
                                                    size);
   }

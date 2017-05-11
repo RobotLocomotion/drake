@@ -78,7 +78,7 @@ class VectorBase {
     DRAKE_DEMAND(0 <= start && start < size());
     DRAKE_DEMAND(0 <= count && count <= size());
     DRAKE_DEMAND((start + count) <= size());
-    return !!get_contiguous_segment_when_possible(start, count);
+    return !!try_getting_contiguous_segment(start, count);
   }
 
   /// Returns the entire vector as an Eigen::VectorBlock referencing a
@@ -110,7 +110,7 @@ class VectorBase {
     DRAKE_DEMAND(0 <= start && start < size());
     DRAKE_DEMAND(0 <= count && count <= size());
     DRAKE_DEMAND((start + count) <= size());
-    auto result = get_contiguous_segment_when_possible(start, count);
+    auto result = try_getting_contiguous_segment(start, count);
     DRAKE_DEMAND(!!result &&
         "This vector does not have a contiguous contiguous-in-memory layout. "
         "See is_contiguous()");
@@ -128,7 +128,7 @@ class VectorBase {
     DRAKE_DEMAND(0 <= start && start < size());
     DRAKE_DEMAND(0 <= count && count <= size());
     DRAKE_DEMAND((start + count) <= size());
-    auto result = get_mutable_contiguous_segment_when_possible(start, count);
+    auto result = try_getting_mutable_contiguous_segment(start, count);
     DRAKE_DEMAND(!!result &&
         "This vector does not have a contiguous contiguous-in-memory layout. "
         "See is_contiguous()");
@@ -280,7 +280,7 @@ class VectorBase {
   /// implementations are guaranteed to be called with valid `start` and `count`
   /// arguments.
   virtual optional<Eigen::VectorBlock<const VectorX<T>>>
-  get_contiguous_segment_when_possible(int start, int count) const = 0;
+  try_getting_contiguous_segment(int start, int count) const = 0;
 
   /// Returns a drake::optional to a mutable Eigen::VectorBlock of `count`
   /// elements, with first element at `start` in `this` vector, if and only if:
@@ -292,7 +292,7 @@ class VectorBase {
   /// therefore implementations are guaranteed to be called with valid `start`
   /// and `count` arguments.
   virtual optional<Eigen::VectorBlock<VectorX<T>>>
-  get_mutable_contiguous_segment_when_possible(int start, int count) = 0;
+  try_getting_mutable_contiguous_segment(int start, int count) = 0;
 };
 
 }  // namespace systems
