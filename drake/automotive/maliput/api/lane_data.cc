@@ -1,7 +1,6 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 
 #include <iostream>
-// #include <string>
 
 namespace drake {
 namespace maliput {
@@ -12,8 +11,9 @@ std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end) {
 }
 
 std::ostream& operator<<(std::ostream& out, const Rotation& rotation) {
-  return out << "(roll = " << rotation.roll << ", pitch = " << rotation.pitch
-      << ", yaw = " << rotation.yaw << ")";
+  return out << "(roll = " << rotation.roll()
+             << ", pitch = " << rotation.pitch()
+             << ", yaw = " << rotation.yaw() << ")";
 }
 
 std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position) {
