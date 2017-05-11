@@ -90,6 +90,17 @@ build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/
 test:cpplint --build_tests_only
 test:cpplint --test_tag_filters=cpplint
 
+### Pycodestyle. ###
+# Code style compliance checking for python, analogous to cpplint above.
+test:pycodestyle --build_tests_only
+test:pycodestyle --test_tag_filters=pycodestyle
+
+### Lint. ###
+# Code style compliance for C++ and Python, merging both cpplint and
+# pycodestyle.
+test:lint --build_tests_only
+test:lint --test_tag_filters=cpplint,pycodestyle
+
 ### Debug symbols on OS X. ###
 # See https://github.com/bazelbuild/bazel/issues/2537
 build:apple_debug --spawn_strategy=standalone
