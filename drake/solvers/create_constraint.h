@@ -21,21 +21,21 @@ namespace solvers {
 namespace detail {
 
 /*
- * Determine if an EigenBase<> has a specific scalar type
+ * Determine if an EigenBase<> has a specific scalar type.
  */
 template <typename Derived, typename Scalar>
 struct is_eigen_scalar_same
     : std::is_same<typename Derived::Scalar, Scalar> {};
 
 /*
- * Determine if an EigenBase<> type is a (column) vector
+ * Determine if an EigenBase<> type is a (column) vector.
  */
 template <typename Derived>
 struct is_eigen_vector
     : std::integral_constant<bool, Derived::ColsAtCompileTime == 1> {};
 
 /*
- * Determine if an EigenBase<> type is a (column) vector of a given type
+ * Determine if an EigenBase<> type is a (column) vector of a scalar type.
  */
 template <typename Derived, typename Scalar>
 struct is_eigen_vector_of
@@ -44,7 +44,8 @@ struct is_eigen_vector_of
             detail::is_eigen_vector<Derived>::value> {};
 
 /*
- * Determine if a EigenBase<> type is a matrix (non-column-vector) of
+ * Determine if a EigenBase<> type is a matrix (non-column-vector) of a scalar
+ * type.
  */
 template <typename Derived, typename Scalar>
 struct is_eigen_matrix_of
@@ -57,7 +58,7 @@ struct is_eigen_matrix_of
  * Expressions and doubles, to then form an implicit formulas.
  */
 template <typename DerivedV, typename DerivedB>
-struct is_eigen_matrix_expression_double_pair  // explicitly non-vector
+struct is_eigen_matrix_expression_double_pair
     : std::integral_constant<
           bool,
           detail::is_eigen_matrix_of<DerivedV, symbolic::Expression>::value &&
@@ -68,7 +69,7 @@ struct is_eigen_matrix_expression_double_pair  // explicitly non-vector
  * that could make a formula.
  */
 template <typename DerivedV, typename DerivedB>
-struct is_eigen_vector_expression_double_pair  // explicitly vector
+struct is_eigen_vector_expression_double_pair
     : std::integral_constant<
           bool,
           detail::is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
@@ -79,7 +80,7 @@ struct is_eigen_vector_expression_double_pair  // explicitly vector
 namespace internal {
 
 // TODO(eric.cousineau): Use Eigen::Ref more pervasively when no temporaries
-// are allocated (or if it doesn't matter if they are)
+// are allocated (or if it doesn't matter if they are).
 
 Binding<LinearConstraint> ParseLinearConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
@@ -285,8 +286,8 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const symbolic::Expression& linear_expr,
     const symbolic::Expression& quadratic_expr);
 
-// // TODO(eric.cousineau): Implement this if variable creation is separated.
-// // Format would be (tuple(linear_binding, psd_binding), new_vars)
+// TODO(eric.cousineau): Implement this if variable creation is separated.
+// Format would be (tuple(linear_binding, psd_binding), new_vars)
 // ParsePositiveSemidefiniteConstraint(
 //     const Eigen::Ref<MatrixX<symbolic::Expression>>& e) {
 //   // ...

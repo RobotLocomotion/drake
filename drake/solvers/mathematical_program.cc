@@ -352,8 +352,9 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearConstraint>& binding) {
-  // Because the ParseLinearConstraint methods can return
-  // LinearEqualityConstraints, delegate dynamic check here
+  // Because the ParseLinearConstraint methods can return instances of
+  // LinearEqualityConstraint or BoundingBoxConstraint, do a dynamic check
+  // here.
   LinearConstraint* constraint = binding.constraint().get();
   if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<BoundingBoxConstraint>(binding));
@@ -379,7 +380,6 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  shared_ptr<LinearConstraint> con = make_shared<LinearConstraint>(A, lb, ub);
   return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
 }
 
