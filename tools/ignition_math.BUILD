@@ -28,7 +28,6 @@ cmake_configure_file(
         "PROJECT_MAJOR_VERSION=3",
         "PROJECT_VERSION_FULL=3.0.0",
     ],
-    visibility = [],
 )
 
 public_headers = [
@@ -64,11 +63,28 @@ public_headers = [
     "include/ignition/math/Vector4.hh",
 ]
 
+# Generates math.hh, which consists of #include statements for all of the
+# other headers in the library except the *Private.hh ones.  The first line is
+# '#include <ignition/math/config.hh>' followed by one line like
+# '#include <ignition/math/Angle.hh>' for each non-generated header.
+genrule(
+    name = "mathhh_genrule",
+    srcs = public_headers,
+    outs = ["include/ignition/math.hh"],
+    # TODO: centralize this logic, as it is used here, in sdformat.BUILD, and
+    # in fcl.BUILD
+    cmd = "(" + (
+        "echo '#include <ignition/math/config.hh>' && " +
+        "echo '$(SRCS)' | tr ' ' '\\n' | " +
+        "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g'"
+    ) + ") > '$@'",
+)
+
 # Generates the library exported to users.  The explicitly listed srcs= matches
 # upstream's explicitly listed sources.  The explicitly listed hdrs= matches
 # upstream's explicitly listed headers.
 cc_library(
-    name = "lib_without_mathhh",
+    name = "ignition_math",
     srcs = [
        "src/Angle.cc",
        "src/Box.cc",
@@ -90,6 +106,7 @@ cc_library(
     # that bazel copies them all into the right place during the build
     # phase.
     hdrs = public_headers + [
+        "include/ignition/math.hh",
         "include/ignition/math/BoxPrivate.hh",
         "include/ignition/math/FrustumPrivate.hh",
         "include/ignition/math/KmeansPrivate.hh",
@@ -100,32 +117,5 @@ cc_library(
         "include/ignition/math/config.hh", # from cmake_configure_file above
     ],
     includes = ["include"],
-    visibility = [],
-)
-
-# Generates math.hh, which consists of #include statements for all of the
-# other headers in the library except the *Private.hh ones.  The first line is
-# '#include <ignition/math/config.hh>' followed by one line like
-# '#include <ignition/math/Angle.hh>' for each non-generated header.
-genrule(
-        name = "mathhh_genrule",
-        srcs = public_headers,
-        outs = ["include/ignition/math.hh"],
-        # TODO: centralize this logic, as it is used here, in sdformat.BUILD, and
-        # in fcl.BUILD
-        cmd = "(" + (
-            "echo '#include <ignition/math/config.hh>' && " +
-            "echo '$(SRCS)' | tr ' ' '\\n' | " +
-            "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g'"
-        ) + ") > '$@'",
-        visibility = [],
-    )
-
-# Generates the library exported to users.
-cc_library(
-    name = "ignition_math",
-    hdrs = ["include/ignition/math.hh"],  # From :mathhh_genrule above.
-    includes = ["include"],
     visibility = ["//visibility:public"],
-    deps = [":lib_without_mathhh"],
 )
