@@ -21,7 +21,6 @@ using drake::solvers::Constraint;
 using drake::solvers::LinearConstraint;
 using drake::solvers::LinearEqualityConstraint;
 using drake::solvers::BoundingBoxConstraint;
-using drake::solvers::QuadraticConstraint;
 using drake::solvers::Cost;
 using drake::solvers::LinearCost;
 using drake::solvers::QuadraticCost;
@@ -215,13 +214,7 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
              std::shared_ptr<BoundingBoxConstraint>>(
     m, "BoundingBoxConstraint");
 
-  py::class_<QuadraticConstraint, Constraint,
-             std::shared_ptr<QuadraticConstraint>>(m, "QuadraticConstraint")
-    .def("Q", &QuadraticConstraint::Q)
-    .def("b", &QuadraticConstraint::b);
-
   RegisterBinding<LinearConstraint>(m, &prog_cls, "LinearConstraint");
-  RegisterBinding<QuadraticConstraint>(m, &prog_cls, "QuadraticConstraint");
   RegisterBinding<LinearEqualityConstraint>(m, &prog_cls,
                                             "LinearEqualityConstraint");
   RegisterBinding<BoundingBoxConstraint>(m, &prog_cls, "BoundingBoxConstraint");
