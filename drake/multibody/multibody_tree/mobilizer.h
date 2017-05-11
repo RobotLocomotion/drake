@@ -72,9 +72,17 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// the knowledge of the inboard and outboard frames it connects.
   /// Subclasses of %Mobilizer are therefore forced to provide this information
   /// in their respective constructors.
+  /// @throws std::runtime_error if `inboard_frame` and `outboard_frame`
+  /// reference the same frame object.
   Mobilizer(const Frame<T>& inboard_frame,
             const Frame<T>& outboard_frame) :
-      inboard_frame_(inboard_frame), outboard_frame_(outboard_frame) {}
+      inboard_frame_(inboard_frame), outboard_frame_(outboard_frame) {
+    // Verify they are not the same frame.
+    if (&inboard_frame == &outboard_frame) {
+      throw std::runtime_error(
+          "The provided inboard and outboard frames reference the same object");
+    }
+  }
 
   /// Returns the number of generalized coordinates admitted by this mobilizer.
   /// As an example, consider RevoluteMobilizer, for which

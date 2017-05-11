@@ -103,6 +103,14 @@ struct MobilizerTopology {
       inboard_frame(in_frame), outboard_frame(out_frame),
       inboard_body(in_body), outboard_body(out_body) {}
 
+  /// Returns `true` if this %MobilizerTopology connects frames identified by
+  /// indexes `frame1` and `frame2`.
+  bool connects_frames(FrameIndex frame1, FrameIndex frame2) const {
+    if ((inboard_frame == frame1 && outboard_frame == frame2) ||
+        (inboard_frame == frame2 && outboard_frame == frame1)) return true;
+    return false;
+  }
+
   /// Unique index in the set of mobilizers.
   MobilizerIndex index;
   /// Index to the inboard frame.
@@ -188,6 +196,10 @@ struct MultibodyTreeTopology {
   /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.
+  /// @throws a std::runtime_error if `in_frame == out_frame`.
+  /// @throws a std::runtime_error if `in_frame` and `out_frame` already are
+  /// connected by another mobilizer. More than one mobilizer between two frames
+  /// is not allowed.
   MobilizerIndex add_mobilizer(
       FrameIndex in_frame, FrameIndex out_frame) {
     // Note: MultibodyTree double checks the mobilizer's frames belong to that
@@ -195,6 +207,15 @@ struct MultibodyTreeTopology {
     // guaranteed. We add the checks here for additional security.
     DRAKE_THROW_UNLESS(in_frame < get_num_frames());
     DRAKE_THROW_UNLESS(out_frame < get_num_frames());
+    if (in_frame == out_frame) {
+      throw std::runtime_error(
+          "Attempting to add a mobilizer between a frame and itself");
+    }
+    if (IsThereAMobilizerBetweenFrames(in_frame, out_frame)) {
+      throw std::runtime_error(
+          "This multibody tree already has a mobilizer connecting these two "
+          "frames. More than one mobilizer between two frames is not allowed");
+    }
     MobilizerIndex mobilizer_index(get_num_mobilizers());
     const BodyIndex inboard_body = frames[in_frame].body;
     const BodyIndex outboard_body = frames[out_frame].body;
@@ -208,6 +229,15 @@ struct MultibodyTreeTopology {
 
   /// Topology gets validated by MultibodyTree::Finalize().
   void set_valid() { is_valid = true; }
+
+  /// Returns `true` if there is _any_ mobilizer in the multibody tree
+  /// connecting the frames with indexes `frame` and `frame2`.
+  bool IsThereAMobilizerBetweenFrames(FrameIndex frame1, FrameIndex frame2) {
+    for (const auto& mobilizer_topology : mobilizers) {
+      if (mobilizer_topology.connects_frames(frame1, frame2)) return true;
+    }
+    return false;
+  }
 
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;

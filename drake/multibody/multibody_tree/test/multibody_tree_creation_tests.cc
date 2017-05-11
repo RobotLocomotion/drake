@@ -66,6 +66,44 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
 }
 
+// Test the basic MultibodyTree API to create and add bodies.
+GTEST_TEST(MultibodyTree, AddMobilizers) {
+  auto model = std::make_unique<MultibodyTree<double>>();
+
+  // Retrieves the world body.
+  const Body<double>& world_body = model->get_world_body();
+
+  // Creates a NaN SpatialInertia to instantiate the RigidBody links of the
+  // pendulum. Using a NaN spatial inertia is ok so far since we are still
+  // not performing any numerical computations. This is only to test API.
+  // M_Bo_B is the spatial inertia about the body frame's origin Bo and
+  // expressed in the body frame B.
+  SpatialInertia<double> M_Bo_B;
+
+  // Adds a new body to the world.
+  const RigidBody<double>& pendulum = model->AddBody<RigidBody>(M_Bo_B);
+
+  // Adds a revolute mobilizer.
+  EXPECT_NO_THROW((model->AddMobilizer<RevoluteMobilizer>(
+      world_body.get_body_frame(), pendulum.get_body_frame(),
+      Vector3d::UnitZ())));
+
+  // We cannot add another mobilizer between the same two frames.
+  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
+      world_body.get_body_frame(), pendulum.get_body_frame(),
+      Vector3d::UnitZ())), std::runtime_error);
+
+  // Even if connected in the opposite order.
+  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
+      pendulum.get_body_frame(), world_body.get_body_frame(),
+      Vector3d::UnitZ())), std::runtime_error);
+
+  // Verify we cannot add a mobilizer between a frame and itself.
+  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
+      pendulum.get_body_frame(), pendulum.get_body_frame(),
+      Vector3d::UnitZ())), std::runtime_error);
+}
+
 // Tests the correctness of MultibodyTreeElement checks to verify one or more
 // elements belong to a given MultibodyTree.
 GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
