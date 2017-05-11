@@ -4,10 +4,11 @@
 Tools for Code Style Compliance
 *******************************
 
-This section provides a list of tools that some have found useful for ensuring their
-code abides by :ref:`Drake's coding style <code-style-guide>`. The list is by no means comprehensive.
-If your favorite tools or methodologies are not listed, we would be delighted to learn about them. Please
-document your trick and submit a pull request!
+This section provides a list of tools that some have found useful for ensuring
+their code abides by :ref:`Drake's coding style <code-style-guide>`. The list
+is by no means comprehensive.
+If your favorite tools or methodologies are not listed, we would be delighted
+to learn about them. Please document your trick and submit a pull request!
 
 .. contents:: `Table of contents`
    :depth: 3
@@ -52,7 +53,8 @@ Then install the version you prefer::
 
     sudo apt-get install clang-format-[version]
 
-Once installed, create a symbolic link so you don't need to type the version number every time you execute it::
+Once installed, create a symbolic link so you don't need to type the version
+number every time you execute it::
 
     sudo ln -s /usr/bin/clang-format-[version] /usr/local/bin/clang-format
 
