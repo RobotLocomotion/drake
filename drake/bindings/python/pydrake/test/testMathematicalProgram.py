@@ -6,6 +6,7 @@ import pydrake
 from pydrake.solvers import mathematicalprogram as mp
 import pydrake.symbolic as sym
 
+
 class TestQP:
     def __init__(self):
         # Create a simple QP that uses all deduced linear constraint types,
@@ -28,6 +29,7 @@ class TestQP:
         # TODO(eric.cousineau): Add constant terms
         self.costs = [prog.AddLinearCost(x[0] + x[1]),
                       prog.AddQuadraticCost(0.5 * (x[0]**2 + x[1]**2))]
+
 
 class TestMathematicalProgram(unittest.TestCase):
     def test_program_construction(self):
@@ -87,7 +89,7 @@ class TestMathematicalProgram(unittest.TestCase):
         for (i, binding) in enumerate(prog.linear_costs()):
             cost = binding.constraint()
             self.assertTrue(np.allclose(cost.A(), np.ones((1, 2))))
-        
+
         self.assertTrue(prog.quadratic_costs())
         for (i, binding) in enumerate(prog.quadratic_costs()):
             cost = binding.constraint()
@@ -147,10 +149,10 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_eval_binding(self):
         qp = TestQP()
         prog = qp.prog
-        
+
         x = qp.x
         x_expected = np.array([1., 1.])
-        
+
         costs = qp.costs
         cost_values_expected = [2., 1.]
         constraints = qp.constraints
@@ -181,6 +183,7 @@ class TestMathematicalProgram(unittest.TestCase):
             for j in range(2):
                 self.assertAlmostEqual(xval[i, j], 2 * i + j)
                 self.assertEqual(xval[i, j], prog.GetSolution(x[i, j]))
+
 
 if __name__ == '__main__':
     unittest.main()
