@@ -111,8 +111,31 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
 #------------------------------------------------------------------------------
 # Compute install actions for a cc_library or cc_binary.
 def _install_cc_actions(ctx, target):
+  # Compute actions for target artifacts.
   dests = {"a": "lib", "so": "lib", None: "bin"}
-  return _install_actions(ctx, [target], dests)
+  actions = _install_actions(ctx, [target], dests)
+
+  # Compute actions for guessed headers.
+  if ctx.attr.guess_hdrs > 0:
+    hdrs = []
+
+    if ctx.attr.guess_hdrs >= 3:
+      hdrs = target.cc.transitive_headers
+
+    elif ctx.attr.guess_hdrs >= 2:
+      hdrs = [h for h in target.cc.transitive_headers
+              if target.label.workspace_root == h.owner.workspace_root]
+
+    elif ctx.attr.guess_hdrs >= 1:
+      hdrs = [h for h in target.cc.transitive_headers
+              if target.label.workspace_root == h.owner.workspace_root
+              and target.label.package == h.owner.package]
+
+    actions += _install_actions(ctx, [struct(files=hdrs)], ctx.attr.hdr_dest,
+                                ctx.attr.hdr_strip_prefix)
+
+  # Return computed actions.
+  return actions
 
 #------------------------------------------------------------------------------
 # Compute install actions for a java_library or java_binary.
@@ -128,6 +151,16 @@ def _install_java_actions(ctx, target):
 #------------------------------------------------------------------------------
 # Generate information to install "stuff". "Stuff" can be library or binary
 # targets, headers, or documentation files.
+#
+# Automatic header installation is governed by `guess_hdrs`:
+#
+# - 0 (default): Only explicitly listed headers are installed.
+# - 1: For each target, Headers used by the target and owned by a target in the
+# -    same package are installed.
+# - 2: For each target, Headers used by the target and owned by a target in the
+# -    same workspace are installed.
+# - 3: All headers used by the target(s) are installed.
+# Library headers are installed automatically.
 def _install_impl(ctx):
   actions = []
 
@@ -157,6 +190,7 @@ install = rule(
     "hdrs": attr.label_list(allow_files = True),
     "hdr_dest": attr.string(default = "include"),
     "hdr_strip_prefix": attr.string_list(),
+    "guess_hdrs": attr.int(default = 0),
     "targets": attr.label_list(),
   },
 )
