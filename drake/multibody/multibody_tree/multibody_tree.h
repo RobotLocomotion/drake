@@ -269,7 +269,7 @@ class MultibodyTree {
   ///                      specialized on the same scalar type T as this
   ///                      %MultibodyTree. Notice this is a requirement of this
   ///                      method's signature and therefore an input mobilzer
-  ///                      specialized on a different sacalar type than that of
+  ///                      specialized on a different scalar type than that of
   ///                      this %MultibodyTree's T will fail to compile.
   /// @returns A constant reference of type `MobilizerType` to the created
   ///          mobilizer. This reference which will remain valid for the

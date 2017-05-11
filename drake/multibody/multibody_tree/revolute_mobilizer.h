@@ -68,7 +68,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   // Bring the handy number of position and velocities MobilizerImpl enums into
   // this class' scope. This is useful when writing mathematical expressions
   // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations which fixed-sized quantities can be optimized at compile time
+  // Operations with fixed-sized quantities can be optimized at compile time
   // and therefore they are highly preferred compared to the very slow dynamic
   // sized quantities.
   using MobilizerBase::nq;

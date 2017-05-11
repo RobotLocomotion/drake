@@ -37,7 +37,10 @@ template<typename T> class BodyNode;
 ///     pendulum.get_body_frame(),
 ///     X_BP /* pose of pin frame P in body frame B */);
 /// // The mobilizer connects the world frame and the pin frame effectively
-/// // adding the single degree of freedom describing this system.
+/// // adding the single degree of freedom describing this system. In this
+/// // regard, the role of a mobilizer is different from that of an equivalent
+/// // constraint removing all other five degrees of freedom but the one related
+/// // to this rotation about the z-axis.
 /// const RevoluteMobilizer<double>& revolute_mobilizer =
 ///   model.AddMobilizer<RevoluteMobilizer>(
 ///     model.get_world_body().get_body_frame(), /* inboard frame */
@@ -54,12 +57,58 @@ template<typename T> class BodyNode;
 /// RevoluteMobilizer has two purposes:
 /// - It defines the tree structure of the model. World is the "parent" body
 ///   while "pendulum" is the "child" body in the MultibodyTree.
-/// - It informs the MultibodyTree of the degress of freedom granted by the
+/// - It informs the MultibodyTree of the degrees of freedom granted by the
 ///   revolute mobilizer between the two frames it connects.
+/// - It defines a permissible motion space spanned by the generalized
+///   coordinates introduced by the mobilizer.
 ///
-/// %Mobilizer is an asbtract base class defining the minimum functionality that
+/// A %Mobilizer describes the kinematics relationship between an inboard frame
+/// F and an outboard frame M, introducing an nq-dimensional vector of
+/// generalized coordinates q and an nv-dimensional vector of generalized
+/// velocities v. Notice that in general `nq != nv`, though `nq == nv` is a very
+/// common case. The kinematic relationships introduced by a %Mobilizer are
+/// fully specified by, [Seth 2010]:
+/// - X_FM(q): The pose of the outboard frame M as measured and expressed in the
+///            inboard frame F, as a function of the mobilizer's generalized
+///            positions.
+/// - H_FM(q): the Jacobian matrix describing the relationship between
+///            generalized velocities v and the spatial velocity `V_FM` by
+///            `V_FM(q, v) = H_FM(q) * v`. `H_FM` is a `6 x nv` matrix.
+///            See [Jain 2010] for details.
+/// - Hdot_FM(q): The time derivative of the Jacobian matrix allowing to compute
+///               the spatial acceleration between the F and M frames:
+///               `A_FM(q, v) = Vdot_FM(q, v) = H_FM(q) * vdot + Hdot_FM(q) * v`
+/// - N(q): The kinematic coupling matrix describing the relationship between
+///         the rate of change of generalized coordinates and the generalized
+///         velocities by `qdot = N(q) * v`, [Seth 2010]. N(q) is an `nq x nv`
+///         matrix.
+///
+/// In general, `nv != nq`. As an example, consider a quaternion mobilizer that
+/// would allow frame M to move freely with respect to frame F. For such a
+/// mobilizer the generalized positions vector might contain a quaternion to
+/// describe rotations plus a position vector to describe translations. However,
+/// we might choose the angular velocity `w_FM` and the linear velocity `v_FM`
+/// as the generalized velocities (or more generally, the spatial velocity
+/// `V_FM`.) In such a case `nq = 7` (4 dofs for a quaternion plus 3 dofs for a
+/// position vector) and `nv = 6` (3 dofs for an angular velocity and 3 dofs for
+/// a linear velocity).
+///
+/// For a detailed discussion on the concept of a mobilizer please refer to
+/// [Seth 2010]. The Jacobian or "Hinge" matrix `H_FM(q)` is introduced in
+/// [Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
+/// the transpose of the Jacobian H_FM matrix here in Drake.
+/// For details in the monogram notation used above please refer to
+/// @ref multibody_spatial_algebra.
+///
+/// %Mobilizer is an abstract base class defining the minimum functionality that
 /// derived %Mobilizer objects must implement in order to fully define the
 /// kinematic relationship between the two frames they connect.
+///
+/// - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+///               algorithms. Springer Science & Business Media.
+/// - [Seth 2010] Seth, A., Sherman, M., Eastman, P. and Delp, S., 2010.
+///               Minimal formulation of joint motion for biomechanisms.
+///               Nonlinear dynamics, 62(1), pp.291-303.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -67,11 +116,10 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
 
-  /// This is the only constructor available for this base class %Mobilizer.
   /// The minimum amount of information that we need to define a %Mobilizer is
   /// the knowledge of the inboard and outboard frames it connects.
-  /// Subclasses of %Mobilizer are therefore forced to provide this information
-  /// in their respective constructors.
+  /// Subclasses of %Mobilizer are therefore required to provide this
+  /// information in their respective constructors.
   /// @throws std::runtime_error if `inboard_frame` and `outboard_frame`
   /// reference the same frame object.
   Mobilizer(const Frame<T>& inboard_frame,
