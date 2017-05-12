@@ -417,6 +417,7 @@ drake_cc_googletest(
     ],
 )
 
+# TODO(eric.cousineau): Remove dependence on create_cost
 drake_cc_googletest(
     name = "cost_test",
     deps = [

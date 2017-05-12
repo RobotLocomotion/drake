@@ -71,13 +71,14 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
           0, 2;
       // clang-format on
       Vector2d b(1, 0);
-      prog()->AddQuadraticCost(Q, b, x_);
+      double c = 3;
+      prog()->AddQuadraticCost(Q, b, c, x_);
       prog()->AddLinearCost(Vector1d(1.0), x_.segment<1>(1));
       break;
     }
     case CostForm::kSymbolic : {
       prog()->AddQuadraticCost(2 * x_(0) * x_(0) + x_(0) * x_(1) +
-                               x_(1) * x_(1) + x_(0) + x_(1));
+                               x_(1) * x_(1) + x_(0) + x_(1) + 3);
       break;
     }
     default: {

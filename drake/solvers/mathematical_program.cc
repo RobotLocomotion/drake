@@ -235,9 +235,6 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
 Binding<LinearCost> MathematicalProgram::AddCost(
     const Binding<LinearCost>& binding) {
   required_capabilities_ |= kLinearCost;
-  DRAKE_ASSERT(binding.constraint()->num_constraints() == 1 &&
-               binding.constraint()->A().cols() ==
-                   static_cast<int>(binding.GetNumElements()));
   CheckIsDecisionVariable(binding.variables());
   linear_costs_.push_back(binding);
   return linear_costs_.back();
@@ -248,9 +245,10 @@ Binding<LinearCost> MathematicalProgram::AddLinearCost(const Expression& e) {
 }
 
 Binding<LinearCost> MathematicalProgram::AddLinearCost(
-    const Eigen::Ref<const Eigen::VectorXd>& c,
+    const Eigen::Ref<const Eigen::VectorXd>& a,
+    double b,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(make_shared<LinearCost>(c), vars);
+  return AddCost(make_shared<LinearCost>(a, b), vars);
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddCost(
@@ -280,8 +278,16 @@ Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b,
+    double c,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(make_shared<QuadraticCost>(Q, b), vars);
+  return AddCost(make_shared<QuadraticCost>(Q, b, c), vars);
+}
+
+Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  return AddQuadraticCost(Q, b, 0., vars);
 }
 
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
@@ -668,6 +674,21 @@ SolutionResult MathematicalProgram::Solve() {
         "No solver available for the given optimization problem!");
   }
 }
+
+namespace internal {
+
+double ComputeExplicitlyConstantCost(const MathematicalProgram& prog) {
+  double sum = 0.;
+  for (const auto& binding : prog.linear_costs()) {
+    sum += binding.constraint()->b();
+  }
+  for (const auto& binding : prog.quadratic_costs()) {
+    sum += binding.constraint()->c();
+  }
+  return sum;
+}
+
+}  // namespace internal
 
 }  // namespace solvers
 }  // namespace drake

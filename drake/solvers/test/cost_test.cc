@@ -1,6 +1,7 @@
 #include "drake/solvers/cost.h"
 
 #include <iostream>
+#include <limits>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -16,6 +17,7 @@ using std::cout;
 using std::endl;
 using std::make_shared;
 using std::make_unique;
+using std::numeric_limits;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
@@ -87,6 +89,67 @@ struct related_cost<PolynomialConstraint> {
 template <typename T>
 auto make_vector(std::initializer_list<T> items) {
   return vector<std::decay_t<T>>(items);
+}
+
+GTEST_TEST(testCost, testQuadraticCost) {
+  const double tol = numeric_limits<double>::epsilon();
+
+  // Simple ground truth test
+  Eigen::Matrix2d Q;
+  Q << 1, 2, 3, 4;
+  const Eigen::Vector2d b(5, 6);
+  const Eigen::Vector2d x0(7, 8);
+  const double obj_expected = 375.5;
+
+  auto cost = make_shared<QuadraticCost>(Q, b);
+  Eigen::VectorXd y(1);
+
+  cost->Eval(x0, y);
+  EXPECT_EQ(y.rows(), 1);
+  EXPECT_NEAR(y(0), obj_expected, tol);
+
+  // Update with a constant term
+  const double c = 100;
+  cost->UpdateQuadraticAndLinearTerms(Q, b, c);
+  cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + c, tol);
+  // Reconstruct
+  auto new_cost = make_shared<QuadraticCost>(Q, b, c);
+  new_cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + c, tol);
+}
+
+GTEST_TEST(testCost, testQuadraticCostVariants) {
+  // Adapted from: testMathematicalProgram.TestL2NormCost
+  // TODO(eric.cousineau): Remove the test in MathematicalProgram, as this
+  // will covert that functionality
+
+  // |Ax - b|^2 = (x-xd)'Q(x-xd) => Q = A'*A and b = A*xd.
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  const Eigen::Matrix2d Q = A.transpose() * A;
+  const Eigen::Vector2d x_desired(5, 6);
+  const Eigen::Vector2d b = A * x_desired;
+
+  const auto l2norm_cost = MakeL2NormCost(A, b);
+  const auto error_cost = MakeQuadraticErrorCost(Q, x_desired);
+
+  // Test the objective at a 6 arbitrary values (to guarantee correctness
+  // of the six-parameter quadratic form.
+  Eigen::Vector2d x0(7, 8);
+
+  Eigen::VectorXd error_value, l2norm_value;
+
+  for (int i = 0; i < 6; i++) {
+    error_cost->Eval(x0, error_value);
+    l2norm_cost->Eval(x0, l2norm_value);
+
+    const auto linear_diff = A * x0 - b;
+    EXPECT_TRUE(CompareMatrices(l2norm_value,
+                                linear_diff.transpose() * linear_diff));
+    EXPECT_TRUE(CompareMatrices(error_value, l2norm_value));
+    x0 += Eigen::Vector2d::Constant(2);
+  }
 }
 
 template <typename C, typename BoundType, typename... Args>

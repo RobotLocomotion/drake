@@ -23,6 +23,9 @@
 namespace drake {
 namespace solvers {
 namespace {
+
+using internal::ComputeExplicitlyConstantCost;
+
 // Checks if the number of variables in the Gurobi model is as expected. This
 // operation can be EXPENSIVE, since it requires calling GRBupdatemodel
 // (Gurobi typically adopts lazy update, where it does not update the model
@@ -283,7 +286,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   // Add linear cost in prog.linear_costs() to the aggregated cost.
   for (const auto& binding : prog.linear_costs()) {
     const auto& constraint = binding.constraint();
-    Eigen::RowVectorXd c = constraint->A();
+    Eigen::VectorXd c = constraint->a();
 
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       b_nonzero_coefs.push_back(Eigen::Triplet<double>(
@@ -644,7 +647,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       // Obtain optimal cost
       double optimal_cost = std::numeric_limits<double>::quiet_NaN();
       GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
-      prog.SetOptimalCost(optimal_cost);
+      const double constant_cost = ComputeExplicitlyConstantCost(prog);
+      prog.SetOptimalCost(optimal_cost + constant_cost);
     }
   }
 
