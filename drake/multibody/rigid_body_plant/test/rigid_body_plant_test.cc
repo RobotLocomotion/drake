@@ -561,10 +561,8 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   auto derivatives = continuous_plant.AllocateTimeDerivatives();
   continuous_plant.CalcTimeDerivatives(*continuous_context, derivatives.get());
   auto updates = time_stepping_plant.AllocateDiscreteVariables();
-  DiscreteEvent<double> update_event;
-  update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-  time_stepping_plant.CalcDiscreteVariableUpdates(*time_stepping_context,
-                                                  update_event, updates.get());
+  time_stepping_plant.CalcDiscreteVariableUpdates(
+      *time_stepping_context, updates.get());
 
   const VectorXd x = continuous_context->get_continuous_state()->CopyToVector();
   EXPECT_TRUE(CompareMatrices(

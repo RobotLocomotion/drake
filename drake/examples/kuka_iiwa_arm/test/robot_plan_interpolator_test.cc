@@ -95,10 +95,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
                  context->get_mutable_state());
 
-  systems::DiscreteEvent<double> event;
-  event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
-  dut.CalcUnrestrictedUpdate(*context, event,
-                             context->get_mutable_state());
+  dut.CalcUnrestrictedUpdate(*context, {}, context->get_mutable_state());
 
   // Test we're running the plan through time by watching the
   // velocities and acceleraiton change.
@@ -110,7 +107,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
 
   for (const TrajectoryTestCase& kase : cases) {
     context->set_time(kase.time);
-    dut.CalcUnrestrictedUpdate(*context, event,
+    dut.CalcUnrestrictedUpdate(*context, {},
                                context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
     const double velocity = output->get_vector_data(
@@ -125,7 +122,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   // measured position.
 
   context->set_time(1);
-  dut.CalcUnrestrictedUpdate(*context, event,
+  dut.CalcUnrestrictedUpdate(*context, {},
                              context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   double position = output->get_vector_data(
@@ -137,7 +134,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   context->FixInputPort(
       dut.get_plan_input_port().get_index(),
       systems::AbstractValue::Make(plan));
-  dut.CalcUnrestrictedUpdate(*context, event,
+  dut.CalcUnrestrictedUpdate(*context, {},
                              context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   position = output->get_vector_data(

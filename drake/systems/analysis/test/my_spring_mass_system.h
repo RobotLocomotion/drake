@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
@@ -39,7 +40,9 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
  private:
   // Publish t q u to standard output.
-  void DoPublish(const Context<T>& context) const override {
+  void DoPublish(const Context<T>& context,
+                 const std::vector<const systems::PublishEvent<T>*>& events)
+      const override {
     ++publish_count_;
   }
 
@@ -47,6 +50,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   // discrete variables- in other words, this is just a counter.
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
       DiscreteValues<T>* discrete_state) const override {
     ++update_count_;
   }
@@ -58,4 +62,3 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 }  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
-

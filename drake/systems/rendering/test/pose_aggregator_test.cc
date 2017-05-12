@@ -54,7 +54,7 @@ class PoseAggregatorTest : public ::testing::Test {
 
 // Tests that PoseAggregator aggregates poses fromtwo PoseVector inputs (one
 // with velocity and one without), and a PoseBundle input.
-TEST_F(PoseAggregatorTest, HeterogeneousAggregation) {
+TEST_F(PoseAggregatorTest, CompositeAggregation) {
   // Set some arbitrary translations in the PoseBundle input, and a velocity
   // for one of the poses.
   PoseBundle<double> generic_input(2);
