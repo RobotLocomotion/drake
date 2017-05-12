@@ -103,7 +103,7 @@ class LinearCost : public Cost {
 
   /**
    * Updates the linear term, upper and lower bounds in the linear constraint.
-   * The updated constraint is @f a_new' x + b_new @f
+   * The updated constraint is @f a_new' x + b_new @f.
    * Note that the number of variables (number of cols) cannot change.
    * @param new_a New linear term.
    * @param new_b New constant term.
@@ -156,9 +156,9 @@ class QuadraticCost : public Cost {
   /**
    * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
-   * @param new_Q new quadratic term.
-   * @param new_b new linear term.
-   * @param new_c new constant term.
+   * @param new_Q New quadratic term.
+   * @param new_b New linear term.
+   * @param new_c New constant term.
    */
   template <typename DerivedQ, typename DerivedB>
   void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,

@@ -126,7 +126,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
 template <typename C, typename BoundType, typename... Args>
 void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
   // Ensure that a constraint constructed in a particular fashion yields
-  // equivalent results to its shim, and the related cost
+  // equivalent results to its shim, and the related cost.
   const auto inf = std::numeric_limits<double>::infinity();
   auto lb = -BoundType(-inf);
   auto ub = BoundType(inf);
@@ -139,7 +139,7 @@ void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
 }
 
 GTEST_TEST(testCost, testCostShim) {
-  // Test CostShim's by means of the related constraints
+  // Test CostShim's by means of the related constraints.
 
   VerifyRelatedCost<LinearConstraint, Vector1d>(Vector1d(2), Vector1d(3));
 
@@ -168,7 +168,7 @@ const auto& to_const_ref(T&& t) {
   return impl::to_const_ref(std::forward<T>(t));
 }
 
-// Verifies that FunctionCost form can be constructed correctly
+// Verifies that FunctionCost form can be constructed correctly.
 template <bool is_pointer, typename F>
 void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
   auto cost = MakeFunctionCost(std::forward<F>(f));
@@ -181,10 +181,10 @@ void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
 }
 
 GTEST_TEST(testCost, testFunctionCost) {
-  // Test that we can construct FunctionCosts with different signatures
+  // Test that we can construct FunctionCosts with different signatures.
   Eigen::Vector2d x(1, 2);
   VerifyFunctionCost<false>(GenericTrivialCost2(), x);
-  // Ensure that we explictly call the default constructor for a const class
+  // Ensure that we explictly call the default constructor for a const class.
   // @ref http://stackoverflow.com/a/28338123/7829525
   const GenericTrivialCost2 obj_const{};
   VerifyFunctionCost<false>(obj_const, x);
