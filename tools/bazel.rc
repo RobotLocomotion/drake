@@ -11,6 +11,7 @@ build --output_filter="^//"
 
 # Default test options.
 test --test_output=errors
+test --test_summary=terse
 
 # By default, disable execution of tests that require proprietary software.
 # Individual targets that use proprietary software are responsible for ensuring
