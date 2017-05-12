@@ -41,7 +41,7 @@ drake_cc_library(
         "//drake/systems/framework:leaf_system",
         "//drake/util",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -62,7 +62,7 @@ drake_cc_library(
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -85,7 +85,7 @@ drake_cc_library(
         "//drake/systems/framework:leaf_system",
         "//drake/systems/lcm",
         "//drake/util",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 

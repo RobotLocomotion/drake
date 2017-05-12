@@ -126,14 +126,14 @@ genrule(
 )
 
 cc_library(
-    name = "lib",
+    name = "ipopt",
     srcs = IPOPT_LIBS,
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "@gfortran//:lib",
+        "@gfortran",
     ],
     alwayslink = 1,
 )

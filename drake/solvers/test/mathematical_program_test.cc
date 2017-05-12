@@ -1089,9 +1089,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
   int k{0};
-  for (int i{0}; i < M_e.rows(); ++i) {
-    for (int j{0}; j < M_e.cols(); ++j, ++k) {
+  for (int j{0}; j < M_e.cols(); ++j) {
+    for (int i{0}; i < M_e.rows(); ++i) {
       EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j), Ax(k) - lb_in_ctr(k));
+      ++k;
     }
   }
 }

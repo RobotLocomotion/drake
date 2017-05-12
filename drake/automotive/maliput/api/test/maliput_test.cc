@@ -79,8 +79,9 @@ GTEST_TEST(MaliputApiTest, TestLaneDataToStringStream) {
   buffer.clear();
 
   // Tests Rotation.
-  buffer << Rotation({1, 2, 3});
-  EXPECT_EQ(buffer.str(), "(roll = 1, pitch = 2, yaw = 3)");
+  buffer << Rotation::FromRpy(M_PI / 5., M_PI / 6., M_PI / 7.);
+  EXPECT_EQ(buffer.str(),
+            "(roll = 0.628319, pitch = 0.523599, yaw = 0.448799)");
   buffer.str("");
   buffer.clear();
 }

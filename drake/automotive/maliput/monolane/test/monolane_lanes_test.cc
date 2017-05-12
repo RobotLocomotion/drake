@@ -55,11 +55,11 @@ GTEST_TEST(MonolaneLanesTest, Rot3) {
 #define EXPECT_ROT_NEAR(actual, expected, tolerance)                 \
   do {                                                               \
     const api::Rotation _actual(actual);                             \
-    const api::Rotation _expected expected;                          \
+    const api::Rotation _expected(api::Rotation::FromRpy expected);  \
     const double _tolerance = (tolerance);                           \
-    EXPECT_NEAR(_actual.yaw, _expected.yaw, _tolerance);             \
-    EXPECT_NEAR(_actual.pitch, _expected.pitch, _tolerance);         \
-    EXPECT_NEAR(_actual.roll, _expected.roll, _tolerance);           \
+    EXPECT_NEAR(_actual.yaw(), _expected.yaw(), _tolerance);         \
+    EXPECT_NEAR(_actual.pitch(), _expected.pitch(), _tolerance);     \
+    EXPECT_NEAR(_actual.roll(), _expected.roll(), _tolerance);       \
   } while (0)
 
 

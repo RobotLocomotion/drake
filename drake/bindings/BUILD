@@ -21,8 +21,8 @@ drake_cc_binary(
     linkshared = 1,
     linkstatic = 1,
     deps = [
-        "@eigen//:eigen",
-        "@pybind11//:pybind11",
+        "@eigen",
+        "@pybind11",
     ],
 )
 
@@ -42,8 +42,8 @@ drake_cc_binary(
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "@eigen//:eigen",
-        "@pybind11//:pybind11",
+        "@eigen",
+        "@pybind11",
     ],
 )
 
@@ -54,7 +54,7 @@ drake_cc_binary(
     linkstatic = 1,
     deps = [
         "//drake/multibody/parsers",
-        "@pybind11//:pybind11",
+        "@pybind11",
     ],
 )
 
@@ -71,7 +71,7 @@ drake_cc_binary(
     deps = [
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
-        "@pybind11//:pybind11",
+        "@pybind11",
     ],
 )
 
@@ -91,7 +91,7 @@ drake_cc_binary(
     deps = [
         "//drake/common:symbolic",
         "//drake/solvers:mathematical_program",
-        "@pybind11//:pybind11",
+        "@pybind11",
     ],
 )
 
@@ -102,7 +102,7 @@ drake_cc_binary(
     linkstatic = 1,
     deps = [
         "//drake/solvers:mathematical_program",
-        "@pybind11//:pybind11",
+        "@pybind11",
     ],
 )
 
@@ -113,7 +113,7 @@ drake_cc_binary(
     linkstatic = 1,
     deps = [
         "//drake/solvers:mathematical_program",
-        "@pybind11//:pybind11",
+        "@pybind11",
     ],
 )
 
@@ -132,7 +132,7 @@ drake_cc_binary(
     linkstatic = 1,
     deps = [
         "//drake/common:symbolic",
-        "@pybind11//:pybind11",
+        "@pybind11",
     ],
 )
 

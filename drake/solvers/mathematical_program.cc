@@ -52,6 +52,7 @@ using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;
 
+using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
 using internal::DecomposeQuadraticExpressionWithMonomialToCoeffMap;
 using internal::ExtractAndAppendVariablesFromExpression;
@@ -209,7 +210,7 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
 namespace {
 
 template <typename To, typename From>
-Binding<To> BindingUpcast(const Binding<From>& binding) {
+Binding<To> BindingDynamicCast(const Binding<From>& binding) {
   auto constraint = std::dynamic_pointer_cast<To>(binding.constraint());
   DRAKE_DEMAND(constraint != nullptr);
   return Binding<To>(constraint, binding.variables());
@@ -221,20 +222,14 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   // See AddCost(const Binding<Constraint>&) for explanation
   Cost* cost = binding.constraint().get();
   if (dynamic_cast<QuadraticCost*>(cost)) {
-    return AddCost(BindingUpcast<QuadraticCost>(binding));
+    return AddCost(BindingDynamicCast<QuadraticCost>(binding));
   } else if (dynamic_cast<LinearCost*>(cost)) {
-    return AddCost(BindingUpcast<LinearCost>(binding));
+    return AddCost(BindingDynamicCast<LinearCost>(binding));
   } else {
     required_capabilities_ |= kGenericCost;
     generic_costs_.push_back(binding);
     return generic_costs_.back();
   }
-}
-
-Binding<Cost> MathematicalProgram::AddCost(
-    const shared_ptr<Cost>& obj,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(Binding<Cost>(obj, vars));
 }
 
 Binding<LinearCost> MathematicalProgram::AddCost(
@@ -248,29 +243,14 @@ Binding<LinearCost> MathematicalProgram::AddCost(
   return linear_costs_.back();
 }
 
-Binding<LinearCost> MathematicalProgram::AddCost(
-    const shared_ptr<LinearCost>& obj,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(Binding<LinearCost>(obj, vars));
-}
-
 Binding<LinearCost> MathematicalProgram::AddLinearCost(const Expression& e) {
-  auto p = ExtractVariablesFromExpression(e);
-  const VectorXDecisionVariable& var = p.first;
-  const auto& map_var_to_index = p.second;
-  Eigen::RowVectorXd c(var.size());
-  double constant_term;
-  DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
-  // The constant term is ignored now.
-  // TODO(hongkai.dai): support adding constant term to the cost.
-  return AddLinearCost(c, var);
+  return AddCost(internal::ParseLinearCost(e));
 }
 
 Binding<LinearCost> MathematicalProgram::AddLinearCost(
     const Eigen::Ref<const Eigen::VectorXd>& c,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto cost = make_shared<LinearCost>(c.transpose());
-  return AddCost(cost, vars);
+  return AddCost(make_shared<LinearCost>(c), vars);
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddCost(
@@ -285,122 +265,33 @@ Binding<QuadraticCost> MathematicalProgram::AddCost(
   return quadratic_costs_.back();
 }
 
-Binding<QuadraticCost> MathematicalProgram::AddCost(
-    const shared_ptr<QuadraticCost>& obj,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(Binding<QuadraticCost>(obj, vars));
-}
-
-Binding<QuadraticCost> AddQuadraticCostWithMonomialToCoeffMap(
-    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
-    const VectorXDecisionVariable& vars_vec,
-    const unordered_map<Variable::Id, int>& map_var_to_index,
-    MathematicalProgram* prog) {
-  // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
-  // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
-  Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
-  Eigen::VectorXd b(vars_vec.size());
-  double constant_term;
-  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-      monomial_to_coeff_map, map_var_to_index, vars_vec.size(), &Q, &b,
-      &constant_term);
-  // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
-  return prog->AddQuadraticCost(Q, b, vars_vec);
-}
-
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Expression& e) {
-  // First build an Eigen vector, that contains all the bound variables.
-  const symbolic::Variables& vars = e.GetVariables();
-  auto p = ExtractVariablesFromExpression(e);
-  const auto& vars_vec = p.first;
-  const auto& map_var_to_index = p.second;
-
-  // Now decomposes the expression into coefficients and monomials.
-  const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map =
-      symbolic::DecomposePolynomialIntoMonomial(e, vars);
-  return AddQuadraticCostWithMonomialToCoeffMap(monomial_to_coeff_map, vars_vec,
-                                                map_var_to_index, this);
+  return AddCost(internal::ParseQuadraticCost(e));
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& x_desired,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto cost = make_shared<QuadraticCost>(2 * Q, -2 * Q * x_desired);
-  return AddCost(cost, vars);
+  return AddCost(MakeQuadraticErrorCost(Q, x_desired), vars);
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto cost = make_shared<QuadraticCost>(Q, b);
-  return AddCost(cost, vars);
+  return AddCost(make_shared<QuadraticCost>(Q, b), vars);
 }
 
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
     const Expression& e) {
-  if (!e.is_polynomial()) {
-    ostringstream oss;
-    oss << "Expression" << e << " is not a polynomial. AddPolynomialCost only "
-                                "support polynomial expression.\n";
-    throw runtime_error(oss.str());
-  }
-  const symbolic::Variables& vars = e.GetVariables();
-  const Polynomiald polynomial = e.ToPolynomial();
-  vector<Polynomiald::VarType> polynomial_vars(vars.size());
-  VectorXDecisionVariable var_vec(vars.size());
-  int polynomial_var_count = 0;
-  for (const auto& var : vars) {
-    polynomial_vars[polynomial_var_count] = var.get_id();
-    var_vec[polynomial_var_count] = var;
-    ++polynomial_var_count;
-  }
-  Binding<PolynomialCost> polynomial_cost(
-      make_shared<PolynomialCost>(Vector1<Polynomiald>(polynomial),
-                                  polynomial_vars),
-      var_vec);
-  AddCost(polynomial_cost);
-  return polynomial_cost;
+  auto binding = AddCost(internal::ParsePolynomialCost(e));
+  return BindingDynamicCast<PolynomialCost>(binding);
 }
 
 Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
-  if (!e.is_polynomial()) {
-    ostringstream oss;
-    oss << "Expression " << e << " is not a polynomial. Currently AddCost does "
-                                 "not support non-polynomial expression.\n";
-    throw runtime_error(oss.str());
-  }
-  const symbolic::Variables& vars = e.GetVariables();
-  const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map =
-      symbolic::DecomposePolynomialIntoMonomial(e, vars);
-  int total_degree = 0;
-  for (const auto& p : monomial_to_coeff_map) {
-    total_degree = std::max(total_degree, p.first.total_degree());
-  }
-
-  auto e_extracted = ExtractVariablesFromExpression(e);
-  const VectorXDecisionVariable& vars_vec = e_extracted.first;
-  const auto& map_var_to_index = e_extracted.second;
-
-  if (total_degree > 2) {
-    return AddPolynomialCost(e);
-  } else if (total_degree == 2) {
-    return AddQuadraticCostWithMonomialToCoeffMap(
-        monomial_to_coeff_map, vars_vec, map_var_to_index, this);
-  } else {
-    Eigen::VectorXd c(vars_vec.size());
-    c.setZero();
-    for (const auto& p : monomial_to_coeff_map) {
-      if (p.first.total_degree() == 1) {
-        const Variable::Id var_id = p.first.get_powers().begin()->first;
-        DRAKE_DEMAND(is_constant(p.second));
-        c(map_var_to_index.at(var_id)) += get_constant_value(p.second);
-      }
-    }
-    return AddLinearCost(c, vars_vec);
-  }
+  return AddCost(internal::ParseCost(e));
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
@@ -419,20 +310,17 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   // incorrect) container.
   if (dynamic_cast<LinearMatrixInequalityConstraint*>(constraint)) {
     return AddConstraint(
-        BindingUpcast<LinearMatrixInequalityConstraint>(binding));
+        BindingDynamicCast<LinearMatrixInequalityConstraint>(binding));
   } else if (dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)) {
     return AddConstraint(
-        BindingUpcast<PositiveSemidefiniteConstraint>(binding));
+        BindingDynamicCast<PositiveSemidefiniteConstraint>(binding));
   } else if (dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
-    return AddConstraint(BindingUpcast<RotatedLorentzConeConstraint>(binding));
+    return AddConstraint(BindingDynamicCast<RotatedLorentzConeConstraint>(
+        binding));
   } else if (dynamic_cast<LorentzConeConstraint*>(constraint)) {
-    return AddConstraint(BindingUpcast<LorentzConeConstraint>(binding));
-  } else if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
-    return AddConstraint(BindingUpcast<BoundingBoxConstraint>(binding));
-  } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
-    return AddConstraint(BindingUpcast<LinearEqualityConstraint>(binding));
+    return AddConstraint(BindingDynamicCast<LorentzConeConstraint>(binding));
   } else if (dynamic_cast<LinearConstraint*>(constraint)) {
-    return AddConstraint(BindingUpcast<LinearConstraint>(binding));
+    return AddConstraint(BindingDynamicCast<LinearConstraint>(binding));
   } else {
     required_capabilities_ |= kGenericConstraint;
     generic_constraints_.push_back(binding);
@@ -442,182 +330,49 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Expression& e, const double lb, const double ub) {
-  return AddLinearConstraint(Vector1<Expression>(e), Vector1<double>(lb),
-                             Vector1<double>(ub));
+  return AddConstraint(internal::ParseLinearConstraint(e, lb, ub));
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
-
-  // Setup map_var_to_index and var_vec.
-  // such that map_var_to_index[var(i)] = i
-  unordered_map<Variable::Id, int> map_var_to_index;
-  VectorXDecisionVariable vars(0);
-  for (int i = 0; i < v.size(); ++i) {
-    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
-  }
-
-  // Construct A, new_lb, new_ub. map_var_to_index is used here.
-  Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
-  Eigen::VectorXd new_lb{v.size()};
-  Eigen::VectorXd new_ub{v.size()};
-  // We will determine if lb <= v <= ub is a bounding box constraint, namely
-  // x_lb <= x <= x_ub.
-  bool is_v_bounding_box = true;
-  for (int i = 0; i < v.size(); ++i) {
-    double constant_term = 0;
-    int num_vi_variables = DecomposeLinearExpression(v(i), map_var_to_index,
-                                                     A.row(i), &constant_term);
-    if (num_vi_variables == 0 &&
-        !(lb(i) <= constant_term && constant_term <= ub(i))) {
-      // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
-      throw SymbolicError(v(i), lb(i), ub(i),
-                          "unsatisfiable but called with AddLinearConstraint");
-
-    } else {
-      new_lb(i) = lb(i) - constant_term;
-      new_ub(i) = ub(i) - constant_term;
-      if (num_vi_variables != 1) {
-        is_v_bounding_box = false;
-      }
-    }
-  }
-  if (is_v_bounding_box) {
-    // If every lb(i) <= v(i) <= ub(i) is a bounding box constraint, then
-    // formulate a bounding box constraint x_lb <= x <= x_ub
-    VectorXDecisionVariable bounding_box_x(v.size());
-    for (int i = 0; i < v.size(); ++i) {
-      // v(i) is in the form of c * x
-      double x_coeff = 0;
-      for (const auto& x : v(i).GetVariables()) {
-        const double coeff = A(i, map_var_to_index[x.get_id()]);
-        if (coeff != 0) {
-          x_coeff += coeff;
-          bounding_box_x(i) = x;
-        }
-      }
-      if (x_coeff > 0) {
-        new_lb(i) /= x_coeff;
-        new_ub(i) /= x_coeff;
-      } else {
-        const double lb_i = new_lb(i);
-        new_lb(i) = new_ub(i) / x_coeff;
-        new_ub(i) = lb_i / x_coeff;
-      }
-    }
-    return AddBoundingBoxConstraint(new_lb, new_ub, bounding_box_x);
-  } else {
-    return AddLinearConstraint(A, new_lb, new_ub, vars);
-  }
+  return AddConstraint(internal::ParseLinearConstraint(v, lb, ub));
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const set<Formula>& formulas) {
-  const auto n = formulas.size();
-
-  // Decomposes a set of formulas into a 1D-vector of expressions, `v`, and two
-  // 1D-vector of double `lb` and `ub`.
-  VectorX<Expression> v{n};
-  Eigen::VectorXd lb{n};
-  Eigen::VectorXd ub{n};
-  int i{0};  // index variable used in the loop
-  // After the following loop, we call `AddLinearEqualityConstraint`
-  // if `are_all_formulas_equal` is still true. Otherwise, we call
-  // `AddLinearConstraint`.  on the value of this Boolean flag.
-  bool are_all_formulas_equal{true};
-  for (const Formula& f : formulas) {
-    if (is_equal_to(f)) {
-      // f := (lhs == rhs)
-      //      (lhs - rhs == 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-      lb(i) = 0.0;
-      ub(i) = 0.0;
-    } else if (is_less_than_or_equal_to(f)) {
-      // f := (lhs <= rhs)
-      //      (-∞ <= lhs - rhs <= 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-      lb(i) = -numeric_limits<double>::infinity();
-      ub(i) = 0.0;
-      are_all_formulas_equal = false;
-    } else if (is_greater_than_or_equal_to(f)) {
-      // f := (lhs >= rhs)
-      //      (∞ >= lhs - rhs >= 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-      lb(i) = 0.0;
-      ub(i) = numeric_limits<double>::infinity();
-      are_all_formulas_equal = false;
-    } else {
-      ostringstream oss;
-      oss << "MathematicalProgram::AddLinearConstraint(const set<Formula>& "
-          << "formulas) is called while its argument 'formulas' includes "
-          << "a formula " << f
-          << " which is not a relational formula using one of {==, <=, >=} "
-          << "operators.";
-      throw runtime_error(oss.str());
-    }
-    ++i;
-  }
-  if (are_all_formulas_equal) {
-    return AddLinearEqualityConstraint(v, lb);
-  } else {
-    return AddLinearConstraint(v, lb, ub);
-  }
+  return AddConstraint(internal::ParseLinearConstraint(formulas));
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Formula& f) {
-  if (is_equal_to(f)) {
-    // e1 == e2
-    const Expression& e1{get_lhs_expression(f)};
-    const Expression& e2{get_rhs_expression(f)};
-    return AddLinearEqualityConstraint(e1 - e2, 0.0);
-  } else if (is_greater_than_or_equal_to(f)) {
-    // e1 >= e2  ->  e1 - e2 >= 0  ->  0 <= e1 - e2 <= ∞
-    const Expression& e1{get_lhs_expression(f)};
-    const Expression& e2{get_rhs_expression(f)};
-    return AddLinearConstraint(e1 - e2, 0.0,
-                               numeric_limits<double>::infinity());
-  } else if (is_less_than_or_equal_to(f)) {
-    // e1 <= e2  ->  0 <= e2 - e1  ->  0 <= e2 - e1 <= ∞
-    const Expression& e1{get_lhs_expression(f)};
-    const Expression& e2{get_rhs_expression(f)};
-    return AddLinearConstraint(e2 - e1, 0.0,
-                               numeric_limits<double>::infinity());
-  }
-  if (is_conjunction(f)) {
-    return AddLinearConstraint(get_operands(f));
-  }
-  ostringstream oss;
-  oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
-      << f
-      << " which is neither a relational formula using one of {==, <=, >=} "
-         "operators nor a conjunction of those relational formulas.";
-  throw runtime_error(oss.str());
-}
-
-Binding<Constraint> MathematicalProgram::AddConstraint(
-    shared_ptr<Constraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<Constraint>(con, vars));
+  return AddConstraint(internal::ParseLinearConstraint(f));
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearConstraint>& binding) {
-  required_capabilities_ |= kLinearConstraint;
-  DRAKE_ASSERT(binding.constraint()->A().cols() ==
-               static_cast<int>(binding.GetNumElements()));
-  CheckIsDecisionVariable(binding.variables());
-  linear_constraints_.push_back(binding);
-  return linear_constraints_.back();
-}
-
-Binding<LinearConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LinearConstraint>(con, vars));
+  // Because the ParseLinearConstraint methods can return instances of
+  // LinearEqualityConstraint or BoundingBoxConstraint, do a dynamic check
+  // here.
+  LinearConstraint* constraint = binding.constraint().get();
+  if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
+    return AddConstraint(BindingDynamicCast<BoundingBoxConstraint>(binding));
+  } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
+    return AddConstraint(BindingDynamicCast<LinearEqualityConstraint>(binding));
+  } else {
+    required_capabilities_ |= kLinearConstraint;
+    // TODO(eric.cousineau): This is a good assertion... But seems out of place,
+    // possibly redundant w.r.t. the binding infrastructure.
+    DRAKE_ASSERT(binding.constraint()->A().cols() ==
+                 static_cast<int>(binding.GetNumElements()));
+    // TODO(eric.cousineau): Move this and other checks to a generic
+    // BindingCheck() (to handle checking for a unique name, or assigning a
+    // default name, etc.)
+    CheckIsDecisionVariable(binding.variables());
+    linear_constraints_.push_back(binding);
+    return linear_constraints_.back();
+  }
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
@@ -625,8 +380,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  shared_ptr<LinearConstraint> con = make_shared<LinearConstraint>(A, lb, ub);
-  return AddConstraint(Binding<LinearConstraint>(con, vars));
+  return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
 }
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
@@ -638,80 +392,20 @@ Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
   return linear_equality_constraints_.back();
 }
 
-Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearEqualityConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LinearEqualityConstraint>(con, vars));
-}
-
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Expression& e,
                                                  double b) {
-  return AddLinearEqualityConstraint(Vector1<Expression>(e), Vector1d(b));
+  return AddConstraint(internal::ParseLinearEqualityConstraint(e, b));
 }
 
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const set<Formula>& formulas) {
-  const auto n = formulas.size();
-  // Decomposes a set of formulas, `{e₁₁ == e₁₂, ..., eₙ₁ == eₙ₂}`
-  // into a 1D-vector of expressions, `v = [e₁₁ - e₁₂, ..., eₙ₁ - eₙ₂]`.
-  VectorX<symbolic::Expression> v{n};
-  int i{0};  // index variable used in the loop
-  for (const symbolic::Formula& f : formulas) {
-    if (is_equal_to(f)) {
-      // f := (lhs == rhs)
-      //      (lhs - rhs == 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-    } else {
-      ostringstream oss;
-      oss << "MathematicalProgram::AddLinearEqualityConstraint(const "
-          << "set<Formula>& formulas) is called while its argument 'formulas' "
-          << "includes a non-equality formula " << f << ".";
-      throw runtime_error(oss.str());
-    }
-    ++i;
-  }
-  return AddLinearEqualityConstraint(v, Eigen::VectorXd::Zero(n));
+  return AddConstraint(internal::ParseLinearEqualityConstraint(formulas));
 }
 
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(const Formula& f) {
-  if (is_equal_to(f)) {
-    // e1 == e2
-    const Expression& e1{get_lhs_expression(f)};
-    const Expression& e2{get_rhs_expression(f)};
-    return AddLinearEqualityConstraint(e1 - e2, 0.0);
-  }
-  if (is_conjunction(f)) {
-    return AddLinearEqualityConstraint(get_operands(f));
-  }
-  ostringstream oss;
-  oss << "MathematicalProgram::AddLinearConstraint is called with a formula "
-      << f
-      << " which is neither an equality formula nor a conjunction of equality "
-         "formulas.";
-  throw runtime_error(oss.str());
-}
-
-Binding<LinearEqualityConstraint>
-MathematicalProgram::DoAddLinearEqualityConstraint(
-    const Eigen::Ref<const VectorX<Expression>>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& b) {
-  DRAKE_DEMAND(v.rows() == b.rows());
-  VectorXDecisionVariable vars(0);
-  unordered_map<Variable::Id, int> map_var_to_index;
-  for (int i = 0; i < v.rows(); ++i) {
-    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
-  }
-  // TODO(hongkai.dai): use sparse matrix.
-  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
-  Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());
-  for (int i = 0; i < v.rows(); ++i) {
-    double constant_term(0);
-    DecomposeLinearExpression(v(i), map_var_to_index, A.row(i), &constant_term);
-    beq(i) = b(i) - constant_term;
-  }
-  return AddLinearEqualityConstraint(A, beq, vars);
+  return AddConstraint(internal::ParseLinearEqualityConstraint(f));
 }
 
 Binding<LinearEqualityConstraint>
@@ -719,9 +413,7 @@ MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
     const Eigen::Ref<const Eigen::VectorXd>& beq,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  shared_ptr<LinearEqualityConstraint> constraint =
-      make_shared<LinearEqualityConstraint>(Aeq, beq);
-  return AddConstraint(Binding<LinearEqualityConstraint>(constraint, vars));
+  return AddConstraint(make_shared<LinearEqualityConstraint>(Aeq, beq), vars);
 }
 
 Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
@@ -731,12 +423,6 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
                binding.GetNumElements());
   bbox_constraints_.push_back(binding);
   return bbox_constraints_.back();
-}
-
-Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<BoundingBoxConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<BoundingBoxConstraint>(con, vars));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
@@ -749,120 +435,13 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v) {
-  DRAKE_DEMAND(v.rows() >= 2);
-  Eigen::MatrixXd A{};
-  Eigen::VectorXd b(v.size());
-  VectorXDecisionVariable vars{};
-  DecomposeLinearExpression(v, &A, &b, &vars);
-  DRAKE_DEMAND(vars.rows() >= 1);
-  return AddLorentzConeConstraint(A, b, vars);
+  return AddConstraint(internal::ParseLorentzConeConstraint(v));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     const Expression& linear_expr, const Expression& quadratic_expr) {
-  const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
-  const auto& quadratic_vars = quadratic_p.first;
-  const auto& quadratic_var_to_index_map = quadratic_p.second;
-  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
-      quadratic_expr, quadratic_expr.GetVariables());
-  Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
-  Eigen::VectorXd b(quadratic_vars.size());
-  double a;
-  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-      monomial_to_coeff_map, quadratic_var_to_index_map, quadratic_vars.size(),
-      &Q, &b, &a);
-  // The constraint that the linear expression v1 satisfying
-  // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
-  // [z; y] being within a Lorentz cone, where
-  // z = v1
-  // y = [1/sqrt(2) * (R * x + R⁻ᵀb); sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
-  // R is the matrix satisfying Rᵀ * R = Q
-
-  VectorX<Expression> expr{};
-
-  double constant;  // constant is a - 0.5 * bᵀ * Q⁻¹ * a
-  // If Q is strictly positive definite, then use LLT
-  Eigen::LLT<Eigen::MatrixXd> llt_Q(Q.selfadjointView<Eigen::Upper>());
-  if (llt_Q.info() == Eigen::Success) {
-    Eigen::MatrixXd R = llt_Q.matrixU();
-    expr.resize(2 + R.rows());
-    expr(0) = linear_expr;
-    expr.segment(1, R.rows()) =
-        1.0 / std::sqrt(2) * (R * quadratic_vars + llt_Q.matrixL().solve(b));
-    constant = a - 0.5 * b.dot(llt_Q.solve(b));
-  } else {
-    // Q is not strictly positive definite.
-    // First check if Q is zero.
-    const bool is_Q_zero = (Q.array() == 0).all();
-
-    if (is_Q_zero) {
-      // Now check if the linear term b is zero. If both Q and b are zero, then
-      // add the linear constraint linear_expr >= sqrt(a); otherwise throw a
-      // runtime error.
-      const bool is_b_zero = (b.array() == 0).all();
-      if (!is_b_zero) {
-        ostringstream oss;
-        oss << "Expression " << quadratic_expr
-            << " is not quadratic, cannot call AddLorentzConeConstraint.\n";
-        throw runtime_error(oss.str());
-      } else {
-        if (a < 0) {
-          ostringstream oss;
-          oss << "Expression " << quadratic_expr
-              << " is negative, cannot call AddLorentzConeConstraint.\n";
-          throw runtime_error(oss.str());
-        }
-        Vector2<Expression> expr_constant_quadratic(linear_expr, std::sqrt(a));
-        return AddLorentzConeConstraint(expr_constant_quadratic);
-      }
-    }
-    // Q is not strictly positive, nor is it zero. Use LDLT to decompose Q
-    // into R * Rᵀ.
-    // Question: is there a better way to compute R * x and R⁻ᵀb? The following
-    // code is really ugly.
-    Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q.selfadjointView<Eigen::Upper>());
-    if (ldlt_Q.info() != Eigen::Success || !ldlt_Q.isPositive()) {
-      ostringstream oss;
-      oss << "Expression" << quadratic_expr
-          << " does not have a positive semidefinite Hessian. Cannot be called "
-             "with AddLorentzConeConstraint.\n";
-      throw runtime_error(oss.str());
-    }
-    Eigen::MatrixXd R1 = ldlt_Q.matrixU();
-    for (int i = 0; i < R1.rows(); ++i) {
-      for (int j = 0; j < i; ++j) {
-        R1(i, j) = 0;
-      }
-      const double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
-      for (int j = i; j < R1.cols(); ++j) {
-        R1(i, j) *= d_sqrt;
-      }
-    }
-    Eigen::MatrixXd R = R1 * ldlt_Q.transpositionsP();
-
-    expr.resize(2 + R1.rows());
-    expr(0) = linear_expr;
-    // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
-    expr.segment(1, R1.rows()) =
-        1.0 / std::sqrt(2) *
-        (R * quadratic_vars + R.transpose().fullPivHouseholderQr().solve(b));
-    constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
-  }
-  if (constant < 0) {
-    ostringstream oss;
-    oss << "Expression " << quadratic_expr
-        << " is not guaranteed to be non-negative, cannot call it with "
-           "AddLorentzConeConstraint.\n";
-    throw runtime_error(oss.str());
-  }
-  expr(expr.rows() - 1) = std::sqrt(constant);
-  return AddLorentzConeConstraint(expr);
-}
-
-Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LorentzConeConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LorentzConeConstraint>(con, vars));
+  return AddConstraint(
+      internal::ParseLorentzConeConstraint(linear_expr, quadratic_expr));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
@@ -880,12 +459,6 @@ Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
   CheckIsDecisionVariable(binding.variables());
   rotated_lorentz_cone_constraint_.push_back(binding);
   return rotated_lorentz_cone_constraint_.back();
-}
-
-Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<RotatedLorentzConeConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<RotatedLorentzConeConstraint>(con, vars));
 }
 
 Binding<RotatedLorentzConeConstraint>
@@ -943,12 +516,6 @@ Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
   return linear_complementarity_constraints_.back();
 }
 
-Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearComplementarityConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LinearComplementarityConstraint>(con, vars));
-}
-
 Binding<LinearComplementarityConstraint>
 MathematicalProgram::AddLinearComplementarityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& M,
@@ -964,52 +531,9 @@ Binding<Constraint> MathematicalProgram::AddPolynomialConstraint(
     const vector<Polynomiald::VarType>& poly_vars, const Eigen::VectorXd& lb,
     const Eigen::VectorXd& ub,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  // Polynomials that are actually affine (a sum of linear terms + a
-  // constant) can be special-cased.  Other polynomials are treated as
-  // generic for now.
-  // TODO(ggould-tri) There may be other such special easy cases.
-  bool all_affine = true;
-  for (int i = 0; i < polynomials.rows(); i++) {
-    if (!polynomials[i].IsAffine()) {
-      all_affine = false;
-      break;
-    }
-  }
-  if (all_affine) {
-    Eigen::MatrixXd linear_constraint_matrix =
-        Eigen::MatrixXd::Zero(polynomials.rows(), poly_vars.size());
-    Eigen::VectorXd linear_constraint_lb = lb;
-    Eigen::VectorXd linear_constraint_ub = ub;
-    for (int poly_num = 0; poly_num < polynomials.rows(); poly_num++) {
-      for (const auto& monomial : polynomials[poly_num].GetMonomials()) {
-        if (monomial.terms.size() == 0) {
-          linear_constraint_lb[poly_num] -= monomial.coefficient;
-          linear_constraint_ub[poly_num] -= monomial.coefficient;
-        } else if (monomial.terms.size() == 1) {
-          const Polynomiald::VarType term_var = monomial.terms[0].var;
-          int var_num = (find(poly_vars.begin(), poly_vars.end(), term_var) -
-                         poly_vars.begin());
-          DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
-          linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
-        } else {
-          DRAKE_ABORT();  // Can't happen (unless isAffine() lied to us).
-        }
-      }
-    }
-    if (ub == lb) {
-      auto constraint = make_shared<LinearEqualityConstraint>(
-          linear_constraint_matrix, linear_constraint_ub);
-      return AddConstraint(constraint, vars);
-    } else {
-      auto constraint = make_shared<LinearConstraint>(
-          linear_constraint_matrix, linear_constraint_lb, linear_constraint_ub);
-      return AddConstraint(constraint, vars);
-    }
-  } else {
-    auto constraint =
-        make_shared<PolynomialConstraint>(polynomials, poly_vars, lb, ub);
-    return AddConstraint(constraint, vars);
-  }
+  auto constraint =
+      internal::MakePolynomialConstraint(polynomials, poly_vars, lb, ub);
+  return AddConstraint(constraint, vars);
 }
 
 Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
@@ -1025,18 +549,16 @@ Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
 Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     shared_ptr<PositiveSemidefiniteConstraint> con,
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var) {
-  required_capabilities_ |= kPositiveSemidefiniteConstraint;
   DRAKE_ASSERT(math::IsSymmetric(symmetric_matrix_var));
   int num_rows = symmetric_matrix_var.rows();
   // TODO(hongkai.dai): this dynamic memory allocation/copying is ugly.
+  // TODO(eric.cousineau): See if Eigen::Map<> can be used (column-major)
   VectorXDecisionVariable flat_symmetric_matrix_var(num_rows * num_rows);
   for (int i = 0; i < num_rows; ++i) {
     flat_symmetric_matrix_var.segment(i * num_rows, num_rows) =
         symmetric_matrix_var.col(i);
   }
-  positive_semidefinite_constraint_.push_back(
-      Binding<PositiveSemidefiniteConstraint>(con, flat_symmetric_matrix_var));
-  return positive_semidefinite_constraint_.back();
+  return AddConstraint(CreateBinding(con, flat_symmetric_matrix_var));
 }
 
 Binding<PositiveSemidefiniteConstraint>
@@ -1054,12 +576,6 @@ Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
                static_cast<int>(binding.GetNumElements()) + 1);
   linear_matrix_inequality_constraint_.push_back(binding);
   return linear_matrix_inequality_constraint_.back();
-}
-
-Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
-    shared_ptr<LinearMatrixInequalityConstraint> con,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddConstraint(Binding<LinearMatrixInequalityConstraint>(con, vars));
 }
 
 Binding<LinearMatrixInequalityConstraint>

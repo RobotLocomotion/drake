@@ -23,7 +23,7 @@ drake_cc_library(
         ":rigid_body_tree_alias_groups",
         "//drake/common:protobuf",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
-        "@yaml_cpp//:lib",
+        "@yaml_cpp",
     ],
 )
 

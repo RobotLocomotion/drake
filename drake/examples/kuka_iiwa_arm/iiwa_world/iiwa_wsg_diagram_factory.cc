@@ -111,8 +111,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   // bot_core::robot_state_t messages.
   iiwa_state_est_ =
       base_builder->template AddSystem<OracularStateEstimation<T>>(
-          iiwa_controller_->get_robot_for_control(),
-          iiwa_controller_->get_robot_for_control().get_body(1));
+          iiwa_controller_->get_robot_for_control());
   iiwa_state_est_->set_name("OracularStateEstimationIIWAState");
   base_builder->Connect(iiwa_output_port,
                         iiwa_state_est_->get_input_port_state());
@@ -127,7 +126,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
       box_info.model_path, multibody::joints::kQuaternion,
       box_info.world_offset, object_.get());
   box_state_est_ = base_builder->template AddSystem<OracularStateEstimation<T>>(
-      *object_, object_->get_body(1));
+      *object_);
   box_state_est_->set_name("OracularStateEstimationBoxState");
   base_builder->Connect(
       plant_->model_instance_state_output_port(box_info.instance_id),

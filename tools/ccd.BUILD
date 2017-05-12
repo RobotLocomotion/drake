@@ -15,7 +15,7 @@ cmake_configure_file(
 # sources instead of globbing, but conveniently puts the public headers in one
 # place and private sources and headers in another; we'll use globbing here.
 cc_library(
-    name = "lib",
+    name = "ccd",
     srcs = glob([
         "src/*.c",
         "src/*.h",

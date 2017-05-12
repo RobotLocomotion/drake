@@ -26,21 +26,33 @@ drake_add_cc_test(monolane_onramp_merge_test)
 target_link_libraries(monolane_onramp_merge_test drakeAutomotive)
 
 drake_add_cc_test(pose_selector_test)
-target_link_libraries(pose_selector_test drakeAutomotive)
+target_link_libraries(pose_selector_test
+    drakeAutomotive
+    drakeMaliputDragway)
 
 drake_add_cc_test(pure_pursuit_test)
-target_link_libraries(pure_pursuit_test drakeAutomotive)
+target_link_libraries(pure_pursuit_test
+    drakeAutomotive
+    drakeMaliputDragway)
 
 drake_add_cc_test(pure_pursuit_controller_test)
-target_link_libraries(pure_pursuit_controller_test drakeAutomotive)
+target_link_libraries(pure_pursuit_controller_test
+    drakeAutomotive
+    drakeMaliputDragway)
 
 drake_add_cc_test(idm_controller_test)
-target_link_libraries(idm_controller_test drakeAutomotive)
+target_link_libraries(idm_controller_test
+    drakeAutomotive
+    drakeMaliputDragway)
 
 drake_add_cc_test(road_path_test)
-target_link_libraries(road_path_test drakeAutomotive)
+target_link_libraries(road_path_test
+    drakeAutomotive
+    drakeMaliputDragway)
 
 if(lcm_FOUND)
   drake_add_cc_test(automotive_simulator_test)
-  target_link_libraries(automotive_simulator_test drakeAutomotiveLcm)
+  target_link_libraries(automotive_simulator_test
+      drakeAutomotiveLcm
+      drakeMaliputDragway)
 endif()

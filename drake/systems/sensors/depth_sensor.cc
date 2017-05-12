@@ -171,16 +171,16 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
     if (distances[i] < 0) {
       // Infinity distance measurements show up as -1.
       if (distances[i] == -1) {
-        distances[i] = DepthSensorOutput<double>::kTooFar;
+        distances[i] = DepthSensorOutput<double>::GetTooFarDistance();
       } else {
         drake::log()->warn("Measured distance was < 0 and != -1: " +
                            std::to_string(distances[i]));
-        distances[i] = DepthSensorOutput<double>::kError;
+        distances[i] = DepthSensorOutput<double>::GetErrorDistance();
       }
     } else if (distances[i] > specification_.max_range()) {
-      distances[i] = DepthSensorOutput<double>::kTooFar;
+      distances[i] = DepthSensorOutput<double>::GetTooFarDistance();
     } else if (distances[i] < specification_.min_range()) {
-      distances[i] = DepthSensorOutput<double>::kTooClose;
+      distances[i] = DepthSensorOutput<double>::GetTooCloseDistance();
     }
   }
 

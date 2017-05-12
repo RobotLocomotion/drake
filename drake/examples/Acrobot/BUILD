@@ -98,7 +98,7 @@ drake_cc_binary(
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -124,7 +124,7 @@ drake_cc_binary(
         "//drake/systems/primitives:linear_system",
         "//drake/systems/primitives:signal_logger",
         "//drake/systems/sensors:rotary_encoders",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -144,7 +144,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -164,7 +164,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -183,7 +183,7 @@ drake_cc_binary(
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/primitives:trajectory_source",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -217,7 +217,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "@gflags//:gflags",
+        "@gflags",
     ],
 )
 
