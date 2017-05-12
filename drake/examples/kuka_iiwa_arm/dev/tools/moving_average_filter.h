@@ -51,7 +51,7 @@ class MovingAverageFilter {
 
  private:
   std::queue<T> window_;
-  const size_t window_size_{0};
+  size_t window_size_{0};
   T sum_;
 };
 
