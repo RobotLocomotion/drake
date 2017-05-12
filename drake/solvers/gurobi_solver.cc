@@ -24,6 +24,7 @@
 namespace drake {
 namespace solvers {
 namespace {
+
 // Checks if the number of variables in the Gurobi model is as expected. This
 // operation can be EXPENSIVE, since it requires calling GRBupdatemodel
 // (Gurobi typically adopts lazy update, where it does not update the model
@@ -233,7 +234,8 @@ int AddSecondOrderConeConstraints(
 /*
  * Add quadratic or linear costs to the optimization problem.
  */
-int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
+int AddCosts(GRBmodel* model, double* pconstant_cost,
+             const MathematicalProgram& prog,
              double sparseness_threshold) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x.
@@ -241,11 +243,14 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   // record the non-zero entries in the cost 0.5*x'*Q*x + b'*x.
   std::vector<Eigen::Triplet<double>> Q_nonzero_coefs;
   std::vector<Eigen::Triplet<double>> b_nonzero_coefs;
+  double& constant_cost = *pconstant_cost;
+  constant_cost = 0;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
     const int constraint_variable_dimension = binding.GetNumElements();
     const Eigen::MatrixXd& Q = constraint->Q();
     const Eigen::VectorXd& b = constraint->b();
+    constant_cost += constraint->c();
 
     DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
 
@@ -284,11 +289,12 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   // Add linear cost in prog.linear_costs() to the aggregated cost.
   for (const auto& binding : prog.linear_costs()) {
     const auto& constraint = binding.constraint();
-    Eigen::RowVectorXd c = constraint->A();
+    const auto& a = constraint->a();
+    constant_cost += constraint->b();
 
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       b_nonzero_coefs.push_back(Eigen::Triplet<double>(
-          prog.FindDecisionVariableIndex(binding.variables()(i)), 0, c(i)));
+          prog.FindDecisionVariableIndex(binding.variables()(i)), 0, a(i)));
     }
   }
 
@@ -445,7 +451,7 @@ void AddSecondOrderConeVariables(
     }
   }
 }
-}  // close namespace
+}  // anonymous namespace
 
 bool GurobiSolver::available() const { return true; }
 
@@ -535,7 +541,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
   double sparseness_threshold = 1e-14;
-  error = AddCosts(model, prog, sparseness_threshold);
+  double constant_cost = 0;
+  error = AddCosts(model, &constant_cost, prog, sparseness_threshold);
   DRAKE_DEMAND(!error);
 
   error = ProcessLinearConstraints(model, prog, sparseness_threshold);
@@ -642,10 +649,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       }
       prog.SetDecisionVariableValues(prog_sol_vector);
 
-      // Obtain optimal cost
+      // Obtain optimal cost.
       double optimal_cost = std::numeric_limits<double>::quiet_NaN();
       GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
-      prog.SetOptimalCost(optimal_cost);
+      // Provide Gurobi's computed cost in addition to the constant cost.
+      prog.SetOptimalCost(optimal_cost + constant_cost);
     }
   }
 

@@ -123,7 +123,7 @@ void LinearSystemExample2::CheckSolution() const {
 }
 
 LinearSystemExample3::LinearSystemExample3() : LinearSystemExample2() {
-  con()->UpdateConstraint(3 * Matrix4d::Identity(), b());
+  con()->UpdateCoefficients(3 * Matrix4d::Identity(), b());
 }
 
 void LinearSystemExample3::CheckSolution() const {
@@ -217,7 +217,8 @@ void NonConvexQPproblem1::AddQuadraticCost() {
       -100 * Eigen::Matrix<double, 5, 5>::Identity();
   Eigen::Matrix<double, 5, 1> c;
   c << 42, 44, 45, 47, 47.5;
-  prog_->AddQuadraticCost(Q, c, x_);
+  double r = -100;
+  prog_->AddQuadraticCost(Q, c, r, x_);
 }
 
 NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,

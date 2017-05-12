@@ -245,8 +245,8 @@ class QuadraticConstraint : public Constraint {
    * @param new_b new linear term
    */
   template <typename DerivedQ, typename DerivedB>
-  void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
-                                     const Eigen::MatrixBase<DerivedB>& new_b) {
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
+                          const Eigen::MatrixBase<DerivedB>& new_b) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
         new_b.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
@@ -472,9 +472,9 @@ class LinearConstraint : public Constraint {
    * @param new_up new upper bound
    */
   template <typename DerivedA, typename DerivedL, typename DerivedU>
-  void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& new_A,
-                        const Eigen::MatrixBase<DerivedL>& new_lb,
-                        const Eigen::MatrixBase<DerivedU>& new_ub) {
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
+                          const Eigen::MatrixBase<DerivedL>& new_lb,
+                          const Eigen::MatrixBase<DerivedU>& new_ub) {
     if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
         new_lb.cols() != 1 || new_ub.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
@@ -524,9 +524,9 @@ class LinearEqualityConstraint : public LinearConstraint {
    *different number of linear constraints, but on the same decision variables)
    */
   template <typename DerivedA, typename DerivedB>
-  void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
-                        const Eigen::MatrixBase<DerivedB>& beq) {
-    LinearConstraint::UpdateConstraint(Aeq, beq, beq);
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
+                          const Eigen::MatrixBase<DerivedB>& beq) {
+    LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
   }
 };
 
