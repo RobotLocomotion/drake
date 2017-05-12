@@ -39,6 +39,14 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
     TestQPonUnitBallExample(solver);
   }
 }
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
+
+int main(int argc, char** argv) {
+  // Lock the MOSEK license for the entire duration of this test.
+  drake::solvers::MosekLicenseLock lock;
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

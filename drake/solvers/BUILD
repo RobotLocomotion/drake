@@ -334,6 +334,7 @@ drake_cc_library(
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
+            "//drake/common:singleton_lock",
             "@mosek",
         ],
         "//conditions:default": [

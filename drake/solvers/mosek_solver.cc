@@ -10,6 +10,8 @@
 #include <Eigen/SparseCore>
 #include <mosek.h>
 
+#include "drake/common/singleton_lock.h"
+
 namespace drake {
 namespace solvers {
 namespace {
@@ -560,20 +562,64 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 }
 }  // anonymous namespace
 
-MosekSolver::~MosekSolver() {
-  if (mosek_env_ != nullptr) {
-    MSKenv_t env = static_cast<MSKenv_t>(mosek_env_);
-    mosek_env_ = nullptr;
-    MSK_deleteenv(&env);
-  }
-}
+/*
+ * Implementation containing a SingletonLock<> for a Mosek license /
+ * environment.
+ */
+class MosekLicenseLock::Impl {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
 
+  Impl() = default;
+
+  MSKenv_t mosek_env() const {
+    return lock_.instance().mosek_env();
+  }
+
+ private:
+  class License {
+   public:
+    License() {
+      MSKrescodee rescode = MSK_makeenv(&mosek_env_, nullptr);
+      if (rescode != MSK_RES_OK) {
+        throw std::runtime_error("Could not acquire MOSEK license.");
+      }
+      // TODO(erc.cousineau): Consider logging acquiring / releasing
+      // license, and incrementing / decrementing lock count.
+    }
+
+    ~License() {
+      DRAKE_ASSERT(mosek_env_);
+      MSK_deleteenv(&mosek_env_);
+    }
+
+    MSKenv_t mosek_env() const {
+      return mosek_env_;
+    }
+   private:
+    MSKenv_t mosek_env_{nullptr};
+  };
+
+  SingletonLock<License> lock_;
+};
+
+// Upon construction, acquire a license lock, which will automatically
+// be destroyed by the default destructor.
+MosekLicenseLock::MosekLicenseLock()
+    : impl_(new Impl()) { }
+
+// Explicitly define default destructor, so that the implicit destructor
+// for unique_ptr<> will have access to the full definition of Impl.
+MosekLicenseLock::~MosekLicenseLock() {}
+
+MosekLicenseLock::Impl* MosekLicenseLock::impl() const {
+  return impl_.get();
+}
 
 bool MosekSolver::available() const { return true; }
 
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
-  MSKenv_t env = nullptr;
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
 
@@ -587,29 +633,14 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // in MathematicalProgram prog, but added to Mosek solver.
   std::vector<bool> is_new_variable(num_vars, false);
 
-  // According to
-  // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
-  // an env between threads is safe, but since we allocate on the
-  // first call to Solve() we need to at least be safe about
-  // allocating the environment initially.
-  {
-    std::lock_guard<std::mutex> lock(env_mutex_);
-    if (mosek_env_ == nullptr) {
-      // Create the Mosek environment.
-      rescode = MSK_makeenv(&env, nullptr);
-      if (rescode == MSK_RES_OK) {
-        mosek_env_ = env;
-      }
-    } else {
-      env = static_cast<MSKenv_t>(mosek_env_);
-      rescode = MSK_RES_OK;
-    }
+  if (!license_lock_) {
+    license_lock_.reset(new MosekLicenseLock());
   }
+  MSKenv_t env = license_lock_->impl()->mosek_env();
 
-  if (rescode == MSK_RES_OK) {
-    // Create the optimization task.
-    rescode = MSK_maketask(env, 0, num_vars, &task);
-  }
+  // Create the optimization task.
+  rescode = MSK_maketask(env, 0, num_vars, &task);
+
   if (rescode == MSK_RES_OK) {
     rescode = MSK_appendvars(task, num_vars);
   }
