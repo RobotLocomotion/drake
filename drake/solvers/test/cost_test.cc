@@ -1,6 +1,7 @@
 #include "drake/solvers/cost.h"
 
 #include <iostream>
+#include <limits>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -16,6 +17,7 @@ using std::cout;
 using std::endl;
 using std::make_shared;
 using std::make_unique;
+using std::numeric_limits;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
@@ -88,6 +90,38 @@ template <typename T>
 auto make_vector(std::initializer_list<T> items) {
   return vector<std::decay_t<T>>(items);
 }
+
+GTEST_TEST(testCost, testQuadraticCost) {
+  const double tol = numeric_limits<double>::epsilon();
+
+  // Simple ground truth test.
+  Eigen::Matrix2d Q;
+  Q << 1, 2, 3, 4;
+  const Eigen::Vector2d b(5, 6);
+  const Eigen::Vector2d x0(7, 8);
+  const double obj_expected = 375.5;
+
+  auto cost = make_shared<QuadraticCost>(Q, b);
+  Eigen::VectorXd y(1);
+
+  cost->Eval(x0, y);
+  EXPECT_EQ(y.rows(), 1);
+  EXPECT_NEAR(y(0), obj_expected, tol);
+
+  // Update with a constant term.
+  const double c = 100;
+  cost->UpdateQuadraticAndLinearTerms(Q, b, c);
+  cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + c, tol);
+
+  // Reconstruct the same cost with the constant term.
+  auto new_cost = make_shared<QuadraticCost>(Q, b, c);
+  new_cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + c, tol);
+}
+
+// TODO(eric.cousineau): Move QuadraticErrorCost and L2NormCost tests here from
+// MathematicalProgram.
 
 template <typename C, typename BoundType, typename... Args>
 void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {

@@ -13,6 +13,9 @@
 namespace drake {
 namespace solvers {
 namespace {
+
+using internal::ComputeExplicitlyConstantCost;
+
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template <typename C>
 MSKrescodee AddLinearConstraintsFromBindings(
@@ -477,7 +480,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     }
   }
   for (const auto& binding : prog.linear_costs()) {
-    const auto& c = binding.constraint()->A();
+    const auto& c = binding.constraint()->a();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       if (std::abs(c(i)) > Eigen::NumTraits<double>::epsilon()) {
         linear_term_triplets.push_back(Eigen::Triplet<double>(
@@ -713,7 +716,8 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            prog.SetOptimalCost(optimal_cost);
+            const double constant_cost = ComputeExplicitlyConstantCost(prog);
+            prog.SetOptimalCost(optimal_cost + constant_cost);
           }
           break;
         }
