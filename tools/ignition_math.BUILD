@@ -77,6 +77,15 @@ genrule(
 cc_library(
     name = "ignition_math",
     srcs = [
+       "include/ignition/math.hh",
+       "include/ignition/math/BoxPrivate.hh",
+       "include/ignition/math/FrustumPrivate.hh",
+       "include/ignition/math/KmeansPrivate.hh",
+       "include/ignition/math/RotationSplinePrivate.hh",
+       "include/ignition/math/SignalStatsPrivate.hh",
+       "include/ignition/math/SplinePrivate.hh",
+       "include/ignition/math/Vector3StatsPrivate.hh",
+       "include/ignition/math/config.hh", # from cmake_configure_file above
        "src/Angle.cc",
        "src/Box.cc",
        "src/Frustum.cc",
@@ -96,17 +105,7 @@ cc_library(
     # We need to list the private headers along with the public ones so
     # that bazel copies them all into the right place during the build
     # phase.
-    hdrs = public_headers + [
-        "include/ignition/math.hh",
-        "include/ignition/math/BoxPrivate.hh",
-        "include/ignition/math/FrustumPrivate.hh",
-        "include/ignition/math/KmeansPrivate.hh",
-        "include/ignition/math/RotationSplinePrivate.hh",
-        "include/ignition/math/SignalStatsPrivate.hh",
-        "include/ignition/math/SplinePrivate.hh",
-        "include/ignition/math/Vector3StatsPrivate.hh",
-        "include/ignition/math/config.hh", # from cmake_configure_file above
-    ],
+    hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
 )

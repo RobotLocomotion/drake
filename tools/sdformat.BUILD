@@ -52,6 +52,14 @@ genrule(
 cc_library(
     name = "sdformat",
     srcs = [
+        "include/sdf/Converter.hh",
+        "include/sdf/ExceptionPrivate.hh",
+        "include/sdf/parser_private.hh",
+        "include/sdf/parser_urdf.hh",
+        "include/sdf/SDFExtension.hh",
+        "include/sdf/sdf_config.h", # from cmake_configure_file above
+        "include/sdf/sdf.hh",       # from genrule above
+        "include/sdf/SDFImplPrivate.hh",
         "src/Console.cc",
         "src/Converter.cc",
         "src/Element.cc",
@@ -92,16 +100,7 @@ cc_library(
     ],
     # We need to list the private headers along with the public ones so that
     # bazel copies them all into the right place during the build phase.
-    hdrs = public_headers + [
-        "include/sdf/Converter.hh",
-        "include/sdf/ExceptionPrivate.hh",
-        "include/sdf/parser_private.hh",
-        "include/sdf/parser_urdf.hh",
-        "include/sdf/SDFExtension.hh",
-        "include/sdf/sdf_config.h", # from cmake_configure_file above
-        "include/sdf/sdf.hh",       # from genrule above
-        "include/sdf/SDFImplPrivate.hh",
-    ],
+    hdrs = public_headers,
     includes = [
         "include",
     ],
