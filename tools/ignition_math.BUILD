@@ -2,7 +2,7 @@
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
-# Generates config.h based on the version numbers in CMake code.
+# Generates config.hh based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
     src = "cmake/config.hh.in",
@@ -55,7 +55,7 @@ public_headers = [
 ]
 
 # Generates math.hh, which consists of #include statements for all of the
-# other headers in the library except the *Private.hh ones.  The first line is
+# public headers in the library.  The first line is
 # '#include <ignition/math/config.hh>' followed by one line like
 # '#include <ignition/math/Angle.hh>' for each non-generated header.
 genrule(
@@ -72,8 +72,8 @@ genrule(
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
-# upstream's explicitly listed sources.  The explicitly listed hdrs= matches
-# upstream's explicitly listed headers.
+# upstream's explicitly listed sources plus private headers.  The explicitly
+# listed hdrs= matches upstream's public headers.
 cc_library(
     name = "ignition_math",
     srcs = [
@@ -102,9 +102,6 @@ cc_library(
        "src/Temperature.cc",
        "src/Vector3Stats.cc",
     ],
-    # We need to list the private headers along with the public ones so
-    # that bazel copies them all into the right place during the build
-    # phase.
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
