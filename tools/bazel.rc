@@ -175,7 +175,8 @@ test:ubsan --test_lang_filters=-py
 
 ### Memcheck build. ###
 build:memcheck --copt -g
-build:memcheck --run_under=//tools:valgrind
+build:memcheck --copt -O1
+test:memcheck --run_under=//tools:valgrind
 test:memcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
@@ -190,7 +191,7 @@ test:memcheck --test_timeout=300,1500,5400,18000
 # when errors are found, try `-c dbg --config fastmemcheck` or `--config
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
-build:fastmemcheck --run_under=//tools:valgrind
+test:fastmemcheck --run_under=//tools:valgrind
 test:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
