@@ -9,8 +9,14 @@
 namespace drake {
 namespace solvers {
 
-MosekSolver::~MosekSolver() {
-  DRAKE_ASSERT(mosek_env_ == nullptr);
+// Define no-op for license lock implementation.
+class MosekLicenseLock::Impl {};
+// Do not throw an error when a lock is constructed. Only do so when a user
+// attempts to solve.
+MosekLicenseLock::MosekLicenseLock() {}
+MosekLicenseLock::~MosekLicenseLock() {}
+MosekLicenseLock::Impl* MosekLicenseLock::impl() const {
+  return nullptr;
 }
 
 bool MosekSolver::available() const {
