@@ -31,6 +31,9 @@ namespace tools {
 template <typename T>
 class MovingAverageFilter {
  public:
+  // Since this class effectively has an internal state, it cannot be copied
+  // or moved.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingAverageFilter)
   /**
    * Constructs the filter with the specified `window_size`.
    * @param window_size The size of the window which must be greater than
@@ -38,8 +41,6 @@ class MovingAverageFilter {
    * @throws a std::runtime_error when window_size <= 0.
    */
   explicit MovingAverageFilter(int window_size);
-
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingAverageFilter)
 
   /**
    * Computes the average filter result. Every call to this method modifies

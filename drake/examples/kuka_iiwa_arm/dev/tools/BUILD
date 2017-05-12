@@ -43,7 +43,6 @@ drake_cc_binary(
         "@gflags",
     ],
 )
-
     
 drake_cc_library(
     name = "moving_average_filter",
