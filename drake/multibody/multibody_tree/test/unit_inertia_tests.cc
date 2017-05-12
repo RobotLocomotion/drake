@@ -30,7 +30,8 @@ GTEST_TEST(UnitInertia, DefaultConstructor) {
 // Test constructor for a diagonal unit inertia with all elements equal.
 GTEST_TEST(UnitInertia, DiagonalInertiaConstructor) {
   const double I0 = 3.14;
-  UnitInertia<double> I(I0);
+  RotationalInertia<double> I = UnitInertia<double>::
+                                MakeTriaxiallySymmetric(I0);
   Vector3d moments_expected;
   moments_expected.setConstant(I0);
   Vector3d products_expected = Vector3d::Zero();
@@ -131,7 +132,8 @@ GTEST_TEST(UnitInertia, PointMass) {
 GTEST_TEST(UnitInertia, SolidSphere) {
   const double radius = 3.5;
   const double sphere_I = 4.9;
-  const UnitInertia<double> G_expected(sphere_I);
+  const UnitInertia<double> G_expected = UnitInertia<double>::
+                                         MakeTriaxiallySymmetric(sphere_I);
   UnitInertia<double> G = UnitInertia<double>::SolidSphere(radius);
   EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
   EXPECT_TRUE(G_expected.get_products() == G.get_products());
@@ -141,7 +143,8 @@ GTEST_TEST(UnitInertia, SolidSphere) {
 GTEST_TEST(UnitInertia, HollowSphere) {
   const double radius = 3.5;
   const double sphere_I = 2.0 *radius * radius / 3.0;
-  const UnitInertia<double> G_expected(sphere_I);
+  const UnitInertia<double> G_expected = UnitInertia<double>::
+                                         MakeTriaxiallySymmetric(sphere_I);
   UnitInertia<double> G = UnitInertia<double>::HollowSphere(radius);
   EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
   EXPECT_TRUE(G_expected.get_products() == G.get_products());
@@ -166,8 +169,9 @@ GTEST_TEST(UnitInertia, SolidBox) {
 GTEST_TEST(UnitInertia, SolidCube) {
   const double L = 1.5;
   const double I = L * L / 6.0;
-  const UnitInertia<double> G_expected(I);
-  UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
+  const UnitInertia<double> G_expected = UnitInertia<double>::
+                                         MakeTriaxiallySymmetric(I);
+    UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), epsilon));
 }
