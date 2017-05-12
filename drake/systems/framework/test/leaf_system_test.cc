@@ -814,6 +814,9 @@ class TestTriggerSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
+      if (event->get_trigger_type() == Event<double>::TriggerType::kForced)
+        continue;
+
       DRAKE_DEMAND(event->callback_ != nullptr);
 
       // Call custom callback handler.

@@ -208,7 +208,9 @@ class System {
   }
 
   /// Forces a publish on the system. For a LeafSystem, this is equivalent
-  /// to calling DoPublish with @p context and an empty publish event vector.
+  /// to calling DoPublish with @p context and a single publish event whose
+  /// trigger type is kForced, with no additional data, attribute or custom
+  /// callback.
   /// For a Diagram, this is equivalent to forcing a publish for all its
   /// constituent sub systems. The Simulator can be configured to call this
   /// in Simulator::Initialize() and at the start of each continuous integration
@@ -443,10 +445,11 @@ class System {
   }
 
   /// This method forces a discrete update. For a LeafSystem, this is equivalent
-  /// to calling DoCalcDiscreteVariableUpdates with @p context, an empty
-  /// discrete update event vector and @p discrete_state. For a Diagram, this
-  /// is equivalent to forcing a discrete update event for all its constituent
-  /// sub systems.
+  /// to calling DoCalcDiscreteVariableUpdates with @p context,
+  /// @p discrete_state and a single publish event whose trigger type is
+  /// kForced, with no additional data, attribute or custom callback.
+  /// For a Diagram, this is equivalent to forcing a discrete update event for
+  /// all its constituent sub systems.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
                                    DiscreteValues<T>* discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
@@ -489,10 +492,11 @@ class System {
   }
 
   /// This method forces an unrestricted update. For a LeafSystem, this is
-  /// equivalent to calling DoCalcUnrestrictedUpdate with @p context, an empty
-  /// unrestricted update event vector and @p state. For a Diagram, this
-  /// is equivalent to forcing an unrestricted update event for all its
-  /// constituent sub systems.
+  /// equivalent to calling DoCalcUnrestrictedUpdate with @p context, @p state
+  /// and a single publish event whose trigger type is kForced, with no
+  /// additional data, attribute or custom callback.
+  /// For a Diagram, this is equivalent to forcing an unrestricted update
+  /// event for all its constituent sub systems.
   ///
   /// @sa CalcUnrestrictedUpdate(const Context<T>&, const
   /// EventCollection<UnrestrictedUpdateEvent<T>>*, State<T>* state)

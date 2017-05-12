@@ -216,7 +216,9 @@ class LeafSystem : public System<T> {
   }
 
  protected:
-  LeafSystem() {}
+  LeafSystem()
+      : forced_events_(LeafCompositeEventCollection<
+                       T>::MakeForcedLeafCompositeEventCollection()) {}
 
   // =========================================================================
   // Implementations of System<T> methods.
@@ -807,8 +809,9 @@ class LeafSystem : public System<T> {
       const EventCollection<PublishEvent<T>>* events) const final {
     // Force call DoPublish.
     if (events == nullptr) {
-      std::vector<const PublishEvent<T>*> empty;
-      this->DoPublish(context, empty);
+      const std::vector<const PublishEvent<T>*>& events =
+          forced_events_->get_publish_events().get_events();
+      this->DoPublish(context, events);
     } else {
       DRAKE_ASSERT(dynamic_cast<const LeafEventCollection<PublishEvent<T>>*>(
           events));
@@ -833,8 +836,9 @@ class LeafSystem : public System<T> {
       DiscreteValues<T>* discrete_state) const final {
     // Force call DoCalcDiscreteVariableUpdates.
     if (events == nullptr) {
-      std::vector<const DiscreteUpdateEvent<T>*> empty;
-      this->DoCalcDiscreteVariableUpdates(context, empty, discrete_state);
+      const std::vector<const DiscreteUpdateEvent<T>*>& events =
+          forced_events_->get_discrete_update_events().get_events();
+      this->DoCalcDiscreteVariableUpdates(context, events, discrete_state);
     } else {
       DRAKE_ASSERT(dynamic_cast<const LeafEventCollection<
           DiscreteUpdateEvent<T>>*>(events));
@@ -862,8 +866,9 @@ class LeafSystem : public System<T> {
       State<T>* state) const final {
     // Force call DoCalcUnrestrictedUpdate.
     if (events == nullptr) {
-      std::vector<const UnrestrictedUpdateEvent<T>*> empty;
-      this->DoCalcUnrestrictedUpdate(context, empty, state);
+      const std::vector<const UnrestrictedUpdateEvent<T>*>& events =
+          forced_events_->get_unrestricted_update_events().get_events();
+      this->DoCalcUnrestrictedUpdate(context, events, state);
     } else {
       DRAKE_DEMAND(dynamic_cast<const LeafEventCollection<
           UnrestrictedUpdateEvent<T>>*>(events));
@@ -986,6 +991,12 @@ class LeafSystem : public System<T> {
   // Update or Publish events registered on this system for every simulator
   // major time step.
   LeafCompositeEventCollection<T> per_step_events_;
+
+  // This is a dummy LeafCompositeEventCollection with exactly one kForced
+  // triggered event per publish, discrete and unrestricted update. This is
+  // only used to dispatch forced event handling.
+  const std::unique_ptr<LeafCompositeEventCollection<T>> forced_events_{
+      nullptr};
 
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;

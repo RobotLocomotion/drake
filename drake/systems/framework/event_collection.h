@@ -556,6 +556,27 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
                 LeafEventCollection<UnrestrictedUpdateEvent<T>>>()) {}
 
   /**
+   * Static method that generates an LeafCompositeEventCollection with exactly
+   * one publish, discrete update and unrestricted update event with no optional
+   * attribute, data or callback, but trigger type kForced.
+   */
+  static std::unique_ptr<LeafCompositeEventCollection<T>>
+  MakeForcedLeafCompositeEventCollection() {
+    auto ret = std::make_unique<LeafCompositeEventCollection<T>>();
+    PublishEvent<T> publish(Event<T>::TriggerType::kForced);
+    publish.add_to_composite(ret.get());
+
+    DiscreteUpdateEvent<T> discrete_update(Event<T>::TriggerType::kForced);
+    discrete_update.add_to_composite(ret.get());
+
+    UnrestrictedUpdateEvent<T> unrestricted_update(
+        Event<T>::TriggerType::kForced);
+    unrestricted_update.add_to_composite(ret.get());
+
+    return ret;
+  }
+
+  /**
    * Adds publish event @p event, whose ownership is also transferred to `this`.
    * Aborts if `event` is null.
    */
