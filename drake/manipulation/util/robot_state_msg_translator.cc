@@ -50,10 +50,16 @@ void DecodeJointValue(const std::unordered_map<std::string, int>& name_to_index,
 RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
     const RigidBodyTree<double>& robot)
     : robot_(CheckTreeIsRobotStateLcmTypeCompatible(robot)),
-      floating_base_(robot_.bodies[1]->getJoint().is_floating()
-                         ? robot_.bodies[1].get()
-                         : nullptr) {
+      root_body_(robot_.get_body(1)),
+      is_floating_base_(root_body_.getJoint().is_floating()) {
   std::unordered_map<const RigidBody<double>*, std::string> body_to_joint_name;
+
+  if (!is_floating_base_) {
+    const DrakeJoint& root_joint = root_body_.getJoint();
+    DRAKE_DEMAND(root_joint.is_fixed());
+    DRAKE_DEMAND(root_joint.get_num_positions() == 0);
+    DRAKE_DEMAND(root_joint.get_num_velocities() == 0);
+  }
 
   for (const auto& body : robot.bodies) {
     if (body->has_parent_body()) {
@@ -94,26 +100,35 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
   DRAKE_DEMAND(v.size() == robot_.get_num_velocities());
 
   // Floating joint.
-  if (floating_base_) {
+  if (is_floating_base_) {
+    const DrakeJoint& root_joint = root_body_.getJoint();
+
     // Pose of floating base in the world frame.
-    auto X_WB = DecodePose(msg.pose);
+    Isometry3<double> X_WB = DecodePose(msg.pose);
     // Spatial velocity of base in the world frame.
-    auto V_WB = DecodeTwist(msg.twist);
-    const DrakeJoint& floating_joint = floating_base_->getJoint();
-    int position_start = floating_base_->get_position_start_index();
-    int velocity_start = floating_base_->get_velocity_start_index();
+    Vector6<double> V_WB = DecodeTwist(msg.twist);
+    // J is the root_joint frame.
+    Isometry3<double> X_WJ = root_joint.get_transform_to_parent_body();
+    Isometry3<double> X_JB = X_WJ.inverse() * X_WB;
+    Vector6<double> V_JB;
+    V_JB.head<3>() = X_WJ.linear().transpose() * V_WB.head<3>();
+    V_JB.tail<3>() = X_WJ.linear().transpose() * V_WB.tail<3>();
+
+    const DrakeJoint& floating_joint = root_body_.getJoint();
+    int position_start = root_body_.get_position_start_index();
+    int velocity_start = root_body_.get_velocity_start_index();
 
     if (floating_joint.get_num_positions() == 6) {
       // RPY-parameterized floating joint.
       // Translation.
-      q.segment<3>(position_start) = X_WB.translation();
+      q.segment<3>(position_start) = X_JB.translation();
 
       // Orientation.
-      auto rpy = math::rotmat2rpy(X_WB.linear());
+      auto rpy = math::rotmat2rpy(X_JB.linear());
       q.segment<3>(position_start + 3) = rpy;
 
       // Translational velocity.
-      auto translationdot = V_WB.tail<3>();
+      auto translationdot = V_JB.tail<3>();
       v.segment<3>(velocity_start) = translationdot;
 
       // Rotational velocity.
@@ -123,25 +138,25 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       typename math::Gradient<decltype(phi), Eigen::Dynamic, 2>::type* ddphi =
           nullptr;
       angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
-      auto angular_velocity_world = V_WB.head<3>();
+      auto angular_velocity_world = V_JB.head<3>();
       auto rpydot = (phi * angular_velocity_world).eval();
       v.segment<3>(velocity_start + 3) = rpydot;
     } else if (floating_joint.get_num_positions() == 7) {
       // Quaternion-parameterized floating joint.
       // Translation.
-      q.segment<3>(position_start) = X_WB.translation();
+      q.segment<3>(position_start) = X_JB.translation();
 
       // Orientation.
-      auto quat = math::rotmat2quat(X_WB.linear());
+      auto quat = math::rotmat2quat(X_JB.linear());
       q.segment<4>(position_start + 3) = quat;
 
       // Transform V_WB to the floating base's body frame (V_WB_B).
       // Translational velocity.
       v.segment<3>(velocity_start + 3) =
-          X_WB.linear().transpose() * V_WB.tail<3>();
+          X_JB.linear().transpose() * V_JB.tail<3>();
       // Rotational velocity.
       v.segment<3>(velocity_start) =
-          X_WB.linear().transpose() * V_WB.head<3>();
+          X_JB.linear().transpose() * V_JB.head<3>();
     } else {
       DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
     }
@@ -161,10 +176,8 @@ void RobotStateLcmMessageTranslator::InitializeMessage(
   // Encode all the other joints assuming they are all 1 dof.
   size_t num_1dof_q = robot_.get_num_positions();
   size_t num_1dof_v = robot_.get_num_velocities();
-  if (floating_base_) {
-    num_1dof_q -= floating_base_->getJoint().get_num_positions();
-    num_1dof_v -= floating_base_->getJoint().get_num_velocities();
-  }
+  num_1dof_q -= root_body_.getJoint().get_num_positions();
+  num_1dof_v -= root_body_.getJoint().get_num_velocities();
   DRAKE_DEMAND(num_1dof_q == num_1dof_v);
 
   msg->utime = 0;
@@ -217,49 +230,57 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
   DRAKE_DEMAND(CheckMessageVectorSize(*msg));
 
   // Encodes the floating base.
-  if (floating_base_) {
-    Isometry3<double> X_WB;
-    Vector6<double> V_WB;
+  const DrakeJoint& root_joint = root_body_.getJoint();
+  // J is the root_joint frame.
+  Isometry3<double> X_JB;
+  Vector6<double> V_JB;
 
-    const DrakeJoint& floating_joint = floating_base_->getJoint();
-    const int position_start = floating_base_->get_position_start_index();
-    const int velocity_start = floating_base_->get_velocity_start_index();
+  if (is_floating_base_) {
+    const int position_start = root_body_.get_position_start_index();
+    const int velocity_start = root_body_.get_velocity_start_index();
 
-    if (floating_joint.get_num_positions() == 6) {
+    if (root_joint.get_num_positions() == 6) {
       // RPY
       Vector3<double> rpy = q.segment<3>(position_start + 3);
       Vector3<double> rpydot = v.segment<3>(velocity_start + 3);
 
-      X_WB.translation() = q.segment<3>(position_start);
-      X_WB.linear() = math::rpy2rotmat(rpy);
-      X_WB.makeAffine();
+      X_JB.translation() = q.segment<3>(position_start);
+      X_JB.linear() = math::rpy2rotmat(rpy);
+      X_JB.makeAffine();
 
       Matrix3<double> phi = Matrix3<double>::Zero();
       angularvel2rpydotMatrix(rpy, phi, static_cast<Matrix3<double>*>(nullptr),
                               static_cast<Matrix3<double>*>(nullptr));
 
       auto decomp = Eigen::ColPivHouseholderQR<Matrix3<double>>(phi);
-      V_WB.head<3>() = decomp.solve(rpydot);
-      V_WB.tail<3>() = v.segment<3>(velocity_start);
-    } else if (floating_joint.get_num_positions() == 7) {
+      V_JB.head<3>() = decomp.solve(rpydot);
+      V_JB.tail<3>() = v.segment<3>(velocity_start);
+    } else if (root_joint.get_num_positions() == 7) {
       // Quaternion
-      X_WB.translation() = q.segment<3>(position_start);
-      X_WB.linear() = math::quat2rotmat(q.segment<4>(position_start + 3));
-      X_WB.makeAffine();
+      X_JB.translation() = q.segment<3>(position_start);
+      X_JB.linear() = math::quat2rotmat(q.segment<4>(position_start + 3));
+      X_JB.makeAffine();
 
       // v has velocity in body frame.
-      V_WB.head<3>() = X_WB.linear() * v.segment<3>(velocity_start);
-      V_WB.tail<3>() = X_WB.linear() * v.segment<3>(velocity_start + 3);
+      V_JB.head<3>() = X_JB.linear() * v.segment<3>(velocity_start);
+      V_JB.tail<3>() = X_JB.linear() * v.segment<3>(velocity_start + 3);
     } else {
       DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
     }
-
-    EncodePose(X_WB, msg->pose);
-    EncodeTwist(V_WB, msg->twist);
   } else {
-    EncodePose(Isometry3<double>::Identity(), msg->pose);
-    EncodeTwist(Vector6<double>::Zero(), msg->twist);
+    // Fixed base, the transformation is the joint's pose in the world frame.
+    X_JB.setIdentity();
+    V_JB.setZero();
   }
+
+  Isometry3<double> X_WJ = root_joint.get_transform_to_parent_body();
+  Isometry3<double> X_WB = X_WJ * X_JB;
+  Vector6<double> V_WB;
+  V_WB.head<3>() = X_WJ.linear() * V_JB.head<3>();
+  V_WB.tail<3>() = X_WJ.linear() * V_JB.tail<3>();
+
+  EncodePose(X_WB, msg->pose);
+  EncodeTwist(V_WB, msg->twist);
 
   EncodeValue(joint_name_to_q_index_, msg->joint_name, q,
               &(msg->joint_position));
@@ -295,34 +316,73 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
     throw std::logic_error("This class assumes at least one non-world body.");
   }
 
+  // Checks the "root_body".
+  const RigidBody<double>& world = robot.get_body(0);
+  const RigidBody<double>& root_body = robot.get_body(1);
+  const DrakeJoint& root_joint = root_body.getJoint();
+
+  DRAKE_DEMAND(root_body.has_parent_body());
+
+  if (root_body.get_parent() != &world) {
+    throw std::logic_error(
+        "First body's parent must be the \"world\".");
+  }
+
   bool floating_joint_found = false;
-  for (const auto& body_ptr : robot.bodies) {
-    if (body_ptr->has_parent_body()) {
-      const auto& joint = body_ptr->getJoint();
-      if (joint.is_floating()) {
-        if (floating_joint_found) {
-          throw std::logic_error(
-              "robot_state_t assumes at most one floating joint.");
-        }
-        floating_joint_found = true;
+  bool fixed_base_found = false;
 
-        if (body_ptr != robot.bodies[1]) {
-          throw std::logic_error(
-              "This class assumes that the first non-world body is the "
-              "floating body.");
-        }
+  if (root_joint.is_floating()) {
+    floating_joint_found = true;
 
-        if (body_ptr->get_position_start_index() != 0 ||
-            body_ptr->get_velocity_start_index() != 0) {
+    if (root_body.get_position_start_index() != 0 ||
+        root_body.get_velocity_start_index() != 0) {
+      throw std::logic_error(
+          "This class assumes that floating joint positions and velocities are "
+          "at the head of the generalized position and velocity vectors.");
+    }
+  }
+
+  if (root_joint.is_fixed()) {
+    fixed_base_found = true;
+    DRAKE_DEMAND(root_joint.get_num_positions() == 0);
+    DRAKE_DEMAND(root_joint.get_num_velocities() == 0);
+  }
+
+  // Root body has to be either fixed or floating.
+  if (!(floating_joint_found ^ fixed_base_found)) {
+    throw std::logic_error(
+        "The first body has to be attached to the world with either a fixed "
+        "joint or a floating joint.");
+  }
+
+  // Skip the "world" and the "root_body".
+  for (int i = 2; i < robot.get_num_bodies(); ++i) {
+    const RigidBody<double>* body = robot.bodies[i].get();
+    DRAKE_DEMAND(body->has_parent_body());
+
+    const auto& joint = body->getJoint();
+
+    if (joint.is_floating()) {
+      if (fixed_base_found) {
+        throw std::logic_error(
+            "This does not allow floating base and fixed base to co-exist.");
+      }
+
+      if (floating_joint_found) {
+        throw std::logic_error(
+            "robot_state_t assumes at most one floating joint.");
+      }
+    } else {
+      if (joint.get_num_positions() > 1 || joint.get_num_velocities() > 1) {
+        throw std::logic_error(
+            "robot_state_t assumes non-floating joints to be "
+            "1-DoF or fixed.");
+      }
+
+      if (joint.is_fixed()) {
+        if (fixed_base_found && body->get_parent() == &world) {
           throw std::logic_error(
-              "This class assumes that floating joint positions and are at the "
-              "head of the position and velocity vectors.");
-        }
-      } else {
-        if (joint.get_num_positions() > 1 || joint.get_num_velocities() > 1) {
-          throw std::logic_error(
-              "robot_state_t assumes non-floating joints to be "
-              "1-DoF or fixed.");
+              "robot_state_t assumes at most one fixed root joint.");
         }
       }
     }
