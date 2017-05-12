@@ -7,6 +7,7 @@
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <cmath>
 
 #include <Eigen/Eigenvalues>
 
@@ -84,6 +85,10 @@ namespace multibody {
 /// axes of inertia** so that the inertia matrix is diagonalized with elements
 /// called **principal moments of inertia**.
 ///
+/// @note To enable speed in a release build while facilitating finding invalid
+/// rotational inertias during debugging, methods in this class will throw a
+/// std::logic_error exception only in a debug build.
+///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 /// Various methods in this class require numerical (not symbolic) data types.
 template <typename T>
@@ -99,8 +104,9 @@ class RotationalInertia {
   /// diagonal and with each product of inertia set to zero. This constructor
   /// is useful for the rotational inertia of a uniform-density sphere or cube.
   /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
-  explicit RotationalInertia(const T& I_triaxial) :
-      RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0) {}
+  static RotationalInertia<T> MakeTriaxiallySymmetric(const T& I_triaxial) {
+    return RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0);
+  }
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.
@@ -132,69 +138,59 @@ class RotationalInertia {
   RotationalInertia(const T& mass, const Vector3<T>& p_PQ_E) :
       RotationalInertia(mass * p_PQ_E, p_PQ_E) {}
 
-  /// Creates a rotational inertia for a unit-mass particle Q (mass = 1), whose
-  /// position vector from about-point P is p_PQ_E (E is expressed-in frame).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
-  /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
-  /// @retval I_QP_E, Q's rotational inertia about-point P expressed-in frame E.
-  /// @remark Negating the position vector p_PQ_E has no affect on the result.
-  static RotationalInertia<T> CalcUnitMassRotationalInertia(
-      const Vector3<T>& p_PQ_E) {
-    return RotationalInertia(p_PQ_E, p_PQ_E);
-  }
-
   /// For consistency with Eigen's API, the rows() method returns 3.
-  int rows() const { return 3;}
+  int rows() const { return 3; }
 
   /// For consistency with Eigen's API, the cols() methods returns 3.
-  int cols() const { return 3;}
+  int cols() const { return 3; }
 
   /// Returns 3-element vector with moments of inertia [Ixx, Iyy, Izz].
   Vector3<T> get_moments() const { return I_SP_E_.diagonal(); }
 
   /// Returns 3-element vector with products of inertia [Ixy, Ixz, Iyz].
   Vector3<T> get_products() const {
-    // Let operator(int ,int) decide whether upper/lower part of matrix is used.
-    const RotationalInertia& Iref = *this;
-    return Vector3<T>(Iref(0, 1), Iref(0, 2), Iref(1, 2));
+    // Note: Products of inertia are stored in lower-triangular part of matrix.
+    // Note: The three upper off-diagonal matrix elements remain equal to NaN.
+    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+    return Vector3<T>(I_SP_E_(1, 0), I_SP_E_(2, 0), I_SP_E_(2, 1));
   }
 
   /// Returns a rotational inertia's trace (i.e., Ixx + Iyy + Izz, the sum of
   /// the diagonal elements of the inertia matrix).  The trace happens to be
   /// invariant to its expressed-in frame (i.e., the trace does not depend
   /// on the frame in which it is expressed).  The trace is useful because the
-  /// largest moment of inertia Imax must have  trace / 3 <= Imax <= trace / 2,
+  /// largest moment of inertia Imax must have: trace / 3 <= Imax <= trace / 2,
   /// and the largest possible product of inertia must be <= Imax / 2.
   /// Hence, trace / 3 and trace / 2 give a lower and upper bound on the largest
   /// possible element that can be in a valid rotational inertia.
-  T CalcTrace() const { return I_SP_E_.trace(); }
+  T Trace() const { return I_SP_E_.trace(); }
 
-  /// Returns the maximum possible moment of inertia for `this` rotational
-  /// inertia about-point P for *any* expressed-in frame E. This maximum is
-  /// 1/2 `this` rotational inertia's trace, i.e., (Ixx + Iyy + Izz) / 2.
-  /// The trace happens to be invariant to its expressed-in frame.
-  /// @remark For a valid rotational inertia, the largest moment of inertia Imax
-  /// has the range:  trace / 3 <= Imax <= trace / 2.
+  /// Returns Imax, the maximum possible moment of inertia for `this` rotational
+  /// inertia about-point P for *any* expressed-in frame E.
+  /// @remark Imax has the range: trace / 3 <= Imax <= trace / 2.
+  /// @see Trace()
   T CalcMaximumPossibleMomentOfInertia() const {
     using std::abs;
-    return 0.5 * abs(CalcTrace());
+    return 0.5 * abs(Trace());
   }
 
-  /// Const access to the `(i, j)` element of this rotational inertia.  Since
-  /// rotational inertia is a symmetric matrix and the upper-off diagonal is not
-  /// stored, this operator maps `(i, j)` to the appropriate memory location.
-  /// This operator is meant for convenience (not speed) and helps avoid access
-  /// to invalid or NaN parts of the inertia matrix.  To prevent a user from
-  /// constructing a non-symmetric or non-physical rotational inertia element-
-  /// by-element, a mutable version of this operator is not provided.
+  /// If `i >= j`, returns the `(i, j)` element of `this` rotational inertia,
+  /// otherwise returns the `(j, i`) element of `this`.   This operator helps
+  /// avoid access to the upper-triangular part of `this` (rotational inertias
+  /// are symmetric and the upper-triangular elements are NaN).
+  /// @remark A mutable version of operator() is intentionally absent so as to
+  /// prevent an end-user from directly setting elements.  This prevents the
+  /// creation of a non-physical (or non-symmetric) rotational inertia.
   const T& operator()(int i, int j) const {
     // Overwrites local copies of i and j.
     check_and_swap(&i, &j);
+    DRAKE_DEMAND(is_lower_triangular_order(i, j));
     return I_SP_E_(i, j);
   }
 
-  /// Get a full 3x3 matrix copy of this rotational inertia.  The returned copy
+  /// Gets a full 3x3 matrix copy of this rotational inertia.  The returned copy
   /// is symmetric and includes both lower and upper parts of the matrix.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
@@ -214,14 +210,13 @@ class RotationalInertia {
   /// `this` rotational inertia (independent of the expressed-in frame E) and
   /// denoting `I_maxB` as the largest element value that can appear in a valid
   /// `other` rotational inertia (independent of the expressed-in frame E),
-  /// `this` and `other` are considered approximately equal, if:
+  /// `this` and `other` are considered nearly equal to each other, if:
   ///  ‖this - other‖∞  <  precision * min(I_maxA, I_maxB)
   ///
   /// @param other Rotational inertia to compare with `this` rotational inertia.
-  /// @param  precision is a dimensionless real positive number that multiplies
-  ///         `I_maximum` to calculate `epsilon` = `precision` * `I_test`.
-  ///         `precision` is usually based on two factors, namely the accuracy
-  ///         of moments/products of inertia and/or machine-precision.
+  /// @param  precision is a dimensionless real positive number that is usually
+  ///         based on two factors, namely expected accuracy of moments/products
+  ///         of inertia (e.g., from end-user or CAD) and/or machine-precision.
   /// @return `true` if the absolute value of each moment/product of inertia
   ///          in `this` is within `epsilon` of the corresponding moment/
   ///          product absolute value in `other`.  Otherwise returns `false`.
@@ -229,12 +224,12 @@ class RotationalInertia {
   ///    in `this` and `other` can be converted to a double (discarding
   ///    supplemental scalar data such as derivatives of an AutoDiffScalar).
   ///    It fails at runtime if type T cannot be converted to `double`.
-  bool IsCloseTo(const RotationalInertia& other, const double precision) const {
+  bool IsNearlyEqualTo(const RotationalInertia& other, double precision) const {
     using std::min;
     const T I_maxA = CalcMaximumPossibleMomentOfInertia();
     const T I_maxB = other.CalcMaximumPossibleMomentOfInertia();
     const T I_test = min(I_maxA, I_maxB);
-    const double epsilon = precision * ExtractDoubleOrThrow(I_test);
+    const T epsilon = precision * I_test;
     return IsApproxMomentsAndProducts(other, epsilon);
   }
 
@@ -277,11 +272,6 @@ class RotationalInertia {
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since rotational inertia `I_BP_E` has been subtracted from it.
   /// @see operator-().
-  /// @warning This operator may produce an invalid rotational inertia.
-  ///    Use CouldBePhysicallyValid() to perform necessary (but insufficient)
-  ///    checks on the physical validity of the resulting rotational inertia.
-  ///    Sufficient conditions require calling CouldBePhysicallyValid() when the
-  ///    about-point is Bcm (the body's center of mass).
   /// @note This subtract operator is useful for computing rotational inertia
   /// of a body with a hole.  First the rotational inertia of a fully solid
   /// body S (without the hole) is calculated, then the rotational inertia of
@@ -321,9 +311,18 @@ class RotationalInertia {
     return *this;
   }
 
+  /// Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
+  /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
+  /// @return `this` rotational inertia multiplied by `nonnegative_scalar`.
+  /// @see operator*=().
+  RotationalInertia<T> operator*(const T& nonnegative_scalar) const {
+    return RotationalInertia(*this) *= nonnegative_scalar;
+  }
+
+
   /// Divides `this` rotational inertia by a positive scalar.
   /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
-  /// @param positive_scalar Positive scalar (> 0) which multiplies `this`.
+  /// @param positive_scalar Positive scalar (> 0) which divides `this`.
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since `this` has been divided by `positive_scalar`.
   /// @see operator/(), operator*().
@@ -354,7 +353,6 @@ class RotationalInertia {
 
   /// Sets `this` rotational inertia so all its elements are equal to NaN.
   /// This helps quickly detect uninitialized moments/products of inertia.
-  /// Computating with NaN triggers a trackable stack of invalid operations.
   void SetToNaN() {
     I_SP_E_.setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
@@ -378,6 +376,7 @@ class RotationalInertia {
     // The three upper off-diagonal products of inertia should be/remain NaN.
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j <= i; ++j) {
+        DRAKE_DEMAND(is_lower_triangular_order(i, j));
         if (isnan(I_SP_E_(i, j))) return true;
       }
     }
@@ -387,42 +386,45 @@ class RotationalInertia {
   /// This method takes `this` rotational inertia about-point P, expressed-in-
   /// frame E, and computes its principal moments of inertia about-point P, but
   /// expressed-in a frame aligned with the principal axes.
-  /// In debug builds, throws std::runtime_error if any moment or products of
-  /// inertia in `this` cannot be converted to a double.
   ///
   /// @note This method only works if all moments/products of inertia in `this`
   ///       with a scalar type T can be converted to a double (discarding
   ///       supplemental scalar data such as derivatives of an AutoDiffScalar).
-  ///       It fails at runtime if type T cannot be converted to `double`.
+  ///       It fails if type T cannot be converted to `double`.
   ///
   /// @retval principal_moments The vector of principal moments of inertia
   ///                           `[Ixx Iyy Izz]` sorted in ascending order.
-  /// @throws std::runtime_error if eigenvalue solver fails.
+  /// @throws std::runtime_error if eigenvalue solver fails or one of the
+  ///         moments or products of inertia cannot be converted to a double.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
     // Notes:
     //   1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffScalar.
     //      Therefore, convert `this` to a local copy of type Matrix3<double>.
     //   2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
     //      of this symmetric matrix.
-    Matrix3<double> Id;
-    Id(0, 0) = ExtractDoubleOrThrow(I_SP_E_(0, 0));
-    Id(1, 0) = ExtractDoubleOrThrow(I_SP_E_(1, 0));
-    Id(2, 0) = ExtractDoubleOrThrow(I_SP_E_(2, 0));
-    Id(1, 1) = ExtractDoubleOrThrow(I_SP_E_(1, 1));
-    Id(2, 1) = ExtractDoubleOrThrow(I_SP_E_(2, 1));
-    Id(2, 2) = ExtractDoubleOrThrow(I_SP_E_(2, 2));
+    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+    Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
+    I_double(0, 0) = ExtractDoubleOrThrow(I_SP_E_(0, 0));
+    I_double(1, 1) = ExtractDoubleOrThrow(I_SP_E_(1, 1));
+    I_double(2, 2) = ExtractDoubleOrThrow(I_SP_E_(2, 2));
+    I_double(1, 0) = ExtractDoubleOrThrow(I_SP_E_(1, 0));
+    I_double(2, 0) = ExtractDoubleOrThrow(I_SP_E_(2, 0));
+    I_double(2, 1) = ExtractDoubleOrThrow(I_SP_E_(2, 1));
 
     // If all products of inertia are zero, no need to calculate eigenvalues.
     // The eigenvalues are the diagonal elements.  Sort them in ascending order.
-    const bool is_diagonal = (Id(1, 0) == 0 && Id(2, 0) == 0 && Id(2, 1) == 0);
+    const bool is_diagonal = (I_double(1, 0) == 0 && I_double(2, 0) == 0 &&
+                              I_double(2, 1) == 0);
     if (is_diagonal) {
-      Vector3<double> moments(Id(0, 0), Id(1, 1), Id(2, 2));
-      std::sort(moments.data(), moments.data()+moments.size());
+      Vector3<double> moments(I_double(0, 0), I_double(1, 1), I_double(2, 2));
+      std::sort(moments.data(), moments.data() + moments.size());
       return moments;
     }
 
     Eigen::SelfAdjointEigenSolver<Matrix3<double>> solver(
-        Id, Eigen::EigenvaluesOnly);
+        I_double, Eigen::EigenvaluesOnly);
     if (solver.info() != Eigen::Success) {
       throw std::runtime_error(
           "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia()."
@@ -440,33 +442,33 @@ class RotationalInertia {
   ///   - `Ixx + Izz >= Iyy`
   ///   - `Iyy + Izz >= Ixx`
   ///
-  /// In debug builds, throws std::runtime_error if any moment or products of
-  /// inertia in `this` cannot be converted to a double.
-  ///
   /// @warning These checks are necessary (but NOT sufficient) conditions for a
-  /// rotational inertia to be physically valid. The sufficient condition
+  /// rotational inertia to be physically valid.  The sufficient condition
   /// requires a rotational inertia to satisfy the above checks *after* `this`
-  /// is shifed to the center of mass using the parallel axis theorem.  However,
-  /// this class does not know its about-point or its center of mass location.
-  /// Sufficient conditions require calling CouldBePhysicallyValid() when the
-  /// about-point is Bcm (the body's center of mass).
+  /// is shifted to the center of mass, i.e., the sufficient condition requires
+  /// calling CouldBePhysicallyValid() when the about-point is Bcm (the body's
+  /// center of mass).  Note: this class does not know its about-point or its
+  /// center of mass location.
   ///
   /// @return `true` for a plausible rotational inertia passing the above
   ///          necessary but insufficient checks and `false` otherwise.
+  /// @throws std::runtime_error if principal moments of inertia cannot be
+  ///         calculated (eigenvalue solver) or one of the moments or products
+  ///         of inertia cannot be converted to a double.
   bool CouldBePhysicallyValid() const {
     if (IsNaN()) return false;
 
     // All the moments of inertia should be non-negative, so the trace should
     // be non-negative.  Also use the trace to calculate epsilon (next step).
-    const double trace  = ExtractDoubleOrThrow(CalcTrace());
-    if ( trace < 0) return false;
+    const T trace  = Trace();
+    if (trace < 0) return false;
 
     // To check the validity of rotational inertia use an epsilon value that is
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.
     const double precision = 10 * std::numeric_limits<double>::epsilon();
-    const double max_possible_inertia_moment_or_product = 0.5 * trace;
-    const double epsilon = precision * max_possible_inertia_moment_or_product;
+    const T max_possible_inertia_moment_or_product = 0.5 * trace;
+    const T epsilon = precision * max_possible_inertia_moment_or_product;
 
     // Test `this` rotational inertia's moments of inertia to be mostly
     // non-negative and also satisfy triangle inequality.
@@ -497,7 +499,7 @@ class RotationalInertia {
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
     // That discussion tell us that really here we don't have a significant
     // performance gain for small matrices when writing on one of the triangular
-    // parts only. Then gain is in accuracy, by having RotationalInertia to only
+    // parts only. The gain is in accuracy, by having RotationalInertia to only
     // deal with one triangular portion of the matrix.
 
     // Local copy to avoid aliasing that occurs if using triangular view.
@@ -523,6 +525,7 @@ class RotationalInertia {
   /// @param R_AE Rotation matrix from frame A to frame E.
   /// @retval I_BP_A Rotational inertia of B about-point P expressed-in frame A.
   /// @see ReExpressInPlace()
+  /// TODO(@mitiguy)  __attribute__((warn_unused_result))
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
@@ -657,13 +660,18 @@ class RotationalInertia {
     return RotationalInertia(I_BP_E) *= nonnegative_scalar;
   }
 
-  /// Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
-  /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
-  /// @return `this` rotational inertia multiplied by `nonnegative_scalar`.
-  /// @see operator*=().
-  friend RotationalInertia<T> operator*(const RotationalInertia<T>& I_BP_E,
-                                        const T& nonnegative_scalar) {
-    return RotationalInertia(I_BP_E) *= nonnegative_scalar;
+
+ protected:
+  /// Creates a rotational inertia for a unit-mass particle Q (mass = 1), whose
+  /// position vector from about-point P is p_PQ_E (E is expressed-in frame).
+  /// In debug builds, throws std::logic_error if rotational inertia that is
+  /// constructed from these arguments violates CouldBePhysicallyValid().
+  /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
+  /// @retval I_QP_E, Q's rotational inertia about-point P expressed-in frame E.
+  /// @remark Negating the position vector p_PQ_E has no affect on the result.
+  static RotationalInertia<T> MakeUnitMassRotationalInertia(
+      const Vector3<T>& p_PQ_E) {
+    return RotationalInertia(p_PQ_E, p_PQ_E);
   }
 
  private:
@@ -671,9 +679,12 @@ class RotationalInertia {
   // ignoring the generic matrix's three upper-off diagonal matrix elements.
   // This constructor intentionally does not test CouldBePhysicallyValid().
   // The three upper off-diagonal matrix elements remain equal to NaN.
-  explicit RotationalInertia(const Matrix3<T>& I) {
-      set_moments_and_products_no_validity_check(I(0, 0),  I(1, 1),  I(2, 2),
-                                                 I(1, 0),  I(2, 0),  I(2, 1));
+  static RotationalInertia<T> MakeRotationalInertiaFromMatrix3(
+      const Matrix3<T>& I) {
+      RotationalInertia<T> K;
+      K.set_moments_and_products_no_validity_check(I(0, 0),  I(1, 1),  I(2, 2),
+                                                   I(1, 0),  I(2, 0),  I(2, 1));
+      return K;
   }
 
   // Constructs a rotational inertia for a particle Q whose position vector
@@ -709,6 +720,9 @@ class RotationalInertia {
       const T& Ixx, const T& Iyy, const T& Izz,
       const T& Ixy, const T& Ixz, const T& Iyz) {
     // Note: The three upper off-diagonal matrix elements remain equal to NaN.
+    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
     I_SP_E_(0, 0) = Ixx;  I_SP_E_(1, 1) = Iyy;  I_SP_E_(2, 2) = Izz;
     I_SP_E_(1, 0) = Ixy;  I_SP_E_(2, 0) = Ixz;  I_SP_E_(2, 1) = Iyz;
   }
@@ -761,10 +775,16 @@ class RotationalInertia {
     return shift_away.MinusEqualsUnchecked(shift_towards);
   }
 
+  // This function returns true if arguments `i` and `j` access the lower-
+  // triangular portion of the rotational matrix, otherwise false.
+  static constexpr bool is_lower_triangular_order(int i, int j) {return i >= j;}
+
   // Utility method used to swap matrix indexes (i, j) depending on the
   // TriangularViewInUse portion of this inertia. The swap is performed so that
   // we only use the triangular portion corresponding to TriangularViewInUse.
-  static void check_and_swap(int* i, int* j) { if (*i < *j) std::swap(*i, *j); }
+  static void check_and_swap(int* i, int* j) {
+    if (!is_lower_triangular_order(*i, *j)) std::swap(*i, *j);
+  }
 
   // Returns a constant reference to the underlying Eigen matrix. Notice that
   // since RotationalInertia only uses the lower-triangular portion of its
@@ -799,10 +819,10 @@ class RotationalInertia {
   // @return `true` if the absolute value of each moment/product of inertia
   //          in `this` is within `epsilon` of the corresponding moment/
   //          product absolute value in `other`.  Otherwise returns `false`.
-  // @note CalcTrace() / 2 is a rotational inertia's maximum possible element,
-  // e.g., consider: epsilon = 1E-9 * CalcTrace()  (where 1E-9 is a heuristic).
+  // @note Trace() / 2 is a rotational inertia's maximum possible element,
+  // e.g., consider: epsilon = 1E-9 * Trace()  (where 1E-9 is a heuristic).
   bool IsApproxMomentsAndProducts(const RotationalInertia& other,
-                                  const double epsilon) const {
+                                  const T &epsilon) const {
     const Vector3<T> moment_difference = get_moments() - other.get_moments();
     const Vector3<T> product_difference = get_products() - other.get_products();
     const T moment_max = moment_difference.template lpNorm<Eigen::Infinity>();
@@ -816,12 +836,12 @@ class RotationalInertia {
   // nearly equal to the third one. Example: Ixx = Iyy = 50, Izz = 100.00000001,
   // or Ixx = -0.0001 (negative),  Ixx = 49.9999,  Iyy = 50.
   // A positive (non-zero) epsilon accounts for round-off errors, e.g., from
-  // CalcPrincipalMomentsOfInertia() or re-expressing inertia in another frame.
+  // re-expressing inertia in another frame.
   // @param Ixx, Iyy, Izz moments of inertia for a generic rotational inertia,
   //        (i.e., not necessarily principal moments of inertia).
   // @param epsilon Real positive number that is much smaller than the largest
   //        possible element in a valid rotational inertia.  Heuristically,
-  //       `epsilon` should probably be a small multiplier of CalcTrace() / 2.
+  //       `epsilon` should probably be a small multiplier of Trace() / 2.
   // @note Denoting Imin and Imax as the smallest and largest possible moments
   //       of inertia in a valid rotational inertia, denoting Imed as the
   //       intermediate moment of inertia, and denoting tr as the trace of the
@@ -829,7 +849,7 @@ class RotationalInertia {
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
   static bool AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-      const T& Ixx, const T& Iyy, const T& Izz, const double epsilon) {
+      const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     const bool are_moments_near_positive = AreMomentsOfInertiaNearPositive(
         Ixx, Iyy, Izz, epsilon);
     const bool is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
@@ -840,21 +860,20 @@ class RotationalInertia {
 
   // Tests whether each moment of inertia is non-negative (to within epsilon).
   // This test allows for small (equal to -epsilon) negative moments of inertia
-  // due to round-off errors, e.g., from CalcPrincipalMomentsOfInertia() and/or
-  // re-expressing a rotational inertia in another frame.
+  // due to round-off errors, e.g., from expressing a rotational inertia.
   // @param Ixx, Iyy, Izz moments of inertia for a generic rotational inertia,
   //        (i.e., not necessarily principal moments of inertia).
   // @param epsilon Real positive number that is significantly smaller than the
   //        largest possible element in a valid rotational inertia.
-  //        Heuristically, `epsilon` is a small multiplier of CalcTrace() / 2.
+  //        Heuristically, `epsilon` is a small multiplier of Trace() / 2.
   static bool AreMomentsOfInertiaNearPositive(
-      const T& Ixx, const T& Iyy, const T& Izz, const double epsilon) {
+      const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
   }
 
   // Throws an exception if a rotational inertia is not physically valid.
   void ThrowIfNotPhysicallyValid() {
-    if ( !CouldBePhysicallyValid() )
+    if (!CouldBePhysicallyValid())
       throw std::logic_error("Warning: Rotational inertia did not pass test: "
                              "CouldBePhysicallyValid().");
   }
@@ -862,7 +881,7 @@ class RotationalInertia {
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.
   void ThrowIfMultiplyByNegativeScalar(const T& nonnegative_scalar) {
-    if ( nonnegative_scalar < 0 )
+    if (nonnegative_scalar < 0)
       throw std::logic_error("Warning: Rotational inertia is multiplied by a "
                              "negative number.");
   }
@@ -870,9 +889,9 @@ class RotationalInertia {
   // Throws an exception if a rotational inertia is divided by a non-positive
   // number - which implies that the resulting rotational inertia is invalid.
   void ThrowIfDivideByZeroOrNegativeScalar(const T& positive_scalar) {
-    if ( positive_scalar == 0 )
+    if (positive_scalar == 0)
       throw std::logic_error("Warning: Rotational inertia is divided by 0.");
-    if ( positive_scalar < 0 )
+    if (positive_scalar < 0)
       throw std::logic_error("Warning: Rotational inertia is divided by a "
                              "negative number");
   }
@@ -880,10 +899,8 @@ class RotationalInertia {
   // The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
   // inertia) and off-diagonal elements (products of inertia) are associated
   // with a body (or composite body) S, an about-point P, and an expressed-in-
-  // frame E.  A rotational inertia is ill-defined unless there is a body S,
-  // about-point P, and expressed-in frame E. The user of this class is
-  // responsible for tracking the body S, about-point P and expressed-in frame E
-  // (none of these are stored in this class).
+  // frame E.  However the user of this class is responsible for tracking S, P,
+  // and E  (none of these are stored in this class).
   // The rotational inertia class only has data for the inertia matrix, whose
   // elements are initially set to NaN to aid in ensuring only the lower-
   // triangular part of the matrix is used (upper-triangular part is not used).

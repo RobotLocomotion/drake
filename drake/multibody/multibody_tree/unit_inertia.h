@@ -40,30 +40,27 @@ class UnitInertia : public RotationalInertia<T> {
   /// detection of uninitialized values.
   UnitInertia() {}
 
-  /// Creates a principal unit inertia with identical diagonal elements
-  /// equal to I and zero products of inertia. Rotational inertias with this
-  /// property are called **triaxially symmetric** and their moment of inertia
-  /// about all lines passing through the object's centroid are equal. For
-  /// example, %UnitInertia matrices of this form arise for simple shapes such
-  /// as sphere and cube solids or shells.
-  /// Throws an exception if I is negative.
-  /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube() for examples
-  /// of **triaxially symmetric**.
-  explicit UnitInertia(const T& I) : RotationalInertia<T>(I) {}
+  /// Constructs a unit inertia with equal moments of inertia along its
+  /// diagonal and with each product of inertia set to zero. This constructor
+  /// is useful for the unit inertia of a uniform-density sphere or cube.
+  /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
+  /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube() for examples.
+  static UnitInertia<T> MakeTriaxiallySymmetric(const T& I_triaxial) {
+    return UnitInertia<T>(
+        RotationalInertia<T>::MakeTriaxiallySymmetric(I_triaxial));
+  }
 
-  /// Creates a principal unit inertia for which the products of inertia are
-  /// zero and the moments of inertia are given by `Ixx`, `Iyy` and `Izz`.
-  /// @throws std::runtime_error if any of the provided moments are negative
-  /// or the resulting inertia is not physically valid according to
-  /// RotationalInertia::CouldBePhysicallyValid().
+  /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /// and with each product of inertia set to zero.
+  /// In debug builds, throws std::logic_error if unit inertia that is
+  /// constructed from these arguments violates CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz) :
       RotationalInertia<T>(Ixx, Iyy, Izz) {}
 
-  /// Creates a general unit inertia matrix with non-zero off-diagonal
-  /// elements where the six components of the rotational intertia in a given
-  /// frame E need to be provided.
-  /// @throws std::runtime_error if the resulting inertia is invalid
-  /// according to RotationalInertia::CouldBePhysicallyValid().
+  /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
+  /// In debug builds, throws std::logic_error if rotational inertia that is
+  /// constructed from these arguments violates CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz,
               const T& Ixy, const T& Ixz, const T& Iyz) :
       RotationalInertia<T>(Ixx, Iyy, Izz, Ixy, Ixz, Iyz) {}
@@ -120,7 +117,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// @returns A reference to `this` unit inertia, which has now been taken
   ///          about point Q so can be written as `G_BQ_E`.
   UnitInertia<T>& ShiftFromCentroidInPlace(const Vector3<T>& p_BcQ_E) {
-    RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
+    RotationalInertia<T>::operator+=(
+        RotationalInertia<T>::MakeUnitMassRotationalInertia(p_BcQ_E));
     return *this;
   }
 
@@ -224,14 +222,14 @@ class UnitInertia : public RotationalInertia<T> {
   /// Computes the unit inertia for a unit-mass solid sphere of uniform density
   /// and radius `r` taken about its center.
   static UnitInertia<T> SolidSphere(const T& r) {
-    return UnitInertia(T(0.4) * r * r);
+    return UnitInertia<T>::MakeTriaxiallySymmetric(T(0.4) * r * r);
   }
 
   /// Computes the unit inertia for a unit-mass hollow sphere of radius `r`
   /// consisting of an infinitesimally thin shell of uniform density.
   /// The unit inertia is taken about the center of the sphere.
   static UnitInertia<T> HollowSphere(const T& r) {
-    return UnitInertia(T(2)/T(3) * r * r);
+    return UnitInertia<T>::MakeTriaxiallySymmetric(T(2)/T(3) * r * r);
   }
 
   /// Computes the unit inertia for a unit-mass solid box of uniform density

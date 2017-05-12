@@ -47,7 +47,8 @@ GTEST_TEST(RotationalInertia, DefaultRotationalInertiaConstructorIsNaN) {
 // Test constructor for a diagonal rotational inertia with all elements equal.
 GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   const double I_diagonal = 3.14;
-  RotationalInertia<double> I(I_diagonal);
+  RotationalInertia<double> I = RotationalInertia<double>::
+                                            MakeTriaxiallySymmetric(I_diagonal);
   Vector3d moments_expected;
   moments_expected.setConstant(I_diagonal);
   Vector3d products_expected = Vector3d::Zero();
@@ -91,7 +92,7 @@ GTEST_TEST(RotationalInertia, TraceIsSumOfDiagonalElements) {
   const RotationalInertia<double> I(moments(0), moments(1), moments(2),
                                     product(0), product(1), product(2));
   const double trace = moments(0) + moments(1) + moments(2);
-  EXPECT_EQ(trace, I.CalcTrace());
+  EXPECT_EQ(trace, I.Trace());
 }
 
 // Test access by (i, j) indexes.
@@ -226,7 +227,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   // Compare Drake results versus MotionGenesis results using a comparison
   // that tests moments/products of inertia to within epsilon multiplied
   // by trace / 2, where trace is the smallest trace of the two matrices.
-  EXPECT_TRUE(I_BBo_B.IsCloseTo(expected_I_BBo_B, epsilon));
+  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(expected_I_BBo_B, epsilon));
 }
 
 // Test the method ShiftFromCenterOfMass for a body B's rotational inertia
@@ -249,7 +250,7 @@ GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
   const double Ixz = I_BBcm_Bxz - mass * xQ*zQ;
   const double Iyz = I_BBcm_Byz - mass * yQ*zQ;
   const RotationalInertia<double> expected_I_BQ_B(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BQ_B.IsCloseTo(expected_I_BQ_B, 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*epsilon));
 }
 
 // Test the method ShiftToCenterOfMass for a body B's rotational inertia
@@ -273,7 +274,7 @@ GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
   const double Iyz = I_BP_Byz + mass * yBcm*zBcm;
   const RotationalInertia<double> expected_I_BBcm_B(
       Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BBcm_B.IsCloseTo(expected_I_BBcm_B, 2*epsilon));
+  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*epsilon));
 }
 
 // Test the method ShiftToThenAwayFromCenterOfMass for a body B's
@@ -300,14 +301,14 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
   // Calculate with single method that does it slighly more efficiently.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
-  EXPECT_TRUE(I_BQ_B.IsCloseTo(expected_I_BQ_B, 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*epsilon));
 
   // Test that negating position vectors have no affect on results.
-  EXPECT_TRUE(I_BBcm_B.IsCloseTo(
+  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(
               I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*epsilon));
-  EXPECT_TRUE(I_BQ_B.IsCloseTo(
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
               I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm), 2*epsilon));
-  EXPECT_TRUE(I_BQ_B.IsCloseTo(
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
               I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, -p_PBcm, -p_QBcm),
               2*epsilon));
 }
@@ -446,6 +447,20 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
   EXPECT_EQ(Ixs.get_products(), sxI.get_products());
 }
 
+// Test the correctness of operator(int i, int j).
+GTEST_TEST(RotationalInertia, OperatorLeftParenIntIntRightParen) {
+  const RotationalInertia<double> I(2.0, 2.3, 2.4, 0.1, -0.1, 0.2);
+  EXPECT_EQ(I(0, 0), 2.0);
+  EXPECT_EQ(I(0, 1), 0.1);
+  EXPECT_EQ(I(0, 2), -0.1);
+  EXPECT_EQ(I(1, 0), 0.1);
+  EXPECT_EQ(I(1, 1), 2.3);
+  EXPECT_EQ(I(1, 2), 0.2);
+  EXPECT_EQ(I(2, 0), -0.1);
+  EXPECT_EQ(I(2, 1), 0.2);
+  EXPECT_EQ(I(2, 2), 2.4);
+}
+
 // Test the correctness of:
 //  - operator+=(const RotationalInertia<T>&)
 //  - operator*=(const T&)
@@ -572,7 +587,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   const Matrix3<ADScalar> R_BW =
       (AngleAxis<ADScalar>(-angle, Vector3d::UnitZ())).toRotationMatrix();
   const RotationalInertia<ADScalar> expectedI_B = I_W.ReExpress(R_BW);
-  EXPECT_TRUE(expectedI_B.IsCloseTo(I_B, epsilon));
+  EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, epsilon));
 }
 
 }  // namespace
