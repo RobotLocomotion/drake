@@ -14,6 +14,7 @@ drake_cc_library(
     srcs = ["humanoid_status_translator_system.cc"],
     hdrs = ["humanoid_status_translator_system.h"],
     deps = [
+        "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
         "//drake/multibody:rigid_body_tree",

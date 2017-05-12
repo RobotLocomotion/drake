@@ -61,7 +61,7 @@ drake_cc_library(
     srcs = ["oracular_state_estimator.cc"],
     hdrs = ["oracular_state_estimator.h"],
     deps = [
-        "//drake/multibody:rigid_body_tree",
+        "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/framework:leaf_system",
         "//drake/util:lcm_util",
         "@bot_core_lcmtypes",
