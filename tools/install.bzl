@@ -144,6 +144,11 @@ def _install_java_actions(ctx, target):
   # to pick install destinations appropriately.
   return []
 
+#------------------------------------------------------------------------------
+# Generate install code for an install action.
+def _install_code(action):
+  return "install(%r, %r)" % (action.src.short_path, action.dst)
+
 #END internal helpers
 #==============================================================================
 #BEGIN rules
@@ -179,10 +184,24 @@ def _install_impl(ctx):
     elif hasattr(t, "java"):
       actions += _install_java_actions(ctx, t)
 
-  return InstallInfo(install_actions = actions)
+  # Generate code for install actions.
+  script_actions = [_install_code(a) for a in actions]
+
+  # Generate install script.
+  # TODO(mwoehlke-kitware): Figure out a better way to generate this and run
+  # it via Python than `#!/usr/bin/env python`.
+  ctx.template_action(
+    template = ctx.executable.install_script_template,
+    output = ctx.outputs.executable,
+    substitutions = {"<<actions>>": "\n  ".join(script_actions)})
+
+  # Return actions.
+  files = ctx.runfiles(files = [a.src for a in actions])
+  return InstallInfo(install_actions = actions, runfiles = files)
 
 install = rule(
   implementation = _install_impl,
+  executable = True,
   attrs = {
     "deps": attr.label_list(providers = ["install_actions"]),
     "docs": attr.label_list(allow_files = True),
@@ -192,6 +211,9 @@ install = rule(
     "hdr_strip_prefix": attr.string_list(),
     "guess_hdrs": attr.int(default = 0),
     "targets": attr.label_list(),
+    "install_script_template": attr.label(
+      allow_files = True, executable = True, cfg="target",
+      default = Label("//tools:install.py.in")),
   },
 )
 
@@ -214,24 +236,6 @@ install_files = rule(
     "dest": attr.string(),
     "files": attr.label_list(allow_files = True),
     "strip_prefix": attr.string_list(),
-  },
-)
-
-#------------------------------------------------------------------------------
-# Generate install script from install rules.
-def _install_driver_impl(ctx):
-  pass
-  # TODO(mwoehlke-kitware): Generate script from collected install actions, and
-  # create rule to run the script as an argument to ctx.attr.driver. The run
-  # rule should depend on all file artifacts in the collected install actions.
-  # The run rule should also take a single argument, which is the install
-  # destination.
-
-install_driver = rule(
-  implementation = _install_driver_impl,
-  attrs = {
-    "deps": attr.label_list(providers = ["install_actions"]),
-    "driver": attr.label(allow_files = True),
   },
 )
 
