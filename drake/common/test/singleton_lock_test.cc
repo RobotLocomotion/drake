@@ -40,9 +40,10 @@ class ResourceLock {
   explicit ResourceLock(int use_count_expected)
       : ResourceLock(use_count_expected, use_count_expected) {}
 
-  ResourceLock(int use_count_ctor_expected, int use_count_dtor_expected)
+  ResourceLock(int use_count_ctor_expected, int use_count_dtor_expected,
+               int value_expected = 1)
       : use_count_dtor_expected_(use_count_dtor_expected) {
-    EXPECT_EQ(1, lock_.instance().value());
+    EXPECT_EQ(value_expected, lock_.instance().value());
     EXPECT_EQ(use_count_ctor_expected, lock_.use_count());
   }
 
@@ -107,6 +108,89 @@ GTEST_TEST(SingletonLock, RaggedTest) {
   }
 
   // Let third be implicitly destroyed
+  EXPECT_EQ(0, global_counter);
+}
+
+/*
+ * Incorporate expectations into resource lock class, but provide ability to
+ * further specialize.
+ */
+template <typename Parent>
+class SpecializedResourceLock {
+ public:
+  explicit SpecializedResourceLock(int use_count_expected)
+      : SpecializedResourceLock(use_count_expected, use_count_expected) {}
+
+  SpecializedResourceLock(int use_count_ctor_expected,
+                          int use_count_dtor_expected,
+                          int value_expected = 1)
+      : use_count_dtor_expected_(use_count_dtor_expected) {
+    EXPECT_EQ(value_expected, lock_.instance().value());
+    EXPECT_EQ(use_count_ctor_expected, lock_.use_count());
+  }
+
+  ~SpecializedResourceLock() {
+    EXPECT_EQ(use_count_dtor_expected_, lock_.use_count());
+  }
+
+ private:
+  SingletonLock<Resource, Parent> lock_;
+  int use_count_dtor_expected_;
+};
+
+struct A {};
+struct B {};
+
+/*
+ * Test unique specializations for a Resource singleton.
+ */
+GTEST_TEST(SingletonLock, SpecializationTest) {
+  EXPECT_EQ(0, global_counter);
+
+  // These will be the same since it uses `void` (the default Parent argument).
+  {
+    SpecializedResourceLock<void> first(1);
+    EXPECT_EQ(1, global_counter);
+    ResourceLock second(2);
+    EXPECT_EQ(1, global_counter);
+  }
+  EXPECT_EQ(0, global_counter);
+
+  // This will be different.
+  // Note that each singleton will record the value of global_counter:
+  //   ResourceLock.instance().value == 1
+  //   SpecializedResourceLock<A>.instance().value == 2
+  //   SpecializedResourceLock<B>.instance().value == 3
+  const int counter_normal = 1;
+  const int counter_a = 2;
+  const int counter_b = 3;
+  {
+    ResourceLock normal_1(1, 1, counter_normal);
+    EXPECT_EQ(1, global_counter);
+
+    {
+      SpecializedResourceLock<A> a_1(1, 1, counter_a);
+      EXPECT_EQ(2, global_counter);
+
+      // Will refer to singleton value
+      ResourceLock normal_2(2, 2, counter_normal);
+      // Global value still remains
+      EXPECT_EQ(2, global_counter);
+
+      {
+        SpecializedResourceLock<B> b_1(1, 1, counter_b);
+        EXPECT_EQ(3, global_counter);
+
+        SpecializedResourceLock<A> a_2(2, 2, counter_a);
+        EXPECT_EQ(3, global_counter);
+
+        SpecializedResourceLock<B> b_2(2, 2, counter_b);
+        EXPECT_EQ(3, global_counter);
+      }
+      EXPECT_EQ(2, global_counter);
+    }
+    EXPECT_EQ(1, global_counter);
+  }
   EXPECT_EQ(0, global_counter);
 }
 

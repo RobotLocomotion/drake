@@ -15,19 +15,16 @@ namespace drake {
  * obtaining licenses for solvers, where network latency may be a significant
  * hit.
  * @tparam T Class of the resource. Must be default-constructible.
+ * @tparam Parent Optional class of lock owner. This is meant to make a unique
+ * specialization, such that you can use multiple disjoint SingletonLock on T
+ * (for whatever reason).
  *
  * @note No mutex should be necessary for accessing the resource, as this
  * is handled by the lifetime of the lock.
  * That is, if you are losing the resource through
  * this class, there is either a bug in this code or your code.
- *
- * @note There will only be one singleton per type. If you need additional
- * singletons, either (a) consider slightly changing your type, or (b)
- * consider modifying this class to provide additional unique instances
- * by using the CRTP.
- *
  */
-template <typename T>
+template <typename T, typename Parent = void>
 class SingletonLock {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingletonLock)
