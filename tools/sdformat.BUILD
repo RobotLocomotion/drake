@@ -2,7 +2,7 @@
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
-# Generates sdf.hh based on the version numbers in CMake code.
+# Generates sdf_config.hh based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
     src = "cmake/sdf_config.h.in",
@@ -29,15 +29,15 @@ public_headers = [
     "include/sdf/Types.hh",
 ]
 
-# Generates sdf.hh, which consists of #include statements for *all* of the other
-# headers in the library (!!!).  There is one line like
-# '#include <sdf/Assert.hh>' for each non-generated header, followed at the end
-# by a single '#include <sdf/sdf_config.hh>'.
+# Generates sdf.hh, which consists of #include statements for all of the public
+# headers in the library.  There is one line like '#include <sdf/Assert.hh>'
+# for each non-generated header, followed at the end by a
+# single '#include <sdf/sdf_config.hh>'.
 genrule(
     name = "sdfhh_genrule",
     srcs = public_headers,
     outs = ["include/sdf/sdf.hh"],
-    # TODO: centralize this logic, as it is used here, in ignmath.BUILD, and
+    # TODO: centralize this logic, as it is used here, in ignition_math.BUILD, and
     # in fcl.BUILD
     cmd = "(" + (
         "echo '$(SRCS)' | tr ' ' '\\n' | " +
@@ -47,8 +47,8 @@ genrule(
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
-# upstream's explicitly listed sources.  The explicitly listed hdrs= matches
-# upstream's explicitly listed headers.
+# upstream's explicitly listed sources plus private headers.  The explicitly
+# listed hdrs= matches upstream's public headers.
 cc_library(
     name = "sdformat",
     srcs = [
@@ -98,8 +98,6 @@ cc_library(
         "src/urdf/urdf_world/types.h",
         "src/urdf/urdf_world/world.h",
     ],
-    # We need to list the private headers along with the public ones so that
-    # bazel copies them all into the right place during the build phase.
     hdrs = public_headers,
     includes = [
         "include",
