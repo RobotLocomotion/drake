@@ -29,6 +29,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "iiwa_ik_test",
     size = "medium",
+    tags = ["snopt"],
     srcs = ["test/iiwa_ik_test.cc"],
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
