@@ -4,6 +4,8 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
+load("//tools:install.bzl", "install")
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -26,4 +28,13 @@ alias(
 alias(
     name="protobuf_python",
     actual="@protobuf//:protobuf_python",
+)
+
+install(
+    name = "install",
+    deps = [
+        "@lcm//:install",
+        "//drake:install",
+        "//tools:install",
+    ],
 )
