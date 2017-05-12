@@ -1,8 +1,9 @@
-#include <gtest/gtest.h>
+#include "drake/examples/kuka_iiwa_arm/dev/tools/moving_average_filter.h"
+
 #include <memory>
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/examples/kuka_iiwa_arm/dev/tools/moving_average_filter.h"
 
 namespace drake {
 namespace examples {
@@ -12,7 +13,7 @@ namespace {
 
 const unsigned int kWindowSize{3};
 
-GTEST_TEST(testMAFilter, InstantiationTest) {
+GTEST_TEST(MovingAverageFilterTest, InstantiationTest) {
   std::unique_ptr<MovingAverageFilter<double>> ma_filter1, ma_filter2;
   EXPECT_NO_THROW(ma_filter1 =
                       std::make_unique<MovingAverageFilter<double>>(2));
@@ -29,11 +30,11 @@ GTEST_TEST(MovingAverageDoubleTest, ComputeTest) {
   double sum = 0;
   for (size_t i = 0; i < window.size(); ++i) {
     sum += window[i];
-    EXPECT_EQ((1.0 / (i + 1)) * sum, filter->compute(window[i]));
+    EXPECT_EQ((1.0 / (i + 1)) * sum, filter->Compute(window[i]));
   }
   const double new_data_point = -12.8;
   EXPECT_EQ((1.0 / kWindowSize) * (sum + new_data_point - window[0]),
-            filter->compute(new_data_point));
+            filter->Compute(new_data_point));
 }
 
 GTEST_TEST(MovingAverageVectorTest, ComputeArrayTest) {
@@ -50,13 +51,13 @@ GTEST_TEST(MovingAverageVectorTest, ComputeArrayTest) {
   for (size_t i = 0; i < window.size(); ++i) {
     sum += window[i];
     EXPECT_EQ(((1.0 / (i + 1)) * sum).matrix(),
-              (filter->compute(window[i])).matrix());
+              (filter->Compute(window[i])).matrix());
   }
 
   const Eigen::Array3d new_data_point(0.67, -78.9, 3.6);
 
   EXPECT_EQ(((1.0 / kWindowSize) * (sum + new_data_point - window[0])).matrix(),
-            (filter->compute(new_data_point)).matrix());
+            (filter->Compute(new_data_point)).matrix());
 }
 
 }  // namespace

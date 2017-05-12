@@ -15,7 +15,7 @@ MovingAverageFilter<T>::MovingAverageFilter(int window_size)
 }
 
 template <typename T>
-T MovingAverageFilter<T>::compute(const T& new_data) {
+T MovingAverageFilter<T>::Compute(const T& new_data) {
   // First intialize sum (needed when type is not a scalar)
   if (window_.size() == 0) {
     sum_ = new_data;
