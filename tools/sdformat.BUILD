@@ -2,21 +2,12 @@
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
-# Lets other packages inspect the CMake code, e.g., for the version number.
-filegroup(
-    name = "cmakelists_with_version",
-    srcs = ["CMakeLists.txt"],
-    visibility = ["//visibility:public"],
-)
-
 # Generates sdf.hh based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
     src = "cmake/sdf_config.h.in",
     out = "include/sdf/sdf_config.h",
-    cmakelists = [
-        ":cmakelists_with_version",
-    ],
+    cmakelists = ["CMakeLists.txt"],
     defines = [
         "PROJECT_NAME=SDFormat",
         "SDF_VERSION_NAME=",
