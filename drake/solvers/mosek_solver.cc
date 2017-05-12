@@ -600,6 +600,12 @@ class MosekLicenseLock::Impl {
     MSKenv_t mosek_env_{nullptr};
   };
 
+  // SingletonLock will do acquisition and release in a thread-safe fashion.
+  // According to
+  // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
+  // an env between threads is safe, but since we allocate on the
+  // first call to Solve() we need to at least be safe about
+  // allocating the environment initially.
   SingletonLock<License> lock_;
 };
 

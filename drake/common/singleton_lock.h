@@ -46,7 +46,7 @@ class SingletonLock {
   }
 
   int use_count() const {
-    // Exclude global count
+    // Return number of references that are external to the manager.
     return instance_.use_count() - 1;
   }
 
@@ -54,33 +54,37 @@ class SingletonLock {
   std::shared_ptr<T> instance_;
 
   /*
-   * Manager the global reference. Acquire resource if there are no existing
-   * references. Otherwise, release the resource.
+   * Manager for the global reference.
    */
   class Manager {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Manager)
     Manager() = default;
 
+    /*
+     * Acquire the resource if there are no existing references.
+     * Return the singleton reference.
+     */
     std::shared_ptr<T> AcquireIfNeeded() {
-      // According to
-      // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
-      // an env between threads is safe, but since we allocate on the
-      // first call to Solve() we need to at least be safe about
-      // allocating the environment initially.
+      // Perform a locked acquisition, given that this is effectively a global.
       std::lock_guard<std::mutex> lock(mutex_);
       if (!singleton_) {
+        // No prior references.
         singleton_.reset(new T());
       }
       return singleton_;
     }
 
+    /*
+     * Release the resource only if there are no external references to the
+     * singleton.
+     */
     void ReleaseIfAble() {
       std::lock_guard<std::mutex> lock(mutex_);
       // This should never be called on an empty resource.
       DRAKE_DEMAND(singleton_ != nullptr);
       if (singleton_.use_count() == 1) {
-        // No references to singleton. Release resource.
+        // No external references to singleton. Release resource.
         singleton_.reset();
       }
     }
