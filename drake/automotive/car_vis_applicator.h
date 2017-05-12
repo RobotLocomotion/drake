@@ -38,8 +38,6 @@ namespace automotive {
 /// - double
 ///
 /// They are already available to link against in the containing library.
-///
-/// @ingroup automotive_systems
 template <typename T>
 class CarVisApplicator : public systems::LeafSystem<T> {
  public:

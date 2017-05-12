@@ -32,7 +32,7 @@ namespace automotive {
 /// Output Port 0: A BasicVector of size one with the commanded steering angle.
 ///   (InputPortDescriptor getter: steering_command_output())
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_controllers
 template <typename T>
 class PurePursuitController : public systems::LeafSystem<T> {
  public:
