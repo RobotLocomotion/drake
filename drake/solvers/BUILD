@@ -362,6 +362,7 @@ drake_cc_library(
             ":mathematical_program_api",
         ],
     }),
+    copts = ["-fpermissive"],
 )
 
 drake_cc_library(
