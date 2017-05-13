@@ -8,11 +8,12 @@
 #include <functional>
 #include <limits>
 
-#include "drake/common/symbolic_expression.h"
 #include "drake/math/cross_product.h"
 
 using std::numeric_limits;
 using drake::symbolic::Expression;
+using Eigen::VectorXd;
+using Eigen::MatrixXi;
 
 namespace drake {
 namespace solvers {
@@ -564,8 +565,8 @@ namespace {
 
 void AddMcCormickVectorConstraints(
     MathematicalProgram* prog, const VectorDecisionVariable<3>& v,
-    const std::vector<MatrixDecisionVariable<3, 1>>& cpos,
-    const std::vector<MatrixDecisionVariable<3, 1>>& cneg,
+    const std::vector<Eigen::Matrix<Expression, 3, 1>>& cpos,
+    const std::vector<Eigen::Matrix<Expression, 3, 1>>& cneg,
     const VectorDecisionVariable<3>& v1, const VectorDecisionVariable<3>& v2) {
   const int N = cpos.size();  // number of discretization points.
 
@@ -581,7 +582,7 @@ void AddMcCormickVectorConstraints(
         box_min(2) = EnvelopeMinValue(zi, N);
         box_max(2) = EnvelopeMinValue(zi + 1, N);
 
-        VectorDecisionVariable<3> this_cpos, this_cneg;
+        Eigen::Matrix<Expression, 3, 1> this_cpos, this_cneg;
         this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
         this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
 
@@ -631,7 +632,7 @@ void AddMcCormickVectorConstraints(
               unique_intersection = box_max / box_max_norm;
             }
             Eigen::Vector3d orthant_u;
-            VectorDecisionVariable<3> orthant_c;
+            Eigen::Matrix<Expression, 3, 1> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
               orthant_u = FlipVector(unique_intersection, o);
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
@@ -686,10 +687,10 @@ void AddMcCormickVectorConstraints(
             Eigen::Matrix<double, 1, 6> a;
             Eigen::Matrix<double, 3, 9> A_cross;
 
-            Eigen::RowVector3d orthant_normal;
-            VectorDecisionVariable<3> orthant_c;
+            Eigen::Vector3d orthant_normal;
+            Eigen::Matrix<Expression, 3, 1> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
-              orthant_normal = FlipVector(normal, o).transpose();
+              orthant_normal = FlipVector(normal, o);
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
 
               for (int i = 0; i < A.rows(); ++i) {
@@ -719,7 +720,8 @@ void AddMcCormickVectorConstraints(
               // the same constraint twice (would be the same for opposite
               // orthants), so skip all of the -x orthants.
               if (o % 2 == 0)
-                prog->AddLinearConstraint(orthant_normal, -1, 1, v);
+                prog->AddLinearConstraint(
+                  orthant_normal.transpose(), -1, 1, v);
 
               // Dot-product constraint: ideally v.dot(v1) = v.dot(v2) = 0.
               // The cone of (unit) vectors within theta of the normal vector
@@ -755,12 +757,24 @@ void AddMcCormickVectorConstraints(
               //   we can impose a tighter Lorentz cone constraint
               //     [|sin(theta)|, n'*v1, n'*v2] is in the Lorentz cone.
               a << orthant_normal, -2, -2, -2;
-              prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v1, orthant_c});
-              prog->AddLinearConstraint(a, -sin(theta) - 6, 1, {v2, orthant_c});
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v1) - 2*orthant_c.sum() >= -sin(theta) - 6);
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v1) - 2*orthant_c.sum() <= 1);
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v2) - 2*orthant_c.sum() >= -sin(theta) - 6);
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v2) - 2*orthant_c.sum() <= 1);
 
               a.tail<3>() << 2, 2, 2;
-              prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v1, orthant_c});
-              prog->AddLinearConstraint(a, -1, sin(theta) + 6, {v2, orthant_c});
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v1) + 2*orthant_c.sum() >= -1);
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v1) + 2*orthant_c.sum() <= sin(theta) + 6);
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v2) + 2*orthant_c.sum() >= -1);
+              prog->AddLinearConstraint(
+                orthant_normal.dot(v2) + 2*orthant_c.sum() <= sin(theta) + 6);
 
               // Cross-product constraint: ideally v2 = v.cross(v1).
               // Since v is within theta of normal, we will prove that
@@ -785,18 +799,14 @@ void AddMcCormickVectorConstraints(
               // Note: Again this constraint could be tighter as a Lorenz cone
               // constraint of the form:
               //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
-              A_cross << Eigen::Matrix3d::Identity(),
-                  -math::VectorToSkewSymmetric(orthant_normal),
-                  Eigen::Matrix3d::Constant(-2);
               prog->AddLinearConstraint(
-                  A_cross, Eigen::Vector3d::Constant(-2 * sin(theta / 2) - 6),
-                  Eigen::Vector3d::Constant(2), {v2, v1, orthant_c});
-
-              A_cross.rightCols<3>() = Eigen::Matrix3d::Constant(2.0);
+                Eigen::Matrix<Expression, 3, 1>::Constant(
+                  -2*sin(theta/2) - 6 + 2*orthant_c.sum())
+                <= v2 - orthant_normal.cross(v1));
               prog->AddLinearConstraint(
-                  A_cross, Eigen::Vector3d::Constant(-2),
-                  Eigen::Vector3d::Constant(2 * sin(theta / 2) + 6),
-                  {v2, v1, orthant_c});
+                v2 - orthant_normal.cross(v1) <=
+                Eigen::Matrix<Expression, 3, 1>::Constant(
+                  2*sin(theta/2) + 6 - 2*orthant_c.sum()));
             }
           }
         } else {
@@ -910,16 +920,14 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   // could do a simple substitution everywhere.
   // TODO(russt): Use symbolic constraints and remove these decision variables!
   std::vector<MatrixDecisionVariable<3, 3>> BRpos, BRneg;
-  std::vector<MatrixDecisionVariable<3, 3>> CRpos, CRneg;
+  std::vector<Eigen::Matrix<Expression, 3, 3>> CRpos, CRneg;
   for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
     BRpos.push_back(
         prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k)));
     BRneg.push_back(
         prog->NewBinaryVariables<3, 3>("BRneg" + std::to_string(k)));
-    CRpos.push_back(
-        prog->NewContinuousVariables<3, 3>("CRpos" + std::to_string(k)));
-    CRneg.push_back(
-        prog->NewContinuousVariables<3, 3>("CRneg" + std::to_string(k)));
+    CRpos.push_back(Eigen::Matrix3d::Ones());
+    CRneg.push_back(Eigen::Matrix3d::Ones());
   }
 
   for (int i = 0; i < 3; i++) {
@@ -953,18 +961,11 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         prog->AddLinearConstraint(R(i, j) + phi(k) >= -s2 * BRneg[k](i, j));
 
         if (k == num_binary_vars_per_half_axis - 1) {
-          //   CRpos[k](i,j) = BRpos[k](i,j)
-          prog->AddLinearConstraint(CRpos[k](i, j) == BRpos[k](i, j));
-
-          //   CRneg[k](i,j) = BRneg[k](i,j)
-          prog->AddLinearConstraint(CRneg[k](i, j) == BRneg[k](i, j));
+          CRpos[k](i, j) = BRpos[k](i, j);
+          CRneg[k](i, j) = BRneg[k](i, j);
         } else {
-          //   CRpos[k](i,j) = BRpos[k](i,j) - BRpos[k+1](i,j)
-          prog->AddLinearConstraint(CRpos[k](i, j) ==
-                                    BRpos[k](i, j) - BRpos[k + 1](i, j));
-          //   CRneg[k](i,j) = BRneg[k](i,j) - BRneg[k+1](i,j)
-          prog->AddLinearConstraint(CRneg[k](i, j) ==
-                                    BRneg[k](i, j) - BRneg[k + 1](i, j));
+          CRpos[k](i, j) = BRpos[k](i, j) - BRpos[k + 1](i, j);
+          CRneg[k](i, j) = BRneg[k](i, j) - BRneg[k + 1](i, j);
         }
       }
       // R(i,j) has to pick a side, either non-positive or non-negative.
@@ -988,7 +989,8 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                                                limits);
 
   // Add constraints to the column and row vectors.
-  std::vector<MatrixDecisionVariable<3, 1>> cpos(num_binary_vars_per_half_axis),
+  std::vector<Eigen::Matrix<Expression, 3, 1>>
+      cpos(num_binary_vars_per_half_axis),
       cneg(num_binary_vars_per_half_axis);
   for (int i = 0; i < 3; i++) {
     // Make lists of the decision variables in terms of column vectors and row
