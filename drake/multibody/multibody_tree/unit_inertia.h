@@ -52,15 +52,15 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.
-  /// In debug builds, throws std::logic_error if unit inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
+  /// In debug builds, throws std::logic_error if unit inertia constructed from
+  /// these arguments violates RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz) :
       RotationalInertia<T>(Ixx, Iyy, Izz) {}
 
   /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
+  /// In debug builds, throws std::logic_error if unit inertia constructed from
+  /// these arguments violates RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz,
               const T& Ixy, const T& Ixz, const T& Iyz) :
       RotationalInertia<T>(Ixx, Iyy, Izz, Ixy, Ixz, Iyz) {}

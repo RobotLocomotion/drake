@@ -85,9 +85,9 @@ namespace multibody {
 /// axes of inertia** so that the inertia matrix is diagonalized with elements
 /// called **principal moments of inertia**.
 ///
-/// @note To enable speed in a release build while facilitating finding invalid
-/// rotational inertias during debugging, methods in this class will throw a
-/// std::logic_error exception only in a debug build.
+/// @note Several methods in this class throw an std::logic_error exception for
+/// invalid rotational inertia operations in debug releases only.  This provides
+/// speed in a release build while facilitating debugging in debug builds.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 /// Various methods in this class require numerical (not symbolic) data types.
@@ -176,10 +176,7 @@ class RotationalInertia {
     return 0.5 * abs(Trace());
   }
 
-  /// If `i >= j`, returns the `(i, j)` element of `this` rotational inertia,
-  /// otherwise returns the `(j, i`) element of `this`.   This operator helps
-  /// avoid access to the upper-triangular part of `this` (rotational inertias
-  /// are symmetric and the upper-triangular elements are NaN).
+  /// Const access to the `(i, j)` element of this rotational inertia.
   /// @remark A mutable version of operator() is intentionally absent so as to
   /// prevent an end-user from directly setting elements.  This prevents the
   /// creation of a non-physical (or non-symmetric) rotational inertia.
@@ -314,11 +311,10 @@ class RotationalInertia {
   /// Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
   /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
   /// @return `this` rotational inertia multiplied by `nonnegative_scalar`.
-  /// @see operator*=().
+  /// @see operator*=(), operator*(const T&, const RotationalInertia<T>&)
   RotationalInertia<T> operator*(const T& nonnegative_scalar) const {
     return RotationalInertia(*this) *= nonnegative_scalar;
   }
-
 
   /// Divides `this` rotational inertia by a positive scalar.
   /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
@@ -525,8 +521,8 @@ class RotationalInertia {
   /// @param R_AE Rotation matrix from frame A to frame E.
   /// @retval I_BP_A Rotational inertia of B about-point P expressed-in frame A.
   /// @see ReExpressInPlace()
-  /// TODO(@mitiguy)  __attribute__((warn_unused_result))
-  RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const {
+  RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const
+                                          __attribute__((warn_unused_result)) {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
@@ -624,6 +620,9 @@ class RotationalInertia {
   ///         expressed-in frame E.
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
+  /// @remark This method is more efficient (by 6 multiplications) than first
+  ///         shifting to the center of mass, then shifting away, e.g., as
+  ///         (ShiftToCenterOfMassInPlace()).ShiftFromCenterOfMassInPlace();
   RotationalInertia<T>& ShiftToThenAwayFromCenterOfMassInPlace(const T& mass,
                        const Vector3<T>& p_PBcm_E, const Vector3<T>& p_QBcm_E) {
     *this += mass * ShiftUnitMassBodyToThenAwayFromCenterOfMass(p_PBcm_E,
@@ -650,10 +649,10 @@ class RotationalInertia {
                                     mass, p_PBcm_E, p_QBcm_E);
   }
 
-  /// Multiplies a nonnegative scalar by `this` rotational inertia (>= 0).
+  /// Multiplies a nonnegative scalar (>=0) by the rotational inertia `I_BP_E`.
   /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
-  /// @return rotational inertia `I_BP_E` multiplied by `nonnegative_scalar`.
-  /// @see operator*=().
+  /// @return `nonnegative_scalar` multiplied by rotational inertia `I_BP_E`.
+  /// @see operator*=(), operator*()
   friend RotationalInertia<T> operator*(const T& nonnegative_scalar,
                                         const RotationalInertia<T>& I_BP_E) {
     /// Multiplication of a scalar with a rotational matrix is commutative.

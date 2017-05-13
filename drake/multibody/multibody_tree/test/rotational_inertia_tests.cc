@@ -447,20 +447,6 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
   EXPECT_EQ(Ixs.get_products(), sxI.get_products());
 }
 
-// Test the correctness of operator(int i, int j).
-GTEST_TEST(RotationalInertia, OperatorLeftParenIntIntRightParen) {
-  const RotationalInertia<double> I(2.0, 2.3, 2.4, 0.1, -0.1, 0.2);
-  EXPECT_EQ(I(0, 0), 2.0);
-  EXPECT_EQ(I(0, 1), 0.1);
-  EXPECT_EQ(I(0, 2), -0.1);
-  EXPECT_EQ(I(1, 0), 0.1);
-  EXPECT_EQ(I(1, 1), 2.3);
-  EXPECT_EQ(I(1, 2), 0.2);
-  EXPECT_EQ(I(2, 0), -0.1);
-  EXPECT_EQ(I(2, 1), 0.2);
-  EXPECT_EQ(I(2, 2), 2.4);
-}
-
 // Test the correctness of:
 //  - operator+=(const RotationalInertia<T>&)
 //  - operator*=(const T&)
