@@ -39,9 +39,10 @@ using drake::solvers::SolverType;
  * @param name Name of the Cost / Constraint class.
  */
 template <typename C>
-auto RegisterBinding(py::handle scope,
+auto RegisterBinding(py::handle* pscope,
                      py::class_<MathematicalProgram>* pprog_cls,
                      const string& name) {
+  auto& scope = *pscope;
   auto& prog_cls = *pprog_cls;
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
@@ -214,10 +215,11 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
              std::shared_ptr<BoundingBoxConstraint>>(
     m, "BoundingBoxConstraint");
 
-  RegisterBinding<LinearConstraint>(m, &prog_cls, "LinearConstraint");
-  RegisterBinding<LinearEqualityConstraint>(m, &prog_cls,
+  RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
+  RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
-  RegisterBinding<BoundingBoxConstraint>(m, &prog_cls, "BoundingBoxConstraint");
+  RegisterBinding<BoundingBoxConstraint>(&m, &prog_cls,
+                                         "BoundingBoxConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, std::shared_ptr<Cost>> cost(
@@ -232,8 +234,8 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("Q", &QuadraticCost::Q)
     .def("b", &QuadraticCost::b);
 
-  RegisterBinding<LinearCost>(m, &prog_cls, "LinearCost");
-  RegisterBinding<QuadraticCost>(m, &prog_cls, "QuadraticCost");
+  RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
+  RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
 
   return m.ptr();
 }
