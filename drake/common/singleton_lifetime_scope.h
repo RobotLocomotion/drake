@@ -16,23 +16,23 @@ namespace drake {
  * hit.
  * @tparam T Class of the resource. Must be default-constructible.
  * @tparam Parent Optional class of lock owner. This is meant to make a unique
- * specialization, such that you can use multiple disjoint SingletonLock on T
- * (for whatever reason).
+ * specialization, such that you can use multiple disjoint
+ * SingletonLifetimeScope on T (for whatever reason).
  *
- * @note No mutex should be necessary for accessing the resource, as this
- * is handled by the lifetime of the lock.
- * That is, if you are losing the resource through
- * this class, there is either a bug in this code or your code.
+ * @note This uses no mutex for *accessing* the resource, it only
+ * uses a mutex for acquiring or releasing the resource.
+ * If you are losing the resource lifetime through this class, there is
+ * either a bug in this code or your code.
  */
 template <typename T, typename Parent = void>
-class SingletonLock {
+class SingletonLifetimeScope {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingletonLock)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingletonLifetimeScope)
 
-  SingletonLock()
+  SingletonLifetimeScope()
     : instance_(manager().AcquireIfNeeded()) {}
 
-  ~SingletonLock() {
+  ~SingletonLifetimeScope() {
     instance_.reset();
     manager().ReleaseIfAble();
   }

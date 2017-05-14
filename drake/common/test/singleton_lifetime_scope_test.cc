@@ -1,4 +1,4 @@
-#include "drake/common/singleton_lock.h"
+#include "drake/common/singleton_lifetime_scope.h"
 
 #include <memory>
 #include <string>
@@ -13,7 +13,7 @@ using std::make_shared;
 using std::shared_ptr;
 
 /*
- * This test verifies that the SingletonLock will scope access to a resource.
+ * This test verifies that the SingletonLifetimeScope will scope access to a resource.
  */
 int global_counter = 0;
 
@@ -52,7 +52,7 @@ class ResourceLock {
   }
 
  private:
-  SingletonLock<Resource> lock_;
+  SingletonLifetimeScope<Resource> lock_;
   int use_count_dtor_expected_;
 };
 
@@ -134,7 +134,7 @@ class SpecializedResourceLock {
   }
 
  private:
-  SingletonLock<Resource, Parent> lock_;
+  SingletonLifetimeScope<Resource, Parent> lock_;
   int use_count_dtor_expected_;
 };
 

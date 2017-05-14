@@ -12,20 +12,20 @@ namespace drake {
 namespace solvers {
 
 /*
- * Permit a scoped lock (RAII) of a MOSEK license.
+ * Permit controlling the scope (RAII) of a MOSEK license.
  * This will attempt to obtain a MOSEK license session if it is the first one.
  * If it fails, it will throw a runtime_error.
- * Once there are no locks in scope, the MOSEK license session will be
+ * Once there are no scope objects alive, the MOSEK license session will be
  * released.
- * If a lock is declared in a main() function, then a lock on the MOSEK license
- * will be obtained for the entire duration of the program.
+ * If a scope object is declared in a main() function, then the MOSEK
+ * license will live for the duration of the program.
  */
-class MosekLicenseLock {
+class MosekLicenseScope {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekLicenseLock)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekLicenseScope)
 
-  MosekLicenseLock();
-  ~MosekLicenseLock();
+  MosekLicenseScope();
+  ~MosekLicenseScope();
 
   class Impl;
   Impl* impl() const;
@@ -50,7 +50,7 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   // Note that this is mutable to allow latching the allocation of mosek_env_
   // during the first call of Solve() (which avoids grabbing a Mosek license
   // before we know that we actually want one).
-  mutable std::unique_ptr<MosekLicenseLock> license_lock_;
+  mutable std::unique_ptr<MosekLicenseScope> license_scope_;
 };
 
 }  // namespace solvers
