@@ -8,7 +8,7 @@
 
 set -e
 
-workspace=$(dirname $(dirname "$0"))
+workspace=$(cd $(dirname $0) && bazel info workspace)
 if [ ! -f "$workspace"/WORKSPACE ]; then
   echo "$0: Cannot find WORKSPACE"
   exit 1
