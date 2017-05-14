@@ -362,6 +362,17 @@ drake_cc_library(
             ":mathematical_program_api",
         ],
     }),
+    # Some versions of SNOPT's API require passing a `std::string::c_str()`
+    # result of `const char*` to a function taking a `char*`, or passing a
+    # function pointer that receives parameters to a function that takes a
+    # (mismatched) function pointer with no arguments.  We could carefully
+    # craft our snopt_solver.cc to have appropriate casts depending on the
+    # signatures of the version of SNOPT in use, but choose instead to just
+    # suppress all such warnings until we find some case where they matter.
+    # (The next best step would be to write a sensible C++ SNOPT API wrapper,
+    # and contain the language abuses there, so that the actual logic of our
+    # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
+    copts = ["-fpermissive"],
 )
 
 drake_cc_library(
