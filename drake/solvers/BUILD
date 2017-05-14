@@ -397,13 +397,21 @@ drake_cc_library(
 
 drake_cc_library(
     name = "nlopt_solver",
-    srcs = ["nlopt_solver.cc"],
+    srcs = select({
+        "//tools:no_nlopt": ["no_nlopt.cc"],
+        "//conditions:default": ["nlopt_solver.cc"],
+    }),
     hdrs = ["nlopt_solver.h"],
-    deps = [
-        ":mathematical_program_api",
-        "//drake/math:autodiff",
-        "@nlopt",
-    ],
+    deps = select({
+        "//conditions:default": [
+            ":mathematical_program_api",
+            "//drake/math:autodiff",
+            "@nlopt",
+        ],
+        "//tools:no_nlopt": [
+            ":mathematical_program_api",
+        ],
+    }),
 )
 
 # === test/ ===
@@ -718,4 +726,7 @@ cpplint(extra_srcs = [
     "ipopt_solver.cc",
     "ipopt_solver.h",
     "no_ipopt.cc",
+    "nlopt_solver.cc",
+    "nlopt_solver.h",
+    "no_nlopt.cc",
 ])
