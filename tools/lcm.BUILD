@@ -8,8 +8,8 @@ package(default_visibility = ["//visibility:public"])
 
 # Generate header to provide ABI export symbols for LCM.
 generate_export_header(
-    lib = "lcm",
     out = "lcm/lcm_export.h",
+    lib = "lcm",
     static_define = "LCM_STATIC",
 )
 
@@ -25,7 +25,6 @@ LCM_COPTS = [
 
 cc_library(
     name = "lcm",
-    linkstatic = 0,
     srcs = [
         "lcm/eventlog.c",
         "lcm/lcm.c",
@@ -47,21 +46,25 @@ cc_library(
         "lcm/lcm-cpp.hpp",
         "lcm/lcm-cpp-impl.hpp",
         "lcm/lcm_coretypes.h",
+        "lcm/lcm_export.h",  # N.B. This is from generate_export_header above.
         "lcm/lcm_internal.h",
         "lcm/lcm_version.h",
         "lcm/lcmtypes/channel_port_map_update_t.h",
         "lcm/lcmtypes/channel_to_port_t.h",
         "lcm/ringbuffer.h",
         "lcm/udpm_util.h",
-        "lcm/lcm_export.h",  # N.B. This is from generate_export_header above.
     ],
     copts = LCM_COPTS,
-    deps = ["@glib//:lib"],
     # TODO(jwnimmer-tri): The 'lcm' is needed so we can generate lcm_export.h
     # with the correct path and still include it like '#include "lcm_export.h"'
     # from other LCM headers. However, this "pollutes" the include paths of
     # everyone using LCM. Can we do better?
-    includes = [".", "lcm"],
+    includes = [
+        ".",
+        "lcm",
+    ],
+    linkstatic = 0,
+    deps = ["@glib//:lib"],
 )
 
 cc_binary(
@@ -183,7 +186,7 @@ java_binary(
 pkg_tar(
     name = "license",
     extension = "tar.gz",
-    mode = "0644",
     files = ["COPYING"],
+    mode = "0644",
     package_dir = "lcm",
 )
