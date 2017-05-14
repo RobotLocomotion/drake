@@ -20,7 +20,7 @@ class TestQP:
             # Bounding box
             prog.AddLinearConstraint(x[0] >= 1),
             # Bounding box
-            prog.AddLinearConstraint((x[1] >= 1) & (x[1] <= 2.)),
+            prog.AddLinearConstraint(sym.logical_and(x[1] >= 1, x[1] <= 2.)),
             # Linear inequality
             prog.AddLinearConstraint(3 * x[0] - x[1] <= 2),
             # Linaer equality
