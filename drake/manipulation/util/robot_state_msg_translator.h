@@ -4,11 +4,11 @@
 #include <unordered_map>
 #include <utility>
 
+#include "lcmtypes/bot_core/robot_state_t.hpp"
+
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
-
-#include "lcmtypes/bot_core/robot_state_t.hpp"
 
 namespace drake {
 namespace manipulation {
