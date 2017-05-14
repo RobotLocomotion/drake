@@ -10,7 +10,7 @@
 #include <Eigen/SparseCore>
 #include <mosek.h>
 
-#include "drake/common/singleton_lifetime_scope.h"
+#include "drake/common/singleton_scope.h"
 
 namespace drake {
 namespace solvers {
@@ -563,7 +563,7 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 }  // anonymous namespace
 
 /*
- * Implementation containing a SingletonLifetimeScope<> for a Mosek license /
+ * Implementation containing a SingletonScope<> for a Mosek license /
  * environment.
  */
 class MosekLicenseScope::Impl {
@@ -600,13 +600,13 @@ class MosekLicenseScope::Impl {
     MSKenv_t mosek_env_{nullptr};
   };
 
-  // SingletonLifetimeScope will do acquisition and release in a thread-safe
+  // SingletonScope will do acquisition and release in a thread-safe
   // fashion. According to
   // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
   // an env between threads is safe, but since we allocate on the
   // first call to Solve() we need to at least be safe about
   // allocating the environment initially.
-  SingletonLifetimeScope<License> singleton_scope_;
+  SingletonScope<License> singleton_scope_;
 };
 
 // Upon construction, acquire a license lock, which will automatically

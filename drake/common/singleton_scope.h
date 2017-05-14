@@ -11,28 +11,28 @@ namespace drake {
 
 /*
  * @brief Thread-safe, global-safe implementation for acquiring a shared
- * resources necessary, and releasing the resource when able. Use this for
- * obtaining licenses for solvers, where network latency may be a significant
- * hit.
+ * resources when necessary, and releasing the resource when able.
+ * An example application is obtaining license for solvers, where network
+ * latency may be a significant hit.
  * @tparam T Class of the resource. Must be default-constructible.
  * @tparam Parent Optional class of lock owner. This is meant to make a unique
- * specialization, such that you can use multiple disjoint
- * SingletonLifetimeScope on T (for whatever reason).
+ * specialization, such that you can use multiple disjoint SingletonScope on T
+ * (for whatever reason).
  *
  * @note This uses no mutex for *accessing* the resource, it only
  * uses a mutex for acquiring or releasing the resource.
  * If you are losing the resource lifetime through this class, there is
- * either a bug in this code or your code.
+ * most likely a bug in your code (ragged scoping with shared_ptr's).
  */
 template <typename T, typename Parent = void>
-class SingletonLifetimeScope {
+class SingletonScope {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingletonLifetimeScope)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingletonScope)
 
-  SingletonLifetimeScope()
+  SingletonScope()
     : instance_(manager().AcquireIfNeeded()) {}
 
-  ~SingletonLifetimeScope() {
+  ~SingletonScope() {
     instance_.reset();
     manager().ReleaseIfAble();
   }

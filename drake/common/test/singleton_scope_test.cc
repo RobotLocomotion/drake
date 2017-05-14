@@ -1,4 +1,4 @@
-#include "drake/common/singleton_lifetime_scope.h"
+#include "drake/common/singleton_scope.h"
 
 #include <memory>
 #include <string>
@@ -13,7 +13,7 @@ using std::make_shared;
 using std::shared_ptr;
 
 /*
- * This test verifies that the SingletonLifetimeScope will scope access to a resource.
+ * This test verifies that the SingletonScope will scope access to a resource.
  */
 int global_counter = 0;
 
@@ -35,40 +35,40 @@ class Resource {
 /*
  * Incorporate expectations into resource lock class.
  */
-class ResourceLock {
+class ResourceScope {
  public:
-  explicit ResourceLock(int use_count_expected)
-      : ResourceLock(use_count_expected, use_count_expected) {}
+  explicit ResourceScope(int use_count_expected)
+      : ResourceScope(use_count_expected, use_count_expected) {}
 
-  ResourceLock(int use_count_ctor_expected, int use_count_dtor_expected,
+  ResourceScope(int use_count_ctor_expected, int use_count_dtor_expected,
                int value_expected = 1)
       : use_count_dtor_expected_(use_count_dtor_expected) {
-    EXPECT_EQ(value_expected, lock_.instance().value());
-    EXPECT_EQ(use_count_ctor_expected, lock_.use_count());
+    EXPECT_EQ(value_expected, singleton_scope_.instance().value());
+    EXPECT_EQ(use_count_ctor_expected, singleton_scope_.use_count());
   }
 
-  ~ResourceLock() {
-    EXPECT_EQ(use_count_dtor_expected_, lock_.use_count());
+  ~ResourceScope() {
+    EXPECT_EQ(use_count_dtor_expected_, singleton_scope_.use_count());
   }
 
  private:
-  SingletonLifetimeScope<Resource> lock_;
+  SingletonScope<Resource> singleton_scope_;
   int use_count_dtor_expected_;
 };
 
 /*
  * Test neatly nested locks.
  */
-GTEST_TEST(SingletonLock, NestedTest) {
+GTEST_TEST(SingletonScopeTest, NestedTest) {
   EXPECT_EQ(0, global_counter);
   {
-    ResourceLock first(1);
+    ResourceScope first(1);
     EXPECT_EQ(1, global_counter);
     {
-      ResourceLock second(2);
+      ResourceScope second(2);
       EXPECT_EQ(1, global_counter);
       {
-        ResourceLock third(3);
+        ResourceScope third(3);
         EXPECT_EQ(1, global_counter);
       }
       EXPECT_EQ(1, global_counter);
@@ -81,21 +81,21 @@ GTEST_TEST(SingletonLock, NestedTest) {
 /*
  * Test ragged destruction with nesting mixed in.
  */
-GTEST_TEST(SingletonLock, RaggedTest) {
+GTEST_TEST(SingletonScopeTest, RaggedTest) {
   EXPECT_EQ(0, global_counter);
 
   {
-    auto first = make_shared<ResourceLock>(1, 2);
+    auto first = make_shared<ResourceScope>(1, 2);
     EXPECT_EQ(1, global_counter);
 
-    auto second = make_shared<ResourceLock>(2, 3);
+    auto second = make_shared<ResourceScope>(2, 3);
     EXPECT_EQ(1, global_counter);
 
-    auto third = make_shared<ResourceLock>(3, 1);
+    auto third = make_shared<ResourceScope>(3, 1);
     EXPECT_EQ(1, global_counter);
 
     {
-      ResourceLock fourth(4);
+      ResourceScope fourth(4);
       EXPECT_EQ(1, global_counter);
     }
     EXPECT_EQ(1, global_counter);
@@ -105,36 +105,37 @@ GTEST_TEST(SingletonLock, RaggedTest) {
 
     first.reset();
     EXPECT_EQ(1, global_counter);
+
+    // Let third be implicitly destroyed
   }
 
-  // Let third be implicitly destroyed
   EXPECT_EQ(0, global_counter);
 }
 
 /*
- * Incorporate expectations into resource lock class, but provide ability to
- * further specialize.
+ * Same as ResourceScope, but provide ability to specialize template definition,
+ * such that we can maintain multiple singletons of type Resource.
  */
 template <typename Parent>
-class SpecializedResourceLock {
+class SpecializedResourceScope {
  public:
-  explicit SpecializedResourceLock(int use_count_expected)
-      : SpecializedResourceLock(use_count_expected, use_count_expected) {}
+  explicit SpecializedResourceScope(int use_count_expected)
+      : SpecializedResourceScope(use_count_expected, use_count_expected) {}
 
-  SpecializedResourceLock(int use_count_ctor_expected,
+  SpecializedResourceScope(int use_count_ctor_expected,
                           int use_count_dtor_expected,
                           int value_expected = 1)
       : use_count_dtor_expected_(use_count_dtor_expected) {
-    EXPECT_EQ(value_expected, lock_.instance().value());
-    EXPECT_EQ(use_count_ctor_expected, lock_.use_count());
+    EXPECT_EQ(value_expected, singleton_scope_.instance().value());
+    EXPECT_EQ(use_count_ctor_expected, singleton_scope_.use_count());
   }
 
-  ~SpecializedResourceLock() {
-    EXPECT_EQ(use_count_dtor_expected_, lock_.use_count());
+  ~SpecializedResourceScope() {
+    EXPECT_EQ(use_count_dtor_expected_, singleton_scope_.use_count());
   }
 
  private:
-  SingletonLifetimeScope<Resource, Parent> lock_;
+  SingletonScope<Resource, Parent> singleton_scope_;
   int use_count_dtor_expected_;
 };
 
@@ -144,47 +145,47 @@ struct B {};
 /*
  * Test unique specializations for a Resource singleton.
  */
-GTEST_TEST(SingletonLock, SpecializationTest) {
+GTEST_TEST(SingletonScopeTest, SpecializationTest) {
   EXPECT_EQ(0, global_counter);
 
   // These will be the same since it uses `void` (the default Parent argument).
   {
-    SpecializedResourceLock<void> first(1);
+    SpecializedResourceScope<void> first(1);
     EXPECT_EQ(1, global_counter);
-    ResourceLock second(2);
+    ResourceScope second(2);
     EXPECT_EQ(1, global_counter);
   }
   EXPECT_EQ(0, global_counter);
 
   // This will be different.
   // Note that each singleton will record the value of global_counter:
-  //   ResourceLock.instance().value == 1
-  //   SpecializedResourceLock<A>.instance().value == 2
-  //   SpecializedResourceLock<B>.instance().value == 3
+  //   ResourceScope.instance().value == 1
+  //   SpecializedResourceScope<A>.instance().value == 2
+  //   SpecializedResourceScope<B>.instance().value == 3
   const int counter_normal = 1;
   const int counter_a = 2;
   const int counter_b = 3;
   {
-    ResourceLock normal_1(1, 1, counter_normal);
+    ResourceScope normal_1(1, 1, counter_normal);
     EXPECT_EQ(1, global_counter);
 
     {
-      SpecializedResourceLock<A> a_1(1, 1, counter_a);
+      SpecializedResourceScope<A> a_1(1, 1, counter_a);
       EXPECT_EQ(2, global_counter);
 
       // Will refer to singleton value
-      ResourceLock normal_2(2, 2, counter_normal);
+      ResourceScope normal_2(2, 2, counter_normal);
       // Global value still remains
       EXPECT_EQ(2, global_counter);
 
       {
-        SpecializedResourceLock<B> b_1(1, 1, counter_b);
+        SpecializedResourceScope<B> b_1(1, 1, counter_b);
         EXPECT_EQ(3, global_counter);
 
-        SpecializedResourceLock<A> a_2(2, 2, counter_a);
+        SpecializedResourceScope<A> a_2(2, 2, counter_a);
         EXPECT_EQ(3, global_counter);
 
-        SpecializedResourceLock<B> b_2(2, 2, counter_b);
+        SpecializedResourceScope<B> b_2(2, 2, counter_b);
         EXPECT_EQ(3, global_counter);
       }
       EXPECT_EQ(2, global_counter);

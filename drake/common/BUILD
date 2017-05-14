@@ -317,8 +317,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "singleton_lifetime_scope",
-    hdrs = ["singleton_lifetime_scope.h"],
+    name = "singleton_scope",
+    hdrs = ["singleton_scope.h"],
     deps = [
         ":common",
     ],
@@ -705,9 +705,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "singleton_lifetime_scope_test",
+    name = "singleton_scope_test",
     deps = [
-        ":singleton_lifetime_scope",
+        ":singleton_scope",
     ],
 )
 

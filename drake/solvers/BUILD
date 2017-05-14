@@ -334,7 +334,7 @@ drake_cc_library(
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
-            "//drake/common:singleton_lifetime_scope",
+            "//drake/common:singleton_scope",
             "@mosek",
         ],
         "//conditions:default": [

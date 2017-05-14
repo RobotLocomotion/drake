@@ -45,8 +45,10 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
 }  // namespace drake
 
 int main(int argc, char** argv) {
-  // Lock the MOSEK license for the entire duration of this test.
-  drake::solvers::MosekLicenseScope lock;
+  // Ensure that we have the MOSEK license for the entire duration of this test,
+  // so that we do not have to release and re-acquire the license for every
+  // test.
+  drake::solvers::MosekLicenseScope mosek_license_scope;
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

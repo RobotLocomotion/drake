@@ -65,7 +65,7 @@ set(installed_headers
   nice_type_name.h
   number_traits.h
   polynomial.h
-        singleton_lifetime_scope.h
+  singleton_scope.h
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
