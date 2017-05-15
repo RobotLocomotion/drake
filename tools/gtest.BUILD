@@ -2,6 +2,7 @@
 
 cc_library(
     name = "lib",
+    testonly = 1,
     srcs = glob(
         [
             "googlemock/src/*.cc",
@@ -41,10 +42,11 @@ cc_library(
 
 cc_library(
     name = "main",
+    testonly = 1,
     srcs = ["googlemock/src/gmock_main.cc"],
-    deps = [
-        ":lib",
-        ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
+    deps = [
+        ":lib",
+    ],
 )
