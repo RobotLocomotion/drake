@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+
 #include <queue>
 
 #include "drake/common/drake_copyable.h"

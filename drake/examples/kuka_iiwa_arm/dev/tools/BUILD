@@ -43,12 +43,12 @@ drake_cc_binary(
         "@gflags",
     ],
 )
-   
+
 drake_cc_library(
     name = "moving_average_filter",
     srcs = ["moving_average_filter.cc"],
     hdrs = ["moving_average_filter.h"],
-    deps = ["//drake/common:common"],
+    deps = ["//drake/common"],
 )
 
 # === test/ ===
@@ -57,8 +57,9 @@ drake_cc_googletest(
     name = "moving_average_filter_test",
     srcs = ["test/moving_average_filter_test.cc"],
     deps = [
-        ":moving_average_filter", 
-        "//drake/common"],
+        ":moving_average_filter",
+        "//drake/common",
+    ],
 )
 
 cpplint()
