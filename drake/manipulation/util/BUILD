@@ -32,7 +32,7 @@ drake_cc_googletest(
         "//drake/examples/Valkyrie:models",
         "//drake/examples/schunk_wsg:models",
         "//drake/manipulation/models/iiwa_description:models",
-        ],
+    ],
     deps = [
         ":robot_state_msg_translator",
         "//drake/common:drake_path",

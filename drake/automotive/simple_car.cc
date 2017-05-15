@@ -196,9 +196,7 @@ systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
 
 // These instantiations must match the API documentation in simple_car.h.
 template class SimpleCar<double>;
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 template class SimpleCar<drake::AutoDiffXd>;
-#endif
 template class SimpleCar<drake::symbolic::Expression>;
 
 }  // namespace automotive

@@ -1,4 +1,5 @@
 #include "drake/manipulation/util/robot_state_msg_translator.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"

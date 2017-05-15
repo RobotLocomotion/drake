@@ -91,6 +91,17 @@ build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/
 test:cpplint --build_tests_only
 test:cpplint --test_tag_filters=cpplint
 
+### Pycodestyle. ###
+# Code style compliance checking for python, analogous to cpplint above.
+test:pycodestyle --build_tests_only
+test:pycodestyle --test_tag_filters=pycodestyle
+
+### Lint. ###
+# Code style compliance for C++ and Python, merging both cpplint and
+# pycodestyle.
+test:lint --build_tests_only
+test:lint --test_tag_filters=cpplint,pycodestyle
+
 ### Debug symbols on OS X. ###
 # See https://github.com/bazelbuild/bazel/issues/2537
 build:apple_debug --spawn_strategy=standalone
@@ -175,11 +186,12 @@ test:ubsan --test_lang_filters=-py
 
 ### Memcheck build. ###
 build:memcheck --copt -g
-build:memcheck --run_under=//tools:valgrind
+build:memcheck --copt -O1
+test:memcheck --run_under=//tools:valgrind
 test:memcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:memcheck --test_timeout=300,1500,5400,18000
+test:memcheck --test_timeout=600,3000,10800,36000  # 10x
 
 # Fast memcheck.
 #
@@ -190,8 +202,8 @@ test:memcheck --test_timeout=300,1500,5400,18000
 # when errors are found, try `-c dbg --config fastmemcheck` or `--config
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
-build:fastmemcheck --run_under=//tools:valgrind
+test:fastmemcheck --run_under=//tools:valgrind
 test:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:fastmemcheck --test_timeout=300,1500,5400,18000
+test:fastmemcheck --test_timeout=600,3000,10800,36000  # 10x

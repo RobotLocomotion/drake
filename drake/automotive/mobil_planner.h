@@ -71,7 +71,7 @@ namespace automotive {
 ///   road.
 ///   (OutputPortDescriptor getter: lane_output())
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_controllers
 ///
 /// [1] Arne Kesting, Martin Treiber and Dirk Helbing, MOBIL: General
 ///     Lane-Changing Model for Car-Following Models, Journal of the
