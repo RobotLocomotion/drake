@@ -79,6 +79,10 @@ TEST_F(SupervectorTest, Empty) {
 // A Supervector is always considered non-contiguous in memory.
 TEST_F(SupervectorTest, IsAlwaysNotContiguous) {
   EXPECT_FALSE(supervector_->is_contiguous());
+  // These methods abort when called on a supervector.
+  EXPECT_THROW(supervector_->get_contiguous_vector(), std::runtime_error);
+  EXPECT_THROW(supervector_->get_mutable_contiguous_vector(),
+               std::runtime_error);
 }
 
 }  // namespace

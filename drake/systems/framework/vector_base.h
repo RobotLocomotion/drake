@@ -70,31 +70,27 @@ class VectorBase {
 
   /// Returns `true` if the segment of `count` elements with first element at
   /// `start` in `this` vector has a contiguous-in-memory layout.
-  /// This method aborts if:
+  /// This method throws a std::runtime_error if:
   ///  - `start` is out-of-bounds,
   ///  - `count` is either negative or larger than size()
   /// @see is_contiguous()
   bool is_segment_contiguous(int start, int count) const {
-    DRAKE_DEMAND(0 <= start && start < size());
-    DRAKE_DEMAND(0 <= count && count <= size());
-    DRAKE_DEMAND((start + count) <= size());
+    VerifySegmentSizesOrThrow(start, count);
     return !!try_getting_contiguous_segment(start, count);
   }
 
   /// Returns the entire vector as an Eigen::VectorBlock referencing a
   /// contiguous block of memory, if possible.
-  /// This method aborts if the underlying memory layout is not contiguous or
-  /// could not be retrieved with O(1) complexity.
-  /// @see is_contiguous()
+  /// @throws std::runtime_error if is_contiguous() is `false`.
+  /// @pre is_contiguous()
   Eigen::VectorBlock<const VectorX<T>> get_contiguous_vector() const {
     return get_contiguous_segment(0, size());
   }
 
   /// Returns the entire vector as a mutable Eigen::VectorBlock referencing a
   /// contiguous block of memory, if possible.
-  /// This method aborts if the underlying memory layout is not contiguous or
-  /// could not be retrieved with O(1) complexity.
-  /// @see is_contiguous()
+  /// @throws std::runtime_error if is_contiguous() is `false`.
+  /// @pre is_contiguous()
   Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_vector() {
     return get_mutable_contiguous_segment(0, size());
   }
@@ -102,36 +98,28 @@ class VectorBase {
   /// Returns a segment of `count` elements with first element at `start` in
   /// `this` vector as an Eigen::VectorBlock referencing a contiguous block of
   /// memory, if possible.
-  /// This method aborts if the underlying memory layout is not contiguous or
-  /// could not be retrieved with O(1) complexity.
-  /// @see is_segment_contiguous()
+  /// @throws std::runtime_error if is_segment_contiguous(start, count) is
+  /// `false`.
+  /// @pre is_segment_contiguous()
   Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
       int start, int count) const {
-    DRAKE_DEMAND(0 <= start && start < size());
-    DRAKE_DEMAND(0 <= count && count <= size());
-    DRAKE_DEMAND((start + count) <= size());
+    VerifySegmentSizesOrThrow(start, count);
     auto result = try_getting_contiguous_segment(start, count);
-    DRAKE_DEMAND(!!result &&
-        "This vector does not have a contiguous contiguous-in-memory layout. "
-        "See is_contiguous()");
+    DRAKE_THROW_UNLESS(is_segment_contiguous(start, count));
     return *result;
   }
 
   /// Returns a mutable segment of `count` elements with first element at
   /// `start` in `this` vector as a mutable Eigen::VectorBlock referencing a
   /// contiguous block of memory, if possible.
-  /// This method aborts if the underlying memory layout is not contiguous or
-  /// could not be retrieved with O(1) complexity.
-  /// @see is_segment_contiguous()
+  /// @throws std::runtime_error if is_segment_contiguous(start, count) is
+  /// `false`.
+  /// @pre is_segment_contiguous()
   virtual Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
       int start, int count) {
-    DRAKE_DEMAND(0 <= start && start < size());
-    DRAKE_DEMAND(0 <= count && count <= size());
-    DRAKE_DEMAND((start + count) <= size());
+    VerifySegmentSizesOrThrow(start, count);
     auto result = try_getting_mutable_contiguous_segment(start, count);
-    DRAKE_DEMAND(!!result &&
-        "This vector does not have a contiguous contiguous-in-memory layout. "
-        "See is_contiguous()");
+    DRAKE_THROW_UNLESS(is_segment_contiguous(start, count));
     return *result;
   }
 
@@ -170,6 +158,11 @@ class VectorBase {
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates only the O(N) memory that it returns.
+  ///
+  /// @warning For cases when it is known that a contiguous segment can be
+  /// retrieved, prefer using the faster variant get_contiguous_vector().
+  ///
+  /// @see get_contiguous_vector()
   virtual VectorX<T> CopyToVector() const {
     VectorX<T> vec(size());
     for (int i = 0; i < size(); ++i) {
@@ -293,6 +286,20 @@ class VectorBase {
   /// and `count` arguments.
   virtual optional<Eigen::VectorBlock<VectorX<T>>>
   try_getting_mutable_contiguous_segment(int start, int count) = 0;
+
+ private:
+  // Helper method for the get_contiguous_segment() family of methods to verify
+  // that:
+  // - 0 <= start && start < this->size()
+  // - 0 <= count && count <= this->size()
+  // - (start + count) <= this->size()
+  // Or a std::runtime_error is thrown if the above conditions are not met.
+  void VerifySegmentSizesOrThrow(int start, int count) const {
+    const int sz = size();
+    DRAKE_THROW_UNLESS(0 <= start && start < sz);
+    DRAKE_THROW_UNLESS(0 <= count && count <= sz);
+    DRAKE_THROW_UNLESS((start + count) <= sz);
+  }
 };
 
 }  // namespace systems
