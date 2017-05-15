@@ -1,7 +1,7 @@
 # -*- python -*-
 
 cc_library(
-    name = "main",
+    name = "lib",
     srcs = glob(
         [
             "googlemock/src/*.cc",
@@ -9,6 +9,8 @@ cc_library(
             "googletest/src/*.h",
         ],
         exclude = [
+            "googlemock/src/gmock_main.cc",
+            "googletest/src/gtest_main.cc",
             "googlemock/src/gmock-all.cc",
             "googletest/src/gtest-all.cc",
         ],
@@ -33,6 +35,16 @@ cc_library(
         "@//tools:linux": ["-pthread"],
         "@//conditions:default": [],
     }),
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "main",
+    srcs = ["googlemock/src/gmock_main.cc"],
+    deps = [
+        ":lib",
+        ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )
