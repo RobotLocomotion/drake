@@ -22,7 +22,8 @@ void QPController::AddAsConstraints(
     tmp_vd_vec_.row(row_ctr) = b.row(d);
     row_ctr++;
   }
-  eq->UpdateCoefficients(tmp_vd_mat_.topRows(row_ctr), tmp_vd_vec_.head(row_ctr));
+  eq->UpdateCoefficients(tmp_vd_mat_.topRows(row_ctr),
+                         tmp_vd_vec_.head(row_ctr));
 }
 
 template <typename DerivedA, typename DerivedB, typename DerivedW>
@@ -573,7 +574,7 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
       row_ctr++;
     }
     eq_dof_motion_->UpdateCoefficients(tmp_vd_mat_.topRows(row_ctr),
-                                     tmp_vd_vec_.head(row_ctr));
+                                       tmp_vd_vec_.head(row_ctr));
   }
   // Procecss cost terms.
   if (row_idx_as_cost.size() > 0) {
@@ -589,8 +590,8 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
   }
 
   // Regularize basis to zero.
-  cost_basis_reg_->UpdateCoefficients(
-      input.w_basis_reg() * basis_reg_mat_, basis_reg_vec_);
+  cost_basis_reg_->UpdateCoefficients(input.w_basis_reg() * basis_reg_mat_,
+                                      basis_reg_vec_);
 
   ////////////////////////////////////////////////////////////////////
   // Call solver.

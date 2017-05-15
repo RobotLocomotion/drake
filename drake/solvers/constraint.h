@@ -246,7 +246,7 @@ class QuadraticConstraint : public Constraint {
    */
   template <typename DerivedQ, typename DerivedB>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
-                                     const Eigen::MatrixBase<DerivedB>& new_b) {
+                          const Eigen::MatrixBase<DerivedB>& new_b) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
         new_b.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
@@ -473,8 +473,8 @@ class LinearConstraint : public Constraint {
    */
   template <typename DerivedA, typename DerivedL, typename DerivedU>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
-                        const Eigen::MatrixBase<DerivedL>& new_lb,
-                        const Eigen::MatrixBase<DerivedU>& new_ub) {
+                          const Eigen::MatrixBase<DerivedL>& new_lb,
+                          const Eigen::MatrixBase<DerivedU>& new_ub) {
     if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
         new_lb.cols() != 1 || new_ub.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
@@ -525,7 +525,7 @@ class LinearEqualityConstraint : public LinearConstraint {
    */
   template <typename DerivedA, typename DerivedB>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
-                        const Eigen::MatrixBase<DerivedB>& beq) {
+                          const Eigen::MatrixBase<DerivedB>& beq) {
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
   }
 };
