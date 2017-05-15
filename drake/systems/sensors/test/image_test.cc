@@ -8,34 +8,35 @@ namespace sensors {
 namespace {
 const int kWidth = 640;
 const int kHeight = 480;
-const int kChannel = 4;
 const uint8_t kInitialValue = 100;
 
 GTEST_TEST(TestImage, EmptyTest) {
-  Image<uint8_t> dut;
+  ImageRgb8U dut;
 
   EXPECT_EQ(dut.width(), 0);
   EXPECT_EQ(dut.height(), 0);
   EXPECT_EQ(dut.size(), 0);
-  EXPECT_EQ(dut.num_channels(), 0);
+  EXPECT_EQ(dut.num_channels(), 3);
+  EXPECT_EQ(dut.pixel_format(), PixelFormat::kRgb8U);
 }
 
 GTEST_TEST(TestImage, InstantiateTest) {
-  Image<uint8_t> dut(kWidth, kHeight, kChannel);
+  ImageRgb8U dut(kWidth, kHeight);
 
   EXPECT_EQ(dut.width(), kWidth);
   EXPECT_EQ(dut.height(), kHeight);
-  EXPECT_EQ(dut.num_channels(), kChannel);
+  EXPECT_EQ(dut.num_channels(), 3);
+  EXPECT_EQ(dut.size(), kWidth * kHeight * 3);
 }
 
 GTEST_TEST(TestImage, InitializeAndAccessToPixelValuesTest) {
   // If you don't give initial value, the default value is zero.
-  Image<uint8_t> dut(kWidth, kHeight, kChannel);
-  Image<uint8_t> dut2(kWidth, kHeight, kChannel, kInitialValue);
+  ImageRgb8U dut(kWidth, kHeight);
+  ImageRgb8U dut2(kWidth, kHeight, kInitialValue);
 
   for (int u = 0; u < kWidth; ++u) {
     for (int v = 0; v < kHeight; ++v) {
-      for (int channel = 0; channel < kChannel; ++channel) {
+      for (int channel = 0; channel < dut.num_channels(); ++channel) {
         EXPECT_EQ(dut.at(u, v)[channel], 0);
         EXPECT_EQ(dut2.at(u, v)[channel], kInitialValue);
       }
@@ -43,11 +44,10 @@ GTEST_TEST(TestImage, InitializeAndAccessToPixelValuesTest) {
   }
 }
 
-
 GTEST_TEST(TestImage, CopyConstructorTest) {
-  Image<uint8_t> image(kWidth, kHeight, kChannel, kInitialValue);
-  Image<uint8_t> dut(image);
-  Image<uint8_t> dut2 = image;
+  ImageRgb8U image(kWidth, kHeight, kInitialValue);
+  ImageRgb8U dut(image);
+  ImageRgb8U dut2 = image;
 
   EXPECT_EQ(dut.width(), image.width());
   EXPECT_EQ(dut.height(), image.height());
@@ -59,7 +59,7 @@ GTEST_TEST(TestImage, CopyConstructorTest) {
 
   for (int u = 0; u < kWidth; ++u) {
     for (int v = 0; v < kHeight; ++v) {
-      for (int channel = 0; channel < kChannel; ++channel) {
+      for (int channel = 0; channel < image.num_channels(); ++channel) {
         EXPECT_EQ(dut.at(u, v)[channel], image.at(u, v)[channel]);
         EXPECT_EQ(dut2.at(u, v)[channel], image.at(u, v)[channel]);
       }
@@ -68,8 +68,8 @@ GTEST_TEST(TestImage, CopyConstructorTest) {
 }
 
 GTEST_TEST(TestImage, AssignmentOperatorTest) {
-  Image<uint8_t> image(kWidth, kHeight, kChannel, kInitialValue);
-  Image<uint8_t> dut(1, 1, 1);
+  ImageRgb8U image(kWidth, kHeight, kInitialValue);
+  ImageRgb8U dut(1, 1);
   dut = image;
 
   EXPECT_EQ(dut.width(), image.width());
@@ -78,7 +78,7 @@ GTEST_TEST(TestImage, AssignmentOperatorTest) {
 
   for (int u = 0; u < kWidth; ++u) {
     for (int v = 0; v < kHeight; ++v) {
-      for (int channel = 0; channel < kChannel; ++channel) {
+      for (int channel = 0; channel < image.num_channels(); ++channel) {
         EXPECT_EQ(dut.at(u, v)[channel], image.at(u, v)[channel]);
       }
     }
@@ -86,20 +86,20 @@ GTEST_TEST(TestImage, AssignmentOperatorTest) {
 }
 
 GTEST_TEST(TestImage, MoveConstructorTest) {
-  Image<uint8_t> image(kWidth, kHeight, kChannel, kInitialValue);
-  Image<uint8_t> dut(std::move(image));
+  ImageRgb8U image(kWidth, kHeight, kInitialValue);
+  ImageRgb8U dut(std::move(image));
 
   EXPECT_EQ(dut.width(), kWidth);
   EXPECT_EQ(dut.height(), kHeight);
-  EXPECT_EQ(dut.num_channels(), kChannel);
+  EXPECT_EQ(dut.num_channels(), 3);
 
   EXPECT_EQ(image.width(), 0);
   EXPECT_EQ(image.height(), 0);
-  EXPECT_EQ(image.num_channels(), 0);
+  EXPECT_EQ(image.num_channels(), 3);
 
   for (int u = 0; u < kWidth; ++u) {
     for (int v = 0; v < kHeight; ++v) {
-      for (int channel = 0; channel < kChannel; ++channel) {
+      for (int channel = 0; channel < image.num_channels(); ++channel) {
         EXPECT_EQ(dut.at(u, v)[channel], kInitialValue);
       }
     }
@@ -107,22 +107,22 @@ GTEST_TEST(TestImage, MoveConstructorTest) {
 }
 
 GTEST_TEST(TestImage, MoveAssignmentOperatorTest) {
-  Image<uint8_t> image(kWidth, kHeight, kChannel, kInitialValue);
-  Image<uint8_t> dut(kWidth / 2, kHeight / 2, 1);
+  ImageRgb8U image(kWidth, kHeight, kInitialValue);
+  ImageRgb8U dut(kWidth / 2, kHeight / 2);
 
   dut = std::move(image);
 
   EXPECT_EQ(dut.width(), kWidth);
   EXPECT_EQ(dut.height(), kHeight);
-  EXPECT_EQ(dut.num_channels(), kChannel);
+  EXPECT_EQ(dut.num_channels(), 3);
 
   EXPECT_EQ(image.width(), 0);
   EXPECT_EQ(image.height(), 0);
-  EXPECT_EQ(image.num_channels(), 0);
+  EXPECT_EQ(image.num_channels(), 3);
 
   for (int u = 0; u < kWidth; ++u) {
     for (int v = 0; v < kHeight; ++v) {
-      for (int channel = 0; channel < kChannel; ++channel) {
+      for (int channel = 0; channel < image.num_channels(); ++channel) {
         EXPECT_EQ(dut.at(u, v)[channel], kInitialValue);
       }
     }
@@ -130,15 +130,15 @@ GTEST_TEST(TestImage, MoveAssignmentOperatorTest) {
 }
 
 GTEST_TEST(TestImage, ResizeTest) {
-  Image<uint8_t> dut(kWidth, kHeight, kChannel);
+  ImageRgb8U dut(kWidth, kHeight);
   const int kWidthResized = 64;
   const int kHeightResized = 48;
   dut.resize(kWidthResized, kHeightResized);
 
   EXPECT_EQ(dut.width(), kWidthResized);
   EXPECT_EQ(dut.height(), kHeightResized);
-  EXPECT_EQ(dut.num_channels(), kChannel);
-  EXPECT_EQ(dut.size(), kWidthResized * kHeightResized * kChannel);
+  EXPECT_EQ(dut.num_channels(), 3);
+  EXPECT_EQ(dut.size(), kWidthResized * kHeightResized * 3);
 }
 
 }  // namespace
