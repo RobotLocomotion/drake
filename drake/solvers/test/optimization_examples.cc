@@ -123,7 +123,7 @@ void LinearSystemExample2::CheckSolution() const {
 }
 
 LinearSystemExample3::LinearSystemExample3() : LinearSystemExample2() {
-  con()->UpdateConstraint(3 * Matrix4d::Identity(), b());
+  con()->UpdateCoefficients(3 * Matrix4d::Identity(), b());
 }
 
 void LinearSystemExample3::CheckSolution() const {

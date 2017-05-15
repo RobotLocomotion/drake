@@ -113,7 +113,7 @@ class LinearCost : public Cost {
    * @param new_a New linear term.
    * @param new_b (optional) New constant term.
    */
-  void UpdateLinearTerms(const Eigen::Ref<const Eigen::VectorXd>& new_a,
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::VectorXd>& new_a,
                          double new_b = 0.) {
     if (new_a.rows() != a_.rows()) {
       throw std::runtime_error("Can't change the number of decision variables");
@@ -172,7 +172,7 @@ class QuadraticCost : public Cost {
    * @param new_c (optional) New constant term.
    */
   template <typename DerivedQ, typename DerivedB>
-  void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
                                      const Eigen::MatrixBase<DerivedB>& new_b,
                                      double new_c = 0.) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||

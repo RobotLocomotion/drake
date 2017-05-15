@@ -107,7 +107,7 @@ GTEST_TEST(testCost, testLinearCost) {
 
   // Update with a constant term.
   const double b = 100;
-  cost->UpdateLinearTerms(a, b);
+  cost->UpdateCoefficients(a, b);
   cost->Eval(x0, y);
   EXPECT_NEAR(y(0), obj_expected + b, tol);
 
@@ -136,7 +136,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
 
   // Update with a constant term.
   const double c = 100;
-  cost->UpdateQuadraticAndLinearTerms(Q, b, c);
+  cost->UpdateCoefficients(Q, b, c);
   cost->Eval(x0, y);
   EXPECT_NEAR(y(0), obj_expected + c, tol);
 

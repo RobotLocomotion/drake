@@ -45,7 +45,6 @@ Binding<QuadraticCost> DoParseQuadraticCost(
   DecomposeQuadraticExpressionWithMonomialToCoeffMap(
       monomial_to_coeff_map, map_var_to_index, vars_vec.size(), &Q, &b,
       &constant_term);
-  // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
   return CreateBinding(make_shared<QuadraticCost>(Q, b, constant_term),
                        vars_vec);
 }
