@@ -264,6 +264,8 @@ ExpressionVar::ExpressionVar(const Variable& v)
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic expressions.
   DRAKE_DEMAND(!var_.is_dummy());
+  DRAKE_DEMAND(var_.get_type() == Variable::Type::CONTINUOUS ||
+               var_.get_type() == Variable::Type::INTEGER);
 }
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }

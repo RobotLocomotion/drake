@@ -171,7 +171,9 @@ class Expression {
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(double d);
-  /** Constructs a variable expression from Variable. */
+  /** Constructs a variable expression from Variable.
+   * @note Variable @p var should be of either CONTINUOUS type or INTEGER type.
+   */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
   /** Returns expression kind. */
@@ -872,8 +874,8 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  // Note that std::equal_to<Expression> calls Expression::EqualTo which checks
-  // structural equality between two expressions.
+// Note that std::equal_to<Expression> calls Expression::EqualTo which checks
+// structural equality between two expressions.
 #if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
   return m1.binaryExpr(m2, std::equal_to<Expression>{}).all();
 #else
