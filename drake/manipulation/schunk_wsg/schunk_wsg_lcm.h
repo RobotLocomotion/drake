@@ -6,11 +6,11 @@
 #include <memory>
 
 #include "drake/common/trajectories/trajectory.h"
-#include "drake/examples/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
+#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace examples {
+namespace manipulation {
 namespace schunk_wsg {
 
 // TODO(sam.creasey) Right now this class just outputs a position
@@ -89,5 +89,5 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
 };
 
 }  // namespace schunk_wsg
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake

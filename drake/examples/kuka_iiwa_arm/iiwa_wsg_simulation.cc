@@ -18,13 +18,13 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -46,8 +46,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-using schunk_wsg::SchunkWsgStatusSender;
-using schunk_wsg::SchunkWsgTrajectoryGenerator;
+using manipulation::schunk_wsg::SchunkWsgStatusSender;
+using manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -77,8 +77,9 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   tree_builder->StoreModel(
       "box",
       "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
-  tree_builder->StoreModel("wsg",
-                           "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
+  tree_builder->StoreModel(
+      "wsg",
+      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -198,7 +199,8 @@ int DoMain() {
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
   wsg_status_pub->set_name("wsg_status_publisher");
-  wsg_status_pub->set_publish_period(schunk_wsg::kSchunkWsgLcmStatusPeriod);
+  wsg_status_pub->set_publish_period(
+      manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       model->get_output_port_wsg_state().size(), 0, 1);

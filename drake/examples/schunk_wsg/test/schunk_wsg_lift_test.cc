@@ -74,7 +74,8 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
       Eigen::Vector3d::Zero());
   const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
       GetDrakePath() +
-          "/examples/schunk_wsg/models/schunk_wsg_50_ball_contact.sdf",
+      "/manipulation/models/wsg_50_description/sdf/"
+      "schunk_wsg_50_ball_contact.sdf",
       multibody::joints::kFixed, gripper_frame, tree.get());
   EXPECT_EQ(gripper_id_table.size(), 1);
   *gripper_instance_id = gripper_id_table.begin()->second;

@@ -5,7 +5,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -19,8 +18,8 @@ using lcm::DrakeLcm;
 using systems::RigidBodyPlant;
 
 namespace examples {
-using schunk_wsg::SchunkWsgTrajectoryGenerator;
-using schunk_wsg::SchunkWsgStatusSender;
+using manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
+using manipulation::schunk_wsg::SchunkWsgStatusSender;
 
 namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {

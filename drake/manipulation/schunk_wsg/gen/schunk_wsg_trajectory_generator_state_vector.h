@@ -14,7 +14,7 @@
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
-namespace examples {
+namespace manipulation {
 namespace schunk_wsg {
 
 /// Describes the row indices of a SchunkWsgTrajectoryGeneratorStateVector.
@@ -85,5 +85,5 @@ class SchunkWsgTrajectoryGeneratorStateVector : public systems::BasicVector<T> {
 };
 
 }  // namespace schunk_wsg
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake

@@ -197,7 +197,8 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
 // Tests an underactuated robot.
 TEST_F(RobotStateLcmMessageTranslatorTest, TestUnderActuated) {
   std::string model =
-      GetDrakePath() + "/examples/schunk_wsg/models/schunk_wsg_50.sdf";
+      GetDrakePath() +
+      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
   std::vector<multibody::joints::FloatingBaseType> types = {
       multibody::joints::FloatingBaseType::kFixed,
       multibody::joints::FloatingBaseType::kQuaternion,

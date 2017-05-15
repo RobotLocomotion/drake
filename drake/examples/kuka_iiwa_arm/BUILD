@@ -123,8 +123,8 @@ drake_cc_binary(
     add_test_rule = 1,
     data = [
         ":models",
-        "//drake/examples/schunk_wsg:models",
         "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
     ],
     test_rule_args = ["--simulation_sec=0.01"],
     deps = [
@@ -134,9 +134,9 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_diagram_factory",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
-        "//drake/examples/schunk_wsg:schunk_wsg_constants",
-        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis",
         "//drake/systems/controllers:inverse_dynamics_controller",

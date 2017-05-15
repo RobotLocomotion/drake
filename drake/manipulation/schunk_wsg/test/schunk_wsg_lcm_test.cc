@@ -1,4 +1,4 @@
-#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 
 #include <memory>
 
@@ -10,7 +10,7 @@
 #include "drake/systems/framework/output_port_value.h"
 
 namespace drake {
-namespace examples {
+namespace manipulation {
 namespace schunk_wsg {
 namespace {
 
@@ -50,5 +50,5 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgTrajectoryGeneratorTest) {
 
 }  // namespace
 }  // namespace schunk_wsg
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake

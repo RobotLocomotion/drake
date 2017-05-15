@@ -13,7 +13,7 @@
 #include "drake/common/eigen_types.h"
 
 namespace drake {
-namespace examples {
+namespace manipulation {
 namespace schunk_wsg {
 
 constexpr int kSchunkWsgNumActuators = 1;
@@ -44,5 +44,5 @@ MatrixX<T> GetSchunkWsgFeedbackSelector() {
 }
 
 }  // namespace schunk_wsg
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake
