@@ -128,6 +128,7 @@ build:asan --copt -fsanitize=address
 build:asan --copt -O1
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
+test:asan --run_under=//tools:asan
 test:asan --test_env=ASAN_OPTIONS
 test:asan --test_env=ASAN_SYMBOLIZER_PATH
 test:asan --test_lang_filters=-py
@@ -141,6 +142,7 @@ build:lsan --copt -fsanitize=leak
 build:lsan --copt -O1
 build:lsan --copt -fno-omit-frame-pointer
 build:lsan --linkopt -fsanitize=leak
+test:lsan --run_under=//tools:lsan
 test:lsan --test_env=LSAN_OPTIONS
 test:lsan --test_env=LSAN_SYMBOLIZER_PATH
 test:lsan --test_lang_filters=-py
@@ -148,9 +150,11 @@ test:lsan --test_lang_filters=-py
 ### MSan build. ###
 build:msan --copt -g
 build:msan --copt -fsanitize=memory
+build:msan --copt -fsanitize-memory-track-origins
 build:msan --copt -O1
 build:msan --copt -fno-omit-frame-pointer
 build:msan --linkopt -fsanitize=memory
+test:msan --run_under=//tools:msan
 test:msan --test_lang_filters=-py
 test:msan --test_env=MSAN_OPTIONS
 test:msan --test_env=MSAN_SYMBOLIZER_PATH
@@ -164,6 +168,7 @@ build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
 build:tsan --linkopt -fsanitize=thread
+test:tsan --run_under=//tools:tsan
 test:tsan --test_env=TSAN_OPTIONS
 test:tsan --test_lang_filters=-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
@@ -176,6 +181,7 @@ build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
+test:ubsan --run_under=//tools:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_lang_filters=-py
 
