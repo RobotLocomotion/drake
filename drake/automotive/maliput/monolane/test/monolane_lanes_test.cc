@@ -1,14 +1,15 @@
+#include "drake/automotive/maliput/monolane/arc_lane.h"
+#include "drake/automotive/maliput/monolane/lane.h"
+#include "drake/automotive/maliput/monolane/line_lane.h"
+
 #include <cmath>
-#include <iostream>
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/junction.h"
-#include "drake/automotive/maliput/monolane/lane.h"
-#include "drake/automotive/maliput/monolane/line_lane.h"
 #include "drake/automotive/maliput/monolane/road_geometry.h"
 #include "drake/automotive/maliput/monolane/segment.h"
+#include "drake/automotive/maliput/monolane/test/monolane_test_utils.h"
 #include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
@@ -30,37 +31,6 @@ GTEST_TEST(MonolaneLanesTest, Rot3) {
   EXPECT_TRUE(CompareMatrices(
       rpy90.apply({0., 0., 1.}), V3(1., 0., 0.), kVeryExact));
 }
-
-
-#define EXPECT_GEO_NEAR(actual, expected, tolerance)         \
-  do {                                                       \
-    const api::GeoPosition _actual(actual);                  \
-    const api::GeoPosition _expected expected;               \
-    const double _tolerance = (tolerance);                   \
-    EXPECT_NEAR(_actual.x(), _expected.x(), _tolerance);     \
-    EXPECT_NEAR(_actual.y(), _expected.y(), _tolerance);     \
-    EXPECT_NEAR(_actual.z(), _expected.z(), _tolerance);     \
-  } while (0)
-
-#define EXPECT_LANE_NEAR(actual, expected, tolerance)         \
-  do {                                                        \
-    const api::LanePosition _actual(actual);                  \
-    const api::LanePosition _expected expected;               \
-    const double _tolerance = (tolerance);                    \
-    EXPECT_NEAR(_actual.s(), _expected.s(), _tolerance);      \
-    EXPECT_NEAR(_actual.r(), _expected.r(), _tolerance);      \
-    EXPECT_NEAR(_actual.h(), _expected.h(), _tolerance);      \
-  } while (0)
-
-#define EXPECT_ROT_NEAR(actual, expected, tolerance)                 \
-  do {                                                               \
-    const api::Rotation _actual(actual);                             \
-    const api::Rotation _expected(api::Rotation::FromRpy expected);  \
-    const double _tolerance = (tolerance);                           \
-    EXPECT_NEAR(_actual.yaw(), _expected.yaw(), _tolerance);         \
-    EXPECT_NEAR(_actual.pitch(), _expected.pitch(), _tolerance);     \
-    EXPECT_NEAR(_actual.roll(), _expected.roll(), _tolerance);       \
-  } while (0)
 
 
 GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
