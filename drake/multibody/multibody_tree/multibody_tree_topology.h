@@ -47,6 +47,11 @@ struct BodyTopology {
   /// Unique index in the MultibodyTree.
   BodyIndex index{0};
 
+  /// Unique index to the one and only inboard mobilizer a body can have.
+  /// By default this is left initialized to "invalid" so that we can detect
+  /// graph loops whithin add_mobilizer().
+  MobilizerIndex inboard_mobilizer{};
+
   /// Unique index to the frame associated with this body.
   FrameIndex body_frame{0};
 
@@ -231,7 +236,20 @@ struct MultibodyTreeTopology {
           "This multibody tree already has a mobilizer connecting these two "
           "bodies. More than one mobilizer between two bodies is not allowed");
     }
+    // Checks for graph loops. Each body can have and only one inboard
+    // mobilizer.
+    if (bodies[outboard_body].inboard_mobilizer.is_valid()) {
+      throw std::runtime_error(
+          "This mobilizer is creating a closed loop since the outboard body "
+          "already has an inboard mobilizer connected to it. "
+          "If a physical loop is really needed, consider using a constraint "
+          "instead.");
+    }
     MobilizerIndex mobilizer_index(get_num_mobilizers());
+
+    // Make note of the inboard mobilizer for the outboard body.
+    bodies[outboard_body].inboard_mobilizer = mobilizer_index;
+
     mobilizers.emplace_back(mobilizer_index,
                             in_frame, out_frame,
                             inboard_body, outboard_body);

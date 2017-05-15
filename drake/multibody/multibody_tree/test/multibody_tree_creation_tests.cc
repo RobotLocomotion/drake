@@ -66,7 +66,8 @@ GTEST_TEST(MultibodyTree, AddBodies) {
   EXPECT_THROW(model->AddBody<RigidBody>(M_Bo_B), std::logic_error);
 }
 
-// Test the basic MultibodyTree API to create and add bodies.
+// Tests the basic MultibodyTree API to create and add bodies.
+// Tests we cannot create graph loops.
 GTEST_TEST(MultibodyTree, AddMobilizers) {
   auto model = std::make_unique<MultibodyTree<double>>();
 
@@ -102,6 +103,24 @@ GTEST_TEST(MultibodyTree, AddMobilizers) {
   EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
       pendulum.get_body_frame(), pendulum.get_body_frame(),
       Vector3d::UnitZ())), std::runtime_error);
+
+  // Adds a second pendulum.
+  const RigidBody<double>& pendulum2 = model->AddBody<RigidBody>(M_Bo_B);
+  model->AddMobilizer<RevoluteMobilizer>(
+      model->get_world_frame(), pendulum2.get_body_frame(), Vector3d::UnitZ());
+
+  EXPECT_EQ(model->get_num_bodies(), 3);
+  EXPECT_EQ(model->get_num_mobilizers(), 2);
+
+  // Attempts to create a loop. Verify we gen an exception.
+  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
+      pendulum.get_body_frame(), pendulum2.get_body_frame(),
+      Vector3d::UnitZ())), std::runtime_error);
+
+  // Expect the number of bodies and mobilizers not to change after the above
+  // (failed) call.
+  EXPECT_EQ(model->get_num_bodies(), 3);
+  EXPECT_EQ(model->get_num_mobilizers(), 2);
 }
 
 // Tests the correctness of MultibodyTreeElement checks to verify one or more
