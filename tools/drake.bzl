@@ -198,7 +198,7 @@ def drake_cc_googletest(
     if use_default_main:
         deps.append("@gtest//:main")
     else:
-        deps.append("@gtest//:lib")
+        deps.append("@gtest//:without_main")
     drake_cc_test(
         name=name,
         deps=deps,

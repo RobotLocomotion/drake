@@ -1,7 +1,7 @@
 # -*- python -*-
 
 cc_library(
-    name = "lib",
+    name = "without_main",
     testonly = 1,
     srcs = glob(
         [
@@ -47,6 +47,6 @@ cc_library(
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        ":lib",
+        ":without_main",
     ],
 )
