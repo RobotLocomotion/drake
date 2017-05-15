@@ -1,12 +1,11 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/plan_eval_utils.h"
+#include "drake/manipulation/util/trajectory_utils.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
-namespace examples {
-namespace qp_inverse_dynamics {
+namespace manipulation {
 
 class PiecewiseCubicTrajectoryTest : public ::testing::Test {
  protected:
@@ -247,6 +246,5 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestIsApprox) {
   }
 }
 
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake

@@ -22,6 +22,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "trajectory_utils",
+    srcs = [
+        "trajectory_utils.cc",
+    ],
+    hdrs = [
+        "trajectory_utils.h",
+    ],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/common/trajectories:piecewise_quaternion",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -40,5 +54,13 @@ drake_cc_googletest(
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "trajectory_utils_test",
+    deps = [
+        ":trajectory_utils",
+        "//drake/common:eigen_matrix_compare",
     ],
 )

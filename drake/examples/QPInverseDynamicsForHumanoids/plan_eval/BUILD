@@ -25,12 +25,12 @@ drake_cc_library(
         "generic_plan.h",
     ],
     deps = [
-        ":plan_eval_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+        "//drake/manipulation/util:trajectory_utils",
     ],
 )
 
@@ -67,21 +67,6 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_library(
-    name = "plan_eval_utils",
-    srcs = [
-        "plan_eval_utils.cc",
-    ],
-    hdrs = [
-        "plan_eval_utils.h",
-    ],
-    deps = [
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/multibody:rigid_body_tree",
-    ],
-)
-
 # === test/ ===
 drake_cc_googletest(
     name = "generic_plan_test",
@@ -97,14 +82,6 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-    ],
-)
-
-drake_cc_googletest(
-    name = "plan_eval_utils_test",
-    deps = [
-        ":plan_eval_utils",
-        "//drake/common:eigen_matrix_compare",
     ],
 )
 
