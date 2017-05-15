@@ -444,11 +444,13 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   // of Q_all.
   std::vector<Eigen::Triplet<double>> Q_lower_triplets;
   std::vector<Eigen::Triplet<double>> linear_term_triplets;
+  double constant_cost = 0.;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
     // The quadratic cost is of form 0.5*x'*Q*x + b*x.
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
+    constant_cost += constraint->c();
     std::vector<int> var_indices(Q.rows());
 
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
@@ -481,6 +483,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   }
   for (const auto& binding : prog.linear_costs()) {
     const auto& c = binding.constraint()->a();
+    constant_cost += binding.constraint()->b();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       if (std::abs(c(i)) > Eigen::NumTraits<double>::epsilon()) {
         linear_term_triplets.push_back(Eigen::Triplet<double>(
@@ -520,6 +523,10 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
       return rescode;
     }
   }
+
+  // Provide constant / fixed cost.
+  MSK_putcfix(*task, constant_cost);
+
   return rescode;
 }
 
@@ -716,8 +723,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            const double constant_cost = ComputeExplicitlyConstantCost(prog);
-            prog.SetOptimalCost(optimal_cost + constant_cost);
+            prog.SetOptimalCost(optimal_cost);
           }
           break;
         }
