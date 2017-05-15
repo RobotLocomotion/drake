@@ -43,7 +43,7 @@ drake_header_tar(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
-    guess_hdrs = 2, # 2 -> same workspace
+    guess_hdrs = 2,  # 2 -> same workspace
     hdr_dest = "include/drake",
     targets = ["libdrake.so"],
 )

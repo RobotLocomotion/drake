@@ -200,21 +200,24 @@ def _install_impl(ctx):
   return InstallInfo(install_actions = actions, runfiles = files)
 
 install = rule(
-  implementation = _install_impl,
-  executable = True,
-  attrs = {
-    "deps": attr.label_list(providers = ["install_actions"]),
-    "docs": attr.label_list(allow_files = True),
-    "doc_dest": attr.string(default = "share/doc"),
-    "hdrs": attr.label_list(allow_files = True),
-    "hdr_dest": attr.string(default = "include"),
-    "hdr_strip_prefix": attr.string_list(),
-    "guess_hdrs": attr.int(default = 0),
-    "targets": attr.label_list(),
-    "install_script_template": attr.label(
-      allow_files = True, executable = True, cfg="target",
-      default = Label("//tools:install.py.in")),
-  },
+    attrs = {
+        "deps": attr.label_list(providers = ["install_actions"]),
+        "docs": attr.label_list(allow_files = True),
+        "doc_dest": attr.string(default = "share/doc"),
+        "hdrs": attr.label_list(allow_files = True),
+        "hdr_dest": attr.string(default = "include"),
+        "hdr_strip_prefix": attr.string_list(),
+        "guess_hdrs": attr.int(default = 0),
+        "targets": attr.label_list(),
+        "install_script_template": attr.label(
+            allow_files = True,
+            executable = True,
+            cfg = "target",
+            default = Label("//tools:install.py.in"),
+        ),
+    },
+    executable = True,
+    implementation = _install_impl,
 )
 
 #------------------------------------------------------------------------------
@@ -231,12 +234,12 @@ def _install_files_impl(ctx):
   return InstallInfo(install_actions = actions)
 
 install_files = rule(
-  implementation = _install_files_impl,
-  attrs = {
-    "dest": attr.string(),
-    "files": attr.label_list(allow_files = True),
-    "strip_prefix": attr.string_list(),
-  },
+    attrs = {
+        "dest": attr.string(),
+        "files": attr.label_list(allow_files = True),
+        "strip_prefix": attr.string_list(),
+    },
+    implementation = _install_files_impl,
 )
 
 #END rules

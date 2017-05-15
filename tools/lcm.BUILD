@@ -245,18 +245,24 @@ install_files(
 
 install(
     name = "install",
-    deps = [":install_cmake"],
-    doc_dest = "share/doc/lcm",
-    docs = ["AUTHORS", "COPYING", "NEWS"],
     hdrs = LCM_PUBLIC_HEADERS,
+    doc_dest = "share/doc/lcm",
+    docs = [
+        "AUTHORS",
+        "COPYING",
+        "NEWS",
+    ],
     targets = [
         "lcm",
         "lcm-gen",
         "lcm-java",
         "lcm-logger",
         "lcm-logplayer",
-        "lcm-spy"
-    ], # TODO(mwoehlke-kitware): install Python bits
+        "lcm-spy",
+    ],
+    deps = [":install_cmake"],
 )
+
+# TODO(mwoehlke-kitware): install Python bits
 
 python_lint()
