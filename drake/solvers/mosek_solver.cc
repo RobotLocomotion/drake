@@ -525,35 +525,40 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
                                 bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
-  const std::vector<MathematicalProgram::VarType>& var_type =
-      prog.DecisionVariableTypes();
   for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
-    if (var_type[i] == MathematicalProgram::VarType::INTEGER) {
-      rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
-      if (rescode != MSK_RES_OK) {
-        return rescode;
-      }
-      *with_integer_or_binary_variable = true;
-    } else if (var_type[i] == MathematicalProgram::VarType::BINARY) {
-      *with_integer_or_binary_variable = true;
-      rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
-      double xi_lb = NAN;
-      double xi_ub = NAN;
-      MSKboundkeye bound_key;
-      if (rescode == MSK_RES_OK) {
-        rescode = MSK_getvarbound(*task, i, &bound_key, &xi_lb, &xi_ub);
+    switch (prog.decision_variable(i).get_type()) {
+      case MathematicalProgram::VarType::INTEGER:
+        rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
-      }
-      if (rescode == MSK_RES_OK) {
-        xi_lb = std::max(0.0, xi_lb);
-        xi_ub = std::min(1.0, xi_ub);
-        rescode = MSK_putvarbound(*task, i, MSK_BK_RA, xi_lb, xi_ub);
-        if (rescode != MSK_RES_OK) {
-          return rescode;
+        *with_integer_or_binary_variable = true;
+        break;
+      case MathematicalProgram::VarType::BINARY: {
+        *with_integer_or_binary_variable = true;
+        rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
+        double xi_lb = NAN;
+        double xi_ub = NAN;
+        MSKboundkeye bound_key;
+        if (rescode == MSK_RES_OK) {
+          rescode = MSK_getvarbound(*task, i, &bound_key, &xi_lb, &xi_ub);
+          if (rescode != MSK_RES_OK) {
+            return rescode;
+          }
         }
+        if (rescode == MSK_RES_OK) {
+          xi_lb = std::max(0.0, xi_lb);
+          xi_ub = std::min(1.0, xi_ub);
+          rescode = MSK_putvarbound(*task, i, MSK_BK_RA, xi_lb, xi_ub);
+          if (rescode != MSK_RES_OK) {
+            return rescode;
+          }
+        }
+        break;
       }
+      case MathematicalProgram::VarType::CONTINUOUS:
+        // Do nothing. */
+        break;
     }
   }
   return rescode;
@@ -567,7 +572,6 @@ MosekSolver::~MosekSolver() {
     MSK_deleteenv(&env);
   }
 }
-
 
 bool MosekSolver::available() const { return true; }
 
