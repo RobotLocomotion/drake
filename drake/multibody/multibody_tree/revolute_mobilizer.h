@@ -13,9 +13,9 @@ template <typename T> class MultibodyTree;
 namespace drake {
 namespace multibody {
 
-/// This Mobilizer grants a single degree of freedom describing the angular
-/// rotation between the inboard and outboard frames it connects. This mobilizer
-/// permits no translation.
+/// This Mobilizer allows two frames to rotate relatively to one another around
+/// an axis that is constant when measured in either this mobilizer's inboard or
+/// outboard frames, while the distance between the two frames does not vary.
 /// To fully specify this mobilizer a user must provide the inboard frame F,
 /// the outboard (or "mobilized") frame M and the axis `axis_F` (expressed in
 /// frame F) about which frame M rotates with respect to F.
