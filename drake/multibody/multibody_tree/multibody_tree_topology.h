@@ -80,7 +80,7 @@ struct FrameTopology {
 /// - Indexes to the inboard/outboard frames of this mobilizer.
 /// - Indexes to the inboard/outboard bodies of this mobilizer.
 /// - Numbers of dofs admitted by this mobilizer.
-/// - Indexing information to retrive entries from the parent MultibodyTree
+/// - Indexing information to retrieve entries from the parent MultibodyTree
 ///   Context.
 /// Additional information on topology classes is given in this file's
 /// documentation at the top.
@@ -106,9 +106,8 @@ struct MobilizerTopology {
   /// Returns `true` if this %MobilizerTopology connects frames identified by
   /// indexes `frame1` and `frame2`.
   bool connects_frames(FrameIndex frame1, FrameIndex frame2) const {
-    if ((inboard_frame == frame1 && outboard_frame == frame2) ||
-        (inboard_frame == frame2 && outboard_frame == frame1)) return true;
-    return false;
+    return (inboard_frame == frame1 && outboard_frame == frame2) ||
+           (inboard_frame == frame2 && outboard_frame == frame1);
   }
 
   /// Unique index in the set of mobilizers.
@@ -123,12 +122,12 @@ struct MobilizerTopology {
   BodyIndex outboard_body;
 
   /// Mobilizer indexing info: Set at Finalize() time.
-  // Number of generalized coordinates admitted by this mobilizer.
+  // Number of generalized coordinates granted by this mobilizer.
   int num_positions{0};
   // First entry in the global array of generalized coordinates for the parent
   // MultibodyTree.
   int positions_start{0};
-  // Number of generalized velocities admitted by this mobilizer.
+  // Number of generalized velocities granted by this mobilizer.
   int num_velocities{0};
   // First entry in the global array of generalized velocities for the parent
   // MultibodyTree.
@@ -147,7 +146,9 @@ struct MultibodyTreeTopology {
   /// and adds it to the tree.
   MultibodyTreeTopology() {}
 
-  /// Returns the number of bodies in the multibody tree.
+  /// Returns the number of bodies in the multibody tree. This includes the
+  /// "world" body and therefore the minimum number of bodies after
+  /// MultibodyTree::Finalize() will always be one, not zero.
   int get_num_bodies() const { return static_cast<int>(bodies.size()); }
 
   /// Returns the number of physical frames in the multibody tree.
@@ -155,7 +156,9 @@ struct MultibodyTreeTopology {
     return static_cast<int>(frames.size());
   }
 
-  /// Returns the number of mobilizers in the multibody tree.
+  /// Returns the number of mobilizers in the multibody tree. Since the "world"
+  /// body does not have a mobilizer, the number of mobilizers will always equal
+  /// the number of bodies minus one.
   int get_num_mobilizers() const {
     return static_cast<int>(mobilizers.size());
   }
@@ -191,8 +194,6 @@ struct MultibodyTreeTopology {
   /// Creates and adds a new MobilizerTopology connecting the inboard and
   /// outboard multibody frames identified by indexes `in_frame` and
   /// `out_frame`, respectively.
-  /// `in_body` corresponds to the body associated with the inboard frame while
-  /// `out_body` corresponds to the body associated with the outboard frame.
   /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.

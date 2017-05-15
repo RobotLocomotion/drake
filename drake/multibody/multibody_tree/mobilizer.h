@@ -49,14 +49,15 @@ template<typename T> class BodyNode;
 /// @endcode
 ///
 /// A %Mobilizer induces a tree structure within a MultibodyTree
-/// model, connecting an inboard frame to an outboard frame. Every time a
+/// model, connecting an inboard (topologically closer to the world) frame to an
+/// outboard (topologically further from the world) frame. Every time a
 /// %Mobilizer is added to a MultibodyTree (using the
 /// MultibodyTree::AddMobilizer() method), a number of degrees of
 /// freedom associated with the particular type of %Mobilizer are added to the
 /// multibody system. In the example above for the single pendulum, adding a
 /// RevoluteMobilizer has two purposes:
-/// - It defines the tree structure of the model. World is the "parent" body
-///   while "pendulum" is the "child" body in the MultibodyTree.
+/// - It defines the tree structure of the model. World is the inboard body
+///   while "pendulum" is the outboard body in the MultibodyTree.
 /// - It informs the MultibodyTree of the degrees of freedom granted by the
 ///   revolute mobilizer between the two frames it connects.
 /// - It defines a permissible motion space spanned by the generalized
@@ -132,22 +133,26 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     }
   }
 
-  /// Returns the number of generalized coordinates admitted by this mobilizer.
+  /// Returns the number of generalized coordinates granted by this mobilizer.
   /// As an example, consider RevoluteMobilizer, for which
   /// `get_num_positions() == 1` since RevoluteMobilizer adds a single
-  /// rotational degree of freedom about a given axis between the inboard and
-  /// outboard frames. Another example would be a quaternion mobilizer, for
-  /// which this method would return 7 (a quaternion plus a position vector).
+  /// generalized coordinate representing the rotational degree of freedom about
+  /// a given axis between the inboard and outboard frames. Another example
+  /// would be a 6 DOF "free" mobilizer internally using a quaternion
+  /// representation to parametrize free rotations and a position vector to
+  /// parametrize free translations; this method would return 7 (a quaternion
+  /// plus a position vector).
   /// @see get_num_velocities()
   virtual int get_num_positions() const = 0;
 
-  /// Returns the number of generalized velocities admitted by this mobilizer.
+  /// Returns the number of generalized velocities granted by this mobilizer.
+  /// Given that all physics occurs in the generalized velocities space, the
+  /// number of generalized velocities exactly matches the number of degrees of
+  /// freedom granted by the mobilizer.
   /// As an example, consider RevoluteMobilizer, for which
   /// `get_num_velocities() == 1` since for RevoluteMobilizer its one and only
   /// generalized velocity describes the magnitude of the angular velocity about
-  /// a given axis between the inboard and outboard frames. Another example
-  /// would be a quaternion mobilizer, for which this method would return 6 (an
-  /// angular velocity plus a linear velocity).
+  /// a given axis between the inboard and outboard frames.
   /// @see get_num_positions()
   virtual int get_num_velocities() const = 0;
 

@@ -138,7 +138,8 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     DoSetTopology(tree);
   }
 
-  /// Implementation of the NVI SetTopology().
+  /// Implementation of the NVI SetTopology(). For advanced use only for
+  /// developers implementing new MultibodyTree components.
   virtual void DoSetTopology(const MultibodyTreeTopology& tree) = 0;
 
  private:

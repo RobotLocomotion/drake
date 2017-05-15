@@ -306,7 +306,7 @@ class MultibodyTree {
     DRAKE_ASSERT(mobilizer_index == get_num_mobilizers());
 
     // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultimobilizerTreeElement altogether.
+    // all. Consider also removing MultibodyTreeElement altogether.
     mobilizer->set_parent_tree(this, mobilizer_index);
 
     MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
@@ -326,24 +326,14 @@ class MultibodyTree {
   ///   // MultibodyTree::AddFrame() ...
   ///   // Notice RevoluteMobilizer is a template an a scalar type.
   ///   const RevoluteMobilizer<T>& pin =
-  ///     model.AddMobilizer<RevoluteMobilizer>(
-  ///       inboard_frame, outboard_frame,
-  ///       Vector3d::UnitZ() /*revolute axis*/);
-  /// @endcode
-  ///
-  /// Note that for dependent names you must use the template keyword (say for
-  /// instance you have a MultibodyTree<T> member within your custom class).
-  /// Like so:
-  /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define inboard and outboard frames by calling
-  ///   // MultibodyTree::AddFrame() ...
-  ///   // Notice the usage of the "template" keyword here:
-  ///   const RevoluteMobilizer<T>& pin =
   ///     model.template AddMobilizer<RevoluteMobilizer>(
   ///       inboard_frame, outboard_frame,
   ///       Vector3d::UnitZ() /*revolute axis*/);
   /// @endcode
+  ///
+  /// Note that for dependent names _only_ you must use the template keyword
+  /// (say for instance you have a MultibodyTree<T> member within your custom
+  /// class).
   ///
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
   /// @throws a std::runtime_error if the new mobilizer attempts to connect a
@@ -364,7 +354,7 @@ class MultibodyTree {
   ///                       T of `this` %MultibodyTree.
   template<template<typename Scalar> class MobilizerType, typename... Args>
   const MobilizerType<T>& AddMobilizer(Args&&... args) {
-    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
+    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
                   "MobilizerType must be a sub-class of Mobilizer<T>.");
     return AddMobilizer(
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
@@ -385,7 +375,12 @@ class MultibodyTree {
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
-  /// Returns the number of mobilizers in the %MultibodyTree.
+  /// Returns the number of mobilizers in the %MultibodyTree. Since the world
+  /// has no Mobilizer, the number of mobilizers equals the number of bodies
+  /// minus one, i.e. get_num_mobilizers() returns get_num_bodies() - 1.
+  // TODO(amcastro-tri): Consider adding a WorldMobilizer (0-dofs) for the world
+  // body. This could be useful to query for reaction forces of the entire
+  // model.
   int get_num_mobilizers() const {
     return static_cast<int>(owned_mobilizers_.size());
   }
