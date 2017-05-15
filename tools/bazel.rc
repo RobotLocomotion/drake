@@ -123,7 +123,6 @@ test:kcov --test_tag_filters=-cpplint,-gurobi,-pycodestyle
 test:kcov --nocache_test_results
 
 ### ASan build. ###
-build:asan --action_env=ASAN_OPTIONS
 build:asan --copt -g
 build:asan --copt -fsanitize=address
 build:asan --copt -O1
@@ -137,7 +136,6 @@ test:asan --test_lang_filters=-py
 test:asan --test_timeout=120,600,1800,7200
 
 ### LSan build. ###
-build:lsan --action_env=LSAN_OPTIONS
 build:lsan --copt -g
 build:lsan --copt -fsanitize=leak
 build:lsan --copt -O1
@@ -148,7 +146,6 @@ test:lsan --test_env=LSAN_SYMBOLIZER_PATH
 test:lsan --test_lang_filters=-py
 
 ### MSan build. ###
-build:msan --action_env=MSAN_OPTIONS
 build:msan --copt -g
 build:msan --copt -fsanitize=memory
 build:msan --copt -O1
@@ -162,7 +159,6 @@ test:msan --test_env=MSAN_SYMBOLIZER_PATH
 test:msan --test_timeout=180,900,2700,10800
 
 ### TSan build. ###
-build:tsan --action_env=TSAN_OPTIONS
 build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
@@ -175,7 +171,6 @@ test:tsan --test_lang_filters=-py
 test:tsan --test_timeout=300,1500,5400,18000
 
 ### UBSan build. ###
-build:ubsan --action_env=UBSAN_OPTIONS
 build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
