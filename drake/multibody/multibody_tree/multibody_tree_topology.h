@@ -110,6 +110,13 @@ struct MobilizerTopology {
            (inboard_frame == frame2 && outboard_frame == frame1);
   }
 
+  /// Returns `true` if this %MobilizerTopology connects bodies identified by
+  /// indexes `body1` and `body2`.
+  bool connects_bodies(BodyIndex body1, BodyIndex body2) const {
+    return (inboard_body == body1 && outboard_body == body2) ||
+           (inboard_body == body2 && outboard_body == body1);
+  }
+
   /// Unique index in the set of mobilizers.
   MobilizerIndex index;
   /// Index to the inboard frame.
@@ -217,9 +224,14 @@ struct MultibodyTreeTopology {
           "This multibody tree already has a mobilizer connecting these two "
           "frames. More than one mobilizer between two frames is not allowed");
     }
-    MobilizerIndex mobilizer_index(get_num_mobilizers());
     const BodyIndex inboard_body = frames[in_frame].body;
     const BodyIndex outboard_body = frames[out_frame].body;
+    if (IsThereAMobilizerBetweenBodies(inboard_body, outboard_body)) {
+      throw std::runtime_error(
+          "This multibody tree already has a mobilizer connecting these two "
+          "bodies. More than one mobilizer between two bodies is not allowed");
+    }
+    MobilizerIndex mobilizer_index(get_num_mobilizers());
     mobilizers.emplace_back(mobilizer_index,
                             in_frame, out_frame,
                             inboard_body, outboard_body);
@@ -236,6 +248,15 @@ struct MultibodyTreeTopology {
   bool IsThereAMobilizerBetweenFrames(FrameIndex frame1, FrameIndex frame2) {
     for (const auto& mobilizer_topology : mobilizers) {
       if (mobilizer_topology.connects_frames(frame1, frame2)) return true;
+    }
+    return false;
+  }
+
+  /// Returns `true` if there is _any_ mobilizer in the multibody tree
+  /// connecting the bodies with indexes `body2` and `body2`.
+  bool IsThereAMobilizerBetweenBodies(BodyIndex body1, BodyIndex body2) {
+    for (const auto& mobilizer_topology : mobilizers) {
+      if (mobilizer_topology.connects_bodies(body1, body2)) return true;
     }
     return false;
   }

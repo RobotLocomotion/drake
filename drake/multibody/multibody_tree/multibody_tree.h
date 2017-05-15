@@ -256,13 +256,15 @@ class MultibodyTree {
   ///       Vector3d::UnitZ() /*revolute axis*/));
   /// @endcode
   ///
+  /// A %Mobilizer effectively connects the two bodies to which the inboard and
+  /// outboard frames belong.
+  ///
   /// @throws std::logic_error if `mobilizer` is a nullptr.
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
   /// @throws a std::runtime_error if the new mobilizer attempts to connect a
   /// frame with itself.
-  /// @throws std::runtime_error if the new mobilizer attempts to connect two
-  /// frames which already have a mobilizer between them. More than one
-  /// mobilizer between two frames is not allowed.
+  /// @throws std::runtime_error if attempting to connect two bodies with more
+  /// than one mobilizer between them.
   ///
   /// @param[in] mobilizer A unique pointer to a mobilizer to add to `this`
   ///                      %MultibodyTree. The mobilizer class must be
@@ -338,9 +340,8 @@ class MultibodyTree {
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
   /// @throws a std::runtime_error if the new mobilizer attempts to connect a
   /// frame with itself.
-  /// @throws std::runtime_error if the new mobilizer attempts to connect two
-  /// frames which already have a mobilizer between them. More than one
-  /// mobilizer between two frames is not allowed.
+  /// @throws std::runtime_error if attempting to connect two bodies with more
+  /// than one mobilizer between them.
   ///
   /// @param[in] args The arguments needed to construct a valid Mobilizer of
   ///                 type `MobilizerType`. `MobilizerType` must provide a

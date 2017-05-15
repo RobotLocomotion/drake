@@ -38,9 +38,9 @@ template<typename T> class BodyNode;
 ///     X_BP /* pose of pin frame P in body frame B */);
 /// // The mobilizer connects the world frame and the pin frame effectively
 /// // adding the single degree of freedom describing this system. In this
-/// // regard, the role of a mobilizer is different from that of an equivalent
-/// // constraint removing all other five degrees of freedom but the one related
-/// // to this rotation about the z-axis.
+/// // regard, the the role of a mobilizer is equivalent but conceptually
+/// // different than a set of constraints that effectively remove all degrees
+/// // of freedom but the one permitting rotation about the z-axis.
 /// const RevoluteMobilizer<double>& revolute_mobilizer =
 ///   model.AddMobilizer<RevoluteMobilizer>(
 ///     model.get_world_frame(), /* inboard frame */
