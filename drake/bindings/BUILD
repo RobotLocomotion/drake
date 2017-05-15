@@ -187,18 +187,18 @@ py_test(
     deps = [":pydrake"],
 )
 
-#py_test(
-#    name = "pydrake_mathematical_program_gurobi_solver_test",
-#    size = "small",
-#    srcs = ["python/pydrake/test/testGurobiSolver.py"],
-#    main = "python/pydrake/test/testGurobiSolver.py",
-#    tags = [
-#        "exclusive",
-#        "gurobi",
-#        "local",
-#    ],
-#    deps = [":pydrake"],
-#)
+py_test(
+    name = "pydrake_mathematical_program_gurobi_solver_test",
+    size = "small",
+    srcs = ["python/pydrake/test/testGurobiSolver.py"],
+    main = "python/pydrake/test/testGurobiSolver.py",
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [":pydrake"],
+)
 
 py_test(
     name = "pydrake_mathematical_program_mosek_solver_test",
@@ -209,19 +209,18 @@ py_test(
     deps = [":pydrake"],
 )
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#py_test(
-#    name = "DISABLED_pydrake_mathematical_program_test",
-#    size = "small",
-#    srcs = ["python/pydrake/test/testMathematicalProgram.py"],
-#    main = "python/pydrake/test/testMathematicalProgram.py",
-#    tags = [
-#        "exclusive",
-#        "gurobi",
-#        "local",
-#    ],
-#    deps = [":pydrake"],
-#)
+py_test(
+    name = "pydrake_mathematical_program_test",
+    size = "small",
+    srcs = ["python/pydrake/test/testMathematicalProgram.py"],
+    main = "python/pydrake/test/testMathematicalProgram.py",
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [":pydrake"],
+)
 
 py_test(
     name = "pydrake_pr2ik_test",

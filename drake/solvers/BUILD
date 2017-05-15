@@ -458,26 +458,25 @@ drake_cc_googletest(
     ],
 )
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
 # TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
 # test that doesn't.
-#drake_cc_googletest(
-#    name = "convex_optimization_test",
-#    srcs = [
-#        "test/convex_optimization_test.cc",
-#    ],
-#    # This test uses Gurobi if present, but does not require it.
-#    tags = [
-#        "exclusive",
-#        "local",
-#    ],
-#    deps = [
-#        ":add_solver_util",
-#        ":mathematical_program",
-#        ":mathematical_program_test_util",
-#        "//drake/common:eigen_matrix_compare",
-#    ],
-#)
+drake_cc_googletest(
+    name = "convex_optimization_test",
+    srcs = [
+        "test/convex_optimization_test.cc",
+    ],
+    # This test uses Gurobi if present, but does not require it.
+    tags = [
+        "exclusive",
+        "local",
+    ],
+    deps = [
+        ":add_solver_util",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "decision_variable_test",
@@ -500,26 +499,25 @@ drake_cc_googletest(
     ],
 )
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#drake_cc_googletest(
-#    name = "gurobi_solver_test",
-#    srcs = [
-#        "test/gurobi_solver_test.cc",
-#    ],
-#    tags = [
-#        "exclusive",
-#        "gurobi",
-#        "local",
-#    ],
-#    deps = [
-#        ":gurobi_solver",
-#        ":linear_program_examples",
-#        ":mathematical_program",
-#        ":mathematical_program_test_util",
-#        ":quadratic_program_examples",
-#        "//drake/common:eigen_matrix_compare",
-#    ],
-#)
+drake_cc_googletest(
+    name = "gurobi_solver_test",
+    srcs = [
+        "test/gurobi_solver_test.cc",
+    ],
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":gurobi_solver",
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "ipopt_solver_test",
@@ -577,24 +575,23 @@ drake_cc_googletest(
 
 # TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
 # test that doesn't.
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#drake_cc_googletest(
-#    name = "mixed_integer_optimization_test",
-#    srcs = [
-#        "test/mixed_integer_optimization_test.cc",
-#    ],
-#    # This test uses Gurobi if present, but does not require it.
-#    tags = [
-#        "exclusive",
-#        "local",
-#    ],
-#    deps = [
-#        ":add_solver_util",
-#        ":mathematical_program",
-#        ":mathematical_program_test_util",
-#        "//drake/common:eigen_matrix_compare",
-#    ],
-#)
+drake_cc_googletest(
+    name = "mixed_integer_optimization_test",
+    srcs = [
+        "test/mixed_integer_optimization_test.cc",
+    ],
+    # This test uses Gurobi if present, but does not require it.
+    tags = [
+        "exclusive",
+        "local",
+    ],
+    deps = [
+        ":add_solver_util",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "moby_lcp_solver_test",
@@ -632,24 +629,23 @@ drake_cc_googletest(
     ],
 )
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#drake_cc_googletest(
-#    name = "rotation_constraint_test",
-#    size = "medium",
-#    tags = [
-#        "exclusive",
-#        "gurobi",
-#        "local",
-#        "mosek",
-#    ],
-#    deps = [
-#        ":gurobi_solver",
-#        ":mathematical_program",
-#        ":rotation_constraint",
-#        "//drake/common:eigen_matrix_compare",
-#        "//drake/math:geometric_transform",
-#    ],
-#)
+drake_cc_googletest(
+    name = "rotation_constraint_test",
+    size = "medium",
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+        "mosek",
+    ],
+    deps = [
+        ":gurobi_solver",
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
 
 drake_cc_binary(
     name = "plot_feasible_rotation_matrices",
@@ -662,22 +658,21 @@ drake_cc_binary(
     ],
 )
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#drake_cc_googletest(
-#    name = "rotation_constraint_limit_test",
-#    size = "large",
-#    tags = [
-#        "exclusive",
-#        "gurobi",
-#        "local",
-#    ],
-#    deps = [
-#        ":gurobi_solver",
-#        ":mathematical_program",
-#        ":rotation_constraint",
-#        "//drake/common:eigen_matrix_compare",
-#    ],
-#)
+drake_cc_googletest(
+    name = "rotation_constraint_limit_test",
+    size = "large",
+    tags = [
+        "exclusive",
+        "gurobi",
+        "local",
+    ],
+    deps = [
+        ":gurobi_solver",
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "snopt_solver_test",
