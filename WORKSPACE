@@ -49,8 +49,8 @@ github_archive(
 github_archive(
     name = "gflags",
     repository = "gflags/gflags",
-    commit = "a69b2544d613b4bee404988710503720c487119a",
-    sha256 = "8b3836d5ca34a2da4d6375cf5f2030c719b508ca16014fcc9d5e9b295b56a6c1",
+    commit = "95ffb27c9c7496ede1409e042571054c70cb9519",
+    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",
 )
 
 github_archive(
