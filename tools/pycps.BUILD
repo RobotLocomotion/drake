@@ -1,3 +1,5 @@
+# -*- python -*-
+
 genrule(
     name = "copy_cps2cmake",
     srcs = ["cps2cmake"],
