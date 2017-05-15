@@ -49,7 +49,7 @@ struct BodyTopology {
 
   /// Unique index to the one and only inboard mobilizer a body can have.
   /// By default this is left initialized to "invalid" so that we can detect
-  /// graph loops whithin add_mobilizer().
+  /// graph loops within add_mobilizer().
   MobilizerIndex inboard_mobilizer{};
 
   /// Unique index to the frame associated with this body.
