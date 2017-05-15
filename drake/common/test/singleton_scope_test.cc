@@ -44,9 +44,9 @@ class TrivialSingletonScope {
 
   TrivialSingletonScope(int use_count_ctor_expected,
                         int use_count_dtor_expected,
-                        int value_expected = 1)
+                        int instance_count_at_construction_expected = 1)
       : use_count_dtor_expected_(use_count_dtor_expected) {
-    EXPECT_EQ(value_expected,
+    EXPECT_EQ(instance_count_at_construction_expected,
               singleton_scope_.instance().instance_count_at_construction());
     EXPECT_EQ(use_count_ctor_expected, singleton_scope_.use_count());
   }
@@ -129,9 +129,9 @@ class SpecializedTrivialSingletonScope {
 
   SpecializedTrivialSingletonScope(int use_count_ctor_expected,
                           int use_count_dtor_expected,
-                          int value_expected = 1)
+                          int instance_count_at_construction_expected = 1)
       : use_count_dtor_expected_(use_count_dtor_expected) {
-    EXPECT_EQ(value_expected,
+    EXPECT_EQ(instance_count_at_construction_expected,
         singleton_scope_.instance().instance_count_at_construction());
     EXPECT_EQ(use_count_ctor_expected, singleton_scope_.use_count());
   }
