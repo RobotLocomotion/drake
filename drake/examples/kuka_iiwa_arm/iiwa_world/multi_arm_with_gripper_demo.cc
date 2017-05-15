@@ -1,8 +1,8 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -24,8 +24,9 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
       "iiwa",
       "/manipulation/models/iiwa_description/urdf/"
           "iiwa14_polytope_collision.urdf");
-  tree_builder->StoreModel("wsg",
-                           "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
+  tree_builder->StoreModel(
+      "wsg",
+      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
   iiwa->clear();
   wsg->clear();
@@ -119,14 +120,14 @@ void main() {
   }
 
   // Adds controllers for all the wsg grippers.
-  const int kWsgActDim = schunk_wsg::kSchunkWsgNumActuators;
+  const int kWsgActDim = manipulation::schunk_wsg::kSchunkWsgNumActuators;
   const VectorX<double> wsg_kp = VectorX<double>::Constant(kWsgActDim, 300.0);
   const VectorX<double> wsg_ki = VectorX<double>::Constant(kWsgActDim, 0.0);
   const VectorX<double> wsg_kd = VectorX<double>::Constant(kWsgActDim, 5.0);
   for (const auto& info : wsg_info) {
     std::unique_ptr<systems::MatrixGain<double>> feedback_selector =
         std::make_unique<systems::MatrixGain<double>>(
-            schunk_wsg::GetSchunkWsgFeedbackSelector<double>());
+            manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>());
     auto controller =
         builder.template AddController<systems::PidController<double>>(
             info.instance_id, std::move(feedback_selector), wsg_kp, wsg_ki,

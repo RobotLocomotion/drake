@@ -1,4 +1,4 @@
-#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 
 #include <gtest/gtest.h>
 
@@ -8,7 +8,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
-namespace examples {
+namespace manipulation {
 namespace schunk_wsg {
 namespace {
 
@@ -17,7 +17,8 @@ namespace {
 GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
   RigidBodyTree<double> wsg;
   parsers::sdf::AddModelInstancesFromSdfFile(
-      GetDrakePath() + "/examples/schunk_wsg/models/schunk_wsg_50.sdf",
+      GetDrakePath() +
+      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf",
       multibody::joints::kFixed, nullptr, &wsg);
 
   const std::map<std::string, int> index_map =
@@ -46,5 +47,5 @@ GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
 
 }  // namespace
 }  // namespace schunk_wsg
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake
