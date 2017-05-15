@@ -584,12 +584,12 @@ class MosekLicenseScope::Impl {
       if (rescode != MSK_RES_OK) {
         throw std::runtime_error("Could not acquire MOSEK license.");
       }
+      DRAKE_DEMAND(mosek_env_ != nullptr);
       // TODO(erc.cousineau): Consider logging acquiring / releasing
       // license, and incrementing / decrementing lock count.
     }
 
     ~License() {
-      DRAKE_ASSERT(mosek_env_);
       MSK_deleteenv(&mosek_env_);
     }
 

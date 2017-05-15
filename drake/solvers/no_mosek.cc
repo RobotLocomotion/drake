@@ -16,7 +16,9 @@ class MosekLicenseScope::Impl {};
 MosekLicenseScope::MosekLicenseScope() {}
 MosekLicenseScope::~MosekLicenseScope() {}
 MosekLicenseScope::Impl* MosekLicenseScope::impl() const {
-  return nullptr;
+  throw std::runtime_error(
+      "Mosek is not installed in your build. You'll need to use a different "
+      "solver.");
 }
 
 bool MosekSolver::available() const {

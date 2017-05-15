@@ -11,14 +11,13 @@
 namespace drake {
 namespace solvers {
 
-/*
- * Permit controlling the scope (RAII) of a MOSEK license.
- * This will attempt to obtain a MOSEK license session if it is the first one.
- * If it fails, it will throw a runtime_error.
- * Once there are no scope objects alive, the MOSEK license session will be
- * released.
+/**
+ * Permits controlling the scope (RAII) of a MOSEK license.
+ * This attempts to obtain a MOSEK license session if it is the first one.
+ * If it fails, it throws a runtime_error.
+ * Once no scope objects are alive, the MOSEK license session is released.
  * If a scope object is declared in a main() function, then the MOSEK
- * license will live for the duration of the program.
+ * license lives for the duration of the program.
  */
 class MosekLicenseScope {
  public:
@@ -27,6 +26,8 @@ class MosekLicenseScope {
   MosekLicenseScope();
   ~MosekLicenseScope();
 
+  // TODO(eric.cousineau): Consider using a MosekSolver class itself, with
+  // a ::Prelock() method, to control shared license scoping.
   class Impl;
   Impl* impl() const;
  private:
