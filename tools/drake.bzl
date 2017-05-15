@@ -187,7 +187,7 @@ def drake_cc_googletest(
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
     By default, sets use_default_main=True to use GTest's main, via
-    @gtest//:main. Otherwise, it will depend on @gtest//:lib.
+    @gtest//:main. Otherwise, it will depend on @gtest//:without_main.
 
     If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
     in debug-mode builds, so the test will trivially pass. This option should
