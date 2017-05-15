@@ -35,6 +35,11 @@ exports_files(
     visibility = ["@nlopt//:__pkg__"],
 )
 
+exports_files(
+    ["ipopt_build_with_autotools.sh"],
+    visibility = ["@ipopt//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",
