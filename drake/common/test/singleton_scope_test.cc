@@ -13,46 +13,50 @@ using std::make_shared;
 using std::shared_ptr;
 
 /*
- * This test verifies that the SingletonScope will scope access to a resource.
- */
-int global_counter = 0;
-
-/*
  * Simple resource to change a global counter when it is acquired / released.
  */
-class Resource {
+class TrivialSingleton {
  public:
-  Resource()
-    : value_(++global_counter) {}
-  ~Resource() {
-    --global_counter;
+  TrivialSingleton()
+    : instance_count_at_construction_(++instance_count_) {}
+  ~TrivialSingleton() {
+    --instance_count_;
   }
-  int value() const { return value_; }
+  int instance_count_at_construction() const {
+    return instance_count_at_construction_;
+  }
+  static int instance_count() { return instance_count_; }
  private:
-  int value_{};
+  int instance_count_at_construction_{};
+
+  static int instance_count_;
 };
+
+int TrivialSingleton::instance_count_ = 0;
 
 /*
  * Incorporate expectations into resource lock class.
  */
-class ResourceScope {
+class TrivialSingletonScope {
  public:
-  explicit ResourceScope(int use_count_expected)
-      : ResourceScope(use_count_expected, use_count_expected) {}
+  explicit TrivialSingletonScope(int use_count_expected)
+      : TrivialSingletonScope(use_count_expected, use_count_expected) {}
 
-  ResourceScope(int use_count_ctor_expected, int use_count_dtor_expected,
-               int value_expected = 1)
+  TrivialSingletonScope(int use_count_ctor_expected,
+                        int use_count_dtor_expected,
+                        int value_expected = 1)
       : use_count_dtor_expected_(use_count_dtor_expected) {
-    EXPECT_EQ(value_expected, singleton_scope_.instance().value());
+    EXPECT_EQ(value_expected,
+              singleton_scope_.instance().instance_count_at_construction());
     EXPECT_EQ(use_count_ctor_expected, singleton_scope_.use_count());
   }
 
-  ~ResourceScope() {
+  ~TrivialSingletonScope() {
     EXPECT_EQ(use_count_dtor_expected_, singleton_scope_.use_count());
   }
 
  private:
-  SingletonScope<Resource> singleton_scope_;
+  SingletonScope<TrivialSingleton> singleton_scope_;
   int use_count_dtor_expected_;
 };
 
@@ -60,82 +64,84 @@ class ResourceScope {
  * Test neatly nested locks.
  */
 GTEST_TEST(SingletonScopeTest, NestedTest) {
-  EXPECT_EQ(0, global_counter);
+  EXPECT_EQ(0, TrivialSingleton::instance_count());
   {
-    ResourceScope first(1);
-    EXPECT_EQ(1, global_counter);
+    TrivialSingletonScope first(1);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
     {
-      ResourceScope second(2);
-      EXPECT_EQ(1, global_counter);
+      TrivialSingletonScope second(2);
+      EXPECT_EQ(1, TrivialSingleton::instance_count());
       {
-        ResourceScope third(3);
-        EXPECT_EQ(1, global_counter);
+        TrivialSingletonScope third(3);
+        EXPECT_EQ(1, TrivialSingleton::instance_count());
       }
-      EXPECT_EQ(1, global_counter);
+      EXPECT_EQ(1, TrivialSingleton::instance_count());
     }
-    EXPECT_EQ(1, global_counter);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
   }
-  EXPECT_EQ(0, global_counter);
+  EXPECT_EQ(0, TrivialSingleton::instance_count());
 }
 
 /*
  * Test ragged destruction with nesting mixed in.
  */
 GTEST_TEST(SingletonScopeTest, RaggedTest) {
-  EXPECT_EQ(0, global_counter);
+  EXPECT_EQ(0, TrivialSingleton::instance_count());
 
   {
-    auto first = make_shared<ResourceScope>(1, 2);
-    EXPECT_EQ(1, global_counter);
+    auto first = make_shared<TrivialSingletonScope>(1, 2);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
 
-    auto second = make_shared<ResourceScope>(2, 3);
-    EXPECT_EQ(1, global_counter);
+    auto second = make_shared<TrivialSingletonScope>(2, 3);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
 
-    auto third = make_shared<ResourceScope>(3, 1);
-    EXPECT_EQ(1, global_counter);
+    auto third = make_shared<TrivialSingletonScope>(3, 1);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
 
     {
-      ResourceScope fourth(4);
-      EXPECT_EQ(1, global_counter);
+      TrivialSingletonScope fourth(4);
+      EXPECT_EQ(1, TrivialSingleton::instance_count());
     }
-    EXPECT_EQ(1, global_counter);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
 
     second.reset();
-    EXPECT_EQ(1, global_counter);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
 
     first.reset();
-    EXPECT_EQ(1, global_counter);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
 
     // Let third be implicitly destroyed
   }
 
-  EXPECT_EQ(0, global_counter);
+  EXPECT_EQ(0, TrivialSingleton::instance_count());
 }
 
 /*
- * Same as ResourceScope, but provide ability to specialize template definition,
- * such that we can maintain multiple singletons of type Resource.
+ * Same as TrivialSingletonScope, but provide ability to specialize template definition,
+ * such that we can maintain multiple singletons of type TrivialSingleton.
  */
 template <typename Parent>
-class SpecializedResourceScope {
+class SpecializedTrivialSingletonScope {
  public:
-  explicit SpecializedResourceScope(int use_count_expected)
-      : SpecializedResourceScope(use_count_expected, use_count_expected) {}
+  explicit SpecializedTrivialSingletonScope(int use_count_expected)
+      : SpecializedTrivialSingletonScope(use_count_expected,
+                                         use_count_expected) {}
 
-  SpecializedResourceScope(int use_count_ctor_expected,
+  SpecializedTrivialSingletonScope(int use_count_ctor_expected,
                           int use_count_dtor_expected,
                           int value_expected = 1)
       : use_count_dtor_expected_(use_count_dtor_expected) {
-    EXPECT_EQ(value_expected, singleton_scope_.instance().value());
+    EXPECT_EQ(value_expected,
+        singleton_scope_.instance().instance_count_at_construction());
     EXPECT_EQ(use_count_ctor_expected, singleton_scope_.use_count());
   }
 
-  ~SpecializedResourceScope() {
+  ~SpecializedTrivialSingletonScope() {
     EXPECT_EQ(use_count_dtor_expected_, singleton_scope_.use_count());
   }
 
  private:
-  SingletonScope<Resource, Parent> singleton_scope_;
+  SingletonScope<TrivialSingleton, Parent> singleton_scope_;
   int use_count_dtor_expected_;
 };
 
@@ -143,56 +149,53 @@ struct A {};
 struct B {};
 
 /*
- * Test unique specializations for a Resource singleton.
+ * Test unique specializations for a TrivialSingleton singleton.
  */
 GTEST_TEST(SingletonScopeTest, SpecializationTest) {
-  EXPECT_EQ(0, global_counter);
+  EXPECT_EQ(0, TrivialSingleton::instance_count());
 
   // These will be the same since it uses `void` (the default Parent argument).
   {
-    SpecializedResourceScope<void> first(1);
-    EXPECT_EQ(1, global_counter);
-    ResourceScope second(2);
-    EXPECT_EQ(1, global_counter);
+    SpecializedTrivialSingletonScope<void> first(1);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
+    TrivialSingletonScope second(2);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
   }
-  EXPECT_EQ(0, global_counter);
+  EXPECT_EQ(0, TrivialSingleton::instance_count());
 
-  // This will be different.
-  // Note that each singleton will record the value of global_counter:
-  //   ResourceScope.instance().value == 1
-  //   SpecializedResourceScope<A>.instance().value == 2
-  //   SpecializedResourceScope<B>.instance().value == 3
-  const int counter_normal = 1;
-  const int counter_a = 2;
-  const int counter_b = 3;
+  // Each singleton instance will have a different instance count at
+  // construction.
+  const int instance_count_normal = 1;
+  const int instance_count_a = 2;
+  const int instance_count_b = 3;
   {
-    ResourceScope normal_1(1, 1, counter_normal);
-    EXPECT_EQ(1, global_counter);
+    TrivialSingletonScope normal_1(1, 1, instance_count_normal);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
 
     {
-      SpecializedResourceScope<A> a_1(1, 1, counter_a);
-      EXPECT_EQ(2, global_counter);
+      SpecializedTrivialSingletonScope<A> a_1(1, 1, instance_count_a);
+      EXPECT_EQ(2, TrivialSingleton::instance_count());
 
-      // Will refer to singleton value
-      ResourceScope normal_2(2, 2, counter_normal);
-      // Global value still remains
-      EXPECT_EQ(2, global_counter);
+      // Will refer to singleton instance_count_at_construction
+      TrivialSingletonScope normal_2(2, 2, instance_count_normal);
+      // Global instance_count_at_construction still remains
+      EXPECT_EQ(2, TrivialSingleton::instance_count());
 
       {
-        SpecializedResourceScope<B> b_1(1, 1, counter_b);
-        EXPECT_EQ(3, global_counter);
+        SpecializedTrivialSingletonScope<B> b_1(1, 1, instance_count_b);
+        EXPECT_EQ(3, TrivialSingleton::instance_count());
 
-        SpecializedResourceScope<A> a_2(2, 2, counter_a);
-        EXPECT_EQ(3, global_counter);
+        SpecializedTrivialSingletonScope<A> a_2(2, 2, instance_count_a);
+        EXPECT_EQ(3, TrivialSingleton::instance_count());
 
-        SpecializedResourceScope<B> b_2(2, 2, counter_b);
-        EXPECT_EQ(3, global_counter);
+        SpecializedTrivialSingletonScope<B> b_2(2, 2, instance_count_b);
+        EXPECT_EQ(3, TrivialSingleton::instance_count());
       }
-      EXPECT_EQ(2, global_counter);
+      EXPECT_EQ(2, TrivialSingleton::instance_count());
     }
-    EXPECT_EQ(1, global_counter);
+    EXPECT_EQ(1, TrivialSingleton::instance_count());
   }
-  EXPECT_EQ(0, global_counter);
+  EXPECT_EQ(0, TrivialSingleton::instance_count());
 }
 
 }  // anonymous namespace
