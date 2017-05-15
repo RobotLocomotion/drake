@@ -1,6 +1,5 @@
 #pragma once
 
-#include <unordered_set>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -10,15 +9,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
-namespace examples {
-namespace qp_inverse_dynamics {
-
-/**
- * ContactState is intended to represent a set of bodies that are in contact.
- * Detailed information such as contact points, contact wrench are not included
- * here.
- */
-typedef std::unordered_set<const RigidBody<double>*> ContactState;
+namespace manipulation {
 
 /**
  * A wrapper class that stores a PiecewisePolynomial and its first and second
@@ -248,6 +239,5 @@ class PiecewiseCartesianTrajectory {
   PiecewiseQuaternionSlerp<T> orientation_;
 };
 
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake

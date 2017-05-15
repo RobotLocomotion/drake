@@ -63,14 +63,11 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
   GenericPlan<T>* CloneGenericPlanDerived() const override;
 
   void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus&,
-      const param_parsers::ParamSet&,
-      const param_parsers::RigidBodyTreeAliasGroups<T>&) override {
-  }
+      const HumanoidStatus&, const param_parsers::ParamSet&,
+      const param_parsers::RigidBodyTreeAliasGroups<T>&) override {}
 
   void UpdateQpInputGenericPlanDerived(
-      const HumanoidStatus&,
-      const param_parsers::ParamSet&,
+      const HumanoidStatus&, const param_parsers::ParamSet&,
       const param_parsers::RigidBodyTreeAliasGroups<T>&,
       QpInput*) const override {}
 };

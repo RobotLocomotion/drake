@@ -4,3 +4,6 @@ if(lcm_FOUND)
       drakeMultibodyParsers
       drakeRobotStateLcmTranslator)
 endif()
+
+drake_add_cc_test(trajectory_utils_test)
+target_link_libraries(trajectory_utils_test drakeTrajectoryUtils)

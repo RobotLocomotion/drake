@@ -15,3 +15,15 @@ if(lcm_FOUND)
 
   add_subdirectory(test)
 endif()
+
+add_library_with_exports(LIB_NAME drakeTrajectoryUtils SOURCE_FILES
+    trajectory_utils.cc)
+target_link_libraries(drakeTrajectoryUtils
+    drakeTrajectories)
+drake_install_libraries(drakeTrajectoryUtils)
+drake_install_headers(
+    trajectory_utils.h)
+drake_install_pkg_config_file(drake-trajectory-utils
+    TARGET drakeTrajectoryUtils
+    LIBS -ldrakeTrajectoryUtils
+    REQUIRES drake-trajectories)
