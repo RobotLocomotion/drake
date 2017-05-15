@@ -325,7 +325,8 @@ GTEST_TEST(RotationalInertia, CouldBePhysicallyValidA) {
 
   // Shifting to calculate I_BBcm should throw an exception in debug builds
   // because some of the moments of inertia are negative.
-  EXPECT_THROW_IF_ARMED(I_BP.ShiftToCenterOfMass(mass, p_PBcm),
+  RotationalInertia<double> I_BBcm;
+  EXPECT_THROW_IF_ARMED(I_BBcm = I_BP.ShiftToCenterOfMass(mass, p_PBcm),
                         std::logic_error);
 }
 
