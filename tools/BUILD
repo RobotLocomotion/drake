@@ -10,6 +10,36 @@ filegroup(
 )
 
 sh_binary(
+    name = "asan",
+    srcs = ["asan.sh"],
+    data = ["asan.supp"],
+)
+
+sh_binary(
+    name = "lsan",
+    srcs = ["lsan.sh"],
+    data = ["lsan.supp"],
+)
+
+sh_binary(
+    name = "msan",
+    srcs = ["msan.sh"],
+    data = ["msan.supp"],
+)
+
+sh_binary(
+    name = "tsan",
+    srcs = ["tsan.sh"],
+    data = ["tsan.supp"],
+)
+
+sh_binary(
+    name = "ubsan",
+    srcs = ["ubsan.sh"],
+    data = ["ubsan.supp"],
+)
+
+sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
     data = ["valgrind.supp"],
