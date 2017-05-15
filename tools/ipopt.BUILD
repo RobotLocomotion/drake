@@ -1,3 +1,5 @@
+# -*- python -*-
+
 # We build IPOPT by shelling out to autotools.
 
 # A prefix-string for genrule cmd attributes, which uses the Kythe cdexec tool,

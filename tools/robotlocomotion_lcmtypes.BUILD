@@ -1,3 +1,5 @@
+# -*- python -*-
+
 package(default_visibility = ["//visibility:public"])
 
 load("@//tools:lcm.bzl", "lcm_cc_library", "lcm_py_library")

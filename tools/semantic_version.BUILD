@@ -1,3 +1,5 @@
+# -*- python -*-
+
 load("@//tools:drake.bzl", "drake_generate_file")
 
 py_library(
