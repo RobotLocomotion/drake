@@ -85,6 +85,11 @@ class LinearCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost)
 
+  /**
+   * Construct a linear cost of the form @f a'x + b @f.
+   * @param a Linear term.
+   * @param b (optional) Constant term.
+   */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   LinearCost(const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0.)
       : Cost(a.rows()), a_(a), b_(b) {}
@@ -106,11 +111,11 @@ class LinearCost : public Cost {
    * The updated constraint is @f a_new' x + b_new @f.
    * Note that the number of variables (number of cols) cannot change.
    * @param new_a New linear term.
-   * @param new_b New constant term.
+   * @param new_b (optional) New constant term.
    */
-  void UpdateConstraint(const Eigen::Ref<const Eigen::RowVectorXd>& new_a,
-                        double new_b = 0.) {
-    if (new_a.cols() != a_.cols()) {
+  void UpdateLinearTerms(const Eigen::Ref<const Eigen::VectorXd>& new_a,
+                         double new_b = 0.) {
+    if (new_a.rows() != a_.rows()) {
       throw std::runtime_error("Can't change the number of decision variables");
     }
 
@@ -137,6 +142,12 @@ class QuadraticCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticCost)
 
+  /**
+   * Construct a cost of the form @f .5 x'Qx + b'x + c @f.
+   * @param Q Quadratic term.
+   * @param b Linear term.
+   * @param c (optional) Constant term.
+   */
   template <typename DerivedQ, typename Derivedb>
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.)
@@ -158,7 +169,7 @@ class QuadraticCost : public Cost {
    * matrices need to have the same dimension as before.
    * @param new_Q New quadratic term.
    * @param new_b New linear term.
-   * @param new_c New constant term.
+   * @param new_c (optional) New constant term.
    */
   template <typename DerivedQ, typename DerivedB>
   void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,

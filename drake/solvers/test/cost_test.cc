@@ -91,6 +91,32 @@ auto make_vector(std::initializer_list<T> items) {
   return vector<std::decay_t<T>>(items);
 }
 
+GTEST_TEST(testCost, testLinearCost) {
+  const double tol = numeric_limits<double>::epsilon();
+
+  // Simple ground truth test.
+  Eigen::Vector2d a(1, 2);
+  const Eigen::Vector2d x0(3, 4);
+  const double obj_expected = 11.;
+
+  auto cost = make_shared<LinearCost>(a);
+  Eigen::VectorXd y(1);
+  cost->Eval(x0, y);
+  EXPECT_EQ(y.rows(), 1);
+  EXPECT_NEAR(y(0), obj_expected, tol);
+
+  // Update with a constant term.
+  const double b = 100;
+  cost->UpdateLinearTerms(a, b);
+  cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + b, tol);
+
+  // Reconstruct the same cost with the constant term.
+  auto new_cost = make_shared<LinearCost>(a, b);
+  new_cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + b, tol);
+}
+
 GTEST_TEST(testCost, testQuadraticCost) {
   const double tol = numeric_limits<double>::epsilon();
 
