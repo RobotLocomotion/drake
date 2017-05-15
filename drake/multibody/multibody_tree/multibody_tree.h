@@ -395,6 +395,11 @@ class MultibodyTree {
     return *owned_bodies_[world_index()];
   }
 
+  /// Returns a constant reference to the *world* frame.
+  const BodyFrame<T>& get_world_frame() const {
+    return owned_bodies_[world_index()]->get_body_frame();
+  }
+
   /// Returns a constant reference to the body with unique index `body_index`.
   /// This method aborts in Debug builds when `body_index` does not correspond
   /// to a body in this multibody tree.

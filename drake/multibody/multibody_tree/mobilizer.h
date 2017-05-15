@@ -43,7 +43,7 @@ template<typename T> class BodyNode;
 /// // to this rotation about the z-axis.
 /// const RevoluteMobilizer<double>& revolute_mobilizer =
 ///   model.AddMobilizer<RevoluteMobilizer>(
-///     model.get_world_body().get_body_frame(), /* inboard frame */
+///     model.get_world_frame(), /* inboard frame */
 ///     pin_frame, /* outboard frame */
 ///     Vector3d::UnitZ() /* revolute axis in this case */));
 /// @endcode

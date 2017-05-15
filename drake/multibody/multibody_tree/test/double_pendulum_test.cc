@@ -62,7 +62,7 @@ class PendulumTests : public ::testing::Test {
     // The shoulder is the mobilizer that connects the world to the upper link.
     // Its inboard frame, Si, is the world frame. Its outboard frame, So, a
     // fixed offset frame on the upper link.
-    shoulder_inboard_frame_ = &world_body_->get_body_frame();
+    shoulder_inboard_frame_ = &model_->get_world_frame();
 
     // The body frame of the upper link is U, and that of the lower link is L.
     // We will add a frame for the pendulum's shoulder. This will be the
