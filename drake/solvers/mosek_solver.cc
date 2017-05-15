@@ -624,6 +624,19 @@ MosekLicenseScope::Impl* MosekLicenseScope::impl() const {
 
 bool MosekSolver::available() const { return true; }
 
+// Based on:
+// @ref http://the-witness.net/news/2012/11/scopeexit-in-c11/
+class ScopeExit {
+ public:
+  explicit ScopeExit(std::function<void()> exit_function)
+      : exit_function_(exit_function) {}
+  ~ScopeExit() {
+    exit_function_();
+  }
+ private:
+  std::function<void()> exit_function_;
+};
+
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
   MSKtask_t task = nullptr;
@@ -644,59 +657,80 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
   MSKenv_t env = license_scope_->impl()->mosek_env();
 
+  // TODO(eric.cousineau): Consider throwing an exception to make debugging
+  // easier.
+
   // Create the optimization task.
   rescode = MSK_maketask(env, 0, num_vars, &task);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
+  }
 
-  if (rescode == MSK_RES_OK) {
-    rescode = MSK_appendvars(task, num_vars);
+  // Ensure that we delete the task at exit
+  ScopeExit scope_exit {[&] {
+    MSK_deletetask(&task);
+  }};
+
+  rescode = MSK_appendvars(task, num_vars);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
   // Add costs
-  if (rescode == MSK_RES_OK) {
-    rescode = AddCosts(prog, &task);
+  rescode = AddCosts(prog, &task);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
   // Add bounding box constraints on decision variables.
-  if (rescode == MSK_RES_OK) {
-    rescode = AddBoundingBoxConstraints(prog, &task);
+  rescode = AddBoundingBoxConstraints(prog, &task);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
   // Specify binary variables.
   bool with_integer_or_binary_variable = false;
-  if (rescode == MSK_RES_OK) {
-    rescode =
-        SpecifyVariableType(prog, &task, &with_integer_or_binary_variable);
+  rescode =
+      SpecifyVariableType(prog, &task, &with_integer_or_binary_variable);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
   // Add linear constraints.
-  if (rescode == MSK_RES_OK) {
-    rescode = AddLinearConstraints(prog, &task);
+  rescode = AddLinearConstraints(prog, &task);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
 
   // Add Lorentz cone constraints.
-  if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(
-        prog, prog.lorentz_cone_constraints(), &task, &is_new_variable);
+  rescode = AddSecondOrderConeConstraints(
+      prog, prog.lorentz_cone_constraints(), &task, &is_new_variable);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
 
   // Add rotated Lorentz cone constraints.
-  if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(), &task, &is_new_variable);
+  rescode = AddSecondOrderConeConstraints(
+      prog, prog.rotated_lorentz_cone_constraints(), &task, &is_new_variable);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
 
   // Add positive semidefinite constraints.
-  if (rescode == MSK_RES_OK) {
-    rescode = AddPositiveSemidefiniteConstraints(prog, &task);
+  rescode = AddPositiveSemidefiniteConstraints(prog, &task);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
 
   // Add linear matrix inequality constraints.
-  if (rescode == MSK_RES_OK) {
-    rescode = AddLinearMatrixInequalityConstraint(prog, &task);
+  rescode = AddLinearMatrixInequalityConstraint(prog, &task);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
 
   SolutionResult result = SolutionResult::kUnknownError;
   // Run optimizer.
-  if (rescode == MSK_RES_OK) {
-    // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
-    MSKrescodee trmcode;  // termination code
-    rescode = MSK_optimizetrm(task, &trmcode);
+  // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
+  MSKrescodee trmcode;  // termination code
+  rescode = MSK_optimizetrm(task, &trmcode);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
   }
 
   // Determines the solution type.
@@ -717,64 +751,53 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
 
   // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
   // Mosek parameter are added by enum, not by string.
-  if (rescode == MSK_RES_OK) {
-    MSKsolstae solution_status;
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_getsolsta(task, solution_type, &solution_status);
-    }
-    if (rescode == MSK_RES_OK) {
-      switch (solution_status) {
-        case MSK_SOL_STA_OPTIMAL:
-        case MSK_SOL_STA_NEAR_OPTIMAL:
-        case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result = SolutionResult::kSolutionFound;
-          MSKint32t num_mosek_vars;
-          rescode = MSK_getnumvar(task, &num_mosek_vars);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
-          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd sol_vector(num_vars);
-          int var_count = 0;
-          for (int i = 0; i < num_mosek_vars; ++i) {
-            if (!is_new_variable[i]) {
-              sol_vector(var_count) = mosek_sol_vector(i);
-              var_count++;
-            }
-          }
-          if (rescode == MSK_RES_OK) {
-            prog.SetDecisionVariableValues(sol_vector);
-          }
-          MSKrealt optimal_cost;
-          rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          if (rescode == MSK_RES_OK) {
-            prog.SetOptimalCost(optimal_cost);
-          }
-          break;
-        }
-        case MSK_SOL_STA_DUAL_INFEAS_CER:
-        case MSK_SOL_STA_PRIM_INFEAS_CER:
-        case MSK_SOL_STA_NEAR_DUAL_FEAS:
-        case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result = SolutionResult::kInfeasibleConstraints;
-          break;
-        }
-        default: {
-          result = SolutionResult::kUnknownError;
-          break;
+  MSKsolstae solution_status;
+  rescode = MSK_getsolsta(task, solution_type, &solution_status);
+  if (rescode != MSK_RES_OK) {
+    return SolutionResult::kUnknownError;
+  }
+  switch (solution_status) {
+    case MSK_SOL_STA_OPTIMAL:
+    case MSK_SOL_STA_NEAR_OPTIMAL:
+    case MSK_SOL_STA_INTEGER_OPTIMAL:
+    case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
+      result = SolutionResult::kSolutionFound;
+      MSKint32t num_mosek_vars;
+      rescode = MSK_getnumvar(task, &num_mosek_vars);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
+      rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      Eigen::VectorXd sol_vector(num_vars);
+      int var_count = 0;
+      for (int i = 0; i < num_mosek_vars; ++i) {
+        if (!is_new_variable[i]) {
+          sol_vector(var_count) = mosek_sol_vector(i);
+          var_count++;
         }
       }
+      prog.SetDecisionVariableValues(sol_vector);
+      MSKrealt optimal_cost;
+      rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      prog.SetOptimalCost(optimal_cost);
+      break;
+    }
+    case MSK_SOL_STA_DUAL_INFEAS_CER:
+    case MSK_SOL_STA_PRIM_INFEAS_CER:
+    case MSK_SOL_STA_NEAR_DUAL_FEAS:
+    case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
+      result = SolutionResult::kInfeasibleConstraints;
+      break;
+    }
+    default: {
+      result = SolutionResult::kUnknownError;
+      break;
     }
   }
 
   prog.SetSolverResult(solver_type(), result);
-  if (rescode != MSK_RES_OK) {
-    result = SolutionResult::kUnknownError;
-  }
 
-  MSK_deletetask(&task);
   return result;
 }
 
