@@ -169,6 +169,30 @@ TEST_F(VariableTest, MemcpyKeepsVariableIntact) {
     EXPECT_TRUE(IsMemcpyMovable(var));
   }
 }
+
+TEST_F(VariableTest, CheckType) {
+  // By default, a symbolic variable has CONTINUOUS type if not specified at
+  // construction time.
+  const Variable v1("v1");
+  EXPECT_EQ(v1.get_type(), Variable::Type::CONTINUOUS);
+
+  // When a type is specified, it should be correctly assigned.
+  const Variable v2("v2", Variable::Type::CONTINUOUS);
+  const Variable v3("v3", Variable::Type::BINARY);
+  const Variable v4("v4", Variable::Type::INTEGER);
+  EXPECT_EQ(v2.get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(v3.get_type(), Variable::Type::BINARY);
+  EXPECT_EQ(v4.get_type(), Variable::Type::INTEGER);
+
+  // Dummy variable gets CONTINUOUS type.
+  EXPECT_TRUE(Variable{}.get_type() == Variable::Type::CONTINUOUS);
+
+  // Variables are identified by their IDs. Names and types are not considered
+  // in the identification process.
+  const Variable v5_continuous("v5", Variable::Type::CONTINUOUS);
+  const Variable v5_int("v5", Variable::Type::INTEGER);
+  EXPECT_FALSE(v5_continuous.equal_to(v5_int));
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
