@@ -14,8 +14,6 @@ namespace drake {
 namespace solvers {
 namespace {
 
-using internal::ComputeExplicitlyConstantCost;
-
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template <typename C>
 MSKrescodee AddLinearConstraintsFromBindings(

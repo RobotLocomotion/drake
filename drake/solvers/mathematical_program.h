@@ -2271,18 +2271,5 @@ class MathematicalProgram {
       const std::set<symbolic::Formula>& formulas);
 };
 
-namespace internal {
-
-/*
- * Sum the constant values that are not captured by the solver for linear and
- * quadratic costs. These are defined by the structure of the cost.
- * @note Nonlinear constraints may have implicit constant terms that will not be
- * captured by this function. This is intended, as the constant value should
- * be captured by each respective solver.
- */
-double ComputeExplicitlyConstantCost(const MathematicalProgram& prog);
-
-}  // namespace internal
-
 }  // namespace solvers
 }  // namespace drake

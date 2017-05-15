@@ -46,7 +46,6 @@ using Eigen::VectorXd;
 using drake::Vector1d;
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
-using drake::solvers::internal::ComputeExplicitlyConstantCost;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
 using drake::symbolic::Variable;
@@ -1993,36 +1992,6 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
   GenericPtr quadratic_cost(new QuadraticCost(Matrix1d(1), Vector1d(1)));
   prog.AddCost(quadratic_cost, x);
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
-}
-
-GTEST_TEST(testMathematicalProgram, testComputeExplicitlyConstantCost) {
-  // Ensure that we can accurately compute constant costs.
-  auto trivial_cost1 = make_shared<GenericTrivialCost1>();  // No move ctor
-  auto trivial_cost2 = GenericTrivialCost2();               // Has move ctor
-
-  {
-    // Test zero cost.
-    MathematicalProgram prog;
-    auto x = prog.NewContinuousVariables<1>();
-    auto y = prog.NewContinuousVariables<3>();
-    prog.AddLinearCost(Vector1d(1), x);        // Numeric.
-    prog.AddQuadraticCost(x(0) * (x(0) + 2));  // Symbolic.
-    prog.AddCost(trivial_cost1, y);
-    prog.AddCost(MakeFunctionCost(trivial_cost2), y.head<2>());
-    EXPECT_EQ(0., ComputeExplicitlyConstantCost(prog));
-  }
-
-  {
-    // Test non-zero cost.
-    MathematicalProgram prog;
-    auto x = prog.NewContinuousVariables<1>();
-    auto y = prog.NewContinuousVariables<3>();
-    prog.AddLinearCost(Vector1d(1), 2, x);         // Numeric.
-    prog.AddQuadraticCost(x(0) * (x(0) + 2) + 3);  // Symbolic.
-    prog.AddCost(trivial_cost1, y);
-    prog.AddCost(MakeFunctionCost(trivial_cost2), y.head<2>());
-    EXPECT_EQ(5., ComputeExplicitlyConstantCost(prog));
-  }
 }
 
 }  // namespace test
