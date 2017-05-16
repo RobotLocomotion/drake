@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -29,6 +30,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -172,8 +176,10 @@ struct BodyNodeTopology {
 
   BodyNodeTopology(
       BodyNodeIndex index, int level,
+      BodyNodeIndex parent_node,
       BodyIndex body, BodyIndex parent_body, MobilizerIndex mobilizer) :
       index(index), level(level),
+      parent_body_node(parent_node),
       body(body), parent_body(parent_body), mobilizer(mobilizer) {}
 
   /// Unique index in the MultibodyTree.
@@ -182,13 +188,13 @@ struct BodyNodeTopology {
   /// Depth level in the MultibodyTree, level = 0 for the world.
   int level{-1};
 
+  /// The unique index to the parent BodyNode of this node.
+  BodyNodeIndex parent_body_node;
+
   BodyIndex body;         // This node's body B.
   BodyIndex parent_body;  // This node's parent body P.
 
   MobilizerIndex mobilizer;  // The mobilizer connecting bodies P and B.
-
-  /// The unique index to the parent BodyNode of this node.
-  BodyNodeIndex parent_body_node;
 
   /// The list of child body nodes to this node.
   std::vector<BodyNodeIndex> child_nodes;
@@ -360,6 +366,7 @@ struct MultibodyTreeTopology {
       const BodyNodeIndex node(get_num_body_nodes());
       const BodyIndex current = queue.front();
       const BodyIndex parent = bodies[current].parent_body;
+      bodies[current].body_node = node;
 
       // Computes level.
       int level = 0;  // level = 0 for the world body.
@@ -387,7 +394,6 @@ struct MultibodyTreeTopology {
           bodies[current].parent_body       /* This node's parent body */,
           bodies[current].inboard_mobilizer /* This node's mobilizer */);
 
-
       // Pushes children to the back of the queue and pops current.
       for (BodyIndex child: bodies[current].child_bodies) {
         queue.push(child);  // Pushes at the back.
@@ -395,18 +401,19 @@ struct MultibodyTreeTopology {
       queue.pop();  // Pops front element.
     }
 
-    // The number of tree nodes must equal the number of bodies in the tree
-    // after the above BFT.
-    DRAKE_DEMAND(get_num_bodies() == get_num_body_nodes());
-
     // Checks that all bodies were reached. We could have this situation if a
     // user add body but forgets to add a mobilizer to it.
     // Bodies that were not reached were not assigned a valid level.
     for (BodyIndex body(0); body < get_num_bodies(); ++body) {
       if (bodies[body].level < 0) {
-        throw std::runtime_error("Body was not assigned a mobilizer.");
+        throw std::runtime_error("Body with index " + std::to_string(body) +
+            " was not assigned a mobilizer");
       }
     }
+
+    // After we checked all bodies were reached above, the number of tree nodes
+    // should equal the number of bodies in the tree.
+    DRAKE_DEMAND(get_num_bodies() == get_num_body_nodes());
 
     // TODO(amcastro-tri): Compile topological information for BodyNode objects
     // in a following PR. This will include:
