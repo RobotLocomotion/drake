@@ -317,10 +317,10 @@ new_local_repository(
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
-    commit = "ignition-math3_3.0.0",
-    sha256 = "9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd",
+    commit = "ignition-math3_3.2.0",
+    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",
     build_file = "tools/ignition_math.BUILD",
-    strip_prefix = "ignitionrobotics-ign-math-a06d26055d07",
+    strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4"
 )
 
 bitbucket_archive(
