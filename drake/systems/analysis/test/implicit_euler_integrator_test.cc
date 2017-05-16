@@ -8,6 +8,10 @@
 #include "drake/systems/analysis/test/spring_mass_damper_system.h"
 #include "drake/systems/analysis/test/discontinuous_spring_mass_damper_system.h"
 
+using drake::systems::implicit_integrator_test::SpringMassDamperSystem;
+using drake::systems::implicit_integrator_test::
+    DiscontinuousSpringMassDamperSystem;
+
 namespace drake {
 namespace systems {
 namespace {
@@ -237,9 +241,9 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
 
   // Get the closed form solution.
   double x_final_true, v_final_true;
-  spring_damper_->get_closed_form_solution(initial_position, initial_velocity,
-                                          t_final, &x_final_true,
-                                          &v_final_true);
+  spring_damper_->GetClosedFormSolution(initial_position, initial_velocity,
+                                        t_final, &x_final_true,
+                                        &v_final_true);
 
   // Check the solution.
   EXPECT_NEAR(x_final_true, x_final, xtol);
@@ -334,8 +338,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 
   // Compute the true solution at t_final.
   double x_final_true, v_final_true;
-  spring_mass.get_closed_form_solution(initial_position, initial_velocity,
-                                       t_final, &x_final_true, &v_final_true);
+  spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
+                                    t_final, &x_final_true, &v_final_true);
 
   // Check the solution to the same tolerance as the explicit Euler
   // integrator (see explicit_euler_integrator_test.cc, SpringMassStep).
@@ -430,10 +434,11 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   // Set the allowed error on the time.
   const double ttol = 10 * std::numeric_limits<double>::epsilon();
 
-  // Set the error estimate allowed error percentage. 11% error is achievable
-  // for these step sizes and this problem.
-//  const double rtol = 0.11;
-  const double rtol[n_dts] = { .09, 0.1000001, 0.1008, 0.1009 };
+  // Set the error estimate tolerance on absolute error. We get this by starting
+  // from 1e-2 for a step size of 1e-2 and then multiply be 1e-2 for each order
+  // of magnitude decrease in step size. This yields a quadratic reduction in
+  // error, as expected.
+  const double atol[n_dts] = { 1e-14, 1e-6, 1e-4, 0.01 };
 
   // Iterate the specified number of initial conditions.
   // Iterate over the number of integration step sizes.
@@ -462,15 +467,16 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
 
       // Get the true position.
       double x_final_true, v_final_true;
-      spring_mass.get_closed_form_solution(initial_position[i],
-                                           initial_velocity[i],
-                                           dts[j], &x_final_true,
-                                           &v_final_true);
+      spring_mass.GetClosedFormSolution(initial_position[i],
+                                        initial_velocity[i],
+                                        dts[j], &x_final_true,
+                                        &v_final_true);
 
       // Check the relative error on position.
       const double err = std::abs(x_final - x_final_true);
-      const double rel_est_err = std::abs(err - est_err) / err;
-      EXPECT_LE(rel_est_err, rtol[j]);
+      const double err_est_err = std::abs(err - est_err);
+      EXPECT_LE(err, atol[j]);
+      EXPECT_LE(err_est_err, atol[j]);
     }
   }
 }
@@ -507,8 +513,8 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
 
   // Get the actual solution.
   double x_final_true, v_final_true;
-  spring_mass.get_closed_form_solution(initial_position, initial_velocity,
-                                       large_dt_, &x_final_true, &v_final_true);
+  spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
+                                    large_dt_, &x_final_true, &v_final_true);
 
   // Integrate exactly one step.
   integrator.IntegrateWithSingleFixedStep(large_dt_);

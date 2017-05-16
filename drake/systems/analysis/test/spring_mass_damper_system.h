@@ -4,10 +4,15 @@
 
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
-// TODO(edrumwri): Beef this class up and move it to drake/systems/plants.
+// WARNING WARNING WARNING
+// This test is currently used only as a stiff system test for implicit
+// integration.
+// TODO(edrumwri): This test should be upgraded to a reusable, closed-form
+//                 benchmark by integrating this class with SpringMassSystem.
 
 namespace drake {
 namespace systems {
+namespace implicit_integrator_test {
 
 // This is an unforced spring-mass-damper system.
 template <class T>
@@ -19,7 +24,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
                          double mass_kg) :
       SpringMassSystem<T>(spring_constant_N_per_m, mass_kg,
                           false /* unforced */),
-      damping_constant_N_per_m_(damping_constant_N_per_m) { }
+      damping_constant_N_per_m_(damping_constant_N_per_m) {}
 
   /// Returns the damping constant that was provided at construction in N/m
   double get_damping_constant() const { return damping_constant_N_per_m_; }
@@ -36,8 +41,8 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   /// @param[out] vf the velocity of the spring at time tf, on return.
   /// @throws std::logic_error if xf or vf is nullptr or the system is
   ///         damped, yet underdamped.
-  void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
-                                T* xf, T* vf) const override {
+  void GetClosedFormSolution(const T& x0, const T& v0, const T& tf,
+                             T* xf, T* vf) const {
     using std::exp;
 
     if (!xf || !vf)
@@ -45,11 +50,11 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
 
     // Special case #1: no damping.
     if (get_damping_constant() == 0) {
-      SpringMassSystem<T>::get_closed_form_solution(x0, v0, tf, xf, vf);
+      SpringMassSystem<T>::GetClosedFormSolution(x0, v0, tf, xf, vf);
       return;
     }
 
-    // TODO(edrumwri): Provide solutions to the underdamped system.
+    // TODO(mitiguy): Provide solutions to the underdamped system.
     // Special case #2: underdamping.
     if (get_damping_constant() * get_damping_constant() <
         4 * this->get_mass() * this->get_spring_constant()) {
@@ -64,8 +69,9 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
 
     // Step 1: Solve the equation for z, yielding r and s.
     T r, s;
-    std::tie(r, s) = SolveQuadratic(this->get_mass(), get_damping_constant(),
-                                    this->get_spring_constant());
+    std::tie(r, s) = SolveRestrictedQuadratic(this->get_mass(),
+                                              get_damping_constant(),
+                                              this->get_spring_constant());
 
     // Step 2: Substituting t = 0 into the equatinons above, solve the resulting
     // linear system:
@@ -73,23 +79,23 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     // r⋅c1 + s⋅c2 = v0
     // yielding:
     // c1 = -(-v0 + s⋅x0)/(r - s) and c2 = -(v0 - r⋅x0)/(r - s)
-    const T c1 = -(v0 + s*x0)/(r - s);
-    const T c2 = -(v0 - r*x0)/(r - s);
+    const T c1 = -(v0 + s * x0) / (r - s);
+    const T c2 = -(v0 - r * x0) / (r - s);
 
     // Step 3: Set the solutions.
-    *xf = c1*exp(r*tf) + c2*exp(s*tf);
-    *vf = r*c1*exp(r*tf) + s*c2*exp(s*tf);
+    *xf = c1 * exp(r * tf) + c2 * exp(s * tf);
+    *vf = r * c1 * exp(r * tf) + s * c2 * exp(s * tf);
   }
 
  protected:
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+  System <AutoDiffXd>* DoToAutoDiffXd() const override {
     return new SpringMassDamperSystem<AutoDiffXd>(this->get_spring_constant(),
                                                   get_damping_constant(),
                                                   this->get_mass());
   }
 
-  void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context <T>& context,
+                             ContinuousState <T>* derivatives) const override {
     // Get the current state of the spring.
     const ContinuousState<T>& state = *context.get_continuous_state();
 
@@ -123,18 +129,27 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   }
 
   // Solves the quadratic equation ax² + bx + c = 0 for x, returned as a pair
-  // of two values. Cancellation error is avoided. Aborts if b is zero.
-  static std::pair<T, T> SolveQuadratic(const T& a, const T& b, const T& c) {
+  // of two values, assuming that b² >= 4ac, a != 0, and b != 0. Cancellation
+  // error is avoided. Aborts if b² < 4ac, a = 0, or b = 0. This restricted
+  // quadratic equation solver will work for the test case in this class; *do
+  // not trust this code to solve generic quadratic equations*.
+  static std::pair<T, T> SolveRestrictedQuadratic(const T& a, const T& b,
+                                                  const T& c) {
     using std::sqrt;
-    DRAKE_DEMAND(b != 0);
-    const T x1 = (-b - sgn(b)*sqrt(b*b - 4*a*c))/(2*a);
-    const T x2 = c/(a*x1);
+    using std::abs;
+    const T disc = b*b - 4 * a * c;
+    DRAKE_DEMAND(disc >= 0);
+    DRAKE_DEMAND(abs(a) > std::numeric_limits<double>::epsilon());
+    DRAKE_DEMAND(abs(b) > std::numeric_limits<double>::epsilon());
+    const T x1 = (-b - sgn(b) * sqrt(disc)) / (2 * a);
+    const T x2 = c / (a * x1);
     return std::make_pair(x1, x2);
   }
 
   double damping_constant_N_per_m_;
 };
 
+}  // namespace implicit_integrator_test
 }  // namespace systems
 }  // namespace drake
 

@@ -67,8 +67,7 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 template <>
 MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
     ComputeAutoDiffJacobian(const System<AutoDiffXd>&,
-                            const Context<AutoDiffXd>&,
-                            ContinuousState<AutoDiffXd>*) {
+                            const Context<AutoDiffXd>&) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitEulerIntegrator");
 }
@@ -84,13 +83,12 @@ MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeAutoDiffJacobian(
-    const System<T>& system, const Context<T>& context,
-    ContinuousState<T>* state) {
+    const System<T>& system, const Context<T>& context) {
   SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
                context.get_time());
   // Create AutoDiff versions of the state vector.
   typedef AutoDiffXd Scalar;
-  VectorX<Scalar> a_xtplus = state->CopyToVector();
+  VectorX<Scalar> a_xtplus = context.get_continuous_state()->CopyToVector();
 
   // Set the size of the derivatives and prepare for Jacobian calculation.
   const int n_state_dim = a_xtplus.size();
@@ -546,7 +544,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
       break;
 
     case JacobianComputationScheme::kAutomatic:
-      J = ComputeAutoDiffJacobian(system, *context, continuous_state);
+      J = ComputeAutoDiffJacobian(system, *context);
       break;
 
     default:
@@ -675,14 +673,14 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
     // The error estimation process for explicit Euler uses two half-steps
     // of explicit Euler (for a total of two derivative evaluations). The error
     // estimation process is derived as follows:
-    // (1) x*(t+h) = xₑ(t+h) + h²/2 d²f/dt² + ...                [full step]
-    // (2) x*(t+h) = ̅xₑ(t+h) + h²/8 (d²f/dt² + d²f₊/dt²) + ...  [two 1/2-steps]
+    // (1) x*(t+h) = xₑ(t+h) + h²/2 df/dt + ...                [full step]
+    // (2) x*(t+h) = ̅xₑ(t+h) + h²/8 (df/dt + df₊/dt) + ...    [two 1/2-steps]
     //
-    // where x*(t+h) is the true (generally unknown) answer that we seek, f()
-    // is the derivative evaluated at x(t) and f₊() is the derivative evaluated
-    // at x(t + h/2). Subtracting (1) from (2), the above equations are
-    // rewritten as:
-    // 0 = x̅ₑ(t+h) - xₑ(t+h) + h²/8 (-3f' + f₊') + ...
+    // where x*(t+h) is the true (generally unknown) answer that we seek,
+    // f() is the ordinary differential equation evaluated at x(t), and
+    // f₊() is the derivative evaluated at x(t + h/2). Subtracting (1) from
+    // (2), the above equations are rewritten as:
+    // 0 = x̅ₑ(t+h) - xₑ(t+h) + h²/8 (-3df/dt + df₊/dt) + ...
     // The sum of all but the first two terms on the right hand side
     // of the above equation is less in magnitude than ch², for some
     // sufficiently large c. Or, written using Big-Oh notation:

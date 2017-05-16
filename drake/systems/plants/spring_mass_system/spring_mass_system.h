@@ -212,8 +212,8 @@ class SpringMassSystem : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
 
-  /// Returns the closed-form position and velocity solution for the unforced
-  /// spring-mass-damper from the given initial conditions.
+  /// Returns the closed-form position and velocity solution for this system
+  /// from the given initial conditions.
   /// @param x0 the position of the spring at time t = 0.
   /// @param v0 the velocity of the spring at time t = 0.
   /// @param tf the time at which to return the position and velocity.
@@ -221,8 +221,8 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @param[out] vf the velocity of the spring at time tf, on return.
   /// @throws std::logic_error if xf or vf is nullptr or if the system is
   ///         forced.
-  virtual void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
-                                        T* xf, T* vf) const {
+  void GetClosedFormSolution(const T& x0, const T& v0, const T& tf,
+                             T* xf, T* vf) const {
     using std::sqrt;
     using std::sin;
     using std::cos;

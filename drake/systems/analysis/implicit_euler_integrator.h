@@ -244,8 +244,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
                                         const Context<T>&,
                                         ContinuousState<T>* state);
   MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
-                                     const Context<T>& context,
-                                     ContinuousState<T>* state);
+                                     const Context<T>& context);
   VectorX<T> CalcTimeDerivativesUsingContext();
 
   // This is a pre-allocated temporary for use by integration. It stores
