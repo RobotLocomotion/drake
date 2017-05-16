@@ -93,7 +93,8 @@ enum {
 // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
 
 MathematicalProgram::MathematicalProgram()
-    : num_vars_(0),
+    : num_indeterminates_(0),
+      num_vars_(0),
       x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
@@ -196,6 +197,53 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
     names[i] = name + "(" + to_string(i) + ")";
   }
   return NewVariables(VarType::BINARY, rows, names);
+}
+
+// TODO (MFG) Do I actually need the int row, or is the cast from size_t good enough?
+/*MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+    int rows, int cols, const vector<string>& names) {
+  MatrixXIndeterminateVariable Indeterminate_variable_matrix(rows, cols);
+  NewIndeterminate_impl(names,Indeterminate_variable_matrix);
+  return Indeterminate_variable_matrix;
+}
+
+VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+    int rows, const vector<string>& names) {
+  return NewIndeterminateVariables(rows, 1, names);
+}*/
+
+MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+    size_t rows, size_t cols, const vector<string>& names) {
+  MatrixXIndeterminateVariable Indeterminate_variable_matrix(rows, cols);
+  NewIndeterminate_impl(names,Indeterminate_variable_matrix);
+  return Indeterminate_variable_matrix;
+}
+
+VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+    size_t rows, const std::vector<std::string>& names) {
+  return NewIndeterminateVariables(rows, 1, names);
+}
+
+VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+    size_t rows, const string& name) {
+  vector<string> names(rows);
+  for (int i = 0; i < static_cast<int>(rows); ++i) {
+    names[i] = name + "(" + to_string(i) + ")";
+  }
+  return NewIndeterminateVariables(rows, names);
+}
+
+MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+    size_t rows, size_t cols, const string& name) {
+  vector<string> names(rows * cols);
+  int count = 0;
+  for (int j = 0; j < static_cast<int>(cols); ++j) {
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
+      ++count;
+    }
+  }
+  return NewIndeterminateVariables(rows, cols, names);
 }
 
 namespace {
@@ -1263,6 +1311,19 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
     oss << var
         << " is not a decision variable in the mathematical program, "
            "when calling GetSolution.\n";
+    throw runtime_error(oss.str());
+  }
+  return it->second;
+}
+
+size_t MathematicalProgram::FindIndeterminateVariableIndex(
+    const Variable& var) const {
+  auto it = indeterminate_variable_index_.find(var.get_id());
+  if (it == indeterminate_variable_index_.end()) {
+    ostringstream oss;
+    oss << var
+        << " is not a indeterminate variable in the mathematical program, "
+            "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;
