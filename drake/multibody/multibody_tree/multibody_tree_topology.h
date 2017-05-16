@@ -21,6 +21,7 @@
 ///    topology can be validated against the stored topology in debug builds.
 
 #include <algorithm>
+#include <queue>
 #include <utility>
 #include <vector>
 
@@ -50,14 +51,31 @@ struct BodyTopology {
   /// Unique index to the one and only inboard mobilizer a body can have.
   /// By default this is left initialized to "invalid" so that we can detect
   /// graph loops within add_mobilizer().
+  /// This will remain "invalid" for the world body.
   MobilizerIndex inboard_mobilizer{};
+
+  /// Within the tree structure of a MultibodyTree, the immedieate inboard (or
+  /// "parent") body connected through by the Mobilizer indexed by
+  /// inboard_mobilizer.
+  /// By default this is left initialized to "invalid" so that we can assert
+  /// (from within add_mobilizer()) that each body can have only one parent
+  /// body. Also, this will remain "invalid" for the world body.
+  BodyIndex parent_body{};
+
+  /// Within the tree structure of a MultibodyTree, the immedieate outboard (or
+  /// "child") bodies to this Body.
+  std::vector<BodyIndex> child_bodies;
 
   /// Unique index to the frame associated with this body.
   FrameIndex body_frame{0};
 
   /// Depth level in the MultibodyTree, level = 0 for the world.
-  /// Initialized to an invalid negative value.
+  /// Initialized to an invalid negative value so that we can detect when a user
+  /// forgets to connect a body with a mobilizer at Finalize().
   int level{-1};
+
+  /// Index to the tree body node in the MultibodyTree.
+  BodyNodeIndex body_node;
 };
 
 /// Data structure to store the topological information associated with a
@@ -146,6 +164,39 @@ struct MobilizerTopology {
   int velocities_start{0};
 };
 
+struct BodyNodeTopology {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyNodeTopology);
+
+  /// Default construction to invalid configuration.
+  BodyNodeTopology() {}
+
+  BodyNodeTopology(
+      BodyNodeIndex index, int level,
+      BodyIndex body, BodyIndex parent_body, MobilizerIndex mobilizer) :
+      index(index), level(level),
+      body(body), parent_body(parent_body), mobilizer(mobilizer) {}
+
+  /// Unique index in the MultibodyTree.
+  BodyNodeIndex index{};
+
+  /// Depth level in the MultibodyTree, level = 0 for the world.
+  int level{-1};
+
+  BodyIndex body;         // This node's body B.
+  BodyIndex parent_body;  // This node's parent body P.
+
+  MobilizerIndex mobilizer;  // The mobilizer connecting bodies P and B.
+
+  /// The unique index to the parent BodyNode of this node.
+  BodyNodeIndex parent_body_node;
+
+  /// The list of child body nodes to this node.
+  std::vector<BodyNodeIndex> child_nodes;
+
+  /// Returns the number of children to this node.
+  int get_num_children() const { return static_cast<int>(child_nodes.size());}
+};
+
 /// Data structure to store the topological information associated with an
 /// entire MultibodyTree.
 struct MultibodyTreeTopology {
@@ -173,6 +224,11 @@ struct MultibodyTreeTopology {
   /// the number of bodies minus one.
   int get_num_mobilizers() const {
     return static_cast<int>(mobilizers.size());
+  }
+
+  /// Returns the number of tree nodes. This must equal the number of bodies.
+  int get_num_body_nodes() const {
+    return static_cast<int>(body_nodes.size());
   }
 
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
@@ -245,18 +301,27 @@ struct MultibodyTreeTopology {
           "If a physical loop is really needed, consider using a constraint "
           "instead.");
     }
+    // Here only demands since the check above should be taking care of loops
+    // unless something went terribly wrong.
+    // BodyTopology::inboard_mobilizer and BodyTopology::parent_body are both
+    // set by this method below.
+    DRAKE_DEMAND(!bodies[outboard_body].parent_body.is_valid());
     MobilizerIndex mobilizer_index(get_num_mobilizers());
 
     // Make note of the inboard mobilizer for the outboard body.
     bodies[outboard_body].inboard_mobilizer = mobilizer_index;
+    // Similarly, record inboard_body as the parent of outboard_body.
+    bodies[outboard_body].parent_body = inboard_body;
+
+    // Records "child" bodies for bookkeeping in the context of the tree
+    // structure of MultibodyTree.
+    bodies[inboard_body].child_bodies.push_back(outboard_body);
 
     mobilizers.emplace_back(mobilizer_index,
                             in_frame, out_frame,
                             inboard_body, outboard_body);
     return mobilizer_index;
   }
-
-  bool is_valid{false};
 
   /// Topology gets validated by MultibodyTree::Finalize().
   void set_valid() { is_valid = true; }
@@ -279,9 +344,91 @@ struct MultibodyTreeTopology {
     return false;
   }
 
+  void Finalize() {
+    // The topology is already valid and therefore there is nothing to do.
+    if (is_valid) return;
+
+    // Compute body levels in the tree. Root is the zero level.
+    // Breadth First Traversal (a.k.a. Level Order Traversal).
+    std::queue<BodyIndex> queue;
+    queue.push(BodyIndex(0));  // Starts at the root.
+    num_levels = 1;  // At least one level with the world body at the root.
+    // While at it, create body nodes and index them in this BFT order for
+    // fast tree traversals of MultibodyTree recursive algorithms.
+    body_nodes.reserve(get_num_bodies());
+    while (!queue.empty()) {
+      const BodyNodeIndex node(get_num_body_nodes());
+      const BodyIndex current = queue.front();
+      const BodyIndex parent = bodies[current].parent_body;
+
+      // Computes level.
+      int level = 0;  // level = 0 for the world body.
+      if (current != 0) {  // Not the world body.
+        level = bodies[parent].level + 1;
+      }
+      // Updates body levels.
+      bodies[current].level = level;
+      // Keep track of the number of levels, the deepest (i.e. max) level.
+      num_levels = std::max(num_levels, level + 1);
+
+      // Since we are doing a BFT, it is valid to ask for the parent node,
+      // unless we are at the root.
+      BodyNodeIndex parent_node;
+      if (node != 0) {  // If we are not at the root:
+        parent_node = bodies[parent].body_node;
+        body_nodes[parent_node].child_nodes.push_back(node);
+      }
+
+      // Creates BodyNodeTopology.
+      body_nodes.emplace_back(
+          node, level /* node index and level */,
+          parent_node /* This node's parent */,
+          current     /* This node's body */,
+          bodies[current].parent_body       /* This node's parent body */,
+          bodies[current].inboard_mobilizer /* This node's mobilizer */);
+
+
+      // Pushes children to the back of the queue and pops current.
+      for (BodyIndex child: bodies[current].child_bodies) {
+        queue.push(child);  // Pushes at the back.
+      }
+      queue.pop();  // Pops front element.
+    }
+
+    // The number of tree nodes must equal the number of bodies in the tree
+    // after the above BFT.
+    DRAKE_DEMAND(get_num_bodies() == get_num_body_nodes());
+
+    // Checks that all bodies were reached. We could have this situation if a
+    // user add body but forgets to add a mobilizer to it.
+    // Bodies that were not reached were not assigned a valid level.
+    for (BodyIndex body(0); body < get_num_bodies(); ++body) {
+      if (bodies[body].level < 0) {
+        throw std::runtime_error("Body was not assigned a mobilizer.");
+      }
+    }
+
+    // TODO(amcastro-tri): Compile topological information for BodyNode objects
+    // in a following PR. This will include:
+    // - Sizes (num dofs)
+    // - Indexing info. Start/end indexes into context (actually cache) pools.
+    
+    // We are done with a successful Finalize() and we mark it as so.
+    // Do not add any more code after this!
+    is_valid = true;
+  }
+
+
+    // is_valid is set to `true` after a successful Finalize().
+  bool is_valid{false};
+  // Number of levels (or generations) in the tree topology. After Finalize()
+  // there will be at least one level (level = 0) with the world body.
+  // Bodies directly connected to the world will belong to level = 1.
+  int num_levels{-1};
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;
   std::vector<MobilizerTopology> mobilizers;
+  std::vector<BodyNodeTopology> body_nodes;
 };
 
 }  // namespace multibody
