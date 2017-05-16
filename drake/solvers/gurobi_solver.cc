@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 #include <Eigen/Core>
@@ -480,12 +481,9 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xupp(num_prog_vars,
                            std::numeric_limits<double>::infinity());
 
-  const std::vector<MathematicalProgram::VarType>& var_type =
-      prog.DecisionVariableTypes();
-
   std::vector<char> gurobi_var_type(num_prog_vars);
   for (int i = 0; i < num_prog_vars; ++i) {
-    switch (var_type[i]) {
+    switch (prog.decision_variable(i).get_type()) {
       case MathematicalProgram::VarType::CONTINUOUS:
         gurobi_var_type[i] = GRB_CONTINUOUS;
         break;
@@ -494,6 +492,9 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         break;
       case MathematicalProgram::VarType::INTEGER:
         gurobi_var_type[i] = GRB_INTEGER;
+      case MathematicalProgram::VarType::BOOLEAN:
+        throw std::runtime_error(
+            "Boolean variables should not be used with Gurobi solver.");
     }
   }
 
