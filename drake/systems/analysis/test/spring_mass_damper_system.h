@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <utility>
 
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
