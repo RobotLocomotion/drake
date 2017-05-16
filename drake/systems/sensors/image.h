@@ -1,70 +1,44 @@
 #pragma once
 
-#include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/reinit_after_move.h"
+#include "drake/systems/sensors/image_traits.h"
 
 namespace drake {
-
 namespace systems {
 namespace sensors {
 
-/// The enum class to be used for describing pixel format in Image class.
-/// The naming rule for the enum members is:
-/// k + (semantic meaning of pixel) + (bit per channel) + (type per channel).
-/// For the type per channel, one of the following capital letters is used.
-///   - I: int
-///   - U: unsigned int
-///   - F: float
-enum class PixelFormat {
-  /// The pixel format used by ImageRgb8U.
-  kRgb8U = 0,
-  /// The pixel format used by ImageBgr8U.
-  kBgr8U,
-  /// The pixel format used by ImageRgba8U.
-  kRgba8U,
-  /// The pixel format used by ImageBgra8U.
-  kBgra8U,
-  /// The pixel format used by ImageGrey8U.
-  kGrey8U,
-  /// The pixel format used by ImageDepth16U.
-  kDepth16U,
-  /// The pixel format used by ImageDepth32F.
-  kDepth32F,
-  /// The pixel format used by ImageLabel16I.
-  kLabel16I,
-};
-
-// Forward declaration of Image.
-template <typename T, int channel, PixelFormat pixelformat> class Image;
+// Forward declaration of Image class.
+template <typename Traits>
+class Image;
 
 /// The type for RGB image where the each channel has the type of uint8_t.
-typedef Image<uint8_t, 3, PixelFormat::kRgb8U> ImageRgb8U;
+using ImageRgb8U = Image<ImageTraits<PixelFormat::kRgb8U>>;
 
 /// The type for BGR image where the each channel has the type of uint8_t.
-typedef Image<uint8_t, 3, PixelFormat::kBgr8U> ImageBgr8U;
+using ImageBgr8U = Image<ImageTraits<PixelFormat::kBgr8U>>;
 
 /// The type for RGBA image where the each channel has the type of uint8_t.
-typedef Image<uint8_t, 4, PixelFormat::kRgba8U> ImageRgba8U;
+using ImageRgba8U = Image<ImageTraits<PixelFormat::kRgba8U>>;
 
 /// The type for BGRA image where the each channel has the type of uint8_t.
-typedef Image<uint8_t, 4, PixelFormat::kBgra8U> ImageBgra8U;
-
-/// The type for greyscale image where the channel has the type of uint8_t.
-typedef Image<uint8_t, 1, PixelFormat::kGrey8U> ImageGrey8U;
-
-/// The type for depth image where the channel has the type of uint16_t.
-typedef Image<uint16_t, 1, PixelFormat::kDepth16U> ImageDepth16U;
+using ImageBgra8U = Image<ImageTraits<PixelFormat::kBgra8U>>;
 
 /// The type for depth image where the channel has the type of float.
-typedef Image<float, 1, PixelFormat::kDepth32F> ImageDepth32F;
+using ImageDepth32F = Image<ImageTraits<PixelFormat::kDepth32F>>;
+
+/// The type for depth image where the channel has the type of uint16_t.
+using ImageDepth16U = Image<ImageTraits<PixelFormat::kDepth16U>>;
 
 /// The type for label image where the channel has the type of int16_t.
-typedef Image<int16_t, 1, PixelFormat::kLabel16I> ImageLabel16I;
+using ImageLabel16I = Image<ImageTraits<PixelFormat::kLabel16I>>;
+
+/// The type for greyscale image where the channel has the type of uint8_t.
+using ImageGrey8U = Image<ImageTraits<PixelFormat::kGrey8U>>;
 
 
 /// Simple data format for Image. For the complex calculation with the image,
@@ -73,13 +47,15 @@ typedef Image<int16_t, 1, PixelFormat::kLabel16I> ImageLabel16I;
 ///
 /// The origin of image coordinate system is on the left-upper corner.
 ///
-/// @tparam T The type of the each channel in a pixel.
-/// @tparam channel The number of channels in a piexl.
-/// @tparam pixelformat The pixel format in a pixel.
-template <typename T, int channel, PixelFormat pixelformat>
+/// @tparam Traits The traits class that contains channel type and the number of
+/// channel for Image.
+template <typename Traits>
 class Image {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Image)
+
+  /// The type for channel.
+  using T = typename Traits::ChannelType;
 
   /// Image size only constructor.  Specifies a width and height for the image.
   /// All the channel values in all the pixels are initialized with zero.
@@ -95,7 +71,7 @@ class Image {
   /// @param initial_value A value set to all the channels in all the pixels
   Image(int width, int height, T initial_value)
       : width_(width), height_(height),
-        data_(width * height * channel, initial_value) {
+        data_(width * height * channel_, initial_value) {
     DRAKE_ASSERT(width > 0);
     DRAKE_ASSERT(height > 0);
   }
@@ -110,11 +86,11 @@ class Image {
   int height() const { return height_; }
 
   /// Returns the number of channel for the image
-  int num_channels() const { return channel; }
+  int num_channels() const { return channel_; }
 
   /// Returns the result of the number of pixels in a image by the number of
   /// channels in a pixel
-  int size() const { return width_ * height_ * channel; }
+  int size() const { return width_ * height_ * channel_; }
 
   /// Changes the sizes of the width and height for the image.  The values for
   /// them should be greater than zero.  (To resize to zero, assign a default-
@@ -124,7 +100,7 @@ class Image {
     DRAKE_ASSERT(width > 0);
     DRAKE_ASSERT(height > 0);
 
-    data_.resize(width * height * channel);
+    data_.resize(width * height * channel_);
     std::fill(data_.begin(), data_.end(), 0);
     width_ = width;
     height_ = height;
@@ -143,7 +119,7 @@ class Image {
   T* at(int x, int y) {
     DRAKE_ASSERT(x >= 0 && x < width_);
     DRAKE_ASSERT(y >= 0 && y < height_);
-    return data_.data() + (x + y * width_) * channel;
+    return data_.data() + (x + y * width_) * channel_;
   }
 
   /// Const version of at() method.  See the document for the non-const version
@@ -151,17 +127,14 @@ class Image {
   const T* at(int x, int y) const {
     DRAKE_ASSERT(x >= 0 && x < width_);
     DRAKE_ASSERT(y >= 0 && y < height_);
-    return data_.data() + (x + y * width_) * channel;
-  }
-
-  PixelFormat pixel_format() const {
-    return pixelformat;
+    return data_.data() + (x + y * width_) * channel_;
   }
 
  private:
   reinit_after_move<int> width_;
   reinit_after_move<int> height_;
   std::vector<T> data_;
+  static constexpr int channel_ = Traits::channel;
 };
 
 }  // namespace sensors

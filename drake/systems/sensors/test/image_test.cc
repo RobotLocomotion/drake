@@ -17,7 +17,6 @@ GTEST_TEST(TestImage, EmptyTest) {
   EXPECT_EQ(dut.height(), 0);
   EXPECT_EQ(dut.size(), 0);
   EXPECT_EQ(dut.num_channels(), 3);
-  EXPECT_EQ(dut.pixel_format(), PixelFormat::kRgb8U);
 }
 
 GTEST_TEST(TestImage, InstantiateTest) {
