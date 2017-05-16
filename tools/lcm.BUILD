@@ -1,8 +1,9 @@
 # -*- python -*-
 
 load("@//tools:drake.bzl", "drake_generate_file")
-load("@//tools:install.bzl", "install", "install_files")
 load("@//tools:generate_export_header.bzl", "generate_export_header")
+load("@//tools:install.bzl", "install", "install_files")
+load("@//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = ["//visibility:public"])
@@ -197,15 +198,47 @@ pkg_tar(
     package_dir = "lcm",
 )
 
-# TODO(mwoehlke-kitware): generate `lcm.cps` from template, lcm_version.h
+py_binary(
+    name = "create-cps",
+    srcs = ["@//tools:lcm-create-cps.py"],
+    main = "@//tools:lcm-create-cps.py",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cps",
+    srcs = ["lcm/lcm_version.h"],
+    outs = ["lcm.cps"],
+    cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+    tools = [":create-cps"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_exports",
+    srcs = ["lcm.cps"],
+    outs = ["lcmConfig.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_package_version",
+    srcs = ["lcm.cps"],
+    outs = ["lcmConfigVersion.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
 
 install_files(
     name = "install_cmake",
     dest = "lib/lcm/cmake",
     files = [
         "lcm-cmake/lcmUtilities.cmake",
-        #"lcmConfig.cmake", # TODO(mwoehlke-kitware) generate me!
-        #"lcmConfigVersion.cmake", # TODO(mwoehlke-kitware) generate me!
+        "lcmConfig.cmake",
+        "lcmConfigVersion.cmake",
     ],
     strip_prefix = ["**/"],
 )
@@ -231,3 +264,5 @@ install(
 )
 
 # TODO(mwoehlke-kitware): install Python bits
+
+python_lint()
