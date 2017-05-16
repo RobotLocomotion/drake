@@ -31,9 +31,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 namespace drake {
 namespace multibody {
 
@@ -154,6 +151,9 @@ struct MobilizerTopology {
   BodyIndex inboard_body;
   /// Index to the outboard body.
   BodyIndex outboard_body;
+  /// Index to the tree node in the MultibodyTree responsible for this
+  /// mobilizer's computations.
+  BodyNodeIndex body_node;
 
   /// Mobilizer indexing info: Set at Finalize() time.
   // Number of generalized coordinates granted by this mobilizer.
@@ -366,12 +366,15 @@ struct MultibodyTreeTopology {
       const BodyNodeIndex node(get_num_body_nodes());
       const BodyIndex current = queue.front();
       const BodyIndex parent = bodies[current].parent_body;
+
       bodies[current].body_node = node;
 
       // Computes level.
       int level = 0;  // level = 0 for the world body.
       if (current != 0) {  // Not the world body.
         level = bodies[parent].level + 1;
+        const MobilizerIndex mobilizer = bodies[current].inboard_mobilizer;
+        mobilizers[mobilizer].body_node = node;
       }
       // Updates body levels.
       bodies[current].level = level;
@@ -395,7 +398,7 @@ struct MultibodyTreeTopology {
           bodies[current].inboard_mobilizer /* This node's mobilizer */);
 
       // Pushes children to the back of the queue and pops current.
-      for (BodyIndex child: bodies[current].child_bodies) {
+      for (BodyIndex child : bodies[current].child_bodies) {
         queue.push(child);  // Pushes at the back.
       }
       queue.pop();  // Pops front element.
@@ -419,12 +422,11 @@ struct MultibodyTreeTopology {
     // in a following PR. This will include:
     // - Sizes (num dofs)
     // - Indexing info. Start/end indexes into context (actually cache) pools.
-    
+
     // We are done with a successful Finalize() and we mark it as so.
     // Do not add any more code after this!
     is_valid = true;
   }
-
 
     // is_valid is set to `true` after a successful Finalize().
   bool is_valid{false};

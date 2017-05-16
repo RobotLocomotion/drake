@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -16,11 +17,12 @@ namespace {
 
 using Eigen::Vector3d;
 using std::make_unique;
+using std::set;
 using std::unique_ptr;
 
 // Tests the basic MultibodyTree API to add bodies and mobilizers.
 // Tests we cannot create graph loops.
-GTEST_TEST(MultibodyTree, AddMobilizers) {
+GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   auto model = std::make_unique<MultibodyTree<double>>();
 
   // Initially there is only one body, the world.
@@ -165,7 +167,6 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   EXPECT_NO_THROW(body2.HasThisParentTreeOrThrow(model2.get()));
 }
 
-#if 0
 class TreeTopologyTests : public ::testing::Test {
  public:
   // Creates an "empty" MultibodyTree that only contains the "world" body and
@@ -173,7 +174,7 @@ class TreeTopologyTests : public ::testing::Test {
   void SetUp() override {
     model_ = std::make_unique<MultibodyTree<double>>();
 
-    const int kNumBodies = 7;
+    const int kNumBodies = 8;
     bodies_.push_back(&model_->get_world_body());
     for (int i =1; i < kNumBodies; ++i)
       bodies_.push_back(AddTestBody());
@@ -202,6 +203,51 @@ class TreeTopologyTests : public ::testing::Test {
         Vector3d::UnitZ());
   }
 
+  // Performs a number of tests on the BodyNodeTopology corresponding to the
+  // body indexed by `body`.
+  void TestBodyNode(BodyIndex body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    const BodyNodeIndex node = topology.bodies[body].body_node;
+
+    // Verify that the corresponding Body and BodyNode reference each other
+    // correctly.
+    EXPECT_EQ(topology.bodies[body].body_node, topology.body_nodes[node].index);
+    EXPECT_EQ(topology.body_nodes[node].body, topology.bodies[body].index);
+
+    // They should belong to the same level.
+    EXPECT_EQ(topology.bodies[body].level, topology.body_nodes[node].level);
+
+    if (body != world_index()) {
+      const BodyNodeIndex parent_node =
+          topology.body_nodes[node].parent_body_node;
+      // parent_node should be a valid index since "body" is not the world.
+      EXPECT_TRUE(parent_node.is_valid());
+
+      // Verifies BodyNode has the parent node to the correct body.
+      const BodyIndex parent_body = topology.body_nodes[parent_node].body;
+      EXPECT_TRUE(parent_body.is_valid());
+      EXPECT_EQ(parent_body, topology.bodies[body].parent_body);
+      EXPECT_EQ(topology.body_nodes[parent_node].index,
+                topology.bodies[parent_body].body_node);
+
+      // Verifies that BodyNode makes reference to the proper mobilizer index.
+      const MobilizerIndex mobilizer = topology.body_nodes[node].mobilizer;
+      EXPECT_EQ(mobilizer, topology.bodies[body].inboard_mobilizer);
+
+      // Verifies the mobilizer makes reference to the appropriate node.
+      EXPECT_EQ(topology.mobilizers[mobilizer].body_node, node);
+
+      // Helper lambda to check if this "node" effectively is a child of
+      // "parent_node".
+      auto is_child_of_parent = [&]() {
+        const auto& children = topology.body_nodes[parent_node].child_nodes;
+        return
+            std::find(children.begin(), children.end(), node) != children.end();
+      };
+      EXPECT_TRUE(is_child_of_parent());
+    }
+  }
+
  protected:
   std::unique_ptr<MultibodyTree<double>> model_;
   // Bodies:
@@ -211,15 +257,59 @@ class TreeTopologyTests : public ::testing::Test {
 };
 
 TEST_F(TreeTopologyTests, Finalize) {
+  model_->Finalize();
   EXPECT_EQ(model_->get_num_bodies(), 8);
   EXPECT_EQ(model_->get_num_mobilizers(), 7);
+
+  const MultibodyTreeTopology& topology = model_->get_topology();
+  EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
+
+  // These sets contain the indexes of the bodies in each tree level.
+  // The order of these indexes in each set is not important, but only the fact
+  // that they belong to the appropriate set.
+  set<BodyIndex> expected_level0 = {BodyIndex(0)};
+  set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5)};
+  set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
+  set<BodyIndex> expected_level3 = {BodyIndex(6)};
+
+  set<BodyIndex> level0 = {topology.body_nodes[0].body};
+  set<BodyIndex> level1 = {topology.body_nodes[1].body,
+                           topology.body_nodes[2].body,
+                           topology.body_nodes[3].body};
+  set<BodyIndex> level2 = {topology.body_nodes[4].body,
+                           topology.body_nodes[5].body,
+                           topology.body_nodes[6].body};
+  set<BodyIndex> level3 = {topology.body_nodes[7].body};
+
+  // Comparison of sets. The order of the elements is not important.
+  EXPECT_EQ(level0, expected_level0);
+  EXPECT_EQ(level1, expected_level1);
+  EXPECT_EQ(level2, expected_level2);
+  EXPECT_EQ(level3, expected_level3);
+
+  // Verifies the expected number of child nodes.
+  EXPECT_EQ(topology.body_nodes[0].get_num_children(), 3);
+  EXPECT_EQ(
+      topology.body_nodes[topology.bodies[4].body_node].get_num_children(), 2);
+  EXPECT_EQ(
+      topology.body_nodes[topology.bodies[7].body_node].get_num_children(), 0);
+  EXPECT_EQ(
+      topology.body_nodes[topology.bodies[5].body_node].get_num_children(), 1);
+  EXPECT_EQ(
+      topology.body_nodes[topology.bodies[2].body_node].get_num_children(), 0);
+  EXPECT_EQ(
+      topology.body_nodes[topology.bodies[1].body_node].get_num_children(), 1);
+  EXPECT_EQ(
+      topology.body_nodes[topology.bodies[3].body_node].get_num_children(), 0);
+  EXPECT_EQ(
+      topology.body_nodes[topology.bodies[6].body_node].get_num_children(), 0);
+
+  // Checks the correctness of each BodyNode associated with a body.
+  for (BodyIndex body(0); body < model_->get_num_bodies(); ++body) {
+    TestBodyNode(body);
+  }
 }
-#endif
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-
-//int main() {
-//  drake::multibody::DoMain();
-//  return 0;
-//}
