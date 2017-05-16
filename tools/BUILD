@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("//tools:install.bzl", "install_files")
+
 package(default_visibility = ["//visibility:public"])
 
 # Depend on this when you need to call clang-format.  (We don't have a label
@@ -57,6 +59,12 @@ genrule(
     cmd = "$(location @pycps//:cps2cmake_executable) $(location drake.cps) > \"$@\"",
     tools = ["@pycps//:cps2cmake_executable"],
     visibility = ["//visibility:private"],
+)
+
+install_files(
+    name = "install",
+    dest = "lib/drake/cmake",
+    files = ["drake-config.cmake"],
 )
 
 # This pulls the otherwise-unused libbot targets into the "//..." label tree.
