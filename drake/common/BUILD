@@ -295,7 +295,7 @@ drake_cc_library(
     }),
     deps = [
         ":common",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
