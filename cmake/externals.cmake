@@ -226,6 +226,7 @@ macro(drake_add_cmake_external PROJECT)
     BINARY_DIR ${_ext_BINARY_DIR}
     DOWNLOAD_DIR ${_ext_DOWNLOAD_DIR}
     DOWNLOAD_COMMAND ${_ext_DOWNLOAD_COMMAND}
+    PATCH_COMMAND ${_ext_PATCH_COMMAND}
     UPDATE_COMMAND ${_ext_UPDATE_COMMAND}
     ${_ext_EXTRA_COMMANDS}
     STEP_TARGETS configure build install
