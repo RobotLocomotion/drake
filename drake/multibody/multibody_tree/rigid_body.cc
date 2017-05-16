@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
