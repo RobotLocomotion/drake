@@ -75,7 +75,6 @@ drake_add_external(fmt PUBLIC CMAKE ALWAYS
 drake_add_external(gflags PUBLIC CMAKE
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=ON
-    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
     -DGFLAGS_BUILD_gflags_nothreads_LIB=OFF)
 
 # googletest
@@ -168,9 +167,7 @@ drake_add_external(snopt CMAKE MATLAB
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
-  CMAKE_ARGS
-    -DBUILD_TESTING=OFF
-    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
+  CMAKE_ARGS -DBUILD_TESTING=OFF
   SOURCE_SUBDIR octomap)
 
 # vtk
@@ -207,7 +204,6 @@ drake_add_external(tinyobjloader PUBLIC CMAKE
 drake_add_external(yaml_cpp PUBLIC CMAKE
  CMAKE_ARGS
    -DBUILD_SHARED_LIBS=ON
-   -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
    -DYAML_CPP_BUILD_CONTRIB=OFF
    -DYAML_CPP_BUILD_TOOLS=OFF)
 
