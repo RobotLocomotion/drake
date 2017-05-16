@@ -206,9 +206,37 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
 #------------------------------------------------------------------------------
 # Compute install actions for a cc_library or cc_binary.
 def _install_cc_actions(ctx, target):
+    # Compute actions for target artifacts.
     # TODO(mwoehlke-kitware): make these parameters.
     dests = {"a": "lib", "so": "lib", None: "bin"}
-    return _install_actions(ctx, [target], dests)
+    actions = _install_actions(ctx, [target], dests)
+
+    # Compute actions for guessed headers.
+    if ctx.attr.guess_hdrs != "NONE":
+        hdrs = []
+
+        if ctx.attr.guess_hdrs == "EVERYTHING":
+            hdrs = target.cc.transitive_headers
+
+        elif ctx.attr.guess_hdrs == "WORKSPACE":
+            hdrs = [h for h in target.cc.transitive_headers if
+                    target.label.workspace_root == h.owner.workspace_root]
+
+        elif ctx.attr.guess_hdrs == "PACKAGE":
+            hdrs = [h for h in target.cc.transitive_headers if
+                    target.label.workspace_root == h.owner.workspace_root and
+                    target.label.package == h.owner.package]
+
+        else:
+            msg_fmt = "'install' given unknown 'guess_hdrs' value '%s'"
+            fail(msg_fmt % ctx.attr.guess_hdrs, ctx.attr.guess_hdrs)
+
+        actions += _install_actions(ctx, [struct(files=hdrs)],
+                                    ctx.attr.hdr_dest,
+                                    ctx.attr.hdr_strip_prefix)
+
+    # Return computed actions.
+    return actions
 
 #------------------------------------------------------------------------------
 # Compute install actions for a java_library or java_binary.
@@ -253,6 +281,7 @@ install = rule(
         "hdrs": attr.label_list(allow_files = True),
         "hdr_dest": attr.string(default = "include"),
         "hdr_strip_prefix": attr.string_list(),
+        "guess_hdrs": attr.string(default = "NONE"),
         "targets": attr.label_list(),
     },
     implementation = _install_impl,
@@ -265,11 +294,28 @@ documentation and header files, and targets (e.g. ``cc_binary``). By default,
 the path of any files is included in the install destination.
 See :rule:`install_files` for details.
 
+Note:
+    By default, headers to be installed must be explicitly listed. This is to
+    work around an issue where Bazel does not appear to provide any mechanism
+    to obtain the public headers of a target at rule instantiation. The
+    ``guess_hdrs`` parameter may be used to tell ``install`` to guess at what
+    headers will be installed. Possible values are:
+
+    * ``"NONE"``: Only install headers which are explicitly listed by ``hdrs``.
+    * ``PACKAGE``:  For each target, install those headers which are used by
+      the target and owned by a target in the same package.
+    * ``WORKSPACE``: For each target, install those headers which are used by
+      the target and owned by a target in the same workspace.
+    * ``EVERYTHING``: Install all headers used by the target.
+
+    The headers considered are *all* headers transitively used by the target.
+    Any option other than ``NONE`` is also likely to install private headers.
 
 Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
     doc_dest: Destination for documentation files (default = "share/doc").
+    guess_hdrs: See note.
     hdrs: List of header files to install.
     hdr_dest: Destination for header files (default = "include").
     hdr_strip_prefix: List of prefixes to remove from header paths.
@@ -326,7 +372,6 @@ Args:
     files: List of files to install.
     strip_prefix: List of prefixes to remove from input paths.
 """
-
 
 #------------------------------------------------------------------------------
 # Generate install script from install rules.
