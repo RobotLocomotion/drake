@@ -31,20 +31,20 @@ namespace systems {
 namespace plants {
 namespace {
 
-class IKTrajectoryCost : public drake::solvers::Constraint {
+class IKTrajectoryCost : public drake::solvers::Cost {
  public:
   /// @p helper is aliased, and must remain valid for the life of
   /// this class.
   template <typename Derived>
   IKTrajectoryCost(const IKTrajectoryHelper& helper,
                    const Eigen::MatrixBase<Derived>& q_nom)
-      : Constraint(1, helper.nq() * (helper.nT() + 2)),
+      : Cost(helper.nq() * (helper.nT() + 2)),
         helper_(helper),
         q_nom_(q_nom) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+              Eigen::VectorXd&) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
@@ -148,8 +148,8 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   }
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-              Eigen::VectorXd &y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+              Eigen::VectorXd&) const override {
     throw std::runtime_error("Non-gradient version not implemented!");
   }
 
@@ -353,6 +353,8 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
                            Eigen::MatrixBase<DerivedD>* qdot_sol,
                            Eigen::MatrixBase<DerivedE>* qddot_sol, int* info,
                            std::vector<std::string>* infeasible_constraint) {
+  unused(infeasible_constraint);  // Per the TODO in the header file.
+
   DRAKE_ASSERT(q_sol->cols() == nT);
   DRAKE_ASSERT(qdot_sol->cols() == nT);
   DRAKE_ASSERT(qddot_sol->cols() == nT);
@@ -382,7 +384,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   VectorXDecisionVariable qdot0 = prog.NewContinuousVariables(nq, "qdot0");
   VectorXDecisionVariable qdotf = prog.NewContinuousVariables(nq, "qdotf");
 
-  std::shared_ptr<drake::solvers::Constraint> cost =
+  std::shared_ptr<drake::solvers::Cost> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);
   prog.AddCost(cost, {q, qdot0, qdotf});
 

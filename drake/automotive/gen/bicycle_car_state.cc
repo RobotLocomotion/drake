@@ -14,5 +14,13 @@ const int BicycleCarStateIndices::kVel;
 const int BicycleCarStateIndices::kSx;
 const int BicycleCarStateIndices::kSy;
 
+const std::vector<std::string>& BicycleCarStateIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "Psi", "Psi_dot", "beta", "vel", "sx", "sy",
+      });
+  return coordinates.access();
+}
+
 }  // namespace automotive
 }  // namespace drake

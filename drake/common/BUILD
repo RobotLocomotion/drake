@@ -30,8 +30,8 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
-        "@eigen//:eigen",
-        "@spdlog//:spdlog",
+        "@eigen",
+        "@spdlog",
     ],
 )
 
@@ -72,7 +72,13 @@ drake_cc_library(
         ":common",
         ":cond",
         ":dummy_value",
+        ":eigen_autodiff_limits",
     ],
+)
+
+drake_cc_library(
+    name = "eigen_autodiff_limits",
+    hdrs = ["eigen_autodiff_limits.h"],
 )
 
 drake_cc_library(
@@ -208,6 +214,12 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "is_memcpy_movable",
+    testonly = 1,
+    hdrs = ["test/is_memcpy_movable.h"],
+)
+
 cc_proto_library(
     name = "matlab_rpc",
     srcs = [
@@ -221,8 +233,8 @@ drake_cc_library(
     srcs = ["call_matlab.cc"],
     hdrs = ["call_matlab.h"],
     deps = [
-        "common",
-        "matlab_rpc",
+        ":common",
+        ":matlab_rpc",
     ],
 )
 
@@ -283,7 +295,7 @@ drake_cc_library(
     }),
     deps = [
         ":common",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -309,7 +321,7 @@ drake_cc_library(
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
     deps = [
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -511,6 +523,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "is_memcpy_movable_test",
+    deps = [
+        ":is_memcpy_movable",
+    ],
+)
+
+drake_cc_googletest(
     name = "polynomial_test",
     deps = [
         ":common",
@@ -558,6 +577,7 @@ drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":common",
+        ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -629,6 +649,7 @@ drake_cc_googletest(
     name = "symbolic_formula_test",
     deps = [
         ":common",
+        ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -638,6 +659,7 @@ drake_cc_googletest(
     name = "symbolic_variable_test",
     deps = [
         ":common",
+        ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -668,7 +690,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "type_safe_index_test",
-    deps = [":type_safe_index"],
+    deps = [
+        ":type_safe_index",
+        ":unused",
+    ],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...

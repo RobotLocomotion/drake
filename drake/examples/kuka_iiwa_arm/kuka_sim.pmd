@@ -35,8 +35,3 @@ group "1.tools" {
   }
 
 }
-
-cmd "2.kuka_ik_demo" {
-    exec = "build/drake/examples/kuka_iiwa_arm/kuka_ik_demo";
-    host = "localhost";
-}

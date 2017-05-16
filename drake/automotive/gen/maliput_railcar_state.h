@@ -6,9 +6,11 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -22,6 +24,12 @@ struct MaliputRailcarStateIndices {
   // The index of each individual coordinate.
   static const int kS = 0;
   static const int kSpeed = 1;
+
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `MaliputRailcarStateIndices::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -42,13 +50,18 @@ class MaliputRailcarState : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// The s-coordinate of the vehicle in lane-space.
+  /// The s-coordinate of the vehicle in a `Lane`-frame.
   const T& s() const { return this->GetAtIndex(K::kS); }
   void set_s(const T& s) { this->SetAtIndex(K::kS, s); }
   /// The speed of the vehicle in physical space.
   const T& speed() const { return this->GetAtIndex(K::kSpeed); }
   void set_speed(const T& speed) { this->SetAtIndex(K::kSpeed, speed); }
   //@}
+
+  /// See MaliputRailcarStateIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return MaliputRailcarStateIndices::GetCoordinateNames();
+  }
 
   /// Returns whether the current values of this vector are well-formed.
   decltype(T() < T()) IsValid() const {

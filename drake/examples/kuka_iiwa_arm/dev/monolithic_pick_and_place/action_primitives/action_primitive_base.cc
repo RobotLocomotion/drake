@@ -1,7 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"

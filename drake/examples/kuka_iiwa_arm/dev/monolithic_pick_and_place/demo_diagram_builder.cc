@@ -81,45 +81,51 @@ StateMachineAndPrimitives<T>::StateMachineAndPrimitives(
 template class StateMachineAndPrimitives<double>;
 
 template <typename T>
-IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
-    T>::IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(DrakeLcm* lcm,
-                                                      const double
-                                                          update_interval) {
+IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<T>::
+    IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
+        DrakeLcm* lcm, const int chosen_box, const double update_interval,
+        Eigen::Vector3d box_position, Eigen::Vector3d box_orientation) {
   this->set_name("IiwaWsgPlantGeneratorsEstimatorsAndVisualizer");
 
+  DiagramBuilder<T> builder;
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance);
-
-  DiagramBuilder<T> builder;
+      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance,
+                                 chosen_box, box_position, box_orientation);
   plant_ = builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<T>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
+  plant_->set_name("plant");
 
   drake_visualizer_ = builder.template AddSystem<DrakeVisualizer>(
       plant_->get_plant().get_rigid_body_tree(), lcm);
+  drake_visualizer_->set_name("drake_visualizer");
 
   builder.Connect(plant_->get_output_port_plant_state(),
                   drake_visualizer_->get_input_port(0));
 
   iiwa_trajectory_generator_ =
-      builder.template AddSystem<IiwaStateFeedbackPlanSource>(
+      builder.template AddSystem<RobotPlanInterpolator>(
           drake::GetDrakePath() + kIiwaUrdf, update_interval);
+  iiwa_trajectory_generator_->set_name("iiwa_trajectory_generator");
+
   builder.Connect(plant_->get_output_port_iiwa_state(),
-                  iiwa_trajectory_generator_->get_input_port_state());
+                  iiwa_trajectory_generator_->get_state_input_port());
   builder.Connect(
-      iiwa_trajectory_generator_->get_output_port_state_trajectory(),
+      iiwa_trajectory_generator_->get_state_output_port(),
       plant_->get_input_port_iiwa_state_command());
   builder.Connect(
-      iiwa_trajectory_generator_->get_output_port_acceleration_trajectory(),
+      iiwa_trajectory_generator_->get_acceleration_output_port(),
       plant_->get_input_port_iiwa_acceleration_command());
 
   input_port_iiwa_plan_ =
-      builder.ExportInput(iiwa_trajectory_generator_->get_input_port_plan());
+      builder.ExportInput(iiwa_trajectory_generator_->get_plan_input_port());
 
   wsg_trajectory_generator_ =
       builder.template AddSystem<SchunkWsgTrajectoryGenerator>(
           plant_->get_output_port_wsg_state().size(), 0);
+  wsg_trajectory_generator_->set_name("wsg_trajectory_generator");
+
   builder.Connect(plant_->get_output_port_wsg_state(),
                   wsg_trajectory_generator_->get_state_input_port());
   builder.Connect(wsg_trajectory_generator_->get_output_port(0),
@@ -135,6 +141,7 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
   // Sets up a WSG Status sender.
   wsg_status_sender_ = builder.template AddSystem<SchunkWsgStatusSender>(
       plant_->get_output_port_wsg_state().size(), 0, 0);
+  wsg_status_sender_->set_name("wsg_status_sender");
 
   builder.Connect(plant_->get_output_port_wsg_state(),
                   wsg_status_sender_->get_input_port(0));
@@ -143,6 +150,19 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
 
   builder.BuildInto(this);
 }
+
+template <typename T>
+void IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<T>::InitializeIiwaPlan(
+    const VectorX<T>& q0, systems::Context<T>* context) const {
+  auto plan_source_context =
+      this->GetMutableSubsystemContext(
+          context, iiwa_trajectory_generator_);
+  iiwa_trajectory_generator_->Initialize(
+      context->get_time(), q0,
+      plan_source_context->get_mutable_state());
+}
+
+
 template class IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>;
 
 }  // namespace monolithic_pick_and_place

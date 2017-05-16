@@ -1643,7 +1643,7 @@ int WorldFixedPositionConstraint::getNumConstraint(const double* t,
   }
 }
 
-void WorldFixedPositionConstraint::eval_valid(const double* valid_t,
+void WorldFixedPositionConstraint::eval_valid(const double*,
                                               int num_valid_t,
                                               const MatrixXd& valid_q,
                                               VectorXd& c,
@@ -1733,7 +1733,7 @@ int WorldFixedOrientConstraint::getNumConstraint(const double* t,
     return 0;
 }
 
-void WorldFixedOrientConstraint::eval_valid(const double* valid_t,
+void WorldFixedOrientConstraint::eval_valid(const double*,
                                             int num_valid_t,
                                             const MatrixXd& valid_q,
                                             VectorXd& c,
@@ -1812,7 +1812,7 @@ int WorldFixedBodyPoseConstraint::getNumConstraint(const double* t,
   }
 }
 
-void WorldFixedBodyPoseConstraint::eval_valid(const double* valid_t,
+void WorldFixedBodyPoseConstraint::eval_valid(const double*,
                                               int num_valid_t,
                                               const MatrixXd& valid_q,
                                               VectorXd& c,

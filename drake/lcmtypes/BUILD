@@ -95,7 +95,7 @@ lcm_cc_library(
     lcm_package = "drake",
     lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
     deps = [
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 

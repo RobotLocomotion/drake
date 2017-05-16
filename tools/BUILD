@@ -35,9 +35,23 @@ exports_files(
     visibility = ["@nlopt//:__pkg__"],
 )
 
+exports_files(
+    ["ipopt_build_with_autotools.sh"],
+    visibility = ["@ipopt//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",
+)
+
+genrule(
+    name = "cmake_exports",
+    srcs = ["drake.cps"],
+    outs = ["drake-config.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) $(location drake.cps) > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
 )
 
 # This pulls the otherwise-unused libbot targets into the "//..." label tree.
@@ -195,6 +209,16 @@ config_setting(
 config_setting(
     name = "no_ipopt",
     values = {"define": "NO_IPOPT=ON"},
+)
+
+# NLOPT is an open-source solver, and is included in the Drake build by default.
+# The NLOPT solver is irrelvant to some users of MathematicalProgram,
+# so we provide a hidden switch to shut it off for
+# developers who don't actually need it.  This is not a supported configuration.
+# Use at your own risk: --define=NO_NLOPT=ON
+config_setting(
+    name = "no_nlopt",
+    values = {"define": "NO_NLOPT=ON"},
 )
 
 config_setting(

@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_library",
+    "drake_cc_googletest",
 )
 
 drake_cc_library(
@@ -21,7 +22,7 @@ drake_cc_library(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/framework",
         "//drake/systems/rendering:drake_visualizer_client",
-    ]
+    ],
 )
 
 drake_cc_binary(
@@ -34,12 +35,30 @@ drake_cc_binary(
     ],
     test_rule_args = ["--num_configurations=1"],
     deps = [
+        ":simple_tree_visualizer",
         "//drake/common",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
-        "@gflags//:gflags",
-        ":simple_tree_visualizer",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "moving_average_filter",
+    srcs = ["moving_average_filter.cc"],
+    hdrs = ["moving_average_filter.h"],
+    deps = ["//drake/common"],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "moving_average_filter_test",
+    srcs = ["test/moving_average_filter_test.cc"],
+    deps = [
+        ":moving_average_filter",
+        "//drake/common",
     ],
 )
 

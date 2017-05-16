@@ -171,13 +171,20 @@ class Value : public AbstractValue {
   /// Constructs a Value<T> by forwarding the given @p args to T's constructor,
   /// if available.  This is only available for non-primitive T's that are
   /// constructible from @p args.
-  template <typename... Args,
+  template <typename Arg1,
+            typename... Args,
             typename = typename std::enable_if<
-                std::is_constructible<T, Args...>::value &&
-                !std::is_same<T, Args...>::value &&
-                !std::is_same<T&, Args...>::value &&
+                // There must be such a constructor.
+                std::is_constructible<T, Arg1, Args...>::value &&
+                // Disable this ctor when given T directly; in that case, we
+                // should call our Value(const T&) ctor above, not try to copy-
+                // construct a T(const T&).
+                !std::is_same<T, Arg1>::value &&
+                !std::is_same<T&, Arg1>::value &&
+                // Only allow real ctors, not POD "constructor"s.
                 !std::is_fundamental<T>::value>::type>
-  explicit Value(Args&&... args) : value_{std::forward<Args>(args)...} {}
+  explicit Value(Arg1&& arg1, Args&&... args)
+      : value_{std::forward<Arg1>(arg1), std::forward<Args>(args)...} {}
 
   ~Value() override {}
 

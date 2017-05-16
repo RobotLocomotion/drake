@@ -70,6 +70,7 @@ PendulumPlant<symbolic::Expression>* PendulumPlant<T>::DoToSymbolic() const {
 
 template class PendulumPlant<double>;
 template class PendulumPlant<AutoDiffXd>;
+template class PendulumPlant<symbolic::Expression>;
 
 }  // namespace pendulum
 }  // namespace examples

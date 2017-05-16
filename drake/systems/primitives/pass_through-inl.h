@@ -5,6 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+#include "drake/common/unused.h"
 #include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
@@ -17,10 +18,11 @@ PassThrough<T>::PassThrough(int size) : SisoVectorSystem<T>(size, size) { }
 
 template <typename T>
 void PassThrough<T>::DoCalcVectorOutput(
-    const Context<T>& context,
+    const Context<T>&,
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
+  unused(state);
   *output = input;
 }
 

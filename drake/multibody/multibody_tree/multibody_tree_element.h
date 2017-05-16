@@ -1,6 +1,8 @@
 #pragma once
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -29,7 +31,7 @@ class MultibodyTreeElement;
 /// A class representing an element or component of a MultibodyTree. Examples of
 /// multibody tree elements are bodies, joints, force elements, and constraints.
 /// Multibody tree elements are owned and managed by a parent MultibodyTree.
-/// As part of their construction process they get assigned an index that
+/// At MultibodyTree::Finalize() stage, they get assigned an index that
 /// uniquely identifies them within their parent MultibodyTree.
 /// A generic multibody tree element `MultibodyComponent` is derived from
 /// this class as:
@@ -44,7 +46,7 @@ class MultibodyTreeElement;
 ///
 /// @tparam ElementType The type of the specific multibody element, for
 ///                     instance, a body or a mobilizer. It must be a template
-///                     class on the scalar type `T`.
+///                     class on the scalar type T.
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar. With the
 ///           signature below the scalar type is automatically deduced from the
 ///           `ElementType` template argument.
@@ -62,9 +64,6 @@ class MultibodyTreeElement;
 template <template <typename> class ElementType,
     typename T, typename ElementIndexType>
 class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
-  // The owning MultibodyTree has access to protected methods in this class to
-  // set the owning parent tree and its unique index in that tree.
-  friend class MultibodyTree<T>;
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeElement)
 
@@ -83,7 +82,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     return *parent_tree_;
   }
 
-  /// Returns the unique index in its parent MultibodyTree to this element.
+  /// Returns this element's unique index in its parent MultibodyTree.
   ElementIndexType get_index() const { return index_;}
 
   /// Checks whether this MultibodyTreeElement has been registered into a
@@ -113,28 +112,52 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
     }
   }
 
-  /// Gives MultibodyTree elements the opportunity to perform internal setup
-  /// when MultibodyTree::Compile() is invoked.
-  virtual void Compile() = 0;
+  /// Checks whether this MultibodyTreeElement belongs to the provided
+  /// MultibodyTree `tree`. If not, it throws a std::logic_error.
+  void HasThisParentTreeOrThrow(const MultibodyTree<T>* tree) const {
+    DRAKE_ASSERT(tree != nullptr);
+    if (parent_tree_ != tree) {
+      throw std::logic_error("This multibody component does not belong to the "
+                             "supplied MultibodyTree.");
+    }
+  }
 
   // TODO(amcastro-tri): Add DeepClone API for transmogrification to other
   // scalar types.
   // This will make use the template argument "MultibodyTreeElement".
 
  protected:
-  // Default constructor made protected so that sub-classes can still declare
-  // their default constructors if they need to.
+  /// Default constructor made protected so that sub-classes can still declare
+  /// their default constructors if they need to.
   MultibodyTreeElement() {}
 
-  // Only derived sub-classes can call these set methods from within their
-  // Create() factories.
-  void set_parent_tree(const MultibodyTree<T>* tree) { parent_tree_ = tree; }
-  void set_index(ElementIndexType index) { index_ = index; }
+  /// Gives MultibodyTree elements the opportunity to retrieve their topology
+  /// when MultibodyTree::Finalize() is invoked.
+  /// NVI to pure virtual method DoSetTopology().
+  void SetTopology(const MultibodyTreeTopology& tree) {
+    DoSetTopology(tree);
+  }
+
+  /// Implementation of the NVI SetTopology(). For advanced use only for
+  /// developers implementing new MultibodyTree components.
+  virtual void DoSetTopology(const MultibodyTreeTopology& tree) = 0;
 
  private:
+  void set_parent_tree(
+      const MultibodyTree<T>* tree, ElementIndexType index) {
+    index_ = index;
+    parent_tree_ = tree;
+  }
+
+  // MultibodyTree<T> is a natural friend of MultibodyTreeElement objects and
+  // therefore it can set the owning parent tree and unique index in that tree.
+  friend class MultibodyTree<T>;
+
   const MultibodyTree<T>* parent_tree_{nullptr};
-  // ElementIndexType requires a valid initialization.
-  ElementIndexType index_{0};
+
+  // The default index value is *invalid*. This must be set to a valid index
+  // value before the element is released to the wild.
+  ElementIndexType index_;
 };
 
 }  // namespace multibody

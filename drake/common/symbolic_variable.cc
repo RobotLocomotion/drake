@@ -2,12 +2,16 @@
 
 #include <atomic>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "drake/common/never_destroyed.h"
 
 using std::atomic;
+using std::make_shared;
+using std::move;
 using std::ostream;
 using std::ostringstream;
 using std::string;
@@ -23,11 +27,12 @@ Variable::Id Variable::get_next_id() {
   return next_id.access()++;
 }
 
-Variable::Variable(const string& name) : id_{get_next_id()}, name_{name} {
+Variable::Variable(string name)
+    : id_{get_next_id()}, name_{make_shared<string>(move(name))} {
   DRAKE_ASSERT(id_ > 0);
 }
 Variable::Id Variable::get_id() const { return id_; }
-string Variable::get_name() const { return name_; }
+string Variable::get_name() const { return *name_; }
 string Variable::to_string() const {
   ostringstream oss;
   oss << *this;

@@ -88,14 +88,12 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   hand_ft_sensor_offset.translation() = Vector3<double>(0., 0., 0.05);
 
   for (Side side : Side::values) {
-    foot_ft_sensor_info[side] =
-        RigidBodyFrame<double>(
-            foot_names[side] + "FTSensor",
-            tree.FindBody(foot_names[side]), foot_ft_sensor_offset);
-    hand_ft_sensor_info[side] =
-        RigidBodyFrame<double>(
-            hand_names[side] + "FTSensor",
-            tree.FindBody(hand_names[side]), hand_ft_sensor_offset);
+    foot_ft_sensor_info[side] = RigidBodyFrame<double>(
+        foot_names[side] + "FTSensor", tree.FindBody(foot_names[side]),
+        foot_ft_sensor_offset);
+    hand_ft_sensor_info[side] = RigidBodyFrame<double>(
+        hand_names[side] + "FTSensor", tree.FindBody(hand_names[side]),
+        hand_ft_sensor_offset);
     force_torque_sensor_info.push_back(foot_ft_sensor_info[side]);
     force_torque_sensor_info.push_back(hand_ft_sensor_info[side]);
   }
@@ -234,21 +232,38 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   double tolerance = 10. * std::numeric_limits<float>::epsilon();
 
   // Test message contents.
+  // The message's "joint" layout should match q's non floating base portion.
+  int q_non_floating_joint_start_index = 0;
+  int v_non_floating_joint_start_index = 0;
+  switch (floating_base_type) {
+    case FloatingBaseType::kRollPitchYaw:
+      q_non_floating_joint_start_index = 6;
+      v_non_floating_joint_start_index = 6;
+      break;
+    case FloatingBaseType::kQuaternion:
+      q_non_floating_joint_start_index = 7;
+      v_non_floating_joint_start_index = 6;
+      break;
+    case FloatingBaseType::kFixed:
+      q_non_floating_joint_start_index = 0;
+      v_non_floating_joint_start_index = 0;
+      break;
+  }
+
+  for (int i = 0; i < msg_output.num_joints; ++i) {
+    const int q_idx = i + q_non_floating_joint_start_index;
+    const int v_idx = i + v_non_floating_joint_start_index;
+    EXPECT_EQ(tree.get_position_name(q_idx), msg_output.joint_name[i]);
+    EXPECT_NEAR(q[q_idx], msg_output.joint_position[i], tolerance);
+    EXPECT_NEAR(v[v_idx], msg_output.joint_velocity[i], tolerance);
+  }
+
   for (size_t i = 0; i < tree.actuators.size(); i++) {
     const auto& actuator = tree.actuators[i];
     const auto& body = *actuator.body_;
-
-    // Ensure that joint names are correct, and match the order of
-    // tree.actuators.
-    EXPECT_EQ(tree.get_position_name(body.get_position_start_index()),
-              msg_output.joint_name[i]);
-
-    // Ensure that joint position, joint velocity, and joint effort are correct.
-    EXPECT_NEAR(efforts[i], msg_output.joint_effort[i], tolerance);
-    EXPECT_NEAR(q[body.get_position_start_index()],
-                msg_output.joint_position[i], tolerance);
-    EXPECT_NEAR(v[body.get_velocity_start_index()],
-                msg_output.joint_velocity[i], tolerance);
+    const int q_idx = body.get_position_start_index();
+    const int actuator_idx = q_idx - q_non_floating_joint_start_index;
+    EXPECT_NEAR(efforts[i], msg_output.joint_effort[actuator_idx], tolerance);
   }
 
   const auto& force_torque = msg_output.force_torque;

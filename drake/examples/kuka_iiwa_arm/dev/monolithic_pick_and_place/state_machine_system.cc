@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "bot_core/robot_state_t.hpp"
+
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
@@ -107,7 +108,7 @@ PickAndPlaceStateMachineSystem::AllocateOutputAbstract(
 }
 
 void PickAndPlaceStateMachineSystem::SetDefaultState(
-    const systems::Context<double>& context,
+    const systems::Context<double>&,
     systems::State<double>* state) const {
   InternalState& internal_state =
       state->get_mutable_abstract_state<InternalState>(kStateIndex);

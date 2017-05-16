@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -29,10 +30,10 @@ class Variable {
    *  It is allowed to construct a dummy variable but it should not be used to
    *  construct a symbolic expression.
    */
-  Variable() : id_{0}, name_{std::string()} {}
+  Variable() : id_{0}, name_{std::make_shared<std::string>()} {}
 
   /** Constructs a variable with a string . */
-  explicit Variable(const std::string& name);
+  explicit Variable(std::string name);
 
   /** Checks if this is a dummy variable (ID = 0) which is created by
    *  the default constructor. */
@@ -53,8 +54,13 @@ class Variable {
  private:
   // Produces a unique ID for a variable.
   static Id get_next_id();
-  Id id_{};           // Unique identifier.
-  std::string name_;  // Name of variable.
+  Id id_{};  // Unique identifier.
+
+  // Variable class has shared_ptr<string> instead of string to be
+  // drake::test::IsMemcpyMovable.
+  // Please check https://github.com/RobotLocomotion/drake/issues/5974
+  // for more information.
+  std::shared_ptr<std::string> name_;  // Name of variable.
 };
 }  // namespace symbolic
 
@@ -110,7 +116,6 @@ typename std::enable_if<
         std::is_same<typename DerivedB::Scalar, Variable>::value,
     bool>::type
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::equal_to<Variable>{}).all();

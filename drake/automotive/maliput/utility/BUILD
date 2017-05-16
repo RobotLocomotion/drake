@@ -25,7 +25,7 @@ drake_cc_library(
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
-        "@fmt//:fmt",
+        "@fmt",
     ],
 )
 
@@ -40,6 +40,24 @@ drake_cc_binary(
 )
 
 # === test/ ===
+
+filegroup(
+    name = "test_data",
+    testonly = 1,
+    srcs = glob(["test/data/*"]),
+)
+
+drake_cc_googletest(
+    name = "generate_obj_test",
+    deps = [
+        ":utility",
+        "//drake/automotive/maliput/monolane",
+        "//drake/thirdParty:spruce",
+    ],
+    data = [
+        ":test_data",
+    ],
+)
 
 drake_cc_googletest(
     name = "generate_urdf_test",

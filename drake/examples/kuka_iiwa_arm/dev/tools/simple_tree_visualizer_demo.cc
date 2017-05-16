@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <thread>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"

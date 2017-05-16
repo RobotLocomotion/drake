@@ -1,6 +1,5 @@
-#include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
-
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
 using Eigen::Vector3d;

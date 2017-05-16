@@ -2,7 +2,8 @@
 
 #include <vector>
 
-#include "external/robotlocomotion_lcmtypes/lcmtypes/robotlocomotion/robot_plan_t.hpp"
+#include "robotlocomotion/robot_plan_t.hpp"
+
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
@@ -62,7 +63,7 @@ GripperAction::ExtendedAllocateOutputAbstract(
 }
 
 void GripperAction::SetExtendedDefaultState(
-    const systems::Context<double>& context,
+    const systems::Context<double>&,
     systems::State<double>* state) const {
   InternalState& wsg_action_state =
       state->get_mutable_abstract_state<InternalState>(

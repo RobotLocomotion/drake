@@ -44,8 +44,8 @@ drake_cc_library(
         "//drake/lcmtypes:polynomial_matrix",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/math:geometric_transform",
-        "@bot_core_lcmtypes//:lib",
-        "@eigen//:eigen",
+        "@bot_core_lcmtypes",
+        "@eigen",
     ],
 )
 
@@ -56,7 +56,7 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/systems/controllers:qp_common",
-        "@yaml_cpp//:lib",
+        "@yaml_cpp",
     ],
 )
 

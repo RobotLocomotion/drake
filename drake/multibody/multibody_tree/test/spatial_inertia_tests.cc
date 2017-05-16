@@ -3,7 +3,7 @@
 #include <limits>
 #include <sstream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"

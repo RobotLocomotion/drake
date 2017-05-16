@@ -4,6 +4,7 @@
 #include <string>
 
 #include "bot_core/robot_state_t.hpp"
+
 #include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/synchronous_world_state.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -47,8 +48,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const systems::OutputPortDescriptor<double>& descriptor) const final;
 
   // This kind of a system is not a direct feedthrough.
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
-                              int input_port, int output_port) const final {
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
+                              int, int) const final {
     return false;
   }
 

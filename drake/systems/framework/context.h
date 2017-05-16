@@ -328,6 +328,11 @@ class Context {
     return get_mutable_parameters().get_mutable_numeric_parameter(index);
   }
 
+  /// Returns the number of abstract-valued parameters.
+  int num_abstract_parameters() const {
+    return get_parameters().num_abstract_parameters();
+  }
+
   /// Returns a const reference to the abstract-valued parameter at @p index.
   /// Asserts if @p index doesn't exist.
   const AbstractValue& get_abstract_parameter(int index) const {

@@ -14,5 +14,14 @@ const int EulerFloatingJointStateIndices::kRoll;
 const int EulerFloatingJointStateIndices::kPitch;
 const int EulerFloatingJointStateIndices::kYaw;
 
+const std::vector<std::string>&
+EulerFloatingJointStateIndices::GetCoordinateNames() {
+  static const never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+          "x", "y", "z", "roll", "pitch", "yaw",
+      });
+  return coordinates.access();
+}
+
 }  // namespace automotive
 }  // namespace drake

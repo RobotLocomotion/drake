@@ -88,6 +88,8 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree<double>& robot,
       plan_shift_(Vector3d::Zero()),
       last_foot_shift_time_(0.0),
       shifted_zmp_trajectory_(settings.zmp_trajectory) {
+  drake::unused(lcm_channel);  // TODO(jwnimmer-tri) This seems bad.
+
   for (int i = 1; i < static_cast<int>(settings.support_times.size()); i++) {
     if (settings.support_times[i] < settings.support_times[i - 1])
       throw std::runtime_error("support times must be increasing");
@@ -553,6 +555,8 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(
 void QPLocomotionPlan::updateSwingTrajectory(
     double t_plan, BodyMotionData& body_motion_data,
     int body_motion_segment_index, const KinematicsCache<double>& cache) {
+  drake::unused(t_plan);  // TODO(jwnimmer-tri) This seems bad.
+
   int takeoff_segment_index =
       body_motion_segment_index + 1;  // this function is called before takeoff
   int num_swing_segments = 3;

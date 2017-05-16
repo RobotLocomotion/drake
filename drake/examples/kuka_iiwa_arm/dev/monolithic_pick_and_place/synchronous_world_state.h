@@ -4,6 +4,7 @@
 #include <string>
 
 #include "bot_core/robot_state_t.hpp"
+
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/lcmt_schunk_wsg_status.hpp"

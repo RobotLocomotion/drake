@@ -2,7 +2,6 @@
 # Drake common library
 #
 
-drake_find_package(Protobuf REQUIRED)
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS matlab_rpc.proto)
 
 # Generated code.
@@ -51,6 +50,7 @@ set(installed_headers
   drake_path.h
   drake_throw.h
   dummy_value.h
+  eigen_autodiff_limits.h
   eigen_autodiff_types.h
   eigen_matrix_compare.h
   eigen_stl_types.h

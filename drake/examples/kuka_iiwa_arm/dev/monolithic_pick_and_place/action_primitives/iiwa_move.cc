@@ -1,7 +1,8 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/iiwa_move.h"
 
 #include <vector>
-#include "external/robotlocomotion_lcmtypes/lcmtypes/robotlocomotion/robot_plan_t.hpp"
+
+#include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitive_base.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
@@ -52,7 +53,7 @@ IiwaMove::ExtendedAllocateOutputAbstract(
   return return_value;
 }
 
-void IiwaMove::SetExtendedDefaultState(const systems::Context<double>& context,
+void IiwaMove::SetExtendedDefaultState(const systems::Context<double>&,
                                        systems::State<double>* state) const {
   InternalState& iiwa_action_state =
       state->get_mutable_abstract_state<InternalState>(

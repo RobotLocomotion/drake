@@ -23,26 +23,26 @@ namespace test {
 
 QuadraticProgramTest::QuadraticProgramTest() {
   auto cost_form = std::get<0>(GetParam());
-  auto cnstr_form = std::get<1>(GetParam());
+  auto constraint_form = std::get<1>(GetParam());
   switch (std::get<2>(GetParam())) {
     case QuadraticProblems::kQuadraticProgram0 : {
-      prob_ = std::make_unique<QuadraticProgram0>(cost_form, cnstr_form);
+      prob_ = std::make_unique<QuadraticProgram0>(cost_form, constraint_form);
       break;
     }
     case QuadraticProblems::kQuadraticProgram1 : {
-      prob_ = std::make_unique<QuadraticProgram1>(cost_form, cnstr_form);
+      prob_ = std::make_unique<QuadraticProgram1>(cost_form, constraint_form);
       break;
     }
     case QuadraticProblems::kQuadraticProgram2 : {
-      prob_ = std::make_unique<QuadraticProgram2>(cost_form, cnstr_form);
+      prob_ = std::make_unique<QuadraticProgram2>(cost_form, constraint_form);
       break;
     }
     case QuadraticProblems::kQuadraticProgram3 : {
-      prob_ = std::make_unique<QuadraticProgram3>(cost_form, cnstr_form);
+      prob_ = std::make_unique<QuadraticProgram3>(cost_form, constraint_form);
       break;
     }
     case QuadraticProblems::kQuadraticProgram4 : {
-      prob_ = std::make_unique<QuadraticProgram4>(cost_form, cnstr_form);
+      prob_ = std::make_unique<QuadraticProgram4>(cost_form, constraint_form);
       break;
     }
     default : throw std::runtime_error("Un-recognized quadratic problem.");
@@ -58,8 +58,8 @@ std::vector<QuadraticProblems> quadratic_problems() {
 }
 
 QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form),
+                                     ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form),
       x_(),
       x_expected_(0.25, 0.75) {
   x_ = prog()->NewContinuousVariables<2>();
@@ -84,7 +84,7 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
       throw std::runtime_error("Unsupported cost form.");
     }
   }
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic : {
       prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
                                        x_);
@@ -124,8 +124,8 @@ void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
 }
 
 QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form),
+                                     ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form),
       x_{},
       x_expected_(0, 1, 2.0 / 3) {
   x_ = prog()->NewContinuousVariables<3>();
@@ -152,7 +152,7 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
                 -numeric_limits<double>::infinity());
   Vector4d b_ub(numeric_limits<double>::infinity(), -1, 100,
                 numeric_limits<double>::infinity());
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic : {
       prog()->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(),
                                        x_);
@@ -209,8 +209,8 @@ void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
 }
 
 QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-    : OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_{} {
+                                     ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form), x_{}, x_expected_{} {
   x_ = prog()->NewContinuousVariables<5>();
 
   Eigen::Matrix<double, 5, 1> Q_diag{};
@@ -249,8 +249,8 @@ void QuadraticProgram2::CheckSolution(SolverType solver_type) const {
 }
 
 QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-: OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_{} {
+                                     ConstraintForm constraint_form)
+: OptimizationProgram(cost_form, constraint_form), x_{}, x_expected_{} {
   x_ = prog()->NewContinuousVariables<6>();
   Vector4d Q1_diag;
   Q1_diag << 5.5, 6.5, 6.0, 7.0;
@@ -305,8 +305,10 @@ void QuadraticProgram3::CheckSolution(SolverType solver_type) const {
 }
 
 QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
-                                     ConstraintForm cnstr_form)
-: OptimizationProgram(cost_form, cnstr_form), x_{}, x_expected_(0.8, 0.2, 0.6) {
+                                     ConstraintForm constraint_form)
+    : OptimizationProgram(cost_form, constraint_form),
+      x_{},
+      x_expected_(0.8, 0.2, 0.6) {
   x_ = prog()->NewContinuousVariables<3>();
   switch (cost_form) {
     case CostForm::kNonSymbolic : {
@@ -323,7 +325,7 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
     }
     default : throw std::runtime_error("Unsupported cost form.");
   }
-  switch (cnstr_form) {
+  switch (constraint_form) {
     case ConstraintForm::kNonSymbolic : {
       prog()->AddLinearEqualityConstraint(RowVector2d(1, 1), 1, x_.head<2>());
       prog()->AddLinearEqualityConstraint(RowVector2d(1, 2), 2,

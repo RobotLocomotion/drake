@@ -9,9 +9,13 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include "drake/common/test/is_memcpy_movable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
+
+using test::IsMemcpyMovable;
+
 namespace symbolic {
 namespace {
 
@@ -155,6 +159,15 @@ TEST_F(VariableTest, EigenVariableMatrixOutput) {
        << "z w";
 
   EXPECT_EQ(oss1.str(), oss2.str());
+}
+
+TEST_F(VariableTest, MemcpyKeepsVariableIntact) {
+  // We have it to test that a variable with a long name (>16 chars), which is
+  // not using SSO (Short String Optimization) internally, is memcpy-movable.
+  const Variable long_var("12345678901234567890");
+  for (const Variable& var : {x_, y_, z_, w_, long_var}) {
+    EXPECT_TRUE(IsMemcpyMovable(var));
+  }
 }
 }  // namespace
 }  // namespace symbolic

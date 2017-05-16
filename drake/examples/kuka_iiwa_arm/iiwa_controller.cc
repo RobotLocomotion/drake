@@ -11,7 +11,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -26,6 +26,8 @@
 
 using robotlocomotion::robot_plan_t;
 
+DEFINE_string(urdf, "", "Name of urdf to load");
+
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -36,7 +38,6 @@ const char* const kIiwaUrdf = "/manipulation/models/iiwa_description/urdf/"
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
-const int kNumJoints = 7;
 
 // Create a system which has an integrator on the interpolated
 // reference position for received plans.
@@ -44,28 +45,44 @@ int DoMain() {
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
-  auto status_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_status>(
-          kLcmStatusChannel, &lcm));
-  auto status_receiver = builder.AddSystem<IiwaStatusReceiver>();
   auto plan_sub =
       builder.AddSystem(systems::lcm::LcmSubscriberSystem::Make<robot_plan_t>(
           kLcmPlanChannel, &lcm));
+  plan_sub->set_name("plan_sub");
+
+  const std::string urdf = (!FLAGS_urdf.empty() ? FLAGS_urdf :
+                            GetDrakePath() + kIiwaUrdf);
   auto plan_source =
-      builder.AddSystem<IiwaPlanSource>(GetDrakePath() + kIiwaUrdf);
+      builder.AddSystem<RobotPlanInterpolator>(urdf);
+  plan_source->set_name("plan_source");
+  const int num_joints = plan_source->tree().get_num_positions();
+
+  auto status_sub = builder.AddSystem(
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_status>(
+          kLcmStatusChannel, &lcm));
+  status_sub->set_name("status_sub");
+
+  auto status_receiver = builder.AddSystem<IiwaStatusReceiver>(num_joints);
+  status_receiver->set_name("status_receiver");
+
   auto target_demux =
-      builder.AddSystem<systems::Demultiplexer>(kNumJoints * 2, kNumJoints);
+      builder.AddSystem<systems::Demultiplexer>(num_joints * 2, num_joints);
+  target_demux->set_name("target_demux");
+
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>(
           kLcmCommandChannel, &lcm));
-  auto command_sender = builder.AddSystem<IiwaCommandSender>();
+  command_pub->set_name("command_pub");
+
+  auto command_sender = builder.AddSystem<IiwaCommandSender>(num_joints);
+  command_sender->set_name("command_sender");
 
   builder.Connect(plan_sub->get_output_port(0),
                   plan_source->get_plan_input_port());
   builder.Connect(status_sub->get_output_port(0),
-                  plan_source->get_status_input_port());
-  builder.Connect(status_sub->get_output_port(0),
                   status_receiver->get_input_port(0));
+  builder.Connect(status_receiver->get_measured_position_output_port(),
+                  plan_source->get_state_input_port());
   builder.Connect(plan_source->get_output_port(0),
                   target_demux->get_input_port(0));
   builder.Connect(target_demux->get_output_port(0),
@@ -86,9 +103,9 @@ int DoMain() {
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
   const lcmt_iiwa_status& first_status = first_msg.GetValue<lcmt_iiwa_status>();
-  VectorX<double> q0(kNumJoints);
-  DRAKE_DEMAND(kNumJoints == first_status.num_joints);
-  for (int i = 0; i < kNumJoints; i++)
+  VectorX<double> q0(num_joints);
+  DRAKE_DEMAND(num_joints == first_status.num_joints);
+  for (int i = 0; i < num_joints; i++)
     q0[i] = first_status.joint_position_measured[i];
 
   systems::Context<double>* diagram_context = loop.get_mutable_context();

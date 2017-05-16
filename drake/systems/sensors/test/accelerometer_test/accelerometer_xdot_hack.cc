@@ -20,7 +20,7 @@ AccelerometerXdotHack::AccelerometerXdotHack(int port_size)
 
 std::unique_ptr<BasicVector<double>>
 AccelerometerXdotHack::AllocateOutputVector(
-    const OutputPortDescriptor<double>& descriptor) const {
+    const OutputPortDescriptor<double>&) const {
   return std::make_unique<BasicVector<double>>(port_size_);
 }
 

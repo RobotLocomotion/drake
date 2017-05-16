@@ -68,10 +68,10 @@ drake_cc_library(
     srcs = ["drake_visualizer_client.cc"],
     hdrs = ["drake_visualizer_client.h"],
     deps = [
-        "@eigen//:eigen",
         "//drake/lcmtypes:viewer",
         "//drake/math:geometric_transform",
         "//drake/multibody/shapes",
+        "@eigen",
     ],
 )
 
