@@ -2,6 +2,8 @@
 
 load("@//tools:drake.bzl", "drake_generate_file")
 load("@//tools:generate_export_header.bzl", "generate_export_header")
+load("@//tools:install.bzl", "install", "install_files")
+load("@//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = ["//visibility:public"])
@@ -23,9 +25,21 @@ LCM_COPTS = [
     "-fvisibility=hidden",
 ]
 
+LCM_PUBLIC_HEADERS = [
+    # Public (installed) headers
+    "lcm/eventlog.h",
+    "lcm/lcm.h",
+    "lcm/lcm-cpp.hpp",
+    "lcm/lcm-cpp-impl.hpp",
+    "lcm/lcm_coretypes.h",
+    "lcm/lcm_export.h",  # N.B. This is from generate_export_header above.
+    "lcm/lcm_version.h",
+]
+
 cc_library(
     name = "lcm",
     srcs = [
+        # Sources
         "lcm/eventlog.c",
         "lcm/lcm.c",
         "lcm/lcm_file.c",
@@ -37,23 +51,16 @@ cc_library(
         "lcm/lcmtypes/channel_to_port_t.c",
         "lcm/ringbuffer.c",
         "lcm/udpm_util.c",
-    ],
-    hdrs = [
+        # Private headers
         "lcm/dbg.h",
-        "lcm/eventlog.h",
         "lcm/ioutils.h",
-        "lcm/lcm.h",
-        "lcm/lcm-cpp.hpp",
-        "lcm/lcm-cpp-impl.hpp",
-        "lcm/lcm_coretypes.h",
-        "lcm/lcm_export.h",  # N.B. This is from generate_export_header above.
         "lcm/lcm_internal.h",
-        "lcm/lcm_version.h",
         "lcm/lcmtypes/channel_port_map_update_t.h",
         "lcm/lcmtypes/channel_to_port_t.h",
         "lcm/ringbuffer.h",
         "lcm/udpm_util.h",
     ],
+    hdrs = LCM_PUBLIC_HEADERS,
     copts = LCM_COPTS,
     # TODO(jwnimmer-tri): The 'lcm' is needed so we can generate lcm_export.h
     # with the correct path and still include it like '#include "lcm_export.h"'
@@ -190,3 +197,72 @@ pkg_tar(
     mode = "0644",
     package_dir = "lcm",
 )
+
+py_binary(
+    name = "create-cps",
+    srcs = ["@//tools:lcm-create-cps.py"],
+    main = "@//tools:lcm-create-cps.py",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cps",
+    srcs = ["lcm/lcm_version.h"],
+    outs = ["lcm.cps"],
+    cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+    tools = [":create-cps"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_exports",
+    srcs = ["lcm.cps"],
+    outs = ["lcmConfig.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_package_version",
+    srcs = ["lcm.cps"],
+    outs = ["lcmConfigVersion.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+install_files(
+    name = "install_cmake",
+    dest = "lib/lcm/cmake",
+    files = [
+        "lcm-cmake/lcmUtilities.cmake",
+        "lcmConfig.cmake",
+        "lcmConfigVersion.cmake",
+    ],
+    strip_prefix = ["**/"],
+)
+
+install(
+    name = "install",
+    hdrs = LCM_PUBLIC_HEADERS,
+    doc_dest = "share/doc/lcm",
+    docs = [
+        "AUTHORS",
+        "COPYING",
+        "NEWS",
+    ],
+    targets = [
+        "lcm",
+        "lcm-gen",
+        "lcm-java",
+        "lcm-logger",
+        "lcm-logplayer",
+        "lcm-spy",
+    ],
+    deps = [":install_cmake"],
+)
+
+# TODO(mwoehlke-kitware): install Python bits
+
+python_lint()

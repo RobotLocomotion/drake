@@ -104,9 +104,9 @@ maven_jar(
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
-    commit = "755d8108bf4447d83786e0e6586875371ba859e5",
+    commit = "c0a0093a950fc83e12e8d5918a0319b590356e7e",
     build_file = "tools/lcm.BUILD",
-    sha256 = "062b2daf35deb617552ffc2145ec238a2898710c8c5e9c49dc2514519c5f7930",
+    sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
 )
 
 github_archive(
@@ -300,8 +300,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "1b985467d1fe737ed3a43a25f4da3316bd45106f",
-    sha256 = "4491debd18ee40bf9d7eab9b35776eff98a71bc904a339f709273cbad9ac6efb",
+    commit = "a05280f1ef1d8970aca8c67dc4cf753953e3cdf7",
+    sha256 = "3024d25ddcb6bb6835834575e577f36bfd6e768501b8c2a2fd66181eb27108ce",
     build_file = "tools/pycps.BUILD",
 )
 
