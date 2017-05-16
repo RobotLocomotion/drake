@@ -18,6 +18,9 @@ target_link_libraries(drake_throw_test drakeCommon)
 drake_add_cc_test(dummy_value_test)
 target_link_libraries(dummy_value_test drakeCommon)
 
+drake_add_cc_test(eigen_autodiff_types_test)
+target_link_libraries(eigen_autodiff_types_test drakeCommon)
+
 drake_add_cc_test(eigen_matrix_compare_test)
 target_link_libraries(eigen_matrix_compare_test drakeCommon)
 
