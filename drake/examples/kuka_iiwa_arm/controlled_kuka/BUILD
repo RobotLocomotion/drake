@@ -25,6 +25,6 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:trajectory_source",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )

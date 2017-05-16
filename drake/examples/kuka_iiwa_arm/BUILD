@@ -112,7 +112,7 @@ drake_cc_binary(
         "//drake/systems/lcm:lcm_driven_loop",
         "//drake/systems/primitives:demultiplexer",
         "@bot_core_lcmtypes",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
         "@robotlocomotion_lcmtypes",
     ],
 )
@@ -144,7 +144,7 @@ drake_cc_binary(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:matrix_gain",
         "//drake/util:lcm_util",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -167,7 +167,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:constant_vector_source",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
