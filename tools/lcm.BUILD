@@ -204,8 +204,8 @@ install_files(
     dest = "lib/lcm/cmake",
     files = [
         "lcm-cmake/lcmUtilities.cmake",
-        "lcmConfig.cmake",  # TODO(mwoehlke-kitware) generate me!
-        "lcmConfigVersion.cmake",  # TODO(mwoehlke-kitware) generate me!
+        #"lcmConfig.cmake", # TODO(mwoehlke-kitware) generate me!
+        #"lcmConfigVersion.cmake", # TODO(mwoehlke-kitware) generate me!
     ],
     strip_prefix = ["**/"],
 )
