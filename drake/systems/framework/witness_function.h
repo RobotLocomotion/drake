@@ -8,9 +8,21 @@
 namespace drake {
 namespace systems {
 
-/// Abstract class that describes a function that is ...
-/// A good witness function should...
-/// Simulation aims to make it easy to trigger a witness function around zero.
+/// Abstract class that describes a function that is able to help determine
+/// the time and state at which a simulation should be halted, which may be
+/// done for any number of purposes, including publishing or state
+/// reinitialization (i.e., event handling).
+///
+/// A witness functions "triggers" when it crosses zero. For example, the
+/// "signed distance" (i.e., Euclidean distance when bodies are disjoint and
+/// minimum translational distance when bodies intersect) between two rigid
+/// bodies can be used as a witness function to determine both the time of
+/// impact for rigid bodies (and their states at that time of impact). A good
+/// witness function should cross zero decisively- it should not linger around
+/// zero- and should not cross zero repeatedly over a small interval of time
+/// or over small changes in state; when a witness function has been "bracketed"
+/// over an interval of time (i.e., it changes sign), that witness function will
+/// ideally cross zero only once in that interval.
 template <class T>
 class WitnessFunction {
  public:
@@ -76,7 +88,13 @@ class WitnessFunction {
   /// Derived classes can override this function to get the time that the
   /// witness function should trigger, given two times and two witness function
   /// evaluations. This default implementation returns the time with the witness
-  /// function evaluation that is closer to zero.
+  /// function evaluation that is closer to zero. This function allows a
+  /// witness function to specify how the input that "zeros" the witness
+  /// function over a small interval is selected. For example, if the witness
+  /// function corresponds to a signed distance function, selecting the time
+  /// corresponding to the positive value (presumably
+  /// @p time_and_witness_value0) would allow the integration to stop before
+  /// interpenetration occurs.
   virtual T do_get_trigger_time(const std::pair<T, T>& time_and_witness_value0,
                                 const std::pair<T, T>& time_and_witness_valuef)
                                 const {
