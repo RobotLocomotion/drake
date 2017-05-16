@@ -9,6 +9,8 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace math {
 
@@ -115,7 +117,7 @@ namespace internal {
 template <typename Derived, typename Scalar>
 struct ResizeDerivativesToMatchScalarImpl {
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar){}
+  static void run(Eigen::MatrixBase<Derived>&, const Scalar&) {}
 };
 
 template <typename Derived, typename DerivType>
@@ -227,7 +229,7 @@ struct InitializeAutoDiffTupleHelper<0> {
                   const std::tuple<AutoDiffTypes...>& auto_diffs,
                   Eigen::DenseIndex num_derivatives,
                   Eigen::DenseIndex deriv_num_start) {
-    // empty
+    unused(values, auto_diffs, num_derivatives, deriv_num_start);
   }
 };
 }  // namespace internal

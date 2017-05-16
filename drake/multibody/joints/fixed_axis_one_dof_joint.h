@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
@@ -44,6 +45,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
+    drake::unused(q);
     motion_subspace = joint_axis_.cast<typename DerivedQ::Scalar>();
     if (dmotion_subspace) {
       dmotion_subspace->setZero(motion_subspace.size(), get_num_positions());
@@ -62,6 +64,8 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
       typename drake::math::Gradient<
           Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
           dmotion_subspace_dot_times_vdv = nullptr) const {
+    drake::unused(q, v);
+
     motion_subspace_dot_times_v.setZero();
 
     if (dmotion_subspace_dot_times_vdq) {

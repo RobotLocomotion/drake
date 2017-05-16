@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -48,8 +49,7 @@ class MyDirectTrajOpt : public DirectTrajectoryOptimization {
 
  private:
   void DoAddRunningCost(const symbolic::Expression& g) override {}
-  void DoAddRunningCost(
-      std::shared_ptr<solvers::Constraint> constraint) override {}
+  void DoAddRunningCost(std::shared_ptr<solvers::Cost> constraint) override {}
 };
 
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {

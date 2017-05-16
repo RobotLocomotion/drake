@@ -27,7 +27,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
+        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives",
         "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:kuka_pick_and_place",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
@@ -43,14 +43,19 @@ drake_cc_library(
 drake_cc_binary(
     name = "monolithic_pick_and_place_demo",
     srcs = ["monolithic_pick_and_place_demo.cc"],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/examples/schunk_wsg:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":kuka_pick_and_place_monolithic",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
+        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
-        "@bot_core_lcmtypes//:lib",
-        "@gflags//:gflags",
+        "@bot_core_lcmtypes",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -61,13 +66,13 @@ drake_cc_binary(
         ":kuka_pick_and_place_monolithic",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
+        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
         "//drake/systems/analysis",
         "//drake/systems/framework",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

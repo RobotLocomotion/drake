@@ -108,7 +108,7 @@ PickAndPlaceStateMachineSystem::AllocateOutputAbstract(
 }
 
 void PickAndPlaceStateMachineSystem::SetDefaultState(
-    const systems::Context<double>& context,
+    const systems::Context<double>&,
     systems::State<double>* state) const {
   InternalState& internal_state =
       state->get_mutable_abstract_state<InternalState>(kStateIndex);

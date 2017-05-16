@@ -16,6 +16,9 @@ target_link_libraries(system_identification_test drakeOptimization)
 drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
+drake_add_cc_test(cost_test)
+target_link_libraries(cost_test drakeOptimization drakeCommon)
+
 set(drakeOptimizationTestSources
         add_solver_util.cc
         optimization_examples.cc
@@ -27,7 +30,8 @@ set(drakeOptimizationHeaders
         optimization_examples.h
         linear_program_examples.h
         quadratic_program_examples.h
-        mathematical_program_test_util.h)
+        mathematical_program_test_util.h
+        generic_trivial_costs.h)
 add_library_with_exports(LIB_NAME drakeOptimizationTest
         SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
 target_link_libraries(drakeOptimizationTest

@@ -155,9 +155,6 @@ class Accelerometer : public systems::LeafSystem<double> {
   /// Returns whether gravity is included in this sensor's measurements.
   bool get_include_gravity() const { return include_gravity_; }
 
-  /// Returns the name of this sensor. The name can be any user-specified value.
-  const std::string& get_name() const { return name_; }
-
   /// Returns the RigidBodyTree that this sensor is sensing.
   const RigidBodyTree<double>& get_tree() const { return tree_; }
 

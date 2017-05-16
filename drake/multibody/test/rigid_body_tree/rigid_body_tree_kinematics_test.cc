@@ -141,7 +141,7 @@ class AcrobotTests : public ::testing::Test {
     Isometry3<double> X_WL1cm =
         robot_->CalcFramePoseInWorldFrame(*cache_, *link1_com_);
     Isometry3<double> X_WL1cm_exact =
-        acrobot_benchmark_.CalcLink1PoseInWorldFrame(theta1_rad, theta2_rad);
+        acrobot_benchmark_.CalcLink1PoseInWorldFrame(theta1_rad);
     EXPECT_TRUE(
         X_WL1cm.isApprox(X_WL1cm_exact, Eigen::NumTraits<double>::epsilon()));
     Isometry3<double> X_WL2cm =
@@ -163,7 +163,7 @@ class AcrobotTests : public ::testing::Test {
         robot_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *link1_com_);
     Vector6<double> V_WL1cm_exact =
         acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
-            theta1_rad, theta2_rad, theta1dot, theta2dot);
+            theta1_rad, theta1dot);
     EXPECT_TRUE(
         V_WL1cm.isApprox(V_WL1cm_exact, Eigen::NumTraits<double>::epsilon()));
 

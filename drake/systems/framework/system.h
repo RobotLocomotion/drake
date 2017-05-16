@@ -90,6 +90,18 @@ struct UpdateActions {
   std::vector<DiscreteEvent<T>> events;
 };
 
+/** @cond */
+// Private helper class for System.
+class SystemImpl {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemImpl)
+  SystemImpl() = delete;
+
+  // The implementation of System<T>::GetMemoryObjectName.
+  static std::string GetMemoryObjectName(const std::string&, int64_t);
+};
+/** @endcond */
+
 /// A superclass template for systems that receive input, maintain state, and
 /// produce output of a given mathematical type T.
 ///
@@ -713,8 +725,20 @@ class System {
   /// Diagram, names of sibling subsystems should be unique.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Retrieves the name last supplied to set_name().
+  /// Returns the name last supplied to set_name(), or empty if set_name() was
+  /// never called.  Systems created through transmogrification have by default
+  /// an identical name to the system they were created from.
   std::string get_name() const { return name_; }
+
+  /// Returns a name for this %System based on a stringification of its type
+  /// name and memory address.  This is intended for use in diagnostic output
+  /// and should not be used for behavioral logic, because the stringification
+  /// of the type name may produce differing results across platforms and
+  /// because the address can vary from run to run.
+  std::string GetMemoryObjectName() const {
+    return SystemImpl::GetMemoryObjectName(
+        NiceTypeName::Get(*this), GetGraphvizId());
+  }
 
   /// Writes the full path of this System in the tree of Systems to @p output.
   /// The path has the form (::ancestor_system_name)*::this_system_name.
@@ -724,8 +748,7 @@ class System {
     if (parent_ != nullptr) {
       parent_->GetPath(output);
     }
-    *output << "::";
-    *output << (get_name().empty() ? "<unnamed System>" : get_name());
+    *output << "::" << (get_name().empty() ? "_" : get_name());
   }
 
   // Returns the full path of the System in the tree of Systems.
@@ -1227,9 +1250,10 @@ class System {
   /// not null, and it can be changed freely by the overriding implementation.
   ///
   /// The default implementation returns without changing @p events.
-  virtual void DoGetPerStepEvents(const Context<T>& context,
+  virtual void DoGetPerStepEvents(
+      const Context<T>& context,
       std::vector<DiscreteEvent<T>>* events) const {
-    unused(context);
+    unused(context, events);
   }
 
   /// Override this method for physical systems to calculate the potential

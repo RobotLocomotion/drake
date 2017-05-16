@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/unused.h"
 #include "drake/lcmt_manipulator_plan_move_end_effector.hpp"
 #include "drake/util/lcmUtil.h"
 
@@ -13,6 +14,8 @@ template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+  unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
+
   // Knots are constant, the second time doesn't matter.
   const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
   const RigidBody<T>* ee_body =
@@ -20,10 +23,11 @@ void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
   Isometry3<T> ee_pose = robot_status.robot().CalcBodyPoseInWorldFrame(
       robot_status.cache(), *ee_body);
 
-  PiecewiseCartesianTrajectory<T> ee_traj =
-      PiecewiseCartesianTrajectory<T>::MakeCubicLinearWithEndLinearVelocity(
-          times, {ee_pose, ee_pose}, Vector3<double>::Zero(),
-          Vector3<double>::Zero());
+  manipulation::PiecewiseCartesianTrajectory<T> ee_traj =
+      manipulation::PiecewiseCartesianTrajectory<
+          T>::MakeCubicLinearWithEndLinearVelocity(times, {ee_pose, ee_pose},
+                                                   Vector3<double>::Zero(),
+                                                   Vector3<double>::Zero());
   this->set_body_trajectory(ee_body, ee_traj);
 }
 
@@ -32,6 +36,8 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
     const void* message_bytes, int message_length) {
+  unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
+
   // Tries to decode as a lcmt_manipulator_plan_move_end_effector message.
   lcmt_manipulator_plan_move_end_effector msg;
   int consumed = msg.decode(message_bytes, 0, message_length);
@@ -68,9 +74,10 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
   }
 
   // TODO(siyuan): use msg.order_of_interpolation.
-  PiecewiseCartesianTrajectory<T> ee_traj =
-      PiecewiseCartesianTrajectory<T>::MakeCubicLinearWithEndLinearVelocity(
-          times, poses, vel0, Vector3<double>::Zero());
+  manipulation::PiecewiseCartesianTrajectory<T> ee_traj =
+      manipulation::PiecewiseCartesianTrajectory<
+          T>::MakeCubicLinearWithEndLinearVelocity(times, poses, vel0,
+                                                   Vector3<double>::Zero());
 
   this->set_body_trajectory(ee_body, ee_traj);
 }

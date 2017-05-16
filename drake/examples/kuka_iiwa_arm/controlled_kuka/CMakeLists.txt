@@ -12,18 +12,6 @@ if(lcm_FOUND)
       drakeTrajectories
       gflags)
 
-  add_executable(kuka_cartesian_way_point_demo
-      kuka_cartesian_way_point_demo.cc)
-  target_link_libraries(kuka_cartesian_way_point_demo
-      drakeKukaIiwaArmCommon
-      drakeLcmSystem
-      drakeRigidBodyPlant
-      drakeSimDiagramBuilder
-      drakeSystemAnalysis
-      drakeSystemControllers
-      drakeTrajectories
-      gflags)
-
   # NLopt isn't sufficient to run the kuka_demo, as it is unable to
   # find a solution.  See
   # https://github.com/RobotLocomotion/drake/issues/3710
@@ -32,7 +20,5 @@ if(lcm_FOUND)
   if(snopt_FOUND)
     drake_add_test(NAME controlled_kuka_demo
         COMMAND controlled_kuka_demo)
-    drake_add_test(NAME kuka_cartesian_way_point_demo
-        COMMAND kuka_cartesian_way_point_demo)
   endif()
 endif()

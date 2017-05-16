@@ -11,7 +11,7 @@ filegroup(
 # upstream's explicitly listed sources.  The globbed hdrs= matches upstream's
 # explicitly globbed headers.
 cc_library(
-    name = "lib",
+    name = "octomap",
     srcs = [
         "octomap/src/AbstractOcTree.cpp",
         "octomap/src/AbstractOccupancyOcTree.cpp",

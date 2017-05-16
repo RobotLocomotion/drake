@@ -95,7 +95,7 @@ class Formula {
   /** Default constructor. */
   Formula() { *this = True(); }
 
-  explicit Formula(const std::shared_ptr<FormulaCell> ptr);
+  explicit Formula(std::shared_ptr<FormulaCell> ptr);
 
   FormulaKind get_kind() const;
   size_t get_hash() const;
@@ -237,7 +237,6 @@ Formula isnan(const Expression& e);
  */
 Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
 
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 /** Constructs and returns a symbolic positive-semidefinite formula from @p
  * m. If @p mode is Eigen::Lower, it's using the lower-triangular part of @p m
  * to construct a positive-semidefinite formula. If @p mode is Eigen::Upper, the
@@ -260,7 +259,6 @@ Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
  */
 Formula positive_semidefinite(const MatrixX<Expression>& m,
                               Eigen::UpLoType mode);
-#endif  // EIGEN_VERSION...
 
 /** Constructs and returns a symbolic positive-semidefinite formula from a lower
  * triangular-view @p l. See the following code snippet.
@@ -440,7 +438,6 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator==(const DerivedA& a1, const DerivedB& a2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::equal_to<void>());
@@ -469,7 +466,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator==(const Derived& a, const ScalarType& v) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr(
       [&v](const typename Derived::Scalar& x) { return x == v; });
 }
@@ -497,7 +493,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator==(const ScalarType& v, const Derived& a) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr(
       [&v](const typename Derived::Scalar& x) { return v == x; });
 }
@@ -516,7 +511,6 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<=(const DerivedA& a1, const DerivedB& a2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::less_equal<void>());
@@ -535,7 +529,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator<=(const Derived& a, const ScalarType& v) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr(
       [&v](const typename Derived::Scalar& x) { return x <= v; });
 }
@@ -553,7 +546,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator<=(const ScalarType& v, const Derived& a) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr(
       [&v](const typename Derived::Scalar& x) { return v <= x; });
 }
@@ -572,7 +564,6 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator<(const DerivedA& a1, const DerivedB& a2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::less<void>());
@@ -591,7 +582,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator<(const Derived& a, const ScalarType& v) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr([&v](const typename Derived::Scalar& x) { return x < v; });
 }
 
@@ -608,7 +598,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator<(const ScalarType& v, const Derived& a) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr([&v](const typename Derived::Scalar& x) { return v < x; });
 }
 
@@ -626,7 +615,6 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>=(const DerivedA& a1, const DerivedB& a2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::greater_equal<void>());
@@ -645,7 +633,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator>=(const Derived& a, const ScalarType& v) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr(
       [&v](const typename Derived::Scalar& x) { return x >= v; });
 }
@@ -687,7 +674,6 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator>(const DerivedA& a1, const DerivedB& a2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::greater<void>());
@@ -706,7 +692,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator>(const Derived& a, const ScalarType& v) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr([&v](const typename Derived::Scalar& x) { return x > v; });
 }
 
@@ -747,7 +732,6 @@ typename std::enable_if<
                      Formula>::value,
     typename detail::RelationalOpTraits<DerivedA, DerivedB>::ReturnType>::type
 operator!=(const DerivedA& a1, const DerivedB& a2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(a1.rows() == a2.rows() && a1.cols() == a2.cols());
   return a1.binaryExpr(a2, std::not_equal_to<void>());
@@ -766,7 +750,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator!=(const Derived& a, const ScalarType& v) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr(
       [&v](const typename Derived::Scalar& x) { return x != v; });
 }
@@ -784,7 +767,6 @@ typename std::enable_if<
     Eigen::Array<Formula, Derived::RowsAtCompileTime,
                  Derived::ColsAtCompileTime>>::type
 operator!=(const ScalarType& v, const Derived& a) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta.
   return a.unaryExpr(
       [&v](const typename Derived::Scalar& x) { return v != x; });
 }
@@ -842,7 +824,6 @@ typename std::enable_if<
                      Formula>::value,
     Formula>::type
 operator==(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::equal_to<void>()).redux(detail::logic_and);
@@ -876,7 +857,6 @@ typename std::enable_if<
                      Formula>::value,
     Formula>::type
 operator!=(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::not_equal_to<void>()).redux(detail::logic_and);
@@ -905,7 +885,6 @@ typename std::enable_if<
                      Formula>::value,
     Formula>::type
 operator<(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::less<void>()).redux(detail::logic_and);
@@ -934,7 +913,6 @@ typename std::enable_if<
                      Formula>::value,
     Formula>::type
 operator<=(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::less_equal<void>()).redux(detail::logic_and);
@@ -963,7 +941,6 @@ typename std::enable_if<
                      Formula>::value,
     Formula>::type
 operator>(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::greater<void>()).redux(detail::logic_and);
@@ -992,7 +969,6 @@ typename std::enable_if<
                      Formula>::value,
     Formula>::type
 operator>=(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::greater_equal<void>()).redux(detail::logic_and);
@@ -1051,7 +1027,6 @@ struct NumTraits<drake::symbolic::Formula>
   static inline int digits10() { return 0; }
 };
 
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 namespace internal {
 
 /// Provides specialization for scalar_cmp_op to handle the case "Expr == Expr"
@@ -1223,7 +1198,5 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
 };
 
 }  // namespace internal
-#endif  // EIGEN_VERSION...
-
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)

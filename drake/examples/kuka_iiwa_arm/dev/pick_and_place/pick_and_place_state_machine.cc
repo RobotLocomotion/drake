@@ -334,7 +334,7 @@ void RunPickAndPlaceDemo() {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main() {
   drake::examples::kuka_iiwa_arm::pick_and_place::RunPickAndPlaceDemo();
   return 0;
 }

@@ -119,7 +119,7 @@ void DoMain() {
 }  // namespace solvers
 }  // namespace drake
 
-int main(int argc, char* argv[]) {
+int main() {
   drake::solvers::DoMain();
   return 0;
 }

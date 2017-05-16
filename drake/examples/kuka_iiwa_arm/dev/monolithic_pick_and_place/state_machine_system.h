@@ -48,8 +48,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const systems::OutputPortDescriptor<double>& descriptor) const final;
 
   // This kind of a system is not a direct feedthrough.
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
-                              int input_port, int output_port) const final {
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
+                              int, int) const final {
     return false;
   }
 

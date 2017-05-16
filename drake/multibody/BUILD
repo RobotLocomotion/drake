@@ -49,6 +49,7 @@ drake_cc_library(
     deps = [
         ":rigid_body_constraint",
         ":rigid_body_tree",
+        "//drake/common:unused",
         "//drake/math:gradient",
         "//drake/solvers:mathematical_program",
     ],

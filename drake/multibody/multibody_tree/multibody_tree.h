@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -67,8 +68,9 @@ class MultibodyTree {
   /// @param[in] body A unique pointer to a body to add to `this`
   ///                 %MultibodyTree. The body class must be specialized on the
   ///                 same scalar type T as this %MultibodyTree.
-  /// @returns A constant reference to the `body` just added, which will remain
-  ///          valid for the lifetime of `this` MultibodyTree.
+  /// @returns A constant reference of type `BodyType` to the created body.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam BodyType The type of the specific sub-class of Body to add. The
   ///                  template needs to be specialized on the same scalar type
@@ -83,7 +85,7 @@ class MultibodyTree {
                              "See documentation for Finalize() for details.");
     }
     if (body == nullptr) {
-      throw std::logic_error("Input body is an invalid nullptr.");
+      throw std::logic_error("Input body is a nullptr.");
     }
     BodyIndex body_index(0);
     FrameIndex body_frame_index(0);
@@ -132,9 +134,9 @@ class MultibodyTree {
   /// @param[in] args The arguments needed to construct a valid Body of type
   ///                 `BodyType`. `BodyType` must provide a public constructor
   ///                 that takes these arguments.
-  /// @returns A constant reference to the body with type `BodyType` just
-  ///          created, which will remain valid for the lifetime of `this`
-  ///          MultibodyTree.
+  /// @returns A constant reference of type `BodyType` to the created body.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam BodyType A template for the type of Body to construct. The
   ///                  template will be specialized on the scalar type T of this
@@ -164,8 +166,9 @@ class MultibodyTree {
   /// @param[in] frame A unique pointer to a frame to be added to `this`
   ///                  %MultibodyTree. The frame class must be specialized on
   ///                  the same scalar type T as this %MultibodyTree.
-  /// @returns A constant reference to the frame just added, which will remain
-  ///          valid for the lifetime of `this` MultibodyTree.
+  /// @returns A constant reference of type `FrameType` to the created frame.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam FrameType The type of the specific sub-class of Frame to add. The
   ///                   template needs to be specialized on the same scalar type
@@ -180,7 +183,7 @@ class MultibodyTree {
                              "See documentation for Finalize() for details.");
     }
     if (frame == nullptr) {
-      throw std::logic_error("Input frame is an invalid nullptr.");
+      throw std::logic_error("Input frame is a nullptr.");
     }
     FrameIndex frame_index = topology_.add_frame(frame->get_body().get_index());
     // This test MUST be performed BEFORE frames_.push_back() and
@@ -223,9 +226,9 @@ class MultibodyTree {
   /// @param[in] args The arguments needed to construct a valid Frame of type
   ///                 `FrameType`. `FrameType` must provide a public constructor
   ///                 that takes these arguments.
-  /// @returns A constant reference to the frame with type `FrameType` just
-  ///          created, which will remain valid for the lifetime of `this`
-  ///          MultibodyTree.
+  /// @returns A constant reference of type `FrameType` to the created frame.
+  ///          This reference which will remain valid for the lifetime of `this`
+  ///          %MultibodyTree.
   ///
   /// @tparam FrameType A template for the type of Frame to construct. The
   ///                   template will be specialized on the scalar type T of
@@ -236,6 +239,126 @@ class MultibodyTree {
                   "FrameType must be a sub-class of Frame<T>.");
     return AddFrame(
         std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
+  }
+
+  /// Takes ownership of `mobilizer` and adds it to `this` %MultibodyTree.
+  /// Returns a constant reference to the mobilizer just added, which will
+  /// remain valid for the lifetime of `this` %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define inboard and outboard frames by calling
+  ///   // MultibodyTree::AddFrame() ...
+  ///   const RevoluteMobilizer<T>& pin =
+  ///     model.AddMobilizer(std::make_unique<RevoluteMobilizer<T>>(
+  ///       inboard_frame, elbow_outboard_frame,
+  ///       Vector3d::UnitZ() /*revolute axis*/));
+  /// @endcode
+  ///
+  /// A %Mobilizer effectively connects the two bodies to which the inboard and
+  /// outboard frames belong.
+  ///
+  /// @throws std::logic_error if `mobilizer` is a nullptr.
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
+  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
+  /// frame with itself.
+  /// @throws std::runtime_error if attempting to connect two bodies with more
+  /// than one mobilizer between them.
+  ///
+  /// @param[in] mobilizer A unique pointer to a mobilizer to add to `this`
+  ///                      %MultibodyTree. The mobilizer class must be
+  ///                      specialized on the same scalar type T as this
+  ///                      %MultibodyTree. Notice this is a requirement of this
+  ///                      method's signature and therefore an input mobilzer
+  ///                      specialized on a different scalar type than that of
+  ///                      this %MultibodyTree's T will fail to compile.
+  /// @returns A constant reference of type `MobilizerType` to the created
+  ///          mobilizer. This reference which will remain valid for the
+  ///          lifetime of `this` %MultibodyTree.
+  ///
+  /// @tparam MobilizerType The type of the specific sub-class of Mobilizer to
+  ///                       add. The template needs to be specialized on the
+  ///                       same scalar type T of this %MultibodyTree.
+  template <template<typename Scalar> class MobilizerType>
+  const MobilizerType<T>& AddMobilizer(
+      std::unique_ptr<MobilizerType<T>> mobilizer) {
+    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
+                  "MobilizerType must be a sub-class of mobilizer<T>.");
+    if (topology_.is_valid) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more bodies is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+    if (mobilizer == nullptr) {
+      throw std::logic_error("Input mobilizer is a nullptr.");
+    }
+    // Verifies that the inboard/outboard frames provided by the user do belong
+    // to this tree. This is a pathological case, but in theory nothing
+    // (but this test) stops a user from adding frames to a tree1 and attempting
+    // later to define mobilizers between those frames in a second tree2.
+    mobilizer->get_inboard_frame().HasThisParentTreeOrThrow(this);
+    mobilizer->get_outboard_frame().HasThisParentTreeOrThrow(this);
+    MobilizerIndex mobilizer_index = topology_.add_mobilizer(
+        mobilizer->get_inboard_frame().get_index(),
+        mobilizer->get_outboard_frame().get_index());
+
+    // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
+    // below. Do not move it around!
+    DRAKE_ASSERT(mobilizer_index == get_num_mobilizers());
+
+    // TODO(amcastro-tri): consider not depending on setting this pointer at
+    // all. Consider also removing MultibodyTreeElement altogether.
+    mobilizer->set_parent_tree(this, mobilizer_index);
+
+    MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
+    owned_mobilizers_.push_back(std::move(mobilizer));
+    return *raw_mobilizer_ptr;
+  }
+
+  /// Constructs a new mobilizer with type `MobilizerType` with the given
+  /// `args`, and adds it to `this` %MultibodyTree, which retains ownership.
+  /// The `MobilizerType` will be specialized on the scalar type T of this
+  /// %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define inboard and outboard frames by calling
+  ///   // MultibodyTree::AddFrame() ...
+  ///   // Notice RevoluteMobilizer is a template an a scalar type.
+  ///   const RevoluteMobilizer<T>& pin =
+  ///     model.template AddMobilizer<RevoluteMobilizer>(
+  ///       inboard_frame, outboard_frame,
+  ///       Vector3d::UnitZ() /*revolute axis*/);
+  /// @endcode
+  ///
+  /// Note that for dependent names _only_ you must use the template keyword
+  /// (say for instance you have a MultibodyTree<T> member within your custom
+  /// class).
+  ///
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
+  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
+  /// frame with itself.
+  /// @throws std::runtime_error if attempting to connect two bodies with more
+  /// than one mobilizer between them.
+  ///
+  /// @param[in] args The arguments needed to construct a valid Mobilizer of
+  ///                 type `MobilizerType`. `MobilizerType` must provide a
+  ///                 public constructor that takes these arguments.
+  /// @returns A constant reference of type `MobilizerType` to the created
+  ///          mobilizer. This reference which will remain valid for the
+  ///          lifetime of `this` %MultibodyTree.
+  ///
+  /// @tparam MobilizerType A template for the type of Mobilizer to construct.
+  ///                       The template will be specialized on the scalar type
+  ///                       T of `this` %MultibodyTree.
+  template<template<typename Scalar> class MobilizerType, typename... Args>
+  const MobilizerType<T>& AddMobilizer(Args&&... args) {
+    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+                  "MobilizerType must be a sub-class of Mobilizer<T>.");
+    return AddMobilizer(
+        std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
   /// @}
@@ -249,13 +372,28 @@ class MultibodyTree {
     return static_cast<int>(frames_.size());
   }
 
-  /// Returns the number of bodies in the MultibodyTree including the *world*
+  /// Returns the number of bodies in the %MultibodyTree including the *world*
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
+
+  /// Returns the number of mobilizers in the %MultibodyTree. Since the world
+  /// has no Mobilizer, the number of mobilizers equals the number of bodies
+  /// minus one, i.e. get_num_mobilizers() returns get_num_bodies() - 1.
+  // TODO(amcastro-tri): Consider adding a WorldMobilizer (0-dofs) for the world
+  // body. This could be useful to query for reaction forces of the entire
+  // model.
+  int get_num_mobilizers() const {
+    return static_cast<int>(owned_mobilizers_.size());
+  }
 
   /// Returns a constant reference to the *world* body.
   const Body<T>& get_world_body() const {
     return *owned_bodies_[world_index()];
+  }
+
+  /// Returns a constant reference to the *world* frame.
+  const BodyFrame<T>& get_world_frame() const {
+    return owned_bodies_[world_index()]->get_body_frame();
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
@@ -307,6 +445,8 @@ class MultibodyTree {
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
+  std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
+
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.

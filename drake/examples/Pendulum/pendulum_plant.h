@@ -19,6 +19,7 @@ namespace pendulum {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 template <typename T>
 class PendulumPlant : public systems::LeafSystem<T> {
  public:

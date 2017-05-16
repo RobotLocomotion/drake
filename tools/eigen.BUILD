@@ -22,5 +22,6 @@ pkg_tar(
     name = "license",
     extension = "tar.gz",
     files = glob(["COPYING.*"]),
+    mode = "0644",
     package_dir = "eigen",
 )

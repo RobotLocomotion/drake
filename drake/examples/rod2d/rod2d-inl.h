@@ -49,7 +49,27 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
   }
 
   this->DeclareInputPort(systems::kVectorValued, 3);
-  this->DeclareOutputPort(systems::kVectorValued, 6);
+  state_output_descriptor_ = &this->DeclareOutputPort(systems::kVectorValued,
+                                                      6);
+  pose_output_descriptor_ = &this->DeclareVectorOutputPort(
+      systems::rendering::PoseVector<T>());
+}
+
+// Computes the external forces on the rod.
+// @returns a three dimensional vector corresponding to the forces acting at
+//          the center-of-mass of the rod (first two components) and the
+//          last corresponding to the torque acting on the rod (final
+//          component). All forces and torques are expressed in the world
+//          frame.
+template <class T>
+Vector3<T> Rod2D<T>::ComputeExternalForces(
+    const systems::Context<T>& context) const {
+  // Compute the external forces (expressed in the world frame).
+  const int port_index = 0;
+  const VectorX<T> input = this->EvalEigenVectorInput(context, port_index);
+  const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
+  const Vector3<T> fapplied = input.segment(0, 3);
+  return fgrav + fapplied;
 }
 
 template <class T>
@@ -301,14 +321,26 @@ Vector2<T> Rod2D<T>::CalcCoincidentRodPointVelocity(
 template <typename T>
 void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
                                systems::SystemOutput<T>* output) const {
-  // Obtain the structure we need to write into.
-  systems::BasicVector<T>* const output_vector =
-      output->GetMutableVectorData(0);
-  DRAKE_ASSERT(output_vector != nullptr);
+  // Get the indices for the output ports.
+  const int state_output_port_index = state_output_descriptor_->get_index();
+  const int pose_output_port_index = pose_output_descriptor_->get_index();
 
-  // Output port value is just the continuous state.
-  output_vector->get_mutable_value() =
-      context.get_continuous_state()->CopyToVector();
+  // Obtain the structure we need to write into.
+  systems::BasicVector<T>* const state_port_value = output->
+      GetMutableVectorData(state_output_port_index);
+  systems::rendering::PoseVector<T>* const pose_port_value = dynamic_cast<
+      systems::rendering::PoseVector<T>*>(output->GetMutableVectorData(
+          pose_output_port_index));
+  DRAKE_ASSERT(state_port_value != nullptr);
+  DRAKE_ASSERT(pose_port_value != nullptr);
+
+  // Convert state to pose.
+  const VectorX<T>& state = (simulation_type_ ==
+      SimulationType::kTimeStepping) ?
+          context.get_discrete_state(0)->CopyToVector() :
+          context.get_continuous_state()->CopyToVector();
+  state_port_value->SetFromVector(state);
+  ConvertStateToPose(state, pose_port_value);
 }
 
 /// Integrates the Rod 2D example forward in time using a
@@ -335,10 +367,6 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   const T& x = q(0);
   const T& y = q(1);
   const T& theta = q(2);
-
-  // Get the inputs.
-  const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
 
   // Three generalized coordinates / velocities.
   const int ngc = 3;
@@ -376,9 +404,8 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Update the generalized velocity vector with discretized external forces
   // (expressed in the world frame).
-  const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
-  const Vector3<T> fapplied = input.segment(0, 3);
-  v += dt_ * M_inv * (fgrav + fapplied);
+  const Vector3<T> fext = ComputeExternalForces(context);
+  v += dt_ * M_inv * fext;
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
@@ -758,10 +785,6 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
   const T& cx = c(0);
   const T& cy = c(1);
 
-  // Get the inputs.
-  const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
-
   // Get necessary state variables.
   const T& x = context.get_continuous_state_vector().GetAtIndex(0);
   const T& y = context.get_continuous_state_vector().GetAtIndex(1);
@@ -769,13 +792,13 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
 
   // Retrieve the external forces.
-  const Vector3<T> fapplied = input.segment(0, 3);
+  const Vector3<T> fext = ComputeExternalForces(context);
 
   // Compute the velocity derivatives.
-  const T xddot = (fapplied(0) + fF) / mass_;
-  const T yddot = (fapplied(1) + fN) / mass_ + get_gravitational_acceleration();
+  const T xddot = (fext(0) + fF) / mass_;
+  const T yddot = (fext(1) + fN) / mass_;
   const T contact_moment = (cx - x) * fN - (cy - y) * fF;
-  const T thetaddot = (contact_moment + fapplied(2)) / J_;
+  const T thetaddot = (contact_moment + fext(2)) / J_;
 
   // Set the derivatives.
   f->SetAtIndex(3, xddot);
@@ -820,10 +843,6 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
                                 systems::VectorBase<T>* const f) const {
   using std::abs;
 
-  // Get the inputs.
-  const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
-
   // Get necessary state variables.
   const T& x = context.get_continuous_state_vector().GetAtIndex(0);
   const T& y = context.get_continuous_state_vector().GetAtIndex(1);
@@ -831,15 +850,14 @@ void Rod2D<T>::SetAccelerations(const systems::Context<T>& context,
   const T& thetadot = context.get_continuous_state_vector().GetAtIndex(5);
 
   // Retrieve the external forces.
-  const Vector3<T> fapplied = input.segment(0, 3);
+  const Vector3<T> fext = ComputeExternalForces(context);
 
   // Compute the derivatives
-  const T xddot = (fapplied(0) + fF[0] + fF[1]) / mass_;
-  const T yddot = (fapplied(1) + fN[0] + fN[1]) / mass_ +
-      get_gravitational_acceleration();
+  const T xddot = (fext(0) + fF[0] + fF[1]) / mass_;
+  const T yddot = (fext(1) + fN[0] + fN[1]) / mass_;
   const T moment_a = (ca[0] - x) * fN[0] - (ca[1] - y) * fF[0];
   const T moment_b = (cb[0] - x) * fN[1] - (cb[1] - y) * fF[1];
-  const T thetaddot = (moment_a + moment_b + fapplied(2)) / J_;
+  const T thetaddot = (moment_a + moment_b + fext(2)) / J_;
 
   // Set the derivatives.
   f->SetAtIndex(3, xddot);
@@ -1019,10 +1037,6 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
   // Get the coefficient of friction.
   const double mu = get_mu_coulomb();
 
-  // Get the inputs.
-  const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
-
   // Three generalized coordinates / velocities.
   const int ngc = 3;
 
@@ -1046,9 +1060,7 @@ void Rod2D<T>::CalcTwoContactSlidingForces(
   const Matrix3<T> M_inv = get_inverse_inertia_matrix();
 
   // Compute the external forces (expressed in the world frame).
-  const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
-  const Vector3<T> fapplied = input.segment(0, 3);
-  const Vector3<T> fext = fgrav + fapplied;
+  const Vector3<T> fext = ComputeExternalForces(context);
 
   // Verify that the two directions of sliding are identical.
   double sliding_sign_left = (leftdot[0] > 0) ? 1 : -1;
@@ -1173,10 +1185,6 @@ void Rod2D<T>::CalcTwoContactNoSlidingForces(
   DRAKE_DEMAND(fN && fN->size() == nc);
   DRAKE_DEMAND(fF && fF->size() == nc);
 
-  // Get the inputs.
-  const int port_index = 0;
-  const auto input = this->EvalEigenVectorInput(context, port_index);
-
   // Three generalized coordinates / velocities.
   const int ngc = 3;
 
@@ -1200,9 +1208,7 @@ void Rod2D<T>::CalcTwoContactNoSlidingForces(
   const Matrix3<T> M_inv = get_inverse_inertia_matrix();
 
   // Compute the external forces (expressed in the world frame).
-  const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
-  const Vector3<T> fapplied = input.segment(0, 3);
-  const Vector3<T> fext = fgrav + fapplied;
+  const Vector3<T> fext = ComputeExternalForces(context);
 
   // Set up the contact normal and tangent (friction) direction Jacobian
   // matrices. These take the form:
@@ -1639,15 +1645,15 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
     DRAKE_ASSERT(fN2 > -10*std::numeric_limits<double>::epsilon());
 
     // Calculate candidate tangential accelerations.
-    auto calc_tan_accel = [=](int d, const T N, const T F) {
+    auto calc_tan_accel = [=](const T N, const T F) {
       const T thetaddot = ((cx - x) * N - (cy - y) * F + tau) / J;
       return (F + fX) / mass +
           r * k * (-stheta * thetaddot - ctheta * thetadot * thetadot) / 2;
     };
 
     // Compute two tangential acceleration candidates.
-    const T cxddot1 = calc_tan_accel(+1, fN1, fF1);
-    const T cxddot2 = calc_tan_accel(-1, fN2, fF2);
+    const T cxddot1 = calc_tan_accel(fN1, fF1);
+    const T cxddot2 = calc_tan_accel(fN2, fF2);
 
     // Pick the one that is smaller in magnitude.
     if (abs(cxddot1) < abs(cxddot2)) {
@@ -1739,8 +1745,7 @@ void Rod2D<T>::CalcAccelerationsCompliantContactAndBallistic(
   systems::VectorBase<T>* const ds = derivatives->get_mutable_vector();
 
   // Get external applied force (a spatial force at Ro, in W).
-  const int port_index = 0;
-  const auto Fext_Ro_W = this->EvalEigenVectorInput(context, port_index);
+  const auto Fext_Ro_W = ComputeExternalForces(context);
 
   // Calculate contact forces (also spatial force at Ro, in W).
   const Vector3<T> Fc_Ro_W = CalcCompliantContactForces(context);
@@ -1749,7 +1754,7 @@ void Rod2D<T>::CalcAccelerationsCompliantContactAndBallistic(
   // Second three derivative components are acceleration due to gravity,
   // contact forces, and non-gravitational, non-contact external forces.
   ds->SetAtIndex(3, F_Ro_W[0]/mass_);
-  ds->SetAtIndex(4, F_Ro_W[1]/mass_ + get_gravitational_acceleration());
+  ds->SetAtIndex(4, F_Ro_W[1]/mass_);
   ds->SetAtIndex(5, F_Ro_W[2]/J_);
 }
 
@@ -1762,15 +1767,13 @@ void Rod2D<T>::CalcAccelerationsBallistic(
   // Obtain the structure we need to write into (ds=d/dt state).
   systems::VectorBase<T>* const ds = derivatives->get_mutable_vector();
 
-  // Get the inputs.
-  const int port_index = 0;
-  const auto f_input = this->EvalEigenVectorInput(context, port_index);
+  const Vector3<T> fext = ComputeExternalForces(context);
 
   // Second three derivative components are acceleration due to gravity and
   // external forces.
-  ds->SetAtIndex(3, f_input(0)/mass_);
-  ds->SetAtIndex(4, f_input(1)/mass_ + get_gravitational_acceleration());
-  ds->SetAtIndex(5, f_input(2)/J_);
+  ds->SetAtIndex(3, fext(0)/mass_);
+  ds->SetAtIndex(4, fext(1)/mass_);
+  ds->SetAtIndex(5, fext(2)/J_);
 }
 
 template <typename T>
@@ -1857,7 +1860,7 @@ std::unique_ptr<systems::AbstractValues> Rod2D<T>::AllocateAbstractState()
 /// Sets the rod to a 45 degree angle with the halfspace and positions the rod
 /// such that it and the halfspace are touching at exactly one point of contact.
 template <typename T>
-void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
+void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
                                   systems::State<T>* state) const {
   using std::sqrt;
   using std::sin;
@@ -1890,6 +1893,20 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>& context,
           .template GetMutableValue<int>() = k;
     }
   }
+}
+
+// Converts a state vector to a rendering PoseVector.
+template <class T>
+void Rod2D<T>::ConvertStateToPose(const VectorX<T>& state,
+                                  systems::rendering::PoseVector<T>* pose) {
+  // Converts the configuration of the rod to a pose, accounting for both
+  // the change to a y+ up coordinate system and the fact that Drake's cylinder
+  // up-direction defaults to +z.
+  const T theta = state[2] + M_PI_2;
+  pose->set_translation(Eigen::Translation<T, 3>(state[0], 0, state[1]));
+  const Vector3<T> y_axis{0, 1, 0};
+  const Eigen::AngleAxis<T> rotation(theta, y_axis);
+  pose->set_rotation(Eigen::Quaternion<T>(rotation));
 }
 
 }  // namespace rod2d

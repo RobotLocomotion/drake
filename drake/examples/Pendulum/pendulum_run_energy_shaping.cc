@@ -56,7 +56,7 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
   const T g_;
 };
 
-int do_main(int argc, char* argv[]) {
+int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -95,6 +95,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, char* argv[]) {
-  return drake::examples::pendulum::do_main(argc, argv);
+int main() {
+  return drake::examples::pendulum::do_main();
 }

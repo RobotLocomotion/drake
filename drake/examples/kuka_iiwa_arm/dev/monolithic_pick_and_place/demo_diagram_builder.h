@@ -8,8 +8,8 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_plan_source.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -49,6 +49,10 @@ const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
  * @param box_instance A pointer to the ModelInstanceInfo object to store
  * information on the box (target for manipulation) within the constructed
  * `systems::RigidBodyPlant`.
+ * @param chosen_box An integer from 1-3 to indicate which of the 3 possible
+ * boxes are to be added into this tree. The number 1 is the "small" sized
+ * box, 2 is the "medium, and 3 is the large). The corresponding models can
+ * be found in the /models folder.
  * @param box_position The position of the target box in world coordinates
  * as a Vector3 object.
  * @param box_orientation The orientation of the target box in RPY
@@ -58,11 +62,8 @@ const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
 template <typename T>
 std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
     ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
-    ModelInstanceInfo<T>* box_instance,
-    const Eigen::Vector3d& box_position = Vector3<double>(1 + -0.43, -0.65,
-                                                          kTableTopZInWorld +
-                                                              0.1),
-    const Eigen::Vector3d& box_orientation = Vector3<double>(0, 0, 1)) {
+    ModelInstanceInfo<T>* box_instance, const int chosen_box,
+    Eigen::Vector3d box_position, Eigen::Vector3d box_orientation) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -74,10 +75,18 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   tree_builder->StoreModel(
       "box_small",
       "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
+
+  tree_builder->StoreModel("box_medium",
+                           "/examples/kuka_iiwa_arm/models/objects/"
+                           "block_for_pick_and_place_mid_size.urdf");
+
+  tree_builder->StoreModel("box_large",
+                           "/examples/kuka_iiwa_arm/models/objects/"
+                           "block_for_pick_and_place_large_size.urdf");
   tree_builder->StoreModel("wsg",
                            "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
 
-  // Build a world with two fixed tables.  A box is placed one on
+  // Builds a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
   tree_builder->AddFixedModelInstance("table",
                                       Eigen::Vector3d::Zero() /* xyz */,
@@ -90,23 +99,33 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
                                       Eigen::Vector3d::Zero() /* rpy */);
 
   tree_builder->AddGround();
+  // Chooses an appropriate box.
+  int box_id = 0;
+  int iiwa_id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
+  *iiwa_instance = tree_builder->get_model_info_for_instance(iiwa_id);
+  switch (chosen_box) {
+    case 1:
+      box_id = tree_builder->AddFloatingModelInstance("box_small", box_position,
+                                                      box_orientation);
+      break;
+    case 2:
+      box_id = tree_builder->AddFloatingModelInstance(
+          "box_medium", box_position, box_orientation);
+      break;
+    case 3:
+      box_id = tree_builder->AddFloatingModelInstance("box_large", box_position,
+                                                      box_orientation);
+      break;
+    default: DRAKE_ABORT_MSG("Chosen box should be between 0 and 4.");
+      break;
+  }
+  *box_instance = tree_builder->get_model_info_for_instance(box_id);
 
-  // Start the box slightly above the table.  If we place it at
-  // the table top exactly, it may start colliding the table (which is
-  // not good, as it will likely shoot off into space).
-  const Eigen::Vector3d kBoxBase(1 + -0.43, -0.65, kTableTopZInWorld + 0.1);
-
-  int id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
-  *iiwa_instance = tree_builder->get_model_info_for_instance(id);
-  id = tree_builder->AddFloatingModelInstance("box_small", kBoxBase,
-                                              Vector3<double>(0, 0, 1));
-
-  *box_instance = tree_builder->get_model_info_for_instance(id);
-  id = tree_builder->AddModelInstanceToFrame(
+  int wsg_id = tree_builder->AddModelInstanceToFrame(
       "wsg", Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
       tree_builder->tree().findFrame("iiwa_frame_ee"),
       drake::multibody::joints::kFixed);
-  *wsg_instance = tree_builder->get_model_info_for_instance(id);
+  *wsg_instance = tree_builder->get_model_info_for_instance(wsg_id);
 
   auto plant =
       std::make_unique<systems::RigidBodyPlant<T>>(tree_builder->Build());
@@ -168,7 +187,7 @@ class StateMachineAndPrimitives : public systems::Diagram<T> {
 /**
  * A `systems::Diagram` that encapsulates a
  * `IiwaAndWsgPlanGeneratorsEstimatorsAndVisualizer`, a
- * `systems::DrakeVisualizer`, `IiwaPlanSource`,
+ * `systems::DrakeVisualizer`, `RobotPlanInterpolator`,
  * `SchunkWsgTrajectoryGenerator` and  a `SchunkWsgStatusSender`. This
  * `systems::Diagram`system serves as the "low-level" logic needed to execute
  * a pick-and-place demo. All of the input and output ports carry abstract data
@@ -188,13 +207,17 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
    * @param lcm : A reference to the lcm object to be passed onto the
    * Visualizer
    * @param update_interval : The update interval of the unrestricted update of
-   * `IiwaPlanSource`. This should be smaller than that of
+   * `RobotPlanInterpolator`. This should be smaller than that of
    * components
    * commanding new plans.
+   * @param chosen_box : The choice of which box ...
    */
   IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
-      lcm::DrakeLcm* lcm, const double update_interval = 0.001);
-
+      lcm::DrakeLcm* lcm, const int chosen_box = 1,
+      const double update_interval = 0.001,
+      Eigen::Vector3d box_position = Vector3<double>(1 + -0.43, -0.65,
+                                                     kTableTopZInWorld + 0.1),
+      Eigen::Vector3d box_orientation = Vector3<double>(0, 0, 1));
   const systems::InputPortDescriptor<T>& get_input_port_iiwa_plan() const {
     return this->get_input_port(input_port_iiwa_plan_);
   }
@@ -229,7 +252,7 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
   IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
   schunk_wsg::SchunkWsgStatusSender* wsg_status_sender_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
-  IiwaPlanSource* iiwa_trajectory_generator_{nullptr};
+  RobotPlanInterpolator* iiwa_trajectory_generator_{nullptr};
   schunk_wsg::SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
 
   int input_port_iiwa_plan_{-1};

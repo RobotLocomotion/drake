@@ -55,13 +55,11 @@ template double calc_smooth_acceleration<double>(
     const double& current_velocity,
     const double& max_velocity,
     const double& velocity_limit_kp);
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)
 template AutoDiffXd calc_smooth_acceleration<AutoDiffXd>(
     const AutoDiffXd& desired_acceleration,
     const AutoDiffXd& current_velocity,
     const AutoDiffXd& max_velocity,
     const AutoDiffXd& velocity_limit_kp);
-#endif
 template Expression calc_smooth_acceleration<Expression>(
     const Expression& desired_acceleration,
     const Expression& current_velocity,

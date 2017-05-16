@@ -24,7 +24,7 @@ drake_cc_library(
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm:iiwa_plan_source",
+        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
@@ -34,8 +34,8 @@ drake_cc_library(
         "//drake/systems/analysis",
         "//drake/systems/framework",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 

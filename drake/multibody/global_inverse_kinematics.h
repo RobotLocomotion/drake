@@ -195,6 +195,44 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       const Eigen::Ref<const Eigen::VectorXd>& body_position_cost,
       const Eigen::Ref<const Eigen::VectorXd>& body_orientation_cost);
 
+  /**
+   * Constrain the point `Q` lying within one of the convex polytopes.
+   * Each convex polytope Pᵢ is represented by its vertices as
+   * Pᵢ = ConvexHull(v_i1, v_i2, ... v_in). Mathematically we want to impose the
+   * constraint that the p_WQ, i.e., the position of point `Q` in world frame
+   * `W`, satisfies
+   * <pre>
+   *   p_WQ ∈ Pᵢ for one i.
+   * </pre>
+   * To impose this constraint, we consider to introduce binary variable zᵢ, and
+   * continuous variables w_i1, w_i2, ..., w_in for each vertex of Pᵢ, with the
+   * following constraints
+   * <pre>
+   *   p_WQ = sum_i (w_i1 * v_i1 + w_i2 * v_i2 + ... + w_in * v_in)
+   *   w_ij >= 0, ∀i,j
+   *   w_i1 + w_i2 + ... + w_in = zᵢ
+   *   sum_i zᵢ = 1
+   *   zᵢ ∈ {0, 1}
+   * </pre>
+   * Notice that if zᵢ = 0, then w_i1 * v_i1 + w_i2 * v_i2 + ... + w_in * v_in
+   * is just 0.
+   * This function can be used for collision avoidance, where each region Pᵢ is
+   * a free space region. It can also be used for grasping, where each region Pᵢ
+   * is a surface patch on the grasped object.
+   * Note this approach also works if the region Pᵢ overlaps with each other.
+   * @param body_index The index of the body to on which point `Q` is attached.
+   * @param p_BQ The position of point `Q` in the body frame `B`.
+   * @param region_vertices region_vertices[i] is the vertices for the i'th
+   * region.
+   * @retval z The newly added binary variables. If point `Q` is in the i'th
+   * region, z(i) = 1.
+   * @pre region_vertices[i] has at least 3 columns. Throw a std::runtime_error
+   * if the precondition is not satisfied.
+   */
+  solvers::VectorXDecisionVariable BodyPointInOneOfRegions(
+      int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      const std::vector<Eigen::Matrix3Xd>& region_vertices);
+
  private:
   const RigidBodyTree<double> *robot_;
 

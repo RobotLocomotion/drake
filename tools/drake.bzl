@@ -17,27 +17,39 @@ GCC_FLAGS = [
     "-Werror=extra",
     "-Werror=return-local-addr",
     "-Werror=non-virtual-dtor",
-    "-Wno-unused-parameter",
     "-Wno-missing-field-initializers",
 ]
 
-def _platform_copts(rule_copts):
-  """Returns both the rule_copts, and platform-specific copts."""
-  return select({
-      "//tools:gcc4.9-linux": GCC_FLAGS + rule_copts,
-      "//tools:gcc5-linux": GCC_FLAGS + rule_copts,
-      "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
-      "//tools:apple": CLANG_FLAGS + rule_copts,
-      "//conditions:default": rule_copts,
-  })
+# The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
+# when building with gcc.
+GCC_CC_TEST_FLAGS = [
+    "-Wno-unused-parameter",
+]
+
+def _platform_copts(rule_copts, cc_test=0):
+    """Returns both the rule_copts, and platform-specific copts.
+
+    When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
+    to 1 from cc_test rules or rules that are boil down to cc_test rules.
+    """
+    extra_gcc_flags = []
+    if cc_test:
+        extra_gcc_flags = GCC_CC_TEST_FLAGS
+    return select({
+        "//tools:gcc4.9-linux": GCC_FLAGS + extra_gcc_flags + rule_copts,
+        "//tools:gcc5-linux": GCC_FLAGS + extra_gcc_flags + rule_copts,
+        "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
+        "//tools:apple": CLANG_FLAGS + rule_copts,
+        "//conditions:default": rule_copts,
+    })
 
 def _dsym_command(name):
-  """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
-  return select({
-      "//tools:apple_debug":
-          "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
-      "//conditions:default": "touch $@",
-  })
+    """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
+    return select({
+        "//tools:apple_debug":
+            "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
+        "//conditions:default": "touch $@",
+    })
 
 def drake_cc_library(
         name,
@@ -149,7 +161,7 @@ def drake_cc_test(
         name=name,
         size=size,
         srcs=srcs,
-        copts=_platform_copts(copts),
+        copts=_platform_copts(copts, cc_test=1),
         **kwargs)
 
     # Also generate the OS X debug symbol file for this test.
@@ -188,10 +200,13 @@ def drake_cc_googletest(
 
 # Collects the transitive closure of header files from ctx.attr.deps.
 def _transitive_hdrs_impl(ctx):
-  headers = set()
-  for dep in ctx.attr.deps:
-    headers += dep.cc.transitive_headers
-  return struct(files=headers)
+    headers = set()
+    for dep in ctx.attr.deps:
+        # TODO(mwoehlke-kitware): Figure out a better way to exclude system
+        # headers from being slurped in?
+        headers += [h for h in dep.cc.transitive_headers
+                    if not "/_usr_" in h.path]
+    return struct(files=headers)
 
 _transitive_hdrs = rule(
     attrs = {
@@ -206,16 +221,29 @@ _transitive_hdrs = rule(
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 def drake_header_tar(name, deps=[], **kwargs):
-  """Creates a .tar.gz that includes all the headers exported by the deps."""
-  # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`
-  # tacks a spurious `..` onto the paths of external headers, which we then
-  # have to clean up in package_drake.sh. It's not clear whether this is a
-  # Bazel bug, or a bug in these macros.
-  _transitive_hdrs(name=name + "_gather",
-                   deps=deps)
-  # We must specify a non-default strip prefix so that the tarball contains
-  # relative and not absolute paths.
-  pkg_tar(name=name,
-          extension="tar.gz",
-          files=[":" + name + "_gather"],
-          strip_prefix="/")
+    """Creates a .tar.gz that includes all the headers exported by the deps."""
+    # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`
+    # tacks a spurious `..` onto the paths of external headers, which we then
+    # have to clean up in package_drake.sh. It's not clear whether this is a
+    # Bazel bug, or a bug in these macros.
+    _transitive_hdrs(name=name + "_gather",
+                     deps=deps)
+    # We must specify a non-default strip prefix so that the tarball contains
+    # relative and not absolute paths.
+    pkg_tar(name=name,
+            extension="tar.gz",
+            mode="0644",
+            files=[":" + name + "_gather"],
+            strip_prefix="/")
+
+# Generate a file with specified content
+def _generate_file_impl(ctx):
+    ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
+
+drake_generate_file = rule(
+    attrs = {
+        "content": attr.string(),
+        "out": attr.output(mandatory = True),
+    },
+    implementation = _generate_file_impl,
+)

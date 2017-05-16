@@ -16,6 +16,7 @@ drake_cc_library(
     deps = [
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
+        "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
     ],
@@ -29,7 +30,7 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -101,6 +102,22 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "valkyrie_controller",
+    hdrs = ["valkyrie_controller.h"],
+    deps = [
+        ":atlas_joint_level_controller_system",
+        ":humanoid_plan_eval_system",
+        ":humanoid_status_translator_system",
+        ":qp_controller_system",
+        "//drake/lcm",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework",
+        "//drake/systems/lcm",
+        "@bot_core_lcmtypes",
+    ],
+)
+
 drake_cc_binary(
     name = "valkyrie_balancing_controller_system",
     srcs = [
@@ -117,18 +134,9 @@ drake_cc_binary(
         "local",
     ],
     deps = [
-        ":atlas_joint_level_controller_system",
-        ":humanoid_plan_eval_system",
-        ":humanoid_status_translator_system",
-        ":qp_controller_system",
+        ":valkyrie_controller",
         "//drake/examples/Valkyrie:valkyrie_constants",
-        "//drake/lcm",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework",
-        "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
-        "//drake/systems/primitives:constant_value_source",
-        "@bot_core_lcmtypes//:lib",
     ],
 )
 
