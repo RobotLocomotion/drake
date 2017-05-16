@@ -198,6 +198,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "maliput_railcar_to_euler_floating_joint",
+    srcs = ["maliput_railcar_to_euler_floating_joint.cc"],
+    hdrs = [
+        "maliput_railcar_to_euler_floating_joint.h",
+    ],
+    deps = [
+        ":generated_vectors",
+        "//drake/automotive/maliput/api",
+        "//drake/systems/framework",
+    ],
+)
+
+
+
+drake_cc_library(
     name = "monolane_onramp_merge",
     srcs = ["monolane_onramp_merge.cc"],
     hdrs = ["monolane_onramp_merge.h"],
@@ -512,6 +527,18 @@ drake_cc_googletest(
         "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "maliput_railcar_to_euler_floating_joint_test",
+    srcs = ["test/maliput_railcar_to_euler_floating_joint_test.cc"],
+    deps = [
+        ":maliput_railcar_to_euler_floating_joint",
+        "//drake/automotive:maliput_railcar",
+        "//drake/automotive/maliput/dragway",
+        "//drake/automotive/maliput/monolane",
+        "//drake/common:drake_path",
     ],
 )
 
