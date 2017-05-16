@@ -1,6 +1,9 @@
 drake_add_cc_test(decision_variable_test)
 target_link_libraries(decision_variable_test drakeOptimization)
 
+drake_add_cc_test(indeterminate_variable_test)
+target_link_libraries(indeterminate_variable_test drakeOptimization)
+
 drake_add_cc_test(binding_test)
 target_link_libraries(binding_test drakeOptimization)
 
