@@ -175,10 +175,10 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 // created).
 // At Finalize(), a body node is created per (body, inboard_mobilizer) pair.
 // Body node indexes are assigned according to a BFT order.
-// Tests below make references to the indexes in this schematic. The following
+// Tests below make reference to the indexes in this schematic. The following
 // points are important:
 // - Body nodes are ordered by a BFT sort however,
-// - There is no guarantee on which body node is assigned to which body.
+// - There is no guarantee on which body node is assigned to which body,
 // - Body nodes at a particular level are not guaranteed to be in any particular
 //   order, only that they belong to the right level is important.
 //

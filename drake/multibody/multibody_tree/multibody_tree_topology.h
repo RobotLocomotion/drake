@@ -168,6 +168,13 @@ struct MobilizerTopology {
   int velocities_start{0};
 };
 
+/// Data structure to store the topological information associated with a tree
+/// node. A tree node essentially consists of a body and its inboard mobilizer.
+/// A body node is in charge of the computations associated to that body and
+/// mobilizer, especially when within a base-to-tip or tip-to-base recursion.
+/// As the topological entity associated with a tree node (and specifically a
+/// MultibodyTree node), this struct contains information regarding parent and
+/// child nodes, parent and child bodies, etc.
 struct BodyNodeTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyNodeTopology);
 

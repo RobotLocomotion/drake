@@ -28,15 +28,12 @@ void MultibodyTree<T>::Finalize() {
         "MultibodyTree.");
   }
 
-  // Analyze if a method that verifies the state of the topology with a
-  // signature similar to RoadGeometry::CheckInvariants() is a good scheme to
-  // report errors here. Either during MBTTopology::Finalize() or after the
-  // fact?
+  // Before performing any setup that depends on the scalar type <T>, compile
+  // all the type-T independent topological information.
   topology_.Finalize();
 
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
-  //   - Finalize non-T dependent topological information.
   //   - Compute degrees of freedom, array sizes and any other information to
   //     allocate a context and request the required cache entries.
   //   - Setup computational structures (BodyNode based).
