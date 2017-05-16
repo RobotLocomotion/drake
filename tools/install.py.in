@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+
+import argparse
+import filecmp
+import os
+import shutil
+
+subdirs = set()
+prefix = None
+
+
+def needs_install(src, dst):
+    # Get canonical destination.
+    dst_full = os.path.join(prefix, dst)
+
+    # Check if destination exists.
+    if not os.path.exists(dst_full):
+        # Destination doesn't exist -> installation needed.
+        return True
+
+    # Check if files are different.
+    if filecmp.cmp(src, dst_full, shallow=False):
+        # Files are the same -> no installation needed.
+        return False
+
+    # File needs to be installed.
+    return True
+
+
+def install(src, dst):
+    global subdirs
+
+    # Ensure destination subdirectory exists, creating it if necessary.
+    subdir = os.path.dirname(dst)
+    if subdir not in subdirs:
+        subdir_full = os.path.join(prefix, subdir)
+        if not os.path.exists(subdir_full):
+            os.makedirs(subdir_full)
+        subdirs.add(subdir)
+
+    # Install file, if not up to date.
+    if needs_install(src, dst):
+        print("[Installing] %s" % dst)
+        dst_full = os.path.join(prefix, dst)
+        if os.path.exists(dst_full):
+            os.remove(dst_full)
+        shutil.copy2(src, dst_full)
+
+    else:
+        print("[Up to date] %s" % dst)
+
+
+def main(args):
+    global prefix
+
+    # Set up options.
+    parser = argparse.ArgumentParser()
+    parser.add_argument('prefix', type=str, help='Install prefix')
+    args = parser.parse_args(args)
+
+    # Get install prefix.
+    prefix = args.prefix
+
+    # Because Bazel executes us in a strange working directory and not the
+    # working directory of the user's shell, enforce that the install
+    # location is an absolute path so that the user is not surprised.
+    if not os.path.isabs(prefix):
+        import sys
+        sys.stderr.write(
+            "Install prefix must be an absolute path (got %r)\n"
+            % prefix)
+        sys.exit(1)
+
+    # Execute the install actions.
+    <<actions>>
+
+
+if __name__ == "__main__":
+    import sys
+    main(sys.argv[1:])
