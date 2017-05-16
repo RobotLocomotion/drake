@@ -153,7 +153,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// the unit inertia of the unit mass at point `Bcm` is larger than `G_BQ_E`.
   /// Use with care.
   UnitInertia<T>& ShiftToCentroidInPlace(const Vector3<T>& p_QBcm_E) {
-    RotationalInertia<T>::operator-=(PointMass(p_QBcm_E));
+    RotationalInertia<T>::MinusEqualsUnchecked(PointMass(p_QBcm_E));
     return *this;
   }
 
@@ -278,10 +278,15 @@ class UnitInertia : public RotationalInertia<T> {
   // End of Doxygen group
   //@}
 
-  /// @name        Operations not allowed for unit inertias
-  // Disable here operations that while well defined for the general
-  // RotationalInertia class, would otherwise result, in general, in non-unit
-  // inertias.
+  /// @name  Disable operators that may result in non-unit inertias
+  // (these operators *are* defined in the RotationalInertia class).
+  // Note: Certain methods such as the re-express and shift do not need to be
+  // deleted (because they cannot produce non-unit inertias).
+  // Disclaimer: Non-const methods in RotationalInertia need to be reconsidered
+  // with respect to the UnitInertia subclass, and either = delete'd below,
+  // or documented why they are allowable.
+  // TODO(mitiguy) See issue #6109.  These deleted operators do not really
+  // protect the unit inertia from being non-unit. This code is broken.
   //@{
   UnitInertia<T>& operator+=(const RotationalInertia<T>&) = delete;
   UnitInertia<T>& operator-=(const RotationalInertia<T>&) = delete;

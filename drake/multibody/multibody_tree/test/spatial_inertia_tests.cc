@@ -266,9 +266,6 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
         "The resulting spatial inertia is not physically valid. "
         "See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
-  } catch (std::logic_error& e) {
-    // TODO(@mitiguy) improve SpatialInertia and UnitInertia classes to avoid
-    // testing in release builds.
   }
 }
 

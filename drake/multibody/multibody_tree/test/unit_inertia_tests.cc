@@ -30,8 +30,7 @@ GTEST_TEST(UnitInertia, DefaultConstructor) {
 // Test constructor for a diagonal unit inertia with all elements equal.
 GTEST_TEST(UnitInertia, DiagonalInertiaConstructor) {
   const double I0 = 3.14;
-  RotationalInertia<double> I = UnitInertia<double>::
-                                MakeTriaxiallySymmetric(I0);
+  UnitInertia<double> I = UnitInertia<double>::MakeTriaxiallySymmetric(I0);
   Vector3d moments_expected;
   moments_expected.setConstant(I0);
   Vector3d products_expected = Vector3d::Zero();

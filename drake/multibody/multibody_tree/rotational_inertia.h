@@ -680,6 +680,32 @@ class RotationalInertia {
     return RotationalInertia(p_PQ_E, p_PQ_E);
   }
 
+  // Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
+  // No check is done to determine if the result is physically valid.
+  // @param I_BP_E Rotational inertia of a body (or composite body) B to
+  //        be subtracted from `this` rotational inertia.
+  // @return A reference to `this` rotational inertia. `this` changes
+  //         since rotational inertia `I_BP_E` has been subtracted from it.
+  // @see operator-().
+  // @warning This operator may produce an invalid rotational inertia.
+  //           Use operator-=() to perform necessary (but insufficient) checks
+  //           on the physical validity of the resulting rotational inertia.
+  // @note: Although this method is mathematically useful, it may result in a
+  // rotational inertia that is physically invalid.  This method helps perform
+  // intermediate calculations which do not necessarily represent a real
+  // rotational inertia.  For example, an efficient way to shift a rotational
+  // inertia from an arbitrary point P to an arbitrary point Q is mathematical
+  // equivalent to a + (b - c).  Although `a` must be physically valid and the
+  // result `a + (b - c)` must be physically valid, the intermediate calculation
+  // (b - c) is not physically valid.  This method allows (b - c) to be
+  // calculated without requiring (b - c) to be physically valid.
+  // @see operator-=().
+  RotationalInertia<T>& MinusEqualsUnchecked(
+      const RotationalInertia<T>& I_BP_E) {
+    this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
+    return *this;
+  }
+
  private:
   // Creates a rotational inertia from a more generic Eigen 3x3 matrix by
   // ignoring the generic matrix's three upper-off diagonal matrix elements.
@@ -733,32 +759,6 @@ class RotationalInertia {
     I_SP_E_(1, 0) = Ixy;  I_SP_E_(2, 0) = Ixz;  I_SP_E_(2, 1) = Iyz;
   }
 
-  // Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
-  // No check is done to determine if the result is physically valid.
-  // @param I_BP_E Rotational inertia of a body (or composite body) B to
-  //        be subtracted from `this` rotational inertia.
-  // @return A reference to `this` rotational inertia. `this` changes
-  //         since rotational inertia `I_BP_E` has been subtracted from it.
-  // @see operator-().
-  // @warning This operator may produce an invalid rotational inertia.
-  //           Use operator-=() to perform necessary (but insufficient) checks
-  //           on the physical validity of the resulting rotational inertia.
-  // @note: Although this method is mathematically useful, it may results in a
-  // rotational inertia that is physical invalid.  This method helps perform
-  // intermediate calculations which do not necessarily represent a real
-  // rotational inertia.  For example, an efficient way to shift a rotational
-  // inertia from an arbitrary point P to an arbitrary point Q is mathematical
-  // equivalent to a + (b - c).  Although `a` must be physically valid and the
-  // result `a + (b - c)` must be physically valid, the intermediate calculation
-  // (b - c) is not physically valid.  This method allows (b - c) to be
-  // calculated without requiring (b - c) to be physically valid.
-  // @see operator-=().
-  RotationalInertia<T>& MinusEqualsUnchecked(
-      const RotationalInertia<T>& I_BP_E) {
-    this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
-    return *this;
-  }
-
   // Calculates the rotational inertia that must be added to account for
   // shifting the rotational inertia for a unit-mass body (or composite body) B
   // from about-point P to about-point Q via Bcm (B's center of mass).  In
@@ -783,11 +783,12 @@ class RotationalInertia {
 
   // This function returns true if arguments `i` and `j` access the lower-
   // triangular portion of the rotational matrix, otherwise false.
-  static constexpr bool is_lower_triangular_order(int i, int j) {return i >= j;}
+  static constexpr bool is_lower_triangular_order(int i, int j) {
+    return i >= j;
+  }
 
-  // Utility method used to swap matrix indexes (i, j) depending on the
-  // TriangularViewInUse portion of this inertia. The swap is performed so that
-  // we only use the triangular portion corresponding to TriangularViewInUse.
+  // Utility method to swap matrix indexes (i, j) if i < j, which helps ensure
+  // that only the lower-triangular part of the rotational inertia is used.
   static void check_and_swap(int* i, int* j) {
     if (!is_lower_triangular_order(*i, *j)) std::swap(*i, *j);
   }

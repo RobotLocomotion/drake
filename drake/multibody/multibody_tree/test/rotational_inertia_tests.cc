@@ -35,7 +35,7 @@ do { \
 } while (0)
 #endif
 
-constexpr double epsilon = std::numeric_limits<double>::epsilon();
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Test default constructor - all elements should be NaN.
 GTEST_TEST(RotationalInertia, DefaultRotationalInertiaConstructorIsNaN) {
@@ -56,8 +56,8 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   EXPECT_EQ(I.get_products(), products_expected);
 }
 
-// Test constructor for a principal axes rotational inertia matrix for which
-// off-diagonal elements are zero.
+// Test constructor for a principal axes rotational inertia matrix (products
+// of inertia are zero).
 GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
   const Vector3d moments(2.0,  2.3, 2.4);  // m for moments.
   RotationalInertia<double> I(moments(0), moments(1), moments(2));
@@ -141,6 +141,33 @@ GTEST_TEST(RotationalInertia, Symmetry) {
   EXPECT_EQ(Imatrix(2, 1), p(2));
 }
 
+// TestB: Rotational inertia expressed in frame R then re-expressed in frame E.
+GTEST_TEST(RotationalInertia, IsNearlyEqualTo) {
+  // Rotate rigid-body B from frame A by a Euler body-fixed sequence
+  // characterized by BodyXYZ q1, q2, q3.  Calculations from MotionGenesis.
+
+  // Form an arbitrary (but valid) rotational inertia for B.
+  const double Ixx = 17.36933842091061;
+  const double Iyy = 13.60270381717411;
+  const double Izz = 10.02795776191528;
+  const double Ixy = -3.084298624204901;
+  const double Ixz = -3.634144189476002;
+  const double Iyz = -6.539290790868233;
+  const double trace = Ixx + Iyy + Izz;
+  const double epsilonI = kEpsilon * trace / 2;
+  const RotationalInertia<double> I1(Ixx, Iyy, Izz,
+                                     Ixy, Ixz, Iyz);
+  const RotationalInertia<double> I2(Ixx, Iyy, Izz,
+                                     Ixy, Ixz, Iyz + 3*epsilonI);
+  const RotationalInertia<double> I3(Ixx, Iyy, Izz,
+                                     Ixy, Ixz, Iyz + 8*epsilonI);
+
+  // Ensure rotational inertias I1 and I2 are nearly equal.
+  // Ensure rotational inertias I1 and I3 are not equal.
+  EXPECT_TRUE(I1.IsNearlyEqualTo(I2, 4*kEpsilon));
+  EXPECT_FALSE(I1.IsNearlyEqualTo(I3, 7*kEpsilon));
+}
+
 // TestA: Rotational inertia expressed in frame R then re-expressed in frame E.
 GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   // Rod R has its frame origin Ro located at the rod's center of mass and its
@@ -166,9 +193,9 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   // Verify I_RRo_F(1,1) (rod R's moment of inertia about-point Ro for y-axis of
   // expressed-in frame F) is equal to I_RRo_R(2,2) (rod R's moment of inertia
   // about-point Ro for z-axis of expressed-in frame R).
-  EXPECT_NEAR(I_RRo_F(0, 0), I_RRo_R(0, 0), epsilon);   // F x-axis = R +x-axis.
-  EXPECT_NEAR(I_RRo_F(1, 1), I_RRo_R(2, 2), epsilon);   // F y-axis = R +z-axis.
-  EXPECT_NEAR(I_RRo_F(2, 2), I_RRo_R(1, 1), epsilon);   // F z-axis = R -y-axis.
+  EXPECT_NEAR(I_RRo_F(0, 0), I_RRo_R(0, 0), kEpsilon);  // F x-axis = R +x-axis.
+  EXPECT_NEAR(I_RRo_F(1, 1), I_RRo_R(2, 2), kEpsilon);  // F y-axis = R +z-axis.
+  EXPECT_NEAR(I_RRo_F(2, 2), I_RRo_R(1, 1), kEpsilon);  // F z-axis = R -y-axis.
 
   // Ensure re-expressing in frame F still produces a physically valid inertia.
   EXPECT_TRUE(I_RRo_F.CouldBePhysicallyValid());
@@ -225,9 +252,9 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
                        I_BBo_Bxy, I_BBo_Bxz, I_BBo_Byz);
 
   // Compare Drake results versus MotionGenesis results using a comparison
-  // that tests moments/products of inertia to within epsilon multiplied
+  // that tests moments/products of inertia to within kEpsilon multiplied
   // by trace / 2, where trace is the smallest trace of the two matrices.
-  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(expected_I_BBo_B, epsilon));
+  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(expected_I_BBo_B, kEpsilon));
 }
 
 // Test the method ShiftFromCenterOfMass for a body B's rotational inertia
@@ -250,7 +277,7 @@ GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
   const double Ixz = I_BBcm_Bxz - mass * xQ*zQ;
   const double Iyz = I_BBcm_Byz - mass * yQ*zQ;
   const RotationalInertia<double> expected_I_BQ_B(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
 }
 
 // Test the method ShiftToCenterOfMass for a body B's rotational inertia
@@ -274,7 +301,7 @@ GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
   const double Iyz = I_BP_Byz + mass * yBcm*zBcm;
   const RotationalInertia<double> expected_I_BBcm_B(
       Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*epsilon));
+  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*kEpsilon));
 }
 
 // Test the method ShiftToThenAwayFromCenterOfMass for a body B's
@@ -301,16 +328,16 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
   // Calculate with single method that does it slighly more efficiently.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*epsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
 
   // Test that negating position vectors have no affect on results.
   EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(
-              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*epsilon));
+              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*kEpsilon));
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
-              I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm), 2*epsilon));
+              I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm), 2*kEpsilon));
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
               I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, -p_PBcm, -p_QBcm),
-              2*epsilon));
+              2*kEpsilon));
 }
 
 // Test the method CouldBePhysicallyValid after a body B's rotational inertia
@@ -540,7 +567,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   wcross_expected << 0.0,  -wz, 0.0,
                       wz,  0.0, 0.0,
                      0.0,  0.0, 0.0;
-  EXPECT_TRUE(wcross.isApprox(wcross_expected, epsilon));
+  EXPECT_TRUE(wcross.isApprox(wcross_expected, kEpsilon));
 
   // Re-express inertia into another frame.
   const RotationalInertia<ADScalar> I_W = I_B.ReExpress(R_WB);
@@ -567,14 +594,14 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
 
   const Matrix3d Idot_W_expected = Ix * Rdot_x + Iy * Rdot_y + Iz * Rdot_z;
 
-  EXPECT_TRUE(Idot_W.isApprox(Idot_W_expected, epsilon));
+  EXPECT_TRUE(Idot_W.isApprox(Idot_W_expected, kEpsilon));
 
   // Test method that compares to inertia matrices using the original rotational
   // inertia and then the rotated/semi-unrotated rotational inertia.
   const Matrix3<ADScalar> R_BW =
       (AngleAxis<ADScalar>(-angle, Vector3d::UnitZ())).toRotationMatrix();
   const RotationalInertia<ADScalar> expectedI_B = I_W.ReExpress(R_BW);
-  EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, epsilon));
+  EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon));
 }
 
 }  // namespace
