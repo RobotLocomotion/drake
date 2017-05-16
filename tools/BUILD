@@ -42,6 +42,11 @@ exports_files(
     visibility = ["@nlopt//:__pkg__"],
 )
 
+exports_files(
+    ["lcm-create-cps.py"],
+    visibility = ["@lcm//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",
