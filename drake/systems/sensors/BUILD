@@ -175,7 +175,7 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

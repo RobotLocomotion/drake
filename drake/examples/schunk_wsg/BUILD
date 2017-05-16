@@ -84,7 +84,7 @@ drake_cc_binary(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:matrix_gain",
         "//drake/systems/primitives:multiplexer",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

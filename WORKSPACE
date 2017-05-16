@@ -47,10 +47,10 @@ github_archive(
 )
 
 github_archive(
-    name = "gflags",
+    name = "com_github_gflags_gflags",
     repository = "gflags/gflags",
-    commit = "a69b2544d613b4bee404988710503720c487119a",
-    sha256 = "8b3836d5ca34a2da4d6375cf5f2030c719b508ca16014fcc9d5e9b295b56a6c1",
+    commit = "95ffb27c9c7496ede1409e042571054c70cb9519",
+    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",
 )
 
 github_archive(
@@ -208,8 +208,8 @@ github_archive(
 github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
-    commit = "0.4.3",
-    sha256 = "4ff626151c403eba7256eac6a039ce0e0256bcebe50d3be378f2bf2cb9634098",
+    commit = "0.4.4",
+    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",
 )
 
 # Necessary for buildifier.

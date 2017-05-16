@@ -40,7 +40,7 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
-        "@gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

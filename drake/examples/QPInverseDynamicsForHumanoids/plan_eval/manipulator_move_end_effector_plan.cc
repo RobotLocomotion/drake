@@ -23,10 +23,11 @@ void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
   Isometry3<T> ee_pose = robot_status.robot().CalcBodyPoseInWorldFrame(
       robot_status.cache(), *ee_body);
 
-  PiecewiseCartesianTrajectory<T> ee_traj =
-      PiecewiseCartesianTrajectory<T>::MakeCubicLinearWithEndLinearVelocity(
-          times, {ee_pose, ee_pose}, Vector3<double>::Zero(),
-          Vector3<double>::Zero());
+  manipulation::PiecewiseCartesianTrajectory<T> ee_traj =
+      manipulation::PiecewiseCartesianTrajectory<
+          T>::MakeCubicLinearWithEndLinearVelocity(times, {ee_pose, ee_pose},
+                                                   Vector3<double>::Zero(),
+                                                   Vector3<double>::Zero());
   this->set_body_trajectory(ee_body, ee_traj);
 }
 
@@ -73,9 +74,10 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
   }
 
   // TODO(siyuan): use msg.order_of_interpolation.
-  PiecewiseCartesianTrajectory<T> ee_traj =
-      PiecewiseCartesianTrajectory<T>::MakeCubicLinearWithEndLinearVelocity(
-          times, poses, vel0, Vector3<double>::Zero());
+  manipulation::PiecewiseCartesianTrajectory<T> ee_traj =
+      manipulation::PiecewiseCartesianTrajectory<
+          T>::MakeCubicLinearWithEndLinearVelocity(times, poses, vel0,
+                                                   Vector3<double>::Zero());
 
   this->set_body_trajectory(ee_body, ee_traj);
 }
