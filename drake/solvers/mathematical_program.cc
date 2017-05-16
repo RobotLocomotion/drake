@@ -598,11 +598,6 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
   return it->second;
 }
 
-MathematicalProgram::VarType MathematicalProgram::DecisionVariableType(
-    const Variable& var) const {
-  return decision_variable_type_[FindDecisionVariableIndex(var)];
-}
-
 double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
