@@ -167,6 +167,43 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   EXPECT_NO_THROW(body2.HasThisParentTreeOrThrow(model2.get()));
 }
 
+// This unit test builds a MultibodyTree as shown in the schematic below, where
+// the number inside the boxes corresponds to each of the bodies' indexes (
+// assigned by MultibodyTree in the order bodies are created) and "m?" next to
+// each connection denotes a mobilizer with the number corresponding to the
+// mobilizer index (assigned by MultibodyTree in the order mobilizers are
+// created).
+// At Finalize(), a body node is created per (body, inboard_mobilizer) pair.
+// Body node indexes are assigned according to a BFT order.
+// Tests below make references to the indexes in this schematic. The following
+// points are important:
+// - Body nodes are ordered by a BFT sort however,
+// - There is no guarantee on which body node is assigned to which body.
+// - Body nodes at a particular level are not guaranteed to be in any particular
+//   order, only that they belong to the right level is important.
+//
+//                        +---+
+//                        | 0 |                        Level 0 (root, world)
+//            +-----------+-+-+-----------+
+//            |             |             |
+//            | m6          | m2          | m4
+//            |             |             |
+//          +-v-+         +-v-+         +-v-+
+//          | 4 |         | 7 |         | 5 |          Level 1
+//       +--+---+--+      +---+         +-+-+
+//       |         |                      |
+//       | m1      | m5                   | m3
+//       |         |                      |
+//     +-v-+     +-v-+                  +-v-+
+//     | 2 |     | 1 |                  | 3 |          Level 2
+//     +---+     +-+-+                  +---+
+//                 |
+//                 | m0
+//                 |
+//               +-v-+
+//               | 6 |                                 Level 3
+//               +---+
+//
 class TreeTopologyTests : public ::testing::Test {
  public:
   // Creates an "empty" MultibodyTree that only contains the "world" body and
@@ -256,6 +293,7 @@ class TreeTopologyTests : public ::testing::Test {
   std::vector<const Mobilizer<double>*> mobilizers_;
 };
 
+// This unit tests verifies that the multibody topology is properly compiled.
 TEST_F(TreeTopologyTests, Finalize) {
   model_->Finalize();
   EXPECT_EQ(model_->get_num_bodies(), 8);
