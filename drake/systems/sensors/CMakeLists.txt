@@ -7,6 +7,8 @@ set(drakeSensors_SRC_FILES
     depth_sensor_specification.cc
     gyroscope.cc
     gyroscope_output.cc
+    magnetometer.cc
+    magnetometer_output.cc
     rotary_encoders.cc)
 
 set(drakeSensors_HEADERS
@@ -19,6 +21,8 @@ set(drakeSensors_HEADERS
     gyroscope.h
     gyroscope_output.h
     image.h
+    magnetometer.h
+    magnetometer_output.h
     rotary_encoders.h)
 
 set(drakeSensors_TARGET_LINK_LIBRARIES
