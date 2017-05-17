@@ -263,7 +263,7 @@ class TreeTopologyTests : public ::testing::Test {
     // Either (and thus the exclusive or):
     // 1. `body` is the world, and thus `parent_node` is invalid, XOR
     // 2. `body` is not the world, and thus we have a valid `parent_node`.
-    EXPECT_TRUE(parent_node.is_valid() ^ body == world_index());
+    EXPECT_TRUE(parent_node.is_valid() ^ (body == world_index()));
 
     if (body != world_index()) {
       // Verifies BodyNode has the parent node to the correct body.
