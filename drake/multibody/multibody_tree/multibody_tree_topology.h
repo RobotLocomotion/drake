@@ -260,6 +260,11 @@ class MultibodyTreeTopology {
     return static_cast<int>(body_nodes_.size());
   }
 
+  /// Returns the number of tree levels in the topology.
+  int get_num_levels() const {
+    return num_levels_;
+  }
+
   /// Returns a constant reference to the corresponding FrameTopology given the
   /// FrameIndex.
   const FrameTopology& get_frame(FrameIndex index) const {
@@ -274,18 +279,18 @@ class MultibodyTreeTopology {
     return bodies_[index];
   }
 
-  /// Returns a constant reference to the corresponding BodyNodeTopology given
-  /// a BodyNodeIndex.
-  const BodyNodeTopology& get_body_node(BodyNodeIndex index) const {
-    DRAKE_ASSERT(index < get_num_body_nodes());
-    return body_nodes_[index];
-  }
-
   /// Returns a constant reference to the corresponding BodyTopology given a
   /// BodyIndex.
   const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
     DRAKE_ASSERT(index < get_num_mobilizers());
     return mobilizers_[index];
+  }
+
+  /// Returns a constant reference to the corresponding BodyNodeTopology given
+  /// a BodyNodeIndex.
+  const BodyNodeTopology& get_body_node(BodyNodeIndex index) const {
+    DRAKE_ASSERT(index < get_num_body_nodes());
+    return body_nodes_[index];
   }
 
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
@@ -439,6 +444,7 @@ class MultibodyTreeTopology {
   ///
   /// @throws std::logic_error If users attempt to call this method on an
   ///         already finalized topology.
+  /// @see is_valid()
   void Finalize() {
     // If the topology is valid it means that it was already finalized.
     // Re-compilation is not allowed.
@@ -525,11 +531,8 @@ class MultibodyTreeTopology {
     is_valid_ = true;
   }
 
-  /// Returns the number of tree levels in the topology.
-  int get_num_levels() const {
-    return num_levels_;
-  }
-
+  /// Returns `true` if Finalize() was already called on `this` topology.
+  /// @see Finalize()
   bool is_valid() const { return is_valid_; }
 
  private:

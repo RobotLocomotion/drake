@@ -252,11 +252,13 @@ class TreeTopologyTests : public ::testing::Test {
 
     // Verify that the corresponding Body and BodyNode reference each other
     // correctly.
-    EXPECT_EQ(get_body_topology(body).body_node, get_body_node_topology(node).index);
+    EXPECT_EQ(get_body_topology(body).body_node,
+              get_body_node_topology(node).index);
     EXPECT_EQ(get_body_node_topology(node).body, get_body_topology(body).index);
 
     // They should belong to the same level.
-    EXPECT_EQ(get_body_topology(body).level, get_body_node_topology(node).level);
+    EXPECT_EQ(get_body_topology(body).level,
+              get_body_node_topology(node).level);
 
     const BodyNodeIndex parent_node =
         get_body_node_topology(node).parent_body_node;
@@ -344,20 +346,20 @@ TEST_F(TreeTopologyTests, Finalize) {
 
   // Verifies the expected number of child nodes.
   EXPECT_EQ(get_body_node_topology(0).get_num_children(), 3);
-  EXPECT_EQ(
-      get_body_node_topology(get_body_topology(4).body_node).get_num_children(), 2);
-  EXPECT_EQ(
-      get_body_node_topology(get_body_topology(7).body_node).get_num_children(), 0);
-  EXPECT_EQ(
-      get_body_node_topology(get_body_topology(5).body_node).get_num_children(), 1);
-  EXPECT_EQ(
-      get_body_node_topology(get_body_topology(2).body_node).get_num_children(), 0);
-  EXPECT_EQ(
-      get_body_node_topology(get_body_topology(1).body_node).get_num_children(), 1);
-  EXPECT_EQ(
-      get_body_node_topology(get_body_topology(3).body_node).get_num_children(), 0);
-  EXPECT_EQ(
-      get_body_node_topology(get_body_topology(6).body_node).get_num_children(), 0);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(4).body_node).get_num_children(), 2);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(7).body_node).get_num_children(), 0);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(5).body_node).get_num_children(), 1);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(2).body_node).get_num_children(), 0);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(1).body_node).get_num_children(), 1);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(3).body_node).get_num_children(), 0);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(6).body_node).get_num_children(), 0);
 
   // Checks the correctness of each BodyNode associated with a body.
   for (BodyIndex body(0); body < model_->get_num_bodies(); ++body) {
