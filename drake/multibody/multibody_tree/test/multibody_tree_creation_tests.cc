@@ -278,7 +278,7 @@ class TreeTopologyTests : public ::testing::Test {
       EXPECT_EQ(mobilizer, get_body_topology(body).inboard_mobilizer);
 
       // Verifies the mobilizer makes reference to the appropriate node.
-      EXPECT_EQ(topology.mobilizers[mobilizer].body_node, node);
+      EXPECT_EQ(topology.get_mobilizer(mobilizer).body_node, node);
 
       // Helper lambda to check if this "node" effectively is a child of
       // "parent_node".

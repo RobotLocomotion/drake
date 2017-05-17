@@ -252,7 +252,7 @@ class MultibodyTreeTopology {
   /// body does not have a mobilizer, the number of mobilizers will always equal
   /// the number of bodies minus one.
   int get_num_mobilizers() const {
-    return static_cast<int>(mobilizers.size());
+    return static_cast<int>(mobilizers_.size());
   }
 
   /// Returns the number of tree nodes. This must equal the number of bodies.
@@ -279,6 +279,13 @@ class MultibodyTreeTopology {
   const BodyNodeTopology& get_body_node(BodyNodeIndex index) const {
     DRAKE_ASSERT(index < get_num_body_nodes());
     return body_nodes_[index];
+  }
+
+  /// Returns a constant reference to the corresponding BodyTopology given a
+  /// BodyIndex.
+  const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
+    DRAKE_ASSERT(index < get_num_mobilizers());
+    return mobilizers_[index];
   }
 
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
@@ -389,7 +396,7 @@ class MultibodyTreeTopology {
     // structure of MultibodyTree.
     bodies_[inboard_body].child_bodies.push_back(outboard_body);
 
-    mobilizers.emplace_back(mobilizer_index,
+    mobilizers_.emplace_back(mobilizer_index,
                             in_frame, out_frame,
                             inboard_body, outboard_body);
     return mobilizer_index;
@@ -398,7 +405,7 @@ class MultibodyTreeTopology {
   /// Returns `true` if there is _any_ mobilizer in the multibody tree
   /// connecting the frames with indexes `frame` and `frame2`.
   bool IsThereAMobilizerBetweenFrames(FrameIndex frame1, FrameIndex frame2) {
-    for (const auto& mobilizer_topology : mobilizers) {
+    for (const auto& mobilizer_topology : mobilizers_) {
       if (mobilizer_topology.connects_frames(frame1, frame2)) return true;
     }
     return false;
@@ -407,7 +414,7 @@ class MultibodyTreeTopology {
   /// Returns `true` if there is _any_ mobilizer in the multibody tree
   /// connecting the bodies with indexes `body2` and `body2`.
   bool IsThereAMobilizerBetweenBodies(BodyIndex body1, BodyIndex body2) {
-    for (const auto& mobilizer_topology : mobilizers) {
+    for (const auto& mobilizer_topology : mobilizers_) {
       if (mobilizer_topology.connects_bodies(body1, body2)) return true;
     }
     return false;
@@ -461,7 +468,7 @@ class MultibodyTreeTopology {
       if (current != 0) {  // Not the world body.
         level = bodies_[parent].level + 1;
         const MobilizerIndex mobilizer = bodies_[current].inboard_mobilizer;
-        mobilizers[mobilizer].body_node = node;
+        mobilizers_[mobilizer].body_node = node;
       }
       // Updates body levels.
       bodies_[current].level = level;
@@ -526,7 +533,6 @@ class MultibodyTreeTopology {
   bool is_valid() const { return is_valid_; }
 
   std::vector<FrameTopology> frames;
-  std::vector<MobilizerTopology> mobilizers;
 
  private:
   // is_valid is set to `true` after a successful Finalize().
@@ -536,6 +542,7 @@ class MultibodyTreeTopology {
   int num_levels_{-1};
 
   std::vector<BodyTopology> bodies_;
+  std::vector<MobilizerTopology> mobilizers_;
   std::vector<BodyNodeTopology> body_nodes_;
 };
 
