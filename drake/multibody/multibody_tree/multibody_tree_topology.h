@@ -257,7 +257,7 @@ class MultibodyTreeTopology {
 
   /// Returns the number of tree nodes. This must equal the number of bodies.
   int get_num_body_nodes() const {
-    return static_cast<int>(body_nodes.size());
+    return static_cast<int>(body_nodes_.size());
   }
 
   /// Returns a constant reference to the corresponding FrameTopology given the
@@ -278,7 +278,7 @@ class MultibodyTreeTopology {
   /// a BodyNodeIndex.
   const BodyNodeTopology& get_body_node(BodyNodeIndex index) const {
     DRAKE_ASSERT(index < get_num_body_nodes());
-    return body_nodes[index];
+    return body_nodes_[index];
   }
 
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
@@ -448,7 +448,7 @@ class MultibodyTreeTopology {
     num_levels_ = 1;  // At least one level with the world body at the root.
     // While at it, create body nodes and index them in this BFT order for
     // fast tree traversals of MultibodyTree recursive algorithms.
-    body_nodes.reserve(get_num_bodies());
+    body_nodes_.reserve(get_num_bodies());
     while (!queue.empty()) {
       const BodyNodeIndex node(get_num_body_nodes());
       const BodyIndex current = queue.front();
@@ -473,11 +473,11 @@ class MultibodyTreeTopology {
       BodyNodeIndex parent_node;
       if (node != 0) {  // If we are not at the root:
         parent_node = bodies_[parent].body_node;
-        body_nodes[parent_node].child_nodes.push_back(node);
+        body_nodes_[parent_node].child_nodes.push_back(node);
       }
 
       // Creates BodyNodeTopology.
-      body_nodes.emplace_back(
+      body_nodes_.emplace_back(
           node, level /* node index and level */,
           parent_node /* This node's parent */,
           current     /* This node's body */,
@@ -527,7 +527,6 @@ class MultibodyTreeTopology {
 
   std::vector<FrameTopology> frames;
   std::vector<MobilizerTopology> mobilizers;
-  std::vector<BodyNodeTopology> body_nodes;
 
  private:
   // is_valid is set to `true` after a successful Finalize().
@@ -537,6 +536,7 @@ class MultibodyTreeTopology {
   int num_levels_{-1};
 
   std::vector<BodyTopology> bodies_;
+  std::vector<BodyNodeTopology> body_nodes_;
 };
 
 }  // namespace multibody
