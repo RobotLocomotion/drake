@@ -248,12 +248,12 @@ class TreeTopologyTests : public ::testing::Test {
   // body indexed by `body`.
   void TestBodyNode(BodyIndex body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
-    const BodyNodeIndex node = topology.bodies[body].body_node;
+    const BodyNodeIndex node = get_body_topology(body).body_node;
 
     // Verify that the corresponding Body and BodyNode reference each other
     // correctly.
-    EXPECT_EQ(topology.bodies[body].body_node, topology.body_nodes[node].index);
-    EXPECT_EQ(topology.body_nodes[node].body, topology.bodies[body].index);
+    EXPECT_EQ(get_body_topology(body).body_node, topology.body_nodes[node].index);
+    EXPECT_EQ(topology.body_nodes[node].body, get_body_topology(body).index);
 
     // They should belong to the same level.
     EXPECT_EQ(topology.bodies[body].level, topology.body_nodes[node].level);
@@ -269,13 +269,13 @@ class TreeTopologyTests : public ::testing::Test {
       // Verifies BodyNode has the parent node to the correct body.
       const BodyIndex parent_body = topology.body_nodes[parent_node].body;
       EXPECT_TRUE(parent_body.is_valid());
-      EXPECT_EQ(parent_body, topology.bodies[body].parent_body);
+      EXPECT_EQ(parent_body, get_body_topology(body).parent_body);
       EXPECT_EQ(topology.body_nodes[parent_node].index,
-                topology.bodies[parent_body].body_node);
+                get_body_topology(parent_body).body_node);
 
       // Verifies that BodyNode makes reference to the proper mobilizer index.
       const MobilizerIndex mobilizer = topology.body_nodes[node].mobilizer;
-      EXPECT_EQ(mobilizer, topology.bodies[body].inboard_mobilizer);
+      EXPECT_EQ(mobilizer, get_body_topology(body).inboard_mobilizer);
 
       // Verifies the mobilizer makes reference to the appropriate node.
       EXPECT_EQ(topology.mobilizers[mobilizer].body_node, node);
@@ -289,6 +289,11 @@ class TreeTopologyTests : public ::testing::Test {
       };
       EXPECT_TRUE(is_child_of_parent());
     }
+  }
+
+  const BodyTopology& get_body_topology(int body_index) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    return topology.bodies[body_index];
   }
 
  protected:
@@ -307,6 +312,7 @@ TEST_F(TreeTopologyTests, Finalize) {
 
   const MultibodyTreeTopology& topology = model_->get_topology();
   EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
+  EXPECT_EQ(topology.get_num_levels(), 4);
 
   // These sets contain the indexes of the bodies in each tree level.
   // The order of these indexes in each set is not important, but only the fact
@@ -334,19 +340,19 @@ TEST_F(TreeTopologyTests, Finalize) {
   // Verifies the expected number of child nodes.
   EXPECT_EQ(topology.body_nodes[0].get_num_children(), 3);
   EXPECT_EQ(
-      topology.body_nodes[topology.bodies[4].body_node].get_num_children(), 2);
+      topology.body_nodes[get_body_topology(4).body_node].get_num_children(), 2);
   EXPECT_EQ(
-      topology.body_nodes[topology.bodies[7].body_node].get_num_children(), 0);
+      topology.body_nodes[get_body_topology(7).body_node].get_num_children(), 0);
   EXPECT_EQ(
-      topology.body_nodes[topology.bodies[5].body_node].get_num_children(), 1);
+      topology.body_nodes[get_body_topology(5).body_node].get_num_children(), 1);
   EXPECT_EQ(
-      topology.body_nodes[topology.bodies[2].body_node].get_num_children(), 0);
+      topology.body_nodes[get_body_topology(2).body_node].get_num_children(), 0);
   EXPECT_EQ(
-      topology.body_nodes[topology.bodies[1].body_node].get_num_children(), 1);
+      topology.body_nodes[get_body_topology(1).body_node].get_num_children(), 1);
   EXPECT_EQ(
-      topology.body_nodes[topology.bodies[3].body_node].get_num_children(), 0);
+      topology.body_nodes[get_body_topology(3).body_node].get_num_children(), 0);
   EXPECT_EQ(
-      topology.body_nodes[topology.bodies[6].body_node].get_num_children(), 0);
+      topology.body_nodes[get_body_topology(6).body_node].get_num_children(), 0);
 
   // Checks the correctness of each BodyNode associated with a body.
   for (BodyIndex body(0); body < model_->get_num_bodies(); ++body) {
