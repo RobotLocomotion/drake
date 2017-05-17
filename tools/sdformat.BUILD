@@ -11,6 +11,11 @@ cmake_configure_file(
     defines = [
         "PROJECT_NAME=SDFormat",
         "SDF_VERSION_NAME=",
+        # The sdformat library currently requires that it be able to find the
+        # SDF files that are installed in the cc_library :data variable, which
+        # is why we set the DATAROOTDIR below.
+        # TODO: change the sdformat library to not require this, or use bazel
+        # variables to find the correct location to place these files.
         "CMAKE_INSTALL_FULL_DATAROOTDIR=external/sdformat/sdf/1.6",
         "SDF_PKG_VERSION=",
     ],
@@ -107,6 +112,10 @@ cc_library(
         "-lboost_system",
         "-ltinyxml"
     ],
+    # TODO: We are currently using the vendored version of urdfdom embedded
+    # in sdformat, so we need this include path to find it.  We can get
+    # rid of this by either building the vendored version as a separate
+    # cc_library rule, or by using a true external version of URDF.
     copts = ["-I external/sdformat/src/urdf"],
     deps = [
         "@ignition_math",
