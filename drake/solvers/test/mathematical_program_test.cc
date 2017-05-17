@@ -141,12 +141,9 @@ void CheckAddedVariable(const MathematicalProgram& prog,
   }
 
   // Checks the type of the newly added variables.
-  const auto& variable_types = prog.DecisionVariableTypes();
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
-      EXPECT_EQ(variable_types[prog.FindDecisionVariableIndex(var(i, j))],
-                type_expected);
-      EXPECT_EQ(prog.DecisionVariableType(var(i, j)), type_expected);
+      EXPECT_EQ(var(i, j).get_type(), type_expected);
     }
   }
 }

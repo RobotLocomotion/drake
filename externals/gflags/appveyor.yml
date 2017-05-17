@@ -1,0 +1,43 @@
+# Configuration for continuous integration service at appveyor.com
+
+shallow_clone: true
+
+# Operating system (build VM template)
+os: Visual Studio 2015
+
+# scripts that are called at very beginning, before repo cloning
+init:
+
+# clone directory
+clone_folder: c:\projects\gflags
+
+matrix:
+  fast_finish: true
+
+platform:
+  - Win32
+
+configuration:
+  - Debug
+  - Release
+
+install:
+  # show all available env vars
+  - set
+  - echo cmake on AppVeyor, %configuration%-%platform%
+  - cmake -version
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
+
+build_script:
+  - cd c:\projects\gflags
+  - mkdir out && cd out
+  - cmake -G "Visual Studio 14 2015"
+    -D CMAKE_BUILD_TYPE=%configuration%
+    -D GFLAGS_BUILD_TESTING=ON
+    -D GFLAGS_BUILD_SHARED_LIBS=ON
+    -D GFLAGS_BUILD_STATIC_LIBS=ON
+    ..
+  - cmake --build . --config %configuration%
+
+test_script:
+  - ctest -C %configuration%
