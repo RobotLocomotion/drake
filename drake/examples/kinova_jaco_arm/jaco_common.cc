@@ -1,7 +1,7 @@
 #include <map>
 
-#include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/common/drake_path.h"
+#include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -51,8 +51,7 @@ void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
       weld_to_frame, tree);
 }
 
-void SetPositionControlledJacoGains(Eigen::VectorXd* Kp,
-                                    Eigen::VectorXd* Ki,
+void SetPositionControlledJacoGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd) {
   Kp->resize(9);
   *Kp << 100, 100, 100, 100, 100, 100, 100, 100, 100;
