@@ -207,8 +207,11 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
 # Compute install actions for a cc_library or cc_binary.
 def _install_cc_actions(ctx, target):
     # Compute actions for target artifacts.
-    # TODO(mwoehlke-kitware): make these parameters.
-    dests = {"a": "lib", "so": "lib", None: "bin"}
+    dests = {
+        "a": ctx.attr.archive_dest,
+        "so": ctx.attr.library_dest,
+        None: ctx.attr.runtime_dest,
+    }
     actions = _install_actions(ctx, [target], dests)
 
     # Compute actions for guessed headers.
@@ -301,6 +304,9 @@ install = rule(
         "hdr_strip_prefix": attr.string_list(),
         "guess_hdrs": attr.string(default = "NONE"),
         "targets": attr.label_list(),
+        "archive_dest": attr.string(default = "lib"),
+        "library_dest": attr.string(default = "lib"),
+        "runtime_dest": attr.string(default = "bin"),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
