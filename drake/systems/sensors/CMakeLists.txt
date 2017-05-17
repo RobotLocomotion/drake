@@ -19,6 +19,7 @@ set(drakeSensors_HEADERS
     gyroscope.h
     gyroscope_output.h
     image.h
+    pixel_types.h
     rotary_encoders.h)
 
 set(drakeSensors_TARGET_LINK_LIBRARIES
