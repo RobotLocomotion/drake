@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
-#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
+#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
 namespace {
 
 inline double get_orientation_difference(const Matrix3<double>& rot0,
@@ -22,7 +22,7 @@ inline double get_orientation_difference(const Matrix3<double>& rot0,
 // achieve these poses. This test checks that an IK solution can be computed,
 // and that the resulting pose lies within the given tolerance from the forward
 // kinematics poses.
-GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
+GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
   const std::string kModelPath =
       GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf";
@@ -38,12 +38,13 @@ GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
   const RigidBody<double>* end_effector = iiwa->FindBody(kEndEffectorLinkName);
 
   IKResults ik_res;
-  IiwaIkPlanner ik_planner(kModelPath, kEndEffectorLinkName, nullptr);
-  IiwaIkPlanner::IkCartesianWaypoint wp;
+  ConstraintRelaxingIk ik_planner(kModelPath, kEndEffectorLinkName,
+                               Isometry3<double>::Identity());
+  ConstraintRelaxingIk::IkCartesianWaypoint wp;
   wp.pos_tol = Vector3<double>(0.001, 0.001, 0.001);
   wp.rot_tol = 0.005;
   wp.constrain_orientation = true;
-  std::vector<IiwaIkPlanner::IkCartesianWaypoint> waypoints(1, wp);
+  std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> waypoints(1, wp);
 
   const VectorX<double> kQcurrent = iiwa->getZeroConfiguration();
   VectorX<double> q_fk;
@@ -83,6 +84,6 @@ GTEST_TEST(testInverseKinematics, SolveIkFromFk) {
   }
 }
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake

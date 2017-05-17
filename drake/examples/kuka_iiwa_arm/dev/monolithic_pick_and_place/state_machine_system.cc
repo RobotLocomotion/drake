@@ -21,6 +21,7 @@ namespace {
 const int kStateIndex = 0;
 }
 
+using manipulation::planner::ConstraintRelaxingIk;
 using pick_and_place::PickAndPlaceState;
 namespace monolithic_pick_and_place {
 
@@ -70,7 +71,7 @@ struct PickAndPlaceStateMachineSystem::InternalState {
 PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
     const Isometry3<double>& iiwa_base, const double update_interval)
     : iiwa_base_(iiwa_base),
-      planner_(std::make_unique<IiwaIkPlanner>(
+      planner_(std::make_unique<ConstraintRelaxingIk>(
           drake::GetDrakePath() + kIiwaUrdf, kIiwaEndEffectorName, iiwa_base_)),
       world_state_(
           std::make_unique<SynchronousWorldState>(planner_->get_robot())) {

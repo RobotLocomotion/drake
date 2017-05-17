@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "drake/common/trajectories/piecewise_quaternion.h"
-#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 
 namespace drake {
 namespace examples {
@@ -36,14 +36,16 @@ Isometry3<double> ComputeGraspPose(const Isometry3<double>& X_WObj);
 // effector moves in a straight line between @pX_WEndEffector0 and
 // @p X_WEndEffector1. Orientation is interpolated with slerp. Intermediate
 // waypoints' tolerance can be adjusted separately.
-bool PlanStraightLineMotion(const VectorX<double>& q_current,
-                            const int num_via_points, double duration,
-                            const Isometry3<double>& X_WEndEffector0,
-                            const Isometry3<double>& X_WEndEffector1,
-                            const Vector3<double>& via_points_pos_tolerance,
-                            const double via_points_rot_tolerance,
-                            IiwaIkPlanner* planner, IKResults* ik_res,
-                            std::vector<double>* times);
+bool PlanStraightLineMotion(
+    const VectorX<double>& q_current,
+    const int num_via_points, double duration,
+    const Isometry3<double>& X_WEndEffector0,
+    const Isometry3<double>& X_WEndEffector1,
+    const Vector3<double>& via_points_pos_tolerance,
+    const double via_points_rot_tolerance,
+    manipulation::planner::ConstraintRelaxingIk* planner,
+    IKResults* ik_res,
+    std::vector<double>* times);
 
 // Different states for the pick and place task.
 enum PickAndPlaceState {
