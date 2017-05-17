@@ -324,7 +324,7 @@ class MultibodyTreeTopology {
   FrameIndex add_frame(BodyIndex body_index) {
     if (is_valid()) {
       throw std::logic_error("This MultibodyTreeTopology is finalized already. "
-                             "Therefore adding more bodies is not allowed. "
+                             "Therefore adding more frames is not allowed. "
                              "See documentation for Finalize() for details.");
     }
     FrameIndex frame_index(get_num_frames());
@@ -350,7 +350,7 @@ class MultibodyTreeTopology {
       FrameIndex in_frame, FrameIndex out_frame) {
     if (is_valid()) {
       throw std::logic_error("This MultibodyTreeTopology is finalized already. "
-                             "Therefore adding more bodies is not allowed. "
+                             "Therefore adding more mobilizers is not allowed. "
                              "See documentation for Finalize() for details.");
     }
     // Note: MultibodyTree double checks the mobilizer's frames belong to that
