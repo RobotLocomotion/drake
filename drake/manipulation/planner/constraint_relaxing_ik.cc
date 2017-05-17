@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
+#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 
 #include <memory>
 
@@ -10,13 +10,17 @@
 #include "drake/multibody/rigid_body_ik.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
+namespace {
+constexpr int kDefaultRandomSeed = 1234;
+}  // namespace
 
-IiwaIkPlanner::IiwaIkPlanner(const std::string& model_path,
-                             const std::string& end_effector_link_name,
-                             const Isometry3<double>& base_to_world, int seed)
-    : rand_generator_(seed) {
+ConstraintRelaxingIk::ConstraintRelaxingIk(
+    const std::string& model_path,
+    const std::string& end_effector_link_name,
+    const Isometry3<double>& base_to_world)
+    : rand_generator_(kDefaultRandomSeed) {
   auto base_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
       base_to_world);
@@ -28,31 +32,7 @@ IiwaIkPlanner::IiwaIkPlanner(const std::string& model_path,
   SetEndEffector(end_effector_link_name);
 }
 
-IiwaIkPlanner::IiwaIkPlanner(const std::string& model_path,
-                             const std::string& end_effector_link_name,
-                             std::shared_ptr<RigidBodyFrame<double>> base,
-                             int seed)
-    : rand_generator_(seed) {
-  robot_ = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFile(
-      model_path, multibody::joints::kFixed, base, robot_.get());
-
-  SetEndEffector(end_effector_link_name);
-}
-
-std::unique_ptr<PiecewisePolynomialTrajectory>
-IiwaIkPlanner::GenerateFirstOrderHoldTrajectory(
-    const std::vector<double>& times, const IKResults& ik_res) {
-  DRAKE_DEMAND(times.size() == ik_res.q_sol.size());
-  std::vector<MatrixX<double>> q(ik_res.q_sol.size());
-  for (size_t i = 0; i < ik_res.q_sol.size(); ++i) {
-    q[i] = ik_res.q_sol[i];
-  }
-  return std::make_unique<PiecewisePolynomialTrajectory>(
-      PiecewisePolynomial<double>::FirstOrderHold(times, q));
-}
-
-bool IiwaIkPlanner::PlanSequentialTrajectory(
+bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
     const VectorX<double>& q_current, IKResults* ik_res) {
   DRAKE_DEMAND(ik_res);
@@ -169,12 +149,13 @@ bool IiwaIkPlanner::PlanSequentialTrajectory(
   return true;
 }
 
-bool IiwaIkPlanner::SolveIk(const IkCartesianWaypoint& waypoint,
-                            const VectorX<double>& q0,
-                            const VectorX<double>& q_nom,
-                            const Vector3<double>& pos_tol, double rot_tol,
-                            VectorX<double>* q_res, std::vector<int>* info,
-                            std::vector<std::string>* infeasible_constraints) {
+bool ConstraintRelaxingIk::SolveIk(
+    const IkCartesianWaypoint& waypoint,
+    const VectorX<double>& q0,
+    const VectorX<double>& q_nom,
+    const Vector3<double>& pos_tol, double rot_tol,
+    VectorX<double>* q_res, std::vector<int>* info,
+    std::vector<std::string>* infeasible_constraints) {
   DRAKE_DEMAND(q_res);
   DRAKE_DEMAND(info);
   DRAKE_DEMAND(infeasible_constraints);
@@ -206,13 +187,9 @@ bool IiwaIkPlanner::SolveIk(const IkCartesianWaypoint& waypoint,
              constraint_array.data(), ikoptions, q_res, info->data(),
              infeasible_constraints);
 
-  if ((*info)[0] != 1) {
-    return false;
-  }
-
-  return true;
+  return (*info)[0] == 1;
 }
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake
