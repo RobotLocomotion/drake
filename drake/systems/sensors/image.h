@@ -6,39 +6,39 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/reinit_after_move.h"
-#include "drake/systems/sensors/image_traits.h"
+#include "drake/systems/sensors/pixel_types.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
 // Forward declaration of Image class.
-template <typename Traits>
+template <PixelType kPixelType>
 class Image;
 
 /// The type for RGB image where the each channel has the type of uint8_t.
-using ImageRgb8U = Image<ImageTraits<PixelFormat::kRgb8U>>;
+using ImageRgb8U = Image<PixelType::kRgb8U>;
 
 /// The type for BGR image where the each channel has the type of uint8_t.
-using ImageBgr8U = Image<ImageTraits<PixelFormat::kBgr8U>>;
+using ImageBgr8U = Image<PixelType::kBgr8U>;
 
 /// The type for RGBA image where the each channel has the type of uint8_t.
-using ImageRgba8U = Image<ImageTraits<PixelFormat::kRgba8U>>;
+using ImageRgba8U = Image<PixelType::kRgba8U>;
 
 /// The type for BGRA image where the each channel has the type of uint8_t.
-using ImageBgra8U = Image<ImageTraits<PixelFormat::kBgra8U>>;
+using ImageBgra8U = Image<PixelType::kBgra8U>;
 
 /// The type for depth image where the channel has the type of float.
-using ImageDepth32F = Image<ImageTraits<PixelFormat::kDepth32F>>;
+using ImageDepth32F = Image<PixelType::kDepth32F>;
 
 /// The type for depth image where the channel has the type of uint16_t.
-using ImageDepth16U = Image<ImageTraits<PixelFormat::kDepth16U>>;
+using ImageDepth16U = Image<PixelType::kDepth16U>;
 
 /// The type for label image where the channel has the type of int16_t.
-using ImageLabel16I = Image<ImageTraits<PixelFormat::kLabel16I>>;
+using ImageLabel16I = Image<PixelType::kLabel16I>;
 
 /// The type for greyscale image where the channel has the type of uint8_t.
-using ImageGrey8U = Image<ImageTraits<PixelFormat::kGrey8U>>;
+using ImageGrey8U = Image<PixelType::kGrey8U>;
 
 
 /// Simple data format for Image. For the complex calculation with the image,
@@ -47,15 +47,25 @@ using ImageGrey8U = Image<ImageTraits<PixelFormat::kGrey8U>>;
 ///
 /// The origin of image coordinate system is on the left-upper corner.
 ///
-/// @tparam Traits The traits class that contains channel type and the number of
-/// channel for Image.
-template <typename Traits>
+/// @tparam kPixelType The pixel type enum that denotes the pixel format and the
+/// data type of a channel.
+template <PixelType kPixelType>
 class Image {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Image)
 
-  /// The type for channel.
+  /// An alias for ImageTraits that contains the data type for a channel,
+  /// the number of channels and the pixel format in it.
+  using Traits = ImageTraits<kPixelType>;
+
+  /// The data type for a channel.
   using T = typename Traits::ChannelType;
+
+  /// The number of channels in a pixel.
+  static constexpr int kNumChannels = Traits::kNumChannels;
+
+  /// The format for pixels.
+  static constexpr PixelFormat kPixelFormat = Traits::kPixelFormat;
 
   /// Image size only constructor.  Specifies a width and height for the image.
   /// All the channel values in all the pixels are initialized with zero.
@@ -71,7 +81,7 @@ class Image {
   /// @param initial_value A value set to all the channels in all the pixels
   Image(int width, int height, T initial_value)
       : width_(width), height_(height),
-        data_(width * height * channel_, initial_value) {
+        data_(width * height * kNumChannels, initial_value) {
     DRAKE_ASSERT(width > 0);
     DRAKE_ASSERT(height > 0);
   }
@@ -85,12 +95,9 @@ class Image {
   /// Returns the size of height for the image
   int height() const { return height_; }
 
-  /// Returns the number of channel for the image
-  int num_channels() const { return channel_; }
-
   /// Returns the result of the number of pixels in a image by the number of
   /// channels in a pixel
-  int size() const { return width_ * height_ * channel_; }
+  int size() const { return width_ * height_ * kNumChannels; }
 
   /// Changes the sizes of the width and height for the image.  The values for
   /// them should be greater than zero.  (To resize to zero, assign a default-
@@ -100,7 +107,7 @@ class Image {
     DRAKE_ASSERT(width > 0);
     DRAKE_ASSERT(height > 0);
 
-    data_.resize(width * height * channel_);
+    data_.resize(width * height * kNumChannels);
     std::fill(data_.begin(), data_.end(), 0);
     width_ = width;
     height_ = height;
@@ -119,7 +126,7 @@ class Image {
   T* at(int x, int y) {
     DRAKE_ASSERT(x >= 0 && x < width_);
     DRAKE_ASSERT(y >= 0 && y < height_);
-    return data_.data() + (x + y * width_) * channel_;
+    return data_.data() + (x + y * width_) * kNumChannels;
   }
 
   /// Const version of at() method.  See the document for the non-const version
@@ -127,15 +134,20 @@ class Image {
   const T* at(int x, int y) const {
     DRAKE_ASSERT(x >= 0 && x < width_);
     DRAKE_ASSERT(y >= 0 && y < height_);
-    return data_.data() + (x + y * width_) * channel_;
+    return data_.data() + (x + y * width_) * kNumChannels;
   }
 
  private:
   reinit_after_move<int> width_;
   reinit_after_move<int> height_;
   std::vector<T> data_;
-  static constexpr int channel_ = Traits::channel;
 };
+
+template <PixelType kPixelType>
+constexpr int Image<kPixelType>::kNumChannels;
+
+template <PixelType kPixelType>
+constexpr PixelFormat Image<kPixelType>::kPixelFormat;
 
 }  // namespace sensors
 }  // namespace systems

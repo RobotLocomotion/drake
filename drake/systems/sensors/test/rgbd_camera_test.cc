@@ -284,7 +284,7 @@ class ImageTest : public ::testing::Test {
     // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+        for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
           ASSERT_NEAR(color_image.at(u, v)[ch], color[ch],
                       kColorPixelTolerance);
         }
@@ -329,7 +329,7 @@ class ImageTest : public ::testing::Test {
     // Verifies the four corner points.
 
     for (const auto& corner : kCorners) {
-      for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+      for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
         ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
                     kTerrainColor[ch], kColorPixelTolerance);
       }
@@ -342,7 +342,7 @@ class ImageTest : public ::testing::Test {
     // If there is no material diffuse information provided in the SDF file, the
     // default color given by our SDF parser is `(0.7, 0.7, 0.7, 1.0)` which is
     // `(179u, 179u, 179u, 255u)` in `uint8_t`.
-    for (int ch = 0; ch < color_image.num_channels() - 1; ++ch) {
+    for (int ch = 0; ch < color_image.kNumChannels - 1; ++ch) {
       ASSERT_NEAR(color_image.at(half_width, half_height)[ch],
                   179u, kColorPixelTolerance);
     }
@@ -359,7 +359,7 @@ class ImageTest : public ::testing::Test {
                                     const sensors::ImageDepth32F& depth_image) {
     // Verifies the four corner points.
     for (const auto& corner : kCorners) {
-      for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+      for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
         ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
                     kTerrainColor[ch], kColorPixelTolerance);
       }
@@ -370,7 +370,7 @@ class ImageTest : public ::testing::Test {
     // Verifies the four corner points.
     UV kRightBox{kWidth / 2 + 144, kHeight / 2};
     UV kLeftBox{kWidth / 2 - 144, kHeight / 2};
-    for (int ch = 0; ch < color_image.num_channels() - 1; ++ch) {
+    for (int ch = 0; ch < color_image.kNumChannels - 1; ++ch) {
       ASSERT_NEAR(color_image.at(kRightBox.u, kRightBox.v)[ch],
                   179u, kColorPixelTolerance);
       ASSERT_NEAR(color_image.at(kLeftBox.u, kLeftBox.v)[ch],
@@ -392,7 +392,7 @@ class ImageTest : public ::testing::Test {
           (color[1] != color_image.at(0, v)[1]) ||
           (color[2] != color_image.at(0, v)[2]) ||
           (color[3] != color_image.at(0, v)[3])) {
-        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+        for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
           color[ch] = color_image.at(0, v)[ch];
         }
         actual_horizon = v;
