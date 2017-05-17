@@ -2,7 +2,7 @@
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
-# Generates sdf_config.hh based on the version numbers in CMake code.
+# Generates sdf_config.h based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
     src = "cmake/sdf_config.h.in",
@@ -32,13 +32,13 @@ public_headers = [
 # Generates sdf.hh, which consists of #include statements for all of the public
 # headers in the library.  There is one line like '#include <sdf/Assert.hh>'
 # for each non-generated header, followed at the end by a
-# single '#include <sdf/sdf_config.hh>'.
+# single '#include <sdf/sdf_config.h>'.
 genrule(
     name = "sdfhh_genrule",
     srcs = public_headers,
     outs = ["include/sdf/sdf.hh"],
-    # TODO: centralize this logic, as it is used here, in ignition_math.BUILD, and
-    # in fcl.BUILD
+    # TODO: We should centralize this logic, as it is used here, in
+    # ignition_math.BUILD, and in fcl.BUILD.
     cmd = "(" + (
         "echo '$(SRCS)' | tr ' ' '\\n' | " +
         "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g' &&" +
