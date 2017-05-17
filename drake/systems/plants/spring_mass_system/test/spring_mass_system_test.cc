@@ -77,6 +77,10 @@ TEST_F(SpringMassSystemTest, Construction) {
   EXPECT_EQ(kMass, system_->get_mass());
 }
 
+TEST_F(SpringMassSystemTest, DirectFeedthrough) {
+  EXPECT_FALSE(system_->HasAnyDirectFeedthrough());
+}
+
 TEST_F(SpringMassSystemTest, CloneState) {
   InitializeState(1.0, 2.0);
   state_->set_conservative_work(3.0);

@@ -92,9 +92,6 @@ class SpringMassSystem : public LeafSystem<T> {
   using MyContinuousState = ContinuousState<T>;
   using MyOutput = SystemOutput<T>;
 
-  /// The input force to this system is not direct feedthrough.
-  bool has_any_direct_feedthrough() const override { return false; }
-
   // Provide methods specific to this System.
 
   /// Returns the input port to the externally applied force.
@@ -260,6 +257,11 @@ class SpringMassSystem : public LeafSystem<T> {
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 
  private:
+  /// This system is not direct feedthrough.
+  bool DoHasDirectFeedthrough(const SparsityMatrix*, int, int) const override {
+    return false;
+  }
+
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
   // and static_cast in Release mode.
 

@@ -32,6 +32,7 @@
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
+DEFINE_string(urdf, "", "Name of urdf to load");
 
 namespace drake {
 namespace examples {
@@ -54,38 +55,62 @@ int DoMain() {
   RigidBodyPlant<double>* plant = nullptr;
   const std::string kModelPath = "/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf";
+  const std::string urdf = (!FLAGS_urdf.empty() ? FLAGS_urdf :
+                            GetDrakePath() + kModelPath);
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
-    CreateTreedFromFixedModelAtPose(kModelPath, tree.get());
+    parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf, multibody::joints::kFixed, tree.get());
     plant = builder.AddPlant(std::move(tree));
   }
   // Creates and adds LCM publisher for visualization.
   builder.AddVisualizer(&lcm);
   builder.get_visualizer()->set_publish_period(kIiwaLcmStatusPeriod);
 
+  const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
+  const int num_joints = tree.get_num_positions();
+
   // Adds a iiwa controller
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+
+  DRAKE_DEMAND(tree.get_num_positions() % kIiwaArmNumJoints == 0);
+  for (int offset = kIiwaArmNumJoints; offset < tree.get_num_positions();
+       offset += kIiwaArmNumJoints) {
+    const int end = offset + kIiwaArmNumJoints;
+    iiwa_kp.conservativeResize(end);
+    iiwa_kp.segment(offset, kIiwaArmNumJoints) =
+        iiwa_kp.head(kIiwaArmNumJoints);
+    iiwa_ki.conservativeResize(end);
+    iiwa_ki.segment(offset, kIiwaArmNumJoints) =
+        iiwa_ki.head(kIiwaArmNumJoints);
+    iiwa_kd.conservativeResize(end);
+    iiwa_kd.segment(offset, kIiwaArmNumJoints) =
+        iiwa_kd.head(kIiwaArmNumJoints);
+  }
+
   auto controller =
       builder.AddController<systems::InverseDynamicsController<double>>(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-          GetDrakePath() + kModelPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          urdf, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
           false /* without feedforward acceleration */);
-
-  const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
-  VerifyIiwaTree(tree);
 
   // Create the command subscriber and status publisher.
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
   auto command_sub = base_builder->AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
           "IIWA_COMMAND", &lcm));
-  auto command_receiver = base_builder->AddSystem<IiwaCommandReceiver>();
+  command_sub->set_name("command_subscriber");
+  auto command_receiver =
+      base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
+  command_receiver->set_name("command_receiver");
   auto status_pub = base_builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
+  status_pub->set_name("status_publisher");
   status_pub->set_publish_period(kIiwaLcmStatusPeriod);
-  auto status_sender = base_builder->AddSystem<IiwaStatusSender>();
+  auto status_sender = base_builder->AddSystem<IiwaStatusSender>(num_joints);
+  status_sender->set_name("status_sender");
 
   base_builder->Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));

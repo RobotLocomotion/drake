@@ -157,8 +157,8 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     ContactForce<double> cforce(pos, normal, force, torque);
     calc.AddForce(cforce);
     EXPECT_EQ(details.size(), 1u);
-    PointContactDetail<double>* detail =
-        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    const PointContactDetail<double>* detail =
+        dynamic_cast<const PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
     auto contact_force = detail->ComputeContactForce();
     EXPECT_EQ(contact_force.get_application_point(), pos);
@@ -173,8 +173,8 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force);
     EXPECT_EQ(details.size(), 1u);
-    PointContactDetail<double>* detail =
-        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    const PointContactDetail<double>* detail =
+        dynamic_cast<const PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
     auto contact_force = detail->ComputeContactForce();
     EXPECT_EQ(contact_force.get_application_point(), pos);
@@ -189,8 +189,8 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
     ContactResultantForceCalculator<double> calc(&details);
     calc.AddForce(pos, normal, force, torque);
     EXPECT_EQ(details.size(), 1u);
-    PointContactDetail<double>* detail =
-        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    const PointContactDetail<double>* detail =
+        dynamic_cast<const PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
     auto contact_force = detail->ComputeContactForce();
     EXPECT_EQ(contact_force.get_application_point(), pos);
@@ -208,8 +208,8 @@ GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
         new PointContactDetail<double>(cforce));
     calc.AddForce(move(input_detail));
     EXPECT_EQ(details.size(), 1u);
-    PointContactDetail<double>* detail =
-        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    const PointContactDetail<double>* detail =
+        dynamic_cast<const PointContactDetail<double>*>(details[0].get());
     ASSERT_NE(detail, nullptr);
     auto contact_force = detail->ComputeContactForce();
     EXPECT_EQ(contact_force.get_application_point(), pos);

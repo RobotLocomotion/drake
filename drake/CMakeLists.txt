@@ -54,8 +54,11 @@ function(add_library_with_exports)
   endif()
 endfunction()
 
-# This makes all of our #include "drake/..." statemenets work.
+# This makes all of our #include "drake/..." statements work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
+
+# To find generated protobuf headers.
+include_directories(BEFORE ${PROJECT_BINARY_DIR}/..)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers -Werror=overloaded-virtual")
 if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize=") # sanitizers are extremely brittle without lazy linking
@@ -165,22 +168,24 @@ add_subdirectory(multibody)
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
+add_subdirectory(manipulation)
 if(yaml-cpp_FOUND)
   add_subdirectory(automotive)
+endif()
+set(ENABLE_PYTHON_BINDINGS OFF)
+if(pybind11_FOUND AND NOT DISABLE_PYTHON AND NUMPY_FOUND)
+  if (NUMPY_VERSION VERSION_LESS 1.7)
+    message(WARNING "Python bindings are disabled because numpy version is less than 1.7")
+  else()
+    set(ENABLE_PYTHON_BINDINGS ON)
+    add_subdirectory(bindings)
+  endif()
 endif()
 if(Matlab_FOUND)
   add_subdirectory(thirdParty/bsd/GetFullPath)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(examples)
-
-if(pybind11_FOUND AND NOT DISABLE_PYTHON AND NUMPY_FOUND)
-  if (NUMPY_VERSION VERSION_LESS 1.7)
-    message(WARNING "Python bindings are disabled because numpy version is less than 1.7")
-  else()
-    add_subdirectory(bindings)
-  endif()
-endif()
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
 

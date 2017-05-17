@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -63,6 +64,8 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
+  unused(state);
+
   const Eigen::VectorBlock<const VectorX<T>>& calibration_offsets =
       this->GetNumericParameter(context, 0).get_value();
   DRAKE_ASSERT(calibration_offsets.size() == num_encoders_);
@@ -93,7 +96,7 @@ std::unique_ptr<Parameters<T>> RotaryEncoders<T>::AllocateParameters() const {
 
 template <typename T>
 void RotaryEncoders<T>::SetDefaultParameters(
-    const LeafContext<T>& context,
+    const LeafContext<T>&,
     Parameters<T>* params) const {
   params->get_mutable_numeric_parameter(0)->SetZero();
 }

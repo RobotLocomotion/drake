@@ -15,8 +15,7 @@
 namespace drake {
 namespace automotive {
 
-/// TrajectoryCar models a car that follows a pre-established trajectory,
-/// neglecting all physics.
+/// TrajectoryCar models a car that follows a pre-established trajectory.
 ///
 /// state vector
 /// * none
@@ -36,7 +35,7 @@ namespace automotive {
 /// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
 ///   (OutputPortDescriptor getter: velocity_output())
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_plants
 template <typename T>
 class TrajectoryCar : public systems::LeafSystem<T> {
  public:

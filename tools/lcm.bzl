@@ -122,7 +122,7 @@ def lcm_cc_library(
         lcm_package=lcm_package,
         outs=outs)
 
-    deps = set(kwargs.pop('deps', [])) | ["@lcm//:lcm"]
+    deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(kwargs.pop('includes', [])) | ["."]
     native.cc_library(
         name=name,

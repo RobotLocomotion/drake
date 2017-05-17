@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace systems {
@@ -29,7 +30,7 @@ double Gain<T>::get_gain() const {
     std::stringstream s;
     s << "The gain vector, [" << k_ << "], cannot be represented as a scalar "
       << "value. Please use drake::systems::Gain::get_gain_vector() instead.";
-    DRAKE_ABORT_MSG(s.str().c_str());
+    throw std::runtime_error(s.str().c_str());
   }
   return k_[0];
 }
@@ -41,10 +42,11 @@ const Eigen::VectorXd& Gain<T>::get_gain_vector() const {
 
 template <typename T>
 void Gain<T>::DoCalcVectorOutput(
-    const Context<T>& context,
+    const Context<T>&,
     const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
+  unused(state);
   *output = k_.array() * input.array();
 }
 

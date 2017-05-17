@@ -49,8 +49,6 @@ class PidControllerTest : public ::testing::Test {
   Vector3d error_rate_signal_{1.3, 0.9, 3.14};
 };
 
-typedef PidControllerTest PidControllerDeathTest;
-
 // Tests getter methods for controller constants.
 TEST_F(PidControllerTest, Getters) {
   ASSERT_EQ(kp_, controller_.get_Kp_vector());
@@ -62,7 +60,7 @@ TEST_F(PidControllerTest, Getters) {
   EXPECT_NO_THROW(controller_.get_Kd_singleton());
 }
 
-TEST_F(PidControllerDeathTest, GetterVectors) {
+TEST_F(PidControllerTest, GetterVectors) {
   const Eigen::Vector2d kp{1.0, 2.0};
   const Eigen::Vector2d ki{1.0, 2.0};
   const Eigen::Vector2d kd{1.0, 2.0};
@@ -76,25 +74,25 @@ TEST_F(PidControllerDeathTest, GetterVectors) {
   ASSERT_EQ(ki, controller.get_Ki_vector());
   ASSERT_EQ(kd, controller.get_Kd_vector());
 
-  EXPECT_DEATH(controller.get_Kp_singleton(), ".*");
+  EXPECT_THROW(controller.get_Kp_singleton(), std::runtime_error);
 }
 
-TEST_F(PidControllerDeathTest, GetterVectorKi) {
+TEST_F(PidControllerTest, GetterVectorKi) {
   const Eigen::Vector2d kp{1.0, 2.0};
   const Eigen::Vector2d ki{1.0, 2.0};
   const Eigen::Vector2d kd{1.0, 2.0};
   PidController<double> controller{kp, ki, kd};
 
-  EXPECT_DEATH(controller.get_Ki_singleton(), ".*");
+  EXPECT_THROW(controller.get_Ki_singleton(), std::runtime_error);
 }
 
-TEST_F(PidControllerDeathTest, GetterVectorKd) {
+TEST_F(PidControllerTest, GetterVectorKd) {
   const Eigen::Vector2d kp{1.0, 2.0};
   const Eigen::Vector2d ki{1.0, 2.0};
   const Eigen::Vector2d kd{1.0, 2.0};
   PidController<double> controller{kp, ki, kd};
 
-  EXPECT_DEATH(controller.get_Kd_singleton(), ".*");
+  EXPECT_THROW(controller.get_Kd_singleton(), std::runtime_error);
 }
 
 TEST_F(PidControllerTest, Graphviz) {

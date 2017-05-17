@@ -15,7 +15,7 @@ Bazel Installation
 ==================
 
 The Ubuntu Xenial platform setup process installs Bazel for you. On other
-platforms, refer to the Bazel installation instructions. We use Bazel 0.4.3.
+platforms, refer to the Bazel installation instructions. We use Bazel 0.4.5.
 https://bazel.build/versions/master/docs/install.html
 
 Drake clone and platform setup
@@ -113,7 +113,7 @@ This config turns off sandboxing, which allows a ``genrule`` to access the
 ``.o`` files and process them into a ``.dSYM``.  Use as follows::
 
   bazel build --config=apple_debug drake/path/to/my:binary_or_test_dsym
-  lldb ./bazel_bin/drake/path/to/my/binary_or_test
+  lldb ./bazel-bin/drake/path/to/my/binary_or_test
 
 For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
@@ -133,17 +133,25 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi (on Ubuntu only)
+ * Gurobi
  * SNOPT
 
 Gurobi
 ------
 
+Install on Ubuntu
+~~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. Download ``gurobi6.0.5_linux64.tar.gz``.
 4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
 5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi605/linux64``
+
+Install on OSX
+~~~~~~~~~~~~~~
+1. Register for an account on http://www.gurobi.com.
+2. Set up your Gurobi license file in accordance with Gurobi documentation.
+3. Download and install ``gurobi6.05_mac64.pkg``.
 
 
 To confirm that your setup was successful, run the tests that require Gurobi.

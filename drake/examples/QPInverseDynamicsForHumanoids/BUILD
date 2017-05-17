@@ -22,6 +22,18 @@ exports_files(
     ["config/valkyrie.alias_groups"],
 )
 
+exports_files(
+    ["config/valkyrie.id_controller_config"],
+)
+
+exports_files(
+    ["config/iiwa.alias_groups"],
+)
+
+exports_files(
+    ["config/iiwa.id_controller_config"],
+)
+
 drake_cc_library(
     name = "humanoid_status",
     srcs = ["humanoid_status.cc"],
@@ -58,7 +70,7 @@ drake_cc_library(
         "//drake/lcmtypes:qp_input",
         "//drake/lcmtypes:resolved_contact",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -97,50 +109,52 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "valkyrie_balancing_test",
-    size = "medium",
-    srcs = ["test/valkyrie_balancing_test.cc"],
-    data = [
-        "config/valkyrie.alias_groups",
-        "config/valkyrie.id_controller_config",
-        "//drake/examples/Valkyrie:models",
-    ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
-    deps = [
-        ":control_utils",
-        ":qp_controller",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/Valkyrie:valkyrie_constants",
-        "//drake/multibody/parsers",
-    ],
-)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+#drake_cc_googletest(
+#    name = "valkyrie_balancing_test",
+#    size = "medium",
+#    srcs = ["test/valkyrie_balancing_test.cc"],
+#    data = [
+#        "config/valkyrie.alias_groups",
+#        "config/valkyrie.id_controller_config",
+#        "//drake/examples/Valkyrie:models",
+#    ],
+#    tags = [
+#        "exclusive",
+#        "gurobi",
+#        "local",
+#    ],
+#    deps = [
+#        ":control_utils",
+#        ":qp_controller",
+#        "//drake/common:eigen_matrix_compare",
+#        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+#        "//drake/examples/Valkyrie:valkyrie_constants",
+#        "//drake/multibody/parsers",
+#    ],
+#)
 
-drake_cc_googletest(
-    name = "iiwa_inverse_dynamics_test",
-    srcs = ["test/iiwa_inverse_dynamics_test.cc"],
-    data = [
-        "config/iiwa.alias_groups",
-        "config/iiwa.id_controller_config",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
-    deps = [
-        ":control_utils",
-        ":qp_controller",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/multibody/parsers",
-    ],
-)
+# Temporarily disabled because we have no Gurobi license in CI. #5862
+#drake_cc_googletest(
+#    name = "iiwa_inverse_dynamics_test",
+#    srcs = ["test/iiwa_inverse_dynamics_test.cc"],
+#    data = [
+#        "config/iiwa.alias_groups",
+#        "config/iiwa.id_controller_config",
+#        "//drake/manipulation/models/iiwa_description:models",
+#    ],
+#    tags = [
+#        "exclusive",
+#        "gurobi",
+#        "local",
+#    ],
+#    deps = [
+#        ":control_utils",
+#        ":qp_controller",
+#        "//drake/common:eigen_matrix_compare",
+#        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+#        "//drake/multibody/parsers",
+#    ],
+#)
 
 cpplint()

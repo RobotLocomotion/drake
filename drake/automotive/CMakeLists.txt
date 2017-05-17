@@ -8,7 +8,6 @@ endif()
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   bicycle_car.cc
   calc_smooth_acceleration.cc
-  create_trajectory_params.cc
   curve2.cc
   gen/bicycle_car_parameters.cc
   gen/bicycle_car_state.cc
@@ -17,16 +16,17 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/idm_planner_parameters.cc
   gen/maliput_railcar_params.cc
   gen/maliput_railcar_state.cc
+  gen/mobil_planner_parameters.cc
+  gen/pure_pursuit_params.cc
   gen/simple_car_params.cc
   gen/simple_car_state.cc
   idm_controller.cc
   idm_planner.cc
+  maliput/api/junction.cc
+  maliput/api/lane.cc
+  maliput/api/lane_data.cc
   maliput/api/road_geometry.cc
-  maliput/dragway/branch_point.cc
-  maliput/dragway/junction.cc
-  maliput/dragway/lane.cc
-  maliput/dragway/road_geometry.cc
-  maliput/dragway/segment.cc
+  maliput/api/segment.cc
   maliput/monolane/arc_lane.cc
   maliput/monolane/branch_point.cc
   maliput/monolane/builder.cc
@@ -39,8 +39,11 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   maliput/utility/generate_obj.cc
   maliput/utility/generate_urdf.cc
   maliput_railcar.cc
+  mobil_planner.cc
   monolane_onramp_merge.cc
   pose_selector.cc
+  pure_pursuit.cc
+  pure_pursuit_controller.cc
   road_path.cc
   simple_car.cc
   simple_powertrain.cc
@@ -65,9 +68,12 @@ drake_install_headers(
   idm_controller.h
   idm_planner.h
   maliput_railcar.h
+  mobil_planner.h
   monolane_onramp_merge.h
   road_path.h
   pose_selector.h
+  pure_pursuit.h
+  pure_pursuit_controller.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
   simple_powertrain.h
@@ -126,7 +132,9 @@ if(lcm_FOUND)
       drake-automotive
       drake-rigid-body-plant)
 
-  add_executable(automotive_demo automotive_demo.cc)
+  add_executable(automotive_demo
+      automotive_demo.cc
+      create_trajectory_params.cc)
   target_link_libraries(automotive_demo
       drakeAutomotiveLcm
       drakeMaliputDragway)

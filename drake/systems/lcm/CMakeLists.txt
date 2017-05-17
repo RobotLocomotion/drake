@@ -27,6 +27,21 @@ if(lcm_FOUND)
       drake-lcm
       drake-lcmtypes-cpp
       drake-system-framework)
+
+  add_library_with_exports(LIB_NAME drakeLcmDrivenLoop SOURCE_FILES
+    lcm_driven_loop.cc)
+  target_link_libraries(drakeLcmDrivenLoop
+    drakeLcmSystem
+    drakeSystemAnalysis)
+
+  drake_install_libraries(drakeLcmDrivenLoop)
+  drake_install_headers(
+    lcm_driven_loop.h)
+  drake_install_pkg_config_file(drake-lcm-driven-loop
+    TARGET drakeLcmDrivenLoop
+    LIBS -ldrakeLcmDrivenLoop ${CMAKE_THREAD_LIBS_INIT}
+    REQUIRES
+      drake-lcm-system2)
 endif()
 
 if(BUILD_TESTING)

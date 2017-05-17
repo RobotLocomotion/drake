@@ -27,8 +27,8 @@ ConstantValueSource<T>::ConstantValueSource(
 }
 
 template <typename T>
-void ConstantValueSource<T>::DoCalcOutput(const Context<T>& context,
-                                        SystemOutput<T>* output) const {
+void ConstantValueSource<T>::DoCalcOutput(const Context<T>&,
+                                          SystemOutput<T>* output) const {
   output->GetMutableData(0)->SetFrom(*source_value_);
 }
 

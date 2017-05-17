@@ -8,6 +8,44 @@ Frequently Asked Questions
    :depth: 3
    :local:
 
+.. _faq_osx_build_failure_missing_dependency_declarations:
+
+Why Does Build Fail with "this rule is missing dependency declarations" on macOS?
+=================================================================================
+
+Symptom: After upgrading Xcode on macOS, you encounter an error similar to the
+following::
+
+    $ bazel build ...
+    ...
+    ERROR: /private/var/tmp/_bazel_liang/6afb2531e78184cc48f3db789230c79d/
+    external/libbot/BUILD.bazel:59:1: undeclared inclusion(s) in rule
+    '@libbot//:ldpc':
+    this rule is missing dependency declarations for the following files
+    included by 'external/libbot/bot2-lcm-utils/src/tunnel/ldpc/getopt.cpp':
+      '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/
+      Developer/SDKs/MacOSX10.12.sdk/usr/include/ctype.h'
+
+Solution: Install Xcode's command-line tools and reset the tools' path to be
+the default. To install Xcode's command-line tools::
+
+    $ xcode-select --install
+
+Once installed, you should have ``bin/``, ``include/``, ``lib/``, and
+``libexec/`` directories within ``/Library/Developer/CommandLineTools/usr/``.
+
+Check the Xcode command line tools' path::
+
+    $ xcode-select -p
+
+Drake's Bazel-based build system is currently
+`hard-coded <https://github.com/RobotLocomotion/drake/blob/c8b974baee3144acecb063607e90287ca009734c/tools/CROSSTOOL#L362-L366>`_
+to assume the Xcode command line tools are in the default location of
+``/Applications/Xcode.app/Contents/Developer``. If the path is not the
+default, reset it to be the default by executing the following command::
+
+    $ sudo xcode-select --reset
+
 .. _faq_missing_or_stray_characters_in_generate_urdf_test:
 
 Why Does Build Fail With Missing or Stray Character Error in generate_urdf_test.cc?
@@ -83,6 +121,27 @@ objects are actually drawn. This appeared to be due to display drivers and/or
 non support of hardware-accelerated rendering. To address this, go to
 ``Virtual Machine Settings``, and check the ``Accelerate 3D Graphics`` box under
 Display settings; now the simulations draw properly.
+
+.. _faq_drake_visualizer_segfault:
+
+Why Does drake-visualizer Segfault Upon Start?
+==============================================
+
+Symptom: VTK6 is installed but Drake's CMake-based super-build is configured to
+download and build against VTK5 using the technique described in
+:ref:`here <faq_cmake_vtk_version_crash>`. When starting ``drake-visualizer``,
+it immediately segfaults::
+
+    $ cd drake-distro
+    $ ./build/install/bin/drake-visualizer
+    Segmentation fault (core dumped)
+
+Solution: The problem is ``drake-visualizer`` is correctly being built against
+VTK5, but is incorrectly run against VTK6. To fix this problem, modify the
+``LD_LIBRARY_PATH`` and ``PYTHONPATH`` environment variables to ensure VTK5 is
+prioritized over VTK6 as described
+:ref:`here <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.
+For more information, see `this comment <https://github.com/RobotLocomotion/drake/issues/5280#issuecomment-282036045>`_.
 
 .. _faq_drake_visualizer_no_module_named_vtk_common_core_python:
 

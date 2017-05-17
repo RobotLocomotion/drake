@@ -1,21 +1,22 @@
 /**
  *
  * @file This is a demo of the functionality of the
- * IiwaStateFeedbackPlanSource along with the
+ * RobotPlanInterpolator along with the
  * SchunkWsgTrajectoryGenerator.
  *
  */
 
 #include <vector>
+
 #include <gflags/gflags.h>
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/demo_diagram_builder.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/iiwa_state_feedback_plan.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -35,10 +36,8 @@ using systems::Simulator;
 using systems::DiagramBuilder;
 
 namespace examples {
-using schunk_wsg::SchunkWsgTrajectoryGenerator;
-
 namespace kuka_iiwa_arm {
-namespace pick_and_place {
+namespace monolithic_pick_and_place {
 namespace {
 
 class PlanSourceTester : public systems::LeafSystem<double> {
@@ -71,7 +70,7 @@ class PlanSourceTester : public systems::LeafSystem<double> {
     std::unique_ptr<systems::AbstractValue> return_value;
     std::unique_ptr<systems::AbstractValue> return_val;
 
-    /* allocate outputs for IiwaStateFeedbackPlanSource and
+    /* allocate outputs for RobotPlanInterpolator and
      * SchunkWsgTrajectoryGenerator */
     if (descriptor.get_index() == output_port_iiwa_plan_) {
       return_val = systems::AbstractValue::Make<robot_plan_t>(robot_plan_t());
@@ -136,37 +135,11 @@ class PlanSourceTester : public systems::LeafSystem<double> {
 int DoMain(void) {
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
-  ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
-  std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance);
-
-  auto plant =
-      builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
-          std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
-
-  auto drake_visualizer = builder.template AddSystem<DrakeVisualizer>(
-      plant->get_plant().get_rigid_body_tree(), &lcm);
-
-  builder.Connect(plant->get_output_port_plant_state(),
-                  drake_visualizer->get_input_port(0));
-  auto iiwa_plan_source =
-      builder.template AddSystem<IiwaStateFeedbackPlanSource>(
-          drake::GetDrakePath() + kIiwaUrdf, 0.01);
-  builder.Connect(plant->get_output_port_iiwa_state(),
-                  iiwa_plan_source->get_input_port_state());
-  builder.Connect(iiwa_plan_source->get_output_port_state_trajectory(),
-                  plant->get_input_port_iiwa_state_command());
-  builder.Connect(iiwa_plan_source->get_output_port_acceleration_trajectory(),
-                  plant->get_input_port_iiwa_acceleration_command());
-
-  auto wsg_trajectory_generator_ =
-      builder.template AddSystem<SchunkWsgTrajectoryGenerator>(
-          plant->get_output_port_wsg_state().size(), 0);
-  builder.Connect(plant->get_output_port_wsg_state(),
-                  wsg_trajectory_generator_->get_state_input_port());
-  builder.Connect(wsg_trajectory_generator_->get_output_port(0),
-                  plant->get_input_port_wsg_command());
+  auto plant_and_estimators = builder.template AddSystem<
+      IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
+      std::make_unique<IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<double>>(
+          &lcm));
 
   auto iiwa_base_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
@@ -176,7 +149,6 @@ int DoMain(void) {
   parsers::urdf::AddModelInstanceFromUrdfFile(drake::GetDrakePath() + kIiwaUrdf,
                                               multibody::joints::kFixed,
                                               iiwa_base_frame, &iiwa);
-
   double kStartTime = 0.5;
   std::vector<double> t, q_wsg;
   t.push_back(kStartTime);
@@ -201,30 +173,30 @@ int DoMain(void) {
       builder.template AddSystem<PlanSourceTester>(iiwa, t, q_iiwa, q_wsg);
 
   builder.Connect(trajectory_generator_tester->get_output_port_iiwa_action(),
-                  iiwa_plan_source->get_input_port_plan());
+                  plant_and_estimators->get_input_port_iiwa_plan());
   builder.Connect(trajectory_generator_tester->get_output_port_wsg_action(),
-                  wsg_trajectory_generator_->get_command_input_port());
-
-  std::cout << "Finished diagram connections. Starting simulation.\n";
+                  plant_and_estimators->get_input_port_wsg_plan());
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
   simulator.Initialize();
+  plant_and_estimators->InitializeIiwaPlan(
+      Eigen::VectorXd::Zero(7),
+      sys->GetMutableSubsystemContext(simulator.get_mutable_context(),
+                                      plant_and_estimators));
 
   simulator.StepTo(6.0);
-
-  std::cout << "Demo completed.\n";
 
   return 0;
 }
 
 }  // namespace
-}  // namespace pick_and_place
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
-  drake::examples::kuka_iiwa_arm::pick_and_place::DoMain();
+int main() {
+  drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
   return 0;
 }

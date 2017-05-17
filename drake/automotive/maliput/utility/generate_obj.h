@@ -31,6 +31,8 @@ struct ObjFeatures {
   double arrow_elevation{0.05};
   /// Absolute elevation (h) of lane-haze above road surface
   double lane_haze_elevation{0.02};
+  /// Origin of OBJ coordinates relative to world-frame
+  api::GeoPosition origin{0., 0., 0.};
 };
 
 /// Generates a Wavefront OBJ model of the road surface of an api::RoadGeometry.

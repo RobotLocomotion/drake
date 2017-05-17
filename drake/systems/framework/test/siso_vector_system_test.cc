@@ -82,7 +82,7 @@ class TestSisoSystem : public SisoVectorSystem<double> {
   }
 
   // LeafSystem override.
-  std::unique_ptr<DiscreteState<double>> AllocateDiscreteState()
+  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState()
       const override {
     return prototype_discrete_state_->Clone();
   }
@@ -100,7 +100,7 @@ class TestSisoSystem : public SisoVectorSystem<double> {
       vec.emplace_back(std::make_unique<BasicVector<double>>(kSize));
     }
     prototype_discrete_state_ =
-        std::make_unique<DiscreteState<double>>(std::move(vec));
+        std::make_unique<DiscreteValues<double>>(std::move(vec));
   }
 
   // Use a single Value<S>(value) for AllocateAbstractState; when this has not
@@ -122,8 +122,8 @@ class TestSisoSystem : public SisoVectorSystem<double> {
   }
 
  private:
-  std::unique_ptr<DiscreteState<double>> prototype_discrete_state_{
-    std::make_unique<DiscreteState<double>>()};
+  std::unique_ptr<DiscreteValues<double>> prototype_discrete_state_{
+      std::make_unique<DiscreteValues<double>>()};
   std::unique_ptr<AbstractValues> prototype_abstract_state_{
       std::make_unique<AbstractValues>()};
   mutable const Context<double>* last_context_{nullptr};
@@ -311,12 +311,8 @@ TEST_F(SisoVectorSystemTest, DiscreteVariableUpdates) {
   dut.CalcDiscreteVariableUpdates(*context, event, discrete_updates.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 1);
-  EXPECT_EQ(
-      discrete_updates->get_mutable_discrete_state(0)->GetAtIndex(0),
-      2.0);
-  EXPECT_EQ(
-      discrete_updates->get_mutable_discrete_state(0)->GetAtIndex(1),
-      3.0);
+  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 2.0);
+  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(1), 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_time_derivatives_count(), 0);

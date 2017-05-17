@@ -1,11 +1,5 @@
-#include "drake/multibody/global_inverse_kinematics.h"
-
-#include <gtest/gtest.h>
-
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
 using Eigen::Vector3d;
@@ -16,116 +10,6 @@ using drake::solvers::SolutionResult;
 namespace drake {
 namespace multibody {
 namespace {
-std::unique_ptr<RigidBodyTree<double>> ConstructKuka() {
-  std::unique_ptr<RigidBodyTree<double>> rigid_body_tree =
-      std::make_unique<RigidBodyTree<double>>();
-  const std::string model_path = drake::GetDrakePath() +
-                                 "/manipulation/models/iiwa_description/urdf/"
-                                 "iiwa14_polytope_collision.urdf";
-
-  parsers::urdf::AddModelInstanceFromUrdfFile(
-      model_path,
-      drake::multibody::joints::kFixed,
-      nullptr,
-      rigid_body_tree.get());
-
-  AddFlatTerrainToWorld(rigid_body_tree.get());
-  return rigid_body_tree;
-}
-
-class KukaTest : public ::testing::Test {
- public:
-  KukaTest()
-      : rigid_body_tree_(ConstructKuka()),
-        global_ik_(*rigid_body_tree_, 2),  // Test with 2 binary variables per
-                                           // half axis.
-        ee_idx_(rigid_body_tree_->FindBodyIndex("iiwa_link_ee")) {}
-
-  ~KukaTest() override {};
-
-  /**
-   * Given the solution computed from global IK, reconstruct the posture, then
-   * compute the body pose using forward kinematics with the reconstructed
-   * posture. Compare that forward kinematics body pose, with the body pose
-   * in the global IK.
-   */
-  void CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
-    Eigen::VectorXd q_global_ik =
-        global_ik_.ReconstructGeneralizedPositionSolution();
-
-    std::cout << "Reconstructed robot posture:\n" << q_global_ik << std::endl;
-    KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q_global_ik);
-
-    // TODO(hongkai.dai): replace this print out with error check. We have not
-    // derived a rigorous bound on the rotation matrix relaxation yet. Should be
-    // able to get a more meaningful bound when we have some theoretical proof.
-    for (int i = 1; i < rigid_body_tree_->get_num_bodies(); ++i) {
-      // Compute forward kinematics.
-      const auto &body_pose_fk = rigid_body_tree_->CalcFramePoseInWorldFrame(
-          cache, rigid_body_tree_->get_body(i), Isometry3d::Identity());
-
-      const Eigen::Matrix3d body_Ri =
-          global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
-      // Use 1E-10 for the error tolerance.
-      EXPECT_TRUE((body_Ri.array().abs() <= 1 + 1E-10).all());
-      EXPECT_LE(body_Ri.trace(), 3 + 1E-10);
-      EXPECT_GE(body_Ri.trace(), -1 - 1E-10);
-      // TODO(hongkai.dai): We will have a more meaningful bound on the
-      // relaxation of rotation matrix. Then clean up this print out with
-      // the check on the error bound, and move this file out of dev folder.
-      std::cout << rigid_body_tree_->get_body(i).get_name() << std::endl;
-      std::cout << "rotation matrix:\n global_ik\n" << body_Ri << std::endl;
-      std::cout << "forward kinematics\n" << body_pose_fk.linear() << std::endl;
-      std::cout << "R * R':\n" << body_Ri * body_Ri.transpose() << std::endl;
-      std::cout << "det(R) = " << body_Ri.determinant() << std::endl;
-      Vector3d body_pos_global_ik =
-          global_ik_.GetSolution(global_ik_.body_position(i));
-      std::cout << "position:\n global_ik\n" << body_pos_global_ik << std::endl;
-      std::cout << "forward kinematics\n"
-                << body_pose_fk.translation() << std::endl;
-      std::cout << std::endl;
-      EXPECT_TRUE(CompareMatrices(body_pose_fk.translation(),
-                                  body_pos_global_ik,
-                                  pos_tol,
-                                  MatrixCompareType::absolute));
-      EXPECT_TRUE(CompareMatrices(body_pose_fk.linear(), body_Ri, orient_tol,
-                                  MatrixCompareType::absolute));
-    }
-  }
-
- protected:
-  std::unique_ptr<RigidBodyTree<double>> rigid_body_tree_;
-  GlobalInverseKinematics global_ik_;
-  int ee_idx_;  // end effector's body index.
-};
-
-TEST_F(KukaTest, ReachableTest) {
-  // Test the case that global IK should find a solution.
-  // "ee" stands for "end effector".
-  Eigen::Vector3d ee_pos_lb_W(0.4, -0.1, 0.4);
-  Eigen::Vector3d ee_pos_ub_W(0.6, 0.1, 0.6);
-  global_ik_.AddWorldPositionConstraint(ee_idx_, Vector3d::Zero(), ee_pos_lb_W,
-                                        ee_pos_ub_W);
-
-  Eigen::Quaterniond ee_desired_orient(
-      Eigen::AngleAxisd(-M_PI / 2, Vector3d(0, 1, 0)));
-  global_ik_.AddWorldOrientationConstraint(ee_idx_, ee_desired_orient,
-                                           0.2 * M_PI);
-
-  solvers::GurobiSolver gurobi_solver;
-  if (gurobi_solver.available()) {
-    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
-
-    SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
-
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
-
-    double pos_tol = 0.06;
-    double orient_tol = 0.2;
-    CheckGlobalIKSolution(pos_tol, orient_tol);
-  }
-}
-
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   Eigen::Vector3d ee_pos_lb(0.6, -0.1, 0.7);
@@ -145,9 +29,15 @@ TEST_F(KukaTest, UnreachableTest) {
 
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
-    EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded
-                    || sol_result == SolutionResult::kInfeasibleConstraints);
+    EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded ||
+                sol_result == SolutionResult::kInfeasibleConstraints);
   }
+  Eigen::Matrix<double, 7, 1> q_nom;
+  Eigen::Matrix<double, 7, 1> q_guess;
+  q_nom.setZero();
+  q_guess.setZero();
+  CheckNonlinearIK(ee_pos_lb, ee_pos_ub, ee_desired_orient, 0, q_nom, q_guess,
+                   13);
 }
 
 TEST_F(KukaTest, ReachableWithCost) {

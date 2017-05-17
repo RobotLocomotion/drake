@@ -23,7 +23,7 @@ namespace systems {
 /// of the constituent systems, and should therefore be discarded.
 ///
 /// A system must be added to the DiagramBuilder with AddSystem before it can
-/// be wired up in any way.
+/// be wired up in any way. Every system must have a unique, non-empty name.
 template <typename T>
 class DiagramBuilder {
  public:
@@ -37,6 +37,9 @@ class DiagramBuilder {
   /// pointer to the System, which will remain valid for the lifetime of the
   /// Diagram built by this builder.
   ///
+  /// If the system's name is unset, sets it to System::GetMemoryObjectName()
+  /// as a default in order to have unique names within the diagram.
+  ///
   /// @code
   ///   DiagramBuilder<T> builder;
   ///   auto foo = builder.AddSystem(std::make_unique<Foo<T>>());
@@ -45,6 +48,9 @@ class DiagramBuilder {
   /// @tparam S The type of system to add.
   template<class S>
   S* AddSystem(std::unique_ptr<S> system) {
+    if (system->get_name().empty()) {
+      system->set_name(system->GetMemoryObjectName());
+    }
     S* raw_sys_ptr = system.get();
     systems_.insert(raw_sys_ptr);
     registered_systems_.push_back(std::move(system));

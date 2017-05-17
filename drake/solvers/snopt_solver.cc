@@ -9,6 +9,10 @@
 
 #include "drake/math/autodiff.h"
 
+// TODO(jwnimmer-tri) Eventually resolve these warnings.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 namespace snopt {
 // Needs to include snopt.hh BEFORE snfilewrapper.hh, otherwise compiler does
 // not work.
@@ -212,7 +216,7 @@ void EvaluateNonlinearConstraints(
       this_x(i) = xvec(prog.FindDecisionVariableIndex(binding.variables()(i)));
     }
 
-    TaylorVecXd ty;
+    AutoDiffVecXd ty;
     ty.resize(num_constraints);
     c->Eval(math::initializeAutoDiff(this_x), ty);
 
@@ -258,7 +262,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
   // evaluate cost
   Eigen::VectorXd this_x;
-  TaylorVecXd ty(1);
+  AutoDiffVecXd ty(1);
 
   for (auto const& binding : current_problem->GetAllCosts()) {
     auto const& obj = binding.constraint();
@@ -561,3 +565,5 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
 }  // namespace solvers
 }  // namespace drake
+
+#pragma GCC diagnostic pop  // "-Wunused-parameter"

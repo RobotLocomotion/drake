@@ -98,7 +98,7 @@ drake_cc_binary(
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -111,9 +111,9 @@ drake_cc_binary(
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_plant",
+        "//drake/common:call_matlab",
         "//drake/common:drake_path",
         "//drake/lcm",
-        "//drake/lcm:lcm_call_matlab",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
@@ -124,7 +124,7 @@ drake_cc_binary(
         "//drake/systems/primitives:linear_system",
         "//drake/systems/primitives:signal_logger",
         "//drake/systems/sensors:rotary_encoders",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -144,7 +144,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -164,7 +164,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -183,7 +183,7 @@ drake_cc_binary(
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/primitives:trajectory_source",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -217,7 +217,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

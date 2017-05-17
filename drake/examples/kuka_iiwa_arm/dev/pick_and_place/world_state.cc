@@ -6,7 +6,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place_demo {
+namespace pick_and_place {
 
 WorldState::WorldState(const std::string& iiwa_model_path,
                        const std::string& end_effector_name, lcm::LCM* lcm)
@@ -52,8 +52,8 @@ void WorldState::SubscribeToObjectStatus(const std::string& channel) {
       lcm_->subscribe(channel, &WorldState::HandleObjectStatus, this));
 }
 
-void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer* rbuf,
-                                  const std::string& chan,
+void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer*,
+                                  const std::string&,
                                   const bot_core::robot_state_t* iiwa_msg) {
   iiwa_base_ = DecodePose(iiwa_msg->pose);
 
@@ -82,8 +82,8 @@ void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer* rbuf,
       iiwa_->CalcBodySpatialVelocityInWorldFrame(cache, *end_effector_);
 }
 
-void WorldState::HandleWsgStatus(const lcm::ReceiveBuffer* rbuf,
-                                 const std::string& chan,
+void WorldState::HandleWsgStatus(const lcm::ReceiveBuffer*,
+                                 const std::string&,
                                  const lcmt_schunk_wsg_status* wsg_msg) {
   bool is_first_msg = wsg_time_ == -1;
   double cur_time = wsg_msg->utime / 1e6;
@@ -106,15 +106,15 @@ void WorldState::HandleWsgStatus(const lcm::ReceiveBuffer* rbuf,
   wsg_force_ = wsg_msg->actual_force;
 }
 
-void WorldState::HandleObjectStatus(const lcm::ReceiveBuffer* rbuf,
-                                    const std::string& chan,
+void WorldState::HandleObjectStatus(const lcm::ReceiveBuffer*,
+                                    const std::string&,
                                     const bot_core::robot_state_t* obj_msg) {
   obj_time_ = obj_msg->utime / 1e6;
   obj_pose_ = DecodePose(obj_msg->pose);
   obj_vel_ = DecodeTwist(obj_msg->twist);
 }
 
-}  // namespace pick_and_place_demo
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

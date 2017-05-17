@@ -128,12 +128,14 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
 
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
       std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
+  controller->set_name("controller");
 
   // Instantiates a system for visualizing the model.
   const RigidBodyTreed& tree_ptr =
       dynamic_cast<const RigidBodyPlant<double>*>(controller->plant())->
           get_rigid_body_tree();
   auto publisher = builder.AddSystem<DrakeVisualizer>(tree_ptr, lcm);
+  publisher->set_name("publisher");
 
   // Instantiates a system for receiving user commands, of type
   // DrivingCommand.
@@ -231,6 +233,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   // with immediately-relevant units and scale comments.
   auto user_to_actuator_cmd_sys =
       builder.template AddSystem<MatrixGain<double>>(matrix_gain);
+  user_to_actuator_cmd_sys->set_name("user_to_actuator_command");
 
   // Instantiates a constant vector source for the feed-forward torque command.
   // The feed-forward torque is zero.
@@ -238,6 +241,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
+  constant_zero_source->set_name("zero");
 
   // Connects the feed-forward torque command.
   builder.Connect(constant_zero_source->get_output_port(),

@@ -18,5 +18,7 @@ gen_lcm_and_vector_from_proto "euler floating joint state" $drake/automotive/eul
 gen_vector_proto "idm planner parameters" $drake/automotive/idm_planner_parameters.named_vector
 gen_lcm_and_vector_from_proto "maliput railcar state" $drake/automotive/maliput_railcar_state.named_vector
 gen_lcm_and_vector_from_proto "maliput railcar params" $drake/automotive/maliput_railcar_params.named_vector
+gen_vector_proto "mobil planner parameters" $drake/automotive/mobil_planner_parameters.named_vector
+gen_vector_proto "pure pursuit params" $drake/automotive/pure_pursuit_params.named_vector
 gen_lcm_and_vector_from_proto "simple car state" $drake/automotive/simple_car_state.named_vector
 gen_lcm_and_vector_from_proto "simple car params" $drake/automotive/simple_car_params.named_vector

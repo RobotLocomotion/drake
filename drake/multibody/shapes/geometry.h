@@ -5,6 +5,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/unused.h"
+
 namespace DrakeShapes {
 enum Shape {
   UNKNOWN = 0,
@@ -51,11 +53,12 @@ class Geometry {
    * Returns the faces making up this geometry as a vector of triangles.
    * Each triangle contains three indices into the vertex list returned
    * by the Geometry getPoints() method.
-   * @param[out] faces Returns a vector of triangles describing 
+   * @param[out] faces Returns a vector of triangles describing
    * this geometry.
    */
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getFaces(TrianglesVector* faces) const {
+    drake::unused(faces);
     throw std::runtime_error("Error: getFaces() not implemented"
       " for this geometry type.\n");
   }

@@ -2,7 +2,7 @@
 #include "drake/solvers/test/rotation_constraint_visualization.h"
 /* clang-format on */
 
-#include "drake/lcm/lcm_call_matlab.h"
+#include "drake/common/call_matlab.h"
 #include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/rotation_constraint_internal.h"
 
@@ -33,12 +33,12 @@ void DrawAllMcCormickEnvelopes(int num_bins) {
 }
 
 void DoMain() {
-  using lcm::LcmCallMatlab;
+  using common::CallMatlab;
   for (int num_bins = 1; num_bins <= 3; ++num_bins) {
-    LcmCallMatlab("figure", num_bins);
-    LcmCallMatlab("clf");
-    LcmCallMatlab("hold", "on");
-    LcmCallMatlab("axis", "equal");
+    CallMatlab("figure", num_bins);
+    CallMatlab("clf");
+    CallMatlab("hold", "on");
+    CallMatlab("axis", "equal");
     DrawSphere();
     DrawAllMcCormickEnvelopes(num_bins);
   }

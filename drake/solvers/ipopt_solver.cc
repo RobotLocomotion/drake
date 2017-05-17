@@ -13,6 +13,7 @@
 #undef HAVE_CSTDDEF
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 
 using Ipopt::Index;
@@ -95,7 +96,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
                           const VectorXDecisionVariable& variables,
                           Number* result, Number* grad) {
   // For constraints which don't use all of the variables in the X
-  // input, extract a subset into the TaylorVecXd this_x to evaluate
+  // input, extract a subset into the AutoDiffVecXd this_x to evaluate
   // the constraint (we actually do this for all constraints.  One
   // potential optimization might be to detect if the initial "tx" has
   // the correct geometry (e.g. the constraint uses all decision
@@ -107,7 +108,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     this_x(i) = xvec(prog.FindDecisionVariableIndex(variables(i)));
   }
 
-  TaylorVecXd ty(c.num_constraints());
+  AutoDiffVecXd ty(c.num_constraints());
   c.Eval(math::initializeAutoDiff(this_x), ty);
 
   // Store the results.  Since IPOPT directly knows the bounds of the
@@ -211,6 +212,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
   virtual bool get_bounds_info(Index n, Number* x_l, Number* x_u, Index m,
                                Number* g_l, Number* g_u) {
+    unused(m);
+
     DRAKE_ASSERT(n == static_cast<Index>(problem_->num_vars()));
     for (Index i = 0; i < n; i++) {
       x_l[i] = -std::numeric_limits<double>::infinity();
@@ -256,6 +259,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   virtual bool get_starting_point(Index n, bool init_x, Number* x, bool init_z,
                                   Number* z_L, Number* z_U, Index m,
                                   bool init_lambda, Number* lambda) {
+    unused(z_L, z_U, m, lambda);
+
     if (init_x) {
       const Eigen::VectorXd& initial_guess = problem_->initial_guess();
       DRAKE_ASSERT(initial_guess.size() == n);
@@ -312,6 +317,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   virtual bool eval_jac_g(Index n, const Number* x, bool new_x, Index m,
                           Index nele_jac, Index* iRow, Index* jCol,
                           Number* values) {
+    unused(m);
+
     if (values == nullptr) {
       DRAKE_ASSERT(iRow != nullptr);
       DRAKE_ASSERT(jCol != nullptr);
@@ -377,6 +384,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  const Number* g, const Number* lambda,
                                  Number obj_value, const IpoptData* ip_data,
                                  IpoptCalculatedQuantities* ip_cq) {
+    unused(z_L, z_U, m, g, lambda, ip_data, ip_cq);
+
     problem_->SetSolverResult(SolverType::kIpopt, status);
 
     switch (status) {
@@ -412,7 +421,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateCosts(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
-    TaylorVecXd ty(1);
+    AutoDiffVecXd ty(1);
     Eigen::VectorXd this_x;
 
     memcpy(cost_cache_->x.data(), x, n * sizeof(Number));

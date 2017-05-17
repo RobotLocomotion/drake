@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -23,7 +24,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
 
-  IiwaCommandReceiver();
+  explicit IiwaCommandReceiver(int num_joints = kIiwaArmNumJoints);
 
   /// Sets the initial position of the controlled iiwa prior to any
   /// commands being received.  @p x contains the starting position.
@@ -41,7 +42,10 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      systems::DiscreteState<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const override;
+
+ private:
+  const int num_joints_;
 };
 
 /// Creates and outputs lcmt_iiwa_command messages
@@ -62,7 +66,7 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandSender)
 
-  IiwaCommandSender();
+  explicit IiwaCommandSender(int num_joints = kIiwaArmNumJoints);
 
   const systems::InputPortDescriptor<double>& get_position_input_port() const {
     return this->get_input_port(position_input_port_);
@@ -80,6 +84,7 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const override;
 
  private:
+  const int num_joints_;
   const int position_input_port_{};
   const int torque_input_port_{};
 };
@@ -99,7 +104,7 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusReceiver)
 
-  IiwaStatusReceiver();
+  explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
 
   const systems::OutputPortDescriptor<double>&
     get_measured_position_output_port() const {
@@ -117,9 +122,10 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      systems::DiscreteState<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const override;
 
  private:
+  const int num_joints_;
   const int measured_position_output_port_{};
   const int commanded_position_output_port_{};
 };
@@ -143,7 +149,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusSender)
 
-  IiwaStatusSender();
+  explicit IiwaStatusSender(int num_joints = kIiwaArmNumJoints);
 
   const systems::InputPortDescriptor<double>& get_command_input_port() const {
     return this->get_input_port(0);
@@ -159,6 +165,9 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
 
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
+
+ private:
+  const int num_joints_;
 };
 
 }  // namespace kuka_iiwa_arm

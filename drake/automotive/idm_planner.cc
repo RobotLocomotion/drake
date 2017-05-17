@@ -45,7 +45,7 @@ const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
 
 // These instantiations must match the API documentation in idm_planner.h.
 template class IdmPlanner<double>;
-template class IdmPlanner<drake::TaylorVarXd>;
+template class IdmPlanner<drake::AutoDiffXd>;
 template class IdmPlanner<drake::symbolic::Expression>;
 
 }  // namespace automotive

@@ -7,9 +7,9 @@
 namespace drake {
 namespace systems {
 
+using std::move;
 using std::unique_ptr;
 using std::vector;
-using std::move;
 
 template <typename T>
 ContactResultantForceCalculator<T>::ContactResultantForceCalculator()
@@ -29,7 +29,7 @@ void ContactResultantForceCalculator<T>::AddForce(
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
-    std::unique_ptr<ContactDetail<T>> contact_detail) {
+    unique_ptr<ContactDetail<T>> contact_detail) {
   forces_.push_back(contact_detail->ComputeContactForce());
   if (detail_accumulator_ != nullptr) {
     detail_accumulator_->emplace_back(move(contact_detail));

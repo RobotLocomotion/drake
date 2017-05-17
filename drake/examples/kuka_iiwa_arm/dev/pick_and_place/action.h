@@ -11,7 +11,7 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-namespace pick_and_place_demo {
+namespace pick_and_place {
 
 /**
  * Base class for actions used by the pick and place demo. E.g., moving the KUKA
@@ -116,7 +116,7 @@ class IiwaMove : public Action {
 
   // TODO(siyuanfeng): have something meaningful here, like the object slipped
   // out.
-  bool ActionFailed(const WorldState& est_state) const override {
+  bool ActionFailed(const WorldState&) const override {
     return false;
   }
 
@@ -154,7 +154,7 @@ class WsgAction : public Action {
 
   // TODO(siyuanfeng): Implement something meaningful here like a check for a
   // force threshold being crossed.
-  bool ActionFailed(const WorldState& est_state) const override {
+  bool ActionFailed(const WorldState&) const override {
     return false;
   }
 
@@ -168,7 +168,7 @@ class WsgAction : public Action {
   const std::string pub_channel_;
 };
 
-}  // namespace pick_and_place_demo
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

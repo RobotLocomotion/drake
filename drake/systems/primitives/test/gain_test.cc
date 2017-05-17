@@ -96,7 +96,7 @@ GTEST_TEST(GainDeathTest, GainAccessorTest) {
   const Vector4<double> gain_values(1.0, 2.0, 3.0, 4.0);
   const auto gain_system = make_unique<Gain<double>>(gain_values);
   // Verifies the gain accessors are OK.
-  EXPECT_DEATH(gain_system->get_gain(), ".*");
+  EXPECT_THROW(gain_system->get_gain(), std::runtime_error);
 }
 
 

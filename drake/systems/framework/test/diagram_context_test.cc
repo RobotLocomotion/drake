@@ -106,8 +106,8 @@ class DiagramContextTest : public ::testing::Test {
     xc->get_mutable_vector()->SetAtIndex(0, 42.0);
     xc->get_mutable_vector()->SetAtIndex(1, 43.0);
 
-    DiscreteState<double>* xd = context_->get_mutable_discrete_state();
-    xd->get_mutable_discrete_state(0)->SetAtIndex(0, 44.0);
+    DiscreteValues<double>* xd = context_->get_mutable_discrete_state();
+    xd->get_mutable_vector(0)->SetAtIndex(0, 44.0);
 
     context_->get_mutable_numeric_parameter(0)->SetAtIndex(0, 76.0);
     context_->get_mutable_numeric_parameter(0)->SetAtIndex(1, 77.0);
@@ -152,8 +152,8 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
   EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
   // - Discrete
-  const DiscreteState<double>* xd = clone.get_discrete_state();
-  EXPECT_EQ(44.0, xd->get_discrete_state(0)->GetAtIndex(0));
+  const DiscreteValues<double>* xd = clone.get_discrete_state();
+  EXPECT_EQ(44.0, xd->get_vector(0)->GetAtIndex(0));
   // - Abstract
   const AbstractValues* xa = clone.get_abstract_state();
   EXPECT_EQ(42, xa->get_value(0).GetValue<int>());
@@ -203,9 +203,9 @@ TEST_F(DiagramContextTest, State) {
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 
   // The zero-order hold has a difference state vector of length 1.
-  DiscreteState<double>* xd = context_->get_mutable_discrete_state();
-  EXPECT_EQ(1, xd->size());
-  EXPECT_EQ(1, xd->get_discrete_state(0)->size());
+  DiscreteValues<double>* xd = context_->get_mutable_discrete_state();
+  EXPECT_EQ(1, xd->num_groups());
+  EXPECT_EQ(1, xd->get_vector(0)->size());
 
   // Changes to the diagram state write through to constituent system states.
   // - Continuous
@@ -216,17 +216,17 @@ TEST_F(DiagramContextTest, State) {
   EXPECT_EQ(42.0, integrator0_xc->get_vector().GetAtIndex(0));
   EXPECT_EQ(43.0, integrator1_xc->get_vector().GetAtIndex(0));
   // - Discrete
-  DiscreteState<double>* hold_xd =
+  DiscreteValues<double>* hold_xd =
       context_->GetMutableSubsystemContext(4)->get_mutable_discrete_state();
-  EXPECT_EQ(44.0, hold_xd->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(44.0, hold_xd->get_vector(0)->GetAtIndex(0));
 
   // Changes to constituent system states appear in the diagram state.
   // - Continuous
   integrator1_xc->get_mutable_vector()->SetAtIndex(0, 1000.0);
   EXPECT_EQ(1000.0, xc->get_vector().GetAtIndex(1));
   // - Discrete
-  hold_xd->get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
-  EXPECT_EQ(1001.0, xd->get_discrete_state(0)->GetAtIndex(0));
+  hold_xd->get_mutable_vector(0)->SetAtIndex(0, 1001.0);
+  EXPECT_EQ(1001.0, xd->get_vector(0)->GetAtIndex(0));
 }
 
 // Tests that the pointers to substates in the DiagramState are equal to the

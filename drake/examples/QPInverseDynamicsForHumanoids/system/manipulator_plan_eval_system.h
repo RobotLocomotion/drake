@@ -81,9 +81,6 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
       const systems::Context<double>& context,
       systems::SystemOutput<double>* output) const override;
 
-  std::vector<std::unique_ptr<systems::AbstractValue>>
-  ExtendedAllocateAbstractState() const override;
-
   std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
       const systems::OutputPortDescriptor<double>& descriptor) const override;
 
@@ -91,8 +88,8 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
   int input_port_index_desired_acceleration_{};
   int output_port_index_debug_info_{};
 
-  const int abs_state_index_plan_{};
-  const int abs_state_index_debug_{};
+  int abs_state_index_plan_{};
+  int abs_state_index_debug_{};
 };
 
 }  // namespace qp_inverse_dynamics

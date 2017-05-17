@@ -41,18 +41,18 @@ const std::pair<RoadOdometry<double>, RoadOdometry<double>> FindClosestPair(
   for (int i = 0; i < traffic_poses.get_num_poses(); ++i) {
     const RoadPosition traffic_position =
         CalcRoadPosition(road, traffic_poses.get_pose(i));
-    const double& s_traffic = traffic_position.pos.s;
+    const double& s_traffic = traffic_position.pos.s();
 
     if (traffic_position.lane->id().id != lane->id().id) continue;
 
     // If this pose is not the ego car and it is in the correct lane, then
     // insert it into the correct "leading" or "trailing" bin.
     if (ego_position.lane->id().id != lane->id().id ||
-        s_traffic != ego_position.pos.s) {
-      if (result_trailing.pos.s < s_traffic &&
-          s_traffic < result_leading.pos.s) {
+        s_traffic != ego_position.pos.s()) {
+      if (result_trailing.pos.s() < s_traffic &&
+          s_traffic < result_leading.pos.s()) {
         // N.B. The ego car and traffic may reside in different lanes.
-        if (s_traffic >= ego_position.pos.s) {
+        if (s_traffic > ego_position.pos.s()) {
           result_leading = RoadOdometry<double>(traffic_position,
                                                 traffic_poses.get_velocity(i));
         } else {
@@ -77,6 +77,15 @@ const RoadPosition CalcRoadPosition(const RoadGeometry& road,
       maliput::api::GeoPosition(pose.translation().x(), pose.translation().y(),
                                 pose.translation().z()),
       nullptr, nullptr, nullptr);
+}
+
+double GetSVelocity(const RoadOdometry<double>& road_odom) {
+  const maliput::api::Rotation rot =
+      road_odom.lane->GetOrientation(road_odom.pos);
+  const double vx = road_odom.vel.get_velocity().translational().x();
+  const double vy = road_odom.vel.get_velocity().translational().y();
+
+  return vx * std::cos(rot.yaw()) + vy * std::sin(rot.yaw());
 }
 
 }  // namespace pose_selector

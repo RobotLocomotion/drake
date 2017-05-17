@@ -29,7 +29,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main(int argc, char* argv[]) {
+int do_main() {
   systems::DiagramBuilder<double> builder;
 
   PendulumPlant<double>* pendulum{nullptr};
@@ -38,11 +38,13 @@ int do_main(int argc, char* argv[]) {
   {
     auto pendulum_ptr = std::make_unique<PendulumPlant<double>>();
     pendulum = pendulum_ptr.get();
+    pendulum->set_name("pendulum");
 
     // The choices of PidController constants here are fairly arbitrary,
     // but seem to effectively swing up the pendulum and hold it.
     controller = builder.AddSystem<systems::PidControlledSystem<double>>(
         std::move(pendulum_ptr), 10., 0., 1.);
+    controller->set_name("controller");
   }
   DRAKE_DEMAND(pendulum != nullptr);
   DRAKE_DEMAND(controller != nullptr);
@@ -81,7 +83,9 @@ int do_main(int argc, char* argv[]) {
   const PiecewisePolynomialTrajectory pp_xtraj =
       dircol.ReconstructStateTrajectory();
   auto input_source = builder.AddSystem<systems::TrajectorySource>(pp_traj);
+  input_source->set_name("input");
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
+  state_source->set_name("state");
 
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -90,6 +94,7 @@ int do_main(int argc, char* argv[]) {
       multibody::joints::kFixed, tree.get());
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  publisher->set_name("publisher");
 
   builder.Connect(input_source->get_output_port(),
                   controller->get_input_port(0));
@@ -123,5 +128,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::pendulum::do_main(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::pendulum::do_main();
 }

@@ -5,6 +5,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
@@ -266,6 +267,7 @@ class RollPitchYawFloatingJoint
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(
       const Eigen::MatrixBase<DerivedV>& v) const {
+    drake::unused(v);
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(
         get_num_velocities(), 1);
   }
@@ -289,6 +291,6 @@ class RollPitchYawFloatingJoint
 
  protected:
   std::unique_ptr<DrakeJoint> DoClone() const final;
-  void DoInitializeClone(DrakeJoint* clone) const final {}
+  void DoInitializeClone(DrakeJoint*) const final {}
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

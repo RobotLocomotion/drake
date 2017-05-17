@@ -1,5 +1,6 @@
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
+#include <cstddef>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -24,11 +25,13 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
 
   context_->SetTimeStateAndParametersFrom(context);
 
-  // Allocate the input port and keep an alias around.
-  input_port_value_ = new FreestandingInputPortValue(
-      system->AllocateInputVector(system->get_input_port(0)));
-  std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
-  context_->SetInputPortValue(0, std::move(input_port_value));
+  if (context_->get_num_input_ports() > 0) {
+    // Allocate the input port and keep an alias around.
+    input_port_value_ = new FreestandingInputPortValue(
+        system->AllocateInputVector(system->get_input_port(0)));
+    std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+    context_->SetInputPortValue(0, std::move(input_port_value));
+  }
 
   // Add the dynamic constraints.
   auto constraint =
@@ -51,60 +54,53 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
 namespace {
 /// Since the running cost evaluation needs the timestep mangled, we
 /// need to wrap it and convert the input.
-class RunningCostEndWrapper : public solvers::Constraint {
+class RunningCostEndWrapper : public solvers::Cost {
  public:
-  explicit RunningCostEndWrapper(
-      std::shared_ptr<solvers::Constraint> constraint)
-      : solvers::Constraint(constraint->num_constraints(),
-                            constraint->num_vars(), constraint->lower_bound(),
-                            constraint->upper_bound()),
-        constraint_(constraint) {}
+  explicit RunningCostEndWrapper(const std::shared_ptr<solvers::Cost>& cost)
+      : solvers::Cost(cost->num_vars()), cost_(cost) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+              Eigen::VectorXd&) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
-    TaylorVecXd wrapped_x = x;
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    AutoDiffVecXd wrapped_x = x;
     wrapped_x(0) *= 0.5;
-    constraint_->Eval(wrapped_x, y);
+    cost_->Eval(wrapped_x, y);
   };
 
  private:
-  std::shared_ptr<Constraint> constraint_;
+  const std::shared_ptr<Cost> cost_;
 };
 
-class RunningCostMidWrapper : public solvers::Constraint {
+class RunningCostMidWrapper : public solvers::Cost {
  public:
-  explicit RunningCostMidWrapper(
-      std::shared_ptr<solvers::Constraint> constraint)
-      : Constraint(constraint->num_constraints(),
-                   constraint->num_vars() + 1,  // We wrap x(0) and x(1) into
-                                                // (x(0) + x(1)) * 0.5, so one
-                                                // less variable when calling
-                                                // Eval.
-                   constraint->lower_bound(), constraint->upper_bound()),
-        constraint_(constraint) {}
+  explicit RunningCostMidWrapper(const std::shared_ptr<solvers::Cost>& cost)
+      : Cost(cost->num_vars() + 1),  // We wrap x(0) and x(1) into
+                                     // (x(0) + x(1)) * 0.5, so one
+                                     // less variable when calling
+                                     // Eval.
+        cost_(cost) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+              Eigen::VectorXd&) const override {
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
-    TaylorVecXd wrapped_x(x.rows() - 1);
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    AutoDiffVecXd wrapped_x(x.rows() - 1);
     wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
     wrapped_x(0) = (x(0) + x(1)) * 0.5;
-    constraint_->Eval(wrapped_x, y);
+    cost_->Eval(wrapped_x, y);
   };
 
  private:
-  std::shared_ptr<Constraint> constraint_;
+  const std::shared_ptr<solvers::Cost> cost_;
 };
 
 }  // anon namespace
@@ -128,19 +124,19 @@ void DircolTrajectoryOptimization::DoAddRunningCost(
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
 void DircolTrajectoryOptimization::DoAddRunningCost(
-    std::shared_ptr<solvers::Constraint> constraint) {
-  AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
+    std::shared_ptr<solvers::Cost> cost) {
+  AddCost(std::make_shared<RunningCostEndWrapper>(cost),
           {h_vars().head(1), x_vars().head(num_states()),
            u_vars().head(num_inputs())});
 
   for (int i = 1; i < N() - 1; i++) {
-    AddCost(std::make_shared<RunningCostMidWrapper>(constraint),
+    AddCost(std::make_shared<RunningCostMidWrapper>(cost),
             {h_vars().segment(i - 1, 2),
              x_vars().segment(i * num_states(), num_states()),
              u_vars().segment(i * num_inputs(), num_inputs())});
   }
 
-  AddCost(std::make_shared<RunningCostEndWrapper>(constraint),
+  AddCost(std::make_shared<RunningCostEndWrapper>(cost),
           {h_vars().tail(1), x_vars().tail(num_states()),
            u_vars().tail(num_inputs())});
 }

@@ -40,7 +40,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
       placeholder_u_vars_(NewContinuousVariables(num_inputs_, "u")) {
   DRAKE_ASSERT(num_time_samples > 1);
   DRAKE_ASSERT(num_states_ > 0);
-  DRAKE_ASSERT(num_inputs_ > 0);
+  DRAKE_ASSERT(num_inputs_ >= 0);
   DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
   // Construct total time linear constraint.
   // TODO(Lucy-tri) add case for all timesteps independent (if needed).
@@ -91,46 +91,44 @@ namespace {
 /// Since the final cost evaluation needs a total time, we need a
 /// wrapper which will calculate the total time from the individual
 /// time steps and mangle the output appropriately.
-class FinalCostWrapper : public solvers::Constraint {
+class FinalCostWrapper : public solvers::Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FinalCostWrapper)
 
   FinalCostWrapper(int num_time_samples, int num_states,
-                   std::shared_ptr<Constraint> constraint)
-      : Constraint(constraint->num_constraints(),
-                   (num_time_samples - 1) + num_states,
-                   constraint->lower_bound(), constraint->upper_bound()),
+                   std::shared_ptr<solvers::Cost> cost)
+      : Cost((num_time_samples - 1) + num_states),
         num_time_samples_(num_time_samples),
         num_states_(num_states),
-        constraint_(constraint) {}
+        cost_(cost) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+              Eigen::VectorXd&) const override {
     // TODO(sam.creasey) If we actually need this, we could cut and
     // paste most of the implementation below (or maybe delegate to a
     // templated version).  I don't expect that scenario to occur.
     throw std::runtime_error("Non-Taylor constraint eval not implemented.");
   }
 
-  void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-              TaylorVecXd& y) const override {
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
     DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
 
-    TaylorVecXd wrapped_x(num_states_ + 1);
+    AutoDiffVecXd wrapped_x(num_states_ + 1);
     wrapped_x(0) = x.head(num_time_samples_ - 1).sum();
     wrapped_x.tail(num_states_) = x.tail(num_states_);
     DRAKE_ASSERT(wrapped_x(0).derivatives().rows() ==
                  x(0).derivatives().rows());
 
-    constraint_->Eval(wrapped_x, y);
+    cost_->Eval(wrapped_x, y);
     DRAKE_ASSERT(y(0).derivatives().rows() == x(0).derivatives().rows());
   };
 
  private:
   const int num_time_samples_;
   const int num_states_;
-  std::shared_ptr<Constraint> constraint_;
+  std::shared_ptr<solvers::Cost> cost_;
 };
 
 }  // namespace
@@ -138,7 +136,7 @@ class FinalCostWrapper : public solvers::Constraint {
 // We just use a generic constraint here since we need to mangle the
 // input and output anyway.
 void DirectTrajectoryOptimization::AddFinalCost(
-    std::shared_ptr<solvers::Constraint> constraint) {
+    std::shared_ptr<solvers::Cost> constraint) {
   auto wrapper =
       std::make_shared<FinalCostWrapper>(N_, num_states_, constraint);
   AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});

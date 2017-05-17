@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"
@@ -14,13 +15,16 @@
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
+#include "drake/math/matrix_util.h"
 
 namespace drake {
 namespace symbolic {
 
 using std::equal;
 using std::hash;
+using std::lexicographical_compare;
 using std::ostream;
+using std::ostringstream;
 using std::runtime_error;
 using std::set;
 using std::shared_ptr;
@@ -46,16 +50,14 @@ Variables RelationalFormulaCell::GetFreeVariables() const {
 bool RelationalFormulaCell::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const RelationalFormulaCell& rel_f =
-      static_cast<const RelationalFormulaCell&>(f);
+  const auto& rel_f = static_cast<const RelationalFormulaCell&>(f);
   return e_lhs_.EqualTo(rel_f.e_lhs_) && e_rhs_.EqualTo(rel_f.e_rhs_);
 }
 
 bool RelationalFormulaCell::Less(const FormulaCell& f) const {
   // Formula::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const RelationalFormulaCell& rel_f =
-      static_cast<const RelationalFormulaCell&>(f);
+  const auto& rel_f = static_cast<const RelationalFormulaCell&>(f);
   if (e_lhs_.Less(rel_f.e_lhs_)) {
     return true;
   }
@@ -81,7 +83,7 @@ Variables NaryFormulaCell::GetFreeVariables() const {
 bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const NaryFormulaCell& nary_f = static_cast<const NaryFormulaCell&>(f);
+  const auto& nary_f = static_cast<const NaryFormulaCell&>(f);
   return equal(
       formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
       nary_f.formulas_.cend(),
@@ -91,7 +93,7 @@ bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
 bool NaryFormulaCell::Less(const FormulaCell& f) const {
   // Formula::Less guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
-  const NaryFormulaCell& nary_f = static_cast<const NaryFormulaCell&>(f);
+  const auto& nary_f = static_cast<const NaryFormulaCell&>(f);
   return lexicographical_compare(
       formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
       nary_f.formulas_.cend(),
@@ -131,9 +133,9 @@ bool FormulaTrue::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaTrue::Evaluate(const Environment& env) const { return true; }
+bool FormulaTrue::Evaluate(const Environment&) const { return true; }
 
-Formula FormulaTrue::Substitute(const Substitution& s) const {
+Formula FormulaTrue::Substitute(const Substitution&) const {
   return Formula::True();
 }
 
@@ -157,9 +159,9 @@ bool FormulaFalse::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaFalse::Evaluate(const Environment& env) const { return false; }
+bool FormulaFalse::Evaluate(const Environment&) const { return false; }
 
-Formula FormulaFalse::Substitute(const Substitution& s) const {
+Formula FormulaFalse::Substitute(const Substitution&) const {
   return Formula::False();
 }
 
@@ -399,7 +401,7 @@ bool FormulaForall::Less(const FormulaCell& f) const {
   return this->f_.Less(forall_f.f_);
 }
 
-bool FormulaForall::Evaluate(const Environment& env) const {
+bool FormulaForall::Evaluate(const Environment&) const {
   // Given ∀ x1, ..., xn. F, check if there is a counterexample satisfying
   // ¬F. If exists, it returns false. Otherwise, return true.
   // That is, it returns !check(∃ x1, ..., xn. ¬F)
@@ -452,6 +454,99 @@ Formula FormulaIsnan::Substitute(const Substitution& s) const {
 
 ostream& FormulaIsnan::Display(ostream& os) const {
   return os << "isnan(" << e_ << ")";
+}
+
+FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
+    const Eigen::Ref<const MatrixX<Expression>>& m)
+    : FormulaCell{FormulaKind::PositiveSemidefinite,
+                  ComputeHashOfLowerTriangular(m)},
+      m_{m} {
+  if (!math::IsSymmetric(m)) {
+    ostringstream oss;
+    oss << "The following matrix is not symmetric and cannot be used to "
+           "construct drake::symbolic::FormulaPositiveSemidefinite:\n"
+        << m;
+    throw std::runtime_error(oss.str());
+  }
+}
+
+namespace {
+// Helper Eigen-visitor class that we use to implement
+// FormulaPositiveSemidefinite::GetFreeVariables().
+struct VariablesCollector {
+  using Index = Eigen::Index;
+
+  // Called for the first coefficient.
+  void init(const Expression& e, Index i, Index j) {
+    DRAKE_ASSERT(vars_.empty());
+    return operator()(e, i, j);
+  }
+  // Called for all other coefficients.
+  void operator()(const Expression& e, Index /* i */, Index /* j */) {
+    vars_ += e.GetVariables();
+  }
+
+  Variables vars_;
+};
+}  // namespace
+
+Variables FormulaPositiveSemidefinite::GetFreeVariables() const {
+  VariablesCollector vc;
+  m_.visit(vc);
+  return vc.vars_;
+}
+
+bool FormulaPositiveSemidefinite::EqualTo(const FormulaCell& f) const {
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaPositiveSemidefinite& f_psd{
+      static_cast<const FormulaPositiveSemidefinite&>(f)};
+  return CheckStructuralEquality(m_, f_psd.m_);
+}
+
+bool FormulaPositiveSemidefinite::Less(const FormulaCell& f) const {
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaPositiveSemidefinite& f_psd{
+      static_cast<const FormulaPositiveSemidefinite&>(f)};
+
+  // Compare rows.
+  if (m_.rows() < f_psd.m_.rows()) {
+    return true;
+  }
+  if (f_psd.m_.rows() < m_.rows()) {
+    return false;
+  }
+
+  // No need to compare cols since m_ and f_psd.m_ are square matrices.
+  DRAKE_ASSERT(m_.rows() == f_psd.m_.rows() && m_.cols() == f_psd.m_.cols());
+
+  // Element-wise comparison.
+  const int num_of_elements = m_.rows() * m_.cols();
+  // clang-format off
+  return lexicographical_compare(
+      m_.data(), m_.data() + num_of_elements,
+      f_psd.m_.data(), f_psd.m_.data() + num_of_elements,
+      [](const Expression& e1, const Expression& e2) { return e1.Less(e2); });
+  // clang-format on
+}
+
+bool FormulaPositiveSemidefinite::Evaluate(const Environment&) const {
+  // Need to check if xᵀ m x ≥ * 0 for all vector x ∈ ℝⁿ.
+  // TODO(Soonho): implement this when we have SMT/delta-SMT support.
+  throw runtime_error(
+      "Checking positive_semidefinite(M) is not yet implemented.");
+}
+
+Formula FormulaPositiveSemidefinite::Substitute(const Substitution& s) const {
+  return positive_semidefinite(
+      m_.unaryExpr([&s](const Expression& e) { return e.Substitute(s); }));
+}
+
+ostream& FormulaPositiveSemidefinite::Display(ostream& os) const {
+  return os << "positive_semidefinite("
+            << m_
+            << ")";
 }
 
 bool is_false(const FormulaCell& f) {
@@ -514,8 +609,12 @@ bool is_isnan(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::Isnan;
 }
 
+bool is_positive_semidefinite(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::PositiveSemidefinite;
+}
+
 shared_ptr<RelationalFormulaCell> to_relational(
-    const shared_ptr<FormulaCell> f_ptr) {
+    const shared_ptr<FormulaCell>& f_ptr) {
   DRAKE_ASSERT(is_relational(*f_ptr));
   return static_pointer_cast<RelationalFormulaCell>(f_ptr);
 }
@@ -524,7 +623,7 @@ shared_ptr<RelationalFormulaCell> to_relational(const Formula& f) {
   return to_relational(f.ptr_);
 }
 
-shared_ptr<NaryFormulaCell> to_nary(const shared_ptr<FormulaCell> f_ptr) {
+shared_ptr<NaryFormulaCell> to_nary(const shared_ptr<FormulaCell>& f_ptr) {
   DRAKE_ASSERT(is_nary(*f_ptr));
   return static_pointer_cast<NaryFormulaCell>(f_ptr);
 }
@@ -533,7 +632,7 @@ shared_ptr<NaryFormulaCell> to_nary(const Formula& f) {
   return to_nary(f.ptr_);
 }
 
-shared_ptr<FormulaNot> to_negation(const shared_ptr<FormulaCell> f_ptr) {
+shared_ptr<FormulaNot> to_negation(const shared_ptr<FormulaCell>& f_ptr) {
   DRAKE_ASSERT(is_negation(*f_ptr));
   return static_pointer_cast<FormulaNot>(f_ptr);
 }
@@ -542,7 +641,7 @@ shared_ptr<FormulaNot> to_negation(const Formula& f) {
   return to_negation(f.ptr_);
 }
 
-shared_ptr<FormulaForall> to_forall(const shared_ptr<FormulaCell> f_ptr) {
+shared_ptr<FormulaForall> to_forall(const shared_ptr<FormulaCell>& f_ptr) {
   DRAKE_ASSERT(is_forall(*f_ptr));
   return static_pointer_cast<FormulaForall>(f_ptr);
 }
@@ -551,12 +650,23 @@ shared_ptr<FormulaForall> to_forall(const Formula& f) {
   return to_forall(f.ptr_);
 }
 
-shared_ptr<FormulaIsnan> to_isnan(const shared_ptr<FormulaCell> f_ptr) {
+shared_ptr<FormulaIsnan> to_isnan(const shared_ptr<FormulaCell>& f_ptr) {
   DRAKE_ASSERT(is_isnan(*f_ptr));
   return static_pointer_cast<FormulaIsnan>(f_ptr);
 }
 
 shared_ptr<FormulaIsnan> to_isnan(const Formula& f) { return to_isnan(f.ptr_); }
+
+shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_positive_semidefinite(*f_ptr));
+  return static_pointer_cast<FormulaPositiveSemidefinite>(f_ptr);
+}
+
+shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const Formula& f) {
+  return to_positive_semidefinite(f.ptr_);
+}
 
 }  // namespace symbolic
 }  // namespace drake

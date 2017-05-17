@@ -23,8 +23,10 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
       Eigen::MatrixXd::Zero(1, 0),   // B.
       Vector1d::Constant(1.0),       // C.
       Eigen::MatrixXd::Zero(1, 0));  // D.
+  plant->set_name("plant");
 
   auto logger = builder.AddSystem<systems::SignalLogger<double>>(1);
+  logger->set_name("logger");
   builder.Cascade(*plant, *logger);
 
   auto diagram = builder.Build();
@@ -35,19 +37,22 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   context->get_mutable_continuous_state_vector()->SetAtIndex(0, 1.0);
 
   simulator.Initialize();
+  // The Simulator internally calls Publish(), which triggers data logging.
   simulator.StepTo(3);
 
+  // Gets the time stamps when each data point is saved.
   const auto& t = logger->sample_times();
   EXPECT_EQ(t.size(), simulator.get_num_publishes());
 
-  // Now check the data (against the known solution to the diff eq).
+  // Gets the logged data.
   const auto& x = logger->data();
   EXPECT_EQ(x.cols(), t.size());
 
-  const Eigen::MatrixXd desired_x = exp(-t.transpose().array());
+  // Now check the data (against the known solution to the diff eq).
+  const Eigen::MatrixXd expected_x = exp(-t.transpose().array());
 
   double tol = 1e-6;  // Not bad for numerical integration!
-  EXPECT_TRUE(CompareMatrices(desired_x, x, tol));
+  EXPECT_TRUE(CompareMatrices(expected_x, x, tol));
 }
 
 }  // namespace

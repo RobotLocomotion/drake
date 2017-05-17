@@ -33,9 +33,13 @@ class OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptimizationProgram)
 
-  OptimizationProgram(CostForm cost_form, ConstraintForm cnstr_form);
+  OptimizationProgram(CostForm cost_form, ConstraintForm constraint_form);
 
   virtual ~OptimizationProgram() {}
+
+  CostForm cost_form() const {return cost_form_;}
+
+  ConstraintForm constraint_form() const {return constraint_form_;}
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
@@ -46,6 +50,8 @@ class OptimizationProgram {
   void RunProblem(MathematicalProgramSolverInterface* solver);
 
  private:
+  CostForm cost_form_;
+  ConstraintForm constraint_form_;
   std::unique_ptr<MathematicalProgram> prog_;
 };
 
@@ -219,7 +225,7 @@ class NonConvexQPproblem2 {
     return cnstr;
   }
 
-  NonConvexQPproblem2(CostForm cost_form, ConstraintForm cnstr_form);
+  NonConvexQPproblem2(CostForm cost_form, ConstraintForm constraint_form);
 
   void CheckSolution() const;
 
@@ -273,7 +279,7 @@ class LowerBoundedProblem {
     return cnstr;
   }
 
-  explicit LowerBoundedProblem(ConstraintForm cnstr_form);
+  explicit LowerBoundedProblem(ConstraintForm constraint_form);
 
   void CheckSolution() const;
 
@@ -322,8 +328,12 @@ class LowerBoundedProblem {
                 Eigen::VectorXd& y) const override {
       EvalImpl(x, y);
     }
-    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-                TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd& y) const override {
+      // Check that the autodiff vector was initialized to the proper (minimal)
+      // size.
+      EXPECT_EQ(x.size(), x(0).derivatives().size());
+
       EvalImpl(x, y);
     }
 
@@ -377,7 +387,7 @@ class GloptiPolyConstrainedMinimizationProblem {
   }
 
   GloptiPolyConstrainedMinimizationProblem(CostForm cost_form,
-                                           ConstraintForm cnstr_form);
+                                           ConstraintForm constraint_form);
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
@@ -420,8 +430,8 @@ class GloptiPolyConstrainedMinimizationProblem {
                 Eigen::VectorXd& y) const override {
       EvalImpl(x, &y);
     }
-    void DoEval(const Eigen::Ref<const TaylorVecXd>& x,
-                TaylorVecXd& y) const override {
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd& y) const override {
       EvalImpl(x, &y);
     }
 
@@ -488,7 +498,7 @@ class MinDistanceFromPlaneToOrigin {
 
   MinDistanceFromPlaneToOrigin(const Eigen::MatrixXd& A,
                                const Eigen::VectorXd& b, CostForm cost_form,
-                               ConstraintForm cnstr_form);
+                               ConstraintForm constraint_form);
 
   MathematicalProgram* prog_lorentz() const { return prog_lorentz_.get(); }
 

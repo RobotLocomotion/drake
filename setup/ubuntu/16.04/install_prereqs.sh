@@ -115,15 +115,15 @@ EOF
     )
 
 # Install Bazel.
-wget -O /tmp/bazel_0.4.3-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.3/bazel_0.4.3-linux-x86_64.deb
-if echo "0cd6592ac2c5548d566fa9f874a386737e76029f5aabe1f04f8320173a05280d /tmp/bazel_0.4.3-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.4.3-linux-x86_64.deb
+wget -O /tmp/bazel_0.4.5-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.5/bazel_0.4.5-linux-x86_64.deb
+if echo "b494d0a413e4703b6cd5312403bea4d92246d6425b3be68c9bfbeb8cc4db8a55 /tmp/bazel_0.4.5-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.4.5-linux-x86_64.deb
 else
   echo "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
   exit 1
 fi
 
-rm /tmp/bazel_0.4.3-linux-x86_64.deb
+rm /tmp/bazel_0.4.5-linux-x86_64.deb
 
 # Repair a bad Bazel/ccache interaction.
 # See https://github.com/RobotLocomotion/drake/issues/4464.

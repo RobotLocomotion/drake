@@ -16,9 +16,11 @@ using drake::systems::SystemOutput;
 using drake::systems::AbstractValues;
 using drake::systems::Simulator;
 using drake::systems::Context;
+using drake::systems::rendering::PoseVector;
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using Vector6d = Eigen::Matrix<double, 6, 1>;
 
 namespace drake {
@@ -554,40 +556,69 @@ TEST_F(Rod2DDAETest, NoSliding) {
 
 // Test multiple (two-point) contact configurations.
 TEST_F(Rod2DDAETest, MultiPoint) {
-  ContinuousState<double>& xc =
+  ContinuousState<double> &xc =
       *context_->get_mutable_continuous_state();
 
-  // This configuration has no sliding velocity. It should throw no exceptions.
-  const double tol = std::numeric_limits<double>::epsilon();
-  xc[0] = 0.0;
-  xc[1] = 0.0;
-  xc[2] = 0.0;
-  xc[3] = 0.0;
-  xc[4] = 0.0;
-  xc[5] = 0.0;
-  context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
-      Rod2D<double>::kStickingTwoContacts;
-  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  for (int i = 0; i < derivatives_->size(); ++i)
-    EXPECT_NEAR((*derivatives_)[i], 0.0, tol);
-
-  // Verify no impact.
-  EXPECT_FALSE(dut_->IsImpacting(*context_));
-
-  // This configuration has sliding velocity. It should throw an exception.
+  // Set the rod to a horizontal, two-contact configuration.
   xc[0] = 0;
   xc[1] = 0;
   xc[2] = 0;
-  xc[3] = 1.0;
-  xc[4] = 0.0;
-  xc[5] = 0.0;
   context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
-      Rod2D<double>::kSlidingTwoContacts;
-  EXPECT_THROW(dut_->CalcTimeDerivatives(*context_, derivatives_.get()),
-               std::logic_error);
+            Rod2D<double>::kSlidingTwoContacts;
+  context_->template get_mutable_abstract_state<int>(1) = 0;
 
-  // Verify no impact.
-  EXPECT_FALSE(dut_->IsImpacting(*context_));
+  // Set the velocity on the rod such that it is moving horizontally.
+  xc[3] = 1.0;
+  EXPECT_FALSE(dut_->IsImpacting(*context_));  // Verify no impact.
+
+  // Set the coefficient of friction to zero.
+  dut_->set_mu_coulomb(0.0);
+
+  // Compute the derivatives and verify that the linear and angular acceleration
+  // are approximately zero.
+  const double eps = 10 * dut_->get_cfm();
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR((*derivatives_)[3], 0, eps);
+  EXPECT_NEAR((*derivatives_)[4], 0, eps);
+  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+
+  // Set the coefficient of friction to "very large".
+  const double large = 100.0;
+  dut_->set_mu_coulomb(large);
+
+  // TODO(edrumwri): Check derivatives now.
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR((*derivatives_)[3], -large *
+      std::abs(dut_->get_gravitational_acceleration()), eps);
+  EXPECT_NEAR((*derivatives_)[4], 0, eps);
+  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+
+  // Set the rod velocity to zero.
+  xc[3] = 0.0;
+  EXPECT_FALSE(dut_->IsImpacting(*context_));  // Verify no impact.
+
+  // Set a constant force pushing the rod.
+  const double fX = 1.0;
+  std::unique_ptr<BasicVector<double>> ext_input =
+      std::make_unique<BasicVector<double>>(3);
+  ext_input->SetAtIndex(0, fX);
+  ext_input->SetAtIndex(1, 0.0);
+  ext_input->SetAtIndex(2, 0.0);
+  context_->FixInputPort(0, std::move(ext_input));
+
+  // Verify that the linear and angular acceleration are still zero.
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR((*derivatives_)[3], 0, eps);
+  EXPECT_NEAR((*derivatives_)[4], 0, eps);
+  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+
+  // Set the coefficient of friction to zero. Now the force should result
+  // in the rod being pushed to the right.
+  dut_->set_mu_coulomb(0.0);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_NEAR((*derivatives_)[3], fX/dut_->get_rod_mass(), eps);
+  EXPECT_NEAR((*derivatives_)[4], 0, eps);
+  EXPECT_NEAR((*derivatives_)[5], 0, eps);
 }
 
 // Verify that the Painlevé configuration does not correspond to an impacting
@@ -1235,6 +1266,53 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
 // Validates the number of witness functions is determined correctly.
 TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
+}
+
+// Verifies that output ports give expected values.
+GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
+  // Create two Rod2D systems, one time stepping, one with continuous state.
+  const double dt = 1e-1;
+  Rod2D<double> ts(Rod2D<double>::SimulationType::kTimeStepping, dt);
+  Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
+
+  // Create contexts for both.
+  std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
+  std::unique_ptr<Context<double>> context_pdae = pdae.CreateDefaultContext();
+
+  // Allocate outputs for both.
+  auto output_ts = ts.AllocateOutput(*context_ts);
+  auto output_pdae = pdae.AllocateOutput(*context_pdae);
+
+  // Compute outputs.
+  ts.CalcOutput(*context_ts, output_ts.get());
+  pdae.CalcOutput(*context_pdae, output_pdae.get());
+
+  // Set port indices.
+  const int state_port = 0;
+  const int pose_port = 1;
+
+  // Verify that state outputs are identical.
+  const double eq_tol = 10 * std::numeric_limits<double>::epsilon();
+  const VectorXd x_ts = output_ts->get_vector_data(state_port)->CopyToVector();
+  VectorXd x_pdae = output_pdae->get_vector_data(state_port)->CopyToVector();
+  EXPECT_LT((x_ts - x_pdae).lpNorm<Eigen::Infinity>(), eq_tol);
+
+  // Transform the rod and verify that pose output is as expected.
+  x_pdae[0] = 0;
+  x_pdae[1] = pdae.get_rod_half_length();
+  x_pdae[2] = M_PI_2;
+  context_pdae->get_mutable_continuous_state()->SetFromVector(x_pdae);
+  pdae.CalcOutput(*context_pdae, output_pdae.get());
+
+  // Rotation by theta is converted to rotation around +y by theta + π/2.
+  const PoseVector<double>* const pose = dynamic_cast<
+      PoseVector<double>*>(output_pdae->GetMutableVectorData(pose_port));
+  const Eigen::Quaterniond quat = pose->get_rotation();
+  EXPECT_NEAR(quat.y(), 1, eq_tol);
+
+  // -- Translation along +y is converted to translation along +z.
+  const auto translation = pose->get_translation();
+  EXPECT_NEAR(translation.z(), pdae.get_rod_half_length(), eq_tol);
 }
 
 }  // namespace

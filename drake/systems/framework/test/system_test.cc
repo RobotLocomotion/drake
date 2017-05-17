@@ -1,9 +1,11 @@
 #include "drake/systems/framework/system.h"
 
+#include <cctype>
 #include <memory>
 #include <stdexcept>
 
 #include <Eigen/Dense>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
@@ -131,8 +133,8 @@ class TestSystem : public System<double> {
 
   // The default update function.
   void DoCalcDiscreteVariableUpdates(
-      const Context<double> &context,
-      DiscreteState<double> *discrete_state) const override {
+      const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const override {
     ++update_count_;
   }
 
@@ -144,8 +146,8 @@ class TestSystem : public System<double> {
 
   // A custom update function with additional argument @p num, which may be
   // bound in DoCalcNextUpdateTime.
-  void DoCalcDiscreteUpdatesNumber(const Context<double> &context,
-                                   DiscreteState<double> *discrete_state,
+  void DoCalcDiscreteUpdatesNumber(const Context<double>& context,
+                                   DiscreteValues<double>* discrete_state,
                                    int num) const {
     updated_numbers_.push_back(num);
   }
@@ -234,7 +236,7 @@ TEST_F(SystemTest, DiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DiscreteState<double>> update =
+  std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
   system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
                                       update.get());
@@ -264,7 +266,7 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
   system_.CalcNextUpdateTime(context_, &actions);
   ASSERT_EQ(1u, actions.events.size());
 
-  std::unique_ptr<DiscreteState<double>> update =
+  std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
   system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
                                       update.get());
@@ -291,6 +293,17 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   // Check for valid content.
   EXPECT_EQ(kAbstractValued, first_input.get_data_type());
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
+}
+
+// Tests GetMemoryObjectName.
+TEST_F(SystemTest, GetMemoryObjectName) {
+  const std::string name = system_.GetMemoryObjectName();
+
+  // The nominal value for 'name' is something like:
+  //   drake/systems/(anonymous namespace)/TestSystem@0123456789abcdef
+  // We check only some platform-agnostic portions of that.
+  EXPECT_THAT(name, ::testing::HasSubstr("drake/systems/"));
+  EXPECT_THAT(name, ::testing::ContainsRegex("/TestSystem@[0-9a-fA-F]{16}$"));
 }
 
 template <typename T>

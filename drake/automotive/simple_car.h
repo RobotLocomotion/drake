@@ -47,7 +47,7 @@ namespace automotive {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_plants
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:
@@ -75,9 +75,7 @@ class SimpleCar : public systems::LeafSystem<T> {
   void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
   void ImplCalcPose(const SimpleCarState<T>& state,
                     systems::rendering::PoseVector<T>* pose) const;
-  void ImplCalcVelocity(const SimpleCarParams<T>& params,
-                        const SimpleCarState<T>& state,
-                        const DrivingCommand<T>& input,
+  void ImplCalcVelocity(const SimpleCarState<T>& state,
                         systems::rendering::FrameVelocity<T>* velocity) const;
   void ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
                                const SimpleCarState<T>& state,

@@ -15,6 +15,12 @@ ConstantVectorSource<T>::ConstantVectorSource(
       source_value_(source_value) {}
 
 template <typename T>
+ConstantVectorSource<T>::ConstantVectorSource(
+    const BasicVector<T>& source_value)
+    : SingleOutputVectorSource<T>(source_value),
+      source_value_(source_value.get_value()) {}
+
+template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
     : ConstantVectorSource(Vector1<T>::Constant(source_value)) {}
 
@@ -23,7 +29,7 @@ ConstantVectorSource<T>::~ConstantVectorSource() = default;
 
 template <typename T>
 void ConstantVectorSource<T>::DoCalcVectorOutput(
-    const Context<T>& context, Eigen::VectorBlock<VectorX<T>>* output) const {
+    const Context<T>&, Eigen::VectorBlock<VectorX<T>>* output) const {
   *output = source_value_;
 }
 

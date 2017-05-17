@@ -41,21 +41,6 @@ if(lcm_FOUND)
         oracular-state-estimator
         spruce)
 
-  add_executable(iiwa_world_demo iiwa_world_demo.cc)
-  target_link_libraries(iiwa_world_demo
-      drakeKukaIiwaWorld)
-  drake_add_test(
-      NAME iiwa_world_demo COMMAND iiwa_world_demo --simulation_sec 0.1)
-
-  add_executable(controlled_iiwa_world_demo controlled_iiwa_world_demo.cc)
-  target_link_libraries(controlled_iiwa_world_demo
-      drakeKukaIiwaWorld)
-  if(snopt_FOUND)
-    drake_add_test(
-        NAME controlled_iiwa_world_demo
-        COMMAND controlled_iiwa_world_demo --simulation_sec 0.1)
-  endif()
-
   add_executable(multi_arm_with_gripper_demo multi_arm_with_gripper_demo.cc)
   target_link_libraries(multi_arm_with_gripper_demo
       drakeKukaIiwaArmCommon

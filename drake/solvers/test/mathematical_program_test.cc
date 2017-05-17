@@ -1,6 +1,7 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <limits>
 #include <map>
@@ -27,6 +28,7 @@
 #include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Dynamic;
@@ -139,12 +141,9 @@ void CheckAddedVariable(const MathematicalProgram& prog,
   }
 
   // Checks the type of the newly added variables.
-  const auto& variable_types = prog.DecisionVariableTypes();
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
-      EXPECT_EQ(variable_types[prog.FindDecisionVariableIndex(var(i, j))],
-                type_expected);
-      EXPECT_EQ(prog.DecisionVariableType(var(i, j)), type_expected);
+      EXPECT_EQ(var(i, j).get_type(), type_expected);
     }
   }
 }
@@ -391,61 +390,11 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
       CompareMatrices(constraint5->upper_bound(), constraint6->upper_bound()));
 }
 
-// A generic cost derived from Constraint class. This is meant for testing
-// adding a cost to optimization program, and the cost is in the form of a
-// derived class of Constraint.
-class GenericTrivialCost1 : public Constraint {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialCost1)
-
-  GenericTrivialCost1()
-      : Constraint(1, 3, Vector1d(numeric_limits<double>::infinity()),
-                   Vector1d(numeric_limits<double>::infinity())),
-        private_val_(2) {}
-
- protected:
-  void DoEval(const Ref<const Eigen::VectorXd>& x, VectorXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-  }
-
-  void DoEval(const Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-  }
-
- private:
-  // Add a private data member to make sure no slicing on this class, derived
-  // from Constraint.
-  double private_val_{0};
-};
-
-// A generic cost. This class is meant for testing adding a cost to the
-// optimization program, by calling `MathematicalProgram::MakeCost` to
-// convert this class to a ConstraintImpl object.
-class GenericTrivialCost2 {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialCost2)
-
-  GenericTrivialCost2() = default;
-
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = x(0) * x(0) - x(1) * x(1) + 2;
-  }
-};
-
 // Verifies if the added cost evaluates the same as the original cost.
 // This function is supposed to test these costs added as a derived class
 // from Constraint.
 void VerifyAddedCost1(const MathematicalProgram& prog,
-                      const shared_ptr<Constraint>& cost,
+                      const shared_ptr<Cost>& cost,
                       const Eigen::Ref<const Eigen::VectorXd>& x_value,
                       int num_generic_costs_expected) {
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
@@ -461,7 +410,7 @@ void VerifyAddedCost1(const MathematicalProgram& prog,
 // a class to ConstraintImpl through MakeCost.
 void VerifyAddedCost2(const MathematicalProgram& prog,
                       const GenericTrivialCost2& cost,
-                      const shared_ptr<Constraint>& returned_cost,
+                      const shared_ptr<Cost>& returned_cost,
                       const Eigen::Ref<const Eigen::Vector2d>& x_value,
                       int num_generic_costs_expected) {
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
@@ -492,12 +441,11 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()), num_generic_costs);
   EXPECT_EQ(prog.linear_costs().size(), 0u);
 
-  shared_ptr<Constraint> generic_trivial_cost1 =
-      make_shared<GenericTrivialCost1>();
+  shared_ptr<Cost> generic_trivial_cost1 = make_shared<GenericTrivialCost1>();
 
   // Adds Binding<Constraint>
-  prog.AddCost(Binding<Constraint>(
-      generic_trivial_cost1, VectorDecisionVariable<3>(x(0), x(1), y(1))));
+  prog.AddCost(Binding<Cost>(generic_trivial_cost1,
+                             VectorDecisionVariable<3>(x(0), x(1), y(1))));
   ++num_generic_costs;
   VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(1, 3, 5),
                    num_generic_costs);
@@ -538,7 +486,7 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
 
 void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
                                          const Expression& e,
-                                         const Binding<Constraint>& binding,
+                                         const Binding<Cost>& binding,
                                          int num_linear_costs) {
   EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
   EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
@@ -1138,9 +1086,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
   int k{0};
-  for (int i{0}; i < M_e.rows(); ++i) {
-    for (int j{0}; j < M_e.cols(); ++j, ++k) {
+  for (int j{0}; j < M_e.cols(); ++j) {
+    for (int i{0}; i < M_e.rows(); ++i) {
       EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j), Ax(k) - lb_in_ctr(k));
+      ++k;
     }
   }
 }
@@ -1877,7 +1826,7 @@ GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
 void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
                                             const Expression& e,
                                             double constant,
-                                            const Binding<Constraint>& binding,
+                                            const Binding<Cost>& binding,
                                             int num_quadratic_cost) {
   EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
   EXPECT_EQ(binding.constraint(), prog.quadratic_costs().back().constraint());
@@ -2028,6 +1977,23 @@ GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
   EXPECT_THROW(prog.AddCost(x(0) + y), runtime_error);
   EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), runtime_error);
 }
+
+GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
+  using GenericPtr = shared_ptr<Cost>;
+  using Matrix1d = Vector1d;
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+
+  GenericPtr linear_cost(new LinearCost(Matrix1d(1)));
+  prog.AddCost(linear_cost, x);
+  EXPECT_EQ(prog.linear_costs().size(), 1);
+
+  GenericPtr quadratic_cost(new QuadraticCost(Matrix1d(1), Vector1d(1)));
+  prog.AddCost(quadratic_cost, x);
+  EXPECT_EQ(prog.quadratic_costs().size(), 1);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

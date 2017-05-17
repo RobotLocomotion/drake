@@ -34,6 +34,7 @@ drake_cc_googletest(
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    tags = ["snopt"],
     deps = [
         ":iiwa_ik_planner",
     ],

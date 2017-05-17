@@ -18,6 +18,8 @@ using Eigen::Matrix3d;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 
+constexpr double epsilon = std::numeric_limits<double>::epsilon();
+
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of un-initialized values.
 GTEST_TEST(UnitInertia, DefaultConstructor) {
@@ -102,11 +104,10 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   const UnitInertia<double> G_Ro_F = G_Ro_R.ReExpress(R_FR);
 
   // Verify that now R's z-axis is oriented along F's y-axis.
-  EXPECT_NEAR(G_Ro_F(0, 0), Iperp, Eigen::NumTraits<double>::epsilon());
-  EXPECT_NEAR(G_Ro_F(1, 1), Irr, Eigen::NumTraits<double>::epsilon());
-  EXPECT_NEAR(G_Ro_F(2, 2), Iperp, Eigen::NumTraits<double>::epsilon());
-  EXPECT_TRUE(
-      G_Ro_F.get_products().isZero(Eigen::NumTraits<double>::epsilon()));
+  EXPECT_NEAR(G_Ro_F(0, 0), Iperp, epsilon);
+  EXPECT_NEAR(G_Ro_F(1, 1), Irr, epsilon);
+  EXPECT_NEAR(G_Ro_F(2, 2), Iperp, epsilon);
+  EXPECT_TRUE(G_Ro_F.get_products().isZero(epsilon));
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
@@ -123,7 +124,7 @@ GTEST_TEST(UnitInertia, PointMass) {
   UnitInertia<double> G = UnitInertia<double>::PointMass(u);
 
   // Verify that G(u) * v = -u x (u x v).
-  EXPECT_TRUE(uxuxv.isApprox(G * v, Eigen::NumTraits<double>::epsilon()));
+  EXPECT_TRUE(uxuxv.isApprox(G * v, epsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid sphere.
@@ -157,7 +158,8 @@ GTEST_TEST(UnitInertia, SolidBox) {
   const double Izz = (Lx2 + Ly2) / 12.0;
   const UnitInertia<double> G_expected(Ixx, Iyy, Izz);
   UnitInertia<double> G = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
-  EXPECT_TRUE(G.IsApprox(G_expected));
+  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), epsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cube.
@@ -166,7 +168,8 @@ GTEST_TEST(UnitInertia, SolidCube) {
   const double I = L * L / 6.0;
   const UnitInertia<double> G_expected(I);
   UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
-  EXPECT_TRUE(G.IsApprox(G_expected));
+  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), epsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder.
@@ -177,7 +180,8 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const double I_axial = r * r / 2.0;
   const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
-  EXPECT_TRUE(G.IsApprox(G_expected));
+  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), epsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder
@@ -189,27 +193,46 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   const double I_axial = r * r / 2.0;
   const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinderAboutEnd(r, L);
-  EXPECT_TRUE(G.IsApprox(G_expected));
+  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), epsilon));
 }
 
-// Tests the methods ShiftFromCentroidInPlace() and ShiftFromCentroid().
+// Tests the methods:
+//  - ShiftFromCentroidInPlace()
+//  - ShiftFromCentroid()
+//  - ShiftToCentroidInPlace()
+//  - ShiftToCentroid()
 GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
   const double r = 2.5;
   const double L = 1.5;
   const UnitInertia<double> G_expected =
       UnitInertia<double>::SolidCylinderAboutEnd(r, L);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
-  EXPECT_FALSE(G.IsApprox(G_expected));  // Not equal yet.
+  EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), epsilon));  // Not equal yet.
   G.ShiftFromCentroidInPlace({0.0, 0.0, L / 2.0});
-  EXPECT_TRUE(G.IsApprox(G_expected));  // Equal after shifting in place.
+  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), epsilon));  // Equal after shifting.
   EXPECT_TRUE(G.CouldBePhysicallyValid());
 
+  // Now test that we can perform the inverse operation and obtain the original
+  // unit inertia.
+  // As a shift into a new object:
+  UnitInertia<double> G2 = G.ShiftToCentroid({0.0, 0.0, -L / 2.0});
+  // As a shift in place:
+  G.ShiftToCentroidInPlace({0.0, 0.0, -L / 2.0});
+  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), epsilon));
+  EXPECT_TRUE(G2.CopyToFullMatrix3().isApprox(
+      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), epsilon));
+
   // Create a new object.
-  UnitInertia<double> G2 =
+  UnitInertia<double> G3 =
       UnitInertia<double>::
       SolidCylinder(r, L).ShiftFromCentroid({0.0, 0.0, L / 2.0});
-  EXPECT_TRUE(G2.IsApprox(G_expected));
-  EXPECT_TRUE(G2.CouldBePhysicallyValid());
+  EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), epsilon));
+  EXPECT_TRUE(G3.CouldBePhysicallyValid());
 }
 
 // Tests that we can instantiate a unit inertia with AutoDiffScalar and
@@ -263,7 +286,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
                       wz,  0.0, 0.0,
                      0.0,  0.0, 0.0;
   EXPECT_TRUE(wcross.isApprox(
-      wcross_expected, Eigen::NumTraits<double>::epsilon()));
+      wcross_expected, epsilon));
 
   // Re-express inertia into another frame.
   const UnitInertia<ADScalar> I_W = G_B.ReExpress(R_WB);
@@ -291,7 +314,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
   const Matrix3d Idot_W_expected = Ix * Rdot_x + Iy * Rdot_y + Iz * Rdot_z;
 
   EXPECT_TRUE(Idot_W.isApprox(
-      Idot_W_expected, Eigen::NumTraits<double>::epsilon()));
+      Idot_W_expected, epsilon));
 }
 
 // The code below is in support of the goal to use a unit-test to confirm that

@@ -16,7 +16,7 @@ if(lcm_FOUND)
 
   # Defines a shared library for use by KUKA iiwa demos based on System 2.0.
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
-      iiwa_common.cc iiwa_lcm.cc iiwa_plan_source.cc)
+      iiwa_common.cc iiwa_lcm.cc robot_plan_interpolator.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
       drakeIK
       drakeLcmSystem
@@ -26,35 +26,11 @@ if(lcm_FOUND)
       Eigen3::Eigen)
   drake_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
-      iiwa_common.h iiwa_lcm.h iiwa_plan_source.h)
+      iiwa_common.h iiwa_lcm.h robot_plan_interpolator.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
       TARGET drakeKukaIiwaArmCommon
       LIBS -ldrakeKukaIiwaArmCommon
       REQUIRES drake-lcm-system drake-lcmtypes-cpp drake-rbm eigen3)
-
-  add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
-  target_link_libraries(run_kuka_iiwa_arm_dynamics
-      drakeSimDiagramBuilder
-      drakeKukaIiwaArmCommon
-      drakeLcmSystem
-      drakeMultibodyParsers
-      drakeRigidBodyPlant
-      drakeSystemAnalysis
-      drakeSystemControllers
-      gflags)
-  drake_add_test(
-      NAME run_kuka_iiwa_arm_dynamics
-      COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5
-      SIZE medium)
-
-  add_executable(kuka_ik_demo kuka_ik_demo.cc)
-  target_link_libraries(kuka_ik_demo
-    drakeIK
-    drakeKukaIiwaArmCommon
-    drakeMultibodyParsers
-    drakeRBM
-    robotlocomotion-lcmtypes-cpp
-    lcm)
 
   add_executable(kuka_plan_runner kuka_plan_runner.cc)
   target_link_libraries(kuka_plan_runner
@@ -72,6 +48,7 @@ if(lcm_FOUND)
     drakeLCMTypes
     drakeTrajectories
     drakeMultibodyParsers
+    drakeLcmDrivenLoop
     drakeLcmSystem
     drakeRBM
     drakeSystemAnalysis
@@ -111,6 +88,7 @@ if(lcm_FOUND)
       drakeLcmSystem
       drakeLCMUtil
       drakeRBM
+      drakeRobotStateLcmTranslator
       Eigen3::Eigen)
   drake_install_libraries(oracularStateEstimator)
   drake_install_headers(
@@ -118,7 +96,7 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(oracular-state-estimator
       TARGET oracularStateEstimator
       LIBS -loracularStateEstimator
-      REQUIRES drake-lcm-system drake-lcm-util drake-lcmtypes-cpp drake-rbm eigen3)
+      REQUIRES drake-lcm-system drake-lcm-util drake-lcmtypes-cpp drake-rbm drake-robot-state-lcm-translator eigen3)
 
 endif()
 

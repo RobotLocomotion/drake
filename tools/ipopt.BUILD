@@ -1,8 +1,6 @@
-# We build IPOPT by shelling out to autotools.
+# -*- python -*-
 
-# A prefix-string for genrule cmd attributes, which uses the Kythe cdexec tool,
-# in quiet mode, to execute in the genrule output directory.
-CDEXEC = "$(location @//tools/third_party/kythe/tools/cdexec:cdexec) -q $(@D)"
+# We build IPOPT by shelling out to autotools.
 
 # We run autotools in a genrule, and only files explicitly identified as outputs
 # of that genrule can be made available to other rules. Therefore, we need a
@@ -98,42 +96,36 @@ IPOPT_LIBS = [
 # We emit static libraries because dynamic libraries would have different names
 # on OS X and on Linux, and Bazel genrules don't allow platform-dependent outs.
 # https://github.com/bazelbuild/bazel/issues/281
-HALF_THE_CORES = "$$[($$(getconf _NPROCESSORS_ONLN)+1)/2]"
-
-LOG = " 2>> ipopt.log"
-
-PRINT_ERRORS = (
-    "echo \"***IPOPT Build stderr***\"" +
-    " && cat ipopt.log" +
-    " && echo \"***IPOPT Build config.log***\"" +
-    " && find -L . -name config.log | xargs cat"
-)
-
-BUILD_IPOPT_CMD = (
-    "(" + CDEXEC + " `pwd`/external/ipopt/configure --enable-shared=no" + LOG +
-    " && " + CDEXEC + " make -j " + HALF_THE_CORES + LOG +
-    " && " + CDEXEC + " make install" + LOG +
-    ") || (" + PRINT_ERRORS + " && false)"
-)
-
 genrule(
     name = "build_with_autotools",
     srcs = glob(["**/*"]),
     outs = IPOPT_HDRS + IPOPT_LIBS,
-    cmd = BUILD_IPOPT_CMD,
-    tools = ["@//tools/third_party/kythe/tools/cdexec:cdexec"],
+    cmd = " ".join([
+        "(",
+        "env",
+        "cdexec=$(location @//tools/third_party/kythe/tools/cdexec:cdexec)",
+        "top_builddir=$(@D)",
+        "tools/ipopt_build_with_autotools.sh",
+        " 2>&1 > ipopt_build_with_autotools.log",
+        ")",
+        "|| (cat ipopt_build_with_autotools.log && false)",
+        ]),
+    tools = [
+          "@//tools:ipopt_build_with_autotools.sh",
+          "@//tools/third_party/kythe/tools/cdexec:cdexec",
+    ],
     visibility = ["//visibility:private"],
 )
 
 cc_library(
-    name = "lib",
+    name = "ipopt",
     srcs = IPOPT_LIBS,
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        "@gfortran//:lib",
+        "@gfortran",
     ],
     alwayslink = 1,
 )

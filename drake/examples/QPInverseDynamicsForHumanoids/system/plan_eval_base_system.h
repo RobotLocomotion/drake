@@ -64,13 +64,6 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   }
 
   /**
-   * Calls ExtendedAllocateAbstractState() first to allocate derived class'
-   * custom abstract states, then appends a QpInput to the end.
-   * @return The combined AbstractState.
-   */
-  std::unique_ptr<systems::AbstractValues> AllocateAbstractState() const final;
-
-  /**
    * Returns input port for HumanoidStatus.
    */
   inline const systems::InputPortDescriptor<double>&
@@ -135,12 +128,6 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
       systems::State<double>* state) const = 0;
 
   /**
-   * Derived classes need to implement this to allocate custom abstract states.
-   */
-  virtual std::vector<std::unique_ptr<systems::AbstractValue>>
-  ExtendedAllocateAbstractState() const = 0;
-
-  /**
    * Returns a mutable reference of Type in @p state at @p index
    */
   template <typename Type>
@@ -155,9 +142,8 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
    * Returns a mutable reference to QpInput in @p state.
    */
   QpInput& get_mutable_qp_input(systems::State<double>* state) const {
-    int size = state->get_mutable_abstract_state()->size();
     return state->get_mutable_abstract_state()
-        ->get_mutable_value(size - 1)
+        ->get_mutable_value(abs_state_index_qp_input_)
         .GetMutableValue<QpInput>();
   }
 
@@ -170,6 +156,8 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
 
   int input_port_index_humanoid_status_{};
   int output_port_index_qp_input_{};
+
+  int abs_state_index_qp_input_{-1};
 };
 
 }  // namespace qp_inverse_dynamics

@@ -15,9 +15,7 @@ ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
     const RigidBodyTree<double>& robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
-    : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt),
-      abs_state_index_plan_(0),
-      abs_state_index_debug_(1) {
+    : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
   DRAKE_DEMAND(get_robot().get_num_velocities() ==
                get_robot().get_num_positions());
   const int kStateDim =
@@ -31,6 +29,13 @@ ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
 
   output_port_index_debug_info_ = DeclareAbstractOutputPort().get_index();
   set_name("ManipulatorPlanEvalSystem");
+
+  abs_state_index_plan_ =
+      DeclareAbstractState(systems::AbstractValue::Make<VectorSetpoint<double>>(
+          VectorSetpoint<double>(kAccDim)));
+  abs_state_index_debug_ = DeclareAbstractState(
+      systems::AbstractValue::Make<lcmt_plan_eval_debug_info>(
+          lcmt_plan_eval_debug_info()));
 }
 
 void ManipulatorPlanEvalSystem::Initialize(systems::State<double>* state) {
@@ -111,23 +116,6 @@ void ManipulatorPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     debug.nominal_v[i] = plan.desired_velocity()[i];
     debug.nominal_vd[i] = plan.desired_acceleration()[i];
   }
-}
-
-std::vector<std::unique_ptr<systems::AbstractValue>>
-ManipulatorPlanEvalSystem::ExtendedAllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(
-      get_num_extended_abstract_states());
-
-  const int dim = get_robot().get_num_velocities();
-  abstract_vals[abs_state_index_plan_] =
-      systems::AbstractValue::Make<VectorSetpoint<double>>(
-          VectorSetpoint<double>(dim));
-
-  abstract_vals[abs_state_index_debug_] =
-      systems::AbstractValue::Make<lcmt_plan_eval_debug_info>(
-          lcmt_plan_eval_debug_info());
-
-  return abstract_vals;
 }
 
 std::unique_ptr<systems::AbstractValue>

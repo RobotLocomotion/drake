@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/eigen_autodiff_limits.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -20,23 +21,18 @@ using AutoDiffUpTo73d = Eigen::AutoDiffScalar<VectorUpTo73d>;
 /// An autodiff variable with a dynamic number of partials.
 using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
 
-// todo: recursive template to get arbitrary gradient order
+// TODO(hongkai-dai): Recursive template to get arbitrary gradient order.
 
-// note: tried using template default values (e.g. Eigen::Dynamic), but they
-// didn't seem to work on my mac clang
+/// An autodiff variable with `num_vars` partials.
 template <int num_vars>
-using TaylorVard = Eigen::AutoDiffScalar<Eigen::Matrix<double, num_vars, 1> >;
+using AutoDiffd = Eigen::AutoDiffScalar<Eigen::Matrix<double, num_vars, 1> >;
+
+/// A vector of `rows` autodiff variables, each with `num_vars` partials.
 template <int num_vars, int rows>
-using TaylorVecd = Eigen::Matrix<TaylorVard<num_vars>, rows, 1>;
-template <int num_vars, int rows, int cols>
-using TaylorMatd = Eigen::Matrix<TaylorVard<num_vars>, rows, cols>;
+using AutoDiffVecd = Eigen::Matrix<AutoDiffd<num_vars>, rows, 1>;
 
-typedef TaylorVard<Eigen::Dynamic> TaylorVarXd;
-typedef TaylorVecd<Eigen::Dynamic, Eigen::Dynamic> TaylorVecXd;
-typedef TaylorMatd<Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic> TaylorMatXd;
-
-static_assert(std::is_same<AutoDiffXd, TaylorVarXd>::value,
-              "AutoDiffXd and TaylorVarXd should be two different names "
-              "for the same type.");
+/// A dynamic-sized vector of autodiff variables, each with a dynamic-sized
+/// vector of partials.
+typedef AutoDiffVecd<Eigen::Dynamic, Eigen::Dynamic> AutoDiffVecXd;
 
 }  // namespace drake

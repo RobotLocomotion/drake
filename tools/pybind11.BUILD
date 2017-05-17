@@ -23,4 +23,9 @@ cc_library(
     ],
     includes = ["include"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@eigen",
+        "@numpy",
+        "@python",
+    ],
 )

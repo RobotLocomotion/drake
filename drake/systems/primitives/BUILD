@@ -100,6 +100,7 @@ drake_cc_library(
         "gain-inl.h",
     ],
     deps = [
+        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -109,6 +110,7 @@ drake_cc_library(
     srcs = ["integrator.cc"],
     hdrs = ["integrator.h"],
     deps = [
+        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -152,6 +154,7 @@ drake_cc_library(
         "pass_through-inl.h",
     ],
     deps = [
+        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -212,6 +215,7 @@ drake_cc_library(
         "zero_order_hold-inl.h",
     ],
     deps = [
+        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -258,6 +262,7 @@ drake_cc_googletest(
         ":constant_vector_source",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -277,6 +282,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":first_order_low_pass_filter",
+        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -329,7 +335,9 @@ drake_cc_googletest(
     deps = [
         ":multiplexer",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities:my_vector",
     ],
 )
 

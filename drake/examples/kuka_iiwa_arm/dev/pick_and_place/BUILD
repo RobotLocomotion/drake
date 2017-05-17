@@ -9,7 +9,7 @@ load(
 )
 
 package(
-    default_visibility = [":__subpackages__"],
+    default_visibility = ["//drake/examples/kuka_iiwa_arm/dev:__subpackages__"],
 )
 
 drake_cc_library(
@@ -47,7 +47,6 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/dev:iiwa_ik_planner",
-        "//drake/examples/schunk_wsg:schunk_wsg_lcm",
         "//drake/util:lcm_util",
     ],
 )

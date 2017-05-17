@@ -15,7 +15,7 @@ namespace sensors {
 /// @see DepthSensor.
 class DepthSensorSpecification {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensorSpecification)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthSensorSpecification)
 
   /// Constructs a %DepthsensorSpecification with all default values.
   DepthSensorSpecification() {}

@@ -15,6 +15,7 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
+#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/vector_base.h"
@@ -27,6 +28,7 @@ using maliput::api::Lane;
 using maliput::api::LaneEnd;
 using maliput::api::LanePosition;
 using maliput::api::Rotation;
+using math::RollPitchYawToQuaternion;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
@@ -38,6 +40,7 @@ using systems::SparsityMatrix;
 using systems::State;
 using systems::SystemOutput;
 using systems::VectorBase;
+using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
 namespace automotive {
@@ -59,6 +62,8 @@ MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
           systems::Value<LaneDirection>(initial_lane_direction)).get_index();
   pose_output_port_index_ =
       this->DeclareVectorOutputPort(PoseVector<T>()).get_index();
+  velocity_output_port_index_ =
+      this->DeclareVectorOutputPort(FrameVelocity<T>()).get_index();
   this->DeclareContinuousState(MaliputRailcarState<T>());
   this->DeclareNumericParameter(MaliputRailcarParams<T>());
 }
@@ -81,6 +86,18 @@ const OutputPortDescriptor<T>& MaliputRailcar<T>::lane_state_output() const {
 template <typename T>
 const OutputPortDescriptor<T>& MaliputRailcar<T>::pose_output() const {
   return this->get_output_port(pose_output_port_index_);
+}
+
+template <typename T>
+const OutputPortDescriptor<T>& MaliputRailcar<T>::velocity_output() const {
+  return this->get_output_port(velocity_output_port_index_);
+}
+
+template <typename T>
+MaliputRailcarParams<T>* MaliputRailcar<T>::get_mutable_parameters(
+    systems::Context<T>* context) const {
+  return this->template GetMutableNumericParameter<MaliputRailcarParams>(
+      context, 0);
 }
 
 template <typename T>
@@ -116,6 +133,12 @@ void MaliputRailcar<T>::DoCalcOutput(const Context<T>& context,
           output->GetMutableVectorData(pose_output_port_index_));
   DRAKE_ASSERT(pose_vector != nullptr);
   ImplCalcPose(params, *state, lane_direction, pose_vector);
+
+  FrameVelocity<T>* const frame_velocity =
+      dynamic_cast<FrameVelocity<T>*>(
+          output->GetMutableVectorData(velocity_output_port_index_));
+  DRAKE_ASSERT(frame_velocity != nullptr);
+  ImplCalcVelocity(params, *state, lane_direction, frame_velocity);
 }
 
 template <typename T>
@@ -165,14 +188,39 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarParams<T>& params,
   // against s.
   const Rotation adjusted_rotation =
       (lane_direction.with_s ? rotation :
-          Rotation(-rotation.roll,
-                   -rotation.pitch,
-                   atan2(-sin(rotation.yaw), -cos(rotation.yaw))));
-  pose->set_translation(
-      Eigen::Translation<T, 3>(geo_position.x, geo_position.y, geo_position.z));
-  pose->set_rotation(math::RollPitchYawToQuaternion(
-      Vector3<T>(adjusted_rotation.roll, adjusted_rotation.pitch,
-                 adjusted_rotation.yaw)));
+       Rotation::FromRpy(-rotation.roll(),
+                         -rotation.pitch(),
+                         atan2(-sin(rotation.yaw()), -cos(rotation.yaw()))));
+  pose->set_translation(Eigen::Translation<T, 3>(geo_position.xyz()));
+  pose->set_rotation(RollPitchYawToQuaternion(
+      Vector3<T>(adjusted_rotation.roll(), adjusted_rotation.pitch(),
+                 adjusted_rotation.yaw())));
+}
+
+template <typename T>
+void MaliputRailcar<T>::ImplCalcVelocity(const MaliputRailcarParams<T>& params,
+    const MaliputRailcarState<T>& state, const LaneDirection& lane_direction,
+    FrameVelocity<T>* frame_velocity) const {
+
+  // In the following code:
+  //  - v is the translational component of the spatial velocity.
+  //  - C is the car's frame.
+  //  - L is the lane frame.
+  //  - W is the world frame.
+  //  - R is a rotation matrix.
+
+  const Vector3<T> v_LC_L(lane_direction.with_s ? state.speed() :
+                                                  -state.speed(),
+                          0 /* r_dot */, 0 /* h_dot */);
+  const Rotation rotation =
+      lane_direction.lane->GetOrientation(
+          LanePosition(state.s(), params.r(), params.h()));
+  const Eigen::Matrix<T, 3, 3> R_WL = rotation.matrix();
+  const Vector3<T> v_WC_W = R_WL * v_LC_L;
+
+  // TODO(liang.fok) Add support for non-zero rotational velocity. See #5751.
+  const Vector3<T> w(T(0), T(0), T(0));
+  frame_velocity->set_velocity(multibody::SpatialVelocity<T>(w, v_WC_W));
 }
 
 template <typename T>
@@ -233,9 +281,9 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
   // zero, we expect the resulting motion derivative's r and h values to
   // also be zero. The IsoLaneVelocity's sigma_v, which may be non-zero, maps
   // to the motion derivative's s value.
-  DRAKE_ASSERT(motion_derivatives.r == 0);
-  DRAKE_ASSERT(motion_derivatives.h == 0);
-  rates->set_s(motion_derivatives.s);
+  DRAKE_ASSERT(motion_derivatives.r() == 0);
+  DRAKE_ASSERT(motion_derivatives.h() == 0);
+  rates->set_s(motion_derivatives.s());
 
   const T desired_acceleration = input.GetAtIndex(0);
   const T smooth_acceleration = calc_smooth_acceleration(
@@ -255,13 +303,13 @@ MaliputRailcar<T>::AllocateAbstractState() const {
 }
 
 template <typename T>
-bool MaliputRailcar<T>::DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
-    int input_port, int output_port) const {
+bool MaliputRailcar<T>::DoHasDirectFeedthrough(
+    const SparsityMatrix*, int, int) const {
   return false;
 }
 
 template <typename T>
-void MaliputRailcar<T>::SetDefaultState(const Context<T>& context,
+void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
     State<T>* state) const {
   MaliputRailcarState<T>* railcar_state =
       dynamic_cast<MaliputRailcarState<T>*>(
@@ -318,7 +366,7 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
         lane_direction.lane->EvalMotionDerivatives(
             LanePosition(s, CalcR(params, lane_direction), params.h()),
             IsoLaneVelocity(sigma_v, 0 /* rho_v */, 0 /* eta_v */));
-    const T s_dot = motion_derivatives.s;
+    const T s_dot = motion_derivatives.s();
 
     const T distance = cond(with_s, T(lane->length()) - s, -s);
 

@@ -1,6 +1,6 @@
 element {
     name: "s"
-    doc: "The s-coordinate of the vehicle in lane-space."
+    doc: "The s-coordinate of the vehicle in a `Lane`-frame."
 }
 element {
     name: "speed"

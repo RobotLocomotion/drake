@@ -1,3 +1,5 @@
+#include <cmath>
+#include <cstddef>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -6,6 +8,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/framework/siso_vector_system.h"
+#include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 #include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
 
@@ -46,8 +49,7 @@ class MyDirectTrajOpt : public DirectTrajectoryOptimization {
 
  private:
   void DoAddRunningCost(const symbolic::Expression& g) override {}
-  void DoAddRunningCost(
-      std::shared_ptr<solvers::Constraint> constraint) override {}
+  void DoAddRunningCost(std::shared_ptr<solvers::Cost> constraint) override {}
 };
 
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
@@ -284,6 +286,33 @@ GTEST_TEST(TrajectoryOptimizationTest, MinimumTimeTest) {
   for (int i = 0; i < timesteps - 1; i++)
     total_time += prog.GetSolution(prog.timestep(i))(0);
   EXPECT_NEAR(total_time, min_time, 1e-5);
+}
+
+/// A simple example where the plant has no inputs.
+GTEST_TEST(TrajectoryOptimizationTest, NoInputs) {
+  // xdot = -x.
+  systems::LinearSystem<double> plant(
+      Vector1d(-1.0),                        // A
+      Eigen::Matrix<double, 1, 0>::Zero(),   // B
+      Eigen::Matrix<double, 0, 1>::Zero(),   // C
+      Eigen::Matrix<double, 0, 0>::Zero());  // D
+
+  auto context = plant.CreateDefaultContext();
+  const int timesteps{10};
+  const double duration{1.0};
+  DircolTrajectoryOptimization prog(&plant, *context, timesteps, duration,
+                                    duration);
+
+  prog.AddTimeIntervalBounds(duration / (timesteps - 1),
+                             duration / (timesteps - 1));
+
+  const double x0 = 2.0;
+  prog.AddLinearConstraint(prog.initial_state() == Vector1d(x0));
+
+  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+
+  EXPECT_NEAR(prog.GetSolution(prog.final_state())(0), x0 * std::exp(-duration),
+              1e-6);
 }
 
 }  // anonymous namespace

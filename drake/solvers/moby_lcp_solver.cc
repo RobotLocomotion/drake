@@ -120,7 +120,7 @@ void MobyLCPSolver<T>::ClearIndexVectors() const {
 template <>
 SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
 // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-    MathematicalProgram& prog) const {
+    MathematicalProgram&) const {
   DRAKE_ABORT_MSG("MobyLCPSolver cannot yet be used in a MathematicalProgram "
                   "while templatized as an AutoDiff");
   return SolutionResult::kUnknownError;

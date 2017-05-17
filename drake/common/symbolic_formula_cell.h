@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
@@ -80,9 +81,9 @@ class RelationalFormulaCell : public FormulaCell {
   RelationalFormulaCell& operator=(RelationalFormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = delete;
-  /** Construct RelationalFormulaCell of kind @p k with @p hash. */
-  RelationalFormulaCell(FormulaKind k, const Expression& e1,
-                        const Expression& e2);
+  /** Construct RelationalFormulaCell of kind @p k with @p lhs and @p rhs. */
+  RelationalFormulaCell(FormulaKind k, const Expression& lhs,
+                        const Expression& rhs);
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -114,7 +115,7 @@ class NaryFormulaCell : public FormulaCell {
   NaryFormulaCell& operator=(NaryFormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   NaryFormulaCell& operator=(const NaryFormulaCell& f) = delete;
-  /** Construct NaryFormulaCell of kind @p k with @p hash. */
+  /** Construct NaryFormulaCell of kind @p k with @p formulas. */
   NaryFormulaCell(FormulaKind k, const std::set<Formula>& formulas);
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
@@ -231,7 +232,7 @@ class FormulaAnd : public NaryFormulaCell {
 class FormulaOr : public NaryFormulaCell {
  public:
   /** Constructs from @p formulas. */
-  explicit FormulaOr(const std::set<Formula>& formula);
+  explicit FormulaOr(const std::set<Formula>& formulas);
   /** Constructs @p f1 ∨ @p f2. */
   FormulaOr(const Formula& f1, const Formula& f2);
   bool Evaluate(const Environment& env) const override;
@@ -295,6 +296,111 @@ class FormulaIsnan : public FormulaCell {
   const Expression e_;
 };
 
+/** Symbolic formula representing positive-semidefinite (PSD) constraint. */
+class FormulaPositiveSemidefinite : public FormulaCell {
+ public:
+  /** Constructs a positive-semidefinite formula from a symmetric matrix @p m.
+   *
+   * @throws std::runtime_error if @p m is not symmetric.
+   *
+   * @note This constructor checks if @p m is symmetric by calling
+   * `math::IsSymmetric` function which can be costly.
+   */
+  explicit FormulaPositiveSemidefinite(
+      const Eigen::Ref<const MatrixX<Expression>>& m);
+
+  /** Constructs a symbolic positive-semidefinite formula from a
+   * lower triangular-view @p l.
+   */
+  template <typename Derived>
+  explicit FormulaPositiveSemidefinite(
+      const Eigen::TriangularView<Derived, Eigen::Lower>& l)
+      : FormulaCell{FormulaKind::PositiveSemidefinite,
+                    ComputeHashOfLowerTriangular(l)},
+        m_{BuildSymmetricMatrixFromLowerTringularView(l)} {}
+
+  /** Constructs a symbolic positive-semidefinite formula from an
+   * upper triangular-view @p u.
+   */
+  template <typename Derived>
+  explicit FormulaPositiveSemidefinite(
+      const Eigen::TriangularView<Derived, Eigen::Upper>& u)
+      : FormulaCell{FormulaKind::PositiveSemidefinite,
+                    ComputeHashOfLowerTriangular(u.transpose())},
+        m_{BuildSymmetricMatrixFromUpperTriangularView(u)} {}
+
+  Variables GetFreeVariables() const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  /** Checks ordering between this PSD formula and @p f. The ordering between
+   * two PSD formulas `psd1` and `psd2` are determined by the ordering between
+   * the two matrices `m1` in `psd1` and `m2` in `psd2`.
+   *
+   * First, we compare the size of `m1` and `m2`:
+   * - If `m1` is smaller than `m2`, `psd1.Less(psd2)` is true.
+   * - If `m2` is smaller than `m1`, `psd1.Less(psd2)` is false.
+   *
+   * If `m1` and `m2` are of the same size, we perform element-wise comparison
+   * by following column-major order. See the following example:
+   *
+   * @code
+   * m1 << x + y, -3.14,
+   *       -3.14,     y;
+   * m2 << x + y,  3.14,
+   *        3.14,     y;
+   * const Formula psd1{positive_semidefinite(m1)};
+   * const Formula psd2{positive_semidefinite(m2)};
+   *
+   * EXPECT_TRUE(psd1.Less(psd2));
+   * @endcode
+   *
+   * Note that in the code above, `psd1.Less(psd2)` holds because we have
+   *  - m1 in column-major ordering : (x + y)  -3.14   -3.14   y_
+   *  - m2 in column-major ordering : (x + y)   3.14    3.14   y_.
+   */
+  bool Less(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
+  Formula Substitute(const Substitution& s) const override;
+  std::ostream& Display(std::ostream& os) const override;
+  /** Returns the corresponding matrix in this PSD formula. */
+  const MatrixX<symbolic::Expression>& get_matrix() const { return m_; }
+
+ private:
+  // Builds a symmetric matrix from a lower triangular-view.
+  template <typename Derived>
+  static MatrixX<Expression> BuildSymmetricMatrixFromLowerTringularView(
+      const Eigen::TriangularView<Derived, Eigen::Lower>& l) {
+    MatrixX<Expression> m(l.rows(), l.cols());
+    m.triangularView<Eigen::Lower>() = l;
+    m.triangularView<Eigen::StrictlyUpper>() =
+        m.transpose().triangularView<Eigen::StrictlyUpper>();
+    return m;
+  }
+
+  // Builds a symmetric matrix from an upper triangular-view.
+  template <typename Derived>
+  static MatrixX<Expression> BuildSymmetricMatrixFromUpperTriangularView(
+      const Eigen::TriangularView<Derived, Eigen::Upper>& u) {
+    MatrixX<Expression> m(u.rows(), u.cols());
+    m.triangularView<Eigen::Upper>() = u;
+    m.triangularView<Eigen::StrictlyLower>() =
+        m.transpose().triangularView<Eigen::StrictlyLower>();
+    return m;
+  }
+
+  // Computes a hash of a matrix only using its lower-triangular part.
+  static size_t ComputeHashOfLowerTriangular(const MatrixX<Expression>& m) {
+    size_t seed{};
+    for (int i = 0; i < m.rows(); ++i) {
+      for (int j = 0; j <= i; ++j) {
+        seed = hash_combine(seed, m(i, j));
+      }
+    }
+    return seed;
+  }
+
+  const MatrixX<Expression> m_;
+};
+
 /** Checks if @p f is structurally equal to False formula. */
 bool is_false(const FormulaCell& f);
 /** Checks if @p f is structurally equal to True formula. */
@@ -323,13 +429,15 @@ bool is_negation(const FormulaCell& f);
 bool is_forall(const FormulaCell& f);
 /** Checks if @p f is an isnan formula. */
 bool is_isnan(const FormulaCell& f);
+/** Checks if @p f is a positive semidefinite formula. */
+bool is_positive_semidefinite(const FormulaCell& f);
 
 /** Casts @p f_ptr of shared_ptr<FormulaCell> to
  * @c shared_ptr<RelationalFormulaCell>.
  *  \pre{@c is_relational(*f_ptr) is true.}
  */
 std::shared_ptr<RelationalFormulaCell> to_relational(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to
  * @c shared_ptr<RelationalFormulaCell>.
@@ -342,7 +450,7 @@ std::shared_ptr<RelationalFormulaCell> to_relational(const Formula& f);
  *  \pre{@c is_nary(*f_ptr) is true.}
  */
 std::shared_ptr<NaryFormulaCell> to_nary(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<NaryFormulaCell>.
  *  \pre{@c is_nary(f) is true.}
@@ -353,7 +461,7 @@ std::shared_ptr<NaryFormulaCell> to_nary(const Formula& f);
  *  \pre{@c is_negation(*f_ptr) is true.}
  */
 std::shared_ptr<FormulaNot> to_negation(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<FormulaNot>.
  *  \pre{@c is_negation(f) is true.}
@@ -364,7 +472,7 @@ std::shared_ptr<FormulaNot> to_negation(const Formula& f);
  *  \pre{@c is_forall(*f_ptr) is true.}
  */
 std::shared_ptr<FormulaForall> to_forall(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<FormulaForall>.
  *  \pre{@c is_forall(f) is true.}
@@ -375,12 +483,26 @@ std::shared_ptr<FormulaForall> to_forall(const Formula& f);
  *  \pre{@c is_isnan(*f_ptr) is true.}
  */
 std::shared_ptr<FormulaIsnan> to_isnan(
-    const std::shared_ptr<FormulaCell> f_ptr);
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f of Formula to @c shared_ptr<FormulaIsnan>.
  *  \pre{@c is_isnan(f) is true.}
  */
 std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
+
+/** Casts @p f_ptr of shared_ptr<FormulaCell> to @c
+ * shared_ptr<FormulaPositiveSemidefinite>.
+ * @pre @c is_positive_semidefinite(*f_ptr) is true.
+ */
+std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const std::shared_ptr<FormulaCell>& f_ptr);
+
+/** Casts @p f of Formula to @c shared_ptr<FormulaPositiveSemidefinite>.
+ *
+ *  @pre @c is_positive_semidefinite(f) is true.
+ */
+std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+    const Formula& f);
 
 }  // namespace symbolic
 }  // namespace drake

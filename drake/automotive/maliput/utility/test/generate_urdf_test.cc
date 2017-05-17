@@ -6,13 +6,8 @@
 #include <gtest/gtest.h>
 #include "spruce.hh"
 
-#include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/builder.h"
-#include "drake/automotive/maliput/monolane/junction.h"
-#include "drake/automotive/maliput/monolane/lane.h"
-#include "drake/automotive/maliput/monolane/line_lane.h"
-#include "drake/automotive/maliput/monolane/road_geometry.h"
-#include "drake/automotive/maliput/monolane/segment.h"
+#include "drake/automotive/maliput/monolane/loader.h"
 
 namespace drake {
 namespace maliput {
@@ -114,7 +109,6 @@ TEST_F(GenerateUrdfTest, AtLeastRunIt) {
   EXPECT_TRUE(spruce::file::remove(expected_obj));
   EXPECT_TRUE(spruce::file::remove(expected_mtl));
 }
-
 
 }  // namespace utility
 }  // namespace maliput

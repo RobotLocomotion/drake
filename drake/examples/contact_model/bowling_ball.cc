@@ -62,7 +62,7 @@ DEFINE_bool(playback, true, "If true, loops playback of simulation");
 
 
 // Bowling ball rolled down a conceptual lane to strike pins.
-int main(int argc, char**argv) {
+int main() {
   using std::cerr;
   using std::cout;
 
@@ -99,6 +99,7 @@ int main(int argc, char**argv) {
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  plant.set_name("plant");
 
   // Note: this sets identical contact parameters across all object pairs:
   // ball-lane, ball-pin, and pin-pin.  :(
@@ -112,6 +113,7 @@ int main(int argc, char**argv) {
   // Visualizer.
   const auto visualizer_publisher =
       builder.template AddSystem<DrakeVisualizer>(tree, &lcm, true);
+  visualizer_publisher->set_name("visualizer_publisher");
 
   // Raw state vector to visualizer.
   builder.Connect(plant.state_output_port(),
@@ -188,5 +190,5 @@ int main(int argc, char**argv) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::systems::main(argc, argv);
+  return drake::systems::main();
 }

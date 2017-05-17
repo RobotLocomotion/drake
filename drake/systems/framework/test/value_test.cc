@@ -20,6 +20,7 @@ using MyVector2d = MyVector<2, double>;
 
 struct NoDefaultCtor {
   explicit NoDefaultCtor(int i) : data{i} {}
+  NoDefaultCtor(int c1, int c2) : data{c1 * c2} {}
   int data;
 };
 
@@ -41,6 +42,10 @@ GTEST_TEST(ValueTest, ForwardingConstructor) {
   // Value<NoDefaultCtor>(int) should work using forwarding.
   const AbstractValue& abstract_value = Value<NoDefaultCtor>(22);
   EXPECT_EQ(22, abstract_value.GetValue<NoDefaultCtor>().data);
+
+  // Value<NoDefaultCtor>(int, int) should work using forwarding.
+  const AbstractValue& value2 = Value<NoDefaultCtor>(11, 2);
+  EXPECT_EQ(22, value2.GetValue<NoDefaultCtor>().data);
 
   // Value<BareStruct>(BareStruct&&) should use the `(const T&)` constructor,
   // not the forwarding constructor.

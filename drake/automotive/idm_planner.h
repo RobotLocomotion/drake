@@ -6,7 +6,7 @@
 namespace drake {
 namespace automotive {
 
-/// IdmPlanner (Intelligent Driver Model Planner) is a simple model governing
+/// IdmPlanner implements the IDM (Intelligent Driver Model) equation governing
 /// longitudinal accelerations of a vehicle in single-lane traffic [1, 2].  It
 /// is derived based on qualitative observations of actual driving behavior and
 /// captures objectives such as keeping a safe distance behind a lead vehicle,
@@ -27,7 +27,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
-/// - drake::TaylorVarXd
+/// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
@@ -36,8 +36,6 @@ namespace automotive {
 ///     and Simulation. Springer, 2013.
 ///
 /// [2] https://en.wikipedia.org/wiki/Intelligent_driver_model.
-///
-/// @ingroup automotive_systems
 template <typename T>
 class IdmPlanner {
  public:

@@ -50,6 +50,12 @@ class DiagramState : public State<T> {
   }
 
   /// Returns the substate at @p index.
+  const State<T>* get_substate(int index) const {
+    DRAKE_DEMAND(index >= 0 && index < num_substates());
+    return substates_[index];
+  }
+
+  /// Returns the substate at @p index.
   State<T>* get_mutable_substate(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_substates());
     return substates_[index];
@@ -62,7 +68,7 @@ class DiagramState : public State<T> {
     std::vector<ContinuousState<T>*> sub_xcs;
     sub_xcs.reserve(num_substates());
     std::vector<BasicVector<T>*> sub_xds;
-    std::vector<AbstractValue*> sub_xms;
+    std::vector<AbstractValue*> sub_xas;
     for (State<T>* substate : substates_) {
       // Continuous
       sub_xcs.push_back(substate->get_mutable_continuous_state());
@@ -71,9 +77,9 @@ class DiagramState : public State<T> {
           substate->get_mutable_discrete_state()->get_data();
       sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
       // Abstract
-      AbstractValues* xm = substate->get_mutable_abstract_state();
-      for (int i_xm = 0; i_xm < xm->size(); ++i_xm) {
-        sub_xms.push_back(&xm->get_mutable_value(i_xm));
+      AbstractValues* xa = substate->get_mutable_abstract_state();
+      for (int i_xa = 0; i_xa < xa->size(); ++i_xa) {
+        sub_xas.push_back(&xa->get_mutable_value(i_xa));
       }
     }
 
@@ -84,8 +90,8 @@ class DiagramState : public State<T> {
     // pointers to that memory.
     this->set_continuous_state(
         std::make_unique<DiagramContinuousState<T>>(sub_xcs));
-    this->set_discrete_state(std::make_unique<DiscreteState<T>>(sub_xds));
-    this->set_abstract_state(std::make_unique<AbstractValues>(sub_xms));
+    this->set_discrete_state(std::make_unique<DiscreteValues<T>>(sub_xds));
+    this->set_abstract_state(std::make_unique<AbstractValues>(sub_xas));
   }
 
  private:
@@ -218,7 +224,7 @@ class DiagramContext : public Context<T> {
     }
     parameters_ = std::make_unique<Parameters<T>>();
     parameters_->set_numeric_parameters(
-        std::make_unique<DiscreteState<T>>(numeric_params));
+        std::make_unique<DiscreteValues<T>>(numeric_params));
     parameters_->set_abstract_parameters(
         std::make_unique<AbstractValues>(abstract_params));
   }

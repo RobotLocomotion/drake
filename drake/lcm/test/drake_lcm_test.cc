@@ -46,6 +46,14 @@ class MessageSubscriber {
     drake::lcmt_drake_signal message_copy;
     std::lock_guard<std::mutex> lock(message_mutex_);
     message_copy = received_message_;
+
+    // g++-4.9 on Trusty is still follows copy-on-write on strings.
+    // So, message_copy.coord[0] references the same memory location as
+    // received_message_.coord[0].  To prevent data-race we make a deep copy.
+    // COW is not followed by g++-5 and the loop may be removed when Trusty
+    // support is terminated.
+    for (size_t i = 0; i < received_message_.coord.size(); ++i)
+          message_copy.coord[i] = received_message_.coord[i].c_str();
     return message_copy;
   }
 
@@ -150,8 +158,8 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
   // This is the callback method.
   void HandleMessage(const std::string& channel, const void* message_buffer,
       int message_size) override {
-    channel_ = channel;
     std::lock_guard<std::mutex> lock(message_mutex_);
+    channel_ = channel;
     received_message_.decode(message_buffer, 0, message_size);
   }
 
@@ -160,11 +168,21 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
     drake::lcmt_drake_signal message_copy;
     std::lock_guard<std::mutex> lock(message_mutex_);
     message_copy = received_message_;
+
+    // g++-4.9 on Trusty is still follows copy-on-write on strings.
+    // So, message_copy.coord[0] references the same memory location as
+    // received_message_.coord[0].  To prevent data-race we make a deep copy.
+    // COW is not followed by g++-5 and the loop may be removed when Trusty
+    // support is terminated.
+    for (size_t i = 0; i < received_message_.coord.size(); ++i)
+      message_copy.coord[i] = received_message_.coord[i].c_str();
+
     return message_copy;
   }
 
   // Returns the channel on which the most recent message was received.
-  const std::string& get_receive_channel() {
+  std::string get_receive_channel() {
+    std::lock_guard<std::mutex> lock(message_mutex_);
     return channel_;
   }
 

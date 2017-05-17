@@ -111,11 +111,11 @@ class KeyboardEventProcessor:
                     last_msg.steering_angle + (
                         STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN)))
 
-        new_msg = last_msg._replace(
+        new_msg = new_msg._replace(
             throttle=_limit_throttle(
-                last_msg.throttle + self.throttle_gradient * THROTTLE_SCALE),
+                new_msg.throttle + self.throttle_gradient * THROTTLE_SCALE),
             brake=_limit_brake(
-                last_msg.brake + self.brake_gradient * BRAKE_SCALE))
+                new_msg.brake + self.brake_gradient * BRAKE_SCALE))
 
         return new_msg
 
@@ -162,7 +162,7 @@ class SteeringCommandPublisher:
         print 'Initializing...'
         pygame.init()
         self.screen = pygame.display.set_mode((300, 70))
-        pygame.display.set_caption('Steering Command Driver')
+        pygame.display.set_caption(lcm_tag)
         self.font = pygame.font.SysFont('Courier', 20)
         if input_method == 'keyboard':
             self.event_processor = KeyboardEventProcessor()

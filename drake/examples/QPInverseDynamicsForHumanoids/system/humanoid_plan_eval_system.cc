@@ -28,18 +28,19 @@ HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
     const RigidBodyTree<double>& robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
-    : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt),
-      abs_state_index_plan_(0) {
+    : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
   set_name("HumanoidPlanEval");
+  abs_state_index_plan_ = DeclareAbstractState(
+      systems::AbstractValue::Make<SimpleStandingPlan>(SimpleStandingPlan()));
 }
 
 void HumanoidPlanEvalSystem::DoExtendedCalcOutput(
-    const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {}
+    const systems::Context<double>&,
+    systems::SystemOutput<double>*) const {}
 
 std::unique_ptr<systems::AbstractValue>
 HumanoidPlanEvalSystem::ExtendedAllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
+    const systems::OutputPortDescriptor<double>&) const {
   DRAKE_ABORT_MSG(
       "HumanoidPlanEvalSystem does not have additional abstract output ports.");
 }
@@ -88,16 +89,6 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
   qp_input.mutable_desired_body_motions().at(torso_body_name).mutable_values() =
       plan.torso_servo.ComputeTargetAcceleration(
           robot_status->torso().pose(), robot_status->torso().velocity());
-}
-
-std::vector<std::unique_ptr<systems::AbstractValue>>
-HumanoidPlanEvalSystem::ExtendedAllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(
-      get_num_extended_abstract_states());
-  abstract_vals[abs_state_index_plan_] =
-      std::unique_ptr<systems::AbstractValue>(
-          new systems::Value<SimpleStandingPlan>(SimpleStandingPlan()));
-  return abstract_vals;
 }
 
 void HumanoidPlanEvalSystem::Initialize(const VectorX<double>& q_d,

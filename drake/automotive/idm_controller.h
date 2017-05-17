@@ -4,7 +4,6 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/automotive/idm_planner.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
@@ -17,30 +16,30 @@
 namespace drake {
 namespace automotive {
 
-/// An IdmController implements the IDM (Intelligent Driver Model) planner,
+/// IdmController implements the IDM (Intelligent Driver Model) planner,
 /// computed based only on the nearest car ahead.  See IdmPlanner and
-/// PoseSelector for details.  The output of this block is a DrivingCommand that
-/// modifies the throttle and brake, but not the steering angle.
+/// PoseSelector for details.  The output of this block is an acceleration value
+/// passed as a command to the vehicle.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 ///
 /// They are already available to link against in the containing library.
 ///
-/// Input Port 0: @p ego_pose PoseVector for the ego car.
+/// Input Port 0: PoseVector for the ego car.
 ///   (InputPortDescriptor getter: ego_pose_input())
-/// Input Port 1: @p ego_velocity FrameVelocity of the ego car.
+///
+/// Input Port 1: FrameVelocity of the ego car.
 ///   (InputPortDescriptor getter: ego_velocity_input())
-/// Input Port 2: @p traffic_poses PoseBundle for the traffic cars, possibly
-///   inclusive of the ego car's pose.
+///
+/// Input Port 2: PoseBundle for the traffic cars, possibly inclusive of the ego
+///   car's pose.
 ///   (InputPortDescriptor getter: traffic_input())
 ///
-/// Output Port 0: A DrivingCommand with the following elements:
-///   * steering angle (unused - outputs zero).
-///   * throttle (>= 0)
-///   * brake (>= 0)
+/// Output Port 0: A BasicVector containing the acceleration request.
+///   OutputPortDescriptor getter: acceleration_output())
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_controllers
 template <typename T>
 class IdmController : public systems::LeafSystem<T> {
  public:
@@ -56,13 +55,24 @@ class IdmController : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& ego_pose_input() const;
   const systems::InputPortDescriptor<T>& ego_velocity_input() const;
   const systems::InputPortDescriptor<T>& traffic_input() const;
+  const systems::OutputPortDescriptor<T>& acceleration_output() const;
   /// @}
 
- private:
-  // Extracts the vehicle's `s`-direction velocity based on its RoadPosition @p
-  // pos and FrameVelocity @p vel.  Assumes the road has zero elevation.
-  double GetSVelocity(const RoadOdometry<T>& road_odom) const;
+ protected:
+  const maliput::api::RoadGeometry& road() const { return road_; }
+  int ego_pose_index() const { return ego_pose_index_; }
+  int ego_velocity_index() const { return ego_velocity_index_; }
+  int traffic_index() const { return traffic_index_; }
+  int acceleration_index() const { return acceleration_index_; }
 
+  void ImplDoCalcOutput(
+      const systems::rendering::PoseVector<T>& ego_pose,
+      const systems::rendering::FrameVelocity<T>& ego_velocity,
+      const systems::rendering::PoseBundle<T>& traffic_poses,
+      const IdmPlannerParameters<T>& idm_params,
+      systems::BasicVector<T>* command) const;
+
+ private:
   // Converts @p pose into RoadPosition.
   const maliput::api::RoadPosition GetRoadPosition(
       const Isometry3<T>& pose) const;
@@ -70,19 +80,13 @@ class IdmController : public systems::LeafSystem<T> {
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
 
-  void ImplDoCalcOutput(
-      const systems::rendering::PoseVector<T>& ego_pose,
-      const systems::rendering::FrameVelocity<T>& ego_velocity,
-      const systems::rendering::PoseBundle<T>& traffic_poses,
-      const IdmPlannerParameters<T>& idm_params,
-      DrivingCommand<T>* output) const;
-
   const maliput::api::RoadGeometry& road_;
 
-  // Indices for the input ports.
-  int ego_pose_index_{};
-  int ego_velocity_index_{};
-  int traffic_index_{};
+  // Indices for the input / output ports.
+  const int ego_pose_index_{};
+  const int ego_velocity_index_{};
+  const int traffic_index_{};
+  const int acceleration_index_{};
 };
 
 }  // namespace automotive

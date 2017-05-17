@@ -25,6 +25,7 @@ drake_cc_library(
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",
+        "//drake/common:unused",
         "//drake/math:saturate",
     ],
 )
@@ -38,7 +39,7 @@ drake_cc_binary(
         "//drake/common",
         "//drake/common:text_logging_gflags",
         "//drake/thirdParty:spruce",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <set>
+#include <sstream>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/symbolic_environment.h"
@@ -26,7 +27,7 @@ bool operator<(FormulaKind k1, FormulaKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
 }
 
-Formula::Formula(const shared_ptr<FormulaCell> ptr) : ptr_{ptr} {}
+Formula::Formula(shared_ptr<FormulaCell> ptr) : ptr_{std::move(ptr)} {}
 
 FormulaKind Formula::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -85,11 +86,10 @@ Formula Formula::Substitute(const Variable& var, const Expression& e) const {
 
 Formula Formula::Substitute(const Substitution& s) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  if (s.size() > 0) {
+  if (!s.empty()) {
     return Formula{ptr_->Substitute(s)};
-  } else {
-    return *this;
   }
+  return *this;
 }
 
 string Formula::to_string() const {
@@ -138,18 +138,16 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
       formulas.insert(f2);
     }
     return Formula{make_shared<FormulaAnd>(formulas)};
-  } else {
-    if (is_conjunction(f2)) {
-      // f1 ∧ (f2,1 ∧ ... f2,m)
-      // => (f1 ∧ f2,1 ∧ ... f2,m)
-      set<Formula> formulas{get_operands(f2)};
-      formulas.insert(f1);
-      return Formula{make_shared<FormulaAnd>(formulas)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaAnd>(f1, f2)};
-    }
   }
+  if (is_conjunction(f2)) {
+    // f1 ∧ (f2,1 ∧ ... f2,m)
+    // => (f1 ∧ f2,1 ∧ ... f2,m)
+    set<Formula> formulas{get_operands(f2)};
+    formulas.insert(f1);
+    return Formula{make_shared<FormulaAnd>(formulas)};
+  }
+  // Nothing to flatten.
+  return Formula{make_shared<FormulaAnd>(f1, f2)};
 }
 
 Formula operator||(const Formula& f1, const Formula& f2) {
@@ -179,18 +177,16 @@ Formula operator||(const Formula& f1, const Formula& f2) {
       formulas.insert(f2);
     }
     return Formula{make_shared<FormulaOr>(formulas)};
-  } else {
-    if (is_disjunction(f2)) {
-      // f1 ∨ (f2,1 ∨ ... f2,m)
-      // => (f1 ∨ f2,1 ∨ ... f2,m)
-      set<Formula> formulas{get_operands(f2)};
-      formulas.insert(f1);
-      return Formula{make_shared<FormulaOr>(formulas)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaOr>(f1, f2)};
-    }
   }
+  if (is_disjunction(f2)) {
+    // f1 ∨ (f2,1 ∨ ... f2,m)
+    // => (f1 ∨ f2,1 ∨ ... f2,m)
+    set<Formula> formulas{get_operands(f2)};
+    formulas.insert(f1);
+    return Formula{make_shared<FormulaOr>(formulas)};
+  }
+  // Nothing to flatten.
+  return Formula{make_shared<FormulaOr>(f1, f2)};
 }
 
 Formula operator!(const Formula& f) {
@@ -266,6 +262,26 @@ Formula isnan(const Expression& e) {
   return Formula{make_shared<FormulaIsnan>(e)};
 }
 
+Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m) {
+  return Formula{make_shared<FormulaPositiveSemidefinite>(m)};
+}
+
+Formula positive_semidefinite(const MatrixX<Expression>& m,
+                              const Eigen::UpLoType mode) {
+  switch (mode) {
+    case Eigen::Lower:
+      return Formula{make_shared<FormulaPositiveSemidefinite>(
+          m.triangularView<Eigen::Lower>())};
+    case Eigen::Upper:
+      return Formula{make_shared<FormulaPositiveSemidefinite>(
+          m.triangularView<Eigen::Upper>())};
+    default:
+      throw std::runtime_error(
+          "positive_semidefinite is called with a mode which is neither "
+          "Eigen::Lower nor Eigen::Upper.");
+  }
+}
+
 Formula operator==(const Variable& v1, const Variable& v2) {
   return Expression{v1} == Expression{v2};
 }
@@ -310,6 +326,9 @@ bool is_nary(const Formula& f) {
 bool is_negation(const Formula& f) { return is_negation(*f.ptr_); }
 bool is_forall(const Formula& f) { return is_forall(*f.ptr_); }
 bool is_isnan(const Formula& f) { return is_isnan(*f.ptr_); }
+bool is_positive_semidefinite(const Formula& f) {
+  return is_positive_semidefinite(*f.ptr_);
+}
 
 const Expression& get_lhs_expression(const Formula& f) {
   DRAKE_ASSERT(is_relational(f));
@@ -336,5 +355,9 @@ const Formula& get_quantified_formula(const Formula& f) {
   return to_forall(f)->get_quantified_formula();
 }
 
+const MatrixX<Expression>& get_matrix_in_positive_semidefinite(
+    const Formula& f) {
+  return to_positive_semidefinite(f)->get_matrix();
+}
 }  // namespace symbolic
 }  // namespace drake

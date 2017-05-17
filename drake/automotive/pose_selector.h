@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace automotive {
+namespace pose_selector {
 
 /// Contains the position of the vehicle with respect to a lane in a road, along
 /// with its velocity vector in the world frame.
@@ -29,8 +30,6 @@ struct RoadOdometry {
   maliput::api::LanePosition pos{};
   systems::rendering::FrameVelocity<T> vel{};
 };
-
-namespace pose_selector {
 
 /// Returns the leading and trailing cars that have closest `s`-coordinates in a
 /// given @p traffic_lane to an ego car as if the ego car were traveling in @p
@@ -79,6 +78,12 @@ const RoadOdometry<double> FindClosestLeading(
 /// road.
 const maliput::api::RoadPosition CalcRoadPosition(
     const maliput::api::RoadGeometry& road, const Isometry3<double>& pose);
+
+// Extracts the vehicle's `s`-direction velocity based on its RoadOdometry @p
+// road_odom.  Assumes the road has zero elevation and superelevation.
+//
+// TODO(jadecastro): Generalize to three-dimensional rotations.
+double GetSVelocity(const pose_selector::RoadOdometry<double>& road_odom);
 
 }  // namespace pose_selector
 }  // namespace automotive

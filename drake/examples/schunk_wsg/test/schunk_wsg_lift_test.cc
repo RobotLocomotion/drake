@@ -74,7 +74,8 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
       Eigen::Vector3d::Zero());
   const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
       GetDrakePath() +
-          "/examples/schunk_wsg/models/schunk_wsg_50_ball_contact.sdf",
+      "/manipulation/models/wsg_50_description/sdf/"
+      "schunk_wsg_50_ball_contact.sdf",
       multibody::joints::kFixed, gripper_frame, tree.get());
   EXPECT_EQ(gripper_id_table.size(), 1);
   *gripper_instance_id = gripper_id_table.begin()->second;
@@ -100,6 +101,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id));
+  plant->set_name("plant");
 
   ASSERT_EQ(plant->get_num_actuators(), 2);
   ASSERT_EQ(plant->get_num_model_instances(), 3);
@@ -133,6 +135,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   auto zero_source =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
           Eigen::VectorXd::Zero(1));
+  zero_source->set_name("zero");
   builder.Connect(zero_source->get_output_port(),
                   lifting_pid_ports.control_input_port);
 
@@ -156,6 +159,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
           Eigen::Vector2d(0., 0.)));
   auto lift_source =
       builder.AddSystem<systems::TrajectorySource>(lift_trajectory);
+  lift_source->set_name("lift_source");
   builder.Connect(lift_source->get_output_port(),
                   lifting_pid_ports.state_input_port);
 
@@ -169,6 +173,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
       PiecewisePolynomial<double>::FirstOrderHold(grip_breaks, grip_knots));
   auto grip_source =
       builder.AddSystem<systems::TrajectorySource>(grip_trajectory);
+  grip_source->set_name("grip_source");
   builder.Connect(grip_source->get_output_port(),
                   plant->model_instance_actuator_command_input_port(
                       gripper_instance_id));
@@ -176,19 +181,21 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.
   drake::lcm::DrakeLcm lcm;
-  const auto viz_publisher =
-      builder.template AddSystem<systems::DrakeVisualizer>(
-          plant->get_rigid_body_tree(), &lcm);
+  auto viz_publisher = builder.template AddSystem<systems::DrakeVisualizer>(
+      plant->get_rigid_body_tree(), &lcm);
+  viz_publisher->set_name("visualization_publisher");
   builder.Connect(plant->state_output_port(),
                   viz_publisher->get_input_port(0));
 
   // contact force visualization
-  const ContactResultsToLcmSystem<double>& contact_viz =
-  *builder.template AddSystem<ContactResultsToLcmSystem<double>>(
-      plant->get_rigid_body_tree());
+  ContactResultsToLcmSystem<double>& contact_viz =
+      *builder.template AddSystem<ContactResultsToLcmSystem<double>>(
+          plant->get_rigid_body_tree());
+  contact_viz.set_name("contact_visualization");
   auto& contact_results_publisher = *builder.AddSystem(
       LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm));
+  contact_results_publisher.set_name("contact_results_publisher");
   // Contact results to lcm msg.
   builder.Connect(plant->contact_results_output_port(),
                   contact_viz.get_input_port(0));

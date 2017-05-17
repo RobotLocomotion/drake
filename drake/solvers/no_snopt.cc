@@ -11,7 +11,7 @@ bool SnoptSolver::available() const {
   return false;
 }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram &prog) const {
+SolutionResult SnoptSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(
       "The SNOPT bindings were not compiled.  You'll need to use a different "
       "solver.");

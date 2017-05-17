@@ -7,6 +7,7 @@ add_library_with_exports(LIB_NAME drakeRod2D SOURCE_FILES
   )
 target_link_libraries(drakeRod2D
   drakeCommon
+  drakeRendering
   drakeSystemFramework
   drakeOptimization
   )

@@ -114,6 +114,12 @@ TEST_F(IdentifierTests, StreamOperator) {
   EXPECT_EQ(ss.str(), "2");
 }
 
+// Tests the ability to convert the id to string via std::to_string.
+TEST_F(IdentifierTests, ToString) {
+  using std::to_string;
+  EXPECT_EQ(to_string(a2_), to_string(a2_.get_value()));
+}
+
 // These tests confirm that behavior that *shouldn't* be compilable isn't.
 
 // This code allows us to turn compile-time errors into run-time errors that

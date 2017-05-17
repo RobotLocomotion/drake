@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/abstract_values.h"
-#include "drake/systems/framework/discrete_state.h"
+#include "drake/systems/framework/discrete_values.h"
 
 namespace drake {
 namespace systems {
@@ -35,7 +35,7 @@ class Parameters {
   Parameters(std::vector<std::unique_ptr<BasicVector<T>>>&& numeric,
              std::vector<std::unique_ptr<AbstractValue>>&& abstract)
       : numeric_parameters_(
-            std::make_unique<DiscreteState<T>>(std::move(numeric))),
+            std::make_unique<DiscreteValues<T>>(std::move(numeric))),
         abstract_parameters_(
             std::make_unique<AbstractValues>(std::move(abstract))) {}
 
@@ -50,20 +50,21 @@ class Parameters {
   /// Constructs Parameters in the common case where the parameters consist of
   /// exactly one numeric vector.
   explicit Parameters(std::unique_ptr<BasicVector<T>> vec)
-      : numeric_parameters_(std::make_unique<DiscreteState<T>>(std::move(vec))),
+      : numeric_parameters_(
+            std::make_unique<DiscreteValues<T>>(std::move(vec))),
         abstract_parameters_(std::make_unique<AbstractValues>()) {}
 
   /// Constructs Parameters in the common case where the parameters consist of
   /// exactly one abstract value.
   explicit Parameters(std::unique_ptr<AbstractValue> value)
-      : numeric_parameters_(std::make_unique<DiscreteState<T>>()),
+      : numeric_parameters_(std::make_unique<DiscreteValues<T>>()),
         abstract_parameters_(
             std::make_unique<AbstractValues>(std::move(value))) {}
 
   virtual ~Parameters() {}
 
   int num_numeric_parameters() const {
-    return numeric_parameters_->size();
+    return numeric_parameters_->num_groups();
   }
 
   int num_abstract_parameters() const {
@@ -73,21 +74,21 @@ class Parameters {
   /// Returns the vector-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   const BasicVector<T>* get_numeric_parameter(int index) const {
-    return numeric_parameters_->get_discrete_state(index);
+    return numeric_parameters_->get_vector(index);
   }
 
   /// Returns the vector-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
   BasicVector<T>* get_mutable_numeric_parameter(int index) {
-    return numeric_parameters_->get_mutable_discrete_state(index);
+    return numeric_parameters_->get_mutable_vector(index);
   }
 
-  const DiscreteState<T>& get_numeric_parameters() const {
+  const DiscreteValues<T>& get_numeric_parameters() const {
     return *numeric_parameters_;
   }
 
   void set_numeric_parameters(
-      std::unique_ptr<DiscreteState<T>> numeric_params) {
+      std::unique_ptr<DiscreteValues<T>> numeric_params) {
     DRAKE_DEMAND(numeric_params != nullptr);
     numeric_parameters_ = std::move(numeric_params);
   }
@@ -145,7 +146,7 @@ class Parameters {
   }
 
  private:
-  std::unique_ptr<DiscreteState<T>> numeric_parameters_;
+  std::unique_ptr<DiscreteValues<T>> numeric_parameters_;
   std::unique_ptr<AbstractValues> abstract_parameters_;
 };
 

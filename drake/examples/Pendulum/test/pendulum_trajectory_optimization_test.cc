@@ -74,9 +74,9 @@ GTEST_TEST(PendulumTrajectoryOptimization,
     // from x_l, x_r, xdot_l, xdot_r. Check out equation 9 of
     // Direct Trajectory Optimization Using Nonlinear Programming and
     // Collocation. By C.R. Hargraves and S.W. Paris
-    const Eigen::Vector2d xm = 0.5 * (x_l + x_r) + h_i / 8 * (xdot_l - xdot_r);
+    const Eigen::Vector2d xa = 0.5 * (x_l + x_r) + h_i / 8 * (xdot_l - xdot_r);
     const Eigen::Vector2d spline_midpoint(state_traj.value((t_l + t_r) / 2));
-    EXPECT_TRUE(CompareMatrices(xm, spline_midpoint, 1E-10,
+    EXPECT_TRUE(CompareMatrices(xa, spline_midpoint, 1E-10,
                                 MatrixCompareType::absolute));
   }
   // TODO(hongkai.dai): Add a test on the optimal cost, when #5685 is merged, so

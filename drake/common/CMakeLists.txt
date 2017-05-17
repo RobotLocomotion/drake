@@ -2,6 +2,8 @@
 # Drake common library
 #
 
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS matlab_rpc.proto)
+
 # Generated code.
 set(drake_path_cc ${PROJECT_BINARY_DIR}/generated/drake/common/test/drake_path.cc)
 set(THIS_FILE_IS_USED_BY_CMAKE_TO_CREATE_GENERATED_CODE
@@ -10,6 +12,7 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 
 # List all source files used to build libdrakeCommon.
 set(sources
+  call_matlab.cc ${PROTO_SRCS}
   double_overloads.cc
   drake_assert.cc
   ${drake_path_cc}
@@ -34,8 +37,10 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   autodiff_overloads.h
+  call_matlab.h ${PROTO_HDRS}
   cond.h
   constants.h
+  copyable_unique_ptr.h
   double_overloads.h
   drake_assert.h
   drake_compat.h
@@ -45,6 +50,7 @@ set(installed_headers
   drake_path.h
   drake_throw.h
   dummy_value.h
+  eigen_autodiff_limits.h
   eigen_autodiff_types.h
   eigen_matrix_compare.h
   eigen_stl_types.h
@@ -53,6 +59,7 @@ set(installed_headers
   functional_form.h
   hash.h
   is_approx_equal_abstol.h
+  is_cloneable.h
   monomial.h
   never_destroyed.h
   nice_type_name.h
@@ -68,6 +75,7 @@ set(installed_headers
   text_logging.h
   text_logging_gflags.h
   trig_poly.h
+  unused.h
   )
 
 # List headers that are needed by code here but should not
@@ -78,11 +86,13 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+target_include_directories(drakeCommon PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(drakeCommon
   Eigen3::Eigen
   fmt
   gflags
-  Threads::Threads)
+  Threads::Threads
+  ${PROTOBUF_LIBRARIES})
 
 set(drakeCommon_CFLAGS)
 set(drakeCommon_REQUIRES)

@@ -35,7 +35,7 @@ namespace examples {
 namespace quadrotor {
 namespace {
 
-int do_main(int argc, char* argv[]) {
+int do_main() {
   lcm::DrakeLcm lcm;
 
   DiagramBuilder<double> builder;
@@ -50,10 +50,13 @@ int do_main(int argc, char* argv[]) {
       finished())};
 
   auto quadrotor = builder.AddSystem<QuadrotorPlant<double>>();
+  quadrotor->set_name("quadrotor");
   auto controller = builder.AddSystem(StabilizingLQRController(
       quadrotor, kNominalPosition));
+  controller->set_name("controller");
   auto visualizer =
       builder.AddSystem<drake::systems::DrakeVisualizer>(*tree, &lcm);
+  visualizer->set_name("visualizer");
 
   builder.Connect(quadrotor->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(), quadrotor->get_input_port(0));
@@ -102,5 +105,5 @@ int do_main(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::quadrotor::do_main(argc, argv);
+  return drake::examples::quadrotor::do_main();
 }

@@ -56,7 +56,7 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
   const T g_;
 };
 
-int do_main(int argc, char* argv[]) {
+int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -65,13 +65,16 @@ int do_main(int argc, char* argv[]) {
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();
+  pendulum->set_name("pendulum");
   auto controller =
       builder.AddSystem<PendulumEnergyShapingController>(*pendulum);
+  controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
 
   auto publisher =
       builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  publisher->set_name("publisher");
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
   auto diagram = builder.Build();
@@ -92,6 +95,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, char* argv[]) {
-  return drake::examples::pendulum::do_main(argc, argv);
+int main() {
+  return drake::examples::pendulum::do_main();
 }

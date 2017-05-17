@@ -7,6 +7,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
@@ -20,6 +21,9 @@ using std::unique_ptr;
 
 namespace drake {
 namespace systems {
+
+using rendering::PoseVector;
+
 namespace sensors {
 namespace {
 
@@ -37,6 +41,8 @@ GTEST_TEST(TestDepthSensor, AccessorsAndToStringTest) {
 
   DepthSensor dut(kSensorName, tree, frame, specification);
   EXPECT_EQ(dut.get_specification(), specification);
+  EXPECT_EQ(dut.get_num_input_ports(), 1);
+  EXPECT_EQ(dut.get_num_output_ports(), 2);
 
   stringstream string_buffer;
   string_buffer << dut;
@@ -71,24 +77,34 @@ void DoEmptyWorldTest(const char* const name,
 
   dut.CalcOutput(*context, output.get());
 
-  Eigen::VectorXd expected_output =
+  Eigen::VectorXd expected_sensor_data_output =
       VectorXd::Constant(dut.get_num_depth_readings(),
-          DepthSensorOutput<double>::kTooFar);
+          DepthSensorOutput<double>::GetTooFarDistance());
 
-  int output_port_index = dut.get_sensor_state_output_port().get_index();
+  const int sensor_data_output_port_index =
+      dut.get_sensor_state_output_port().get_index();
 
   EXPECT_TRUE(CompareMatrices(
-      expected_output, output->get_vector_data(output_port_index)->get_value(),
+      expected_sensor_data_output,
+      output->get_vector_data(sensor_data_output_port_index)->get_value(),
       1e-10));
 
   // Confirms that Clone is correct.
   std::unique_ptr<BasicVector<double>> cloned_base =
-      output->get_vector_data(output_port_index)->Clone();
+      output->get_vector_data(sensor_data_output_port_index)->Clone();
   const DepthSensorOutput<double>* const cloned_sub =
       dynamic_cast<const DepthSensorOutput<double>*>(cloned_base.get());
   ASSERT_NE(cloned_sub, nullptr);
   EXPECT_TRUE(CompareMatrices(
-      expected_output, cloned_sub->get_value(),
+      expected_sensor_data_output, cloned_sub->get_value(),
+      1e-10));
+
+  const int pose_output_port_index =
+      dut.get_pose_output_port().get_index();
+
+  EXPECT_TRUE(CompareMatrices(
+      PoseVector<double>().get_value(),
+      output->get_vector_data(pose_output_port_index)->get_value(),
       1e-10));
 }
 
@@ -192,7 +208,7 @@ GTEST_TEST(TestDepthSensor, XyBoxInWorldTest) {
 
   Eigen::VectorXd expected_depths =
       VectorXd::Constant(depth_measurements.size(),
-          DepthSensorOutput<double>::kTooFar);
+          DepthSensorOutput<double>::GetTooFarDistance());
 
   const double box_distance = box_xyz(0) - kBoxWidth / 2;
   expected_depths(23) = box_distance / cos(specification.min_yaw() +
@@ -245,7 +261,7 @@ GTEST_TEST(TestDepthSensor, XzBoxInWorldTest) {
 
   Eigen::VectorXd expected_output =
       VectorXd::Constant(depth_measurements.size(),
-          DepthSensorOutput<double>::kTooFar);
+          DepthSensorOutput<double>::GetTooFarDistance());
 
   const double box_distance = box_xyz(2) - kBoxWidth / 2;
   // sin() is used below because pitch is the angle between the sensor's base
@@ -279,13 +295,66 @@ GTEST_TEST(TestDepthSensor, TestTooClose) {
   EXPECT_EQ(depth_measurements.size(), 1);
   Eigen::VectorXd expected_output =
       VectorXd::Constant(depth_measurements.size(),
-          DepthSensorOutput<double>::kTooClose);
+          DepthSensorOutput<double>::GetTooCloseDistance());
 
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
                               MatrixCompareType::absolute));
 
   const Matrix3Xd point_cloud = std::get<1>(result);
   EXPECT_EQ(point_cloud.cols(), 0);
+}
+
+// Tests that DepthSensorSpecification is copyable.
+GTEST_TEST(TestDepthSensor, TestDepthSensorSpecIsCopyable) {
+  DepthSensorSpecification original_spec;
+  DepthSensorSpecification::set_x_linear_spec(&original_spec);
+
+  DepthSensorSpecification copied_spec_1 = original_spec;
+  EXPECT_EQ(copied_spec_1, original_spec);
+
+  DepthSensorSpecification copied_spec_2(original_spec);
+  EXPECT_EQ(copied_spec_2, original_spec);
+}
+
+// Tests that DepthSensorOutput is able to correctly ignore NaN values.
+GTEST_TEST(TestDepthSensor, TestOutputIgnoresNaNs) {
+  DepthSensorSpecification spec;
+  DepthSensorSpecification::set_x_linear_spec(&spec);
+
+  DepthSensorOutput<double> dut(spec);  // The Device Under Test (DUT).
+  EXPECT_EQ(dut.GetNumValidDistanceMeasurements(), 0);
+  dut.SetAtIndex(0, spec.min_range());
+  EXPECT_EQ(dut.GetNumValidDistanceMeasurements(), 1);
+}
+
+GTEST_TEST(TestDepthSensor, TestOutputSemantics) {
+  EXPECT_FALSE(DepthSensorOutput<double>::IsValid(
+      DepthSensorOutput<double>::GetErrorDistance()));
+  EXPECT_FALSE(DepthSensorOutput<double>::IsValid(
+      DepthSensorOutput<double>::GetTooFarDistance()));
+  EXPECT_FALSE(DepthSensorOutput<double>::IsValid(
+      DepthSensorOutput<double>::GetTooCloseDistance()));
+
+  EXPECT_FALSE(DepthSensorOutput<double>::IsTooClose(
+      DepthSensorOutput<double>::GetErrorDistance()));
+  EXPECT_FALSE(DepthSensorOutput<double>::IsTooClose(
+      DepthSensorOutput<double>::GetTooFarDistance()));
+  EXPECT_TRUE(DepthSensorOutput<double>::IsTooClose(
+      DepthSensorOutput<double>::GetTooCloseDistance()));
+
+  EXPECT_FALSE(DepthSensorOutput<double>::IsTooFar(
+      DepthSensorOutput<double>::GetErrorDistance()));
+  EXPECT_TRUE(DepthSensorOutput<double>::IsTooFar(
+      DepthSensorOutput<double>::GetTooFarDistance()));
+  EXPECT_FALSE(DepthSensorOutput<double>::IsTooFar(
+      DepthSensorOutput<double>::GetTooCloseDistance()));
+
+  EXPECT_TRUE(DepthSensorOutput<double>::IsError(
+      DepthSensorOutput<double>::GetErrorDistance()));
+  EXPECT_FALSE(DepthSensorOutput<double>::IsError(
+      DepthSensorOutput<double>::GetTooFarDistance()));
+  EXPECT_FALSE(DepthSensorOutput<double>::IsError(
+      DepthSensorOutput<double>::GetTooCloseDistance()));
 }
 
 }  // namespace
