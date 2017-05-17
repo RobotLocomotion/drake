@@ -99,6 +99,7 @@ cc_library(
        "src/SignalStats.cc",
        "src/SphericalCoordinates.cc",
        "src/Spline.cc",
+       "src/SplinePrivate.cc",
        "src/Temperature.cc",
        "src/Vector3Stats.cc",
     ],
