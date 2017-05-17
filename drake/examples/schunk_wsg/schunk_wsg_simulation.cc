@@ -12,12 +12,12 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/examples/schunk_wsg/simulated_schunk_wsg_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -39,6 +39,8 @@ namespace examples {
 namespace schunk_wsg {
 namespace {
 
+using manipulation::schunk_wsg::SchunkWsgStatusSender;
+using manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
@@ -68,7 +70,8 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
         Eigen::VectorXd::Zero(1));
     zero_source->set_name("zero_source");
 
-    const Eigen::MatrixXd feedback_matrix = GetSchunkWsgFeedbackSelector<T>();
+    const Eigen::MatrixXd feedback_matrix =
+        manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<T>();
     std::unique_ptr<MatrixGain<T>> feedback_selector =
         std::make_unique<MatrixGain<T>>(feedback_matrix);
 
@@ -126,7 +129,8 @@ int DoMain() {
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
   status_pub->set_name("status_publisher");
-  status_pub->set_publish_period(kSchunkWsgLcmStatusPeriod);
+  status_pub->set_publish_period(
+      manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       tree.get_num_positions() + tree.get_num_velocities(),

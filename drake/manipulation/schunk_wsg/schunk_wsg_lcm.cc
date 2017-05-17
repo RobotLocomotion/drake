@@ -1,4 +1,4 @@
-#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 
 #include <vector>
 
@@ -10,7 +10,7 @@
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
 namespace drake {
-namespace examples {
+namespace manipulation {
 namespace schunk_wsg {
 
 using systems::Context;
@@ -193,5 +193,5 @@ void SchunkWsgStatusSender::DoCalcOutput(const Context<double>& context,
 
 
 }  // namespace schunk_wsg
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake

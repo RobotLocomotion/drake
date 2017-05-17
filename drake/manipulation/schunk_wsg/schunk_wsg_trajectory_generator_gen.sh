@@ -5,10 +5,10 @@
 
 me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
 mydir=$(dirname "$me")
-examples=$(dirname "$mydir")
-drake=$(dirname "$examples")
+manipulation=$(dirname "$mydir")
+drake=$(dirname "$manipulation")
 
-namespace="drake::examples::schunk_wsg"
+namespace="drake::manipulation::schunk_wsg"
 
 source $drake/tools/lcm_vector_gen.sh
 
