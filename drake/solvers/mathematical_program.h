@@ -192,7 +192,7 @@ class MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
 
-  enum class VarType { CONTINUOUS, INTEGER, BINARY };
+  using VarType = symbolic::Variable::Type;
 
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
@@ -642,7 +642,7 @@ class MathematicalProgram {
    */
   template <typename C>
   auto AddCost(const std::shared_ptr<C>& obj,
-                     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+               const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     // Redirect to the appropriate type
     // Use auto to enable the overloading method to upcast if needed
     return AddCost(internal::CreateBinding(obj, vars));
@@ -1990,20 +1990,6 @@ class MathematicalProgram {
   /** Getter for number of variables in the optimization program */
   size_t num_vars() const { return num_vars_; }
 
-  /**
-   * Returns a vector containing the type of each decision variable.
-   * The length of the vector is the same as
-   * MathematicalProgram::num_vars(). variable_type[i] is the type
-   * of x(i) in the MathematicalProgram, where x is the vector containing all
-   * decision variables.
-   */
-  const std::vector<VarType>& DecisionVariableTypes() const {
-    return decision_variable_type_;
-  }
-
-  /** Returns the type of the decision variable. */
-  VarType DecisionVariableType(const symbolic::Variable& var) const;
-
   /** Getter for the initial guess */
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
@@ -2082,10 +2068,6 @@ class MathematicalProgram {
   // the optimization program.
   std::unordered_map<symbolic::Variable::Id, size_t> decision_variable_index_{};
 
-  std::vector<VarType> decision_variable_type_;  // decision_variable_type_[i]
-                                                 // stores the type of the
-                                                 // variable with index i.
-
   VectorXDecisionVariable decision_variables_;
   std::vector<Binding<Cost>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;
@@ -2143,8 +2125,12 @@ class MathematicalProgram {
       case VarType::BINARY:
         required_capabilities_ |= kBinaryVariable;
         break;
-      default:
-        throw std::runtime_error("Unknown variable type");
+      case VarType::INTEGER:
+        throw std::runtime_error(
+            "MathematicalProgram does not support integer variables yet.");
+      case VarType::BOOLEAN:
+        throw std::runtime_error(
+            "MathematicalProgram does not support Boolean variables.");
     }
     int rows = decision_variable_matrix.rows();
     int cols = decision_variable_matrix.cols();
@@ -2159,15 +2145,13 @@ class MathematicalProgram {
     decision_variables_.conservativeResize(num_vars_ + num_new_vars,
                                            Eigen::NoChange);
     x_values_.resize(num_vars_ + num_new_vars, NAN);
-    decision_variable_type_.resize(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      decision_variables_(num_vars_ + i) = symbolic::Variable(names[i]);
+      decision_variables_(num_vars_ + i) = symbolic::Variable(names[i], type);
       const size_t new_var_index = num_vars_ + i;
       decision_variable_index_.insert(std::pair<size_t, size_t>(
           decision_variables_(new_var_index).get_id(), new_var_index));
-      decision_variable_type_[new_var_index] = type;
       decision_variable_matrix(row_index, col_index) =
           decision_variables_(num_vars_ + i);
       // If the matrix is not symmetric, then store the variable in column

@@ -75,7 +75,6 @@ drake_add_external(fmt PUBLIC CMAKE ALWAYS
 drake_add_external(gflags PUBLIC CMAKE
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=ON
-    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
     -DGFLAGS_BUILD_gflags_nothreads_LIB=OFF)
 
 # googletest
@@ -168,9 +167,7 @@ drake_add_external(snopt CMAKE MATLAB
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
-  CMAKE_ARGS
-    -DBUILD_TESTING=OFF
-    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
+  CMAKE_ARGS -DBUILD_TESTING=OFF
   SOURCE_SUBDIR octomap)
 
 # vtk
@@ -207,7 +204,6 @@ drake_add_external(tinyobjloader PUBLIC CMAKE
 drake_add_external(yaml_cpp PUBLIC CMAKE
  CMAKE_ARGS
    -DBUILD_SHARED_LIBS=ON
-   -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
    -DYAML_CPP_BUILD_CONTRIB=OFF
    -DYAML_CPP_BUILD_TOOLS=OFF)
 
@@ -231,8 +227,8 @@ drake_add_external(iris PUBLIC CMAKE MATLAB PYTHON
 
 # ignition_math
 drake_add_external(ignition_math PUBLIC CMAKE
-  URL https://bitbucket.org/ignitionrobotics/ign-math/get/ignition-math3_3.0.0.tar.gz
-  URL_HASH SHA256=9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd
+  URL https://bitbucket.org/ignitionrobotics/ign-math/get/ignition-math3_3.2.0.tar.gz
+  URL_HASH SHA256=1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309
   CMAKE_ARGS
     -DENABLE_TESTS_COMPILATION=OFF
     -DUSE_HOST_CFLAGS=OFF

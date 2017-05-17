@@ -104,9 +104,9 @@ maven_jar(
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
-    commit = "755d8108bf4447d83786e0e6586875371ba859e5",
+    commit = "c0a0093a950fc83e12e8d5918a0319b590356e7e",
     build_file = "tools/lcm.BUILD",
-    sha256 = "062b2daf35deb617552ffc2145ec238a2898710c8c5e9c49dc2514519c5f7930",
+    sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
 )
 
 github_archive(
@@ -300,8 +300,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "1b985467d1fe737ed3a43a25f4da3316bd45106f",
-    sha256 = "4491debd18ee40bf9d7eab9b35776eff98a71bc904a339f709273cbad9ac6efb",
+    commit = "a05280f1ef1d8970aca8c67dc4cf753953e3cdf7",
+    sha256 = "3024d25ddcb6bb6835834575e577f36bfd6e768501b8c2a2fd66181eb27108ce",
     build_file = "tools/pycps.BUILD",
 )
 
@@ -317,10 +317,10 @@ new_local_repository(
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
-    commit = "ignition-math3_3.0.0",
-    sha256 = "9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd",
+    commit = "ignition-math3_3.2.0",
+    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",
     build_file = "tools/ignition_math.BUILD",
-    strip_prefix = "ignitionrobotics-ign-math-a06d26055d07",
+    strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4"
 )
 
 bitbucket_archive(
