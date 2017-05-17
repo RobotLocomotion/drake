@@ -330,7 +330,7 @@ struct MultibodyTreeTopology {
     }
 
     // The checks above guarantee that it is the first time we add an inboard
-    // mobilizer to `outboard_body`. The DRAKE_DEMAND's below double check our
+    // mobilizer to `outboard_body`. The DRAKE_DEMANDs below double check our
     // implementation.
     // BodyTopology::inboard_mobilizer and BodyTopology::parent_body are both
     // set within this method right after these checks.
@@ -431,6 +431,9 @@ struct MultibodyTreeTopology {
     // Checks that all bodies were reached. We could have this situation if a
     // user adds a body but forgets to add a mobilizer to it.
     // Bodies that were not reached were not assigned a valid level.
+    // TODO(amcastro-tri): this will stop at the first body that is not
+    // connected to the tree. Add logic to emit a message with ALL bodies that
+    // are not properly connected to the tree.
     for (BodyIndex body(0); body < get_num_bodies(); ++body) {
       if (bodies[body].level < 0) {
         throw std::runtime_error("Body with index " + std::to_string(body) +
