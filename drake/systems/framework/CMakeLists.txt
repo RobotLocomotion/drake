@@ -70,6 +70,7 @@ set(installed_headers
   value.h
   value_checker.h
   vector_base.h
+  vector_value.h
   )
 
 # Headers that are needed by code here but should not

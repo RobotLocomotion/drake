@@ -12,6 +12,7 @@
 #include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
+#include "drake/systems/framework/vector_value.h"
 
 namespace drake {
 namespace systems {
