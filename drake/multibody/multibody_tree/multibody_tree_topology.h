@@ -407,24 +407,6 @@ class MultibodyTreeTopology {
     return mobilizer_index;
   }
 
-  /// Returns `true` if there is _any_ mobilizer in the multibody tree
-  /// connecting the frames with indexes `frame` and `frame2`.
-  bool IsThereAMobilizerBetweenFrames(FrameIndex frame1, FrameIndex frame2) {
-    for (const auto& mobilizer_topology : mobilizers_) {
-      if (mobilizer_topology.connects_frames(frame1, frame2)) return true;
-    }
-    return false;
-  }
-
-  /// Returns `true` if there is _any_ mobilizer in the multibody tree
-  /// connecting the bodies with indexes `body2` and `body2`.
-  bool IsThereAMobilizerBetweenBodies(BodyIndex body1, BodyIndex body2) {
-    for (const auto& mobilizer_topology : mobilizers_) {
-      if (mobilizer_topology.connects_bodies(body1, body2)) return true;
-    }
-    return false;
-  }
-
   /// This method must be called by MultibodyTree::Finalize() after all
   /// topological elements in the tree (corresponding to joints, bodies, force
   /// elements, constraints) were added and before any computations are
@@ -536,6 +518,26 @@ class MultibodyTreeTopology {
   bool is_valid() const { return is_valid_; }
 
  private:
+  // Returns `true` if there is _any_ mobilizer in the multibody tree
+  // connecting the frames with indexes `frame` and `frame2`.
+  bool IsThereAMobilizerBetweenFrames(
+      FrameIndex frame1, FrameIndex frame2) const {
+    for (const auto& mobilizer_topology : mobilizers_) {
+      if (mobilizer_topology.connects_frames(frame1, frame2)) return true;
+    }
+    return false;
+  }
+
+  // Returns `true` if there is _any_ mobilizer in the multibody tree
+  // connecting the bodies with indexes `body2` and `body2`.
+  bool IsThereAMobilizerBetweenBodies(
+      BodyIndex body1, BodyIndex body2) const {
+    for (const auto& mobilizer_topology : mobilizers_) {
+      if (mobilizer_topology.connects_bodies(body1, body2)) return true;
+    }
+    return false;
+  }
+
   // is_valid is set to `true` after a successful Finalize().
   bool is_valid_{false};
   // Number of levels (or generations) in the tree topology. After Finalize()
