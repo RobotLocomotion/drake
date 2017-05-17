@@ -26,7 +26,7 @@ using IndeterminateVariableRefList = std::list<Eigen::Ref<const VectorXIndetermi
 
 /**
  * Concatenates each element in \p var_list into a single Eigen vector of
- * decision variables, returns this concatenated vector.
+ * indeterminates, returns this concatenated vector.
  */
 VectorXIndeterminateVariable ConcatenateIndeterminateVariableRefList(
     const IndeterminateVariableRefList& var_list);

@@ -635,8 +635,8 @@ class MathematicalProgram {
   /**
    * Adds indeterminate variables, appending them to an internal vector of any
    * existing vars.
-   * @param rows  The number of rows in the new indeterminates.
-   * @param cols  The number of columns in the new indeterminates.
+   * @tparam rows  The number of rows in the new indeterminates.
+   * @tparam cols  The number of columns in the new indeterminates.
    * @param names A vector of strings containing the name for each variable.
    * @return The MatrixIndeterminateVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
@@ -662,7 +662,7 @@ class MathematicalProgram {
   /// Adds indeterminate variables to this MathematicalProgram.
   /**
    * Adds indeterminate variables, appending them to an internal vector of any
-   * existing vars.
+   * existing indeterminates.
    * @param rows  The number of rows in the new indeterminates.
    * @param cols  The number of columns in the new indeterminates.
    * @param names A vector of strings containing the name for each variable.
@@ -735,7 +735,7 @@ class MathematicalProgram {
     return NewIndeterminateVariables<rows>(names);
   }
 
-// TODO (MFG) Do I actually need the int row, or is the cast from size_t good enough?
+// TODO (FischerGundlach) Do I actually need the int row, or is the cast from size_t good enough?
 /*  MatrixXIndeterminateVariable NewIndeterminateVariables(
       int rows, int cols, const std::vector<std::string>& names);
 
