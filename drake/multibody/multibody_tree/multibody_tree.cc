@@ -52,8 +52,6 @@ void MultibodyTree<T>::Finalize() {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
   }
-
-  set_valid_topology();
 }
 
 // Explicitly instantiates on the most common scalar types.

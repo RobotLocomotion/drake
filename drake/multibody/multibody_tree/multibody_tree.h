@@ -79,7 +79,7 @@ class MultibodyTree {
   const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body) {
     static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
-    if (topology_.is_valid) {
+    if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more bodies is not allowed. "
                              "See documentation for Finalize() for details.");
@@ -177,7 +177,7 @@ class MultibodyTree {
   const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame) {
     static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
                   "FrameType must be a sub-class of Frame<T>.");
-    if (topology_.is_valid) {
+    if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more frames is not allowed. "
                              "See documentation for Finalize() for details.");
@@ -285,7 +285,7 @@ class MultibodyTree {
       std::unique_ptr<MobilizerType<T>> mobilizer) {
     static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
                   "MobilizerType must be a sub-class of mobilizer<T>.");
-    if (topology_.is_valid) {
+    if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more bodies is not allowed. "
                              "See documentation for Finalize() for details.");
@@ -409,7 +409,7 @@ class MultibodyTree {
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
   /// Finalize() is called, which validates the topology.
   /// @see Finalize().
-  bool topology_is_valid() const { return topology_.is_valid; }
+  bool topology_is_valid() const { return topology_.is_valid(); }
 
   /// Returns the topology information for this multibody tree. Users should not
   /// need to call this method since MultibodyTreeTopology is an internal
@@ -439,9 +439,6 @@ class MultibodyTree {
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckInvariants().
-
-  // Sets a flag indicate the topology is valid.
-  void set_valid_topology() { topology_.set_valid(); }
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;

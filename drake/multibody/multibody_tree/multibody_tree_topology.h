@@ -227,7 +227,8 @@ struct BodyNodeTopology {
 
 /// Data structure to store the topological information associated with an
 /// entire MultibodyTree.
-struct MultibodyTreeTopology {
+class MultibodyTreeTopology {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
   /// Default constructor creates an empty, invalid topology. The minimum valid
@@ -262,9 +263,18 @@ struct MultibodyTreeTopology {
   /// Creates and adds a new BodyTopology to this MultibodyTreeTopology.
   /// The BodyTopology will be assigned a new, unique BodyIndex and FrameIndex
   /// values.
+  ///
+  /// @throws std::logic_error if Finalize() was already called on `this`
+  /// topology.
+  ///
   /// @returns a std::pair<BodyIndex, FrameIndex> containing the indexes
   /// assigned to the new BodyTopology.
   std::pair<BodyIndex, FrameIndex> add_body() {
+    if (is_valid()) {
+      throw std::logic_error("This MultibodyTreeTopology is finalized already. "
+                             "Therefore adding more bodies is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
     BodyIndex body_index = BodyIndex(get_num_bodies());
     FrameIndex body_frame_index = add_frame(body_index);
     bodies.emplace_back(body_index, body_frame_index);
@@ -273,8 +283,17 @@ struct MultibodyTreeTopology {
 
   /// Creates and adds a new FrameTopology, associated with the given
   /// body_index, to this MultibodyTreeTopology.
+  ///
+  /// @throws std::logic_error if Finalize() was already called on `this`
+  /// topology.
+  ///
   /// @returns The FrameIndex assigned to the new FrameTopology.
   FrameIndex add_frame(BodyIndex body_index) {
+    if (is_valid()) {
+      throw std::logic_error("This MultibodyTreeTopology is finalized already. "
+                             "Therefore adding more bodies is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
     FrameIndex frame_index(get_num_frames());
     frames.emplace_back(frame_index, body_index);
     return frame_index;
@@ -290,15 +309,24 @@ struct MultibodyTreeTopology {
   /// Creates and adds a new MobilizerTopology connecting the inboard and
   /// outboard multibody frames identified by indexes `in_frame` and
   /// `out_frame`, respectively.
-  /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
+  ///
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.
   /// @throws a std::runtime_error if `in_frame == out_frame`.
   /// @throws a std::runtime_error if `in_frame` and `out_frame` already are
   /// connected by another mobilizer. More than one mobilizer between two frames
   /// is not allowed.
+  /// @throws std::logic_error if Finalize() was already called on `this`
+  /// topology.
+  ///
+  /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
   MobilizerIndex add_mobilizer(
       FrameIndex in_frame, FrameIndex out_frame) {
+    if (is_valid()) {
+      throw std::logic_error("This MultibodyTreeTopology is finalized already. "
+                             "Therefore adding more bodies is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
     // Note: MultibodyTree double checks the mobilizer's frames belong to that
     // tree. Therefore the validity of in_frame and out_frame is already
     // guaranteed. We add the checks here for additional security.
@@ -353,9 +381,6 @@ struct MultibodyTreeTopology {
     return mobilizer_index;
   }
 
-  /// Topology gets validated by MultibodyTree::Finalize().
-  void set_valid() { is_valid = true; }
-
   /// Returns `true` if there is _any_ mobilizer in the multibody tree
   /// connecting the frames with indexes `frame` and `frame2`.
   bool IsThereAMobilizerBetweenFrames(FrameIndex frame1, FrameIndex frame2) {
@@ -374,15 +399,39 @@ struct MultibodyTreeTopology {
     return false;
   }
 
+  /// This method must be called by MultibodyTree::Finalize() after all
+  /// topological elements in the tree (corresponding to joints, bodies, force
+  /// elements, constraints) were added and before any computations are
+  /// performed.
+  /// It essentially compiles all the necessary "topological information", i.e.
+  /// how bodies, joints and, any other elements connect with each other, and
+  /// performs all the required pre-processing to perform computations at a
+  /// later stage. This preprocessing includes:
+  /// - sorting in BFT order for fast recursions through the tree,
+  /// - computation of state sizes and of pool sizes within cache entries,
+  /// - computation of index maps to retrieve either state or cache entries for
+  ///   each multibody element.
+  ///
+  /// If the finalize stage is successful, the `this` topology is validated,
+  /// meaning it is up-to-date after this call.
+  /// No more multibody tree elements can be added after a call to Finalize().
+  ///
+  /// @throws std::logic_error If users attempt to call this method on an
+  ///         already finalized topology.
   void Finalize() {
-    // The topology is already valid and therefore there is nothing to do.
-    if (is_valid) return;
+    // If the topology is valid it means that it was already finalized.
+    // Re-compilation is not allowed.
+    if (is_valid()) {
+      throw std::logic_error(
+          "Attempting to call MultibodyTree::Finalize() on an already """
+          "finalized MultibodyTree.");
+    }
 
     // Compute body levels in the tree. Root is the zero level.
     // Breadth First Traversal (a.k.a. Level Order Traversal).
     std::queue<BodyIndex> queue;
     queue.push(BodyIndex(0));  // Starts at the root.
-    num_levels = 1;  // At least one level with the world body at the root.
+    num_levels_ = 1;  // At least one level with the world body at the root.
     // While at it, create body nodes and index them in this BFT order for
     // fast tree traversals of MultibodyTree recursive algorithms.
     body_nodes.reserve(get_num_bodies());
@@ -403,7 +452,7 @@ struct MultibodyTreeTopology {
       // Updates body levels.
       bodies[current].level = level;
       // Keep track of the number of levels, the deepest (i.e. max) level.
-      num_levels = std::max(num_levels, level + 1);
+      num_levels_ = std::max(num_levels_, level + 1);
 
       // Since we are doing a BFT, it is valid to ask for the parent node,
       // unless we are at the root.
@@ -452,18 +501,27 @@ struct MultibodyTreeTopology {
 
     // We are done with a successful Finalize() and we mark it as so.
     // Do not add any more code after this!
-    is_valid = true;
+    is_valid_ = true;
   }
 
-    // is_valid is set to `true` after a successful Finalize().
-  bool is_valid{false};
-  // Number of levels (or generations) in the tree topology. After Finalize()
-  // there will be at least one level (level = 0) with the world body.
-  int num_levels{-1};
+  /// Returns the number of tree levels in the topology.
+  int get_num_levels() const {
+    return num_levels_;
+  }
+
+  bool is_valid() const { return is_valid_; }
+
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;
   std::vector<MobilizerTopology> mobilizers;
   std::vector<BodyNodeTopology> body_nodes;
+
+ private:
+  // is_valid is set to `true` after a successful Finalize().
+  bool is_valid_{false};
+  // Number of levels (or generations) in the tree topology. After Finalize()
+  // there will be at least one level (level = 0) with the world body.
+  int num_levels_{-1};
 };
 
 }  // namespace multibody
