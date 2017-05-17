@@ -32,7 +32,6 @@ fort.*
 debug.txt
 stepping.mat
 walking.mat
-drake/doc/DoxygenMatlab/html
 .viewer-prefs
 .matlabroot
 *.dSYM
