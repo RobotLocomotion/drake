@@ -1,7 +1,9 @@
 #include "drake/solvers/cost.h"
 
 #include <iostream>
+#include <limits>
 #include <memory>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 
@@ -16,6 +18,8 @@ using std::cout;
 using std::endl;
 using std::make_shared;
 using std::make_unique;
+using std::numeric_limits;
+using std::runtime_error;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
@@ -89,10 +93,75 @@ auto make_vector(std::initializer_list<T> items) {
   return vector<std::decay_t<T>>(items);
 }
 
+GTEST_TEST(testCost, testLinearCost) {
+  const double tol = numeric_limits<double>::epsilon();
+
+  // Simple ground truth test.
+  Eigen::Vector2d a(1, 2);
+  const Eigen::Vector2d x0(3, 4);
+  const double obj_expected = 11.;
+
+  auto cost = make_shared<LinearCost>(a);
+  Eigen::VectorXd y(1);
+  cost->Eval(x0, y);
+  EXPECT_EQ(y.rows(), 1);
+  EXPECT_NEAR(y(0), obj_expected, tol);
+
+  // Update with a constant term.
+  const double b = 100;
+  cost->UpdateCoefficients(a, b);
+  cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + b, tol);
+  EXPECT_THROW(cost->UpdateCoefficients(Eigen::Vector3d::Ones(), b),
+               runtime_error);
+
+  // Reconstruct the same cost with the constant term.
+  auto new_cost = make_shared<LinearCost>(a, b);
+  new_cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + b, tol);
+}
+
+GTEST_TEST(testCost, testQuadraticCost) {
+  const double tol = numeric_limits<double>::epsilon();
+
+  // Simple ground truth test.
+  Eigen::Matrix2d Q;
+  Q << 1, 2, 3, 4;
+  const Eigen::Vector2d b(5, 6);
+  const Eigen::Vector2d x0(7, 8);
+  const double obj_expected = 375.5;
+
+  auto cost = make_shared<QuadraticCost>(Q, b);
+  Eigen::VectorXd y(1);
+
+  cost->Eval(x0, y);
+  EXPECT_EQ(y.rows(), 1);
+  EXPECT_NEAR(y(0), obj_expected, tol);
+
+  // Update with a constant term.
+  const double c = 100;
+  cost->UpdateCoefficients(Q, b, c);
+  cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + c, tol);
+
+  EXPECT_THROW(cost->UpdateCoefficients(Eigen::Matrix3d::Identity(), b, c),
+               runtime_error);
+  EXPECT_THROW(cost->UpdateCoefficients(Q, Eigen::Vector3d::Ones(), c),
+               runtime_error);
+
+  // Reconstruct the same cost with the constant term.
+  auto new_cost = make_shared<QuadraticCost>(Q, b, c);
+  new_cost->Eval(x0, y);
+  EXPECT_NEAR(y(0), obj_expected + c, tol);
+}
+
+// TODO(eric.cousineau): Move QuadraticErrorCost and L2NormCost tests here from
+// MathematicalProgram.
+
 template <typename C, typename BoundType, typename... Args>
 void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
   // Ensure that a constraint constructed in a particular fashion yields
-  // equivalent results to its shim, and the related cost
+  // equivalent results to its shim, and the related cost.
   const auto inf = std::numeric_limits<double>::infinity();
   auto lb = -BoundType(-inf);
   auto ub = BoundType(inf);
@@ -105,7 +174,7 @@ void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
 }
 
 GTEST_TEST(testCost, testCostShim) {
-  // Test CostShim's by means of the related constraints
+  // Test CostShim's by means of the related constraints.
 
   VerifyRelatedCost<LinearConstraint, Vector1d>(Vector1d(2), Vector1d(3));
 
@@ -134,7 +203,7 @@ const auto& to_const_ref(T&& t) {
   return impl::to_const_ref(std::forward<T>(t));
 }
 
-// Verifies that FunctionCost form can be constructed correctly
+// Verifies that FunctionCost form can be constructed correctly.
 template <bool is_pointer, typename F>
 void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
   auto cost = MakeFunctionCost(std::forward<F>(f));
@@ -147,10 +216,10 @@ void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
 }
 
 GTEST_TEST(testCost, testFunctionCost) {
-  // Test that we can construct FunctionCosts with different signatures
+  // Test that we can construct FunctionCosts with different signatures.
   Eigen::Vector2d x(1, 2);
   VerifyFunctionCost<false>(GenericTrivialCost2(), x);
-  // Ensure that we explictly call the default constructor for a const class
+  // Ensure that we explictly call the default constructor for a const class.
   // @ref http://stackoverflow.com/a/28338123/7829525
   const GenericTrivialCost2 obj_const{};
   VerifyFunctionCost<false>(obj_const, x);

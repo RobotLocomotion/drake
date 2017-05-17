@@ -45,8 +45,8 @@ Binding<QuadraticCost> DoParseQuadraticCost(
   DecomposeQuadraticExpressionWithMonomialToCoeffMap(
       monomial_to_coeff_map, map_var_to_index, vars_vec.size(), &Q, &b,
       &constant_term);
-  // Now add the quadratic constraint 0.5 * x' * Q * x + b' * x
-  return CreateBinding(make_shared<QuadraticCost>(Q, b), vars_vec);
+  return CreateBinding(make_shared<QuadraticCost>(Q, b, constant_term),
+                       vars_vec);
 }
 
 Binding<LinearCost> DoParseLinearCost(
@@ -56,10 +56,8 @@ Binding<LinearCost> DoParseLinearCost(
   Eigen::RowVectorXd c(vars_vec.size());
   double constant_term;
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
-  // The constant term is ignored now.
-  // TODO(eric.cousineau): support adding constant term to the cost.
-  unused(constant_term);
-  return CreateBinding(make_shared<LinearCost>(c), vars_vec);
+  return CreateBinding(make_shared<LinearCost>(c.transpose(), constant_term),
+                       vars_vec);
 }
 
 }  // anonymous namespace
