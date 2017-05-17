@@ -4,6 +4,7 @@
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:python_lint.bzl", "python_lint")
 load("//tools:drake.bzl", "drake_cc_binary")
+load("//tools:gurobi.bzl", "gurobi_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -192,11 +193,7 @@ py_test(
     size = "small",
     srcs = ["python/pydrake/test/testGurobiSolver.py"],
     main = "python/pydrake/test/testGurobiSolver.py",
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [":pydrake"],
 )
 
@@ -214,11 +211,7 @@ py_test(
     size = "small",
     srcs = ["python/pydrake/test/testMathematicalProgram.py"],
     main = "python/pydrake/test/testMathematicalProgram.py",
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [":pydrake"],
 )
 

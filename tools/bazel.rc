@@ -28,6 +28,7 @@ test --test_tag_filters=-gurobi,-mosek,-snopt
 # -- "local", because they are non-hermetic. For the moment, we also require
 # -- the tag "exclusive", to rate-limit license servers with a small number of
 # -- licenses.
+# -- For consistency, use "gurobi_test_tags()" from //tools:gurobi.bzl.
 # -- TODO(david-german-tri): Find a better fix for the license server problem.
 #
 # -- To run tests that require Gurobi, also specify a custom set of

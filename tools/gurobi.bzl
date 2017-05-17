@@ -64,3 +64,18 @@ gurobi_repository = repository_rule(
     local = True,
     implementation = _gurobi_impl,
 )
+
+def gurobi_test_tags(gurobi_required=True):
+    """Returns the test tags necessary for properly running Gurobi tests.
+
+    By default, sets gurobi_required=True, which will require that the supplied
+    tag filters include "gurobi".
+    """
+    nominal_tags = [
+        "exclusive",
+        "local",
+    ]
+    if gurobi_required:
+        return nominal_tags + ["gurobi"]
+    else:
+        return nominal_tags

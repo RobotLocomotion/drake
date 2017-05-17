@@ -8,6 +8,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:gurobi.bzl", "gurobi_test_tags")
 
 drake_cc_library(
     name = "humanoid_status_translator_system",
@@ -128,11 +129,7 @@ drake_cc_binary(
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [
         ":valkyrie_controller",
         "//drake/examples/Valkyrie:valkyrie_constants",
@@ -148,11 +145,7 @@ drake_cc_googletest(
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [
         ":humanoid_plan_eval_system",
         ":qp_controller_system",
@@ -176,11 +169,7 @@ drake_cc_googletest(
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [
         ":manipulator_inverse_dynamics_controller",
         "//drake/common:eigen_matrix_compare",
@@ -200,11 +189,7 @@ drake_cc_googletest(
         "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [
         ":qp_controller_system",
         "//drake/common:eigen_matrix_compare",

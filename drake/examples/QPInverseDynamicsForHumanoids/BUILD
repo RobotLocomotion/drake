@@ -3,6 +3,7 @@
 
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:gurobi.bzl", "gurobi_test_tags")
 
 package(
     default_visibility = [":__subpackages__"],
@@ -118,11 +119,7 @@ drake_cc_googletest(
         "config/valkyrie.id_controller_config",
         "//drake/examples/Valkyrie:models",
     ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [
         ":control_utils",
         ":qp_controller",
@@ -141,11 +138,7 @@ drake_cc_googletest(
         "config/iiwa.id_controller_config",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = [
-        "exclusive",
-        "gurobi",
-        "local",
-    ],
+    tags = gurobi_test_tags(),
     deps = [
         ":control_utils",
         ":qp_controller",
