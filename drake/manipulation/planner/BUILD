@@ -9,13 +9,13 @@ load(
 )
 
 package(
-    default_visibility = [":__subpackages__"],
+    default_visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
-    name = "iiwa_ik_planner",
-    srcs = ["iiwa_ik_planner.cc"],
-    hdrs = ["iiwa_ik_planner.h"],
+    name = "relaxing_ik_wrapper",
+    srcs = ["relaxing_ik_wrapper.cc"],
+    hdrs = ["relaxing_ik_wrapper.h"],
     deps = [
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/multibody:inverse_kinematics",
@@ -27,15 +27,13 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "iiwa_ik_test",
+    name = "relaxing_ik_wrapper_test",
     size = "medium",
-    srcs = ["test/iiwa_ik_test.cc"],
+    srcs = ["test/relaxing_ik_wrapper_test.cc"],
     data = [
-        "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = ["snopt"],
     deps = [
-        ":iiwa_ik_planner",
+        ":relaxing_ik_wrapper",
     ],
 )

@@ -7,7 +7,7 @@ if(lcm_FOUND)
       drakeCommon
       drakeIK
       drakeKukaIiwaArmCommon
-      drakeKukaIiwaArmIK
+      drakeManipulationPlanner
       drakeLcmSystem
       drakeLCMTypes
       drakeLCMUtil
@@ -24,7 +24,7 @@ if(lcm_FOUND)
       TARGET pickAndPlaceCommon
       LIBS -lpickAndPlaceCommon
       REQUIRES drake-common drake-ik drake-kuka-iiwa-arm-common
-      drake-lcm-system drake-lcmtypes-cpp drake-lcm-utils drake-rbm 
+      drake-lcm-system drake-lcmtypes-cpp drake-lcm-utils drake-rbm
       robotlocomotion-lcmtypes-cpp)
 
 
@@ -32,11 +32,10 @@ if(lcm_FOUND)
     pick_and_place_state_machine.cc)
   target_link_libraries(pick_and_place_demo
     drakeKukaIiwaArmCommon
-    drakeKukaIiwaArmIK
+    drakeManipulationPlanner
     drakeLCMTypes
     drakeLCMUtil
     drakeRigidBodyPlant
     pickAndPlaceCommon
     robotlocomotion-lcmtypes-cpp)
 endif()
-

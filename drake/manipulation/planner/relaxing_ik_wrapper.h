@@ -11,16 +11,16 @@
 #include "drake/multibody/rigid_body_ik.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
 
 /**
  * A wrapper class around the IK planner. This class improves IK's usability by
  * handling constraint relaxing and multiple initial guesses internally.
  */
-class IiwaIkPlanner {
+class RelaxingIkWrapper {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaIkPlanner);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RelaxingIkWrapper);
 
   /**
    * Cartesian waypoint. Input to the IK solver.
@@ -48,38 +48,15 @@ class IiwaIkPlanner {
   };
 
   /**
-   * Returns a linear PiecewisePolynomialTrajectory from @p times and @p ik_res.
-   */
-  static std::unique_ptr<PiecewisePolynomialTrajectory>
-  GenerateFirstOrderHoldTrajectory(const std::vector<double>& times,
-                                   const IKResults& ik_res);
-
-  /**
    * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
    * @param model_path Path to the model file.
    * @param end_effector_link_name Link name of the end effector.
    * @param base_to_world X_WB, transformation from robot's base to the world
    * frame.
-   * @param random_seed Seed for the random number generator used to generate
-   * random initial guesses.
    */
-  IiwaIkPlanner(const std::string& model_path,
-                const std::string& end_effector_link_name,
-                const Isometry3<double>& base_to_world, int random_seed = 1234);
-
-  /**
-   * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
-   * @param model_path Path to the model file.
-   * @param end_effector_link_name Link name of the end effector.
-   * @param base_to_world X_WB, transformation from robot's base to the world
-   * frame.
-   * @param random_seed Seed for the random number generator used to generate
-   * random initial guesses.
-   */
-  IiwaIkPlanner(const std::string& model_path,
-                const std::string& end_effector_link_name,
-                std::shared_ptr<RigidBodyFrame<double>> base_to_world,
-                int random_seed = 1234);
+  RelaxingIkWrapper(const std::string& model_path,
+                    const std::string& end_effector_link_name,
+                    const Isometry3<double>& base_to_world);
 
   /**
    * Sets end effector to @p end_effector_body.
@@ -131,6 +108,6 @@ class IiwaIkPlanner {
   int end_effector_body_idx_;
 };
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake

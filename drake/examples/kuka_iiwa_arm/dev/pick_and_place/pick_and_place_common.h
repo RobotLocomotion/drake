@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "drake/common/trajectories/piecewise_quaternion.h"
-#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/manipulation/planner/relaxing_ik_wrapper.h"
 
 namespace drake {
 namespace examples {
@@ -42,7 +42,8 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
                             const Isometry3<double>& X_WEndEffector1,
                             const Vector3<double>& via_points_pos_tolerance,
                             const double via_points_rot_tolerance,
-                            IiwaIkPlanner* planner, IKResults* ik_res,
+                            manipulation::planner::RelaxingIkWrapper* planner,
+                            IKResults* ik_res,
                             std::vector<double>* times);
 
 // Different states for the pick and place task.
