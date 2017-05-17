@@ -252,14 +252,14 @@ class TreeTopologyTests : public ::testing::Test {
 
     // Verify that the corresponding Body and BodyNode reference each other
     // correctly.
-    EXPECT_EQ(get_body_topology(body).body_node, topology.body_nodes[node].index);
-    EXPECT_EQ(topology.body_nodes[node].body, get_body_topology(body).index);
+    EXPECT_EQ(get_body_topology(body).body_node, get_body_node_topology(node).index);
+    EXPECT_EQ(get_body_node_topology(node).body, get_body_topology(body).index);
 
     // They should belong to the same level.
-    EXPECT_EQ(topology.bodies[body].level, topology.body_nodes[node].level);
+    EXPECT_EQ(get_body_topology(body).level, get_body_node_topology(node).level);
 
     const BodyNodeIndex parent_node =
-        topology.body_nodes[node].parent_body_node;
+        get_body_node_topology(node).parent_body_node;
     // Either (and thus the exclusive or):
     // 1. `body` is the world, and thus `parent_node` is invalid, XOR
     // 2. `body` is not the world, and thus we have a valid `parent_node`.
@@ -267,14 +267,14 @@ class TreeTopologyTests : public ::testing::Test {
 
     if (body != world_index()) {
       // Verifies BodyNode has the parent node to the correct body.
-      const BodyIndex parent_body = topology.body_nodes[parent_node].body;
+      const BodyIndex parent_body = get_body_node_topology(parent_node).body;
       EXPECT_TRUE(parent_body.is_valid());
       EXPECT_EQ(parent_body, get_body_topology(body).parent_body);
-      EXPECT_EQ(topology.body_nodes[parent_node].index,
+      EXPECT_EQ(get_body_node_topology(parent_node).index,
                 get_body_topology(parent_body).body_node);
 
       // Verifies that BodyNode makes reference to the proper mobilizer index.
-      const MobilizerIndex mobilizer = topology.body_nodes[node].mobilizer;
+      const MobilizerIndex mobilizer = get_body_node_topology(node).mobilizer;
       EXPECT_EQ(mobilizer, get_body_topology(body).inboard_mobilizer);
 
       // Verifies the mobilizer makes reference to the appropriate node.
@@ -283,7 +283,7 @@ class TreeTopologyTests : public ::testing::Test {
       // Helper lambda to check if this "node" effectively is a child of
       // "parent_node".
       auto is_child_of_parent = [&]() {
-        const auto& children = topology.body_nodes[parent_node].child_nodes;
+        const auto& children = get_body_node_topology(parent_node).child_nodes;
         return
             std::find(children.begin(), children.end(), node) != children.end();
       };
@@ -293,7 +293,12 @@ class TreeTopologyTests : public ::testing::Test {
 
   const BodyTopology& get_body_topology(int body_index) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
-    return topology.bodies[body_index];
+    return topology.get_body(BodyIndex(body_index));
+  }
+
+  const BodyNodeTopology& get_body_node_topology(int body_node_index) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    return topology.get_body_node(BodyNodeIndex(body_node_index));
   }
 
  protected:
@@ -322,14 +327,14 @@ TEST_F(TreeTopologyTests, Finalize) {
   set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
   set<BodyIndex> expected_level3 = {BodyIndex(6)};
 
-  set<BodyIndex> level0 = {topology.body_nodes[0].body};
-  set<BodyIndex> level1 = {topology.body_nodes[1].body,
-                           topology.body_nodes[2].body,
-                           topology.body_nodes[3].body};
-  set<BodyIndex> level2 = {topology.body_nodes[4].body,
-                           topology.body_nodes[5].body,
-                           topology.body_nodes[6].body};
-  set<BodyIndex> level3 = {topology.body_nodes[7].body};
+  set<BodyIndex> level0 = {get_body_node_topology(0).body};
+  set<BodyIndex> level1 = {get_body_node_topology(1).body,
+                           get_body_node_topology(2).body,
+                           get_body_node_topology(3).body};
+  set<BodyIndex> level2 = {get_body_node_topology(4).body,
+                           get_body_node_topology(5).body,
+                           get_body_node_topology(6).body};
+  set<BodyIndex> level3 = {get_body_node_topology(7).body};
 
   // Comparison of sets. The order of the elements is not important.
   EXPECT_EQ(level0, expected_level0);
@@ -338,21 +343,21 @@ TEST_F(TreeTopologyTests, Finalize) {
   EXPECT_EQ(level3, expected_level3);
 
   // Verifies the expected number of child nodes.
-  EXPECT_EQ(topology.body_nodes[0].get_num_children(), 3);
+  EXPECT_EQ(get_body_node_topology(0).get_num_children(), 3);
   EXPECT_EQ(
-      topology.body_nodes[get_body_topology(4).body_node].get_num_children(), 2);
+      get_body_node_topology(get_body_topology(4).body_node).get_num_children(), 2);
   EXPECT_EQ(
-      topology.body_nodes[get_body_topology(7).body_node].get_num_children(), 0);
+      get_body_node_topology(get_body_topology(7).body_node).get_num_children(), 0);
   EXPECT_EQ(
-      topology.body_nodes[get_body_topology(5).body_node].get_num_children(), 1);
+      get_body_node_topology(get_body_topology(5).body_node).get_num_children(), 1);
   EXPECT_EQ(
-      topology.body_nodes[get_body_topology(2).body_node].get_num_children(), 0);
+      get_body_node_topology(get_body_topology(2).body_node).get_num_children(), 0);
   EXPECT_EQ(
-      topology.body_nodes[get_body_topology(1).body_node].get_num_children(), 1);
+      get_body_node_topology(get_body_topology(1).body_node).get_num_children(), 1);
   EXPECT_EQ(
-      topology.body_nodes[get_body_topology(3).body_node].get_num_children(), 0);
+      get_body_node_topology(get_body_topology(3).body_node).get_num_children(), 0);
   EXPECT_EQ(
-      topology.body_nodes[get_body_topology(6).body_node].get_num_children(), 0);
+      get_body_node_topology(get_body_topology(6).body_node).get_num_children(), 0);
 
   // Checks the correctness of each BodyNode associated with a body.
   for (BodyIndex body(0); body < model_->get_num_bodies(); ++body) {
