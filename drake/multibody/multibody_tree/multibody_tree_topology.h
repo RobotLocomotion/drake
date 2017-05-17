@@ -245,7 +245,7 @@ class MultibodyTreeTopology {
 
   /// Returns the number of physical frames in the multibody tree.
   int get_num_frames() const {
-    return static_cast<int>(frames.size());
+    return static_cast<int>(frames_.size());
   }
 
   /// Returns the number of mobilizers in the multibody tree. Since the "world"
@@ -264,7 +264,7 @@ class MultibodyTreeTopology {
   /// FrameIndex.
   const FrameTopology& get_frame(FrameIndex index) const {
     DRAKE_ASSERT(index < get_num_frames());
-    return frames[index];
+    return frames_[index];
   }
 
   /// Returns a constant reference to the corresponding BodyTopology given a
@@ -323,7 +323,7 @@ class MultibodyTreeTopology {
                              "See documentation for Finalize() for details.");
     }
     FrameIndex frame_index(get_num_frames());
-    frames.emplace_back(frame_index, body_index);
+    frames_.emplace_back(frame_index, body_index);
     return frame_index;
   }
 
@@ -362,8 +362,8 @@ class MultibodyTreeTopology {
           "This multibody tree already has a mobilizer connecting these two "
           "frames. More than one mobilizer between two frames is not allowed");
     }
-    const BodyIndex inboard_body = frames[in_frame].body;
-    const BodyIndex outboard_body = frames[out_frame].body;
+    const BodyIndex inboard_body = frames_[in_frame].body;
+    const BodyIndex outboard_body = frames_[out_frame].body;
     if (IsThereAMobilizerBetweenBodies(inboard_body, outboard_body)) {
       throw std::runtime_error(
           "This multibody tree already has a mobilizer connecting these two "
@@ -532,8 +532,6 @@ class MultibodyTreeTopology {
 
   bool is_valid() const { return is_valid_; }
 
-  std::vector<FrameTopology> frames;
-
  private:
   // is_valid is set to `true` after a successful Finalize().
   bool is_valid_{false};
@@ -541,6 +539,8 @@ class MultibodyTreeTopology {
   // there will be at least one level (level = 0) with the world body.
   int num_levels_{-1};
 
+  // Topological elements:
+  std::vector<FrameTopology> frames_;
   std::vector<BodyTopology> bodies_;
   std::vector<MobilizerTopology> mobilizers_;
   std::vector<BodyNodeTopology> body_nodes_;
