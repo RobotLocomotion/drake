@@ -206,38 +206,42 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 //
 class TreeTopologyTests : public ::testing::Test {
  public:
-  // Creates an "empty" MultibodyTree that only contains the "world" body and
-  // world body frame.
+  // Creates MultibodyTree according to the schematic above.
   void SetUp() override {
     model_ = std::make_unique<MultibodyTree<double>>();
 
     const int kNumBodies = 8;
     bodies_.push_back(&model_->get_world_body());
     for (int i =1; i < kNumBodies; ++i)
-      bodies_.push_back(AddTestBody());
+      AddTestBody();
 
     // Adds mobilizers to connect bodies according to the following diagram:
-    mobilizers_.push_back(ConnectBodies(*bodies_[1], *bodies_[6]));  // mob. 0
-    mobilizers_.push_back(ConnectBodies(*bodies_[4], *bodies_[2]));  // mob. 1
-    mobilizers_.push_back(ConnectBodies(*bodies_[0], *bodies_[7]));  // mob. 2
-    mobilizers_.push_back(ConnectBodies(*bodies_[5], *bodies_[3]));  // mob. 3
-    mobilizers_.push_back(ConnectBodies(*bodies_[0], *bodies_[5]));  // mob. 4
-    mobilizers_.push_back(ConnectBodies(*bodies_[4], *bodies_[1]));  // mob. 5
-    mobilizers_.push_back(ConnectBodies(*bodies_[0], *bodies_[4]));  // mob. 6
+    ConnectBodies(*bodies_[1], *bodies_[6]);  // mob. 0
+    ConnectBodies(*bodies_[4], *bodies_[2]);  // mob. 1
+    ConnectBodies(*bodies_[0], *bodies_[7]);  // mob. 2
+    ConnectBodies(*bodies_[5], *bodies_[3]);  // mob. 3
+    ConnectBodies(*bodies_[0], *bodies_[5]);  // mob. 4
+    ConnectBodies(*bodies_[4], *bodies_[1]);  // mob. 5
+    ConnectBodies(*bodies_[0], *bodies_[4]);  // mob. 6
   }
 
   const RigidBody<double>* AddTestBody() {
     // NaN SpatialInertia to instantiate the RigidBody objects.
     // It is safe here since this tests only focus on topological information.
     const SpatialInertia<double> M_Bo_B;
-    return &model_->AddBody<RigidBody>(M_Bo_B);
+    const RigidBody<double>* body = &model_->AddBody<RigidBody>(M_Bo_B);
+    bodies_.push_back(body);
+    return body;
   }
 
   const Mobilizer<double>* ConnectBodies(
       const Body<double>& inboard, const Body<double>& outboard) {
-    return &model_->AddMobilizer<RevoluteMobilizer>(
-        inboard.get_body_frame(), outboard.get_body_frame(),
-        Vector3d::UnitZ());
+    const Mobilizer<double>* mobilizer =
+        &model_->AddMobilizer<RevoluteMobilizer>(
+            inboard.get_body_frame(), outboard.get_body_frame(),
+            Vector3d::UnitZ());
+    mobilizers_.push_back(mobilizer);
+    return mobilizer;
   }
 
   // Performs a number of tests on the BodyNodeTopology corresponding to the
@@ -254,12 +258,14 @@ class TreeTopologyTests : public ::testing::Test {
     // They should belong to the same level.
     EXPECT_EQ(topology.bodies[body].level, topology.body_nodes[node].level);
 
-    if (body != world_index()) {
-      const BodyNodeIndex parent_node =
-          topology.body_nodes[node].parent_body_node;
-      // parent_node should be a valid index since "body" is not the world.
-      EXPECT_TRUE(parent_node.is_valid());
+    const BodyNodeIndex parent_node =
+        topology.body_nodes[node].parent_body_node;
+    // Either (and thus the exclusive or):
+    // 1. `body` is the world, and thus `parent_node` is invalid, XOR
+    // 2. `body` is not the world, and thus we have a valid `parent_node`.
+    EXPECT_TRUE(parent_node.is_valid() ^ body == world_index());
 
+    if (body != world_index()) {
       // Verifies BodyNode has the parent node to the correct body.
       const BodyIndex parent_body = topology.body_nodes[parent_node].body;
       EXPECT_TRUE(parent_body.is_valid());

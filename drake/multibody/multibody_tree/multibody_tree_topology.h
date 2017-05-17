@@ -50,20 +50,19 @@ struct BodyTopology {
   BodyIndex index{0};
 
   /// Unique index to the one and only inboard mobilizer a body can have.
-  /// By default this is left initialized to "invalid" so that we can detect
+  /// By default this is initialized to "invalid" so that we can detect
   /// graph loops within add_mobilizer().
   /// This will remain "invalid" for the world body.
   MobilizerIndex inboard_mobilizer{};
 
-  /// Within the tree structure of a MultibodyTree, the immedieate inboard (or
-  /// "parent") body connected through by the Mobilizer indexed by
-  /// inboard_mobilizer.
-  /// By default this is left initialized to "invalid" so that we can assert
+  /// Within the tree structure of a MultibodyTree, the immediate inboard (or
+  /// "parent") body connected by the Mobilizer indexed by `inboard_mobilizer`.
+  /// By default this is initialized to "invalid" so that we can assert
   /// (from within add_mobilizer()) that each body can have only one parent
   /// body. Also, this will remain "invalid" for the world body.
   BodyIndex parent_body{};
 
-  /// Within the tree structure of a MultibodyTree, the immedieate outboard (or
+  /// Within the tree structure of a MultibodyTree, the immediate outboard (or
   /// "child") bodies to this Body.
   std::vector<BodyIndex> child_bodies;
 
@@ -71,8 +70,8 @@ struct BodyTopology {
   FrameIndex body_frame{0};
 
   /// Depth level in the MultibodyTree, level = 0 for the world.
-  /// Initialized to an invalid negative value so that we can detect when a user
-  /// forgets to connect a body with a mobilizer at Finalize().
+  /// Initialized to an invalid negative value so that we can detect at
+  /// Finalize() when a user forgets to connect a body with a mobilizer.
   int level{-1};
 
   /// Index to the tree body node in the MultibodyTree.
@@ -152,7 +151,8 @@ struct MobilizerTopology {
   /// Index to the outboard body.
   BodyIndex outboard_body;
   /// Index to the tree node in the MultibodyTree responsible for this
-  /// mobilizer's computations.
+  /// mobilizer's computations. See the documentation for BodyNodeTopology for
+  /// further details on how these computations are organized.
   BodyNodeIndex body_node;
 
   /// Mobilizer indexing info: Set at Finalize() time.
@@ -171,7 +171,7 @@ struct MobilizerTopology {
 /// Data structure to store the topological information associated with a tree
 /// node. A tree node essentially consists of a body and its inboard mobilizer.
 /// A body node is in charge of the computations associated to that body and
-/// mobilizer, especially when within a base-to-tip or tip-to-base recursion.
+/// mobilizer, especially within a base-to-tip or tip-to-base recursion.
 /// As the topological entity associated with a tree node (and specifically a
 /// MultibodyTree node), this struct contains information regarding parent and
 /// child nodes, parent and child bodies, etc.
@@ -181,6 +181,21 @@ struct BodyNodeTopology {
   /// Default construction to invalid configuration.
   BodyNodeTopology() {}
 
+  /// Constructor specifying the topological information for a tree node.
+  /// A tree node is instantiated for each body in the multibody system and it
+  /// contains, in addition to that particular body, the inboard mobilizer
+  /// connecting the body to the rest of the tree inwards (i.e. towards the
+  /// world or root of the tree) from the mobilizer.
+  ///
+  /// @param index The unique index for `this` body node.
+  /// @param level The level (depth or generation) in the tree structure.
+  /// @param parent_node The parent node, in a tree structure sense, of `this`
+  ///                    node.
+  /// @param body The index to the body associated with this node.
+  /// @param parent_body The parent body, in a tree structure sense, to `body`.
+  ///                    In other words, `parent_body` is the body associated
+  ///                    with node `parent_node`.
+  /// @param mobilizer The index to the mobilizer associated with this node.
   BodyNodeTopology(
       BodyNodeIndex index, int level,
       BodyNodeIndex parent_node,
@@ -189,7 +204,7 @@ struct BodyNodeTopology {
       parent_body_node(parent_node),
       body(body), parent_body(parent_body), mobilizer(mobilizer) {}
 
-  /// Unique index in the MultibodyTree.
+  /// Unique index of this node in the MultibodyTree.
   BodyNodeIndex index{};
 
   /// Depth level in the MultibodyTree, level = 0 for the world.
@@ -216,7 +231,7 @@ struct MultibodyTreeTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
   /// Default constructor creates an empty, invalid topology. The minimum valid
-  /// topology for a minimum valid MultibodyTree containts at least the
+  /// topology for a minimum valid MultibodyTree contains at least the
   /// BodyTopology for the world. The topology for the _world_ body does not get
   /// added until MultibodyTree construction, which creates a _world_ body
   /// and adds it to the tree.
@@ -305,8 +320,7 @@ struct MultibodyTreeTopology {
           "This multibody tree already has a mobilizer connecting these two "
           "bodies. More than one mobilizer between two bodies is not allowed");
     }
-    // Checks for graph loops. Each body can have and only one inboard
-    // mobilizer.
+    // Checks for graph loops. Each body can have only one inboard mobilizer.
     if (bodies[outboard_body].inboard_mobilizer.is_valid()) {
       throw std::runtime_error(
           "This mobilizer is creating a closed loop since the outboard body "
@@ -314,10 +328,13 @@ struct MultibodyTreeTopology {
           "If a physical loop is really needed, consider using a constraint "
           "instead.");
     }
-    // Here only demands since the check above should be taking care of loops
-    // unless something went terribly wrong.
+
+    // The checks above guarantee that it is the first time we add an inboard
+    // mobilizer to `outboard_body`. The DRAKE_DEMAND's below double check our
+    // implementation.
     // BodyTopology::inboard_mobilizer and BodyTopology::parent_body are both
-    // set by this method below.
+    // set within this method right after these checks.
+    DRAKE_DEMAND(!bodies[outboard_body].inboard_mobilizer.is_valid());
     DRAKE_DEMAND(!bodies[outboard_body].parent_body.is_valid());
     MobilizerIndex mobilizer_index(get_num_mobilizers());
 
@@ -412,7 +429,7 @@ struct MultibodyTreeTopology {
     }
 
     // Checks that all bodies were reached. We could have this situation if a
-    // user add body but forgets to add a mobilizer to it.
+    // user adds a body but forgets to add a mobilizer to it.
     // Bodies that were not reached were not assigned a valid level.
     for (BodyIndex body(0); body < get_num_bodies(); ++body) {
       if (bodies[body].level < 0) {
@@ -439,7 +456,6 @@ struct MultibodyTreeTopology {
   bool is_valid{false};
   // Number of levels (or generations) in the tree topology. After Finalize()
   // there will be at least one level (level = 0) with the world body.
-  // Bodies directly connected to the world will belong to level = 1.
   int num_levels{-1};
   std::vector<BodyTopology> bodies;
   std::vector<FrameTopology> frames;
