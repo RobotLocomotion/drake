@@ -10,7 +10,6 @@ namespace drake {
 namespace examples {
 namespace kinova_jaco_arm {
 
-
 /// Verifies that @p tree matches assumptions about joint indices.
 /// Aborts if the tree isn't as expected.
 void VerifyJacoTree(const RigidBodyTree<double>& tree);
@@ -25,8 +24,7 @@ void CreateTreedFromFixedModelAtPose(
     const Eigen::Vector3d& orientation = Eigen::Vector3d::Zero());
 
 /// Used to set the feedback gains for the simulated position controlled KUKA.
-void SetPositionControlledJacoGains(Eigen::VectorXd* Kp,
-                                    Eigen::VectorXd* Ki,
+void SetPositionControlledJacoGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
 
 }  // namespace kinova_jaco_arm
