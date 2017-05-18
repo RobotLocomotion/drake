@@ -3,7 +3,6 @@ if(lcm_FOUND)
   # System 2.0.
   add_library_with_exports(LIB_NAME drakeKukaIiwaWorld SOURCE_FILES
       world_sim_tree_builder.cc
-      world_sim_diagram_factory.cc
       iiwa_wsg_diagram_factory.cc)
   target_link_libraries(drakeKukaIiwaWorld
       drakeKukaIiwaArmCommon
@@ -22,7 +21,6 @@ if(lcm_FOUND)
   drake_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(
       world_sim_tree_builder.h
-      world_sim_diagram_factory.h
       iiwa_wsg_diagram_factory.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-world
       TARGET drakeKukaIiwaWorld
