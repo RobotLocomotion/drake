@@ -78,6 +78,11 @@ exports_files(
 )
 
 exports_files(
+    ["eigen-create-cps.py"],
+    visibility = ["@eigen//:__pkg__"],
+)
+
+exports_files(
     ["lcm-create-cps.py"],
     visibility = ["@lcm//:__pkg__"],
 )
