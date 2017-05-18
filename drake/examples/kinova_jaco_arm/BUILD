@@ -33,8 +33,6 @@ drake_cc_library(
         "jaco_common.h",
     ],
     deps = [
-        "@bot_core_lcmtypes//:lib",
-        "@robotlocomotion_lcmtypes//:lib",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
