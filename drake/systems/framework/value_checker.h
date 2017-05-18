@@ -8,6 +8,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
+#include "drake/systems/framework/vector_value.h"
 
 namespace drake {
 namespace systems {
