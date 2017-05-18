@@ -30,7 +30,7 @@ GTEST_TEST(UnitInertia, DefaultConstructor) {
 // Test constructor for a diagonal unit inertia with all elements equal.
 GTEST_TEST(UnitInertia, DiagonalInertiaConstructor) {
   const double I0 = 3.14;
-  UnitInertia<double> I = UnitInertia<double>::MakeTriaxiallySymmetric(I0);
+  UnitInertia<double> I = UnitInertia<double>::TriaxiallySymmetric(I0);
   Vector3d moments_expected;
   moments_expected.setConstant(I0);
   Vector3d products_expected = Vector3d::Zero();
@@ -132,7 +132,7 @@ GTEST_TEST(UnitInertia, SolidSphere) {
   const double radius = 3.5;
   const double sphere_I = 4.9;
   const UnitInertia<double> G_expected = UnitInertia<double>::
-                                         MakeTriaxiallySymmetric(sphere_I);
+                                         TriaxiallySymmetric(sphere_I);
   UnitInertia<double> G = UnitInertia<double>::SolidSphere(radius);
   EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
   EXPECT_TRUE(G_expected.get_products() == G.get_products());
@@ -143,7 +143,7 @@ GTEST_TEST(UnitInertia, HollowSphere) {
   const double radius = 3.5;
   const double sphere_I = 2.0 *radius * radius / 3.0;
   const UnitInertia<double> G_expected = UnitInertia<double>::
-                                         MakeTriaxiallySymmetric(sphere_I);
+                                         TriaxiallySymmetric(sphere_I);
   UnitInertia<double> G = UnitInertia<double>::HollowSphere(radius);
   EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
   EXPECT_TRUE(G_expected.get_products() == G.get_products());
@@ -169,7 +169,7 @@ GTEST_TEST(UnitInertia, SolidCube) {
   const double L = 1.5;
   const double I = L * L / 6.0;
   const UnitInertia<double> G_expected = UnitInertia<double>::
-                                         MakeTriaxiallySymmetric(I);
+                                         TriaxiallySymmetric(I);
     UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), epsilon));
@@ -201,11 +201,11 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
 }
 
 // Tests the methods:
-//  - ShiftFromCentroidInPlace()
-//  - ShiftFromCentroid()
-//  - ShiftToCentroidInPlace()
-//  - ShiftToCentroid()
-GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
+//  - ShiftFromCenterOfMassInPlace()
+//  - ShiftFromCenterOfMass()
+//  - ShiftToCenterOfMassInPlace()
+//  - ShiftToCenterOfMass()
+GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   const double r = 2.5;
   const double L = 1.5;
   const UnitInertia<double> G_expected =
@@ -213,7 +213,7 @@ GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
   UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
   EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), epsilon));  // Not equal yet.
-  G.ShiftFromCentroidInPlace({0.0, 0.0, L / 2.0});
+  G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), epsilon));  // Equal after shifting.
   EXPECT_TRUE(G.CouldBePhysicallyValid());
@@ -221,9 +221,9 @@ GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
   // Now test that we can perform the inverse operation and obtain the original
   // unit inertia.
   // As a shift into a new object:
-  UnitInertia<double> G2 = G.ShiftToCentroid({0.0, 0.0, -L / 2.0});
+  UnitInertia<double> G2 = G.ShiftToCenterOfMass({0.0, 0.0, -L / 2.0});
   // As a shift in place:
-  G.ShiftToCentroidInPlace({0.0, 0.0, -L / 2.0});
+  G.ShiftToCenterOfMassInPlace({0.0, 0.0, -L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), epsilon));
   EXPECT_TRUE(G2.CopyToFullMatrix3().isApprox(
@@ -232,7 +232,7 @@ GTEST_TEST(UnitInertia, ShiftFromCentroidInPlace) {
   // Create a new object.
   UnitInertia<double> G3 =
       UnitInertia<double>::
-      SolidCylinder(r, L).ShiftFromCentroid({0.0, 0.0, L / 2.0});
+      SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), epsilon));
   EXPECT_TRUE(G3.CouldBePhysicallyValid());

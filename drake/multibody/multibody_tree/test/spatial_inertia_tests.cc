@@ -269,7 +269,6 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
   }
 }
 
-
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

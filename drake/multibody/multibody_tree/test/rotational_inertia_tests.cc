@@ -48,7 +48,7 @@ GTEST_TEST(RotationalInertia, DefaultRotationalInertiaConstructorIsNaN) {
 GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   const double I_diagonal = 3.14;
   RotationalInertia<double> I = RotationalInertia<double>::
-                                            MakeTriaxiallySymmetric(I_diagonal);
+                                            TriaxiallySymmetric(I_diagonal);
   Vector3d moments_expected;
   moments_expected.setConstant(I_diagonal);
   Vector3d products_expected = Vector3d::Zero();
@@ -59,7 +59,7 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
 // Test constructor for a principal axes rotational inertia matrix (products
 // of inertia are zero).
 GTEST_TEST(RotationalInertia, PrincipalAxesConstructor) {
-  const Vector3d moments(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d moments(2.0,  2.3, 2.4);
   RotationalInertia<double> I(moments(0), moments(1), moments(2));
   EXPECT_EQ(I.get_moments(), moments);
   EXPECT_EQ(I.get_products(), Vector3d::Zero());
@@ -325,7 +325,7 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
   const RotationalInertia<double> expected_I_BQ_B =
       I_BBcm_B.ShiftFromCenterOfMass(mass, p_QBcm);
 
-  // Calculate with single method that does it slighly more efficiently.
+  // Calculate with single method that does it slightly more efficiently.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
