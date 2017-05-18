@@ -13,6 +13,15 @@ package(
 )
 
 drake_cc_library(
+    name = "multibody_tree_indexes",
+    srcs = [],
+    hdrs = ["multibody_tree_indexes.h"],
+    deps = [
+        "//drake/common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_tree_topology",
     srcs = [],
     hdrs = [
@@ -34,7 +43,6 @@ drake_cc_library(
         "position_kinematics_cache.h",
     ],
     deps = [
-        ":multibody_tree_indexes",
         ":multibody_tree_topology",
         "//drake/common:autodiff",
         "//drake/systems/framework:leaf_context",
@@ -42,10 +50,31 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_tree",
+    name = "multibody_tree_topology",
+    srcs = [],
+    hdrs = [
+        "multibody_tree_topology.h",
+    ],
+    deps = [
+        ":multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_tree_element",
+    srcs = [],
+    hdrs = [
+        "multibody_tree_element.h",
+    ],
+    deps = [
+        ":multibody_tree_topology",
+    ],
+)
+
+drake_cc_library(
+    name = "bodies_and_frames",
     srcs = [
         "fixed_offset_frame.cc",
-        "multibody_tree.cc",
         "rigid_body.cc",
     ],
     hdrs = [
@@ -53,24 +82,45 @@ drake_cc_library(
         "fixed_offset_frame.h",
         "frame.h",
         "frame_base.h",
-        "multibody_tree.h",
-        "multibody_tree_element.h",
         "rigid_body.h",
     ],
     deps = [
-        ":multibody_tree_context",
-        ":multibody_tree_indexes",
+        ":multibody_tree_element",
         ":spatial_inertia",
         "//drake/common:autodiff",
     ],
 )
 
 drake_cc_library(
-    name = "multibody_tree_indexes",
-    srcs = [],
-    hdrs = ["multibody_tree_indexes.h"],
+    name = "mobilizers",
+    srcs = ["revolute_mobilizer.cc"],
+    hdrs = [
+        "mobilizer.h",
+        "mobilizer_impl.h",
+        "revolute_mobilizer.h",
+    ],
     deps = [
+        ":bodies_and_frames",
+        "//drake/common:autodiff",
         "//drake/common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_tree",
+    srcs = [
+        "multibody_tree.cc",
+    ],
+    hdrs = [
+        "multibody_tree.h",
+    ],
+    deps = [
+        ":bodies_and_frames",
+        ":mobilizers",
+        ":multibody_tree_context",
+        ":multibody_tree_indexes",
+        ":spatial_inertia",
+        "//drake/common:autodiff",
     ],
 )
 

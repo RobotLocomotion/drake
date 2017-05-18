@@ -247,6 +247,10 @@ macro(drake_setup_options)
     "libbot2 robotics suite LCM types")
 
   drake_system_dependency(
+    PROTOBUF REQUIRES Protobuf
+    "Google protocol buffers")
+
+  drake_system_dependency(
     ROBOTLOCOMOTION_LCMTYPES OPTIONAL REQUIRES robotlocomotion-lcmtypes
     DEPENDS "HAVE_BOT_CORE_LCMTYPES"
     "robotlocomotion LCM types")
@@ -285,6 +289,13 @@ macro(drake_setup_options)
   drake_optional_external(IPOPT ON
     DEPENDS "NOT APPLE OR NOT Matlab_FOUND\;NOT DISABLE_FORTRAN"
     "Interior Point Optimizer, for solving non-linear optimizations")
+
+  drake_optional_external(IGNITION_MATH ON
+    "Math classes and functions for robot applications")
+
+  drake_optional_external(IGNITION_RNDF ON
+    DEPENDS "WITH_IGNITION_MATH"
+    "Classes and functions for parsing RNDF road networks")
 
   drake_optional_external(LIBBOT ON
     DEPENDS "NOT USE_SANITIZER"

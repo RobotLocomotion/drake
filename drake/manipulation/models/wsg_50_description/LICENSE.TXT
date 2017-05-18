@@ -1,0 +1,13 @@
+This folder contains a model of the Schunk WSG 50 gripper. The files were
+originally taken from https://github.com/nalt/wsg50-ros-pkg, SHA 56376f0. The
+original license for these files is BSD and is given in the link below.
+
+https://github.com/nalt/wsg50-ros-pkg/blob/a3ab07374a6cff13a90af3c23778622a71d1db14/wsg_50_simulation/package.xml#L16
+
+Since obtaining the model files from the above-mentioned source, they were
+substantially modified for use by Drake. For example, the original .stl mesh
+files were converted to .obj files. Our changes are covered by Drake's license
+terms (see LICENSE.TXT in Drake's root folder).
+
+The files in sdf/ were developed entirely in Drake, and are also
+covered by Drake's license terms.

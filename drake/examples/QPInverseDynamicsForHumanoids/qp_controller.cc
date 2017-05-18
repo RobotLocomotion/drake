@@ -22,7 +22,8 @@ void QPController::AddAsConstraints(
     tmp_vd_vec_.row(row_ctr) = b.row(d);
     row_ctr++;
   }
-  eq->UpdateConstraint(tmp_vd_mat_.topRows(row_ctr), tmp_vd_vec_.head(row_ctr));
+  eq->UpdateCoefficients(tmp_vd_mat_.topRows(row_ctr),
+                         tmp_vd_vec_.head(row_ctr));
 }
 
 template <typename DerivedA, typename DerivedB, typename DerivedW>
@@ -30,7 +31,7 @@ void QPController::AddAsCosts(const Eigen::MatrixBase<DerivedA>& A,
                               const Eigen::MatrixBase<DerivedB>& b,
                               const Eigen::MatrixBase<DerivedW>& weights,
                               const std::list<int>& idx,
-                              drake::solvers::QuadraticConstraint* cost) {
+                              drake::solvers::QuadraticCost* cost) {
   if (idx.empty()) return;
   if (A.rows() != b.rows() || A.rows() != weights.rows() ||
       A.rows() > tmp_vd_mat_.rows() || b.cols() != 1 || weights.cols() != 1 ||
@@ -45,7 +46,7 @@ void QPController::AddAsCosts(const Eigen::MatrixBase<DerivedA>& A,
     tmp_vd_mat_ += weight * A.row(d).transpose() * A.row(d);
     tmp_vd_vec_ += weight * A.row(d).transpose() * b.row(d);
   }
-  cost->UpdateQuadraticAndLinearTerms(tmp_vd_mat_, tmp_vd_vec_);
+  cost->UpdateCoefficients(tmp_vd_mat_, tmp_vd_vec_);
 }
 
 void QPController::SetTempMatricesToZero() {
@@ -437,7 +438,7 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
           -JB_.block(0, i, num_dynamics_equations_, 1);
     }
     dynamics_constant_ = -rs.bias_term().head(num_dynamics_equations_);
-    eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
+    eq_dynamics_->UpdateCoefficients(dynamics_linear_, dynamics_constant_);
   }
 
   // Contact constraints, 3 rows per contact point
@@ -448,7 +449,7 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
     int force_dim = 3 * contact.num_contact_points();
     // As cost
     if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
-      cost_contacts_[cost_ctr]->UpdateQuadraticAndLinearTerms(
+      cost_contacts_[cost_ctr]->UpdateCoefficients(
           contact.weight() *
               stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_)
                   .transpose() *
@@ -463,7 +464,7 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
       cost_contacts_[cost_ctr++]->set_description(contact.body_name() +
                                                   " contact cost");
     } else {
-      eq_contacts_[eq_ctr]->UpdateConstraint(
+      eq_contacts_[eq_ctr]->UpdateCoefficients(
           stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_),
           -(stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim) +
             contact.Kd() *
@@ -496,7 +497,7 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
     inequality_lower_bound_[i] += rs.robot().actuators[i].effort_limit_min_;
     inequality_upper_bound_[i] += rs.robot().actuators[i].effort_limit_max_;
   }
-  ineq_torque_limit_->UpdateConstraint(
+  ineq_torque_limit_->UpdateCoefficients(
       inequality_linear_, inequality_lower_bound_, inequality_upper_bound_);
 
   ////////////////////////////////////////////////////////////////////
@@ -572,8 +573,8 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
       tmp_vd_vec_[row_ctr] = input.desired_dof_motions().value(d);
       row_ctr++;
     }
-    eq_dof_motion_->UpdateConstraint(tmp_vd_mat_.topRows(row_ctr),
-                                     tmp_vd_vec_.head(row_ctr));
+    eq_dof_motion_->UpdateCoefficients(tmp_vd_mat_.topRows(row_ctr),
+                                       tmp_vd_vec_.head(row_ctr));
   }
   // Procecss cost terms.
   if (row_idx_as_cost.size() > 0) {
@@ -585,12 +586,12 @@ int QPController::Control(const HumanoidStatus& rs, const QpInput& input,
       tmp_vd_mat_(d, d) = weight;
       tmp_vd_vec_[d] = -weight * input.desired_dof_motions().value(d);
     }
-    cost_dof_motion_->UpdateQuadraticAndLinearTerms(tmp_vd_mat_, tmp_vd_vec_);
+    cost_dof_motion_->UpdateCoefficients(tmp_vd_mat_, tmp_vd_vec_);
   }
 
   // Regularize basis to zero.
-  cost_basis_reg_->UpdateQuadraticAndLinearTerms(
-      input.w_basis_reg() * basis_reg_mat_, basis_reg_vec_);
+  cost_basis_reg_->UpdateCoefficients(input.w_basis_reg() * basis_reg_mat_,
+                                      basis_reg_vec_);
 
   ////////////////////////////////////////////////////////////////////
   // Call solver.

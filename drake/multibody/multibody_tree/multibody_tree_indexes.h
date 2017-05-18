@@ -14,7 +14,7 @@ using BodyIndex = TypeSafeIndex<class BodyTag>;
 /// Type used to identify Mobilizer objects by index in a multibody tree system.
 using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
 
-/// Type used to identify BodyNode objects by index in a multibody tree system.
+/// Type used to identify tree nodes by index within a multibody tree system.
 using BodyNodeIndex = TypeSafeIndex<class BodyNodeTag>;
 
 /// For every MultibodyTree the **world** body _always_ has this unique index

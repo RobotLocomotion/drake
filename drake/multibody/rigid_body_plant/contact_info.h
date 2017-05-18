@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
@@ -44,6 +46,7 @@ namespace systems {
 template <typename T>
 class ContactInfo {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactInfo)
   /**
    Initialize the contact response for two colliding collision elements.
 
@@ -52,11 +55,6 @@ class ContactInfo {
    */
   ContactInfo(DrakeCollision::ElementId element1,
               DrakeCollision::ElementId element2);
-
-  ContactInfo(const ContactInfo<T>& other);
-  ContactInfo& operator=(const ContactInfo<T>& other);
-  ContactInfo(ContactInfo<T>&& other) = delete;
-  ContactInfo& operator=(ContactInfo<T>&& other) = delete;
 
   DrakeCollision::ElementId get_element_id_1() const { return element1_; }
   DrakeCollision::ElementId get_element_id_2() const { return element2_; }
@@ -69,21 +67,30 @@ class ContactInfo {
     return resultant_force_;
   }
 
-  const std::vector<std::unique_ptr<ContactDetail<T>>>& get_contact_details()
-      const {
+  const std::vector<copyable_unique_ptr<ContactDetail<T>>>&
+  get_contact_details() const {
     return contact_details_;
   }
 
   void set_contact_details(
-      std::vector<std::unique_ptr<ContactDetail<T>>>&& details) {
+      std::vector<copyable_unique_ptr<ContactDetail<T>>>&& details) {
     contact_details_ = std::move(details);
+  }
+
+  void set_contact_details(
+      std::vector<std::unique_ptr<ContactDetail<T>>>&& details) {
+    contact_details_.clear();
+    for (size_t i = 0; i < details.size(); ++i) {
+      contact_details_.emplace_back(std::move(details[i]));
+    }
+    details.clear();
   }
 
  private:
   DrakeCollision::ElementId element1_{};
   DrakeCollision::ElementId element2_{};
   ContactForce<T> resultant_force_;
-  std::vector<std::unique_ptr<ContactDetail<T>>> contact_details_;
+  std::vector<copyable_unique_ptr<ContactDetail<T>>> contact_details_;
 };
 
 }  // namespace systems

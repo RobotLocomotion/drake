@@ -80,28 +80,7 @@ bool Model::transformCollisionFrame(
   }
 }
 
-bool closestPointsAllToAll(
-    const vector<ElementId>& ids_to_check,
-    bool use_margins,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    vector<PointPair>& closest_points) {
-  return false;
-}
-
-bool collisionPointsAllToAll(
-    bool use_margins,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    vector<PointPair>& points) {
-  return false;
-}
-
-bool closestPointsPairwise(
-    const vector<ElementIdPair>& id_pairs,
-    bool use_margins,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    vector<PointPair>& closest_points) {
-  return false;
-}
+void Model::DoAddElement(const Element&) {}
 
 /**
  * A toString for the collision model.

@@ -35,8 +35,8 @@ class AccelerometerTestLogger : public LeafSystem<double> {
 
  private:
   // No output.
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
+  void DoCalcOutput(const Context<double>&,
+                    SystemOutput<double>*) const override {}
 
   // Logging is done in this method.
   void DoPublish(const Context<double>& context) const override;

@@ -48,7 +48,7 @@ def _gurobi_impl(repository_ctx):
         "gurobi-distro/include/gurobi_c++.h",
     ])
     print("{warning}") if not hdrs else cc_library(
-        name = "lib",
+        name = "gurobi",
         srcs = {srcs},
         hdrs = hdrs,
         includes = ["gurobi-distro/include"],

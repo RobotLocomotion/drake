@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
@@ -163,11 +164,11 @@ void AddQuasiStaticConstraint(
 
 namespace {
 
-class InverseKinObjective : public Constraint {
+class InverseKinObjective : public solvers::Cost {
  public:
   // All references are aliased for the life of the objective.
-  InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
-      : Constraint(model->get_num_positions(), Q.rows()), Q_(Q) {}
+  explicit InverseKinObjective(const MatrixXd& Q)
+      : Cost(Q.rows()), Q_(Q) {}
 
   /// Set the nominal posture.  This should be invoked before any
   /// calls to Eval() (the output of Eval() is undefined if this has
@@ -208,6 +209,8 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
                        const IKoptions& ikoptions, MatrixBase<DerivedC>* q_sol,
                        int* info,
                        std::vector<std::string>* infeasible_constraint) {
+  unused(infeasible_constraint);  // Per the TODO in the header file.
+
   // Validate some basic parameters of the input.
   if (q_seed.rows() != model->get_num_positions() || q_seed.cols() != nT ||
       q_nom.rows() != model->get_num_positions() || q_nom.cols() != nT) {
@@ -232,7 +235,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
 
     MatrixXd Q;
     ikoptions.getQ(Q);
-    auto objective = std::make_shared<InverseKinObjective>(model, Q);
+    auto objective = std::make_shared<InverseKinObjective>(Q);
     prog.AddCost(objective, vars);
 
     for (int i = 0; i < num_constraints; i++) {

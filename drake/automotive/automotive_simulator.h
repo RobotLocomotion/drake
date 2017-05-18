@@ -9,8 +9,12 @@
 #include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
+#include "drake/automotive/idm_controller.h"
+#include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput_railcar.h"
+#include "drake/automotive/mobil_planner.h"
+#include "drake/automotive/pure_pursuit_controller.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
@@ -21,8 +25,10 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/rendering/pose_aggregator.h"
+#include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
@@ -71,6 +77,29 @@ class AutomotiveSimulator {
   /// @return The ID of the car that was just added to the simulation.
   int AddPriusSimpleCar(
       const std::string& name, const std::string& channel_name,
+      const SimpleCarState<T>& initial_state = SimpleCarState<T>());
+
+  /// Adds a SimpleCar to this simulation controlled by a MOBIL planner coupled
+  /// with a PurePursuitController to perform lateral control of the vehicle,
+  /// along with an IDM longitudinal controller.  The car is visualized as a
+  /// Toyota Prius.
+  ///
+  /// @pre Start() has NOT been called.
+  ///
+  /// @pre SetRoadGeometry() was called. Otherwise, a std::runtime_error will be
+  /// thrown.
+  ///
+  /// @param name The car's name, which must be unique among all cars.
+  /// Otherwise a std::runtime_error will be thrown.
+  ///
+  /// @param initial_with_s Initial travel direction in the lane. (See
+  /// MobilPlanner documentation.)
+  ///
+  /// @param initial_state The SimpleCar's initial state.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddMobilControlledSimpleCar(
+      const std::string& name, bool initial_with_s,
       const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
@@ -223,6 +252,11 @@ class AutomotiveSimulator {
   /// Advances simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
 
+  /// Returns the current poses of all vehicles in the simulation.
+  ///
+  /// @pre Start() has been called.
+  systems::rendering::PoseBundle<T> GetCurrentPoses() const;
+
  private:
   int allocate_vehicle_number();
 
@@ -230,6 +264,12 @@ class AutomotiveSimulator {
   // have been added to the `AutomotiveSimulator`. Throws a std::runtime_error
   // if it is not unique meaning a car of the same name was already added.
   void CheckNameUniqueness(const std::string& name);
+
+  // Connects the provided pose and velocity output ports of a vehicle model to
+  // the PoseAggregator and adds a PriusVis for visualizing the vehicle.
+  void ConnectCarOutputsAndPriusVis(int id,
+    const systems::OutputPortDescriptor<T>& pose_output,
+    const systems::OutputPortDescriptor<T>& velocity_output);
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
@@ -282,19 +322,21 @@ class AutomotiveSimulator {
            std::pair<MaliputRailcarParams<T>, MaliputRailcarState<T>>>
       railcar_configs_;
 
+  // The output port of the Diagram that contains pose bundle information.
+  int pose_bundle_output_port_{};
+
   // === End for building. ===
 
   // Adds the PoseAggregator.
   systems::rendering::PoseAggregator<T>* aggregator_{};
 
-  // Adds a CarVisApplicator system, which takes the poses of the vehicles and
-  // outputs the poses of the visual elements that make up the visualization of
-  // the vehicles. For a system-level architecture diagram, see #5541.
+  // Takes the poses of the vehicles and outputs the poses of the visual
+  // elements that make up the visualization of the vehicles. For a system-level
+  // architecture diagram, see #5541.
   CarVisApplicator<T>* car_vis_applicator_{};
 
-  // Adds a PoseBundleToDrawMessage system, which takes the output of
-  // car_vis_applicator_ and creates an lcmt_viewer_draw message containing the
-  // latest poses of the visual elements.
+  // Takes the output of car_vis_applicator_ and creates an lcmt_viewer_draw
+  // message containing the latest poses of the visual elements.
   systems::rendering::PoseBundleToDrawMessage* bundle_to_draw_{};
 
   // Takes the output of bundle_to_draw_ and passes it to lcm_ for publishing.

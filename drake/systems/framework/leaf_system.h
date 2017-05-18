@@ -4,7 +4,6 @@
 #include <cmath>
 #include <limits>
 #include <memory>
-#include <regex>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -294,9 +293,7 @@ class LeafSystem : public System<T> {
     const int64_t id = this->GetGraphvizId();
     std::string name = this->get_name();
     if (name.empty()) {
-      const std::string type = NiceTypeName::Get(*this);
-      // Drop the template parameters.
-      name = std::regex_replace(type, std::regex("<.*>$"), std::string());
+      name = this->GetMemoryObjectName();
     }
 
     // Open the attributes and label.
@@ -700,7 +697,8 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  void DoGetPerStepEvents(const Context<T>& context,
+  void DoGetPerStepEvents(
+      const Context<T>&,
       std::vector<DiscreteEvent<T>>* events) const override {
     *events = per_step_events_;
   }
@@ -711,8 +709,7 @@ class LeafSystem : public System<T> {
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
-  DoCalcNextUpdateTimeImpl(const Context<T1>& context,
-                           UpdateActions<T1>* events) const {
+  DoCalcNextUpdateTimeImpl(const Context<T1>&, UpdateActions<T1>*) const {
     DRAKE_ABORT_MSG(
         "The default implementation of LeafSystem<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");

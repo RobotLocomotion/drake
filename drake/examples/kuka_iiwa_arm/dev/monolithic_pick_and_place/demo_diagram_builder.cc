@@ -5,7 +5,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -19,8 +18,8 @@ using lcm::DrakeLcm;
 using systems::RigidBodyPlant;
 
 namespace examples {
-using schunk_wsg::SchunkWsgTrajectoryGenerator;
-using schunk_wsg::SchunkWsgStatusSender;
+using manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
+using manipulation::schunk_wsg::SchunkWsgStatusSender;
 
 namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {
@@ -81,18 +80,18 @@ StateMachineAndPrimitives<T>::StateMachineAndPrimitives(
 template class StateMachineAndPrimitives<double>;
 
 template <typename T>
-IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
-    T>::IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(DrakeLcm* lcm,
-                                                      const double
-                                                          update_interval) {
+IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<T>::
+    IiwaWsgPlantGeneratorsEstimatorsAndVisualizer(
+        DrakeLcm* lcm, const int chosen_box, const double update_interval,
+        Eigen::Vector3d box_position, Eigen::Vector3d box_orientation) {
   this->set_name("IiwaWsgPlantGeneratorsEstimatorsAndVisualizer");
 
+  DiagramBuilder<T> builder;
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance);
-
-  DiagramBuilder<T> builder;
+      BuildCombinedPlant<double>(&iiwa_instance, &wsg_instance, &box_instance,
+                                 chosen_box, box_position, box_orientation);
   plant_ = builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<T>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
   plant_->set_name("plant");
@@ -105,7 +104,7 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer<
                   drake_visualizer_->get_input_port(0));
 
   iiwa_trajectory_generator_ =
-      builder.template AddSystem<IiwaPlanSource>(
+      builder.template AddSystem<RobotPlanInterpolator>(
           drake::GetDrakePath() + kIiwaUrdf, update_interval);
   iiwa_trajectory_generator_->set_name("iiwa_trajectory_generator");
 

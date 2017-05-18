@@ -9,6 +9,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -19,6 +20,7 @@ namespace {
 using Eigen::Isometry3d;
 using Eigen::Matrix4d;
 using Eigen::Translation3d;
+using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -37,8 +39,7 @@ class PendulumTests : public ::testing::Test {
   // Creates an "empty" MultibodyTree that only contains the "world" body and
   // world body frame.
   void SetUp() override {
-    owned_model_ = std::make_unique<MultibodyTree<double>>();
-    model_ = owned_model_.get();
+    model_ = std::make_unique<MultibodyTree<double>>();
 
     // Retrieves the world body.
     world_body_ = &model_->get_world_body();
@@ -64,7 +65,7 @@ class PendulumTests : public ::testing::Test {
     // The shoulder is the mobilizer that connects the world to the upper link.
     // Its inboard frame, Si, is the world frame. Its outboard frame, So, a
     // fixed offset frame on the upper link.
-    shoulder_inboard_frame_ = &world_body_->get_body_frame();
+    shoulder_inboard_frame_ = &model_->get_world_frame();
 
     // The body frame of the upper link is U, and that of the lower link is L.
     // We will add a frame for the pendulum's shoulder. This will be the
@@ -95,11 +96,23 @@ class PendulumTests : public ::testing::Test {
         &model_->AddFrame<FixedOffsetFrame>(*upper_link_, X_UEi_);
     elbow_outboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_);
+
+    // Adds the shoulder and elbow mobilizers of the pendulum.
+    // Using:
+    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
+    shoulder_mobilizer_ =
+        &model_->AddMobilizer(
+            make_unique<RevoluteMobilizer<double>>(
+                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+                Vector3d::UnitZ() /*revolute axis*/));
+    // Using: const MobilizerType<T>& AddMobilizer(Args&&... args)
+    elbow_mobilizer_ = &model_->AddMobilizer<RevoluteMobilizer>(
+        *elbow_inboard_frame_, *elbow_outboard_frame_,
+        Vector3d::UnitZ() /*revolute axis*/);
   }
 
  protected:
-  std::unique_ptr<MultibodyTree<double>> owned_model_;
-  MultibodyTree<double>* model_;
+  std::unique_ptr<MultibodyTree<double>> model_;
   const Body<double>* world_body_;
   // Bodies:
   const RigidBody<double>* upper_link_;
@@ -109,6 +122,9 @@ class PendulumTests : public ::testing::Test {
   const FixedOffsetFrame<double>* shoulder_outboard_frame_;
   const FixedOffsetFrame<double>* elbow_inboard_frame_;
   const FixedOffsetFrame<double>* elbow_outboard_frame_;
+  // Mobilizers:
+  const RevoluteMobilizer<double>* shoulder_mobilizer_;
+  const RevoluteMobilizer<double>* elbow_mobilizer_;
   // Pendulum parameters:
   const double link_length = 1.0;
   const double half_link_length = link_length / 2;
@@ -121,20 +137,6 @@ class PendulumTests : public ::testing::Test {
   const Isometry3d X_UEi_{Translation3d(0.0, -half_link_length, 0.0)};
   // Pose of the elbow outboard frame Eo in the lower link frame L.
   const Isometry3d X_LEo_{Translation3d(0.0, half_link_length, 0.0)};
-
-  // For testing whether we can retrieve/set cache entries, this method
-  // initializes the poses of each link in their corresponding cache entries.
-  void SetPendulumPoses(Context<double>* context) {
-    DRAKE_DEMAND(context != nullptr);
-    auto mbt_context = dynamic_cast<MultibodyTreeContext<double>*>(context);
-    DRAKE_DEMAND(mbt_context != nullptr);
-    PositionKinematicsCache<double>* pc =
-        mbt_context->GetMutablePositionKinematics();
-    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
-    // MultibodyTree methods re-computing the PositionKinematicsCache will
-    // validate this entry after they are done with their computing.
-    mbt_context->ValidatePositionKinematicsCache();
-  }
 };
 
 TEST_F(PendulumTests, CreateModelBasics) {
@@ -148,6 +150,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model_->get_num_bodies(), 3);
   EXPECT_EQ(model_->get_num_frames(), 6);
+  EXPECT_EQ(model_->get_num_mobilizers(), 2);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -161,11 +164,41 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(
       elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
 
+  // Checks that mobilizers connect the right frames.
+  EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().get_index(),
+            world_body_->get_body_frame().get_index());
+  EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().get_index(),
+            shoulder_outboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
+            elbow_inboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
+            elbow_outboard_frame_->get_index());
+
+  // Checks that mobilizers connect the right bodies.
+  EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().get_index(),
+            world_body_->get_index());
+  EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().get_index(),
+            upper_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
+            upper_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
+            lower_link_->get_index());
+
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
   EXPECT_EQ(&shoulder_outboard_frame_->get_body(), upper_link_);
   EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
   EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
+
+  // Checks we can request inboard/outboard bodies to a mobilizer.
+  EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
+  EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
+
+  // Request revolute mobilizers' axes.
+  EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
 }
 
 // Frame indexes are assigned by MultibodyTree. The number of frames
@@ -195,11 +228,14 @@ TEST_F(PendulumTests, Finalize) {
   EXPECT_NO_THROW(model_->Finalize());
   EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
 
-  // Asserts that no more bodies can be added after finalize.
+  // Asserts that no more multibody elements can be added after finalize.
   SpatialInertia<double> M_Bo_B;
   EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
                std::logic_error);
+  EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
+      *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+      Vector3d::UnitZ()), std::logic_error);
 
   // Asserts re-finalization is not allowed.
   EXPECT_THROW(model_->Finalize(), std::logic_error);
@@ -250,7 +286,8 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_NO_THROW(context = model_->CreateDefaultContext());
 
   // Tests MultibodyTreeContext accessors.
-  auto mbt_context = dynamic_cast<MultibodyTreeContext<double>*>(context.get());
+  auto
+      mbt_context = dynamic_cast<MultibodyTreeContext<double> *>(context.get());
 
   // TODO(amcastro-tri): Update these tests to be against 2 dof's instead of 0
   // when mobilizers are introduced. Right now these tests are here to verify
@@ -273,8 +310,8 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_TRUE(mbt_context->is_position_kinematics_valid());
 
   // Tests the API to retrieve body poses from the context.
-  const Isometry3d& X_WW = world_body_->get_pose_in_world(*context);
-  const Isometry3d& X_WLu = upper_link_->get_pose_in_world(*context);
+  const Isometry3d &X_WW = world_body_->get_pose_in_world(*context);
+  const Isometry3d &X_WLu = upper_link_->get_pose_in_world(*context);
 
   // Asserts that the retrieved poses match with the ones specified by the unit
   // test method SetPendulumPoses().

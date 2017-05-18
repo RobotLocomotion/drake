@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <list>
+#include <stdexcept>
 #include <vector>
 
 #include <Eigen/Core>
@@ -13,6 +14,7 @@
 namespace drake {
 namespace solvers {
 namespace {
+
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template <typename C>
 MSKrescodee AddLinearConstraintsFromBindings(
@@ -441,11 +443,13 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   // of Q_all.
   std::vector<Eigen::Triplet<double>> Q_lower_triplets;
   std::vector<Eigen::Triplet<double>> linear_term_triplets;
+  double constant_cost = 0.;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
     // The quadratic cost is of form 0.5*x'*Q*x + b*x.
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
+    constant_cost += constraint->c();
     std::vector<int> var_indices(Q.rows());
 
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
@@ -477,7 +481,8 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     }
   }
   for (const auto& binding : prog.linear_costs()) {
-    const auto& c = binding.constraint()->A();
+    const auto& c = binding.constraint()->a();
+    constant_cost += binding.constraint()->b();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       if (std::abs(c(i)) > Eigen::NumTraits<double>::epsilon()) {
         linear_term_triplets.push_back(Eigen::Triplet<double>(
@@ -517,6 +522,10 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
       return rescode;
     }
   }
+
+  // Provide constant / fixed cost.
+  MSK_putcfix(*task, constant_cost);
+
   return rescode;
 }
 
@@ -525,40 +534,58 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
                                 bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
-  const std::vector<MathematicalProgram::VarType>& var_type =
-      prog.DecisionVariableTypes();
   for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
-    if (var_type[i] == MathematicalProgram::VarType::INTEGER) {
-      rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
-      if (rescode != MSK_RES_OK) {
-        return rescode;
-      }
-      *with_integer_or_binary_variable = true;
-    } else if (var_type[i] == MathematicalProgram::VarType::BINARY) {
-      *with_integer_or_binary_variable = true;
-      rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
-      double xi_lb = NAN;
-      double xi_ub = NAN;
-      MSKboundkeye bound_key;
-      if (rescode == MSK_RES_OK) {
-        rescode = MSK_getvarbound(*task, i, &bound_key, &xi_lb, &xi_ub);
+    switch (prog.decision_variable(i).get_type()) {
+      case MathematicalProgram::VarType::INTEGER: {
+        rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
-      }
-      if (rescode == MSK_RES_OK) {
-        xi_lb = std::max(0.0, xi_lb);
-        xi_ub = std::min(1.0, xi_ub);
-        rescode = MSK_putvarbound(*task, i, MSK_BK_RA, xi_lb, xi_ub);
-        if (rescode != MSK_RES_OK) {
-          return rescode;
+        *with_integer_or_binary_variable = true;
+      } break;
+      case MathematicalProgram::VarType::BINARY: {
+        *with_integer_or_binary_variable = true;
+        rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
+        double xi_lb = NAN;
+        double xi_ub = NAN;
+        MSKboundkeye bound_key;
+        if (rescode == MSK_RES_OK) {
+          rescode = MSK_getvarbound(*task, i, &bound_key, &xi_lb, &xi_ub);
+          if (rescode != MSK_RES_OK) {
+            return rescode;
+          }
         }
+        if (rescode == MSK_RES_OK) {
+          xi_lb = std::max(0.0, xi_lb);
+          xi_ub = std::min(1.0, xi_ub);
+          rescode = MSK_putvarbound(*task, i, MSK_BK_RA, xi_lb, xi_ub);
+          if (rescode != MSK_RES_OK) {
+            return rescode;
+          }
+        }
+        break;
+      }
+      case MathematicalProgram::VarType::CONTINUOUS: {
+        // Do nothing.
+        break;
+      }
+      case MathematicalProgram::VarType::BOOLEAN: {
+        throw std::runtime_error(
+            "Boolean variables should not be used with Mosek solver.");
       }
     }
   }
   return rescode;
 }
 }  // anonymous namespace
+
+MosekSolver::~MosekSolver() {
+  if (mosek_env_ != nullptr) {
+    MSKenv_t env = static_cast<MSKenv_t>(mosek_env_);
+    mosek_env_ = nullptr;
+    MSK_deleteenv(&env);
+  }
+}
 
 bool MosekSolver::available() const { return true; }
 
@@ -578,8 +605,25 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // in MathematicalProgram prog, but added to Mosek solver.
   std::vector<bool> is_new_variable(num_vars, false);
 
-  // Create the Mosek environment.
-  rescode = MSK_makeenv(&env, nullptr);
+  // According to
+  // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
+  // an env between threads is safe, but since we allocate on the
+  // first call to Solve() we need to at least be safe about
+  // allocating the environment initially.
+  {
+    std::lock_guard<std::mutex> lock(env_mutex_);
+    if (mosek_env_ == nullptr) {
+      // Create the Mosek environment.
+      rescode = MSK_makeenv(&env, nullptr);
+      if (rescode == MSK_RES_OK) {
+        mosek_env_ = env;
+      }
+    } else {
+      env = static_cast<MSKenv_t>(mosek_env_);
+      rescode = MSK_RES_OK;
+    }
+  }
+
   if (rescode == MSK_RES_OK) {
     // Create the optimization task.
     rescode = MSK_maketask(env, 0, num_vars, &task);
@@ -712,7 +756,6 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
 
   MSK_deletetask(&task);
-  MSK_deleteenv(&env);
   return result;
 }
 

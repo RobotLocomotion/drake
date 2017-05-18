@@ -4,6 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools:drake.bzl", "drake_header_tar")
+load("//tools:install.bzl", "install")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 # This list is obviously incomplete.
@@ -15,6 +16,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/multibody/parsers",
     "//drake/systems/framework",
     "//drake/systems/primitives",
+    "//drake/lcm",
 ]
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
@@ -31,11 +33,22 @@ cc_binary(
 # All the headers mentioned in "hdrs" attributes of the transitive closure of
 # dependencies of the _LIBDRAKE_COMPONENTS. This is a superset of the headers
 # actually required to operate Drake.
+# TODO(mwoehlke-kitware): remove once install finished
 drake_header_tar(
     name = "libdrake_headers",
     deps = _LIBDRAKE_COMPONENTS,
 )
 
+# Install libdrake.so along with all transitive headers in the same workspace
+# (i.e. in Drake itself; not externals).
+install(
+    name = "install",
+    guess_hdrs = "WORKSPACE",
+    hdr_dest = "include/drake",
+    targets = ["libdrake.so"],
+)
+
+# TODO(mwoehlke-kitware): remove once install finished
 pkg_tar(
     name = "external_licenses",
     extension = "tar.gz",
@@ -43,6 +56,7 @@ pkg_tar(
         "@bullet//:license",
         "@eigen//:license",
         "@fmt//:license",
+        "@lcm//:license",
         "@spdlog//:license",
         "@tinyobjloader//:license",
     ],

@@ -50,7 +50,7 @@ class MaliputRailcarState : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
-  /// The s-coordinate of the vehicle in lane-space.
+  /// The s-coordinate of the vehicle in a `Lane`-frame.
   const T& s() const { return this->GetAtIndex(K::kS); }
   void set_s(const T& s) { this->SetAtIndex(K::kS, s); }
   /// The speed of the vehicle in physical space.

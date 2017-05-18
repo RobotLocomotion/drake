@@ -30,7 +30,7 @@ class LaneEndSet final : public api::LaneEndSet {
  private:
   int do_size() const override { return 1; }
 
-  const api::LaneEnd& do_get(int index) const override { return end_; }
+  const api::LaneEnd& do_get(int) const override { return end_; }
 
   const api::LaneEnd end_;
 };

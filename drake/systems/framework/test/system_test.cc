@@ -1,9 +1,11 @@
 #include "drake/systems/framework/system.h"
 
+#include <cctype>
 #include <memory>
 #include <stdexcept>
 
 #include <Eigen/Dense>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
@@ -291,6 +293,17 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   // Check for valid content.
   EXPECT_EQ(kAbstractValued, first_input.get_data_type());
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
+}
+
+// Tests GetMemoryObjectName.
+TEST_F(SystemTest, GetMemoryObjectName) {
+  const std::string name = system_.GetMemoryObjectName();
+
+  // The nominal value for 'name' is something like:
+  //   drake/systems/(anonymous namespace)/TestSystem@0123456789abcdef
+  // We check only some platform-agnostic portions of that.
+  EXPECT_THAT(name, ::testing::HasSubstr("drake/systems/"));
+  EXPECT_THAT(name, ::testing::ContainsRegex("/TestSystem@[0-9a-fA-F]{16}$"));
 }
 
 template <typename T>

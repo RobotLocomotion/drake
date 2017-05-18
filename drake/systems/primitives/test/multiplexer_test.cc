@@ -4,8 +4,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 
 using std::make_unique;
 
@@ -73,6 +75,27 @@ TEST_F(MultiplexerTest, ScalarConstructor) {
   ASSERT_EQ(4, mux_->get_output_port(0).size());
   ASSERT_EQ(1, output_->get_num_ports());
   ASSERT_EQ(4, output_->get_vector_data(0)->size());
+}
+
+TEST_F(MultiplexerTest, ModelVectorConstructor) {
+  mux_ = make_unique<Multiplexer<double>>(MyVector<2, double>());
+  context_ = mux_->CreateDefaultContext();
+  output_ = mux_->AllocateOutput(*context_);
+
+  // Confirm the shape.
+  ASSERT_EQ(2, mux_->get_num_input_ports());
+  ASSERT_EQ(1, mux_->get_input_port(0).size());
+  ASSERT_EQ(1, mux_->get_input_port(1).size());
+  ASSERT_EQ(2, context_->get_num_input_ports());
+  ASSERT_EQ(1, mux_->get_num_output_ports());
+  ASSERT_EQ(2, mux_->get_output_port(0).size());
+  ASSERT_EQ(1, output_->get_num_ports());
+  ASSERT_EQ(2, output_->get_vector_data(0)->size());
+
+  // Confirm that the vector is truly MyVector<2, double>.
+  typedef MyVector<2, double> MyVectorSizeTwo;
+  ASSERT_TRUE(is_dynamic_castable<const MyVectorSizeTwo>(
+      output_->get_vector_data(0)));
 }
 
 TEST_F(MultiplexerTest, IsStateless) {

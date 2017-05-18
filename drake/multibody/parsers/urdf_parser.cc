@@ -313,7 +313,6 @@ bool ParseGeometry(XMLElement* node, const PackageMap& package_map,
 // A warning is printed to std::cerr if a material is not set for the rigid
 // body's visualization.
 void ParseVisual(RigidBody<double>* body, XMLElement* node,
-                 RigidBodyTree<double>* tree,
                  MaterialMap* materials, const PackageMap& package_map,
                  const string& root_dir) {
   // Ensures there is a geometry child element. Since this is a required
@@ -506,7 +505,7 @@ bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    ParseVisual(body, visual_node, tree, materials, package_map, root_dir);
+    ParseVisual(body, visual_node, materials, package_map, root_dir);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
@@ -1214,7 +1213,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
   const PackageMap package_map;
   return AddModelInstanceFromUrdfStringSearchingInRosPackages(
       urdf_string, package_map, root_dir, floating_base_type,
-      nullptr /* weld_to_frame */, tree);
+      weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(

@@ -18,6 +18,9 @@ target_link_libraries(drake_throw_test drakeCommon)
 drake_add_cc_test(dummy_value_test)
 target_link_libraries(dummy_value_test drakeCommon)
 
+drake_add_cc_test(eigen_autodiff_types_test)
+target_link_libraries(eigen_autodiff_types_test drakeCommon)
+
 drake_add_cc_test(eigen_matrix_compare_test)
 target_link_libraries(eigen_matrix_compare_test drakeCommon)
 
@@ -44,6 +47,9 @@ target_link_libraries(monomial_test drakeCommon)
 
 drake_add_cc_test(is_dynamic_castable_test)
 target_link_libraries(is_dynamic_castable_test drakeCommon)
+
+drake_add_cc_test(is_memcpy_movable_test)
+target_link_libraries(is_memcpy_movable_test drakeCommon)
 
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
