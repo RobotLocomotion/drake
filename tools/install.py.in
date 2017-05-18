@@ -6,6 +6,7 @@ import os
 import shutil
 
 subdirs = set()
+installed_files = set()
 prefix = None
 
 
@@ -28,7 +29,7 @@ def needs_install(src, dst):
 
 
 def install(src, dst):
-    global subdirs
+    global subdirs, installed_files
 
     # Ensure destination subdirectory exists, creating it if necessary.
     subdir = os.path.dirname(dst)
@@ -49,6 +50,31 @@ def install(src, dst):
     else:
         print("[Up to date] %s" % dst)
 
+    installed_files.add(dst)
+
+
+def clean(path, parents=[]):
+    # Iterate over items in current path.
+    for item in os.listdir(path):
+        # Get full path.
+        item_full = os.path.join(path, item)
+
+        # Get "full" (root-relative) path as list.
+        item_parts = parents + [item]
+
+        if os.path.isdir(item_full):
+            # Recurse into directories.
+            clean(os.path.join(path, item), item_parts)
+
+        elif os.path.isfile(item_full):
+            # Get "full" path of file without install prefix.
+            p = os.path.join(*item_parts)
+
+            # Check if file is supposed to be installed, and delete it if not.
+            if p not in installed_files:
+                print("[Removing] %s" % p)
+                os.remove(item_full)
+
 
 def main(args):
     global prefix
@@ -56,6 +82,8 @@ def main(args):
     # Set up options.
     parser = argparse.ArgumentParser()
     parser.add_argument('prefix', type=str, help='Install prefix')
+    parser.add_argument('--clean', dest='clean', action='store_true',
+                        help='Remove extra files from install directory')
     args = parser.parse_args(args)
 
     # Get install prefix.
@@ -73,6 +101,10 @@ def main(args):
 
     # Execute the install actions.
     <<actions>>
+
+    # Optionally remove "extra" files from install prefix.
+    if args.clean:
+        clean(prefix)
 
 
 if __name__ == "__main__":
