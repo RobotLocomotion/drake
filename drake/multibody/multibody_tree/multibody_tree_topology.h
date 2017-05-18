@@ -187,22 +187,22 @@ struct BodyNodeTopology {
   /// connecting the body to the rest of the tree inwards (i.e. towards the
   /// world or root of the tree) from the mobilizer.
   ///
-  /// @param index The unique index for `this` body node.
-  /// @param level The level (depth or generation) in the tree structure.
-  /// @param parent_node The parent node, in a tree structure sense, of `this`
-  ///                    node.
-  /// @param body The index to the body associated with this node.
-  /// @param parent_body The parent body, in a tree structure sense, to `body`.
-  ///                    In other words, `parent_body` is the body associated
-  ///                    with node `parent_node`.
-  /// @param mobilizer The index to the mobilizer associated with this node.
+  /// @param index_in The unique index for `this` body node.
+  /// @param level_in The level (depth or generation) in the tree structure.
+  /// @param parent_node_in The parent node, in a tree structure sense, of
+  ///                       `this` node.
+  /// @param body_in The index to the body associated with this node.
+  /// @param parent_body_in The parent body, in a tree structure sense, to
+  ///                       `body_in`. In other words, `parent_body_in` is the
+  ///                       body associated with node `parent_node_in`.
+  /// @param mobilizer_in The index to the mobilizer associated with this node.
   BodyNodeTopology(
-      BodyNodeIndex index, int level,
-      BodyNodeIndex parent_node,
-      BodyIndex body, BodyIndex parent_body, MobilizerIndex mobilizer) :
-      index(index), level(level),
-      parent_body_node(parent_node),
-      body(body), parent_body(parent_body), mobilizer(mobilizer) {}
+      BodyNodeIndex index_in, int level_in,
+      BodyNodeIndex parent_node_in,
+      BodyIndex body_in, BodyIndex parent_body_in, MobilizerIndex mobilizer_in)
+      : index(index_in), level(level_in),
+      parent_body_node(parent_node_in),
+      body(body_in), parent_body(parent_body_in), mobilizer(mobilizer_in) {}
 
   /// Unique index of this node in the MultibodyTree.
   BodyNodeIndex index{};
