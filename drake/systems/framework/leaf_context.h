@@ -74,24 +74,6 @@ class LeafContext : public Context<T> {
     return cache_.MakeCacheTicket(prerequisites);
   }
 
-  /// Creates a new cache entry of type `EntryType` and returns the new ticket
-  /// to it, marking the entry itself as **invalid**. This entry will
-  /// depend on the list of passed @p prerequisites.
-  /// As an example of usage consider the code below:
-  ///
-  /// @code
-  ///   LeafContext<double> context;
-  ///   auto foo = context.MakeCacheEntry<Foo<double>>(
-  ///       {ticket1, ticket2}, /* Entry prerequisites. */
-  ///       "name", 3.14);      /* Foo<double>'s constructor parameters. */
-  /// @endcode
-  template<class EntryType, typename... Args>
-  CacheTicket MakeCacheEntry(const std::set<CacheTicket>& prerequisites,
-                             Args&&... args) {
-    return cache_.MakeCacheEntry<EntryType>(
-        prerequisites, std::forward<Args>(args)...);
-  }
-
   /// Stores the given @p value in the cache entry for the given @p ticket,
   /// and returns a bare pointer to @p value.  That pointer will be invalidated
   /// whenever any of the @p ticket's declared prerequisites change, and
@@ -121,37 +103,10 @@ class LeafContext : public Context<T> {
     cache_.Set<V>(ticket, value);
   }
 
-  bool is_cache_entry_valid(CacheTicket ticket) const {
-    return cache_.is_entry_valid(ticket);
-  }
-
-  /// Returns the cached value for the given @p ticket, or nullptr if the
-  /// cache entry has been invalidated.
+  // Returns the cached value for the given @p ticket, or nullptr if the
+  // cache entry has been invalidated.
   const AbstractValue* GetCachedValue(CacheTicket ticket) const {
     return cache_.Get(ticket);
-  }
-
-  /// Returns the mutable cached value for the cache entry referenced by
-  /// @p ticket, invalidating this entry itself and recursively invalidating all
-  /// of its dependents.
-  AbstractValue* GetMutableCachedValue(CacheTicket ticket) const {
-    return cache_.GetMutable(ticket);
-  }
-
-  /// Validates the cache entry corresponding to the provided @p ticket and
-  /// recursively invalidates all dependents.
-  /// Users should use SetCachedValue() whenever copies of the particular entry
-  /// type are cheap to perform since SetCachedValue() automatically invalidates
-  /// dependents.
-  /// However, in many cases cache entries are large complex data structures and
-  /// it might be more convenient to first retrieve a mutable entry with
-  /// GetMutableCachedValue(), make the necessary updates to the entry and
-  /// finally, validate it with a call to this method.
-  ///
-  /// @warning Only advanced, careful users should call this method since
-  /// validating cache entries by hand can be error prone. Use with care.
-  void ValidateCacheEntry(CacheTicket ticket) {
-    cache_.Validate(ticket);
   }
 
   // =========================================================================
