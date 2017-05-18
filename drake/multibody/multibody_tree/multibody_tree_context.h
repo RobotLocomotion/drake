@@ -105,8 +105,10 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   const VectorX<T>& get_state_vector() const {
     // We know that MultibodyTreeContext is a LeafContext and therefore the
     // continuous state vector must be a BasicVector.
+    // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
+    // PR #6049 gets merged.
     Eigen::VectorBlock<const VectorX<T>> xc =
-        safe_cast<systems::BasicVector<T>>(
+        dynamic_cast<const systems::BasicVector<T>&>(
             this->get_continuous_state()->get_vector()).get_value();
     // xc.nestedExpression() resolves to "const VectorX<T>&" since the
     // continuous state is a BasicVector.
@@ -117,43 +119,15 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   VectorX<T>& get_mutable_state_vector() {
     // We know that MultibodyTreeContext is a LeafContext and therefore the
     // continuous state vector must be a BasicVector.
+    // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
+    // PR #6049 gets merged.
     Eigen::VectorBlock<VectorX<T>> xc =
-        safe_cast<systems::BasicVector<T>>(
+        dynamic_cast<systems::BasicVector<T>*>(
             this->get_mutable_continuous_state()->get_mutable_vector())->
             get_mutable_value();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     return xc.nestedExpression();
-  }
-
-  // Helper methods to safely switch between static_cast in Release builds to
-  // dynamic_cast in Debug builds.
-  // TODO(amcastro-tri): Switch to the version in drake/common introduced in
-  // #5964 once it gets merged into master. For now use this version since a
-  // safe_cast search will quickly show the places that need to be updated.
-
-  // Const type version.
-  template<class ToType, class FromType>
-  static const ToType& safe_cast(const FromType& from) {
-    static_assert(std::is_convertible<const ToType&, const FromType&>::value,
-                  "FromType is not convertible to ToType.");
-#ifndef NDEBUG
-    return dynamic_cast<const ToType&>(from);
-#else
-    return static_cast<const ToType&>(from);
-#endif
-  }
-
-  // Mutable type version.
-  template<class ToType, class FromType>
-  static ToType* safe_cast(FromType* from) {
-    static_assert(std::is_convertible<ToType*, FromType*>::value,
-                  "FromType is not convertible to ToType.");
-#ifndef NDEBUG
-    return dynamic_cast<ToType*>(from);
-#else
-    return static_cast<ToType*>(from);
-#endif
   }
 
   const MultibodyTreeTopology topology_;
