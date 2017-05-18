@@ -63,46 +63,53 @@ GTEST_TEST(ValueTest, ForwardingConstructor) {
 }
 
 GTEST_TEST(ValueTest, Make) {
-  auto abstract_value = AbstractValue::Make<int>(42);
-  EXPECT_EQ(42, abstract_value->GetValue<int>());
+  using T = int;
+  // TODO(jwnimmer-tri) We should be able to forward this too, and lose the
+  // explicit construction of T{42}.
+  auto abstract_value = AbstractValue::Make<T>(T{42});
+  EXPECT_EQ(42, abstract_value->template GetValue<T>());
 }
 
 GTEST_TEST(ValueTest, Access) {
-  Value<int> value(3);
+  using T = int;
+  Value<T> value(3);
   const AbstractValue& erased = value;
-  EXPECT_EQ(3, erased.GetValue<int>());
-  EXPECT_EQ(3, erased.GetValueOrThrow<int>());
+  EXPECT_EQ(3, erased.GetValue<T>());
+  EXPECT_EQ(3, erased.GetValueOrThrow<T>());
 }
 
 GTEST_TEST(ValueTest, Clone) {
-  Value<int> value(43);
+  using T = int;
+  Value<T> value(43);
   const AbstractValue& erased = value;
   std::unique_ptr<AbstractValue> cloned = erased.Clone();
-  EXPECT_EQ(43, cloned->GetValue<int>());
+  EXPECT_EQ(43, cloned->GetValue<T>());
 }
 
 GTEST_TEST(ValueTest, Mutation) {
-  Value<int> value(5);
-  value.set_value(6);
+  using T = int;
+  Value<T> value(5);
+  value.set_value(T{6});
   AbstractValue& erased = value;
-  EXPECT_EQ(6, erased.GetValue<int>());
-  erased.SetValue<int>(7);
-  EXPECT_EQ(7, erased.GetValue<int>());
-  erased.SetValueOrThrow<int>(8);
-  EXPECT_EQ(8, erased.GetValue<int>());
-  erased.SetFrom(Value<int>(9));
-  EXPECT_EQ(9, erased.GetValue<int>());
-  erased.SetFromOrThrow(Value<int>(10));
-  EXPECT_EQ(10, erased.GetValue<int>());
+  EXPECT_EQ(6, erased.GetValue<T>());
+  erased.SetValue<T>(T{7});
+  EXPECT_EQ(7, erased.GetValue<T>());
+  erased.SetValueOrThrow<T>(T{8});
+  EXPECT_EQ(8, erased.GetValue<T>());
+  erased.SetFrom(Value<T>(9));
+  EXPECT_EQ(9, erased.GetValue<T>());
+  erased.SetFromOrThrow(Value<T>(10));
+  EXPECT_EQ(10, erased.GetValue<T>());
 }
 
 GTEST_TEST(ValueTest, BadCast) {
+  using T = int;
   Value<double> value(4);
   AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetValueOrThrow<int>(), std::bad_cast);
-  EXPECT_THROW(erased.GetMutableValueOrThrow<int>(), std::bad_cast);
-  EXPECT_THROW(erased.SetValueOrThrow<int>(3), std::bad_cast);
-  EXPECT_THROW(erased.SetFromOrThrow(Value<int>(2)), std::bad_cast);
+  EXPECT_THROW(erased.GetValueOrThrow<T>(), std::bad_cast);
+  EXPECT_THROW(erased.GetMutableValueOrThrow<T>(), std::bad_cast);
+  EXPECT_THROW(erased.SetValueOrThrow<T>(T{3}), std::bad_cast);
+  EXPECT_THROW(erased.SetFromOrThrow(Value<T>(2)), std::bad_cast);
 }
 
 class PrintInterface {
