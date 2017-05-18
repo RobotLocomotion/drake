@@ -97,9 +97,9 @@ void BouncingBall<T>::DoCalcNextUpdateTime(
 
   // Compute the impact time.
   *time = context.get_time() + std::min(r1, r2);
-  systems::EventCollection<systems::UnrestrictedUpdateEvent<T>>* uu_events =
+  systems::EventCollection<systems::UnrestrictedUpdateEvent<T>>& uu_events =
       events->get_mutable_unrestricted_update_events();
-  uu_events->add_event(std::move(event));
+  uu_events.add_event(std::move(event));
 }
 
 template <typename T>
