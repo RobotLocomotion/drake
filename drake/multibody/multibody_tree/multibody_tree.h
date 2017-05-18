@@ -466,10 +466,6 @@ class MultibodyTree {
   std::vector<const Frame<T>*> frames_;
 
   MultibodyTreeTopology topology_;
-
-  // This method gets called from within Finalize() to setup the topological
-  // information of this MultibodyTree.
-  void CompileTopology();
 };
 
 }  // namespace multibody

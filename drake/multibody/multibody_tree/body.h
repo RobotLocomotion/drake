@@ -153,19 +153,6 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   BodyTopology topology_;
-
-  // Helper method to convert a systems::Context to a MultibodyTreeContext.
-  // In Debug builds it throws a std::bad_cast exception.
-  static const MultibodyTreeContext<T>& get_multibody_tree_context(
-      const systems::Context<T>& context) {
-    // TODO(amcastro-tri): Switch to the fast_cast introduced in #5964 once it
-    // gets merged into master.
-#ifndef NDEBUG
-    return dynamic_cast<const MultibodyTreeContext<T>&>(context);
-#else
-    return static_cast<const MultibodyTreeContext<T>&>(context);
-#endif
-  }
 };
 
 }  // namespace multibody

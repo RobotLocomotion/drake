@@ -33,9 +33,6 @@ void MultibodyTree<T>::Finalize() {
   // all the type-T independent topological information.
   topology_.Finalize();
 
-  // REMOVE THIS!!! Since now body node indexes are appropriately set.
-  CompileTopology();
-
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
   //   - Compute degrees of freedom, array sizes and any other information to
@@ -56,19 +53,6 @@ void MultibodyTree<T>::Finalize() {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
   }
-}
-
-template <typename T>
-void MultibodyTree<T>::CompileTopology() {
-  // TODO(amcastro-tri): BodyNode objects will be actual tree nodes ordered by a
-  // breadth first traversal. Therefore body node indexes will be appropriately
-  // initialized in a following PR that introduces Mobilizer objects connecting
-  // frames in a meaningful way. The code below is now introduced so that bodies
-  // can retrieve Context entries.
-  //BodyNodeIndex body_node(0);
-  //for (auto& body_topology : topology_.bodies) {
-  //  body_topology.body_node = body_node++;
-  //}
 }
 
 template <typename T>
