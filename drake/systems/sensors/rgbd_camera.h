@@ -70,13 +70,12 @@ class RgbdCamera : public LeafSystem<double> {
   /// Note that this matches the convention used by the Point Cloud Library
   /// (PCL).
   ///
-  /// @param[in] depth_image The input depth image obtained from RgbdCamera. The
-  /// number of channels must be one.
+  /// @param[in] depth_image The input depth image obtained from RgbdCamera.
   ///
   /// @param[in] camera_info The input camera info which is used for conversion.
   ///
   /// @param[out] point_cloud The pointer of output point cloud.
-  static void ConvertDepthImageToPointCloud(const Image<float>& depth_image,
+  static void ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                             const CameraInfo& camera_info,
                                             Eigen::Matrix3Xf* point_cloud);
 

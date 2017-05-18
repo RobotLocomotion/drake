@@ -39,7 +39,10 @@ drake_cc_library(
 drake_cc_library(
     name = "image",
     srcs = [],
-    hdrs = ["image.h"],
+    hdrs = [
+        "image.h",
+        "pixel_types.h"
+    ],
     deps = [
         "//drake/common",
         "//drake/common:reinit_after_move",

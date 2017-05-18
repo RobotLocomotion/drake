@@ -152,9 +152,9 @@ github_archive(
 github_archive(
     name = "ipopt",
     repository = "RobotLocomotion/ipopt-mirror",
-    commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
+    commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
     build_file = "tools/ipopt.BUILD",
-    sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
+    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",
 )
 
 github_archive(
@@ -330,4 +330,13 @@ bitbucket_archive(
     sha256 = "e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a",
     build_file = "tools/ignition_rndf.BUILD",
     strip_prefix = "ignitionrobotics-ign-rndf-b20a4f68333f",
+)
+
+bitbucket_archive(
+    name = "sdformat",
+    repository = "osrf/sdformat",
+    commit = "deca28cd6cd5",
+    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",
+    build_file = "tools/sdformat.BUILD",
+    strip_prefix = "osrf-sdformat-deca28cd6cd5",
 )

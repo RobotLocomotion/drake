@@ -82,7 +82,7 @@ build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 # manually list out all git submodule externals' BUILD files.
 #
 # TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
-build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c,externals/protobuf,externals/protobuf/util/python
+build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c,externals/protobuf,externals/protobuf/util/python,externals/gflags
 
 ### Cpplint. ###
 # By default, cpplint tests are run as part of `bazel test` alongside all of
@@ -123,12 +123,12 @@ test:kcov --test_tag_filters=-cpplint,-gurobi,-pycodestyle
 test:kcov --nocache_test_results
 
 ### ASan build. ###
-build:asan --action_env=ASAN_OPTIONS
 build:asan --copt -g
 build:asan --copt -fsanitize=address
 build:asan --copt -O1
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
+test:asan --run_under=//tools:asan
 test:asan --test_env=ASAN_OPTIONS
 test:asan --test_env=ASAN_SYMBOLIZER_PATH
 test:asan --test_lang_filters=-py
@@ -137,23 +137,24 @@ test:asan --test_lang_filters=-py
 test:asan --test_timeout=120,600,1800,7200
 
 ### LSan build. ###
-build:lsan --action_env=LSAN_OPTIONS
 build:lsan --copt -g
 build:lsan --copt -fsanitize=leak
 build:lsan --copt -O1
 build:lsan --copt -fno-omit-frame-pointer
 build:lsan --linkopt -fsanitize=leak
+test:lsan --run_under=//tools:lsan
 test:lsan --test_env=LSAN_OPTIONS
 test:lsan --test_env=LSAN_SYMBOLIZER_PATH
 test:lsan --test_lang_filters=-py
 
 ### MSan build. ###
-build:msan --action_env=MSAN_OPTIONS
 build:msan --copt -g
 build:msan --copt -fsanitize=memory
+build:msan --copt -fsanitize-memory-track-origins
 build:msan --copt -O1
 build:msan --copt -fno-omit-frame-pointer
 build:msan --linkopt -fsanitize=memory
+test:msan --run_under=//tools:msan
 test:msan --test_lang_filters=-py
 test:msan --test_env=MSAN_OPTIONS
 test:msan --test_env=MSAN_SYMBOLIZER_PATH
@@ -162,12 +163,12 @@ test:msan --test_env=MSAN_SYMBOLIZER_PATH
 test:msan --test_timeout=180,900,2700,10800
 
 ### TSan build. ###
-build:tsan --action_env=TSAN_OPTIONS
 build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
 build:tsan --linkopt -fsanitize=thread
+test:tsan --run_under=//tools:tsan
 test:tsan --test_env=TSAN_OPTIONS
 test:tsan --test_lang_filters=-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
@@ -175,12 +176,12 @@ test:tsan --test_lang_filters=-py
 test:tsan --test_timeout=300,1500,5400,18000
 
 ### UBSan build. ###
-build:ubsan --action_env=UBSAN_OPTIONS
 build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
+test:ubsan --run_under=//tools:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_lang_filters=-py
 

@@ -44,8 +44,8 @@ drake_cc_googletest(
     # /examples.
     data = [
         "//drake/examples/Valkyrie:models",
-        "//drake/examples/schunk_wsg:models",
         "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":robot_state_msg_translator",

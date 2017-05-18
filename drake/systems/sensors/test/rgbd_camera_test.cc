@@ -176,12 +176,12 @@ UV kCorners[4] = {
 class ImageTest : public ::testing::Test {
  public:
   typedef std::function<void(
-      const sensors::Image<uint8_t>& color_image,
-      const sensors::Image<float>& depth_image)> ImageVerifier;
+      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageDepth32F& depth_image)> ImageVerifier;
 
   typedef std::function<void(
-      const sensors::Image<uint8_t>& color_image,
-      const sensors::Image<float>& depth_image,
+      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageDepth32F& depth_image,
       int horizon)> ImageHorizonVerifier;
 
   typedef std::function<void(
@@ -191,9 +191,9 @@ class ImageTest : public ::testing::Test {
     diagram_->CalcOutput(*context_, output_.get());
 
     auto color_image = output_->GetMutableData(0)->GetMutableValue<
-      sensors::Image<uint8_t>>();
+      sensors::ImageBgra8U>();
     auto depth_image = output_->GetMutableData(1)->GetMutableValue<
-      sensors::Image<float>>();
+      sensors::ImageDepth32F>();
 
     verifier(color_image, depth_image);
   }
@@ -208,9 +208,9 @@ class ImageTest : public ::testing::Test {
 
   void VerifyPoseUpdate(ImageHorizonVerifier verifier) {
     auto& color_image = output_->GetMutableData(0)->GetMutableValue<
-      sensors::Image<uint8_t>>();
+      sensors::ImageBgra8U>();
     auto& depth_image = output_->GetMutableData(1)->GetMutableValue<
-      sensors::Image<float>>();
+      sensors::ImageDepth32F>();
     VectorBase<double>* cstate =
         context_->get_mutable_continuous_state_vector();
 
@@ -239,7 +239,7 @@ class ImageTest : public ::testing::Test {
   void VerifyLabelImage() {
     diagram_->CalcOutput(*context_, output_.get());
     auto label_image = output_->GetMutableData(2)->GetMutableValue<
-      sensors::Image<int16_t>>();
+      sensors::ImageLabel16I>();
 
     std::vector<int16_t> actual_ids;
     for (int v = 0; v < label_image.height(); ++v) {
@@ -277,14 +277,14 @@ class ImageTest : public ::testing::Test {
   }
 
   static void VerifyUniformColorAndDepth(
-      const sensors::Image<uint8_t>& color_image,
-      const sensors::Image<float>& depth_image,
+      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageDepth32F& depth_image,
       const std::array<uint8_t, 4>& color, float depth) {
     // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
     // assumption is any defects will be detected by sampling this amount.
     for (int v = 0; v < color_image.height(); v += 20) {
       for (int u = 0; u < color_image.width(); u += 20) {
-        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+        for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
           ASSERT_NEAR(color_image.at(u, v)[ch], color[ch],
                       kColorPixelTolerance);
         }
@@ -294,42 +294,42 @@ class ImageTest : public ::testing::Test {
     }
   }
 
-  static void VerifyTerrain(const sensors::Image<uint8_t>& color_image,
-                            const sensors::Image<float>& depth_image) {
+  static void VerifyTerrain(const sensors::ImageBgra8U& color_image,
+                            const sensors::ImageDepth32F& depth_image) {
     VerifyUniformColorAndDepth(color_image, depth_image,
                                kTerrainColor, 4.999f);
   }
 
   static void VerifyBox(
-      const sensors::Image<uint8_t>& color_image,
-      const sensors::Image<float>& depth_image) {
+      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageDepth32F& depth_image) {
     // This is given by the material diffuse element in `box.sdf`.
     const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
   static void VerifyCylinder(
-      const sensors::Image<uint8_t>& color_image,
-      const sensors::Image<float>& depth_image) {
+      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageDepth32F& depth_image) {
     // This is given by the material diffuse element in `cylinder.sdf`.
     const std::array<uint8_t, 4> kPixelColor{{255u, 0u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
-  static void VerifyMeshBox(const sensors::Image<uint8_t>& color_image,
-                            const sensors::Image<float>& depth_image) {
+  static void VerifyMeshBox(const sensors::ImageBgra8U& color_image,
+                            const sensors::ImageDepth32F& depth_image) {
     // This is given by `box.png` which is the texture file for `box.obj`.
     const std::array<uint8_t, 4> kPixelColor{{33u, 241u, 4u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
   // Verifies the color and depth of the image at the center and four corners.
-  static void VerifySphere(const sensors::Image<uint8_t>& color_image,
-                           const sensors::Image<float>& depth_image) {
+  static void VerifySphere(const sensors::ImageBgra8U& color_image,
+                           const sensors::ImageDepth32F& depth_image) {
     // Verifies the four corner points.
 
     for (const auto& corner : kCorners) {
-      for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+      for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
         ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
                     kTerrainColor[ch], kColorPixelTolerance);
       }
@@ -342,7 +342,7 @@ class ImageTest : public ::testing::Test {
     // If there is no material diffuse information provided in the SDF file, the
     // default color given by our SDF parser is `(0.7, 0.7, 0.7, 1.0)` which is
     // `(179u, 179u, 179u, 255u)` in `uint8_t`.
-    for (int ch = 0; ch < color_image.num_channels() - 1; ++ch) {
+    for (int ch = 0; ch < color_image.kNumChannels - 1; ++ch) {
       ASSERT_NEAR(color_image.at(half_width, half_height)[ch],
                   179u, kColorPixelTolerance);
     }
@@ -355,11 +355,11 @@ class ImageTest : public ::testing::Test {
   }
 
   // Verifies the color and depth of the image at the two visuals (boxes).
-  static void VerifyMultipleVisuals(const sensors::Image<uint8_t>& color_image,
-                                    const sensors::Image<float>& depth_image) {
+  static void VerifyMultipleVisuals(const sensors::ImageBgra8U& color_image,
+                                    const sensors::ImageDepth32F& depth_image) {
     // Verifies the four corner points.
     for (const auto& corner : kCorners) {
-      for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+      for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
         ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
                     kTerrainColor[ch], kColorPixelTolerance);
       }
@@ -370,7 +370,7 @@ class ImageTest : public ::testing::Test {
     // Verifies the four corner points.
     UV kRightBox{kWidth / 2 + 144, kHeight / 2};
     UV kLeftBox{kWidth / 2 - 144, kHeight / 2};
-    for (int ch = 0; ch < color_image.num_channels() - 1; ++ch) {
+    for (int ch = 0; ch < color_image.kNumChannels - 1; ++ch) {
       ASSERT_NEAR(color_image.at(kRightBox.u, kRightBox.v)[ch],
                   179u, kColorPixelTolerance);
       ASSERT_NEAR(color_image.at(kLeftBox.u, kLeftBox.v)[ch],
@@ -382,8 +382,8 @@ class ImageTest : public ::testing::Test {
                 3.999f, kDepthTolerance);
   }
 
-  static void VerifyMovingCamera(const sensors::Image<uint8_t>& color_image,
-                                 const sensors::Image<float>& depth_image,
+  static void VerifyMovingCamera(const sensors::ImageBgra8U& color_image,
+                                 const sensors::ImageDepth32F& depth_image,
                                  int expected_horizon) {
     int actual_horizon{0};
     std::array<uint8_t, 4> color{{0u, 0u, 0u, 0u}};
@@ -392,7 +392,7 @@ class ImageTest : public ::testing::Test {
           (color[1] != color_image.at(0, v)[1]) ||
           (color[2] != color_image.at(0, v)[2]) ||
           (color[3] != color_image.at(0, v)[3])) {
-        for (int ch = 0; ch < color_image.num_channels(); ++ch) {
+        for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
           color[ch] = color_image.at(0, v)[ch];
         }
         actual_horizon = v;
@@ -546,7 +546,7 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
   }
 
   const CameraInfo camera_info_;
-  Image<float> depth_image_;
+  ImageDepth32F depth_image_;
   Eigen::Matrix3Xf actual_point_cloud_;
 };
 

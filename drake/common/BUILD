@@ -696,6 +696,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "eigen_autodiff_types_test",
+    deps = [":autodiff"],
+)
+
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
