@@ -23,34 +23,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "world_sim_diagram_factory",
-    srcs = [
-        "world_sim_diagram_factory.cc",
-    ],
-    hdrs = [
-        "world_sim_diagram_factory.h",
-    ],
-    visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
-    deps = [
-        "//drake/common:drake_path",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/lcm",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:multiplexer",
-        "//drake/systems/primitives:trajectory_source",
-    ],
-)
-
-drake_cc_library(
     name = "iiwa_wsg_diagram_factory",
     srcs = [
         "iiwa_wsg_diagram_factory.cc",
