@@ -28,9 +28,12 @@ void MultibodyTree<T>::Finalize() {
         "MultibodyTree.");
   }
 
+  // Before performing any setup that depends on the scalar type <T>, compile
+  // all the type-T independent topological information.
+  topology_.Finalize();
+
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
-  //   - Finalize non-T dependent topological information.
   //   - Compute degrees of freedom, array sizes and any other information to
   //     allocate a context and request the required cache entries.
   //   - Setup computational structures (BodyNode based).
@@ -49,8 +52,6 @@ void MultibodyTree<T>::Finalize() {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
   }
-
-  set_valid_topology();
 }
 
 // Explicitly instantiates on the most common scalar types.
