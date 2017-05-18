@@ -18,48 +18,67 @@ namespace {
 
 using MyVector2d = MyVector<2, double>;
 
-struct NoDefaultCtor {
-  explicit NoDefaultCtor(int i) : data{i} {}
-  NoDefaultCtor(int c1, int c2) : data{c1 * c2} {}
-  int data;
-};
-
+// A type with no constructors.
 struct BareStruct {
   int data;
 };
 
-GTEST_TEST(ValueTest, DefaultConstructor) {
-  // Value<int>() should work because int is default-constructible.
-  const AbstractValue& abstract_value = Value<int>();
-  EXPECT_EQ(0, abstract_value.GetValue<int>());
+// A copyable type with no default constructor.
+struct CopyableInt {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CopyableInt);
+  explicit CopyableInt(int i) : data{i} {}
+  CopyableInt(int c1, int c2) : data{c1 * c2} {}
 
-  // Value<NoDefaultCtor>() should not work because NoDefaultCtor is not.
-  static_assert(!std::is_default_constructible<Value<NoDefaultCtor>>::value,
-                "Value<NoDefaultCtor>() should not work.");
+  int data;
+};
+
+// Value<T>() should work if and only if T is default-constructible.
+GTEST_TEST(ValueTest, DefaultConstructor) {
+  const AbstractValue& value_int = Value<int>();
+  EXPECT_EQ(0, value_int.GetValue<int>());
+
+  const AbstractValue& value_bare_struct = Value<BareStruct>();
+  EXPECT_EQ(0, value_bare_struct.GetValue<BareStruct>().data);
+
+  static_assert(!std::is_default_constructible<Value<CopyableInt>>::value,
+                "Value<CopyableInt>() should not work.");
 }
 
+// Value<T>(int) should work (possibly using forwarding).
 GTEST_TEST(ValueTest, ForwardingConstructor) {
-  // Value<NoDefaultCtor>(int) should work using forwarding.
-  const AbstractValue& abstract_value = Value<NoDefaultCtor>(22);
-  EXPECT_EQ(22, abstract_value.GetValue<NoDefaultCtor>().data);
+  using T = CopyableInt;
+  const AbstractValue& abstract_value = Value<T>(22);
+  EXPECT_EQ(22, abstract_value.GetValue<T>().data);
+}
 
-  // Value<NoDefaultCtor>(int, int) should work using forwarding.
-  const AbstractValue& value2 = Value<NoDefaultCtor>(11, 2);
-  EXPECT_EQ(22, value2.GetValue<NoDefaultCtor>().data);
+// A two-argument constructor should work using forwarding.  (The forwarding
+// test case above is not quite enough, because the Value implementation treats
+// the first argument and rest of the arguments separately.)
+GTEST_TEST(ValueTest, ForwardingConstructorTwoArgs) {
+  using T = CopyableInt;
+  const AbstractValue& value = Value<T>(11, 2);
+  EXPECT_EQ(22, value.GetValue<T>().data);
+}
 
-  // Value<BareStruct>(BareStruct&&) should use the `(const T&)` constructor,
-  // not the forwarding constructor.
-  const Value<BareStruct> xvalue_bare(BareStruct{});
+// Passing a single reference argument to the Value<T> constructor should use
+// the `(const T&)` constructor, not the forwarding constructor.
+GTEST_TEST(ValueTest, CopyConstructor) {
+  using T = CopyableInt;
+  T param{0};
+  const T const_param{0};
+  const Value<T> xvalue(T{0});          // Called with `T&&`.
+  const Value<T> lvalue(param);         // Called with `T&`.
+  const Value<T> crvalue(const_param);  // Called with `const T&`.
+}
 
-  // Value<BareStruct>(BareStruct&) should use the `(const T&)` constructor,
-  // not the forwarding constructor.
-  BareStruct bare_struct{};
-  const Value<BareStruct> lvalue_bare(bare_struct);
-
-  // Value<BareStruct>(const BareStruct&) should use the `(const T&)`
-  // constructor, not the forwarding constructor.
-  const BareStruct const_bare_struct{};
-  const Value<BareStruct> crvalue_bare(const_bare_struct);
+// Ditto for BareStruct.
+GTEST_TEST(ValueTest, BareCopyConstructor) {
+  using T = BareStruct;
+  T param{};
+  const T const_param{};
+  const Value<T> xvalue(T{});           // Called with `T&&`.
+  const Value<T> lvalue(param);         // Called with `T&`.
+  const Value<T> crvalue(const_param);  // Called with `const T&`.
 }
 
 GTEST_TEST(ValueTest, Make) {
