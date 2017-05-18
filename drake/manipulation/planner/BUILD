@@ -9,13 +9,13 @@ load(
 )
 
 package(
-    default_visibility = [":__subpackages__"],
+    default_visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
-    name = "iiwa_ik_planner",
-    srcs = ["iiwa_ik_planner.cc"],
-    hdrs = ["iiwa_ik_planner.h"],
+    name = "constraint_relaxing_ik",
+    srcs = ["constraint_relaxing_ik.cc"],
+    hdrs = ["constraint_relaxing_ik.h"],
     deps = [
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/multibody:inverse_kinematics",
@@ -27,15 +27,18 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "iiwa_ik_test",
+    name = "constraint_relaxing_ik_test",
     size = "medium",
-    srcs = ["test/iiwa_ik_test.cc"],
+    srcs = ["test/constraint_relaxing_ik_test.cc"],
     data = [
-        "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    # TODO(sam.creasey) This test currently times out on Mac with
+    # IPOPT.  Once IPOPT is tuned to provide better/faster IK results
+    # (see https://github.com/RobotLocomotion/drake/issues/3128 ) we
+    # should enable this test.
     tags = ["snopt"],
     deps = [
-        ":iiwa_ik_planner",
+        ":constraint_relaxing_ik",
     ],
 )

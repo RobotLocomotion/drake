@@ -11,75 +11,44 @@
 #include "drake/multibody/rigid_body_ik.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
 
 /**
  * A wrapper class around the IK planner. This class improves IK's usability by
  * handling constraint relaxing and multiple initial guesses internally.
  */
-class IiwaIkPlanner {
+class ConstraintRelaxingIk {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaIkPlanner);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintRelaxingIk);
 
   /**
    * Cartesian waypoint. Input to the IK solver.
    */
   struct IkCartesianWaypoint {
     /// Desired end effector pose in the world frame.
-    Isometry3<double> pose;
+    Isometry3<double> pose{Isometry3<double>::Identity()};
     /// Bounding box for the end effector in the world frame.
-    Vector3<double> pos_tol;
+    Vector3<double> pos_tol{Vector3<double>(0.005, 0.005, 0.005)};
     /// Max angle difference (in radians) between solved end effector's
     /// orientation and the desired.
-    double rot_tol;
+    double rot_tol{0.05};
     /// Signals if orientation constraint is enabled.
-    bool constrain_orientation;
+    bool constrain_orientation{false};
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-    /// Default constructor.
-    IkCartesianWaypoint() {
-      pose.setIdentity();
-      constrain_orientation = false;
-      pos_tol = Vector3<double>(0.005, 0.005, 0.005);
-      rot_tol = 0.05;
-    }
   };
 
   /**
-   * Returns a linear PiecewisePolynomialTrajectory from @p times and @p ik_res.
-   */
-  static std::unique_ptr<PiecewisePolynomialTrajectory>
-  GenerateFirstOrderHoldTrajectory(const std::vector<double>& times,
-                                   const IKResults& ik_res);
-
-  /**
    * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
    * @param model_path Path to the model file.
    * @param end_effector_link_name Link name of the end effector.
    * @param base_to_world X_WB, transformation from robot's base to the world
    * frame.
-   * @param random_seed Seed for the random number generator used to generate
-   * random initial guesses.
    */
-  IiwaIkPlanner(const std::string& model_path,
-                const std::string& end_effector_link_name,
-                const Isometry3<double>& base_to_world, int random_seed = 1234);
-
-  /**
-   * Constructor. Instantiates an internal RigidBodyTree from @p model_path.
-   * @param model_path Path to the model file.
-   * @param end_effector_link_name Link name of the end effector.
-   * @param base_to_world X_WB, transformation from robot's base to the world
-   * frame.
-   * @param random_seed Seed for the random number generator used to generate
-   * random initial guesses.
-   */
-  IiwaIkPlanner(const std::string& model_path,
-                const std::string& end_effector_link_name,
-                std::shared_ptr<RigidBodyFrame<double>> base_to_world,
-                int random_seed = 1234);
+  ConstraintRelaxingIk(const std::string& model_path,
+                       const std::string& end_effector_link_name,
+                       const Isometry3<double>& base_to_world);
 
   /**
    * Sets end effector to @p end_effector_body.
@@ -122,15 +91,15 @@ class IiwaIkPlanner {
  private:
   bool SolveIk(const IkCartesianWaypoint& waypoint, const VectorX<double>& q0,
                const VectorX<double>& q_nom,
-               const Vector3<double>& position_tol, double rot_tolerance,
-               VectorX<double>* ik_res, std::vector<int>* info,
+               const Vector3<double>& pos_tol, double rot_tol,
+               VectorX<double>* q_res, std::vector<int>* info,
                std::vector<std::string>* infeasible_constraints);
 
   std::default_random_engine rand_generator_;
   std::unique_ptr<RigidBodyTree<double>> robot_{nullptr};
-  int end_effector_body_idx_;
+  int end_effector_body_idx_{};
 };
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake

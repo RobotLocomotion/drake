@@ -12,7 +12,6 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
-#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/action.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_common.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/world_state.h"
@@ -27,6 +26,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 namespace {
+
+using manipulation::planner::ConstraintRelaxingIk;
 
 // Makes a state machine that drives the iiwa to pick up a block from one table
 // and place it on the other table.
@@ -53,7 +54,7 @@ void RunPickAndPlaceDemo() {
   const Isometry3<double> iiwa_base = env_state.get_iiwa_base();
   std::shared_ptr<RigidBodyFrame<double>> iiwa_base_frame =
       std::make_shared<RigidBodyFrame<double>>("world", nullptr, iiwa_base);
-  IiwaIkPlanner planner(iiwa_path, iiwa_end_effector_name, iiwa_base);
+  ConstraintRelaxingIk planner(iiwa_path, iiwa_end_effector_name, iiwa_base);
   IKResults ik_res;
   std::vector<double> times;
 
