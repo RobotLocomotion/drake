@@ -19,7 +19,7 @@ content = """
   "Description": "Lightweight Communications and Marshaling library",
   "License": "LGPL-2.1+",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
-  "Default-Components": [ "lcm" ],
+  "Default-Components": [ ":lcm" ],
   "Components": {
     "lcm-coretypes": {
       "Type": "interface",

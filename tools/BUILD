@@ -103,7 +103,7 @@ genrule(
 
 install_files(
     name = "install",
-    dest = "lib/drake/cmake",
+    dest = "lib/cmake/drake",
     files = ["drake-config.cmake"],
 )
 
