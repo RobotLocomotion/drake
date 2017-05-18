@@ -152,9 +152,9 @@ github_archive(
 github_archive(
     name = "ipopt",
     repository = "RobotLocomotion/ipopt-mirror",
-    commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
+    commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
     build_file = "tools/ipopt.BUILD",
-    sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
+    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",
 )
 
 github_archive(
