@@ -821,9 +821,6 @@ class TestTriggerSystem : public LeafSystem<double> {
 
       // Call custom callback handler.
       event->callback_(context, *event);
-
-      // Also clone the abstract value and store it in abs_data_.
-      abs_data_.push_back(event->get_data()->Clone());
     }
 
     publish_count_++;
@@ -833,32 +830,20 @@ class TestTriggerSystem : public LeafSystem<double> {
       const Context<double>& context,
       CompositeEventCollection<double>* events) const override {
     {
-      Event<double>::TriggerType trigger = Event<double>::TriggerType::kPerStep;
-      events_.push_back(std::make_unique<PublishEvent<double>>(trigger));
-      PublishEvent<double>* pe =
-          static_cast<PublishEvent<double>*>(events_.back().get());
-      pe->set_data(AbstractValue::Make<std::string>("hello"));
-      pe->callback_ = [this](const Context<double>& c, const Event<double>& e) {
-        CopyString(c, e);
+      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
+      event.callback_ = [this](const Context<double>&, const Event<double>&) {
+        CopyString("hello");
       };
-      events_.back()->add_to_composite(events);
+      event.add_to_composite(events);
     }
 
     {
-      Event<double>::TriggerType trigger = Event<double>::TriggerType::kPerStep;
-      events_.push_back(std::make_unique<PublishEvent<double>>(trigger));
-      PublishEvent<double>* pe =
-          static_cast<PublishEvent<double>*>(events_.back().get());
-      pe->set_data(AbstractValue::Make<int>(42));
-      pe->callback_ = [this](const Context<double>& c, const Event<double>& e) {
-        CopyInt(c, e);
+      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
+      event.callback_ = [this](const Context<double>&, const Event<double>&) {
+        CopyInt(42);
       };
-      events_.back()->add_to_composite(events);
+      event.add_to_composite(events);
     }
-  }
-
-  const std::vector<std::unique_ptr<AbstractValue>>& get_abstract_data() const {
-    return abs_data_;
   }
 
   const std::vector<std::string>& get_string_data() const {
@@ -874,24 +859,19 @@ class TestTriggerSystem : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {}
 
   // Casts the data in @p trigger as string and store it in string_data_.
-  void CopyString(const Context<double>& context,
-                  const Event<double>& event) const {
-    if (event.get_data() != nullptr)
-      string_data_.push_back(event.get_data()->GetValue<std::string>());
+  void CopyString(const std::string& data) const {
+    string_data_.push_back(data);
   }
 
   // Casts the data in @p trigger as int and store it in int_data_.
-  void CopyInt(const Context<double>& context, const Event<double>& e) const {
-    if (e.get_data() != nullptr)
-      int_data_.push_back(e.get_data()->GetValue<int>());
+  void CopyInt(int data) const {
+    int_data_.push_back(data);
   }
 
   // Stores data copied from the abstract values in handled events.
-  mutable std::vector<std::unique_ptr<AbstractValue>> abs_data_;
   mutable std::vector<std::string> string_data_;
   mutable std::vector<int> int_data_;
   mutable int publish_count_{0};
-  mutable std::list<std::unique_ptr<Event<double>>> events_;
 };
 
 class TriggerTest : public ::testing::Test {
@@ -910,8 +890,8 @@ class TriggerTest : public ::testing::Test {
   const LeafCompositeEventCollection<double>* leaf_info_;
 };
 
-// After handling of the events, the abs_data_ should be {"hello", 42},
-// int_data_ should be {42}, string_data_ should be {"hello"}.
+// After handling of the events, int_data_ should be {42},
+// string_data_ should be {"hello"}.
 // Then forces a Publish() call on dut_, which should only increase
 // publish_count_ without changing any of the data_ vectors.
 TEST_F(TriggerTest, AbstractTrigger) {
@@ -922,12 +902,6 @@ TEST_F(TriggerTest, AbstractTrigger) {
 
   // Calls handler.
   dut_.Publish(*context_, info_->get_publish_events());
-
-  // Checks abs_data_ in dut.
-  const auto& data = dut_.get_abstract_data();
-  EXPECT_EQ(data.size(), 2);
-  EXPECT_EQ(data[0]->GetValue<std::string>(), "hello");
-  EXPECT_EQ(data[1]->GetValue<int>(), 42);
 
   // Checks string_data_ in dut.
   const auto& string_data = dut_.get_string_data();
@@ -945,7 +919,6 @@ TEST_F(TriggerTest, AbstractTrigger) {
   EXPECT_EQ(dut_.get_publish_count(), 2);
   EXPECT_EQ(string_data.size(), 1);
   EXPECT_EQ(int_data.size(), 1);
-  EXPECT_EQ(data.size(), 2);
 }
 
 }  // namespace
