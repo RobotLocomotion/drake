@@ -42,40 +42,6 @@ std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
   return out;
 }
 
-/// A vector of pair of subsystem id and its DiscreteEvent.
-template <typename T>
-using SubsystemIdAndEventPairs = std::vector<std::pair<int, DiscreteEvent<T>>>;
-
-/// For a subsystem identified by @p subsystem_id, sorts all its discrete events
-/// @p subsystem_events based on their event types. The results are appended to
-/// @p all_publish, @p all_discrete_update and @p all_unrestricted_update.
-template <typename T>
-void FilterSubsystemEventsByType(int subsystem_id,
-    const std::vector<DiscreteEvent<T>>& subsystem_events,
-    SubsystemIdAndEventPairs<T>* all_publish,
-    SubsystemIdAndEventPairs<T>* all_discrete_update,
-    SubsystemIdAndEventPairs<T>* all_unrestricted_update) {
-  DRAKE_ASSERT(all_publish != nullptr);
-  DRAKE_ASSERT(all_discrete_update != nullptr);
-  DRAKE_ASSERT(all_unrestricted_update != nullptr);
-  for (const auto& event : subsystem_events) {
-    switch (event.action) {
-      case DiscreteEvent<T>::kPublishAction:
-        all_publish->emplace_back(subsystem_id, event);
-        break;
-      case DiscreteEvent<T>::kDiscreteUpdateAction:
-        all_discrete_update->emplace_back(subsystem_id, event);
-        break;
-      case DiscreteEvent<T>::kUnrestrictedUpdateAction:
-        all_unrestricted_update->emplace_back(subsystem_id, event);
-        break;
-      default:
-        DRAKE_ABORT_MSG("Unknown ActionType.");
-        break;
-    }
-  }
-}
-
 /// DiagramOutput is an implementation of SystemOutput that holds unowned
 /// OutputPortValue pointers. It is used to expose the outputs of constituent
 /// systems as outputs of a Diagram.
@@ -279,6 +245,21 @@ class Diagram : public System<T>,
     return false;
   }
 
+  /// Allocates a DiagramEventCollection for this Diagram.
+  /// @sa System::AllocateCompositeEventCollection().
+  std::unique_ptr<CompositeEventCollection<T>>
+  AllocateCompositeEventCollection() const final {
+    const int num_systems = num_subsystems();
+    std::vector<std::unique_ptr<CompositeEventCollection<T>>> subevents(
+        num_systems);
+    for (int i = 0; i < num_systems; ++i) {
+      subevents[i] = sorted_systems_[i]->AllocateCompositeEventCollection();
+    }
+
+    return std::make_unique<DiagramCompositeEventCollection<T>>(
+        std::move(subevents));
+  }
+
   std::unique_ptr<Context<T>> AllocateContext() const override {
     const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
@@ -479,8 +460,8 @@ class Diagram : public System<T>,
   /// Retrieves the state for a particular subsystem from the @p state for the
   /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
   /// diagram.
-  const State<T>& GetSubsystemState(
-      const State<T>& state, const System<T>* subsystem) const {
+  const State<T>& GetSubsystemState(const State<T>& state,
+                                    const System<T>* subsystem) const {
     auto ret = DoGetTargetSystemState(subsystem, &state);
     DRAKE_DEMAND(ret != nullptr);
     return *ret;
@@ -499,7 +480,7 @@ class Diagram : public System<T>,
 
   /// Returns a Graphviz fragment describing this Diagram. To obtain a complete
   /// Graphviz graph, call System<T>::GetGraphvizString.
-  void GetGraphvizFragment(std::stringstream *dot) const override {
+  void GetGraphvizFragment(std::stringstream* dot) const override {
     // Open the Diagram.
     const int64_t id = this->GetGraphvizId();
     *dot << "subgraph cluster" << id << "diagram" " {" << std::endl;
@@ -581,14 +562,14 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
-                                 std::stringstream *dot) const override {
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                 std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_u" << port.get_index();
   }
 
-  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
-                                  std::stringstream *dot) const override {
+  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+                                  std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_y" << port.get_index();
   }
@@ -634,20 +615,51 @@ class Diagram : public System<T>,
   }
 
  protected:
+  template <typename EventType>
+  std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
+      std::function<
+          std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+          allocater_func) const {
+    const int num_systems = num_subsystems();
+    auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
+    for (int i = 0; i < num_systems; ++i) {
+      std::unique_ptr<EventCollection<EventType>> subevent_collection =
+          allocater_func(sorted_systems_[i]);
+      ret->set_and_own_subevent_collection(i, std::move(subevent_collection));
+    }
+    return std::move(ret);
+  }
+
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+  AllocateForcedPublishEventCollection() const final {
+    return AllocateForcedEventCollection<PublishEvent<T>>(
+        &System<T>::AllocateForcedPublishEventCollection);
+  }
+
+  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
+  AllocateForcedDiscreteUpdateEventCollection() const final {
+    return AllocateForcedEventCollection<DiscreteUpdateEvent<T>>(
+        &System<T>::AllocateForcedDiscreteUpdateEventCollection);
+  }
+
+  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
+  AllocateForcedUnrestrictedUpdateEventCollection() const final {
+    return AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
+        &System<T>::AllocateForcedUnrestrictedUpdateEventCollection);
+  }
+
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
   /// Returns a pointer to mutable context if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
-  Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>* target_system, Context<T>* context) const final {
-    if (target_system == this)
-      return context;
+  Context<T>* DoGetMutableTargetSystemContext(const System<T>* target_system,
+                                              Context<T>* context) const final {
+    if (target_system == this) return context;
 
     return GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
-        target_system, context,
-        &System<T>::DoGetMutableTargetSystemContext,
+        target_system, context, &System<T>::DoGetMutableTargetSystemContext,
         &DiagramContext<T>::GetMutableSubsystemContext);
   }
 
@@ -655,49 +667,33 @@ class Diagram : public System<T>,
   /// of this, nullptr is returned otherwise.
   const Context<T>* DoGetTargetSystemContext(
       const System<T>* target_system, const Context<T>* context) const final {
-    if (target_system == this)
-      return context;
+    if (target_system == this) return context;
 
     return GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
-        target_system, context,
-        &System<T>::DoGetTargetSystemContext,
+        target_system, context, &System<T>::DoGetTargetSystemContext,
         &DiagramContext<T>::GetSubsystemContext);
   }
 
   /// Returns a pointer to mutable state if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
-  State<T>* DoGetMutableTargetSystemState(
-      const System<T>* target_system, State<T>* state) const final {
-    if (target_system == this)
-      return state;
+  State<T>* DoGetMutableTargetSystemState(const System<T>* target_system,
+                                          State<T>* state) const final {
+    if (target_system == this) return state;
 
     return GetSubsystemStuff<State<T>*, DiagramState<T>*>(
-        target_system, state,
-        &System<T>::DoGetMutableTargetSystemState,
+        target_system, state, &System<T>::DoGetMutableTargetSystemState,
         &DiagramState<T>::get_mutable_substate);
   }
 
   /// Returns a pointer to const state if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
-  const State<T>* DoGetTargetSystemState(
-      const System<T>* target_system, const State<T>* state) const final {
-    if (target_system == this)
-      return state;
+  const State<T>* DoGetTargetSystemState(const System<T>* target_system,
+                                         const State<T>* state) const final {
+    if (target_system == this) return state;
 
     return GetSubsystemStuff<const State<T>*, const DiagramState<T>*>(
-        target_system, state,
-        &System<T>::DoGetTargetSystemState,
+        target_system, state, &System<T>::DoGetTargetSystemState,
         &DiagramState<T>::get_substate);
-  }
-
-  void DoPublish(const Context<T>& context) const override {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-
-    for (const System<T>* const system : sorted_systems_) {
-      const int i = GetSystemIndexOrAbort(system);
-      system->Publish(*diagram_context->GetSubsystemContext(i));
-    }
   }
 
   /// The @p generalized_velocity vector must have the same size and ordering as
@@ -755,10 +751,9 @@ class Diagram : public System<T>,
   /// The @p generalized_velocity vector must have the same size and ordering as
   /// the generalized velocity in the ContinuousState that this Diagram reserves
   /// in its context.
-  void DoMapQDotToVelocity(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      VectorBase<T>* generalized_velocity) const override {
+  void DoMapQDotToVelocity(const Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           VectorBase<T>* generalized_velocity) const override {
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
@@ -789,7 +784,7 @@ class Diagram : public System<T>,
       // Select the chunk of qdot belonging to subsystem i.
       const int num_q = sub_xc->get_generalized_position().size();
       const Eigen::Ref<const VectorX<T>>& dq_slice =
-        qdot.segment(q_index, num_q);
+          qdot.segment(q_index, num_q);
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
       const int num_v = sub_xc->get_generalized_velocity().size();
@@ -808,52 +803,9 @@ class Diagram : public System<T>,
   /// types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic.
   void DoCalcNextUpdateTime(const Context<T>& context,
-                            UpdateActions<T>* actions) const override {
-    DoCalcNextUpdateTimeImpl(context, actions);
-  }
-
-  /// Populates a vector of events that need to be handled before the integrator
-  /// can take a step.
-  void DoGetPerStepEvents(const Context<T>& context,
-      std::vector<DiscreteEvent<T>>* events) const override {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-
-    // Iterate over the subsystems in sorted order, and harvest all their per
-    // step actions.
-    std::vector<std::vector<DiscreteEvent<T>>> sub_events(num_subsystems());
-
-    bool no_events = true;
-    for (int i = 0; i < num_subsystems(); ++i) {
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      sorted_systems_[i]->GetPerStepEvents(*subcontext, &sub_events[i]);
-      no_events = no_events && sub_events[i].empty();
-    }
-
-    // If no actions are needed, bail early.
-    if (no_events) return;
-
-    internal::SubsystemIdAndEventPairs<T> publishers;
-    internal::SubsystemIdAndEventPairs<T> updaters;
-    internal::SubsystemIdAndEventPairs<T> unrestricted_updaters;
-
-    for (int i = 0; i < num_subsystems(); i++) {
-      internal::FilterSubsystemEventsByType<T>(i, sub_events[i],
-          &publishers, &updaters, &unrestricted_updaters);
-    }
-
-    DRAKE_ASSERT(!publishers.empty() || !updaters.empty() ||
-                 !unrestricted_updaters.empty());
-
-    // Request a publish event, if our subsystems want it.
-    RequestPublishIfAny<T>(publishers, events);
-
-    // Request an update event, if our subsystems want it.
-    RequestDiscreteUpdateIfAny<T>(updaters, events);
-
-    // Request an unrestricted update event, if our subsystems want it.
-    RequestUnrestrictedUpdateIfAny<T>(unrestricted_updaters, events);
+                            CompositeEventCollection<T>* event_info,
+                            T* time) const override {
+    DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
   /// Creates a deep copy of this Diagram<double>, converting the scalar type
@@ -865,9 +817,7 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<AutoDiffXd>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-      [](const FromType& subsystem) {
-        return subsystem.ToAutoDiffXd();
-      }};
+        [](const FromType& subsystem) { return subsystem.ToAutoDiffXd(); }};
     return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
   }
 
@@ -880,11 +830,9 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<symbolic::Expression>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) {
-          return subsystem.ToSymbolic();
-        }};
-    return ConvertScalarType<symbolic::Expression>(
-        subsystem_converter).release();
+        [](const FromType& subsystem) { return subsystem.ToSymbolic(); }};
+    return ConvertScalarType<symbolic::Expression>(subsystem_converter)
+        .release();
   }
 
   BasicVector<T>* DoAllocateInputVector(
@@ -893,8 +841,8 @@ class Diagram : public System<T>,
     const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
     const System<T>* subsystem = id.first;
     const int subindex = id.second;
-    return subsystem->AllocateInputVector(
-        subsystem->get_input_port(subindex)).release();
+    return subsystem->AllocateInputVector(subsystem->get_input_port(subindex))
+        .release();
   }
 
   AbstractValue* DoAllocateInputAbstract(
@@ -903,11 +851,112 @@ class Diagram : public System<T>,
     const PortIdentifier& id = input_port_ids_[descriptor.get_index()];
     const System<T>* subsystem = id.first;
     const int subindex = id.second;
-    return subsystem->AllocateInputAbstract(
-        subsystem->get_input_port(subindex)).release();
+    return subsystem->AllocateInputAbstract(subsystem->get_input_port(subindex))
+        .release();
   }
 
  private:
+  // For each subsystem, if there is a publish event in its corresponding sub
+  // event collection, calls its Publish method with the appropriate subcontext
+  // and sub event collection.
+  void DispatchPublishHandler(
+      const Context<T>& context,
+      const EventCollection<PublishEvent<T>>& event_info) const final {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context);
+    const DiagramEventCollection<PublishEvent<T>>& info =
+        dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(
+            event_info);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const EventCollection<PublishEvent<T>>& subinfo =
+          info.get_subevent_collection(i);
+
+      if (subinfo.HasEvents()) {
+        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+        DRAKE_DEMAND(subcontext != nullptr);
+        sorted_systems_[i]->Publish(*subcontext, subinfo);
+      }
+    }
+  }
+
+  // For each subsystem, if there is a discrete update event in its
+  // corresponding sub event collection, calls its CalcDiscreteVariableUpdates
+  // method with the appropriate subcontext, sub event collection and
+  // substate.
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>& event_info,
+      DiscreteValues<T>* discrete_state) const final {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context);
+    auto diagram_differences =
+        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
+    DRAKE_DEMAND(diagram_differences);
+
+    // As a baseline, initialize all the difference variables to their
+    // current values.
+    for (int i = 0; i < diagram_differences->num_groups(); ++i) {
+      diagram_differences->get_mutable_vector(i)->set_value(
+          context.get_discrete_state(i)->get_value());
+    }
+
+    const DiagramEventCollection<DiscreteUpdateEvent<T>>& info =
+        dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
+            event_info);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const EventCollection<DiscreteUpdateEvent<T>>& subinfo =
+          info.get_subevent_collection(i);
+
+      if (subinfo.HasEvents()) {
+        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+        DRAKE_DEMAND(subcontext != nullptr);
+        DiscreteValues<T>* subdifference =
+            diagram_differences->get_mutable_subdifference(i);
+        DRAKE_DEMAND(subdifference != nullptr);
+
+        sorted_systems_[i]->CalcDiscreteVariableUpdates(*subcontext, subinfo,
+            subdifference);
+      }
+    }
+  }
+
+  // For each subsystem, if there is an unrestricted update event in its
+  // corresponding sub event collection, calls its CalcUnrestrictedUpdate
+  // method with the appropriate subcontext, sub event collection and substate.
+  void DispatchUnrestrictedUpdateHandler(
+      const Context<T>& context,
+      const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
+      State<T>* state) const final {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context);
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+
+    // No need to set state to context's state, since it has already been done
+    // in System::CalcUnrestrictedUpdate().
+
+    const DiagramEventCollection<UnrestrictedUpdateEvent<T>>& info =
+        dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
+            event_info);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const EventCollection<UnrestrictedUpdateEvent<T>>& subinfo =
+          info.get_subevent_collection(i);
+
+      if (subinfo.HasEvents()) {
+        const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+        DRAKE_DEMAND(subcontext != nullptr);
+        State<T>* substate = diagram_state->get_mutable_substate(i);
+        DRAKE_DEMAND(substate != nullptr);
+
+        sorted_systems_[i]->CalcUnrestrictedUpdate(*subcontext, subinfo,
+            substate);
+      }
+    }
+  }
+
   /// Tries to recursively find @p target_system's BaseStuffPtr
   /// (context / state / etc). nullptr is returned if @p target_system is not
   /// a sub system of this diagram. This template function should only be used
@@ -1026,69 +1075,10 @@ class Diagram : public System<T>,
   template <typename NewType, typename T1 = T>
   std::unique_ptr<Diagram<NewType>> ConvertScalarType(
       std::function<std::unique_ptr<System<NewType>>(
-          const System<
-              std::enable_if_t<!std::is_same<T1, double>::value,
-                               double>>&)>) const {
+          const System<std::enable_if_t<!std::is_same<T1, double>::value,
+                                        double>>&)>) const {
     DRAKE_ABORT_MSG(
         "Scalar type conversion is only supported from Diagram<double>.");
-  }
-
-  // Adds a Diagram<T1>::HandlePublish callback to handle diagram level
-  // publish in @p my_events if @p sub_events is not empty.
-  template <typename T1 = T>
-  void RequestPublishIfAny(
-      const internal::SubsystemIdAndEventPairs<T1>& sub_events,
-      std::vector<DiscreteEvent<T1>>* my_events) const {
-    if (!sub_events.empty()) {
-      DiscreteEvent<T1> event;
-      event.action = DiscreteEvent<T1>::kPublishAction;
-      event.do_publish = std::bind(&Diagram<T1>::HandlePublish, this,
-                                   std::placeholders::_1, /* context */
-                                   sub_events);
-      DRAKE_ASSERT(my_events != nullptr);
-      my_events->push_back(event);
-    }
-  }
-
-  // Adds a Diagram<T1>::HandleUnrestrictedUpdate callback to handle
-  // diagram level unrestricted update to @p my_events if @p sub_events is
-  // not empty.
-  template <typename T1 = T>
-  void RequestUnrestrictedUpdateIfAny(
-      const internal::SubsystemIdAndEventPairs<T1>& sub_events,
-      std::vector<DiscreteEvent<T1>>* my_events) const {
-    if (!sub_events.empty()) {
-      DiscreteEvent<T1> event;
-      event.action = DiscreteEvent<T1>::kUnrestrictedUpdateAction;
-      event.do_unrestricted_update = std::bind(
-                                  &Diagram<T1>::HandleUnrestrictedUpdate,
-                                  this,
-                                  std::placeholders::_1, /* context */
-                                  std::placeholders::_2, /* state */
-                                  sub_events);
-      DRAKE_ASSERT(my_events != nullptr);
-      my_events->push_back(event);
-    }
-  }
-
-  // Adds a Diagram<T1>::HandleUpdate callback to handle diagram level
-  // discrete state update to @p my_events if @p sub_events is not empty.
-  template <typename T1 = T>
-  void RequestDiscreteUpdateIfAny(
-      const internal::SubsystemIdAndEventPairs<T1>& sub_events,
-      std::vector<DiscreteEvent<T1>>* my_events) const {
-    if (!sub_events.empty()) {
-      DiscreteEvent<T1> event;
-      event.action = DiscreteEvent<T1>::kDiscreteUpdateAction;
-      event.do_calc_discrete_variable_update = std::bind(
-                                  &Diagram<T1>::HandleUpdate,
-                                  this,
-                                  std::placeholders::_1, /* context */
-                                  std::placeholders::_2, /* difference state */
-                                  sub_events);
-      DRAKE_ASSERT(my_events != nullptr);
-      my_events->push_back(event);
-    }
   }
 
   // Aborts for scalar types that are not numeric, since there is no reasonable
@@ -1097,7 +1087,8 @@ class Diagram : public System<T>,
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
-  DoCalcNextUpdateTimeImpl(const Context<T1>&, UpdateActions<T1>*) const {
+  DoCalcNextUpdateTimeImpl(const Context<T1>&, CompositeEventCollection<T1>*,
+                           T1*) const {
     DRAKE_ABORT_MSG(
         "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
         "only works with types that are drake::is_numeric.");
@@ -1109,53 +1100,53 @@ class Diagram : public System<T>,
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
-      const Context<T1>& context, UpdateActions<T1>* actions) const {
+      const Context<T1>& context, CompositeEventCollection<T1>* event_info,
+      T1* time) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
+    auto info = dynamic_cast<DiagramCompositeEventCollection<T1>*>(event_info);
     DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
 
-    actions->time = std::numeric_limits<T1>::infinity();
+    *time = std::numeric_limits<T1>::infinity();
 
     // Iterate over the subsystems in sorted order, and harvest the most
     // imminent updates.
-    std::vector<UpdateActions<T1>> sub_actions(num_subsystems());
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
+      CompositeEventCollection<T1>& subinfo =
+          info->get_mutable_subevent_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
-      const T1 time =
-          sorted_systems_[i]->CalcNextUpdateTime(*subcontext, &sub_actions[i]);
-      if (time < actions->time) {
-        actions->time = time;
+      const T1 sub_time =
+          sorted_systems_[i]->CalcNextUpdateTime(*subcontext, &subinfo);
+      if (sub_time < *time) {
+        // i is the earliest, need to clear all the previous ones.
+        for (int j = 0; j < i; ++j) {
+          info->get_mutable_subevent_collection(j).Clear();
+        }
+        *time = sub_time;
+      } else if (sub_time > *time) {
+        // i is too late, clear it.
+        subinfo.Clear();
       }
     }
+  }
 
-    // If no discrete actions are needed, bail early.
-    if (actions->time == std::numeric_limits<T1>::infinity()) {
-      return;
+  void DoGetPerStepEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* event_info) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      CompositeEventCollection<T>& subinfo =
+          info->get_mutable_subevent_collection(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+
+      sorted_systems_[i]->GetPerStepEvents(*subcontext, &subinfo);
     }
-
-    internal::SubsystemIdAndEventPairs<T1> publishers;
-    internal::SubsystemIdAndEventPairs<T1> updaters;
-    internal::SubsystemIdAndEventPairs<T1> unrestricted_updaters;
-
-    for (int i = 0; i < num_subsystems(); i++) {
-      if (sub_actions[i].time > actions->time) continue;
-
-      internal::FilterSubsystemEventsByType(i, sub_actions[i].events,
-          &publishers, &updaters, &unrestricted_updaters);
-    }
-
-    DRAKE_ASSERT(!publishers.empty() || !updaters.empty() ||
-                 !unrestricted_updaters.empty());
-
-    // Request a publish event, if our subsystems want it.
-    RequestPublishIfAny<T1>(publishers, &(actions->events));
-
-    // Request an update event, if our subsystems want it.
-    RequestDiscreteUpdateIfAny<T1>(updaters, &(actions->events));
-
-    // Request an unrestricted update event, if our subsystems want it.
-    RequestUnrestrictedUpdateIfAny<T1>(
-        unrestricted_updaters, &(actions->events));
   }
 
   // A structural outline of a Diagram, produced by DiagramBuilder.
@@ -1213,6 +1204,13 @@ class Diagram : public System<T>,
     for (const PortIdentifier& id : output_port_ids_) {
       ExportOutput(id);
     }
+
+    this->set_forced_publish_events(
+        this->AllocateForcedPublishEventCollection());
+    this->set_forced_discrete_update_events(
+        this->AllocateForcedDiscreteUpdateEventCollection());
+    this->set_forced_unrestricted_update_events(
+        this->AllocateForcedUnrestrictedUpdateEventCollection());
   }
 
   // Takes ownership of the @p registered_systems from DiagramBuilder.
@@ -1377,109 +1375,12 @@ class Diagram : public System<T>,
         continue;
       }
       if (names.find(name) != names.end()) {
-        log()->error("Non-unique name \"{}\" for subsystem of type {}",
-                     name, NiceTypeName::Get(*system));
+        log()->error("Non-unique name \"{}\" for subsystem of type {}", name,
+                     NiceTypeName::Get(*system));
       }
       names.insert(name);
     }
     return names.size() == sorted_systems_.size();
-  }
-
-  /// Handles Publish callbacks that were registered in DoCalcNextUpdateTime.
-  /// Dispatches the Publish events to the subsystems that requested them.
-  void HandlePublish(
-      const Context<T>& context,
-      const internal::SubsystemIdAndEventPairs<T>& sub_actions) const {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-
-    for (const auto& action : sub_actions) {
-      const int index = action.first;
-      const DiscreteEvent<T>& event = action.second;
-      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
-
-      const Context<T>* subcontext =
-          diagram_context->GetSubsystemContext(index);
-      DRAKE_DEMAND(subcontext != nullptr);
-
-      DRAKE_ASSERT(event.action == DiscreteEvent<T>::kPublishAction);
-      sorted_systems_[index]->Publish(*subcontext, event);
-    }
-  }
-
-  /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
-  /// Dispatches the Publish events to the subsystems that requested them.
-  void HandleUpdate(
-      const Context<T>& context, DiscreteValues<T>* update,
-      const internal::SubsystemIdAndEventPairs<T>& sub_actions) const {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    auto diagram_differences =
-        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(update);
-    DRAKE_DEMAND(diagram_differences != nullptr);
-
-    // As a baseline, initialize all the difference variables to their
-    // current values.
-    for (int i = 0; i < diagram_differences->num_groups(); ++i) {
-      diagram_differences->get_mutable_vector(i)->set_value(
-          context.get_discrete_state(i)->get_value());
-    }
-
-    // Then, allow the systems that wanted to update a difference variable
-    // to do so.
-    for (const auto& action : sub_actions) {
-      const int index = action.first;
-      const DiscreteEvent<T>& event = action.second;
-      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
-
-      // Get the context and the difference state for the specified system.
-      const Context<T>* subcontext =
-          diagram_context->GetSubsystemContext(index);
-      DRAKE_DEMAND(subcontext != nullptr);
-      DiscreteValues<T>* subdifference =
-          diagram_differences->get_mutable_subdifference(index);
-      DRAKE_DEMAND(subdifference != nullptr);
-
-      // Do that system's update actions.
-      DRAKE_ASSERT(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
-      sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
-                                                          event,
-                                                          subdifference);
-    }
-  }
-
-  /// Handles Update callbacks that were registered in DoCalcNextUpdateTime.
-  /// Dispatches the UnrestrictedUpdate events to the subsystems that requested
-  /// them.
-  void HandleUnrestrictedUpdate(
-      const Context<T>& context, State<T>* state,
-      const internal::SubsystemIdAndEventPairs<T>& sub_actions) const {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
-    DRAKE_DEMAND(diagram_state != nullptr);
-
-    // No need to set state to context's state, since it has already been done
-    // in System::CalcUnrestrictedUpdate().
-
-    for (const auto& action : sub_actions) {
-      const int index = action.first;
-      const DiscreteEvent<T>& event = action.second;
-      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
-
-      // Get the context and the state for the specified system.
-      const Context<T>* subcontext =
-          diagram_context->GetSubsystemContext(index);
-      DRAKE_DEMAND(subcontext != nullptr);
-      State<T>* substate = diagram_state->get_mutable_substate(index);
-      DRAKE_DEMAND(substate != nullptr);
-
-      // Do that system's update actions.
-      DRAKE_ASSERT(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
-      sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext,
-                                                     event,
-                                                     substate);
-    }
   }
 
   int num_subsystems() const {

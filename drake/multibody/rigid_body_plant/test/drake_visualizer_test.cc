@@ -456,19 +456,8 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 // Helper function to publish load robot model message.
 void PublishLoadRobotModelMessageHelper(
     const DrakeVisualizer& dut, Context<double>* context) {
-  systems::UpdateActions<double> events;
-  dut.CalcNextUpdateTime(*context, &events);
-  ASSERT_EQ(events.events.size(), 1);
-  ASSERT_EQ(events.events.front().action,
-      systems::DiscreteEvent<double>::kDiscreteUpdateAction);
-  // TODO(siyuan) We should really be demanding an exact time,
-  // but we have to fudge it for now to placate the simulator.  Even
-  // though the event time is not the current time, we've left the
-  // context time below unchanged, to avoid unnecessarily disturbing
-  // the unit test. See issue #5725.
-  EXPECT_NEAR(events.time, context->get_time(), 0.01);
   std::unique_ptr<State<double>> tmp_state = context->CloneState();
-  dut.CalcDiscreteVariableUpdates(*context, events.events.front(),
+  dut.CalcDiscreteVariableUpdates(*context,
       tmp_state->get_mutable_discrete_state());
   context->get_mutable_state()->CopyFrom(*tmp_state);
 }
