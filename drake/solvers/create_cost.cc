@@ -54,7 +54,7 @@ Binding<LinearCost> DoParseLinearCost(
     const VectorXDecisionVariable& vars_vec,
     const unordered_map<Variable::Id, int>& map_var_to_index) {
   Eigen::RowVectorXd c(vars_vec.size());
-  double constant_term;
+  double constant_term{};
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
   return CreateBinding(make_shared<LinearCost>(c.transpose(), constant_term),
                        vars_vec);
