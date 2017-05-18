@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <type_traits>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
