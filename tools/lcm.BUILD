@@ -234,7 +234,7 @@ genrule(
 
 install_files(
     name = "install_cmake",
-    dest = "lib/lcm/cmake",
+    dest = "lib/cmake/lcm",
     files = [
         "lcm-cmake/lcmUtilities.cmake",
         "lcmConfig.cmake",
