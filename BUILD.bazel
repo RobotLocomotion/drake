@@ -33,6 +33,7 @@ alias(
 install(
     name = "install",
     deps = [
+        "@eigen//:install",
         "@lcm//:install",
         "//drake:install",
         "//tools:install",
