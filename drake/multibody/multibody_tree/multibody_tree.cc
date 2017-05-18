@@ -65,10 +65,10 @@ void MultibodyTree<T>::CompileTopology() {
   // initialized in a following PR that introduces Mobilizer objects connecting
   // frames in a meaningful way. The code below is now introduced so that bodies
   // can retrieve Context entries.
-  BodyNodeIndex body_node(0);
-  for (auto& body_topology : topology_.bodies) {
-    body_topology.body_node = body_node++;
-  }
+  //BodyNodeIndex body_node(0);
+  //for (auto& body_topology : topology_.bodies) {
+  //  body_topology.body_node = body_node++;
+  //}
 }
 
 template <typename T>

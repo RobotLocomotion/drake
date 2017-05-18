@@ -50,17 +50,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_tree_topology",
-    srcs = [],
-    hdrs = [
-        "multibody_tree_topology.h",
-    ],
-    deps = [
-        ":multibody_tree_indexes",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_tree_element",
     srcs = [],
     hdrs = [
@@ -85,6 +74,7 @@ drake_cc_library(
         "rigid_body.h",
     ],
     deps = [
+        ":multibody_tree_context",
         ":multibody_tree_element",
         ":spatial_inertia",
         "//drake/common:autodiff",

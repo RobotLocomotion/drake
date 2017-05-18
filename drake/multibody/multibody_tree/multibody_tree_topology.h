@@ -69,10 +69,6 @@ struct BodyTopology {
   /// Unique index to the frame associated with this body.
   FrameIndex body_frame{0};
 
-  /// The unique index identifying the BodyNode this Body is associated within
-  /// a MultibodyTree.
-  BodyNodeIndex body_node{0};
-
   /// Depth level in the MultibodyTree, level = 0 for the world.
   /// Initialized to an invalid negative value so that we can detect at
   /// Finalize() when a user forgets to connect a body with a mobilizer.
@@ -554,6 +550,8 @@ class MultibodyTreeTopology {
   std::vector<MobilizerTopology> mobilizers_;
   std::vector<BodyNodeTopology> body_nodes_;
 
+  // MAKE THESE PRIVATE BEFORE MERGING!!
+ public:
   // Total number of generalized positions and velocities in the MultibodyTree
   // model.
   int num_positions{0};

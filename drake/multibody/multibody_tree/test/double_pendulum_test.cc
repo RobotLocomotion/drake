@@ -112,6 +112,20 @@ class PendulumTests : public ::testing::Test {
   }
 
  protected:
+  // For testing whether we can retrieve/set cache entries, this method
+  // initializes the poses of each link in their corresponding cache entries.
+  void SetPendulumPoses(Context<double>* context) {
+    DRAKE_DEMAND(context != nullptr);
+    auto mbt_context = dynamic_cast<MultibodyTreeContext<double>*>(context);
+    DRAKE_DEMAND(mbt_context != nullptr);
+    PositionKinematicsCache<double>* pc =
+        mbt_context->GetMutablePositionKinematics();
+    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
+    // MultibodyTree methods re-computing the PositionKinematicsCache will
+    // validate this entry after they are done with their computing.
+    mbt_context->ValidatePositionKinematicsCache();
+  }
+
   std::unique_ptr<MultibodyTree<double>> model_;
   const Body<double>* world_body_;
   // Bodies:
