@@ -28,6 +28,16 @@ struct CopyableInt {
   int data;
 };
 
+// Helper for EXPECT_EQ to unwrap the data field.
+template <typename T>
+bool operator==(int i, const T& value) { return i == value.data; }
+
+// Boilerplate for tests that are identical across different types.  Our
+// TYPED_TESTs will run using `int` and `CopyableInt`.
+template <typename TypeParam> class TypedValueTest : public ::testing::Test {};
+typedef ::testing::Types<int, CopyableInt> Implementations;
+TYPED_TEST_CASE(TypedValueTest, Implementations);
+
 // Value<T>() should work if and only if T is default-constructible.
 GTEST_TEST(ValueTest, DefaultConstructor) {
   const AbstractValue& value_int = Value<int>();
@@ -41,10 +51,10 @@ GTEST_TEST(ValueTest, DefaultConstructor) {
 }
 
 // Value<T>(int) should work (possibly using forwarding).
-GTEST_TEST(ValueTest, ForwardingConstructor) {
-  using T = CopyableInt;
+TYPED_TEST(TypedValueTest, ForwardingConstructor) {
+  using T = TypeParam;
   const AbstractValue& abstract_value = Value<T>(22);
-  EXPECT_EQ(22, abstract_value.GetValue<T>().data);
+  EXPECT_EQ(22, abstract_value.GetValue<T>());
 }
 
 // A two-argument constructor should work using forwarding.  (The forwarding
@@ -53,13 +63,13 @@ GTEST_TEST(ValueTest, ForwardingConstructor) {
 GTEST_TEST(ValueTest, ForwardingConstructorTwoArgs) {
   using T = CopyableInt;
   const AbstractValue& value = Value<T>(11, 2);
-  EXPECT_EQ(22, value.GetValue<T>().data);
+  EXPECT_EQ(22, value.GetValue<T>());
 }
 
 // Passing a single reference argument to the Value<T> constructor should use
 // the `(const T&)` constructor, not the forwarding constructor.
-GTEST_TEST(ValueTest, CopyConstructor) {
-  using T = CopyableInt;
+TYPED_TEST(TypedValueTest, CopyConstructor) {
+  using T = TypeParam;
   T param{0};
   const T const_param{0};
   const Value<T> xvalue(T{0});          // Called with `T&&`.
@@ -77,32 +87,32 @@ GTEST_TEST(ValueTest, BareCopyConstructor) {
   const Value<T> crvalue(const_param);  // Called with `const T&`.
 }
 
-GTEST_TEST(ValueTest, Make) {
-  using T = int;
+TYPED_TEST(TypedValueTest, Make) {
+  using T = TypeParam;
   // TODO(jwnimmer-tri) We should be able to forward this too, and lose the
   // explicit construction of T{42}.
   auto abstract_value = AbstractValue::Make<T>(T{42});
   EXPECT_EQ(42, abstract_value->template GetValue<T>());
 }
 
-GTEST_TEST(ValueTest, Access) {
-  using T = int;
+TYPED_TEST(TypedValueTest, Access) {
+  using T = TypeParam;
   Value<T> value(3);
   const AbstractValue& erased = value;
   EXPECT_EQ(3, erased.GetValue<T>());
   EXPECT_EQ(3, erased.GetValueOrThrow<T>());
 }
 
-GTEST_TEST(ValueTest, Clone) {
-  using T = int;
+TYPED_TEST(TypedValueTest, Clone) {
+  using T = TypeParam;
   Value<T> value(43);
   const AbstractValue& erased = value;
   std::unique_ptr<AbstractValue> cloned = erased.Clone();
   EXPECT_EQ(43, cloned->GetValue<T>());
 }
 
-GTEST_TEST(ValueTest, Mutation) {
-  using T = int;
+TYPED_TEST(TypedValueTest, Mutation) {
+  using T = TypeParam;
   Value<T> value(5);
   value.set_value(T{6});
   AbstractValue& erased = value;
@@ -117,8 +127,8 @@ GTEST_TEST(ValueTest, Mutation) {
   EXPECT_EQ(10, erased.GetValue<T>());
 }
 
-GTEST_TEST(ValueTest, BadCast) {
-  using T = int;
+TYPED_TEST(TypedValueTest, BadCast) {
+  using T = TypeParam;
   Value<double> value(4);
   AbstractValue& erased = value;
   EXPECT_THROW(erased.GetValueOrThrow<T>(), std::bad_cast);
