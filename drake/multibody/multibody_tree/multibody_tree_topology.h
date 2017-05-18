@@ -517,6 +517,12 @@ class MultibodyTreeTopology {
   /// @see Finalize()
   bool is_valid() const { return is_valid_; }
 
+  /// Returns the total number of generalized positions in the model.
+  int get_num_positions() const { return num_positions_; }
+
+  /// Returns the total number of generalized velocities in the model.
+  int get_num_velocities() const { return num_velocities_; }
+
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the frames with indexes `frame` and `frame2`.
@@ -550,12 +556,10 @@ class MultibodyTreeTopology {
   std::vector<MobilizerTopology> mobilizers_;
   std::vector<BodyNodeTopology> body_nodes_;
 
-  // MAKE THESE PRIVATE BEFORE MERGING!!
- public:
   // Total number of generalized positions and velocities in the MultibodyTree
   // model.
-  int num_positions{0};
-  int num_velocities{0};
+  int num_positions_{0};
+  int num_velocities_{0};
 };
 
 }  // namespace multibody

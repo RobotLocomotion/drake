@@ -111,19 +111,24 @@ class PendulumTests : public ::testing::Test {
         Vector3d::UnitZ() /*revolute axis*/);
   }
 
+  // Helper method to extract a pose from the position kinematics.
+  // TODO(amcastro-tri):
+  // Replace this by a method Body<T>::get_pose_in_world(const Context<T>&)
+  // when we can place cache entries in the context.
+  const Isometry3d& get_body_pose_in_world(
+      const PositionKinematicsCache<double>& pc,
+      const Body<double>& body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
+  }
+
  protected:
-  // For testing whether we can retrieve/set cache entries, this method
-  // initializes the poses of each link in their corresponding cache entries.
-  void SetPendulumPoses(Context<double>* context) {
-    DRAKE_DEMAND(context != nullptr);
-    auto mbt_context = dynamic_cast<MultibodyTreeContext<double>*>(context);
-    DRAKE_DEMAND(mbt_context != nullptr);
-    PositionKinematicsCache<double>* pc =
-        mbt_context->GetMutablePositionKinematics();
+  // For testing only so that we can retrieve/set (future to be) cache entries,
+  // this method initializes the poses of each link in the position kinematics
+  // cache.
+  void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
     pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
-    // MultibodyTree methods re-computing the PositionKinematicsCache will
-    // validate this entry after they are done with their computing.
-    mbt_context->ValidatePositionKinematicsCache();
   }
 
   std::unique_ptr<MultibodyTree<double>> model_;
@@ -311,21 +316,16 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_EQ(mbt_context->get_velocities().size(), 0);
   EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 0);
 
-  // Expect an assertion in Debug builds if the position kinematics is not yet
-  // valid.
-  EXPECT_FALSE(mbt_context->is_position_kinematics_valid());
-  EXPECT_THROW(world_body_->get_pose_in_world(*mbt_context),
-               std::runtime_error);
+  // Set the poses of each body in the position kinematics cache to have an
+  // arbitrary value that we can use for unit testing. In practice the poses in
+  // the position kinematics will be the result of a position kinematics update
+  // and will live in the context as a cache entry.
+  PositionKinematicsCache<double> pc(model_->get_topology());
+  SetPendulumPoses(&pc);
 
-  // Set the poses of each body in the context to have an arbitrary value that
-  // we can use for unit testing. In practice the poses in the context will be
-  // the result of a position kinematics update.
-  SetPendulumPoses(context.get());
-  EXPECT_TRUE(mbt_context->is_position_kinematics_valid());
-
-  // Tests the API to retrieve body poses from the context.
-  const Isometry3d &X_WW = world_body_->get_pose_in_world(*context);
-  const Isometry3d &X_WLu = upper_link_->get_pose_in_world(*context);
+  // Retrieve body poses from position kinematics cache.
+  const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
+  const Isometry3d &X_WLu = get_body_pose_in_world(pc, *upper_link_);
 
   // Asserts that the retrieved poses match with the ones specified by the unit
   // test method SetPendulumPoses().

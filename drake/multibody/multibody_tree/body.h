@@ -130,18 +130,6 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return body_frame_;
   }
 
-  /// Returns a constant reference to the pose of this body in the world frame
-  /// for a given @p context.
-  /// @throws std::runtime_error if the position kinematics cache entry was not
-  /// validated.
-  const Isometry3<T>& get_pose_in_world(
-      const systems::Context<T>& context) const {
-    const MultibodyTreeContext<T>& mbt_context =
-        get_multibody_tree_context(context);
-    mbt_context.PositionKinematicsCacheIsValidOrThrow();
-    return mbt_context.get_position_kinematics().get_X_WB(topology_.body_node);
-  }
-
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
   // set of private Body methods.

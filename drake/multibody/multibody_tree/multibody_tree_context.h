@@ -51,8 +51,8 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     using systems::Value;
 
     // Allocate continuous state.
-    const int num_positions = topology_.num_positions;
-    const int num_velocities = topology_.num_velocities;
+    const int num_positions = topology_.get_num_positions();
+    const int num_velocities = topology_.get_num_velocities();
     const int num_states = num_positions + num_velocities;
 
     // TODO(amcastro-tri): Consider to inherit a more specific BasicVector.
@@ -62,12 +62,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
         num_positions /* num_q */, num_velocities /* num_v */, 0 /* num_z */);
     this->set_continuous_state(std::move(xc));
 
-    // Creates cache entries in the context.
-    // TODO(amcastro-tri): provide dependency on the generalized positions
-    // vector.
-    position_kinematics_ticket_ = this->CreateCacheEntry({});
-    position_kinematics_ticket_ =
-        this->template MakeCacheEntry<PositionKinematicsCache<T>>({}, topology);
+    // TODO(amcastro-tri): Create cache entries.
+    // For instance, for PositionKinematicsCache so that it doesn't get
+    // re-allocated and re-computed every time is needed.
   }
 
   /// Returns the size of the generalized positions vector.
@@ -101,51 +98,6 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities() {
     return get_mutable_state_vector().segment(get_num_positions(),
                                               get_num_velocities());
-  }
-
-  bool is_position_kinematics_valid() const {
-    return this->is_cache_entry_valid(position_kinematics_ticket_);
-  }
-
-  /// Validates the cache entry corresponding to the PositionKinematicsCache and
-  /// recursively invalidate its dependents.
-  void ValidatePositionKinematicsCache() {
-    this->ValidateCacheEntry(position_kinematics_ticket_);
-  }
-
-  /// Returns a constant reference to the position kinematics cache entry.
-  /// @throws std::runtime_error if the position kinematics cache entry was not
-  /// validated, only in Debug builds.
-  const PositionKinematicsCache<T>& get_position_kinematics() const {
-    using systems::AbstractValue;
-    using systems::Value;
-    DRAKE_ASSERT_VOID(PositionKinematicsCacheIsValidOrThrow());
-    const AbstractValue* value =
-        this->GetCachedValue(position_kinematics_ticket_);
-    auto unpacked = safe_cast<const Value<PositionKinematicsCache<T>>>(value);
-    return unpacked->get_value();
-  }
-
-  /// Returns a mutable reference to the position kinematics cache entry.
-  /// This call has the effect of recursively invalidating all other cache
-  /// entries depending on the position kinematics.
-  PositionKinematicsCache<T>* GetMutablePositionKinematics() const {
-    using systems::AbstractValue;
-    using systems::Value;
-    AbstractValue* value =
-        this->GetMutableCachedValue(position_kinematics_ticket_);
-    auto unpacked = safe_cast<Value<PositionKinematicsCache<T>>>(value);
-    return &unpacked->get_mutable_value();
-  }
-
-  /// Checks that the position kinematics cache is valid and throws an exception
-  /// if not.
-  void PositionKinematicsCacheIsValidOrThrow() const {
-    if (!is_position_kinematics_valid()) {
-      throw std::runtime_error(
-          "Attempting to retrieve an invalidated position kinematics cache"
-          " entry.");
-    }
   }
 
  private:
@@ -205,7 +157,6 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   }
 
   const MultibodyTreeTopology topology_;
-  systems::CacheTicket position_kinematics_ticket_;
 };
 
 }  // namespace multibody
