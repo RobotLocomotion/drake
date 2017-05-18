@@ -23,8 +23,8 @@ AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size) {
       this->DeclareInputPort(kVectorValued, 3).get_index();
 }
 
-void AccelerometerTestLogger::DoPublish(const Context<double>& context)
-    const {
+void AccelerometerTestLogger::DoPublish(const Context<double>& context,
+        const std::vector<const systems::PublishEvent<double>*>&) const {
   if (log_to_console_) {
     std::stringstream buffer;
     buffer <<

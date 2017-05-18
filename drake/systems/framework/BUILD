@@ -145,6 +145,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "events",
+    srcs = [
+        "event_collection.cc",
+    ],
+    hdrs = [
+        "event.h",
+        "event_collection.h",
+    ],
+    deps = [
+        ":abstract_values",
+        ":value",
+        ":context",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+drake_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
@@ -242,6 +260,7 @@ drake_cc_library(
     deps = [
         ":cache",
         ":context",
+        ":events",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
