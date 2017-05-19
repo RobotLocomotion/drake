@@ -160,7 +160,6 @@ drake_cc_library(
         ":create_cost",
         ":decision_variable",
         ":gurobi_solver",
-        ":indeterminate_variable",
         ":ipopt_solver",
         ":mosek_solver",
         ":nlopt_solver",
