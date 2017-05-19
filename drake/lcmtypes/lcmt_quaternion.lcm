@@ -1,0 +1,9 @@
+package drake;
+
+// A representation of an orientation in quaternion.
+struct lcmt_quaternion {
+  double w;
+  double x;
+  double y;
+  double z;
+}

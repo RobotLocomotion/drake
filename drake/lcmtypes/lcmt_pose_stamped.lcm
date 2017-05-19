@@ -1,0 +1,7 @@
+package drake;
+
+// A representation of a 3D pose with timestamp and associated frame name.
+struct lcmt_pose_stamped {
+  lcmt_header header;
+  lcmt_pose pose;
+}

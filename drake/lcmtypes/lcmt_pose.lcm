@@ -1,0 +1,7 @@
+package drake;
+
+// A representation of a 3D pose.
+struct lcmt_pose {
+  lcmt_point position;
+  lcmt_quaternion orientation;
+}
