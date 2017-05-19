@@ -51,6 +51,28 @@ class VectorValue : public Value<BasicVector<T>*> {
     return std::make_unique<VectorValue>(*this);
   }
 
+  /// Obtain a const reference to the BasicVector owned by this VectorValue.
+  const BasicVector<T>& get_vector() const {
+    DRAKE_ASSERT(owned_value_ != nullptr);
+    return *owned_value_;
+  }
+
+  /// Obtain a mutable reference to the BasicVector owned by this VectorValue.
+  BasicVector<T>& get_mutable_vector() {
+    DRAKE_ASSERT(owned_value_ != nullptr);
+    return *owned_value_;
+  }
+
+  /// Extract the contained BasicVector and transfer ownership to
+  /// the caller. The VectorValue is left empty. This is useful when you have
+  /// been handed an AbstractValue but would like to use only the BasicVector
+  /// you know lurks inside. After extracting the vector you should delete
+  /// the now-empty shell of the AbstractValue.
+  std::unique_ptr<BasicVector<T>> release_vector() {
+    this->set_value(nullptr);  // Clear the parent Value.
+    return std::move(owned_value_);
+  }
+
  private:
   void CheckInvariants() {
     DRAKE_DEMAND(owned_value_.get() == this->get_value());

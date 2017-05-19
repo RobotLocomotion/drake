@@ -257,7 +257,7 @@ drake_cc_library(
         ":cache",
         ":context",
         ":diagram_context",
-        ":value",
+        ":vector_value",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
@@ -273,8 +273,8 @@ drake_cc_library(
     visibility = [":__subpackages__"],
     deps = [
         ":value",
-        ":vector_value",
         ":vector",
+        ":vector_value",
         "//drake/common",
     ],
 )
