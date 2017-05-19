@@ -16,6 +16,8 @@
 /// 6: finger 1 bend/extend
 /// 7: finger 2 bend/extend
 /// 8: finger 3 bend/extend
+///
+/// Position units are in radians, velocity units are radians in per second
 
 #include <gflags/gflags.h>
 
