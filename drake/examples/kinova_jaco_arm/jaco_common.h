@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
