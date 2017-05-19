@@ -843,7 +843,7 @@ void RgbdCamera::OutputPoseVector(
 }
 
 void RgbdCamera::OutputColorImage(const Context<double>& context,
-                      Image<uint8_t>* color_image) const {
+                                  ImageBgra8U* color_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, kPortStateInput);
 
@@ -851,7 +851,7 @@ void RgbdCamera::OutputColorImage(const Context<double>& context,
 }
 
 void RgbdCamera::OutputDepthImage(const Context<double>& context,
-                      Image<float>* depth_image) const {
+                                  ImageDepth32F* depth_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, kPortStateInput);
 
@@ -859,7 +859,7 @@ void RgbdCamera::OutputDepthImage(const Context<double>& context,
 }
 
 void RgbdCamera::OutputLabelImage(const Context<double>& context,
-                      Image<int16_t>* label_image) const {
+                                  ImageLabel16I* label_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, kPortStateInput);
 
