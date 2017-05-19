@@ -270,35 +270,43 @@ class IntegratorBase {
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
-   *  @name Minstep
+   *  @name Methods for minimum integration step size selection and behavior.
+   *  @anchor Minstep
    *  @{
-   *  This group of methods is used to set the requested minimum step size
-   *  as well as the desired behavior for when the integrator wishes to take
-   *  a step below the minimum step size. Requesting a minimum step size
-   *  provides two kinds of notifications to the user: (1) the integrator wishes
-   *  to take a smaller integration step than the user expected would be
-   *  necessary and (2) the integration cannot simultaneously advance virtual
-   *  time and satisfy error tolerances/integrator convergence criteria.
+   *  This group of methods is used to set both the requested minimum step size
+   *  and the desired behavior for when the integrator attempts to shrink a
+   *  step- for purposes of error control or integrator convergence- below the
+   *  *working minimum step size* (defined precisely below). A user can request
+   *  a minimum step size in order to receive two kinds of notifications: (1)
+   *  the integrator attempted to shrink the step size (again, for purposes of
+   *  error control or integrator convergence) smaller than the user anticipated
+   *  would be necessary and (2) time became so large in magnitude that
+   *  it has become impossible to simultaneously advance virtual
+   *  time and satisfy error tolerances/integrator convergence criteria. To
+   *  illustrate the latter case, consider that double precision floating point
+   *  arithmetic yields the result `1e20 + 1e-4 = 1e20`, so selecting an
+   *  integration step size of 1e-4 when the current time is 1e20 would not
+   *  allow the integrator to advance virtual time.
    *
-   *  The requested minimum step size generally differs from the *working*
-   *  minimum step size. For example, if the requested minimum step size were
-   *  1e-4, floating point representation means that a step of 1e-4 will not be
-   *  possible when the current time in  the Context is 1e20: double precision
-   *  (type `double`) arithmetic yields the result `1e20 + 1e-4 = 1e20`.
-   *  Consequently, the requested minimum step size is replaced by a sensible
-   *  alternative when appropriate (1e6 for this example). See
-   *  get_working_minimum_step_size() and set_requested_minimum_step_size() for
-   *  more information. As this time (1e20) is large, the working minimum (1e6)
-   *  may be insufficiently small to satisfy error tolerances. The default
-   *  behavior in such a case is to throw an exception, but that behavior
+   *  The user-requested minimum step size generally differs from the *working*
+   *  minimum step size, which is selected automatically by the integrator;
+   *  Specifically, the requested minimum step size is replaced by an
+   *  automatically determined minimum when the former is too small relative to
+   *  the virtual time; the working minimum is the minimum active at a
+   *  particular point in virtual time. See get_working_minimum_step_size() and
+   *  set_requested_minimum_step_size() for a complete description of how the
+   *  working minimum step size is determined.
+   *
+   *  The default behavior taken when the integrator attempts to shrink the
+   *  step (again, for purposes of error control or integrator convergence)
+   *  below the working minimum is to throw an exception, but that behavior
    *  can be altered (see get_minimum_step_size_exceeded_throws() and
-   *  set_minimum_step_size_exceeded_throws()).
-   *
-   *  The requested minimum step size does not automatically apply for, e.g.,
-   *  `IntegrateWithMultipleSteps(h)` when `h` is smaller than the working
-   *  minimum; it would only apply when the integrator might wish to shrink `h`
-   *  even further (e.g., for error control purposes). As an example, assume
-   *  that the integrator first takes a step of `h-ε` when
+   *  set_minimum_step_size_exceeded_throws()). Since this condition applies
+   *  only for the cases of step size shrinkages for error control or error
+   *  integrator convergence, the working minimum step size does not
+   *  automatically apply for, e.g., `IntegrateWithMultipleSteps(h)` when `h` is
+   *  smaller than the working minimum. As an example, assume that the
+   *  integrator first takes a step of `h-ε` when
    *  `IntegrateWithMultipleSteps(h)` were called. A step of `ε < γ` (where `γ`
    *  is the working minimum step size) would remain.
    *  `IntegrateWithMultipleSteps()` would be free to attempt that step of size
@@ -312,7 +320,7 @@ class IntegratorBase {
   /// minimum step size (for, e.g., purposes of error control). Default is
   /// `true`. If `false`, the integrator will advance time and state using the
   /// minimum specified step size in such situations.
-  /// @see Minstep
+  /// See @link Minstep this section for more detail. @endlink
   bool get_minimum_step_size_exceeded_throws() const {
     return min_step_exceeded_throws_; }
 
