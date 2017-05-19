@@ -146,19 +146,19 @@ class WitnessFunction {
   }
 
  protected:
-   /// Derived classes will implement this function to evaluate the witness
+  /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
   virtual T DoEvaluate(const Context<T>& context) = 0;
 
   // The name of this witness function.
   std::string name_;
 
-  private:
-    // Condition(s) under which this witness function triggers.
-    TriggerType trigger_type_;
+ private:
+  // Condition(s) under which this witness function triggers.
+  TriggerType trigger_type_;
 
-    // Action (event type) to be taken when this witness function triggers.
-    typename DiscreteEvent<T>::ActionType action_type_;
+  // Action (event type) to be taken when this witness function triggers.
+  typename DiscreteEvent<T>::ActionType action_type_;
 };
 
 }  // namespace systems
