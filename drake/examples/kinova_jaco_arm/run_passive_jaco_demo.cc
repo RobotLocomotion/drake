@@ -1,8 +1,21 @@
 /// @file
 ///
-/// This demo sets up a simple passive dynamics simulation of the Kinova jaco
+/// This demo sets up a simple passive dynamics simulation of the Kinova Jaco
 /// arm. The robot is initialized with an (arbitrary) joint space pose, and is
 /// simulated with zero torques at the joints.
+///
+/// This simulation uses a 6-degree of freedom Kinova Jaco arm with a three
+/// finger gripper. Joints are numbered sequentually starting from the base
+/// with the following joint index descriptions:
+/// 0: shoulder roll
+/// 1: shoulder fore/aft
+/// 2: elbow fore/aft
+/// 3: forearm roll
+/// 4: wrist yaw
+/// 5: wrist roll
+/// 6: finger 1 bend/extend
+/// 7: finger 2 bend/extend
+/// 8: finger 3 bend/extend
 
 #include <gflags/gflags.h>
 
@@ -17,20 +30,12 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
-using std::make_unique;
-using std::move;
-using std::unique_ptr;
-
 namespace drake {
 
-using lcm::DrakeLcm;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::ContinuousState;
-using systems::Diagram;
-using systems::DiagramBuilder;
 using systems::RigidBodyPlant;
-using systems::Simulator;
 using systems::VectorBase;
 
 namespace examples {
@@ -44,9 +49,9 @@ int DoMain(int argc, char* argv[]) {
   logging::HandleSpdlogGflags();
 
   drake::lcm::DrakeLcm lcm;
-  DiagramBuilder<double> builder;
+  systems::DiagramBuilder<double> builder;
 
-  // Adds a plant
+  // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
   const std::string kModelPath =
       "/manipulation/models/jaco_description/urdf/"
@@ -57,36 +62,37 @@ int DoMain(int argc, char* argv[]) {
     CreateTreedFromFixedModelAtPose(kModelPath, tree.get());
 
     auto tree_sys =
-        std::make_unique<systems::RigidBodyPlant<double>>(std::move(tree));
-    plant = builder.template AddSystem<systems::RigidBodyPlant<double>>(
+        std::make_unique<RigidBodyPlant<double>>(std::move(tree));
+    plant = builder.AddSystem<RigidBodyPlant<double>>(
         std::move(tree_sys));
     plant->set_name("plant");
   }
 
-  // Verifies the tree
+  // Verifies the tree.
   const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
   VerifyJacoTree(tree);
 
   // Creates and adds LCM publisher for visualization.
   auto visualizer =
-      builder.template AddSystem<systems::DrakeVisualizer>(tree, &lcm);
+      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
 
-  // Feed in constant command inputs of zero
+  // Feeds in constant command inputs of zero.
   VectorX<double> zero_values = VectorX<double>::Zero(plant->get_input_size());
   auto zero_source =
-      builder.template AddSystem<ConstantVectorSource<double>>(zero_values);
+      builder.AddSystem<ConstantVectorSource<double>>(zero_values);
   zero_source->set_name("zero_source");
   builder.Connect(zero_source->get_output_port(), plant->get_input_port(0));
 
-  // Connect the visualizer and build the diagram
+  // Connects the visualizer and builds the diagram.
   builder.Connect(plant->get_output_port(0), visualizer->get_input_port(0));
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
-  Simulator<double> simulator(*diagram);
+  systems::Simulator<double> simulator(*diagram);
 
-  systems::Context<double>* jaco_context = diagram->GetMutableSubsystemContext(
+  Context<double>* jaco_context = diagram->GetMutableSubsystemContext(
       simulator.get_mutable_context(), plant);
 
-  //  Set (arbitrary) initial conditions
+  // Sets (arbitrary) initial conditions.
+  // See file header for joint index descriptions.
   VectorBase<double>* x0 = jaco_context->get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, 0.5);
 
