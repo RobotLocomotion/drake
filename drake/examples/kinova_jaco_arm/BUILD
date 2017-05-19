@@ -36,8 +36,7 @@ drake_cc_binary(
     test_rule_args = ["--duration=0.5"],
     test_rule_size = "medium",
     deps = [
-        "@gflags//:gflags",
-        ":jaco_common",
+       ":jaco_common",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
@@ -45,6 +44,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/primitives:constant_vector_source",
+        "@gflags//:gflags",
     ],
 )
 
@@ -57,7 +57,6 @@ drake_cc_binary(
     ],
     tags = ["snopt"],
     deps = [
-        "@gflags//:gflags",
         ":jaco_common",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
@@ -67,6 +66,7 @@ drake_cc_binary(
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/controllers:state_feedback_controller_base",
         "//drake/systems/primitives:constant_vector_source",
+        "@gflags//:gflags",
     ],
 )
 
