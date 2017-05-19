@@ -10,6 +10,7 @@
 // integration.
 // TODO(edrumwri): This test should be upgraded to a reusable, closed-form
 //                 benchmark by integrating this class with SpringMassSystem.
+//                 See issue #6146.
 
 namespace drake {
 namespace systems {

@@ -2,6 +2,13 @@
 
 #include "drake/systems/analysis/test/spring_mass_damper_system.h"
 
+// WARNING WARNING WARNING
+// This test is currently used only as a stiff system test for implicit
+// integration.
+// TODO(edrumwri): This test should be upgraded to a reusable, closed-form
+//                 benchmark by integrating this class with SpringMassSystem.
+//                 See issue #6146.
+
 namespace drake {
 namespace systems {
 namespace implicit_integrator_test {
@@ -11,6 +18,7 @@ namespace implicit_integrator_test {
 // point mass state. A force of constant magnitude is applied to the
 // spring-mass-damper. Tests the ability of an integrator to deal with
 // such discontinuities.
+
 template <class T>
 class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
  public:
