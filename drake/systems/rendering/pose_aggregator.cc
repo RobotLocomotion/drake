@@ -18,7 +18,7 @@ PoseAggregator<T>::PoseAggregator() {
   // Declare the output port and provide an allocator for a PoseBundle of length
   // equal to the concatenation of all inputs. This can't be done with a model
   // value because we don't know at construction how big the output will be.
-  this->DeclareAbstractOutputPort(&PoseAggregator::AllocatePoseBundle,
+  this->DeclareAbstractOutputPort(&PoseAggregator::MakePoseBundle,
                                   &PoseAggregator::CalcPoseBundle);
 }
 
@@ -120,7 +120,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
 }
 
 template <typename T>
-PoseBundle<T> PoseAggregator<T>::AllocatePoseBundle() const {
+PoseBundle<T> PoseAggregator<T>::MakePoseBundle() const {
   return PoseBundle<T>(this->CountNumPoses());
 }
 

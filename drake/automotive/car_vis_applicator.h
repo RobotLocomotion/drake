@@ -73,7 +73,7 @@ class CarVisApplicator : public systems::LeafSystem<T> {
   int num_vis_poses() const;
 
  private:
-  systems::rendering::PoseBundle<T> AllocatePoseBundleOutput() const;
+  systems::rendering::PoseBundle<T> MakePoseBundleOutput() const;
 
   void CalcPoseBundleOutput(const systems::Context<T>& context,
                             systems::rendering::PoseBundle<T>* output) const;

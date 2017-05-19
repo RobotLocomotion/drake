@@ -50,7 +50,7 @@ class GripperAction : public ActionPrimitive {
       systems::State<double>* state) const override;
 
  private:
-  lcmt_schunk_wsg_command AllocatePlanOutputPort() const;
+  lcmt_schunk_wsg_command MakePlanOutput() const;
   void OutputCurrentPlan(const systems::Context<double>& context,
                          lcmt_schunk_wsg_command* wsg_plan_output) const;
 

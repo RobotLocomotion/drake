@@ -37,7 +37,7 @@ GripperAction::GripperAction(double desired_update_interval)
                       1 /* action_primitive_state_index */),
       internal_state_index_(0),
       plan_output_port(this->DeclareAbstractOutputPort(
-                               &GripperAction::AllocatePlanOutputPort,
+                               &GripperAction::MakePlanOutput,
                                &GripperAction::OutputCurrentPlan)
                            .get_index()),
       input_port_primitive_input_(
@@ -52,7 +52,7 @@ GripperAction::AllocateExtendedAbstractState() const {
   return return_value;
 }
 
-lcmt_schunk_wsg_command GripperAction::AllocatePlanOutputPort() const {
+lcmt_schunk_wsg_command GripperAction::MakePlanOutput() const {
   lcmt_schunk_wsg_command default_command;
   default_command.target_position_mm = kMaxWidthInMm;
   default_command.force = 0.0;

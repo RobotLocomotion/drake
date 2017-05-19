@@ -53,8 +53,8 @@ class RobotStateEncoder final : public LeafSystem<double> {
       const RigidBodyActuator& actuator) const;
 
  private:
-  // This is the allocator method for the output port.
-  bot_core::robot_state_t AllocateRobotState() const;
+  // This is the method used by the allocator for the output port.
+  bot_core::robot_state_t MakeRobotState() const;
 
   // This is the calculator method for the output port.
   void OutputRobotState(const Context<double>& context,

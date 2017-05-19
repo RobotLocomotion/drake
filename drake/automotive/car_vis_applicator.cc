@@ -30,7 +30,7 @@ CarVisApplicator<T>::CarVisApplicator() {
           .get_index();
   output_port_index_ =
       systems::LeafSystem<T>::DeclareAbstractOutputPort(
-          &CarVisApplicator::AllocatePoseBundleOutput,
+          &CarVisApplicator::MakePoseBundleOutput,
           &CarVisApplicator::CalcPoseBundleOutput).get_index();
 }
 
@@ -126,7 +126,7 @@ void CarVisApplicator<T>::CalcPoseBundleOutput(
 
 template <typename T>
 PoseBundle<T>
-CarVisApplicator<T>::AllocatePoseBundleOutput() const {
+CarVisApplicator<T>::MakePoseBundleOutput() const {
   PoseBundle<T> pose_bundle(num_vis_poses());
   int index{0};
   for (const auto& v : visualizers_) {

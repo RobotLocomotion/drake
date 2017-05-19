@@ -637,7 +637,9 @@ class LeafSystem : public System<T> {
   /// simply by providing a model value that can be used to construct an
   /// allocator that simply copies the model when a new value object is needed.
   /// Alternatively a method can be provided that constructs a value object when
-  /// invoked.
+  /// invoked (those methods are conventionally, but not necessarily, named
+  /// `MakeSomething()` where `Something` is replace by the output port value
+  /// type).
   ///
   /// Because output port values are ultimately stored in AbstractValue objects,
   /// the underlying types must be suitable. For vector ports, that means the
@@ -791,7 +793,7 @@ class LeafSystem : public System<T> {
   /// Declares an abstract-valued output port by specifying member functions to
   /// use both for the allocator and calculator. The signatures are:
   /// @code
-  /// OutputType MySystem::ConstructOutputValue(const Context<T>&) const;
+  /// OutputType MySystem::MakeOutputValue(const Context<T>&) const;
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
@@ -800,13 +802,13 @@ class LeafSystem : public System<T> {
   /// Template arguments will be deduced and do not need to be specified.
   template <class MySystem, typename OutputType>
   const LeafOutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*construct)(const Context<T>&) const,
+      OutputType (MySystem::*make)(const Context<T>&) const,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = this->CreateLeafOutputPort(
-        [this_ptr, construct](const Context<T>* context) {
-          return AbstractValue::Make((this_ptr->*construct)(*context));
+        [this_ptr, make](const Context<T>* context) {
+          return AbstractValue::Make((this_ptr->*make)(*context));
         },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
@@ -827,13 +829,13 @@ class LeafSystem : public System<T> {
   /// Template arguments will be deduced and do not need to be specified.
   template <class MySystem, typename OutputType>
   const LeafOutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*construct)() const,
+      OutputType (MySystem::*make)() const,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = this->CreateLeafOutputPort(
-        [this_ptr, construct](const Context<T>*) {  // Swallow the context.
-          return AbstractValue::Make((this_ptr->*construct)());
+        [this_ptr, make](const Context<T>*) {  // Swallow the context.
+          return AbstractValue::Make((this_ptr->*make)());
         },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();

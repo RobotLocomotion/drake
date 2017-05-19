@@ -159,8 +159,8 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   }
 
  private:
-  // This is the allocator method for the output port.
-  lcmt_iiwa_status AllocateOutputStatus() const;
+  // This is the method to use for the output port allocator.
+  lcmt_iiwa_status MakeOutputStatus() const;
 
   // This is the calculator method for the output port.
   void OutputStatus(const systems::Context<double>& context,

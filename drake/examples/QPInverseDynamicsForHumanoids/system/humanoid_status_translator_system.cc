@@ -14,7 +14,7 @@ HumanoidStatusTranslatorSystem::HumanoidStatusTranslatorSystem(
 }
 
 HumanoidStatus
-HumanoidStatusTranslatorSystem::AllocateOutputPort() const {
+HumanoidStatusTranslatorSystem::MakeHumanoidStatus() const {
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
   alias_groups.LoadFromFile(alias_group_path_);
 
@@ -29,7 +29,7 @@ StateToHumanoidStatusSystem::StateToHumanoidStatusSystem(
       DeclareInputPort(systems::kVectorValued, kDim).get_index();
   set_output_port_index_humanoid_status(
       DeclareAbstractOutputPort<StateToHumanoidStatusSystem, HumanoidStatus>(
-          &StateToHumanoidStatusSystem::AllocateOutputPort,
+          &StateToHumanoidStatusSystem::MakeHumanoidStatus,
           &StateToHumanoidStatusSystem::CalcHumanoidStatus)
           .get_index());
 }
@@ -56,7 +56,7 @@ RobotStateMsgToHumanoidStatusSystem::RobotStateMsgToHumanoidStatusSystem(
   set_output_port_index_humanoid_status(
       DeclareAbstractOutputPort<RobotStateMsgToHumanoidStatusSystem,
                                 HumanoidStatus>(
-          &RobotStateMsgToHumanoidStatusSystem::AllocateOutputPort,
+          &RobotStateMsgToHumanoidStatusSystem::MakeHumanoidStatus,
           &RobotStateMsgToHumanoidStatusSystem::CalcHumanoidStatus)
           .get_index());
 }

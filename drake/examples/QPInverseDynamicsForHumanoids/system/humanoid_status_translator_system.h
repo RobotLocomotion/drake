@@ -42,9 +42,9 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
 
  protected:
   /**
-   * Derived classes should use this as the output port allocator.
+   * Derived classes should use this method for the output port allocator.
    */
-  HumanoidStatus AllocateOutputPort() const;
+  HumanoidStatus MakeHumanoidStatus() const;
 
   /**
    * Derived classes should use this to record the output port index.

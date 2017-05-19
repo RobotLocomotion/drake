@@ -32,7 +32,7 @@ RobotStateEncoder::RobotStateEncoder(
     const std::vector<RigidBodyFrame<double>>& ft_sensor_info)
     : translator_(tree),
       lcm_message_port_index_(
-          DeclareAbstractOutputPort(&RobotStateEncoder::AllocateRobotState,
+          DeclareAbstractOutputPort(&RobotStateEncoder::MakeRobotState,
                                     &RobotStateEncoder::OutputRobotState)
               .get_index()),
       kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
@@ -77,7 +77,7 @@ void RobotStateEncoder::OutputRobotState(const Context<double>& context,
   SetForceTorque(kinematics_results, contact_results, &message);
 }
 
-robot_state_t RobotStateEncoder::AllocateRobotState() const {
+robot_state_t RobotStateEncoder::MakeRobotState() const {
   robot_state_t msg;
   translator_.InitializeMessage(&msg);
   return robot_state_t(msg);

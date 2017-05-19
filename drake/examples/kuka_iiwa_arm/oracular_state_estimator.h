@@ -46,7 +46,7 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
             .get_index();
     output_port_index_msg_ =
         this->DeclareAbstractOutputPort(
-                &OracularStateEstimation::AllocateRobotState,
+                &OracularStateEstimation::MakeRobotState,
                 &OracularStateEstimation::OutputRobotState)
             .get_index();
   }
@@ -68,7 +68,7 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
         &msg);
   }
 
-  bot_core::robot_state_t AllocateRobotState() const {
+  bot_core::robot_state_t MakeRobotState() const {
     bot_core::robot_state_t msg;
     // Resize and zeros the message.
     translator_.InitializeMessage(&msg);

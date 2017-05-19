@@ -179,11 +179,11 @@ IiwaStatusSender::IiwaStatusSender(int num_joints)
     : num_joints_(num_joints) {
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
-  this->DeclareAbstractOutputPort(&IiwaStatusSender::AllocateOutputStatus,
+  this->DeclareAbstractOutputPort(&IiwaStatusSender::MakeOutputStatus,
                                   &IiwaStatusSender::OutputStatus);
 }
 
-lcmt_iiwa_status IiwaStatusSender::AllocateOutputStatus() const {
+lcmt_iiwa_status IiwaStatusSender::MakeOutputStatus() const {
   lcmt_iiwa_status msg{};
   msg.num_joints = num_joints_;
   msg.joint_position_measured.resize(msg.num_joints, 0);
