@@ -767,15 +767,15 @@ void RgbdCamera::Init(const std::string& name) {
       impl_->tree().get_num_positions() + impl_->tree().get_num_velocities();
   this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
-  ImageBgra8U color_image(kImageWidth, kImageHeight, kColorImageChannel);
+  ImageBgra8U color_image(kImageWidth, kImageHeight);
   color_image_port_ = &this->DeclareAbstractOutputPort(
       sensors::ImageBgra8U(color_image), &RgbdCamera::OutputColorImage);
 
-  ImageDepth32F depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
+  ImageDepth32F depth_image(kImageWidth, kImageHeight);
   depth_image_port_ = &this->DeclareAbstractOutputPort(
       sensors::ImageDepth32F(depth_image), &RgbdCamera::OutputDepthImage);
 
-  ImageLabel16I label_image(kImageWidth, kImageHeight, kLabelImageChannel);
+  ImageLabel16I label_image(kImageWidth, kImageHeight);
   label_image_port_ = &this->DeclareAbstractOutputPort(
       sensors::ImageLabel16I(label_image), &RgbdCamera::OutputLabelImage);
 
