@@ -602,19 +602,19 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
   // Set the first witness function trigger and the witness function that
   // makes that trigger.
   std::list<WitnessFunction<T>*> triggered_witnesses;
-  T t_first = tf;
+  T t_first_witness = tf;
 
   // Loop over all witness functions.
   for (size_t i = 0; i < witnesses.size(); ++i) {
     // Set a and b
     T a = t0;
-    T b = t_first;
+    T b = t_first_witness;
 
     // Set the witness function values.
     T fa = w0[i];
 
     // Integrate to b.
-    fwd_int(t_first);
+    fwd_int(t_first_witness);
 
     // Evaluate the witness function.
     T fb = system.EvalWitnessFunction(*context, witnesses[i]);
@@ -624,6 +624,9 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     // we can skip the bisection for this interval.
     if (!witnesses[i]->should_trigger(fa, fb))
       continue;
+
+    // Since the witness function is triggering, fa should not be exactly zero.
+    DRAKE_ASSERT(fa != 0);
 
     while (true) {
       // Determine the midpoint.
@@ -640,8 +643,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
         b = c;
         fb = fc;
       } else {
-        // NOTE: because the witness function cannot trigger at the very
-        // beginning of an interval, it's conceivable
+        DRAKE_DEMAND(witnesses[i]->should_trigger(fc, fb));
         a = c;
         fa = fc;
       }
@@ -661,7 +663,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
        //  changes sign at the end of the interval (i.e., the following
        // assertion).
        // Integrate to the trigger time.
-       fwd_int(t_first);
+       fwd_int(t_first_witness);
 
        // TODO(edrumwri): This check is expensive. Remove it once we are
        // confident.
@@ -670,20 +672,20 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
        DRAKE_DEMAND(f_trigger * fa <= 0);
 
        // Only clear the list of witnesses if t_trigger strictly less than
-        // t_first.
-        DRAKE_DEMAND(t_first >= t_trigger);
-        if (t_trigger < t_first)
+        // t_first_witness.
+        DRAKE_DEMAND(t_first_witness >= t_trigger);
+        if (t_trigger < t_first_witness)
           triggered_witnesses.clear();
 
         // Set the first trigger time and add the witness index.
         triggered_witnesses.push_back(witnesses[i]);
-        t_first = t_trigger;
+        t_first_witness = t_trigger;
         break;
       }
     }
   }
 
-  DRAKE_DEMAND(t_first <= tf);
+  DRAKE_DEMAND(t_first_witness <= tf);
   return triggered_witnesses;
 }
 
