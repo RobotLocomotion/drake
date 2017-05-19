@@ -20,25 +20,18 @@ class LogisticSystem;
 template <class T>
 class LogisticWitness : public systems::WitnessFunction<T> {
  public:
+  ~LogisticWitness() override {}
   explicit LogisticWitness(const LogisticSystem<T>* system) :
+    systems::WitnessFunction<T>(
+        systems::WitnessFunction<T>::TriggerType::kCrossesZero,
+        systems::DiscreteEvent<T>::kPublishAction),
     system_(*system) {
   }
 
   // The witness function is simply the state value itself.
-  T Evaluate(const Context<T>& context) override {
+  T DoEvaluate(const Context<T>& context) override {
     return (*context.get_continuous_state())[0];
   }
-
-  // Triggering this witness function will only yield a publish event.
-  typename systems::DiscreteEvent<T>::ActionType get_action_type()
-      const override {
-    return systems::DiscreteEvent<T>::kPublishAction;
-  }
-
-  // Trigger the witness function whenever the state crosses zero.
-  typename systems::WitnessFunction<T>::TriggerType get_trigger_type()
-      const override {
-    return systems::WitnessFunction<T>::TriggerType::kCrossesZero; }
 
   // Pointer to the system.
   const LogisticSystem<T>& system_;

@@ -26,21 +26,25 @@ namespace systems {
 ///
 /// Precision in the definition of the witness function is necessary, because we
 /// want the witness function to trigger only once if, for example,
-/// `w(t₀, x₀) ≠ 0`, `w(t₁, x₁) = 0`, and `w(t₂, x₂) ≠ 0`, for some t₂ > t₁.
-/// In other words, if the witness function is evaluated over the intervals
-/// [t₀, t₁] and [t₁, t₂], meaning that the zero occurs precisely at an interval
-/// endpoint, the witness function should trigger once. Similarly, the witness
-/// function should trigger exactly once if `w(t₀, x₀) ≠ 0`, `w(t*, x*) = 0`,
-/// and `w(t₁, x₁) = 0`. We can define the trigger condition formally over
-/// interval `[t₀, t₁]` as:<pre>
-/// T(w, t₀, x₀, t₁) =  1   if w(t₀, x₀) ≠ 0 and w(t₀, x₀)⋅w(t₁, x₁) ≤ 0
-///                     0   if w(t₀, x₀) = 0 or  w(t₀, x₀)⋅w(t₁, x₁) > 0
+/// `w(t₀, x₀(t₀)) ≠ 0`, `w(t₁, x₁(t₁)) = 0`, and `w(t₂, x₂(t₂)) ≠ 0`, for some
+/// t₂ > t₁. In other words, if the witness function is evaluated over the
+/// intervals [t₀, t₁] and [t₁, t₂], meaning that the zero occurs precisely at
+/// an interval endpoint, the witness function should trigger once. Similarly,
+/// the witness function should trigger exactly once if `w(t₀, x₀(t₀)) ≠ 0`,
+/// `w(t*, x*(t*)) = 0`,
+/// and `w(t₁, x₁(t₁)) = 0`. We can define the trigger condition formally over
+/// interval `[t₀, t₁]` using the function:<pre>
+/// T(w, t₀, x₀(t₀), t₁) =  1   if w(t₀, x₀(t₀)) ≠ 0 and
+///                                w(t₀, x₀(t₀))⋅w(t₁, x₁(t₁)) ≤ 0
+///                         0   if w(t₀, x₀(t₀)) = 0 or
+///                                w(t₀, x₀(t₀))⋅w(t₁, x₁(t₁)) > 0
 /// </pre>
 /// where `x(tₑ)` for some `tₑ ≥ t₀` is the solution to the ODE or DAE initial
-/// value problem `ẋ = f(t, x)` for `x(t₀) = x₀`. The trigger function can be
-/// further modified, if desired, to incorporate the constraint that the witness
-/// function should trigger only when crossing from positive values to negative
-/// values, or vice versa.
+/// value problem `ẋ = f(t, x)` for `x(t₀) = x₀` at time `tₑ`. We wish for the
+/// witness function to trigger if the trigger function evaluates to one. The
+/// trigger function can be further modified, if desired, to incorporate the
+/// constraint that the witness function should trigger only when crossing from
+/// positive values to negative values, or vice versa.
 ///
 /// A good witness function should not cross zero repeatedly over a small
 /// interval of time or over small changes in state; when a witness function has
@@ -67,19 +71,26 @@ class WitnessFunction {
     /// This witness function will never be triggered.
     kNone,
 
-    /// Witness function triggers when the function crosses zero after an
-    /// initial positive evaluation.
-    kPositiveThenNegative,
+    /// Witness function triggers when the function crosses or touches zero
+    /// after an initial positive evaluation.
+    kPositiveThenNonPositive,
 
-    /// Witness function triggers when the function crosses zero after an
-    /// initial negative evaluation.
-    kNegativeThenPositive,
+    /// Witness function triggers when the function crosses or touches zero
+    /// after an initial negative evaluation.
+    kNegativeThenNonNegative,
 
-    /// Witness function triggers *any time* the function crosses zero.
-    /// Convenience definition for equivalence to bitwise OR of
-    /// kPositiveThenNegative and kNegativeThenPositive.
+    /// Witness function triggers *any time* the function crosses/touches zero,
+    /// *except* when the witness function evaluates to zero at the beginning
+    /// of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
+    /// kNegativeThenNonNegative.
     kCrossesZero,
   };
+
+  /// Constructs the witness function with the given trigger type and action
+  /// type.
+  WitnessFunction(const TriggerType& ttype,
+                  const typename DiscreteEvent<T>::ActionType& atype) :
+                  trigger_type_(ttype), action_type_(atype) {}
 
   /// Gets the name of this witness function (used primarily for logging and
   /// debugging).
@@ -89,16 +100,19 @@ class WitnessFunction {
   void set_name(const std::string& name) { name_ = name; }
 
   /// Derived classes will override this function to get the type of event
-  /// that the witness function will trigger.
-  virtual typename DiscreteEvent<T>::ActionType get_action_type() const = 0;
+  /// that will be taken if this witness function triggers. Example actions are
+  /// publish, perform a discrete variable update, or perform an unrestricted
+  /// update.
+  typename DiscreteEvent<T>::ActionType get_action_type() const {
+      return action_type_; }
 
-  /// Derived classes will override this function to get the witness function
-  /// trigger type.
-  virtual TriggerType get_trigger_type() const = 0;
+  /// Gets the condition(s) under which this witness function triggers.
+  TriggerType get_trigger_type() const { return trigger_type_; }
 
-  /// Derived classes will override this function to evaluate the witness
-  /// function at the given context.
-  virtual T Evaluate(const Context<T>& context) = 0;
+  /// Evaluates the witness function at the given context.
+  T Evaluate(const Context<T>& context) {
+    return DoEvaluate(context);
+  }
 
   /// Derived classes can override this function to specify the absolute time
   /// tolerance with which to isolate the first witness trigger. Default
@@ -116,10 +130,10 @@ class WitnessFunction {
       case TriggerType::kNone:
         return false;
 
-      case TriggerType::kPositiveThenNegative:
+      case TriggerType::kPositiveThenNonPositive:
         return (w0 > 0 && wf <= 0);
 
-      case TriggerType::kNegativeThenPositive:
+      case TriggerType::kNegativeThenNonNegative:
         return (w0 < 0 && wf >= 0);
 
       case TriggerType::kCrossesZero:
@@ -132,8 +146,19 @@ class WitnessFunction {
   }
 
  protected:
+   /// Derived classes will implement this function to evaluate the witness
+  /// function at the given context.
+  virtual T DoEvaluate(const Context<T>& context) = 0;
+
   // The name of this witness function.
   std::string name_;
+
+  private:
+    // Condition(s) under which this witness function triggers.
+    TriggerType trigger_type_;
+
+    // Action (event type) to be taken when this witness function triggers.
+    typename DiscreteEvent<T>::ActionType action_type_;
 };
 
 }  // namespace systems

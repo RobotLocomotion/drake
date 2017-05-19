@@ -22,31 +22,18 @@ class ClockWitness : public systems::WitnessFunction<T> {
  public:
   explicit ClockWitness(const EmptySystem<T>* system,
       const typename systems::WitnessFunction<T>::TriggerType& ttype) :
-    system_(*system), trigger_type_(ttype) {
+      systems::WitnessFunction<T>(ttype,
+          systems::DiscreteEvent<T>::kPublishAction),
+    system_(*system) {
   }
 
   // The witness function is simply the time value itself.
-  T Evaluate(const Context<T>& context) override {
+  T DoEvaluate(const Context<T>& context) override {
     return context.get_time();
   }
 
-  // Triggering this witness function will only yield a publish event.
-  typename systems::DiscreteEvent<T>::ActionType get_action_type()
-      const override {
-    return systems::DiscreteEvent<T>::kPublishAction;
-  }
-
-  // Trigger the witness function whenever the clock crosses zero.
-  typename systems::WitnessFunction<T>::TriggerType get_trigger_type()
-      const override {
-    return trigger_type_; }
-
   // Pointer to the system.
   const EmptySystem<T>& system_;
-
-  // Condition upon which this witness should trigger.
-  typename systems::WitnessFunction<T>::TriggerType trigger_type_{
-      systems::WitnessFunction<T>::kNone};
 };
 
 /// System with no state evolution for testing a simplistic witness function.

@@ -69,7 +69,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimple) {
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   EmptySystem system(WitnessFunction<double>::TriggerType::
-      kPositiveThenNegative);
+      kPositiveThenNonPositive);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -93,7 +93,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
   EmptySystem system(WitnessFunction<double>::TriggerType::
-      kNegativeThenPositive);
+      kNegativeThenNonNegative);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
