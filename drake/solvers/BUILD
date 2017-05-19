@@ -9,6 +9,7 @@ load(
     "drake_cc_library",
 )
 load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools:mosek.bzl", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -597,7 +598,7 @@ drake_cc_googletest(
     srcs = [
         "test/mosek_solver_test.cc",
     ],
-    tags = ["mosek"],
+    tags = mosek_test_tags(),
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
@@ -623,9 +624,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rotation_constraint_test",
     size = "medium",
-    tags = gurobi_test_tags() + [
-        "mosek",
-    ],
+    tags = gurobi_test_tags() + mosek_test_tags(),
     deps = [
         ":gurobi_solver",
         ":mathematical_program",

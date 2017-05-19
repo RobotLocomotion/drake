@@ -5,6 +5,7 @@ load("//tools:cpplint.bzl", "cpplint")
 load("//tools:python_lint.bzl", "python_lint")
 load("//tools:drake.bzl", "drake_cc_binary")
 load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools:mosek.bzl", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -202,7 +203,7 @@ py_test(
     size = "small",
     srcs = ["python/pydrake/test/testMosekSolver.py"],
     main = "python/pydrake/test/testMosekSolver.py",
-    tags = ["mosek"],
+    tags = mosek_test_tags(),
     deps = [":pydrake"],
 )
 
