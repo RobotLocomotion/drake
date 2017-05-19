@@ -167,6 +167,14 @@ void CheckAddedIndeterminateVariable(const MathematicalProgram& prog,
                 j * var.rows() + i);
     }
   }
+
+  // Checks if the indeterminate is of type MathematicalProgram::VarType::CONTINUOUS variable (by default).
+  // This test should always be true (by defaults), but keep it to make sure everything works as it is supposed to be.
+  for (int i = 0; i < var.rows(); ++i) {
+    for (int j = 0; j < var.cols(); ++j) {
+      EXPECT_EQ(var(i, j).get_type(), MathematicalProgram::VarType::CONTINUOUS);
+    }
+  }
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
