@@ -256,7 +256,7 @@ class GeoMesh {
 
 // A `Lane`-frame face: a sequence of vertices expressed in the (s,r,h)
 // coordinates of an api::Lane (which is not referenced here).  Each
-// vertex has normal vector also expressed in the `Lane`-frame.
+// vertex has a normal vector also expressed in the `Lane`-frame.
 class SrhFace {
  public:
   SrhFace(const std::initializer_list<api::LanePosition> vertices,
@@ -559,6 +559,16 @@ double PickGridUnit(const api::Lane* lane,
 }
 
 
+// Renders a BranchPoint @p branch_point as a collection of pointy
+// arrows for each branch.  @p base_elevation is the desired elevation
+// of the center of the rendering (above the road surface), and
+// @p height is the vertical size of rendering.  The actual elevation
+// may be raised in order to avoid overlapping other nearby
+// BranchPoints.  @p mesh is the mesh into which the rendering occurs.
+// @p previous_centers is a list of the world-frame positions of the
+// centers of previously rendered BranchPoints (in order to avoid
+// overlaps with them); this list will be updated with the rendered
+// center of this BranchPoint.
 void RenderBranchPoint(
     const api::BranchPoint* const branch_point,
     const double base_elevation, const double height,

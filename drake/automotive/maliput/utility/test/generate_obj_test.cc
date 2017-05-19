@@ -45,7 +45,6 @@ class GenerateObjTest : public ::testing::Test {
   void ReadAsString(const spruce::path& path, std::string* destination) {
     std::ifstream is(path.getStr());
     std::stringstream ss;
-    std::cout << "FILE '" << path.getStr() << "'\n";
     ASSERT_TRUE(is.is_open());
     while (true) {
       char c = is.get();
@@ -84,7 +83,6 @@ class GenerateObjBasicDutTest : public GenerateObjTest {
     const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
     const mono::Endpoint start{{0., 0., 0.}, kZeroZ};
     b.Connect("0", start, 1., kZeroZ);
-    const std::unique_ptr<const api::RoadGeometry> dut = b.Build({"dut"});
     dut_ = b.Build({"dut"});
   }
 
@@ -137,7 +135,6 @@ TEST_F(GenerateObjBasicDutTest, ChangeOrigin) {
     const mono::EndpointZ kZeroZ{kOffsetZ, 0., 0., 0.};
     const mono::Endpoint start{{kOffsetX, kOffsetY, 0.}, kZeroZ};
     b.Connect("0", start, 1., kZeroZ);
-    const std::unique_ptr<const api::RoadGeometry> dut = b.Build({"dut"});
     dut_ = b.Build({"dut"});
   }
 
@@ -231,7 +228,6 @@ TEST_F(GenerateObjBasicDutTest, StackedBranchPointsObjContent) {
     const mono::Endpoint start1{{10. * kLinearTolerance, 0., M_PI}, kZeroZ};
     b.Connect("0", start0, 1., kZeroZ);
     b.Connect("1", start1, 1., kZeroZ);
-    const std::unique_ptr<const api::RoadGeometry> dut = b.Build({"dut"});
     dut_ = b.Build({"dut"});
   }
 

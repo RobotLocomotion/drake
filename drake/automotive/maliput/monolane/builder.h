@@ -3,9 +3,9 @@
 #include <cmath>
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 #include <vector>
 
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -306,7 +306,7 @@ class Group {
 
  private:
   std::string id_;
-  std::set<const Connection*> connection_set_;
+  std::unordered_set<const Connection*> connection_set_;
   std::vector<const Connection*> connection_vector_;
 };
 
