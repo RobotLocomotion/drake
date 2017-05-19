@@ -118,13 +118,18 @@ struct MobilizerTopology {
   /// outboard frames the Mobilizer will connect, given by `in_frame` and
   /// `out_frame` respectively, and similarly the inboard and outboard bodies
   /// being connected, given by `in_body` and `out_body`, respectively.
+  /// The constructed topology will correspond to that of a Mobilizer with
+  /// `num_positions_in` generalized positions and `num_velocities_in`
+  /// generalized velocities.
   MobilizerTopology(
       MobilizerIndex mobilizer_index,
       FrameIndex in_frame, FrameIndex out_frame,
-      BodyIndex in_body, BodyIndex out_body) :
+      BodyIndex in_body, BodyIndex out_body,
+      int num_positions_in, int num_velocities_in) :
       index(mobilizer_index),
       inboard_frame(in_frame), outboard_frame(out_frame),
-      inboard_body(in_body), outboard_body(out_body) {}
+      inboard_body(in_body), outboard_body(out_body),
+      num_positions(num_positions_in), num_velocities(num_velocities_in) {}
 
   /// Returns `true` if this %MobilizerTopology connects frames identified by
   /// indexes `frame1` and `frame2`.
@@ -223,6 +228,19 @@ struct BodyNodeTopology {
 
   /// Returns the number of children to this node.
   int get_num_children() const { return static_cast<int>(child_nodes.size());}
+
+
+  /// Start and number of dofs for this node's mobilizer.
+  int num_mobilizer_positions{0};
+  int mobilizer_positions_start{0};
+  int num_mobilizer_velocities{0};
+  int mobilizer_velocities_start{0};
+
+  /// Start and number of dofs for this node's body (flexible dofs).
+  int num_flexible_positions{0};
+  int flexible_positions_start{0};
+  int num_flexible_velocities{0};
+  int flexible_velocities_start{0};
 };
 
 /// Data structure to store the topological information associated with an
@@ -334,7 +352,8 @@ class MultibodyTreeTopology {
 
   /// Creates and adds a new MobilizerTopology connecting the inboard and
   /// outboard multibody frames identified by indexes `in_frame` and
-  /// `out_frame`, respectively.
+  /// `out_frame`, respectively. The created topology will correspond to that of
+  /// a Mobilizer with `num_positions` and `num_velocities`.
   ///
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.
@@ -347,7 +366,8 @@ class MultibodyTreeTopology {
   ///
   /// @returns The MobilizerIndex assigned to the new MobilizerTopology.
   MobilizerIndex add_mobilizer(
-      FrameIndex in_frame, FrameIndex out_frame) {
+      FrameIndex in_frame, FrameIndex out_frame,
+      int num_positions, int num_velocities) {
     if (is_valid()) {
       throw std::logic_error("This MultibodyTreeTopology is finalized already. "
                              "Therefore adding more mobilizers is not allowed. "
@@ -402,8 +422,9 @@ class MultibodyTreeTopology {
     bodies_[inboard_body].child_bodies.push_back(outboard_body);
 
     mobilizers_.emplace_back(mobilizer_index,
-                            in_frame, out_frame,
-                            inboard_body, outboard_body);
+                             in_frame, out_frame,
+                             inboard_body, outboard_body,
+                             num_positions, num_velocities);
     return mobilizer_index;
   }
 
@@ -503,10 +524,34 @@ class MultibodyTreeTopology {
     // should equal the number of bodies in the tree.
     DRAKE_DEMAND(get_num_bodies() == get_num_body_nodes());
 
-    // TODO(amcastro-tri): Compile topological information for BodyNode objects
-    // in a following PR. This will include:
-    // - Sizes (num dofs)
-    // - Indexing info. Start/end indexes into context (actually cache) pools.
+    // Compile information regarding the size of the system:
+    // - Number of degrees of freedom (generalized positions and velocities).
+    // - Start/end indexes for each node.
+    //
+    // TODO(amcastro-tri): count body dofs (i.e. for flexible dofs).
+    //
+    // Base-to-Tip loop in BFT order, skipping the world (node = 0).
+    num_positions_ = 0;
+    num_velocities_ = 0;
+    num_states_ = 0;
+    for (BodyNodeIndex node_index(1);
+         node_index < get_num_body_nodes(); ++node_index) {
+      BodyNodeTopology& node = body_nodes_[node_index];
+      MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
+
+      mobilizer.positions_start = num_states_;
+      num_states_ += mobilizer.num_positions;
+      mobilizer.velocities_start = num_states_;
+      num_states_ += mobilizer.num_velocities;
+
+      num_positions_ += mobilizer.num_positions;
+      num_velocities_ += mobilizer.num_velocities;
+
+      node.mobilizer_positions_start = mobilizer.positions_start;
+      node.num_mobilizer_positions = mobilizer.num_positions;
+      node.mobilizer_velocities_start = mobilizer.velocities_start;
+      node.num_mobilizer_velocities = mobilizer.num_velocities;
+    }
 
     // We are done with a successful Finalize() and we mark it as so.
     // Do not add any more code after this!
@@ -522,6 +567,9 @@ class MultibodyTreeTopology {
 
   /// Returns the total number of generalized velocities in the model.
   int get_num_velocities() const { return num_velocities_; }
+
+  /// Returns the total size of the state vector in the model.
+  int get_num_states() const { return num_states_; }
 
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
@@ -560,6 +608,7 @@ class MultibodyTreeTopology {
   // model.
   int num_positions_{0};
   int num_velocities_{0};
+  int num_states_{0};
 };
 
 }  // namespace multibody

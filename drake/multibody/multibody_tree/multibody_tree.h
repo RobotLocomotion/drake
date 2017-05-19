@@ -301,9 +301,12 @@ class MultibodyTree {
     // later to define mobilizers between those frames in a second tree2.
     mobilizer->get_inboard_frame().HasThisParentTreeOrThrow(this);
     mobilizer->get_outboard_frame().HasThisParentTreeOrThrow(this);
+    const int num_positions = mobilizer->get_num_positions();
+    const int num_velocities = mobilizer->get_num_velocities();
     MobilizerIndex mobilizer_index = topology_.add_mobilizer(
         mobilizer->get_inboard_frame().get_index(),
-        mobilizer->get_outboard_frame().get_index());
+        mobilizer->get_outboard_frame().get_index(),
+        num_positions, num_velocities);
 
     // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
     // below. Do not move it around!

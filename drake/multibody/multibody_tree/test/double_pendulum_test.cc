@@ -308,13 +308,11 @@ TEST_F(PendulumTests, CreateContext) {
   auto
       mbt_context = dynamic_cast<MultibodyTreeContext<double> *>(context.get());
 
-  // TODO(amcastro-tri): Update these tests to be against 2 dof's instead of 0
-  // when mobilizers are introduced. Right now these tests are here to verify
-  // the API allow us to obtain these vectors as Eigen blocks.
-  EXPECT_EQ(mbt_context->get_positions().size(), 0);
-  EXPECT_EQ(mbt_context->get_mutable_positions().size(), 0);
-  EXPECT_EQ(mbt_context->get_velocities().size(), 0);
-  EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 0);
+  // Verifies the correct number of generalized positions and velocities.
+  EXPECT_EQ(mbt_context->get_positions().size(), 2);
+  EXPECT_EQ(mbt_context->get_mutable_positions().size(), 2);
+  EXPECT_EQ(mbt_context->get_velocities().size(), 2);
+  EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
 
   // Set the poses of each body in the position kinematics cache to have an
   // arbitrary value that we can use for unit testing. In practice the poses in
