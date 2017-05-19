@@ -15,14 +15,17 @@
 namespace drake {
 namespace solvers {
 template <int rows, int cols>
-using MatrixIndeterminateVariable = Eigen::Matrix<symbolic::Variable, rows, cols>;
+using MatrixIndeterminateVariable =
+    Eigen::Matrix<symbolic::Variable, rows, cols>;
 template <int rows>
 using VectorIndeterminateVariable = MatrixIndeterminateVariable<rows, 1>;
 using MatrixXIndeterminateVariable =
     MatrixIndeterminateVariable<Eigen::Dynamic, Eigen::Dynamic>;
-using VectorXIndeterminateVariable = VectorIndeterminateVariable<Eigen::Dynamic>;
+using VectorXIndeterminateVariable =
+    VectorIndeterminateVariable<Eigen::Dynamic>;
 
-using IndeterminateVariableRefList = std::list<Eigen::Ref<const VectorXIndeterminateVariable>>;
+using IndeterminateVariableRefList =
+    std::list<Eigen::Ref<const VectorXIndeterminateVariable>>;
 
 /**
  * Concatenates each element in \p var_list into a single Eigen vector of

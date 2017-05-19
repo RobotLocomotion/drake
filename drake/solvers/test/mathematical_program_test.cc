@@ -168,8 +168,10 @@ void CheckAddedIndeterminateVariable(const MathematicalProgram& prog,
     }
   }
 
-  // Checks if the indeterminate is of type MathematicalProgram::VarType::CONTINUOUS variable (by default).
-  // This test should always be true (by defaults), but keep it to make sure everything works as it is supposed to be.
+  // Checks if the indeterminate is of type
+  // MathematicalProgram::VarType::CONTINUOUS variable (by default). This test
+  // should always be true (by defaults), but keep it to make sure everything
+  // works as it is supposed to be.
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
       EXPECT_EQ(var(i, j).get_type(), MathematicalProgram::VarType::CONTINUOUS);
@@ -287,7 +289,8 @@ GTEST_TEST(testAddIndeterminateVariable, testAddIndeterminateVariables1) {
                 "should be a dynamic sized matrix");
   EXPECT_EQ(X.rows(), 2);
   EXPECT_EQ(X.cols(), 3);
-  CheckAddedIndeterminateVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+  CheckAddedIndeterminateVariable(
+      prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
 }
 
 GTEST_TEST(testAddIndeterminateVariable, testAddIndeterminateVariable2) {
@@ -296,7 +299,8 @@ GTEST_TEST(testAddIndeterminateVariable, testAddIndeterminateVariable2) {
   auto X = prog.NewIndeterminateVariables<2, 3>("X");
   static_assert(is_same<decltype(X), MatrixIndeterminateVariable<2, 3>>::value,
                 "should be a static sized matrix");
-  CheckAddedIndeterminateVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+  CheckAddedIndeterminateVariable(
+      prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
 }
 
 GTEST_TEST(testAddIndeterminateVariable, testAddIndeterminateVariable3) {

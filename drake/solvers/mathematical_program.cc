@@ -208,7 +208,8 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
   return NewVariables(VarType::BINARY, rows, names);
 }
 
-// TODO (FischerGundlach) Do I actually need the int row, or is the cast from size_t good enough?
+// TODO(FischerGundlach): Do I actually need the int row, or is the cast from
+// size_t good enough?
 /*MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
     int rows, int cols, const vector<string>& names) {
   MatrixXIndeterminateVariable Indeterminate_variable_matrix(rows, cols);
@@ -224,7 +225,7 @@ VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
 MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
     size_t rows, size_t cols, const vector<string>& names) {
   MatrixXIndeterminateVariable Indeterminate_variable_matrix(rows, cols);
-  NewIndeterminate_impl(names,Indeterminate_variable_matrix);
+  NewIndeterminate_impl(names, Indeterminate_variable_matrix);
   return Indeterminate_variable_matrix;
 }
 
@@ -367,8 +368,8 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
     return AddConstraint(
         BindingDynamicCast<PositiveSemidefiniteConstraint>(binding));
   } else if (dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
-    return AddConstraint(BindingDynamicCast<RotatedLorentzConeConstraint>(
-        binding));
+    return AddConstraint(
+        BindingDynamicCast<RotatedLorentzConeConstraint>(binding));
   } else if (dynamic_cast<LorentzConeConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<LorentzConeConstraint>(binding));
   } else if (dynamic_cast<LinearConstraint*>(constraint)) {
@@ -643,8 +644,9 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
     ostringstream oss;
-    oss << var << " is not a decision variable in the mathematical program, "
-                  "when calling GetSolution.\n";
+    oss << var
+        << " is not a decision variable in the mathematical program, "
+           "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;
@@ -657,7 +659,7 @@ size_t MathematicalProgram::FindIndeterminateVariableIndex(
     ostringstream oss;
     oss << var
         << " is not a indeterminate variable in the mathematical program, "
-            "when calling GetSolution.\n";
+           "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;

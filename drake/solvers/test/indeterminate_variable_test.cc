@@ -20,7 +20,8 @@ GTEST_TEST(TestIndeterminateVariable, TestIndeterminateVariableListRef) {
   VectorIndeterminateVariable<2> x_vec2(x2, x4);
   IndeterminateVariableRefList var_list{x_vec1, x_vec2};
 
-  VectorXIndeterminateVariable stacked_vars = ConcatenateIndeterminateVariableRefList(var_list);
+  VectorXIndeterminateVariable stacked_vars =
+      ConcatenateIndeterminateVariableRefList(var_list);
   EXPECT_EQ(stacked_vars.rows(), 4);
   EXPECT_PRED2(VarEqual, stacked_vars(0), x3);
   EXPECT_PRED2(VarEqual, stacked_vars(1), x1);
