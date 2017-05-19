@@ -352,16 +352,6 @@ drake_cc_library(
         "//conditions:default": ["no_snopt.cc"],
     }),
     hdrs = ["snopt_solver.h"],
-    deps = select({
-        "//tools:with_snopt": [
-            ":mathematical_program_api",
-            "//drake/math:autodiff",
-            "@snopt//:snopt_c",
-        ],
-        "//conditions:default": [
-            ":mathematical_program_api",
-        ],
-    }),
     # Some versions of SNOPT's API require passing a `std::string::c_str()`
     # result of `const char*` to a function taking a `char*`, or passing a
     # function pointer that receives parameters to a function that takes a
@@ -373,6 +363,16 @@ drake_cc_library(
     # and contain the language abuses there, so that the actual logic of our
     # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
     copts = ["-fpermissive"],
+    deps = select({
+        "//tools:with_snopt": [
+            ":mathematical_program_api",
+            "//drake/math:autodiff",
+            "@snopt//:snopt_c",
+        ],
+        "//conditions:default": [
+            ":mathematical_program_api",
+        ],
+    }),
 )
 
 drake_cc_library(

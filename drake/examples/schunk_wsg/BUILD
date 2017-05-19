@@ -30,10 +30,10 @@ drake_cc_binary(
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":simulated_schunk_wsg_system",
-        "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
-        "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
         "//drake/lcm",
         "//drake/lcmtypes:schunk",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",

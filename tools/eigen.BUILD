@@ -17,7 +17,7 @@ cc_library(
             "unsupported/Eigen/*",
             "unsupported/Eigen/**/*.h",
         ],
-        exclude=["**/CMakeLists.txt"],
+        exclude = ["**/CMakeLists.txt"],
     ),
     defines = ["EIGEN_MPL2_ONLY"],
     includes = ["."],
@@ -70,9 +70,9 @@ install(
     name = "install",
     doc_dest = "share/doc/eigen3",
     docs = glob(["COPYING.*"]),
-    targets = ["eigen"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/eigen3",
+    targets = ["eigen"],
     deps = ["install_cmake"],
 )
 
