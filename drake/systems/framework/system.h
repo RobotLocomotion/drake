@@ -113,9 +113,6 @@ class System {
   // System objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
-  /// The Eigen scalar type with which this System is templatized.
-  typedef T ScalarType;
-
   virtual ~System() {}
 
   //----------------------------------------------------------------------------
