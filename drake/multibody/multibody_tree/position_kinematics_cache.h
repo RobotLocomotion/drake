@@ -68,8 +68,9 @@ class PositionKinematicsCache {
  private:
   // Pool types:
   // Pools store entries in the same order multibody tree nodes are
-  // ordered in the tree, i.e. in BFT order. Therefore clients of this class
-  // will access entries by BodyNodeIndex, see `get_X_WB()` for instance.
+  // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore
+  // clients of this class will access entries by BodyNodeIndex, see
+  // `get_X_WB()` for instance.
 
   // The type of pools for storing poses.
   typedef eigen_aligned_std_vector<Isometry3<T>> X_PoolType;
