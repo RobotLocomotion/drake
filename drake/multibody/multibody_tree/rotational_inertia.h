@@ -1,13 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <sstream>
 #include <utility>
 #include <vector>
-#include <cmath>
 
 #include <Eigen/Eigenvalues>
 
@@ -59,10 +59,7 @@ namespace multibody {
 /// frame E (x̂, ŷ, ẑ).  A rotational inertia is ill-defined unless there is a
 /// body S, about-point P, and expressed-in frame E. The user of this class is
 /// responsible for tracking the body S, about-point P and expressed-in frame E
-/// (none of these are stored in this class). The rotational inertia class only
-/// stores data for the inertia matrix, whose elements are initially set to NaN
-/// to aid in ensuring only the lower-triangular part of the matrix is used
-/// (the upper-triangular part is not used - with each element as NaN).
+/// (none of these are stored in this class).
 ///
 /// @note This class does not store the about-point nor the expressed-in frame,
 /// nor does this class help enforce consistency of the about-point or
@@ -104,8 +101,8 @@ class RotationalInertia {
   /// and with each product of inertia set to zero.
   /// In debug builds, throws std::logic_error if rotational inertia that is
   /// constructed from these arguments violates CouldBePhysicallyValid().
-  RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz) :
-      RotationalInertia(Ixx, Iyy, Izz, 0.0, 0.0, 0.0) {}
+  RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz)
+      : RotationalInertia(Ixx, Iyy, Izz, 0.0, 0.0, 0.0) {}
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
@@ -127,14 +124,14 @@ class RotationalInertia {
   /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
   /// @retval I_QP_E, Q's rotational inertia about-point P expressed-in frame E.
   /// @remark Negating the position vector p_PQ_E has no affect on the result.
-  RotationalInertia(const T& mass, const Vector3<T>& p_PQ_E) :
-      RotationalInertia(mass * p_PQ_E, p_PQ_E) {}
+  RotationalInertia(const T& mass, const Vector3<T>& p_PQ_E)
+      : RotationalInertia(mass * p_PQ_E, p_PQ_E) {}
 
   /// Constructs a rotational inertia with equal moments of inertia along its
-  /// diagonal and with each product of inertia set to zero. This constructor
+  /// diagonal and with each product of inertia set to zero. This factory
   /// is useful for the rotational inertia of a uniform-density sphere or cube.
   /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
-  /// TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
+  // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
   static RotationalInertia<T> TriaxiallySymmetric(const T& I_triaxial) {
     return RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0);
   }
@@ -142,7 +139,7 @@ class RotationalInertia {
   /// For consistency with Eigen's API, the rows() method returns 3.
   int rows() const { return 3; }
 
-  /// For consistency with Eigen's API, the cols() methods returns 3.
+  /// For consistency with Eigen's API, the cols() method returns 3.
   int cols() const { return 3; }
 
   /// Returns 3-element vector with moments of inertia [Ixx, Iyy, Izz].
@@ -192,15 +189,6 @@ class RotationalInertia {
   /// is symmetric and includes both lower and upper parts of the matrix.
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /// Returns this rotational inertia's Frobenius norm, which for a rotational
-  /// inertia I having moments of inertia m and products of inertia p is:
-  ///  ‖I‖F = sqrt(‖m‖₂² + 2 ‖p‖₂²), with sqrt() the square root function and
-  ///                                ‖⋅‖₂ the ℓ²-norm of a vector.
-  T Norm() const {
-    using std::sqrt;
-    return sqrt(get_moments().squaredNorm() + 2 * get_products().squaredNorm());
-  }
-
   /// Compares `this` rotational inertia to `other` rotional inertia within the
   /// specified `precision` (which is a dimensionless number specifying
   /// the relative precision to which the comparison is performed).
@@ -241,6 +229,7 @@ class RotationalInertia {
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since rotational inertia `I_BP_E` has been added to it.
   /// @see operator+().
+  // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_BP_E) {
     this->get_mutable_triangular_view() += I_BP_E.get_matrix();
     return *this;
@@ -297,12 +286,12 @@ class RotationalInertia {
     return RotationalInertia(*this) -= I_BP_E;
   }
 
-  /// Multiplies `this` rotational inertia by a nonnegative scalar.
+  /// Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
   /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
   /// @param nonnegative_scalar Nonnegative scalar which multiplies `this`.
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since `this` has been multiplied by `nonnegative_scalar`.
-  /// @see operator*().
+  /// @see operator*(), operator*(const T&, const RotationalInertia<T>&).
   RotationalInertia<T>& operator*=(const T& nonnegative_scalar) {
     DRAKE_ASSERT_VOID(ThrowIfMultiplyByNegativeScalar(nonnegative_scalar));
     this->get_mutable_triangular_view() *= nonnegative_scalar;
@@ -311,14 +300,16 @@ class RotationalInertia {
 
   /// Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
   /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
+  /// @param nonnegative_scalar Nonnegative scalar which multiplies `this`.
   /// @return `this` rotational inertia multiplied by `nonnegative_scalar`.
   /// @see operator*=(), operator*(const T&, const RotationalInertia<T>&)
   RotationalInertia<T> operator*(const T& nonnegative_scalar) const {
     return RotationalInertia(*this) *= nonnegative_scalar;
   }
 
-  /// Multiplies a nonnegative scalar (>=0) by the rotational inertia `I_BP_E`.
+  /// Multiplies a nonnegative scalar (>= 0) by the rotational inertia `I_BP_E`.
   /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
+  /// @param nonnegative_scalar Nonnegative scalar which multiplies `I_BP_E`.
   /// @return `nonnegative_scalar` multiplied by rotational inertia `I_BP_E`.
   /// @see operator*=(), operator*()
   friend RotationalInertia<T> operator*(const T& nonnegative_scalar,
@@ -327,35 +318,37 @@ class RotationalInertia {
     return RotationalInertia(I_BP_E) *= nonnegative_scalar;
   }
 
-  /// Divides `this` rotational inertia by a positive scalar.
-  /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
-  /// @param positive_scalar Positive scalar (> 0) which divides `this`.
-  /// @return A reference to `this` rotational inertia. `this` changes
-  ///         since `this` has been divided by `positive_scalar`.
-  /// @see operator/(), operator*().
-  RotationalInertia<T>& operator/=(const T& positive_scalar) {
-    DRAKE_ASSERT_VOID(ThrowIfDivideByZeroOrNegativeScalar(positive_scalar));
-    this->get_mutable_triangular_view() /= positive_scalar;
-    return *this;
-  }
-
-  /// Divides `this` rotational inertia by a positive scalar.
-  /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
-  /// @param positive_scalar Positive scalar (> 0) which multiplies `this`.
-  /// @return `this` rotational inertia divided by `positive_scalar`.
-  /// @see operator/=(), operator*=().
-  RotationalInertia<T> operator/(const T& positive_scalar) const {
-    return RotationalInertia(*this) /= positive_scalar;
-  }
-
   /// Multiplies `this` rotational inertia about-point P, expressed-in frame E
   /// by the vector w_E (which *must* also have the same expressed-in frame E).
   /// @note This calculation is equivalent to regarding `this` rotational
   ///       inertia as an inertia dyadic and dot-multiplying it by w_E.
   /// @param w_E Vector to post-multiply with `this` rotational inertia.
   /// @return The Vector that results from multiplying `this` by `w_E`.
+  // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   Vector3<T> operator*(const Vector3<T>& w_E) const {
     return Vector3<T>(get_symmetric_matrix_view() * w_E);
+  }
+
+  /// Divides `this` rotational inertia by a positive scalar (> 0).
+  /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
+  /// @param positive_scalar Positive scalar (> 0) which divides `this`.
+  /// @return A reference to `this` rotational inertia. `this` changes
+  ///         since `this` has been divided by `positive_scalar`.
+  /// @see operator/().
+  RotationalInertia<T>& operator/=(const T& positive_scalar) {
+    DRAKE_ASSERT_VOID(ThrowIfDivideByZeroOrNegativeScalar(positive_scalar));
+    this->get_mutable_triangular_view() /= positive_scalar;
+    return *this;
+  }
+
+  /// Divides `this` rotational inertia by a positive scalar(> 0).
+  /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
+  /// @param positive_scalar Positive scalar (> 0) which divides `this`.
+  /// @return `this` rotational inertia divided by `positive_scalar`.
+  /// @see operator/=().
+  // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
+  RotationalInertia<T> operator/(const T& positive_scalar) const {
+    return RotationalInertia(*this) /= positive_scalar;
   }
 
   /// Sets `this` rotational inertia so all its elements are equal to NaN.
@@ -459,8 +452,8 @@ class RotationalInertia {
   /// @return `true` for a plausible rotational inertia passing the above
   ///          necessary but insufficient checks and `false` otherwise.
   /// @throws std::runtime_error if principal moments of inertia cannot be
-  ///         calculated (eigenvalue solver) or one of the moments or products
-  ///         of inertia cannot be converted to a double.
+  ///         calculated (eigenvalue solver) or if scalar type T cannot be
+  ///         converted to a double.
   bool CouldBePhysicallyValid() const {
     if (IsNaN()) return false;
 
@@ -489,7 +482,7 @@ class RotationalInertia {
         p(0), p(1), p(2), epsilon);
   }
 
-  /// Re-expresses `this` rotational inertia `I_BP_E` so it is `I_BP_A`.
+  /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
   /// In other words, starts with `this` rotational inertia of a body (or
   /// composite body) B about-point P expressed-in frame E and re-expresses
   /// to B's rotational inertia about-point P expressed-in frame A, i.e.,
@@ -666,18 +659,6 @@ class RotationalInertia {
   ///@}
 
  protected:
-  /// Creates a rotational inertia for a unit-mass particle Q (mass = 1), whose
-  /// position vector from about-point P is p_PQ_E (E is expressed-in frame).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
-  /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
-  /// @retval I_QP_E, Q's rotational inertia about-point P expressed-in frame E.
-  /// @remark Negating the position vector p_PQ_E has no affect on the result.
-  static RotationalInertia<T> MakeUnitMassRotationalInertia(
-      const Vector3<T>& p_PQ_E) {
-    return RotationalInertia(p_PQ_E, p_PQ_E);
-  }
-
   /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   /// No check is done to determine if the result is physically valid.
   /// @param I_BP_E Rotational inertia of a body (or composite body) B to
@@ -704,17 +685,16 @@ class RotationalInertia {
     return *this;
   }
 
- private:
-  // Constructs a rotational inertia for a particle Q whose position vector
-  // from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
-  // expressed-in frame.  Particle Q's mass (or unit mass) is included in the
-  // first argument.  This constructor is private as it is a "helper" function.
-  // In debug builds, throws std::logic_error if rotational inertia that is
-  // constructed from these arguments violates CouldBePhysicallyValid().
-  // @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
-  // @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
-  //                    If unit mass, this argument is simply p_PQ_E.
-  // @retval I_QP_E, Q's rotational inertia about-point Q expressed-in frame E.
+  /// Constructs a rotational inertia for a particle Q whose position vector
+  /// from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
+  /// expressed-in frame.  Particle Q's mass (or unit mass) is included in the
+  /// first argument.  This constructor is private as it is a "helper" function.
+  /// In debug builds, throws std::logic_error if rotational inertia that is
+  /// constructed from these arguments violates CouldBePhysicallyValid().
+  /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
+  /// @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
+  ///                    If unit mass, this argument is simply p_PQ_E.
+  /// @retval I_QP_E, Q's rotational inertia about-point Q expressed-in frame E.
   RotationalInertia(const Vector3<T>& mass_p_PQ_E, const Vector3<T>& p_PQ_E) {
     const T& mx = mass_p_PQ_E(0);
     const T& my = mass_p_PQ_E(1);
@@ -730,6 +710,7 @@ class RotationalInertia {
     DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
   }
 
+ private:
   // Sets this rotational inertia's moments and products of inertia. This method
   // intentionally avoids testing CouldBePhysicallyValid().  Some methods need
   // to be able to form non-physical rotational inertias (which are to be
@@ -867,8 +848,8 @@ class RotationalInertia {
   // Throws an exception if a rotational inertia is not physically valid.
   void ThrowIfNotPhysicallyValid() {
     if (!CouldBePhysicallyValid()) {
-    throw std::logic_error("Error: Rotational inertia did not pass test: "
-                           "CouldBePhysicallyValid().");
+      throw std::logic_error("Error: Rotational inertia did not pass test: "
+                             "CouldBePhysicallyValid().");
     }
   }
 
@@ -897,9 +878,10 @@ class RotationalInertia {
   // with a body (or composite body) S, an about-point P, and an expressed-in-
   // frame E.  However the user of this class is responsible for tracking S, P,
   // and E  (none of these are stored in this class).
-  // The rotational inertia class only has data for the inertia matrix, whose
-  // elements are initially set to NaN to aid in ensuring only the lower-
-  // triangular part of the matrix is used (upper-triangular part is not used).
+  // The only data stored by the rotational inertia class is its inertia matrix.
+  // Since the inertia matrix is symmetric, only the lower-triangular part of
+  // the matrix is used.  All elements of the inertia matrix are initially set
+  // to NaN which helps ensure the upper-triangular part is not used.
   Matrix3<T> I_SP_E_{Matrix3<T>::Constant(std::numeric_limits<
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };

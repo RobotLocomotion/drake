@@ -44,16 +44,16 @@ class UnitInertia : public RotationalInertia<T> {
   /// and with each product of inertia set to zero.
   /// In debug builds, throws std::logic_error if unit inertia constructed from
   /// these arguments violates RotationalInertia::CouldBePhysicallyValid().
-  UnitInertia(const T& Ixx, const T& Iyy, const T& Izz) :
-      RotationalInertia<T>(Ixx, Iyy, Izz) {}
+  UnitInertia(const T& Ixx, const T& Iyy, const T& Izz)
+      : RotationalInertia<T>(Ixx, Iyy, Izz) {}
 
   /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
   /// In debug builds, throws std::logic_error if unit inertia constructed from
   /// these arguments violates RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz,
-              const T& Ixy, const T& Ixz, const T& Iyz) :
-      RotationalInertia<T>(Ixx, Iyy, Izz, Ixy, Ixz, Iyz) {}
+              const T& Ixy, const T& Ixz, const T& Iyz)
+      : RotationalInertia<T>(Ixx, Iyy, Izz, Ixy, Ixz, Iyz) {}
 
   /// Constructs a %UnitInertia from a RotationalInertia. This constructor has
   /// no way to verify that the input rotational inertia actually is a unit
@@ -61,8 +61,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// the input rotational inertia will henceforth be considered a valid unit
   /// inertia.
   /// It is the responsibility of the user to pass a valid unit inertia.
-  explicit UnitInertia(const RotationalInertia<T>& I) :
-      RotationalInertia<T>(I) {}
+  explicit UnitInertia(const RotationalInertia<T>& I)
+      : RotationalInertia<T>(I) {}
 
   /// Sets `this` unit inertia from a generally non-unit inertia I corresponding
   /// to a body with a given `mass`.
@@ -107,8 +107,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @returns A reference to `this` unit inertia, which has now been taken
   ///          about point Q so can be written as `G_BQ_E`.
   UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcQ_E) {
-    RotationalInertia<T>::operator+=(
-        RotationalInertia<T>::MakeUnitMassRotationalInertia(p_BcQ_E));
+    RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
     return *this;
   }
 
@@ -143,6 +142,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Therefore the resulting inertia could have negative moments of inertia if
   /// the unit inertia of the unit mass at point `Bcm` is larger than `G_BQ_E`.
   /// Use with care.
+  // TODO(mitiguy) Issue #6147.  If invalid inertia, should throws exception.
   UnitInertia<T>& ShiftToCenterOfMassInPlace(const Vector3<T>& p_QBcm_E) {
     RotationalInertia<T>::MinusEqualsUnchecked(PointMass(p_QBcm_E));
     return *this;
@@ -163,17 +163,6 @@ class UnitInertia : public RotationalInertia<T> {
   UnitInertia<T> ShiftToCenterOfMass(
       const Vector3<T>& p_QBcm_E) const __attribute__((warn_unused_result)) {
     return UnitInertia<T>(*this).ShiftToCenterOfMassInPlace(p_QBcm_E);
-  }
-
-  /// Constructs a unit inertia with equal moments of inertia along its
-  /// diagonal and with each product of inertia set to zero. This constructor
-  /// is useful for the unit inertia of a uniform-density sphere or cube.
-  /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
-  /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube() for examples.
-  /// TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
-  static UnitInertia<T> TriaxiallySymmetric(const T& I_triaxial) {
-    return UnitInertia<T>(
-        RotationalInertia<T>::TriaxiallySymmetric(I_triaxial));
   }
 
   /// @name            Unit inertia for common 3D objects
@@ -277,10 +266,21 @@ class UnitInertia : public RotationalInertia<T> {
     const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
     return UnitInertia(Ix, Ix, Iz);
   }
+
+  /// Constructs a unit inertia with equal moments of inertia along its
+  /// diagonal and with each product of inertia set to zero. This factory
+  /// is useful for the unit inertia of a uniform-density sphere or cube.
+  /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
+  /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube() for examples.
+  // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
+  static UnitInertia<T> TriaxiallySymmetric(const T& I_triaxial) {
+    return UnitInertia<T>(
+        RotationalInertia<T>::TriaxiallySymmetric(I_triaxial));
+  }
   // End of Doxygen group
   //@}
 
-  /// @name  Disable operators that may result in non-unit inertias
+  // Disable operators that may result in non-unit inertias
   // (these operators *are* defined in the RotationalInertia class).
   // Note: Certain methods such as the re-express and shift do not need to be
   // deleted (because they cannot produce non-unit inertias).
@@ -288,7 +288,8 @@ class UnitInertia : public RotationalInertia<T> {
   // with respect to the UnitInertia subclass, and either = delete'd below,
   // or documented why they are allowable.
   // TODO(mitiguy) See issue #6109.  These deleted operators do not really
-  // protect the unit inertia from being non-unit. This code is broken.
+  //         protect a unit inertia from being non-unit. This code is broken.
+  /// @name  Disable operators that may result in non-unit inertias.
   //@{
   UnitInertia<T>& operator+=(const RotationalInertia<T>&) = delete;
   UnitInertia<T>& operator-=(const RotationalInertia<T>&) = delete;
