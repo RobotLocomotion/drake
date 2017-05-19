@@ -208,11 +208,11 @@ class RgbdCamera : public LeafSystem<double> {
 
   // These are the calculator methods for the four output ports.
   void OutputColorImage(const Context<double>& context,
-                        Image<uint8_t>* color_image) const;
+                        ImageBgra8U* color_image) const;
   void OutputDepthImage(const Context<double>& context,
-                        Image<float>* depth_image) const;
+                        ImageDepth32F* depth_image) const;
   void OutputLabelImage(const Context<double>& context,
-                        Image<int16_t>* label_image) const;
+                        ImageLabel16I* label_image) const;
   void OutputPoseVector(const Context<double>& context,
                         rendering::PoseVector<double>* pose_vector) const;
 

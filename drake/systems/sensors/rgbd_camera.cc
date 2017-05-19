@@ -261,11 +261,11 @@ class RgbdCamera::Impl {
 
   // These are the calculator method implementations for the four output ports.
   void OutputColorImage(const BasicVector<double>& input_vector,
-                        Image<uint8_t>* color_image) const;
+                        ImageBgra8U* color_image) const;
   void OutputDepthImage(const BasicVector<double>& input_vector,
-                        Image<float>* depth_image) const;
+                        ImageDepth32F* depth_image) const;
   void OutputLabelImage(const BasicVector<double>& input_vector,
-                        Image<int16_t>* label_image) const;
+                        ImageLabel16I* label_image) const;
   void OutputPoseVector(const BasicVector<double>& input_vector,
                         rendering::PoseVector<double>* pose_vector) const;
 
