@@ -142,7 +142,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Therefore the resulting inertia could have negative moments of inertia if
   /// the unit inertia of the unit mass at point `Bcm` is larger than `G_BQ_E`.
   /// Use with care.
-  // TODO(mitiguy) Issue #6147.  If invalid inertia, should throws exception.
+  // TODO(mitiguy) Issue #6147.  If invalid inertia, should throw exception.
   UnitInertia<T>& ShiftToCenterOfMassInPlace(const Vector3<T>& p_QBcm_E) {
     RotationalInertia<T>::MinusEqualsUnchecked(PointMass(p_QBcm_E));
     return *this;

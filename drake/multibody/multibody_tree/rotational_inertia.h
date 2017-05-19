@@ -685,6 +685,7 @@ class RotationalInertia {
     return *this;
   }
 
+ private:
   /// Constructs a rotational inertia for a particle Q whose position vector
   /// from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
   /// expressed-in frame.  Particle Q's mass (or unit mass) is included in the
@@ -710,7 +711,6 @@ class RotationalInertia {
     DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
   }
 
- private:
   // Sets this rotational inertia's moments and products of inertia. This method
   // intentionally avoids testing CouldBePhysicallyValid().  Some methods need
   // to be able to form non-physical rotational inertias (which are to be
