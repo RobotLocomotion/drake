@@ -270,8 +270,8 @@ class IntegratorBase {
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
-   *  @name Methods for minimum integration step size selection and behavior.
    *  @anchor Minstep
+   *  @name Methods for minimum integration step size selection and behavior.
    *  @{
    *  This group of methods is used to set both the requested minimum step size
    *  and the desired behavior for when the integrator attempts to shrink a
