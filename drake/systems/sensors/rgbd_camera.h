@@ -190,14 +190,14 @@ class RgbdCamera : public LeafSystem<double> {
   const InputPortDescriptor<double>& state_input_port() const;
 
   /// Returns the abstract valued output port that contains a BGRA image of the
-  /// type Image<uint8_t>.
+  /// type ImageBgra8U.
   const OutputPort<double>& color_image_output_port() const;
 
-  /// Returns the abstract valued output port that contains an Image<float>.
+  /// Returns the abstract valued output port that contains an ImageDepth32F.
   const OutputPort<double>& depth_image_output_port() const;
 
   /// Returns the abstract valued output port that contains an label image of
-  /// the type Image<int16_t>.
+  /// the type ImageLabel16I.
   const OutputPort<double>& label_image_output_port() const;
 
   /// Returns the vector valued output port that contains a PoseVector.
