@@ -55,7 +55,8 @@ class EmptySystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptySystem)
 
-  EmptySystem(const typename systems::WitnessFunction<T>::TriggerType& ttype) {
+  explicit EmptySystem(const typename systems::WitnessFunction<T>::TriggerType&
+                         ttype) {
     witness_ = std::make_unique<ClockWitness<T>>(this, ttype);
   }
 

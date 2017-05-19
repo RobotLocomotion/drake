@@ -20,7 +20,8 @@
 #include "drake/systems/analysis/test/logistic_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
-using namespace drake::systems;
+using drake::systems::WitnessFunction;
+using drake::systems::Simulator;
 using drake::systems::RungeKutta3Integrator;
 using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
 using EmptySystem = drake::systems::analysis_test::EmptySystem<double>;

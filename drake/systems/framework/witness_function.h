@@ -1,7 +1,8 @@
 #pragma once
 
-#include <utility>
+#include <limits>
 #include <string>
+#include <utility>
 
 #include "drake/systems/framework/discrete_event.h"
 
