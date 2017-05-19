@@ -105,6 +105,9 @@ target_link_libraries(symbolic_variables_test drakeCommon)
 drake_add_cc_test(type_safe_index_test type_safe_index_test.cc)
 target_link_libraries(type_safe_index_test drakeCommon)
 
+drake_add_cc_test(scoped_singleton_test scoped_singleton_test.cc)
+target_link_libraries(scoped_singleton_test drakeCommon)
+
 # Adds "drake_assert.h" unit testing.
 add_executable(drake_assert_test_default drake_assert_test.cc)
 target_link_libraries(drake_assert_test_default drakeCommon GTest::GTest GTest::Main)

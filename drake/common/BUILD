@@ -317,6 +317,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scoped_singleton",
+    hdrs = ["scoped_singleton.h"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_library(
     name = "protobuf",
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
@@ -693,6 +701,13 @@ drake_cc_googletest(
     deps = [
         ":type_safe_index",
         ":unused",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scoped_singleton_test",
+    deps = [
+        ":scoped_singleton",
     ],
 )
 
