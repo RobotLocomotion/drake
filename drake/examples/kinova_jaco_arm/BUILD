@@ -6,22 +6,10 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
-    "drake_cc_googletest",
 )
 
 package(
     default_visibility = [":__subpackages__"],
-)
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
@@ -33,8 +21,6 @@ drake_cc_library(
         "jaco_common.h",
     ],
     deps = [
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],
@@ -45,7 +31,6 @@ drake_cc_binary(
     srcs = ["run_passive_jaco_demo.cc"],
     add_test_rule = 1,
     data = [
-        ":models",
         "//drake/manipulation/models/jaco_description:models",
     ],
     test_rule_args = ["--duration=0.5"],
@@ -59,8 +44,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/controllers:state_feedback_controller_base",
         "//drake/systems/primitives:constant_vector_source",
     ],
 )
@@ -70,7 +53,6 @@ drake_cc_binary(
     srcs = ["run_setpose_jaco_demo.cc"],
     add_test_rule = 1,
     data = [
-        ":models",
         "//drake/manipulation/models/jaco_description:models",
     ],
     tags = ["snopt"],
