@@ -275,18 +275,19 @@ class IntegratorBase {
    *  @{
    *  This group of methods is used to set both the requested minimum step size
    *  and the desired behavior for when the integrator attempts to shrink a
-   *  step- for purposes of error control or integrator convergence- below the
-   *  *working minimum step size* (defined precisely below). A user can request
-   *  a minimum step size in order to receive two kinds of notifications: (1)
-   *  the integrator attempted to shrink the step size (again, for purposes of
-   *  error control or integrator convergence) smaller than the user anticipated
-   *  would be necessary and (2) time became so large in magnitude that
-   *  it has become impossible to simultaneously advance virtual
-   *  time and satisfy error tolerances/integrator convergence criteria. To
-   *  illustrate the latter case, consider that double precision floating point
-   *  arithmetic yields the result `1e20 + 1e-4 = 1e20`, so selecting an
-   *  integration step size of 1e-4 when the current time is 1e20 would not
-   *  allow the integrator to advance virtual time.
+   *  step—for purposes of error control or integrator step convergence—below
+   *  the *working minimum step size* (defined precisely below). A user can
+   *  request a minimum step size in order to be notified when either of the
+   *  following behaviors were identified: (1) the integrator attempted to
+   *  shrink the step size (again, for purposes of error control or step
+   *  convergence)  smaller than the user anticipated would be necessary and (2)
+   *  time became so large in magnitude that it has become impossible to
+   *  simultaneously advance virtual time and satisfy error
+   *  tolerances/integrator convergence criteria. To illustrate the latter case,
+   *  consider that double precision floating point arithmetic yields the result
+   *  `1e20 + 1e-4 = 1e20`, so selecting an integration step size of 1e-4 when
+   *  the current time is 1e20 would not allow the integrator to advance virtual
+   *  time.
    *
    *  The user-requested minimum step size generally differs from the *working*
    *  minimum step size, which is selected automatically by the integrator;
