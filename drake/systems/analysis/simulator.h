@@ -648,9 +648,8 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
         fa = fc;
       }
 
-      // If the time is sufficiently isolated and fc is within the dead band,
-      // quit. This conjunction on the condition helps find a zero well into
-      // the interior of the dead band.
+      // If the time is sufficiently isolated- to an absolute tolerance if t0
+      // is small, to a relative tolerance if t0 is large- then quit.
       if (b - a < witnesses[i]->get_time_isolation_tolerance() * ttol_mult) {
         // The trigger time is always at the right endpoint of the interval,
         // thereby ensuring that the witness will not trigger immediately when
@@ -663,7 +662,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
        //  changes sign at the end of the interval (i.e., the following
        // assertion).
        // Integrate to the trigger time.
-       fwd_int(t_first_witness);
+       fwd_int(t_trigger);
 
        // TODO(edrumwri): This check is expensive. Remove it once we are
        // confident.
