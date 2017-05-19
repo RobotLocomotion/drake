@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include <memory>
 #include <string>
 
 #include <Eigen/Core>
@@ -16,7 +16,6 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
 
   MosekSolver() : MathematicalProgramSolverInterface(SolverType::kMosek) {}
-  ~MosekSolver();
 
   /**
    * Defined true if Mosek was included during compilation, false otherwise.
@@ -25,14 +24,21 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
+  class License;
+
+  /**
+   * Permits controlling the scope (RAII) of a MOSEK license.
+   * This uses GetScopedSingleton to conservatively scope the lifetime of a
+   * license, and permit the license lifetime to be extended by the user.
+   * @throws std::runtime_error if a license cannot be obtained.
+   */
+  static std::shared_ptr<License> AcquireLicense();
+
  private:
-  // This is a void* to avoid needing to refer to types from the Mosek
-  // API if we're building without Mosek.  Note that both of these are
-  // mutable to allow latching the allocation of mosek_env_ during the
-  // first call so Solve() (which avoids grabbing a Mosek license
+  // Note that this is mutable to allow latching the allocation of mosek_env_
+  // during the first call of Solve() (which avoids grabbing a Mosek license
   // before we know that we actually want one).
-  mutable void* mosek_env_{nullptr};
-  mutable std::mutex env_mutex_;
+  mutable std::shared_ptr<License> license_;
 };
 
 }  // namespace solvers
