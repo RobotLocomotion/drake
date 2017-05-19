@@ -79,30 +79,30 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
   /// Returns an Eigen expression of the vector of generalized positions.
   Eigen::VectorBlock<const VectorX<T>> get_positions() const {
-    return get_state_vector().segment(0, get_num_positions());
+    return get_state_segment(0, get_num_positions());
   }
 
   /// Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_velocities() const {
-    return get_state_vector().segment(get_num_positions(),
-                                      get_num_velocities());
+    return get_state_segment(get_num_positions(), get_num_velocities());
   }
 
   /// Returns a mutable Eigen expression of the vector of generalized positions.
   Eigen::VectorBlock<VectorX<T>> get_mutable_positions() {
-    return get_mutable_state_vector().segment(0, get_num_positions());
+    return get_mutable_state_segment(0, get_num_positions());
   }
 
   /// Returns a mutable Eigen expression of the vector of generalized
   /// velocities.
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities() {
-    return get_mutable_state_vector().segment(get_num_positions(),
-                                              get_num_velocities());
+    return get_mutable_state_segment(get_num_positions(), get_num_velocities());
   }
 
  private:
-  // Returns a constant reference to the underlying Eigen vector for the state.
-  const VectorX<T>& get_state_vector() const {
+  // Helper to return a const Eigen::VectorBlock referencing a segment in the
+  // state vector with its first element at `start` and of size `count`.
+  Eigen::VectorBlock<const VectorX<T>> get_state_segment(
+      int start, int count) const {
     // We know that MultibodyTreeContext is a LeafContext and therefore the
     // continuous state vector must be a BasicVector.
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
@@ -112,11 +112,15 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
             this->get_continuous_state()->get_vector()).get_value();
     // xc.nestedExpression() resolves to "const VectorX<T>&" since the
     // continuous state is a BasicVector.
-    return xc.nestedExpression();
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
+    return xc.nestedExpression().segment(start, count);
   }
 
-  // Returns a mutable reference to the underlying Eigen vector for the state.
-  VectorX<T>& get_mutable_state_vector() {
+  // Helper to return a mutable Eigen::VectorBlock referencing a segment in the
+  // state vector with its first element at `start` and of size `count`.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
+      int start, int count) {
     // We know that MultibodyTreeContext is a LeafContext and therefore the
     // continuous state vector must be a BasicVector.
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
@@ -127,7 +131,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
             get_mutable_value();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
-    return xc.nestedExpression();
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
+    return xc.nestedExpression().segment(start, count);
   }
 
   const MultibodyTreeTopology topology_;
