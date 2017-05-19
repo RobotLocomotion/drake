@@ -510,6 +510,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "indeterminate_variable_test",
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "equality_constrained_qp_solver_test",
     srcs = [
         "test/equality_constrained_qp_solver_test.cc",
@@ -590,6 +599,7 @@ drake_cc_googletest(
         ":generic_trivial_cost",
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":indeterminate_variable_test",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:is_dynamic_castable",
         "//drake/common:symbolic_test_util",
