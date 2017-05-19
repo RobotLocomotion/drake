@@ -43,18 +43,23 @@ lcm_wrap_types(
   lcmt_euler_floating_joint_state_t.lcm
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm
+  lcmt_header.lcm
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
   lcmt_maliput_railcar_params_t.lcm
   lcmt_maliput_railcar_state_t.lcm
   lcmt_piecewise_polynomial.lcm
+  lcmt_point.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
+  lcmt_pose.lcm
+  lcmt_pose_stamped.lcm
   lcmt_qp_controller_input.lcm
   lcmt_qp_input.lcm
   lcmt_quadrotor_input_t.lcm
   lcmt_quadrotor_output_t.lcm
+  lcmt_quaternion.lcm
   lcmt_resolved_contact.lcm
   lcmt_robot_state.lcm
   lcmt_scope_data.lcm

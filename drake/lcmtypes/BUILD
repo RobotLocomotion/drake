@@ -79,6 +79,12 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "header",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_header.lcm"],
+)
+
+lcm_cc_library(
     name = "inverse_dynamics_debug_info",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_inverse_dynamics_debug_info.lcm"],
@@ -106,10 +112,37 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "point",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_point.lcm"],
+)
+
+lcm_cc_library(
     name = "polynomial",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_polynomial.lcm"],
 )
+
+lcm_cc_library(
+    name = "pose",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_pose.lcm"],
+    deps = [
+        "point",
+        "quaternion",
+    ],
+)
+
+lcm_cc_library(
+    name = "pose_stamped",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_pose_stamped.lcm"],
+    deps = [
+        "header",
+        "pose",
+    ],
+)
+
 
 lcm_cc_library(
     name = "plan_eval_debug_info",
@@ -141,6 +174,12 @@ lcm_cc_library(
     name = "qp_input",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_qp_input.lcm"],
+)
+
+lcm_cc_library(
+    name = "quaternion",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_quaternion.lcm"],
 )
 
 lcm_cc_library(

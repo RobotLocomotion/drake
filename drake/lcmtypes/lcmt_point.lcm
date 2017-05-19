@@ -1,0 +1,8 @@
+package drake;
+
+// A representation of a 3D point.
+struct lcmt_point {
+  double x;
+  double y;
+  double z;
+}
