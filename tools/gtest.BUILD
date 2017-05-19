@@ -1,7 +1,8 @@
 # -*- python -*-
 
 cc_library(
-    name = "main",
+    name = "without_main",
+    testonly = 1,
     srcs = glob(
         [
             "googlemock/src/*.cc",
@@ -9,6 +10,8 @@ cc_library(
             "googletest/src/*.h",
         ],
         exclude = [
+            "googlemock/src/gmock_main.cc",
+            "googletest/src/gtest_main.cc",
             "googlemock/src/gmock-all.cc",
             "googletest/src/gtest-all.cc",
         ],
@@ -35,4 +38,15 @@ cc_library(
     }),
     linkstatic = 1,
     visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "main",
+    testonly = 1,
+    srcs = ["googlemock/src/gmock_main.cc"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":without_main",
+    ],
 )
