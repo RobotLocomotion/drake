@@ -67,10 +67,9 @@ class PositionKinematicsCache {
 
  private:
   // Pool types:
-  // Pools are stored as arrays with BSF (Breadth-First Search) ordering in
-  // order to minimize cache misses (in this context we mean **hardware cache**)
-  // during MultibodyTree traversals. Cache misses result in memory access with
-  // a much longer latency.
+  // Pools store entries in the same order multibody tree nodes are
+  // ordered in the tree, i.e. in BFT order. Therefore clients of this class
+  // will access entries by BodyNodeIndex, see `get_X_WB()` for instance.
 
   // The type of pools for storing poses.
   typedef eigen_aligned_std_vector<Isometry3<T>> X_PoolType;

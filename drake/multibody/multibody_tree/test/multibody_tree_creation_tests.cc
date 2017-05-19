@@ -374,7 +374,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(model_->get_num_bodies(), 8);
   EXPECT_EQ(model_->get_num_mobilizers(), 7);
 
-  const MultibodyTreeTopology &topology = model_->get_topology();
+  const MultibodyTreeTopology& topology = model_->get_topology();
   EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
   EXPECT_EQ(topology.get_num_levels(), 4);
 
