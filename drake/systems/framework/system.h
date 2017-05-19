@@ -1019,7 +1019,6 @@ class System {
   virtual T EvalWitnessFunction(const Context<T>& context,
                                 WitnessFunction<T>* witness_function)
                                 const {
-    DRAKE_ASSERT(&witness_function->get_system() == this);
     return witness_function->Evaluate(context);
   }
 

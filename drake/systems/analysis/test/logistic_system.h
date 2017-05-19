@@ -21,7 +21,7 @@ template <class T>
 class LogisticWitness : public systems::WitnessFunction<T> {
  public:
   explicit LogisticWitness(const LogisticSystem<T>* system) :
-    systems::WitnessFunction<T>(system), system_(system) {
+    system_(*system) {
   }
 
   // The witness function is simply the state value itself.
@@ -40,22 +40,8 @@ class LogisticWitness : public systems::WitnessFunction<T> {
       const override {
     return systems::WitnessFunction<T>::TriggerType::kCrossesZero; }
 
-  // Tight time isolation.
-  T get_time_isolation_tolerance() const override { return 1e-8; }
-
-  // Relatively thick dead band.
-  T get_positive_dead_band() const override { return 1e-4; }
-  T get_negative_dead_band() const override { return -1e-4; }
-
-  // Naive trigger time bisects the two times.
-  T do_get_trigger_time(const std::pair<T, T>& time_and_witness_value0,
-                        const std::pair<T, T>& time_and_witness_valuef)
-                        const override {
-    return (time_and_witness_value0.first + time_and_witness_valuef.first)/2;
-  }
-
   // Pointer to the system.
-  const LogisticSystem<T>* system_;
+  const LogisticSystem<T>& system_;
 };
 
 /// System with state evolution yielding a logistic function, for purposes of
@@ -69,7 +55,6 @@ class LogisticSystem : public LeafSystem<T> {
 
   LogisticSystem(double k, double alpha, double nu) : k_(k), alpha_(alpha),
       nu_(nu) {
-    this->DeclareDiscreteUpdatePeriodSec(1);
     this->DeclareContinuousState(1);
     witness_ = std::make_unique<LogisticWitness<T>>(this);
   }

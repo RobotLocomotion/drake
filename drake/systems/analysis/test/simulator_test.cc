@@ -16,11 +16,14 @@
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test/empty_system.h"
 #include "drake/systems/analysis/test/logistic_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
+using namespace drake::systems;
 using drake::systems::RungeKutta3Integrator;
 using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
+using EmptySystem = drake::systems::analysis_test::EmptySystem<double>;
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
 using std::complex;
@@ -30,22 +33,100 @@ namespace systems {
 namespace {
 
 // Tests ability of simulation to identify the proper number of witness function
+// triggerings. This particular example uses an empty system and a clock as
+// the witness function, which makes it particularly easy to determine when the
+// witness function should trigger.
+GTEST_TEST(SimulatorTest, WitnessTestCountSimple) {
+  EmptySystem system(WitnessFunction<double>::TriggerType::kCrossesZero);
+  int num_publishes = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    num_publishes++;
+  });
+
+  const double dt = 1;
+  Simulator<double> simulator(system);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+      simulator.get_mutable_context());
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
+  context->set_time(-1);
+  simulator.StepTo(0);
+
+  // Publication occurs at witness function crossing and at initialization.
+  EXPECT_EQ(2, num_publishes);
+
+  // Reset the time to zero and verify that no publication is performed when
+  // stepping to 1.
+  num_publishes = 0;
+  context->set_time(0);
+  simulator.StepTo(1);
+  EXPECT_EQ(0, num_publishes);
+}
+
+// Tests ability of simulation to identify the proper number of witness function
+// triggerings (zero) for a positive-to-negative trigger. Uses the same empty
+// system from WitnessTestCountSimple.
+GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
+  EmptySystem system(WitnessFunction<double>::TriggerType::
+      kPositiveThenNegative);
+  int num_publishes = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    num_publishes++;
+  });
+
+  const double dt = 1;
+  Simulator<double> simulator(system);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+      simulator.get_mutable_context());
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
+  context->set_time(-1);
+  simulator.StepTo(1);
+
+  // Publication should only occur at witness function crossing.
+  EXPECT_EQ(1, num_publishes);
+}
+
+// Tests ability of simulation to identify the proper number of witness function
+// triggerings (zero) for a negative-to-positive trigger. Uses the same empty
+// system from WitnessTestCountSimple.
+GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
+  EmptySystem system(WitnessFunction<double>::TriggerType::
+      kNegativeThenPositive);
+  int num_publishes = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    num_publishes++;
+  });
+
+  const double dt = 1;
+  Simulator<double> simulator(system);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+      simulator.get_mutable_context());
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
+  context->set_time(-1);
+  simulator.StepTo(1);
+
+  // Publication occurs at witness function crossing and at initialization.
+  EXPECT_EQ(2, num_publishes);
+}
+
+// Tests ability of simulation to identify the proper number of witness function
 // triggerings. This particular example, the logistic function, is particularly
 // challenging for detecting exactly one zero crossing under the
 // parameterization in use. The logic system's state just barely crosses zero
 // (at t << 1) and then hovers around zero afterward.
-GTEST_TEST(SimulatorTest, WitnessTestCount) {
+GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
   LogisticSystem system(1e-8, 100, 1);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
   });
 
-  drake::systems::Simulator<double> simulator(system);
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(system,
+  const double dt = 1e-6;
+  Simulator<double> simulator(system);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
       simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_target_accuracy(1e-5);
-  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.set_publish_every_time_step(false);
   Context<double>* context = simulator.get_mutable_context();
   (*context->get_mutable_continuous_state())[0] = -1;

@@ -560,22 +560,25 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   }
 }
 
-// Isolates the time at which a witness function triggered, to the desired
-// tolerance.
-// @post The context will be isolated to the first witness function trigger,
-//       to within the isolation tolerance specified by each witness function.
+// Isolates the first time at one or more witness functions triggered (in the
+// interval [t0, tf]), to the tolerances specified by the witness function(s).
+// @post The context will be isolated to the first witness function trigger(s),
+//       to within the isolation tolerance specified by that (those) witness
+//       function(s).
 template <class T>
 std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     const std::vector<WitnessFunction<T>*>& witnesses, const VectorX<T>& w0,
     const T& t0, const VectorX<T>& x0, const T& tf) {
   using std::max;
+  using std::abs;
 
-  // TODO(edrumwri): Speed this process using interpolation between states.
-  // TODO(edrumwri): Speed this process using more powerful root finding
-  //                 methods.
+  // TODO(edrumwri): Speed this process using interpolation between states,
+  // more powerful root finding methods, and/or introducing the concept of
+  // a dead band.
 
-  // Get the tolerance for floating point equivalence.
-  const T zero_tol = max(tf, T(1)) * std::numeric_limits<double>::epsilon();
+  // Set the time isolation tolerance multiplier, which is subject to the
+  // magnitude of the simulation time.
+  const T ttol_mult = max(T(1), T(abs(t0)));
 
   // Get the system.
   const System<T>& system = get_system();
@@ -585,12 +588,12 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
-      [t0, x0, zero_tol, context, this](const T& t_des) {
+      [t0, x0, context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
     context->set_time(t0);
     context->get_mutable_continuous_state()->SetFromVector(x0);
     T t_remaining = t_des - t0;
-    while (t_remaining > zero_tol) {
+    while (t_remaining > 0) {
       integrator_->StepOnceAtMost(inf, inf, t_remaining);
       t_remaining = t_des - context->get_time();
     }
@@ -622,10 +625,6 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     if (!witnesses[i]->should_trigger(fa, fb))
       continue;
 
-    // Get the dead bands.
-    const T pos_dead = witnesses[i]->get_positive_dead_band();
-    const T neg_dead = witnesses[i]->get_negative_dead_band();
-
     while (true) {
       // Determine the midpoint.
       T c = (a + b) / 2;
@@ -641,6 +640,8 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
         b = c;
         fb = fc;
       } else {
+        // NOTE: because the witness function cannot trigger at the very
+        // beginning of an interval, it's conceivable
         a = c;
         fa = fc;
       }
@@ -648,12 +649,27 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
       // If the time is sufficiently isolated and fc is within the dead band,
       // quit. This conjunction on the condition helps find a zero well into
       // the interior of the dead band.
-      if (b - c < witnesses[i]->get_time_isolation_tolerance() &&
-          fc < pos_dead && fc > neg_dead) {
-        T t_trigger = witnesses[i]->get_trigger_time(std::make_pair(a, fa),
-                                                     std::make_pair(b, fb));
+      if (b - a < witnesses[i]->get_time_isolation_tolerance() * ttol_mult) {
+        // The trigger time is always at the right endpoint of the interval,
+        // thereby ensuring that the witness will not trigger immediately when
+        // the continuous state integration process continues (after the
+        // requisite handler is called).
+        const T t_trigger = b;
 
-        // Only clear the list of witnesses if t_trigger strictly less than
+       // TODO(edrumwri): Move this to the end of the function and
+       //  only done once when we are confident that the witness function
+       //  changes sign at the end of the interval (i.e., the following
+       // assertion).
+       // Integrate to the trigger time.
+       fwd_int(t_first);
+
+       // TODO(edrumwri): This check is expensive. Remove it once we are
+       // confident.
+       // Verify that the witness function changed sign.
+       const T f_trigger = system.EvalWitnessFunction(*context, witnesses[i]);
+       DRAKE_DEMAND(f_trigger * fa <= 0);
+
+       // Only clear the list of witnesses if t_trigger strictly less than
         // t_first.
         DRAKE_DEMAND(t_first >= t_trigger);
         if (t_trigger < t_first)
@@ -667,7 +683,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     }
   }
 
-  DRAKE_DEMAND(t_first < tf);
+  DRAKE_DEMAND(t_first <= tf);
   return triggered_witnesses;
 }
 
