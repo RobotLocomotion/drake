@@ -686,16 +686,16 @@ class RotationalInertia {
   }
 
  private:
-  /// Constructs a rotational inertia for a particle Q whose position vector
-  /// from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
-  /// expressed-in frame.  Particle Q's mass (or unit mass) is included in the
-  /// first argument.  This constructor is private as it is a "helper" function.
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
-  /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
-  /// @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
-  ///                    If unit mass, this argument is simply p_PQ_E.
-  /// @retval I_QP_E, Q's rotational inertia about-point Q expressed-in frame E.
+  // Constructs a rotational inertia for a particle Q whose position vector
+  // from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
+  // expressed-in frame.  Particle Q's mass (or unit mass) is included in the
+  // first argument.  This constructor is private as it is a "helper" function.
+  // In debug builds, throws std::logic_error if rotational inertia that is
+  // constructed from these arguments violates CouldBePhysicallyValid().
+  // @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
+  // @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
+  //                    If unit mass, this argument is simply p_PQ_E.
+  // @retval I_QP_E, Q's rotational inertia about-point Q expressed-in frame E.
   RotationalInertia(const Vector3<T>& mass_p_PQ_E, const Vector3<T>& p_PQ_E) {
     const T& mx = mass_p_PQ_E(0);
     const T& my = mass_p_PQ_E(1);
