@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include <gtest/gtest.h>
-
 #include <sdf/sdf.hh>
 
 namespace drake {
