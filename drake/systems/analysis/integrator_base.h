@@ -281,19 +281,23 @@ class IntegratorBase {
    * you to influence two aspects of this procedure:
    * - you can increase the minimum step size, and
    * - you can control whether an exception is thrown if a smaller step would
-   *   have been needed.
+   *   have been needed to achieve the aforementioned integrator requirements.
    *
    * By default, integrators allow a very small minimum step which can
    * result in long run times. Setting a larger minimum can be helpful as a
    * diagnostic to figure out what aspect of your simulation is requiring small
    * steps. You can set the minimum to what should be a "reasonable" minimum
    * based on what you know about the physical system. You will then get an
-   * exception thrown at a point where your model behaves unexpectedly.
+   * std::runtime_error exception thrown at any point in time where your model 
+   * behaves unexpectedly.
    *
-   * If you disable the exception, the integrator will simply proceed with a
-   * step of the minimum size and ignore requirements such as accuracy, just
-   * for that step. Beware that there can be no guarantee about how large an
-   * error will be made during that step, so this should be done cautiously.
+   * If you disable the exception (via
+   * `set_throw_on_minimum_step_size_violation(false)`), the integrator will
+   * simply proceed with a step of the minimum size: accuracy will be maintained
+   * only when the minimum step size is not violated. Beware that there can be 
+   * no guarantee about the magnitude of any errors introduced by violating the
+   * accuracy "requirements" in this manner, so disabling the exception should
+   * be done warily. 
    *
    * #### Details
    * Because time is maintained to finite precision, there is an absolute
@@ -307,9 +311,11 @@ class IntegratorBase {
    * You may request a larger minimum step size `h_min`. Then at every time t,
    * the integrator determines a "working" minimum `h_work=max(h_min,h_floor)`.
    * If the step size selection algorithm determines that a step smaller than
-   * `h_work` is needed to meet accuracy or other needs, then an exception
-   * will be thrown and the simulation halted. If you have suppressed the
-   * exception then the integrator will attempt to continue anyway.
+   * `h_work` is needed to meet accuracy or other needs, then a 
+   * std::runtime_error exception will be thrown and the simulation halted. On 
+   * the other hand, if you have suppressed the exception (again, via
+   * `set_throw_on_minimum_step_size_violation(false)`), the integration
+   * will continue.
    *
    * Under some circumstances the integrator may legitimately take a step of
    * size `h` smaller than your specified `h_min`, although never smaller than
@@ -318,7 +324,7 @@ class IntegratorBase {
    * necessitating that a tiny "sliver" of a step be taken to complete the
    * interval. That does not indicate an error, and required accuracy and
    * convergence goals are achieved. Larger steps can resume immediately
-   * afterwards. Another circumstance is when one of the integrator's Step
+   * afterwards. Another circumstance is when one of the integrator's stepping
    * methods is called directly requesting a very small step, for example
    * `IntegrateWithMultipleSteps(h)`. No exception will be thrown in either of
    * these cases.
@@ -351,12 +357,12 @@ class IntegratorBase {
     return req_min_step_size_; }
 
   /**
-   * Sets whether the integrator should throw an exception when the integrator's
-   * step size selection algorithm determines that it must take a step smaller
-   * than the minimum step size (for, e.g., purposes of error control). Default
-   * is `true`. If `false`, the integrator will advance time and state using the
-   * minimum specified step size in such situations.
-   * See @link Minstep this section @endlink for more detail.
+   * Sets whether the integrator should throw a std::runtime_error exception
+   * when the integrator's step size selection algorithm determines that it
+   * must take a step smaller than the minimum step size (for, e.g., purposes
+   * of error control). Default is `true`. If `false`, the integrator will
+   * advance time and state using the minimum specified step size in such
+   * situations. See @link Minstep this section @endlink for more detail.
    */
   void set_throw_on_minimum_step_size_violation(bool throws) {
     min_step_exceeded_throws_ = throws;
