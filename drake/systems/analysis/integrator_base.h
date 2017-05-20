@@ -270,74 +270,67 @@ class IntegratorBase {
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
-   *  @anchor Minstep
-   *  @name Methods for minimum integration step size selection and behavior.
-   *  @{
-   *  This group of methods is used to set both the requested minimum step size
-   *  and the desired behavior for when the integrator attempts to shrink a
-   *  step—for purposes of error control or integrator step convergence—below
-   *  the *working minimum step size* (defined precisely below). A user can
-   *  request a minimum step size in order to be notified when either of the
-   *  following behaviors were identified: (1) the integrator attempted to
-   *  shrink the step size (again, for purposes of error control or step
-   *  convergence)  smaller than the user anticipated would be necessary and (2)
-   *  time became so large in magnitude that it has become impossible to
-   *  simultaneously advance virtual time and satisfy error
-   *  tolerances/integrator convergence criteria. To illustrate the latter case,
-   *  consider that double precision floating point arithmetic yields the result
-   *  `1e20 + 1e-4 = 1e20`, so selecting an integration step size of 1e-4 when
-   *  the current time is 1e20 would not allow the integrator to advance virtual
-   *  time.
+   * @anchor Minstep
+   * @name Methods for minimum integration step size selection and behavior
    *
-   *  The user-requested minimum step size generally differs from the *working*
-   *  minimum step size, which is selected automatically by the integrator;
-   *  Specifically, the requested minimum step size is replaced by an
-   *  automatically determined minimum when the former is too small relative to
-   *  the virtual time; the working minimum is the minimum active at a
-   *  particular point in virtual time. See get_working_minimum_step_size() and
-   *  set_requested_minimum_step_size() for a complete description of how the
-   *  working minimum step size is determined.
+   * Variable step integrators reduce their step sizes as needed to achieve
+   * requirements such as specified accuracy or step convergence. However, it is
+   * not possible to take an arbitrarily small step. Normally integrators choose
+   * an appropriate minimum step and throw an exception if the requirements
+   * can't be achieved without going below that. Methods in this section allow
+   * you to influence two aspects of this procedure:
+   * - you can increase the minimum step size, and
+   * - you can control whether an exception is thrown if a smaller step would
+   *   have been needed.
    *
-   *  The default behavior taken when the integrator attempts to shrink the
-   *  step (again, for purposes of error control or integrator convergence)
-   *  below the working minimum is to throw an exception, but that behavior
-   *  can be altered (see get_minimum_step_size_exceeded_throws() and
-   *  set_minimum_step_size_exceeded_throws()). Since this condition applies
-   *  only for the cases of step size shrinkages for error control or error
-   *  integrator convergence, the working minimum step size does not
-   *  automatically apply for, e.g., `IntegrateWithMultipleSteps(h)` when `h` is
-   *  smaller than the working minimum. As an example, assume that the
-   *  integrator first takes a step of `h-ε` when
-   *  `IntegrateWithMultipleSteps(h)` were called. A step of `ε < γ` (where `γ`
-   *  is the working minimum step size) would remain.
-   *  `IntegrateWithMultipleSteps()` would be free to attempt that step of size
-   *  `ε` (without the working minimum step size being relevant) However, the
-   *  minimum step size *would* be relevant if the integrator then determines
-   *  that `ε` is too large to, e.g., allow the integration process to converge.
+   * By default, integrators allow a very small minimum step which can
+   * result in long run times. Setting a larger minimum can be helpful as a
+   * diagnostic to figure out what aspect of your simulation is requiring small
+   * steps. You can set the minimum to what should be a "reasonable" minimum
+   * based on what you know about the physical system. You will then get an
+   * exception thrown at a point where your model behaves unexpectedly.
+   *
+   * If you disable the exception, the integrator will simply proceed with a
+   * step of the minimum size and ignore requirements such as accuracy, just
+   * for that step. Beware that there can be no guarantee about how large an
+   * error will be made during that step, so this should be done cautiously.
+   *
+   * #### Details
+   * Because time is maintained to finite precision, there is an absolute
+   * minimum step size `h_floor` required to avoid roundoff error. The
+   * integrator will never take a step smaller than `h_floor`. We calculate
+   * `h_floor=max(ε,ε⋅t)`, where t is the current time and ε is a small multiple
+   * of machine precision, typically a number like 1e-14. Note that `h_floor`
+   * necessarily grows with time; if that is a concern you should limit how
+   * long your simulations are allowed to run without resetting time.
+   *
+   * You may request a larger minimum step size `h_min`. Then at every time t,
+   * the integrator determines a "working" minimum `h_work=max(h_min,h_floor)`.
+   * If the step size selection algorithm determines that a step smaller than
+   * `h_work` is needed to meet accuracy or other needs, then an exception
+   * will be thrown and the simulation halted. If you have suppressed the
+   * exception then the integrator will attempt to continue anyway.
+   *
+   * Under some circumstances the integrator may legitimately take a step of
+   * size `h` smaller than your specified `h_min`, although never smaller than
+   * `h_floor`. For example, occasionally the integrator may reach an event or
+   * time limit that occurs a very short time after the end of a previous step,
+   * necessitating that a tiny "sliver" of a step be taken to complete the
+   * interval. That does not indicate an error, and required accuracy and
+   * convergence goals are achieved. Larger steps can resume immediately
+   * afterwards. Another circumstance is when one of the integrator's Step
+   * methods is called directly requesting a very small step, for example
+   * `IntegrateWithMultipleSteps(h)`. No exception will be thrown in either of
+   * these cases.
    */
 
-  /// Gets whether the integrator should throw an exception when the integrator
-  /// wishes to adjust a user-requested step size to be smaller than the
-  /// minimum step size (for, e.g., purposes of error control). Default is
-  /// `true`. If `false`, the integrator will advance time and state using the
-  /// minimum specified step size in such situations.
-  /// See @link Minstep this section for more detail. @endlink
-  bool get_minimum_step_size_exceeded_throws() const {
-    return min_step_exceeded_throws_; }
-
-  /// Setter corresponding to get_minimum_step_size_exceeded_throws().
-  /// @sa get_minimum_step_size_exceeded_throws().
-  void set_minimum_step_size_exceeded_throws(bool throws) {
-    min_step_exceeded_throws_ = throws; }
-
+  //@{
   /**
-   * Sets the requested minimum step size that may be taken by this integrator.
-   * All integration steps will be at least this large *except those
-   * specifically requested by users*. This requested minimum step size is an
-   * absolute number, which can make the behavior appear to be strange when
-   * times are large. For example, an integration step of 1e-14 when the current
-   * time in the context is 1e+14 will appear to cause time to fail to advance
-   * (because `double` types possess approximately 16 digits of precision).
+   * Sets the requested minimum step size `h_min` that may be taken by this
+   * integrator. No step smaller than this will be taken except under
+   * circumstances as described @link Minstep above. @endlink This setting will
+   * be ignored if it is smaller than the absolute minimum `h_floor` also
+   * described above.
    * @param min_step_size a non-negative value. Setting this value to zero
    *                      will cause the integrator to use a reasonable value
    *                      instead (see get_working_minimum_step_size()).
@@ -350,30 +343,47 @@ class IntegratorBase {
   }
 
   /**
-   * Gets the requested minimum step size setting for this integrator. The
-   * *working* minimum step size that is dependent upon the current system time
-   * (stored in the integrator's context).
+   * Gets the requested minimum step size `h_min` for this integrator.
    * @sa set_requested_minimum_step_size()
    * @sa get_working_minimum_step_size(T)
    */
   const T& get_requested_minimum_step_size() const {
     return req_min_step_size_; }
 
-  /// Gets the working minimum step size for this integrator. The working
-  /// minimum step size is the maximum of get_requested_minimum_step_size() and
-  /// max(t*tol, tol), where t is the current system time stored in the
-  /// integrator's context and tol is a sufficiently small number chosen so that
-  /// t and (1+tol)*t are sufficiently distinct in order to avoid roundoff
-  /// problems.
+  /**
+   * Sets whether the integrator should throw an exception when the integrator's
+   * step size selection algorithm determines that it must take a step smaller
+   * than the minimum step size (for, e.g., purposes of error control). Default
+   * is `true`. If `false`, the integrator will advance time and state using the
+   * minimum specified step size in such situations.
+   * See @link Minstep this section @endlink for more detail.
+   */
+  void set_throw_on_minimum_step_size_violation(bool throws) {
+    min_step_exceeded_throws_ = throws;
+  }
+
+  /**
+   * Reports the current setting of the throw_on_minimum_step_size_violation
+   * flag.
+   * @sa set_throw_on_minimum_step_size_violation().
+   */
+  bool get_throw_on_minimum_step_size_violation() const {
+    return min_step_exceeded_throws_;
+  }
+
+  /**
+   * Gets the current value of the working minimum step size `h_work(t)` for
+   * this integrator, which may vary with the current time t as stored in the
+   * integrator's context.
+   * See @link Minstep this section @endlink for more detail.
+   */
   T get_working_minimum_step_size() const {
     using std::max;
     const double tol = 1e-14;
     const T smart_minimum = max(tol, get_context().get_time()*tol);
     return max(smart_minimum, req_min_step_size_);
   }
-  /**
-   *  @}
-   */
+  //@}
 
   /**
    * Resets the integrator to initial values, i.e., default construction

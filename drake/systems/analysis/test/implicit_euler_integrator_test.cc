@@ -207,7 +207,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
   ImplicitEulerIntegrator<double> integrator(*spring_damper_, context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_requested_minimum_step_size(small_dt_);
-  integrator.set_minimum_step_size_exceeded_throws(false);
+  integrator.set_throw_on_minimum_step_size_violation(false);
 
   // Set error controlled integration parameters.
   const double xtol = 1e-6;
@@ -493,7 +493,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_requested_minimum_step_size(small_dt_);
-  integrator.set_minimum_step_size_exceeded_throws(false);
+  integrator.set_throw_on_minimum_step_size_violation(false);
 
   // Turn fixed stepping on.
   integrator.set_fixed_step_mode(true);
@@ -540,7 +540,7 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
   ImplicitEulerIntegrator<double> integrator(*mod_spring_damper_,
                                              context_.get());
   integrator.set_maximum_step_size(dt_);
-  integrator.set_minimum_step_size_exceeded_throws(false);
+  integrator.set_throw_on_minimum_step_size_violation(false);
 
   // Setting the minimum step size speeds the unit test without (in this case)
   // affecting solution accuracy.
