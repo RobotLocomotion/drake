@@ -336,7 +336,7 @@ class IntegratorBase {
    * integrator. No step smaller than this will be taken except under
    * circumstances as described @link Minstep above. @endlink This setting will
    * be ignored if it is smaller than the absolute minimum `h_floor` also
-   * described above.
+   * described above. Default value is zero.
    * @param min_step_size a non-negative value. Setting this value to zero
    *                      will cause the integrator to use a reasonable value
    *                      instead (see get_working_minimum_step_size()).
@@ -411,7 +411,7 @@ class IntegratorBase {
     ResetStatistics();
 
     // Wipe out settings.
-    req_min_step_size_ = nan();
+    req_min_step_size_ = 0;
     max_step_size_ = nan();
     accuracy_in_use_ = nan();
 
@@ -1261,7 +1261,7 @@ class IntegratorBase {
   T max_step_size_{nan()};
 
   // The minimum step size.
-  T req_min_step_size_{nan()};
+  T req_min_step_size_{0};
 
   // The last step taken by the integrator.
   T prev_step_size_{nan()};
