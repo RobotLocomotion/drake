@@ -111,7 +111,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
             &context.get_continuous_state_vector());
     DRAKE_ASSERT(state);
 
-    // Compute the pose and velocities.
+    // Compute the pose.
     const auto raw_pose = CalcRawPose(*state);
     ImplCalcOutput(raw_pose, *state, output_vector);
   }
