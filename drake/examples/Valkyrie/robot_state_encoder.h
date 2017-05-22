@@ -39,7 +39,7 @@ class RobotStateEncoder final : public LeafSystem<double> {
 
   ~RobotStateEncoder() override;
 
-  /// Returns descriptor of output port on which the LCM message is presented.
+  /// Returns the output port on which the LCM message is presented.
   const OutputPort<double>& lcm_message_port() const;
 
   /// Returns descriptor of kinematics result input port.

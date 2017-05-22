@@ -50,7 +50,7 @@ class CarVisApplicator : public systems::LeafSystem<T> {
   /// the form of a PoseBundle.
   const systems::InputPortDescriptor<T>& get_car_poses_input_port() const;
 
-  /// Returns a descriptor of the output port that contains the visual geometry
+  /// Returns the output port that contains the visual geometry
   /// poses of all vehicle visualizations.
   const systems::OutputPort<T>& get_visual_geometry_poses_output_port() const;
 

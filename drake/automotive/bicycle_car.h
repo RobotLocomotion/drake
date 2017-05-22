@@ -76,7 +76,7 @@ class BicycleCar : public systems::LeafSystem<T> {
   /// powertrain force.
   const systems::InputPortDescriptor<T>& get_force_input_port() const;
 
-  /// Returns a descriptor of the output port that contains the bicycle states.
+  /// Returns the output port that contains the bicycle states.
   const systems::OutputPort<T>& get_state_output_port() const;
 
  private:

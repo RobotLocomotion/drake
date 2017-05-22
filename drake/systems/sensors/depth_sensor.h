@@ -146,11 +146,11 @@ class DepthSensor : public systems::LeafSystem<double> {
   const InputPortDescriptor<double>& get_rigid_body_tree_state_input_port()
       const;
 
-  /// Returns a descriptor of the state output port, which contains the sensor's
+  /// Returns the state output port, which contains the sensor's
   /// sensed values.
   const OutputPort<double>& get_sensor_state_output_port() const;
 
-  /// Returns a descriptor of the `X_WS` output port, which contains the
+  /// Returns the `X_WS` output port, which contains the
   /// transform from this sensor's frame to the world frame.
   const OutputPort<double>& get_pose_output_port() const;
 

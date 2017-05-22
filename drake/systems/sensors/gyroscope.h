@@ -93,7 +93,7 @@ class Gyroscope : public systems::LeafSystem<double> {
     return System<double>::get_input_port(input_port_index_);
   }
 
-  /// Returns a descriptor of the state output port, which contains the sensor's
+  /// Returns a the state output port, which contains the sensor's
   /// sensed values.
   const OutputPort<double>& get_output_port() const {
     return System<double>::get_output_port(output_port_index_);

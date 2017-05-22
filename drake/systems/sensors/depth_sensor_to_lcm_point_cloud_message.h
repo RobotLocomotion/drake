@@ -35,7 +35,7 @@ class DepthSensorToLcmPointCloudMessage : public systems::LeafSystem<double> {
   /// Returns a descriptor of the input port containing `X_WS`.
   const InputPortDescriptor<double>& pose_input_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that contains a
+  /// Returns the abstract valued output port that contains a
   /// `Value<bot_core::pointcloud_t>`.
   const OutputPort<double>& pointcloud_message_output_port() const;
 
