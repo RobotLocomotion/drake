@@ -60,7 +60,7 @@ std::unique_ptr<systems::Context<T>>
 MultibodyTree<T>::CreateDefaultContext() const {
   if (!topology_is_valid()) {
     throw std::logic_error(
-        "Attempting to create a Context for a  MultibodyTree with an invalid "
+        "Attempting to create a Context for a MultibodyTree with an invalid "
         "topology. MultibodyTree::Finalize() must be called before attempting "
         "to create a context.");
   }

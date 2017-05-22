@@ -305,8 +305,8 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_NO_THROW(context = model_->CreateDefaultContext());
 
   // Tests MultibodyTreeContext accessors.
-  auto
-      mbt_context = dynamic_cast<MultibodyTreeContext<double> *>(context.get());
+  auto mbt_context =
+      dynamic_cast<MultibodyTreeContext<double> *>(context.get());
 
   // Verifies the correct number of generalized positions and velocities.
   EXPECT_EQ(mbt_context->get_positions().size(), 2);

@@ -41,25 +41,25 @@ class PositionKinematicsCache {
     Allocate();
   }
 
-  /// Returns a constant reference to the pose `X_WB` of the body `B`
+  /// Returns a constant reference to the pose `X_WB` of the body B
   /// (associated with node @p body_node_index) as measured and expressed in the
-  /// world frame `W`.
+  /// world frame W.
   /// @param[in] body_node_index The unique index for the computational
-  ///                            BodyNode object associated with body `B`.
-  /// @returns `X_WB` the pose of the the body frame `B` measured and
-  ///                 expressed in the world frame `W`.
+  ///                            BodyNode object associated with body B.
+  /// @returns `X_WB` the pose of the the body frame B measured and
+  ///                 expressed in the world frame W.
   const Isometry3<T>& get_X_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
   }
 
-  /// Returns a mutable reference to the pose `X_WB` of the body `B`
+  /// Returns a mutable reference to the pose `X_WB` of the body B
   /// (associated with node @p body_node_index) as measured and expressed in the
-  /// world frame `W`.
+  /// world frame W.
   /// @param[in] body_node_index The unique index for the computational
-  ///                            BodyNode object associated with body `B`.
-  /// @returns `X_WB` the pose of the the body frame `B` measured and
-  ///                 expressed in the world frame `W`.
+  ///                            BodyNode object associated with body B.
+  /// @returns `X_WB` the pose of the the body frame B measured and
+  ///                 expressed in the world frame W.
   Isometry3<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];

@@ -445,10 +445,16 @@ class MultibodyTree {
   ///
   /// @pre The method Finalize() must be called before attempting to create a
   /// context in order for the %MultibodyTree topology to be valid at the moment
-  /// of allocating resources.
+  /// of allocation.
   ///
   /// @throws std::logic_error If users attempt to call this method on a
   ///         %MultibodyTree with an invalid topology.
+  // TODO(amcastro-tri): Split this method into implementations to be used by
+  // System::AllocateContext() so that MultibodyPlant() can make use of it
+  // within the system's infrastructure. This will require at least the
+  // introduction of system's methods to:
+  //  - Create a context different from LeafContext, in this case MBTContext.
+  //  - Create or request cache entries.
   std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
 
   /// Sets default values in the context including pre-computed cache entries.

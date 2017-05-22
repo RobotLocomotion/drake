@@ -55,11 +55,11 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     const int num_velocities = topology_.get_num_velocities();
     const int num_states = topology_.get_num_states();
 
-    // TODO(amcastro-tri): Consider to inherit a more specific BasicVector.
+    // TODO(amcastro-tri): Consider inheriting a more specific BasicVector.
     // See EndlessRoadCar<T>::AllocateContinuousState().
     auto xc = std::make_unique<ContinuousState<T>>(
         std::make_unique<BasicVector<T>>(num_states),
-        num_positions /* num_q */, num_velocities /* num_v */, 0 /* num_z */);
+        num_positions, num_velocities, 0);
     this->set_continuous_state(std::move(xc));
 
     // TODO(amcastro-tri): Create cache entries.
