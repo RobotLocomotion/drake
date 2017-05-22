@@ -24,6 +24,21 @@ using systems::rendering::PoseVector;
 
 namespace automotive {
 
+namespace {  // Local helper function.
+
+// Obtain our continuous state from a context.
+template <typename T>
+const SimpleCarState<T>& get_state(const systems::Context<T>& context) {
+  const systems::VectorBase<T>& context_state =
+      context.get_continuous_state_vector();
+  const SimpleCarState<T>* const state =
+      dynamic_cast<const SimpleCarState<T>*>(&context_state);
+  DRAKE_DEMAND(state);
+  return *state;
+}
+
+}  // namespace
+
 template <typename T>
 SimpleCar<T>::SimpleCar() {
   this->DeclareVectorInputPort(DrivingCommand<T>());

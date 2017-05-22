@@ -48,8 +48,8 @@ class PurePursuitController : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& steering_command_output() const;
 
  private:
-  void OutputSteeringAngle(const systems::Context<T>& context,
-                           systems::BasicVector<T>* output) const;
+  void OutputSteeringCommand(const systems::Context<T>& context,
+                            systems::BasicVector<T>* output) const;
 
   void CalcSteeringCommand(const PurePursuitParams<T>& pp_params,
                            const SimpleCarParams<T>& car_params,

@@ -93,8 +93,19 @@ GTEST_TEST(VectorValueTest, ExtractBasicVector) {
   auto basic_vector = BasicVector<double>::Make({4, 5, 6});
   const BasicVector<double>* ptr = basic_vector.get();
   VectorValue<double> value(std::move(basic_vector));
+
+  const BasicVector<double>& got = value.get_vector();
+  EXPECT_EQ(&got, ptr);
+  EXPECT_EQ(got.get_value(), Eigen::Vector3d(4,5,6));
+
+  value.get_mutable_vector().SetAtIndex(1, 9.);
+  EXPECT_EQ(got.get_value(), Eigen::Vector3d(4,9,6));
+
   auto extracted = value.release_vector();
   EXPECT_EQ(extracted.get(), ptr);
+
+  // Check that the VectorValue is is empty now.
+  EXPECT_TRUE(value.release_vector() == nullptr);
 }
 
 }  // namespace

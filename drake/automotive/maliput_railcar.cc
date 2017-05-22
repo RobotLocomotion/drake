@@ -45,6 +45,29 @@ using systems::rendering::PoseVector;
 
 namespace automotive {
 
+namespace {  // Local helper functions.
+
+// Finds our continuous state in a context.
+template <typename T>
+const MaliputRailcarState<T>& get_state(
+    const systems::Context<T>& context) {
+  const MaliputRailcarState<T>* const state =
+      dynamic_cast<const MaliputRailcarState<T>*>(
+          &context.get_continuous_state_vector());
+  DRAKE_DEMAND(state != nullptr);
+  return *state;
+}
+
+// Finds the lane direction state variable in a context.
+template <typename T>
+const LaneDirection& get_lane_direction(
+    const systems::Context<T>& context) {
+  return context.template get_abstract_state<LaneDirection>(0);
+}
+
+}  // namespace
+
+
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialS;
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialSpeed;
 template <typename T> constexpr double MaliputRailcar<T>::kLaneEndEpsilon;
@@ -133,6 +156,12 @@ T MaliputRailcar<T>::CalcR(const MaliputRailcarParams<T>& params,
   } else {
     return -params.r();
   }
+}
+
+template <typename T>
+const MaliputRailcarParams<T>& MaliputRailcar<T>::get_parameters(
+    const systems::Context<T>& context) const {
+  return this->template GetNumericParameter<MaliputRailcarParams>(context, 0);
 }
 
 template <typename T>

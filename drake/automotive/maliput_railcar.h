@@ -165,27 +165,9 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   T CalcR(const MaliputRailcarParams<T>& params,
           const LaneDirection& lane_direction) const;
 
-  // Finds our parameters in a context.
+// Finds our parameters in a context.
   const MaliputRailcarParams<T>& get_parameters(
-      const systems::Context<T>& context) const {
-    return this->template GetNumericParameter<MaliputRailcarParams>(context, 0);
-  }
-
-  // Finds our continuous state in a context.
-  const MaliputRailcarState<T>& get_state(
-      const systems::Context<T>& context) const {
-    const MaliputRailcarState<T>* const state =
-        dynamic_cast<const MaliputRailcarState<T>*>(
-            &context.get_continuous_state_vector());
-    DRAKE_DEMAND(state != nullptr);
-    return *state;
-  }
-
-  // Finds the lane direction state variable in a context.
-  const LaneDirection& get_lane_direction(
-      const systems::Context<T>& context) const {
-    return context.template get_abstract_state<LaneDirection>(0);
-  }
+      const systems::Context<T>& context) const;
 
   const LaneDirection initial_lane_direction_{};
   int command_input_port_index_{};

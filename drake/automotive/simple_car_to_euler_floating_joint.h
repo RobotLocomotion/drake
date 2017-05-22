@@ -21,12 +21,13 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
     this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareVectorInputPort(SimpleCarState<T>());
     this->DeclareVectorOutputPort(
-        &SimpleCarToEulerFloatingJoint::CalcStateOutput);
+        &SimpleCarToEulerFloatingJoint::ConvertStateTo3dPose);
   }
 
  private:
-  void CalcStateOutput(const systems::Context<T>& context,
-                       EulerFloatingJointState<T>* output_data) const {
+  // Converts the x,y,heading input state to a full 3D pose.
+  void ConvertStateTo3dPose(const systems::Context<T>& context,
+                            EulerFloatingJointState<T>* output_data) const {
     typedef systems::VectorBase<T> Base;
     const Base* const input_vector = this->EvalVectorInput(context, 0);
     DRAKE_ASSERT(input_vector != nullptr);

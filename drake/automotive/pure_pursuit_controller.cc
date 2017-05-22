@@ -25,7 +25,7 @@ PurePursuitController<T>::PurePursuitController()
       steering_command_index_{
           this->DeclareVectorOutputPort(
                   BasicVector<T>(1),
-                  &PurePursuitController::OutputSteeringAngle)
+                  &PurePursuitController::OutputSteeringCommand)
               .get_index()} {
   this->DeclareNumericParameter(PurePursuitParams<T>());
   this->DeclareNumericParameter(SimpleCarParams<T>());
@@ -53,7 +53,7 @@ PurePursuitController<T>::steering_command_output() const {
 }
 
 template <typename T>
-void PurePursuitController<T>::OutputSteeringAngle(
+void PurePursuitController<T>::OutputSteeringCommand(
     const systems::Context<T>& context,
     systems::BasicVector<T>* steering_output) const {
   // Obtain the parameters.

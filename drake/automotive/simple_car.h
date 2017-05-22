@@ -80,16 +80,6 @@ class SimpleCar : public systems::LeafSystem<T> {
                                const SimpleCarState<T>& state,
                                const DrivingCommand<T>& input,
                                SimpleCarState<T>* rates) const;
-
-  // Obtain our continuous state from a context.
-  const SimpleCarState<T>& get_state(const systems::Context<T>& context) const {
-    const systems::VectorBase<T>& context_state =
-        context.get_continuous_state_vector();
-    const SimpleCarState<T>* const state =
-        dynamic_cast<const SimpleCarState<T>*>(&context_state);
-    DRAKE_DEMAND(state);
-    return *state;
-  }
 };
 
 }  // namespace automotive

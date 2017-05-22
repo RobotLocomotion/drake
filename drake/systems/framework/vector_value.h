@@ -12,6 +12,10 @@ namespace systems {
 
 /// A container class for BasicVector<T>.
 ///
+/// @warning We expect this container to be non-empty in normal use. Although
+/// we do permit it to be empty, most users should never use it that way.
+/// Prefer a 0-length BasicVector to a nullptr.
+///
 /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
 template <typename T>
 class VectorValue : public Value<BasicVector<T>*> {
@@ -33,6 +37,9 @@ class VectorValue : public Value<BasicVector<T>*> {
     DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
+  /// Copy assignment replaces the contained BasicVector with a clone of
+  /// of the one supplied in `other`. If `other` is empty then this will be
+  /// empty also after the assignment.
   VectorValue& operator=(const VectorValue& other) {
     if (this == &other) {
       // Special case to do nothing, to avoid an unnecessary Clone.
@@ -51,13 +58,15 @@ class VectorValue : public Value<BasicVector<T>*> {
     return std::make_unique<VectorValue>(*this);
   }
 
-  /// Obtain a const reference to the BasicVector owned by this VectorValue.
+  /// Obtain a const reference to the BasicVector owned by this VectorValue,
+  /// which must not be empty.
   const BasicVector<T>& get_vector() const {
     DRAKE_ASSERT(owned_value_ != nullptr);
     return *owned_value_;
   }
 
-  /// Obtain a mutable reference to the BasicVector owned by this VectorValue.
+  /// Obtain a mutable reference to the BasicVector owned by this VectorValue,
+  /// which must not be empty.
   BasicVector<T>& get_mutable_vector() {
     DRAKE_ASSERT(owned_value_ != nullptr);
     return *owned_value_;
@@ -66,7 +75,7 @@ class VectorValue : public Value<BasicVector<T>*> {
   /// Extract the contained BasicVector and transfer ownership to
   /// the caller. The VectorValue is left empty. This is useful when you have
   /// been handed an AbstractValue but would like to use only the BasicVector
-  /// you know lurks inside. After extracting the vector you should delete
+  /// you know lurks inside. After extracting the vector you should discard
   /// the now-empty shell of the AbstractValue.
   std::unique_ptr<BasicVector<T>> release_vector() {
     this->set_value(nullptr);  // Clear the parent Value.
