@@ -54,12 +54,15 @@ class TestSystem : public System<double> {
     return this->DeclareAbstractInputPort();
   }
 
-  const OutputPort<double>& AddAbstractOutputPort() {
+  const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
-    auto& port = CreateLeafOutputPort(
+    auto port =
+        std::make_unique<LeafOutputPort<double>>(
         typename LeafOutputPort<double>::AllocCallback(nullptr),
         typename LeafOutputPort<double>::CalcCallback(nullptr));
-    return port;
+    LeafOutputPort<double>* const port_ptr = port.get();
+    this->CreateOutputPort(std::unique_ptr<OutputPort<double>>(port.release()));
+    return *port_ptr;
   }
 
   bool HasAnyDirectFeedthrough() const override {
@@ -320,14 +323,14 @@ class ValueIOTestSystem : public System<T> {
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
     this->DeclareAbstractInputPort();
-    this->CreateLeafOutputPort(
+    CreateLeafOutputPort(
         Value<std::string>("output"),
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
         });
 
     this->DeclareInputPort(kVectorValued, 1);
-    this->CreateLeafOutputPort(
+    CreateLeafOutputPort(
         BasicVector<T>(1),
         [this](const Context<T>& context, BasicVector<T>* output) {
           this->CalcVectorOutput(context, output);
@@ -404,6 +407,20 @@ class ValueIOTestSystem : public System<T> {
     output->add_port(this->get_output_port(0).Allocate(context));
     output->add_port(this->get_output_port(1).Allocate(context));
     return std::unique_ptr<SystemOutput<T>>(output.release());
+  }
+
+ private:
+  // Creates a new LeafOutputPort in this System and returns a reference to
+  // it. The arguments to this method are forwarded to the matching
+  // LeafOutputPort constructor. (This method is normally supplied by
+  // LeafSystem but we're not including that here.)
+  template <typename... Args>
+  LeafOutputPort<T>& CreateLeafOutputPort(Args&&... args) {
+    auto port =
+        std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
+    LeafOutputPort<T>* const port_ptr = port.get();
+    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(port.release()));
+    return *port_ptr;
   }
 };
 

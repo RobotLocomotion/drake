@@ -156,15 +156,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "system_common",
+    srcs = [],
+    hdrs = ["system_common.h"],
+    deps = [],
+)
+
+drake_cc_library(
     name = "input_port_descriptor",
     srcs = [
         "input_port_descriptor.cc",
     ],
     hdrs = [
         "input_port_descriptor.h",
-        "system_port_descriptor.h",
     ],
     deps = [
+        ":system_common",
         ":value",
         "//drake/common",
         "//drake/common:type_safe_index",
@@ -251,12 +258,11 @@ drake_cc_library(
     hdrs = [
         "output_port.h",
         "system.h",
-        "system_port_descriptor.h",
     ],
     deps = [
         ":cache",
         ":context",
-        ":diagram_context",
+        ":system_common",
         ":vector_value",
         "//drake/common",
         "//drake/common:autodiff",

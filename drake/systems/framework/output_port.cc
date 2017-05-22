@@ -5,7 +5,6 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -114,7 +113,7 @@ std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
     std::ostringstream oss;
     oss << "LeafOutputPort::DoAllocate(): " << this->GetPortIdMsg()
         << " has neither an allocation function nor a model value so cannot"
-           " be allocated.";
+            " be allocated.";
     throw std::logic_error(oss.str());
   }
   DRAKE_DEMAND(result.get() != nullptr);
@@ -144,37 +143,20 @@ const AbstractValue& LeafOutputPort<T>::DoEval(
   return *reinterpret_cast<const AbstractValue*>(0);
 }
 
-//==============================================================================
-//                          DIAGRAM OUTPUT PORT
-//==============================================================================
-template <typename T>
-const Context<T>& DiagramOutputPort<T>::get_subcontext(
-    const Context<T>& context, int subsystem_index) const {
-  const DiagramContext<T>* diagram_context =
-      dynamic_cast<const DiagramContext<T>*>(&context);
-  DRAKE_DEMAND(diagram_context != nullptr);
-  return *diagram_context->GetSubsystemContext(subsystem_index);
-}
+// The Vector2/3 instantiations here are for the benefit of some
+// older unit tests but are not otherwise advertised.
 
 template class OutputPort<double>;
-template class LeafOutputPort<double>;
-template class DiagramOutputPort<double>;
-
-template class OutputPort<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
-template class LeafOutputPort<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
-template class DiagramOutputPort<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
-
-template class OutputPort<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
-template class LeafOutputPort<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
-template class DiagramOutputPort<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
-
 template class OutputPort<AutoDiffXd>;
-template class LeafOutputPort<AutoDiffXd>;
-template class DiagramOutputPort<AutoDiffXd>;
-
 template class OutputPort<symbolic::Expression>;
+template class OutputPort<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
+template class OutputPort<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
+
+template class LeafOutputPort<double>;
+template class LeafOutputPort<AutoDiffXd>;
 template class LeafOutputPort<symbolic::Expression>;
-template class DiagramOutputPort<symbolic::Expression>;
+template class LeafOutputPort<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
+template class LeafOutputPort<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
 
 }  // namespace systems
 }  // namespace drake

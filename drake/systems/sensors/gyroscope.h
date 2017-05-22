@@ -11,7 +11,6 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/sensors/gyroscope_output.h"
 
 namespace drake {

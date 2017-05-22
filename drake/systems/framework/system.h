@@ -1092,32 +1092,10 @@ class System {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
-  /// Creates a new LeafOutputPort in this System and returns a reference to
-  /// it. The arguments to this method are forwarded to the matching
-  /// LeafOutputPort constructor.
-  template <typename... Args>
-  LeafOutputPort<T>& CreateLeafOutputPort(Args&&... args) {
-    auto port =
-        std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
-    LeafOutputPort<T>* const port_ptr = port.get();
+  void CreateOutputPort(std::unique_ptr<OutputPort<T>> port) {
     port->set_system_and_index(this,
                                OutputPortIndex(this->get_num_output_ports()));
     output_ports_.push_back(std::move(port));
-    return *port_ptr;
-  }
-
-  /// Creates a new DiagramOutputPort in this System and returns a reference to
-  /// it. The arguments to this method are forwarded to the matching
-  /// DiagramOutputPort constructor.
-  template <typename... Args>
-  DiagramOutputPort<T>& CreateDiagramOutputPort(Args&&... args) {
-    auto port =
-        std::make_unique<DiagramOutputPort<T>>(std::forward<Args>(args)...);
-    DiagramOutputPort<T>* const port_ptr = port.get();
-    port->set_system_and_index(this,
-                               OutputPortIndex(this->get_num_output_ports()));
-    output_ports_.push_back(std::move(port));
-    return *port_ptr;
   }
   //@}
 

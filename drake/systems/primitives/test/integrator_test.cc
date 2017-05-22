@@ -9,7 +9,6 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -50,9 +49,9 @@ TEST_F(IntegratorTest, Topology) {
   EXPECT_EQ(kLength, input_descriptor.size());
 
   ASSERT_EQ(1, integrator_->get_num_output_ports());
-  const auto& output_descriptor = integrator_->get_output_port(0);
-  EXPECT_EQ(kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(kLength, output_descriptor.size());
+  const auto& output_port = integrator_->get_output_port(0);
+  EXPECT_EQ(kVectorValued, output_port.get_data_type());
+  EXPECT_EQ(kLength, output_port.size());
 }
 
 // Tests that the output of an integrator is its state.

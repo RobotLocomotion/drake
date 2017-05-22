@@ -7,7 +7,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -43,7 +42,7 @@ class AccelerometerXdotHack : public systems::LeafSystem<double> {
   }
   ///@}
 
-  /// @name System output port descriptor accessors.
+  /// @name System output port accessors.
   ///@{
 
   /// Returns the output port. The size of this port's output vector is

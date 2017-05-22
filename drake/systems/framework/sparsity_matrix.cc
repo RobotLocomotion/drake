@@ -31,7 +31,7 @@ SparsityMatrix::SparsityMatrix(const System<symbolic::Expression>& system)
   // TODO(david-german-tri): Initialize parameters, once #5072 is resolved.
 
   // Outputs
-  // -- Record the output port descriptors and compute the outputs.
+  // -- Record the output ports and compute the outputs.
   for (int i = 0; i < system.get_num_output_ports(); ++i) {
     const OutputPort<symbolic::Expression>& port = system.get_output_port(i);
     output_port_types_[i] = port.get_data_type();

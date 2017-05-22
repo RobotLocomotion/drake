@@ -4,6 +4,10 @@ namespace drake {
 namespace systems {
 namespace internal {
 
+template class DiagramOutputPort<double>;
+template class DiagramOutputPort<AutoDiffXd>;
+template class DiagramOutputPort<symbolic::Expression>;
+
 template class DiagramOutput<double>;
 
 template class DiagramTimeDerivatives<double>;

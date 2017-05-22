@@ -68,7 +68,7 @@ set(installed_headers
   subvector.h
   supervector.h
   system.h
-  system_port_descriptor.h
+  system_common.h
   systems.h
   value.h
   value_checker.h

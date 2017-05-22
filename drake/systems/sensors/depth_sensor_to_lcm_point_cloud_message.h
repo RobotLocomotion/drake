@@ -4,7 +4,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
 namespace drake {

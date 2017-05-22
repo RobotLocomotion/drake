@@ -975,6 +975,18 @@ class LeafSystem : public System<T> {
     }
   }
 
+  // Creates a new LeafOutputPort in this LeafSystem and returns a reference to
+  // it. The arguments to this method are forwarded to the matching
+  // LeafOutputPort constructor.
+  template <typename... Args>
+  LeafOutputPort<T>& CreateLeafOutputPort(Args&&... args) {
+    auto port =
+        std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
+    LeafOutputPort<T>* const port_ptr = port.get();
+    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(port.release()));
+    return *port_ptr;
+  }
+
   // Periodic Update or Publish events registered on this system.
   std::vector<PeriodicEvent<T>> periodic_events_;
 

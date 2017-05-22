@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/system_common.h"
 
 namespace drake {
 namespace systems {

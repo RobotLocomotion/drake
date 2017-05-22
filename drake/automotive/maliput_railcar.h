@@ -108,7 +108,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   MaliputRailcarParams<T>* get_mutable_parameters(
       systems::Context<T>* context) const;
 
-  /// Getter methods for input and output port descriptors.
+  /// Getter methods for input and output ports.
   /// @{
   const systems::InputPortDescriptor<T>& command_input() const;
   const systems::OutputPort<T>& state_output() const;

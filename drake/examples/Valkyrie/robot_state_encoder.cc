@@ -7,7 +7,6 @@
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"

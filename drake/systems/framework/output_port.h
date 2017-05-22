@@ -10,7 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/system_common.h"
 #include "drake/systems/framework/vector_value.h"
 
 namespace drake {
@@ -236,6 +236,8 @@ class OutputPort {
 };
 
 
+
+
 //==============================================================================
 //                            LEAF OUTPUT PORT
 //==============================================================================
@@ -263,12 +265,12 @@ class LeafOutputPort : public OutputPort<T> {
   /** Signature of a function suitable for calculating a value of a particular
   output port, given a place to put the value. **/
   using CalcCallback =
-      std::function<void(const Context<T>&, AbstractValue*)>;
+  std::function<void(const Context<T>&, AbstractValue*)>;
 
   /** Signature of a function suitable for calculating a value of a particular
   vector-valued output port, given a place to put the value. **/
   using CalcVectorCallback =
-      std::function<void(const Context<T>&, BasicVector<T>*)>;
+  std::function<void(const Context<T>&, BasicVector<T>*)>;
 
   /** Signature of a function suitable for obtaining the cached value of a
   particular output port. **/
@@ -321,7 +323,7 @@ class LeafOutputPort : public OutputPort<T> {
   The supplied calculator function writes to a BasicVector of the same
   underlying concrete type and size as the model value.**/
   explicit LeafOutputPort(const BasicVector<T>& model_value,
-  CalcVectorCallback vector_calc_function)
+                          CalcVectorCallback vector_calc_function)
       : OutputPort<T>(kVectorValued, model_value.size()),
         model_value_(new VectorValue<T>(model_value.Clone())) {
     set_calculation_function(vector_calc_function);
@@ -383,6 +385,7 @@ class LeafOutputPort : public OutputPort<T> {
   // evaluation function which must exist.
   const AbstractValue& DoEval(const Context<T>& context) const final;
 
+
   // Data.
   std::unique_ptr<const AbstractValue> model_value_;  // May be nullptr.
 
@@ -391,60 +394,7 @@ class LeafOutputPort : public OutputPort<T> {
   EvalCallback  eval_function_;
 };
 
-
-//==============================================================================
-//                          DIAGRAM OUTPUT PORT
-//==============================================================================
-/** Holds information about the subsystem output port that has been exported to
-become one of this Diagram's output ports. The actual methods for determining
-the port's value are supplied by the LeafSystem that ultimately underlies the
-source port, although that may be any number of levels down. **/
-template <typename T>
-class DiagramOutputPort : public OutputPort<T> {
- public:
-  DiagramOutputPort(const OutputPort<T>* source_output_port,
-                    int subsystem_index)
-      : OutputPort<T>(source_output_port->get_data_type(),
-                      source_output_port->size()),
-        source_output_port_(source_output_port),
-        subsystem_index_(subsystem_index) {}
-
-  /** Obtain a reference to the subsystem output port that was exported to
-  create this diagram port. Note that the source may itself be a diagram output
-  port. **/
-  const OutputPort<T>& get_source_output_port() const {
-    DRAKE_DEMAND(source_output_port_ != nullptr);
-    return *source_output_port_;
-  }
-
- private:
-  // These forward to the source system output port, passing in just the source
-  // System's Context, not the whole Diagram context we're given.
-  std::unique_ptr<AbstractValue> DoAllocate(
-      const Context<T>* context) const final {
-    DRAKE_DEMAND(source_output_port_ != nullptr);
-    const Context<T>* subcontext =
-        context ? &get_subcontext(*context, subsystem_index_) : nullptr;
-    return source_output_port_->Allocate(subcontext);
-  }
-  void DoCalc(const Context<T>& context, AbstractValue* value) const final {
-    DRAKE_DEMAND(source_output_port_ != nullptr);
-    const Context<T>& subcontext = get_subcontext(context, subsystem_index_);
-    return source_output_port_->Calc(subcontext, value);
-  }
-  const AbstractValue& DoEval(const Context<T>& context) const final {
-    DRAKE_ASSERT(source_output_port_ != nullptr);
-    const Context<T>& subcontext = get_subcontext(context, subsystem_index_);
-    return source_output_port_->Eval(subcontext);
-  }
-
-  // Dig out the right subcontext for delegation.
-  const Context<T>& get_subcontext(const Context<T>&,
-                                   int subsystem_index) const;
-
-  const OutputPort<T>* source_output_port_;
-  const int subsystem_index_;
-};
+// See diagram.h for DiagramOutputPort.
 
 }  // namespace systems
 }  // namespace drake
