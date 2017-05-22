@@ -11,6 +11,8 @@
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -299,9 +301,12 @@ class MultibodyTree {
     // later to define mobilizers between those frames in a second tree2.
     mobilizer->get_inboard_frame().HasThisParentTreeOrThrow(this);
     mobilizer->get_outboard_frame().HasThisParentTreeOrThrow(this);
+    const int num_positions = mobilizer->get_num_positions();
+    const int num_velocities = mobilizer->get_num_velocities();
     MobilizerIndex mobilizer_index = topology_.add_mobilizer(
         mobilizer->get_inboard_frame().get_index(),
-        mobilizer->get_outboard_frame().get_index());
+        mobilizer->get_outboard_frame().get_index(),
+        num_positions, num_velocities);
 
     // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
     // below. Do not move it around!
@@ -434,6 +439,26 @@ class MultibodyTree {
   // TODO(amcastro-tri): Consider making this method private and calling it
   // automatically when CreateDefaultContext() is called.
   void Finalize();
+
+  /// Allocates a new context for this %MultibodyTree uniquely identifying the
+  /// state of the multibody system.
+  ///
+  /// @pre The method Finalize() must be called before attempting to create a
+  /// context in order for the %MultibodyTree topology to be valid at the moment
+  /// of allocation.
+  ///
+  /// @throws std::logic_error If users attempt to call this method on a
+  ///         %MultibodyTree with an invalid topology.
+  // TODO(amcastro-tri): Split this method into implementations to be used by
+  // System::AllocateContext() so that MultibodyPlant() can make use of it
+  // within the system's infrastructure. This will require at least the
+  // introduction of system's methods to:
+  //  - Create a context different from LeafContext, in this case MBTContext.
+  //  - Create or request cache entries.
+  std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
+
+  /// Sets default values in the context including pre-computed cache entries.
+  void SetDefaults(systems::Context<T>*) const {}
 
  private:
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
