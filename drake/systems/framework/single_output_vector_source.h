@@ -48,16 +48,16 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   }
 
  protected:
+  /// Creates a source with the given sole output port configuration.
+  explicit SingleOutputVectorSource(int size)
+      : SingleOutputVectorSource(BasicVector<T>(size)) {}
+
   /// Creates a source with output type and dimension of the @p model_vector.
   explicit SingleOutputVectorSource(const BasicVector<T>& model_vector) {
     this->DeclareVectorOutputPort(
         model_vector,
         &SingleOutputVectorSource<T>::CalcVectorOutput);
   }
-
-  /// Creates a source with the given sole output port configuration.
-  explicit SingleOutputVectorSource(int size)
-      : SingleOutputVectorSource(BasicVector<T>(size)) {}
 
   /// Provides a convenience method for %SingleOutputVectorSource subclasses.
   /// This method performs the same logical operation as System::DoCalcOutput

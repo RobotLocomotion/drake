@@ -19,10 +19,10 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/input_port_descriptor.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port.h"
+#include "drake/systems/framework/output_port_value.h"
 
 namespace drake {
 namespace systems {

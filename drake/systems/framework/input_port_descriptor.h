@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/system_common.h"
 

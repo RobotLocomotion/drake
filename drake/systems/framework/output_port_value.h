@@ -216,7 +216,7 @@ class LeafSystemOutput : public SystemOutput<T> {
     port_values_.emplace_back(std::move(port));
   }
 
- private:
+ protected:
   // Returns a clone that includes a deep copy of all the output port values.
   LeafSystemOutput<T>* DoClone() const override {
     LeafSystemOutput<T>* clone = new LeafSystemOutput<T>();
@@ -226,6 +226,7 @@ class LeafSystemOutput : public SystemOutput<T> {
     return clone;
   }
 
+ private:
   std::vector<std::unique_ptr<OutputPortValue>> port_values_;
 };
 

@@ -1341,7 +1341,7 @@ class Diagram : public System<T>,
     const OutputPort<T>& port = system->get_output_port(port_index);
     const int i = GetSystemIndexOrAbort(system);
     SPDLOG_TRACE(log(), "Evaluating output for subsystem {}, port {}",
-                 system->GetPath(), id.second);
+                 system->GetPath(), port_index);
     const Context<T>* subsystem_context = context.GetSubsystemContext(i);
     SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
     AbstractValue* port_output = subsystem_output->GetMutableData(port_index);
