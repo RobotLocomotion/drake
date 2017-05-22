@@ -14,6 +14,7 @@ set(sources
   input_port_evaluator_interface.cc
   input_port_value.cc
   leaf_context.cc
+  leaf_output_port.cc
   leaf_system.cc
   model_values.cc
   output_port.cc
@@ -55,6 +56,7 @@ set(installed_headers
   input_port_evaluator_interface.h
   input_port_value.h
   leaf_context.h
+  leaf_output_port.h
   leaf_system.h
   model_values.h
   output_port.h

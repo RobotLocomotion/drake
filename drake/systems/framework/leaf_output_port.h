@@ -159,9 +159,7 @@ class LeafOutputPort : public OutputPort<T> {
   std::unique_ptr<AbstractValue> DoAllocate(
       const Context<T>* context) const final;
 
-  // Invokes the supplied calculation function if present, or attempts to use
-  // obsolete CalcOutput() method for backwards compatibility.
-  // TODO(sherm1) Get rid of CalcOutput() fallback.
+  // Invokes the supplied calculation function if present.
   void DoCalc(const Context<T>& context, AbstractValue* value) const final;
 
   // If this output port has its own cache entry then this checks the validity
