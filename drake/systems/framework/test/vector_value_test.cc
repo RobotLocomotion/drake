@@ -96,10 +96,10 @@ GTEST_TEST(VectorValueTest, ExtractBasicVector) {
 
   const BasicVector<double>& got = value.get_vector();
   EXPECT_EQ(&got, ptr);
-  EXPECT_EQ(got.get_value(), Eigen::Vector3d(4,5,6));
+  EXPECT_EQ(got.get_value(), Eigen::Vector3d(4, 5, 6));
 
   value.get_mutable_vector().SetAtIndex(1, 9.);
-  EXPECT_EQ(got.get_value(), Eigen::Vector3d(4,9,6));
+  EXPECT_EQ(got.get_value(), Eigen::Vector3d(4, 9, 6));
 
   auto extracted = value.release_vector();
   EXPECT_EQ(extracted.get(), ptr);
