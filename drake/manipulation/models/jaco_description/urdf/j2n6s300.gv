@@ -1,0 +1,50 @@
+digraph G {
+node [shape=box];
+"world" [label="world"];
+"root" [label="root"];
+"j2n6s300_link_base" [label="j2n6s300_link_base"];
+"j2n6s300_link_1" [label="j2n6s300_link_1"];
+"j2n6s300_link_2" [label="j2n6s300_link_2"];
+"j2n6s300_link_3" [label="j2n6s300_link_3"];
+"j2n6s300_link_4" [label="j2n6s300_link_4"];
+"j2n6s300_link_5" [label="j2n6s300_link_5"];
+"j2n6s300_link_6" [label="j2n6s300_link_6"];
+"j2n6s300_end_effector" [label="j2n6s300_end_effector"];
+"j2n6s300_link_finger_1" [label="j2n6s300_link_finger_1"];
+"j2n6s300_link_finger_tip_1" [label="j2n6s300_link_finger_tip_1"];
+"j2n6s300_link_finger_2" [label="j2n6s300_link_finger_2"];
+"j2n6s300_link_finger_tip_2" [label="j2n6s300_link_finger_tip_2"];
+"j2n6s300_link_finger_3" [label="j2n6s300_link_finger_3"];
+"j2n6s300_link_finger_tip_3" [label="j2n6s300_link_finger_tip_3"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"world" -> "connect_root_and_world" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"connect_root_and_world" -> "root"
+"root" -> "j2n6s300_joint_base" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"j2n6s300_joint_base" -> "j2n6s300_link_base"
+"j2n6s300_link_base" -> "j2n6s300_joint_1" [label="xyz: 0 0 0.15675 \nrpy: 3.14159 -2.06823e-13 3.14159"]
+"j2n6s300_joint_1" -> "j2n6s300_link_1"
+"j2n6s300_link_1" -> "j2n6s300_joint_2" [label="xyz: 0 0.0016 -0.11875 \nrpy: 1.5708 9.26536e-05 2.06823e-13"]
+"j2n6s300_joint_2" -> "j2n6s300_link_2"
+"j2n6s300_link_2" -> "j2n6s300_joint_3" [label="xyz: 0 -0.41 0 \nrpy: -3.14159 -2.06823e-13 -9.26536e-05"]
+"j2n6s300_joint_3" -> "j2n6s300_link_3"
+"j2n6s300_link_3" -> "j2n6s300_joint_4" [label="xyz: 0 0.2073 -0.0114 \nrpy: -1.5708 -1.26218e-29 -3.14159"]
+"j2n6s300_joint_4" -> "j2n6s300_link_4"
+"j2n6s300_link_4" -> "j2n6s300_joint_5" [label="xyz: 0 -0.03703 -0.06414 \nrpy: 1.0472 -0 -3.14159"]
+"j2n6s300_joint_5" -> "j2n6s300_link_5"
+"j2n6s300_link_5" -> "j2n6s300_joint_6" [label="xyz: 0 -0.03703 -0.06414 \nrpy: 1.0472 -0 -3.14159"]
+"j2n6s300_joint_6" -> "j2n6s300_link_6"
+"j2n6s300_link_6" -> "j2n6s300_joint_end_effector" [label="xyz: 0 0 -0.16 \nrpy: -3.14159 -0 0"]
+"j2n6s300_joint_end_effector" -> "j2n6s300_end_effector"
+"j2n6s300_link_6" -> "j2n6s300_joint_finger_1" [label="xyz: 0.00279 0.03126 -0.11467 \nrpy: -1.5708 0.649262 1.35961"]
+"j2n6s300_joint_finger_1" -> "j2n6s300_link_finger_1"
+"j2n6s300_link_finger_1" -> "j2n6s300_joint_finger_tip_1" [label="xyz: 0.044 -0.003 0 \nrpy: 0 -0 0"]
+"j2n6s300_joint_finger_tip_1" -> "j2n6s300_link_finger_tip_1"
+"j2n6s300_link_6" -> "j2n6s300_joint_finger_2" [label="xyz: 0.02226 -0.02707 -0.11482 \nrpy: -1.5708 0.649262 -1.38614"]
+"j2n6s300_joint_finger_2" -> "j2n6s300_link_finger_2"
+"j2n6s300_link_finger_2" -> "j2n6s300_joint_finger_tip_2" [label="xyz: 0.044 -0.003 0 \nrpy: 0 -0 0"]
+"j2n6s300_joint_finger_tip_2" -> "j2n6s300_link_finger_tip_2"
+"j2n6s300_link_6" -> "j2n6s300_joint_finger_3" [label="xyz: -0.02226 -0.02707 -0.11482 \nrpy: -1.5708 0.649262 -1.75545"]
+"j2n6s300_joint_finger_3" -> "j2n6s300_link_finger_3"
+"j2n6s300_link_finger_3" -> "j2n6s300_joint_finger_tip_3" [label="xyz: 0.044 -0.003 0 \nrpy: 0 -0 0"]
+"j2n6s300_joint_finger_tip_3" -> "j2n6s300_link_finger_tip_3"
+}
