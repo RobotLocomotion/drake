@@ -551,7 +551,7 @@ class Diagram : public System<T>,
 
   /// Returns a Graphviz fragment describing this Diagram. To obtain a complete
   /// Graphviz graph, call System<T>::GetGraphvizString.
-  void GetGraphvizFragment(std::stringstream *dot) const override {
+  void GetGraphvizFragment(std::stringstream* dot) const override {
     // Open the Diagram.
     const int64_t id = this->GetGraphvizId();
     *dot << "subgraph cluster" << id << "diagram" " {" << std::endl;
@@ -633,14 +633,14 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
-                                 std::stringstream *dot) const override {
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                 std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_u" << port.get_index();
   }
 
-  void GetGraphvizOutputPortToken(const OutputPort<T> &port,
-                                  std::stringstream *dot) const override {
+  void GetGraphvizOutputPortToken(const OutputPort<T>& port,
+                                  std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_y" << port.get_index();
   }
@@ -1322,7 +1322,7 @@ class Diagram : public System<T>,
     const auto& source_output_port = sys->get_output_port(port_index);
 
     // Add this port to our externally visible topology.
-    this->CreateDiagramOutputPort(&source_output_port, subsystem_index);
+    CreateDiagramOutputPort(&source_output_port, subsystem_index);
   }
 
   // Evaluates the value of the output port with the given @p id in the given

@@ -172,9 +172,7 @@ drake_cc_library(
     ],
     deps = [
         ":system_common",
-        ":value",
         "//drake/common",
-        "//drake/common:type_safe_index",
     ],
 )
 
