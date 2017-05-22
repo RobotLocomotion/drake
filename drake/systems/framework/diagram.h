@@ -86,6 +86,8 @@ void FilterSubsystemEventsByType(int subsystem_id,
 template <typename T>
 class DiagramOutputPort : public OutputPort<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutputPort)
+
   /// Construct a %DiagramOutputPort that exports the indicated port from
   /// the subsystem whose index is provided.
   DiagramOutputPort(const OutputPort<T>* source_output_port,
@@ -93,13 +95,17 @@ class DiagramOutputPort : public OutputPort<T> {
       : OutputPort<T>(source_output_port->get_data_type(),
                       source_output_port->size()),
         source_output_port_(source_output_port),
-        subsystem_index_(subsystem_index) {}
+        subsystem_index_(subsystem_index) {
+    DRAKE_DEMAND(source_output_port_ != nullptr);
+    DRAKE_DEMAND(subsystem_index_ >= 0);
+  }
+
+  ~DiagramOutputPort() final = default;
 
   /// Obtain a reference to the subsystem output port that was exported to
   /// create this diagram port. Note that the source may itself be a diagram
   /// output port.
   const OutputPort<T>& get_source_output_port() const {
-    DRAKE_DEMAND(source_output_port_ != nullptr);
     return *source_output_port_;
   }
 
@@ -108,32 +114,28 @@ class DiagramOutputPort : public OutputPort<T> {
   // System's Context, not the whole Diagram context we're given.
   std::unique_ptr<AbstractValue> DoAllocate(
       const Context<T>* context) const final {
-    DRAKE_DEMAND(source_output_port_ != nullptr);
     const Context<T>* subcontext =
-        context ? &get_subcontext(*context, subsystem_index_) : nullptr;
+        context ? &get_subcontext(*context) : nullptr;
     return source_output_port_->Allocate(subcontext);
   }
   void DoCalc(const Context<T>& context, AbstractValue* value) const final {
-    DRAKE_DEMAND(source_output_port_ != nullptr);
-    const Context<T>& subcontext = get_subcontext(context, subsystem_index_);
+    const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Calc(subcontext, value);
   }
   const AbstractValue& DoEval(const Context<T>& context) const final {
-    DRAKE_ASSERT(source_output_port_ != nullptr);
-    const Context<T>& subcontext = get_subcontext(context, subsystem_index_);
+    const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Eval(subcontext);
   }
 
   // Dig out the right subcontext for delegation.
-  const Context<T>& get_subcontext(const Context<T>& context,
-                                   int subsystem_index) const {
+  const Context<T>& get_subcontext(const Context<T>& context) const {
     const DiagramContext<T>* diagram_context =
         dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
-    return *diagram_context->GetSubsystemContext(subsystem_index);
+    return *diagram_context->GetSubsystemContext(subsystem_index_);
   }
 
-  const OutputPort<T>* source_output_port_;
+  const OutputPort<T>* const source_output_port_;
   const int subsystem_index_;
 };
 
@@ -1309,7 +1311,7 @@ class Diagram : public System<T>,
     auto port = std::make_unique<internal::DiagramOutputPort<T>>(
         std::forward<Args>(args)...);
     internal::DiagramOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(port.release()));
+    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(std::move(port)));
     return *port_ptr;
   }
 

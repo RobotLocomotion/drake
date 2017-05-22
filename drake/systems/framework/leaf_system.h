@@ -983,7 +983,7 @@ class LeafSystem : public System<T> {
     auto port =
         std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
     LeafOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(port.release()));
+    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(std::move(port)));
     return *port_ptr;
   }
 

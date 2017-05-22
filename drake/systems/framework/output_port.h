@@ -71,17 +71,9 @@ No other values for T are currently supported.
 template <typename T>
 class OutputPort {
  public:
-  /** @name Basic Concepts
-  MoveConstructible only; not CopyConstructible; not Copy/Move-Assignable. **/
-  //@{
-  // See InputPortDescriptor doc for implementation note and justification.
-  OutputPort() = delete;
-  OutputPort(OutputPort&&) = default;
-  OutputPort(const OutputPort&) = delete;
-  OutputPort& operator=(OutputPort&&) = default;
-  OutputPort& operator=(const OutputPort&) = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
+
   virtual ~OutputPort() = default;
-  //@}
 
   /** Allocate a concrete object suitable for holding the value to be exposed
   by this output port, and return that as an AbstractValue. This works for any
@@ -235,9 +227,6 @@ class OutputPort {
   const int size_;
 };
 
-
-
-
 //==============================================================================
 //                            LEAF OUTPUT PORT
 //==============================================================================
@@ -251,6 +240,10 @@ matches the type returned by the allocation function. **/
 template <typename T>
 class LeafOutputPort : public OutputPort<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafOutputPort)
+
+  ~LeafOutputPort() override = default;
+
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular output port. The result is returned as an
   AbstractValue even if this is a vector-valued port. **/

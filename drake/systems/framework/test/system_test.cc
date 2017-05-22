@@ -56,12 +56,12 @@ class TestSystem : public System<double> {
 
   const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
-    auto port =
-        std::make_unique<LeafOutputPort<double>>(
+    auto port = std::make_unique<LeafOutputPort<double>>(
         typename LeafOutputPort<double>::AllocCallback(nullptr),
         typename LeafOutputPort<double>::CalcCallback(nullptr));
     LeafOutputPort<double>* const port_ptr = port.get();
-    this->CreateOutputPort(std::unique_ptr<OutputPort<double>>(port.release()));
+    this->CreateOutputPort(
+        std::unique_ptr<OutputPort<double>>(std::move(port)));
     return *port_ptr;
   }
 
@@ -324,7 +324,7 @@ class ValueIOTestSystem : public System<T> {
   ValueIOTestSystem() {
     this->DeclareAbstractInputPort();
     CreateLeafOutputPort(
-        Value<std::string>("output"),
+        Value<std::string>(),
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
         });
@@ -363,7 +363,7 @@ class ValueIOTestSystem : public System<T> {
   std::unique_ptr<Context<T>> AllocateContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     context->SetNumInputPorts(this->get_num_input_ports());
-    return std::unique_ptr<Context<T>>(context.release());
+    return std::unique_ptr<Context<T>>(std::move(context));
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -383,7 +383,7 @@ class ValueIOTestSystem : public System<T> {
     return true;
   }
 
-  // Append "output" to input(0) for output(0).
+  // Appends "output" to input(0) for output(0).
   void CalcStringOutput(const Context<T>& context,
                         AbstractValue* output) const {
     const std::string* str_in =
@@ -393,7 +393,7 @@ class ValueIOTestSystem : public System<T> {
     str_out = *str_in + "output";
   }
 
-  // Set output(1) = 2 * input(1).
+  // Sets output(1) = 2 * input(1).
   void CalcVectorOutput(const Context<T>& context,
                         BasicVector<T>* vec_out) const {
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
@@ -406,7 +406,7 @@ class ValueIOTestSystem : public System<T> {
         new LeafSystemOutput<T>);
     output->add_port(this->get_output_port(0).Allocate(context));
     output->add_port(this->get_output_port(1).Allocate(context));
-    return std::unique_ptr<SystemOutput<T>>(output.release());
+    return std::unique_ptr<SystemOutput<T>>(std::move(output));
   }
 
  private:
@@ -419,7 +419,7 @@ class ValueIOTestSystem : public System<T> {
     auto port =
         std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
     LeafOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(port.release()));
+    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(std::move(port)));
     return *port_ptr;
   }
 };
