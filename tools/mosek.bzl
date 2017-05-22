@@ -107,6 +107,10 @@ def mosek_test_tags(mosek_required=True):
 
     By default, sets mosek_required=True, which will require that the supplied
     tag filters include "mosek".
+
+    MOSEK checks a license file, and may need to contact a license server to
+    check out a license. Therefore, tests that use MOSEK must have the tag
+    "local", because they are non-hermetic.
     """
     nominal_tags = [
         "local",

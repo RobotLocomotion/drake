@@ -70,7 +70,14 @@ def gurobi_test_tags(gurobi_required=True):
 
     By default, sets gurobi_required=True, which will require that the supplied
     tag filters include "gurobi".
+
+    Gurobi checks a license file, and may need to contact a license server to
+    check out a license. Therefore, tests that use Gurobi must have the tag
+    "local", because they are non-hermetic. For the moment, we also require
+    the tag "exclusive", to rate-limit license servers with a small number of
+    licenses.
     """
+    # TODO(david-german-tri): Find a better fix for the license server problem.
     nominal_tags = [
         "exclusive",
         "local",
