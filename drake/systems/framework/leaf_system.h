@@ -669,7 +669,7 @@ class LeafSystem : public System<T> {
                   "Expected vector type derived from BasicVector.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = this->CreateLeafOutputPort(
+    auto& port = CreateLeafOutputPort(
         model_vector, [this_ptr, calc](const Context<T>& context,
                                        BasicVector<T>* result) {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
@@ -710,7 +710,7 @@ class LeafSystem : public System<T> {
   const LeafOutputPort<T>& DeclareVectorOutputPort(
       const BasicVector<T>& model_vector,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
-    auto& port = this->CreateLeafOutputPort(model_vector, vector_calc_function);
+    auto& port = CreateLeafOutputPort(model_vector, vector_calc_function);
     return port;
   }
 
@@ -726,7 +726,7 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::AllocVectorCallback vector_alloc_function,
       int size,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
-    auto& port = this->CreateLeafOutputPort(
+    auto& port = CreateLeafOutputPort(
         vector_alloc_function, size, vector_calc_function);
     return port;
   }
@@ -745,7 +745,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = this->CreateLeafOutputPort(
+    auto& port = CreateLeafOutputPort(
         Value<OutputType>(model_value),
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
@@ -806,7 +806,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = this->CreateLeafOutputPort(
+    auto& port = CreateLeafOutputPort(
         [this_ptr, make](const Context<T>* context) {
           return AbstractValue::Make((this_ptr->*make)(*context));
         },
@@ -833,7 +833,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = this->CreateLeafOutputPort(
+    auto& port = CreateLeafOutputPort(
         [this_ptr, make](const Context<T>*) {  // Swallow the context.
           return AbstractValue::Make((this_ptr->*make)());
         },
@@ -852,7 +852,7 @@ class LeafSystem : public System<T> {
   const LeafOutputPort<T>& DeclareAbstractOutputPort(
       const AbstractValue& model_value,
       typename LeafOutputPort<T>::CalcCallback calc_function) {
-    auto& port = this->CreateLeafOutputPort(model_value, calc_function);
+    auto& port = CreateLeafOutputPort(model_value, calc_function);
     return port;
   }
 
@@ -863,7 +863,7 @@ class LeafSystem : public System<T> {
   const LeafOutputPort<T>& DeclareAbstractOutputPort(
       typename LeafOutputPort<T>::AllocCallback alloc_function,
       typename LeafOutputPort<T>::CalcCallback calc_function) {
-    auto& port = this->CreateLeafOutputPort(alloc_function, calc_function);
+    auto& port = CreateLeafOutputPort(alloc_function, calc_function);
     return port;
   }
   //@}
