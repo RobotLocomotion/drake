@@ -1,5 +1,6 @@
 #include "drake/systems/framework/leaf_output_port.h"
 
+#include <memory>
 #include <sstream>
 
 #include "drake/common/drake_assert.h"

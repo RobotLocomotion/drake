@@ -61,8 +61,7 @@ class TestSystem : public System<double> {
         typename LeafOutputPort<double>::AllocCallback(nullptr),
         typename LeafOutputPort<double>::CalcCallback(nullptr));
     LeafOutputPort<double>* const port_ptr = port.get();
-    this->CreateOutputPort(
-        std::unique_ptr<OutputPort<double>>(std::move(port)));
+    this->CreateOutputPort(std::move(port));
     return *port_ptr;
   }
 
@@ -364,7 +363,7 @@ class ValueIOTestSystem : public System<T> {
   std::unique_ptr<Context<T>> AllocateContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     context->SetNumInputPorts(this->get_num_input_ports());
-    return std::unique_ptr<Context<T>>(std::move(context));
+    return std::move(context);
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -407,7 +406,7 @@ class ValueIOTestSystem : public System<T> {
         new LeafSystemOutput<T>);
     output->add_port(this->get_output_port(0).Allocate(context));
     output->add_port(this->get_output_port(1).Allocate(context));
-    return std::unique_ptr<SystemOutput<T>>(std::move(output));
+    return std::move(output);
   }
 
  private:
@@ -420,7 +419,7 @@ class ValueIOTestSystem : public System<T> {
     auto port =
         std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
     LeafOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(std::move(port)));
+    this->CreateOutputPort(std::move(port));
     return *port_ptr;
   }
 };

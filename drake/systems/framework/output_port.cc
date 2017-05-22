@@ -1,5 +1,6 @@
 #include "drake/systems/framework/output_port.h"
 
+#include <memory>
 #include <sstream>
 
 #include "drake/common/eigen_autodiff_types.h"

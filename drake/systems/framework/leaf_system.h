@@ -96,7 +96,7 @@ class LeafSystem : public System<T> {
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
 
-    return std::unique_ptr<Context<T>>(context.release());
+    return std::move(context);
   }
 
   /// Default implementation: sets all continuous and discrete state variables
@@ -167,7 +167,7 @@ class LeafSystem : public System<T> {
       output->add_port(std::make_unique<OutputPortValue>(
           port.Allocate(&context)));
     }
-    return std::unique_ptr<SystemOutput<T>>(output.release());
+    return std::move(output);
   }
 
   /// Returns the AllocateContinuousState value, which must not be nullptr.
@@ -821,7 +821,7 @@ class LeafSystem : public System<T> {
   /// Declares an abstract-valued output port by specifying member functions to
   /// use both for the allocator and calculator. The signatures are:
   /// @code
-  /// OutputType MySystem::ConstructOutputValue() const;
+  /// OutputType MySystem::MakeOutputValue() const;
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
@@ -984,7 +984,7 @@ class LeafSystem : public System<T> {
     auto port =
         std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
     LeafOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(std::move(port)));
+    this->CreateOutputPort(std::move(port));
     return *port_ptr;
   }
 

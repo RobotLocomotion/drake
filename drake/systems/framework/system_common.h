@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_assert.h"
-
 namespace drake {
 namespace systems {
 

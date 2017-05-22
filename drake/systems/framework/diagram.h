@@ -382,7 +382,7 @@ class Diagram : public System<T>,
 
     context->MakeState();
     context->MakeParameters();
-    return std::unique_ptr<Context<T>>(context.release());
+    return std::move(context);
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -424,7 +424,7 @@ class Diagram : public System<T>,
     auto output = std::make_unique<internal::DiagramOutput<T>>();
     output->get_mutable_port_values()->resize(output_port_ids_.size());
     ExposeSubsystemOutputs(*diagram_context, output.get());
-    return std::unique_ptr<SystemOutput<T>>(output.release());
+    return std::move(output);
   }
 
   /// Aggregates the time derivatives from each subsystem into a
@@ -1311,7 +1311,7 @@ class Diagram : public System<T>,
     auto port = std::make_unique<internal::DiagramOutputPort<T>>(
         std::forward<Args>(args)...);
     internal::DiagramOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::unique_ptr<OutputPort<T>>(std::move(port)));
+    this->CreateOutputPort(std::move(port));
     return *port_ptr;
   }
 
