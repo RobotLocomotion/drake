@@ -6,7 +6,7 @@
 /// controlled to track and hold a final (arbitrary) joint space pose.
 ///
 /// This simulation uses a 6-degree of freedom Kinova Jaco arm with a three
-/// finger gripper. Joints are numbered sequentually starting from the base
+/// finger gripper. Joints are numbered sequentially starting from the base
 /// with the following joint index descriptions:
 /// 0: shoulder roll
 /// 1: shoulder fore/aft
@@ -114,7 +114,8 @@ int DoMain() {
       simulator.get_mutable_context(), plant);
 
   // Sets some (arbitrary) initial conditions.
-  // See the @file docblock at the top of this file for joint index descriptions.
+  // See the @file docblock at the top of this file
+  // for joint index descriptions.
   systems::VectorBase<double>* x0 =
       jaco_context->get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, -1.57);
