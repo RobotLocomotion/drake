@@ -94,7 +94,7 @@ int DoMain(int argc, char* argv[]) {
       simulator.get_mutable_context(), plant);
 
   // Sets (arbitrary) initial conditions.
-  // See file header for joint index descriptions.
+  // See the @file docblock at the top of this file for joint index descriptions.
   VectorBase<double>* x0 = jaco_context->get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, 0.5);
 
