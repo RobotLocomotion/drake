@@ -78,6 +78,11 @@ exports_files(
 )
 
 exports_files(
+    ["eigen-create-cps.py"],
+    visibility = ["@eigen//:__pkg__"],
+)
+
+exports_files(
     ["lcm-create-cps.py"],
     visibility = ["@lcm//:__pkg__"],
 )
@@ -98,7 +103,7 @@ genrule(
 
 install_files(
     name = "install",
-    dest = "lib/drake/cmake",
+    dest = "lib/cmake/drake",
     files = ["drake-config.cmake"],
 )
 

@@ -49,13 +49,13 @@ filegroup(
 
 drake_cc_googletest(
     name = "generate_obj_test",
+    data = [
+        ":test_data",
+    ],
     deps = [
         ":utility",
         "//drake/automotive/maliput/monolane",
         "//drake/thirdParty:spruce",
-    ],
-    data = [
-        ":test_data",
     ],
 )
 

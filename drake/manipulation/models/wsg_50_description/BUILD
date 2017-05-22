@@ -18,9 +18,9 @@ filegroup(
         "meshes/WSG-FMF.obj",
         "meshes/WSG50_110.obj",
         "package.xml",
-        "urdf/wsg_50_mesh_collision.urdf",
+        "sdf/schunk_wsg_50.sdf",
         "sdf/schunk_wsg_50_ball_contact.sdf",
-        "sdf/schunk_wsg_50.sdf"
+        "urdf/wsg_50_mesh_collision.urdf",
     ],
     visibility = ["//visibility:public"],
 )

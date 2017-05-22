@@ -165,8 +165,8 @@ def _output_path(ctx, input_file, strip_prefix):
     # Possibly remove prefixes.
     for p in strip_prefix:
         output_path = _remove_prefix(input_path, p)
-        if input_path != None:
-            return input_path
+        if output_path != None:
+            return output_path
 
     return input_path
 

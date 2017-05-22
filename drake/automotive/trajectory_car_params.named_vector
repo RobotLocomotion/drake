@@ -1,0 +1,14 @@
+element {
+    name: "max_speed"
+    doc: "The limit on the car's forward speed."
+    doc_units: "m/s"
+    default_value: "45.0"
+    min_value: "0.0"
+}
+element {
+    name: "speed_limit_kp"
+    doc: "The smoothing constant for min/max speed limits."
+    doc_units: "Hz"
+    default_value: "10.0"
+    min_value: "0.0"
+}

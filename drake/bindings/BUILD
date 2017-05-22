@@ -159,12 +159,12 @@ py_library(
     data = [
         ":python/pydrake/_pydrake_autodiffutils.so",
         ":python/pydrake/_pydrake_rbtree.so",
+        ":python/pydrake/_pydrake_symbolic.so",
         ":python/pydrake/parsers.so",
         ":python/pydrake/solvers/_pydrake_ik.so",
         ":python/pydrake/solvers/_pydrake_mathematicalprogram.so",
         ":python/pydrake/solvers/gurobi.so",
         ":python/pydrake/solvers/mosek.so",
-        ":python/pydrake/_pydrake_symbolic.so",
     ],
     imports = ["python"],
     visibility = ["//visibility:public"],

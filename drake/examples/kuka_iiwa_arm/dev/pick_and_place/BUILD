@@ -27,8 +27,8 @@ drake_cc_library(
     deps = [
         "//drake/common/trajectories:piecewise_quaternion",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/manipulation/planner:constraint_relaxing_ik",
         "//drake/lcmtypes:schunk",
+        "//drake/manipulation/planner:constraint_relaxing_ik",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/util:lcm_util",

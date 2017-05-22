@@ -41,7 +41,7 @@ drake_cc_library(
     srcs = [],
     hdrs = [
         "image.h",
-        "pixel_types.h"
+        "pixel_types.h",
     ],
     deps = [
         "//drake/common",
