@@ -158,8 +158,12 @@ drake_cc_library(
 drake_cc_library(
     name = "system_common",
     srcs = [],
-    hdrs = ["system_common.h"],
-    deps = [],
+    hdrs = [
+        "system_common.h",
+    ],
+    deps = [
+        "//drake/common",
+    ],
 )
 
 drake_cc_library(
@@ -172,7 +176,6 @@ drake_cc_library(
     ],
     deps = [
         ":system_common",
-        "//drake/common",
     ],
 )
 
@@ -262,7 +265,6 @@ drake_cc_library(
         ":context",
         ":system_common",
         ":vector_value",
-        "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
         "//drake/common:type_safe_index",

@@ -165,7 +165,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   T CalcR(const MaliputRailcarParams<T>& params,
           const LaneDirection& lane_direction) const;
 
-// Finds our parameters in a context.
+  // Finds our parameters in a context.
   const MaliputRailcarParams<T>& get_parameters(
       const systems::Context<T>& context) const;
 

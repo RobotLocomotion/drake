@@ -73,6 +73,17 @@ class SisoVectorSystem : public LeafSystem<T> {
   }
 
  protected:
+  /// Creates a system with one input port and one output port of the given
+  /// sizes.  Does not declare any state -- subclasses may optionally declare
+  /// continuous or discrete state, but not both.
+  SisoVectorSystem(int input_size, int output_size) {
+    DRAKE_THROW_UNLESS(input_size > 0);
+    DRAKE_THROW_UNLESS(output_size > 0);
+    this->DeclareInputPort(kVectorValued, input_size);
+    this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                  &SisoVectorSystem::CalcVectorOutput);
+  }
+
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
   /// DoCalcVectorTimeDerivatives().
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -164,17 +175,6 @@ class SisoVectorSystem : public LeafSystem<T> {
 
     // Delegate to subclass.
     DoCalcVectorOutput(context, input_block, state_block, &output_block);
-  }
-
-  /// Creates a system with one input port and one output port of the given
-  /// sizes.  Does not declare any state -- subclasses may optionally declare
-  /// continuous or discrete state, but not both.
-  SisoVectorSystem(int input_size, int output_size) {
-    DRAKE_THROW_UNLESS(input_size > 0);
-    DRAKE_THROW_UNLESS(output_size > 0);
-    this->DeclareInputPort(kVectorValued, input_size);
-    this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                  &SisoVectorSystem::CalcVectorOutput);
   }
 
   /// Provides a convenience method for %SisoVectorSystem subclasses.  This
