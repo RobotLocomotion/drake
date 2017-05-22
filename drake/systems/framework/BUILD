@@ -273,6 +273,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "leaf_output_port",
+    srcs = ["leaf_output_port.cc"],
+    hdrs = ["leaf_output_port.h"],
+    deps = [
+        ":system",
+        ":value",
+        ":vector",
+        ":vector_value",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "model_values",
     srcs = ["model_values.cc"],
     hdrs = ["model_values.h"],
@@ -291,6 +304,7 @@ drake_cc_library(
     hdrs = ["leaf_system.h"],
     deps = [
         ":leaf_context",
+        ":leaf_output_port",
         ":model_values",
         ":sparsity_matrix",
         ":system",
@@ -551,6 +565,7 @@ drake_cc_googletest(
     name = "system_test",
     deps = [
         ":leaf_context",
+        ":leaf_output_port",
         ":system",
         "//drake/common",
         "//drake/systems/framework/test_utilities",

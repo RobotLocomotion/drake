@@ -1,4 +1,5 @@
 #include "drake/systems/framework/output_port.h"
+#include "drake/systems/framework/leaf_output_port.h"
 
 #include <cctype>
 #include <memory>

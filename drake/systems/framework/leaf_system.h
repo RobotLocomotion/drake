@@ -21,6 +21,7 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/sparsity_matrix.h"
