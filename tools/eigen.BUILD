@@ -69,9 +69,9 @@ install_files(
 install(
     name = "install",
     doc_dest = "share/doc/eigen3",
-    docs = glob(["COPYING.*"]),
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/eigen3",
+    license_docs = glob(["COPYING.*"]),
     targets = ["eigen"],
     deps = ["install_cmake"],
 )
