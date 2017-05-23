@@ -25,6 +25,7 @@ namespace symbolic {
 enum class FormulaKind {
   False,                 ///< ⊥
   True,                  ///< ⊤
+  Var,                   ///< Boolean Variable
   Eq,                    ///< =
   Neq,                   ///< !=
   Gt,                    ///< >
@@ -43,6 +44,7 @@ enum class FormulaKind {
 bool operator<(FormulaKind k1, FormulaKind k2);
 
 class FormulaCell;                  // In drake/common/symbolic_formula_cell.h
+class FormulaVar;                   // In drake/common/symbolic_formula_cell.h
 class RelationalFormulaCell;        // In drake/common/symbolic_formula_cell.h
 class NaryFormulaCell;              // In drake/common/symbolic_formula_cell.h
 class FormulaNot;                   // In drake/common/symbolic_formula_cell.h
@@ -55,7 +57,7 @@ class FormulaPositiveSemidefinite;  // In drake/common/symbolic_formula_cell.h
 It has the following grammar:
 
 \verbatim
-    F := ⊥ | ⊤ | E = E | E ≠ E | E > E | E ≥ E | E < E | E ≤ E
+    F := ⊥ | ⊤ | Var | E = E | E ≠ E | E > E | E ≥ E | E < E | E ≤ E
        | E ∧ ... ∧ E | E ∨ ... ∨ E | ¬F | ∀ x₁, ..., xn. F
 \endverbatim
 
@@ -96,6 +98,11 @@ class Formula {
   Formula() { *this = True(); }
 
   explicit Formula(std::shared_ptr<FormulaCell> ptr);
+
+  /** Constructs a formula from @p var.
+   * @pre @p var is of BOOLEAN type and not a dummy variable.
+   */
+  explicit Formula(const Variable& var);
 
   FormulaKind get_kind() const;
   size_t get_hash() const;
@@ -153,8 +160,15 @@ class Formula {
   explicit operator bool() const { return Evaluate(); }
 
   friend Formula operator&&(const Formula& f1, const Formula& f2);
+  friend Formula operator&&(const Variable& v, const Formula& f);
+  friend Formula operator&&(const Formula& f, const Variable& v);
+  friend Formula operator&&(const Variable& v1, const Variable& v2);
   friend Formula operator||(const Formula& f1, const Formula& f2);
+  friend Formula operator||(const Variable& v, const Formula& f);
+  friend Formula operator||(const Formula& f, const Variable& v);
+  friend Formula operator||(const Variable& v1, const Variable& v2);
   friend Formula operator!(const Formula& f);
+  friend Formula operator!(const Variable& v);
   friend Formula operator==(const Expression& e1, const Expression& e2);
   friend Formula operator!=(const Expression& e1, const Expression& e2);
   friend Formula operator<(const Expression& e1, const Expression& e2);
@@ -167,6 +181,7 @@ class Formula {
 
   friend bool is_false(const Formula& f);
   friend bool is_true(const Formula& f);
+  friend bool is_variable(const Formula& f);
   friend bool is_equal_to(const Formula& f);
   friend bool is_not_equal_to(const Formula& f);
   friend bool is_greater_than(const Formula& f);
@@ -184,6 +199,7 @@ class Formula {
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of symbolic_formula.h. These functions are
   // declared in symbolic_formula_cell.h header.
+  friend std::shared_ptr<FormulaVar> to_variable(const Formula& f);
   friend std::shared_ptr<RelationalFormulaCell> to_relational(const Formula& f);
   friend std::shared_ptr<NaryFormulaCell> to_nary(const Formula& f);
   friend std::shared_ptr<FormulaNot> to_negation(const Formula& f);
@@ -200,8 +216,15 @@ class Formula {
 Formula forall(const Variables& vars, const Formula& f);
 
 Formula operator&&(const Formula& f1, const Formula& f2);
+Formula operator&&(const Variable& v, const Formula& f);
+Formula operator&&(const Formula& f, const Variable& v);
+Formula operator&&(const Variable& v1, const Variable& v2);
 Formula operator||(const Formula& f1, const Formula& f2);
+Formula operator||(const Variable& v, const Formula& f);
+Formula operator||(const Formula& f, const Variable& v);
+Formula operator||(const Variable& v1, const Variable& v2);
 Formula operator!(const Formula& f);
+Formula operator!(const Variable& v);
 Formula operator==(const Expression& e1, const Expression& e2);
 Formula operator!=(const Expression& e1, const Expression& e2);
 Formula operator<(const Expression& e1, const Expression& e2);
@@ -305,6 +328,8 @@ std::ostream& operator<<(std::ostream& os, const Formula& f);
 bool is_false(const Formula& f);
 /** Checks if @p f is structurally equal to True formula. */
 bool is_true(const Formula& f);
+/** Checks if @p f is a variable formula. */
+bool is_variable(const Formula& f);
 /** Checks if @p f is a formula representing equality (==). */
 bool is_equal_to(const Formula& f);
 /** Checks if @p f is a formula representing disequality (!=). */
@@ -333,6 +358,11 @@ bool is_forall(const Formula& f);
 bool is_isnan(const Formula& f);
 /** Checks if @p f is a positive-semidefinite formula. */
 bool is_positive_semidefinite(const Formula& f);
+
+/** Returns the embedded variable in the variable formula @p f.
+ *  @pre @p f is a variable formula.
+ */
+const Variable& get_variable(const Formula& f);
 
 /** Returns the lhs-argument of a relational formula @p f.
  *  \pre{@p f is a relational formula.}

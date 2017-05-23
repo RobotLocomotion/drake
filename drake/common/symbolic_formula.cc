@@ -29,6 +29,8 @@ bool operator<(FormulaKind k1, FormulaKind k2) {
 
 Formula::Formula(shared_ptr<FormulaCell> ptr) : ptr_{std::move(ptr)} {}
 
+Formula::Formula(const Variable& var) : ptr_{make_shared<FormulaVar>(var)} {}
+
 FormulaKind Formula::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->get_kind();
@@ -149,6 +151,15 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
   // Nothing to flatten.
   return Formula{make_shared<FormulaAnd>(f1, f2)};
 }
+Formula operator&&(const Variable& v, const Formula& f) {
+  return Formula(v) && f;
+}
+Formula operator&&(const Formula& f, const Variable& v) {
+  return f && Formula(v);
+}
+Formula operator&&(const Variable& v1, const Variable& v2) {
+  return Formula(v1) && Formula(v2);
+}
 
 Formula operator||(const Formula& f1, const Formula& f2) {
   // tt || x => tt    x || tt => tt
@@ -188,6 +199,15 @@ Formula operator||(const Formula& f1, const Formula& f2) {
   // Nothing to flatten.
   return Formula{make_shared<FormulaOr>(f1, f2)};
 }
+Formula operator||(const Variable& v, const Formula& f) {
+  return Formula(v) || f;
+}
+Formula operator||(const Formula& f, const Variable& v) {
+  return f || Formula(v);
+}
+Formula operator||(const Variable& v1, const Variable& v2) {
+  return Formula(v1) || Formula(v2);
+}
 
 Formula operator!(const Formula& f) {
   if (f.EqualTo(Formula::True())) {
@@ -198,6 +218,8 @@ Formula operator!(const Formula& f) {
   }
   return Formula{make_shared<FormulaNot>(f)};
 }
+
+Formula operator!(const Variable& v) { return !Formula(v); }
 
 ostream& operator<<(ostream& os, const Formula& f) {
   DRAKE_ASSERT(f.ptr_ != nullptr);
@@ -284,6 +306,7 @@ Formula positive_semidefinite(const MatrixX<Expression>& m,
 
 bool is_false(const Formula& f) { return is_false(*f.ptr_); }
 bool is_true(const Formula& f) { return is_true(*f.ptr_); }
+bool is_variable(const Formula& f) { return is_variable(*f.ptr_); }
 bool is_equal_to(const Formula& f) { return is_equal_to(*f.ptr_); }
 bool is_not_equal_to(const Formula& f) { return is_not_equal_to(*f.ptr_); }
 bool is_greater_than(const Formula& f) { return is_greater_than(*f.ptr_); }
@@ -309,6 +332,11 @@ bool is_forall(const Formula& f) { return is_forall(*f.ptr_); }
 bool is_isnan(const Formula& f) { return is_isnan(*f.ptr_); }
 bool is_positive_semidefinite(const Formula& f) {
   return is_positive_semidefinite(*f.ptr_);
+}
+
+const Variable& get_variable(const Formula& f) {
+  DRAKE_ASSERT(is_variable(f));
+  return to_variable(f)->get_variable();
 }
 
 const Expression& get_lhs_expression(const Formula& f) {

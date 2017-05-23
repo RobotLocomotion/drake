@@ -50,7 +50,7 @@ using test::ExprNotEqual;
 using test::ExprNotLess;
 
 // Checks if a given 'expressions' is ordered by Expression::Less.
-static void CheckOrdering(const vector<Expression>& expressions) {
+void CheckOrdering(const vector<Expression>& expressions) {
   for (size_t i{0}; i < expressions.size(); ++i) {
     for (size_t j{0}; j < expressions.size(); ++j) {
       if (i < j) {
