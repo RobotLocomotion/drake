@@ -350,7 +350,8 @@ class Simulator {
   bool initialization_done_{false};
 
   // Per step events that are to be handled on every "major time step" (i.e.,
-  // every loop within StepTo()). This collection is set within Initialize().
+  // every successful completion of a step). This collection is set within
+  // Initialize().
   std::unique_ptr<CompositeEventCollection<T>> per_step_events_;
 
   // Pre-allocated temporaries for updated discrete states.
