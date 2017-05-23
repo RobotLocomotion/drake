@@ -80,23 +80,23 @@ void DepthSensor::PrecomputeRaycastEndpoints() {
   // (3) pitch = PI and and pitch = -PI for a given yaw
   // (3) yaw > 2 * PI
   //
-  for (int i = 0; i < get_num_pixel_rows(); ++i) {
+  for (int i = 0; i < get_num_pitch(); ++i) {
     double pitch =
         specification_.min_pitch() + i * specification_.pitch_increment();
 
     // If this is the top-most row, set the pitch equal to max_pitch_. This is
     // necessary to account for small inaccuracies due to floating point
     // arithmetic.
-    if (i == get_num_pixel_rows() - 1) pitch = specification_.max_pitch();
+    if (i == get_num_pitch() - 1) pitch = specification_.max_pitch();
 
-    for (int j = 0; j < get_num_pixel_cols(); ++j) {
+    for (int j = 0; j < get_num_yaw(); ++j) {
       double yaw =
           specification_.min_yaw() + j * specification_.yaw_increment();
 
       // If this is the right-most column, set the yaw equal to max_yaw_.
       // This is necessary to account for small inaccuracies due to floating
       // point arithmetic.
-      if (j == get_num_pixel_cols() - 1) yaw = specification_.max_yaw();
+      if (j == get_num_yaw() - 1) yaw = specification_.max_yaw();
 
       // Compute the location of the raycast end point assuming a max sensing
       // range of one and no occlusions. This is done using the same equations
@@ -109,7 +109,7 @@ void DepthSensor::PrecomputeRaycastEndpoints() {
       // the range cast end point exceeds the maximum range of the sensor. This
       // is so we can detect when an object is sensed at precisely the maximum
       // range of the sensor.
-      raycast_endpoints_.col(i * get_num_pixel_cols() + j) =
+      raycast_endpoints_.col(i * get_num_yaw() + j) =
           1.1 * specification_.max_range() * Vector3<double>(x, y, z);
     }
   }

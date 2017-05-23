@@ -59,14 +59,14 @@ namespace sensors {
 ///
 /// This system has two output ports. The first contains the sensed values
 /// stored in a DepthSensorOutput object. For each pitch, there is a fixed
-/// number of yaw values as specified by num_pixel_cols(). Each of these vector
+/// number of yaw values as specified by num_yaw(). Each of these vector
 /// of yaw values that share the same pitch are contiguous in the output vector.
 /// In other words, here is pseudocode describing this sensor's output vector:
 ///
 /// <pre>
-///  for i in 0 to num_pixel_rows():
-///    for j in 0 to num_pixel_cols():
-///      output_vector[i * num_pixel_cols() + j] ==
+///  for i in 0 to num_pitch():
+///    for j in 0 to num_yaw():
+///      output_vector[i * num_yaw() + j] ==
 ///          [depth value when yaw   = min_yaw()   + j * yaw_increment() and
 ///                            pitch = min_pitch() + i * pitch_increment()]
 /// </pre>
@@ -125,15 +125,15 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// Returns the number of pixel rows in the resulting depth sensor output.
   /// This is equal to parameter `num_pitch_values` that's passed into the
   /// constructor.
-  int get_num_pixel_rows() const { return specification_.num_pitch_values(); }
+  int get_num_pitch() const { return specification_.num_pitch_values(); }
 
   /// Returns the number of pixel columns in the resulting depth sensor output.
   /// This is equal to parameter `num_yaw_values` that's passed into the
   /// constructor.
-  int get_num_pixel_cols() const { return specification_.num_yaw_values(); }
+  int get_num_yaw() const { return specification_.num_yaw_values(); }
 
   /// Returns the size of the system's output, which equals the product of
-  /// num_pixel_rows() and num_pixel_cols().
+  /// num_pitch() and num_yaw().
   int get_num_depth_readings() const {
     return specification_.num_depth_readings();
   }
