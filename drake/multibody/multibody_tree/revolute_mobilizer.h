@@ -5,7 +5,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer_impl.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/systems/framework/context.h"
 
 // Forward declarations.
 template <typename T> class MultibodyTree;
@@ -66,6 +68,21 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// @retval axis_F The rotation axis as a unit vector expressed in the inboard
   ///                frame F.
   const Vector3<double>& get_revolute_axis() const { return axis_F_; }
+
+  /// Sets the `context` so that the generalized coordinate coresponding the
+  /// rotation angle of `this` mobilizer equals `angle`.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @param[in] angle The desired angle in radians.
+  /// @returns a constant reference to `this` mobilizer.
+  const RevoluteMobilizer<T>& set_angle(
+      systems::Context<T>* context, const T& angle) const;
+
+  /// Gets the rotation angle of `this` mobilizer from `context`.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @returns The angle coordinate of `this` mobilizer in the `context`.
+  const T& get_angle(const systems::Context<T>& context) const;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;

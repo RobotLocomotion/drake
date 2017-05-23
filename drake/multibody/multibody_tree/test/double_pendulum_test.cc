@@ -359,11 +359,15 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
   EXPECT_EQ(mbt_context->get_velocities().size(), 2);
   EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
 
-  EXPECT_EQ(mbt_context->get_mutable_positions_segment<1>(1).size(), 1);
+  // Verifies methods to retrieve fixed-sized segments of the state.
+  EXPECT_EQ(mbt_context->get_state_segment<1>(1).size(), 1);
+  EXPECT_EQ(mbt_context->get_mutable_state_segment<1>(1).size(), 1);
 
-  // Initialize the state.
+  // Initializes the state and verifies it contains the right values.
   shoulder_mobilizer_->set_zero_configuration(context.get());
-  //elbow_mobilizer_->set_angle(context, -M_PI / 4);
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), 0.0);
+  shoulder_mobilizer_->set_angle(context.get(), M_PI / 4);
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), M_PI / 4);
 
   // Set the poses of each body in the position kinematics cache to have an
   // arbitrary value that we can use for unit testing. In practice the poses in

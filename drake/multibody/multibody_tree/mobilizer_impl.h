@@ -52,11 +52,11 @@ class MobilizerImpl : public Mobilizer<T> {
   int get_num_velocities() const final { return nv;}
 
   /// Sets the what is considered the _zero_ configuration for this mobilizer.
-  /// By default this method sets all degrees of freedom related to this
+  /// By default this method sets all generalized positions related to this
   /// mobilizer to zero.
   /// In general setting all generalized coordinates to zero does not represent
   /// the _zero_ configuration and it might even not represent a mathematicaly
-  /// valid configuration. Consider for instance a QuaternionMobilizer, for
+  /// valid configuration. Consider for instance a quaternion mobilizer, for
   /// which its _zero_ configuration corresponds to the quaternion [1, 0, 0, 0].
   /// For those cases the specific mobilizers must override this method.
   virtual void set_zero_configuration(systems::Context<T>* context) const {
@@ -71,13 +71,20 @@ class MobilizerImpl : public Mobilizer<T> {
   // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
 
-  /// Given a mutable MultibodyTreeContext this method regurns a mutable
-  /// reference vector to the portion of the generalized coordinates vector for
-  /// the entire MultibodyTree that correspods to this mobilizer.
-  /// The returned vector has the proper static size for fast computations.
+  /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
+  /// segment in the state vector corresponding to `this` mobilizer's state.
+  Eigen::VectorBlock<const VectorX<T>, nq> get_positions(
+      const MultibodyTreeContext<T>& context) const {
+    return context.template get_state_segment<nq>(
+        this->get_positions_start());
+  }
+
+  /// Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
+  /// segment in the state vector corresponding to `this` mobilizer's state.
   Eigen::VectorBlock<VectorX<T>, nq> get_mutable_positions(
       MultibodyTreeContext<T>* context) const {
-    return context->template get_mutable_positions_segment<nq>(this->get_positions_start());
+    return context->template get_mutable_state_segment<nq>(
+        this->get_positions_start());
   }
 };
 
