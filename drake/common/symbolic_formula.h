@@ -209,13 +209,6 @@ Formula operator<=(const Expression& e1, const Expression& e2);
 Formula operator>(const Expression& e1, const Expression& e2);
 Formula operator>=(const Expression& e1, const Expression& e2);
 
-Formula operator==(const Variable& v1, const Variable& v2);
-Formula operator!=(const Variable& v1, const Variable& v2);
-Formula operator<(const Variable& v1, const Variable& v2);
-Formula operator<=(const Variable& v1, const Variable& v2);
-Formula operator>(const Variable& v1, const Variable& v2);
-Formula operator>=(const Variable& v1, const Variable& v2);
-
 /** Returns a Formula for the predicate isnan(e) to the given expression. This
  * serves as the argument-dependent lookup related to std::isnan(double). When
  * evaluated, this Formula will return false when the e.Evaluate() is not NaN.
