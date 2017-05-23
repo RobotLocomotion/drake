@@ -171,7 +171,10 @@ class Expression {
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(double d);
-  /** Constructs a variable expression from Variable. */
+  /** Constructs a variable expression from Variable.
+   * @pre @p var is not a dummy variable whose ID is 0.
+   * @pre @p var is not of BOOLEAN type.
+   */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
   /** Returns expression kind. */

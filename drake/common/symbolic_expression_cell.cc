@@ -264,6 +264,9 @@ ExpressionVar::ExpressionVar(const Variable& v)
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic expressions.
   DRAKE_DEMAND(!var_.is_dummy());
+  // Boolean symbolic variable should not be used in constructing symbolic
+  // expressions.
+  DRAKE_DEMAND(var_.get_type() != Variable::Type::BOOLEAN);
 }
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
