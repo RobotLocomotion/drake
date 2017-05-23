@@ -1,14 +1,14 @@
-#include "drake/solvers/indeterminate_variable.h"
+#include "drake/solvers/indeterminate.h"
 
 namespace drake {
 namespace solvers {
-VectorXIndeterminateVariable ConcatenateIndeterminateVariableRefList(
-    const IndeterminateVariableRefList& var_list) {
+VectorXIndeterminate ConcatenateIndeterminatesRefList(
+    const IndeterminatesRefList& var_list) {
   int dim = 0;
   for (const auto& var : var_list) {
     dim += var.size();
   }
-  VectorXIndeterminateVariable stacked_var(dim);
+  VectorXIndeterminate stacked_var(dim);
   int var_count = 0;
   for (const auto& var : var_list) {
     stacked_var.segment(var_count, var.rows()) = var;

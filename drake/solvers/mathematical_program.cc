@@ -222,28 +222,28 @@ VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
   return NewIndeterminateVariables(rows, 1, names);
 }*/
 
-MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
     size_t rows, size_t cols, const vector<string>& names) {
-  MatrixXIndeterminateVariable Indeterminate_variable_matrix(rows, cols);
-  NewIndeterminate_impl(names, Indeterminate_variable_matrix);
-  return Indeterminate_variable_matrix;
+  MatrixXIndeterminate indeterminates_matrix(rows, cols);
+  NewIndeterminates_impl(names, indeterminates_matrix);
+  return indeterminates_matrix;
 }
 
-VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
     size_t rows, const std::vector<std::string>& names) {
-  return NewIndeterminateVariables(rows, 1, names);
+  return NewIndeterminates(rows, 1, names);
 }
 
-VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
     size_t rows, const string& name) {
   vector<string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + "(" + to_string(i) + ")";
   }
-  return NewIndeterminateVariables(rows, names);
+  return NewIndeterminates(rows, names);
 }
 
-MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
     size_t rows, size_t cols, const string& name) {
   vector<string> names(rows * cols);
   int count = 0;
@@ -253,7 +253,7 @@ MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
       ++count;
     }
   }
-  return NewIndeterminateVariables(rows, cols, names);
+  return NewIndeterminates(rows, cols, names);
 }
 
 namespace {
@@ -652,13 +652,13 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
   return it->second;
 }
 
-size_t MathematicalProgram::FindIndeterminateVariableIndex(
+size_t MathematicalProgram::FindIndeterminateIndex(
     const Variable& var) const {
-  auto it = indeterminate_variable_index_.find(var.get_id());
-  if (it == indeterminate_variable_index_.end()) {
+  auto it = indeterminates_index_.find(var.get_id());
+  if (it == indeterminates_index_.end()) {
     ostringstream oss;
     oss << var
-        << " is not a indeterminate variable in the mathematical program, "
+        << " is not a indeterminate in the mathematical program, "
            "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }

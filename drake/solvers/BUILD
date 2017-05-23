@@ -101,9 +101,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "indeterminate_variable",
-    srcs = ["indeterminate_variable.cc"],
-    hdrs = ["indeterminate_variable.h"],
+    name = "indeterminate",
+    srcs = ["indeterminate.cc"],
+    hdrs = ["indeterminate.h"],
     deps = [
         "//drake/common",
         "//drake/common:number_traits",
@@ -301,7 +301,7 @@ drake_cc_library(
         ":create_cost",
         ":decision_variable",
         ":function",
-        ":indeterminate_variable",
+        ":indeterminate",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:number_traits",
@@ -501,7 +501,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "indeterminate_variable_test",
+    name = "indeterminates_test",
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",
