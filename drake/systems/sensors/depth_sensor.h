@@ -21,11 +21,11 @@ namespace sensors {
 
 /// A simple model of an ideal depth sensor. Example real-world depth sensors
 /// include Lidar, IR, sonar, etc. The depth measurements are taken at evenly
-/// spaced pixel rows (pitch angles) and columns (yaw angles). Ray casting is
-/// used to obtain the depth measurements and all pitch / yaw combinations in a
-/// single resulting depth image are obtained at a single effective point in
-/// time. Thus, this sensor does *not* model aliasing effects due to the time
-/// spent scanning vertically and horizontally.
+/// spaced pitch angles and yaw angles. Ray casting is used to obtain the depth
+/// measurements and all pitch / yaw combinations in a single resulting depth
+/// image are obtained at a single effective point in time. Thus, this sensor
+/// does *not* model aliasing effects due to the time spent scanning vertically
+/// and horizontally.
 ///
 /// There are two frames associated with this sensor: its base frame and its
 /// optical frame. This sensor's specification and configuration are defined in
@@ -90,6 +90,7 @@ namespace sensors {
 /// @see DepthSensorOutput
 /// @see DepthSensorSpecification
 ///
+
 class DepthSensor : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensor)
@@ -122,13 +123,13 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// Returns this sensor's specification.
   const DepthSensorSpecification& get_specification() { return specification_; }
 
-  /// Returns the number of pixel rows in the resulting depth sensor output.
-  /// This is equal to parameter `num_pitch_values` that's passed into the
-  /// constructor.
+	/// Returns the number of pixel rows in the resulting depth sensor output.
+	/// This is equal to parameter `DepthSensorSpecification::num_pitch_values`
+	/// that's passed into the constructor.
   int get_num_pitch() const { return specification_.num_pitch_values(); }
 
   /// Returns the number of pixel columns in the resulting depth sensor output.
-  /// This is equal to parameter `num_yaw_values` that's passed into the
+  /// This is equal to parameter `DepthSensorSpecification::num_yaw_values` that's passed into the
   /// constructor.
   int get_num_yaw() const { return specification_.num_yaw_values(); }
 
@@ -180,6 +181,19 @@ class DepthSensor : public systems::LeafSystem<double> {
   // range were achieved. This is cached to avoid repeated allocation and
   // computation.
   Eigen::Matrix3Xd raycast_endpoints_;
+
+  // Evaluates the output port containing the depth measurements.
+  void UpdateOutputs( const VectorX<double> &distances,
+                     const KinematicsCache<double> &kinematics_cache,
+                     SystemOutput<double> *output
+                     ) const;
+
+  // Applies the min / max range of the sensor. Any measurement that is less
+  // than the minimum or greater than the maximum is set to an invalid value.
+  // This is so users of this sensor can distinguish between an object at the
+  // maximum sensing distance and not detecting any object within the sensing
+  // range.
+  void ApplyLimits(VectorX<double> * dists ) const;
 };
 
 }  // namespace sensors

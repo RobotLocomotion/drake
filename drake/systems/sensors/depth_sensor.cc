@@ -162,29 +162,35 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   const_cast<RigidBodyTree<double>&>(tree_).collisionRaycast(
       kinematics_cache, origin, raycast_endpoints_world, distances);
 
-  // Applies the min / max range of the sensor. Any measurement that is less
-  // than the minimum or greater than the maximum is set to an invalid value.
-  // This is so users of this sensor can distinguish between an object at the
-  // maximum sensing distance and not detecting any object within the sensing
-  // range.
-  for (int i = 0; i < distances.size(); ++i) {
-    if (distances[i] < 0) {
+  ApplyLimits(& distances);
+
+  UpdateOutputs( distances, kinematics_cache, output );
+}
+
+void DepthSensor::ApplyLimits(VectorX<double> * distances ) const {
+  
+  for (int i = 0; i < distances->size(); ++i) {
+    if ( (*distances)[i] < 0) {
       // Infinity distance measurements show up as -1.
-      if (distances[i] == -1) {
-        distances[i] = DepthSensorOutput<double>::kTooFar;
+      if ( (*distances)[i] == -1) {
+         (*distances)[i] = DepthSensorOutput<double>::kTooFar;
       } else {
         drake::log()->warn("Measured distance was < 0 and != -1: " +
-                           std::to_string(distances[i]));
-        distances[i] = DepthSensorOutput<double>::kError;
+                           std::to_string( (*distances)[i]));
+        (*distances)[i] = DepthSensorOutput<double>::kError;
       }
-    } else if (distances[i] > specification_.max_range()) {
-      distances[i] = DepthSensorOutput<double>::kTooFar;
-    } else if (distances[i] < specification_.min_range()) {
-      distances[i] = DepthSensorOutput<double>::kTooClose;
+    } else if ( (*distances)[i] > specification_.max_range()) {
+      (*distances)[i] = DepthSensorOutput<double>::kTooFar;
+    } else if ( (*distances)[i] < specification_.min_range()) {
+      (*distances)[i] = DepthSensorOutput<double>::kTooClose;
     }
   }
+}
 
-  // Evaluates the output port containing the depth measurements.
+void DepthSensor::UpdateOutputs( const VectorX<double> &distances,
+                     const KinematicsCache<double> &kinematics_cache,
+                     SystemOutput<double> *output
+                     ) const {
   BasicVector<double>* data_output =
       output->GetMutableVectorData(depth_output_port_index_);
   DRAKE_ASSERT(data_output != nullptr);
