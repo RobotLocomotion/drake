@@ -43,8 +43,10 @@ drake_header_tar(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
+    doc_dest = "share/doc/drake",
     guess_hdrs = "WORKSPACE",
     hdr_dest = "include/drake",
+    license_docs = ["//:LICENSE.TXT"],
     targets = ["libdrake.so"],
 )
 
