@@ -593,6 +593,25 @@ TEST_F(SymbolicFormulaTest, And3) {
   EXPECT_PRED2(FormulaEqual, f1_ && f2_ && f1_, f1_ && f2_);
 }
 
+TEST_F(SymbolicFormulaTest, And4) {
+  // Simplification: f && f => f.
+  for (const Formula& f :
+       {b1_, b2_, tt_, ff_, f1_, f2_, f3_, f4_, f_eq_, f_neq_, f_lt_, f_lte_,
+        f_gt_, f_gte_, f_and_, f_or_, not_f_or_, f_forall_}) {
+    EXPECT_PRED2(FormulaEqual, f && f, f);
+  }
+}
+
+TEST_F(SymbolicFormulaTest, And5) {
+  // Flatten and removing duplicates. This is the example mentioned in
+  // symbolic_formula.h file:
+  //     (f1 && f2) && f1 => f1 && f2
+  //     f1 && (f2 && f1) => f1 && f2
+  EXPECT_PRED2(FormulaEqual, (f1_ && f2_) && f1_, f1_ && f2_);
+  EXPECT_PRED2(FormulaEqual, f1_ && (f2_ && f1_), f1_ && f2_);
+  EXPECT_PRED2(FormulaEqual, (f1_ && f2_) && f1_, f1_ && (f2_ && f1_));
+}
+
 TEST_F(SymbolicFormulaTest, AndWithBooleanVariableOperator) {
   // Checks if operator&& works Boolean variables as expected.
   const Formula f1{var_b1_ && var_b2_};
@@ -654,6 +673,25 @@ TEST_F(SymbolicFormulaTest, Or3) {
                f1_ || f2_ || f3_ || f4_);
   // Remove duplicate
   EXPECT_PRED2(FormulaEqual, f1_ || f2_ || f1_, f1_ || f2_);
+}
+
+TEST_F(SymbolicFormulaTest, Or4) {
+  // Simplification: f || f => f.
+  for (const Formula& f :
+       {b1_, b2_, tt_, ff_, f1_, f2_, f3_, f4_, f_eq_, f_neq_, f_lt_, f_lte_,
+        f_gt_, f_gte_, f_and_, f_or_, not_f_or_, f_forall_}) {
+    EXPECT_PRED2(FormulaEqual, f || f, f);
+  }
+}
+
+TEST_F(SymbolicFormulaTest, Or5) {
+  // Flatten and removing duplicates. This is a disjunctive version of the
+  // example mentioned in symbolic_formula.h file:
+  //     (f1 || f2) || f1 => f1 || f2
+  //     f1 || (f2 || f1) => f1 || f2
+  EXPECT_PRED2(FormulaEqual, (f1_ || f2_) || f1_, f1_ || f2_);
+  EXPECT_PRED2(FormulaEqual, f1_ || (f2_ || f1_), f1_ || f2_);
+  EXPECT_PRED2(FormulaEqual, (f1_ || f2_) || f1_, f1_ || (f2_ || f1_));
 }
 
 TEST_F(SymbolicFormulaTest, OrWithBooleanVariableOperator) {

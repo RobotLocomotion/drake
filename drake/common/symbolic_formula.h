@@ -81,6 +81,13 @@ The following simple simplifications are implemented:
     F1 ∨ F2        ->  True    (if either F1 or F2 is True)
 \endverbatim
 
+We flatten nested conjunctions (or disjunctions) at the construction. A
+conjunction (resp. disjunction) takes a set of conjuncts (resp. disjuncts). Note
+that any duplicated conjunct/disjunct is removed. For example, both of `f1 &&
+(f2 && f1)` and `(f1 && f2) && f1` are flattened to `f1 && f2 && f1` and
+simplified into `f1 && f2`. As a result, the two are identified as the same
+formula.
+
 \note Formula class has an explicit conversion operator to bool. It evaluates a
 symbolic formula under an empty environment. If a symbolic formula includes
 variables, the conversion operator throws an exception. This operator is only
