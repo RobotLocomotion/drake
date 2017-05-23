@@ -282,25 +282,6 @@ Formula positive_semidefinite(const MatrixX<Expression>& m,
   }
 }
 
-Formula operator==(const Variable& v1, const Variable& v2) {
-  return Expression{v1} == Expression{v2};
-}
-Formula operator!=(const Variable& v1, const Variable& v2) {
-  return Expression{v1} != Expression{v2};
-}
-Formula operator<(const Variable& v1, const Variable& v2) {
-  return Expression{v1} < Expression{v2};
-}
-Formula operator<=(const Variable& v1, const Variable& v2) {
-  return Expression{v1} <= Expression{v2};
-}
-Formula operator>(const Variable& v1, const Variable& v2) {
-  return Expression{v1} > Expression{v2};
-}
-Formula operator>=(const Variable& v1, const Variable& v2) {
-  return Expression{v1} >= Expression{v2};
-}
-
 bool is_false(const Formula& f) { return is_false(*f.ptr_); }
 bool is_true(const Formula& f) { return is_true(*f.ptr_); }
 bool is_equal_to(const Formula& f) { return is_equal_to(*f.ptr_); }
