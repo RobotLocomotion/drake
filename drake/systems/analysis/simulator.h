@@ -415,13 +415,13 @@ template <typename T>
 void Simulator<T>::HandleUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events) {
   if (events.HasEvents()) {
-    State<T>* x = context_->get_mutable_state();
-    DRAKE_DEMAND(x != nullptr);
     // First, compute the unrestricted updates into a temporary buffer.
     system_.CalcUnrestrictedUpdate(*context_, events,
         unrestricted_updates_.get());
     // TODO(edrumwri): simply swap the states for additional speed.
     // Now write the update back into the context.
+    State<T>* x = context_->get_mutable_state();
+    DRAKE_DEMAND(x != nullptr);
     x->CopyFrom(*unrestricted_updates_);
     ++num_unrestricted_updates_;
   }
@@ -432,12 +432,12 @@ template <typename T>
 void Simulator<T>::HandleDiscreteUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events) {
   if (events.HasEvents()) {
-    DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
-    // Systems with discrete update events must have discrete state.
-    DRAKE_DEMAND(xd != nullptr);
     // First, compute the discrete updates into a temporary buffer.
     system_.CalcDiscreteVariableUpdates(*context_, events,
         discrete_updates_.get());
+    DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
+    // Systems with discrete update events must have discrete state.
+    DRAKE_DEMAND(xd != nullptr);
     // Then, write them back into the context.
     xd->CopyFrom(*discrete_updates_);
     ++num_discrete_updates_;

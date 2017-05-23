@@ -120,20 +120,22 @@ class Event {
   TriggerType get_trigger_type() const { return trigger_type_; }
 
   /**
-   * Returns a const pointer to the AbstractValue attribute.
+   * Returns a const pointer to the AbstractValue attribute. The returned value
+   * can be nullptr, which means this event does not have an associated
+   * attribute.
    */
   const AbstractValue* get_attribute() const { return attribute_.get(); }
 
   /**
    * Returns a const reference to the underlying attribute.
    *
-   * @throws std::runtime_error if there is no underlying attribute.
+   * @throws std::logic_error if there is no underlying attribute.
    * @throws std::bad_cast if @tparam DataType does not match the underlying
    *         attribute type.
    */
   template <typename DataType>
   const DataType& get_attribute() const {
-    if (attribute_ == nullptr) throw std::runtime_error("Data is null.");
+    if (attribute_ == nullptr) throw std::logic_error("Data is null.");
     return attribute_->GetValue<DataType>();
   }
 
