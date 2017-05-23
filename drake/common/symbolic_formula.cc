@@ -114,6 +114,10 @@ Formula forall(const Variables& vars, const Formula& f) {
 }
 
 Formula operator&&(const Formula& f1, const Formula& f2) {
+  // f && f => f
+  if (f1.EqualTo(f2)) {
+    return f1;
+  }
   // ff && x => ff    x && ff => ff
   if (f1.EqualTo(Formula::False()) || f2.EqualTo(Formula::False())) {
     return Formula::False();
@@ -162,6 +166,10 @@ Formula operator&&(const Variable& v1, const Variable& v2) {
 }
 
 Formula operator||(const Formula& f1, const Formula& f2) {
+  // f || f => f
+  if (f1.EqualTo(f2)) {
+    return f1;
+  }
   // tt || x => tt    x || tt => tt
   if (f1.EqualTo(Formula::True()) || f2.EqualTo(Formula::True())) {
     return Formula::True();
