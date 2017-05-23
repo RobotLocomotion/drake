@@ -146,7 +146,7 @@ class EventCollection {
 
 /**
  * A concrete class that holds all simultaneous homogeneous events for a
- * Diagram. For each sub system in the corresponding Diagram, a derived
+ * Diagram. For each subsystem in the corresponding Diagram, a derived
  * EventCollection instance is maintained internally, thus effectively holding
  * the same recursive tree structure as the corresponding Diagram.
  */
@@ -159,7 +159,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * Note that this constructor only resizes the containers; it
    * does not allocate any derived EventCollection instances.
    *
-   * @param num_subsystems Number of sub systems in the corresponding Diagram.
+   * @param num_subsystems Number of subsystems in the corresponding Diagram.
    */
   explicit DiagramEventCollection(int num_subsystems)
       : EventCollection<EventType>(),
@@ -173,7 +173,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 
   /**
    * Returns the number of constituent EventCollection objects that correspond
-   * to each sub system in the Diagram.
+   * to each subsystem in the Diagram.
    */
   int num_subsystems() const {
     return static_cast<int>(subevent_collection_.size());
@@ -181,7 +181,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 
   /**
    * Transfers @p subevent_collection ownership to `this` and associates it
-   * with the sub system identified by @p index. Aborts if the 0-indexed
+   * with the subsystem identified by @p index. Aborts if the 0-indexed
    * @p index is greater than or equal to the number of subsystems specified
    * in this object's construction (see DiagramEventCollection(int)); if
    * @p index is negative; or if @p subevent_collection is null.
@@ -196,7 +196,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Associate @p subevent_collection with sub system identified by @p index.
+   * Associate @p subevent_collection with subsystem identified by @p index.
    * Ownership of the object that @p subevent_collection is maintained
    * elsewhere, and its life span must be longer than this. Aborts if the
    * 0-indexed @p index is greater than or equal to the number of subsystems
@@ -211,7 +211,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Returns a const pointer to sub system's EventCollection at @p index.
+   * Returns a const pointer to subsystem's EventCollection at @p index.
    * Aborts if the 0-indexed @p index is greater than or equal to the number of
    * subsystems specified in this object's construction (see
    * DiagramEventCollection(int)) or if @p index is negative.
@@ -222,7 +222,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Returns a mutable pointer to sub system's EventCollection at @p index.
+   * Returns a mutable pointer to subsystem's EventCollection at @p index.
    */
   EventCollection<EventType>& get_mutable_subevent_collection(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
@@ -295,7 +295,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
   LeafEventCollection() = default;
 
   /**
-   * Static method that generates an LeafEventCollection with exactly
+   * Static method that generates a LeafEventCollection with exactly
    * one event with no optional attribute, data or callback, and trigger type
    * kForced.
    */
@@ -374,7 +374,8 @@ class LeafEventCollection final : public EventCollection<EventType> {
   // Owned event unique pointers.
   std::vector<std::unique_ptr<EventType>> owned_events_;
 
-  // Points to the corresponding unique pointers.
+  // Points to the corresponding unique pointers. This is primarily used for
+  // get_events().
   std::vector<const EventType*> events_;
 };
 
@@ -389,7 +390,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
  *   EventCollection<UnrestrictedUpdate<T>>}
  * </pre>
  *
- * @tparam T needs compatible with Eigen Scalar type.
+ * @tparam T needs to be compatible with Eigen Scalar type.
  */
 template <typename T>
 class CompositeEventCollection {
@@ -467,7 +468,7 @@ class CompositeEventCollection {
 
   /**
    * Assuming the internal unrestricted update event collection is an instance
-   * of LeafEventCollection, adds the unrestricted update publish event @p event
+   * of LeafEventCollection, adds the unrestricted update event @p event
    * (ownership is also transferred) to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
@@ -504,22 +505,22 @@ class CompositeEventCollection {
   /**
    * Returns a const reference to the collection of publish events.
    */
-  virtual const EventCollection<PublishEvent<T>>& get_publish_events() const {
+  const EventCollection<PublishEvent<T>>& get_publish_events() const {
     return *publish_events_;
   }
 
   /**
    * Returns a const reference to the collection of discrete update events.
    */
-  virtual const EventCollection<DiscreteUpdateEvent<T>>&
-  get_discrete_update_events() const {
+  const EventCollection<DiscreteUpdateEvent<T>>& get_discrete_update_events()
+      const {
     return *discrete_update_events_;
   }
 
   /**
    * Returns a const reference to the collection of unrestricted update events.
    */
-  virtual const EventCollection<UnrestrictedUpdateEvent<T>>&
+  const EventCollection<UnrestrictedUpdateEvent<T>>&
   get_unrestricted_update_events() const {
     return *unrestricted_update_events_;
   }
@@ -596,8 +597,7 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
   /**
    * Returns a const reference to the collection of publish events.
    */
-  const LeafEventCollection<PublishEvent<T>>& get_publish_events()
-      const override {
+  const LeafEventCollection<PublishEvent<T>>& get_publish_events() const {
     return dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(
         CompositeEventCollection<T>::get_publish_events());
   }
@@ -606,7 +606,7 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
    * Returns a const reference to the collection of discrete update events.
    */
   const LeafEventCollection<DiscreteUpdateEvent<T>>&
-  get_discrete_update_events() const override {
+  get_discrete_update_events() const {
     return dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
         CompositeEventCollection<T>::get_discrete_update_events());
   }
@@ -615,7 +615,7 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
    * Returns a const reference to the collection of unrestricted update events.
    */
   const LeafEventCollection<UnrestrictedUpdateEvent<T>>&
-  get_unrestricted_update_events() const override {
+  get_unrestricted_update_events() const {
     return dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
         CompositeEventCollection<T>::get_unrestricted_update_events());
   }
@@ -631,7 +631,7 @@ class DiagramCompositeEventCollection final
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramCompositeEventCollection)
 
   /**
-   * Allocated CompositeEventCollection for all constituent sub systems are
+   * Allocated CompositeEventCollection for all constituent subsystems are
    * passed in @p subevents, for which ownership is also transferred to `this`.
    */
   explicit DiagramCompositeEventCollection(
@@ -651,7 +651,7 @@ class DiagramCompositeEventCollection final
       DiagramEventCollection<PublishEvent<T>>& sub_publish =
           dynamic_cast<DiagramEventCollection<PublishEvent<T>>&>(
               this->get_mutable_publish_events());
-      // Sets sub_publish's i'th sub system's EventCollection<PublishEvent>
+      // Sets sub_publish's i'th subsystem's EventCollection<PublishEvent>
       // pointer to owned_subevent_collection_[i].get_mutable_publish_events().
       // So that sub_publish has the same pointer structure, but does not
       // duplicate actual data.

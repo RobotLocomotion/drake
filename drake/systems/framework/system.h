@@ -1045,14 +1045,12 @@ class System {
   //----------------------------------------------------------------------------
   /// @name                 Event handler dispatch mechanism
   /// For a LeafSystem (or user implemented equivalent classes), these functions
-  /// need to get the vector of events from @p events that correspond to the
-  /// event type it is handling (X), and call the appropriate LeafSystem::DoX
-  /// event handler. For example, LeafSystem::DispatchPublishHandler() needs to
-  /// extract a vector of all publish events from @p events and pass
-  /// it to LeafSystem::DoPublish(). User supplied custom event callbacks
-  /// embedded in each individual event need to be further dispatched in the
-  /// LeafSystem::DoX handlers if desired. For a LeafSystem, the pseudo code of
-  /// the complete default publish event handler dispatching is roughly:
+  /// need to call the appropriate LeafSystem::DoX event handler. E.g.
+  /// LeafSystem::DispatchPublishHandler() calls LeafSystem::DoPublish(). User
+  /// supplied custom event callbacks embedded in each individual event need to
+  /// be further dispatched in the LeafSystem::DoX handlers if desired. For a
+  /// LeafSystem, the pseudo code of the complete default publish event handler
+  /// dispatching is roughly:
   /// <pre>
   ///   leaf_sys.Publish(context, event_collection)
   ///   -> leaf_sys.DispatchPublishHandler(context, event_collection)
@@ -1067,12 +1065,9 @@ class System {
   /// For a Diagram (or user implemented equivalent classes), these functions
   /// must iterate through all sub systems, extract their corresponding
   /// sub context and sub event collections from @p context and @p events,
-  /// and pass those to the sub systems' public non-virtual event handlers (e.g.
-  /// System::Publish() for publish events).
-  ///
-  /// @p events can be null. For a Diagram, the nullptr is passed down to
-  /// the subsystems as an EventCollection. For a LeafSystem, it is equivalent
-  /// to call LeafSystem::DoX() handlers with an empty event list.
+  /// and pass those to the sub systems' public non-virtual event handlers if
+  /// the sub event collection is nonempty (e.g. System::Publish() for publish
+  /// events).
   ///
   /// All of these functions are only called from their corresponding public
   /// non-virtual event handlers, where @p context is error checked. The derived
@@ -1082,7 +1077,6 @@ class System {
   //@{
   /**
    * This function dispatches all publish events to the appropriate handlers.
-   * @p events can be null.
    */
   virtual void DispatchPublishHandler(
       const Context<T>& context,
@@ -1090,7 +1084,7 @@ class System {
 
   /**
    * This function dispatches all discrete update events to the appropriate
-   * handlers. @p events can be null. @p discrete_state cannot be null.
+   * handlers. @p discrete_state cannot be null.
    */
   virtual void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
@@ -1099,7 +1093,7 @@ class System {
 
   /**
    * This function dispatches all unrestricted update events to the appropriate
-   * handlers. @p events can be null. @p state cannot be null.
+   * handlers. @p state cannot be null.
    */
   virtual void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
@@ -1542,8 +1536,10 @@ class System {
   std::vector<std::unique_ptr<OutputPortDescriptor<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
-  // All of these have exactly one kForced triggered event. These are only
-  // used to dispatch forced event handling.
+  // These are only used to dispatch forced event handling. For a LeafSystem,
+  // all of these have exactly one kForced triggered event. For a Diagram, they
+  // are DiagramEventCollection, whose leafs are LeafEventCollection with
+  // exactly one kForced triggered event.
   std::unique_ptr<EventCollection<PublishEvent<T>>> forced_publish_{nullptr};
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
       forced_discrete_update_{nullptr};
