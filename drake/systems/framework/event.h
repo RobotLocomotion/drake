@@ -110,7 +110,6 @@ class Event {
   std::unique_ptr<Event> Clone() const {
     std::unique_ptr<Event> clone(DoClone());
     clone->trigger_type_ = trigger_type_;
-    // if (data_ != nullptr) clone->set_data(data_->Clone());
     if (attribute_ != nullptr) clone->set_attribute(attribute_->Clone());
     return clone;
   }
@@ -119,37 +118,6 @@ class Event {
    * Returns the trigger type.
    */
   TriggerType get_trigger_type() const { return trigger_type_; }
-
-  /**
-   * Returns a const pointer to the AbstractValue data.
-   */
-  //   const AbstractValue* get_data() const { return data_.get(); }
-
-  /**
-   * Returns a const reference to the underlying data.
-   *
-   * @throws std::runtime_error if there is no underlying data.
-   * @throws std::bad_cast if @tparam DataType does not match the underlying
-   *         data type.
-   */
-
-  /*
-  template <typename DataType>
-  const DataType& get_data() const {
-    if (data_ == nullptr)
-      throw std::runtime_error("Data is null.");
-    return data_->GetValue<DataType>();
-  }
-  */
-
-  /**
-   * Sets and transfers the ownership of @p data.
-   */
-  /*
-  void set_data(std::unique_ptr<AbstractValue> data) {
-    data_ = std::move(data);
-  }
-  */
 
   /**
    * Returns a const pointer to the AbstractValue attribute.
@@ -198,9 +166,6 @@ class Event {
  private:
   TriggerType trigger_type_;
   std::unique_ptr<AbstractValue> attribute_{nullptr};
-
-  // Owned AbstractData.
-  // std::unique_ptr<AbstractValue> data_{nullptr};
 };
 
 /**
