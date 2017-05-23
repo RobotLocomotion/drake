@@ -90,6 +90,7 @@ drake_cc_library(
     ],
     deps = [
         ":bodies_and_frames",
+        ":multibody_tree_context",
         "//drake/common:autodiff",
         "//drake/common:type_safe_index",
     ],

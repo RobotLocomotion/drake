@@ -183,6 +183,9 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// bookkeeping detail.
   const MobilizerTopology& get_topology() const { return topology_; }
 
+ protected:
+  int get_positions_start() const { return get_topology().positions_start; }
+
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology

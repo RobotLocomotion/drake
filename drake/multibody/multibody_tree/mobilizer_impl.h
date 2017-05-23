@@ -5,11 +5,14 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -48,11 +51,34 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int get_num_velocities() const final { return nv;}
 
+  /// Sets the what is considered the _zero_ configuration for this mobilizer.
+  /// By default this method sets all degrees of freedom related to this
+  /// mobilizer to zero.
+  /// In general setting all generalized coordinates to zero does not represent
+  /// the _zero_ configuration and it might even not represent a mathematicaly
+  /// valid configuration. Consider for instance a QuaternionMobilizer, for
+  /// which its _zero_ configuration corresponds to the quaternion [1, 0, 0, 0].
+  /// For those cases the specific mobilizers must override this method.
+  virtual void set_zero_configuration(systems::Context<T>* context) const {
+    auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
+    DRAKE_DEMAND(mbt_context != nullptr);
+    get_mutable_positions(mbt_context).setZero();
+  }
+
  protected:
   // Handy enum to grant specific implementations compile time sizes.
   // static constexpr int i = 42; discouraged.
   // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
+
+  /// Given a mutable MultibodyTreeContext this method regurns a mutable
+  /// reference vector to the portion of the generalized coordinates vector for
+  /// the entire MultibodyTree that correspods to this mobilizer.
+  /// The returned vector has the proper static size for fast computations.
+  Eigen::VectorBlock<VectorX<T>, nq> get_mutable_positions(
+      MultibodyTreeContext<T>* context) const {
+    return context->template get_mutable_positions_segment<nq>(this->get_positions_start());
+  }
 };
 
 }  // namespace multibody

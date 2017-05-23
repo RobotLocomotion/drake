@@ -306,7 +306,7 @@ TEST_F(PendulumTests, CreateContext) {
 
   // Tests MultibodyTreeContext accessors.
   auto mbt_context =
-      dynamic_cast<MultibodyTreeContext<double> *>(context.get());
+      dynamic_cast<MultibodyTreeContext<double>*>(context.get());
 
   // Verifies the correct number of generalized positions and velocities.
   EXPECT_EQ(mbt_context->get_positions().size(), 2);
@@ -320,6 +320,58 @@ TEST_F(PendulumTests, CreateContext) {
   // and will live in the context as a cache entry.
   PositionKinematicsCache<double> pc(model_->get_topology());
   SetPendulumPoses(&pc);
+
+  // Retrieve body poses from position kinematics cache.
+  const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
+  const Isometry3d &X_WLu = get_body_pose_in_world(pc, *upper_link_);
+
+  // Asserts that the retrieved poses match with the ones specified by the unit
+  // test method SetPendulumPoses().
+  EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
+  EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
+}
+
+TEST_F(PendulumTests, CalcPositionKinematics) {
+  CreatePendulumModel();
+
+  // Verifies the number of multibody elements is correct.
+  EXPECT_EQ(model_->get_num_bodies(), 3);
+
+  // Verify we cannot create a Context until we have a valid topology.
+  EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
+  EXPECT_THROW(model_->CreateDefaultContext(), std::logic_error);
+
+  // Finalize() stage.
+  EXPECT_NO_THROW(model_->Finalize());
+  EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
+
+  // Create Context.
+  std::unique_ptr<Context<double>> context;
+  EXPECT_NO_THROW(context = model_->CreateDefaultContext());
+
+  // Tests MultibodyTreeContext accessors.
+  auto mbt_context =
+      dynamic_cast<MultibodyTreeContext<double>*>(context.get());
+
+  // Verifies the correct number of generalized positions and velocities.
+  EXPECT_EQ(mbt_context->get_positions().size(), 2);
+  EXPECT_EQ(mbt_context->get_mutable_positions().size(), 2);
+  EXPECT_EQ(mbt_context->get_velocities().size(), 2);
+  EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
+
+  EXPECT_EQ(mbt_context->get_mutable_positions_segment<1>(1).size(), 1);
+
+  // Initialize the state.
+  shoulder_mobilizer_->set_zero_configuration(context.get());
+  //elbow_mobilizer_->set_angle(context, -M_PI / 4);
+
+  // Set the poses of each body in the position kinematics cache to have an
+  // arbitrary value that we can use for unit testing. In practice the poses in
+  // the position kinematics will be the result of a position kinematics update
+  // and will live in the context as a cache entry.
+  PositionKinematicsCache<double> pc(model_->get_topology());
+  SetPendulumPoses(&pc);
+  //model_->CalcPositionKinematics(mbt_context, &pc);
 
   // Retrieve body poses from position kinematics cache.
   const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
