@@ -167,14 +167,27 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   // This is so users of this sensor can distinguish between an object at the
   // maximum sensing distance and not detecting any object within the sensing
   // range.
+  apply_limits(distances);
+
+  // Evaluates the output port containing the depth measurements.
+  update_outputs(output, kinematics_cache, distances);
+
+}
+
+void DepthSensor::apply_limits(VectorX<double>& distances) const {
+  // Applies the min / max range of the sensor. Any measurement that is less
+  // than the minimum or greater than the maximum is set to an invalid value.
+  // This is so users of this sensor can distinguish between an object at the
+  // maximum sensing distance and not detecting any object within the sensing
+  // range.
   for (int i = 0; i < distances.size(); ++i) {
     if (distances[i] < 0) {
       // Infinity distance measurements show up as -1.
       if (distances[i] == -1) {
         distances[i] = DepthSensorOutput<double>::kTooFar;
       } else {
-        drake::log()->warn("Measured distance was < 0 and != -1: " +
-                           std::to_string(distances[i]));
+        log()->warn("Measured distance was < 0 and != -1: " +
+                           std::__cxx11::to_string(distances[i]));
         distances[i] = DepthSensorOutput<double>::kError;
       }
     } else if (distances[i] > specification_.max_range()) {
@@ -183,7 +196,11 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
       distances[i] = DepthSensorOutput<double>::kTooClose;
     }
   }
+}
 
+void DepthSensor::update_outputs(SystemOutput<double> *output,
+                                 const KinematicsCache<double> &kinematics_cache,
+                                 const VectorX<double> &distances) const {
   // Evaluates the output port containing the depth measurements.
   BasicVector<double>* data_output =
       output->GetMutableVectorData(depth_output_port_index_);
@@ -191,7 +208,7 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   data_output->SetFromVector(distances);
 
   // Evaluates the output port containing X_WS.
-  const drake::Isometry3<double> X_WS =
+  const Isometry3<double> X_WS =
       tree_.CalcFramePoseInWorldFrame(kinematics_cache, frame_);
   PoseVector<double>* pose_output =
       dynamic_cast<PoseVector<double>*>(

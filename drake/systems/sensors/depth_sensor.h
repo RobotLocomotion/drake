@@ -180,6 +180,10 @@ class DepthSensor : public systems::LeafSystem<double> {
   // range were achieved. This is cached to avoid repeated allocation and
   // computation.
   Eigen::Matrix3Xd raycast_endpoints_;
+  void update_outputs(SystemOutput<double> *output,
+                      const KinematicsCache<double> &kinematics_cache,
+                      const VectorX<double> &distances) const;
+  void apply_limits(VectorX<double>& distances) const;
 };
 
 }  // namespace sensors
