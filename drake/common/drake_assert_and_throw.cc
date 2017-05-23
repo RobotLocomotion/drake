@@ -11,28 +11,35 @@
 
 namespace drake {
 namespace detail {
+namespace {
 
+// Stream into @p out the given failure details; only @p condition may be null.
+void PrintFailureDetailTo(std::ostream& out, const char* condition,
+                          const char* func, const char* file, int line) {
+  out << "Failure at " << file << ":" << line << " in " << func << "()";
+  if (condition) {
+    out << ": condition '" << condition << "' failed.";
+  } else {
+    out << ".";
+  }
+}
+}  // namespace
+
+// Declared in drake_assert.h.
 void Abort(const char* condition, const char* func, const char* file,
            int line) {
-  std::cerr << "abort: failure at " << file << ":" << line
-            << " in " << func << "()";
-  if (condition) {
-    std::cerr << ": assertion '" << condition << "' failed.";
-  } else {
-    std::cerr << ".";
-  }
+  std::cerr << "abort: ";
+  PrintFailureDetailTo(std::cerr, condition, func, file, line);
   std::cerr << std::endl;
-
   std::abort();
 }
 
+// Declared in drake_throw.h.
 void Throw(const char* condition, const char* func, const char* file,
            int line) {
-  std::stringstream message;
-  message
-      << "Failure at " << file << ":" << line << " in " << func << "(): "
-      << "condition '" << condition << "' failed.";
-  throw std::runtime_error(message.str());
+  std::ostringstream what;
+  PrintFailureDetailTo(what, condition, func, file, line);
+  throw std::runtime_error(what.str());
 }
 
 }  // namespace detail
