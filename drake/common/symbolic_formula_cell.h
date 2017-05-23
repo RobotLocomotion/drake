@@ -156,6 +156,25 @@ class FormulaFalse : public FormulaCell {
   std::ostream& Display(std::ostream& os) const override;
 };
 
+/** Symbolic formula representing a Boolean variable. */
+class FormulaVar : public FormulaCell {
+ public:
+  /** Constructs a formula from @p var.
+   * @pre @p var is of BOOLEAN type and not a dummy variable.
+   */
+  explicit FormulaVar(const Variable& v);
+  Variables GetFreeVariables() const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Less(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
+  Formula Substitute(const Substitution& subst) const override;
+  std::ostream& Display(std::ostream& os) const override;
+  const Variable& get_variable() const;
+
+ private:
+  const Variable var_;
+};
+
 /** Symbolic formula representing equality (e1 = e2). */
 class FormulaEq : public RelationalFormulaCell {
  public:
@@ -405,6 +424,8 @@ class FormulaPositiveSemidefinite : public FormulaCell {
 bool is_false(const FormulaCell& f);
 /** Checks if @p f is structurally equal to True formula. */
 bool is_true(const FormulaCell& f);
+/** Checks if @p f is a variable formula. */
+bool is_variable(const FormulaCell& f);
 /** Checks if @p f is a formula representing equality (==). */
 bool is_equal_to(const FormulaCell& f);
 /** Checks if @p f is a formula representing disequality (!=). */
@@ -431,6 +452,13 @@ bool is_forall(const FormulaCell& f);
 bool is_isnan(const FormulaCell& f);
 /** Checks if @p f is a positive semidefinite formula. */
 bool is_positive_semidefinite(const FormulaCell& f);
+
+/** Casts @p f_ptr of shared_ptr<FormulaCell> to
+ * @c shared_ptr<FormulaVar>.
+ * @pre @c is_variable(*f_ptr) is true.
+ */
+std::shared_ptr<FormulaVar> to_variable(
+    const std::shared_ptr<FormulaCell>& f_ptr);
 
 /** Casts @p f_ptr of shared_ptr<FormulaCell> to
  * @c shared_ptr<RelationalFormulaCell>.
