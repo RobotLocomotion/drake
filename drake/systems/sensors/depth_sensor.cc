@@ -167,6 +167,18 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
   // This is so users of this sensor can distinguish between an object at the
   // maximum sensing distance and not detecting any object within the sensing
   // range.
+  apply_limits(distances);
+
+  // Evaluates the output port containing the depth measurements.
+  update_outputs(output, kinematics_cache, distances);
+}
+
+void DepthSensor::apply_limits(VectorX<double>& distances) const {
+  // Applies the min / max range of the sensor. Any measurement that is less
+  // than the minimum or greater than the maximum is set to an invalid value.
+  // This is so users of this sensor can distinguish between an object at the
+  // maximum sensing distance and not detecting any object within the sensing
+  // range.
   for (int i = 0; i < distances.size(); ++i) {
     if (distances[i] < 0) {
       // Infinity distance measurements show up as -1.
@@ -183,7 +195,11 @@ void DepthSensor::DoCalcOutput(const systems::Context<double>& context,
       distances[i] = DepthSensorOutput<double>::kTooClose;
     }
   }
+}
 
+void DepthSensor::update_outputs(SystemOutput<double> *output,
+                                const KinematicsCache<double> &kinematics_cache,
+                                const VectorX<double> &distances) const {
   // Evaluates the output port containing the depth measurements.
   BasicVector<double>* data_output =
       output->GetMutableVectorData(depth_output_port_index_);
