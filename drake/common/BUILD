@@ -12,8 +12,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "common",
     srcs = [
-        "drake_assert.cc",
-        "drake_throw.cc",
+        "drake_assert_and_throw.cc",
         "text_logging.cc",
     ],
     hdrs = [
