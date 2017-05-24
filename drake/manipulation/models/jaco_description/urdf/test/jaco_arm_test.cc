@@ -23,10 +23,10 @@ GTEST_TEST(JacoArmTest, TestLoadTree) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
      kPath, multibody::joints::kFixed, tree.get());
 
-  // Each robot has 8 bodies and an end effector with 2 bodies. In addition,
-  // there are two bodies that are not part of either robot: world and base.
-  // Since there are two robots, there should be a total of
-  // 2 * (8 + 2) + 2 = 22 bodies in the tree.
+  // Each robot has 6 bodies, an end effector, and with 6 finger bodies.
+  // In addition, there are three bodies that are not part of the
+  // robot: world, root, and base. Hence, there should be a
+  // total of 6 + 1 + 6 + 3 = 16 bodies in the tree.
   EXPECT_EQ(tree->get_num_bodies(), 16);
 }
 

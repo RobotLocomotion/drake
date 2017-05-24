@@ -28,7 +28,6 @@ drake_cc_googletest(
     name = "jaco_arm_test",
     srcs = ["urdf/test/jaco_arm_test.cc"],
     data = [":models"],
-    local = 1,
     deps = [
         "//drake/multibody/parsers",
     ],
