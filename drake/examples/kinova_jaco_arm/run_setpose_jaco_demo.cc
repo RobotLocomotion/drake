@@ -7,8 +7,8 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
+#include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -39,7 +39,7 @@ int DoMain() {
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreedFromFixedModelAtPose(kUrdfPath, tree.get());
+    CreateTreeFromFixedModelAtPose(kUrdfPath, tree.get());
 
     auto tree_sys =
         std::make_unique<systems::RigidBodyPlant<double>>(std::move(tree));
@@ -64,7 +64,7 @@ int DoMain() {
           std::move(control_sys));
 
   // Adds a constant source for desired state.
-  Eigen::VectorXd const_pos = Eigen::VectorXd::Zero(NUM_JACO_ARM_DOFS * 2);
+  Eigen::VectorXd const_pos = Eigen::VectorXd::Zero(kNumDofs * 2);
   const_pos(1) = 1.57;
   const_pos(2) = 2.0;
 
@@ -76,18 +76,16 @@ int DoMain() {
                   controller->get_input_port_desired_state());
 
   // Connects the state port to the controller.
-  const auto& instance_state_output_port =
-      plant->model_instance_state_output_port(
-          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
-  builder.Connect(instance_state_output_port,
-          controller->get_input_port_estimated_state());
+  static const int kInstanceId =
+      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
+  const auto& state_out_port =
+      plant->model_instance_state_output_port(kInstanceId);
+  builder.Connect(state_out_port, controller->get_input_port_estimated_state());
 
   // Connects the controller torque output to plant.
-  const auto& instance_torque_input_port =
-      plant->model_instance_actuator_command_input_port(
-          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
-  builder.Connect(controller->get_output_port_control(),
-          instance_torque_input_port);
+  const auto& torque_out_port =
+      plant->model_instance_actuator_command_input_port(kInstanceId);
+  builder.Connect(controller->get_output_port_control(), torque_out_port);
 
   // Connects the visualizer and builds the diagram.
   builder.Connect(plant->get_output_port(0), visualizer->get_input_port(0));

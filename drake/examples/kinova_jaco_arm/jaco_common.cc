@@ -1,5 +1,4 @@
 #include <map>
-#include <cmath>
 
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -16,7 +15,7 @@ void VerifyJacoTree(const RigidBodyTree<double>& tree) {
   std::map<std::string, int> name_to_idx = tree.computePositionNameToIndexMap();
 
   int joint_idx = 0;
-  DRAKE_DEMAND(name_to_idx.size() == NUM_JACO_ARM_DOFS);
+  DRAKE_DEMAND(name_to_idx.size() == kNumDofs);
   DRAKE_DEMAND(name_to_idx.count("j2n6s300_joint_1"));
   DRAKE_DEMAND(name_to_idx["j2n6s300_joint_1"] == joint_idx++);
   DRAKE_DEMAND(name_to_idx.count("j2n6s300_joint_2"));
@@ -37,13 +36,13 @@ void VerifyJacoTree(const RigidBodyTree<double>& tree) {
   DRAKE_DEMAND(name_to_idx["j2n6s300_joint_finger_3"] == joint_idx++);
 }
 
-void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
+void CreateTreeFromFixedModelAtPose(const std::string& model_file_name,
                                      RigidBodyTreed* tree,
                                      const Vector3d& position,
                                      const Vector3d& orientation) {
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
-      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr, position,
-      orientation);
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
+      nullptr, position, orientation);
 
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       model_file_name, drake::multibody::joints::kFixed,
@@ -55,11 +54,11 @@ void SetPositionControlledJacoGains(VectorXd* Kp, VectorXd* Ki,
   // All gains are for acceleration, not directly responsible for generating
   // torques. These are set to high values to ensure good tracking. These gains
   // are picked arbitrarily.
-  Kp->resize(NUM_JACO_ARM_DOFS);
-  *Kp = VectorXd::Constant(NUM_JACO_ARM_DOFS, 100.0);
+  Kp->resize(kNumDofs);
+  *Kp = VectorXd::Constant(kNumDofs, 100.0);
   Kd->resize(Kp->size());
   *Kd = 2.0 * Kp->array().sqrt();
-  *Ki = VectorXd::Zero(NUM_JACO_ARM_DOFS);
+  *Ki = VectorXd::Zero(kNumDofs);
 }
 
 }  // namespace kinova_jaco_arm

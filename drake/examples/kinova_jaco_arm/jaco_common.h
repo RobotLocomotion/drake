@@ -20,11 +20,11 @@
 
 #include "drake/multibody/rigid_body_tree.h"
 
-#define NUM_JACO_ARM_DOFS 9 // degrees of freedom available for the jaco arm
-
 namespace drake {
 namespace examples {
 namespace kinova_jaco_arm {
+
+constexpr int kNumDofs = 9;  // degrees of freedom available for the jaco arm
 
 /// Verifies that @p tree matches assumptions about joint indices.
 /// Aborts if the tree isn't as expected.
@@ -34,7 +34,7 @@ void VerifyJacoTree(const RigidBodyTree<double>& tree);
 /// the model specified by @model_file_name.
 /// This method is a convenience wrapper over `AddModelInstanceFromUrdfFile`.
 /// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
-void CreateTreedFromFixedModelAtPose(
+void CreateTreeFromFixedModelAtPose(
     const std::string& model_file_name, RigidBodyTreed* tree,
     const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
     const Eigen::Vector3d& orientation = Eigen::Vector3d::Zero());

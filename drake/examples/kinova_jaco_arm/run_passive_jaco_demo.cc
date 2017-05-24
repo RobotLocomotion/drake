@@ -30,7 +30,7 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
-DEFINE_double(simulation_sec, 2, "Total duration of the simulation in seconds.");
+DEFINE_double(simulation_sec, 2, "Number of seconds to simulate");
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
@@ -46,7 +46,7 @@ int DoMain() {
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreedFromFixedModelAtPose(kModelPath, tree.get());
+    CreateTreeFromFixedModelAtPose(kModelPath, tree.get());
 
     auto tree_sys =
         std::make_unique<RigidBodyPlant<double>>(std::move(tree));

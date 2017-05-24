@@ -33,7 +33,7 @@ drake_cc_binary(
     data = [
         "//drake/manipulation/models/jaco_description:models",
     ],
-    test_rule_args = ["--duration=0.5"],
+    test_rule_args = ["--simulation_sec=2"],
     test_rule_size = "medium",
     deps = [
         ":jaco_common",
