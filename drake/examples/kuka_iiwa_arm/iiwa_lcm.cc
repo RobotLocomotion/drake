@@ -1,6 +1,6 @@
-#include <vector>
-
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"
