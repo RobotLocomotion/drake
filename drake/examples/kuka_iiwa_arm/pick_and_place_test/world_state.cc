@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/world_state.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place_test/world_state.h"
 
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/util/lcmUtil.h"
@@ -9,12 +9,12 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
 WorldState::WorldState(const std::string& iiwa_model_path,
-                       const std::string& end_effector_name, lcm::LCM* lcm)
+                       const std::string& end_effector_name)
     : iiwa_model_path_(iiwa_model_path),
-      ee_name_(end_effector_name),
-      lcm_(lcm) {
+      ee_name_(end_effector_name) {
   iiwa_time_ = -1;
-  iiwa_base_ = iiwa_ee_pose_ = Isometry3<double>::Identity();
+  iiwa_base_ = Isometry3<double>::Identity();
+  iiwa_ee_pose_ = Isometry3<double>::Identity();
   iiwa_q_ = VectorX<double>::Zero(7);
   iiwa_v_ = VectorX<double>::Zero(7);
   iiwa_ee_vel_.setZero();
@@ -29,32 +29,9 @@ WorldState::WorldState(const std::string& iiwa_model_path,
   obj_vel_.setZero();
 }
 
-WorldState::~WorldState() {
-  for (lcm::Subscription* sub : lcm_subscriptions_) {
-    int status = lcm_->unsubscribe(sub);
-    DRAKE_DEMAND(status == 0);
-  }
-  lcm_subscriptions_.clear();
-}
+WorldState::~WorldState() { }
 
-void WorldState::SubscribeToIiwaStatus(const std::string& channel) {
-  lcm_subscriptions_.push_back(
-      lcm_->subscribe(channel, &WorldState::HandleIiwaStatus, this));
-}
-
-void WorldState::SubscribeToWsgStatus(const std::string& channel) {
-  lcm_subscriptions_.push_back(
-      lcm_->subscribe(channel, &WorldState::HandleWsgStatus, this));
-}
-
-void WorldState::SubscribeToObjectStatus(const std::string& channel) {
-  lcm_subscriptions_.push_back(
-      lcm_->subscribe(channel, &WorldState::HandleObjectStatus, this));
-}
-
-void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer*,
-                                  const std::string&,
-                                  const bot_core::robot_state_t* iiwa_msg) {
+void WorldState::HandleIiwaStatus(const bot_core::robot_state_t* iiwa_msg) {
   iiwa_base_ = DecodePose(iiwa_msg->pose);
 
   if (iiwa_time_ == -1) {
@@ -65,7 +42,7 @@ void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer*,
     iiwa_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFile(
         iiwa_model_path_, multibody::joints::kFixed, base_frame, iiwa_.get());
-    end_effector_ = iiwa_->FindBody("iiwa_link_ee");
+    end_effector_ = iiwa_->FindBody(ee_name_);
   }
 
   iiwa_time_ = iiwa_msg->utime / 1e6;
@@ -82,9 +59,7 @@ void WorldState::HandleIiwaStatus(const lcm::ReceiveBuffer*,
       iiwa_->CalcBodySpatialVelocityInWorldFrame(cache, *end_effector_);
 }
 
-void WorldState::HandleWsgStatus(const lcm::ReceiveBuffer*,
-                                 const std::string&,
-                                 const lcmt_schunk_wsg_status* wsg_msg) {
+void WorldState::HandleWsgStatus(const lcmt_schunk_wsg_status* wsg_msg) {
   bool is_first_msg = wsg_time_ == -1;
   double cur_time = wsg_msg->utime / 1e6;
   double dt = cur_time - wsg_time_;
@@ -106,9 +81,7 @@ void WorldState::HandleWsgStatus(const lcm::ReceiveBuffer*,
   wsg_force_ = wsg_msg->actual_force;
 }
 
-void WorldState::HandleObjectStatus(const lcm::ReceiveBuffer*,
-                                    const std::string&,
-                                    const bot_core::robot_state_t* obj_msg) {
+void WorldState::HandleObjectStatus(const bot_core::robot_state_t* obj_msg) {
   obj_time_ = obj_msg->utime / 1e6;
   obj_pose_ = DecodePose(obj_msg->pose);
   obj_vel_ = DecodeTwist(obj_msg->twist);
