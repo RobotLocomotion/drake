@@ -65,6 +65,10 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_positions(mbt_context).setZero();
   }
 
+  /// For internal use only.
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+    const Body<T>* body, const Mobilizer<T>* mobilizer) const final;
+
  protected:
   // Handy enum to grant specific implementations compile time sizes.
   // static constexpr int i = 42; discouraged.
@@ -85,6 +89,10 @@ class MobilizerImpl : public Mobilizer<T> {
       MultibodyTreeContext<T>* context) const {
     return context->template get_mutable_state_segment<nq>(
         this->get_positions_start());
+  }
+
+  Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
+    return pc->get_mutable_X_FM(this->get_topology().body_node);
   }
 };
 

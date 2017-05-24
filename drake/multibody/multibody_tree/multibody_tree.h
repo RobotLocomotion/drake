@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/body.h"
+#include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -409,6 +410,14 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
+  /// Returns a constant reference to the body with unique index `body_index`.
+  /// This method aborts in Debug builds when `body_index` does not correspond
+  /// to a body in this multibody tree.
+  const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
+    DRAKE_ASSERT(mobilizer_index < get_num_mobilizers());
+    return *owned_mobilizers_[mobilizer_index];
+  }
+
   /// Returns `true` if this %MultibodyTree was finalized with Finalize() after
   /// all multibody elements were added, and `false` otherwise.
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
@@ -460,7 +469,13 @@ class MultibodyTree {
   /// Sets default values in the context including pre-computed cache entries.
   void SetDefaults(systems::Context<T>*) const {}
 
+  void CalcPositionKinematicsCache(
+      const MultibodyTreeContext<T>& context,
+      PositionKinematicsCache<T>* pc) const;
+
  private:
+  void CreateBodyNode(BodyNodeIndex body_node_index);
+
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckInvariants().
@@ -468,6 +483,7 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
+  std::vector<std::unique_ptr<BodyNode<T>>> body_nodes_;
 
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a

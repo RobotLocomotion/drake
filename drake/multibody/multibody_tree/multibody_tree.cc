@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/multibody/multibody_tree/body_node_welded.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
@@ -53,6 +54,39 @@ void MultibodyTree<T>::Finalize() {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
   }
+
+  // Creates BodyNode's:
+  for (BodyNodeIndex body_node_index(1);
+       body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
+    CreateBodyNode(body_node_index);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
+  const BodyNodeTopology& node_topology =
+      topology_.get_body_node(body_node_index);
+  const BodyIndex body_index = node_topology.body;
+
+  const Body<T>* body = owned_bodies_[node_topology.body].get();
+
+  std::unique_ptr<BodyNode<T>> body_node;
+  if (body_index == world_index()) {
+    body_node = std::make_unique<BodyNodeWelded<T>>(&get_world_body());
+  } else {
+    // The mobilizer should be valid if not at the root (the world).
+    DRAKE_ASSERT(node_topology.mobilizer.is_valid());
+    const Mobilizer<T>* mobilizer =
+        owned_mobilizers_[node_topology.mobilizer].get();
+
+    // Only the mobilizer knows how to create a body node with compile-time
+    // fixed sizes.
+    body_node = mobilizer->CreateBodyNode(body, mobilizer);
+  }
+  body_node->set_parent_tree(this, body_node_index);
+  body_node->SetTopology(topology_);
+
+  body_nodes_.push_back(std::move(body_node));
 }
 
 template <typename T>
@@ -67,6 +101,32 @@ MultibodyTree<T>::CreateDefaultContext() const {
   auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
   SetDefaults(context.get());
   return std::move(context);
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcPositionKinematicsCache(
+    const MultibodyTreeContext<T>& context,
+    PositionKinematicsCache<T>* pc) const {
+  // Loop over all mobilizers to update their position dependent kinematics.
+  // This updates the kinematics quantities only dependent on the rigid degrees
+  // of freedom qr. These are: X_FM(qr), H_FM(qr), HdotTimesV(qr), N(qr).
+  // Notice this loop can be performed in any order, even in parallel.
+  for (const auto& mobilizer: owned_mobilizers_)
+    mobilizer->CalcPositionKinematicsCache(context, pc);
+
+#if 0
+  // With the kinematics information across mobilizer's and the kinematics
+  // information for each body, we are now in position to perform a base-to-tip
+  // recursion to update world positions and parent to child body transforms.
+  // This skips the world, level = 0.
+  for (int level = 1; level < get_num_levels(); ++level) {
+    for (BodyNodeIndex body_node_id: body_node_levels_[level]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_id];
+      // Update per-node kinematics.
+      node.UpdatePositionKinematicsCache_BaseToTip(context);
+    }
+  }
+#endif
 }
 
 // Explicitly instantiates on the most common scalar types.

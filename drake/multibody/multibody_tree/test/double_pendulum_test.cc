@@ -17,6 +17,12 @@ namespace drake {
 namespace multibody {
 namespace {
 
+
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+#define PRINT_VARn(x) std::cout <<  #x ": \n" << x << std::endl;
+
+using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix4d;
 using Eigen::Translation3d;
@@ -363,20 +369,47 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
   EXPECT_EQ(mbt_context->get_state_segment<1>(1).size(), 1);
   EXPECT_EQ(mbt_context->get_mutable_state_segment<1>(1).size(), 1);
 
-  // Initializes the state and verifies it contains the right values.
   shoulder_mobilizer_->set_zero_configuration(context.get());
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), 0.0);
-  shoulder_mobilizer_->set_angle(context.get(), M_PI / 4);
-  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), M_PI / 4);
+
+  // Initializes the state and verifies it contains the right values.
+  const double shoulder_angle = M_PI / 4;
+  const double elbow_angle = -M_PI / 4;
+  shoulder_mobilizer_->set_angle(context.get(), shoulder_angle);
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), shoulder_angle);
+  elbow_mobilizer_->set_angle(context.get(), elbow_angle);
+  EXPECT_EQ(elbow_mobilizer_->get_angle(*context), elbow_angle);
 
   // Set the poses of each body in the position kinematics cache to have an
   // arbitrary value that we can use for unit testing. In practice the poses in
   // the position kinematics will be the result of a position kinematics update
   // and will live in the context as a cache entry.
   PositionKinematicsCache<double> pc(model_->get_topology());
-  SetPendulumPoses(&pc);
-  //model_->CalcPositionKinematics(mbt_context, &pc);
+  model_->CalcPositionKinematicsCache(*mbt_context, &pc);
 
+  // Indexes to the BodyNode objects associated with each mobilizer.
+  const BodyNodeIndex shoulder_node =
+      shoulder_mobilizer_->get_topology().body_node;
+  const BodyNodeIndex elbow_node =
+      elbow_mobilizer_->get_topology().body_node;
+
+  // Expected poses of the outboard frames measured in the inboard frame.
+  Isometry3d X_SiSo(AngleAxisd(shoulder_angle, Vector3d::UnitZ()));
+  Isometry3d X_EiEo(AngleAxisd(elbow_angle, Vector3d::UnitZ()));
+
+  // Verify the values in the position kinematics cache.
+  EXPECT_TRUE(pc.get_mutable_X_FM(shoulder_node).matrix().isApprox(
+      X_SiSo.matrix()));
+  EXPECT_TRUE(pc.get_mutable_X_FM(elbow_node).matrix().isApprox(
+      X_EiEo.matrix()));
+
+  PRINT_VARn(X_SiSo.matrix());
+  PRINT_VARn(pc.get_mutable_X_FM(shoulder_node).matrix());
+
+  PRINT_VARn(X_EiEo.matrix());
+  PRINT_VARn(pc.get_mutable_X_FM(elbow_node).matrix());
+
+#if 0
   // Retrieve body poses from position kinematics cache.
   const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
   const Isometry3d &X_WLu = get_body_pose_in_world(pc, *upper_link_);
@@ -385,6 +418,7 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
   // test method SetPendulumPoses().
   EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
   EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
+#endif
 }
 
 }  // namespace

@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -182,6 +183,28 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// need to call this method since MobilizerTopology is an internal
   /// bookkeeping detail.
   const MobilizerTopology& get_topology() const { return topology_; }
+
+  /// @name Methods that Define a %Mobilizer
+  /// @{
+
+  /// Computes the across-Mobilizer transform `X_FM(q)` ginven the vector of
+  /// generalized postions `q`.
+  /// This method can be considered the *definition* of a given mobilizer.
+  virtual void CalcAcrossMobilizerTransform(
+      const MultibodyTreeContext<T>& context,
+      PositionKinematicsCache<T>* pc) const = 0;
+
+  /// @}
+
+  void CalcPositionKinematicsCache(
+      const MultibodyTreeContext<T>& context,
+      PositionKinematicsCache<T>* pc) const {
+    this->CalcAcrossMobilizerTransform(context, pc);
+  }
+
+  /// For internal use only.
+  virtual std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
  protected:
   int get_positions_start() const { return get_topology().positions_start; }

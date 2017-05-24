@@ -65,6 +65,21 @@ class PositionKinematicsCache {
     return X_WB_pool_[body_node_index];
   }
 
+  /// For the mobilizer associated with the body node indexed by
+  /// `body_node_index`, this method returns a mutable reference to the pose
+  /// `X_FM` of the outboard frame M as measured and expressed in the inboard
+  /// frame F.
+  ///
+  /// @param[in] body_node_index The unique index for the computational
+  ///                            BodyNode object associated with the mobilizer
+  ///                            of interest.
+  /// @returns A mutable reference to the pose `X_FM` of the outboard frame M
+  ///          as measured and expressed in the inboard frame F.
+  Isometry3<T>& get_mutable_X_FM(BodyNodeIndex body_node_index) {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return X_FM_pool_[body_node_index];
+  }
+
  private:
   // Pool types:
   // Pools store entries in the same order multibody tree nodes are
@@ -79,11 +94,16 @@ class PositionKinematicsCache {
   void Allocate() {
     X_WB_pool_.resize(num_nodes_);
     X_WB_pool_[world_index()] = Isometry3<T>::Identity();
+
+    X_FM_pool_.resize(num_nodes_);
+    X_FM_pool_[world_index()] = Matrix4<T>::Constant(
+        Eigen::NumTraits<double>::quiet_NaN());  // It should never be used.
   }
 
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
   X_PoolType X_WB_pool_;  // Indexed by BodyNodeIndex.
+  X_PoolType X_FM_pool_;  // Indexed by BodyNodeIndex.
 };
 
 }  // namespace multibody

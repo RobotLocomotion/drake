@@ -84,6 +84,10 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// @returns The angle coordinate of `this` mobilizer in the `context`.
   const T& get_angle(const systems::Context<T>& context) const;
 
+  void CalcAcrossMobilizerTransform(
+      const MultibodyTreeContext<T>& context,
+      PositionKinematicsCache<T>* pc) const final;
+
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;
   // Bring the handy number of position and velocities MobilizerImpl enums into

@@ -27,6 +27,16 @@ const T& RevoluteMobilizer<T>::get_angle(
   return q.coeffRef(0);
 }
 
+template <typename T>
+void RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
+    const MultibodyTreeContext<T>& context,
+    PositionKinematicsCache<T>* pc) const {
+  auto q = this->get_positions(context);
+  Isometry3<T>& X_FM = this->get_mutable_X_FM(pc);
+  X_FM = Isometry3<T>::Identity();
+  X_FM.linear() = Eigen::AngleAxis<T>(q[0], axis_F_).toRotationMatrix();
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class RevoluteMobilizer<double>;
 template class RevoluteMobilizer<AutoDiffXd>;
