@@ -830,18 +830,19 @@ class TestTriggerSystem : public LeafSystem<double> {
       const Context<double>& context,
       CompositeEventCollection<double>* events) const override {
     {
-      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
-      event.callback_ = [this](const Context<double>&, const Event<double>&) {
-        CopyString("hello");
-      };
+      PublishEvent<double> event(
+          Event<double>::TriggerType::kPerStep,
+          std::bind(&TestTriggerSystem::StringCallback, this,
+              std::placeholders::_1, std::placeholders::_2,
+              std::make_shared<const std::string>("hello")));
       event.add_to_composite(events);
     }
 
     {
-      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
-      event.callback_ = [this](const Context<double>&, const Event<double>&) {
-        CopyInt(42);
-      };
+      PublishEvent<double> event(
+          Event<double>::TriggerType::kPerStep,
+          std::bind(&TestTriggerSystem::IntCallback, this,
+              std::placeholders::_1, std::placeholders::_2, 42));
       event.add_to_composite(events);
     }
   }
@@ -855,18 +856,20 @@ class TestTriggerSystem : public LeafSystem<double> {
   int get_publish_count() const { return publish_count_; }
 
  private:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
-  // Casts the data in @p trigger as string and store it in string_data_.
-  void CopyString(const std::string& data) const {
-    string_data_.push_back(data);
+  // Pass data by a shared_ptr<const stuff>.
+  void StringCallback(const Context<double>&, const PublishEvent<double>&,
+      std::shared_ptr<const std::string> data) const {
+    string_data_.push_back(*data);
   }
 
-  // Casts the data in @p trigger as int and store it in int_data_.
-  void CopyInt(int data) const {
+  // Pass data by value.
+  void IntCallback(const Context<double>&, const PublishEvent<double>&,
+      int data) const {
     int_data_.push_back(data);
   }
+
+  void DoCalcOutput(const Context<double>& context,
+                    SystemOutput<double>* output) const override {}
 
   // Stores data copied from the abstract values in handled events.
   mutable std::vector<std::string> string_data_;
