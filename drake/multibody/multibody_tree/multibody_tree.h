@@ -392,6 +392,11 @@ class MultibodyTree {
     return static_cast<int>(owned_mobilizers_.size());
   }
 
+  /// Returns the number of tree levels in the model.
+  int get_num_levels() const {
+    return topology_.get_num_levels();
+  }
+
   /// Returns a constant reference to the *world* body.
   const Body<T>& get_world_body() const {
     return *owned_bodies_[world_index()];
@@ -489,6 +494,10 @@ class MultibodyTree {
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.
   std::vector<const Frame<T>*> frames_;
+
+  // Body node indexes ordered by level. Therefore for the i-th level
+  // body_node_levels_[i] contains the list of body node indexes in that level.
+  std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
 
   MultibodyTreeTopology topology_;
 };

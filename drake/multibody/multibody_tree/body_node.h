@@ -49,7 +49,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   BodyIndex get_parent_body_index() const { return topology_.parent_body;}
 
-#if 0
   /// This method can anly be called within a base-to-tip loop.
   void UpdatePositionKinematicsCache_BaseToTip(
       const MultibodyTreeContext<T>& context) const {
@@ -69,15 +68,17 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - phi_PB_W: shift operator from P to B.
     // - com_W: center of mass.
     // - M_Bo_W: Spatial inertia.
-    UpdateBodySpecificKinematicsCache_BaseToTip(context);
+    //UpdateBodySpecificKinematicsCache_BaseToTip(context);
 
     // With H_FM(qr) already in the cache (computed by
     // Mobilizer::UpdatePositionKinematicsCache()) this call updates the cache
     // entries for H_PB_W, the Jacobian for the SpatialVelocity jump between
     // body B and its parent body P expressed in the world frame W.
-    UpdateAcrossBodiesSpatialVelocityJacobian(context);
+    //UpdateAcrossBodiesSpatialVelocityJacobian(context);
   }
-#endif
+
+  /// Returns the topology information for this body node.
+  const BodyNodeTopology& get_topology() const { return topology_; }
 
  protected:
   BodyNodeTopology topology_;
@@ -85,7 +86,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   const Body<T>* body_{nullptr};
   const Mobilizer<T>* mobilizer_{nullptr};
 
-#if 0
   // Helper methods to extract entries from the context.
 
   // Get from the position kinematics cache a constant reference to the pose
@@ -186,7 +186,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     X_WB = X_WP * X_PB;
   }
-#endif
+
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each body retrieves its topology

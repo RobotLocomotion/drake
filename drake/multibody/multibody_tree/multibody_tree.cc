@@ -55,6 +55,15 @@ void MultibodyTree<T>::Finalize() {
     mobilizer->SetTopology(topology_);
   }
 
+  // Create a list of body nodes organized by levels.
+  body_node_levels_.reserve(topology_.get_num_levels());
+  for (BodyNodeIndex body_node_index(1);
+       body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
+    const BodyNodeTopology& node_topology =
+        topology_.get_body_node(body_node_index);
+    body_node_levels_[node_topology.level].push_back(body_node_index);
+  }
+
   // Creates BodyNode's:
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
@@ -114,19 +123,21 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   for (const auto& mobilizer: owned_mobilizers_)
     mobilizer->CalcPositionKinematicsCache(context, pc);
 
-#if 0
   // With the kinematics information across mobilizer's and the kinematics
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
   for (int level = 1; level < get_num_levels(); ++level) {
-    for (BodyNodeIndex body_node_id: body_node_levels_[level]) {
-      const BodyNode<T>& node = *body_nodes_[body_node_id];
+    for (BodyNodeIndex body_node_index: body_node_levels_[level]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+      
+      DRAKE_ASSERT(node.get_topology().level == level);
+      DRAKE_ASSERT(node.get_index() == body_node_index);
+      
       // Update per-node kinematics.
       node.UpdatePositionKinematicsCache_BaseToTip(context);
     }
   }
-#endif
 }
 
 // Explicitly instantiates on the most common scalar types.
