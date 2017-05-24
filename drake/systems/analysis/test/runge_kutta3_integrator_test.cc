@@ -309,7 +309,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
 }
 
 // Verify that attempting to take a step for a very large initial time throws
-// an exception. 
+// an exception.
 TEST_F(RK3IntegratorTest, MinTimeThrows) {
   // Set integrator parameters: do error control.
   integrator_->set_maximum_step_size(dt);
