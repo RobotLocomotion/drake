@@ -21,11 +21,11 @@ namespace sensors {
 
 /// A simple model of an ideal depth sensor. Example real-world depth sensors
 /// include Lidar, IR, sonar, etc. The depth measurements are taken at evenly
-/// spaced pixel rows (pitch angles) and columns (yaw angles). Ray casting is
-/// used to obtain the depth measurements and all pitch / yaw combinations in a
-/// single resulting depth image are obtained at a single effective point in
-/// time. Thus, this sensor does *not* model aliasing effects due to the time
-/// spent scanning vertically and horizontally.
+/// spaced pitch angles and yaw angles. Ray casting is used to obtain the depth
+/// measurements and all pitch / yaw combinations in a single resulting depth
+/// image are obtained at a single effective point in time. Thus, this sensor
+/// does *not* model aliasing effects due to the time spent scanning vertically
+/// and horizontally.
 ///
 /// There are two frames associated with this sensor: its base frame and its
 /// optical frame. This sensor's specification and configuration are defined in
@@ -59,14 +59,14 @@ namespace sensors {
 ///
 /// This system has two output ports. The first contains the sensed values
 /// stored in a DepthSensorOutput object. For each pitch, there is a fixed
-/// number of yaw values as specified by num_pixel_cols(). Each of these vector
+/// number of yaw values as specified by num_yaw(). Each of these vector
 /// of yaw values that share the same pitch are contiguous in the output vector.
 /// In other words, here is pseudocode describing this sensor's output vector:
 ///
 /// <pre>
-///  for i in 0 to num_pixel_rows():
-///    for j in 0 to num_pixel_cols():
-///      output_vector[i * num_pixel_cols() + j] ==
+///  for i in 0 to num_pitch():
+///    for j in 0 to num_yaw():
+///      output_vector[i * num_yaw() + j] ==
 ///          [depth value when yaw   = min_yaw()   + j * yaw_increment() and
 ///                            pitch = min_pitch() + i * pitch_increment()]
 /// </pre>
@@ -92,6 +92,7 @@ namespace sensors {
 /// @see DepthSensorOutput
 /// @see DepthSensorSpecification
 ///
+
 class DepthSensor : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensor)
@@ -125,17 +126,17 @@ class DepthSensor : public systems::LeafSystem<double> {
   const DepthSensorSpecification& get_specification() { return specification_; }
 
   /// Returns the number of pixel rows in the resulting depth sensor output.
-  /// This is equal to parameter `num_pitch_values` that's passed into the
-  /// constructor.
-  int get_num_pixel_rows() const { return specification_.num_pitch_values(); }
+  /// This is equal to parameter DepthSensorSpecification::num_pitch_values
+  /// that's passed into the constructor.
+  int get_num_pitch() const { return specification_.num_pitch_values(); }
 
   /// Returns the number of pixel columns in the resulting depth sensor output.
-  /// This is equal to parameter `num_yaw_values` that's passed into the
-  /// constructor.
-  int get_num_pixel_cols() const { return specification_.num_yaw_values(); }
+  /// This is equal to parameter DepthSensorSpecification::num_yaw_values
+  /// that's passed into the constructor.
+  int get_num_yaw() const { return specification_.num_yaw_values(); }
 
   /// Returns the size of the system's output, which equals the product of
-  /// num_pixel_rows() and num_pixel_cols().
+  /// num_pitch() and num_yaw().
   int get_num_depth_readings() const {
     return specification_.num_depth_readings();
   }
@@ -169,6 +170,18 @@ class DepthSensor : public systems::LeafSystem<double> {
   // computed once at the time of construction since the end points are constant
   // in the sensor's base frame.
   void PrecomputeRaycastEndpoints();
+
+  // Applies the min / max range of the sensor. Any measurement that is less
+  // than the minimum or greater than the maximum is set to an invalid value.
+  // This is so users of this sensor can distinguish between an object at the
+  // maximum sensing distance and not detecting any object within the sensing
+  // range.
+  void ApplyLimits(VectorX<double>* dists) const;
+
+  // Evaluates the output port containing the depth measurements.
+  void UpdateOutputs(const VectorX<double>& distances,
+                     const KinematicsCache<double>& kinematics_cache,
+                     SystemOutput<double>* output) const;
 
   const std::string name_;
   const RigidBodyTree<double>& tree_;
