@@ -982,23 +982,6 @@ class LeafSystem : public System<T> {
     }
   }
 
-  std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateForcedPublishEventCollection() const override {
-    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-  }
-
-  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateForcedDiscreteUpdateEventCollection() const override {
-    return LeafEventCollection<
-        DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
-  }
-
-  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateForcedUnrestrictedUpdateEventCollection() const override {
-    return LeafEventCollection<
-        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
-  }
-
   // Periodic Update or Publish events registered on this system.
   std::vector<std::unique_ptr<Event<T>>> periodic_events_;
 
