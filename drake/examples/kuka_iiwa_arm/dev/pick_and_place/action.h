@@ -6,7 +6,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/world_state.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 
 namespace drake {
 namespace examples {

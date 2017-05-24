@@ -1,0 +1,29 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("//tools:cpplint.bzl", "cpplint")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_library",
+)
+
+package(
+    default_visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+)
+
+drake_cc_library(
+    name = "pick_and_place",
+    srcs = [
+        "world_state.cc",
+    ],
+    hdrs = [
+        "world_state.h",
+    ],
+    deps = [
+        "//drake/lcmtypes:schunk",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/util:lcm_util",
+        "@bot_core_lcmtypes",
+    ],
+)

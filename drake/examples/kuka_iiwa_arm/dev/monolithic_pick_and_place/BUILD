@@ -17,16 +17,15 @@ drake_cc_library(
     srcs = [
         "demo_diagram_builder.cc",
         "state_machine_system.cc",
-        "synchronous_world_state.cc",
     ],
     hdrs = [
         "demo_diagram_builder.h",
         "pick_and_place_common.h",
         "state_machine_system.h",
-        "synchronous_world_state.h",
     ],
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place",
         "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives",
         "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:kuka_pick_and_place",
