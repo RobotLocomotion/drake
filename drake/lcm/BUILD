@@ -55,6 +55,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "translator",
+    hdrs = [
+        "translator.h",
+    ],
+    deps = [
+        "//drake/common",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
