@@ -289,7 +289,8 @@ class IntegratorBase {
    * steps. You can set the minimum to what should be a "reasonable" minimum
    * based on what you know about the physical system. You will then get an
    * std::runtime_error exception thrown at any point in time where your model 
-   * behaves unexpectedly.
+   * behaves unexpectedly (due to, e.g., a discontinuity in the derivative
+   * evaluation function).
    *
    * If you disable the exception (via
    * `set_throw_on_minimum_step_size_violation(false)`), the integrator will
@@ -297,7 +298,7 @@ class IntegratorBase {
    * only when the minimum step size is not violated. Beware that there can be 
    * no guarantee about the magnitude of any errors introduced by violating the
    * accuracy "requirements" in this manner, so disabling the exception should
-   * be done warily. 
+   * be done warily.
    *
    * #### Details
    * Because time is maintained to finite precision, there is an absolute
@@ -315,7 +316,7 @@ class IntegratorBase {
    * std::runtime_error exception will be thrown and the simulation halted. On 
    * the other hand, if you have suppressed the exception (again, via
    * `set_throw_on_minimum_step_size_violation(false)`), the integration
-   * will continue.
+   * will continue, taking a step of size `h_work`.
    *
    * Under some circumstances the integrator may legitimately take a step of
    * size `h` smaller than your specified `h_min`, although never smaller than
@@ -385,6 +386,7 @@ class IntegratorBase {
    */
   T get_working_minimum_step_size() const {
     using std::max;
+    // Tolerance is just a number close to machine epsilon.
     const double tol = 1e-14;
     const T smart_minimum = max(tol, get_context().get_time()*tol);
     return max(smart_minimum, req_min_step_size_);
@@ -556,8 +558,7 @@ class IntegratorBase {
   ///          purposes), generally.
   /// @param dt The non-negative integration step to take.
   /// @throws std::logic_error If the integrator has not been initialized or
-  ///                          dt is negative **or** if the integrator
-  ///                          is operating in fixed step mode.
+  ///                          dt is negative.
   /// @sa IntegrateAtMost(), which is designed to be operated by Simulator and
   ///     accounts for publishing and state reinitialization.
   /// @sa IntegrateWithSingleStep(), which is also designed to be operated

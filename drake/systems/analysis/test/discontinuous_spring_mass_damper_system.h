@@ -24,11 +24,11 @@ class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscontinuousSpringMassDamperSystem);
   DiscontinuousSpringMassDamperSystem(double spring_constant_N_per_m,
-                                      double damping_constant_N_per_m,
+                                      double damping_constant_Ns_per_m,
                                       double mass_kg,
                                       double constant_force) :
       SpringMassDamperSystem<T>(spring_constant_N_per_m,
-                                damping_constant_N_per_m,
+                                damping_constant_Ns_per_m,
                                 mass_kg),
       constant_force_(constant_force) {
     DRAKE_ASSERT(constant_force >= 0.0);

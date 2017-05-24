@@ -22,20 +22,21 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassDamperSystem);
   SpringMassDamperSystem(double spring_constant_N_per_m,
-                         double damping_constant_N_per_m,
+                         double damping_constant_Ns_per_m,
                          double mass_kg) :
       SpringMassSystem<T>(spring_constant_N_per_m, mass_kg,
                           false /* unforced */),
-      damping_constant_N_per_m_(damping_constant_N_per_m) {}
+      damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {}
 
   /// Returns the damping constant that was provided at construction in N/m
-  double get_damping_constant() const { return damping_constant_N_per_m_; }
+  double get_damping_constant() const { return damping_constant_Ns_per_m_; }
 
   /// Returns the closed-form position and velocity solution for the unforced
   /// spring-mass-damper from the given initial conditions *for the case that
   /// the spring-mass-damper is not underdamped*. In other words, this function
   /// requires that `c² - 4⋅m⋅k ≥ 0`, where c is the damping coefficient,
-  /// m is the mass, and k is the spring coefficient.
+  /// m is the mass, and k is the spring coefficient. Put yet another way,
+  /// the damping ratio must be greater than one (i.e., ξ = c/2sqrt(km)) > 1).
   /// @param x0 the position of the spring at time t = 0.
   /// @param v0 the velocity of the spring at time t = 0.
   /// @param tf the time at which to return the position and velocity.
@@ -50,7 +51,8 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     if (!xf || !vf)
       throw std::logic_error("Passed final position/velocity is null.");
 
-    // Special case #1: no damping.
+    // Special case #1: no damping (uses the closed form solution from
+    // the mass-spring system).
     if (get_damping_constant() == 0) {
       SpringMassSystem<T>::GetClosedFormSolution(x0, v0, tf, xf, vf);
       return;
@@ -148,7 +150,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
     return std::make_pair(x1, x2);
   }
 
-  double damping_constant_N_per_m_;
+  double damping_constant_Ns_per_m_;
 };
 
 }  // namespace implicit_integrator_test
