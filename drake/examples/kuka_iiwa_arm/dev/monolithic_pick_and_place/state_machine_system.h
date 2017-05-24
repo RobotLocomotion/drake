@@ -5,7 +5,7 @@
 
 #include "bot_core/robot_state_t.hpp"
 
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/synchronous_world_state.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -150,7 +150,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
 
   const std::unique_ptr<
     manipulation::planner::ConstraintRelaxingIk> planner_{nullptr};
-  const std::unique_ptr<SynchronousWorldState> world_state_{nullptr};
+  const std::unique_ptr<pick_and_place::WorldState> world_state_{nullptr};
 };
 
 }  // namespace monolithic_pick_and_place
