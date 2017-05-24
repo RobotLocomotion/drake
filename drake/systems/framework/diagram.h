@@ -652,7 +652,7 @@ class Diagram : public System<T>,
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
-  /// Returns a pointer to mutable context if @p target_system is a sub system
+  /// Returns a pointer to mutable context if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
   Context<T>* DoGetMutableTargetSystemContext(const System<T>* target_system,
                                               Context<T>* context) const final {
@@ -663,7 +663,7 @@ class Diagram : public System<T>,
         &DiagramContext<T>::GetMutableSubsystemContext);
   }
 
-  /// Returns a pointer to const context if @p target_system is a sub system
+  /// Returns a pointer to const context if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
   const Context<T>* DoGetTargetSystemContext(
       const System<T>* target_system, const Context<T>* context) const final {
@@ -674,7 +674,7 @@ class Diagram : public System<T>,
         &DiagramContext<T>::GetSubsystemContext);
   }
 
-  /// Returns a pointer to mutable state if @p target_system is a sub system
+  /// Returns a pointer to mutable state if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
   State<T>* DoGetMutableTargetSystemState(const System<T>* target_system,
                                           State<T>* state) const final {
@@ -685,7 +685,7 @@ class Diagram : public System<T>,
         &DiagramState<T>::get_mutable_substate);
   }
 
-  /// Returns a pointer to const state if @p target_system is a sub system
+  /// Returns a pointer to const state if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
   const State<T>* DoGetTargetSystemState(const System<T>* target_system,
                                          const State<T>* state) const final {
@@ -856,9 +856,9 @@ class Diagram : public System<T>,
   }
 
  private:
-  // For each subsystem, if there is a publish event in its corresponding sub
-  // event collection, calls its Publish method with the appropriate subcontext
-  // and sub event collection.
+  // For each subsystem, if there is a publish event in its corresponding
+  // subevent collection, calls its Publish method with the appropriate
+  // subcontext and subevent collection.
   void DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
@@ -881,8 +881,8 @@ class Diagram : public System<T>,
   }
 
   // For each subsystem, if there is a discrete update event in its
-  // corresponding sub event collection, calls its CalcDiscreteVariableUpdates
-  // method with the appropriate subcontext, sub event collection and
+  // corresponding subevent collection, calls its CalcDiscreteVariableUpdates
+  // method with the appropriate subcontext, subevent collection and
   // substate.
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
@@ -923,8 +923,8 @@ class Diagram : public System<T>,
   }
 
   // For each subsystem, if there is an unrestricted update event in its
-  // corresponding sub event collection, calls its CalcUnrestrictedUpdate
-  // method with the appropriate subcontext, sub event collection and substate.
+  // corresponding subevent collection, calls its CalcUnrestrictedUpdate
+  // method with the appropriate subcontext, subevent collection and substate.
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
@@ -959,16 +959,16 @@ class Diagram : public System<T>,
 
   /// Tries to recursively find @p target_system's BaseStuffPtr
   /// (context / state / etc). nullptr is returned if @p target_system is not
-  /// a sub system of this diagram. This template function should only be used
+  /// a subsystem of this diagram. This template function should only be used
   /// to reduce code repetition for DoGetMutableTargetSystemContext(),
   /// DoGetTargetSystemContext(), DoGetMutableTargetSystemState(), and
   /// DoGetTargetSystemState().
-  /// @param target_system The sub system of interest.
+  /// @param target_system The subsystem of interest.
   /// @param my_stuff BaseStuffPtr that's associated with this diagram.
   /// @param recursive_getter A member function of System that returns sub
   /// context or state. Should be one of the four functions listed above.
   /// @param get_child_stuff A member function of DiagramContext or DiagramState
-  /// that returns context or state given the index of the sub system.
+  /// that returns context or state given the index of the subsystem.
   ///
   /// @tparam BaseStuffPtr Can be Context<T>*, const Context<T>*, State<T>* and
   /// const State<T>*.
@@ -1205,12 +1205,11 @@ class Diagram : public System<T>,
       ExportOutput(id);
     }
 
-    this->set_forced_publish_events(
-        this->AllocateForcedPublishEventCollection());
+    this->set_forced_publish_events(AllocateForcedPublishEventCollection());
     this->set_forced_discrete_update_events(
-        this->AllocateForcedDiscreteUpdateEventCollection());
+        AllocateForcedDiscreteUpdateEventCollection());
     this->set_forced_unrestricted_update_events(
-        this->AllocateForcedUnrestrictedUpdateEventCollection());
+        AllocateForcedUnrestrictedUpdateEventCollection());
   }
 
   // Takes ownership of the @p registered_systems from DiagramBuilder.

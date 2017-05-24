@@ -230,7 +230,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Clears all sub event collections.
+   * Clears all subevent collections.
    */
   void Clear() override {
     for (EventCollection<EventType>* subevent : subevent_collection_) {
@@ -239,7 +239,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Returns `true` if and only if none of the sub event collections have any
+   * Returns `true` if and only if none of the subevent collections have any
    * events.
    */
   bool HasEvents() const override {
@@ -253,10 +253,10 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   // These are protected for doxygen.
 
   /**
-   * Goes through each sub event collection and merges in the corresponding one
+   * Goes through each subevent collection and merges in the corresponding one
    * in @p other_collection. Asserts that @p other_collection is an instance of
    * DiagramEventCollection. Aborts if `this` does not have the same number of
-   * sub event collections as @p other_collection.
+   * subevent collections as @p other_collection.
    * @throws std::bad_cast if @p other_collection is not an instance of
    * DiagramEventCollection.
    */
