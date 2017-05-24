@@ -18,6 +18,7 @@ drake_cc_library(
     hdrs = [
         "constants.h",
         "drake_assert.h",
+        "drake_assert_toggle.h",
         "drake_compat.h",
         "drake_copyable.h",
         "drake_deprecated.h",
@@ -452,6 +453,15 @@ sh_test(
         "drake_compat.h",
         "test/drake_assert_test_compile.cc",
         "unused.h",
+    ],
+)
+
+# Functional test of drake_assert_toggle.
+# Do NOT combine this with any other test; it changes process-wide settings.
+drake_cc_googletest(
+    name = "drake_assert_toggle_test",
+    deps = [
+        ":common",
     ],
 )
 

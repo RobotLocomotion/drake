@@ -42,6 +42,7 @@ set(installed_headers
   copyable_unique_ptr.h
   double_overloads.h
   drake_assert.h
+  drake_assert_toggle.h
   drake_compat.h
   drake_copyable.h
   drake_deprecated.h
