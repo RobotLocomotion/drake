@@ -5,8 +5,9 @@ https://github.com/Kinovarobotics/kinova-ros/tree/kinova-ros-beta/
 kinova_description/urdf, SHA 006c2e1.
 
 The original license for these files is covered under the BSD license terms,
-as stated at the following link:
-http://wiki.ros.org/jaco
+as stated in the package.xml file:
+https://github.com/Kinovarobotics/kinova-ros/blob/kinova-ros-beta/
+kinova_description/package.xml
 
 Since obtaining the model files from the above source, they were modified for
 use by Drake. For example, the original DAE and STL mesh files were converted

@@ -4,21 +4,6 @@
 /// jaco robot within a simulation, to reach and hold a given joint space pose.
 /// The robot is initialized with an (arbitrary) joint space pose, and is
 /// controlled to track and hold a final (arbitrary) joint space pose.
-///
-/// This simulation uses a 6-degree of freedom Kinova Jaco arm with a three
-/// finger gripper. Joints are numbered sequentially starting from the base
-/// with the following joint index descriptions:
-/// 0: shoulder roll
-/// 1: shoulder fore/aft
-/// 2: elbow fore/aft
-/// 3: forearm roll
-/// 4: wrist yaw
-/// 5: wrist roll
-/// 6: finger 1 bend/extend
-/// 7: finger 2 bend/extend
-/// 8: finger 3 bend/extend
-///
-/// Position units are in radians, velocity units are in radians per second
 
 #include <gflags/gflags.h>
 
@@ -47,9 +32,9 @@ int DoMain() {
   systems::DiagramBuilder<double> builder;
 
   systems::RigidBodyPlant<double>* plant = nullptr;
-  const std::string kUrdfPath =
-      "/manipulation/models/jaco_description/urdf/"
-      "j2n6s300.urdf";
+  const std::string kUrdfPath = drake::GetDrakePath() +
+                                "/manipulation/models/jaco_description/urdf/"
+                                "j2n6s300.urdf";
 
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -58,8 +43,8 @@ int DoMain() {
 
     auto tree_sys =
         std::make_unique<systems::RigidBodyPlant<double>>(std::move(tree));
-    plant = builder.AddSystem<systems::RigidBodyPlant<double>>(
-        std::move(tree_sys));
+    plant =
+        builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_sys));
     plant->set_name("plant");
   }
 
@@ -72,14 +57,14 @@ int DoMain() {
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
   auto control_sys =
       std::make_unique<systems::InverseDynamicsController<double>>(
-          GetDrakePath() + kUrdfPath, nullptr, jaco_kp, jaco_ki, jaco_kd,
+          kUrdfPath, nullptr, jaco_kp, jaco_ki, jaco_kd,
           false /* no feedforward acceleration */);
   auto controller =
       builder.AddSystem<systems::InverseDynamicsController<double>>(
           std::move(control_sys));
 
   // Adds a constant source for desired state.
-  Eigen::VectorXd const_pos = Eigen::VectorXd::Zero(18);
+  Eigen::VectorXd const_pos = Eigen::VectorXd::Zero(NUM_JACO_ARM_DOFS * 2);
   const_pos(1) = 1.57;
   const_pos(2) = 2.0;
 
@@ -88,21 +73,21 @@ int DoMain() {
 
   const_src->set_name("constant_source");
   builder.Connect(const_src->get_output_port(),
-                   controller->get_input_port_desired_state());
+                  controller->get_input_port_desired_state());
 
   // Connects the state port to the controller.
   const auto& instance_state_output_port =
       plant->model_instance_state_output_port(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
   builder.Connect(instance_state_output_port,
-                   controller->get_input_port_estimated_state());
+          controller->get_input_port_estimated_state());
 
   // Connects the controller torque output to plant.
   const auto& instance_torque_input_port =
       plant->model_instance_actuator_command_input_port(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
   builder.Connect(controller->get_output_port_control(),
-                   instance_torque_input_port);
+          instance_torque_input_port);
 
   // Connects the visualizer and builds the diagram.
   builder.Connect(plant->get_output_port(0), visualizer->get_input_port(0));
@@ -114,15 +99,14 @@ int DoMain() {
       simulator.get_mutable_context(), plant);
 
   // Sets some (arbitrary) initial conditions.
-  // See the @file docblock at the top of this file
-  // for joint index descriptions.
+  // See the @file docblock in jaco_common.h for joint index descriptions.
   systems::VectorBase<double>* x0 =
       jaco_context->get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, -1.57);
   x0->SetAtIndex(2, -1.57);
 
   simulator.Initialize();
-  simulator.set_target_realtime_rate(0.5);
+  simulator.set_target_realtime_rate(1);
 
   simulator.StepTo(FLAGS_simulation_sec);
 

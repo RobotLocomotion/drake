@@ -3,26 +3,12 @@
 /// This demo sets up a simple passive dynamics simulation of the Kinova Jaco
 /// arm. The robot is initialized with an (arbitrary) joint space pose, and is
 /// simulated with zero torques at the joints.
-///
-/// This simulation uses a 6-degree of freedom Kinova Jaco arm with a three
-/// finger gripper. Joints are numbered sequentially starting from the base
-/// with the following joint index descriptions:
-/// 0: shoulder roll
-/// 1: shoulder fore/aft
-/// 2: elbow fore/aft
-/// 3: forearm roll
-/// 4: wrist yaw
-/// 5: wrist roll
-/// 6: finger 1 bend/extend
-/// 7: finger 2 bend/extend
-/// 8: finger 3 bend/extend
-///
-/// Position units are in radians, velocity units are radians in per second
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
+#include "drake/common/text_logging_gflags.h"
+#include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -44,18 +30,17 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
-DEFINE_double(duration, 2, "Total duration of the simulation in seconds.");
+DEFINE_double(simulation_sec, 2, "Total duration of the simulation in seconds.");
 
-int DoMain(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  logging::HandleSpdlogGflags();
+int DoMain() {
+  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
 
   drake::lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
   // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
-  const std::string kModelPath =
+  const std::string kModelPath = drake::GetDrakePath() +
       "/manipulation/models/jaco_description/urdf/"
       "j2n6s300.urdf";
   {
@@ -94,8 +79,7 @@ int DoMain(int argc, char* argv[]) {
       simulator.get_mutable_context(), plant);
 
   // Sets (arbitrary) initial conditions.
-  // See the @file docblock at the top of this file
-  // for joint index descriptions.
+  // See the @file docblock in jaco_common.h for joint index descriptions.
   VectorBase<double>* x0 = jaco_context->get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, 0.5);
 
@@ -103,7 +87,7 @@ int DoMain(int argc, char* argv[]) {
 
   // Simulate for the desired duration.
   simulator.set_target_realtime_rate(1);
-  simulator.StepTo(FLAGS_duration);
+  simulator.StepTo(FLAGS_simulation_sec);
 
   // Ensures the simulation was successful.
   const Context<double>& context = simulator.get_context();
@@ -115,30 +99,9 @@ int DoMain(int argc, char* argv[]) {
   const int num_v = velocity_vector.size();
 
   // Ensures the sizes of the position and velocity vectors are correct.
-  if (num_q != plant->get_num_positions()) {
-    throw std::runtime_error(
-        "ERROR: Size of position vector (" + std::to_string(num_q) +
-        ") does "
-        "not match number of positions in RigidBodyTree (" +
-        std::to_string(plant->get_num_positions()) + ").");
-  }
-
-  if (num_v != plant->get_num_velocities()) {
-    throw std::runtime_error(
-        "ERROR: Size of velocity vector (" + std::to_string(num_v) +
-        ") does "
-        "not match number of velocities in RigidBodyTree (" +
-        std::to_string(plant->get_num_velocities()) + ").");
-  }
-
-  // Ensures the number of position states equals the number of velocity states.
-  if (num_q != num_v) {
-    throw std::runtime_error("ERROR: Number of positions (" +
-                             std::to_string(num_q) +
-                             ") does not "
-                             "match the number of velocities (" +
-                             std::to_string(num_v) + ").");
-  }
+  DRAKE_DEMAND(num_q == plant->get_num_positions());
+  DRAKE_DEMAND(num_v == plant->get_num_velocities());
+  DRAKE_DEMAND(num_q == num_v);
 
   // Ensures the robot's joints are within their position limits.
   const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
@@ -160,18 +123,20 @@ int DoMain(int argc, char* argv[]) {
     for (int j = 0; j < joint.get_num_positions(); ++j) {
       double position = position_vector.GetAtIndex(state_index++);
       if (position < min_limit[j] - kJointLimitTolerance) {
-        throw std::runtime_error("ERROR: Joint " + joint.get_name() + " (DOF " +
+        std::cerr << "ERROR: Joint " + joint.get_name() + " (DOF " +
                                  joint.get_position_name(j) +
                                  ") violated minimum position limit (" +
                                  std::to_string(position) + " < " +
-                                 std::to_string(min_limit[j]) + ").");
+                                 std::to_string(min_limit[j]) + ").";
+        return 1;
       }
       if (position > max_limit[j] + kJointLimitTolerance) {
-        throw std::runtime_error("ERROR: Joint " + joint.get_name() + " (DOF " +
+        std::cerr << "ERROR: Joint " + joint.get_name() + " (DOF " +
                                  joint.get_position_name(j) +
                                  ") violated maximum position limit (" +
                                  std::to_string(position) + " > " +
-                                 std::to_string(max_limit[j]) + ").");
+                                 std::to_string(max_limit[j]) + ").";
+        return 1;
       }
     }
   }
@@ -185,5 +150,6 @@ int DoMain(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::kinova_jaco_arm::DoMain(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::kinova_jaco_arm::DoMain();
 }

@@ -39,7 +39,7 @@
    finger_proximal		57
    finger_distal      58 
 -->
-  <link name="base_link">
+  <link name="root">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -57,7 +57,7 @@
   <!-- for gazebo -->
   <link name="world"/>
   <joint name="connect_root_and_world" type="fixed">
-    <child link="base_link"/>
+    <child link="root"/>
     <parent link="world"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
@@ -70,16 +70,18 @@
   </gazebo>
   <link name="j2n6s300_link_base">
     <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.1"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.075" radius="0.025"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
     <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.1"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.075" radius="0.025"/>
       </geometry>
     </collision>
     <inertial>
@@ -89,7 +91,7 @@
     </inertial>
   </link>
   <joint name="j2n6s300_joint_base" type="fixed">
-    <parent link="base_link"/>
+    <parent link="root"/>
     <child link="j2n6s300_link_base"/>
     <axis xyz="0 0 0"/>
     <limit effort="2000" lower="0" upper="0" velocity="1"/>
@@ -98,21 +100,18 @@
   </joint>
   <link name="j2n6s300_link_1">
     <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.06"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.06" radius="0.025"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <visual>
-      <geometry>
-        <cylinder length="0.05" radius="0.01"/>
-      </geometry>
-    </visual>
     <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.06"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.06" radius="0.025"/>
       </geometry>
     </collision>
     <inertial>
@@ -141,6 +140,7 @@
   </transmission>
   <link name="j2n6s300_link_2">
     <visual>
+      <origin rpy="1.57079632679 0 0" xyz="0 -0.21 0"/>
       <geometry>
         <cylinder length="0.05" radius="0.01"/>
       </geometry>
@@ -148,14 +148,10 @@
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <visual>
-      <geometry>
-        <cylinder length="0.05" radius="0.01"/>
-      </geometry>
-    </visual>
     <collision>
+      <origin rpy="1.57079632679 0 0" xyz="0 -0.21 0"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.3" radius="0.025"/>
       </geometry>
     </collision>
     <inertial>
@@ -168,8 +164,8 @@
     <parent link="j2n6s300_link_1"/>
     <child link="j2n6s300_link_2"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
-    <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.0016 -0.11875"/>
+    <limit effort="2000" lower="-2.618" upper="2.613" velocity="1"/>
+    <origin rpy="-1.57079632679 3.1415 3.14159265359" xyz="0 0.0016 -0.11875"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
   <transmission name="j2n6s300_joint_2_trans">
@@ -184,21 +180,18 @@
   </transmission>
   <link name="j2n6s300_link_3">
     <visual>
+      <origin rpy="1.57079632679 0 0" xyz="0 0.12 0"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.17" radius="0.025"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <visual>
-      <geometry>
-        <cylinder length="0.05" radius="0.01"/>
-      </geometry>
-    </visual>
     <collision>
+      <origin rpy="1.57079632679 0 0" xyz="0 0.12 0"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.17" radius="0.025"/>
       </geometry>
     </collision>
     <inertial>
@@ -211,8 +204,8 @@
     <parent link="j2n6s300_link_2"/>
     <child link="j2n6s300_link_3"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
-    <origin rpy="0 3.14159265359 0" xyz="0 -0.410 0"/>
+    <limit effort="2000" lower="-2.618" upper="2.613" velocity="1"/>
+    <origin rpy="0 3.14159265359 3.1415" xyz="0 -0.410 0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
   <transmission name="j2n6s300_joint_3_trans">
@@ -227,21 +220,18 @@
   </transmission>
   <link name="j2n6s300_link_4">
     <visual>
+      <origin rpy="0 0 0" xyz="0 -0.01 -0.02"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.01" radius="0.025"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <visual>
-      <geometry>
-        <cylinder length="0.05" radius="0.01"/>
-      </geometry>
-    </visual>
     <collision>
+      <origin rpy="0 0 0" xyz="0 -0.01 -0.02"/>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.01" radius="0.025"/>
       </geometry>
     </collision>
     <inertial>
@@ -271,20 +261,15 @@
   <link name="j2n6s300_link_5">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.01" radius="0.025"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <visual>
-      <geometry>
-        <cylinder length="0.05" radius="0.01"/>
-      </geometry>
-    </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.01" radius="0.025"/>
       </geometry>
     </collision>
     <inertial>
@@ -314,20 +299,15 @@
   <link name="j2n6s300_link_6">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.01" radius="0.025"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
       </material>
     </visual>
-    <visual>
-      <geometry>
-        <cylinder length="0.05" radius="0.01"/>
-      </geometry>
-    </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.01"/>
+        <cylinder length="0.01" radius="0.025"/>
       </geometry>
     </collision>
     <inertial>
@@ -376,7 +356,7 @@
   <link name="j2n6s300_link_finger_1">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -384,13 +364,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.01"/>
       <origin xyz="0.022 0 0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+      <inertia ixx=".0026" ixy="0" ixz="0" iyy=".0026" iyz="0" izz=".0026"/>
     </inertial>
   </link>
   <joint name="j2n6s300_joint_finger_1" type="revolute">
@@ -413,7 +393,7 @@
   <link name="j2n6s300_link_finger_tip_1">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -421,13 +401,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.01"/>
       <origin xyz="0.022 0 0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+      <inertia ixx=".0026" ixy="0" ixz="0" iyy=".0026" iyz="0" izz=".0026"/>
     </inertial>
   </link>
   <joint name="j2n6s300_joint_finger_tip_1" type="fixed">
@@ -440,7 +420,7 @@
   <link name="j2n6s300_link_finger_2">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -448,13 +428,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.01"/>
       <origin xyz="0.022 0 0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+      <inertia ixx=".0026" ixy="0" ixz="0" iyy=".0026" iyz="0" izz=".0026"/>
     </inertial>
   </link>
   <joint name="j2n6s300_joint_finger_2" type="revolute">
@@ -477,7 +457,7 @@
   <link name="j2n6s300_link_finger_tip_2">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -485,13 +465,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.01"/>
       <origin xyz="0.022 0 0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+      <inertia ixx=".0026" ixy="0" ixz="0" iyy=".0026" iyz="0" izz=".0026"/>
     </inertial>
   </link>
   <joint name="j2n6s300_joint_finger_tip_2" type="fixed">
@@ -504,7 +484,7 @@
   <link name="j2n6s300_link_finger_3">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -512,13 +492,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.01"/>
       <origin xyz="0.022 0 0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+      <inertia ixx=".0026" ixy="0" ixz="0" iyy=".0026" iyz="0" izz=".0026"/>
     </inertial>
   </link>
   <joint name="j2n6s300_joint_finger_3" type="revolute">
@@ -541,7 +521,7 @@
   <link name="j2n6s300_link_finger_tip_3">
     <visual>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -549,13 +529,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.05" radius="0.005"/>
+        <cylinder length="0.01" radius="0.01"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.01"/>
       <origin xyz="0.022 0 0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+      <inertia ixx=".0026" ixy="0" ixz="0" iyy=".0026" iyz="0" izz=".0026"/>
     </inertial>
   </link>
   <joint name="j2n6s300_joint_finger_tip_3" type="fixed">
@@ -565,70 +545,4 @@
     <origin rpy="0 0 0" xyz="0.044 -0.003 0"/>
     <limit effort="2000" lower="0" upper="2" velocity="1"/>
   </joint>
- <transmission name="jaco_tran_1">
-    <robotNamespace>/jaco</robotNamespace>
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2n6s300_joint_1">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="jaco_motor_1">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="jaco_tran_2">
-    <robotNamespace>/jaco</robotNamespace>
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2n6s300_joint_2">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="jaco_motor_2">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="jaco_tran_3">
-    <robotNamespace>/jaco</robotNamespace>
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2n6s300_joint_3">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="jaco_motor_3">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="jaco_tran_4">
-    <robotNamespace>/jaco</robotNamespace>
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2n6s300_joint_4">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="jaco_motor_4">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="jaco_tran_5">
-    <robotNamespace>/jaco</robotNamespace>
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2n6s300_joint_5">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="jaco_motor_5">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="jaco_tran_6">
-    <robotNamespace>/jaco</robotNamespace>
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2n6s300_joint_6">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="jaco_motor_6">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
 </robot>

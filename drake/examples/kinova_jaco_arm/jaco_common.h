@@ -1,8 +1,26 @@
 #pragma once
+/// @file
+///
+/// This file assumes a 6-degree of freedom Kinova Jaco arm with a three
+/// finger gripper. Joints are numbered sequentially starting from the base
+/// with the following joint index descriptions:
+/// 0: shoulder roll
+/// 1: shoulder fore/aft
+/// 2: elbow fore/aft
+/// 3: forearm roll
+/// 4: wrist yaw
+/// 5: wrist roll
+/// 6: finger 1 bend/extend
+/// 7: finger 2 bend/extend
+/// 8: finger 3 bend/extend
+///
+/// Position units are in radians, velocity units are in radians per second
 
 #include <string>
 
 #include "drake/multibody/rigid_body_tree.h"
+
+#define NUM_JACO_ARM_DOFS 9 // degrees of freedom available for the jaco arm
 
 namespace drake {
 namespace examples {
@@ -21,7 +39,7 @@ void CreateTreedFromFixedModelAtPose(
     const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
     const Eigen::Vector3d& orientation = Eigen::Vector3d::Zero());
 
-/// Used to set the feedback gains for the simulated position controlled KUKA.
+/// Sets the feedback gains for the simulated position controlled Jaco arm.
 void SetPositionControlledJacoGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
 
