@@ -4,9 +4,9 @@
 #include <memory>
 #include <string>
 
-#include <lcm/lcm-cpp.hpp>
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/common/drake_copyable.h"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -22,32 +22,39 @@ namespace pick_and_place {
  */
 class WorldState {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorldState)
+
   /**
-   * Constructs an WorldState object that holds the states that represent a pick
-   * and place scenario.
+   * Constructs an WorldState object that holds the states that
+   * represent a pick and place scenario.  A RigidBodyTree will be
+   * constructed internally based on @p iiwa_model_path (the location
+   * of its base will be set from the pose of the first received LCM
+   * message describing the iiwa's status).  @p end_effector_name is
+   * the link name of the end effector in the model.
+   *
+   * No synchronization is attempted between the various states
+   * (iiwa/wsg/obj), the accessors just return the most recently
+   * received status.
    */
   WorldState(const std::string& iiwa_model_path,
-             const std::string& end_effector_name, lcm::LCM* lcm);
+             const std::string& end_effector_name);
 
-  virtual ~WorldState();
+  // TODO(sam.creasey) We should consider adding an alternate
+  // constructor which takes an existing RigidBodyTree (which would
+  // include the correct base location).  This would remove the
+  // possibly brittle requirement that the base have the pose
+  // specified correctly in the first LCM message.
 
-  /**
-   * Adds an LCM callback listening to @p channel to process iiwa status
-   * messages.
-   */
-  void SubscribeToIiwaStatus(const std::string& channel);
+  ~WorldState();
 
-  /**
-   * Adds an LCM callback listening to @p channel to process wsg gripper status
-   * messages.
-   */
-  void SubscribeToWsgStatus(const std::string& channel);
+  /// Update the stored iiwa status from @p iiwa_msg.
+  void HandleIiwaStatus(const bot_core::robot_state_t& iiwa_msg);
 
-  /**
-   * Adds an LCM callback listening to @p channel to process object status
-   * messages.
-   */
-  void SubscribeToObjectStatus(const std::string& channel);
+  /// Update the stored wsg status from @p wsg_msg.
+  void HandleWsgStatus(const lcmt_schunk_wsg_status& wsg_msg);
+
+  /// Update the stored object status from @p obj_msg.
+  void HandleObjectStatus(const bot_core::robot_state_t& obj_msg);
 
   double get_iiwa_time() const { return iiwa_time_; }
   double get_wsg_time() const { return wsg_time_; }
@@ -56,10 +63,10 @@ class WorldState {
   const Vector6<double>& get_object_velocity() const { return obj_vel_; }
   const Isometry3<double>& get_iiwa_base() const { return iiwa_base_; }
   const Isometry3<double>& get_iiwa_end_effector_pose() const {
-    return iiwa_ee_pose_;
+    return iiwa_end_effector_pose_;
   }
   const Vector6<double>& get_iiwa_end_effector_velocity() const {
-    return iiwa_ee_vel_;
+    return iiwa_end_effector_vel_;
   }
   const VectorX<double>& get_iiwa_q() const { return iiwa_q_; }
   const VectorX<double>& get_iiwa_v() const { return iiwa_v_; }
@@ -71,49 +78,32 @@ class WorldState {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  // Handles iiwa states from the LCM message.
-  void HandleIiwaStatus(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
-                        const bot_core::robot_state_t* iiwa_msg);
-
-  // Handles WSG states from the LCM message.
-  void HandleWsgStatus(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
-                       const lcmt_schunk_wsg_status* wsg_msg);
-
-  // Handles object states from the LCM message.
-  void HandleObjectStatus(const lcm::ReceiveBuffer* rbuf,
-                          const std::string& chan,
-                          const bot_core::robot_state_t* obj_msg);
-
   // We can't initialize the RigidBodyTree unless we know where its base is
   // located. Since this information comes from LCM and thus may be delayed,
   // it's easier for us to own a model internally.
   std::unique_ptr<RigidBodyTree<double>> iiwa_;
   const std::string iiwa_model_path_;
-  const std::string ee_name_;
+  const std::string end_effector_name_;
   const RigidBody<double>* end_effector_{nullptr};
 
   // Iiwa status.
-  double iiwa_time_;
+  double iiwa_time_{};
   Isometry3<double> iiwa_base_;
   VectorX<double> iiwa_q_;
   VectorX<double> iiwa_v_;
-  Isometry3<double> iiwa_ee_pose_;
-  Vector6<double> iiwa_ee_vel_;
+  Isometry3<double> iiwa_end_effector_pose_;
+  Vector6<double> iiwa_end_effector_vel_;
 
   // Gripper status.
-  double wsg_time_;
-  double wsg_q_;  // units [m]
-  double wsg_v_;  // units [m/s]
-  double wsg_force_;
+  double wsg_time_{};
+  double wsg_q_{};  // units [m]
+  double wsg_v_{};  // units [m/s]
+  double wsg_force_{};
 
   // Object status.
-  double obj_time_;
+  double obj_time_{};
   Isometry3<double> obj_pose_;
   Vector6<double> obj_vel_;
-
-  // LCM subscription management.
-  lcm::LCM* lcm_;
-  std::list<lcm::Subscription*> lcm_subscriptions_;
 };
 
 }  // namespace pick_and_place
