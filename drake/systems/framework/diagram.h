@@ -1205,11 +1205,15 @@ class Diagram : public System<T>,
       ExportOutput(id);
     }
 
-    this->set_forced_publish_events(AllocateForcedPublishEventCollection());
+    this->set_forced_publish_events(
+        AllocateForcedEventCollection<PublishEvent<T>>(
+            &System<T>::AllocateForcedPublishEventCollection));
     this->set_forced_discrete_update_events(
-        AllocateForcedDiscreteUpdateEventCollection());
+        AllocateForcedEventCollection<DiscreteUpdateEvent<T>>(
+            &System<T>::AllocateForcedDiscreteUpdateEventCollection));
     this->set_forced_unrestricted_update_events(
-        AllocateForcedUnrestrictedUpdateEventCollection());
+        AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
+            &System<T>::AllocateForcedUnrestrictedUpdateEventCollection));
   }
 
   // Takes ownership of the @p registered_systems from DiagramBuilder.
