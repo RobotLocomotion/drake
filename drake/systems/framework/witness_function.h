@@ -15,9 +15,9 @@ namespace systems {
 /// reinitialization (i.e., event handling).
 ///
 /// For the ensuing discussion, consider two times (`t₀` and `t₁ > t₀`) and
-/// states corresponding to those times (`x₀` and `x₁`). A witness function,
-/// `w(t, x)`, "triggers" only when it crosses zero at a time `t*` where
-/// t₀ < t* ≤ t₁`. Note the half-open interval. For a concrete example of a
+/// states corresponding to those times (`x(t₀)` and `x(t₁)`). A
+/// witness function, `w(t, x)`, "triggers" only when it crosses zero at a time
+/// `t*` where `t₀ < t* ≤ t₁`. Note the half-open interval. For an example of a
 /// witness function, consider the "signed distance" (i.e., Euclidean distance
 /// when bodies are disjoint and minimum translational distance when bodies
 /// intersect) between two rigid bodies; this witness function can be used to
@@ -26,25 +26,25 @@ namespace systems {
 ///
 /// Precision in the definition of the witness function is necessary, because we
 /// want the witness function to trigger only once if, for example,
-/// `w(t₀, x₀(t₀)) ≠ 0`, `w(t₁, x₁(t₁)) = 0`, and `w(t₂, x₂(t₂)) ≠ 0`, for some
+/// `w(t₀, x(t₀)) ≠ 0`, `w(t₁, x(t₁)) = 0`, and `w(t₂, x(t₂)) ≠ 0`, for some
 /// t₂ > t₁. In other words, if the witness function is evaluated over the
 /// intervals [t₀, t₁] and [t₁, t₂], meaning that the zero occurs precisely at
 /// an interval endpoint, the witness function should trigger once. Similarly,
-/// the witness function should trigger exactly once if `w(t₀, x₀(t₀)) ≠ 0`,
-/// `w(t*, x*(t*)) = 0`,
-/// and `w(t₁, x₁(t₁)) = 0`. We can define the trigger condition formally over
+/// the witness function should trigger exactly once if `w(t₀, x(t₀)) ≠ 0`,
+/// `w(t*, x(t*)) = 0`,
+/// and `w(t₁, x(t₁)) = 0`. We can define the trigger condition formally over
 /// interval `[t₀, t₁]` using the function:<pre>
-/// T(w, t₀, x₀(t₀), t₁) =  1   if w(t₀, x₀(t₀)) ≠ 0 and
-///                                w(t₀, x₀(t₀))⋅w(t₁, x₁(t₁)) ≤ 0
-///                         0   if w(t₀, x₀(t₀)) = 0 or
-///                                w(t₀, x₀(t₀))⋅w(t₁, x₁(t₁)) > 0
+/// T(w, t₀, x(t₀), t₁) =   1   if w(t₀, x(t₀)) ≠ 0 and
+///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) ≤ 0
+///                         0   if w(t₀, x(t₀)) = 0 or
+///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) > 0
 /// </pre>
 /// where `x(tₑ)` for some `tₑ ≥ t₀` is the solution to the ODE or DAE initial
-/// value problem `ẋ = f(t, x)` for `x(t₀) = x₀` at time `tₑ`. We wish for the
-/// witness function to trigger if the trigger function evaluates to one. The
-/// trigger function can be further modified, if desired, to incorporate the
-/// constraint that the witness function should trigger only when crossing from
-/// positive values to negative values, or vice versa.
+/// value problem `ẋ = f(t, x)` for initial condition `x(t₀) = x₀` at time `tₑ`.
+/// We wish for the witness function to trigger if the trigger function
+/// evaluates to one. The trigger function can be further modified, if desired,
+/// to incorporate the constraint that the witness function should trigger only
+/// when crossing from positive values to negative values, or vice versa.
 ///
 /// A good witness function should not cross zero repeatedly over a small
 /// interval of time or over small changes in state; when a witness function has
@@ -58,16 +58,19 @@ namespace systems {
 /// parameter that needs to be tuned. The disadvantage of this scheme is that it
 /// always requires the length of the interval to be reduced to the time
 /// tolerance *and that each function evaluation (which requires numerical
-/// integration) is extraordinarily expensive*. Assuming the (slow) bisection
-/// algorithm is used, the number of integrations necessary to cut the interval
-/// from a length of ℓ to a length of ε will be log₂(ℓ / ε). In other words,
-/// the scheme does not benefit from a fortuitous guess close to the root.
+/// integration) is extraordinarily expensive*. If, for example, the (slow)
+/// bisection algorithm were used to isolate the time interval, the number of
+/// integrations necessary to cut the interval from a length of ℓ to a length of
+/// ε will be log₂(ℓ / ε). In other words, the scheme does not benefit from a
+/// fortuitous guess close to the root. Bisection is just one of several
+/// possible algorithms for isolating the time interval, though it's a reliable
+/// choice and always converges linearly.
 template <class T>
 class WitnessFunction {
  public:
   virtual ~WitnessFunction() {}
 
-  enum class TriggerType {
+  enum class DirectionType {
     /// This witness function will never be triggered.
     kNone,
 
@@ -86,11 +89,11 @@ class WitnessFunction {
     kCrossesZero,
   };
 
-  /// Constructs the witness function with the given trigger type and action
+  /// Constructs the witness function with the given direction type and action
   /// type.
-  WitnessFunction(const TriggerType& ttype,
+  WitnessFunction(const DirectionType& ttype,
                   const typename DiscreteEvent<T>::ActionType& atype) :
-                  trigger_type_(ttype), action_type_(atype) {}
+                  dir_type_(ttype), action_type_(atype) {}
 
   /// Gets the name of this witness function (used primarily for logging and
   /// debugging).
@@ -106,8 +109,8 @@ class WitnessFunction {
   typename DiscreteEvent<T>::ActionType get_action_type() const {
       return action_type_; }
 
-  /// Gets the condition(s) under which this witness function triggers.
-  TriggerType get_trigger_type() const { return trigger_type_; }
+  /// Gets the direction(s) under which this witness function triggers.
+  DirectionType get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
   T Evaluate(const Context<T>& context) {
@@ -117,6 +120,9 @@ class WitnessFunction {
   /// Derived classes can override this function to specify the absolute time
   /// tolerance with which to isolate the first witness trigger. Default
   /// implementation returns 10 * machine epsilon.
+  /// @note Simulator will not attempt to isolate the witness function trigger
+  ///       time to an interval smaller than the integrator's working minimum
+  ///       step size (see IntegratorBase::get_working_minimum_step_size()).
   virtual T get_time_isolation_tolerance() const { return
       T(10 * std::numeric_limits<double>::epsilon()); }
 
@@ -124,19 +130,19 @@ class WitnessFunction {
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
   bool should_trigger(const T& w0, const T& wf) const {
-    TriggerType ttype = get_trigger_type();
+    DirectionType dtype = get_dir_type();
 
-    switch (ttype) {
-      case TriggerType::kNone:
+    switch (dtype) {
+      case DirectionType::kNone:
         return false;
 
-      case TriggerType::kPositiveThenNonPositive:
+      case DirectionType::kPositiveThenNonPositive:
         return (w0 > 0 && wf <= 0);
 
-      case TriggerType::kNegativeThenNonNegative:
+      case DirectionType::kNegativeThenNonNegative:
         return (w0 < 0 && wf >= 0);
 
-      case TriggerType::kCrossesZero:
+      case DirectionType::kCrossesZero:
         return ((w0 > 0 && wf <= 0) ||
                 (w0 < 0 && wf >= 0));
 
@@ -154,8 +160,8 @@ class WitnessFunction {
   std::string name_;
 
  private:
-  // Condition(s) under which this witness function triggers.
-  TriggerType trigger_type_;
+  // Direction(s) under which this witness function triggers.
+  DirectionType dir_type_;
 
   // Action (event type) to be taken when this witness function triggers.
   typename DiscreteEvent<T>::ActionType action_type_;

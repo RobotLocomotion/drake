@@ -21,8 +21,8 @@ template <class T>
 class ClockWitness : public systems::WitnessFunction<T> {
  public:
   explicit ClockWitness(const EmptySystem<T>* system,
-      const typename systems::WitnessFunction<T>::TriggerType& ttype) :
-      systems::WitnessFunction<T>(ttype,
+      const typename systems::WitnessFunction<T>::DirectionType& dir_type) :
+      systems::WitnessFunction<T>(dir_type,
           systems::DiscreteEvent<T>::kPublishAction),
     system_(*system) {
   }
@@ -42,9 +42,9 @@ class EmptySystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptySystem)
 
-  explicit EmptySystem(const typename systems::WitnessFunction<T>::TriggerType&
-                         ttype) {
-    witness_ = std::make_unique<ClockWitness<T>>(this, ttype);
+  explicit EmptySystem(
+      const typename systems::WitnessFunction<T>::DirectionType& dir_type) {
+    witness_ = std::make_unique<ClockWitness<T>>(this, dir_type);
   }
 
   void DoCalcOutput(const Context<T>& context,

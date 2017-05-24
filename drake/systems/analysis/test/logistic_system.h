@@ -23,7 +23,7 @@ class LogisticWitness : public systems::WitnessFunction<T> {
   ~LogisticWitness() override {}
   explicit LogisticWitness(const LogisticSystem<T>* system) :
     systems::WitnessFunction<T>(
-        systems::WitnessFunction<T>::TriggerType::kCrossesZero,
+        systems::WitnessFunction<T>::DirectionType::kCrossesZero,
         systems::DiscreteEvent<T>::kPublishAction),
     system_(*system) {
   }
