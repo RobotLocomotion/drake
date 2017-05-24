@@ -117,7 +117,7 @@ drake_cc_library(
     hdrs = ["test/monolane_test_utils.h"],
     deps = [
         "//drake/automotive/maliput/api",
-    ]
+    ],
 )
 
 drake_cc_binary(

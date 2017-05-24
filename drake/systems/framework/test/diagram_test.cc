@@ -892,8 +892,10 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   EXPECT_EQ(2.0, time);
   auto info = dynamic_cast<const DiagramCompositeEventCollection<double>*>(
       events.get());
-  // TODO(siyuan): don't have hard code event index, need to implement
-  // get_subevent_collection.
+  // TODO(siyuan): don't pick subsystem's event collection based on hard coded
+  // event index that is tied to the diagram topology, need to implement the
+  // analogous method to get_subsystem_context for
+  // get_subevent_collection(subsystem*).
   auto& subevent_collection = info->get_subevent_collection(2);
 
   EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
@@ -907,8 +909,10 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
 
   EXPECT_EQ(6.0, time);
   // Both zoh should have an update event.
-  // TODO(siyuan): don't have hard code event index, need to implement
-  // get_subevent_collection.
+  // TODO(siyuan): don't pick subsystem's event collection based on hard coded
+  // event index that is tied to the diagram topology, need to implement the
+  // analogous method to get_subsystem_context for
+  // get_subevent_collection(subsystem*).
   auto info = dynamic_cast<const DiagramCompositeEventCollection<double>*>(
       events.get());
   {
@@ -1371,7 +1375,6 @@ class PerStepActionTestSystem : public LeafSystem<double> {
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
-    std::cout << get_name() << " publishing " << events.size() << std::endl;
     publish_ctr_++;
   }
 
@@ -1460,6 +1463,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
 class MyEventTestSystem : public LeafSystem<double> {
  public:
+  // If @p > 0, declares a periodic publish event with @p. Otherwise, declares
+  // a per step publish event.
   MyEventTestSystem(const std::string& name, double p) {
     if (p > 0) {
       DeclarePublishPeriodSec(p);
@@ -1470,6 +1475,10 @@ class MyEventTestSystem : public LeafSystem<double> {
     set_name(name);
   }
 
+  int get_periodic_count() const { return periodic_count_; }
+
+  int get_per_step_count() const { return per_step_count_; }
+
  private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {}
@@ -1477,12 +1486,21 @@ class MyEventTestSystem : public LeafSystem<double> {
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
-    std::cout << get_name() << ": " << context.get_time() << ", trigger: ";
     for (const PublishEvent<double>* event : events) {
-      std::cout << static_cast<int>(event->get_trigger_type()) << " ";
+      if (event->get_trigger_type() ==
+          Event<double>::TriggerType::kPeriodic) {
+        periodic_count_++;
+      } else if (event->get_trigger_type() ==
+          Event<double>::TriggerType::kPerStep) {
+        per_step_count_++;
+      } else {
+        DRAKE_ABORT();
+      }
     }
-    std::cout << std::endl;
   }
+
+  mutable int periodic_count_{0};
+  mutable int per_step_count_{0};
 };
 
 GTEST_TEST(MyEventTest, MyEventTestLeaf) {
@@ -1493,24 +1511,35 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
   double time = dut.CalcNextUpdateTime(*context, events.get());
   context->set_time(time);
   dut.Publish(*context, events->get_publish_events());
+
+  EXPECT_EQ(dut.get_periodic_count(), 1);
+  EXPECT_EQ(dut.get_per_step_count(), 0);
 }
 
+// Builds a diagram with a sub diagram (has 3 MyEventTestSystem) and 2
+// MyEventTestSystem. sys4 is configured to have per step events, and all
+// the others should have periodic publish events. Tests
+// Diagram::CalcNextUpdateTime, Diagram::GetPerStepEvents, and
+// CompositeEventCollection::Merge. The result should be sys1, sys2, sys3, sys4
+// fired their proper callbacks.
 GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   std::unique_ptr<Diagram<double>> sub_diagram;
+  std::vector<const MyEventTestSystem*> sys(5);
+
   {
     DiagramBuilder<double> builder;
-
-    builder.AddSystem<MyEventTestSystem>("sys0", 0.2);
-    builder.AddSystem<MyEventTestSystem>("sys1", 0.1);
-    builder.AddSystem<MyEventTestSystem>("sys2", 0.1);
+    // sys0's scheduled time is after the rest, so it's should not fire.
+    sys[0] = builder.AddSystem<MyEventTestSystem>("sys0", 0.2);
+    sys[1] = builder.AddSystem<MyEventTestSystem>("sys1", 0.1);
+    sys[2] = builder.AddSystem<MyEventTestSystem>("sys2", 0.1);
 
     sub_diagram = builder.Build();
     sub_diagram->set_name("sub_diagram");
   }
   DiagramBuilder<double> builder;
   builder.AddSystem(std::move(sub_diagram));
-  builder.AddSystem<MyEventTestSystem>("sys3", 0.1);
-  builder.AddSystem<MyEventTestSystem>("sys4", 0.);
+  sys[3] = builder.AddSystem<MyEventTestSystem>("sys3", 0.1);
+  sys[4] = builder.AddSystem<MyEventTestSystem>("sys4", 0.);
 
   auto dut = builder.Build();
 
@@ -1528,6 +1557,21 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   context->set_time(time);
   dut->Publish(*context, events->get_publish_events());
+
+  EXPECT_EQ(sys[0]->get_periodic_count(), 0);
+  EXPECT_EQ(sys[0]->get_per_step_count(), 0);
+
+  EXPECT_EQ(sys[1]->get_periodic_count(), 1);
+  EXPECT_EQ(sys[1]->get_per_step_count(), 0);
+
+  EXPECT_EQ(sys[2]->get_periodic_count(), 1);
+  EXPECT_EQ(sys[2]->get_per_step_count(), 0);
+
+  EXPECT_EQ(sys[3]->get_periodic_count(), 1);
+  EXPECT_EQ(sys[3]->get_per_step_count(), 0);
+
+  EXPECT_EQ(sys[4]->get_periodic_count(), 0);
+  EXPECT_EQ(sys[4]->get_per_step_count(), 1);
 }
 
 }  // namespace

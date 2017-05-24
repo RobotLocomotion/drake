@@ -23,15 +23,9 @@ test --test_tag_filters=-gurobi,-mosek,-snopt
 # -- To use this config, the GUROBI_PATH environment variable must be the
 # -- linux64 directory in the Gurobi 6.0.5 release.
 #
-# -- Gurobi checks a license file, and may need to contact a license server to
-# -- check out a license. Therefore, tests that use Gurobi must have the tag
-# -- "local", because they are non-hermetic. For the moment, we also require
-# -- the tag "exclusive", to rate-limit license servers with a small number of
-# -- licenses.
-# -- TODO(david-german-tri): Find a better fix for the license server problem.
-#
-# -- To run tests that require Gurobi, also specify a custom set of
-# -- test_tag_filters that does not exclude the "gurobi" tag.
+# -- To run tests where Gurobi is used, ensure that you include
+# -- "gurobi_test_tags()" from //tools:gurobi.bzl. If Gurobi is optional, set
+# -- gurobi_required=False.
 build:gurobi --define=WITH_GUROBI=ON
 # -- By default, Gurobi looks for the license file in the homedir.
 test:gurobi --test_env=HOME
@@ -42,8 +36,9 @@ test:gurobi --test_env=GRB_LICENSE_FILE
 # -- To use this config, you must have a MOSEK license file installed to
 # -- $HOME/mosek/mosek.lic.
 #
-# -- To run tests that require MOSEK, also specify a set of test_tag_filters
-# -- that does not exclude the "mosek" tag.
+# -- To run tests where MOSEK is used, ensure that you include
+# -- "mosek_test_tags()" from //tools:mosek.bzl. If MOSEK is optional, set
+# -- mosek_required=False.
 build:mosek --define=WITH_MOSEK=ON
 # -- MOSEK looks for its license file at $HOME/mosek/mosek.lic
 test:mosek --test_env=HOME
@@ -123,12 +118,12 @@ test:kcov --test_tag_filters=-cpplint,-gurobi,-pycodestyle
 test:kcov --nocache_test_results
 
 ### ASan build. ###
-build:asan --action_env=ASAN_OPTIONS
 build:asan --copt -g
 build:asan --copt -fsanitize=address
 build:asan --copt -O1
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
+test:asan --run_under=//tools:asan
 test:asan --test_env=ASAN_OPTIONS
 test:asan --test_env=ASAN_SYMBOLIZER_PATH
 test:asan --test_lang_filters=-py
@@ -137,23 +132,24 @@ test:asan --test_lang_filters=-py
 test:asan --test_timeout=120,600,1800,7200
 
 ### LSan build. ###
-build:lsan --action_env=LSAN_OPTIONS
 build:lsan --copt -g
 build:lsan --copt -fsanitize=leak
 build:lsan --copt -O1
 build:lsan --copt -fno-omit-frame-pointer
 build:lsan --linkopt -fsanitize=leak
+test:lsan --run_under=//tools:lsan
 test:lsan --test_env=LSAN_OPTIONS
 test:lsan --test_env=LSAN_SYMBOLIZER_PATH
 test:lsan --test_lang_filters=-py
 
 ### MSan build. ###
-build:msan --action_env=MSAN_OPTIONS
 build:msan --copt -g
 build:msan --copt -fsanitize=memory
+build:msan --copt -fsanitize-memory-track-origins
 build:msan --copt -O1
 build:msan --copt -fno-omit-frame-pointer
 build:msan --linkopt -fsanitize=memory
+test:msan --run_under=//tools:msan
 test:msan --test_lang_filters=-py
 test:msan --test_env=MSAN_OPTIONS
 test:msan --test_env=MSAN_SYMBOLIZER_PATH
@@ -162,12 +158,12 @@ test:msan --test_env=MSAN_SYMBOLIZER_PATH
 test:msan --test_timeout=180,900,2700,10800
 
 ### TSan build. ###
-build:tsan --action_env=TSAN_OPTIONS
 build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
 build:tsan --linkopt -fsanitize=thread
+test:tsan --run_under=//tools:tsan
 test:tsan --test_env=TSAN_OPTIONS
 test:tsan --test_lang_filters=-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
@@ -175,12 +171,12 @@ test:tsan --test_lang_filters=-py
 test:tsan --test_timeout=300,1500,5400,18000
 
 ### UBSan build. ###
-build:ubsan --action_env=UBSAN_OPTIONS
 build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
+test:ubsan --run_under=//tools:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_lang_filters=-py
 

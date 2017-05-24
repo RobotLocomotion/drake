@@ -171,6 +171,9 @@ class BinaryExpressionCell : public ExpressionCell {
 /** Symbolic expression representing a variable. */
 class ExpressionVar : public ExpressionCell {
  public:
+  /** Constructs an expression from @p var.
+   * @pre @p var is neither a dummy nor a BOOLEAN variable.
+   */
   explicit ExpressionVar(const Variable& v);
   const Variable& get_variable() const { return var_; }
   Variables GetVariables() const override;

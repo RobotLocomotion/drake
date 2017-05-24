@@ -132,7 +132,6 @@ drake_cc_binary(
         ":iiwa_lcm",
         ":oracular_state_estimator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_diagram_factory",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",

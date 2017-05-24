@@ -3,9 +3,9 @@
 #include <cmath>
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 #include <vector>
 
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -283,25 +283,31 @@ class Group {
   /// Constructs a Group with @p id, populated by @p connections.
   Group(const std::string& id,
         const std::vector<const Connection*>& connections)
-      : id_(id), connections_(connections.begin(), connections.end()) {}
+      : id_(id) {
+    for (const Connection* connection : connections) {
+      Add(connection);
+    }
+  }
 
   /// Adds a Connection.
   void Add(const Connection* connection) {
-    auto result = connections_.insert(connection);
+    auto result = connection_set_.insert(connection);
     DRAKE_DEMAND(result.second);
+    connection_vector_.push_back(connection);
   }
 
   /// Returns the ID string.
   const std::string& id() const { return id_; }
 
   /// Returns the grouped Connections.
-  const std::set<const Connection*>& connections() const {
-    return connections_;
+  const std::vector<const Connection*>& connections() const {
+    return connection_vector_;
   }
 
  private:
   std::string id_;
-  std::set<const Connection*> connections_;
+  std::unordered_set<const Connection*> connection_set_;
+  std::vector<const Connection*> connection_vector_;
 };
 
 

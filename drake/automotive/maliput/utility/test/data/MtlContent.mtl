@@ -24,3 +24,11 @@ Ks 0.9 0.9 0.9
 Ns 10.0
 illum 2
 d 0.20
+
+newmtl branch_point_glow
+Ka 0.0 0.0 1.0
+Kd 0.0 0.0 1.0
+Ks 0.0 0.0 1.0
+Ns 10.0
+illum 2
+d 0.80

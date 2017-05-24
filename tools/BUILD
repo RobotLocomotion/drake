@@ -12,6 +12,36 @@ filegroup(
 )
 
 sh_binary(
+    name = "asan",
+    srcs = ["asan.sh"],
+    data = ["asan.supp"],
+)
+
+sh_binary(
+    name = "lsan",
+    srcs = ["lsan.sh"],
+    data = ["lsan.supp"],
+)
+
+sh_binary(
+    name = "msan",
+    srcs = ["msan.sh"],
+    data = ["msan.supp"],
+)
+
+sh_binary(
+    name = "tsan",
+    srcs = ["tsan.sh"],
+    data = ["tsan.supp"],
+)
+
+sh_binary(
+    name = "ubsan",
+    srcs = ["ubsan.sh"],
+    data = ["ubsan.supp"],
+)
+
+sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
     data = ["valgrind.supp"],
@@ -48,6 +78,11 @@ exports_files(
 )
 
 exports_files(
+    ["eigen-create-cps.py"],
+    visibility = ["@eigen//:__pkg__"],
+)
+
+exports_files(
     ["lcm-create-cps.py"],
     visibility = ["@lcm//:__pkg__"],
 )
@@ -68,7 +103,7 @@ genrule(
 
 install_files(
     name = "install",
-    dest = "lib/drake/cmake",
+    dest = "lib/cmake/drake",
     files = ["drake-config.cmake"],
 )
 

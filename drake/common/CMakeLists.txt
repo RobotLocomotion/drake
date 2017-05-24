@@ -14,9 +14,8 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 set(sources
   call_matlab.cc ${PROTO_SRCS}
   double_overloads.cc
-  drake_assert.cc
+  drake_assert_and_throw.cc
   ${drake_path_cc}
-  drake_throw.cc
   functional_form.cc
   monomial.cc
   nice_type_name.cc

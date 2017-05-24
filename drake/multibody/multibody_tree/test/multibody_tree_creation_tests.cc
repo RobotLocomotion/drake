@@ -367,6 +367,54 @@ TEST_F(TreeTopologyTests, Finalize) {
   }
 }
 
+// This unit tests verifies the correct number of generalized positions and
+// velocities as well as the start indexes into the state vector.
+TEST_F(TreeTopologyTests, SizesAndIndexing) {
+  model_->Finalize();
+  EXPECT_EQ(model_->get_num_bodies(), 8);
+  EXPECT_EQ(model_->get_num_mobilizers(), 7);
+
+  const MultibodyTreeTopology& topology = model_->get_topology();
+  EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
+  EXPECT_EQ(topology.get_num_levels(), 4);
+
+  // Verifies the total number of generalized positions and velocities.
+  EXPECT_EQ(topology.get_num_positions(), 7);
+  EXPECT_EQ(topology.get_num_velocities(), 7);
+  EXPECT_EQ(topology.get_num_states(), 14);
+
+  // Tip-to-Base recursion.
+  // In this case all mobilizers are RevoluteMobilizer objects with one
+  // generalized position and one generalized velocity per mobilizer.
+  int state_vector_index = 0;
+  for (BodyNodeIndex node_index(1); /* Skips the world node. */
+       node_index < topology.get_num_body_nodes(); ++node_index) {
+    const BodyNodeTopology& node = topology.get_body_node(node_index);
+    const BodyIndex body_index = node.body;
+    const MobilizerIndex mobilizer_index = node.mobilizer;
+
+    const MobilizerTopology& mobilizer_topology =
+        mobilizers_[mobilizer_index]->get_topology();
+
+    EXPECT_EQ(body_index, bodies_[body_index]->get_index());
+    EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->get_index());
+
+    // Verify positions index.
+    EXPECT_EQ(state_vector_index, node.mobilizer_positions_start);
+    EXPECT_EQ(state_vector_index, mobilizer_topology.positions_start);
+
+    // For this case we know there is one generalized position per mobilizer.
+    state_vector_index += 1;
+
+    // Verify velocities index.
+    EXPECT_EQ(state_vector_index, node.mobilizer_velocities_start);
+    EXPECT_EQ(state_vector_index, mobilizer_topology.velocities_start);
+
+    // For this case we know there is one generalized velocities per mobilizer.
+    state_vector_index += 1;
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

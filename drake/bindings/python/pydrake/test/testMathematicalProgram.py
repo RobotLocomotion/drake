@@ -88,7 +88,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(prog.linear_costs())
         for (i, binding) in enumerate(prog.linear_costs()):
             cost = binding.constraint()
-            self.assertTrue(np.allclose(cost.A(), np.ones((1, 2))))
+            self.assertTrue(np.allclose(cost.a(), np.ones((1, 2))))
 
         self.assertTrue(prog.quadratic_costs())
         for (i, binding) in enumerate(prog.quadratic_costs()):

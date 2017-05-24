@@ -260,10 +260,10 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder> bp_map(
       (EndpointFuzzyOrder(linear_tolerance_)));
   std::map<const Connection*, Lane*> lane_map;
-  std::set<const Connection*> remaining_connections;
+  std::map<const Connection*, bool> connection_was_built;
 
   for (const std::unique_ptr<Connection>& connection : connections_) {
-    remaining_connections.insert(connection.get());
+    connection_was_built.emplace(connection.get(), false);
   }
 
   for (const std::unique_ptr<Group>& group : groups_) {
@@ -272,21 +272,24 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
     drake::log()->debug("junction: {}", junction->id().id);
     for (auto& connection : group->connections()) {
       drake::log()->debug("connection: {}", connection->id());
-      // Remove connection from remaining_connections, and ensure that it
-      // was indeed in there.
-      DRAKE_DEMAND(remaining_connections.erase(connection) == 1);
+      DRAKE_DEMAND(!connection_was_built[connection]);
       lane_map[connection] = BuildConnection(
           connection, junction, road_geometry.get(), &bp_map);
+      connection_was_built[connection] = true;
     }
   }
 
-  for (const Connection* const connection : remaining_connections) {
+  for (const std::unique_ptr<Connection>& connection : connections_) {
+    if (connection_was_built[connection.get()]) {
+      continue;
+    }
     Junction* junction =
         road_geometry->NewJunction({std::string("j:") + connection->id()});
     drake::log()->debug("junction: {}", junction->id().id);
     drake::log()->debug("connection: {}", connection->id());
-    lane_map[connection] =
-        BuildConnection(connection, junction, road_geometry.get(), &bp_map);
+    lane_map[connection.get()] =
+        BuildConnection(connection.get(),
+                        junction, road_geometry.get(), &bp_map);
   }
 
   for (const DefaultBranch& def : default_branches_) {

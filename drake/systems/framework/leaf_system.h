@@ -47,9 +47,7 @@ class LeafSystem : public System<T> {
   /// @sa System::AllocateCompositeEventCollection().
   std::unique_ptr<CompositeEventCollection<T>>
       AllocateCompositeEventCollection() const final {
-    LeafCompositeEventCollection<T>* ptr =
-        new LeafCompositeEventCollection<T>();
-    return std::unique_ptr<CompositeEventCollection<T>>(ptr);
+    return std::make_unique<LeafCompositeEventCollection<T>>();
   }
 
   // =========================================================================
@@ -239,11 +237,13 @@ class LeafSystem : public System<T> {
  protected:
   LeafSystem() {
     this->set_forced_publish_events(
-        this->AllocateForcedPublishEventCollection());
+        LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
     this->set_forced_discrete_update_events(
-        this->AllocateForcedDiscreteUpdateEventCollection());
+        LeafEventCollection<
+            DiscreteUpdateEvent<T>>::MakeForcedEventCollection());
     this->set_forced_unrestricted_update_events(
-        this->AllocateForcedUnrestrictedUpdateEventCollection());
+        LeafEventCollection<
+            UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
   // =========================================================================
@@ -518,9 +518,12 @@ class LeafSystem : public System<T> {
 
   /// Declares that this System has a simple, fixed-period event specified by
   /// @p event. A deep copy of @p event will be made and maintained by `this`.
-  /// @p's trigger must be set to Event::TriggerType::kPeriodic.
   /// The first tick will occur at t = @p period_sec, and it will recur at every
-  /// @p period_sec thereafter.
+  /// @p period_sec thereafter. @p event's trigger type must be
+  /// Event::TriggerType::kPeriodic or this method aborts. Note that @p event's
+  /// attribute field is NOT preserved during the deep copy. Instead, it will
+  /// contain a Event<T>::PeriodicAttribute constructed from the specified
+  /// @p period_sec and @p offset_set.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
   /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
@@ -539,8 +542,9 @@ class LeafSystem : public System<T> {
 
   /// Declares a periodic discrete update event with period = @p period_sec and
   /// zero offset. The event does not have a custom callback function, and its
-  /// trigger will be set to type Event::TriggerType::kPeriodic but does not
-  /// contain any "abstract" data.
+  /// trigger will be set to type Event::TriggerType::kPeriodic and its
+  /// attribute will be an Event<T>::PeriodicAttribute of 0 offset and
+  /// @p period_sec.
   void DeclareDiscreteUpdatePeriodSec(double period_sec) {
     DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
         period_sec, 0.0,
@@ -550,7 +554,8 @@ class LeafSystem : public System<T> {
   /// Declares a periodic discrete update event with period = @p period_sec and
   /// offset = @p offset_sec. The event does not have a custom callback
   /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// The event does not contain any "abstract" data.
+  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
+  /// @p period_sec.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
         period_sec, offset_sec,
@@ -560,7 +565,8 @@ class LeafSystem : public System<T> {
   /// Declares a periodic unrestricted update event with period = @p period_sec
   /// and offset = @p offset_sec. The event does not have a custom callback
   /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// The event does not contain any "abstract" data.
+  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
+  /// @p period_sec.
   void DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
     DeclarePeriodicEvent<UnrestrictedUpdateEvent<T>>(
         period_sec, offset_sec,
@@ -569,8 +575,9 @@ class LeafSystem : public System<T> {
 
   /// Declares a periodic publish event with period = @p period_sec
   /// and zero offset. The event does not have a custom callback function, and
-  /// its trigger will be set to Event::TriggerType::kPeriodic. The event does
-  /// not contain any "abstract" data.
+  /// its trigger will be set to Event::TriggerType::kPeriodic.
+  /// Its attribute will be an Event<T>::PeriodicAttribute of 0 offset and
+  /// @p period_sec.
   void DeclarePublishPeriodSec(double period_sec) {
     DeclarePeriodicEvent<PublishEvent<T>>(
         period_sec, 0, PublishEvent<T>(Event<T>::TriggerType::kPeriodic));
@@ -973,6 +980,23 @@ class LeafSystem : public System<T> {
     } else {
       return nullptr;
     }
+  }
+
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+  AllocateForcedPublishEventCollection() const override {
+    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
+  AllocateForcedDiscreteUpdateEventCollection() const override {
+    return LeafEventCollection<
+        DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
+  AllocateForcedUnrestrictedUpdateEventCollection() const override {
+    return LeafEventCollection<
+        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   }
 
   // Periodic Update or Publish events registered on this system.

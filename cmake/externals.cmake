@@ -467,6 +467,9 @@ function(drake_add_external PROJECT)
       # All supported externals are requested
     else()
       # Project is NOT enabled; skip it
+      message(STATUS
+        "Skipping ${PROJECT} - Please see drake_optional_external (cmake/options.cmake) for "
+        "how to enable it.")
       return()
     endif()
   else()

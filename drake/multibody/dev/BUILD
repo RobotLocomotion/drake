@@ -7,6 +7,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:gurobi.bzl", "gurobi_test_tags")
 
 drake_cc_library(
     name = "global_inverse_kinematics_test_util",
@@ -27,46 +28,43 @@ drake_cc_library(
     ],
 )
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#drake_cc_googletest(
-#    name = "global_inverse_kinematics_test",
-#    size = "medium",
-#    srcs = ["test/global_inverse_kinematics_test.cc"],
-#    data = [
-#        "//drake/manipulation/models/iiwa_description:models",
-#    ],
-#    tags = ["gurobi"],
-#    deps = [
-#        ":global_inverse_kinematics_test_util",
-#    ],
-#)
+drake_cc_googletest(
+    name = "global_inverse_kinematics_test",
+    size = "medium",
+    srcs = ["test/global_inverse_kinematics_test.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#drake_cc_googletest(
-#    name = "global_inverse_kinematics_reachable_test",
-#    size = "medium",
-#    srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
-#    data = [
-#        "//drake/manipulation/models/iiwa_description:models",
-#    ],
-#    tags = ["gurobi"],
-#    deps = [
-#        ":global_inverse_kinematics_test_util",
-#    ],
-#)
+drake_cc_googletest(
+    name = "global_inverse_kinematics_reachable_test",
+    size = "medium",
+    srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#drake_cc_googletest(
-#    name = "global_inverse_kinematics_collision_avoidance_test",
-#    size = "medium",
-#    srcs = ["test/global_inverse_kinematics_collision_avoidance_test.cc"],
-#    data = [
-#        "//drake/manipulation/models/iiwa_description:models",
-#    ],
-#    tags = ["gurobi"],
-#    deps = [
-#        ":global_inverse_kinematics_test_util",
-#    ],
-#)
+drake_cc_googletest(
+    name = "global_inverse_kinematics_collision_avoidance_test",
+    size = "medium",
+    srcs = ["test/global_inverse_kinematics_collision_avoidance_test.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
 
 cpplint()

@@ -230,7 +230,7 @@ class System {
   /// trigger type is kForced, with no additional data, attribute or custom
   /// callback.
   /// For a Diagram, this is equivalent to forcing a publish for all its
-  /// constituent sub systems. The Simulator can be configured to call this
+  /// constituent subsystems. The Simulator can be configured to call this
   /// in Simulator::Initialize() and at the start of each continuous integration
   /// step. See the Simulator API for more details.
   void Publish(const Context<T>& context) const {
@@ -463,7 +463,7 @@ class System {
   /// @p discrete_state and a single publish event whose trigger type is
   /// kForced, with no additional data, attribute or custom callback.
   /// For a Diagram, this is equivalent to forcing a discrete update event for
-  /// all its constituent sub systems.
+  /// all its constituent subsystems.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
                                    DiscreteValues<T>* discrete_state) const {
     CalcDiscreteVariableUpdates(
@@ -507,7 +507,7 @@ class System {
   /// and a single publish event whose trigger type is kForced, with no
   /// additional data, attribute or custom callback.
   /// For a Diagram, this is equivalent to forcing an unrestricted update
-  /// event for all its constituent sub systems.
+  /// event for all its constituent subsystems.
   ///
   /// @sa CalcUnrestrictedUpdate(const Context<T>&, const
   /// EventCollection<UnrestrictedUpdateEvent<T>>*, State<T>* state)
@@ -1075,10 +1075,10 @@ class System {
   /// similarly for a LeafSystem.
   ///
   /// For a Diagram (or user implemented equivalent classes), these functions
-  /// must iterate through all sub systems, extract their corresponding
-  /// sub context and sub event collections from @p context and @p events,
-  /// and pass those to the sub systems' public non-virtual event handlers if
-  /// the sub event collection is nonempty (e.g. System::Publish() for publish
+  /// must iterate through all subsystems, extract their corresponding
+  /// subcontext and subevent collections from @p context and @p events,
+  /// and pass those to the subsystems' public non-virtual event handlers if
+  /// the subevent collection is nonempty (e.g. System::Publish() for publish
   /// events).
   ///
   /// All of these functions are only called from their corresponding public

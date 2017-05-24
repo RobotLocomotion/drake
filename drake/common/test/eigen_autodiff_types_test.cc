@@ -1,4 +1,5 @@
 #include "drake/common/eigen_autodiff_types.h"
+
 #include <gtest/gtest.h>
 
 namespace drake {

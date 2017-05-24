@@ -27,9 +27,7 @@ if(BUILD_TESTING)
   drake_add_python_test(pydrake.test.testForwardDiff)
   drake_add_python_test(pydrake.test.testSymbolic)
 
-  # Temporarily disabled because we have no Gurobi license in CI. #5862
-  # if(gurobi_FOUND)
-  if (FALSE)
+  if(gurobi_FOUND)
     drake_add_python_test(pydrake.test.testMathematicalProgram)
     drake_add_python_test(pydrake.test.testGurobiSolver)
   endif()

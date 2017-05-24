@@ -1,0 +1,12 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_trajectory_car_state_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double position;  // The along-curve position of the vehicle.
+  double speed;  // The along-curve speed of the vehicle.
+}

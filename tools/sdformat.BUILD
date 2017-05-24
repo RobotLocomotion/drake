@@ -59,23 +59,23 @@ cc_library(
     srcs = [
         "include/sdf/Converter.hh",
         "include/sdf/ExceptionPrivate.hh",
+        "include/sdf/SDFExtension.hh",
+        "include/sdf/SDFImplPrivate.hh",
         "include/sdf/parser_private.hh",
         "include/sdf/parser_urdf.hh",
-        "include/sdf/SDFExtension.hh",
-        "include/sdf/sdf_config.h", # from cmake_configure_file above
-        "include/sdf/sdf.hh",       # from genrule above
-        "include/sdf/SDFImplPrivate.hh",
+        "include/sdf/sdf.hh",  # from genrule above
+        "include/sdf/sdf_config.h",  # from cmake_configure_file above
         "src/Console.cc",
         "src/Converter.cc",
         "src/Element.cc",
         "src/Exception.cc",
         "src/Filesystem.cc",
-        "src/parser.cc",
-        "src/parser_urdf.cc",
         "src/Param.cc",
         "src/SDF.cc",
         "src/SDFExtension.cc",
         "src/Types.cc",
+        "src/parser.cc",
+        "src/parser_urdf.cc",
         "src/urdf/urdf_exception/exception.h",
         "src/urdf/urdf_model/color.h",
         "src/urdf/urdf_model/joint.h",
@@ -95,30 +95,30 @@ cc_library(
         "src/urdf/urdf_parser/pose.cpp",
         "src/urdf/urdf_parser/twist.cpp",
         "src/urdf/urdf_parser/urdf_model_state.cpp",
+        "src/urdf/urdf_parser/urdf_parser.h",
         "src/urdf/urdf_parser/urdf_sensor.cpp",
         "src/urdf/urdf_parser/world.cpp",
-        "src/urdf/urdf_parser/urdf_parser.h",
         "src/urdf/urdf_sensor/sensor.h",
         "src/urdf/urdf_sensor/types.h",
         "src/urdf/urdf_world/types.h",
         "src/urdf/urdf_world/world.h",
     ],
     hdrs = public_headers,
-    includes = [
-        "include",
-    ],
-    visibility = ["//visibility:public"],
-    linkopts = [
-        "-lboost_system",
-        "-ltinyxml"
-    ],
     # TODO: We are currently using the vendored version of urdfdom embedded
     # in sdformat, so we need this include path to find it.  We can get
     # rid of this by either building the vendored version as a separate
     # cc_library rule, or by using a true external version of URDF.
     copts = ["-I external/sdformat/src/urdf"],
+    data = glob(["sdf/1.6/*.sdf"]),
+    includes = [
+        "include",
+    ],
+    linkopts = [
+        "-lboost_system",
+        "-ltinyxml",
+    ],
+    visibility = ["//visibility:public"],
     deps = [
         "@ignition_math",
     ],
-    data = glob(['sdf/1.6/*.sdf']),
 )

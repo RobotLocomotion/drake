@@ -275,8 +275,8 @@ drake_cc_library(
     visibility = [":__subpackages__"],
     deps = [
         ":value",
-        ":vector_value",
         ":vector",
+        ":vector_value",
         "//drake/common",
     ],
 )

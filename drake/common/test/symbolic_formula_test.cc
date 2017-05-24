@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
@@ -42,9 +43,10 @@ using test::FormulaEqual;
 using test::FormulaLess;
 using test::FormulaNotEqual;
 using test::FormulaNotLess;
+using test::VarEqual;
 
 // Checks if a given 'formulas' is ordered by Formula::Less.
-static void CheckOrdering(const vector<Formula>& formulas) {
+void CheckOrdering(const vector<Formula>& formulas) {
   for (size_t i{0}; i < formulas.size(); ++i) {
     for (size_t j{0}; j < formulas.size(); ++j) {
       if (i < j) {
@@ -83,20 +85,24 @@ static void CheckOrdering(const vector<Formula>& formulas) {
 // Provides common variables that are used by the following tests.
 class SymbolicFormulaTest : public ::testing::Test {
  protected:
-  const Variable var_x_{"x"};
-  const Variable var_y_{"y"};
-  const Variable var_z_{"z"};
+  const Variable var_x_{"x", Variable::Type::CONTINUOUS};
+  const Variable var_y_{"y", Variable::Type::CONTINUOUS};
+  const Variable var_z_{"z", Variable::Type::CONTINUOUS};
+  const Variable var_b1_{"x", Variable::Type::BOOLEAN};
+  const Variable var_b2_{"y", Variable::Type::BOOLEAN};
+
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
-  const Formula tt_{Formula::True()};
-  const Formula ff_{Formula::False()};
-
   const Expression e1_{x_ + y_};
   const Expression e1_prime_{x_ + y_};
   const Expression e2_{x_ - y_};
   const Expression e3_{x_ + z_};
 
+  const Formula b1_{var_b1_};
+  const Formula b2_{var_b2_};
+  const Formula tt_{Formula::True()};
+  const Formula ff_{Formula::False()};
   const Formula f1_{x_ + y_ > 0};
   const Formula f2_{x_ * y_ < 5};
   const Formula f3_{x_ / y_ < 5};
@@ -149,6 +155,8 @@ TEST_F(SymbolicFormulaTest, LessKind) {
   CheckOrdering({
         Formula::False(),
         Formula::True(),
+        b1_,
+        b2_,
         x_ == y_,
         x_ != y_,
         x_> y_,
@@ -254,6 +262,14 @@ TEST_F(SymbolicFormulaTest, False) {
   EXPECT_EQ(Formula::False().GetFreeVariables().size(), 0u);
   EXPECT_EQ(Formula::False().to_string(), "False");
   EXPECT_TRUE(is_false(Formula::False()));
+}
+
+TEST_F(SymbolicFormulaTest, Variable) {
+  // Tests is_variable and get_variable functions.
+  EXPECT_TRUE(is_variable(b1_));
+  EXPECT_TRUE(is_variable(b2_));
+  EXPECT_PRED2(VarEqual, get_variable(b1_), var_b1_);
+  EXPECT_PRED2(VarEqual, get_variable(b2_), var_b2_);
 }
 
 TEST_F(SymbolicFormulaTest, IsNaN) {
@@ -577,6 +593,54 @@ TEST_F(SymbolicFormulaTest, And3) {
   EXPECT_PRED2(FormulaEqual, f1_ && f2_ && f1_, f1_ && f2_);
 }
 
+TEST_F(SymbolicFormulaTest, And4) {
+  // Simplification: f && f => f.
+  for (const Formula& f :
+       {b1_, b2_, tt_, ff_, f1_, f2_, f3_, f4_, f_eq_, f_neq_, f_lt_, f_lte_,
+        f_gt_, f_gte_, f_and_, f_or_, not_f_or_, f_forall_}) {
+    EXPECT_PRED2(FormulaEqual, f && f, f);
+  }
+}
+
+TEST_F(SymbolicFormulaTest, And5) {
+  // Flatten and removing duplicates. This is the example mentioned in
+  // symbolic_formula.h file:
+  //     (f1 && f2) && f1 => f1 && f2
+  //     f1 && (f2 && f1) => f1 && f2
+  EXPECT_PRED2(FormulaEqual, (f1_ && f2_) && f1_, f1_ && f2_);
+  EXPECT_PRED2(FormulaEqual, f1_ && (f2_ && f1_), f1_ && f2_);
+  EXPECT_PRED2(FormulaEqual, (f1_ && f2_) && f1_, f1_ && (f2_ && f1_));
+}
+
+TEST_F(SymbolicFormulaTest, AndWithBooleanVariableOperator) {
+  // Checks if operator&& works Boolean variables as expected.
+  const Formula f1{var_b1_ && var_b2_};
+  ASSERT_TRUE(is_conjunction(f1));
+  EXPECT_EQ(get_operands(f1).count(b1_), 1);
+  EXPECT_EQ(get_operands(f1).count(b2_), 1);
+
+  const Formula f2{var_b1_ && (y_ > 0)};
+  ASSERT_TRUE(is_conjunction(f2));
+  EXPECT_EQ(get_operands(f2).count(b1_), 1);
+
+  const Formula f3{(x_ > 0) && var_b2_};
+  ASSERT_TRUE(is_conjunction(f3));
+  EXPECT_EQ(get_operands(f3).count(b2_), 1);
+}
+
+TEST_F(SymbolicFormulaTest, AndWithBooleanVariableEvaluate) {
+  // Checks the evaluations of conjunctive formulas with Boolean variables.
+  const Formula f{b1_ && b2_};
+  const Environment env1{{var_b1_, true}, {var_b2_, true}};
+  const Environment env2{{var_b1_, true}, {var_b2_, false}};
+  const Environment env3{{var_b1_, false}, {var_b2_, true}};
+  const Environment env4{{var_b1_, false}, {var_b2_, false}};
+  EXPECT_TRUE(f.Evaluate(env1));
+  EXPECT_FALSE(f.Evaluate(env2));
+  EXPECT_FALSE(f.Evaluate(env3));
+  EXPECT_FALSE(f.Evaluate(env4));
+}
+
 TEST_F(SymbolicFormulaTest, Or1) {
   EXPECT_PRED2(FormulaEqual, tt_, tt_ || tt_);
   EXPECT_PRED2(FormulaEqual, tt_, ff_ || tt_);
@@ -611,6 +675,54 @@ TEST_F(SymbolicFormulaTest, Or3) {
   EXPECT_PRED2(FormulaEqual, f1_ || f2_ || f1_, f1_ || f2_);
 }
 
+TEST_F(SymbolicFormulaTest, Or4) {
+  // Simplification: f || f => f.
+  for (const Formula& f :
+       {b1_, b2_, tt_, ff_, f1_, f2_, f3_, f4_, f_eq_, f_neq_, f_lt_, f_lte_,
+        f_gt_, f_gte_, f_and_, f_or_, not_f_or_, f_forall_}) {
+    EXPECT_PRED2(FormulaEqual, f || f, f);
+  }
+}
+
+TEST_F(SymbolicFormulaTest, Or5) {
+  // Flatten and removing duplicates. This is a disjunctive version of the
+  // example mentioned in symbolic_formula.h file:
+  //     (f1 || f2) || f1 => f1 || f2
+  //     f1 || (f2 || f1) => f1 || f2
+  EXPECT_PRED2(FormulaEqual, (f1_ || f2_) || f1_, f1_ || f2_);
+  EXPECT_PRED2(FormulaEqual, f1_ || (f2_ || f1_), f1_ || f2_);
+  EXPECT_PRED2(FormulaEqual, (f1_ || f2_) || f1_, f1_ || (f2_ || f1_));
+}
+
+TEST_F(SymbolicFormulaTest, OrWithBooleanVariableOperator) {
+  // Checks if operator|| works with Boolean variables as expected.
+  const Formula f1{var_b1_ || var_b2_};
+  ASSERT_TRUE(is_disjunction(f1));
+  EXPECT_EQ(get_operands(f1).count(b1_), 1);
+  EXPECT_EQ(get_operands(f1).count(b2_), 1);
+
+  const Formula f2{var_b1_ || (y_ > 0)};
+  ASSERT_TRUE(is_disjunction(f2));
+  EXPECT_EQ(get_operands(f2).count(b1_), 1);
+
+  const Formula f3{(x_ > 0) || var_b2_};
+  ASSERT_TRUE(is_disjunction(f3));
+  EXPECT_EQ(get_operands(f3).count(b2_), 1);
+}
+
+TEST_F(SymbolicFormulaTest, OrWithBooleanVariableEvaluate) {
+  // Checks the evaluations of disjunctive formulas with Boolean variables.
+  const Formula f{b1_ || b2_};
+  const Environment env1{{var_b1_, true}, {var_b2_, true}};
+  const Environment env2{{var_b1_, true}, {var_b2_, false}};
+  const Environment env3{{var_b1_, false}, {var_b2_, true}};
+  const Environment env4{{var_b1_, false}, {var_b2_, false}};
+  EXPECT_TRUE(f.Evaluate(env1));
+  EXPECT_TRUE(f.Evaluate(env2));
+  EXPECT_TRUE(f.Evaluate(env3));
+  EXPECT_FALSE(f.Evaluate(env4));
+}
+
 TEST_F(SymbolicFormulaTest, Not1) {
   EXPECT_PRED2(FormulaEqual, ff_, !tt_);
   EXPECT_PRED2(FormulaEqual, tt_, !ff_);
@@ -628,6 +740,23 @@ TEST_F(SymbolicFormulaTest, Not2) {
 
   EXPECT_EQ((!(x_ == 5)).to_string(), "!((x = 5))");
   EXPECT_TRUE(is_negation(!(x_ == 5)));
+}
+
+TEST_F(SymbolicFormulaTest, NotWithBooleanVariableOperator) {
+  // Checks if operator! works with Boolean variables as expected.
+  const Formula f{!var_b1_};
+  EXPECT_TRUE(is_negation(f));
+  ASSERT_TRUE(is_variable(get_operand(f)));
+  EXPECT_PRED2(VarEqual, get_variable(get_operand(f)), var_b1_);
+}
+
+TEST_F(SymbolicFormulaTest, NotWithBooleanVariableEvaluate) {
+  // Checks the evaluations of negation formulas with a Boolean variable.
+  const Formula f{!b1_};
+  const Environment env1{{var_b1_, true}};
+  const Environment env2{{var_b1_, false}};
+  EXPECT_FALSE(f.Evaluate(env1));
+  EXPECT_TRUE(f.Evaluate(env2));
 }
 
 TEST_F(SymbolicFormulaTest, Forall1) {

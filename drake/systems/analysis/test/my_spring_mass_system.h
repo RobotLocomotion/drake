@@ -40,8 +40,8 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
  private:
   // Publish t q u to standard output.
-  void DoPublish(const Context<T>& context,
-                 const std::vector<const systems::PublishEvent<T>*>& events)
+  void DoPublish(const Context<T>&,
+                 const std::vector<const systems::PublishEvent<T>*>&)
       const override {
     ++publish_count_;
   }
@@ -49,9 +49,9 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   // The discrete equation update here is for the special case of zero
   // discrete variables- in other words, this is just a counter.
   void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
-      DiscreteValues<T>* discrete_state) const override {
+      const Context<T>&,
+      const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
+      DiscreteValues<T>*) const override {
     ++update_count_;
   }
 

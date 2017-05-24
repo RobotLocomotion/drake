@@ -34,6 +34,10 @@ GTEST_TEST(Curve2Test, BasicTest) {
   const std::vector<Point2d> segment_waypoints{start_point, end_point};
   const Curve2d segment{segment_waypoints};
   EXPECT_DOUBLE_EQ(segment.path_length(), M_SQRT2);
+  auto waypoints = segment.waypoints();
+  EXPECT_GE(waypoints.size(), 2);
+  EXPECT_EQ(waypoints[0], start_point);
+  EXPECT_EQ(waypoints[1], end_point);
 
   auto before_start = segment.GetPosition(-1.0);
   auto at_start = segment.GetPosition(0.0);

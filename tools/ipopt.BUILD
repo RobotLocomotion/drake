@@ -109,10 +109,10 @@ genrule(
         " 2>&1 > ipopt_build_with_autotools.log",
         ")",
         "|| (cat ipopt_build_with_autotools.log && false)",
-        ]),
+    ]),
     tools = [
-          "@//tools:ipopt_build_with_autotools.sh",
-          "@//tools/third_party/kythe/tools/cdexec:cdexec",
+        "@//tools:ipopt_build_with_autotools.sh",
+        "@//tools/third_party/kythe/tools/cdexec:cdexec",
     ],
     visibility = ["//visibility:private"],
 )
