@@ -452,6 +452,7 @@ sh_test(
         "drake_compat.h",
         "test/drake_assert_test_compile.cc",
         "unused.h",
+        "//tools:third_party/bazel/tools/cpp/osx_cc_wrapper.sh",
     ],
 )
 
