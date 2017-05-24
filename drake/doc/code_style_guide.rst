@@ -262,6 +262,11 @@ Additional Rules
     `#1935 <https://github.com/RobotLocomotion/drake/issues/1935>`_ and
     `#3355 <https://github.com/RobotLocomotion/drake/issues/3355>`_.
 
+* Aborts should only be used to *catch bugs that are internal to Drake*. Thus,
+  they should not need to be unit tested since they shouldn't be happening
+  anyway. If you feel the need to unit test an abort or document its existence,
+  consider making it a thrown exception. For more background information and
+  discussion, see `this Slack thread <https://drakedevelopers.slack.com/archives/platform_review/p1483977197000082>`_.
 * The ``main()`` method should be as brief as possible since it exists outside
   of namespace ``drake``. It should simply call another method that is
   appropriately namespaced within namespace ``drake``. The method can be called
