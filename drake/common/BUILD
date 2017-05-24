@@ -18,6 +18,7 @@ drake_cc_library(
     hdrs = [
         "constants.h",
         "drake_assert.h",
+        "drake_assertion_error.h",
         "drake_compat.h",
         "drake_copyable.h",
         "drake_deprecated.h",
