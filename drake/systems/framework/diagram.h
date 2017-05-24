@@ -614,21 +614,9 @@ class Diagram : public System<T>,
     }
   }
 
- protected:
-  template <typename EventType>
-  std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
-      std::function<
-          std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
-          allocater_func) const {
-    const int num_systems = num_subsystems();
-    auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
-    for (int i = 0; i < num_systems; ++i) {
-      std::unique_ptr<EventCollection<EventType>> subevent_collection =
-          allocater_func(sorted_systems_[i]);
-      ret->set_and_own_subevent_collection(i, std::move(subevent_collection));
-    }
-    return std::move(ret);
-  }
+  /// @cond
+  // The three methods below are hidden, as described in documentation for their
+  // corresponding methods in System.
 
   std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const final {
@@ -647,7 +635,25 @@ class Diagram : public System<T>,
     return AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
         &System<T>::AllocateForcedUnrestrictedUpdateEventCollection);
   }
+  /// @endcond
 
+ private:
+  template <typename EventType>
+  std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
+      std::function<
+          std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+          allocator_func) const {
+    const int num_systems = num_subsystems();
+    auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
+    for (int i = 0; i < num_systems; ++i) {
+      std::unique_ptr<EventCollection<EventType>> subevent_collection =
+          allocator_func(sorted_systems_[i]);
+      ret->set_and_own_subevent_collection(i, std::move(subevent_collection));
+    }
+    return std::move(ret);
+  }
+
+ protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}

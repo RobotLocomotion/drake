@@ -55,6 +55,27 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Implementations of System<T> methods.
 
+  /// @cond
+  // The three methods below are hidden, as described in documentation for their
+  // corresponding methods in System.
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+  AllocateForcedPublishEventCollection() const override {
+    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
+  AllocateForcedDiscreteUpdateEventCollection() const override {
+    return LeafEventCollection<
+        DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
+  AllocateForcedUnrestrictedUpdateEventCollection() const override {
+    return LeafEventCollection<
+        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+  }
+  /// @endcond
+
   std::unique_ptr<Context<T>> AllocateContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     // Reserve inputs that have already been declared.
@@ -952,23 +973,6 @@ class LeafSystem : public System<T> {
     } else {
       return nullptr;
     }
-  }
-
-  std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateForcedPublishEventCollection() const override {
-    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-  }
-
-  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateForcedDiscreteUpdateEventCollection() const override {
-    return LeafEventCollection<
-        DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
-  }
-
-  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateForcedUnrestrictedUpdateEventCollection() const override {
-    return LeafEventCollection<
-        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   }
 
   // Periodic Update or Publish events registered on this system.

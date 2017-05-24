@@ -69,6 +69,17 @@ class System {
   virtual std::unique_ptr<CompositeEventCollection<T>>
       AllocateCompositeEventCollection() const = 0;
 
+  /// @cond
+  // Consumers of this class should never need to call the three methods below.
+  // These three methods would ideally be designated as "protected", but
+  // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
+  // perhaps surprisingly, is not able to access these methods when they are
+  // protected. See: https://stackoverflow.com/questions/16785069/why-cant-a-derived-class-call-protected-member-function-in-this-code.
+  // To address this problem, we keep the methods "public" and
+  // (1) Make the overriding methods in LeafSystem and Diagram "final" and
+  // (2) Use the doxygen cond/endcond tags so that these methods are hidden
+  //     from the user (in the doxygen documentation).
+
   virtual std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const = 0;
 
@@ -77,6 +88,7 @@ class System {
 
   virtual std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
   AllocateForcedUnrestrictedUpdateEventCollection() const = 0;
+  /// @endcond
 
   /// Given a port descriptor, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses must
