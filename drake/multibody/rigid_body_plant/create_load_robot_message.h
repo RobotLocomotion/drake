@@ -14,8 +14,6 @@ namespace multibody {
 /// - double
 ///
 /// They are already available to link against in the containing library.
-///
-/// @ingroup automotive_systems
 template <typename T>
 lcmt_viewer_load_robot CreateLoadRobotMessage(
     const RigidBodyTree<double>& tree);

@@ -7,11 +7,9 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace tools {
-// TODO(naveenoid) : Modify class to simply wrap DrakeVisualizer before
-// moving out of dev.
 /**
  * A utility to render a `RigidBodyTree` in a specified configuration in the
- * `drake-visualizer`.
+ * `drake-visualizer` app.
  */
 class SimpleTreeVisualizer {
  public:

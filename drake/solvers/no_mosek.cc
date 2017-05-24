@@ -4,8 +4,14 @@
 
 #include <stdexcept>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace solvers {
+
+MosekSolver::~MosekSolver() {
+  DRAKE_ASSERT(mosek_env_ == nullptr);
+}
 
 bool MosekSolver::available() const {
   return false;

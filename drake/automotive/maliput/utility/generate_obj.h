@@ -23,6 +23,8 @@ struct ObjFeatures {
   bool draw_arrows{true};
   /// Draw highlighting swath with lane_bounds() of each lane?
   bool draw_lane_haze{true};
+  /// Draw branching at BranchPoints?
+  bool draw_branch_points{true};
   /// Absolute width of stripes
   double stripe_width{0.25};
   /// Absolute elevation (h) of stripes above road surface
@@ -31,6 +33,10 @@ struct ObjFeatures {
   double arrow_elevation{0.05};
   /// Absolute elevation (h) of lane-haze above road surface
   double lane_haze_elevation{0.02};
+  /// Absolute elevation (h) of branch-points above road surface
+  double branch_point_elevation{0.5};
+  /// Height of rendered branch-point arrows
+  double branch_point_height{0.5};
   /// Origin of OBJ coordinates relative to world-frame
   api::GeoPosition origin{0., 0., 0.};
 };

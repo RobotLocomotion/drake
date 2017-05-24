@@ -18,7 +18,7 @@ cc_library(
         "@//tools:linux": ["-pthread"],
         "@//conditions:default": [],
     }),
-    deps = ["@fmt//:fmt"],
+    deps = ["@fmt"],
 )
 
 pkg_tar(

@@ -172,6 +172,7 @@ void DepthSensor::ApplyLimits(VectorX<double> * distances ) const {
   for (int i = 0; i < distances->size(); ++i) {
     if ( (*distances)[i] < 0) {
       // Infinity distance measurements show up as -1.
+
       if ( (*distances)[i] == -1) {
          (*distances)[i] = DepthSensorOutput<double>::kTooFar;
       } else {

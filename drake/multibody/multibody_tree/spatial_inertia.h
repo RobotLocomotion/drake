@@ -165,7 +165,7 @@ class SpatialInertia {
     if (mass_ < T(0)) return false;
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
-    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCentroid(p_PScm_E_);
+    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
     if (!G_SScm_E.CouldBePhysicallyValid()) return false;
     return true;  // All tests passed.
   }
@@ -267,8 +267,8 @@ class SpatialInertia {
     // The following two lines apply the parallel axis theorem (in place) so
     // that:
     //   G_SQ = G_SP + px_QScm² - px_PScm²
-    G_SP_E_.ShiftFromCentroidInPlace(p_QScm_E);
-    G_SP_E_.ShiftToCentroidInPlace(p_PScm_E_);
+    G_SP_E_.ShiftFromCenterOfMassInPlace(p_QScm_E);
+    G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
     p_PScm_E_ = p_QScm_E;
     // This would only mean a bug in the implementation. The Shift operation
     // should always lead to a valid spatial inertia.

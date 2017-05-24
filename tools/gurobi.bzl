@@ -48,7 +48,7 @@ def _gurobi_impl(repository_ctx):
         "gurobi-distro/include/gurobi_c++.h",
     ])
     print("{warning}") if not hdrs else cc_library(
-        name = "lib",
+        name = "gurobi",
         srcs = {srcs},
         hdrs = hdrs,
         includes = ["gurobi-distro/include"],
@@ -64,3 +64,25 @@ gurobi_repository = repository_rule(
     local = True,
     implementation = _gurobi_impl,
 )
+
+def gurobi_test_tags(gurobi_required=True):
+    """Returns the test tags necessary for properly running Gurobi tests.
+
+    By default, sets gurobi_required=True, which will require that the supplied
+    tag filters include "gurobi".
+
+    Gurobi checks a license file, and may need to contact a license server to
+    check out a license. Therefore, tests that use Gurobi must have the tag
+    "local", because they are non-hermetic. For the moment, we also require
+    the tag "exclusive", to rate-limit license servers with a small number of
+    licenses.
+    """
+    # TODO(david-german-tri): Find a better fix for the license server problem.
+    nominal_tags = [
+        "exclusive",
+        "local",
+    ]
+    if gurobi_required:
+        return nominal_tags + ["gurobi"]
+    else:
+        return nominal_tags

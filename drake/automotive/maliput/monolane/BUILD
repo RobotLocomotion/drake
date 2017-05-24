@@ -70,7 +70,7 @@ drake_cc_library(
     ],
     deps = [
         ":builder",
-        "@yaml_cpp//:lib",
+        "@yaml_cpp",
     ],
 )
 
@@ -96,7 +96,27 @@ drake_cc_googletest(
     srcs = ["test/monolane_lanes_test.cc"],
     deps = [
         ":lanes",
+        ":monolane_test_utils",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "monolane_road_geometry_test",
+    size = "small",
+    srcs = ["test/monolane_road_geometry_test.cc"],
+    deps = [
+        ":builder",
+        ":monolane_test_utils",
+    ],
+)
+
+drake_cc_library(
+    name = "monolane_test_utils",
+    testonly = 1,
+    hdrs = ["test/monolane_test_utils.h"],
+    deps = [
+        "//drake/automotive/maliput/api",
     ],
 )
 

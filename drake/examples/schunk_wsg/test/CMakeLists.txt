@@ -1,11 +1,7 @@
 if(lcm_FOUND)
-  drake_add_cc_test(simulated_schunk_wsg_system_test)
+  drake_add_cc_test(NAME simulated_schunk_wsg_system_test SIZE medium)
   target_link_libraries(simulated_schunk_wsg_system_test
-    drakeSchunkWsg drakeSystemAnalysis drakeSystemPrimitives)
-
-  drake_add_cc_test(schunk_wsg_lcm_test)
-  target_link_libraries(schunk_wsg_lcm_test
-    drakeSchunkWsg drakeSystemAnalysis)
+    drakeSimulatedSchunkWsg drakeSystemAnalysis drakeSystemPrimitives)
 
   # With the new contact model (and current configuration values), this test
   # takes about 2.5 minutes to run in release mode.  It should *not*
@@ -22,8 +18,3 @@ if(lcm_FOUND)
     drakeSystemControllers
     drakeSystemPrimitives)
 endif()
-
-drake_add_cc_test(schunk_wsg_constants_test)
-target_link_libraries(schunk_wsg_constants_test
-    drakeMultibodyParsers
-    drakeRBM)

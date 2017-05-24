@@ -10,7 +10,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -85,11 +85,11 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   // Sets up the WSG gripper part.
   std::unique_ptr<systems::MatrixGain<T>> feedback_selector =
       std::make_unique<systems::MatrixGain<T>>(
-          schunk_wsg::GetSchunkWsgFeedbackSelector<T>());
+          manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<T>());
   // TODO(sam.creasey) The choice of position gains below is completely
   // arbitrary. We'll need to revisit this once we switch to force control
   // for the gripper.
-  const int kWsgActDim = schunk_wsg::kSchunkWsgNumActuators;
+  const int kWsgActDim = manipulation::schunk_wsg::kSchunkWsgNumActuators;
   const VectorX<T> wsg_kp = VectorX<T>::Constant(kWsgActDim, 300.0);
   const VectorX<T> wsg_ki = VectorX<T>::Constant(kWsgActDim, 0.0);
   const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
@@ -111,8 +111,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   // bot_core::robot_state_t messages.
   iiwa_state_est_ =
       base_builder->template AddSystem<OracularStateEstimation<T>>(
-          iiwa_controller_->get_robot_for_control(),
-          iiwa_controller_->get_robot_for_control().get_body(1));
+          iiwa_controller_->get_robot_for_control());
   iiwa_state_est_->set_name("OracularStateEstimationIIWAState");
   base_builder->Connect(iiwa_output_port,
                         iiwa_state_est_->get_input_port_state());
@@ -127,7 +126,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
       box_info.model_path, multibody::joints::kQuaternion,
       box_info.world_offset, object_.get());
   box_state_est_ = base_builder->template AddSystem<OracularStateEstimation<T>>(
-      *object_, object_->get_body(1));
+      *object_);
   box_state_est_->set_name("OracularStateEstimationBoxState");
   base_builder->Connect(
       plant_->model_instance_state_output_port(box_info.instance_id),

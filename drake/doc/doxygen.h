@@ -14,6 +14,7 @@
   <ul>
     <li><a href="class_rigid_body_tree.html">Rigid-Body Kinematics and
   Dynamics</a></li>
+    <li><a href="group__automotive__systems.html">Automotive Systems</a></li>
   </ul>
   <li>Algorithms</li>
   <ul>
@@ -49,7 +50,7 @@ apt-get install doxygen</i> on Ubuntu).</p>
 out the Doxygen C++ documentation</a></p>
 
 <p>Drake's Doxygen documentation is
-<a href="http://drake.mit.edu">hosted online</a> for the master branch, but is 
+<a href="http://drake.mit.edu">hosted online</a> for the master branch, but is
 only updated nightly.</p>
 
 */

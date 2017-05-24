@@ -76,10 +76,12 @@ namespace sensors {
 /// distance is less than  the sensor's minimum sensing range, a value of
 /// DepthSensor::kTooClose is provided.
 ///
-/// DepthSensor::kError is defined for use when a sensing error occurs. It is
-/// not expected to occur in this system's output because it models an ideal
-/// sensor in which sensing errors do not occur. It is expected to be used by
-/// non-ideal depth sensors.
+/// Sensing errors can be expressed using a distance value of
+/// DepthSensorOutput::GetErrorDistance(), and detected using
+/// DepthSensorOutput::IsError() or DepthSensorOutput::IsValid(). It is not
+/// expected to occur in this system's output because it models an ideal sensor
+/// in which sensing errors do not occur. Sensing errors are expected to be used
+/// by non-ideal depth sensors.
 ///
 /// The second output port contains a PoseVector, which is `X_WS`, i.e., the
 /// transform from this sensor's frame to the world frame. It is useful for

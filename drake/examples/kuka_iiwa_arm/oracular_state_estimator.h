@@ -3,35 +3,42 @@
 #include <memory>
 #include <string>
 
-#include "bot_core/robot_state_t.hpp"
-
+#include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/util/lcmUtil.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+// TODO(siyuan): move this to /manipulation/util
+
 /**
- * A class that takes state vector and output a bot_core::robot_state_t message.
- * Note that the joint_effort part will be set to zero.
+ * A System block that takes state vector and output a bot_core::robot_state_t
+ * message. For the encoded `message`, `message.pose` will always be
+ * X_WB (pose of `B` in `W`), where `W` is the world frame, and `B` is the
+ * first non-world rigid body's body frame in the given rigid body tree.
+ * Similarly, `message.twist` = V_WB is the spatial velocity of `B` relative
+ * to `W` expressed in `W`. If the first non-world rigid body is rigidly
+ * attached to the world, V_WB = 0. The joint section of `message` excludes all
+ * degrees of freedom that correspond to the floating base (if one exists),
+ * and will be in the order of the rigid body tree's generalized position.
+ * Note that the `message.joint_effort` will be set to zero as this class
+ * only encodes kinematics information.
+ * See manipulation::RobotStateLcmMessageTranslator for more details.
  */
 template <typename T>
 class OracularStateEstimation : public systems::LeafSystem<T> {
  public:
   /**
    * Constructor for OracularStateEstimation.
+   *
    * @param robot, Reference to the RigidBodyTree. The life span of @p robot
    * needs to be longer than this instance. Also note that the generated LCM
    * messages will contain every joint in @p robot.
-   * @param base_body, Reference to the base link in @p robot. Can be either
-   * floating base or a fixed base. @p base_body must be part of @p robot,
-   * and it needs to have a longer life span than this instance.
    */
-  OracularStateEstimation(const RigidBodyTree<T>& robot,
-                          const RigidBody<T>& base_body)
-      : robot_(robot), base_body_(base_body) {
+  explicit OracularStateEstimation(const RigidBodyTree<T>& robot)
+      : robot_(robot), translator_(robot_) {
     input_port_index_state_ =
         this->DeclareInputPort(
                 systems::kVectorValued,
@@ -45,56 +52,23 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
     const systems::BasicVector<T>* state =
         this->EvalVectorInput(context, input_port_index_state_);
 
-    VectorX<T> q = state->get_value().head(robot_.get_num_positions());
-    VectorX<T> v = state->get_value().tail(robot_.get_num_velocities());
-    KinematicsCache<T> cache = robot_.doKinematics(q, v);
-
     bot_core::robot_state_t& msg =
         output->template GetMutableData(output_port_index_msg_)
             ->template GetMutableValue<bot_core::robot_state_t>();
+
     msg.utime = static_cast<int64_t>(context.get_time() * 1e6);
-
-    // Pose and velocity of floating body in the world frame.
-    Isometry3<T> base_body_to_world =
-        robot_.CalcBodyPoseInWorldFrame(cache, base_body_);
-    Vector6<T> base_body_velocity =
-        robot_.CalcBodySpatialVelocityInWorldFrame(cache, base_body_);
-
-    EncodePose(base_body_to_world, msg.pose);
-    EncodeTwist(base_body_velocity, msg.twist);
-
-    // Encodes joint names, positions, velocities and efforts.
-    // Note: the order of the actuators in the rigid body tree determines the
-    // order of the joint_name, joint_position, joint_velocity, and
-    // joint_effort fields.
-    msg.joint_name.resize(robot_.get_num_actuators());
-    msg.joint_position.resize(robot_.get_num_actuators());
-    msg.joint_velocity.resize(robot_.get_num_actuators());
-    msg.joint_effort.resize(robot_.get_num_actuators());
-    msg.num_joints = static_cast<int16_t>(msg.joint_name.size());
-    int i = 0;
-    for (const auto& actuator : robot_.actuators) {
-      const auto& body = *actuator.body_;
-
-      // To match usage of robot_state_t throughout OpenHumanoids code, set
-      // joint_names field to position coordinate names.
-      // We are iterating over actuators, so won't have a problem with the
-      // floating base here.
-      int position_index = body.get_position_start_index();
-      int velocity_index = body.get_velocity_start_index();
-      msg.joint_name[i] = robot_.get_position_name(position_index);
-
-      msg.joint_position[i] = static_cast<float>(q[position_index]);
-      msg.joint_velocity[i] = static_cast<float>(v[velocity_index]);
-      msg.joint_effort[i] = 0;
-      i++;
-    }
+    translator_.EncodeMessageKinematics(
+        state->get_value().head(robot_.get_num_positions()),
+        state->get_value().tail(robot_.get_num_velocities()),
+        &msg);
   }
 
   std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
       const systems::OutputPortDescriptor<T>&) const override {
-    return systems::AbstractValue::Make<bot_core::robot_state_t>(
-        bot_core::robot_state_t());
+    bot_core::robot_state_t msg;
+    // Resize and zeros the message.
+    translator_.InitializeMessage(&msg);
+    return systems::AbstractValue::Make<bot_core::robot_state_t>(msg);
   }
 
   inline const systems::InputPortDescriptor<T>& get_input_port_state() const {
@@ -107,7 +81,8 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
 
  private:
   const RigidBodyTree<T>& robot_;
-  const RigidBody<T>& base_body_;
+  const manipulation::RobotStateLcmMessageTranslator translator_;
+
   int input_port_index_state_{0};
   int output_port_index_msg_{0};
 };

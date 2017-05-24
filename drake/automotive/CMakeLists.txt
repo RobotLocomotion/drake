@@ -8,7 +8,6 @@ endif()
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   bicycle_car.cc
   calc_smooth_acceleration.cc
-  create_trajectory_params.cc
   curve2.cc
   gen/bicycle_car_parameters.cc
   gen/bicycle_car_state.cc
@@ -23,12 +22,11 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/simple_car_state.cc
   idm_controller.cc
   idm_planner.cc
+  maliput/api/junction.cc
+  maliput/api/lane.cc
+  maliput/api/lane_data.cc
   maliput/api/road_geometry.cc
-  maliput/dragway/branch_point.cc
-  maliput/dragway/junction.cc
-  maliput/dragway/lane.cc
-  maliput/dragway/road_geometry.cc
-  maliput/dragway/segment.cc
+  maliput/api/segment.cc
   maliput/monolane/arc_lane.cc
   maliput/monolane/branch_point.cc
   maliput/monolane/builder.cc
@@ -134,7 +132,9 @@ if(lcm_FOUND)
       drake-automotive
       drake-rigid-body-plant)
 
-  add_executable(automotive_demo automotive_demo.cc)
+  add_executable(automotive_demo
+      automotive_demo.cc
+      create_trajectory_params.cc)
   target_link_libraries(automotive_demo
       drakeAutomotiveLcm
       drakeMaliputDragway)

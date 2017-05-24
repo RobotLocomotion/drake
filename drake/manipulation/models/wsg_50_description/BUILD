@@ -12,13 +12,15 @@ package(
 )
 
 filegroup(
-    name = "wsg_50_model_files",
+    name = "models",
     srcs = [
         "meshes/GUIDE_WSG50_110.obj",
         "meshes/WSG-FMF.obj",
         "meshes/WSG50_110.obj",
-        "urdf/wsg_50_mesh_collision.urdf",
         "package.xml",
+        "sdf/schunk_wsg_50.sdf",
+        "sdf/schunk_wsg_50_ball_contact.sdf",
+        "urdf/wsg_50_mesh_collision.urdf",
     ],
     visibility = ["//visibility:public"],
 )
@@ -28,7 +30,7 @@ filegroup(
 drake_cc_googletest(
     name = "wsg_50_mesh_collision_test",
     srcs = ["urdf/test/wsg50_mesh_collision_test.cc"],
-    data = [":wsg_50_model_files"],
+    data = [":models"],
     local = 1,
     deps = [
         "//drake/multibody/parsers",

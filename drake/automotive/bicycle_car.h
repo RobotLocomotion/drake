@@ -60,7 +60,7 @@ namespace automotive {
 ///     models for the safety verification of high-order road vehicle models,
 ///     in Proc. of the American Control Conference, 2012, pp. 3559–3566.
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_plants
 template <typename T>
 class BicycleCar : public systems::LeafSystem<T> {
  public:

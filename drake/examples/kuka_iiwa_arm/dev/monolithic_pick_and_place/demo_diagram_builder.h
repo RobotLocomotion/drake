@@ -10,8 +10,8 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
-#include "drake/examples/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/framework/diagram.h"
@@ -83,8 +83,9 @@ std::unique_ptr<systems::RigidBodyPlant<T>> BuildCombinedPlant(
   tree_builder->StoreModel("box_large",
                            "/examples/kuka_iiwa_arm/models/objects/"
                            "block_for_pick_and_place_large_size.urdf");
-  tree_builder->StoreModel("wsg",
-                           "/examples/schunk_wsg/models/schunk_wsg_50.sdf");
+  tree_builder->StoreModel(
+      "wsg",
+      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
   // Builds a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -250,10 +251,11 @@ IiwaWsgPlantGeneratorsEstimatorsAndVisualizer
 
  private:
   IiwaAndWsgPlantWithStateEstimator<T>* plant_{nullptr};
-  schunk_wsg::SchunkWsgStatusSender* wsg_status_sender_{nullptr};
+  manipulation::schunk_wsg::SchunkWsgStatusSender* wsg_status_sender_{nullptr};
   systems::DrakeVisualizer* drake_visualizer_{nullptr};
   RobotPlanInterpolator* iiwa_trajectory_generator_{nullptr};
-  schunk_wsg::SchunkWsgTrajectoryGenerator* wsg_trajectory_generator_{nullptr};
+  manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator*
+  wsg_trajectory_generator_{nullptr};
 
   int input_port_iiwa_plan_{-1};
   int input_port_wsg_plan_{-1};

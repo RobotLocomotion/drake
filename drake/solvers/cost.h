@@ -78,57 +78,146 @@ class CostShim : public CostShimBase {
 };
 
 /**
- * Implements a cost of the form @f Ax @f
+ * Implements a cost of the form @f a'x + b @f.
  */
-class LinearCost : public CostShim<LinearConstraint> {
+class LinearCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost)
 
-  explicit LinearCost(const Eigen::Ref<const Eigen::VectorXd>& c)
-      : CostShim(c.transpose(), Vector1<double>::Constant(
-                                    -std::numeric_limits<double>::infinity()),
-                 Vector1<double>::Constant(
-                     std::numeric_limits<double>::infinity())) {}
+  /**
+   * Construct a linear cost of the form @f a'x + b @f.
+   * @param a Linear term.
+   * @param b (optional) Constant term.
+   */
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  LinearCost(const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0.)
+      : Cost(a.rows()), a_(a), b_(b) {}
+
+  ~LinearCost() override {}
 
   Eigen::SparseMatrix<double> GetSparseMatrix() const {
-    return constraint()->GetSparseMatrix();
+    // TODO(eric.cousineau): Consider storing or caching sparse matrix, such
+    // that we can return a const lvalue reference.
+    return a_.sparseView();
   }
-  const Eigen::MatrixXd& A() const { return constraint()->A(); }
+
+  const Eigen::VectorXd& a() const { return a_; }
+
+  double b() const { return b_; }
+
+  /**
+   * Updates the linear term, upper and lower bounds in the linear constraint.
+   * The updated constraint is @f a_new' x + b_new @f.
+   * Note that the number of variables (number of cols) cannot change.
+   * @param new_a New linear term.
+   * @param new_b (optional) New constant term.
+   */
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::VectorXd>& new_a,
+                          double new_b = 0.) {
+    if (new_a.rows() != a_.rows()) {
+      throw std::runtime_error("Can't change the number of decision variables");
+    }
+
+    a_ = new_a;
+    b_ = new_b;
+  }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
+
+ private:
+  Eigen::VectorXd a_;
+  double b_{};
 };
 
 /**
- * Implements a cost of the form @f .5 x'Qx + b'x @f
+ * Implements a cost of the form @f .5 x'Qx + b'x + c @f.
  */
-class QuadraticCost : public CostShim<QuadraticConstraint> {
+class QuadraticCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticCost)
 
+  /**
+   * Constructs a cost of the form @f .5 x'Qx + b'x + c @f.
+   * @param Q Quadratic term.
+   * @param b Linear term.
+   * @param c (optional) Constant term.
+   */
   template <typename DerivedQ, typename Derivedb>
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
-                const Eigen::MatrixBase<Derivedb>& f)
-      : CostShim(Q, f, -std::numeric_limits<double>::infinity(),
-                 std::numeric_limits<double>::infinity()) {}
+                const Eigen::MatrixBase<Derivedb>& b, double c = 0.)
+      : Cost(Q.rows()), Q_(Q), b_(b), c_(c) {
+    DRAKE_ASSERT(Q_.rows() == Q_.cols());
+    DRAKE_ASSERT(Q_.cols() == b_.rows());
+  }
 
-  const Eigen::MatrixXd& Q() const { return constraint()->Q(); }
+  ~QuadraticCost() override {}
 
-  const Eigen::VectorXd& b() const { return constraint()->b(); }
+  const Eigen::MatrixXd& Q() const { return Q_; }
+
+  const Eigen::VectorXd& b() const { return b_; }
+
+  double c() const { return c_; }
 
   /**
    * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
    * @param new_Q New quadratic term.
    * @param new_b New linear term.
+   * @param new_c (optional) New constant term.
    */
   template <typename DerivedQ, typename DerivedB>
-  void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
-                                     const Eigen::MatrixBase<DerivedB>& new_b) {
-    constraint()->UpdateQuadraticAndLinearTerms(new_Q, new_b);
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
+                          const Eigen::MatrixBase<DerivedB>& new_b,
+                          double new_c = 0.) {
+    if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
+        new_b.cols() != 1) {
+      throw std::runtime_error("New constraints have invalid dimensions");
+    }
+
+    if (new_b.rows() != b_.rows()) {
+      throw std::runtime_error("Can't change the number of decision variables");
+    }
+
+    Q_ = new_Q;
+    b_ = new_b;
+    c_ = new_c;
   }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
+
+ private:
+  Eigen::MatrixXd Q_;
+  Eigen::VectorXd b_;
+  double c_{};
 };
 
 /**
- *  Implements a cost of the form P(x, y...) where P is a multivariate
- *  polynomial in x, y...
+ * Creates a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+ */
+std::shared_ptr<QuadraticCost> MakeQuadraticErrorCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& x_desired);
+
+/**
+ * Creates a cost term of the form | Ax - b |^2.
+ */
+std::shared_ptr<QuadraticCost> MakeL2NormCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b);
+
+/**
+ * Implements a cost of the form P(x, y...) where P is a multivariate
+ * polynomial in x, y, ...
  *
  * The Polynomial class uses a different variable naming scheme; thus the
  * caller must provide a list of Polynomial::VarType variables that correspond
@@ -221,6 +310,18 @@ class FunctionCost : public CostShim<FunctionConstraint<F>> {
   using Base = CostShim<FunctionConstraint<F>>;
   using Base::Base;
 };
+
+/**
+ * Converts an input of type @p F to a FunctionCost object.
+ * @tparam F This class should have functions numInputs(), numOutputs and
+ * eval(x, y).
+ * @see detail::FunctionTraits
+ */
+template <typename F>
+std::shared_ptr<Cost> MakeFunctionCost(F&& f) {
+  using FC = FunctionCost<std::decay_t<F>>;
+  return std::make_shared<FC>(std::forward<F>(f));
+}
 
 }  // namespace solvers
 }  // namespace drake

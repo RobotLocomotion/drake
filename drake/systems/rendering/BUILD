@@ -71,7 +71,7 @@ drake_cc_library(
         "//drake/lcmtypes:viewer",
         "//drake/math:geometric_transform",
         "//drake/multibody/shapes",
-        "@eigen//:eigen",
+        "@eigen",
     ],
 )
 

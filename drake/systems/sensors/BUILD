@@ -39,7 +39,10 @@ drake_cc_library(
 drake_cc_library(
     name = "image",
     srcs = [],
-    hdrs = ["image.h"],
+    hdrs = [
+        "image.h",
+        "pixel_types.h",
+    ],
     deps = [
         "//drake/common",
         "//drake/common:reinit_after_move",
@@ -104,7 +107,7 @@ drake_cc_library(
         ":depth_sensor",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/rendering:pose_vector",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -175,7 +178,7 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

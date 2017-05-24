@@ -3,10 +3,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace maliput {
 namespace api {
+namespace {
 
 #define CHECK_ALL_LANE_POSITION_ACCESSORS(dut, _s, _r, _h)       \
   do {                                                           \
@@ -117,6 +119,102 @@ GTEST_TEST(GeoPositionTest, ComponentSetters) {
 
 #undef CHECK_ALL_GEO_POSITION_ACCESSORS
 
+// An arbitrary very small number (that passes the tests).
+const double kRotationTolerance = 1e-15;
+
+#define CHECK_ALL_ROTATION_ACCESSORS(dut, _w, _x, _y, _z, _ro, _pi, _ya, _ma) \
+  do {                                                                  \
+    EXPECT_TRUE(CompareMatrices(dut.quat().coeffs(),                    \
+                                Vector4<double>(_x, _y, _z, _w),        \
+                                kRotationTolerance));                   \
+    EXPECT_TRUE(CompareMatrices(dut.rpy(),                              \
+                                Vector3<double>(_ro, _pi, _ya),         \
+                                kRotationTolerance));                   \
+    EXPECT_NEAR(dut.roll(), _ro, kRotationTolerance);                   \
+    EXPECT_NEAR(dut.pitch(), _pi, kRotationTolerance);                  \
+    EXPECT_NEAR(dut.yaw(), _ya, kRotationTolerance);                    \
+    EXPECT_TRUE(CompareMatrices(dut.matrix(), _ma,                      \
+                                kRotationTolerance));                   \
+  } while (0)
+
+
+class RotationTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // A quaternion that rotates x->y, y->z, z->x...
+    twist_quat_ = Quaternion<double> (
+        Eigen::AngleAxis<double>(M_PI * 2. / 3.,
+                                 Vector3<double>(1.0, 1.0, 1.0).normalized()));
+
+    nonnormalized_twist_quat_ = Quaternion<double>(7. * twist_quat_.coeffs());
+
+    twist_roll_ = M_PI / 2.;
+    twist_pitch_ = 0.;
+    twist_yaw_ = M_PI / 2.;
+
+    twist_matrix_ <<
+        0., 0., 1.,
+        1., 0., 0.,
+        0., 1., 0.;
+  }
+
+  Quaternion<double> nonnormalized_twist_quat_;
+  Quaternion<double> twist_quat_;
+  double twist_roll_;
+  double twist_pitch_;
+  double twist_yaw_;
+  Matrix3<double> twist_matrix_;
+};
+
+
+TEST_F(RotationTest, DefaultConstructor) {
+  // Check that default constructor obeys its contract.
+  Rotation dut;
+  CHECK_ALL_ROTATION_ACCESSORS(dut, 1., 0., 0., 0., 0., 0., 0.,
+                               Matrix3<double>::Identity());
+}
+
+
+TEST_F(RotationTest, ConstructionFromQuaternion) {
+  // Check the conversion-construction from a Quaternion.
+  Rotation dut = Rotation::FromQuat(nonnormalized_twist_quat_);
+  CHECK_ALL_ROTATION_ACCESSORS(
+      dut, twist_quat_.w(), twist_quat_.x(), twist_quat_.y(), twist_quat_.z(),
+      twist_roll_, twist_pitch_, twist_yaw_, twist_matrix_);
+}
+
+
+TEST_F(RotationTest, ConstructionFromRpyVector) {
+  // Check the conversion-construction from a 3-vector of roll, pitch, yaw.
+  Rotation dut = Rotation::FromRpy(Vector3<double>(
+      twist_roll_, twist_pitch_, twist_yaw_));
+  CHECK_ALL_ROTATION_ACCESSORS(
+      dut, twist_quat_.w(), twist_quat_.x(), twist_quat_.y(), twist_quat_.z(),
+      twist_roll_, twist_pitch_, twist_yaw_, twist_matrix_);
+}
+
+
+TEST_F(RotationTest, ConstructionFromRpyComponents) {
+  // Check the conversion-construction from individual roll, pitch, yaw.
+  Rotation dut = Rotation::FromRpy(twist_roll_, twist_pitch_, twist_yaw_);
+  CHECK_ALL_ROTATION_ACCESSORS(
+      dut, twist_quat_.w(), twist_quat_.x(), twist_quat_.y(), twist_quat_.z(),
+      twist_roll_, twist_pitch_, twist_yaw_, twist_matrix_);
+}
+
+
+TEST_F(RotationTest, QuaternionSetter) {
+  // Check the vector-based setter.
+  Rotation dut = Rotation::FromRpy(23., 75., 0.567);
+  dut.set_quat(nonnormalized_twist_quat_);
+  CHECK_ALL_ROTATION_ACCESSORS(
+      dut, twist_quat_.w(), twist_quat_.x(), twist_quat_.y(), twist_quat_.z(),
+      twist_roll_, twist_pitch_, twist_yaw_, twist_matrix_);
+}
+
+#undef CHECK_ALL_ROTATION_ACCESSORS
+
+}  // namespace
 }  // namespace api
 }  // namespace maliput
 }  // namespace drake

@@ -95,7 +95,7 @@ lcm_cc_library(
     lcm_package = "drake",
     lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
     deps = [
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
     ],
 )
 
@@ -205,6 +205,8 @@ _AUTOMOTIVE_LCM_SRCS = [
     "lcmt_maliput_railcar_state_t.lcm",
     "lcmt_simple_car_params_t.lcm",
     "lcmt_simple_car_state_t.lcm",
+    "lcmt_trajectory_car_params_t.lcm",
+    "lcmt_trajectory_car_state_t.lcm",
 ]
 
 lcm_cc_library(
