@@ -580,9 +580,6 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
   // magnitude of the simulation time.
   const T ttol_mult = max(T(1), T(abs(t0)));
 
-  // Get the system.
-  const System<T>& system = get_system();
-
   // Will need to alter the context repeatedly.
   Context<T>* context = get_mutable_context();
 
