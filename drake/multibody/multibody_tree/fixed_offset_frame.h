@@ -54,12 +54,44 @@ class FixedOffsetFrame : public Frame<T> {
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<T>& X_BF);
 
+  /// Returns the pose X_FB of the body B associated with this frame F,
+  /// measured in this frame F.
+  Isometry3<T> CalcBodyPoseInThisFrame(
+      const MultibodyTreeContext<T>& context) const final {
+    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_FP_);
+  }
+
+  /// Returns the pose of the body B associated with this frame measured in a
+  /// frame Q, given the pose X_QF of this frame F measured in Q.
+  Isometry3<T> CalcBodyPoseInOtherFrame(
+      const MultibodyTreeContext<T>& context,
+      const Isometry3<T>& X_QF) const final {
+    // This method computes: X_QB = X_QP * X_PB
+    // where P is this frame's parent frame
+    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_QF * X_FP_);
+  }
+
+  /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
+  /// return the pose of frame Q measured and expressed in the frame B of
+  /// the body to which this frame is attached.
+  /// For `this` frame F with pose `X_BF` measured and expressed in
+  /// body frame B, this method computes `X_BQ = X_BP * X_PF * X_FQ`.
+  Isometry3<T> CalcOffsetPoseInBody(
+      const MultibodyTreeContext<T>& context,
+      const Isometry3<T>& X_FQ) const final {
+    return parent_frame_.CalcOffsetPoseInBody(context, X_PF_ * X_FQ);
+  }
+
  private:
   // The frame to which this frame is attached.
   const Frame<T>& parent_frame_;
 
   // Spatial transform giving the fixed pose of this frame F in another frame P.
-  Isometry3<T> X_PF_;
+  const Isometry3<T> X_PF_;
+
+  // Spatial transform giving the fixed pose of the parent frame P as
+  // measured in this frame F.
+  const Isometry3<T> X_FP_;
 };
 
 }  // namespace multibody

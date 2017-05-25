@@ -55,6 +55,34 @@ class BodyFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
+  /// Overrides Frame::CalcBodyPoseInThisFrame() that returns the pose the body
+  /// associated with this frame. For a %BodyFrame this method simply resolves
+  /// to return the identity pose.
+  Isometry3<T> CalcBodyPoseInThisFrame(
+      const MultibodyTreeContext<T>& context) const final {
+    return Isometry3<T>::Identity();
+  }
+
+  /// Given the pose `X_MF` of frame `F` measured in this material frame `M`,
+  /// return the pose of frame `F` measured and expressed in the frame `B` of
+  /// the body to which this material frame is attached.
+  /// In this particular case since `this` material frame `M` IS the frame of
+  /// body `B`, this method directly returns `X_MF`.
+  Isometry3<T> CalcOffsetPoseInBody(
+      const MultibodyTreeContext<T>& context,
+      const Isometry3<T>& X_MF) const final {
+    return X_MF;
+  }
+
+  /// Returns the pose of the body B associated with this frame measured in a
+  /// frame Q, given the pose X_QF of this frame F measured in Q.
+  /// Since in this case F = B, this method simply returns X_QF = X_QB.
+  Isometry3<T> CalcBodyPoseInOtherFrame(
+      const MultibodyTreeContext<T>& context,
+      const Isometry3<T>& X_QF) const final {
+    return X_QF;
+  }
+
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
   // every time a Body object is created and they are associated with each

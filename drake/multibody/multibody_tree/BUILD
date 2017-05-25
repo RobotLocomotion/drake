@@ -74,6 +74,7 @@ drake_cc_library(
         "rigid_body.h",
     ],
     deps = [
+        ":multibody_tree_context",
         ":multibody_tree_element",
         ":spatial_inertia",
         "//drake/common:autodiff",

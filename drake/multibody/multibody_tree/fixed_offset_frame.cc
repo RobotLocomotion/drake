@@ -13,12 +13,14 @@ namespace multibody {
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
     const BodyFrame<T>& P, const Isometry3<T>& X_PF) :
-    Frame<T>(P.get_body()), parent_frame_(P), X_PF_(X_PF) {}
+    Frame<T>(P.get_body()), parent_frame_(P),
+    X_PF_(X_PF), X_FP_(X_PF.inverse()) {}
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
     const Body<T>& B, const Isometry3<T>& X_BF) :
-    Frame<T>(B), parent_frame_(B.get_body_frame()), X_PF_(X_BF) {}
+    Frame<T>(B), parent_frame_(B.get_body_frame()),
+    X_PF_(X_BF), X_FP_(X_BF.inverse()) {}
 
 // Explicitly instantiates on the most common scalar types.
 template class FixedOffsetFrame<double>;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/multibody/multibody_tree/frame_base.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
@@ -42,6 +43,27 @@ class Frame : public FrameBase<T> {
   const Body<T>& get_body() const {
     return body_;
   }
+
+  /// Given the offset pose `X_MF` of frame `F` measured in this frame `M`,
+  /// compute the pose of frame `F` measured and expressed in the frame `B` of
+  /// the body to which this material frame is attached.
+  /// In the particular case `M = B`, this method directly returns `X_MF`.
+  virtual Isometry3<T> CalcOffsetPoseInBody(
+      const MultibodyTreeContext<T>& context,
+      const Isometry3<T>& X_MF) const = 0;
+
+  /// Returns the pose X_FB of the body B associated with this frame F,
+  /// measured in this frame F.
+  virtual Isometry3<T> CalcBodyPoseInThisFrame(
+      const MultibodyTreeContext<T>& context) const = 0;
+
+  /// Returns the pose of the body B associated with this frame measured in a
+  /// frame Q, given the pose X_QF of this frame F measured in Q.
+  /// @sa CalcBodyPoseInThisFrame() to compute the pose of the body assiciated
+  /// with this frame as measured in this frame.
+  virtual Isometry3<T> CalcBodyPoseInOtherFrame(
+      const MultibodyTreeContext<T>& context,
+      const Isometry3<T>& X_QF) const = 0;
 
  protected:
   // Only derived classes can use this constructor.
