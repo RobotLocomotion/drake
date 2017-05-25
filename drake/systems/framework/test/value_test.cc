@@ -28,14 +28,52 @@ struct CopyableInt {
   int data;
 };
 
+// A clone-only type with no default constructor.
+struct CloneableInt {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CloneableInt);
+  explicit CloneableInt(int i) : data{i} {}
+
+  std::unique_ptr<CloneableInt> Clone() const {
+    return std::make_unique<CloneableInt>(data);
+  }
+
+  const int data;
+};
+
+// A move-or-clone (not copy) type with a default constructor.
+struct MoveOrCloneInt {
+  MoveOrCloneInt() {}
+  explicit MoveOrCloneInt(int i) : data{i} {}
+  MoveOrCloneInt(MoveOrCloneInt&& other) {
+    std::swap(data, other.data);
+  }
+  MoveOrCloneInt& operator=(MoveOrCloneInt&& other)  {
+    std::swap(data, other.data);
+    return *this;
+  }
+  MoveOrCloneInt(const MoveOrCloneInt&) = delete;
+  void operator=(const MoveOrCloneInt&) = delete;
+
+  std::unique_ptr<MoveOrCloneInt> Clone() const {
+    return std::make_unique<MoveOrCloneInt>(data);
+  }
+
+  int data{};
+};
+
 // Helper for EXPECT_EQ to unwrap the data field.
 template <typename T>
 bool operator==(int i, const T& value) { return i == value.data; }
 
 // Boilerplate for tests that are identical across different types.  Our
-// TYPED_TESTs will run using `int` and `CopyableInt`.
+// TYPED_TESTs will run using all of the below types as the TypeParam.
 template <typename TypeParam> class TypedValueTest : public ::testing::Test {};
-typedef ::testing::Types<int, CopyableInt> Implementations;
+typedef ::testing::Types<
+    int,
+    CopyableInt,
+    CloneableInt,
+    MoveOrCloneInt
+    > Implementations;
 TYPED_TEST_CASE(TypedValueTest, Implementations);
 
 // Value<T>() should work if and only if T is default-constructible.
@@ -48,6 +86,12 @@ GTEST_TEST(ValueTest, DefaultConstructor) {
 
   static_assert(!std::is_default_constructible<Value<CopyableInt>>::value,
                 "Value<CopyableInt>() should not work.");
+
+  static_assert(!std::is_default_constructible<Value<CloneableInt>>::value,
+                "Value<CloneableInt>() should not work.");
+
+  const AbstractValue& value_move_or_clone_int = Value<MoveOrCloneInt>();
+  EXPECT_EQ(0, value_move_or_clone_int.GetValue<MoveOrCloneInt>().data);
 }
 
 // Value<T>(int) should work (possibly using forwarding).
@@ -85,6 +129,15 @@ GTEST_TEST(ValueTest, BareCopyConstructor) {
   const Value<T> xvalue(T{});           // Called with `T&&`.
   const Value<T> lvalue(param);         // Called with `T&`.
   const Value<T> crvalue(const_param);  // Called with `const T&`.
+}
+
+// Passing a unique_ptr<T> to Value<T> should take over the value.
+TYPED_TEST(TypedValueTest, UniquePtrConstructor) {
+  using T = TypeParam;
+  auto original = std::make_unique<T>(22);
+  const Value<T> value{std::move(original)};
+  EXPECT_EQ(original.get(), nullptr);
+  EXPECT_EQ(22, value.template GetValue<T>());
 }
 
 TYPED_TEST(TypedValueTest, Make) {
