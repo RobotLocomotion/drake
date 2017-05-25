@@ -124,6 +124,7 @@ drake_cc_library(
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
+        "symbolic_formula_visitor.cc",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -133,6 +134,7 @@ drake_cc_library(
         "symbolic_expression.h",
         "symbolic_expression_visitor.h",
         "symbolic_formula.h",
+        "symbolic_formula_visitor.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
@@ -403,12 +405,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_assert_test_enabled",
     srcs = ["test/drake_assert_test.cc"],
-    deps = [
-        ":common",
-    ],
     copts = [
         "-DDRAKE_ENABLE_ASSERTS",
         "-UDRAKE_DISABLE_ASSERTS",
+    ],
+    deps = [
+        ":common",
     ],
 )
 
@@ -416,12 +418,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_assert_test_disabled",
     srcs = ["test/drake_assert_test.cc"],
-    deps = [
-        ":common",
-    ],
     copts = [
         "-UDRAKE_ENABLE_ASSERTS",
         "-DDRAKE_DISABLE_ASSERTS",
+    ],
+    deps = [
+        ":common",
     ],
 )
 
@@ -700,6 +702,15 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":is_memcpy_movable",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_formula_visitor_test",
+    deps = [
+        ":common",
         ":symbolic",
         ":symbolic_test_util",
     ],
