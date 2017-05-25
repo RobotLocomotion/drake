@@ -6,14 +6,25 @@
 #include <typeinfo>
 #include <utility>
 
-#include "drake/common/drake_assert.h"
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/is_cloneable.h"
 
 namespace drake {
 namespace systems {
 
 template <typename T>
 class Value;
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+// Forward declare some private helper structs.
+namespace value_detail {
+template <typename T, bool use_copy>
+struct ValueTraitsImpl;
+template <typename T>
+using ValueTraits = ValueTraitsImpl<T, std::is_copy_constructible<T>::value>;
+}
+#endif
 
 /// A fully type-erased container class.
 ///
@@ -37,7 +48,7 @@ class AbstractValue {
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
 
-  /// Copies the value in @p other to this value.
+  /// Copies or clones the value in @p other to this value.
   /// In Debug builds, if the types don't match, std::bad_cast will be
   /// thrown.  In Release builds, this is not guaranteed.
   virtual void SetFrom(const AbstractValue& other) = 0;
@@ -83,7 +94,8 @@ class AbstractValue {
 
   /// Sets the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
-  /// @param value_to_set The value to be copied into this AbstractValue.
+  /// @param value_to_set The value to be copied or cloned into this
+  /// AbstractValue.
   /// In Debug builds, if the types don't match, std::bad_cast will be
   /// thrown.  In Release builds, this is not guaranteed.
   template <typename T>
@@ -156,19 +168,25 @@ class Value : public AbstractValue {
 
   /// Constructs a Value<T> using T's default constructor, if available.
   /// This is only available for T's that support default construction.
-  ///
-  /// @tparam T1 is template boilerplate; do not set.
+#if !defined(DRAKE_DOXYGEN_CXX)
+  // T1 is template boilerplate; do not specify it at call sites.
   template <typename T1 = T,
             typename = typename std::enable_if<
                 std::is_default_constructible<T1>::value>::type>
-  Value() : value_{} {}
+#endif
+  Value() : value_{} { Traits::reinitialize_if_necessary(&value_); }
 
-  /// Constructs a Value<T> by copying the given value @p v.
-  explicit Value(const T& v) : value_(v) {}
+  /// Constructs a Value<T> by copying or cloning the given value @p v.
+  explicit Value(const T& v) : value_(Traits::to_storage(v)) {}
 
   /// Constructs a Value<T> by forwarding the given @p args to T's constructor,
   /// if available.  This is only available for non-primitive T's that are
   /// constructible from @p args.
+#if defined(DRAKE_DOXYGEN_CXX)
+  template <typename... Args>
+  explicit Value(Args&&... args);
+#else
+  // This overload is for copyable T; we construct value_ in-place as Storage.
   template <typename Arg1,
             typename... Args,
             typename = typename std::enable_if<
@@ -180,9 +198,30 @@ class Value : public AbstractValue {
                 !std::is_same<T, Arg1>::value &&
                 !std::is_same<T&, Arg1>::value &&
                 // Only allow real ctors, not POD "constructor"s.
-                !std::is_fundamental<T>::value>::type>
+                !std::is_fundamental<T>::value &&
+                // Use this only for copyable T's.
+                value_detail::ValueTraits<T>::use_copy::value
+              >::type>
   explicit Value(Arg1&& arg1, Args&&... args)
       : value_{std::forward<Arg1>(arg1), std::forward<Args>(args)...} {}
+
+  // This overload is for cloneable T; we move a unique_ptr into our Storage.
+  template <typename Arg1,
+            typename... Args,
+            typename = typename std::enable_if<
+                // These predicates are the same as above ...
+                std::is_constructible<T, Arg1, Args...>::value &&
+                !std::is_same<T, Arg1>::value &&
+                !std::is_same<T&, Arg1>::value &&
+                // ... except only for cloneable T.
+                !value_detail::ValueTraits<T>::use_copy::value
+              >::type,
+            // Dummy to disambiguate this method from the above overload.
+            typename = void>
+  explicit Value(Arg1&& arg1, Args&&... args)
+      : value_{std::make_unique<T>(
+            std::forward<Arg1>(arg1), std::forward<Args>(args)...)} {}
+#endif
 
   ~Value() override {}
 
@@ -191,25 +230,69 @@ class Value : public AbstractValue {
   }
 
   void SetFrom(const AbstractValue& other) override {
-    value_ = other.GetValue<T>();
+    value_ = Traits::to_storage(other.GetValue<T>());
   }
 
   void SetFromOrThrow(const AbstractValue& other) override {
-    value_ = other.GetValueOrThrow<T>();
+    value_ = Traits::to_storage(other.GetValueOrThrow<T>());
   }
 
   /// Returns a const reference to the stored value.
-  const T& get_value() const { return value_; }
+  const T& get_value() const { return Traits::access(value_); }
 
   /// Returns a mutable reference to the stored value.
-  T& get_mutable_value() { return value_; }
+  T& get_mutable_value() { return Traits::access(value_); }
 
   /// Replaces the stored value with a new one.
-  void set_value(const T& v) { value_ = v; }
+  void set_value(const T& v) { value_ = Traits::to_storage(v); }
 
  private:
-  T value_;
+  using Traits = value_detail::ValueTraits<T>;
+  typename Traits::Storage value_;
 };
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace value_detail {
+
+// A traits type for Value<T>, where use_copy is true when T's copy constructor
+// and copy-assignment operator are used and false when T's Clone is used.
+template <typename T, bool use_copy>
+struct ValueTraitsImpl {};
+
+// For copyable types, we can store a T directly within Value<T> and we don't
+// need any special tricks to create or retrieve it.
+template <typename T>
+struct ValueTraitsImpl<T, true> {
+  using use_copy = std::true_type;
+  using Storage = T;
+  static void reinitialize_if_necessary(Storage*) {}
+  static const T& to_storage(const T& other) { return other; }
+  static const T& access(const Storage& storage) { return storage; }
+  // NOLINTNEXTLINE(runtime/references)
+  static T& access(Storage& storage) { return storage; }
+};
+
+// For non-copyable types, we store a copyable_unique_ptr<T> so that Value<T>'s
+// implementation's use of operator= and such work naturally.  To store values,
+// we must Clone them; to access values, we must de-reference the pointer.
+template <typename T>
+struct ValueTraitsImpl<T, false> {
+  static_assert(
+      drake::is_cloneable<T>::value,
+      "Types placed into a Value<T> must either be copyable or cloneable");
+  using use_copy = std::false_type;
+  using Storage = typename drake::copyable_unique_ptr<T>;
+  static void reinitialize_if_necessary(Storage* value) {
+    *value = std::make_unique<T>();
+  }
+  static Storage to_storage(const T& other) { return Storage{other.Clone()}; }
+  static const T& access(const Storage& storage) { return *storage; }
+  // NOLINTNEXTLINE(runtime/references)
+  static T& access(Storage& storage) { return *storage; }
+};
+
+}  // namespace value_detail
+#endif
 
 }  // namespace systems
 }  // namespace drake
