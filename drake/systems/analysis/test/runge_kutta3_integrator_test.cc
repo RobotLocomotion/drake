@@ -347,6 +347,10 @@ TEST_F(RK3IntegratorTest, MinTimeThrows) {
   const double large_dt = 1e-2;
   EXPECT_THROW(integrator_->IntegrateWithMultipleSteps(large_dt),
                std::runtime_error);
+
+  // Disable the throw and verify that the exception does not still occur.
+  integrator_->set_throw_on_minimum_step_size_violation(false);
+  EXPECT_NO_THROW(integrator_->IntegrateWithMultipleSteps(large_dt));
 }
 
 // Verify that attempting to take a single fixed step throws an exception.

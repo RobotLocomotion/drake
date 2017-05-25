@@ -294,7 +294,7 @@ class IntegratorBase {
    *
    * If you disable the exception (via
    * `set_throw_on_minimum_step_size_violation(false)`), the integrator will
-   * simply proceed with a step of the minimum size: accuracy will be maintained
+   * simply proceed with a step of the minimum size: accuracy is guaranteed
    * only when the minimum step size is not violated. Beware that there can be 
    * no guarantee about the magnitude of any errors introduced by violating the
    * accuracy "requirements" in this manner, so disabling the exception should
@@ -1221,9 +1221,6 @@ class IntegratorBase {
     // Update the previous step size.
     prev_step_size_ = dt;
   }
-
-  // Sets the number of steps taken.
-  void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
 
   // Steps the system forward exactly by @p dt, if possible, by calling DoStep.
   // Does necessary pre-initialization and post-cleanup. This method does not

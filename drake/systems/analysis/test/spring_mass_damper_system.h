@@ -28,7 +28,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
                           false /* unforced */),
       damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {}
 
-  /// Returns the damping constant that was provided at construction in N/m
+  /// Returns the damping constant that was provided at construction in Ns/m
   double get_damping_constant() const { return damping_constant_Ns_per_m_; }
 
   /// Returns the closed-form position and velocity solution for the unforced
