@@ -663,6 +663,20 @@ bool is_positive_semidefinite(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::PositiveSemidefinite;
 }
 
+shared_ptr<FormulaFalse> to_false(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_false(*f_ptr));
+  return static_pointer_cast<FormulaFalse>(f_ptr);
+}
+
+shared_ptr<FormulaFalse> to_false(const Formula& f) { return to_false(f.ptr_); }
+
+shared_ptr<FormulaTrue> to_true(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_true(*f_ptr));
+  return static_pointer_cast<FormulaTrue>(f_ptr);
+}
+
+shared_ptr<FormulaTrue> to_true(const Formula& f) { return to_true(f.ptr_); }
+
 shared_ptr<FormulaVar> to_variable(const shared_ptr<FormulaCell>& f_ptr) {
   DRAKE_ASSERT(is_variable(*f_ptr));
   return static_pointer_cast<FormulaVar>(f_ptr);
@@ -682,6 +696,62 @@ shared_ptr<RelationalFormulaCell> to_relational(const Formula& f) {
   return to_relational(f.ptr_);
 }
 
+shared_ptr<FormulaEq> to_equal_to(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_equal_to(*f_ptr));
+  return static_pointer_cast<FormulaEq>(f_ptr);
+}
+
+shared_ptr<FormulaEq> to_equal_to(const Formula& f) {
+  return to_equal_to(f.ptr_);
+}
+
+shared_ptr<FormulaNeq> to_not_equal_to(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_not_equal_to(*f_ptr));
+  return static_pointer_cast<FormulaNeq>(f_ptr);
+}
+
+shared_ptr<FormulaNeq> to_not_equal_to(const Formula& f) {
+  return to_not_equal_to(f.ptr_);
+}
+
+shared_ptr<FormulaGt> to_greater_than(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_greater_than(*f_ptr));
+  return static_pointer_cast<FormulaGt>(f_ptr);
+}
+
+shared_ptr<FormulaGt> to_greater_than(const Formula& f) {
+  return to_greater_than(f.ptr_);
+}
+
+shared_ptr<FormulaGeq> to_greater_than_or_equal_to(
+    const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_greater_than_or_equal_to(*f_ptr));
+  return static_pointer_cast<FormulaGeq>(f_ptr);
+}
+
+shared_ptr<FormulaGeq> to_greater_than_or_equal_to(const Formula& f) {
+  return to_greater_than_or_equal_to(f.ptr_);
+}
+
+shared_ptr<FormulaLt> to_less_than(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_less_than(*f_ptr));
+  return static_pointer_cast<FormulaLt>(f_ptr);
+}
+
+shared_ptr<FormulaLt> to_less_than(const Formula& f) {
+  return to_less_than(f.ptr_);
+}
+
+shared_ptr<FormulaLeq> to_less_than_or_equal_to(
+    const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_less_than_or_equal_to(*f_ptr));
+  return static_pointer_cast<FormulaLeq>(f_ptr);
+}
+
+shared_ptr<FormulaLeq> to_less_than_or_equal_to(const Formula& f) {
+  return to_less_than_or_equal_to(f.ptr_);
+}
+
 shared_ptr<NaryFormulaCell> to_nary(const shared_ptr<FormulaCell>& f_ptr) {
   DRAKE_ASSERT(is_nary(*f_ptr));
   return static_pointer_cast<NaryFormulaCell>(f_ptr);
@@ -689,6 +759,24 @@ shared_ptr<NaryFormulaCell> to_nary(const shared_ptr<FormulaCell>& f_ptr) {
 
 shared_ptr<NaryFormulaCell> to_nary(const Formula& f) {
   return to_nary(f.ptr_);
+}
+
+shared_ptr<FormulaAnd> to_conjunction(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_conjunction(*f_ptr));
+  return static_pointer_cast<FormulaAnd>(f_ptr);
+}
+
+shared_ptr<FormulaAnd> to_conjunction(const Formula& f) {
+  return to_conjunction(f.ptr_);
+}
+
+shared_ptr<FormulaOr> to_disjunction(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_disjunction(*f_ptr));
+  return static_pointer_cast<FormulaOr>(f_ptr);
+}
+
+shared_ptr<FormulaOr> to_disjunction(const Formula& f) {
+  return to_disjunction(f.ptr_);
 }
 
 shared_ptr<FormulaNot> to_negation(const shared_ptr<FormulaCell>& f_ptr) {
