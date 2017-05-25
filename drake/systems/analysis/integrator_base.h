@@ -1330,8 +1330,10 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
   using std::isnan;
 
   // Verify that the integrator supports error estimates.
-  if (!supports_error_estimation())
-    throw std::logic_error("StepOnceErrorControlledAtMost() requires error estimation.");
+  if (!supports_error_estimation()) {
+    throw std::logic_error("StepOnceErrorControlledAtMost() requires error "
+                               "estimation.");
+  }
 
   // Save time, continuous variables, and time derivative because we'll possibly
   // revert time and state.
