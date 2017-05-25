@@ -13,9 +13,13 @@
 /// @p DRAKE_ASSERT(condition) is similar to the built-in @p assert(condition)
 /// from the C++ system header @p <cassert>.  Unless Drake's assertions are
 /// disarmed by the pre-processor definitions listed below, @p DRAKE_ASSERT
-/// will evaluate @p condition and iff the value is false will ::abort() the
-/// program with a message showing at least the condition text, function name,
-/// file, and line.
+/// will evaluate @p condition and iff the value is false will trigger an
+/// assertion failure with a message showing at least the condition text,
+/// function name, file, and line.
+///
+/// By default, assertion failures will :abort() the program.  Code that is
+/// using Drake may turn assertion failures into exceptions, via the functions
+/// in drake/common/drake_assert_toggle.h.
 ///
 /// Assertions are enabled or disabled using the following pre-processor macros:
 /// - If @p DRAKE_ENABLE_ASSERTS is defined, then @p DRAKE_ASSERT is armed.
@@ -37,14 +41,15 @@
 /// allows for guarding expensive assertion-checking subroutines using the same
 /// macros as stand-alone assertions.
 #define DRAKE_ASSERT_VOID(expression)
-/// Evaluates @p condition and iff the value is false will ::abort() the
-/// program with a message showing at least the condition text, function name,
+/// Evaluates @p condition and iff the value is false will trigger an assertion
+/// failure with a message showing at least the condition text, function name,
 /// file, and line.
 #define DRAKE_DEMAND(condition)
-/// Like @p DRAKE_DEMAND(false), except that the meaningless "false"
-/// condition test is not included in the message.
+/// Aborts the program (via ::abort) with a message showing at least the
+/// function name, file, and line.
 #define DRAKE_ABORT()
-/// Like @p DRAKE_ABORT(), with the addition of literal message text.
+/// Aborts the program (via ::abort) with a message showing at least the
+/// given message (macro argument), function name, file, and line.
 #define DRAKE_ABORT_MSG(message)
 #else  //  DRAKE_DOXYGEN_CXX
 
@@ -72,6 +77,10 @@ namespace detail {
 // Abort the program with an error message.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Abort(const char* condition, const char* func, const char* file, int line);
+// Report an assertion failure; will either Abort(...) or throw.
+__attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
+void AssertionFailed(
+    const char* condition, const char* func, const char* file, int line);
 }  // namespace detail
 namespace assert {
 // Allows for specialization of how to bool-convert Conditions used in
@@ -98,7 +107,8 @@ struct ConditionTraits {
         typename std::remove_cv<decltype(condition)>::type> Trait;           \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     if (!Trait::Evaluate(condition)) {                                       \
-      ::drake::detail::Abort(#condition, __func__, __FILE__, __LINE__);      \
+      ::drake::detail::AssertionFailed(                                      \
+           #condition, __func__, __FILE__, __LINE__);                        \
     }                                                                        \
   } while (0)
 
