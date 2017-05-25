@@ -131,6 +131,15 @@ GTEST_TEST(ValueTest, BareCopyConstructor) {
   const Value<T> crvalue(const_param);  // Called with `const T&`.
 }
 
+// Passing a unique_ptr<T> to Value<T> should take over the value.
+TYPED_TEST(TypedValueTest, UniquePtrConstructor) {
+  using T = TypeParam;
+  auto original = std::make_unique<T>(22);
+  const Value<T> value{std::move(original)};
+  EXPECT_EQ(original.get(), nullptr);
+  EXPECT_EQ(22, value.template GetValue<T>());
+}
+
 TYPED_TEST(TypedValueTest, Make) {
   using T = TypeParam;
   // TODO(jwnimmer-tri) We should be able to forward this too, and lose the

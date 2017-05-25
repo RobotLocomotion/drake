@@ -223,6 +223,10 @@ class Value : public AbstractValue {
             std::forward<Arg1>(arg1), std::forward<Args>(args)...)} {}
 #endif
 
+  /// Constructs a Value<T> by copying or moving the given value @p v.
+  explicit Value(std::unique_ptr<T> v)
+      : value_(Traits::to_storage(std::move(v))) {}
+
   ~Value() override {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
@@ -267,6 +271,7 @@ struct ValueTraitsImpl<T, true> {
   using Storage = T;
   static void reinitialize_if_necessary(Storage*) {}
   static const T& to_storage(const T& other) { return other; }
+  static Storage to_storage(const std::unique_ptr<T>& other) { return *other; }
   static const T& access(const Storage& storage) { return storage; }
   // NOLINTNEXTLINE(runtime/references)
   static T& access(Storage& storage) { return storage; }
@@ -285,7 +290,12 @@ struct ValueTraitsImpl<T, false> {
   static void reinitialize_if_necessary(Storage* value) {
     *value = std::make_unique<T>();
   }
-  static Storage to_storage(const T& other) { return Storage{other.Clone()}; }
+  static Storage to_storage(const T& other) {
+    return Storage{other.Clone()};
+  }
+  static Storage to_storage(std::unique_ptr<T> other) {
+    return Storage{std::move(other)};
+  }
   static const T& access(const Storage& storage) { return *storage; }
   // NOLINTNEXTLINE(runtime/references)
   static T& access(Storage& storage) { return *storage; }
