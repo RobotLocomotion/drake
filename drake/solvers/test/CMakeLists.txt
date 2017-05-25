@@ -79,15 +79,14 @@ drake_add_cc_test(snopt_solver_test)
 target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
 if (mosek_FOUND)
-  drake_add_cc_test(rotation_constraint_test rotation_constraint_test.cc)
-  set_tests_properties(rotation_constraint_test PROPERTIES TIMEOUT 900)
+  drake_add_cc_test(NAME rotation_constraint_test rotation_constraint_test.cc
+    SIZE large)
   target_link_libraries(rotation_constraint_test drakeRotationConstraint)
 endif()
 
 if (gurobi_FOUND)
   if(NOT APPLE)
-	  drake_add_cc_test(rotation_constraint_limit_test)
-	  set_tests_properties(rotation_constraint_limit_test PROPERTIES TIMEOUT 900)
+	  drake_add_cc_test(NAME rotation_constraint_limit_test SIZE large)
 	  target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
   endif()
 endif()
