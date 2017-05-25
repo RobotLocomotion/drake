@@ -105,9 +105,10 @@ drake_cc_library(
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
     deps = [
-        "//drake/common",
-        "//drake/common:number_traits",
+        #"//drake/common",
+        #"//drake/common:number_traits",
         "//drake/common:symbolic",
+        "//drake/solvers:decision_variable"
     ],
 )
 
@@ -504,7 +505,7 @@ drake_cc_googletest(
     name = "indeterminates_test",
     deps = [
         ":mathematical_program",
-        "//drake/common:eigen_matrix_compare",
+        #"//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic_test_util",
     ],
 )

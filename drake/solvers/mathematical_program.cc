@@ -208,34 +208,20 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
   return NewVariables(VarType::BINARY, rows, names);
 }
 
-// TODO(FischerGundlach): Do I actually need the int row, or is the cast from
-// size_t good enough?
-/*MatrixXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
-    int rows, int cols, const vector<string>& names) {
-  MatrixXIndeterminateVariable Indeterminate_variable_matrix(rows, cols);
-  NewIndeterminate_impl(names,Indeterminate_variable_matrix);
-  return Indeterminate_variable_matrix;
-}
-
-VectorXIndeterminateVariable MathematicalProgram::NewIndeterminateVariables(
-    int rows, const vector<string>& names) {
-  return NewIndeterminateVariables(rows, 1, names);
-}*/
-
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
-    size_t rows, size_t cols, const vector<string>& names) {
+    int rows, int cols, const vector<string>& names) {
   MatrixXIndeterminate indeterminates_matrix(rows, cols);
   NewIndeterminates_impl(names, indeterminates_matrix);
   return indeterminates_matrix;
 }
 
 VectorXIndeterminate MathematicalProgram::NewIndeterminates(
-    size_t rows, const std::vector<std::string>& names) {
+    int rows, const std::vector<std::string>& names) {
   return NewIndeterminates(rows, 1, names);
 }
 
 VectorXIndeterminate MathematicalProgram::NewIndeterminates(
-    size_t rows, const string& name) {
+    int rows, const string& name) {
   vector<string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + "(" + to_string(i) + ")";
@@ -244,7 +230,7 @@ VectorXIndeterminate MathematicalProgram::NewIndeterminates(
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
-    size_t rows, size_t cols, const string& name) {
+    int rows, int cols, const string& name) {
   vector<string> names(rows * cols);
   int count = 0;
   for (int j = 0; j < static_cast<int>(cols); ++j) {
@@ -644,22 +630,19 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
     ostringstream oss;
-    oss << var
-        << " is not a decision variable in the mathematical program, "
-           "when calling GetSolution.\n";
+    oss << var << " is not a decision variable in the mathematical program, "
+                  "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;
 }
 
-size_t MathematicalProgram::FindIndeterminateIndex(
-    const Variable& var) const {
+size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   auto it = indeterminates_index_.find(var.get_id());
   if (it == indeterminates_index_.end()) {
     ostringstream oss;
-    oss << var
-        << " is not a indeterminate in the mathematical program, "
-           "when calling GetSolution.\n";
+    oss << var << " is not a indeterminate in the mathematical program, "
+                  "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;

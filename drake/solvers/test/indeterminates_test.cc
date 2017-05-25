@@ -1,8 +1,6 @@
-#include "drake/solvers/indeterminate.h"
-
 #include <gtest/gtest.h>
-
 #include "drake/common/test/symbolic_test_util.h"
+#include "drake/solvers/indeterminate.h"
 
 namespace drake {
 namespace solvers {
