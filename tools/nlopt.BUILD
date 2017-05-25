@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 # Chooses the nlopt preprocessor substitutions that we want to use from Bazel.
 cmake_configure_file(
@@ -112,5 +113,24 @@ cc_library(
         "esch",
         "api",
     ],
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "license",
+    extension = "tar.gz",
+    files = [
+        "COPYING",
+        "bobyqa/COPYRIGHT",
+        "cobyla/COPYRIGHT",
+        "direct/COPYING",
+        "esch/COPYRIGHT",
+        "luksan/COPYRIGHT",
+        "newuoa/COPYRIGHT",
+        "slsqp/COPYRIGHT",
+        "stogo/COPYRIGHT",
+    ],
+    mode = "0644",
+    package_dir = "nlopt",
     visibility = ["//visibility:public"],
 )

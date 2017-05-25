@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
 # We build IPOPT by shelling out to autotools.
 
 # We run autotools in a genrule, and only files explicitly identified as outputs
@@ -128,4 +130,17 @@ cc_library(
         "@gfortran",
     ],
     alwayslink = 1,
+)
+
+pkg_tar(
+    name = "license",
+    extension = "tar.gz",
+    files = [
+        "Ipopt/LICENSE",
+        "ThirdParty/Metis/metis-4.0/LICENSE",
+        "ThirdParty/Mumps/MUMPS/LICENSE",
+    ],
+    mode = "0644",
+    package_dir = "ipopt",
+    visibility = ["//visibility:public"],
 )

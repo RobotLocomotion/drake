@@ -33,6 +33,9 @@ function copy_build_artifacts
   cp bazel-bin/external/lcm/liblcm.so "$1/lib/"
   cp bazel-bin/drake/libdrake.so "$1/lib/"
   cp bazel-genfiles/tools/drake-config.cmake "$1/lib/cmake/drake/"
+  
+  # Ignore *.so files nested below *.runfiles directories.
+  find bazel-bin/drake/bindings/python -name "*.so" -not -path "*.runfiles/*.so" -exec cp "{}" "$1/lib/python2.7/site_packages" \;
 }
 
 #------------------------------------------------------------------------------
@@ -54,6 +57,14 @@ function extract_headers
   # Remove the scratch directory
   cd ..
   rmdir scratch
+) }
+
+#------------------------------------------------------------------------------
+# Extract Python sources to specified install prefix.
+function extract_python_sources
+{ (
+  cd "$1/lib/python2.7"
+  tar -xzf "$workspace/bazel-bin/drake/python_sources.tar.gz"
 ) }
 
 #------------------------------------------------------------------------------
@@ -172,16 +183,19 @@ cd "$workspace"
 bazel build \
   //drake:libdrake.so \
   //drake:libdrake_headers \
-  //drake:external_licenses
+  //drake:external_licenses \
+  //drake:python_sources
 
 # Create and populate temporary install tree.
 tmpdir=$(mktemp -d)
 mkdir -p "$tmpdir/lib/cmake/drake"
+mkdir -p "$tmpdir/lib/python2.7/site_packages"
 mkdir -p "$tmpdir/include/external"
 
 copy_source_artifacts "$tmpdir"
 copy_build_artifacts "$tmpdir"
 extract_headers "$tmpdir"
+extract_python_sources "$tmpdir"
 extract_licenses "$tmpdir"
 
 verify_licenses "$tmpdir"
