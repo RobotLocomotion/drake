@@ -33,9 +33,9 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "pick_and_place_state_machine",
+    name = "pick_and_place_demo",
     srcs = [
-        "pick_and_place_state_machine.cc",
+        "pick_and_place_demo.cc",
     ],
     deps = [
         ":kuka_pick_and_place",
