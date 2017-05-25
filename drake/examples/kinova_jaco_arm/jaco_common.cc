@@ -1,6 +1,7 @@
+#include "drake/examples/kinova_jaco_arm/jaco_common.h"
+
 #include <map>
 
-#include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 using Eigen::Vector3d;
