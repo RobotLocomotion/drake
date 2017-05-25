@@ -30,6 +30,8 @@ alias(
     actual="@protobuf//:protobuf_python",
 )
 
+exports_files(["LICENSE.TXT"])
+
 install(
     name = "install",
     deps = [

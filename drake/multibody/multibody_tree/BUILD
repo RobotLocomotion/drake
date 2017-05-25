@@ -33,6 +33,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "multibody_tree_context",
+    srcs = [
+        "multibody_tree_context.cc",
+        "position_kinematics_cache.cc",
+    ],
+    hdrs = [
+        "multibody_tree_context.h",
+        "position_kinematics_cache.h",
+    ],
+    deps = [
+        ":multibody_tree_topology",
+        "//drake/common:autodiff",
+        "//drake/systems/framework:leaf_context",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_tree_element",
     srcs = [],
     hdrs = [
@@ -89,6 +106,7 @@ drake_cc_library(
     deps = [
         ":bodies_and_frames",
         ":mobilizers",
+        ":multibody_tree_context",
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//drake/common:autodiff",
@@ -103,6 +121,17 @@ drake_cc_library(
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:extract_double",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_inertia",
+    srcs = [],
+    hdrs = ["spatial_inertia.h"],
+    deps = [
+        ":unit_inertia",
+        "//drake/math:gradient",
+        "//drake/multibody/multibody_tree/math:spatial_algebra",
     ],
 )
 
@@ -123,13 +152,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "multibody_tree_indexes_tests",
-    deps = [":multibody_tree_indexes"],
+    name = "multibody_tree_creation_tests",
+    deps = [":multibody_tree"],
 )
 
 drake_cc_googletest(
-    name = "multibody_tree_creation_tests",
-    deps = [":multibody_tree"],
+    name = "multibody_tree_indexes_tests",
+    deps = [":multibody_tree_indexes"],
 )
 
 drake_cc_googletest(
@@ -141,27 +170,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "unit_inertia_tests",
+    name = "spatial_inertia_tests",
     deps = [
-        ":unit_inertia",
-    ],
-)
-
-drake_cc_library(
-    name = "spatial_inertia",
-    srcs = [],
-    hdrs = ["spatial_inertia.h"],
-    deps = [
-        ":unit_inertia",
-        "//drake/math:gradient",
-        "//drake/multibody/multibody_tree/math:spatial_algebra",
+        ":spatial_inertia",
     ],
 )
 
 drake_cc_googletest(
-    name = "spatial_inertia_tests",
+    name = "unit_inertia_tests",
     deps = [
-        ":spatial_inertia",
+        ":unit_inertia",
     ],
 )
 

@@ -6,5 +6,6 @@ if(PYTHON_EXECUTABLE)
     NAME yaml_to_obj_test
     COMMAND ${PYTHON_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/yaml_to_obj_test.py
-    $<TARGET_FILE:yaml_to_obj>)
+    $<TARGET_FILE:yaml_to_obj>
+    SIZE medium)
 endif()

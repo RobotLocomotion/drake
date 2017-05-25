@@ -249,9 +249,9 @@ install(
     doc_dest = "share/doc/lcm",
     docs = [
         "AUTHORS",
-        "COPYING",
         "NEWS",
     ],
+    license_docs = ["COPYING"],
     targets = [
         "lcm",
         "lcm-gen",

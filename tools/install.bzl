@@ -162,6 +162,12 @@ def _output_path(ctx, input_file, strip_prefix):
         out_root = _join_paths("bazel-out/*/*", package_root)
         input_path = _remove_prefix(input_path, out_root)
 
+    # Deal with possible case of file outside the package root.
+    if input_path == None:
+        print("%s installing file %s which is not in current package"
+              % (package_root, input_file.path))
+        return input_file.basename
+
     # Possibly remove prefixes.
     for p in strip_prefix:
         output_path = _remove_prefix(input_path, p)
@@ -263,11 +269,17 @@ def _install_code(action):
 def _install_impl(ctx):
     actions = []
 
+    # Check for missing license files.
+    if len(ctx.attr.targets) or len(ctx.attr.hdrs):
+        if not len(ctx.attr.license_docs):
+            fail("'install' missing 'license_docs'")
+
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d.install_actions
 
     # Generate actions for docs and includes.
+    actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest)
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest)
     actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
                                 ctx.attr.hdr_strip_prefix)
@@ -299,6 +311,7 @@ install = rule(
         "deps": attr.label_list(providers = ["install_actions"]),
         "docs": attr.label_list(allow_files = True),
         "doc_dest": attr.string(default = "share/doc"),
+        "license_docs": attr.label_list(allow_files = True),
         "hdrs": attr.label_list(allow_files = True),
         "hdr_dest": attr.string(default = "include"),
         "hdr_strip_prefix": attr.string_list(),
@@ -346,6 +359,7 @@ Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
     doc_dest: Destination for documentation files (default = "share/doc").
+    license_docs: List of license files to install (uses doc_dest).
     guess_hdrs: See note.
     hdrs: List of header files to install.
     hdr_dest: Destination for header files (default = "include").

@@ -12,8 +12,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "common",
     srcs = [
-        "drake_assert.cc",
-        "drake_throw.cc",
+        "drake_assert_and_throw.cc",
         "text_logging.cc",
     ],
     hdrs = [
@@ -392,6 +391,7 @@ drake_cc_googletest(
     ],
 )
 
+# Functional test of DRAKE_ASSERT at runtime.
 drake_cc_googletest(
     name = "drake_assert_test",
     deps = [
@@ -399,10 +399,60 @@ drake_cc_googletest(
     ],
 )
 
+# Same, but with assertions forced enabled.
+drake_cc_googletest(
+    name = "drake_assert_test_enabled",
+    srcs = ["test/drake_assert_test.cc"],
+    deps = [
+        ":common",
+    ],
+    copts = [
+        "-DDRAKE_ENABLE_ASSERTS",
+        "-UDRAKE_DISABLE_ASSERTS",
+    ],
+)
+
+# Same, but with assertions forced disabled.
+drake_cc_googletest(
+    name = "drake_assert_test_disabled",
+    srcs = ["test/drake_assert_test.cc"],
+    deps = [
+        ":common",
+    ],
+    copts = [
+        "-UDRAKE_ENABLE_ASSERTS",
+        "-DDRAKE_DISABLE_ASSERTS",
+    ],
+)
+
+# Functional test of DRAKE_ASSERT at compile time.
 drake_cc_googletest(
     name = "drake_assert_test_compile",
     deps = [
         ":common",
+        ":unused",
+    ],
+)
+
+# Needed by :drake_assert_test_compile_variants.
+genrule(
+    name = "capture_cc",
+    outs = ["capture_cc.env"],
+    cmd = "echo \"BAZEL_CC=$(CC)\" > '$@'",
+    visibility = ["//visibility:private"],
+)
+
+# Functional test that mistyped DRAKE_ASSERTs will failt to compile.
+sh_test(
+    name = "drake_assert_test_compile_variants",
+    srcs = ["test/drake_assert_test_compile_variants.sh"],
+    data = [
+        "capture_cc.env",
+        "drake_assert.h",
+        "drake_compat.h",
+        "test/drake_assert_test_compile.cc",
+        "unused.h",
+        "//tools:third_party/bazel/tools/cpp/osx_cc_wrapper.sh",
     ],
 )
 
