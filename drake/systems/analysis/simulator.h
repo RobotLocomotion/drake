@@ -568,7 +568,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
 // Isolates the first time at one or more witness functions triggered (in the
 // interval [t0, tf]), to the tolerances specified by the witness function(s).
-// @pre triggered_witnesses is empty and non-null (aborts if condition not met). 
+// @pre triggered_witnesses is empty and non-null (aborts if condition not met).
 // @post The context will be isolated to the first witness function trigger(s),
 //       to within the isolation tolerance specified by that (those) witness
 //       function(s).
@@ -583,7 +583,7 @@ void Simulator<T>::IsolateWitnessTriggers(
 
   // Verify that the vector of triggered witnesses is non-null and empty.
   DRAKE_DEMAND(triggered_witnesses);
-  DRAKE_DEMAND(triggered_witnesses->empty()); 
+  DRAKE_DEMAND(triggered_witnesses->empty());
 
   // TODO(edrumwri): Speed this process using interpolation between states,
   // more powerful root finding methods, and/or introducing the concept of
@@ -615,7 +615,7 @@ void Simulator<T>::IsolateWitnessTriggers(
 
   // Loop over all witness functions.
   for (size_t i = 0; i < witnesses.size(); ++i) {
-    // Set interval endpoints (in time). 
+    // Set interval endpoints (in time).
     T a = t0;
     T b = t_first_witness;
 
@@ -762,7 +762,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     // Indicate a "sample time was hit". In more understandable terms, this
     // means that an event should be handled on the next simulation loop.
     return true;
-  } 
+  }
 
   // No witness function triggered; handle integration as usual.
   // Updates and boundary times are consciously distinguished between. See
