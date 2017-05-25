@@ -16,7 +16,6 @@ class TranslatorBase {
   TranslatorBase() {}
   virtual ~TranslatorBase() {}
 
-  virtual std::unique_ptr<DataType> AllocateDecodedData() const = 0;
   virtual void InitializeMessage(MsgType* msg) const = 0;
 
   virtual void Encode(double time, const DataType& data, MsgType* msg) const = 0;

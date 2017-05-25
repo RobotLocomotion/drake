@@ -6,26 +6,23 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-std::unique_ptr<VectorBase<double>>
-MyLcmtDrakeSignalTranslator::AllocateDecodedData() const {
-  return std::make_unique<BasicVector<double>>(size_);
-}
-
 void MyLcmtDrakeSignalTranslator::InitializeMessage(
     lcmt_drake_signal* msg) const {
-  msg->dim = size_;
+  msg->dim = 0;
   msg->val.resize(msg->dim, 0);
   msg->coord.resize(msg->dim);
   msg->timestamp = 0;
 }
 
 void MyLcmtDrakeSignalTranslator::Decode(
-    const lcmt_drake_signal& msg,
-    double* time, VectorBase<double>* vector_base) const {
+    const lcmt_drake_signal& msg, double* time,
+    VectorBase<double>* vector_base) const {
   if (msg.dim != vector_base->size()) {
     throw std::runtime_error(
         "drake::systems::lcm::LcmtDrakeSignalTranslator: Decode: ERROR: "
-        "The LCM message's size (" + std::to_string(msg.dim) + ") is not "
+        "The LCM message's size (" +
+        std::to_string(msg.dim) +
+        ") is not "
         "equal to vector_base's size (" +
         std::to_string(vector_base->size()) + ").");
   }
@@ -39,11 +36,9 @@ void MyLcmtDrakeSignalTranslator::Decode(
   *time = static_cast<double>(msg.timestamp) / 1e3;
 }
 
-void MyLcmtDrakeSignalTranslator::Encode(
-    double time,
-    const VectorBase<double>& vector_base,
-    lcmt_drake_signal* msg) const {
-
+void MyLcmtDrakeSignalTranslator::Encode(double time,
+                                         const VectorBase<double>& vector_base,
+                                         lcmt_drake_signal* msg) const {
   msg->dim = vector_base.size();
   msg->val.resize(msg->dim);
   msg->coord.resize(msg->dim);

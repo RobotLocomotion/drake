@@ -28,6 +28,9 @@ drake_cc_library(
     ],
     hdrs = [
         "translator.h",
+        "translator_internal.h",
+        "new_lcm_publisher_system.h",
+        "translator_system.h"
     ],
     deps = [
         "//drake/lcm:translator",
