@@ -542,6 +542,11 @@ class IntegratorBase {
    *          simulation circumstances, users will typically call
    *          `Simulator::StepTo()`. In other circumstances, users will
    *          typically call `IntegratorBase::IntegrateWithMultipleSteps()`.
+   *
+   * This method at a glance:
+   * - For integrating ODEs/DAEs via Simulator
+   * - Supports fixed step and variable step integration schemes
+   * - Takes only a single step forward.
    */
   // TODO(edrumwri): Make the stretch size configurable.
   StepResult IntegrateAtMost(const T& publish_dt, const T& update_dt,
@@ -564,6 +569,11 @@ class IntegratorBase {
   /// @sa IntegrateWithSingleStep(), which is also designed to be operated
   ///     *outside of* Simulator, but throws an exception if the integrator
   ///     cannot advance time by @p dt in a single step.
+  ///
+  /// This method at a glance:
+  /// - For integrating ODEs/DAEs not using Simulator
+  /// - Supports fixed step and variable step integration schemes
+  /// - Takes as many steps as necessary until time has advanced by @p dt
   void IntegrateWithMultipleSteps(const T& dt) {
     using std::max;
     using std::min;
@@ -611,6 +621,12 @@ class IntegratorBase {
   /// @sa IntegrateWithMultipleSteps(), which is also designed to be operated
   ///     *outside of* Simulator, but will take as many integration steps as
   ///     necessary until time has been stepped forward by @p dt.
+  ///
+  /// This method at a glance:
+  /// - For integrating ODEs/DAEs not using Simulator
+  /// - Fixed step integration (no step size reductions for error control or
+  ///   integrator convergence)
+  /// - Takes only a single step forward.
   void IntegrateWithSingleFixedStep(const T& dt) {
     if (dt < 0) {
       throw std::logic_error("IntegrateWithSingleFixedStep() called with a "
@@ -1036,13 +1052,6 @@ class IntegratorBase {
    */
 
  protected:
-  // Derived classes are tasked with providing a method, DoStep(), to (1) take a
-  // *single integration step* from time/state (t₀, x₀) to time/state (t₁, x₁),
-  // or reporting failure (which might occur if t₁-t₀ is too large of a step)
-  // and (2) computing an estimate of the error, if possible, over that step.
-  // Such derived classes may provide special routines for any bespoke
-  // initialization or statistics collection.
-
   /// Resets any statistics particular to a specific integrator. The default
   /// implementation of this function does nothing. If your integrator
   /// collects its own statistics, you should re-implement this method and
@@ -1224,11 +1233,12 @@ class IntegratorBase {
 
   // Steps the system forward exactly by @p dt, if possible, by calling DoStep.
   // Does necessary pre-initialization and post-cleanup. This method does not
-  // update general integrator statistics, because error control might decide
-  // that it does not like the result of the step and might "rewind" and take a
-  // smaller one.
+  // update general integrator statistics (which are updated in the calling
+  // methods), because error control might decide that it does not like the
+  // result of the step and might "rewind" and take a smaller one.
   // @returns `true` if successful, `false` otherwise (due to, e.g., integrator
   //          convergence failure).
+  // @sa DoStep()
   bool Step(const T& dt) {
     if (!DoStep(dt))
       return false;
