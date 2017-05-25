@@ -91,6 +91,10 @@ class MobilizerImpl : public Mobilizer<T> {
         this->get_positions_start());
   }
 
+  const Isometry3<T>& get_X_FM(PositionKinematicsCache<T>* pc) const {
+    return pc->get_X_FM(this->get_topology().body_node);
+  }
+
   Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
     return pc->get_mutable_X_FM(this->get_topology().body_node);
   }

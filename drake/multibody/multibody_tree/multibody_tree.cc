@@ -56,7 +56,7 @@ void MultibodyTree<T>::Finalize() {
   }
 
   // Create a list of body nodes organized by levels.
-  body_node_levels_.reserve(topology_.get_num_levels());
+  body_node_levels_.resize(topology_.get_num_levels());
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     const BodyNodeTopology& node_topology =
@@ -65,7 +65,7 @@ void MultibodyTree<T>::Finalize() {
   }
 
   // Creates BodyNode's:
-  for (BodyNodeIndex body_node_index(1);
+  for (BodyNodeIndex body_node_index(0);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     CreateBodyNode(body_node_index);
   }
@@ -116,6 +116,12 @@ template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
     const MultibodyTreeContext<T>& context,
     PositionKinematicsCache<T>* pc) const {
+  // TODO(amcastro-tri): Loop over bodies to update their position dependent
+  // kinematics. Essentially the pose X_BQ(qf_B) of each frame Q that is
+  // attached to the body measured and expressed in the body frame B.
+  // Notice this loop can be performed in any order and each X_BQ(qf_B) is
+  // independent of all others. This could be performed even in parallel.
+
   // Loop over all mobilizers to update their position dependent kinematics.
   // This updates the kinematics quantities only dependent on the rigid degrees
   // of freedom qr. These are: X_FM(qr), H_FM(qr), HdotTimesV(qr), N(qr).
@@ -135,7 +141,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
       DRAKE_ASSERT(node.get_index() == body_node_index);
       
       // Update per-node kinematics.
-      node.UpdatePositionKinematicsCache_BaseToTip(context);
+      node.CalcPositionKinematicsCache_BaseToTip(context, pc);
     }
   }
 }

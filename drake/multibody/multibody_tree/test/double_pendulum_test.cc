@@ -153,6 +153,9 @@ class PendulumTests : public ::testing::Test {
   // Pendulum parameters:
   const double link_length = 1.0;
   const double half_link_length = link_length / 2;
+  // COM positions, measured and expressed in body frame:
+  const Vector3d p_UBcm_{0.0, -half_link_length, 0.0};
+  const Vector3d p_LBcm_{0.0, -half_link_length, 0.0};
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
   const Isometry3d X_WL_{Translation3d(0.0, -half_link_length, 0.0)};
@@ -403,22 +406,27 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
   EXPECT_TRUE(pc.get_mutable_X_FM(elbow_node).matrix().isApprox(
       X_EiEo.matrix()));
 
-  PRINT_VARn(X_SiSo.matrix());
-  PRINT_VARn(pc.get_mutable_X_FM(shoulder_node).matrix());
-
-  PRINT_VARn(X_EiEo.matrix());
-  PRINT_VARn(pc.get_mutable_X_FM(elbow_node).matrix());
-
-#if 0
   // Retrieve body poses from position kinematics cache.
   const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
-  const Isometry3d &X_WLu = get_body_pose_in_world(pc, *upper_link_);
+  const Isometry3d &X_WU = get_body_pose_in_world(pc, *upper_link_);
+  const Isometry3d &X_WL = get_body_pose_in_world(pc, *lower_link_);
+
+  // Expected pose of the upper link in the world frame.
+  Isometry3d X_WU_expected = /* X_WSo * X_SoU */
+      AngleAxisd(shoulder_angle, Vector3d::UnitZ()) * Translation3d(p_UBcm_);
+
+  // Expected pose of the lower link in the world frame.
+  Isometry3d X_WL_expected = /* X_WSo * X_SoEi * X_EiEo * X_EoL */
+      AngleAxisd(shoulder_angle, Vector3d::UnitZ()) *
+      Translation3d(Vector3d(0.0, -link_length, 0.0)) *
+      AngleAxisd(elbow_angle, Vector3d::UnitZ()) *
+      Translation3d(p_LBcm_);
 
   // Asserts that the retrieved poses match with the ones specified by the unit
   // test method SetPendulumPoses().
   EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
-  EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
-#endif
+  EXPECT_TRUE(X_WU.matrix().isApprox(X_WU_expected.matrix()));
+  EXPECT_TRUE(X_WL.matrix().isApprox(X_WL_expected.matrix()));
 }
 
 }  // namespace
