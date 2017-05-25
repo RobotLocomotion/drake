@@ -21,21 +21,23 @@ template <class T>
 class ClockWitness : public systems::WitnessFunction<T> {
  public:
   explicit ClockWitness(
-      const T& offset,
+      const T& trigger_time,
       const EmptySystem<T>& system,
       const typename systems::WitnessFunction<T>::DirectionType& dir_type) :
-      systems::WitnessFunction<T>(system, dir_type,
-          systems::DiscreteEvent<T>::kPublishAction), offset_(offset) {
+        systems::WitnessFunction<T>(system, dir_type,
+          systems::DiscreteEvent<T>::kPublishAction),
+        trigger_time_(trigger_time) {
   }
 
  protected:
-  // The witness function is simply the time value itself.
+  // The witness function is the time value itself plus the offset value.
   T DoEvaluate(const Context<T>& context) const override {
-    return context.get_time() + offset_;
+    return context.get_time() - trigger_time_;
   }
 
  private:
-  T offset_{0};
+  // The time at which the witness function is to trigger.
+  T trigger_time_{0};
 };
 
 /// System with no state evolution for testing a simplistic witness function.
@@ -55,8 +57,8 @@ class EmptySystem : public LeafSystem<T> {
   }
 
  protected:
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {}
+  void DoCalcOutput(const Context<T>&,
+                    SystemOutput<T>*) const override {}
 
   void DoGetWitnessFunctions(
       const systems::Context<T>&,

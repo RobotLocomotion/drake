@@ -1025,7 +1025,9 @@ class System {
  protected:
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default
-  /// implementation does nothing.
+  /// implementation does nothing. On entry to this function, the context will
+  /// have already been validated and the vector of witness functions will have
+  /// been validated to be both empty and non-null.
   virtual void DoGetWitnessFunctions(const Context<T>&,
       std::vector<const WitnessFunction<T>*>*) const {
   }

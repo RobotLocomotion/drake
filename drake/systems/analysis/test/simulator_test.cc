@@ -40,7 +40,7 @@ namespace {
 // function should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(-1, WitnessFunction<double>::DirectionType::kCrossesZero);
+  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -48,6 +48,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
       simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
@@ -55,8 +56,8 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   context->set_time(0);
   simulator.StepTo(1);
 
-  // Publication occurs at witness function crossing and at initialization.
-  EXPECT_EQ(2, num_publishes);
+  // Publication should occur at witness function crossing.
+  EXPECT_EQ(1, num_publishes);
 }
 
 // Tests ability of simulation to identify the proper number of witness function
@@ -76,13 +77,14 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
   Simulator<double> simulator(system);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
       simulator.get_mutable_context());
+  simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
   Context<double>* context = simulator.get_mutable_context();
   context->set_time(0);
   simulator.StepTo(1);
 
   // Verify that no publication is performed when stepping to 1.
-  EXPECT_EQ(1, num_publishes);
+  EXPECT_EQ(0, num_publishes);
 }
 
 // Tests ability of simulation to identify the proper number of witness function
@@ -90,7 +92,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(-1, WitnessFunction<double>::DirectionType::
+  EmptySystem system(+1, WitnessFunction<double>::DirectionType::
       kPositiveThenNonPositive);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -99,6 +101,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
       simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
@@ -106,8 +109,9 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   context->set_time(0);
   simulator.StepTo(2);
 
-  // Publication should only occur at witness function crossing.
-  EXPECT_EQ(1, num_publishes);
+  // Publication should not occur (witness function should initially evaluate
+  // to a negative value, then will evolve to a positive value).
+  EXPECT_EQ(0, num_publishes);
 }
 
 // Tests ability of simulation to identify the proper number of witness function
@@ -123,6 +127,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
       simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
@@ -130,8 +135,8 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
   context->set_time(-1);
   simulator.StepTo(1);
 
-  // Publication occurs at witness function crossing and at initialization.
-  EXPECT_EQ(2, num_publishes);
+  // Publication should occur at witness function crossing.
+  EXPECT_EQ(1, num_publishes);
 }
 
 // Tests ability of simulation to identify the proper number of witness function
@@ -148,6 +153,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
 
   const double dt = 1e-6;
   Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
       simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
@@ -155,8 +161,8 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
   (*context->get_mutable_continuous_state())[0] = -1;
   simulator.StepTo(1e-4);
 
-  // Publication occurs at witness function crossing and at initialization.
-  EXPECT_EQ(2, num_publishes);
+  // Publication should occur only at witness function crossing.
+  EXPECT_EQ(1, num_publishes);
 }
 
 GTEST_TEST(SimulatorTest, SecondConstructor) {

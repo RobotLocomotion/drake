@@ -70,8 +70,8 @@ class LogisticSystem : public LeafSystem<T> {
     (*continuous_state)[0] = alpha_ * (1 - pow(x/k_, nu_)) * t;
   }
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
+  void DoCalcOutput(const Context<T>&,
+                    SystemOutput<T>*) const override {
   }
 
   void DoGetWitnessFunctions(
