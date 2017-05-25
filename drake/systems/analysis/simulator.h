@@ -666,20 +666,20 @@ void Simulator<T>::IsolateWitnessTriggers(
         // requisite handler is called).
         const T t_trigger = b;
 
-       // TODO(edrumwri): Move this to the end of the function (and
-       // only call this once) when we are confident that the witness function
-       // changes sign at the end of the interval (i.e., the following
-       // assertion).
-       // Integrate to the trigger time.
-       fwd_int(t_trigger);
+        // TODO(edrumwri): Move this to the end of the function (and
+        // only call this once) when we are confident that the witness function
+        // changes sign at the end of the interval (i.e., the following
+        // assertion).
+        // Integrate to the trigger time.
+        fwd_int(t_trigger);
 
-       // TODO(edrumwri): This check is expensive. Remove it once we are
-       // confident.
-       // Verify that the witness function changed sign.
-       const T f_trigger = witnesses[i]->Evaluate(*context);
-       DRAKE_DEMAND(f_trigger * fa <= 0);
+        // TODO(edrumwri): This check is expensive. Remove it once we are
+        // confident.
+        // Verify that the witness function changed sign.
+        const T f_trigger = witnesses[i]->Evaluate(*context);
+        DRAKE_DEMAND(f_trigger * fa <= 0);
 
-       // Only clear the list of witnesses if t_trigger strictly less than
+        // Only clear the list of witnesses if t_trigger strictly less than
         // t_first_witness.
         DRAKE_DEMAND(t_first_witness >= t_trigger);
         if (t_trigger < t_first_witness)
