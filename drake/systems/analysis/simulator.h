@@ -617,7 +617,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
     fwd_int(t_first_witness);
 
     // Evaluate the witness function.
-    T fb = system.EvalWitnessFunction(*context, witnesses[i]);
+    T fb = witnesses[i]->Evaluate(*context);
 
     // See whether there has been a sign change; after shrinking the time
     // interval one or more times, there may no longer be one, in which case
@@ -636,7 +636,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
       fwd_int(c);
 
       // Evaluate the witness function.
-      T fc = system.EvalWitnessFunction(*context, witnesses[i]);
+      T fc = witnesses[i]->Evaluate(*context);
 
       // Bisect.
       if (witnesses[i]->should_trigger(fa, fc)) {
@@ -667,7 +667,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
        // TODO(edrumwri): This check is expensive. Remove it once we are
        // confident.
        // Verify that the witness function changed sign.
-       const T f_trigger = system.EvalWitnessFunction(*context, witnesses[i]);
+       const T f_trigger = witnesses[i]->Evaluate(*context);
        DRAKE_DEMAND(f_trigger * fa <= 0);
 
        // Only clear the list of witnesses if t_trigger strictly less than
