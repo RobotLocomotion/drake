@@ -65,8 +65,8 @@ int DoMain() {
 
   // Adds a constant source for desired state.
   Eigen::VectorXd const_pos = Eigen::VectorXd::Zero(kNumDofs * 2);
-  const_pos(1) = 1.57;
-  const_pos(2) = 2.0;
+  const_pos(1) = 1.57;  // shoulder fore/aft angle, [rad]
+  const_pos(2) = 2.0;  // elbow fore/aft angle, [rad]
 
   systems::ConstantVectorSource<double>* const_src =
       builder.AddSystem<systems::ConstantVectorSource<double>>(const_pos);

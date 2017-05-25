@@ -81,7 +81,7 @@ int DoMain() {
   // Sets (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
   VectorBase<double>* x0 = jaco_context->get_mutable_continuous_state_vector();
-  x0->SetAtIndex(1, 0.5);
+  x0->SetAtIndex(1, 0.5);  // shoulder fore/aft angle [rad]
 
   simulator.Initialize();
 
