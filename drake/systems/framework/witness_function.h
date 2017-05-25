@@ -61,10 +61,9 @@ namespace systems {
 /// integration) is extraordinarily expensive*. If, for example, the (slow)
 /// bisection algorithm were used to isolate the time interval, the number of
 /// integrations necessary to cut the interval from a length of ℓ to a length of
-/// ε will be log₂(ℓ / ε). In other words, the scheme does not benefit from a
-/// fortuitous guess close to the root. Bisection is just one of several
-/// possible algorithms for isolating the time interval, though it's a reliable
-/// choice and always converges linearly.
+/// ε will be log₂(ℓ / ε). Bisection is just one of several possible algorithms
+/// for isolating the time interval, though it's a reliable choice and always
+/// converges linearly.
 template <class T>
 class WitnessFunction {
  public:
@@ -91,9 +90,10 @@ class WitnessFunction {
 
   /// Constructs the witness function with the given direction type and action
   /// type.
-  WitnessFunction(const DirectionType& ttype,
+  WitnessFunction(const System<T>& system,
+                  const DirectionType& dtype,
                   const typename DiscreteEvent<T>::ActionType& atype) :
-                  dir_type_(ttype), action_type_(atype) {}
+                  system_(system), dir_type_(dtype), action_type_(atype) {}
 
   /// Gets the name of this witness function (used primarily for logging and
   /// debugging).
@@ -113,7 +113,8 @@ class WitnessFunction {
   DirectionType get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
-  T Evaluate(const Context<T>& context) {
+  T Evaluate(const Context<T>& context) const {
+    DRAKE_ASSERT_VOID(system_.CheckValidContext(context));
     return DoEvaluate(context);
   }
 
@@ -154,12 +155,16 @@ class WitnessFunction {
  protected:
   /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
-  virtual T DoEvaluate(const Context<T>& context) = 0;
+  /// @param context an already-validated Context
+  virtual T DoEvaluate(const Context<T>& context) const = 0;
 
   // The name of this witness function.
   std::string name_;
 
  private:
+  // A reference to the system.
+  const System<T>& system_;
+
   // Direction(s) under which this witness function triggers.
   DirectionType dir_type_;
 

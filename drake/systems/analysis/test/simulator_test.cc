@@ -34,11 +34,13 @@ namespace systems {
 namespace {
 
 // Tests ability of simulation to identify the proper number of witness function
-// triggerings. This particular example uses an empty system and a clock as
-// the witness function, which makes it particularly easy to determine when the
-// witness function should trigger.
-GTEST_TEST(SimulatorTest, WitnessTestCountSimple) {
-  EmptySystem system(WitnessFunction<double>::DirectionType::kCrossesZero);
+// triggerings going from negative to non-negative witness function evaluation.
+// This particular example uses an empty system and a clock as the witness
+// function, which makes it particularly easy to determine when the witness
+// function should trigger.
+GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
+  // Set empty system to trigger when time is +1.
+  EmptySystem system(-1, WitnessFunction<double>::DirectionType::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -50,25 +52,45 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimple) {
       simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
   Context<double>* context = simulator.get_mutable_context();
-  context->set_time(-1);
-  simulator.StepTo(0);
+  context->set_time(0);
+  simulator.StepTo(1);
 
   // Publication occurs at witness function crossing and at initialization.
   EXPECT_EQ(2, num_publishes);
+}
 
-  // Reset the time to zero and verify that no publication is performed when
-  // stepping to 1.
-  num_publishes = 0;
+// Tests ability of simulation to identify the proper number of witness function
+// triggerings going from zero to positive witness function evaluation. This
+// particular example uses an empty system and a clock as the witness function,
+// which makes it particularly easy to determine when the witness function
+// should trigger.
+GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
+  // Set empty system to trigger when time is zero.
+  EmptySystem system(0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  int num_publishes = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    num_publishes++;
+  });
+
+  const double dt = 1;
+  Simulator<double> simulator(system);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+      simulator.get_mutable_context());
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
   context->set_time(0);
   simulator.StepTo(1);
-  EXPECT_EQ(0, num_publishes);
+
+  // Verify that no publication is performed when stepping to 1.
+  EXPECT_EQ(1, num_publishes);
 }
 
 // Tests ability of simulation to identify the proper number of witness function
 // triggerings (zero) for a positive-to-negative trigger. Uses the same empty
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
-  EmptySystem system(WitnessFunction<double>::DirectionType::
+  // Set empty system to trigger when time is +1.
+  EmptySystem system(-1, WitnessFunction<double>::DirectionType::
       kPositiveThenNonPositive);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -81,8 +103,8 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
       simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
   Context<double>* context = simulator.get_mutable_context();
-  context->set_time(-1);
-  simulator.StepTo(1);
+  context->set_time(0);
+  simulator.StepTo(2);
 
   // Publication should only occur at witness function crossing.
   EXPECT_EQ(1, num_publishes);
@@ -92,7 +114,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
 // triggerings (zero) for a negative-to-positive trigger. Uses the same empty
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
-  EmptySystem system(WitnessFunction<double>::DirectionType::
+  EmptySystem system(0, WitnessFunction<double>::DirectionType::
       kNegativeThenNonNegative);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){

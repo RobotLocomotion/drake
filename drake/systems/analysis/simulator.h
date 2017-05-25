@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <chrono>
 #include <limits>
-#include <list>
 #include <memory>
 #include <tuple>
 #include <utility>
@@ -299,9 +298,12 @@ class Simulator {
       const T& next_sample_time,
       const T& boundary_dt,
       UpdateActions<T>* update_actions);
-  std::list<WitnessFunction<T>*> IsolateWitnessTriggers(
-      const std::vector<WitnessFunction<T>*>& witnesses, const VectorX<T>& w0,
-      const T& t0, const VectorX<T>& x0, const T& tf);
+
+  void IsolateWitnessTriggers(
+      const std::vector<const WitnessFunction<T>*>& witnesses,
+      const VectorX<T>& w0,
+      const T& t0, const VectorX<T>& x0, const T& tf,
+      std::vector<const WitnessFunction<T>*>* triggered_witnesses);
 
   // The steady_clock is immune to system clock changes so increases
   // monotonically. We'll work in fractional seconds.
@@ -329,6 +331,10 @@ class Simulator {
 
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
+
+  // Temporaries used for witness function isolation.
+  std::vector<const WitnessFunction<T>*> triggered_witnesses_;
+  VectorX<T> w0_, wf_;
 
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{0.};
@@ -562,15 +568,22 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
 // Isolates the first time at one or more witness functions triggered (in the
 // interval [t0, tf]), to the tolerances specified by the witness function(s).
+// @pre triggered_witnesses is empty and non-null (aborts if condition not met). 
 // @post The context will be isolated to the first witness function trigger(s),
 //       to within the isolation tolerance specified by that (those) witness
 //       function(s).
 template <class T>
-std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
-    const std::vector<WitnessFunction<T>*>& witnesses, const VectorX<T>& w0,
-    const T& t0, const VectorX<T>& x0, const T& tf) {
+void Simulator<T>::IsolateWitnessTriggers(
+    const std::vector<const WitnessFunction<T>*>& witnesses,
+    const VectorX<T>& w0,
+    const T& t0, const VectorX<T>& x0, const T& tf,
+    std::vector<const WitnessFunction<T>*>* triggered_witnesses) {
   using std::max;
   using std::abs;
+
+  // Verify that the vector of triggered witnesses is non-null and empty.
+  DRAKE_DEMAND(triggered_witnesses);
+  DRAKE_DEMAND(triggered_witnesses->empty()); 
 
   // TODO(edrumwri): Speed this process using interpolation between states,
   // more powerful root finding methods, and/or introducing the concept of
@@ -598,12 +611,11 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
 
   // Set the first witness function trigger and the witness function that
   // makes that trigger.
-  std::list<WitnessFunction<T>*> triggered_witnesses;
   T t_first_witness = tf;
 
   // Loop over all witness functions.
   for (size_t i = 0; i < witnesses.size(); ++i) {
-    // Set a and b
+    // Set interval endpoints (in time). 
     T a = t0;
     T b = t_first_witness;
 
@@ -623,7 +635,7 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
       continue;
 
     // Since the witness function is triggering, fa should not be exactly zero.
-    DRAKE_ASSERT(fa != 0);
+    DRAKE_DEMAND(fa != 0);
 
     while (true) {
       // Determine the midpoint.
@@ -654,9 +666,9 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
         // requisite handler is called).
         const T t_trigger = b;
 
-       // TODO(edrumwri): Move this to the end of the function and
-       //  only done once when we are confident that the witness function
-       //  changes sign at the end of the interval (i.e., the following
+       // TODO(edrumwri): Move this to the end of the function (and
+       // only call this once) when we are confident that the witness function
+       // changes sign at the end of the interval (i.e., the following
        // assertion).
        // Integrate to the trigger time.
        fwd_int(t_trigger);
@@ -671,10 +683,10 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
         // t_first_witness.
         DRAKE_DEMAND(t_first_witness >= t_trigger);
         if (t_trigger < t_first_witness)
-          triggered_witnesses.clear();
+          triggered_witnesses->clear();
 
         // Set the first trigger time and add the witness index.
-        triggered_witnesses.push_back(witnesses[i]);
+        triggered_witnesses->push_back(witnesses[i]);
         t_first_witness = t_trigger;
         break;
       }
@@ -682,7 +694,6 @@ std::list<WitnessFunction<T>*> Simulator<T>::IsolateWitnessTriggers(
   }
 
   DRAKE_DEMAND(t_first_witness <= tf);
-  return triggered_witnesses;
 }
 
 // Integrates the continuous state forward in time while attempting to locate
@@ -702,13 +713,13 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
 
   // Get the set of witness functions active at the current time.
   const System<T>& system = get_system();
-  const std::vector<WitnessFunction<T>*> witness_functions = system.
-      get_witness_functions(context);
+  std::vector<const WitnessFunction<T>*> witness_functions;
+  system.GetWitnessFunctions(context, &witness_functions);
 
   // Evaluate the witness functions.
-  VectorX<T> w0(witness_functions.size());
+  w0_.resize(witness_functions.size());
   for (size_t i = 0; i < witness_functions.size(); ++i)
-      w0[i] = system.EvalWitnessFunction(context, witness_functions[i]);
+      w0_[i] = witness_functions[i]->Evaluate(context);
 
   // Attempt to integrate. Updates and boundary times are consciously
   // distinguished between. See internal documentation for
@@ -719,25 +730,26 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   const T tf = context.get_time();
 
   // Evaluate the witness functions again.
-  VectorX<T> wf(witness_functions.size());
+  wf_.resize(witness_functions.size());
   for (size_t i =0; i < witness_functions.size(); ++i)
-    wf[i] = system.EvalWitnessFunction(context, witness_functions[i]);
+    wf_[i] = witness_functions[i]->Evaluate(context);
 
   // See whether a witness function triggered.
   bool witness_triggered = false;
   for (size_t i =0; i < witness_functions.size() && !witness_triggered; ++i) {
-      if (witness_functions[i]->should_trigger(w0[i], wf[i]))
+      if (witness_functions[i]->should_trigger(w0_[i], wf_[i]))
         witness_triggered = true;
   }
 
   // Triggering requires isolating the witness function time.
   if (witness_triggered) {
     // Isolate the time that the witness function.
-    std::list<WitnessFunction<T>*> triggered_witnesses = IsolateWitnessTriggers(
-      witness_functions, w0, t0, x0, tf);
+    triggered_witnesses_.clear();
+    IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
+                           &triggered_witnesses_);
 
     // TODO(edrumwri): Store witness function(s) that triggered.
-    for (WitnessFunction<T>* fn : witness_functions) {
+    for (const WitnessFunction<T>* fn : witness_functions) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->get_name(), context.get_time());
       update_actions->time = context.get_time();
@@ -750,31 +762,31 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     // Indicate a "sample time was hit". In more understandable terms, this
     // means that an event should be handled on the next simulation loop.
     return true;
-  } else {
-    // No witness function triggered; handle integration as usual.
-    // Updates and boundary times are consciously distinguished between. See
-    // internal documentation for IntegratorBase::StepOnceAtMost() for more
-    // information.
-    switch (result) {
-      case IntegratorBase<T>::kReachedUpdateTime:
-      case IntegratorBase<T>::kReachedPublishTime:
-        // Next line sets the time to the exact sample time rather than
-        // introducing rounding error by summing the context time + dt.
-        context_->set_time(next_sample_time);
-        return true;            // Sample time hit.
-        break;
+  } 
 
-      case IntegratorBase<T>::kTimeHasAdvanced:
-      case IntegratorBase<T>::kReachedBoundaryTime:
-        return false;           // Did not hit a sample time.
-        break;
+  // No witness function triggered; handle integration as usual.
+  // Updates and boundary times are consciously distinguished between. See
+  // internal documentation for IntegratorBase::StepOnceAtMost() for more
+  // information.
+  switch (result) {
+    case IntegratorBase<T>::kReachedUpdateTime:
+    case IntegratorBase<T>::kReachedPublishTime:
+      // Next line sets the time to the exact sample time rather than
+      // introducing rounding error by summing the context time + dt.
+      context_->set_time(next_sample_time);
+      return true;            // Sample time hit.
+      break;
 
-      default:DRAKE_ABORT_MSG("Unexpected integrator result.");
-    }
-    ++num_steps_taken_;
+    case IntegratorBase<T>::kTimeHasAdvanced:
+    case IntegratorBase<T>::kReachedBoundaryTime:
+      return false;           // Did not hit a sample time.
+      break;
 
-    // TODO(sherm1) Constraint projection goes here.
+    default:DRAKE_ABORT_MSG("Unexpected integrator result.");
   }
+  ++num_steps_taken_;
+
+  // TODO(sherm1) Constraint projection goes here.
 
   // Should never get here.
   DRAKE_ABORT();

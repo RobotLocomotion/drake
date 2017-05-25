@@ -20,20 +20,22 @@ class EmptySystem;
 template <class T>
 class ClockWitness : public systems::WitnessFunction<T> {
  public:
-  explicit ClockWitness(const EmptySystem<T>* system,
+  explicit ClockWitness(
+      const T& offset,
+      const EmptySystem<T>& system,
       const typename systems::WitnessFunction<T>::DirectionType& dir_type) :
-      systems::WitnessFunction<T>(dir_type,
-          systems::DiscreteEvent<T>::kPublishAction),
-    system_(*system) {
+      systems::WitnessFunction<T>(system, dir_type,
+          systems::DiscreteEvent<T>::kPublishAction), offset_(offset) {
   }
 
+ protected:
   // The witness function is simply the time value itself.
-  T DoEvaluate(const Context<T>& context) override {
-    return context.get_time();
+  T DoEvaluate(const Context<T>& context) const override {
+    return context.get_time() + offset_;
   }
 
-  // Pointer to the system.
-  const EmptySystem<T>& system_;
+ private:
+  T offset_{0};
 };
 
 /// System with no state evolution for testing a simplistic witness function.
@@ -42,28 +44,29 @@ class EmptySystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptySystem)
 
-  explicit EmptySystem(
+  explicit EmptySystem(const T& offset,
       const typename systems::WitnessFunction<T>::DirectionType& dir_type) {
-    witness_ = std::make_unique<ClockWitness<T>>(this, dir_type);
-  }
-
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {}
-
-  std::vector<systems::WitnessFunction<T>*> get_witness_functions(
-      const systems::Context<T>& context) const override {
-    std::vector<systems::WitnessFunction<T>*> witness_vec = { witness_.get() };
-    return witness_vec;
-  }
-
-  void DoPublish(
-      const drake::systems::Context<double>& context) const override {
-    if (publish_callback_ != nullptr) publish_callback_(context);
+    witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
 
   void set_publish_callback(
       std::function<void(const Context<double>&)> callback) {
     publish_callback_ = callback;
+  }
+
+ protected:
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {}
+
+  void DoGetWitnessFunctions(
+      const systems::Context<T>&,
+      std::vector<const systems::WitnessFunction<T>*>* w) const override {
+    w->push_back(witness_.get());
+  }
+
+  void DoPublish(
+      const drake::systems::Context<double>& context) const override {
+    if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
  private:

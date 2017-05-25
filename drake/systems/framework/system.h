@@ -1007,22 +1007,29 @@ class System {
 
   //@}
 
-  /// Derived classes can override this method to provide witness functions
-  /// active at the beginning of a continuous time interval. The default
-  /// implementation returns an empty vector.
-  virtual std::vector<WitnessFunction<T>*> get_witness_functions(
-      const Context<T>&) const {
-    return std::vector<WitnessFunction<T>*>();
-  }
-
-  /// Evaluates the given witness function for this diagram.
-  virtual T EvalWitnessFunction(const Context<T>& context,
-                                WitnessFunction<T>* witness_function)
-                                const {
-    return witness_function->Evaluate(context);
+  /// Gets the witness functions active at the beginning of a continuous time
+  /// interval. DoGetWitnessFunctions() does the actual work.
+  /// @param context a valid context for the System (aborts if not true).
+  /// @param[out] w a valid pointer to an empty vector that will store
+  ///             pointers to the witness functions active at the beginning of
+  ///             the continuous time interval. The method aborts if witnesses
+  ///             is null or non-empty.
+  void GetWitnessFunctions(const Context<T>& context,
+                           std::vector<const WitnessFunction<T>*>* w) const {
+    DRAKE_DEMAND(w);
+    DRAKE_DEMAND(w->empty());
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DoGetWitnessFunctions(context, w);
   }
 
  protected:
+  /// Derived classes can override this method to provide witness functions
+  /// active at the beginning of a continuous time interval. The default
+  /// implementation does nothing.
+  virtual void DoGetWitnessFunctions(const Context<T>&,
+      std::vector<const WitnessFunction<T>*>*) const {
+  }
+
   //----------------------------------------------------------------------------
   /// @name                 System construction
   /// Authors of derived %Systems can use these methods in the constructor

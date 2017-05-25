@@ -21,20 +21,18 @@ template <class T>
 class LogisticWitness : public systems::WitnessFunction<T> {
  public:
   ~LogisticWitness() override {}
-  explicit LogisticWitness(const LogisticSystem<T>* system) :
+  explicit LogisticWitness(const LogisticSystem<T>& system) :
     systems::WitnessFunction<T>(
+        system,
         systems::WitnessFunction<T>::DirectionType::kCrossesZero,
-        systems::DiscreteEvent<T>::kPublishAction),
-    system_(*system) {
+        systems::DiscreteEvent<T>::kPublishAction) {
   }
 
+ protected:
   // The witness function is simply the state value itself.
-  T DoEvaluate(const Context<T>& context) override {
+  T DoEvaluate(const Context<T>& context) const override {
     return (*context.get_continuous_state())[0];
   }
-
-  // Pointer to the system.
-  const LogisticSystem<T>& system_;
 };
 
 /// System with state evolution yielding a logistic function, for purposes of
@@ -49,11 +47,19 @@ class LogisticSystem : public LeafSystem<T> {
   LogisticSystem(double k, double alpha, double nu) : k_(k), alpha_(alpha),
       nu_(nu) {
     this->DeclareContinuousState(1);
-    witness_ = std::make_unique<LogisticWitness<T>>(this);
+    witness_ = std::make_unique<LogisticWitness<T>>(*this);
   }
 
+  void set_publish_callback(
+      std::function<void(const Context<double>&)> callback) {
+    publish_callback_ = callback;
+  }
+
+ protected:
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
-    systems::ContinuousState<T>* continuous_state) const override {
+      systems::ContinuousState<T>* continuous_state) const override {
+    using std::pow;
+
     // Get the current time.
     const T& t = context.get_time();
 
@@ -68,20 +74,15 @@ class LogisticSystem : public LeafSystem<T> {
                     SystemOutput<T>* output) const override {
   }
 
-  std::vector<systems::WitnessFunction<T>*> get_witness_functions(
-      const systems::Context<T>& context) const override {
-    std::vector<systems::WitnessFunction<T>*> witness_vec = { witness_.get() };
-    return witness_vec;
+  void DoGetWitnessFunctions(
+      const systems::Context<T>&,
+      std::vector<const systems::WitnessFunction<T>*>* w) const override {
+    w->push_back(witness_.get());
   }
 
   void DoPublish(
       const drake::systems::Context<double>& context) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
-  }
-
-  void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
-    publish_callback_ = callback;
   }
 
  private:
