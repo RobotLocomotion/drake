@@ -566,6 +566,13 @@ TEST_F(SymbolicFormulaTest, And1) {
   EXPECT_PRED2(FormulaEqual, ff_, ff_ && ff_);
   EXPECT_PRED2(FormulaEqual, f1_, tt_ && f1_);
   EXPECT_PRED2(FormulaEqual, f1_, f1_ && tt_);
+  EXPECT_PRED2(FormulaEqual, make_conjunction({tt_, f1_, tt_}), f1_);
+  EXPECT_PRED2(FormulaEqual, make_conjunction({tt_, tt_, ff_}), ff_);
+  // Checks if flattening works: (f₁ ∧ f₂) ∧ (f₃ ∧ f₄) => f₁ ∧ f₂ ∧ f₃ ∧ f₄.
+  EXPECT_PRED2(FormulaEqual, make_conjunction({f1_ && f2_, f3_ && f4_}),
+               make_conjunction({f1_, f2_, f3_, f4_}));
+  // Empty conjunction = True.
+  EXPECT_PRED2(FormulaEqual, make_conjunction({}), Formula::True());
 }
 
 TEST_F(SymbolicFormulaTest, And2) {
@@ -648,6 +655,13 @@ TEST_F(SymbolicFormulaTest, Or1) {
   EXPECT_PRED2(FormulaEqual, ff_, ff_ || ff_);
   EXPECT_PRED2(FormulaEqual, f1_, ff_ || f1_);
   EXPECT_PRED2(FormulaEqual, f1_, f1_ || ff_);
+  EXPECT_PRED2(FormulaEqual, make_disjunction({ff_, f1_, ff_}), f1_);
+  EXPECT_PRED2(FormulaEqual, make_disjunction({ff_, ff_, tt_}), tt_);
+  // Checks if flattening works: (f₁ ∨ f₂) ∨ (f₃ ∨ f₄) => f₁ ∨ f₂ ∨ f₃ ∨ f₄.
+  EXPECT_PRED2(FormulaEqual, make_disjunction({f1_ || f2_, f3_ || f4_}),
+               make_disjunction({f1_, f2_, f3_, f4_}));
+  // Empty disjunction = False.
+  EXPECT_PRED2(FormulaEqual, make_disjunction({}), Formula::False());
 }
 
 TEST_F(SymbolicFormulaTest, Or2) {
