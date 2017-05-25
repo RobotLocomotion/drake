@@ -151,7 +151,6 @@ class AbstractValue {
 template <typename T>
 class Value : public AbstractValue {
  public:
-  // Values are copyable but not moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Value)
 
   /// Constructs a Value<T> using T's default constructor, if available.

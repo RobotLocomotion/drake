@@ -535,6 +535,7 @@ drake_cc_googletest(
     name = "vector_value_test",
     deps = [
         ":vector_value",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
