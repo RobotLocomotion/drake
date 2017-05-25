@@ -1108,7 +1108,7 @@ class IntegratorBase {
    * @returns `true` if the full step of size @p dt_max is taken and `false`
    *          otherwise (i.e., a smaller step than @p dt_max was taken).
    */
-  bool StepErrorControlled(const T& dt_max);
+  bool StepOnceErrorControlledAtMost(const T& dt_max);
 
   /**
    * Computes the infinity norm of a change in continuous state. We use the
@@ -1326,12 +1326,12 @@ class IntegratorBase {
 };
 
 template <class T>
-bool IntegratorBase<T>::StepErrorControlled(const T& dt_max) {
+bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
   using std::isnan;
 
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation())
-    throw std::logic_error("StepErrorControlled() requires error estimation.");
+    throw std::logic_error("StepOnceErrorControlledAtMost() requires error estimation.");
 
   // Save time, continuous variables, and time derivative because we'll possibly
   // revert time and state.
@@ -1660,7 +1660,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
       full_step = false;
     }
   } else {
-    full_step = StepErrorControlled(dt);
+    full_step = StepOnceErrorControlledAtMost(dt);
   }
 
   // Update generic statistics.
