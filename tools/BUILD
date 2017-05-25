@@ -80,10 +80,12 @@ exports_files(
 exports_create_cps_scripts([
     "bullet",
     "eigen",
+    "fmt",
     "ipopt",
     "lcm",
     "nlopt",
     "pybind11",
+    "spdlog",
 ])
 
 alias(
