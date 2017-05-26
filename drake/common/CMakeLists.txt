@@ -71,6 +71,7 @@ set(installed_headers
   symbolic_expression.h
   symbolic_expression_visitor.h
   symbolic_formula.h
+  symbolic_formula_visitor.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h

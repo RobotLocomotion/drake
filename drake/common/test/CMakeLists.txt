@@ -87,6 +87,9 @@ target_link_libraries(symbolic_mixing_scalar_types_test drakeCommon)
 drake_add_cc_test(symbolic_formula_test)
 target_link_libraries(symbolic_formula_test drakeCommon)
 
+drake_add_cc_test(symbolic_formula_visitor_test)
+target_link_libraries(symbolic_formula_visitor_test drakeCommon)
+
 drake_add_cc_test(sorted_vectors_have_intersection_test)
 target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)
 
