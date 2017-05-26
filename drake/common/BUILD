@@ -161,6 +161,16 @@ drake_cc_library(
 # Miscellaneous utilities.
 
 drake_cc_library(
+    name = "find_resource",
+    srcs = ["find_resource.cc"],
+    hdrs = ["find_resource.h"],
+    deps = [
+        ":common",
+        "//drake/thirdParty:spruce",
+    ],
+)
+
+drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
     # drake_path are removed.
@@ -508,6 +518,16 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":extract_double",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_resource_test",
+    deps = [
+        ":find_resource",
+    ],
+    data = [
+        "test/find_resource_test_data.txt",
     ],
 )
 
