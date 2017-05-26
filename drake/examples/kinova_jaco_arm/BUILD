@@ -45,7 +45,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/primitives:constant_vector_source",
         "@com_github_gflags_gflags//:gflags",
-  ],
+    ],
 )
 
 drake_cc_binary(
@@ -55,11 +55,11 @@ drake_cc_binary(
     data = [
         "//drake/manipulation/models/jaco_description:models",
     ],
+    tags = ["snopt"],
     test_rule_args = ["--simulation_sec=0.1"],
     test_rule_size = "medium",
-    tags = ["snopt"],
     deps = [
-       ":jaco_common",
+        ":jaco_common",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",
