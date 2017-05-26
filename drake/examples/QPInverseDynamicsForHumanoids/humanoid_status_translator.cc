@@ -31,6 +31,7 @@ void HumanoidStatusAndRobotStateMsgTranslator::Encode(
     double time, const HumanoidStatus& data,
     bot_core::robot_state_t* msg) const {
   msg->utime = static_cast<int>(time * 1e6);
+
   translator_.EncodeMessageKinematics(data.position(), data.velocity(), msg);
   translator_.EncodeMessageTorque(data.joint_torque(), msg);
 

@@ -13,12 +13,23 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * A Translator between raw state vector (systems::BasicVector<double>) and
+ * HumanoidStatus. Note that since the raw state does not contain any time
+ * information, I picked the DataType to be systems::BasicVector<double>, and
+ * MsgType to be HumanoidStatus. This way, when combined with a
+ * systems::lcm::LcmEncoderSystem for translation, I can pass context's time
+ * by using the Encode method in this class.
+ */
 class StateVectorAndHumanoidStatusTranslator final
     : public drake::lcm::TranslatorBase<
           systems::BasicVector<double>, HumanoidStatus> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateVectorAndHumanoidStatusTranslator)
 
+  /**
+   * Constructor. @p robot's life span must be longer than this.
+   */
   StateVectorAndHumanoidStatusTranslator(const RigidBodyTree<double>& robot,
                                          const std::string& alias_group_path)
       : default_status_(robot, param_parsers::RigidBodyTreeAliasGroups<double>(
@@ -34,9 +45,20 @@ class StateVectorAndHumanoidStatusTranslator final
     return default_status_;
   }
 
+  /**
+   * @p time is used to update the timing in @p msg, and @p data is used to
+   * update the kinematics of @p msg. The rest in @p msg is not changed.
+   * Assumes that @p data has the same dimension as @p msg's rigid body tree's
+   * state. @p msg cannot be nullptr.
+   */
   void Encode(double time, const systems::BasicVector<double>& data,
               HumanoidStatus* msg) const override;
 
+  /**
+   * @p time will be set to the time in @p msg. The state (q, v) are copied
+   * into @p data. Assumes that @p data has the same dimension as @p msg's
+   * rigid body tree's state. @p time and @p data cannot be nullptr.
+   */
   void Decode(const HumanoidStatus& msg, double* time,
               systems::BasicVector<double>* data) const override;
 
@@ -45,12 +67,20 @@ class StateVectorAndHumanoidStatusTranslator final
   const systems::BasicVector<double> default_state_;
 };
 
+/**
+ * A Translator between HumanoidStatus and bot_core::robot_state_t. This is a
+ * wrapper class on around manipulation::RobotStateLcmMessageTranslator. Refer
+ * to the latter for more details.
+ */
 class HumanoidStatusAndRobotStateMsgTranslator final
     : public drake::lcm::TranslatorBase<HumanoidStatus,
                                         bot_core::robot_state_t> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HumanoidStatusAndRobotStateMsgTranslator)
 
+  /**
+   * Constructor. @p robot's life span must be longer than this.
+   */
   HumanoidStatusAndRobotStateMsgTranslator(const RigidBodyTree<double>& robot,
                                            const std::string& alias_group_path)
       : translator_(robot),
@@ -71,9 +101,15 @@ class HumanoidStatusAndRobotStateMsgTranslator final
     return default_msg_;
   }
 
+  /**
+   * @p msg cannot be nullptr.
+   */
   void Encode(double time, const HumanoidStatus& data,
               bot_core::robot_state_t* msg) const override;
 
+  /**
+   * @p time and @p data cannot be nullptr.
+   */
   void Decode(const bot_core::robot_state_t& msg, double* time,
               HumanoidStatus* data) const override;
 
