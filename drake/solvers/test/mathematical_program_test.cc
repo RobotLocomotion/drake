@@ -149,6 +149,37 @@ void CheckAddedVariable(const MathematicalProgram& prog,
   }
 }
 
+template <typename Derived>
+void CheckAddedIndeterminates(const MathematicalProgram& prog,
+                              const Eigen::MatrixBase<Derived>& indeterminates,
+                              const string& indeterminates_name) {
+  // Checks the name of the newly added indeterminates.
+  ostringstream msg_buff;
+  msg_buff << indeterminates << endl;
+  EXPECT_EQ(msg_buff.str(), indeterminates_name);
+  // Checks num_indeterminates() function.
+  const int num_new_indeterminates = indeterminates.size();
+  EXPECT_EQ(prog.num_indeterminates(), num_new_indeterminates);
+  // Checks the indices of the newly added indeterminates.
+  for (int i = 0; i < indeterminates.rows(); ++i) {
+    for (int j = 0; j < indeterminates.cols(); ++j) {
+      EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates(i, j)),
+                j * indeterminates.rows() + i);
+    }
+  }
+
+  // Checks if the indeterminate is of type
+  // MathematicalProgram::VarType::CONTINUOUS variable (by default). This test
+  // should always be true (by defaults), but keep it to make sure everything
+  // works as it is supposed to be.
+  for (int i = 0; i < indeterminates.rows(); ++i) {
+    for (int j = 0; j < indeterminates.cols(); ++j) {
+      EXPECT_EQ(indeterminates(i, j).get_type(),
+                MathematicalProgram::VarType::CONTINUOUS);
+    }
+  }
+}
+
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
@@ -249,6 +280,47 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
                 "wrong type");
   CheckAddedVariable(prog, X, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
                      MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates1) {
+  // Adds a dynamic-sized matrix of Indeterminates.
+  MathematicalProgram prog;
+  auto X = prog.NewIndeterminates(2, 3, "X");
+  static_assert(is_same<decltype(X), MatrixXIndeterminate>::value,
+                "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedIndeterminates(prog, X,
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates2) {
+  // Adds a static-sized matrix of Indeterminates.
+  MathematicalProgram prog;
+  auto X = prog.NewIndeterminates<2, 3>("X");
+  static_assert(is_same<decltype(X), MatrixIndeterminate<2, 3>>::value,
+                "should be a static sized matrix");
+  CheckAddedIndeterminates(prog, X,
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates3) {
+  // Adds a dynamic-sized vector of Indeterminates.
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates(4, "x");
+  static_assert(is_same<decltype(x), VectorXIndeterminate>::value,
+                "Should be a VectorXDecisionVariable object.");
+  EXPECT_EQ(x.rows(), 4);
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates4) {
+  // Adds a static-sized vector of Indeterminate variables.
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates<4>("x");
+  static_assert(is_same<decltype(x), VectorIndeterminate<4>>::value,
+                "Should be a VectorXDecisionVariable object.");
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
 
 template <typename Derived1, typename Derived2>
