@@ -306,8 +306,7 @@ TEST_F(DiagramContextTest, CloneState) {
 }
 
 // Verifies that accuracy is set properly.
-TEST_F(DiagramContextTest, Accuracy)
-{
+TEST_F(DiagramContextTest, Accuracy) {
   // Verify accuracy is not set by default.
   EXPECT_FALSE(context_->get_accuracy());
 

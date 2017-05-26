@@ -371,8 +371,7 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
 }
 
 // Verifies that accuracy is set properly.
-TEST_F(LeafContextTest, Accuracy)
-{
+TEST_F(LeafContextTest, Accuracy) {
   // Verify accuracy is not set by default.
   EXPECT_FALSE(context_.get_accuracy());
 
