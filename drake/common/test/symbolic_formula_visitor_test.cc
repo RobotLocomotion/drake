@@ -36,27 +36,43 @@ class NegationNormalFormConverter {
   // Converts @p f into an equivalent formula @c f' in NNF.
   Formula Visit(const Formula& f) const { return Visit(f, true); }
 
+ private:
+  // Converts @p f into an equivalent formula @c f' in NNF. The parameter @p
+  // polarity is to indicate whether it processes @c f (if @p polarity is
+  // true) or @c ¬f (if @p polarity is false).
+  Formula Visit(const Formula& f, const bool polarity) const {
+    return VisitFormula<Formula>(*this, f, polarity);
+  }
+  // Given formulas = {f₁, ..., fₙ} and a func : Formula → Formula,
+  // map(formulas, func) returns a set {func(f₁), ... func(fₙ)}.
+  set<Formula> map(const set<Formula>& formulas,
+                   const function<Formula(const Formula&)>& func) const {
+    set<Formula> result;
+    transform(formulas.cbegin(), formulas.cend(),
+              inserter(result, result.begin()), func);
+    return result;
+  }
   Formula operator()(const shared_ptr<FormulaFalse>& f,
                      const bool polarity) const {
-    // NNF(False) = False
+    // NNF(False)  = False
     // NNF(¬False) = True
     return polarity ? Formula::False() : Formula::True();
   }
   Formula operator()(const shared_ptr<FormulaTrue>& f,
                      const bool polarity) const {
-    // NNF(True) = True
+    // NNF(True)  = True
     // NNF(¬True) = False
     return polarity ? Formula::True() : Formula::False();
   }
   Formula operator()(const shared_ptr<FormulaVar>& f,
                      const bool polarity) const {
-    // NNF(b) = b
+    // NNF(b)  = b
     // NNF(¬b) = ¬b
     return polarity ? Formula{f} : !Formula{f};
   }
   Formula operator()(const shared_ptr<FormulaEq>& f,
                      const bool polarity) const {
-    // NNF(e1 = e2) = (e1 = e2)
+    // NNF(e1 = e2)    = (e1 = e2)
     // NNF(¬(e1 = e2)) = (e1 != e2)
     return polarity ? Formula{f}
                     : f->get_lhs_expression() != f->get_rhs_expression();
@@ -128,7 +144,8 @@ class NegationNormalFormConverter {
                      const bool polarity) const {
     // NNF(∀v₁...vₙ. f)    =  ∀v₁...vₙ. f
     // NNF(¬(∀v₁...vₙ. f)) = ¬∀v₁...vₙ. f
-    // TODO(soonho-tri): The second case be further reduced into
+    //
+    // TODO(soonho-tri): The second case can be further reduced into
     // ∃v₁...vₙ. NNF(¬f). However, we do not have a representation
     // FormulaExists(∃) yet. Revisit this when we add FormulaExists.
     return polarity ? Formula{f} : !Formula{f};
@@ -146,23 +163,11 @@ class NegationNormalFormConverter {
     return polarity ? Formula{f} : !Formula{f};
   }
 
- private:
-  // Given formulas = {f₁, ..., fₙ} and a func : Formula → Formula,
-  // map(formulas, func) returns a set {func(f₁), ... func(fₙ)}.
-  set<Formula> map(const set<Formula>& formulas,
-                   const function<Formula(const Formula&)>& func) const {
-    set<Formula> result;
-    transform(formulas.cbegin(), formulas.cend(),
-              inserter(result, result.begin()), func);
-    return result;
-  }
-
-  // Converts @p f into an equivalent formula @c f' in NNF. The parameter @p
-  // polarity is to indicate whether it processes @c f (if @p polarity is
-  // true) or @c ¬f (if @p polarity is false).
-  Formula Visit(const Formula& f, const bool polarity) const {
-    return VisitFormula<Formula>(*this, f, polarity);
-  }
+  // Makes VisitFormula a friend of this class so that it can use private
+  // operator()s.
+  friend Formula drake::symbolic::VisitFormula<
+      Formula, NegationNormalFormConverter, const bool&>(
+      const NegationNormalFormConverter&, const Formula&, const bool&);
 };
 
 class SymbolicFormulaVisitorTest : public ::testing::Test {
