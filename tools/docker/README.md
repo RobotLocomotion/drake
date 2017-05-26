@@ -5,10 +5,10 @@ Ubuntu 16.04 environments.
 $ cd <drake-root-dir>  
 
 If you have the Nvidia drivers installed:  
-$ docker build -t drake -f tools/docker/Dockerfile.nvidia  
+$ docker build -t drake -f tools/docker/Dockerfile.nvidia .  
   
 If you are using open source graphics drivers:  
-$ docker build -t drake -f tools/docker/Dockerfile.opensource  
+$ docker build -t drake -f tools/docker/Dockerfile.opensource .    
   
 # Running
 ## Passive Acrobot Simulation
