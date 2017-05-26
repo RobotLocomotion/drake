@@ -131,8 +131,15 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
       + R(1, 1) - R(2, 2);
   // clang-format on
 
+  auto t1 = U.eigenvalues();
+  auto t2 = t1.array();
+  auto t3 = t2.real();
   auto lambda_mag = U.eigenvalues().array().real();
-  for (int i = 0; i < 4; i++) EXPECT_GE(lambda_mag(i), -tol);
+  std::cout << "LAMBDA MAG: " <<  lambda_mag << std::endl;
+  EXPECT_GE(lambda_mag(0), -tol);
+  EXPECT_GE(lambda_mag(1), -tol);
+  EXPECT_GE(lambda_mag(2), -tol);
+  EXPECT_GE(lambda_mag(3), -tol);
 }
 
 // Sets up and solves an optimization:
