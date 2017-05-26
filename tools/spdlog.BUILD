@@ -16,7 +16,7 @@ cc_library(
     includes = ["include"],
     linkopts = select({
         "@drake//tools:linux": ["-pthread"],
-        "@//conditions:default": [],
+        "@//conditions:default": [],  # This is a bazel-default rule, and does not need @drake//
     }),
     deps = ["@fmt"],
 )
