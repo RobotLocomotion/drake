@@ -33,7 +33,7 @@ drake_cc_binary(
     data = [
         "//drake/manipulation/models/jaco_description:models",
     ],
-    test_rule_args = ["--simulation_sec=2"],
+    test_rule_args = ["--simulation_sec=0.1"],
     test_rule_size = "medium",
     deps = [
         ":jaco_common",
@@ -55,6 +55,8 @@ drake_cc_binary(
     data = [
         "//drake/manipulation/models/jaco_description:models",
     ],
+    test_rule_args = ["--simulation_sec=0.1"],
+    test_rule_size = "medium",
     tags = ["snopt"],
     deps = [
        ":jaco_common",
