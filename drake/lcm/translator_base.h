@@ -7,7 +7,22 @@ namespace lcm {
 
 /**
  * Base API for a translator between arbitrary data of DataType and a Lcm
- * message of MsgType.
+ * message of MsgType. This class is intended to facilitate Lcm communication
+ * under the System framework. Within the System frame, time can be acquired
+ * directly from the Context, so it is not uncommon to omit time from state
+ * representations (DataType). Meanwhile, a well defined Lcm message (MsgType)
+ * almost always contains an time stamp. Thus, during message encoding
+ * (DataType -> MsgType), we provide an additional time information (often
+ * extracted from some Context). During decoding (MsgType -> DataType), the
+ * message's time stamp can be extracted and stored separated. This introduces
+ * an asymmetry of information flow, i.e.
+ * <pre>
+ *   (DataType, time) -> MsgType,
+ *   MsgType -> (DataType, time)
+ * </pre>
+ *
+ * Note that MsgType is not required to be a Lcm message. In fact, it can be
+ * any arbitrary data type as well.
  */
 template <typename DataType, typename MsgType>
 class TranslatorBase {

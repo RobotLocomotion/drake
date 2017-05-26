@@ -6,7 +6,6 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/lcm/translator_base.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {

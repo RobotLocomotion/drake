@@ -156,83 +156,78 @@ class TestVectorTranslator
   lcmt_drake_signal default_msg_;
 };
 
+lcmt_drake_signal MakeTestMessage(int size) {
+  lcmt_drake_signal msg;
+  msg.dim = size;
+  msg.val.resize(msg.dim);
+  msg.coord.resize(msg.dim);
+  for (int i = 0; i < size; ++i) {
+    msg.val[i] = i;
+    msg.coord[i] = std::to_string(i);
+  }
+  return msg;
+}
+
+void CheckEncodedMessage(const lcmt_drake_signal& msg, int size, double time) {
+  EXPECT_EQ(static_cast<int64_t>(time * 1e3), msg.timestamp);
+  EXPECT_EQ(msg.dim, size);
+  for (int i = 0; i < msg.dim; ++i) {
+    EXPECT_EQ(msg.coord[i], std::to_string(i));
+    EXPECT_EQ(msg.val[i], i);
+  }
+}
+
 // Tests a LcmEncoderSystem from TestVector<double> to lcmt_drake_signal using
 // a TestVectorTranslator.
-GTEST_TEST(TranslatorTest, ToLcmMessageBasicVectorVersion) {
+GTEST_TEST(TranslatorTest, EncodeBasicVectorVersion) {
   const int kVecSize = 2;
+  TestVector<double> vec(kVecSize);
+  for (int i = 0; i < kVecSize; ++i) {
+    vec.SetAtIndex(i, i);
+    vec.get_mutable_names()[i] = std::to_string(i);
+  }
 
   LcmEncoderSystem<TestVector<double>, lcmt_drake_signal> dut(
       std::make_unique<TestVectorTranslator>(kVecSize));
-
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
-
-  {
-    auto vec = std::make_unique<TestVector<double>>(kVecSize);
-    for (int i = 0; i < kVecSize; ++i) {
-      vec->SetAtIndex(i, i);
-      vec->get_mutable_names()[i] = std::to_string(i);
-    }
-
-    context->FixInputPort(0, std::move(vec));
-  }
-
-  const double time = 233;
-  context->set_time(time);
+  context->FixInputPort(0, vec.Clone());
+  context->set_time(233);
 
   dut.CalcOutput(*context, output.get());
   const lcmt_drake_signal& msg =
       output->get_data(0)->GetValue<lcmt_drake_signal>();
 
-  EXPECT_EQ(time * 1e3, msg.timestamp);
-
-  EXPECT_EQ(msg.dim, kVecSize);
-  for (int i = 0; i < msg.dim; ++i) {
-    EXPECT_EQ(msg.coord[i], std::to_string(i));
-    EXPECT_EQ(msg.val[i], i);
-  }
+  CheckEncodedMessage(msg, kVecSize, context->get_time());
 }
 
 // Tests a LcmEncoderSystem from TestData to lcmt_drake_signal using a
 // TestDataTranslator.
-GTEST_TEST(TranslatorTest, ToLcmMessageAbstractValVersion) {
+GTEST_TEST(TranslatorTest, EncodeAbstractValVersion) {
   const int kVecSize = 2;
+  TestData data(kVecSize);
+  for (int i = 0; i < kVecSize; ++i) {
+    data.vector[i] = i;
+    data.names[i] = std::to_string(i);
+  }
 
   LcmEncoderSystem<TestData, lcmt_drake_signal> dut(
       std::make_unique<TestDataTranslator>(kVecSize));
-
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
-
-  {
-    TestData data(kVecSize);
-    for (int i = 0; i < kVecSize; ++i) {
-      data.vector[i] = i;
-      data.names[i] = std::to_string(i);
-    }
-
-    context->FixInputPort(0, AbstractValue::Make<TestData>(data));
-  }
-
-  const double time = 233;
-  context->set_time(time);
+  context->FixInputPort(0, AbstractValue::Make<TestData>(data));
+  context->set_time(233);
 
   dut.CalcOutput(*context, output.get());
   const lcmt_drake_signal& msg =
       output->get_data(0)->GetValue<lcmt_drake_signal>();
 
-  EXPECT_EQ(time * 1e3, msg.timestamp);
-
-  EXPECT_EQ(msg.dim, kVecSize);
-  for (int i = 0; i < msg.dim; ++i) {
-    EXPECT_EQ(msg.coord[i], std::to_string(i));
-    EXPECT_EQ(msg.val[i], i);
-  }
+  CheckEncodedMessage(msg, kVecSize, context->get_time());
 }
 
 // Tests a LcmDecoderSystem from lcmt_drake_signal to TestData using a
 // TestDataTranslator.
-GTEST_TEST(TranslatorTest, FromLcmMessageAbstractValVersion) {
+GTEST_TEST(TranslatorTest, DecodeAbstractValVersion) {
   const int kVecSize = 2;
 
   LcmDecoderSystem<TestData, lcmt_drake_signal> dut(
@@ -240,15 +235,7 @@ GTEST_TEST(TranslatorTest, FromLcmMessageAbstractValVersion) {
 
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
-
-  lcmt_drake_signal msg;
-  msg.dim = kVecSize;
-  msg.val.resize(msg.dim);
-  msg.coord.resize(msg.dim);
-  for (int i = 0; i < kVecSize; ++i) {
-    msg.val[i] = i;
-    msg.coord[i] = std::to_string(i);
-  }
+  lcmt_drake_signal msg = MakeTestMessage(kVecSize);
   context->FixInputPort(0, AbstractValue::Make<lcmt_drake_signal>(msg));
 
   dut.CalcOutput(*context, output.get());
@@ -272,19 +259,10 @@ GTEST_TEST(TranslatorTest, FromLcmMessageBasicVectorVersion) {
 
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
-
-  lcmt_drake_signal msg;
-  msg.dim = kVecSize;
-  msg.val.resize(msg.dim);
-  msg.coord.resize(msg.dim);
-  for (int i = 0; i < kVecSize; ++i) {
-    msg.val[i] = i;
-    msg.coord[i] = std::to_string(i);
-  }
+  lcmt_drake_signal msg = MakeTestMessage(kVecSize);
   context->FixInputPort(0, AbstractValue::Make<lcmt_drake_signal>(msg));
 
   dut.CalcOutput(*context, output.get());
-
   const TestVector<double>* const vector =
       dynamic_cast<const TestVector<double>*>(output->get_vector_data(0));
 
