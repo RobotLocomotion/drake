@@ -92,14 +92,14 @@ class Simulator {
    * constraint-satisfying initial condition. */
   void Initialize();
 
-  /// Gets the target accuracy for the Simulator, which roughly corresponds
+  /// Sets the target accuracy for the Simulator, which roughly corresponds
   /// to the number of digits of accuracy in the solution.
   /// The target accuracy is a meta parameter setting that directly sets
-  /// accuracy tolerances for all components used by Simulator, including
+  /// accuracy settings for all components used by Simulator, including
   /// ODE/DAE integrators, witness function time isolation, etc. Accuracy
   /// tolerances for components that can be used independently from Simulator
   /// (e.g., integrators) are maintained independently *but Simulator tracks
-  /// these accuracy tolerances* (and throws an exception in StepTo() if the
+  /// these accuracy settings* (and throws an exception in StepTo() if the
   /// user manages make the tolerances inconsistent). The simulator will not
   /// maintain consistent accuracy values among all components if the accuracy
   /// value is not set (i.e., the `optional` type does not contain a value).
@@ -108,10 +108,6 @@ class Simulator {
   /// will be maintained to the tightest tolerances possible) to 1 (loosest
   /// accuracy). The default value is "not set", meaning that the Simulator
   /// user is responsible for setting the accuracy of individual components.
-  std::experimental::optional<double> get_simulation_accuracy() {
-    return accuracy_; }
-
-  /// Sets the target accuracy for the Simulator.
   /// @param accuracy The target accuracy in the range [0, 1], where 1 indicates
   ///                 that tolerances are at their loosest and 0 indicates that
   ///                 tolerances are at their tightest.
@@ -124,6 +120,12 @@ class Simulator {
       throw std::logic_error("Specific accuracy outside of [0,1].");
     accuracy_ = accuracy;
   }
+
+  /// Gets the target accuracy for the Simulator, which roughly corresponds
+  /// to the number of digits of accuracy in the solution.
+  /// @sa set_target_accuracy()
+  std::experimental::optional<double> get_simulation_accuracy() {
+    return accuracy_; }
 
   // TODO(edrumwri): add ability to account for final time
   /** Advance the System's trajectory until `boundary_time` is reached in
@@ -432,8 +434,8 @@ Simulator<T>::Simulator(const System<T>& system,
 }
 
 // Verifies the consistency of the Simulator on each StepTo() call.
-// @throws std::logic_error if the various component accuracy tolerances
-//         do not match the accuracy tolerances in Simulator (assuming that
+// @throws std::logic_error if the various component accuracy settings
+//         do not match the accuracy settings in Simulator (assuming that
 //         the optional accuracy has been set).
 template <class T>
 void Simulator<T>::CheckConsistency() {
