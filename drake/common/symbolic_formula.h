@@ -176,23 +176,6 @@ class Formula {
   /** Conversion to bool. */
   explicit operator bool() const { return Evaluate(); }
 
-  friend Formula operator&&(const Formula& f1, const Formula& f2);
-  friend Formula operator&&(const Variable& v, const Formula& f);
-  friend Formula operator&&(const Formula& f, const Variable& v);
-  friend Formula operator&&(const Variable& v1, const Variable& v2);
-  friend Formula operator||(const Formula& f1, const Formula& f2);
-  friend Formula operator||(const Variable& v, const Formula& f);
-  friend Formula operator||(const Formula& f, const Variable& v);
-  friend Formula operator||(const Variable& v1, const Variable& v2);
-  friend Formula operator!(const Formula& f);
-  friend Formula operator!(const Variable& v);
-  friend Formula operator==(const Expression& e1, const Expression& e2);
-  friend Formula operator!=(const Expression& e1, const Expression& e2);
-  friend Formula operator<(const Expression& e1, const Expression& e2);
-  friend Formula operator<=(const Expression& e1, const Expression& e2);
-  friend Formula operator>(const Expression& e1, const Expression& e2);
-  friend Formula operator>=(const Expression& e1, const Expression& e2);
-
   friend std::ostream& operator<<(std::ostream& os, const Formula& f);
   friend void swap(Formula& a, Formula& b) { std::swap(a.ptr_, b.ptr_); }
 
@@ -216,7 +199,6 @@ class Formula {
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of symbolic_formula.h. These functions are
   // declared in symbolic_formula_cell.h header.
-
   friend std::shared_ptr<FormulaFalse> to_false(const Formula& f);
   friend std::shared_ptr<FormulaTrue> to_true(const Formula& f);
   friend std::shared_ptr<FormulaVar> to_variable(const Formula& f);
@@ -244,10 +226,33 @@ class Formula {
 /** Returns a formula @p f, universally quantified by variables @p vars. */
 Formula forall(const Variables& vars, const Formula& f);
 
+/** Returns a conjunction of @p formulas. It performs the following
+ * simplification:
+ *
+ * - make_conjunction({}) returns True.
+ * - make_conjunction({f₁}) returns f₁.
+ * - If False ∈ @p formulas, it returns False.
+ * - If True ∈ @p formulas, it will not appear in the return value.
+ * - Nested conjunctions will be flattened. For example, make_conjunction({f₁,
+ *   f₂ ∧ f₃}) returns f₁ ∧ f₂ ∧ f₃.
+ */
+Formula make_conjunction(const std::set<Formula>& formulas);
 Formula operator&&(const Formula& f1, const Formula& f2);
 Formula operator&&(const Variable& v, const Formula& f);
 Formula operator&&(const Formula& f, const Variable& v);
 Formula operator&&(const Variable& v1, const Variable& v2);
+
+/** Returns a disjunction of @p formulas. It performs the following
+ * simplification:
+ *
+ * - make_disjunction({}) returns False.
+ * - make_disjunction({f₁}) returns f₁.
+ * - If True ∈ @p formulas, it returns True.
+ * - If False ∈ @p formulas, it will not appear in the return value.
+ * - Nested disjunctions will be flattened. For example, make_disjunction({f₁,
+ *   f₂ ∨ f₃}) returns f₁ ∨ f₂ ∨ f₃.
+ */
+Formula make_disjunction(const std::set<Formula>& formulas);
 Formula operator||(const Formula& f1, const Formula& f2);
 Formula operator||(const Variable& v, const Formula& f);
 Formula operator||(const Formula& f, const Variable& v);
