@@ -106,7 +106,8 @@ class Simulator {
   ///
   /// Assuming that the accuracy is set, accuracy values range from 0 (accuracy
   /// will be maintained to the tightest tolerances possible) to 1 (loosest
-  /// accuracy).
+  /// accuracy). The default value is "not set", meaning that the Simulator
+  /// user is responsible for setting the accuracy of individual components.
   std::experimental::optional<double> get_simulation_accuracy() {
     return accuracy_; }
 
