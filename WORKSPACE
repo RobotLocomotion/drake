@@ -16,10 +16,15 @@
 
 workspace(name = "drake")
 
-load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
 load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
+
+local_repository(
+    name = "kythe",
+    path = "tools/third_party/kythe",
+)
+load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
     name = "glib",
