@@ -404,12 +404,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_assert_test_enabled",
     srcs = ["test/drake_assert_test.cc"],
-    deps = [
-        ":common",
-    ],
     copts = [
         "-DDRAKE_ENABLE_ASSERTS",
         "-UDRAKE_DISABLE_ASSERTS",
+    ],
+    deps = [
+        ":common",
     ],
 )
 
@@ -417,12 +417,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_assert_test_disabled",
     srcs = ["test/drake_assert_test.cc"],
-    deps = [
-        ":common",
-    ],
     copts = [
         "-UDRAKE_ENABLE_ASSERTS",
         "-DDRAKE_DISABLE_ASSERTS",
+    ],
+    deps = [
+        ":common",
     ],
 )
 

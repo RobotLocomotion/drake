@@ -58,8 +58,8 @@ drake_cc_library(
     deps = [
         ":vector",
         "//drake/common",
-        "//drake/common:is_cloneable",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:is_cloneable",
     ],
 )
 
