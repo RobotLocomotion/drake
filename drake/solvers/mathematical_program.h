@@ -2414,8 +2414,6 @@ class MathematicalProgram {
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      // indeterminates_(indeterminates_.rows() + i) =
-      // symbolic::Variable(names[i]);
       indeterminates_(indeterminates_.rows() - num_new_vars + i) =
           symbolic::Variable(names[i]);
 
