@@ -56,9 +56,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "translator",
+    name = "translator_base",
     hdrs = [
-        "translator.h",
+        "translator_base.h",
     ],
     deps = [
         "//drake/common",

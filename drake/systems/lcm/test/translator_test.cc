@@ -1,19 +1,18 @@
-#include "drake/systems/lcm/translator.h"
-#include "drake/systems/lcm/new_lcm_publisher_system.h"
-#include "drake/systems/lcm/translator_system.h"
-#include "drake/lcm/drake_mock_lcm.h"
-
-#include "drake/systems/lcm/translator_system.h"
-
 #include <gtest/gtest.h>
+
+#include "drake/lcmt_drake_signal.hpp"
+
+#include "drake/systems/lcm/translator_system.h"
 
 namespace drake {
 namespace systems {
 namespace lcm {
 namespace {
 
+// Some arbitrary struct that holds the same amount of information as a
+// lcmt_drake_signal message.
 struct TestData {
-  TestData(int size) {
+  explicit TestData(int size) {
     vector.resize(size, 0);
     names.resize(size);
   }
@@ -22,55 +21,14 @@ struct TestData {
   std::vector<double> vector;
 };
 
-class TestDataTranslator : public drake::lcm::TranslatorBase<TestData, lcmt_drake_signal> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestDataTranslator)
-  explicit TestDataTranslator() {}
-
-  void InitializeMessage(lcmt_drake_signal* msg) const override {
-    msg->dim = 0;
-    msg->val.resize(msg->dim, 0);
-    msg->coord.resize(msg->dim);
-    msg->timestamp = 0;
-  }
-
-  void Decode(const lcmt_drake_signal& msg,
-      double* time, TestData* data) const override {
-    DRAKE_DEMAND(msg.dim == static_cast<int>(data->names.size()));
-
-    // Saves the values from the LCM message into vector_base.
-    // Assumes that the order of the values are identical in both.
-    for (int i = 0; i < msg.dim; ++i) {
-      data->vector[i] = msg.val[i];
-      data->names[i] = msg.coord[i];
-    }
-
-    *time = static_cast<double>(msg.timestamp) / 1e3;
-  }
-
-  void Encode(double time, const TestData& data,
-      lcmt_drake_signal* msg) const override {
-
-    msg->dim = data.names.size();
-    msg->val.resize(msg->dim);
-    msg->coord.resize(msg->dim);
-    msg->timestamp = static_cast<int64_t>(time * 1e3);
-
-    for (int i = 0; i < msg->dim; ++i) {
-      msg->val[i] = data.vector[i];
-      msg->coord[i] = data.names[i];
-    }
-  }
-};
-
+// A derived BasicVector that holds the same amount of information as a
+// lcmt_drake_signal message.
 template <typename T>
 class TestVector : public BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestVector)
 
-  TestVector(int size) : BasicVector<T>(size) {
-    names_.resize(size);
-  }
+  explicit TestVector(int size) : BasicVector<T>(size) { names_.resize(size); }
 
   TestVector* DoClone() const override {
     TestVector* ret = new TestVector(this->size());
@@ -85,24 +43,90 @@ class TestVector : public BasicVector<T> {
   std::vector<std::string> names_;
 };
 
-class TestVectorTranslator : public drake::lcm::TranslatorBase<TestVector<double>, lcmt_drake_signal> {
+// A translator between TestData and lcmt_drake_signal.
+class TestDataTranslator
+    : public drake::lcm::TranslatorBase<TestData, lcmt_drake_signal> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestVectorTranslator)
-  explicit TestVectorTranslator(int size) : vector_size_(size) {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestDataTranslator)
 
-  void InitializeMessage(lcmt_drake_signal* msg) const override {
-    msg->dim = 0;
-    msg->val.resize(msg->dim, 0);
-    msg->coord.resize(msg->dim);
-    msg->timestamp = 0;
+  explicit TestDataTranslator(int size) : default_data_(size) {
+    // Message defaults to same size, with 0 value, and empty strings.
+    default_msg_.dim = size;
+    default_msg_.val.resize(default_msg_.dim, 0);
+    default_msg_.coord.resize(default_msg_.dim);
+    default_msg_.timestamp = 0;
   }
 
-  void Decode(const lcmt_drake_signal& msg,
-      double* time, TestVector<double>* vector) const override {
+  const TestData& get_default_data() const override { return default_data_; }
+
+  const lcmt_drake_signal& get_default_msg() const override {
+    return default_msg_;
+  }
+
+  // Resizes @p data if its dimension doesn't match @p msg.
+  void Decode(const lcmt_drake_signal& msg, double* time,
+              TestData* data) const override {
+    if (msg.dim != static_cast<int>(data->names.size())) {
+      *data = TestData(msg.dim);
+    }
+
+    for (int i = 0; i < msg.dim; ++i) {
+      data->vector[i] = msg.val[i];
+      data->names[i] = msg.coord[i];
+    }
+
+    *time = static_cast<double>(msg.timestamp) / 1e3;
+  }
+
+  // Resizes @p msg if its dimension doesn't match @p data.
+  void Encode(double time, const TestData& data,
+              lcmt_drake_signal* msg) const override {
+    if (msg->dim != static_cast<int>(data.names.size())) {
+      msg->dim = static_cast<int>(data.names.size());
+      msg->val.resize(msg->dim);
+      msg->coord.resize(msg->dim);
+    }
+
+    msg->timestamp = static_cast<int64_t>(time * 1e3);
+    for (int i = 0; i < msg->dim; ++i) {
+      msg->val[i] = data.vector[i];
+      msg->coord[i] = data.names[i];
+    }
+  }
+
+ private:
+  lcmt_drake_signal default_msg_;
+  TestData default_data_;
+};
+
+// A translator between TestVector<double> and lcmt_drake_signal.
+class TestVectorTranslator
+    : public drake::lcm::TranslatorBase<TestVector<double>, lcmt_drake_signal> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestVectorTranslator)
+
+  explicit TestVectorTranslator(int size) : default_vector_(size) {
+    // Message defaults to same size, with 0 value, and empty strings.
+    default_msg_.dim = size;
+    default_msg_.val.resize(default_msg_.dim, 0);
+    default_msg_.coord.resize(default_msg_.dim);
+    default_msg_.timestamp = 0;
+  }
+
+  const TestVector<double>& get_default_data() const override {
+    return default_vector_;
+  }
+
+  const lcmt_drake_signal& get_default_msg() const override {
+    return default_msg_;
+  }
+
+  // Assumes that @p vector's dimension is the same as @p msg's. Because
+  // @p vector cannot be resized / assigned.
+  void Decode(const lcmt_drake_signal& msg, double* time,
+              TestVector<double>* vector) const override {
     DRAKE_DEMAND(msg.dim == static_cast<int>(vector->size()));
 
-    // Saves the values from the LCM message into vector_base.
-    // Assumes that the order of the values are identical in both.
     for (int i = 0; i < msg.dim; ++i) {
       vector->SetAtIndex(i, msg.val[i]);
       vector->get_mutable_names()[i] = msg.coord[i];
@@ -111,31 +135,33 @@ class TestVectorTranslator : public drake::lcm::TranslatorBase<TestVector<double
     *time = static_cast<double>(msg.timestamp) / 1e3;
   }
 
+  // Resizes @p msg if its dimension doesn't match @p data.
   void Encode(double time, const TestVector<double>& vector,
-      lcmt_drake_signal* msg) const override {
+              lcmt_drake_signal* msg) const override {
+    if (msg->dim != vector.size()) {
+      msg->dim = vector.size();
+      msg->val.resize(msg->dim);
+      msg->coord.resize(msg->dim);
+    }
 
-    msg->dim = vector.size();
-    msg->val.resize(msg->dim);
-    msg->coord.resize(msg->dim);
     msg->timestamp = static_cast<int64_t>(time * 1e3);
-
     for (int i = 0; i < msg->dim; ++i) {
       msg->val[i] = vector.GetAtIndex(i);
       msg->coord[i] = vector.get_names()[i];
     }
   }
 
-  int get_vector_size() const { return vector_size_; }
-
  private:
-  int vector_size_{0};
+  TestVector<double> default_vector_;
+  lcmt_drake_signal default_msg_;
 };
 
+// Tests a LcmEncoderSystem from TestVector<double> to lcmt_drake_signal using
+// a TestVectorTranslator.
 GTEST_TEST(TranslatorTest, ToLcmMessageBasicVectorVersion) {
   const int kVecSize = 2;
 
-  ToLcmMessageTranslator<TestVector<double>, lcmt_drake_signal> dut(
-      TestVector<double>(kVecSize),
+  LcmEncoderSystem<TestVector<double>, lcmt_drake_signal> dut(
       std::make_unique<TestVectorTranslator>(kVecSize));
 
   auto context = dut.CreateDefaultContext();
@@ -156,7 +182,7 @@ GTEST_TEST(TranslatorTest, ToLcmMessageBasicVectorVersion) {
 
   dut.CalcOutput(*context, output.get());
   const lcmt_drake_signal& msg =
-        output->get_data(0)->GetValue<lcmt_drake_signal>();
+      output->get_data(0)->GetValue<lcmt_drake_signal>();
 
   EXPECT_EQ(time * 1e3, msg.timestamp);
 
@@ -167,12 +193,13 @@ GTEST_TEST(TranslatorTest, ToLcmMessageBasicVectorVersion) {
   }
 }
 
+// Tests a LcmEncoderSystem from TestData to lcmt_drake_signal using a
+// TestDataTranslator.
 GTEST_TEST(TranslatorTest, ToLcmMessageAbstractValVersion) {
   const int kVecSize = 2;
 
-  ToLcmMessageTranslator<TestData, lcmt_drake_signal> dut(
-      TestData(kVecSize),
-      std::make_unique<TestDataTranslator>());
+  LcmEncoderSystem<TestData, lcmt_drake_signal> dut(
+      std::make_unique<TestDataTranslator>(kVecSize));
 
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
@@ -192,7 +219,7 @@ GTEST_TEST(TranslatorTest, ToLcmMessageAbstractValVersion) {
 
   dut.CalcOutput(*context, output.get());
   const lcmt_drake_signal& msg =
-        output->get_data(0)->GetValue<lcmt_drake_signal>();
+      output->get_data(0)->GetValue<lcmt_drake_signal>();
 
   EXPECT_EQ(time * 1e3, msg.timestamp);
 
@@ -203,12 +230,13 @@ GTEST_TEST(TranslatorTest, ToLcmMessageAbstractValVersion) {
   }
 }
 
+// Tests a LcmDecoderSystem from lcmt_drake_signal to TestData using a
+// TestDataTranslator.
 GTEST_TEST(TranslatorTest, FromLcmMessageAbstractValVersion) {
   const int kVecSize = 2;
 
-  FromLcmMessageTranslator<TestData, lcmt_drake_signal> dut(
-      TestData(kVecSize),
-      std::make_unique<TestDataTranslator>());
+  LcmDecoderSystem<TestData, lcmt_drake_signal> dut(
+      std::make_unique<TestDataTranslator>(kVecSize));
 
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
@@ -224,8 +252,7 @@ GTEST_TEST(TranslatorTest, FromLcmMessageAbstractValVersion) {
   context->FixInputPort(0, AbstractValue::Make<lcmt_drake_signal>(msg));
 
   dut.CalcOutput(*context, output.get());
-  const TestData& data =
-      output->get_data(0)->GetValue<TestData>();
+  const TestData& data = output->get_data(0)->GetValue<TestData>();
 
   EXPECT_EQ(data.names.size(), kVecSize);
   EXPECT_EQ(data.vector.size(), kVecSize);
@@ -235,11 +262,12 @@ GTEST_TEST(TranslatorTest, FromLcmMessageAbstractValVersion) {
   }
 }
 
+// Tests a LcmDecoderSystem from lcmt_drake_signal to TestVector<double> using
+// a TestVectorTranslator.
 GTEST_TEST(TranslatorTest, FromLcmMessageBasicVectorVersion) {
   const int kVecSize = 2;
 
-  FromLcmMessageTranslator<TestVector<double>, lcmt_drake_signal> dut(
-      TestVector<double>(kVecSize),
+  LcmDecoderSystem<TestVector<double>, lcmt_drake_signal> dut(
       std::make_unique<TestVectorTranslator>(kVecSize));
 
   auto context = dut.CreateDefaultContext();
@@ -266,98 +294,6 @@ GTEST_TEST(TranslatorTest, FromLcmMessageBasicVectorVersion) {
     EXPECT_EQ(vector->get_names()[i], std::to_string(i));
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-/*
-GTEST_TEST(NewLcmPublisherTest, BasicVectorVersion) {
-  drake::lcm::DrakeMockLcm lcm;
-  const int kVecSize = 2;
-
-  NewLcmPublisherSystem<VectorBase<double>, lcmt_drake_signal> dut(
-      "test", std::make_unique<MyLcmtDrakeSignalTranslator>(kVecSize), kVecSize, &lcm);
-
-  auto context = dut.CreateDefaultContext();
-  auto output = dut.AllocateOutput(*context);
-
-  {
-    auto vec = std::make_unique<BasicVector<double>>(kVecSize);
-    for (int i = 0; i < kVecSize; ++i)
-      vec->SetAtIndex(i, i);
-
-    context->FixInputPort(0, std::move(vec));
-  }
-
-  const double time = 233;
-  context->set_time(time);
-
-  dut.Publish(*context.get());
-
-  const std::vector<uint8_t>& published_message_bytes =
-      lcm.get_last_published_message("test");
-
-  drake::lcmt_drake_signal received_message;
-  received_message.decode(&published_message_bytes[0], 0,
-      published_message_bytes.size());
-
-  EXPECT_EQ(time * 1e3, received_message.timestamp);
-
-  EXPECT_EQ(received_message.dim, kVecSize);
-  for (int i = 0; i < received_message.dim; ++i) {
-    EXPECT_EQ(received_message.coord[i], "");
-    EXPECT_EQ(received_message.val[i], i);
-  }
-}
-
-GTEST_TEST(NewLcmPublisherTest, AbstractValueVersion) {
-  drake::lcm::DrakeMockLcm lcm;
-  const int kVecSize = 2;
-
-  NewLcmPublisherSystem<TestData, lcmt_drake_signal> dut(
-      "test", std::make_unique<TestDataTranslator>(), &lcm);
-
-  auto context = dut.CreateDefaultContext();
-  auto output = dut.AllocateOutput(*context);
-
-  {
-    TestData data(kVecSize);
-    for (int i = 0; i < kVecSize; ++i) {
-      data.vector[i] = i;
-      data.names[i] = std::to_string(i);
-    }
-
-    context->FixInputPort(0, AbstractValue::Make<TestData>(data));
-  }
-
-  const double time = 233;
-  context->set_time(time);
-
-  dut.Publish(*context.get());
-
-  const std::vector<uint8_t>& published_message_bytes =
-      lcm.get_last_published_message("test");
-
-  drake::lcmt_drake_signal received_message;
-  received_message.decode(&published_message_bytes[0], 0,
-      published_message_bytes.size());
-
-  EXPECT_EQ(time * 1e3, received_message.timestamp);
-
-  EXPECT_EQ(received_message.dim, kVecSize);
-  for (int i = 0; i < received_message.dim; ++i) {
-    EXPECT_EQ(received_message.coord[i], std::to_string(i));
-    EXPECT_EQ(received_message.val[i], i);
-  }
-}
-*/
 
 }  // namespace
 }  // namespace lcm

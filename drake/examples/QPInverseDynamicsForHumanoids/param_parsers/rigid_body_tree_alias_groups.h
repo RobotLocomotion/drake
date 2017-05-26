@@ -45,6 +45,11 @@ class RigidBodyTreeAliasGroups {
   explicit RigidBodyTreeAliasGroups(const RigidBodyTree<T>& tree)
       : tree_(tree) {}
 
+  RigidBodyTreeAliasGroups(const RigidBodyTree<T>& tree,
+      const std::string& path) : tree_(tree) {
+    LoadFromFile(path);
+  }
+
   RigidBodyTreeAliasGroups(const RigidBodyTreeAliasGroups&) = delete;
   RigidBodyTreeAliasGroups& operator=(const RigidBodyTreeAliasGroups&) = delete;
 

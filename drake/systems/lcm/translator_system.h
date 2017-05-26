@@ -1,101 +1,189 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+
 #include "drake/common/drake_copyable.h"
-#include "drake/lcm/translator.h"
-#include "drake/systems/framework/leaf_context.h"
+#include "drake/lcm/translator_base.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/lcm/translator_internal.h"
 
 namespace drake {
 namespace systems {
 namespace lcm {
 
+namespace translator_system_detail {
+
+template <typename DataType, bool is_vector>
+struct DataTypeTraits {};
+
+// Convenience IO port getters for DataType derived from
+// systems::VectorBase<double>.
+template <typename DataType>
+struct DataTypeTraits<DataType, true> {
+  // Returns a const reference of DataType that corresponds to the first
+  // input port in @p context. Assumes that the input port is vector valued,
+  // and is of type DataType.
+  static const DataType& get_data(const System<double>& sys,
+                                  const Context<double>& context) {
+    const DataType* const vector =
+        dynamic_cast<const DataType*>(sys.EvalVectorInput(context, 0));
+    DRAKE_DEMAND(vector != nullptr);
+    return *vector;
+  }
+
+  // Returns a mutable reference of DataType that corresponds to the first
+  // output port in @p output. Assumes that the output port is vector valued,
+  // and is of type DataType.
+  static DataType& get_mutable_data(SystemOutput<double>* output) {
+    DataType* const vector =
+        dynamic_cast<DataType*>(output->GetMutableVectorData(0));
+    DRAKE_DEMAND(vector != nullptr);
+    return *vector;
+  }
+};
+
+// Convenience IO port getters for DataType not derived from
+// systems::VectorBase<double>.
+template <typename DataType>
+struct DataTypeTraits<DataType, false> {
+  // Returns a const reference of DataType that corresponds to the first
+  // input port in @p context. Assumes that the input port is abstract valued,
+  // and is of type DataType.
+  static const DataType& get_data(const System<double>& sys,
+                                  const Context<double>& context) {
+    const AbstractValue* const value = sys.EvalAbstractInput(context, 0);
+    DRAKE_DEMAND(value != nullptr);
+    return value->GetValue<DataType>();
+  }
+
+  // Returns a mutable reference of DataType that corresponds to the first
+  // output port in @p output. Assumes that the output port is abstract valued,
+  // and is of type DataType.
+  static DataType& get_mutable_data(SystemOutput<double>* output) {
+    return output->GetMutableData(0)->GetMutableValue<DataType>();
+  }
+};
+
+}  // namespace translator_system_detail
+
+/**
+ * An encoding systems that converts data of DataType to a Lcm message of
+ * MsgType. This system has exactly one input port and one output port. The
+ * output port is always of abstract value, which contains the encoded Lcm
+ * message. If DataType is derived from systems::VectorBase<double>, the
+ * input port will be vector valued. The input port will be abstract valued
+ * otherwise. The input and output ports' model values are specified by the
+ * translator instance passed to the constructor.
+ */
 template <typename DataType, typename MsgType>
-class ToLcmMessageTranslator : public LeafSystem<double> {
+class LcmEncoderSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ToLcmMessageTranslator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmEncoderSystem)
 
   using TranslatorType = typename drake::lcm::TranslatorBase<DataType, MsgType>;
 
-  // For VectorBase and it's derived.
+  /**
+   * Constructor when DataType is derived from systems::VectorBase<double>.
+   * A vector valued input port and an abstract output port are declared. The
+   * model values for the input and output ports are set to @p translator
+   * corresponding default values.
+   *
+   * @param translator Translator, whose ownership is transferred to this.
+   */
   template <typename DataType1 = DataType,
             typename = typename std::enable_if<std::is_base_of<
                 systems::VectorBase<double>, DataType1>::value>::type>
-  ToLcmMessageTranslator(const DataType1& default_input,
-                         std::unique_ptr<TranslatorType> translator)
+  explicit LcmEncoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
-    DeclareVectorInputPort(default_input);
-
-    Value<MsgType> msg;
-    translator_->InitializeMessage(&(msg.template GetMutableValue<MsgType>()));
-    DeclareAbstractOutputPort(msg);
+    DeclareVectorInputPort(translator_->get_default_data());
+    DeclareAbstractOutputPort(Value<MsgType>(translator_->get_default_msg()));
   }
 
-  // For every thing else.
+  /**
+   * Constructor when DataType is not derived from systems::VectorBase<double>.
+   * An abstract valued input port and an abstract output port are declared.
+   * The model values for the input and output ports are set to @p translator
+   * corresponding default values.
+   *
+   * @param translator Translator, whose ownership is transferred to this.
+   */
   template <typename DataType1 = DataType,
             typename = typename std::enable_if<!std::is_base_of<
                 systems::VectorBase<double>, DataType1>::value>::type,
             typename = void>
-  ToLcmMessageTranslator(const DataType1& default_input,
-                         std::unique_ptr<TranslatorType> translator)
+  explicit LcmEncoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
-    DeclareAbstractInputPort(Value<DataType>(default_input));
-
-    Value<MsgType> msg;
-    translator_->InitializeMessage(&(msg.template GetMutableValue<MsgType>()));
-    DeclareAbstractOutputPort(msg);
+    DeclareAbstractInputPort(Value<DataType>(translator_->get_default_data()));
+    DeclareAbstractOutputPort(Value<MsgType>(translator_->get_default_msg()));
   }
 
-  const TranslatorType& get_translator() const { return *translator_; };
+  /**
+   * Returns a const reference to the translator.
+   */
+  const TranslatorType& get_translator() const { return *translator_; }
 
  private:
   void DoCalcOutput(const Context<double>& context,
                     SystemOutput<double>* output) const override {
-    const DataType& data = translator_internal::DataTypeTraits<
+    const DataType& data = translator_system_detail::DataTypeTraits<
         DataType, std::is_base_of<VectorBase<double>,
                                   DataType>::value>::get_data(*this, context);
-
     MsgType& msg = output->GetMutableData(0)->GetMutableValue<MsgType>();
-
     translator_->Encode(context.get_time(), data, &msg);
   }
 
   std::unique_ptr<TranslatorType> translator_;
 };
 
+/**
+ * A decoding systems that converts a Lcm message of MsgTypedata to data of
+ * DataType. This system has exactly one input port and one output port. The
+ * input port is always of abstract value, which contains the encoded Lcm
+ * message. If DataType is derived from systems::VectorBase<double>, the
+ * output port will be vector valued. The output port will be abstract valued
+ * otherwise. The input and output ports' model values are specified by the
+ * translator instance passed to the constructor.
+ */
 template <typename DataType, typename MsgType>
-class FromLcmMessageTranslator : public LeafSystem<double> {
+class LcmDecoderSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FromLcmMessageTranslator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmDecoderSystem)
 
   using TranslatorType = typename drake::lcm::TranslatorBase<DataType, MsgType>;
 
+  /**
+   * Constructor when DataType is derived from systems::VectorBase<double>.
+   * An abstract input port and a vector valued output port are declared. The
+   * model values for the input and output ports are set to @p translator
+   * corresponding default values.
+   *
+   * @param translator Translator, whose ownership is transferred to this.
+   */
   template <typename DataType1 = DataType,
             typename = typename std::enable_if<std::is_base_of<
                 systems::VectorBase<double>, DataType1>::value>::type>
-  FromLcmMessageTranslator(const DataType1& default_output,
-                           std::unique_ptr<TranslatorType> translator)
+  explicit LcmDecoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
-    Value<MsgType> msg;
-    translator_->InitializeMessage(&(msg.template GetMutableValue<MsgType>()));
-
-    DeclareAbstractInputPort(msg);
-    DeclareVectorOutputPort(default_output);
+    DeclareAbstractInputPort(Value<MsgType>(translator_->get_default_msg()));
+    DeclareVectorOutputPort(translator_->get_default_data());
   }
 
-  // For every thing else.
+  /**
+   * Constructor when DataType is not derived from systems::VectorBase<double>.
+   * An abstract input port and an abstract valued output port are declared. The
+   * model values for the input and output ports are set to @p translator
+   * corresponding default values.
+   *
+   * @param translator Translator, whose ownership is transferred to this.
+   */
   template <typename DataType1 = DataType,
             typename = typename std::enable_if<!std::is_base_of<
                 systems::VectorBase<double>, DataType1>::value>::type,
             typename = void>
-  FromLcmMessageTranslator(const DataType1& default_output,
-                           std::unique_ptr<TranslatorType> translator)
+  explicit LcmDecoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
-    Value<MsgType> msg;
-    translator_->InitializeMessage(&(msg.template GetMutableValue<MsgType>()));
-
-    DeclareAbstractInputPort(msg);
-    DeclareAbstractOutputPort(Value<DataType>(default_output));
+    DeclareAbstractInputPort(Value<MsgType>(translator_->get_default_msg()));
+    DeclareAbstractOutputPort(Value<DataType>(translator_->get_default_data()));
   }
 
  private:
@@ -103,7 +191,7 @@ class FromLcmMessageTranslator : public LeafSystem<double> {
                     SystemOutput<double>* output) const override {
     const MsgType& msg =
         this->EvalAbstractInput(context, 0)->template GetValue<MsgType>();
-    DataType& data = translator_internal::DataTypeTraits<
+    DataType& data = translator_system_detail::DataTypeTraits<
         DataType, std::is_base_of<VectorBase<double>,
                                   DataType>::value>::get_mutable_data(output);
     double throw_away_time;
