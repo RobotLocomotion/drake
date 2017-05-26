@@ -12,7 +12,7 @@ namespace systems {
  * A second-order, explicit Runge Kutta integrator.
  */
 template <class T>
-class RungeKutta2Integrator : public IntegratorBase<T> {
+class RungeKutta2Integrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta2Integrator)
 

@@ -271,6 +271,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::FactorAndSolve(const MatrixX<T>& A,
                                              const VectorX<T>& b) {
+  num_iter_factorizations_++;
   LU_.compute(A);
   return LU_.solve(b);
 }
@@ -283,6 +284,7 @@ template <>
 VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
     const MatrixX<AutoDiffXd>& A,
     const VectorX<AutoDiffXd>& b) {
+  num_iter_factorizations_++;
   QR_.compute(A);
   return QR_.solve(b);
 }
@@ -364,7 +366,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // TODO(edrumwri): Allow caller to provide their own solver.
     const int n = xtplus->size();
     iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-    num_iter_factorizations_++;
     VectorX<T> dx = FactorAndSolve(iteration_matrix_, goutput);
 
     // Get the infinity norm of the weighted update vector.
@@ -653,8 +654,7 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
   const T t0 = context->get_time();
   const VectorX<T> xt0 = context->get_continuous_state()->CopyToVector();
 
-  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}",
-               dt, t0);
+  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}", dt, t0);
 
   // If the requested dt is less than or equal to the minimum step size, an
   // explicit Euler step will be taken. We compute the error estimate using two

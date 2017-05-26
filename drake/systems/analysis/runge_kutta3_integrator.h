@@ -54,7 +54,7 @@ namespace systems {
  *   rev. ed. Springer, 1993. p. 166.
  */
 template <class T>
-class RungeKutta3Integrator : public IntegratorBase<T> {
+class RungeKutta3Integrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta3Integrator)
 

@@ -82,7 +82,7 @@ namespace systems {
  *                    Equations. John Wiley & Sons, 1991.
  */
 template <class T>
-class ImplicitEulerIntegrator : public IntegratorBase<T> {
+class ImplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitEulerIntegrator)
 
@@ -182,7 +182,7 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   int64_t get_num_jacobian_evaluations() const { return
         num_jacobian_evaluations_; }
 
-  /// Gets the number of iteration matrix factorizations since the last
+  /// Gets the number of factorizations of the iteration matrix since the last
   /// call to ResetStatistics(). This count includes those refactorizations
   /// necessary during the error estimation process.
   int64_t get_num_iteration_matrix_factorizations() const {
@@ -214,8 +214,9 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   int64_t get_num_error_estimator_jacobian_evaluations() const {
     return num_err_est_jacobian_reforms_; }
 
-  /// Gets the number of iteration matrix factorizations *used only during
-  /// the error estimation process* since the last call to ResetStatistics().
+  /// Gets the number of factorizations of the iteration matrix *used only
+  /// during the error estimation process* since the last call to
+  /// ResetStatistics().
   int64_t get_num_error_estimator_iteration_matrix_factorizations() const {
     return num_err_est_iter_factorizations_;
   }
