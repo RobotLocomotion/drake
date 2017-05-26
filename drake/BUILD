@@ -19,15 +19,21 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/lcm",
 ]
 
-# The Drake binary package. libdrake.so contains all the symbols from all the
-# _LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
+# The Drake library package. :drake contains all the symbols from all the
+# _LIBDRAKE_COMPONENTS and all the Drake externals.
+cc_library(
+    name = "drake",
+    deps = _LIBDRAKE_COMPONENTS,
+)
+
+# The Drake binary package. libdrake.so contains:drake. We use linkstatic=1 so
 # that the binary package will not contain any references to shared libraries
 # inside the build tree.
 cc_binary(
     name = "libdrake.so",
     linkshared = 1,
     linkstatic = 1,
-    deps = _LIBDRAKE_COMPONENTS,
+    deps = [":drake"],
 )
 
 # All the headers mentioned in "hdrs" attributes of the transitive closure of
