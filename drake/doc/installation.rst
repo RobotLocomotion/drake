@@ -16,6 +16,7 @@ You can choose to download a pre-compiled version of Drake, or to build it from 
 
 	from_binary
 	from_source
+	docker
 
 
 Optional: Installing MATLAB
