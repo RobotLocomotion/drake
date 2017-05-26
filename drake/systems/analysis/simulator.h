@@ -99,10 +99,14 @@ class Simulator {
   /// ODE/DAE integrators, witness function time isolation, etc. Accuracy
   /// tolerances for components that can be used independently from Simulator
   /// (e.g., integrators) are maintained independently *but Simulator tracks
-  /// these accuracy tolerances* (and throws an exception if the user manages
-  /// make the tolerances inconsistent). The simulator will not maintain
-  /// consistent accuracy values among all used components if the value is
-  /// not set (i.e., the `optional` type does not contain a value).
+  /// these accuracy tolerances* (and throws an exception in StepTo() if the
+  /// user manages make the tolerances inconsistent). The simulator will not
+  /// maintain consistent accuracy values among all components if the accuracy
+  /// value is not set (i.e., the `optional` type does not contain a value).
+  ///
+  /// Assuming that the accuracy is set, accuracy values range from 0 (accuracy
+  /// will be maintained to the tightest tolerances possible) to 1 (loosest
+  /// accuracy).
   std::experimental::optional<double> get_simulation_accuracy() {
     return accuracy_; }
 
@@ -134,6 +138,12 @@ class Simulator {
    * time you attempt a step, possibly resulting in unexpected error conditions.
    * See documentation for `Initialize()` for the error conditions it might
    * produce.
+   *
+   * @param boundary_time a time greater than or equal to the System's current
+   *                      time, stored in the context (aborts if this assumption
+   *                      is not met).
+   * @throws std::logic_error if accuracy settings are inconsistent between
+   *         Simulator and its components.
    */
   void StepTo(const T& boundary_time);
 
@@ -420,10 +430,12 @@ Simulator<T>::Simulator(const System<T>& system,
   unrestricted_updates_ = context_->CloneState();
 }
 
-/// Verifies the consistency of the Simulator.
+// Verifies the consistency of the Simulator on each StepTo() call.
+// @throws std::logic_error if the various component accuracy tolerances
+//         do not match the accuracy tolerances in Simulator (assuming that
+//         the optional accuracy has been set).
 template <class T>
-void Simulator<T>::CheckConsistency()
-{
+void Simulator<T>::CheckConsistency() {
   using std::isnan;
   using std::abs;
 

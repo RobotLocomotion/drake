@@ -25,8 +25,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-GTEST_TEST(SimulatorTest, ConsistentAccuracy)
-{
+GTEST_TEST(SimulatorTest, ConsistentAccuracy) {
   // Create a dummy system and context.
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
   auto context = spring_mass.CreateDefaultContext();
