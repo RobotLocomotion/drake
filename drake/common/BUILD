@@ -165,25 +165,11 @@ drake_cc_library(
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
     # drake_path are removed.
     # testonly = 1,
-    srcs = ["drake_path.cc"],
+    srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
     deps = [
         ":common",
     ],
-)
-
-# TODO(jwnimmer-tri) GetDrakePath has a long and storied history (#1471, #2174).
-# It serves multiple purposes (unit tests loading their models; installed demos
-# loading their models; etc.) but doesn't really do any of them well.  The rule
-# here in Bazel is intended as a temporary shim, in order to support Bazel and
-# CMake build systems concurrently.  We should endeavor to remove this rule (in
-# lieu of properly-declared data dependencies) once we are unchained from CMake.
-genrule(
-    name = "drake_path_genrule",
-    srcs = ["drake_path.cc.in"],
-    outs = ["drake_path.cc"],
-    # TODO(jwnimmer-tri) This should be an abspath, not relpath.
-    cmd = "sed 's#@PROJECT_SOURCE_DIR@#drake#g' $< > $@",
 )
 
 # TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
