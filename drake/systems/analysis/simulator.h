@@ -4,6 +4,7 @@
 #include <chrono>
 #include <limits>
 #include <memory>
+#include <experimental/optional>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -90,6 +91,34 @@ class Simulator {
    * sense, and `std::runtime_error` if it is unable to find a
    * constraint-satisfying initial condition. */
   void Initialize();
+
+  /// Gets the target accuracy for the Simulator, which roughly corresponds
+  /// to the number of digits of accuracy in the solution.
+  /// The target accuracy is a meta parameter setting that directly sets
+  /// accuracy tolerances for all components used by Simulator, including
+  /// ODE/DAE integrators, witness function time isolation, etc. Accuracy
+  /// tolerances for components that can be used independently from Simulator
+  /// (e.g., integrators) are maintained independently *but Simulator tracks
+  /// these accuracy tolerances* (and throws an exception if the user manages
+  /// make the tolerances inconsistent). The simulator will not maintain
+  /// consistent accuracy values among all used components if the value is
+  /// not set (i.e., the `optional` type does not contain a value).
+  std::experimental::optional<double> get_simulation_accuracy() {
+    return accuracy_; }
+
+  /// Sets the target accuracy for the Simulator.
+  /// @param accuracy The target accuracy in the range [0, 1], where 1 indicates
+  ///                 that tolerances are at their loosest and 0 indicates that
+  ///                 tolerances are at their tightest.
+  /// @throws std::logic_error if the accuracy is set *and* the accuracy does
+  ///         not lie in the interval [0,1].
+  /// @sa get_target_accuracy()
+  void set_simulation_accuracy(
+      const std::experimental::optional<double>& accuracy) {
+    if (accuracy && (accuracy.value() < 0 || accuracy.value() > 1))
+      throw std::logic_error("Specific accuracy outside of [0,1].");
+    accuracy_ = accuracy;
+  }
 
   // TODO(edrumwri): add ability to account for final time
   /** Advance the System's trajectory until `boundary_time` is reached in
@@ -288,6 +317,9 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  // Performs per-step checks for Simulator consistency.
+  void CheckConsistency();
+
   // Goes through every event in @p events and calls unrestricted update only
   // if that event's action type is kUnrestrictedUpdateAction.
   void HandleUnrestrictedUpdate(const std::vector<DiscreteEvent<T>>& events);
@@ -326,6 +358,9 @@ class Simulator {
 
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
+
+  /// The optional meta simulator accuracy setting.
+  std::experimental::optional<double> accuracy_;
 
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{0.};
@@ -385,10 +420,34 @@ Simulator<T>::Simulator(const System<T>& system,
   unrestricted_updates_ = context_->CloneState();
 }
 
+/// Verifies the consistency of the Simulator.
+template <class T>
+void Simulator<T>::CheckConsistency()
+{
+  using std::isnan;
+  using std::abs;
+
+  // If Simulator's accuracy has been set, verify that integrator's accuracy has
+  // either not been set or the integrator's accuracy setting matches
+  // Simulator's.
+  if (accuracy_) {
+    if (!isnan(integrator_->get_target_accuracy()) &&
+        abs(integrator_->get_target_accuracy() - accuracy_.value()) >
+            std::numeric_limits<double>::epsilon()) {
+      throw std::logic_error("Accuracy is set in Simulator and integrator and"
+                                 " accuracies are not equal.");
+    }
+  }
+}
+
 template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
+
+  // Set the integrator's accuracy to the Simulator's accuracy.
+  if (accuracy_)
+    integrator_->set_target_accuracy(accuracy_.value());
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -479,6 +538,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
+
+  // Verify simulation consistency.
+  CheckConsistency();
 
   // Updates/publishes can be triggered throughout the integration process,
   // but are not active at the start of the step.
