@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
@@ -51,6 +52,17 @@ class Context {
   virtual void set_time(const T& time_sec) {
     get_mutable_step_info()->time_sec = time_sec;
   }
+
+  // =========================================================================
+  // Accessors and Mutators for Accuracy.
+
+  /// Returns the accuracy setting (if any).
+  const drake::optional<T>& get_accuracy() const { return accuracy_; }
+
+  /// Gets a mutable pointer to the accuracy setting.
+  /// TODO(edrumwri) Invalidate all cached time- and state-dependent
+  /// computations.
+  drake::optional<T>* get_mutable_accuracy() { return &accuracy_; }
 
   // =========================================================================
   // Accessors and Mutators for State.
@@ -365,6 +377,9 @@ class Context {
   /// Requires a constructor T(double).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
+    drake::optional<T>& accuracy = *get_mutable_accuracy();
+    if (source.get_accuracy())
+      accuracy = T(source.get_accuracy().value());
     get_mutable_state()->SetFrom(source.get_state());
     get_mutable_parameters().SetFrom(source.get_parameters());
   }
@@ -437,6 +452,9 @@ class Context {
  private:
   // Current time and step information.
   StepInfo<T> step_info_;
+
+  // Accuracy setting.
+  drake::optional<T> accuracy_;
 
   // The context of the enclosing Diagram, used in EvalInputPort.
   // This pointer MUST be treated as a black box. If you call any substantive

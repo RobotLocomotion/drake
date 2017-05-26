@@ -331,6 +331,7 @@ class DiagramContext : public Context<T> {
     }
 
     // Make deep copies of everything else using the default copy constructors.
+    *clone->get_mutable_accuracy() = this->get_accuracy();
     *clone->get_mutable_step_info() = this->get_step_info();
 
     return clone;

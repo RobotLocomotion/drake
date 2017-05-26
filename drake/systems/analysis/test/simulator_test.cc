@@ -12,7 +12,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
@@ -25,45 +24,8 @@ namespace drake {
 namespace systems {
 namespace {
 
-GTEST_TEST(SimulatorTest, ConsistentAccuracy) {
-  // Create a dummy system and context.
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
-  auto context = spring_mass.CreateDefaultContext();
-
-  /// Construct the simulator with the created context.
-  Simulator<double> simulator(spring_mass, std::move(context));
-
-  /// Use an error controlled integrator.
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(spring_mass,
-      simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_target_accuracy(1.0);
-
-  // Arbitrary setting to keep the integrator from complaining on
-  // initialization.
-  simulator.get_mutable_integrator()->set_maximum_step_size(0.1);
-
-  /// Verify that setting too loose/tight accuracy throws exceptions.
-  EXPECT_THROW(simulator.set_simulation_accuracy(1.1), std::logic_error);
-  EXPECT_THROW(simulator.set_simulation_accuracy(-1e-15), std::logic_error);
-
-  // Set the simulator accuracy.
-  const double des_accuracy = 0.1;
-  simulator.set_simulation_accuracy(des_accuracy);
-
-  // Initialize the simulator.
-  simulator.Initialize();
-
-  // Verify that integrator's target accuracy is the same.
-  EXPECT_EQ(des_accuracy, simulator.get_integrator()->get_target_accuracy());
-
-  // Change the accuracy in the integrator and verify that an exception is
-  // thrown.
-  simulator.get_mutable_integrator()->set_target_accuracy(1e-2);
-  EXPECT_THROW(simulator.StepTo(1.0), std::logic_error);
-}
-
 GTEST_TEST(SimulatorTest, SecondConstructor) {
-  // Create the spring-mass system and context.
+  // Create the spring-mass sytem and context.
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
   auto context = spring_mass.CreateDefaultContext();
 

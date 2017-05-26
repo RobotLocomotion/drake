@@ -305,6 +305,20 @@ TEST_F(DiagramContextTest, CloneState) {
   EXPECT_EQ(43.0, (*context_->get_continuous_state())[1]);
 }
 
+// Verifies that accuracy is set properly.
+TEST_F(DiagramContextTest, Accuracy)
+{
+  // Verify accuracy is not set by default.
+  EXPECT_FALSE(context_->get_accuracy());
+
+  // Verify that setting the accuracy is reflected in cloning.
+  const double unity = 1.0;
+  auto& mutable_accuracy = *context_->get_mutable_accuracy();
+  mutable_accuracy = unity;
+  std::unique_ptr<Context<double>> clone = context_->Clone();
+  EXPECT_EQ(clone->get_accuracy().value(), unity);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

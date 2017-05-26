@@ -370,5 +370,19 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   EXPECT_EQ(2.0, (target.get_numeric_parameter(0)->GetAtIndex(1).value()));
 }
 
+// Verifies that accuracy is set properly.
+TEST_F(LeafContextTest, Accuracy)
+{
+  // Verify accuracy is not set by default.
+  EXPECT_FALSE(context_.get_accuracy());
+
+  // Verify that setting the accuracy is reflected in cloning.
+  const double unity = 1.0;
+  auto& mutable_accuracy = *context_.get_mutable_accuracy();
+  mutable_accuracy = unity;
+  std::unique_ptr<Context<double>> clone = context_.Clone();
+  EXPECT_EQ(clone->get_accuracy().value(), unity);
+}
+
 }  // namespace systems
 }  // namespace drake
