@@ -174,7 +174,7 @@ pkg_config_package = repository_rule(
         "max_version": attr.string(),
         "exact_version": attr.string(),
         "build_file_template": attr.label(
-            default = Label("@//tools/third_party/kythe/tools/build_rules/config:BUILD.tpl"),
+            default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
             single_file = True,
             allow_files = True,
         ),
