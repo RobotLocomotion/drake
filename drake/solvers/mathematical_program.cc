@@ -207,6 +207,40 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
   return NewVariables(VarType::BINARY, rows, names);
 }
 
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const vector<string>& names) {
+  MatrixXIndeterminate indeterminates_matrix(rows, cols);
+  NewIndeterminates_impl(names, indeterminates_matrix);
+  return indeterminates_matrix;
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, const std::vector<std::string>& names) {
+  return NewIndeterminates(rows, 1, names);
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, const string& name) {
+  vector<string> names(rows);
+  for (int i = 0; i < static_cast<int>(rows); ++i) {
+    names[i] = name + "(" + to_string(i) + ")";
+  }
+  return NewIndeterminates(rows, names);
+}
+
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const string& name) {
+  vector<string> names(rows * cols);
+  int count = 0;
+  for (int j = 0; j < static_cast<int>(cols); ++j) {
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
+      ++count;
+    }
+  }
+  return NewIndeterminates(rows, cols, names);
+}
+
 namespace {
 
 template <typename To, typename From>
@@ -319,8 +353,8 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
     return AddConstraint(
         BindingDynamicCast<PositiveSemidefiniteConstraint>(binding));
   } else if (dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
-    return AddConstraint(BindingDynamicCast<RotatedLorentzConeConstraint>(
-        binding));
+    return AddConstraint(
+        BindingDynamicCast<RotatedLorentzConeConstraint>(binding));
   } else if (dynamic_cast<LorentzConeConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<LorentzConeConstraint>(binding));
   } else if (dynamic_cast<LinearConstraint*>(constraint)) {
@@ -596,6 +630,17 @@ size_t MathematicalProgram::FindDecisionVariableIndex(
   if (it == decision_variable_index_.end()) {
     ostringstream oss;
     oss << var << " is not a decision variable in the mathematical program, "
+                  "when calling GetSolution.\n";
+    throw runtime_error(oss.str());
+  }
+  return it->second;
+}
+
+size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
+  auto it = indeterminates_index_.find(var.get_id());
+  if (it == indeterminates_index_.end()) {
+    ostringstream oss;
+    oss << var << " is not a indeterminate in the mathematical program, "
                   "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
