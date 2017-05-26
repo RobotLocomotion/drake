@@ -30,7 +30,7 @@ cc_library(
         "googletest/include",
     ],
     linkopts = select({
-        "@//tools:linux": ["-pthread"],
+        "@drake//tools:linux": ["-pthread"],
         "@//conditions:default": [],
     }),
     linkstatic = 1,

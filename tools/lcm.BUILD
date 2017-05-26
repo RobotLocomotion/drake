@@ -1,9 +1,9 @@
 # -*- python -*-
 
-load("@//tools:drake.bzl", "drake_generate_file")
-load("@//tools:generate_export_header.bzl", "generate_export_header")
-load("@//tools:install.bzl", "install", "install_files")
-load("@//tools:python_lint.bzl", "python_lint")
+load("@drake//tools:drake.bzl", "drake_generate_file")
+load("@drake//tools:generate_export_header.bzl", "generate_export_header")
+load("@drake//tools:install.bzl", "install", "install_files")
+load("@drake//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = ["//visibility:public"])
@@ -200,8 +200,8 @@ pkg_tar(
 
 py_binary(
     name = "create-cps",
-    srcs = ["@//tools:lcm-create-cps.py"],
-    main = "@//tools:lcm-create-cps.py",
+    srcs = ["@drake//tools:lcm-create-cps.py"],
+    main = "@drake//tools:lcm-create-cps.py",
     visibility = ["//visibility:private"],
 )
 

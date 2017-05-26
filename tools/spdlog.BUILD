@@ -15,7 +15,7 @@ cc_library(
     ],
     includes = ["include"],
     linkopts = select({
-        "@//tools:linux": ["-pthread"],
+        "@drake//tools:linux": ["-pthread"],
         "@//conditions:default": [],
     }),
     deps = ["@fmt"],
