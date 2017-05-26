@@ -134,6 +134,7 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
   auto t1 = U.eigenvalues();
   auto t2 = t1.array();
   auto t3 = t2.real();
+  std::cout << "T3: " << t3 << std::endl;
   auto lambda_mag = U.eigenvalues().array().real();
   std::cout << "LAMBDA MAG: " <<  lambda_mag << std::endl;
   EXPECT_GE(lambda_mag(0), -tol);
