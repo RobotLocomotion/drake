@@ -160,7 +160,7 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
   // Checks num_indeterminates() function.
   const int num_new_indeterminates = indeterminates.size();
   EXPECT_EQ(prog.num_indeterminates(), num_new_indeterminates);
-  // Checks the indices of the newly added variables.
+  // Checks the indices of the newly added indeterminates.
   for (int i = 0; i < indeterminates.rows(); ++i) {
     for (int j = 0; j < indeterminates.cols(); ++j) {
       EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates(i, j)),
