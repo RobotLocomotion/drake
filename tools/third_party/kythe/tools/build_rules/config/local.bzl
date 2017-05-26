@@ -50,7 +50,7 @@ local_cc_library_configure = repository_rule(
         "default": attr.string(),
         "defines": attr.string_list(),
         "build_file_template": attr.label(
-            default = Label("@//tools/third_party/kythe/tools/build_rules/config:BUILD.tpl"),
+            default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
             single_file = True,
             allow_files = True,
         ),

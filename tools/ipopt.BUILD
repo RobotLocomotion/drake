@@ -103,7 +103,7 @@ genrule(
     cmd = " ".join([
         "(",
         "env",
-        "cdexec=$(location @drake//tools/third_party/kythe/tools/cdexec:cdexec)",
+        "cdexec=$(location @kythe//tools/cdexec:cdexec)",
         "top_builddir=$(@D)",
         "$(location @drake//tools:ipopt_build_with_autotools.sh)",
         " 2>&1 > ipopt_build_with_autotools.log",
@@ -112,7 +112,7 @@ genrule(
     ]),
     tools = [
         "@drake//tools:ipopt_build_with_autotools.sh",
-        "@drake//tools/third_party/kythe/tools/cdexec:cdexec",
+        "@kythe//tools/cdexec:cdexec",
     ],
     visibility = ["//visibility:private"],
 )
