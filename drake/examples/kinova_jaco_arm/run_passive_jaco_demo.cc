@@ -6,9 +6,9 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/examples/kinova_jaco_arm/jaco_common.h"
-#include "drake/common/text_logging_gflags.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging_gflags.h"
+#include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"

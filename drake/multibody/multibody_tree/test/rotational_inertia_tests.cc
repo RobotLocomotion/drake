@@ -8,7 +8,6 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 
-
 namespace drake {
 namespace multibody {
 namespace math {
