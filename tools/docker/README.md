@@ -15,14 +15,14 @@ $ docker build -t drake -f tools/docker/Dockerfile.opensource .
   
 # Running
 ## Passive Acrobot Simulation
-Nvidia drivers:  
-$ xhost +local:root; nvidia-docker run -ti --rm -e DISPLAY
--e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix
---privileged drake
+Nvidia drivers:  (requires nvidia-docker plugin)  
+$ xhost +local:root; nvidia-docker run -ti --rm -e DISPLAY \  
+-e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \  
+--privileged drake  
   
 Open source drivers:  
-$ xhost +local:root; docker run -ti --rm -e DISPLAY
--e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix
+$ xhost +local:root; docker run -ti --rm -e DISPLAY \  
+-e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \  
 --privileged drake  
   
 Note: The --privileged argument is only necessary under security enhanced
