@@ -15,12 +15,12 @@ $ docker build -t drake -f tools/docker/Dockerfile.opensource .
   
 # Running
 ## Passive Acrobot Simulation
-Nvidia drivers:  (requires nvidia-docker plugin)  
+### Nvidia drivers:  (requires nvidia-docker plugin)  
 $ xhost +local:root; nvidia-docker run -ti --rm -e DISPLAY \  
 -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \  
 --privileged drake  
   
-Open source drivers:  
+### Open source drivers:  
 $ xhost +local:root; docker run -ti --rm -e DISPLAY \  
 -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \  
 --privileged drake  
@@ -28,7 +28,7 @@ $ xhost +local:root; docker run -ti --rm -e DISPLAY \
 Note: The --privileged argument is only necessary under security enhanced
 linux.
 
-##Enter An Interactive Shell
+## Enter An Interactive Shell
 An arbitrary command can be passed to the docker image by appending the
 argument to the above commands. Type bash at the end to enter a bash shell in
 the docker image.
