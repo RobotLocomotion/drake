@@ -1,3 +1,4 @@
+# Copyright 2016-2017 Toyota Research Institute.  All rights reserved.
 #!/bin/bash
 set -e
 [[ $# -eq 0 ]] && {
