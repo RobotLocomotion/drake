@@ -17,4 +17,4 @@ RUN apt-get update && yes "Y" \
       && apt-get clean all
 RUN mkdir /drake/build && cd /drake/build && cmake .. && make -j16 && cd /drake && bazel build ... && bazel test ...
 COPY tools/docker/entrypoint.sh /
-ENTRYPOINT /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
