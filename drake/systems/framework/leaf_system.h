@@ -689,8 +689,16 @@ class LeafSystem : public System<T> {
   /// where `MySystem` is a class derived from `LeafSystem<T>` and
   /// `BasicVectorSubtype` is derived from `BasicVector<T>` and has a suitable
   /// default constructor that allocates a vector of the expected size. This
-  /// will use `BasicVectorSubtype()` as the model vector for the output port.
+  /// will use `BasicVectorSubtype()` (that is, the default constructor) to
+  /// produce a model vector for the output port's value.
   /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @note The default constructor will be called once immediately, and
+  /// subsequent allocations will just copy the model value without invoking the
+  /// constructor again. If you want the constructor invoked again at each
+  /// allocation (not common), use one of the other signatures to explicitly
+  /// provide a method for the allocator to call; that method can then invoke
+  /// the `BasicVectorSubtype` default constructor.
   template <class MySystem, typename BasicVectorSubtype>
   const LeafOutputPort<T>& DeclareVectorOutputPort(
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const) {
@@ -776,11 +784,17 @@ class LeafSystem : public System<T> {
   /// @code
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>`.
-  /// We infer from that signature that the port's allocator should allocate
-  /// an AbstractValue of type `Value<OutputType>` using OutputType's
-  /// default constructor.
+  /// where `MySystem` is a class derived from `LeafSystem<T>`. `OutputType`
+  /// must be default constructible, so that we can create a model value using
+  /// `Value<OutputType>()`.
   /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @note The default constructor will be called once immediately, and
+  /// subsequent allocations will just copy the model value without invoking the
+  /// constructor again. If you want the constructor invoked again at each
+  /// allocation (not common), use one of the other signatures to explicitly
+  /// provide a method for the allocator to call; that method can then invoke
+  /// the `OutputType` default constructor.
   template <class MySystem, typename OutputType>
   const LeafOutputPort<T>& DeclareAbstractOutputPort(
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
