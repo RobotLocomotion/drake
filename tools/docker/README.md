@@ -18,12 +18,12 @@ $ docker build -t drake -f tools/docker/Dockerfile.opensource .
 ### Nvidia drivers:  (requires nvidia-docker plugin)  
 $ xhost +local:root; nvidia-docker run -ti --rm -e DISPLAY \  
 -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \  
---privileged drake  
+--privileged drake; xhost -local:root  
   
 ### Open source drivers:  
 $ xhost +local:root; docker run -ti --rm -e DISPLAY \  
 -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \  
---privileged drake  
+--privileged drake; xhost -local:root  
   
 Note: The --privileged argument is only necessary under security enhanced
 linux.
@@ -31,4 +31,8 @@ linux.
 ## Enter An Interactive Shell
 An arbitrary command can be passed to the docker image by appending the
 argument to the above commands. Type bash at the end to enter a bash shell in
-the docker image.
+the docker image.  
+$ xhost +local:root; docker run -ti --rm -e DISPLAY \  
+-e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \  
+--privileged drake bash; xhost -local:root  
+
