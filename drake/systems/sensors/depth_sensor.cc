@@ -34,10 +34,7 @@ DepthSensor::DepthSensor(const std::string& name,
                          const RigidBodyTree<double>& tree,
                          const RigidBodyFrame<double>& frame,
                          const DepthSensorSpecification& specification)
-    : name_(name),
-      tree_(tree),
-      frame_(frame),
-      specification_(specification) {
+    : name_(name), tree_(tree), frame_(frame), specification_(specification) {
   DRAKE_DEMAND(specification_.min_yaw() <= specification_.max_yaw() &&
                "min_yaw must be less than or equal to max_yaw.");
   DRAKE_DEMAND(specification_.min_pitch() <= specification_.max_pitch() &&
@@ -84,23 +81,23 @@ void DepthSensor::PrecomputeRaycastEndpoints() {
   // (3) pitch = PI and and pitch = -PI for a given yaw
   // (3) yaw > 2 * PI
   //
-  for (int i = 0; i < get_num_pixel_rows(); ++i) {
+  for (int i = 0; i < get_num_pitch(); ++i) {
     double pitch =
         specification_.min_pitch() + i * specification_.pitch_increment();
 
     // If this is the top-most row, set the pitch equal to max_pitch_. This is
     // necessary to account for small inaccuracies due to floating point
     // arithmetic.
-    if (i == get_num_pixel_rows() - 1) pitch = specification_.max_pitch();
+    if (i == get_num_pitch() - 1) pitch = specification_.max_pitch();
 
-    for (int j = 0; j < get_num_pixel_cols(); ++j) {
+    for (int j = 0; j < get_num_yaw(); ++j) {
       double yaw =
           specification_.min_yaw() + j * specification_.yaw_increment();
 
       // If this is the right-most column, set the yaw equal to max_yaw_.
       // This is necessary to account for small inaccuracies due to floating
       // point arithmetic.
-      if (j == get_num_pixel_cols() - 1) yaw = specification_.max_yaw();
+      if (j == get_num_yaw() - 1) yaw = specification_.max_yaw();
 
       // Compute the location of the raycast end point assuming a max sensing
       // range of one and no occlusions. This is done using the same equations
@@ -113,7 +110,7 @@ void DepthSensor::PrecomputeRaycastEndpoints() {
       // the range cast end point exceeds the maximum range of the sensor. This
       // is so we can detect when an object is sensed at precisely the maximum
       // range of the sensor.
-      raycast_endpoints_.col(i * get_num_pixel_cols() + j) =
+      raycast_endpoints_.col(i * get_num_yaw() + j) =
           1.1 * specification_.max_range() * Vector3<double>(x, y, z);
     }
   }
@@ -133,6 +130,8 @@ const OutputPort<double>& DepthSensor::get_pose_output_port() const {
   return System<double>::get_output_port(pose_output_port_index_);
 }
 
+// TODO(sherm1) Should be accessing an already-calculated kinematics cache,
+// not recalculating.
 void DepthSensor::CalcDepthOutput(
     const Context<double>& context,
     DepthSensorOutput<double>* data_output) const {
@@ -167,34 +166,33 @@ void DepthSensor::CalcDepthOutput(
   const_cast<RigidBodyTree<double>&>(tree_).collisionRaycast(
       kinematics_cache, origin, raycast_endpoints_world, distances);
 
-  // Applies the min / max range of the sensor. Any measurement that is less
-  // than the minimum or greater than the maximum is set to an invalid value.
-  // This is so users of this sensor can distinguish between an object at the
-  // maximum sensing distance and not detecting any object within the sensing
-  // range.
-  for (int i = 0; i < distances.size(); ++i) {
-    if (distances[i] < 0) {
-      // Infinity distance measurements show up as -1.
-      if (distances[i] == -1) {
-        distances[i] = DepthSensorOutput<double>::GetTooFarDistance();
-      } else {
-        drake::log()->warn("Measured distance was < 0 and != -1: " +
-                           std::to_string(distances[i]));
-        distances[i] = DepthSensorOutput<double>::GetErrorDistance();
-      }
-    } else if (distances[i] > specification_.max_range()) {
-      distances[i] = DepthSensorOutput<double>::GetTooFarDistance();
-    } else if (distances[i] < specification_.min_range()) {
-      distances[i] = DepthSensorOutput<double>::GetTooCloseDistance();
-    }
-  }
+  ApplyLimits(&distances);
 
   // Evaluates the output port containing the depth measurements.
   DRAKE_ASSERT(data_output != nullptr);
   data_output->SetFromVector(distances);
 }
 
+void DepthSensor::ApplyLimits(VectorX<double>* distances) const {
+  VectorX<double>& d = *distances;
+
+  for (int i = 0; i < d.size(); ++i) {
+    // Infinity distance measurements show up as -1.
+    DRAKE_DEMAND((d[i] >= 0) || (d[i] == -1));
+    if (d[i] == -1) {
+      d[i] = DepthSensorOutput<double>::GetTooFarDistance();
+    } else if (d[i] > specification_.max_range()) {
+      d[i] = DepthSensorOutput<double>::GetTooFarDistance();
+    } else if (d[i] < specification_.min_range()) {
+      d[i] = DepthSensorOutput<double>::GetTooCloseDistance();
+    }
+  }
+}
+
+
 // Evaluates the output port containing X_WS.
+// TODO(sherm1) Should be accessing an already-calculated kinematics cache,
+// not recalculating.
 void DepthSensor::CalcPoseOutput(const Context<double>& context,
                                  PoseVector<double>* output) const {
   VectorXd u = this->EvalEigenVectorInput(context, 0);

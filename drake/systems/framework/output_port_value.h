@@ -12,7 +12,6 @@
 #include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
-#include "drake/systems/framework/vector_value.h"
 
 namespace drake {
 namespace systems {
@@ -33,7 +32,7 @@ class OutputPortValue {
   /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit OutputPortValue(std::unique_ptr<V<T>> vec)
-      : data_(new VectorValue<T>(std::move(vec))) {}
+      : data_(std::make_unique<Value<BasicVector<T>>>(std::move(vec))) {}
 
   /// Constructs an abstract-valued OutputPortValue.
   /// Takes ownership of @p data.
@@ -57,7 +56,7 @@ class OutputPortValue {
   /// if this is not a vector-valued port.
   template <typename T>
   const BasicVector<T>* get_vector_data() const {
-    return data_->GetValue<BasicVector<T>*>();
+    return &data_->GetValue<BasicVector<T>>();
   }
 
   /// Returns a positive and monotonically increasing number that is guaranteed
@@ -95,7 +94,7 @@ class OutputPortValue {
   template <typename T>
   BasicVector<T>* GetMutableVectorData() {
     InvalidateAndIncrement();
-    return data_->GetValue<BasicVector<T>*>();
+    return &data_->GetMutableValue<BasicVector<T>>();
   }
 
   /// Returns a clone of this %OutputPortValue containing a clone of the data,

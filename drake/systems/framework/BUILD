@@ -26,7 +26,6 @@ drake_cc_library(
         ":system",
         ":value",
         ":vector",
-        ":vector_value",
     ],
 )
 
@@ -59,16 +58,8 @@ drake_cc_library(
     deps = [
         ":vector",
         "//drake/common",
-    ],
-)
-
-drake_cc_library(
-    name = "vector_value",
-    hdrs = ["vector_value.h"],
-    deps = [
-        ":value",
-        ":vector",
-        "//drake/common",
+        "//drake/common:copyable_unique_ptr",
+        "//drake/common:is_cloneable",
     ],
 )
 
@@ -79,7 +70,6 @@ drake_cc_library(
     visibility = [":__subpackages__"],
     deps = [
         ":value",
-        ":vector_value",
         "//drake/common",
         "//drake/common:nice_type_name",
     ],
@@ -197,7 +187,6 @@ drake_cc_library(
         ":value",
         ":value_checker",
         ":vector",
-        ":vector_value",
         "//drake/common",
     ],
 )
@@ -294,7 +283,6 @@ drake_cc_library(
     deps = [
         ":value",
         ":vector",
-        ":vector_value",
         "//drake/common",
     ],
 )
@@ -578,14 +566,6 @@ drake_cc_googletest(
     deps = [
         ":value",
         "//drake/common",
-    ],
-)
-
-drake_cc_googletest(
-    name = "vector_value_test",
-    deps = [
-        ":vector_value",
-        "//drake/systems/framework/test_utilities",
     ],
 )
 
