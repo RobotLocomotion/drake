@@ -2,10 +2,11 @@
 
 #include <string>
 
-#include "drake/systems/rendering/pose_vector.h"
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 #include "robotlocomotion/pose_stamped_t.hpp"
+
+#include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
 namespace systems {
@@ -22,7 +23,8 @@ class PoseStampedTPoseVectorTranslatorTest : public ::testing::Test {
       : kFrameName("foo"),
         kPosition(1., 2., 3.),
         // This is from rpy2quat(PI / 3, PI / 2, PI / 4).
-        kOrientation(0.70105738, 0.09229596, 0.70105738, -0.09229596),
+        kOrientation(0.70105738464997791048, 0.09229595564125714358,
+                     0.70105738464997791048, -0.09229595564125722684),
         dut_(kFrameName),
         actual_pose_vector_(new PoseVector<double>()) {
     expected_pose_vector_.set_translation(kPosition);

@@ -30,11 +30,9 @@ void PoseStampedTPoseVectorTranslator::Deserialize(
       pose_msg.pose.position.y,
       pose_msg.pose.position.z);
 
-  Eigen::Quaterniond quat(
-      pose_msg.pose.orientation.w,
-      pose_msg.pose.orientation.x,
-      pose_msg.pose.orientation.y,
-      pose_msg.pose.orientation.z);
+  const auto& q = pose_msg.pose.orientation;
+  const double d = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+  Eigen::Quaterniond quat(q.w / d, q.x / d, q.y / d, q.z / d);
 
   auto pose_vector = dynamic_cast<PoseVector<double>*>(vector_base);
   pose_vector->set_translation(t);
