@@ -261,6 +261,69 @@ def _install_code(action):
 
 #END internal helpers
 #==============================================================================
+#BEGIN macros
+
+#------------------------------------------------------------------------------
+# DOC
+def cmake_config(package, script, version_file):
+    native.py_binary(
+        name = "create-cps",
+        srcs = [script],
+        main = script,
+        visibility = ["//visibility:private"],
+    )
+
+    cps_file_name = "{}.cps".format(package)
+
+    native.genrule(
+        name = "cps",
+        srcs = [version_file],
+        outs = [cps_file_name],
+        cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+        tools = [":create-cps"],
+        visibility = ["//visibility:private"],
+    )
+
+    config_file_name = "{}Config.cmake".format(package)
+
+    native.genrule(
+        name = "cmake_exports",
+        srcs = [cps_file_name],
+        outs = [config_file_name],
+        cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+        tools = ["@pycps//:cps2cmake_executable"],
+        visibility = ["//visibility:private"],
+    )
+
+    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+
+    native.genrule(
+        name = "cmake_package_version",
+        srcs = [cps_file_name],
+        outs = [config_version_file_name],
+        cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+        tools = ["@pycps//:cps2cmake_executable"],
+        visibility = ["//visibility:private"],
+    )
+
+#------------------------------------------------------------------------------
+# DOC
+def install_cmake_config(package):
+    cmake_config_dest = "lib/cmake/{}".format(package.lower())
+    config_file_name = "{}Config.cmake".format(package)
+    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+
+    native.install_files(
+        name = "install_cmake_config",
+        dest = cmake_config_dest,
+        files = [
+            config_file_name,
+            config_version_file_name,
+        ],
+    )
+
+#END macros
+#==============================================================================
 #BEGIN rules
 
 #------------------------------------------------------------------------------
