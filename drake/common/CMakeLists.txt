@@ -17,6 +17,7 @@ set(sources
   double_overloads.cc
   drake_assert_and_throw.cc
   drake_path_cmake.cc
+  find_resource.cc
   functional_form.cc
   monomial.cc
   nice_type_name.cc
@@ -57,6 +58,7 @@ set(installed_headers
   eigen_stl_types.h
   eigen_types.h
   extract_double.h
+  find_resource.h
   functional_form.h
   hash.h
   is_approx_equal_abstol.h
@@ -93,6 +95,7 @@ target_link_libraries(drakeCommon
   Eigen3::Eigen
   fmt
   gflags
+  spruce
   Threads::Threads
   ${PROTOBUF_LIBRARIES})
 
