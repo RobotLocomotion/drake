@@ -516,28 +516,36 @@ class LeafSystem : public System<T> {
     return params;
   }
 
-  /// Declares that this System has a simple, fixed-period event specified by
-  /// @p event. A deep copy of @p event will be made and maintained by `this`.
-  /// The first tick will occur at t = @p period_sec, and it will recur at every
-  /// @p period_sec thereafter. @p event's trigger type must be
-  /// Event::TriggerType::kPeriodic or this method aborts. Note that @p event's
-  /// attribute field is NOT preserved during the deep copy. Instead, it will
-  /// contain a Event<T>::PeriodicAttribute constructed from the specified
-  /// @p period_sec and @p offset_set.
+  /// Declares that this System has a simple, fixed-period event specified with
+  /// no custom callback function, and its attribute filed contains an
+  /// Event<T>::PeriodicAttribute constructed from the specified @p period_sec
+  /// and @p offset_set. The first tick will occur at t = @p period_sec, and it
+  /// will recur at every @p period_sec thereafter.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
   /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
   template <typename EventType>
-  void DeclarePeriodicEvent(double period_sec, double offset_sec,
-                            const EventType& event) {
-    DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPeriodic);
-    auto clone = event.Clone();
+  void DeclarePeriodicEvent(double period_sec, double offset_sec) {
+    EventType event(Event<T>::TriggerType::kPeriodic);
     typename Event<T>::PeriodicAttribute attribute;
     attribute.period_sec = period_sec;
     attribute.offset_sec = offset_sec;
-    clone->set_attribute(
+    event.set_attribute(
         AbstractValue::Make<typename Event<T>::PeriodicAttribute>(attribute));
-    periodic_events_.push_back(std::move(clone));
+    periodic_events_.push_back(event.Clone());
+  }
+
+  /// Declares that this System has a simple, fixed-period event specified by
+  /// @p event. A deep copy of @p event will be made and maintained by `this`.
+  /// @p event's trigger type must be Event::TriggerType::kPeriodic or this
+  /// method aborts.
+  ///
+  /// @tparam EventType A class derived from Event (e.g., PublishEvent,
+  /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
+  template <typename EventType>
+  void DeclarePeriodicEvent(const EventType& event) {
+    DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPeriodic);
+    periodic_events_.push_back(event.Clone());
   }
 
   /// Declares a periodic discrete update event with period = @p period_sec and
@@ -546,9 +554,7 @@ class LeafSystem : public System<T> {
   /// attribute will be an Event<T>::PeriodicAttribute of 0 offset and
   /// @p period_sec.
   void DeclareDiscreteUpdatePeriodSec(double period_sec) {
-    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
-        period_sec, 0.0,
-        DiscreteUpdateEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(period_sec, 0.0);
   }
 
   /// Declares a periodic discrete update event with period = @p period_sec and
@@ -557,9 +563,7 @@ class LeafSystem : public System<T> {
   /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
   /// @p period_sec.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
-    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
-        period_sec, offset_sec,
-        DiscreteUpdateEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(period_sec, offset_sec);
   }
 
   /// Declares a periodic unrestricted update event with period = @p period_sec
@@ -568,9 +572,7 @@ class LeafSystem : public System<T> {
   /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
   /// @p period_sec.
   void DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
-    DeclarePeriodicEvent<UnrestrictedUpdateEvent<T>>(
-        period_sec, offset_sec,
-        UnrestrictedUpdateEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<UnrestrictedUpdateEvent<T>>(period_sec, offset_sec);
   }
 
   /// Declares a periodic publish event with period = @p period_sec
@@ -579,8 +581,7 @@ class LeafSystem : public System<T> {
   /// Its attribute will be an Event<T>::PeriodicAttribute of 0 offset and
   /// @p period_sec.
   void DeclarePublishPeriodSec(double period_sec) {
-    DeclarePeriodicEvent<PublishEvent<T>>(
-        period_sec, 0, PublishEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<PublishEvent<T>>(period_sec, 0);
   }
 
   /// Declares a per step event using @p event, which is deep copied (the
