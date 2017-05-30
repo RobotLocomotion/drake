@@ -1,0 +1,15 @@
+<?xml version='1.0' ?>
+<sdf version="1.6">
+  <world name="world">
+    <model name="box_1">
+      <pose>0 0 0 0 0 0</pose>
+      <include>
+      </include>
+    </model>
+    <model name="box_2">
+      <pose>0 0 0 0 0 0</pose>
+      <include>
+      </include>
+    </model>
+  </world>
+</sdf>
