@@ -38,11 +38,11 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
-const std::string kUrdfPath = drake::GetDrakePath() +
-                              "/manipulation/models/jaco_description/urdf/"
-                              "j2n6s300.urdf";
+const char kRelUrdfPath[] =
+    "/manipulation/models/jaco_description/urdf/j2n6s300.urdf";
 
 std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
+  std::string kUrdfPath = drake::GetDrakePath() + std::string(kRelUrdfPath);
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       kUrdfPath, multibody::joints::kFixed, tree.get());
@@ -66,8 +66,7 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   // Defines an end effector constraint and makes it active for the time span
   // from 1 to 3 seconds.
   Vector2d wpc1_tspan = Vector2d(1, 3);
-  Vector3d pos_end(-0.4, -0.4,
-                   0.6);  // end goal in cartesian coordinates (x,y,z)
+  Vector3d pos_end(-0.4, -0.4, 0.6);  // end goal in world coordinates (x,y,z)
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);  // lower bound
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);  // upper bound
   WorldPositionConstraint wpc1(tree.get(),
@@ -154,6 +153,8 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
+
+  std::string kUrdfPath = drake::GetDrakePath() + std::string(kRelUrdfPath);
 
   drake::lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
