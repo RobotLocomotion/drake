@@ -590,7 +590,10 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& dt,
   const VectorX<T> xt0 = context->get_continuous_state_vector().
       CopyToVector();
 
-  // Compute the derivative at xt0.
+  // Compute the derivative at xt0. NOTE: the derivative is calculated at this
+  // point (early on in the integration process) in order to reuse the
+  // derivative evaluation, via the cache, from the last integration step (if
+  // possible).
   const VectorX<T> dx0 = CalcTimeDerivativesUsingContext();
 
   // Do the Euler step.

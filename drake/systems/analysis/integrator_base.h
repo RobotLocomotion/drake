@@ -1093,7 +1093,7 @@ class IntegratorBase {
    * Default code for advancing the continuous state of the system by a single
    * step of @p dt_max (or smaller, depending on error control). This particular
    * function is designed to be called directly by an error estimating
-   * integrator's DoStepAtMost() method to effect error-controlled integration.
+   * integrator's DoStep() method to effect error-controlled integration.
    * The integrator can effect error controlled integration without calling this
    * method, if the implementer so chooses, but this default method is expected
    * to function well in most circumstances.
@@ -1103,7 +1103,7 @@ class IntegratorBase {
    * @throws std::logic_error if integrator does not support error
    *                          estimation.
    * @note This function will shrink the integration step as necessary whenever
-   *       the integrator's DoStepAtMost() fails to take the requested step
+   *       the integrator's DoStep() fails to take the requested step
    *       e.g., due to integrator convergence failure.
    * @returns `true` if the full step of size @p dt_max is taken and `false`
    *          otherwise (i.e., a smaller step than @p dt_max was taken).
@@ -1120,7 +1120,7 @@ class IntegratorBase {
   T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
 
   /**
-   * Calculates djusted integrator step sizes toward keeping state variables
+   * Calculates adjusted integrator step sizes toward keeping state variables
    * within error bounds on the next integration step. Note that it is not
    * guaranteed that the (possibly) reduced step size will keep state variables
    * within error bounds; however, the process of (1) taking a trial
@@ -1159,7 +1159,7 @@ class IntegratorBase {
    * Derived classes must implement this method to (1) integrate the continuous
    * portion of this system forward by a single step of size @p dt and
    * (2) set the error estimate (via get_mutable_error_estimate()). This
-   * method is called during the default DoIntegrateAtMost() method.
+   * method is called during the default Step() method.
    * @param dt The integration step to take.
    * @returns `true` if successful, `false` if the integrator was unable to take
    *           a single step of size @p dt (due to, e.g., an integrator
@@ -1204,7 +1204,7 @@ class IntegratorBase {
   void ValidateSmallerStepSize(const T& current_step_size,
                                const T& new_step_size) const {
     if (new_step_size < get_working_minimum_step_size() &&
-        new_step_size < current_step_size &&
+        new_step_size < current_step_size &&  // Verify step adjusted downward.
         min_step_exceeded_throws_) {
       SPDLOG_DEBUG(drake::log(), "Integrator wants to select too small step "
           "size of {}; working minimum is ", new_step_size,
