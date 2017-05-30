@@ -7,8 +7,8 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
+#include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -100,8 +100,8 @@ int DoMain() {
   // See the @file docblock in jaco_common.h for joint index descriptions.
   systems::VectorBase<double>* x0 =
       jaco_context->get_mutable_continuous_state_vector();
-  x0->SetAtIndex(1, -1.57);
-  x0->SetAtIndex(2, -1.57);
+  x0->SetAtIndex(1, -1.57);  // shoulder fore/aft
+  x0->SetAtIndex(2, -1.57);  // elbow fore/aft
 
   simulator.Initialize();
   simulator.set_target_realtime_rate(1);
