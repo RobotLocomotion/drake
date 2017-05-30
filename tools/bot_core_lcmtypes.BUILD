@@ -1,9 +1,11 @@
+# -*- python -*-
+
 package(default_visibility = ["//visibility:public"])
 
-load("@//tools:lcm.bzl", "lcm_cc_library", "lcm_py_library")
+load("@drake//tools:lcm.bzl", "lcm_cc_library", "lcm_py_library")
 
 lcm_cc_library(
-    name = "lib",
+    name = "bot_core_lcmtypes",
     includes = ["lcmtypes"],
     lcm_package = "bot_core",
     lcm_srcs = glob(["lcmtypes/*.lcm"]),

@@ -8,7 +8,7 @@ package(
 
 # Note that this is only a portion of Bullet.
 cc_library(
-    name = "lib",
+    name = "bullet",
     srcs = glob([
         "src/BulletCollision/**/*.cpp",
         "src/LinearMath/**/*.cpp",

@@ -19,6 +19,7 @@ set(drakeSensors_HEADERS
     gyroscope.h
     gyroscope_output.h
     image.h
+    pixel_types.h
     rotary_encoders.h)
 
 set(drakeSensors_TARGET_LINK_LIBRARIES
@@ -35,11 +36,6 @@ if(lcm_FOUND AND Bullet_FOUND)
   list(APPEND drakeSensors_SRC_FILES depth_sensor_to_lcm_point_cloud_message.cc)
   list(APPEND drakeSensors_HEADERS depth_sensor_to_lcm_point_cloud_message.h)
   list(APPEND drakeSensors_TARGET_LINK_LIBRARIES robotlocomotion-lcmtypes-cpp)
-  add_executable(depth_sensor_to_lcm_point_cloud_message_demo
-      depth_sensor_to_lcm_point_cloud_message_demo.cc)
-  target_link_libraries(depth_sensor_to_lcm_point_cloud_message_demo
-      drakeSensors
-      drakeSystemAnalysis)
 endif()
 
 add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES

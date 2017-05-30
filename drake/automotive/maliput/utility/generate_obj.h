@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/segment.h"
 
 namespace drake {
 namespace maliput {
@@ -23,6 +25,8 @@ struct ObjFeatures {
   bool draw_arrows{true};
   /// Draw highlighting swath with lane_bounds() of each lane?
   bool draw_lane_haze{true};
+  /// Draw branching at BranchPoints?
+  bool draw_branch_points{true};
   /// Absolute width of stripes
   double stripe_width{0.25};
   /// Absolute elevation (h) of stripes above road surface
@@ -31,8 +35,15 @@ struct ObjFeatures {
   double arrow_elevation{0.05};
   /// Absolute elevation (h) of lane-haze above road surface
   double lane_haze_elevation{0.02};
+  /// Absolute elevation (h) of branch-points above road surface
+  double branch_point_elevation{0.5};
+  /// Height of rendered branch-point arrows
+  double branch_point_height{0.5};
   /// Origin of OBJ coordinates relative to world-frame
   api::GeoPosition origin{0., 0., 0.};
+  /// ID's of specific segments to be highlighted.  (If non-empty, then the
+  /// Segments *not* specified on this list will be rendered as grayed-out.)
+  std::vector<api::SegmentId> highlighted_segments;
 };
 
 /// Generates a Wavefront OBJ model of the road surface of an api::RoadGeometry.

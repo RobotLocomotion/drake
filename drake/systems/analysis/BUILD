@@ -76,6 +76,7 @@ drake_cc_library(
     hdrs = ["simulator.h"],
     deps = [
         ":runge_kutta2_integrator",
+        ":runge_kutta3_integrator",
         "//drake/common:extract_double",
         "//drake/systems/framework:context",
         "//drake/systems/framework:system",

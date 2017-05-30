@@ -16,7 +16,7 @@
 namespace drake {
 namespace automotive {
 
-/// An IdmController implements the IDM (Intelligent Driver Model) planner,
+/// IdmController implements the IDM (Intelligent Driver Model) planner,
 /// computed based only on the nearest car ahead.  See IdmPlanner and
 /// PoseSelector for details.  The output of this block is an acceleration value
 /// passed as a command to the vehicle.
@@ -39,7 +39,7 @@ namespace automotive {
 /// Output Port 0: A BasicVector containing the acceleration request.
 ///   OutputPortDescriptor getter: acceleration_output())
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_controllers
 template <typename T>
 class IdmController : public systems::LeafSystem<T> {
  public:

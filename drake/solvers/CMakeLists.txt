@@ -30,7 +30,10 @@ list(APPEND optimization_files
   ${solver_headers}
   constraint.cc
   cost.cc
+  create_constraint.cc
+  create_cost.cc
   decision_variable.cc
+  indeterminate.cc
   equality_constrained_qp_solver.cc
   linear_system_solver.cc
   mathematical_program.cc
@@ -80,11 +83,13 @@ drake_install_headers(
   binding.h
   constraint.h
   cost.h
+  create_constraint.h
   create_cost.h
   function.h
   mathematical_program.h
   mathematical_program_solver_interface.h
   decision_variable.h
+  indeterminate.h
   symbolic_extraction.h
   system_identification.h
   )

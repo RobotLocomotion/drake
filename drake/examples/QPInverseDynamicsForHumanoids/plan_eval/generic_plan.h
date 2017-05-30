@@ -3,18 +3,26 @@
 #include <memory>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/plan_eval_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
+#include "drake/manipulation/util/trajectory_utils.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
+
+/**
+ * ContactState is intended to represent a set of bodies that are in contact.
+ * Detailed information such as contact points, contact wrench are not included
+ * here.
+ */
+typedef std::unordered_set<const RigidBody<double>*> ContactState;
 
 /**
  * This class represents a plan interpretor, which conceptually serves as a
@@ -142,7 +150,7 @@ class GenericPlan {
    * Returns a map of all Cartesian trajectories.
    */
   const std::unordered_map<const RigidBody<T>*,
-                           PiecewiseCartesianTrajectory<T>>&
+                           manipulation::PiecewiseCartesianTrajectory<T>>&
   get_body_trajectories() const {
     return body_trajectories_;
   }
@@ -150,7 +158,7 @@ class GenericPlan {
   /**
    * Returns the Cartesian trajectory for @p body.
    */
-  const PiecewiseCartesianTrajectory<T>& get_body_trajectory(
+  const manipulation::PiecewiseCartesianTrajectory<T>& get_body_trajectory(
       const RigidBody<T>* body) const {
     return body_trajectories_.at(body);
   }
@@ -158,7 +166,7 @@ class GenericPlan {
   /**
    * Returns trajectory for all degrees of freedom.
    */
-  const PiecewiseCubicTrajectory<T>& get_dof_trajectory() const {
+  const manipulation::PiecewiseCubicTrajectory<T>& get_dof_trajectory() const {
     return dof_trajectory_;
   }
 
@@ -227,8 +235,9 @@ class GenericPlan {
    * Set a Cartesian trajectory for @p body. Replaces the existing one if
    * it exists.
    */
-  void set_body_trajectory(const RigidBody<T>* body,
-                           const PiecewiseCartesianTrajectory<T>& traj) {
+  void set_body_trajectory(
+      const RigidBody<T>* body,
+      const manipulation::PiecewiseCartesianTrajectory<T>& traj) {
     auto it = body_trajectories_.find(body);
     if (it != body_trajectories_.end()) {
       body_trajectories_.erase(it);
@@ -246,7 +255,8 @@ class GenericPlan {
   /**
    * Sets dof trajectory to @p traj.
    */
-  void set_dof_trajectory(const PiecewiseCubicTrajectory<T>& traj) {
+  void set_dof_trajectory(
+      const manipulation::PiecewiseCubicTrajectory<T>& traj) {
     dof_trajectory_ = traj;
   }
 
@@ -254,9 +264,10 @@ class GenericPlan {
   // Planned set of bodies that are in contact.
   ContactState contact_state_;
   // Trajectory for all dof.
-  PiecewiseCubicTrajectory<T> dof_trajectory_;
+  manipulation::PiecewiseCubicTrajectory<T> dof_trajectory_;
   // Trajectories for all bodies that have Cartesian tracking objectives.
-  std::unordered_map<const RigidBody<T>*, PiecewiseCartesianTrajectory<T>>
+  std::unordered_map<const RigidBody<T>*,
+                     manipulation::PiecewiseCartesianTrajectory<T>>
       body_trajectories_;
 };
 

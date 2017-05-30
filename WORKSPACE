@@ -16,10 +16,15 @@
 
 workspace(name = "drake")
 
-load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
 load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
+
+local_repository(
+    name = "kythe",
+    path = "tools/third_party/kythe",
+)
+load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
     name = "glib",
@@ -47,10 +52,10 @@ github_archive(
 )
 
 github_archive(
-    name = "gflags",
+    name = "com_github_gflags_gflags",
     repository = "gflags/gflags",
-    commit = "a69b2544d613b4bee404988710503720c487119a",
-    sha256 = "8b3836d5ca34a2da4d6375cf5f2030c719b508ca16014fcc9d5e9b295b56a6c1",
+    commit = "95ffb27c9c7496ede1409e042571054c70cb9519",
+    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",
 )
 
 github_archive(
@@ -104,9 +109,9 @@ maven_jar(
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
-    commit = "755d8108bf4447d83786e0e6586875371ba859e5",
+    commit = "c0a0093a950fc83e12e8d5918a0319b590356e7e",
     build_file = "tools/lcm.BUILD",
-    sha256 = "062b2daf35deb617552ffc2145ec238a2898710c8c5e9c49dc2514519c5f7930",
+    sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
 )
 
 github_archive(
@@ -152,9 +157,9 @@ github_archive(
 github_archive(
     name = "ipopt",
     repository = "RobotLocomotion/ipopt-mirror",
-    commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
+    commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
     build_file = "tools/ipopt.BUILD",
-    sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
+    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",
 )
 
 github_archive(
@@ -190,10 +195,10 @@ github_archive(
 
 github_archive(
     name = "robotlocomotion_lcmtypes",
-    repository = "robotlocomotion/lcmtypes",
-    commit = "4bd59a1b62a1eca31a2550b37f356426bc793d67",
+    repository = "RobotLocomotion/lcmtypes",
+    commit = "409a2d1fedfffea07b3e56c18efe1d0d9352f468",
     build_file = "tools/robotlocomotion_lcmtypes.BUILD",
-    sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
+    sha256 = "3131ae0e72da26b968cac74c07a2e471f9ff5c5ab75cb4d32fc42aa6f5744b99",
 )
 
 github_archive(
@@ -208,8 +213,8 @@ github_archive(
 github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
-    commit = "0.4.3",
-    sha256 = "4ff626151c403eba7256eac6a039ce0e0256bcebe50d3be378f2bf2cb9634098",
+    commit = "0.4.4",
+    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",
 )
 
 # Necessary for buildifier.
@@ -300,8 +305,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "1b985467d1fe737ed3a43a25f4da3316bd45106f",
-    sha256 = "4491debd18ee40bf9d7eab9b35776eff98a71bc904a339f709273cbad9ac6efb",
+    commit = "a05280f1ef1d8970aca8c67dc4cf753953e3cdf7",
+    sha256 = "3024d25ddcb6bb6835834575e577f36bfd6e768501b8c2a2fd66181eb27108ce",
     build_file = "tools/pycps.BUILD",
 )
 
@@ -317,10 +322,10 @@ new_local_repository(
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
-    commit = "ignition-math3_3.0.0",
-    sha256 = "9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd",
+    commit = "ignition-math3_3.2.0",
+    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",
     build_file = "tools/ignition_math.BUILD",
-    strip_prefix = "ignitionrobotics-ign-math-a06d26055d07",
+    strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4"
 )
 
 bitbucket_archive(
@@ -330,4 +335,13 @@ bitbucket_archive(
     sha256 = "e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a",
     build_file = "tools/ignition_rndf.BUILD",
     strip_prefix = "ignitionrobotics-ign-rndf-b20a4f68333f",
+)
+
+bitbucket_archive(
+    name = "sdformat",
+    repository = "osrf/sdformat",
+    commit = "deca28cd6cd5",
+    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",
+    build_file = "tools/sdformat.BUILD",
+    strip_prefix = "osrf-sdformat-deca28cd6cd5",
 )

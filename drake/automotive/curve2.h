@@ -15,6 +15,12 @@ namespace automotive {
 /// Curve2 represents a path through two-dimensional Cartesian space. Given a
 /// list of waypoints, it traces a path between them.
 ///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - drake::AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+///
 /// TODO(jwnimmer-tri) We will soon trace the path using a spline, but
 /// for now it's easiest to just interpolate straight segments, as a
 /// starting point.  Callers should not yet rely on <em>how</em> we
@@ -36,6 +42,9 @@ class Curve2 {
     // waypoints (derivative problems); this will probably come for
     // free as part of the spline refactoring.
   }
+
+  /// @return the waypoints associated with this curve.
+  const std::vector<Point2>& waypoints() const { return waypoints_; }
 
   /// @return the length of this curve (the total distance traced).
   T path_length() const { return path_length_; }
@@ -74,7 +83,7 @@ class Curve2 {
     }
 
     // Iterate over the segments, up through the requested path_distance.
-    T remaining_distance = std::max(T{}, path_distance);
+    T remaining_distance = std::max(T{0.0}, path_distance);
     for (auto point0 = waypoints_.begin(), point1 = point0 + 1;
          point1 != waypoints_.end();  // BR
          point0 = point1++) {

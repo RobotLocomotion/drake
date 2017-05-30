@@ -17,8 +17,6 @@ namespace automotive {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// @ingroup automotive_systems
-///
 template <typename T>
 class BoxCarVis : public CarVis<T> {
  public:

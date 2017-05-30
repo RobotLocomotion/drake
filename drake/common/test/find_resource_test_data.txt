@@ -1,0 +1,1 @@
+Test data for drake/common/test/find_resource_test.cc.

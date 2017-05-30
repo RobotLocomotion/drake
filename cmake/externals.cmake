@@ -156,6 +156,7 @@ macro(drake_add_cmake_external PROJECT)
   set(_ext_LIST_SEPARATOR "!")
 
   set(_ext_PROPAGATE_CACHE_VARS
+    CMAKE_EXPORT_NO_PACKAGE_REGISTRY
     CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
     CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY
     CMAKE_PREFIX_PATH
@@ -466,6 +467,9 @@ function(drake_add_external PROJECT)
       # All supported externals are requested
     else()
       # Project is NOT enabled; skip it
+      message(STATUS
+        "Skipping ${PROJECT} - Please see drake_optional_external (cmake/options.cmake) for "
+        "how to enable it.")
       return()
     endif()
   else()

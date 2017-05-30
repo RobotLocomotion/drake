@@ -88,7 +88,7 @@ api::GeoPosition Lane::DoToGeoPosition(
 
 api::Rotation Lane::DoGetOrientation(
     const api::LanePosition&) const {
-  return api::Rotation(0, 0, 0);  // roll, pitch, yaw.
+  return api::Rotation();  // Default is Identity.
 }
 
 api::LanePosition Lane::DoToLanePosition(

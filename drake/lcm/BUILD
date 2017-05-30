@@ -40,7 +40,7 @@ drake_cc_library(
     deps = [
         ":interface",
         "//drake/common",
-        "@lcm//:lcm",
+        "@lcm",
     ],
 )
 

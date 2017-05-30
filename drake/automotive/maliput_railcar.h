@@ -57,7 +57,7 @@ namespace automotive {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_plants
 template <typename T>
 class MaliputRailcar : public systems::LeafSystem<T> {
  public:

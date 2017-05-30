@@ -603,27 +603,33 @@ class Diagram : public System<T>,
   void EvaluateSubsystemInputPort(
       const Context<T>* context,
       const InputPortDescriptor<T>& descriptor) const override {
-    // Find the output port connected to the given input port.
-    const PortIdentifier id{descriptor.get_system(), descriptor.get_index()};
-    const auto upstream_it = dependency_graph_.find(id);
-
+    DRAKE_DEMAND(context != nullptr);
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    const PortIdentifier id{descriptor.get_system(), descriptor.get_index()};
 
-    // If the upstream output port exists in this Diagram, evaluate it.
-    // TODO(david-german-tri): Add online algebraic loop detection here.
-    if (upstream_it != dependency_graph_.end()) {
-      DRAKE_DEMAND(diagram_context != nullptr);
-      const PortIdentifier& prerequisite = upstream_it->second;
-      this->EvaluateOutputPort(*diagram_context, prerequisite);
-    }
-
-    // If the upstream output port is an input of this whole Diagram, ask our
-    // parent to evaluate it.
+    // Find if this input port is exported.
     const auto external_it =
         std::find(input_port_ids_.begin(), input_port_ids_.end(), id);
-    if (external_it != input_port_ids_.end()) {
+    const bool is_exported = (external_it != input_port_ids_.end());
+
+    // Find if this input port is connected to an output port.
+    const auto upstream_it = dependency_graph_.find(id);
+    const bool is_connected = (upstream_it != dependency_graph_.end());
+
+    DRAKE_DEMAND(is_exported ^ is_connected);
+
+    if (is_exported) {
+      // The upstream output port is an input of this whole Diagram; ask our
+      // parent to evaluate it.
       const int i = external_it - input_port_ids_.begin();
       this->EvalInputPort(*diagram_context, i);
+    } else {
+      // The upstream output port exists in this Diagram; evaluate it.
+      // TODO(david-german-tri): Add online algebraic loop detection here.
+      DRAKE_ASSERT(is_connected);
+      const PortIdentifier& prerequisite = upstream_it->second;
+      this->EvaluateOutputPort(*diagram_context, prerequisite);
     }
   }
 

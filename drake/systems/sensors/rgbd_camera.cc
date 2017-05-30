@@ -48,10 +48,6 @@ const int kPortDepthImage = 1;
 const int kPortLabelImage = 2;
 const int kPortCameraPose = 3;
 
-const int kColorImageChannel = 4;
-const int kDepthImageChannel = 1;
-const int kLabelImageChannel = 1;
-
 // TODO(kunimatsu-tri) Add support for the arbitrary clipping planes and
 // background color.
 const double kClippingPlaneNear = 0.01;
@@ -205,10 +201,9 @@ class ColorPalette {
 }  // namespace
 
 
-void RgbdCamera::ConvertDepthImageToPointCloud(const Image<float>& depth_image,
+void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                                const CameraInfo& camera_info,
                                                Eigen::Matrix3Xf* point_cloud) {
-  DRAKE_DEMAND(depth_image.num_channels() == 1);
   if (depth_image.size() != point_cloud->cols()) {
     point_cloud->resize(3, depth_image.size());
   }
@@ -621,17 +616,17 @@ void RgbdCamera::Impl::DoCalcOutput(
   UpdateRenderWindow();
 
   // Outputs the image data.
-  sensors::Image<uint8_t>& image =
+  sensors::ImageBgra8U& image =
       output->GetMutableData(kPortColorImage)->GetMutableValue<
-        sensors::Image<uint8_t>>();
+        sensors::ImageBgra8U>();
 
-  sensors::Image<float>& depth_image =
+  sensors::ImageDepth32F& depth_image =
       output->GetMutableData(kPortDepthImage)->GetMutableValue<
-        sensors::Image<float>>();
+        sensors::ImageDepth32F>();
 
-  sensors::Image<int16_t>& label_image =
+  sensors::ImageLabel16I& label_image =
       output->GetMutableData(kPortLabelImage)->GetMutableValue<
-        sensors::Image<int16_t>>();
+        sensors::ImageLabel16I>();
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
@@ -717,16 +712,16 @@ void RgbdCamera::Init(const std::string& name) {
       impl_->tree().get_num_positions() + impl_->tree().get_num_velocities();
   this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
-  Image<uint8_t> color_image(kImageWidth, kImageHeight, kColorImageChannel);
-  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<uint8_t>>(
+  ImageBgra8U color_image(kImageWidth, kImageHeight);
+  this->DeclareAbstractOutputPort(systems::Value<sensors::ImageBgra8U>(
       color_image));
 
-  Image<float> depth_image(kImageWidth, kImageHeight, kDepthImageChannel);
-  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<float>>(
+  ImageDepth32F depth_image(kImageWidth, kImageHeight);
+  this->DeclareAbstractOutputPort(systems::Value<sensors::ImageDepth32F>(
       depth_image));
 
-  Image<int16_t> label_image(kImageWidth, kImageHeight, kLabelImageChannel);
-  this->DeclareAbstractOutputPort(systems::Value<sensors::Image<int16_t>>(
+  ImageLabel16I label_image(kImageWidth, kImageHeight);
+  this->DeclareAbstractOutputPort(systems::Value<sensors::ImageLabel16I>(
       label_image));
 
   this->DeclareVectorOutputPort(rendering::PoseVector<double>());

@@ -15,10 +15,10 @@ cc_library(
     ],
     includes = ["include"],
     linkopts = select({
-        "@//tools:linux": ["-pthread"],
-        "@//conditions:default": [],
+        "@drake//tools:linux": ["-pthread"],
+        "@//conditions:default": [],  # This is a bazel-default rule, and does not need @drake//
     }),
-    deps = ["@fmt//:fmt"],
+    deps = ["@fmt"],
 )
 
 pkg_tar(

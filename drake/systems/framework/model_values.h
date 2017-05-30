@@ -38,8 +38,8 @@ class ModelValues {
   /// @pre index >= size()
   void AddModel(int index, std::unique_ptr<AbstractValue> model_value);
 
-  /// Wraps @p model_vector in a VectorValue<T> and sets that to be the model
-  /// value for @p index.
+  /// Wraps @p model_vector in a Value and sets that to be the model value for
+  /// @p index.
   ///
   /// @pre index >= size()
   template <typename T>
@@ -73,7 +73,12 @@ class ModelValues {
 template <typename T>
 void ModelValues::AddVectorModel(
     int index, std::unique_ptr<BasicVector<T>> model_vector) {
-  AddModel(index, std::make_unique<VectorValue<T>>(std::move(model_vector)));
+  if (model_vector.get() != nullptr) {
+    AddModel(index, std::make_unique<Value<BasicVector<T>>>(
+        std::move(model_vector)));
+  } else {
+    AddModel(index, std::unique_ptr<AbstractValue>{});
+  }
 }
 
 template <typename T>
@@ -83,11 +88,9 @@ ModelValues::CloneVectorModel(int index) const {
   if (abstract_result.get() == nullptr) {
     return nullptr;
   }
-  auto vector = abstract_result->GetMutableValueOrThrow<BasicVector<T>*>();
-  if (vector == nullptr) {
-    return nullptr;
-  }
-  return vector->Clone();
+  const BasicVector<T>& basic_vector =
+      abstract_result->GetValueOrThrow<BasicVector<T>>();
+  return basic_vector.Clone();
 }
 
 }  // namespace detail

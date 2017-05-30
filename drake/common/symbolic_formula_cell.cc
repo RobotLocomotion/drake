@@ -167,6 +167,54 @@ Formula FormulaFalse::Substitute(const Substitution&) const {
 
 ostream& FormulaFalse::Display(ostream& os) const { return os << "False"; }
 
+FormulaVar::FormulaVar(const Variable& v)
+    : FormulaCell{FormulaKind::Var, hash_value<Variable>{}(v)}, var_{v} {
+  // Dummy symbolic variable (ID = 0) should not be used in constructing
+  // symbolic formulas.
+  DRAKE_DEMAND(!var_.is_dummy());
+  DRAKE_DEMAND(var_.get_type() == Variable::Type::BOOLEAN);
+}
+
+Variables FormulaVar::GetFreeVariables() const { return Variables{var_}; }
+
+bool FormulaVar::EqualTo(const FormulaCell& f) const {
+  // Formula::EqualTo guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaVar& f_var{static_cast<const FormulaVar&>(f)};
+  return var_.equal_to(f_var.var_);
+}
+
+bool FormulaVar::Less(const FormulaCell& f) const {
+  // Formula::Less guarantees the following assertion.
+  DRAKE_ASSERT(get_kind() == f.get_kind());
+  const FormulaVar& f_var{static_cast<const FormulaVar&>(f)};
+  return var_.less(f_var.var_);
+}
+
+bool FormulaVar::Evaluate(const Environment& env) const {
+  const Environment::const_iterator it{env.find(var_)};
+  if (it != env.cend()) {
+    return static_cast<bool>(it->second);
+  } else {
+    ostringstream oss;
+    oss << "The following environment does not have an entry for the "
+           "variable "
+        << var_ << "\n";
+    oss << env << "\n";
+    throw runtime_error(oss.str());
+  }
+}
+
+Formula FormulaVar::Substitute(const Substitution&) const {
+  // TODO(soonho-tri): Add a substitution (Variable -> Formula) and use it
+  // here. For now, `Substitute` does nothing for Boolean variables.
+  return Formula{var_};
+}
+
+ostream& FormulaVar::Display(ostream& os) const { return os << var_; }
+
+const Variable& FormulaVar::get_variable() const { return var_; }
+
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
 
@@ -465,11 +513,7 @@ FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
     ostringstream oss;
     oss << "The following matrix is not symmetric and cannot be used to "
            "construct drake::symbolic::FormulaPositiveSemidefinite:\n"
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
         << m;
-#else
-        << "OLD_EIGEN_CANNOT_RENDER_THIS";
-#endif
     throw std::runtime_error(oss.str());
   }
 }
@@ -478,11 +522,7 @@ namespace {
 // Helper Eigen-visitor class that we use to implement
 // FormulaPositiveSemidefinite::GetFreeVariables().
 struct VariablesCollector {
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
   using Index = Eigen::Index;
-#else
-  using Index = std::ptrdiff_t;
-#endif  // EIGEN_VERSION...
 
   // Called for the first coefficient.
   void init(const Expression& e, Index i, Index j) {
@@ -552,13 +592,7 @@ Formula FormulaPositiveSemidefinite::Substitute(const Substitution& s) const {
 }
 
 ostream& FormulaPositiveSemidefinite::Display(ostream& os) const {
-  return os << "positive_semidefinite("
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
-            << m_
-#else
-            << "OLD_EIGEN_CANNOT_RENDER_THIS"
-#endif
-            << ")";
+  return os << "positive_semidefinite(" << m_ << ")";
 }
 
 bool is_false(const FormulaCell& f) {
@@ -566,6 +600,10 @@ bool is_false(const FormulaCell& f) {
 }
 
 bool is_true(const FormulaCell& f) { return f.get_kind() == FormulaKind::True; }
+
+bool is_variable(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::Var;
+}
 
 bool is_equal_to(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::Eq;
@@ -623,6 +661,15 @@ bool is_isnan(const FormulaCell& f) {
 
 bool is_positive_semidefinite(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::PositiveSemidefinite;
+}
+
+shared_ptr<FormulaVar> to_variable(const shared_ptr<FormulaCell>& f_ptr) {
+  DRAKE_ASSERT(is_variable(*f_ptr));
+  return static_pointer_cast<FormulaVar>(f_ptr);
+}
+
+shared_ptr<FormulaVar> to_variable(const Formula& f) {
+  return to_variable(f.ptr_);
 }
 
 shared_ptr<RelationalFormulaCell> to_relational(

@@ -43,6 +43,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
+using drake::Vector1d;
 using drake::solvers::detail::VecIn;
 using drake::solvers::detail::VecOut;
 using drake::symbolic::Expression;
@@ -141,12 +142,40 @@ void CheckAddedVariable(const MathematicalProgram& prog,
   }
 
   // Checks the type of the newly added variables.
-  const auto& variable_types = prog.DecisionVariableTypes();
   for (int i = 0; i < var.rows(); ++i) {
     for (int j = 0; j < var.cols(); ++j) {
-      EXPECT_EQ(variable_types[prog.FindDecisionVariableIndex(var(i, j))],
-                type_expected);
-      EXPECT_EQ(prog.DecisionVariableType(var(i, j)), type_expected);
+      EXPECT_EQ(var(i, j).get_type(), type_expected);
+    }
+  }
+}
+
+template <typename Derived>
+void CheckAddedIndeterminates(const MathematicalProgram& prog,
+                              const Eigen::MatrixBase<Derived>& indeterminates,
+                              const string& indeterminates_name) {
+  // Checks the name of the newly added indeterminates.
+  ostringstream msg_buff;
+  msg_buff << indeterminates << endl;
+  EXPECT_EQ(msg_buff.str(), indeterminates_name);
+  // Checks num_indeterminates() function.
+  const int num_new_indeterminates = indeterminates.size();
+  EXPECT_EQ(prog.num_indeterminates(), num_new_indeterminates);
+  // Checks the indices of the newly added indeterminates.
+  for (int i = 0; i < indeterminates.rows(); ++i) {
+    for (int j = 0; j < indeterminates.cols(); ++j) {
+      EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates(i, j)),
+                j * indeterminates.rows() + i);
+    }
+  }
+
+  // Checks if the indeterminate is of type
+  // MathematicalProgram::VarType::CONTINUOUS variable (by default). This test
+  // should always be true (by defaults), but keep it to make sure everything
+  // works as it is supposed to be.
+  for (int i = 0; i < indeterminates.rows(); ++i) {
+    for (int j = 0; j < indeterminates.cols(); ++j) {
+      EXPECT_EQ(indeterminates(i, j).get_type(),
+                MathematicalProgram::VarType::CONTINUOUS);
     }
   }
 }
@@ -251,6 +280,47 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
                 "wrong type");
   CheckAddedVariable(prog, X, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
                      MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates1) {
+  // Adds a dynamic-sized matrix of Indeterminates.
+  MathematicalProgram prog;
+  auto X = prog.NewIndeterminates(2, 3, "X");
+  static_assert(is_same<decltype(X), MatrixXIndeterminate>::value,
+                "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedIndeterminates(prog, X,
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates2) {
+  // Adds a static-sized matrix of Indeterminates.
+  MathematicalProgram prog;
+  auto X = prog.NewIndeterminates<2, 3>("X");
+  static_assert(is_same<decltype(X), MatrixIndeterminate<2, 3>>::value,
+                "should be a static sized matrix");
+  CheckAddedIndeterminates(prog, X,
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates3) {
+  // Adds a dynamic-sized vector of Indeterminates.
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates(4, "x");
+  static_assert(is_same<decltype(x), VectorXIndeterminate>::value,
+                "Should be a VectorXDecisionVariable object.");
+  EXPECT_EQ(x.rows(), 4);
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates4) {
+  // Adds a static-sized vector of Indeterminate variables.
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates<4>("x");
+  static_assert(is_same<decltype(x), VectorIndeterminate<4>>::value,
+                "Should be a VectorXDecisionVariable object.");
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
 
 template <typename Derived1, typename Derived2>
@@ -498,7 +568,7 @@ void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
   EXPECT_EQ(binding.constraint()->num_constraints(), 1);
   auto cnstr = prog.linear_costs().back().constraint();
   auto vars = prog.linear_costs().back().variables();
-  const Expression cx{(cnstr->A() * vars)(0)};
+  const Expression cx{cnstr->a().dot(vars)};
   double constant_term{0};
   if (is_addition(e)) {
     constant_term = get_constant_in_addition(e);
@@ -1089,9 +1159,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
   int k{0};
-  for (int i{0}; i < M_e.rows(); ++i) {
-    for (int j{0}; j < M_e.cols(); ++j, ++k) {
+  for (int j{0}; j < M_e.cols(); ++j) {
+    for (int i{0}; i < M_e.rows(); ++i) {
       EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j), Ax(k) - lb_in_ctr(k));
+      ++k;
     }
   }
 }
@@ -1827,7 +1898,6 @@ GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
 
 void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
                                             const Expression& e,
-                                            double constant,
                                             const Binding<Cost>& binding,
                                             int num_quadratic_cost) {
   EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
@@ -1837,19 +1907,19 @@ void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
   auto cnstr = prog.quadratic_costs().back().constraint();
   // Check the added cost is 0.5 * x' * Q * x + b' * x
   const auto& x_bound = binding.variables();
-  const Expression e_added =
-      0.5 * x_bound.dot(cnstr->Q() * x_bound) + cnstr->b().dot(x_bound);
-  EXPECT_PRED2(ExprEqual, e_added.Expand() + constant, e.Expand());
+  const Expression e_added = 0.5 * x_bound.dot(cnstr->Q() * x_bound) +
+                             cnstr->b().dot(x_bound) + cnstr->c();
+  EXPECT_PRED2(ExprEqual, e_added.Expand(), e.Expand());
 }
 
 void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
-                                     const Expression& e, double constant) {
+                                     const Expression& e) {
   int num_quadratic_cost = prog->quadratic_costs().size();
   auto binding1 = prog->AddQuadraticCost(e);
-  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding1,
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, binding1,
                                          ++num_quadratic_cost);
   auto binding2 = prog->AddCost(e);
-  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, constant, binding2,
+  CheckAddedSymbolicQuadraticCostUserFun(*prog, e, binding2,
                                          ++num_quadratic_cost);
 }
 
@@ -1859,32 +1929,32 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
 
   // Identity diagonal term.
   Expression e1 = x.transpose() * x;
-  CheckAddedSymbolicQuadraticCost(&prog, e1, 0);
+  CheckAddedSymbolicQuadraticCost(&prog, e1);
 
   // Identity diagonal term.
   Expression e2 = x.transpose() * x + 1;
-  CheckAddedSymbolicQuadraticCost(&prog, e2, 1);
+  CheckAddedSymbolicQuadraticCost(&prog, e2);
 
   // Identity diagonal term.
   Expression e3 = x(0) * x(0) + x(1) * x(1) + 2;
-  CheckAddedSymbolicQuadraticCost(&prog, e3, 2);
+  CheckAddedSymbolicQuadraticCost(&prog, e3);
 
   // Non-identity diagonal term.
   Expression e4 = x(0) * x(0) + 2 * x(1) * x(1) + 3 * x(2) * x(2) + 3;
-  CheckAddedSymbolicQuadraticCost(&prog, e4, 3);
+  CheckAddedSymbolicQuadraticCost(&prog, e4);
 
   // Cross terms.
   Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
-  CheckAddedSymbolicQuadraticCost(&prog, e5, 2);
+  CheckAddedSymbolicQuadraticCost(&prog, e5);
 
   // Linear terms.
   Expression e6 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0);
-  CheckAddedSymbolicQuadraticCost(&prog, e6, 0);
+  CheckAddedSymbolicQuadraticCost(&prog, e6);
 
   // Cross terms and linear terms.
   Expression e7 = (x(0) + 2 * x(1) + 3) * (x(0) + x(1) + 4) + 3 * x(0) * x(0) +
                   6 * pow(x(1) + 1, 2);
-  CheckAddedSymbolicQuadraticCost(&prog, e7, 18);
+  CheckAddedSymbolicQuadraticCost(&prog, e7);
 
   // Cubic polynomial case.
   Expression e8 = pow(x(0), 3) + 1;
@@ -1917,10 +1987,7 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
     obj2->Eval(x0, y2);
 
     EXPECT_TRUE(CompareMatrices(y1, y2));
-    EXPECT_TRUE(CompareMatrices(
-        y2, (A * x0 - b).transpose() * (A * x0 - b) - b.transpose() * b));
-    // Note: Currently have to subtract out the constant term (b'*b) due to
-    // issue #3500.
+    EXPECT_TRUE(CompareMatrices(y2, (A * x0 - b).transpose() * (A * x0 - b)));
 
     x0 += Eigen::Vector2d::Constant(2);
   }

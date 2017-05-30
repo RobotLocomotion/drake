@@ -7,13 +7,14 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(symbolic) {
+PYBIND11_PLUGIN(_pydrake_symbolic) {
   using drake::symbolic::Variable;
   using drake::symbolic::Expression;
   using drake::symbolic::Formula;
   using drake::symbolic::pow;
 
-  py::module m("symbolic", "Symbolic variables, expressions, and formulae");
+  py::module m("_pydrake_symbolic",
+               "Symbolic variables, expressions, and formulae");
 
   py::class_<Variable>(m, "Variable")
     .def(py::init<const std::string&>())
@@ -227,6 +228,27 @@ PYBIND11_PLUGIN(symbolic) {
 
   py::class_<Formula>(m, "Formula")
     .def("__repr__", &Formula::to_string);
+
+  // Cannot overload logical operators: http://stackoverflow.com/a/471561
+  // Defining custom function for clarity.
+  // Could use bitwise operators:
+  // https://docs.python.org/2/library/operator.html#operator.__and__
+  // However, this may reduce clarity and introduces constraints on order of
+  // operations.
+  m
+    // Hide AND and OR to permit us to make it accept 1 or more arguments in
+    // Python (and not have to handle type safety within C++).
+    .def("__logical_and", [](const Formula& a,
+                             const Formula& b) {
+      return a && b;
+    })
+    .def("__logical_or", [](const Formula& a,
+                            const Formula& b) {
+      return a || b;
+    })
+    .def("logical_not", [](const Formula& a) {
+          return !a;
+    });
 
   return m.ptr();
 }

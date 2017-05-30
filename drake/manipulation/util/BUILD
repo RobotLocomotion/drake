@@ -18,7 +18,21 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/util",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes//:lib",
+        "@bot_core_lcmtypes",
+    ],
+)
+
+drake_cc_library(
+    name = "trajectory_utils",
+    srcs = [
+        "trajectory_utils.cc",
+    ],
+    hdrs = [
+        "trajectory_utils.h",
+    ],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/common/trajectories:piecewise_quaternion",
     ],
 )
 
@@ -30,9 +44,9 @@ drake_cc_googletest(
     # /examples.
     data = [
         "//drake/examples/Valkyrie:models",
-        "//drake/examples/schunk_wsg:models",
         "//drake/manipulation/models/iiwa_description:models",
-        ],
+        "//drake/manipulation/models/wsg_50_description:models",
+    ],
     deps = [
         ":robot_state_msg_translator",
         "//drake/common:drake_path",
@@ -40,5 +54,13 @@ drake_cc_googletest(
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "trajectory_utils_test",
+    deps = [
+        ":trajectory_utils",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
