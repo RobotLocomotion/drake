@@ -46,7 +46,7 @@ GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
   input->get_mutable_value() << robot_position;
 
   context->FixInputPort(0, std::move(input));
-  publisher->DoPublish(*context);
+  publisher->DoPublish(*context, {});
 
   const std::map<std::string, std::unique_ptr<geometry_msgs::TransformStamped>>&
       messages = publisher->get_transform_messages();

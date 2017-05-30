@@ -128,22 +128,21 @@ class ManipulatorInverseDynamicsControllerTest : public ::testing::Test {
         diagram_->GetMutableSubsystemContext(context_.get(), qp_id_controller));
 
     // Computes results.
-    systems::UpdateActions<double> actions;
-    diagram_->CalcNextUpdateTime(*context_, &actions);
-    EXPECT_EQ(actions.events.size(), 1);
+    auto events = diagram_->AllocateCompositeEventCollection();
+    diagram_->CalcNextUpdateTime(*context_, events.get());
 
     std::unique_ptr<systems::State<double>> state = context_->CloneState();
 
     // Generates QpInput from the plan eval block within
     // ManipulatorInverseDynamicsController.
-    diagram_->CalcUnrestrictedUpdate(*context_, actions.events.front(),
-                                     state.get());
+    diagram_->CalcUnrestrictedUpdate(
+        *context_, events->get_unrestricted_update_events(), state.get());
     context_->get_mutable_state()->CopyFrom(*state);
 
     // Generates QpOuput from the inverse dynamics block within
     // ManipulatorInverseDynamicsController.
-    diagram_->CalcUnrestrictedUpdate(*context_, actions.events.front(),
-                                     state.get());
+    diagram_->CalcUnrestrictedUpdate(
+         *context_, events->get_unrestricted_update_events(), state.get());
     context_->get_mutable_state()->CopyFrom(*state);
 
     // Gets output.

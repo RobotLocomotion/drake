@@ -18,7 +18,8 @@ RosClockPublisher::RosClockPublisher() {
   clock_publisher_ = node_handle.advertise<rosgraph_msgs::Clock>("/clock", 1);
 }
 
-void RosClockPublisher::DoPublish(const Context<double>& context) const {
+void RosClockPublisher::DoPublish(const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>&) const {
   // Aborts the transmission if the minimum transmission period hasn't been met.
   if (clock_message_.clock.sec != 0 || clock_message_.clock.nsec != 0) {
     double duration = duration_cast<milliseconds>(steady_clock::now() -
