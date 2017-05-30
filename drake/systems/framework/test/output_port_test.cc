@@ -82,26 +82,18 @@ class LeafOutputPortTest : public ::testing::Test {
     // TODO(sherm1) Eval methods should be generated automatically if not set.
     // This is just testing the basic wiring.
     absport_general_.set_evaluation_function(eval_string);
-    absport_model_.set_evaluation_function(eval_string);
     vecport_general_.set_evaluation_function(eval_vector3);
-    vecport_model_.set_evaluation_function(eval_vector3);
   }
 
  protected:
   systems::ConstantVectorSource<double> source_{Vector3d(3., -3., 0.)};
   unique_ptr<Context<double>> context_{source_.CreateDefaultContext()};
-  unique_ptr<MyVector3d> vec3_model_{MyVector3d::Make(1., 2., 3.)};
-  unique_ptr<AbstractValue> abs_model_{
-      AbstractValue::Make(string("model string"))};
 
-  // Create abstract- and vector-valued ports specified with either an explicit
-  // allocator function, or with a model value of the appropriate type.
+  // Create abstract- and vector-valued ports.
   DummySystem dummy_;
   LeafOutputPort<double> absport_general_{dummy_, alloc_string, calc_string};
-  LeafOutputPort<double> absport_model_{dummy_, *abs_model_, calc_string};
   LeafOutputPort<double> vecport_general_{dummy_, alloc_myvector3, 3,
                                           calc_vector3};
-  LeafOutputPort<double> vecport_model_{dummy_, *vec3_model_, calc_vector3};
 };
 
 // Helper function for testing an abstract-valued port.
@@ -120,9 +112,6 @@ void AbstractPortCheck(const Context<double>& context,
 TEST_F(LeafOutputPortTest, AbstractPorts) {
   // Check abstract port with explicit function allocator.
   AbstractPortCheck(*context_, absport_general_, "from alloc_string");
-
-  // Same checks for abstract port with model-value based allocation.
-  AbstractPortCheck(*context_, absport_model_, "model string");
 }
 
 // Helper function for testing a vector-valued port.
@@ -146,9 +135,6 @@ void VectorPortCheck(const Context<double>& context,
 TEST_F(LeafOutputPortTest, VectorPorts) {
   // Check vector port with explicit function allocator.
   VectorPortCheck(*context_, vecport_general_, Vector3d(-1., -2., -3.));
-
-  // Check vector port with model-value based allocation.
-  VectorPortCheck(*context_, vecport_model_, Vector3d(1., 2., 3.));
 }
 
 // Check that Debug builds catch bad output types given to Calc(). We can't

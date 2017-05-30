@@ -671,7 +671,8 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateLeafOutputPort(
-        model_vector,
+        MakeAllocVectorCallback(model_vector),
+        model_vector.size(),
         [this_ptr, calc](const Context<T>& context, BasicVector<T>* result) {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
           DRAKE_DEMAND(typed_result != nullptr);
@@ -719,7 +720,9 @@ class LeafSystem : public System<T> {
   const LeafOutputPort<T>& DeclareVectorOutputPort(
       const BasicVector<T>& model_vector,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
-    auto& port = CreateLeafOutputPort(model_vector, vector_calc_function);
+    auto& port =
+        CreateLeafOutputPort(MakeAllocVectorCallback(model_vector),
+                             model_vector.size(), vector_calc_function);
     return port;
   }
 
@@ -755,7 +758,7 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateLeafOutputPort(
-        Value<OutputType>(model_value),
+        MakeAllocCallback(model_value),
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
@@ -867,7 +870,8 @@ class LeafSystem : public System<T> {
   const LeafOutputPort<T>& DeclareAbstractOutputPort(
       const AbstractValue& model_value,
       typename LeafOutputPort<T>::CalcCallback calc_function) {
-    auto& port = CreateLeafOutputPort(model_value, calc_function);
+    auto& port =
+        CreateLeafOutputPort(MakeAllocCallback(model_value), calc_function);
     return port;
   }
 
@@ -1000,6 +1004,38 @@ class LeafSystem : public System<T> {
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;
+  }
+
+  // Creates a vector output port allocator function from a BasicVector model
+  // value.
+  template <typename BasicVectorSubtype>
+  static typename LeafOutputPort<T>::AllocVectorCallback
+  MakeAllocVectorCallback(const BasicVectorSubtype& model_vector) {
+    // Allows a capture-by-value to produce a functor-owned copy of the model.
+    copyable_unique_ptr<BasicVector<T>> owned_model(model_vector.Clone());
+    return [owned_model](const Context<T>&) {
+      return owned_model->Clone();
+    };
+  }
+
+  // Creates an abstract output port allocator function from an arbitrary type
+  // model value.
+  template <typename OutputType>
+  static typename LeafOutputPort<T>::AllocCallback MakeAllocCallback(
+      const OutputType& model_value) {
+    // Allows a capture-by-value to produce a functor-owned copy of the model.
+    copyable_unique_ptr<AbstractValue> owned_model(
+        new Value<OutputType>(model_value));
+    return [owned_model](const Context<T>&) { return owned_model->Clone(); };
+  }
+
+  // Preferred overload for the above when the model value is already
+  // an AbstractValue.
+  static typename LeafOutputPort<T>::AllocCallback MakeAllocCallback(
+      const AbstractValue& model_value) {
+    // Allows a capture-by-value to produce a functor-owned copy of the model.
+    copyable_unique_ptr<AbstractValue> owned_model(model_value.Clone());
+    return [owned_model](const Context<T>&) { return owned_model->Clone(); };
   }
 
   // Periodic Update or Publish events registered on this system.

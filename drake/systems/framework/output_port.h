@@ -52,9 +52,6 @@ to be determined at runtime.
 - Calc() unconditionally computes the port's value.
 - Eval() updates a cached value if necessary.
 
-Variants of the above are available for vector-valued ports. See the method
-documentation for more information.
-
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
 Instantiated templates for the following kinds of T's are provided:
@@ -64,6 +61,7 @@ Instantiated templates for the following kinds of T's are provided:
 
 They are already available to link against in the containing library.
 No other values for T are currently supported. */
+// TODO(sherm1) Implement caching for output ports.
 template <typename T>
 class OutputPort {
  public:

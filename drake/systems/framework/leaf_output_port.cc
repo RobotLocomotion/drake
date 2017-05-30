@@ -44,13 +44,10 @@ std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
   // value.
   if (alloc_function_) {
     result = alloc_function_(context);
-  } else if (model_value_) {
-    result = model_value_->Clone();
   } else {
     std::ostringstream oss;
     oss << "LeafOutputPort::DoAllocate(): " << this->GetPortIdMsg()
-        << " has neither an allocation function nor a model value so cannot"
-            " be allocated.";
+        << " has no allocation function so cannot be allocated.";
     throw std::logic_error(oss.str());
   }
   DRAKE_DEMAND(result.get() != nullptr);
