@@ -79,11 +79,14 @@ exports_files(
 
 exports_create_cps_scripts([
     "bullet",
+    "ccd",
     "eigen",
     "fmt",
+    "fcl",
     "ipopt",
     "lcm",
     "nlopt",
+    "octomap",
     "pybind11",
     "spdlog",
 ])

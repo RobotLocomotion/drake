@@ -1,8 +1,16 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 # Generates config.h based on the version numbers in CMake code.
+# Keep defines in sync with Components.config.Definitions in
+# fcl-create-cps.py.
 cmake_configure_file(
     name = "config",
     src = "include/fcl/config.h.in",
@@ -43,4 +51,23 @@ cc_library(
         "@eigen",
         "@octomap",
     ],
+)
+
+cmake_config(
+    package = "fcl",
+    script = "@drake//tools:fcl-create-cps.py",
+    version_file = "CMakeModules/FCLVersion.cmake",
+)
+
+install_cmake_config(package = "fcl")  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    doc_dest = "share/doc/fcl",
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/fcl",
+    hdr_strip_prefix = ["include/fcl"],
+    license_docs = glob(["LICENSE"]),
+    targets = [":fcl"],
+    deps = [":install_cmake_config"],
 )
