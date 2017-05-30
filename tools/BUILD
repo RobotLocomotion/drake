@@ -65,7 +65,7 @@ py_binary(
 py_library(
     name = "cpsutils",
     srcs = ["cpsutils.py"],
-    deps = ["@pycps//:cps"]
+    deps = ["@pycps//:cps"],
 )
 
 exports_files(
@@ -85,11 +85,14 @@ exports_files(
 
 exports_create_cps_scripts([
     "bullet",
+    "ccd",
     "eigen",
+    "fcl",
     "fmt",
     "ipopt",
     "lcm",
     "nlopt",
+    "octomap",
     "pybind11",
     "spdlog",
 ])
