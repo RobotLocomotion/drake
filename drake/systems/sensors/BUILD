@@ -111,20 +111,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "depth_sensor_to_lcm_point_cloud_message_demo",
-    srcs = [
-        "depth_sensor_to_lcm_point_cloud_message_demo.cc",
-    ],
-    deps = [
-        ":depth_sensor_to_lcm_point_cloud_message",
-        "//drake/common:text_logging_gflags",
-        "//drake/lcm",
-        "//drake/systems/analysis",
-        "//drake/systems/lcm",
-    ],
-)
-
 drake_cc_library(
     name = "gyroscope",
     srcs = [
