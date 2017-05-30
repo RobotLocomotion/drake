@@ -156,7 +156,6 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
   EXPECT_THROW(vecport_general_.Calc(*context_, bad_vec.get()),
                std::logic_error);
-  vecport_general_.Calc(*context_, bad_vec.get());
 }
 #endif
 
