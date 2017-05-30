@@ -4,9 +4,11 @@
 #include <string>
 #include <vector>
 
-#include <lcm/lcm-cpp.hpp>
+#include "robotlocomotion/robot_plan_t.hpp"
 
+#include "drake/common/drake_copyable.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
+#include "drake/lcmt_schunk_wsg_command.hpp"
 
 namespace drake {
 namespace examples {
@@ -14,15 +16,15 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
 /**
- * Base class for actions used by the pick and place demo. E.g., moving the KUKA
- * iiwa arm, and opening / closing the gripper. The commands are packaged and
- * sent through LCM.
+ * Base class for actions used by the pick and place demo. E.g.,
+ * moving the KUKA iiwa arm, and opening / closing the gripper. The
+ * commands generate LCM messages.
  */
 class Action {
  public:
-  explicit Action(lcm::LCM* lcm) : lcm_(lcm) { Reset(); }
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Action)
 
-  virtual ~Action() {}
+  virtual ~Action();
 
   /**
    * Returns true if the action has finished based on the provided estimated
@@ -37,12 +39,9 @@ class Action {
   virtual bool ActionFailed(const WorldState& est_state) const = 0;
 
   /**
-   * Returns true if the action has started.
+   * Returns true if the action started.
    */
-  virtual bool ActionStarted() const {
-    if (act_start_time_ < 0) return false;
-    return true;
-  }
+  virtual bool ActionStarted() const;
 
   /**
    * Returns the time when the action has started.
@@ -62,19 +61,16 @@ class Action {
   /**
    * Resets the action's internal states.
    */
-  virtual void Reset() { act_start_time_ = -1; }
+  virtual void Reset();
 
  protected:
-  // Sets the action initial time.
-  virtual void StartAction(double start_time) {
-    DRAKE_DEMAND(start_time >= 0);
-    act_start_time_ = start_time;
-  }
+  Action() { Reset(); }
 
-  lcm::LCM* lcm_;
+  /// Set the action initial time.
+  void StartAction(double start_time);
 
  private:
-  double act_start_time_;
+  double act_start_time_{};
 };
 
 /**
@@ -83,35 +79,22 @@ class Action {
  */
 class IiwaMove : public Action {
  public:
-  /**
-   * Constructs an Action class to move the iiwa arm.
-   *
-   * @param iiwa The KUKA iiwa model. Its life span must be longer than the
-   * instance of this class.
-   * @param channel Name of the LCM message channel containing the output
-   * robotlocomotion::robot_plan_t.
-   */
-  IiwaMove(const RigidBodyTree<double>& iiwa, const std::string& channel,
-           lcm::LCM* lcm)
-      : Action(lcm), iiwa_(iiwa), pub_channel_(channel) {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IiwaMove)
 
-  ~IiwaMove() override {}
+  IiwaMove();
 
   /**
-   * Returns a constant reference to the KUKA iiwa model.
+   * Populates @p plan with a robot plan that moves the iiwa arm
+   * described by @p iiwa through the joint positions in @p q at the
+   * times in @p time.  (Note: @p time and @p q must be of the same
+   * length).
    */
-  const RigidBodyTree<double>& get_iiwa() const { return iiwa_; }
+  void MoveJoints(const WorldState& est_state,
+                  const RigidBodyTree<double>& iiwa,
+                  const std::vector<double>& time,
+                  const std::vector<VectorX<double>>& q,
+                  robotlocomotion::robot_plan_t* plan);
 
-  /**
-   * Sends a LCM message that moves the iiwa arm through the joint positions
-   * in @p q at time @p time.
-   */
-  void MoveJoints(const WorldState& est_state, const std::vector<double>& time,
-                  const std::vector<VectorX<double>>& q);
-
-  /**
-   * Resets all internal states including IK waypoints solutions.
-   */
   void Reset() override;
 
   // TODO(siyuanfeng): have something meaningful here, like the object slipped
@@ -127,30 +110,31 @@ class IiwaMove : public Action {
   bool ActionFinished(const WorldState& est_state) const override;
 
  private:
-  const RigidBodyTree<double>& iiwa_;
-  const std::string pub_channel_;
-  double finish_time_;
+  double duration_{};
 };
 
 /**
- * An Action that closes / open the gripper.
+ * An Action that closes / opens the gripper.
  */
 class WsgAction : public Action {
  public:
-  WsgAction(const std::string& channel, lcm::LCM* lcm)
-      : Action(lcm), pub_channel_(channel) {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WsgAction)
 
-  ~WsgAction() override {}
-
-  /**
-   * Sends an LCM message that tells the WSG gripper driver to fully open.
-   */
-  void OpenGripper(const WorldState& est_state);
+  WsgAction();
 
   /**
-   * Sends an LCM message that tells the WSG gripper driver to fully close.
+   * Populates @p msg with an LCM message that tells the WSG gripper
+   * driver to fully open.
    */
-  void CloseGripper(const WorldState& est_state);
+  void OpenGripper(const WorldState& est_state,
+                   lcmt_schunk_wsg_command* msg);
+
+  /**
+   * Populates @p msg with an LCM message that tells the WSG gripper
+   * driver to fully close.
+   */
+  void CloseGripper(const WorldState& est_state,
+                    lcmt_schunk_wsg_command* msg);
 
   // TODO(siyuanfeng): Implement something meaningful here like a check for a
   // force threshold being crossed.
@@ -163,9 +147,6 @@ class WsgAction : public Action {
    * after an Open / Close command was last issued.
    */
   bool ActionFinished(const WorldState& est_state) const override;
-
- private:
-  const std::string pub_channel_;
 };
 
 }  // namespace pick_and_place
