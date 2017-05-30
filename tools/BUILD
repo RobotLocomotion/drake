@@ -87,6 +87,10 @@ exports_files(
     visibility = ["@lcm//:__pkg__"],
 )
 
+exports_files(
+    ["xvfb-run.sh"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",

@@ -24,10 +24,6 @@ endif()
 
 if(VTK_FOUND)
   if(Bullet_FOUND)
-    # Building a manual test executable for RgbdCamera until we have CI that
-    # runs Xvfb server.  #5210 and #5227 are the related issues.
-    # TODO(kunimatsu-tri) Replace this with an appropriate unit test once CI
-    # had Xvfb.
     add_executable(rgbd_camera_test rgbd_camera_test.cc)
     target_link_libraries(rgbd_camera_test
       drakeCollision
@@ -37,6 +33,32 @@ if(VTK_FOUND)
       drakeSystemAnalysis
       GTest::GTest
       GTest::Main)
+
+    # TODO(jamiesnape): Fix rgbd_camera_test built with VTK 5.x when using Xvfb
+    # or remove VTK 5 support completely.
+    if(VTK_MAJOR_VERSION GREATER 5)
+      set(XVFB_RUN_COMMAND)
+
+      if(NOT APPLE AND NOT DEFINED ENV{DISPLAY})
+        find_program(XVFB_RUN_EXECUTABLE NAMES xvfb-run)
+
+        if(XVFB_RUN_EXECUTABLE)
+            set(XVFB_RUN_COMMAND
+              "${XVFB_RUN_EXECUTABLE}" -a -s "-screen 0 1024x768x24")
+        endif()
+      endif()
+
+      if(APPLE OR DEFINED ENV{DISPLAY} OR XVFB_RUN_COMMAND)
+        add_test(NAME rgbd_camera_test COMMAND
+          ${XVFB_RUN_COMMAND} $<TARGET_FILE:rgbd_camera_test>)
+      else()
+        message(STATUS
+          "Not running rgbd_camera_test because no framebuffer is available")
+      endif()
+    else()
+      message(STATUS
+        "Not running rgbd_camera_test because this build uses VTK 5")
+    endif()
   endif()
 
   drake_add_cc_test(vtk_util_test)

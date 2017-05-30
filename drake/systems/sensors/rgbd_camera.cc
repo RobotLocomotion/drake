@@ -26,12 +26,21 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkWindowToImageFilter.h>
+#include <vtkVersion.h>
+
+#if VTK_MAJOR_VERSION >= 6
+#include <vtkAutoInit.h>
+#endif
 
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/vtk_util.h"
+
+#if VTK_MAJOR_VERSION >= 6
+VTK_MODULE_INIT(vtkRenderingOpenGL2)
+#endif
 
 // TODO(kunimatsu-tri) Refactor RenderingWorld out from RgbdCamera,
 // so that other vtk dependent sensor simulators can share the RenderingWorld

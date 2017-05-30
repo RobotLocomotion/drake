@@ -19,6 +19,7 @@ drake_cc_library(
         ":accelerometer",
         ":camera_info",
         ":depth_sensor",
+        ":rgbd_camera",
         ":rotary_encoders",
     ],
 )
@@ -142,6 +143,45 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "vtk_util",
+    srcs = ["vtk_util.cc"],
+    hdrs = ["vtk_util.h"],
+    deps = [
+        "//drake/common",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersSources",
+    ],
+)
+
+drake_cc_library(
+    name = "rgbd_camera",
+    srcs = ["rgbd_camera.cc"],
+    hdrs = ["rgbd_camera.h"],
+    deps = [
+        ":camera_info",
+        ":image",
+        ":vtk_util",
+        "//drake/math:geometric_transform",
+        "//drake/multibody:rigid_body_frame",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework",
+        "//drake/systems/rendering:pose_vector",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkFiltersSources",
+        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_library(
     name = "accelerometer_example_diagram",
     srcs = [
         "test/accelerometer_test/accelerometer_example_diagram.cc",
@@ -254,6 +294,47 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
+)
+
+drake_cc_binary(
+    name = "rgbd_camera_binary",
+    srcs = ["test/rgbd_camera_test.cc"],
+    data = [
+        "test/models/box.sdf",
+        "test/models/cylinder.sdf",
+        "test/models/mesh_box.sdf",
+        "test/models/meshes/box.obj",
+        "test/models/meshes/box.png",
+        "test/models/multiple_visuals.sdf",
+        "test/models/nothing.sdf",
+        "test/models/sphere.sdf",
+        "test/models/three_boxes.sdf",
+    ],
+    testonly = 1,
+    deps = [
+        ":rgbd_camera",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "@gtest//:main",
+    ],
+)
+
+sh_test(
+    name = "rgbd_camera_test",
+    size = "small",
+    srcs = ["//tools:xvfb-run.sh"],
+    data = [":rgbd_camera_binary"],
+    args = ["$(location :rgbd_camera_binary)"],
+    tags = ["exclusive"],
+)
+
+drake_cc_googletest(
+    name = "vtk_util_test",
+    local = 1,
+    deps = [":vtk_util"],
 )
 
 cpplint()
