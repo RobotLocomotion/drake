@@ -350,12 +350,12 @@ class Context {
   // Accessors and Mutators for Accuracy.
 
   /// Returns the accuracy setting (if any).
-  const optional<T>& get_accuracy() const { return accuracy_; }
+  const optional<double>& get_accuracy() const { return accuracy_; }
 
   /// Sets the accuracy setting.
   /// TODO(edrumwri) Invalidate all cached time- and state-dependent
   /// computations.
-  void set_accuracy(const optional<T>& accuracy) { accuracy_ = accuracy; }
+  void set_accuracy(const optional<double>& accuracy) { accuracy_ = accuracy; }
 
   // =========================================================================
   // Miscellaneous Public Methods
@@ -378,7 +378,7 @@ class Context {
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
     if (source.get_accuracy())
-    set_accuracy(T(source.get_accuracy().value()));
+      set_accuracy(source.get_accuracy().value());
     get_mutable_state()->SetFrom(source.get_state());
     get_mutable_parameters().SetFrom(source.get_parameters());
   }
@@ -453,7 +453,7 @@ class Context {
   StepInfo<T> step_info_;
 
   // Accuracy setting.
-  optional<T> accuracy_;
+  optional<double> accuracy_;
 
   // The context of the enclosing Diagram, used in EvalInputPort.
   // This pointer MUST be treated as a black box. If you call any substantive
