@@ -1,6 +1,10 @@
 # -*- python -*-
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load("@//tools:python_lint.bzl", "python_lint")
+
+package(default_visibility = ["//visibility:public"])
 
 # Chooses the nlopt preprocessor substitutions that we want to use from Bazel.
 cmake_configure_file(
@@ -40,6 +44,7 @@ cmake_configure_file(
         # Yes, we are going to build the C++ bindings.
         "WITH_CXX=1",
     ],
+    visibility = ["//visibility:private"],
 )
 
 # Creates api/nlopt.hpp based on api/nlopt.h.
@@ -53,6 +58,7 @@ genrule(
     cmd = "$(location @//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
           " || (cat log && false)",
     tools = ["@//tools:nlopt-gen-hpp.sh"],
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
@@ -112,5 +118,31 @@ cc_library(
         "esch",
         "api",
     ],
-    visibility = ["//visibility:public"],
 )
+
+cmake_config(
+    package = "NLopt",
+    script = "@//tools:nlopt-create-cps.py",
+    version_file = "nlopt_config.h",
+)
+
+install_cmake_config(package = "NLopt")
+
+install(
+    name = "install",
+    doc_dest = "share/doc/nlopt",
+    docs = [
+        "AUTHORS",
+        "NEWS",
+    ],
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/nlopt",
+    license_docs = glob([
+        "**/COPYING",
+        "**/COPYRIGHT",
+    ]),
+    targets = [":nlopt"],
+    deps = [":install_cmake"],
+)
+
+python_lint()
