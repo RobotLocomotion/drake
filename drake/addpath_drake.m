@@ -48,7 +48,6 @@ addpath(fullfile(root,'thirdParty','bsd','GetFullPath'));
 addpath(fullfile(root,'thirdParty','bsd','plotregion'));
 addpath(fullfile(root,'thirdParty','bsd','polytopes'));
 addpath(fullfile(root,'thirdParty','bsd','psm'));
-addpath(fullfile(root,'thirdParty','bsd','xacro'));
 addpath(fullfile(root,'thirdParty','misc'));
 addpath(fullfile(root,'thirdParty','misc','pathlcp'));
 addpath(fullfile(root,'thirdParty','zlib'));
