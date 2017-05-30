@@ -1,10 +1,27 @@
 # -*- python -*-
 
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+
+package(default_visibility = ["//visibility:public"])
+
 # Lets other packages inspect the CMake code, e.g., for the version number.
 filegroup(
     name = "cmakelists_with_version",
     srcs = ["octomap/CMakeLists.txt"],
-    visibility = ["//visibility:public"],
+)
+
+# Generates octomath library
+cc_library(
+    name = "octomath",
+    srcs = [
+        "octomap/src/math/Pose6D.cpp",
+        "octomap/src/math/Quaternion.cpp",
+        "octomap/src/math/Vector3.cpp",
+    ],
+    hdrs = glob([
+        "octomap/include/octomap/math/*.h*",
+    ]),
+    includes = ["octomap/include"],
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -22,14 +39,32 @@ cc_library(
         "octomap/src/OcTreeStamped.cpp",
         "octomap/src/Pointcloud.cpp",
         "octomap/src/ScanGraph.cpp",
-        "octomap/src/math/Pose6D.cpp",
-        "octomap/src/math/Quaternion.cpp",
-        "octomap/src/math/Vector3.cpp",
     ],
     hdrs = glob([
         "octomap/include/octomap/*.h*",
-        "octomap/include/octomap/math/*.h*",
     ]),
     includes = ["octomap/include"],
-    visibility = ["//visibility:public"],
+    deps = [":octomath"],
+)
+
+cmake_config(
+    package = "octomap",
+    script = "@drake//tools:octomap-create-cps.py",
+    version_file = ":cmakelists_with_version",
+)
+
+install_cmake_config(package = "octomap")  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    doc_dest = "share/doc",
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include",
+    hdr_strip_prefix = ["octomap/include"],
+    license_docs = ["octomap/LICENSE.txt"],
+    targets = [
+        ":octomap",
+        ":octomath",
+    ],
+    deps = [":install_cmake_config"],
 )
