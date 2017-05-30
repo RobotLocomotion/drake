@@ -1,5 +1,9 @@
 # -*- python -*-
 
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "pybind11",
     hdrs = [
@@ -22,10 +26,17 @@ cc_library(
         "include/pybind11/typeid.h",
     ],
     includes = ["include"],
-    visibility = ["//visibility:public"],
     deps = [
         "@eigen",
         "@numpy",
         "@python",
     ],
+)
+
+pkg_tar(
+    name = "license",
+    extension = "tar.gz",
+    files = ["LICENSE"],
+    mode = "0644",
+    package_dir = "pybind11",
 )

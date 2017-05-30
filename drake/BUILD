@@ -13,10 +13,13 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 # When adding new components to the package, please also add the licenses for
 # any new external dependencies to :external_licenses.
 _LIBDRAKE_COMPONENTS = [
+    "//drake/lcm",
+    "//drake/multibody:inverse_kinematics",
+    "//drake/multibody:rigid_body_tree",
     "//drake/multibody/parsers",
+    "//drake/solvers:mathematical_program",
     "//drake/systems/framework",
     "//drake/systems/primitives",
-    "//drake/lcm",
 ]
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
@@ -52,13 +55,23 @@ install(
 
 # TODO(mwoehlke-kitware): remove once install finished
 pkg_tar(
+    name = "python_sources",
+    extension = "tar.gz",
+    strip_prefix = "/drake/bindings/python",
+    files = ["//drake/bindings:pydrake"],
+)
+
+pkg_tar(
     name = "external_licenses",
     extension = "tar.gz",
     deps = [
         "@bullet//:license",
         "@eigen//:license",
         "@fmt//:license",
+        "@ipopt//:license",
         "@lcm//:license",
+        "@nlopt//:license",
+        "@pybind11//:license",
         "@spdlog//:license",
         "@tinyobjloader//:license",
     ],
