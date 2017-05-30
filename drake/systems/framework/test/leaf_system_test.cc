@@ -201,6 +201,23 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
             Event<double>::TriggerType::kPeriodic);
 }
 
+// Tests periodic events' scheduling when its offset is zero.
+TEST_F(LeafSystemTest, PeriodicUpdateZeroOffset) {
+  system_.AddPeriodicUpdate(2.0);
+
+  context_.set_time(0.0);
+  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  EXPECT_EQ(2.0, time);
+
+  context_.set_time(1.0);
+  time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  EXPECT_EQ(2.0, time);
+
+  context_.set_time(2.1);
+  time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  EXPECT_EQ(4.0, time);
+}
+
 // Tests that if a LeafSystem has both a discrete update and a periodic Publish,
 // the update actions are computed appropriately.
 TEST_F(LeafSystemTest, UpdateAndPublish) {
