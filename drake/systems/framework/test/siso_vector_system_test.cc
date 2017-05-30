@@ -216,14 +216,14 @@ TEST_F(SisoVectorSystemTest, OutputStateless) {
   TestSisoSystem dut;
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<BasicVector<double>> output =
-      output_port.AllocateVector(*context);
+  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  output_port.CalcVector(*context, output.get());
+  output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  EXPECT_EQ(output->GetAtIndex(0), 1.0);
-  EXPECT_EQ(output->GetAtIndex(1), 2.0);
+  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(basic.GetAtIndex(0), 1.0);
+  EXPECT_EQ(basic.GetAtIndex(1), 2.0);
 }
 
 // Forwarding of CalcOutput with continuous state.
@@ -232,16 +232,16 @@ TEST_F(SisoVectorSystemTest, OutputContinuous) {
   dut.DeclareContinuousState(TestSisoSystem::kSize);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<BasicVector<double>> output =
-      output_port.AllocateVector(*context);
+  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_continuous_state_vector()->SetFromVector(
       Eigen::Vector2d::Ones());
-  output_port.CalcVector(*context, output.get());
+  output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  EXPECT_EQ(output->GetAtIndex(0), 2.0);
-  EXPECT_EQ(output->GetAtIndex(1), 3.0);
+  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(basic.GetAtIndex(0), 2.0);
+  EXPECT_EQ(basic.GetAtIndex(1), 3.0);
 }
 
 // Forwarding of CalcOutput with discrete state.
@@ -250,16 +250,16 @@ TEST_F(SisoVectorSystemTest, OutputDiscrete) {
   dut.set_prototype_discrete_state_count(1);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<BasicVector<double>> output =
-      output_port.AllocateVector(*context);
+  std::unique_ptr<AbstractValue>  output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_discrete_state(0)->SetFromVector(
       Eigen::Vector2d::Ones());
-  output_port.CalcVector(*context, output.get());
+  output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  EXPECT_EQ(output->GetAtIndex(0), 2.0);
-  EXPECT_EQ(output->GetAtIndex(1), 3.0);
+  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(basic.GetAtIndex(0), 2.0);
+  EXPECT_EQ(basic.GetAtIndex(1), 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);

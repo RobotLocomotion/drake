@@ -124,9 +124,9 @@ class DiagramBuilder {
                const InputPortDescriptor<T>& dest) {
     DRAKE_DEMAND(src.size() == dest.size());
     PortIdentifier dest_id{dest.get_system(), dest.get_index()};
-    PortIdentifier src_id{src.get_system(), src.get_index()};
+    PortIdentifier src_id{&src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);
-    ThrowIfSystemNotRegistered(src.get_system());
+    ThrowIfSystemNotRegistered(&src.get_system());
     ThrowIfSystemNotRegistered(dest.get_system());
     dependency_graph_[dest_id] = src_id;
   }
@@ -168,10 +168,10 @@ class DiagramBuilder {
   /// output of the entire diagram.
   /// @return The index of the exported output port of the entire diagram.
   int ExportOutput(const OutputPort<T>& output) {
-    ThrowIfSystemNotRegistered(output.get_system());
+    ThrowIfSystemNotRegistered(&output.get_system());
     int return_id = static_cast<int>(output_port_ids_.size());
     output_port_ids_.push_back(
-        PortIdentifier{output.get_system(), output.get_index()});
+        PortIdentifier{&output.get_system(), output.get_index()});
     return return_id;
   }
 

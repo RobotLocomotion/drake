@@ -57,7 +57,7 @@ class TestSystem : public System<double> {
 
   const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
-    auto port = std::make_unique<LeafOutputPort<double>>(
+    auto port = std::make_unique<LeafOutputPort<double>>(*this,
         typename LeafOutputPort<double>::AllocCallback(nullptr),
         typename LeafOutputPort<double>::CalcCallback(nullptr));
     LeafOutputPort<double>* const port_ptr = port.get();
@@ -417,7 +417,7 @@ class ValueIOTestSystem : public System<T> {
   template <typename... Args>
   LeafOutputPort<T>& CreateLeafOutputPort(Args&&... args) {
     auto port =
-        std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
+        std::make_unique<LeafOutputPort<T>>(*this, std::forward<Args>(args)...);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;

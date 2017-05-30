@@ -165,7 +165,7 @@ class LeafSystem : public System<T> {
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPort<T>& port = this->get_output_port(i);
       output->add_port(std::make_unique<OutputPortValue>(
-          port.Allocate(&context)));
+          port.Allocate(context)));
     }
     return std::move(output);
   }
@@ -315,15 +315,15 @@ class LeafSystem : public System<T> {
     *dot << "}\"];" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
                                  std::stringstream *dot) const final {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
   }
 
-  void GetGraphvizOutputPortToken(const OutputPort<T> &port,
+  void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                   std::stringstream *dot) const final {
-    DRAKE_DEMAND(port.get_system() == this);
+    DRAKE_DEMAND(&port.get_system() == this);
     *dot << this->GetGraphvizId() << ":y" << port.get_index();
   }
 
@@ -671,8 +671,8 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateLeafOutputPort(
-        model_vector, [this_ptr, calc](const Context<T>& context,
-                                       BasicVector<T>* result) {
+        model_vector,
+        [this_ptr, calc](const Context<T>& context, BasicVector<T>* result) {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
           DRAKE_DEMAND(typed_result != nullptr);
           (this_ptr->*calc)(context, typed_result);
@@ -822,8 +822,8 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateLeafOutputPort(
-        [this_ptr, make](const Context<T>* context) {
-          return AbstractValue::Make((this_ptr->*make)(*context));
+        [this_ptr, make](const Context<T>& context) {
+          return AbstractValue::Make((this_ptr->*make)(context));
         },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
@@ -849,7 +849,7 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateLeafOutputPort(
-        [this_ptr, make](const Context<T>*) {  // Swallow the context.
+        [this_ptr, make](const Context<T>&) {  // Swallow the context.
           return AbstractValue::Make((this_ptr->*make)());
         },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
@@ -995,8 +995,8 @@ class LeafSystem : public System<T> {
   // LeafOutputPort constructor.
   template <typename... Args>
   LeafOutputPort<T>& CreateLeafOutputPort(Args&&... args) {
-    auto port =
-        std::make_unique<LeafOutputPort<T>>(std::forward<Args>(args)...);
+    auto port = std::make_unique<LeafOutputPort<T>>(
+        *this, std::forward<Args>(args)...);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;

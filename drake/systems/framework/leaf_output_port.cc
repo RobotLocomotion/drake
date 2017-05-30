@@ -21,8 +21,8 @@ void LeafOutputPort<T>::set_calculation_function(
     // function.
     calc_function_ = [this, vector_calc_function](const Context<T>& context,
                                                   AbstractValue* abstract) {
-      // The abstract value must be a VectorValue<T>.
-      auto value = dynamic_cast<Value<BasicVector<T>*>*>(abstract);
+      // The abstract value must be a Value<BasicVector<T>>.
+      auto value = dynamic_cast<Value<BasicVector<T>>*>(abstract);
       if (value == nullptr) {
         std::ostringstream oss;
         oss << "OutputPort::Calc(): Expected a vector output type for "
@@ -30,14 +30,14 @@ void LeafOutputPort<T>::set_calculation_function(
             << NiceTypeName::Get(*abstract) << " instead.";
         throw std::logic_error(oss.str());
       }
-      vector_calc_function(context, value->get_mutable_value());
+      vector_calc_function(context, &value->get_mutable_value());
     };
   }
 }
 
 template <typename T>
 std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
-    const Context<T>* context) const {
+    const Context<T>& context) const {
   std::unique_ptr<AbstractValue> result;
 
   // Use the allocation function if available, otherwise clone the model

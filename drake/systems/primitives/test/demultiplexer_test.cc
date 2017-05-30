@@ -22,13 +22,13 @@ class DemultiplexerTest : public ::testing::Test {
   void SetUp() override {
     demux_ = make_unique<Demultiplexer<double>>(3 /* size */);
     context_ = demux_->CreateDefaultContext();
-    output_ = demux_->get_output_port(0).AllocateVector(*context_);
+    output_ = demux_->get_output_port(0).Allocate(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> demux_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<BasicVector<double>> output_;
+  std::unique_ptr<AbstractValue> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
 
@@ -49,9 +49,10 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   ASSERT_EQ(input_vector.size(), demux_->get_num_output_ports());
 
   for (int i=0; i < input_vector.size(); ++i) {
-    demux_->get_output_port(i).CalcVector(*context_, output_.get());
-    ASSERT_EQ(1, output_->size());
-    ASSERT_EQ(input_vector[i], output_->get_value()[0]);
+    demux_->get_output_port(i).Calc(*context_, output_.get());
+    const auto& output_vector = output_->GetValueOrThrow<BasicVector<double>>();
+    ASSERT_EQ(1, output_vector.size());
+    ASSERT_EQ(input_vector[i], output_vector.get_value()[0]);
   }
 }
 
@@ -67,7 +68,7 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   auto demux = make_unique<Demultiplexer<double>>(
       kInputSize /* size */, kOutputSize /* output_ports_sizes */);
   auto context = demux->CreateDefaultContext();
-  auto output = demux->get_output_port(0).AllocateVector(*context);
+  auto output = demux->get_output_port(0).Allocate(*context);
   auto input = make_unique<BasicVector<double>>(kInputSize /* size */);
 
   // Checks that the number of input ports in the system and in the context
@@ -86,10 +87,11 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   ASSERT_EQ(kNumOutputs, demux->get_num_output_ports());
 
   for (int output_index = 0; output_index < kNumOutputs; ++output_index) {
-    demux->get_output_port(output_index).CalcVector(*context, output.get());
-    ASSERT_EQ(kOutputSize, output->size());
+    demux->get_output_port(output_index).Calc(*context, output.get());
+    const auto& output_vector = output->GetValueOrThrow<BasicVector<double>>();
+    ASSERT_EQ(kOutputSize, output_vector.size());
     ASSERT_EQ(input_vector.segment<kOutputSize>(output_index * kOutputSize),
-              output->get_value());
+              output_vector.get_value());
   }
 }
 

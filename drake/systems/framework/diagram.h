@@ -90,9 +90,10 @@ class DiagramOutputPort : public OutputPort<T> {
 
   /// Construct a %DiagramOutputPort that exports the indicated port from
   /// the subsystem whose index is provided.
-  DiagramOutputPort(const OutputPort<T>* source_output_port,
+  DiagramOutputPort(const System<T>& system,
+                    const OutputPort<T>* source_output_port,
                     int subsystem_index)
-      : OutputPort<T>(source_output_port->get_data_type(),
+      : OutputPort<T>(system, source_output_port->get_data_type(),
                       source_output_port->size()),
         source_output_port_(source_output_port),
         subsystem_index_(subsystem_index) {
@@ -113,15 +114,16 @@ class DiagramOutputPort : public OutputPort<T> {
   // These forward to the source system output port, passing in just the source
   // System's Context, not the whole Diagram context we're given.
   std::unique_ptr<AbstractValue> DoAllocate(
-      const Context<T>* context) const final {
-    const Context<T>* subcontext =
-        context ? &get_subcontext(*context) : nullptr;
+      const Context<T>& context) const final {
+    const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Allocate(subcontext);
   }
+
   void DoCalc(const Context<T>& context, AbstractValue* value) const final {
     const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Calc(subcontext, value);
   }
+
   const AbstractValue& DoEval(const Context<T>& context) const final {
     const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Eval(subcontext);
@@ -643,7 +645,7 @@ class Diagram : public System<T>,
 
   void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                   std::stringstream* dot) const override {
-    DRAKE_DEMAND(port.get_system() == this);
+    DRAKE_DEMAND(&port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_y" << port.get_index();
   }
 
@@ -1309,7 +1311,7 @@ class Diagram : public System<T>,
   template <typename... Args>
   internal::DiagramOutputPort<T>& CreateDiagramOutputPort(Args&&... args) {
     auto port = std::make_unique<internal::DiagramOutputPort<T>>(
-        std::forward<Args>(args)...);
+        *this, std::forward<Args>(args)...);
     internal::DiagramOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;

@@ -48,7 +48,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   // or serializer for allocation. So we'll just create the callbacks here.
   if (translator_ != nullptr) {
     LeafOutputPort<double>::AllocVectorCallback alloc_func =
-        [this](const Context<double>*) {
+        [this](const Context<double>&) {
           return this->LcmSubscriberSystem::AllocateTranslatorOutputValue();
         };
     LeafOutputPort<double>::CalcVectorCallback calc_func =
@@ -59,7 +59,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
                             calc_func);
   } else {
     LeafOutputPort<double>::AllocCallback alloc_func =
-        [this](const Context<double>*) {
+        [this](const Context<double>&) {
           return this->LcmSubscriberSystem::AllocateSerializerOutputValue();
         };
     LeafOutputPort<double>::CalcCallback calc_func =
@@ -171,12 +171,12 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
 
 std::unique_ptr<DiscreteValues<double>>
 LcmSubscriberSystem::AllocateDiscreteState() const {
-  // Only make discrete states if we are outputing vector values.
+  // Only make discrete states if we are outputting vector values.
   if (translator_ != nullptr) {
     DRAKE_DEMAND(serializer_ == nullptr);
     std::vector<std::unique_ptr<BasicVector<double>>> discrete_state_vec(2);
     discrete_state_vec[kStateIndexMessage] =
-        this->get_output_port(0).AllocateVector();
+        this->LcmSubscriberSystem::AllocateTranslatorOutputValue();
     discrete_state_vec[kStateIndexMessageCount] =
         std::make_unique<BasicVector<double>>(1);
     return std::make_unique<DiscreteValues<double>>(
@@ -188,11 +188,12 @@ LcmSubscriberSystem::AllocateDiscreteState() const {
 
 std::unique_ptr<AbstractValues> LcmSubscriberSystem::AllocateAbstractState()
     const {
-  // Only make abstract states if we are outputing abstract message.
+  // Only make abstract states if we are outputting abstract message.
   if (serializer_ != nullptr) {
     DRAKE_DEMAND(translator_ == nullptr);
     std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
-    abstract_vals[kStateIndexMessage] = this->get_output_port(0).Allocate();
+    abstract_vals[kStateIndexMessage] =
+        this->LcmSubscriberSystem::AllocateSerializerOutputValue();
     abstract_vals[kStateIndexMessageCount] = AbstractValue::Make<int>(0);
     return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
   }

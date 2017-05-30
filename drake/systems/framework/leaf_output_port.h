@@ -11,7 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/system_common.h"
-#include "drake/systems/framework/vector_value.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +27,7 @@ port's value. When created, an allocation and a calculation function must be
 provided. Allocation can be specified either by providing a model value that
 can be cloned when needed, or by providing an allocation callback function.
 Calculation is specified by providing a calculation callback whose output type
-matches the type returned by the allocation function. **/
+matches the type returned by the allocation function. */
 // TODO(sherm1) Implement caching.
 template <typename T>
 class LeafOutputPort : public OutputPort<T> {
@@ -38,27 +38,27 @@ class LeafOutputPort : public OutputPort<T> {
 
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular output port. The result is returned as an
-  AbstractValue even if this is a vector-valued port. **/
+  AbstractValue even if this is a vector-valued port. */
   using AllocCallback = std::function<std::unique_ptr<AbstractValue>(
-      const Context<T>*)>;
+      const Context<T>&)>;
 
   /** Signature of a function suitable for allocating a BasicVector of the
-  right size and concrete type for a particular vector-valued output port. **/
+  right size and concrete type for a particular vector-valued output port. */
   using AllocVectorCallback = std::function<std::unique_ptr<BasicVector<T>>(
-      const Context<T>*)>;
+      const Context<T>&)>;
 
   /** Signature of a function suitable for calculating a value of a particular
-  output port, given a place to put the value. **/
+  output port, given a place to put the value. */
   using CalcCallback =
   std::function<void(const Context<T>&, AbstractValue*)>;
 
   /** Signature of a function suitable for calculating a value of a particular
-  vector-valued output port, given a place to put the value. **/
+  vector-valued output port, given a place to put the value. */
   using CalcVectorCallback =
   std::function<void(const Context<T>&, BasicVector<T>*)>;
 
   /** Signature of a function suitable for obtaining the cached value of a
-  particular output port. **/
+  particular output port. */
   using EvalCallback = std::function<const AbstractValue&(const Context<T>&)>;
 
   // There is no EvalVectorCallback.
@@ -67,10 +67,10 @@ class LeafOutputPort : public OutputPort<T> {
   and an explicit calculator function. The supplied allocator returns a suitable
   AbstractValue in which to hold the result. The supplied calculator function
   writes to an AbstractValue of the same underlying concrete type as is returned
-  by the allocator. **/
-  explicit LeafOutputPort(AllocCallback alloc_function,
-                          CalcCallback calc_function)
-      : OutputPort<T>(kAbstractValued, 0 /* size */) {
+  by the allocator. */
+  LeafOutputPort(const System<T>& system, AllocCallback alloc_function,
+                 CalcCallback calc_function)
+      : OutputPort<T>(system, kAbstractValued, 0 /* size */) {
     set_allocation_function(alloc_function);
     set_calculation_function(calc_function);
   }
@@ -79,10 +79,10 @@ class LeafOutputPort : public OutputPort<T> {
   AbstractValue as a model for the port's value type. You do not need to supply
   an allocation function; instead the model value will be cloned as needed.
   The supplied calculator writes to an AbstractValue of the same underlying
-  concrete type as the model value. **/
-  explicit LeafOutputPort(const AbstractValue& model_value,
-                          CalcCallback calc_function)
-      : OutputPort<T>(kAbstractValued, 0 /* size */),
+  concrete type as the model value. */
+  LeafOutputPort(const System<T>& system, const AbstractValue& model_value,
+                 CalcCallback calc_function)
+      : OutputPort<T>(system, kAbstractValued, 0 /* size */),
         model_value_(model_value.Clone()) {
     set_calculation_function(calc_function);
   }
@@ -93,62 +93,64 @@ class LeafOutputPort : public OutputPort<T> {
   calculator function writes to a BasicVector of the same underlying concrete
   type as is returned by the allocator. If a particular size is required, supply
   it here; otherwise use kAutoSize. (Note: currently a fixed size is
-  required.) **/
-  explicit LeafOutputPort(AllocVectorCallback vector_alloc_function,
-                          int size,
-                          CalcVectorCallback vector_calc_function)
-      : OutputPort<T>(kVectorValued, size) {
+  required.) */
+  LeafOutputPort(const System<T>& system,
+                 AllocVectorCallback vector_alloc_function, int size,
+                 CalcVectorCallback vector_calc_function)
+      : OutputPort<T>(system, kVectorValued, size) {
     set_allocation_function(vector_alloc_function);
     set_calculation_function(vector_calc_function);
   }
 
-  /** Construct a fixed-size vector-valued output port using the
+  /** Constructs a fixed-size vector-valued output port using the
   supplied BasicVector as a model for the port's value type, preserving both
   the concrete type and size. You do not need to supply an allocation function.
   The supplied calculator function writes to a BasicVector of the same
-  underlying concrete type and size as the model value.**/
-  explicit LeafOutputPort(const BasicVector<T>& model_value,
-                          CalcVectorCallback vector_calc_function)
-      : OutputPort<T>(kVectorValued, model_value.size()),
-        model_value_(new VectorValue<T>(model_value.Clone())) {
+  underlying concrete type and size as the model value.*/
+  LeafOutputPort(const System<T>& system, const BasicVector<T>& model_value,
+                 CalcVectorCallback vector_calc_function)
+      : OutputPort<T>(system, kVectorValued, model_value.size()),
+        model_value_(new Value<BasicVector<T>>(model_value)) {
     set_calculation_function(vector_calc_function);
   }
 
-  /** Set or replace the allocation function for this output port, using
-  a function that returns an AbstractValue. **/
+  /** Sets or replaces the allocation function for this output port, using
+  a function that returns an AbstractValue. */
   void set_allocation_function(AllocCallback alloc_function) {
     alloc_function_ = alloc_function;
   }
 
-  /** Set or replace the allocation function for this vector-valued output port,
-  using a function that returns an object derived from `BasicVector<T>`.**/
+  /** Sets or replaces the allocation function for this vector-valued output
+  port, using a function that returns an object derived from
+  `BasicVector<T>`. */
   void set_allocation_function(AllocVectorCallback vector_alloc_function) {
     if (!vector_alloc_function) {
       alloc_function_ = nullptr;
     } else {
       // Wrap the vector-returning function with an AbstractValue-returning
       // allocator.
-      alloc_function_ = [vector_alloc_function](const Context<T>* context) {
+      alloc_function_ = [vector_alloc_function](const Context<T>& context) {
         std::unique_ptr<BasicVector<T>> vector = vector_alloc_function(context);
         return std::unique_ptr<AbstractValue>(
-            new VectorValue<T>(std::move(vector)));
+            new Value<BasicVector<T>>(std::move(vector)));
       };
     }
   }
 
-  /** Set or replace the calculation function for this output port, using
-  a function that writes into an `AbstractValue`. **/
+  /** Sets or replaces the calculation function for this output port, using
+  a function that writes into an `AbstractValue`. */
   void set_calculation_function(CalcCallback calc_function) {
     calc_function_ = calc_function;
   }
 
-  /** Set or replace the calculation function for this vector-valued output
-  port, using a function that writes into a `BasicVector<T>`. **/
+  /** Sets or replaces the calculation function for this vector-valued output
+  port, using a function that writes into a `BasicVector<T>`. */
   void set_calculation_function(CalcVectorCallback vector_calc_function);
 
-  /** (Advanced) Set or replace the evaluation function for this output port,
-  using a function that returns an `AbstractValue`. By default, an evaluation
-  function is automatically provided that calls the calculation function. **/
+  /** (Advanced) Sets or replaces the evaluation function for this output
+  port, using a function that returns an `AbstractValue`. By default, an
+  evaluation function is automatically provided that calls the calculation
+  function. */
   void set_evaluation_function(EvalCallback eval_function) {
     eval_function_ = eval_function;
   }
@@ -157,7 +159,7 @@ class LeafOutputPort : public OutputPort<T> {
   // Invokes the supplied allocation function if there is one, otherwise clones
   // the model value if there is one, otherwise complains.
   std::unique_ptr<AbstractValue> DoAllocate(
-      const Context<T>* context) const final;
+      const Context<T>& context) const final;
 
   // Invokes the supplied calculation function if present.
   void DoCalc(const Context<T>& context, AbstractValue* value) const final;
@@ -167,7 +169,6 @@ class LeafOutputPort : public OutputPort<T> {
   // a reference to the cache entry's value. Otherwise it invokes a custom
   // evaluation function which must exist.
   const AbstractValue& DoEval(const Context<T>& context) const final;
-
 
   // Data.
   std::unique_ptr<const AbstractValue> model_value_;  // May be nullptr.

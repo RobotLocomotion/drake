@@ -20,14 +20,14 @@ class AdderTest : public ::testing::Test {
   void SetUp() override {
     adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
     context_ = adder_->CreateDefaultContext();
-    output_ = adder_->get_output_port().AllocateVector(context_.get());
+    output_ = adder_->get_output_port().Allocate(*context_);
     input0_.reset(new BasicVector<double>(3 /* size */));
     input1_.reset(new BasicVector<double>(3 /* size */));
   }
 
   std::unique_ptr<Adder<double>> adder_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<BasicVector<double>> output_;
+  std::unique_ptr<AbstractValue> output_;
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;
 };
@@ -58,10 +58,11 @@ TEST_F(AdderTest, AddTwoVectors) {
   context_->FixInputPort(0, std::move(input0_));
   context_->FixInputPort(1, std::move(input1_));
 
-  adder_->get_output_port().CalcVector(*context_, output_.get());
+  adder_->get_output_port().Calc(*context_, output_.get());
+  const auto& output_vector = output_->GetValueOrThrow<BasicVector<double>>();
 
   Eigen::Vector3d expected(5, 7, 9);
-  EXPECT_EQ(expected, output_->get_value());
+  EXPECT_EQ(expected, output_vector.get_value());
 }
 
 // Tests that Adder allocates no state variables in the context_.

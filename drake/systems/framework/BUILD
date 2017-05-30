@@ -253,7 +253,7 @@ drake_cc_library(
         ":cache",
         ":context",
         ":system_common",
-        ":vector_value",
+        ":value",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
@@ -270,7 +270,6 @@ drake_cc_library(
         ":system",
         ":value",
         ":vector",
-        ":vector_value",
         "//drake/common",
     ],
 )

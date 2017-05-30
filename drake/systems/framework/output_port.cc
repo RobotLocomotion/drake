@@ -2,7 +2,9 @@
 
 #include <memory>
 #include <sstream>
+#include <typeinfo>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic_expression.h"
@@ -11,64 +13,90 @@
 namespace drake {
 namespace systems {
 
-//==============================================================================
-//                                OUTPUT PORT
-//==============================================================================
 template <typename T>
 std::unique_ptr<AbstractValue> OutputPort<T>::Allocate(
-    const Context<T>* context) const {
-  if (context != nullptr) {
-    DRAKE_ASSERT_VOID(get_system()->CheckValidContext(*context));
-  }
+    const Context<T>& context) const {
+  DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
   return DoAllocate(context);
-}
-
-// Note that this is just sugar. It calls the real Allocate() method above,
-// assumes the AbstractValue contains a BasicVector, digs out that vector and
-// returns it to the caller, getting rid of the rest of the AbstractValue
-// infrastructure.
-// TODO(sherm1) Consider whether to nuke this method altogether.
-template <typename T>
-std::unique_ptr<BasicVector<T>> OutputPort<T>::AllocateVector(
-    const Context<T>* context) const {
-  std::unique_ptr<AbstractValue> abstract = Allocate(context);
-  // The abstract value must be a VectorValue<T>.
-  VectorValue<T>* value = dynamic_cast<VectorValue<T>*>(abstract.get());
-  if (value == nullptr) {
-    std::ostringstream oss;
-    oss << "OutputPort::AllocateVector(): Expected a vector type from the "
-           "allocator for "
-        << this->GetPortIdMsg() << " but got a " << NiceTypeName::Get(*abstract)
-        << " instead.";
-    throw std::logic_error(oss.str());
-  }
-
-  return value->release_vector();
-  // The empty AbstractValue shell is destructed here.
 }
 
 template <typename T>
 void OutputPort<T>::Calc(const Context<T>& context,
                          AbstractValue* value) const {
-  DRAKE_ASSERT_VOID(get_system()->CheckValidContext(context));
   DRAKE_DEMAND(value != nullptr);
-  // TODO(sherm1) Validate abstract value object.
+  DRAKE_ASSERT_VOID(CheckValidOutputType(context, *value));
+  DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
+
   return DoCalc(context, value);
 }
 
 template <typename T>
 const AbstractValue& OutputPort<T>::Eval(const Context<T>& context) const {
-  DRAKE_ASSERT_VOID(get_system()->CheckValidContext(context));
+  DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
   return DoEval(context);
+}
+
+template <typename T>
+OutputPort<T>::OutputPort(const System<T>& system, PortDataType data_type,
+                          int size)
+    : system_(system),
+      index_(system.get_num_output_ports()),
+      data_type_(data_type),
+      size_(size) {
+  if (size_ == kAutoSize) {
+    DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
+  }
 }
 
 template <typename T>
 std::string OutputPort<T>::GetPortIdMsg() const {
   std::ostringstream oss;
   oss << "output port " << this->get_index() << " of "
-      << NiceTypeName::Get(*this->get_system()) << " System "
-      << this->get_system()->GetPath();
+      << NiceTypeName::Get(this->get_system()) << " System "
+      << this->get_system().GetPath();
   return oss.str();
+}
+
+template <typename T>
+void OutputPort<T>::CheckValidOutputType(const Context<T>& context,
+                                          const AbstractValue& proposed) const {
+  auto good = DoAllocate(context);  // Expensive!
+  // Attempt to interpret these as BasicVectors.
+  auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
+  auto good_vec = dynamic_cast<const Value<BasicVector<T>>*>(good.get());
+  if (proposed_vec && good_vec) {
+    CheckValidBasicVector(context, good_vec->get_value(),
+                          proposed_vec->get_value());
+  } else {
+    // At least one is not a BasicVector.
+    CheckValidAbstractValue(context, *good, proposed);
+  }
+}
+
+template <typename T>
+void OutputPort<T>::CheckValidAbstractValue(
+    const Context<T>& context, const AbstractValue& good,
+    const AbstractValue& proposed) const {
+  if (typeid(proposed) != typeid(good)) {
+    std::ostringstream oss;
+    oss << "Calc(): expected AbstractValue output type "
+        << NiceTypeName::Get(good) << " but got " << NiceTypeName::Get(proposed)
+        << " for " << GetPortIdMsg();
+    throw std::logic_error(oss.str());
+  }
+}
+
+template <typename T>
+void OutputPort<T>::CheckValidBasicVector(
+    const Context<T>& context, const BasicVector<T>& good,
+    const BasicVector<T>& proposed) const {
+  if (typeid(proposed) != typeid(good)) {
+    std::ostringstream oss;
+    oss << "Calc(): expected BasicVector output type "
+        << NiceTypeName::Get(good) << " but got " << NiceTypeName::Get(proposed)
+        << " for " << GetPortIdMsg();
+    throw std::logic_error(oss.str());
+  }
 }
 
 // The Vector2/3 instantiations here are for the benefit of some
