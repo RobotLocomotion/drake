@@ -89,8 +89,8 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
     int id,
     const OutputPort<T>& pose_output,
     const OutputPort<T>& velocity_output) {
-  DRAKE_DEMAND(pose_output.get_system() == velocity_output.get_system());
-  const std::string name = pose_output.get_system()->get_name();
+  DRAKE_DEMAND(&pose_output.get_system() == &velocity_output.get_system());
+  const std::string name = pose_output.get_system().get_name();
   auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
   builder_->Connect(pose_output, ports.first);
   builder_->Connect(velocity_output, ports.second);

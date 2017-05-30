@@ -168,11 +168,11 @@ class OutputPort {
   void CheckValidOutputType(const Context<T>&, const AbstractValue&) const;
 
   // Check that both type-erased arguments have the same underlying type.
-  void CheckValidAbstractValue(const Context<T>&, const AbstractValue& good,
+  void CheckValidAbstractValue(const AbstractValue& good,
                                const AbstractValue& proposed) const;
 
   // Check that both BasicVector arguments have the same underlying type.
-  void CheckValidBasicVector(const Context<T>&, const BasicVector<T>& good,
+  void CheckValidBasicVector(const BasicVector<T>& good,
                              const BasicVector<T>& proposed) const;
 
   const System<T>& system_;

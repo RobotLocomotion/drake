@@ -382,7 +382,7 @@ void PidController<T>::GetGraphvizInputPortToken(
 template <typename T>
 void PidController<T>::GetGraphvizOutputPortToken(
     const OutputPort<T>& port, std::stringstream* dot) const {
-  DRAKE_DEMAND(port.get_system() == this);
+  DRAKE_DEMAND(&port.get_system() == this);
   *dot << this->GetGraphvizId() << ":y" << port.get_index();
 }
 

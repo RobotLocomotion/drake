@@ -59,7 +59,7 @@ std::string OutputPort<T>::GetPortIdMsg() const {
 
 template <typename T>
 void OutputPort<T>::CheckValidOutputType(const Context<T>& context,
-                                          const AbstractValue& proposed) const {
+                                         const AbstractValue& proposed) const {
   auto good = DoAllocate(context);  // Expensive!
   // Attempt to interpret these as BasicVectors.
   auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
@@ -75,8 +75,7 @@ void OutputPort<T>::CheckValidOutputType(const Context<T>& context,
 
 template <typename T>
 void OutputPort<T>::CheckValidAbstractValue(
-    const Context<T>& context, const AbstractValue& good,
-    const AbstractValue& proposed) const {
+    const AbstractValue& good, const AbstractValue& proposed) const {
   if (typeid(proposed) != typeid(good)) {
     std::ostringstream oss;
     oss << "Calc(): expected AbstractValue output type "
@@ -88,8 +87,7 @@ void OutputPort<T>::CheckValidAbstractValue(
 
 template <typename T>
 void OutputPort<T>::CheckValidBasicVector(
-    const Context<T>& context, const BasicVector<T>& good,
-    const BasicVector<T>& proposed) const {
+    const BasicVector<T>& good, const BasicVector<T>& proposed) const {
   if (typeid(proposed) != typeid(good)) {
     std::ostringstream oss;
     oss << "Calc(): expected BasicVector output type "
