@@ -137,7 +137,19 @@ TEST_F(LeafOutputPortTest, VectorPorts) {
   VectorPortCheck(*context_, vecport_general_, Vector3d(-1., -2., -3.));
 }
 
-// Check that Debug builds catch bad output types given to Calc(). We can't
+// AllocCallback that returns an illegal null value.
+unique_ptr<AbstractValue> alloc_null(const Context<double>&) {
+  return nullptr;
+}
+
+// The null check is done in all builds.
+TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
+  // Create an abstract port with an allocator that returns null.
+  LeafOutputPort<double> null_port{dummy_, alloc_null, calc_string};
+  EXPECT_THROW(null_port.Allocate(*context_), std::logic_error);
+}
+
+// Check that Debug builds catch bad output types. We can't
 // run these tests unchecked since they may execute or segfault depending on
 // memory contents.
 #ifndef DRAKE_ASSERT_IS_DISARMED

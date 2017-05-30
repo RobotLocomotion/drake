@@ -60,7 +60,7 @@ Instantiated templates for the following kinds of T's are provided:
 - symbolic::Expression
 
 They are already available to link against in the containing library.
-No other values for T are currently supported. */
+No other values for T are currently supported. **/
 // TODO(sherm1) Implement caching for output ports.
 template <typename T>
 class OutputPort {
@@ -70,68 +70,67 @@ class OutputPort {
   virtual ~OutputPort() = default;
 
   /** Allocates a concrete object suitable for holding the value to be exposed
-  by this output port, and return that as an AbstractValue.
+  by this output port, and return that as an AbstractValue. The returned object
+  will never be null. If Drake assertions are enabled (typically only in Debug
+  builds), validates for a vector-valued port that the returned AbstractValue
+  is actually BasicVector-derived type and that it has an acceptable size.
   @note If this is a vector-valued port, the underlying type is
   `Value<BasicVector<T>>`; downcast to `BasicVector<T>` before downcasting to
-  the specific `BasicVector` subclass. */
+  the specific `BasicVector` subclass. **/
   std::unique_ptr<AbstractValue> Allocate(const Context<T>& context) const;
 
   /** Unconditionally computes the value of this output port with respect to the
   given context, into an already-allocated AbstractValue object whose concrete
   type must be the correct type for this output port. If Drake assertions are
   enabled (typically only in Debug builds), validates that the given `value` has
-  the same concrete type as is returned by the Allocate() method. */
+  the same concrete type as is returned by the Allocate() method. **/
   void Calc(const Context<T>& context, AbstractValue* value) const;
 
   /** Returns a reference to the value of this output port contained in the
   given Context. If that value is not up to date with respect to its
   prerequisites, the Calc() method above is used first to update the value
-  before the reference is returned. */
+  before the reference is returned. (Not implemented yet.) **/
+  // TODO(sherm1) Implement properly.
   const AbstractValue& Eval(const Context<T>& context) const;
 
   /** Returns a reference to the System that owns this output port. Note that
   for a diagram output port this will be the diagram, not the leaf system whose
-  output port was forwarded. */
+  output port was forwarded. **/
   const System<T>& get_system() const {
     return system_;
   }
 
-  /** Returns the index of this output port within the owning System. */
+  /** Returns the index of this output port within the owning System. **/
   OutputPortIndex get_index() const {
     return index_;
   }
 
-  /** This is the port data type specified at port construction. */
+  /** Gets the port data type specified at port construction. **/
   PortDataType get_data_type() const { return data_type_; }
 
-  /** For vector-valued output ports, if this is non-negative it is the
-  required runtime size of the value. Otherwise is may be kAutoSize in which
-  case the size is determined upon allocation. */
+  /** Returns the fixed size expected for a vector-valued output port. Not
+  meaningful for abstract output ports. **/
   int size() const { return size_; }
 
  protected:
-  /** Constructor is for use by derived classes for setting the base class
-  members.
+  /** Provides derived classes the ability to set the base class members at
+  construction.
   @param system
     The System that will own this new output port. This port will
     be assigned the next available output port index in this system.
   @param data_type
     Whether the port described is vector or abstract valued.
   @param size
-    If the port described is vector-valued, the number of elements, or
-    kAutoSize if determined by connections. */
+    If the port described is vector-valued, the number of elements expected. **/
   OutputPort(const System<T>& system, PortDataType data_type, int size);
 
   /** A concrete %OutputPort must provide a way to allocate a suitable object
   for holding the runtime value of this output port. The particulars may depend
-  on values and types of objects in the given Context, if one is supplied. It
-  is up to the implementation to complain if a Context is required but wasn't
-  supplied by the caller.
-
+  on values and types of objects in the given Context.
   @param context
      A Context that has already been validated as compatible with
      the System whose output port this is.
-  @returns A unique_ptr to the new value-holding object as an AbstractValue. */
+  @returns A unique_ptr to the new value-holding object as an AbstractValue. **/
   virtual std::unique_ptr<AbstractValue> DoAllocate(
       const Context<T>& context) const = 0;
 
@@ -139,12 +138,11 @@ class OutputPort {
   this output port should have given the contents of the supplied Context. The
   value may be determined by computation or by copying from a source value in
   the Context.
-
   @param context A Context that has already been validated as compatible with
                  the System whose output port this is.
   @param value   A pointer that has already be validated as non-null and
                  pointing to an object of the right type to hold a value of
-                 this output port. */
+                 this output port. **/
   virtual void DoCalc(const Context<T>& context,
                       AbstractValue* value) const = 0;
 
@@ -153,16 +151,19 @@ class OutputPort {
   date with respect to its prerequisites in `context`, no computation should be
   performed. Otherwise, the implementation should arrange for the value to be
   computed, typically but not necessarily by invoking DoCalc().
-
   @param context A Context that has already been validated as compatible with
-                 the System whose output port this is. */
+                 the System whose output port this is. **/
   virtual const AbstractValue& DoEval(const Context<T>& context) const = 0;
 
   /** This is useful for error messages and produces `"output port <#> of
-  <system type name> System <subsystem pathname>"` */
+  <system type name> System <subsystem pathname>"` **/
   std::string GetPortIdMsg() const;
 
  private:
+  // Check whether the allocator returned a value that is consistent with
+  // this port's specification.
+  void CheckValidAllocation(const AbstractValue&) const;
+
   // Check that an AbstractValue provided to Calc() is suitable for this port.
   // (Very expensive; use in Debug only.)
   void CheckValidOutputType(const Context<T>&, const AbstractValue&) const;

@@ -3,6 +3,7 @@
 #include <memory>
 #include <sstream>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
@@ -25,7 +26,7 @@ void LeafOutputPort<T>::set_calculation_function(
       auto value = dynamic_cast<Value<BasicVector<T>>*>(abstract);
       if (value == nullptr) {
         std::ostringstream oss;
-        oss << "OutputPort::Calc(): Expected a vector output type for "
+        oss << "LeafOutputPort::Calc(): Expected a vector output type for "
             << this->GetPortIdMsg() << " but got a "
             << NiceTypeName::Get(*abstract) << " instead.";
         throw std::logic_error(oss.str());
@@ -45,12 +46,15 @@ std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
   if (alloc_function_) {
     result = alloc_function_(context);
   } else {
-    std::ostringstream oss;
-    oss << "LeafOutputPort::DoAllocate(): " << this->GetPortIdMsg()
-        << " has no allocation function so cannot be allocated.";
-    throw std::logic_error(oss.str());
+    throw std::logic_error(
+        "LeafOutputPort::DoAllocate(): " + this->GetPortIdMsg() +
+        " has no allocation function so cannot be allocated.");
   }
-  DRAKE_DEMAND(result.get() != nullptr);
+  if (result.get() == nullptr) {
+    throw std::logic_error(
+        "LeafOutputPort::DoAllocate(): allocator returned a nullptr for " +
+        this->GetPortIdMsg());
+  }
   return result;
 }
 
@@ -60,10 +64,8 @@ void LeafOutputPort<T>::DoCalc(const Context<T>& context,
   if (calc_function_) {
     calc_function_(context, value);
   } else {
-    std::ostringstream oss;
-    oss << "LeafOutputPort::DoCalc(): " << this->GetPortIdMsg()
-        << " had no calculation function available.";
-    throw std::logic_error(oss.str());
+    throw std::logic_error("LeafOutputPort::DoCalc(): " + this->GetPortIdMsg() +
+                           " had no calculation function available.");
   }
 }
 

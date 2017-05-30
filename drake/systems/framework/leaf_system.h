@@ -766,8 +766,14 @@ class LeafSystem : public System<T> {
     return port;
   }
 
-  /// This is a necessary specialization of the above signature for the case
-  /// where a general AbstractValue type is given rather than a concrete value.
+  /// Declares an abstract-valued output port by specifying an AbstractValue
+  /// model value and a calculator function that is a class member function
+  /// (method) with signature:
+  /// @code
+  /// void MySystem::CalcOutputValue(const Context<T>&, AbstractValue*) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>`.
+  /// Template arguments will be deduced and do not need to be specified.
   template <class MySystem>
   const LeafOutputPort<T>& DeclareAbstractOutputPort(
       const AbstractValue& model_value,

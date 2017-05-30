@@ -17,7 +17,13 @@ template <typename T>
 std::unique_ptr<AbstractValue> OutputPort<T>::Allocate(
     const Context<T>& context) const {
   DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
-  return DoAllocate(context);
+  std::unique_ptr<AbstractValue> value = DoAllocate(context);
+  if (value == nullptr) {
+    throw std::logic_error("Allocate(): allocator returned a nullptr for " +
+                           GetPortIdMsg());
+  }
+  DRAKE_ASSERT_VOID(CheckValidAllocation(*value));
+  return value;
 }
 
 template <typename T>
@@ -27,7 +33,7 @@ void OutputPort<T>::Calc(const Context<T>& context,
   DRAKE_ASSERT_VOID(CheckValidOutputType(context, *value));
   DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
 
-  return DoCalc(context, value);
+  DoCalc(context, value);
 }
 
 template <typename T>
@@ -55,6 +61,35 @@ std::string OutputPort<T>::GetPortIdMsg() const {
       << NiceTypeName::Get(this->get_system()) << " System "
       << this->get_system().GetPath();
   return oss.str();
+}
+
+// If this is a vector-valued port, we can check that the returned abstract
+// value actually holds a BasicVector-derived object, and for fixed-size ports
+// that the object has the right size.
+template <typename T>
+void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
+  if (this->get_data_type() != kVectorValued)
+    return;  // Nothing we can check for an abstract port.
+
+  auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
+  if (proposed_vec == nullptr) {
+    std::ostringstream oss;
+    oss << "Allocate(): expected BasicVector output type but got "
+        << NiceTypeName::Get(proposed) << " for " << GetPortIdMsg();
+    throw std::logic_error(oss.str());
+  }
+
+  if (this->size() == kAutoSize)
+    return;  // Any size is acceptable.
+
+  const int proposed_size = proposed_vec->get_value().size();
+  if (proposed_size != this->size()) {
+    std::ostringstream oss;
+    oss << "Allocate(): expected vector output type of size " << this->size()
+        << " but got a vector of size " << proposed_size
+        << " for " << GetPortIdMsg();
+    throw std::logic_error(oss.str());
+  }
 }
 
 template <typename T>
