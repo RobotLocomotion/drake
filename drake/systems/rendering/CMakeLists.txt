@@ -43,6 +43,7 @@ if(lcm_FOUND)
       TARGET drakeRenderingLcm
       LIBS -ldrakeRenderingLcm
       REQUIRES
+          drakeLcmSystem
           drake_lcmtypes
           drake-shapes
           robotlocomotion-lcmtypes-cpp
