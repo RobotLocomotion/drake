@@ -14,8 +14,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/action.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_common.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/action.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -101,6 +101,7 @@ void RunPickAndPlaceDemo() {
 
   // Makes a WorldState, and sets up LCM subscriptions.
   WorldState env_state(iiwa_path, iiwa_end_effector_name);
+  const RigidBodyTree<double>& iiwa = env_state.get_iiwa();
   WorldStateSubscriber env_state_subscriber(&lcm, &env_state);
 
   // Spins until at least one message is received from every LCM channel.
@@ -117,8 +118,8 @@ void RunPickAndPlaceDemo() {
   std::vector<double> times;
 
   // Makes action handles.
-  WsgAction wsg_act("SCHUNK_WSG_COMMAND", &lcm);
-  IiwaMove iiwa_move(env_state.get_iiwa(), "COMMITTED_ROBOT_PLAN", &lcm);
+  WsgAction wsg_act;
+  IiwaMove iiwa_move;
 
   // Desired end effector pose in the world frame for pick and place.
   Isometry3<double> X_WEndEffector0, X_WEndEffector1;
@@ -154,7 +155,10 @@ void RunPickAndPlaceDemo() {
       // Opens the gripper.
       case OPEN_GRIPPER:
         if (!wsg_act.ActionStarted()) {
-          wsg_act.OpenGripper(env_state);
+          lcmt_schunk_wsg_command msg;
+          wsg_act.OpenGripper(env_state, &msg);
+          lcm.publish("SCHUNK_WSG_COMMAND", &msg);
+
           std::cout << "OPEN_GRIPPER: " << env_state.get_iiwa_time()
                     << std::endl;
         }
@@ -179,7 +183,10 @@ void RunPickAndPlaceDemo() {
               env_state.get_iiwa_q(), 0, 2, X_WEndEffector0, X_WEndEffector1,
               kLoosePosTol, kLooseRotTol, &planner, &ik_res, &times);
           DRAKE_DEMAND(res);
-          iiwa_move.MoveJoints(env_state, times, ik_res.q_sol);
+
+          robotlocomotion::robot_plan_t plan;
+          iiwa_move.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
+          lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
 
           std::cout << "APPROACH_PICK_PREGRASP: " << env_state.get_iiwa_time()
                     << std::endl;
@@ -204,7 +211,10 @@ void RunPickAndPlaceDemo() {
               kTightPosTol, kTightRotTol, &planner, &ik_res, &times);
           DRAKE_DEMAND(res);
 
-          iiwa_move.MoveJoints(env_state, times, ik_res.q_sol);
+          robotlocomotion::robot_plan_t plan;
+          iiwa_move.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
+          lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
+
           std::cout << "APPROACH_PICK: " << env_state.get_iiwa_time()
                     << std::endl;
         }
@@ -218,7 +228,10 @@ void RunPickAndPlaceDemo() {
       // Grasps the object.
       case GRASP:
         if (!wsg_act.ActionStarted()) {
-          wsg_act.CloseGripper(env_state);
+          lcmt_schunk_wsg_command msg;
+          wsg_act.CloseGripper(env_state, &msg);
+          lcm.publish("SCHUNK_WSG_COMMAND", &msg);
+
           std::cout << "GRASP: " << env_state.get_iiwa_time() << std::endl;
         }
 
@@ -240,7 +253,10 @@ void RunPickAndPlaceDemo() {
               kTightPosTol, kTightRotTol, &planner, &ik_res, &times);
           DRAKE_DEMAND(res);
 
-          iiwa_move.MoveJoints(env_state, times, ik_res.q_sol);
+          robotlocomotion::robot_plan_t plan;
+          iiwa_move.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
+          lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
+
           std::cout << "LIFT_FROM_PICK: " << env_state.get_iiwa_time()
                     << std::endl;
         }
@@ -288,7 +304,10 @@ void RunPickAndPlaceDemo() {
               kLoosePosTol, kLooseRotTol, &planner, &ik_res, &times);
           DRAKE_DEMAND(res);
 
-          iiwa_move.MoveJoints(env_state, times, ik_res.q_sol);
+          robotlocomotion::robot_plan_t plan;
+          iiwa_move.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
+          lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
+
           std::cout << "APPROACH_PLACE_PREGRASP: " << env_state.get_iiwa_time()
                     << std::endl;
         }
@@ -322,7 +341,10 @@ void RunPickAndPlaceDemo() {
               kTightPosTol, kTightRotTol, &planner, &ik_res, &times);
           DRAKE_DEMAND(res);
 
-          iiwa_move.MoveJoints(env_state, times, ik_res.q_sol);
+          robotlocomotion::robot_plan_t plan;
+          iiwa_move.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
+          lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
+
           std::cout << "APPROACH_PLACE: " << env_state.get_iiwa_time()
                     << std::endl;
         }
@@ -336,7 +358,10 @@ void RunPickAndPlaceDemo() {
       // Releases the object.
       case PLACE:
         if (!wsg_act.ActionStarted()) {
-          wsg_act.OpenGripper(env_state);
+          lcmt_schunk_wsg_command msg;
+          wsg_act.OpenGripper(env_state, &msg);
+          lcm.publish("SCHUNK_WSG_COMMAND", &msg);
+
           std::cout << "PLACE: " << env_state.get_iiwa_time() << std::endl;
         }
 
@@ -358,7 +383,10 @@ void RunPickAndPlaceDemo() {
               kTightPosTol, kTightRotTol, &planner, &ik_res, &times);
           DRAKE_DEMAND(res);
 
-          iiwa_move.MoveJoints(env_state, times, ik_res.q_sol);
+          robotlocomotion::robot_plan_t plan;
+          iiwa_move.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
+          lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
+
           std::cout << "LIFT_FROM_PLACE: " << env_state.get_iiwa_time()
                     << std::endl;
         }
@@ -374,7 +402,11 @@ void RunPickAndPlaceDemo() {
           const std::vector<double> time = {0, 2};
           std::vector<VectorX<double>> q(2, env_state.get_iiwa_q());
           q[1].setZero();
-          iiwa_move.MoveJoints(env_state, time, q);
+
+          robotlocomotion::robot_plan_t plan;
+          iiwa_move.MoveJoints(env_state, iiwa, times, q, &plan);
+          lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
+
           std::cout << "DONE: " << env_state.get_iiwa_time() << std::endl;
         }
 

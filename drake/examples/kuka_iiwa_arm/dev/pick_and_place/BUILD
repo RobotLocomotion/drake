@@ -15,11 +15,9 @@ package(
 drake_cc_library(
     name = "kuka_pick_and_place",
     srcs = [
-        "action.cc",
         "pick_and_place_common.cc",
     ],
     hdrs = [
-        "action.h",
         "pick_and_place_common.h",
     ],
     deps = [
