@@ -30,6 +30,12 @@ target_link_libraries(eigen_stl_types_test Eigen3::Eigen)
 drake_add_cc_test(extract_double_test)
 target_link_libraries(extract_double_test drakeCommon)
 
+# TODO(jwnimmer-tri) Drake CI's ROS configuration uses an out-of-source build,
+# which this unit test does not yet support:
+#   drake_add_cc_test(find_resource_test)
+add_executable(find_resource_test find_resource_test.cc)
+target_link_libraries(find_resource_test drakeCommon GTest::GTest GTest::Main)
+
 drake_add_cc_test(functional_form_test)
 target_link_libraries(functional_form_test drakeCommon)
 
@@ -86,6 +92,9 @@ target_link_libraries(symbolic_mixing_scalar_types_test drakeCommon)
 
 drake_add_cc_test(symbolic_formula_test)
 target_link_libraries(symbolic_formula_test drakeCommon)
+
+drake_add_cc_test(symbolic_formula_visitor_test)
+target_link_libraries(symbolic_formula_visitor_test drakeCommon)
 
 drake_add_cc_test(sorted_vectors_have_intersection_test)
 target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)

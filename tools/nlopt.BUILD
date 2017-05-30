@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
 # Chooses the nlopt preprocessor substitutions that we want to use from Bazel.
 cmake_configure_file(
@@ -50,9 +50,9 @@ genrule(
         "api/nlopt.h",
     ],
     outs = ["api/nlopt.hpp"],
-    cmd = "$(location @//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
+    cmd = "$(location @drake//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
           " || (cat log && false)",
-    tools = ["@//tools:nlopt-gen-hpp.sh"],
+    tools = ["@drake//tools:nlopt-gen-hpp.sh"],
 )
 
 cc_library(

@@ -16,10 +16,15 @@
 
 workspace(name = "drake")
 
-load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
 load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
+
+local_repository(
+    name = "kythe",
+    path = "tools/third_party/kythe",
+)
+load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
     name = "glib",
@@ -191,9 +196,9 @@ github_archive(
 github_archive(
     name = "robotlocomotion_lcmtypes",
     repository = "RobotLocomotion/lcmtypes",
-    commit = "4bd59a1b62a1eca31a2550b37f356426bc793d67",
+    commit = "409a2d1fedfffea07b3e56c18efe1d0d9352f468",
     build_file = "tools/robotlocomotion_lcmtypes.BUILD",
-    sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
+    sha256 = "3131ae0e72da26b968cac74c07a2e471f9ff5c5ab75cb4d32fc42aa6f5744b99",
 )
 
 github_archive(

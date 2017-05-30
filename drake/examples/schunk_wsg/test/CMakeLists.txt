@@ -1,5 +1,5 @@
 if(lcm_FOUND)
-  drake_add_cc_test(simulated_schunk_wsg_system_test)
+  drake_add_cc_test(NAME simulated_schunk_wsg_system_test SIZE medium)
   target_link_libraries(simulated_schunk_wsg_system_test
     drakeSimulatedSchunkWsg drakeSystemAnalysis drakeSystemPrimitives)
 

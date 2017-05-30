@@ -1,7 +1,7 @@
 # -*- python -*-
 
-load("@//tools:install.bzl", "install", "install_files")
-load("@//tools:python_lint.bzl", "python_lint")
+load("@drake//tools:install.bzl", "install", "install_files")
+load("@drake//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(
@@ -25,8 +25,8 @@ cc_library(
 
 py_binary(
     name = "create-cps",
-    srcs = ["@//tools:eigen-create-cps.py"],
-    main = "@//tools:eigen-create-cps.py",
+    srcs = ["@drake//tools:eigen-create-cps.py"],
+    main = "@drake//tools:eigen-create-cps.py",
     visibility = ["//visibility:private"],
 )
 

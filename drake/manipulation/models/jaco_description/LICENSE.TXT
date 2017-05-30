@@ -1,0 +1,16 @@
+This folder contains a model of the 6-dof 3-finger Kinova Jaco arm.
+The file was originally taken from the Kinova ROS package, which is
+available at:
+https://github.com/Kinovarobotics/kinova-ros/tree/kinova-ros-beta/
+kinova_description/urdf, SHA 006c2e1.
+
+The original license for these files is covered under the BSD license terms,
+as stated in the package.xml file:
+https://github.com/Kinovarobotics/kinova-ros/blob/kinova-ros-beta/
+kinova_description/package.xml
+
+Since obtaining the model files from the above source, they were modified for
+use by Drake. For example, the original DAE and STL mesh files were converted
+to OBJ files, and various collision models were modified. Our changes are 
+covered by Drake's license terms (see LICENSE.TXT in Drake's root folder).
+

@@ -11,8 +11,8 @@
 #include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
-#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@//tools:lcm.bzl", "lcm_java_library", "lcm_py_library")
+load("@drake//tools:lcm.bzl", "lcm_java_library", "lcm_py_library")
 
 package(default_visibility = ["//visibility:public"])
 
