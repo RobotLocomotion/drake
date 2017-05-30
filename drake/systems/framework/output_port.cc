@@ -65,11 +65,11 @@ void OutputPort<T>::CheckValidOutputType(const Context<T>& context,
   auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
   auto good_vec = dynamic_cast<const Value<BasicVector<T>>*>(good.get());
   if (proposed_vec && good_vec) {
-    CheckValidBasicVector(context, good_vec->get_value(),
+    CheckValidBasicVector(good_vec->get_value(),
                           proposed_vec->get_value());
   } else {
     // At least one is not a BasicVector.
-    CheckValidAbstractValue(context, *good, proposed);
+    CheckValidAbstractValue(*good, proposed);
   }
 }
 
