@@ -48,5 +48,7 @@ install(
         "@pybind11//:install",
         "@robotlocomotion_lcmtypes//:install",
         "@spdlog//:install",
+        "@tinyobjloader//:install",
+        "@yaml_cpp//:install",
     ],
 )
