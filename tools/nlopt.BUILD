@@ -1,6 +1,10 @@
 # -*- python -*-
 
 load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@//tools:install.bzl", "install", "install_files")
+load("@//tools:python_lint.bzl", "python_lint")
+
+package(default_visibility = ["//visibility:public"])
 
 # Chooses the nlopt preprocessor substitutions that we want to use from Bazel.
 cmake_configure_file(
@@ -40,6 +44,7 @@ cmake_configure_file(
         # Yes, we are going to build the C++ bindings.
         "WITH_CXX=1",
     ],
+    visibility = ["//visibility:private"],
 )
 
 # Creates api/nlopt.hpp based on api/nlopt.h.
@@ -53,6 +58,7 @@ genrule(
     cmd = "$(location @//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
           " || (cat log && false)",
     tools = ["@//tools:nlopt-gen-hpp.sh"],
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
@@ -112,5 +118,70 @@ cc_library(
         "esch",
         "api",
     ],
-    visibility = ["//visibility:public"],
 )
+
+# TODO(jamiesnape): Refactor the install logic repeated for multiple external
+# targets.
+
+py_binary(
+    name = "create-cps",
+    srcs = ["@//tools:nlopt-create-cps.py"],
+    main = "@//tools:nlopt-create-cps.py",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cps",
+    srcs = ["nlopt_config.h"],
+    outs = ["nlopt.cps"],
+    cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+    tools = [":create-cps"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_exports",
+    srcs = ["nlopt.cps"],
+    outs = ["NLoptConfig.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_package_version",
+    srcs = ["nlopt.cps"],
+    outs = ["NLoptConfigVersion.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+install_files(
+    name = "install_cmake",
+    dest = "lib/cmake/nlopt",
+    files = [
+        "NLoptConfig.cmake",
+        "NLoptConfigVersion.cmake",
+    ],
+    strip_prefix = ["**/"],
+)
+
+install(
+    name = "install",
+    doc_dest = "share/doc/nlopt",
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/nlopt",
+    docs = [
+        "AUTHORS",
+        "NEWS",
+    ],
+    license_docs = glob([
+        "**/COPYING",
+        "**/COPYRIGHT",
+    ]),
+    targets = [":nlopt"],
+    deps = [":install_cmake"],
+)
+
+python_lint()
