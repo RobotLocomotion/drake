@@ -57,12 +57,12 @@ class Context {
   // Accessors and Mutators for Accuracy.
 
   /// Returns the accuracy setting (if any).
-  const drake::optional<T>& get_accuracy() const { return accuracy_; }
+  const optional<T>& get_accuracy() const { return accuracy_; }
 
   /// Gets a mutable pointer to the accuracy setting.
   /// TODO(edrumwri) Invalidate all cached time- and state-dependent
   /// computations.
-  drake::optional<T>* get_mutable_accuracy() { return &accuracy_; }
+  optional<T>* get_mutable_accuracy() { return &accuracy_; }
 
   // =========================================================================
   // Accessors and Mutators for State.
@@ -377,7 +377,7 @@ class Context {
   /// Requires a constructor T(double).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
-    drake::optional<T>& accuracy = *get_mutable_accuracy();
+    optional<T>& accuracy = *get_mutable_accuracy();
     if (source.get_accuracy())
       accuracy = T(source.get_accuracy().value());
     get_mutable_state()->SetFrom(source.get_state());
@@ -454,7 +454,7 @@ class Context {
   StepInfo<T> step_info_;
 
   // Accuracy setting.
-  drake::optional<T> accuracy_;
+  optional<T> accuracy_;
 
   // The context of the enclosing Diagram, used in EvalInputPort.
   // This pointer MUST be treated as a black box. If you call any substantive
