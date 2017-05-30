@@ -36,6 +36,7 @@ install(
     name = "install",
     deps = [
         "@eigen//:install",
+        "@ipopt//:install",
         "@lcm//:install",
         "@nlopt//:install",
         "@pybind11//:install",

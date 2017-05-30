@@ -1,5 +1,10 @@
 # -*- python -*-
 
+load("@//tools:install.bzl", "install", "install_files")
+load("@//tools:python_lint.bzl", "python_lint")
+
+package(default_visibility = ["//visibility:public"])
+
 # We build IPOPT by shelling out to autotools.
 
 # We run autotools in a genrule, and only files explicitly identified as outputs
@@ -123,9 +128,67 @@ cc_library(
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
     linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        "@gfortran",
-    ],
+    deps = ["@gfortran"],
     alwayslink = 1,
 )
+
+# TODO(jamiesnape): Refactor the install logic repeated for multiple external
+# targets.
+
+py_binary(
+    name = "create-cps",
+    srcs = ["@//tools:ipopt-create-cps.py"],
+    main = "@//tools:ipopt-create-cps.py",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cps",
+    srcs = ["Ipopt/src/Common/config_ipopt_default.h"],
+    outs = ["ipopt.cps"],
+    cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+    tools = [":create-cps"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_exports",
+    srcs = ["ipopt.cps"],
+    outs = ["IPOPTConfig.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "cmake_package_version",
+    srcs = ["ipopt.cps"],
+    outs = ["IPOPTConfigVersion.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+install_files(
+    name = "install_cmake",
+    dest = "lib/cmake/ipopt",
+    files = [
+        "IPOPTConfig.cmake",
+        "IPOPTConfigVersion.cmake",
+    ],
+    strip_prefix = ["**/"],
+)
+
+# TODO(jamiesnape): At the moment libipopt.a has gone AWOL.
+install(
+    name = "install",
+    doc_dest = "share/doc/ipopt",
+    guess_hdrs = "PACKAGE",
+    hdr_strip_prefix = ["include/coin"],
+    hdr_dest = "include/ipopt",
+    license_docs = glob(["**/LICENSE"]),
+    targets = [":ipopt"],
+    deps = [":install_cmake"],
+)
+
+python_lint()
