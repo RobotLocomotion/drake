@@ -54,17 +54,6 @@ class Context {
   }
 
   // =========================================================================
-  // Accessors and Mutators for Accuracy.
-
-  /// Returns the accuracy setting (if any).
-  const optional<T>& get_accuracy() const { return accuracy_; }
-
-  /// Gets a mutable pointer to the accuracy setting.
-  /// TODO(edrumwri) Invalidate all cached time- and state-dependent
-  /// computations.
-  optional<T>* get_mutable_accuracy() { return &accuracy_; }
-
-  // =========================================================================
   // Accessors and Mutators for State.
 
   virtual const State<T>& get_state() const = 0;
@@ -358,6 +347,17 @@ class Context {
   }
 
   // =========================================================================
+  // Accessors and Mutators for Accuracy.
+
+  /// Returns the accuracy setting (if any).
+  const optional<T>& get_accuracy() const { return accuracy_; }
+
+  /// Sets the accuracy setting.
+  /// TODO(edrumwri) Invalidate all cached time- and state-dependent
+  /// computations.
+  void set_accuracy(const optional<T>& accuracy) { accuracy_ = accuracy; }
+
+  // =========================================================================
   // Miscellaneous Public Methods
 
   /// Returns a deep copy of this Context. The clone's input ports will
@@ -377,9 +377,8 @@ class Context {
   /// Requires a constructor T(double).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
-    optional<T>& accuracy = *get_mutable_accuracy();
     if (source.get_accuracy())
-      accuracy = T(source.get_accuracy().value());
+    set_accuracy(T(source.get_accuracy().value()));
     get_mutable_state()->SetFrom(source.get_state());
     get_mutable_parameters().SetFrom(source.get_parameters());
   }

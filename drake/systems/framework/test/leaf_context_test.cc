@@ -377,8 +377,7 @@ TEST_F(LeafContextTest, Accuracy) {
 
   // Verify that setting the accuracy is reflected in cloning.
   const double unity = 1.0;
-  auto& mutable_accuracy = *context_.get_mutable_accuracy();
-  mutable_accuracy = unity;
+  context_.set_accuracy(unity);
   std::unique_ptr<Context<double>> clone = context_.Clone();
   EXPECT_EQ(clone->get_accuracy().value(), unity);
 }
