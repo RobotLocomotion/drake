@@ -198,44 +198,6 @@ def drake_cc_googletest(
         deps=deps,
         **kwargs)
 
-# Collects the transitive closure of header files from ctx.attr.deps.
-def _transitive_hdrs_impl(ctx):
-    headers = set()
-    for dep in ctx.attr.deps:
-        # TODO(mwoehlke-kitware): Figure out a better way to exclude system
-        # headers from being slurped in?
-        headers += [h for h in dep.cc.transitive_headers
-                    if not "/_usr_" in h.path]
-    return struct(files=headers)
-
-_transitive_hdrs = rule(
-    attrs = {
-        "deps": attr.label_list(
-            allow_files = False,
-            providers = ["cc"],
-        ),
-    },
-    implementation = _transitive_hdrs_impl,
-)
-
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-
-def drake_header_tar(name, deps=[], **kwargs):
-    """Creates a .tar.gz that includes all the headers exported by the deps."""
-    # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`
-    # tacks a spurious `..` onto the paths of external headers, which we then
-    # have to clean up in package_drake.sh. It's not clear whether this is a
-    # Bazel bug, or a bug in these macros.
-    _transitive_hdrs(name=name + "_gather",
-                     deps=deps)
-    # We must specify a non-default strip prefix so that the tarball contains
-    # relative and not absolute paths.
-    pkg_tar(name=name,
-            extension="tar.gz",
-            mode="0644",
-            files=[":" + name + "_gather"],
-            strip_prefix="/")
-
 # Generate a file with specified content
 def _generate_file_impl(ctx):
     ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
