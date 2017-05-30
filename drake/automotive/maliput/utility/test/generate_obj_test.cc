@@ -293,6 +293,44 @@ maliput_monolane_builder:
 }
 
 
+TEST_F(GenerateObjBasicDutTest, HighlightedSegments) {
+  const std::string basename{"HighlightedSegments"};
+
+  // Construct a RoadGeometry with two segments.
+  {
+    mono::Builder b(kLaneBounds, kDriveableBounds,
+                    kLinearTolerance, kAngularTolerance);
+
+    const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
+    const mono::Endpoint start0{{0., 0., 0.}, kZeroZ};
+    auto c0 = b.Connect("0", start0, 2., kZeroZ);
+    b.Connect("1", c0->end(), 2., kZeroZ);
+    dut_ = b.Build({"dut"});
+  }
+
+  ObjFeatures features;
+  features.highlighted_segments.push_back(dut_->junction(1)->segment(0)->id());
+  GenerateObjFile(dut_.get(), directory_.getStr(), basename, features);
+
+  spruce::path actual_obj_path(directory_);
+  actual_obj_path.append(basename + ".obj");
+  EXPECT_TRUE(actual_obj_path.isFile());
+  paths_to_cleanup_.push_back(actual_obj_path);
+
+  spruce::path actual_mtl_path(directory_);
+  actual_mtl_path.append(basename + ".mtl");
+  EXPECT_TRUE(actual_mtl_path.isFile());
+  paths_to_cleanup_.push_back(actual_mtl_path);
+
+  std::string expected_obj_contents;
+  ReadExpectedData(basename + ".obj", &expected_obj_contents);
+
+  std::string actual_obj_contents;
+  ReadAsString(actual_obj_path, &actual_obj_contents);
+  EXPECT_EQ(expected_obj_contents, actual_obj_contents);
+}
+
+
 }  // namespace utility
 }  // namespace maliput
 }  // namespace drake
