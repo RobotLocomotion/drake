@@ -103,6 +103,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "indeterminate_variable",
+    srcs = ["indeterminate_variable.cc"],
+    hdrs = ["indeterminate_variable.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:number_traits",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "function",
     srcs = [],
     hdrs = ["function.h"],
@@ -150,6 +161,7 @@ drake_cc_library(
         ":create_constraint",
         ":create_cost",
         ":decision_variable",
+        ":indeterminate_variable",
         ":gurobi_solver",
         ":ipopt_solver",
         ":mosek_solver",
@@ -479,6 +491,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "decision_variable_test",
+    deps = [
+        ":mathematical_program",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "indeterminate_variable_test",
     deps = [
         ":mathematical_program",
         "//drake/common:eigen_matrix_compare",

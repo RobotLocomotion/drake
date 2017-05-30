@@ -31,6 +31,7 @@
 #include "drake/solvers/create_constraint.h"
 #include "drake/solvers/create_cost.h"
 #include "drake/solvers/decision_variable.h"
+#include "drake/solvers/indeterminate_variable.h"
 #include "drake/solvers/function.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
@@ -629,6 +630,167 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /// Adds indeterminate variables to this MathematicalProgram.
+  /**
+   * Adds indeterminate variables, appending them to an internal vector of any
+   * existing vars.
+   * @tparam rows  The number of rows in the new indeterminates.
+   * @tparam cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminateVariable of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * std::array<std::string, 6> names = {"x1", "x2", "x3", "x4", "x5", "x6"};
+   * auto x = prog.NewIndeterminateVariables<2, 3>(names);
+   * @endcode
+   * This adds a 2 x 3 matrix indeterminate variables into the program.
+   *
+   * The name of the indeterminates is only used for the user for understand.
+   */
+  template <int rows, int cols>
+  MatrixIndeterminateVariable<rows, cols> NewIndeterminateVariables(
+      const std::array<std::string, rows * cols>& names) {
+    MatrixIndeterminateVariable<rows, cols> indeterminate_variable_matrix;
+    NewIndeterminate_impl(names, indeterminate_variable_matrix);
+    return indeterminate_variable_matrix;
+  }
+
+  /// Adds indeterminate variables to this MathematicalProgram.
+  /**
+   * Adds indeterminate variables, appending them to an internal vector of any
+   * existing indeterminates.
+   * @param rows  The number of rows in the new indeterminates.
+   * @param cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminateVariable of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * std::array<std::string, 2> names = {"x1", "x2"};
+   * auto x = prog.NewIndeterminateVariables<2>(names);
+   * @endcode
+   * This adds a 2 vector indeterminate variables into the program.
+   *
+   * The name of the indeterminates is only used for the user for understand.
+   */
+  template <int rows>
+  VectorIndeterminateVariable<rows> NewIndeterminateVariables(
+      const std::array<std::string, rows>& names) {
+    return NewIndeterminateVariables<rows, 1>(names);
+  }
+
+  /// Adds indeterminate variables to this MathematicalProgram.
+  /**
+   * Adds indeterminate variables, appending them to an internal vector of any
+   * existing vars.
+   * @param rows  The number of rows in the new indeterminates.
+   * @param cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminateVariable of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+  * auto x = prog.NewIndeterminateVariables<2, 3>("X");
+  * @endcode
+      * This adds a 2 x 3 matrix indeterminate variables into the program.
+  *
+  * The name of the indeterminates is only used for the user for understand.
+  */
+
+  template <int rows, int cols>
+  MatrixIndeterminateVariable<rows, cols> NewIndeterminateVariables(
+      const std::string& name = "X") {
+    std::array<std::string, rows * cols> names;
+    for (int j = 0; j < cols; ++j) {
+      for (int i = 0; i < rows; ++i) {
+        names[j * rows + i] =
+            name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+      }
+    }
+    return NewIndeterminateVariables<rows, cols>(names);
+  }
+
+  /**
+ * Adds indeterminate variables to the program.
+ * The name for all newly added indeterminates are set to @p name. The default name
+ * is "x"
+ * @see NewIndeterminatesVariables(const std::array<std::string, rows>& names)
+ */
+  template <int rows>
+  VectorIndeterminateVariable<rows> NewIndeterminateVariables(
+      const std::string& name = "x") {
+    std::array<std::string, rows> names;
+    int offset = (name.compare("x") == 0) ? num_vars_ : 0;
+    for (int i = 0; i < rows; ++i) {
+      names[i] = name + "(" + std::to_string(offset + i) + ")";
+    }
+    return NewIndeterminateVariables<rows>(names);
+  }
+
+// TODO (FischerGundlach) Do I actually need the int row, or is the cast from size_t good enough?
+/*  MatrixXIndeterminateVariable NewIndeterminateVariables(
+      int rows, int cols, const std::vector<std::string>& names);
+
+  VectorXIndeterminateVariable NewIndeterminateVariables(
+      int rows, const std::vector<std::string>& names)*/ ;
+
+  /**
+   * Adds indeterminate variables to this MathematicalProgram.
+   * @see NewIndeterminateVariables(size_t rows, size_t cols, const
+   * std::vector<std::string>& names);
+   */
+  VectorXIndeterminateVariable NewIndeterminateVariables(
+      size_t rows, const std::vector<std::string>& names);
+
+  /**
+   * Adds indeterminate variables to this MathematicalProgram, with default name
+   * "x".
+   * @see NewIndeterminateVariables(size_t rows, size_t cols, const
+   * std::vector<std::string>& names);
+   */
+  VectorXIndeterminateVariable NewIndeterminateVariables(
+      size_t rows, const std::string& name = "x");
+
+  /// Adds indeterminate variables to this MathematicalProgram.
+  /**
+   * Adds indeterminate variables, appending them to an internal vector of any
+   * existing vars.
+   * @param rows  The number of rows in the new indeterminates.
+   * @param cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminateVariable of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.NewIndeterminateVariables(2, 3, {"x1", "x2", "x3", "x4", "x5",
+   * "x6"});
+   * @endcode
+   * This adds a 2 x 3 matrix indeterminate variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  MatrixXIndeterminateVariable NewIndeterminateVariables(
+      size_t rows, size_t cols, const std::vector<std::string>& names);
+
+  /**
+   * Adds indeterminate variables to this MathematicalProgram, with default name
+   * "X". The new variables are returned and viewed as a matrix, with size
+   * @p rows x @p cols.
+   * @see NewIndeterminateVariables(size_t rows, size_t cols, const
+   * std::vector<std::string>& names);
+   */
+  MatrixXIndeterminateVariable NewIndeterminateVariables(
+      size_t rows, size_t cols, const std::string& name = "X");
 
   /**
    * Adds a generic cost to the optimization program.
@@ -2035,6 +2197,18 @@ class MathematicalProgram {
    */
   size_t FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
+  /** Getter for number of variables in the optimization program */
+  size_t num_indeterminates() const { return num_indeterminates_; }
+
+  /** Returns the index of the indeterminate variable. Internally the solvers thinks
+ * all indeterminates are stored in an array, and it acceses each individual
+ * indeterminatee using its index. This index is used when adding constraints
+ * and costs for each solver.
+ * @pre{@p var is a indeterminate variable in the mathematical program, otherwise
+ * this function throws a runtime error.}
+ */
+  size_t FindIndeterminateVariableIndex(const symbolic::Variable& var) const;
+
   /**
    * Gets the solution of an Eigen matrix of decision variables.
    * @tparam Derived An Eigen matrix containing Variable.
@@ -2087,13 +2261,29 @@ class MathematicalProgram {
     return decision_variables_(i);
   }
 
+  /** Getter for all indeterminate variables in the program. */
+  const VectorXIndeterminateVariable& indeterminate_variables() const {
+    return indeterminate_variables_;
+  }
+
+  /** Getter for the indeterminate variable with index @p i in the program. */
+  const symbolic::Variable& indeterminate_variable(int i) const {
+    return indeterminate_variables_(i);
+  }
+
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
   std::unordered_map<symbolic::Variable::Id, size_t> decision_variable_index_{};
 
   VectorXDecisionVariable decision_variables_;
-  std::vector<Binding<Cost>> generic_costs_;
+
+  std::unordered_map<symbolic::Variable::Id, size_t> indeterminate_variable_index_{};
+  size_t num_indeterminates_;
+  VectorXIndeterminateVariable indeterminate_variables_;
+
+  std::vector<Binding<Constraint>> generic_costs_;
+
   std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
   std::vector<Binding<LinearCost>> linear_costs_;
@@ -2239,6 +2429,46 @@ class MathematicalProgram {
       }
     }
   }
+
+  template <typename T>
+  void NewIndeterminate_impl(const T& names,
+      Eigen::Ref<MatrixXIndeterminateVariable> indeterminate_variable_matrix) {
+
+    int rows = indeterminate_variable_matrix.rows();
+    int cols = indeterminate_variable_matrix.cols();
+    int num_new_vars = rows * cols;
+
+    DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
+    indeterminate_variables_.conservativeResize(num_indeterminates_ + num_new_vars,
+                                           Eigen::NoChange);
+    int row_index = 0;
+    int col_index = 0;
+    for (int i = 0; i < num_new_vars; ++i) {
+
+      indeterminate_variables_(num_indeterminates_ + i) = symbolic::Variable(names[i]);
+
+      const size_t new_var_index = num_indeterminates_ + i;
+      indeterminate_variable_index_.insert(std::pair<size_t, size_t>(
+          indeterminate_variables_(new_var_index).get_id(), new_var_index));
+      indeterminate_variable_matrix(row_index, col_index) =
+          indeterminate_variables_(num_indeterminates_ + i);
+
+      // store the variable in column major.
+      if (row_index + 1 < rows) {
+        ++row_index;
+      } else {
+        ++col_index;
+        row_index = 0;
+      }
+
+    }
+    num_indeterminates_ += num_new_vars;
+  }
+
+  Binding<LinearEqualityConstraint> DoAddLinearEqualityConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& b);
+
 
   // Adds a linear constraint represented by a set of symbolic formulas to the
   // program.
