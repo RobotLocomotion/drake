@@ -194,16 +194,15 @@ void DepthSensor::ApplyLimits(VectorX<double>* distances) const {
 // TODO(sherm1) Should be accessing an already-calculated kinematics cache,
 // not recalculating.
 void DepthSensor::CalcPoseOutput(const Context<double>& context,
-                                 PoseVector<double>* output) const {
+                                 PoseVector<double>* pose_output) const {
+  DRAKE_ASSERT(pose_output != nullptr);
   VectorXd u = this->EvalEigenVectorInput(context, 0);
   auto q = u.head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
 
   const drake::Isometry3<double> X_WS =
       tree_.CalcFramePoseInWorldFrame(kinematics_cache, frame_);
-  PoseVector<double>* pose_output =
-      dynamic_cast<PoseVector<double>*>(output);
-  DRAKE_ASSERT(pose_output != nullptr);
+
   pose_output->set_translation(
       Eigen::Translation<double, 3>(X_WS.translation()));
   pose_output->set_rotation(Eigen::Quaternion<double>(X_WS.rotation()));

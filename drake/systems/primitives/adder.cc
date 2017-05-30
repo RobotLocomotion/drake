@@ -1,6 +1,5 @@
 #include "drake/systems/primitives/adder.h"
 
-#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -12,7 +11,6 @@
 
 namespace drake {
 namespace systems {
-
 
 template <typename T>
 Adder<T>::Adder(int num_inputs, int size) {
@@ -26,7 +24,7 @@ Adder<T>::Adder(int num_inputs, int size) {
 template <typename T>
 void Adder<T>::CalcSum(const Context<T>& context,
                        BasicVector<T>* sum) const {
-  auto sum_vector = sum->get_mutable_value();
+  Eigen::VectorBlock<VectorX<T>> sum_vector = sum->get_mutable_value();
 
   // Zeroes the output.
   sum_vector.setZero();

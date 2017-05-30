@@ -28,7 +28,7 @@ Demultiplexer<T>::Demultiplexer(int size, int output_ports_sizes) {
 
 template <typename T>
 void Demultiplexer<T>::CopyToOutput(const Context<T>& context,
-                                    OutputPortIndex oport,
+                                    OutputPortIndex port_index,
                                     BasicVector<T>* output) const {
   // All output ports have the same size as defined in the constructor.
   const int out_size = this->get_output_port(0).size();
@@ -37,7 +37,7 @@ void Demultiplexer<T>::CopyToOutput(const Context<T>& context,
   // value to avoid copy.
   auto in_vector = System<T>::EvalEigenVectorInput(context, 0);
   auto out_vector = output->get_mutable_value();
-  out_vector = in_vector.segment(oport * out_size, out_size);
+  out_vector = in_vector.segment(port_index * out_size, out_size);
 }
 
 template <typename T>
