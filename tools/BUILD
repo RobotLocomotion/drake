@@ -92,6 +92,8 @@ exports_create_cps_scripts([
     "nlopt",
     "pybind11",
     "spdlog",
+    "tinyobjloader",
+    "yaml_cpp",
 ])
 
 exports_files(
