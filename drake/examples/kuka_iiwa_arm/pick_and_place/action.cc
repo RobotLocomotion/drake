@@ -1,26 +1,43 @@
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/action.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/action.h"
 
 #include <limits>
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/lcmt_schunk_wsg_command.hpp"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
+Action::~Action() {}
+
+bool Action::ActionStarted() const {
+  if (act_start_time_ < 0) return false;
+  return true;
+}
+
+void Action::Reset() {
+  act_start_time_ = -1;
+}
+
+void Action::StartAction(double start_time) {
+  DRAKE_DEMAND(start_time >= 0);
+  act_start_time_ = start_time;
+}
+
+IiwaMove::IiwaMove() {}
+
 void IiwaMove::MoveJoints(const WorldState& est_state,
+                          const RigidBodyTree<double>& iiwa,
                           const std::vector<double>& time,
-                          const std::vector<VectorX<double>>& q) {
+                          const std::vector<VectorX<double>>& q,
+                          robotlocomotion::robot_plan_t* plan) {
   DRAKE_DEMAND(time.size() == q.size());
 
   std::vector<int> info(time.size(), 1);
   MatrixX<double> q_mat(q.front().size(), q.size());
   for (size_t i = 0; i < q.size(); ++i) q_mat.col(i) = q[i];
-  robotlocomotion::robot_plan_t plan =
-      EncodeKeyFrames(iiwa_, time, info, q_mat);
-  lcm_->publish(pub_channel_, &plan);
+  *plan = EncodeKeyFrames(iiwa, time, info, q_mat);
   StartAction(est_state.get_iiwa_time());
   finish_time_ = time.back();
 }
@@ -41,19 +58,25 @@ bool IiwaMove::ActionFinished(const WorldState& est_state) const {
   }
 }
 
-void WsgAction::OpenGripper(const WorldState& est_state) {
+WsgAction::WsgAction() {}
+
+void WsgAction::OpenGripper(const WorldState& est_state,
+                            lcmt_schunk_wsg_command* msg) {
   StartAction(est_state.get_wsg_time());
-  lcmt_schunk_wsg_command msg;
+  *msg = lcmt_schunk_wsg_command();
+  msg->utime = est_state.get_wsg_time() * 1e6;
   // Max aperture.
-  msg.target_position_mm = 110;
-  lcm_->publish(pub_channel_, &msg);
+  msg->target_position_mm = 110;
+  msg->force = 40;
 }
 
-void WsgAction::CloseGripper(const WorldState& est_state) {
+void WsgAction::CloseGripper(const WorldState& est_state,
+                             lcmt_schunk_wsg_command* msg) {
   StartAction(est_state.get_wsg_time());
-  lcmt_schunk_wsg_command msg;
-  msg.target_position_mm = 0;
-  lcm_->publish(pub_channel_, &msg);
+  *msg = lcmt_schunk_wsg_command();
+  msg->utime = est_state.get_wsg_time() * 1e6;
+  msg->target_position_mm = 0;
+  msg->force = 40;
 }
 
 bool WsgAction::ActionFinished(const WorldState& est_state) const {

@@ -15,9 +15,11 @@ package(
 drake_cc_library(
     name = "pick_and_place",
     srcs = [
+        "action.cc",
         "world_state.cc",
     ],
     hdrs = [
+        "action.h",
         "world_state.h",
     ],
     deps = [
@@ -27,6 +29,7 @@ drake_cc_library(
         "//drake/multibody/parsers",
         "//drake/util:lcm_util",
         "@bot_core_lcmtypes",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 
