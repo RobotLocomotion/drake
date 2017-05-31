@@ -5,6 +5,7 @@ set(drakeSensors_SRC_FILES
     depth_sensor.cc
     depth_sensor_output.cc
     depth_sensor_specification.cc
+    dropout_depth_sensor.cc
     gyroscope.cc
     gyroscope_output.cc
     rotary_encoders.cc)
@@ -16,6 +17,7 @@ set(drakeSensors_HEADERS
     depth_sensor.h
     depth_sensor_output.h
     depth_sensor_specification.h
+    dropout_depth_sensor.h
     gyroscope.h
     gyroscope_output.h
     image.h
