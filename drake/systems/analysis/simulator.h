@@ -52,13 +52,6 @@ namespace systems {
  * application. Otherwise, a default is provided which is adequate for most
  * systems.
  *
- * === Event detection, isolation, and handling.
- *
- * - accuracy not set + fixed step integration = no event isolation
- * - accuracy set + fixed step integration = event isolation to global scalar * dt * accuracy
- *   (equal to the previous case when accuracy >= 1)
- * - accuracy set + variable step integration = accuracy * scalar * system characteristic time
- *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * Instantiated templates for the following kinds of T's are provided and
