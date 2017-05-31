@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -60,6 +61,7 @@ class BodyFrame : public Frame<T> {
   /// to return the identity pose.
   Isometry3<T> CalcBodyPoseInThisFrame(
       const MultibodyTreeContext<T>& context) const final {
+    unused(context);
     return Isometry3<T>::Identity();
   }
 
@@ -71,6 +73,7 @@ class BodyFrame : public Frame<T> {
   Isometry3<T> CalcOffsetPoseInBody(
       const MultibodyTreeContext<T>& context,
       const Isometry3<T>& X_MF) const final {
+    unused(context);
     return X_MF;
   }
 
@@ -80,6 +83,7 @@ class BodyFrame : public Frame<T> {
   Isometry3<T> CalcBodyPoseInOtherFrame(
       const MultibodyTreeContext<T>& context,
       const Isometry3<T>& X_QF) const final {
+    unused(context);
     return X_QF;
   }
 
