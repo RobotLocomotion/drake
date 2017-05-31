@@ -34,10 +34,10 @@ without launching a preview::
 
     $ bazel build //drake/doc:sphinx.zip
 
-.. _documentation-generation-instructions-cmake:
+.. _documentation-generation-instructions-cmake-or-ninja:
 
-When using CMake
-================
+When using CMake or Ninja
+=========================
 
 Drake's documentation is built using the ``documentation`` build target.
 After building Drake like normal, execute::
