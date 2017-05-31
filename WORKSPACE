@@ -345,3 +345,18 @@ bitbucket_archive(
     build_file = "tools/sdformat.BUILD",
     strip_prefix = "osrf-sdformat-deca28cd6cd5",
 )
+
+load("//tools:vtk.bzl", "vtk_repository")
+vtk_repository(
+    name = "vtk",
+)
+
+pkg_config_package(
+    name = "libpng",
+    modname = "libpng",
+)
+
+pkg_config_package(
+    name = "zlib",
+    modname = "zlib",
+)
