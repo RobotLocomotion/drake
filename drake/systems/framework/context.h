@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
@@ -347,17 +346,6 @@ class Context {
   }
 
   // =========================================================================
-  // Accessors and Mutators for Accuracy.
-
-  /// Returns the accuracy setting (if any).
-  const optional<double>& get_accuracy() const { return accuracy_; }
-
-  /// Sets the accuracy setting.
-  /// TODO(edrumwri) Invalidate all cached time- and state-dependent
-  /// computations.
-  void set_accuracy(const optional<double>& accuracy) { accuracy_ = accuracy; }
-
-  // =========================================================================
   // Miscellaneous Public Methods
 
   /// Returns a deep copy of this Context. The clone's input ports will
@@ -377,7 +365,6 @@ class Context {
   /// Requires a constructor T(double).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
-    set_accuracy(source.get_accuracy());
     get_mutable_state()->SetFrom(source.get_state());
     get_mutable_parameters().SetFrom(source.get_parameters());
   }
@@ -450,9 +437,6 @@ class Context {
  private:
   // Current time and step information.
   StepInfo<T> step_info_;
-
-  // Accuracy setting.
-  optional<double> accuracy_;
 
   // The context of the enclosing Diagram, used in EvalInputPort.
   // This pointer MUST be treated as a black box. If you call any substantive
