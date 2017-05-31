@@ -314,7 +314,7 @@ TEST_F(DiagramContextTest, Accuracy) {
   const double unity = 1.0;
   context_->set_accuracy(unity);
   std::unique_ptr<Context<double>> clone = context_->Clone();
-  EXPECT_EQ(clone->get_accuracy().value(), unity);
+  EXPECT_EQ(clone->get_accuracy().value_or(999), unity);
 }
 
 }  // namespace
