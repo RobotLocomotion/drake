@@ -51,21 +51,17 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int get_num_velocities() const final { return nv;}
 
-  /// Sets the what is considered the _zero_ configuration for this mobilizer.
-  /// By default this method sets all generalized positions related to this
-  /// mobilizer to zero.
-  /// In general setting all generalized coordinates to zero does not represent
-  /// the _zero_ configuration and it might even not represent a mathematicaly
-  /// valid configuration. Consider for instance a quaternion mobilizer, for
-  /// which its _zero_ configuration corresponds to the quaternion [1, 0, 0, 0].
-  /// For those cases the specific mobilizers must override this method.
-  virtual void set_zero_configuration(systems::Context<T>* context) const {
+  /// Default implementation to Mobilizer::set_zero_configuration() that sets
+  /// all generalized positions related to this mobilizer to zero.
+  /// Be aware however that this default does not apply in general to all
+  /// mobilizers and specific subclases must override this method.
+  void set_zero_configuration(systems::Context<T>* context) const override {
     auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
     DRAKE_DEMAND(mbt_context != nullptr);
     get_mutable_positions(mbt_context).setZero();
   }
 
-  /// For internal use only.
+  /// For MultibodyTree internal use only.
   std::unique_ptr<BodyNode<T>> CreateBodyNode(
     const Body<T>* body, const Mobilizer<T>* mobilizer) const final;
 
@@ -74,6 +70,8 @@ class MobilizerImpl : public Mobilizer<T> {
   // static constexpr int i = 42; discouraged.
   // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
+
+  /// @name Helper Methods to Retrieve Entries from MultibodyTreeContext.
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
@@ -90,14 +88,17 @@ class MobilizerImpl : public Mobilizer<T> {
     return context->template get_mutable_state_segment<nq>(
         this->get_positions_start());
   }
+  /// @}
 
-  const Isometry3<T>& get_X_FM(PositionKinematicsCache<T>* pc) const {
-    return pc->get_X_FM(this->get_topology().body_node);
-  }
+  /// @name Helper Methods to Retrieve Entries from PositionKinematicsCache.
+  /// @{
 
+  /// Returns a mutable reference to the pose `X_FM` of the outboard frame M as
+  /// measured and expressed in the inboard frame F.
   Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
     return pc->get_mutable_X_FM(this->get_topology().body_node);
   }
+  /// @}
 };
 
 }  // namespace multibody

@@ -117,10 +117,10 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
     const MultibodyTreeContext<T>& context,
     PositionKinematicsCache<T>* pc) const {
   // TODO(amcastro-tri): Loop over bodies to update their position dependent
-  // kinematics. Essentially the pose X_BQ(qf_B) of each frame Q that is
-  // attached to the body measured and expressed in the body frame B.
+  // kinematics. This gives the chance to flexible bodies to update the pose
+  // X_BQ(qb_B) of each frame Q that is attached to the body.
   // Notice this loop can be performed in any order and each X_BQ(qf_B) is
-  // independent of all others. This could be performed even in parallel.
+  // independent of all others. This could even be performed in parallel.
 
   // Loop over all mobilizers to update their position dependent kinematics.
   // This updates the kinematics quantities only dependent on the rigid degrees

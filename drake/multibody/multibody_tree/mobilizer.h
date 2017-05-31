@@ -72,7 +72,7 @@ template<typename T> class BodyNode;
 /// fully specified by, [Seth 2010]:
 /// - X_FM(q): The pose of the outboard frame M as measured and expressed in the
 ///            inboard frame F, as a function of the mobilizer's generalized
-///            positions.
+///            positions. This is computed by CalcAcrossMobilizerTransform().
 /// - H_FM(q): the Jacobian matrix describing the relationship between
 ///            generalized velocities v and the spatial velocity `V_FM` by
 ///            `V_FM(q, v) = H_FM(q) * v`. `H_FM` is a `6 x nv` matrix.
@@ -187,26 +187,68 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @name Methods that Define a %Mobilizer
   /// @{
 
-  /// Computes the across-Mobilizer transform `X_FM(q)` ginven the vector of
+  /// Sets the what is considered the _zero_ configuration for `this` mobilizer.
+  /// Most often the _zero_ configuration will correspond to setting the vector
+  /// of generalized positions related to this mobilizer to zero. However, in
+  /// the general case, setting all generalized coordinates to zero does not
+  /// correspond to the _zero_ configuration and it might even not represent a
+  /// mathematicaly valid one. Consider for instance a quaternion mobilizer, for
+  /// which its _zero_ configuration corresponds to the quaternion [1, 0, 0, 0].
+  virtual void set_zero_configuration(systems::Context<T>* context) const = 0;
+
+  /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
+  /// frame F and the outboard frame M as a function of the vector of
   /// generalized postions `q`.
-  /// This method can be considered the *definition* of a given mobilizer.
+  /// %Mobilizer subclasses implementing this method can retrieve the fixed-size
+  /// vector of generalized positions for `this` mobilizer from `context` with:
+  ///
+  /// @code
+  /// auto q = this->get_positions(context);
+  /// @endcode
+  ///
+  /// While a mutable reference to the across-mobilizer transform is obtained
+  /// from the position kinematics `pc` with:
+  ///
+  /// @code
+  /// Isometry3<T>& X_FM = this->get_mutable_X_FM(pc);
+  /// @endcode
+  ///
+  /// Additionally, `context` can provide any other paramters the mobilizer
+  /// could depend on.
   virtual void CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const = 0;
 
   /// @}
 
+  /// Computes position dependent kinematics associated with `this` mobilizer
+  /// which inlude:
+  /// - X_FM(q): The pose of the outboard frame M as measured and expressed in
+  ///            the inboard frame F.
+  /// - H_FM(q): the Jacobian matrix describing the relationship between
+  ///            generalized velocities v and the spatial velocity `V_FM` by
+  ///            `V_FM(q, v) = H_FM(q) * v`.
+  /// - Hdot_FM(q): The time derivative of the Jacobian matrix allowing to
+  ///               compute the spatial acceleration between the F and M frames.
+  /// - N(q): The kinematic coupling matrix describing the relationship between
+  ///         the rate of change of generalized coordinates and the generalized
+  ///         velocities by `qdot = N(q) * v`.
+  ///
+  /// This method is used by MultibodyTree to update the position kinematics
+  /// quantities associated with `this` mobilizer.
   void CalcPositionKinematicsCache(
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const {
     this->CalcAcrossMobilizerTransform(context, pc);
   }
 
-  /// For internal use only.
+  /// For MultibodyTree internal use only.
   virtual std::unique_ptr<BodyNode<T>> CreateBodyNode(
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
  protected:
+  /// Returns the first entry in the global array of generalized coordinates in
+  /// the MultibodyTree model.
   int get_positions_start() const { return get_topology().positions_start; }
 
  private:

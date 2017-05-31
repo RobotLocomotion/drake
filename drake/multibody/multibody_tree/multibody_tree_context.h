@@ -98,7 +98,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return get_mutable_state_segment(get_num_positions(), get_num_velocities());
   }
 
-  /// Return a const fixed-size Eigen::VectorBlock of `count` elements
+  /// Returns a const fixed-size Eigen::VectorBlock of `count` elements
   /// referencing a segment in the state vector with its first element
   /// at `start`.
   template <int count>
