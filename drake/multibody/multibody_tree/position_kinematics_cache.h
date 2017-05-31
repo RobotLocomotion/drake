@@ -154,7 +154,6 @@ class PositionKinematicsCache {
   X_PoolType X_PB_pool_;  // Indexed by BodyNodeIndex.
   X_PoolType X_FM_pool_;  // Indexed by BodyNodeIndex.
   X_PoolType X_MB_pool_;  // Indexed by BodyNodeIndex.
-  //X_PoolType X_FB_pool_;  // Indexed by FrameIndex.
 };
 
 }  // namespace multibody

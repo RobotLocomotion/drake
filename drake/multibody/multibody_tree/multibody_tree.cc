@@ -126,7 +126,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // This updates the kinematics quantities only dependent on the rigid degrees
   // of freedom qr. These are: X_FM(qr), H_FM(qr), HdotTimesV(qr), N(qr).
   // Notice this loop can be performed in any order, even in parallel.
-  for (const auto& mobilizer: owned_mobilizers_)
+  for (const auto& mobilizer : owned_mobilizers_)
     mobilizer->CalcPositionKinematicsCache(context, pc);
 
   // With the kinematics information across mobilizer's and the kinematics
@@ -134,12 +134,12 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
   for (int level = 1; level < get_num_levels(); ++level) {
-    for (BodyNodeIndex body_node_index: body_node_levels_[level]) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
-      
+
       DRAKE_ASSERT(node.get_topology().level == level);
       DRAKE_ASSERT(node.get_index() == body_node_index);
-      
+
       // Update per-node kinematics.
       node.CalcPositionKinematicsCache_BaseToTip(context, pc);
     }

@@ -97,7 +97,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void CalcAcrossMobilizerBodyPoses_BaseToTip(
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const {
-
     // Body for this node.
     const Body<T>& BodyB = get_body();
 
@@ -142,7 +141,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
  private:
-
   // =========================================================================
   // PositionKinematicsCache Accessors and Mutators.
 
@@ -168,49 +166,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
     topology_ = tree_topology.get_body_node(this->get_index());
   }
-
-#if 0
-  // Get from the position kinematics cache a constant reference to the pose
-  // X_PF of the "fixed" frame F as measured and expressed in the inboard
-  // (parent) body frame P.
-  const Isometry3<T>& get_X_PF(const PositionKinematicsCache<T>& pc) const {
-    const auto& pool = pc.get_X_BF_pool();
-    DRAKE_ASSERT(topology_.X_PF_index < static_cast<int>(pool.size()));
-    return pool[topology_.X_PF_index];
-  }
-
-  Isometry3<T>& get_mutable_X_PF(PositionKinematicsCache<T>* pc) const {
-    auto& pool = pc->get_mutable_X_BF_pool();
-    DRAKE_ASSERT(topology_.X_PF_index < static_cast<int>(pool.size()));
-    return pool[topology_.X_PF_index];
-  }
-#endif
-
-#if 0
-  const Isometry3<T>& get_X_FM(const PositionKinematicsCache<T>* pc) const {
-    return pc->get_X_FM(topology_.id);
-  }
-
-  const Isometry3<T>& get_X_WP(const PositionKinematicsCache<T>* pc) const {
-    return pc->get_X_WB(topology_.parent_body_node);
-  }
-
-  const Isometry3<T>& get_X_PB(const PositionKinematicsCache<T>* pc) const {
-    return pc->get_X_PB(topology_.id);
-  }
-
-  Isometry3<T>& get_mutable_X_PB(PositionKinematicsCache<T>* pc) const {
-    return pc->get_mutable_X_PB(topology_.id);
-  }
-
-  const Isometry3<T>& get_X_WB(const PositionKinematicsCache<T>* pc) const {
-    return pc->get_X_WB(topology_.id);
-  }
-
-  Isometry3<T>& get_mutable_X_WB(PositionKinematicsCache<T>* pc) const {
-    return pc->get_mutable_X_WB(topology_.id);
-  }
-#endif
 };
 
 }  // namespace multibody

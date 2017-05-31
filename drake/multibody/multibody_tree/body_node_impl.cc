@@ -1,15 +1,6 @@
 #include "drake/multibody/multibody_tree/body_node_impl.h"
 
-#include <memory>
-#include <vector>
-
-#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/mobilizer.h"
-//#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/multibody_tree_context.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 
 namespace drake {
 namespace multibody {

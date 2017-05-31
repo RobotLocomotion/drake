@@ -409,17 +409,18 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
 
       // Expected pose of the upper link in the world frame.
       Isometry3d X_WU_expected = /* X_WSo * X_SoU */
-          AngleAxisd(shoulder_angle, Vector3d::UnitZ()) * Translation3d(p_UBcm_);
+          AngleAxisd(shoulder_angle, Vector3d::UnitZ()) * /* X_WSo */
+          Translation3d(p_UBcm_);                         /* X_SoU */
 
       // Expected pose of the lower link in the world frame.
       Isometry3d X_WL_expected = /* X_WSo * X_SoEi * X_EiEo * X_EoL */
-          AngleAxisd(shoulder_angle, Vector3d::UnitZ()) *
-              Translation3d(Vector3d(0.0, -link_length, 0.0)) *
-              AngleAxisd(elbow_angle, Vector3d::UnitZ()) *
-              Translation3d(p_LBcm_);
+          AngleAxisd(shoulder_angle, Vector3d::UnitZ()) *        /* X_WSo  */
+              Translation3d(Vector3d(0.0, -link_length, 0.0)) *  /* X_SoEi */
+              AngleAxisd(elbow_angle, Vector3d::UnitZ()) *       /* X_EiEo */
+              Translation3d(p_LBcm_);                            /* X_EoL */
 
-      // Asserts that the retrieved poses match with the ones specified by the unit
-      // test method SetPendulumPoses().
+      // Asserts that the retrieved poses match with the ones specified by the
+      // unit test method SetPendulumPoses().
       EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
       EXPECT_TRUE(X_WU.matrix().isApprox(X_WU_expected.matrix()));
       EXPECT_TRUE(X_WL.matrix().isApprox(X_WL_expected.matrix()));
