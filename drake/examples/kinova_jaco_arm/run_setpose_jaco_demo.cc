@@ -83,9 +83,9 @@ int DoMain() {
   builder.Connect(state_out_port, controller->get_input_port_estimated_state());
 
   // Connects the controller torque output to plant.
-  const auto& torque_out_port =
+  const auto& torque_input_port =
       plant->model_instance_actuator_command_input_port(kInstanceId);
-  builder.Connect(controller->get_output_port_control(), torque_out_port);
+  builder.Connect(controller->get_output_port_control(), torque_input_port);
 
   // Connects the visualizer and builds the diagram.
   builder.Connect(plant->get_output_port(0), visualizer->get_input_port(0));

@@ -1,10 +1,11 @@
 /// @file
 ///
-/// This demo sets up a position controlled and gravity compensated KUKA iiwa
+/// This demo sets up a position controlled and gravity compensated Kinova Jaco
 /// robot within a simulation to follow an arbitrarily designed plan. The
 /// generated plan takes the arm from the zero configuration through a motion
 /// that reaches a Cartesian position in space, and then repeats this reaching
-/// task while applying a joint configuration constraint.
+/// task while applying a joint configuration constraint. Note that the
+/// end-effector orientation is not constrained in this demo.
 
 #include <iostream>
 #include <memory>
@@ -42,7 +43,8 @@ const char kRelUrdfPath[] =
     "/manipulation/models/jaco_description/urdf/j2n6s300.urdf";
 
 std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
-  std::string kUrdfPath = drake::GetDrakePath() + std::string(kRelUrdfPath);
+  const std::string kUrdfPath =
+      drake::GetDrakePath() + std::string(kRelUrdfPath);
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       kUrdfPath, multibody::joints::kFixed, tree.get());
@@ -89,7 +91,7 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   // the end effector constraint. The variable `joint_position_start_idx`
   // below is a collection of offsets into the state vector referring to the
   // positions of the joints to be constrained.
-  VectorXi joint_position_start_idx(1);
+  Vector1<int> joint_position_start_idx;
   joint_position_start_idx(0) =
       tree->FindChildBodyOfJoint("j2n6s300_joint_1")
       ->get_position_start_index();
@@ -154,7 +156,8 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
 
-  std::string kUrdfPath = drake::GetDrakePath() + std::string(kRelUrdfPath);
+  const std::string kUrdfPath =
+      drake::GetDrakePath() + std::string(kRelUrdfPath);
 
   drake::lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
@@ -196,16 +199,16 @@ int DoMain() {
                   controller->get_input_port_desired_state());
 
   // Connects the state port to the controller.
-  static const int kInstanceId =
+  const int kInstanceId =
       RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
   const auto& state_out_port =
       plant->model_instance_state_output_port(kInstanceId);
   builder.Connect(state_out_port, controller->get_input_port_estimated_state());
 
   // Connects the controller torque output to plant.
-  const auto& torque_out_port =
+  const auto& torque_input_port =
       plant->model_instance_actuator_command_input_port(kInstanceId);
-  builder.Connect(controller->get_output_port_control(), torque_out_port);
+  builder.Connect(controller->get_output_port_control(), torque_input_port);
 
   // Connects the visualizer and builds the diagram.
   builder.Connect(plant->get_output_port(0), visualizer->get_input_port(0));
