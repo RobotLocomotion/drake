@@ -10,11 +10,13 @@
 #include <lcm/lcm-cpp.hpp>
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/action.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_common.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/world_state.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -26,6 +28,64 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 namespace {
+
+class WorldStateSubscriber {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorldStateSubscriber)
+
+  WorldStateSubscriber(lcm::LCM* lcm, WorldState* state)
+      : lcm_(lcm),
+        state_(state) {
+    DRAKE_DEMAND(state);
+
+    lcm_subscriptions_.push_back(
+        lcm_->subscribe("IIWA_STATE_EST",
+                        &WorldStateSubscriber::HandleIiwaStatus, this));
+    lcm_subscriptions_.push_back(
+        lcm_->subscribe("SCHUNK_WSG_STATUS",
+                        &WorldStateSubscriber::HandleWsgStatus, this));
+    lcm_subscriptions_.push_back(
+        lcm_->subscribe("OBJECT_STATE_EST",
+                        &WorldStateSubscriber::HandleObjectStatus, this));
+  }
+
+  ~WorldStateSubscriber() {
+    for (lcm::Subscription* sub : lcm_subscriptions_) {
+      int status = lcm_->unsubscribe(sub);
+      DRAKE_DEMAND(status == 0);
+    }
+    lcm_subscriptions_.clear();
+  }
+
+ private:
+  // Handles iiwa states from the LCM message.
+  void HandleIiwaStatus(const lcm::ReceiveBuffer*, const std::string&,
+                        const bot_core::robot_state_t* iiwa_msg) {
+    DRAKE_DEMAND(iiwa_msg != nullptr);
+    state_->HandleIiwaStatus(*iiwa_msg);
+  }
+
+  // Handles WSG states from the LCM message.
+  void HandleWsgStatus(const lcm::ReceiveBuffer*, const std::string&,
+                       const lcmt_schunk_wsg_status* wsg_msg) {
+    DRAKE_DEMAND(wsg_msg != nullptr);
+    state_->HandleWsgStatus(*wsg_msg);
+  }
+
+  // Handles object states from the LCM message.
+  void HandleObjectStatus(const lcm::ReceiveBuffer*,
+                          const std::string&,
+                          const bot_core::robot_state_t* obj_msg) {
+    DRAKE_DEMAND(obj_msg != nullptr);
+    state_->HandleObjectStatus(*obj_msg);
+  }
+
+  // LCM subscription management.
+  lcm::LCM* lcm_;
+  WorldState* state_;
+  std::list<lcm::Subscription*> lcm_subscriptions_;
+};
+
 
 using manipulation::planner::ConstraintRelaxingIk;
 
@@ -40,10 +100,8 @@ void RunPickAndPlaceDemo() {
   const std::string iiwa_end_effector_name = "iiwa_link_ee";
 
   // Makes a WorldState, and sets up LCM subscriptions.
-  WorldState env_state(iiwa_path, iiwa_end_effector_name, &lcm);
-  env_state.SubscribeToWsgStatus("SCHUNK_WSG_STATUS");
-  env_state.SubscribeToIiwaStatus("IIWA_STATE_EST");
-  env_state.SubscribeToObjectStatus("OBJECT_STATE_EST");
+  WorldState env_state(iiwa_path, iiwa_end_effector_name);
+  WorldStateSubscriber env_state_subscriber(&lcm, &env_state);
 
   // Spins until at least one message is received from every LCM channel.
   while (lcm.handleTimeout(10) == 0 || env_state.get_iiwa_time() == -1 ||

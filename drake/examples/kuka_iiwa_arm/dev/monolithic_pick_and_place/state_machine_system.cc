@@ -8,7 +8,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/action_primitives/action_primitives_common.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_common.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/synchronous_world_state.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_common.h"
 
 using bot_core::robot_state_t;
@@ -74,7 +73,8 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
       planner_(std::make_unique<ConstraintRelaxingIk>(
           drake::GetDrakePath() + kIiwaUrdf, kIiwaEndEffectorName, iiwa_base_)),
       world_state_(
-          std::make_unique<SynchronousWorldState>(planner_->get_robot())) {
+          std::make_unique<pick_and_place::WorldState>(
+              drake::GetDrakePath() + kIiwaUrdf, kIiwaEndEffectorName)) {
   input_port_iiwa_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_box_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_wsg_status_ = this->DeclareAbstractInputPort().get_index();
@@ -173,9 +173,9 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
       this->EvalAbstractInput(context, input_port_wsg_action_status_)
           ->GetValue<ActionPrimitiveState>();
 
-  world_state_->UnpackIiwaStatusMessage(&iiwa_state);
-  world_state_->UnpackWsgStatusMessage(&wsg_status);
-  world_state_->UnpackObjectStatusMessage(&box_state);
+  world_state_->HandleIiwaStatus(iiwa_state);
+  world_state_->HandleWsgStatus(wsg_status);
+  world_state_->HandleObjectStatus(box_state);
 
   IKResults ik_res;
   std::vector<double> times;
