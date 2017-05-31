@@ -83,6 +83,11 @@ exports_files(
 )
 
 exports_files(
+    ["ipopt-create-cps.py"],
+    visibility = ["@ipopt//:__pkg__"],
+)
+
+exports_files(
     ["lcm-create-cps.py"],
     visibility = ["@lcm//:__pkg__"],
 )
