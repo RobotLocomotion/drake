@@ -52,6 +52,13 @@ namespace systems {
  * application. Otherwise, a default is provided which is adequate for most
  * systems.
  *
+ * === Event detection, isolation, and handling.
+ *
+ * - accuracy not set + fixed step integration = no event isolation
+ * - accuracy set + fixed step integration = event isolation to global scalar * dt * accuracy
+ *   (equal to the previous case when accuracy >= 1)
+ * - accuracy set + variable step integration = accuracy * scalar * system characteristic time
+ *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * Instantiated templates for the following kinds of T's are provided and
@@ -138,6 +145,9 @@ class Simulator {
   void set_target_realtime_rate(double realtime_rate) {
     target_realtime_rate_ = std::max(realtime_rate, 0.);
   }
+
+  /// Sets the simulation accuracy. The simulation accuracy is a single meta
+  /// parameter that automatically
 
   /** Return the real time rate target currently in effect. The default is
    * zero, meaning the %Simulator runs as fast as possible. You can change the
@@ -280,7 +290,30 @@ class Simulator {
     return static_cast<U*>(integrator_.get());
   }
 
-
+  /// Gets the length of the interval used for witness function time isolation.
+  /// The length of the interval is determined differently to support multiple
+  /// applications, as described below:
+  ///
+  /// * **Simulations with continuous state advanced using integration with
+  ///   error control**: the isolation time interval will be the
+  ///   product of the system's characteristic time and the accuracy stored in
+  ///   the Context.
+  /// * **Simulations with continuous state advanced using integration with
+  ///   fixed steps**: the isolation time interval will be determined
+  ///   differently depending on whether the accuracy is set in the Context or
+  ///   not. If the accuracy *is* set in the Context, the nominally fixed
+  ///   steps for integrating continuous state will be subdivided until events
+  ///   have been isolated to the requisite interval length, which is computed
+  ///   as the step size times the accuracy in the Context. *Otherwise* (i.e.,
+  ///   accuracy is not set in the Context), the Simulator will not do any
+  ///   isolation whatsoever; this latter setting is appropriate for
+  ///   applications (e.g., direct transcription) where variable integration
+  ///   steps are not recommended.
+  ///
+  /// @throws std::logic_error() if the accuracy is not set in the Context
+  ///         *and* the Simulator's integrator is not operating in fixed-step
+  ///         mode.
+  T GetWitnessTimeIsolation() const;
 
   /**
    * Gets a constant reference to the system.
@@ -566,12 +599,42 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   }
 }
 
+template <class T>
+T Simulator<T>::GetWitnessTimeIsolation() const {
+  // The scale factor for witness isolation.
+  // TODO(edrumwri): Consider making this user-settable.
+  const double iso_scale_factor = 1.0;
+
+  // TODO(edrumwri): Acquire characteristic time properly from the system
+  //                 (i.e., modify the System to provide this value).
+  const double characteristic_time = 1.0;
+
+  // Get the accuracy setting.
+  const optional<double> accuracy = get_context().get_accuracy();
+
+  // Determine the length of the isolation interval.
+  if (integrator_->get_fixed_step_mode()) {
+    // Look for accuracy information.
+    if (accuracy) {
+      return iso_scale_factor * accuracy.value() *
+          integrator_->get_maximum_step_size();
+    } else {
+       return integrator_->get_maximum_step_size();
+    }
+  } else {
+    if (!accuracy) {
+      throw std::logic_error("Integrator is not operating in fixed step mode"
+                                 "and accuracy is not set in the context.");
+    }
+    return iso_scale_factor * accuracy.value() * characteristic_time;
+  }
+}
+
 // Isolates the first time at one or more witness functions triggered (in the
-// interval [t0, tf]), to the tolerances specified by the witness function(s).
+// interval [t0, tf]), to the requisite interval length.
 // @pre triggered_witnesses is empty and non-null (aborts if condition not met).
 // @post The context will be isolated to the first witness function trigger(s),
-//       to within the isolation tolerance specified by that (those) witness
-//       function(s).
+//       to within the requisite interval length.
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -589,12 +652,15 @@ void Simulator<T>::IsolateWitnessTriggers(
   // more powerful root finding methods, and/or introducing the concept of
   // a dead band.
 
-  // Set the time isolation tolerance multiplier, which is subject to the
-  // magnitude of the simulation time.
-  const T ttol_mult = max(T(1), T(abs(t0)));
-
   // Will need to alter the context repeatedly.
   Context<T>* context = get_mutable_context();
+
+  // Get the witness isolation interval length. The max computation is used
+  // because it is ineffectual to attempt to isolate intervals smaller than
+  // the current time in the context can allow.
+  const double eps = std::numeric_limits<double>::epsilon();
+  const T witness_iso_len = max(GetWitnessTimeIsolation(),
+                                max(T(1), T(abs(t0) * eps)));
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
@@ -659,7 +725,7 @@ void Simulator<T>::IsolateWitnessTriggers(
 
       // If the time is sufficiently isolated- to an absolute tolerance if t0
       // is small, to a relative tolerance if t0 is large- then quit.
-      if (b - a < witnesses[i]->get_time_isolation_tolerance() * ttol_mult) {
+      if (b - a < witness_iso_len) {
         // The trigger time is always at the right endpoint of the interval,
         // thereby ensuring that the witness will not trigger immediately when
         // the continuous state integration process continues (after the

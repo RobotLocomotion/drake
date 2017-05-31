@@ -165,6 +165,9 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
   EXPECT_EQ(1, num_publishes);
 }
 
+// TODO(edrumwri): Add tests for verifying that correct interval returned
+// in the case of multiple witness functions. See issue #6184.
+
 GTEST_TEST(SimulatorTest, SecondConstructor) {
   // Create the spring-mass sytem and context.
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);

@@ -51,13 +51,10 @@ namespace systems {
 /// been "bracketed" over an interval of time (i.e., it changes sign), that
 /// witness function will ideally cross zero only once in that interval.
 ///
-/// Since it is generally more intuitive to specify the time tolerance for which
-/// a witness should be considered to be triggered than it is to specify the
-/// tolerance for the witness function output (which would need to be
-/// specialized for each witness function), this is the only floating point
-/// parameter that needs to be tuned. The disadvantage of this scheme is that it
-/// always requires the length of the interval to be reduced to the time
-/// tolerance *and that each function evaluation (which requires numerical
+/// A witness function trigger time is isolated only to a small interval of
+/// time (as described in Simulator). The disadvantage of this scheme is that it
+/// always requires the length of the interval to be reduced to the requisite
+/// length *and that each function evaluation (which requires numerical
 /// integration) is extraordinarily expensive*. If, for example, the (slow)
 /// bisection algorithm were used to isolate the time interval, the number of
 /// integrations necessary to cut the interval from a length of ℓ to a length of
@@ -117,15 +114,6 @@ class WitnessFunction {
     DRAKE_ASSERT_VOID(system_.CheckValidContext(context));
     return DoEvaluate(context);
   }
-
-  /// Derived classes can override this function to specify the absolute time
-  /// tolerance with which to isolate the first witness trigger. Default
-  /// implementation returns 10 * machine epsilon.
-  /// @note Simulator will not attempt to isolate the witness function trigger
-  ///       time to an interval smaller than the integrator's working minimum
-  ///       step size (see IntegratorBase::get_working_minimum_step_size()).
-  virtual T get_time_isolation_tolerance() const { return
-      T(10 * std::numeric_limits<double>::epsilon()); }
 
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
