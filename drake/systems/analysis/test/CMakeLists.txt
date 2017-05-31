@@ -15,6 +15,11 @@ target_link_libraries(runge_kutta2_integrator_test
         drakeSystemAnalysis drakeSystemFramework drakeCommon
         drakeSpringMassSystemPlant)
 
+drake_add_cc_test(half_explicit_DAE1_solver_test)
+target_link_libraries(half_explicit_DAE1_solver_test
+        drakeSystemAnalysis drakeSystemFramework drakeCommon
+        drakeSpringMassSystemPlant)
+
 # TODO(edrumwri): remove this test when evaluating derivatives for
 # RigidBodyPlant does not fail when no geometry is present (specifically for
 # the minimal build case). See issue #4294.

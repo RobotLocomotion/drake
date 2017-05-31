@@ -12,6 +12,7 @@ drake_cc_library(
     hdrs = [],
     deps = [
         ":explicit_euler_integrator",
+        ":half_explicit_DAE1_solver",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":semi_explicit_euler_integrator",
@@ -32,6 +33,17 @@ drake_cc_library(
     name = "explicit_euler_integrator",
     srcs = [],
     hdrs = ["explicit_euler_integrator.h"],
+    deps = [
+        ":integrator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "half_explicit_DAE1_solver",
+    hdrs = [
+            "half_explicit_DAE1_solver.h",
+            "half_explicit_DAE1_solver-inl.h", 
+    ],
     deps = [
         ":integrator_base",
     ],
