@@ -520,7 +520,11 @@ class LeafSystem : public System<T> {
   /// no custom callback function, and its attribute field contains an
   /// Event<T>::PeriodicAttribute constructed from the specified @p period_sec
   /// and @p offset_set. The first tick will occur at t = @p offset_sec, and it
-  /// will recur at every @p period_sec thereafter.
+  /// will recur at every @p period_sec thereafter. Note that the periodic
+  /// events returned by system::CalcNextUpdateTime() will happen at a time
+  /// strictly after the querying time. E.g. if there is a periodic event with
+  /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
+  /// the returned event will happen at t = 5 not t = 0.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
   /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
@@ -539,8 +543,13 @@ class LeafSystem : public System<T> {
   /// @p event. A deep copy of @p event will be made and maintained by `this`.
   /// @p event's trigger type must be Event::TriggerType::kPeriodic or this
   /// method aborts. The first tick will occur at t = @p offset_sec, and it
-  /// will recur at every @p period_sec thereafter. Note that @p event's
-  /// attribute field is preserved.
+  /// will recur at every @p period_sec thereafter. Note that the periodic
+  /// events returned by system::CalcNextUpdateTime() will happen at a time
+  /// strictly after the querying time. E.g. if there is a periodic event with
+  /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
+  /// the returned event will happen at t = 5 not t = 0.
+  ///
+  /// Note that @p event's attribute field is preserved.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
   /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
