@@ -299,9 +299,9 @@ class Simulator {
   ///   have been isolated to the requisite interval length, which is computed
   ///   as the step size times the accuracy in the Context. *Otherwise* (i.e.,
   ///   accuracy is not set in the Context), the Simulator will not do any
-  ///   isolation whatsoever; this latter setting is appropriate for
-  ///   applications (e.g., direct transcription) where variable integration
-  ///   steps are not recommended.
+  ///   isolation whatsoever (witnesses will always trigger at the end of time
+  ///   step); this latter setting is appropriate for applications (e.g., direct
+  ///   transcription) where variable integration steps are not recommended.
   ///
   /// @throws std::logic_error() if the accuracy is not set in the Context
   ///         *and* the Simulator's integrator is not operating in fixed-step
@@ -612,15 +612,18 @@ T Simulator<T>::GetWitnessTimeIsolation() const {
       return iso_scale_factor * accuracy.value() *
           integrator_->get_maximum_step_size();
     } else {
-       return integrator_->get_maximum_step_size();
+      // This method should not be called for fixed step integration without
+      // setting accuracy.
+      DRAKE_ABORT();
     }
-  } else {
-    if (!accuracy) {
-      throw std::logic_error("Integrator is not operating in fixed step mode"
-                                 "and accuracy is not set in the context.");
-    }
-    return iso_scale_factor * accuracy.value() * characteristic_time;
   }
+
+  // Integration with error control isolation window determination.
+  if (!accuracy) {
+    throw std::logic_error("Integrator is not operating in fixed step mode"
+                               "and accuracy is not set in the context.");
+  }
+  return iso_scale_factor * accuracy.value() * characteristic_time;
 }
 
 // Isolates the first time at one or more witness functions triggered (in the
@@ -794,21 +797,27 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     wf_[i] = witness_functions[i]->Evaluate(context);
 
   // See whether a witness function triggered.
+  triggered_witnesses_.clear();
   bool witness_triggered = false;
   for (size_t i =0; i < witness_functions.size() && !witness_triggered; ++i) {
-      if (witness_functions[i]->should_trigger(w0_[i], wf_[i]))
+      if (witness_functions[i]->should_trigger(w0_[i], wf_[i])) {
         witness_triggered = true;
+        triggered_witnesses_.push_back(witness_functions[i]);
+      }
   }
 
   // Triggering requires isolating the witness function time.
   if (witness_triggered) {
-    // Isolate the time that the witness function.
-    triggered_witnesses_.clear();
-    IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
-                           &triggered_witnesses_);
+    // Isolate the time that the witness function triggered unless no time
+    // isolation is done.
+    if (!integrator_->get_fixed_step_mode() || context_->get_accuracy()) {
+      triggered_witnesses_.clear();
+      IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
+                             &triggered_witnesses_);
+    }
 
     // TODO(edrumwri): Store witness function(s) that triggered.
-    for (const WitnessFunction<T>* fn : witness_functions) {
+    for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->get_name(), context.get_time());
       update_actions->time = context.get_time();
