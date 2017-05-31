@@ -87,6 +87,11 @@ exports_files(
     visibility = ["@lcm//:__pkg__"],
 )
 
+exports_files(
+    ["pybind11-create-cps.py"],
+    visibility = ["@pybind11//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",
