@@ -12,7 +12,7 @@ namespace systems {
  * A second-order, explicit Runge Kutta integrator.
  */
 template <class T>
-class RungeKutta2Integrator : public IntegratorBase<T> {
+class RungeKutta2Integrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta2Integrator)
 
@@ -46,7 +46,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   int get_error_estimate_order() const override { return 0; }
 
  private:
-  void DoStepOnceFixedSize(const T& dt) override;
+  bool DoStep(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
@@ -57,7 +57,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
  * by IntegratorBase::Step().
  */
 template <class T>
-void RungeKutta2Integrator<T>::DoStepOnceFixedSize(const T& dt) {
+bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc = context->get_mutable_continuous_state_vector();
@@ -80,6 +80,9 @@ void RungeKutta2Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   // TODO(sherm1) Use better operators when available.
   xc->PlusEqScaled(dt / 2, xcdot1);
   xc->PlusEqScaled(-dt / 2, xcdot0);
+
+  // RK2 always succeeds at taking the step.
+  return true;
 }
 }  // namespace systems
 }  // namespace drake

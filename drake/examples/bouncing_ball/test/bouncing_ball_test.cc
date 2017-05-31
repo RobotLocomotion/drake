@@ -138,7 +138,7 @@ TEST_F(BouncingBallTest, Simulate) {
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
                                               simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-  simulator.get_mutable_integrator()->set_minimum_step_size(1e-3);
+  simulator.get_mutable_integrator()->set_requested_minimum_step_size(1e-3);
   simulator.get_mutable_integrator()->set_maximum_step_size(1e-3);
   simulator.Initialize();
 
@@ -169,7 +169,7 @@ TEST_F(BouncingBallTest, Simulate) {
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
                                               simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_fixed_step_mode(false);
-  simulator.get_mutable_integrator()->set_minimum_step_size(1e-8);
+  simulator.get_mutable_integrator()->set_requested_minimum_step_size(1e-8);
   simulator.get_mutable_integrator()->set_maximum_step_size(1e-2);
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
   simulator.Initialize();

@@ -101,7 +101,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double t_final = 1.0;
   double t;
   for (t = 0.0; std::abs(t - t_final) > dt; t += dt)
-    integrator.StepOnceAtMost(inf, inf, dt);
+    integrator.IntegrateAtMost(inf, inf, dt);
 
   EXPECT_NEAR(context->get_time(), 1., dt);  // Should be exact.
 
