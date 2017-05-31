@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_formula_visitor.h"
 
+#include <algorithm>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -8,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_formula_cell.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
@@ -21,6 +21,7 @@ using std::inserter;
 using std::make_shared;
 using std::set;
 using std::shared_ptr;
+using std::transform;
 
 using test::FormulaEqual;
 
@@ -34,140 +35,119 @@ using test::FormulaEqual;
 class NegationNormalFormConverter {
  public:
   // Converts @p f into an equivalent formula @c f' in NNF.
-  Formula Visit(const Formula& f) const { return Visit(f, true); }
+  Formula Visit(const Formula& f) { return Visit(f, true); }
 
  private:
   // Converts @p f into an equivalent formula @c f' in NNF. The parameter @p
   // polarity is to indicate whether it processes @c f (if @p polarity is
   // true) or @c ¬f (if @p polarity is false).
-  Formula Visit(const Formula& f, const bool polarity) const {
-    return VisitFormula<Formula>(*this, f, polarity);
+  Formula Visit(const Formula& f, const bool polarity) {
+    return VisitFormula<Formula>(this, f, polarity);
   }
   // Given formulas = {f₁, ..., fₙ} and a func : Formula → Formula,
   // map(formulas, func) returns a set {func(f₁), ... func(fₙ)}.
   set<Formula> map(const set<Formula>& formulas,
-                   const function<Formula(const Formula&)>& func) const {
+                   const function<Formula(const Formula&)>& func) {
     set<Formula> result;
     transform(formulas.cbegin(), formulas.cend(),
               inserter(result, result.begin()), func);
     return result;
   }
-  Formula operator()(const shared_ptr<FormulaFalse>& f,
-                     const bool polarity) const {
+  Formula VisitFalse(const Formula& f, const bool polarity) {
     // NNF(False)  = False
     // NNF(¬False) = True
     return polarity ? Formula::False() : Formula::True();
   }
-  Formula operator()(const shared_ptr<FormulaTrue>& f,
-                     const bool polarity) const {
+  Formula VisitTrue(const Formula& f, const bool polarity) {
     // NNF(True)  = True
     // NNF(¬True) = False
     return polarity ? Formula::True() : Formula::False();
   }
-  Formula operator()(const shared_ptr<FormulaVar>& f,
-                     const bool polarity) const {
+  Formula VisitVariable(const Formula& f, const bool polarity) {
     // NNF(b)  = b
     // NNF(¬b) = ¬b
-    return polarity ? Formula{f} : !Formula{f};
+    return polarity ? f : !f;
   }
-  Formula operator()(const shared_ptr<FormulaEq>& f,
-                     const bool polarity) const {
+  Formula VisitEqualTo(const Formula& f, const bool polarity) {
     // NNF(e1 = e2)    = (e1 = e2)
     // NNF(¬(e1 = e2)) = (e1 != e2)
-    return polarity ? Formula{f}
-                    : f->get_lhs_expression() != f->get_rhs_expression();
+    return polarity ? f : get_lhs_expression(f) != get_rhs_expression(f);
   }
-  Formula operator()(const shared_ptr<FormulaNeq>& f,
-                     const bool polarity) const {
+  Formula VisitNotEqualTo(const Formula& f, const bool polarity) {
     // NNF(e1 != e2)    = (e1 != e2)
     // NNF(¬(e1 != e2)) = (e1 = e2)
-    return polarity ? Formula{f}
-                    : f->get_lhs_expression() == f->get_rhs_expression();
+    return polarity ? f : get_lhs_expression(f) == get_rhs_expression(f);
   }
-  Formula operator()(const shared_ptr<FormulaGt>& f,
-                     const bool polarity) const {
+  Formula VisitGreaterThan(const Formula& f, const bool polarity) {
     // NNF(e1 > e2)    = (e1 > e2)
     // NNF(¬(e1 > e2)) = (e1 <= e2)
-    return polarity ? Formula{f}
-                    : f->get_lhs_expression() <= f->get_rhs_expression();
+    return polarity ? f : get_lhs_expression(f) <= get_rhs_expression(f);
   }
-  Formula operator()(const shared_ptr<FormulaGeq>& f,
-                     const bool polarity) const {
+  Formula VisitGreaterThanOrEqualTo(const Formula& f, const bool polarity) {
     // NNF(e1 >= e2)    = (e1 >= e2)
     // NNF(¬(e1 >= e2)) = (e1 < e2)
-    return polarity ? Formula{f}
-                    : f->get_lhs_expression() < f->get_rhs_expression();
+    return polarity ? f : get_lhs_expression(f) < get_rhs_expression(f);
   }
-  Formula operator()(const shared_ptr<FormulaLt>& f,
-                     const bool polarity) const {
+  Formula VisitLessThan(const Formula& f, const bool polarity) {
     // NNF(e1 < e2)    = (e1 < e2)
     // NNF(¬(e1 < e2)) = (e1 >= e2)
-    return polarity ? Formula{f}
-                    : f->get_lhs_expression() >= f->get_rhs_expression();
+    return polarity ? f : get_lhs_expression(f) >= get_rhs_expression(f);
   }
-  Formula operator()(const shared_ptr<FormulaLeq>& f,
-                     const bool polarity) const {
+  Formula VisitLessThanOrEqualTo(const Formula& f, const bool polarity) {
     // NNF(e1 <= e2)    = (e1 <= e2)
     // NNF(¬(e1 <= e2)) = (e1 > e2)
-    return polarity ? Formula{f}
-                    : f->get_lhs_expression() > f->get_rhs_expression();
+    return polarity ? f : get_lhs_expression(f) > get_rhs_expression(f);
   }
-  Formula operator()(const shared_ptr<FormulaAnd>& f,
-                     const bool polarity) const {
+  Formula VisitConjunction(const Formula& f, const bool polarity) {
     // NNF(f₁ ∧ ... ∨ fₙ)    = NNF(f₁) ∧ ... ∧ NNF(fₙ)
     // NNF(¬(f₁ ∧ ... ∨ fₙ)) = NNF(¬f₁) ∨ ... ∨ NNF(¬fₙ)
     const set<Formula> new_operands{
-        map(f->get_operands(), [this, &polarity](const Formula& formula) {
+        map(get_operands(f), [this, &polarity](const Formula& formula) {
           return this->Visit(formula, polarity);
         })};
     return polarity ? make_conjunction(new_operands)
                     : make_disjunction(new_operands);
   }
-  Formula operator()(const shared_ptr<FormulaOr>& f,
-                     const bool polarity) const {
+  Formula VisitDisjunction(const Formula& f, const bool polarity) {
     // NNF(f₁ ∨ ... ∨ fₙ)    = NNF(f₁) ∨ ... ∨ NNF(fₙ)
     // NNF(¬(f₁ ∨ ... ∨ fₙ)) = NNF(¬f₁) ∧ ... ∧ NNF(¬fₙ)
     const set<Formula> new_operands{
-        map(f->get_operands(), [this, &polarity](const Formula& formula) {
+        map(get_operands(f), [this, &polarity](const Formula& formula) {
           return this->Visit(formula, polarity);
         })};
     return polarity ? make_disjunction(new_operands)
                     : make_conjunction(new_operands);
   }
-  Formula operator()(const shared_ptr<FormulaNot>& f,
-                     const bool polarity) const {
+  Formula VisitNegation(const Formula& f, const bool polarity) {
     // NNF(¬f, ⊤) = NNF(f, ⊥)
     // NNF(¬f, ⊥) = NNF(f, ⊤)
-    return Visit(f->get_operand(), !polarity);
+    return Visit(get_operand(f), !polarity);
   }
-  Formula operator()(const shared_ptr<FormulaForall>& f,
-                     const bool polarity) const {
+  Formula VisitForall(const Formula& f, const bool polarity) {
     // NNF(∀v₁...vₙ. f)    =  ∀v₁...vₙ. f
     // NNF(¬(∀v₁...vₙ. f)) = ¬∀v₁...vₙ. f
     //
     // TODO(soonho-tri): The second case can be further reduced into
     // ∃v₁...vₙ. NNF(¬f). However, we do not have a representation
     // FormulaExists(∃) yet. Revisit this when we add FormulaExists.
-    return polarity ? Formula{f} : !Formula{f};
+    return polarity ? f : !f;
   }
-  Formula operator()(const shared_ptr<FormulaIsnan>& f,
-                     const bool polarity) const {
+  Formula VisitIsnan(const Formula& f, const bool polarity) {
     // NNF(isnan(f))  =  isnan(f)
     // NNF(¬isnan(f)) = ¬isnan(f)
-    return polarity ? Formula{f} : !Formula{f};
+    return polarity ? f : !f;
   }
-  Formula operator()(const shared_ptr<FormulaPositiveSemidefinite>& f,
-                     const bool polarity) const {
+  Formula VisitPositiveSemidefinite(const Formula& f, const bool polarity) {
     // NNF(psd(M))  =  psd(M)
     // NNF(¬psd(M)) = ¬psd(M)
-    return polarity ? Formula{f} : !Formula{f};
+    return polarity ? f : !f;
   }
 
   // Makes VisitFormula a friend of this class so that it can use private
   // operator()s.
   friend Formula drake::symbolic::VisitFormula<
       Formula, NegationNormalFormConverter, const bool&>(
-      const NegationNormalFormConverter&, const Formula&, const bool&);
+      NegationNormalFormConverter*, const Formula&, const bool&);
 };
 
 class SymbolicFormulaVisitorTest : public ::testing::Test {
