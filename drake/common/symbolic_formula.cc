@@ -215,6 +215,10 @@ Formula operator!(const Formula& f) {
   if (f.EqualTo(Formula::False())) {
     return Formula::True();
   }
+  // Simplification: ¬(¬f₁)  =>  f₁
+  if (is_negation(f)) {
+    return get_operand(f);
+  }
   return Formula{make_shared<FormulaNot>(f)};
 }
 
