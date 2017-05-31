@@ -639,7 +639,7 @@ class LeafSystem : public System<T> {
   /// allocator that simply copies the model when a new value object is needed.
   /// Alternatively a method can be provided that constructs a value object when
   /// invoked (those methods are conventionally, but not necessarily, named
-  /// `MakeSomething()` where `Something` is replace by the output port value
+  /// `MakeSomething()` where `Something` is replaced by the output port value
   /// type).
   ///
   /// Because output port values are ultimately stored in AbstractValue objects,
@@ -647,7 +647,7 @@ class LeafSystem : public System<T> {
   /// type must be BasicVector or a class derived from BasicVector. For abstract
   /// ports, the type must be copy constructible and copy assignable. For
   /// methods below that are not given an explicit model value or construction
-  /// method, the underlying type must be default constructible.
+  /// ("make") method, the underlying type must be default constructible.
   //@{
 
   /// Declares a vector-valued output port by specifying (1) a model vector of

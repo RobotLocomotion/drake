@@ -335,6 +335,8 @@ TEST_F(LeafSystemTest, DeclarePerStepActions) {
 
 // A system that exercises the model_value-based input and output ports,
 // as well as model-declared params.
+// TODO(sherm1) Add unit tests for default-constructed and explicit allocator
+// output ports.
 class DeclaredModelPortsSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredModelPortsSystem);
@@ -344,12 +346,52 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareVectorInputPort(MyVector2d());
     this->DeclareAbstractInputPort(Value<int>(22));
 
-    // We're not providing calculators for these output ports.
-    this->DeclareVectorOutputPort(BasicVector<double>(3), nullptr);
-    this->DeclareVectorOutputPort(MyVector4d(), nullptr);
-    this->DeclareAbstractOutputPort(Value<std::string>("44"), nullptr);
+    // Output port 0 uses a BasicVector base class model.
+    this->DeclareVectorOutputPort(BasicVector<double>(3),
+                                  &DeclaredModelPortsSystem::CalcBasicVector3);
+    // Output port 1 uses a class derived from BasicVector.
+    this->DeclareVectorOutputPort(MyVector4d(),
+                                  &DeclaredModelPortsSystem::CalcMyVector4d);
+    // Output port 2 uses a type-erased AbstractValue model (string inside).
+    this->DeclareAbstractOutputPort(
+        Value<std::string>("44"),
+        &DeclaredModelPortsSystem::CalcAbstractString);
+    // Output port 3 uses a concrete string model.
+    this->DeclareAbstractOutputPort(std::string("45"),
+                                    &DeclaredModelPortsSystem::CalcString);
 
     this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
+  }
+
+  const BasicVector<double>& expected_basic() const { return *expected_basic_; }
+  const MyVector4d& expected_myvector() const { return *expected_myvector_; }
+
+ private:
+  std::unique_ptr<BasicVector<double>> expected_basic_{
+      BasicVector<double>::Make(1., .5, .25)};
+  std::unique_ptr<MyVector4d> expected_myvector_{
+      MyVector4d::Make(4., 3., 2., 1.)};
+
+  void CalcBasicVector3(const Context<double>&,
+                        BasicVector<double>* out) const {
+    ASSERT_NE(out, nullptr);
+    EXPECT_EQ(out->size(), 3);
+    out->get_mutable_value() = expected_basic().get_value();
+  }
+
+  void CalcMyVector4d(const Context<double>&, MyVector4d* out) const {
+    ASSERT_NE(out, nullptr);
+    out->get_mutable_value() = expected_myvector().get_value();
+  }
+
+  void CalcAbstractString(const Context<double>&, AbstractValue* out) const {
+    ASSERT_NE(out, nullptr);
+    out->GetMutableValueOrThrow<std::string>() = "abstract string";
+  }
+
+  void CalcString(const Context<double>&, std::string* out) const {
+    ASSERT_NE(out, nullptr);
+    *out = "concrete string";
   }
 };
 
@@ -359,7 +401,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
   ASSERT_EQ(dut.get_num_input_ports(), 3);
-  ASSERT_EQ(dut.get_num_output_ports(), 3);
+  ASSERT_EQ(dut.get_num_output_ports(), 4);
 
   const InputPortDescriptor<double>& in0 = dut.get_input_port(0);
   const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
@@ -368,6 +410,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   const OutputPort<double>& out0 = dut.get_output_port(0);
   const OutputPort<double>& out1 = dut.get_output_port(1);
   const OutputPort<double>& out2 = dut.get_output_port(2);
+  const OutputPort<double>& out3 = dut.get_output_port(3);
 
   EXPECT_EQ(in0.get_data_type(), kVectorValued);
   EXPECT_EQ(in1.get_data_type(), kVectorValued);
@@ -376,6 +419,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
   EXPECT_EQ(out1.get_data_type(), kVectorValued);
   EXPECT_EQ(out2.get_data_type(), kAbstractValued);
+  EXPECT_EQ(out3.get_data_type(), kAbstractValued);
 
   EXPECT_EQ(in0.size(), 1);
   EXPECT_EQ(in1.size(), 2);
@@ -410,7 +454,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
 
 // Tests that Declare{Vector,Abstract}OutputPort flow through to allocating the
 // correct values.
-GTEST_TEST(ModelLeafSystemTest, ModelPortsOutput) {
+GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
   auto system_output = dut.AllocateOutput(*context);
@@ -432,6 +476,55 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsOutput) {
   std::string downcast_output2{};
   EXPECT_NO_THROW(downcast_output2 = output2->GetValueOrThrow<std::string>());
   EXPECT_EQ(downcast_output2, "44");
+
+  // Check that Value<string>("45") came out (even though we only specified
+  // a concrete string.
+  auto output3 = system_output->get_data(3);
+  ASSERT_NE(output3, nullptr);
+  std::string downcast_output3{};
+  EXPECT_NO_THROW(downcast_output3 = output3->GetValueOrThrow<std::string>());
+  EXPECT_EQ(downcast_output3, "45");
+}
+
+// Tests that calculator functions were generated correctly for the
+// model-based output ports.
+GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
+  DeclaredModelPortsSystem dut;
+  auto context = dut.CreateDefaultContext();
+
+  const OutputPort<double>& out0 = dut.get_output_port(0);
+  const OutputPort<double>& out1 = dut.get_output_port(1);
+  const OutputPort<double>& out2 = dut.get_output_port(2);
+  const OutputPort<double>& out3 = dut.get_output_port(3);
+
+  // These are all unique_ptr<AbstractValue>.
+  auto value0 = out0.Allocate(*context);
+  auto value1 = out1.Allocate(*context);
+  auto value2 = out2.Allocate(*context);
+  auto value3 = out3.Allocate(*context);
+
+  // Calculate.
+  out0.Calc(*context, value0.get());
+  out1.Calc(*context, value1.get());
+  out2.Calc(*context, value2.get());
+  out3.Calc(*context, value3.get());
+
+  // Downcast to concrete types.
+  const BasicVector<double>* vec0{};
+  const MyVector4d* vec1{};
+  const std::string* str2{};
+  const std::string* str3{};
+  EXPECT_NO_THROW(vec0 = &value0->GetValueOrThrow<BasicVector<double>>());
+  EXPECT_NO_THROW(vec1 = dynamic_cast<const MyVector4d*>(
+                      &value1->GetValueOrThrow<BasicVector<double>>()));
+  EXPECT_NO_THROW(str2 = &value2->GetValueOrThrow<std::string>());
+  EXPECT_NO_THROW(str3 = &value3->GetValueOrThrow<std::string>());
+
+  // Check the calculated values.
+  EXPECT_EQ(vec0->get_value(), dut.expected_basic().get_value());
+  EXPECT_EQ(vec1->get_value(), dut.expected_myvector().get_value());
+  EXPECT_EQ(*str2, "abstract string");
+  EXPECT_EQ(*str3, "concrete string");
 }
 
 // Tests that the leaf system reserved the declared parameters of interesting
