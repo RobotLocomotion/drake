@@ -65,21 +65,23 @@ class BodyFrame : public Frame<T> {
     return Isometry3<T>::Identity();
   }
 
-  /// Given the pose `X_MF` of frame `F` measured in this material frame `M`,
-  /// return the pose of frame `F` measured and expressed in the frame `B` of
-  /// the body to which this material frame is attached.
-  /// In this particular case since `this` material frame `M` IS the frame of
-  /// body `B`, this method directly returns `X_MF`.
+  /// Override for Frame::CalcBodyPoseInThisFrame() that given the offset pose
+  /// `X_FQ` of a frame Q measured in this frame F, computes the pose of frame
+  /// Q measured and expressed in the frame B of the body to which this frame
+  /// is attached.
+  /// In this particular case since `this` frame `F` **is** the frame of
+  /// body `B`, this method directly returns `X_FQ`.
   Isometry3<T> CalcOffsetPoseInBody(
       const MultibodyTreeContext<T>& context,
-      const Isometry3<T>& X_MF) const final {
+      const Isometry3<T>& X_FQ) const final {
     unused(context);
-    return X_MF;
+    return X_FQ;
   }
 
-  /// Returns the pose of the body B associated with this frame measured in a
-  /// frame Q, given the pose X_QF of this frame F measured in Q.
-  /// Since in this case F = B, this method simply returns X_QF = X_QB.
+  /// Returns the pose `X_QB` of the body B associated with this frame F
+  /// measured in a frame Q, given the pose `X_QF` of this frame F measured
+  /// in Q.
+  /// Since in this case `F = B`, this method simply returns `X_QB = X_QF`.
   Isometry3<T> CalcBodyPoseInOtherFrame(
       const MultibodyTreeContext<T>& context,
       const Isometry3<T>& X_QF) const final {
