@@ -181,6 +181,11 @@ drake_cc_library(
     hdrs = ["drake_path.h"],
     deps = [
         ":common",
+        ":find_resource",
+        "//drake/thirdParty:spruce",
+    ],
+    data = [
+        "cmake_project_source_dir.cc.in",
     ],
 )
 
