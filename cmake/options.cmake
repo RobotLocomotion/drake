@@ -257,7 +257,7 @@ macro(drake_setup_options)
 
   drake_system_dependency(
     VTK OPTIONAL PREFER_SYSTEM_VERSION REQUIRES VTK VERSION 5.10
-    ADDITIONAL_VERSIONS 5.8 --
+    ADDITIONAL_VERSIONS 5.8 7.1 8.0 --
     "Visualization ToolKit")
 
   drake_system_dependency(
