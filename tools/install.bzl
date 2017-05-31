@@ -426,6 +426,20 @@ Args:
 #BEGIN macros
 
 #------------------------------------------------------------------------------
+def exports_create_cps_scripts(packages):
+    """Export scripts that create CPS files to other packages.
+
+    Args:
+        packages (:obj:`list` of :obj:`str`): Bazel package names.
+    """
+
+    for package in packages:
+        native.exports_files(
+            ["{}-create-cps.py".format(package)],
+            visibility = ["@{}//:__pkg__".format(package)],
+        )
+
+#------------------------------------------------------------------------------
 def cmake_config(package, script, version_file):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
