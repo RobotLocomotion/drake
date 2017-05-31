@@ -80,13 +80,12 @@ class SpringMassSystem : public LeafSystem<T> {
 
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
-  /// @param[in] name The name of the system.
   /// @param[in] spring_constant_N_per_m The spring constant in N/m.
   /// @param[in] mass_Kg The actual value in Kg of the mass attached to the
   /// spring.
   /// @param[in] system_is_forced If `true`, the system has an input port for an
   /// external force. If `false`, the system has no inputs.
-  SpringMassSystem(const T& spring_constant_N_per_m, const T& mass_kg,
+  SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
   using MyContext = Context<T>;
@@ -102,10 +101,10 @@ class SpringMassSystem : public LeafSystem<T> {
   const OutputPortDescriptor<T>& get_output_port() const;
 
   /// Returns the spring constant k that was provided at construction, in N/m.
-  const T& get_spring_constant() const { return spring_constant_N_per_m_; }
+  double get_spring_constant() const { return spring_constant_N_per_m_; }
 
   /// Returns the mass m that was provided at construction, in kg.
-  const T& get_mass() const { return mass_kg_; }
+  double get_mass() const { return mass_kg_; }
 
   /// Gets the current position of the mass in the given Context.
   T get_position(const MyContext& context) const {
@@ -203,9 +202,59 @@ class SpringMassSystem : public LeafSystem<T> {
   T DoCalcNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides.
+  /// Allocates an output vector of type SpringMassStateVector<T>.
+  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
+      const OutputPortDescriptor<T>& descriptor) const override;
+
   void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
+
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
+
+  /// Returns the closed-form position and velocity solution for the unforced
+  /// spring-mass-damper from the given initial conditions.
+  /// @param x0 the position of the spring at time t = 0.
+  /// @param v0 the velocity of the spring at time t = 0.
+  /// @param tf the time at which to return the position and velocity.
+  /// @param[out] xf the position of the spring at time tf, on return.
+  /// @param[out] vf the velocity of the spring at time tf, on return.
+  /// @throws std::logic_error if xf or vf is nullptr or if the system is
+  ///         forced.
+  virtual void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
+                                        T* xf, T* vf) const {
+    using std::sqrt;
+    using std::sin;
+    using std::cos;
+
+    if (!xf || !vf)
+      throw std::logic_error("Passed final position/velocity is null.");
+    if (system_is_forced_)
+      throw std::logic_error("Can only compute closed form solution on "
+                                 "unforced system");
+
+    // d^2x/dt^2 = -kx/m
+    // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
+    // where omega = sqrt(k/m)
+    // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
+    // for t = 0, x(0) = c1, x'(0) = c2*omega
+
+    // Setup c1 and c2 for ODE constants.
+    const T omega = sqrt(get_spring_constant() / get_mass());
+    const T c1 = x0;
+    const T c2 = v0 / omega;
+    *xf = c1*cos(omega*tf) + c2*sin(omega*tf);
+    *vf = -c1*sin(omega*tf)*omega + c2*cos(omega*tf)*omega;
+  }
+
+ protected:
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    return new SpringMassSystem<AutoDiffXd>(this->get_spring_constant(),
+                                            this->get_mass(),
+                                            system_is_forced_);
+  }
+
+  // LeafSystem<T> override.
+  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 
  private:
   /// This system is not direct feedthrough.
@@ -245,8 +294,8 @@ class SpringMassSystem : public LeafSystem<T> {
     return get_mutable_state(context->get_mutable_continuous_state());
   }
 
-  const T spring_constant_N_per_m_{};
-  const T mass_kg_{};
+  const double spring_constant_N_per_m_{};
+  const double mass_kg_{};
   const bool system_is_forced_{false};
 };
 
