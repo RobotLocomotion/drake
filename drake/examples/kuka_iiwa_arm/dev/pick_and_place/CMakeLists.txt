@@ -1,6 +1,5 @@
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME pickAndPlaceDevCommon SOURCE_FILES
-      action.cc
       pick_and_place_common.cc)
   target_link_libraries(pickAndPlaceDevCommon
       drakeCommon
@@ -15,7 +14,6 @@ if(lcm_FOUND)
       robotlocomotion-lcmtypes-cpp)
   drake_install_libraries(pickAndPlaceDevCommon)
   drake_install_headers(
-      action.h
       pick_and_place_common.h)
   drake_install_pkg_config_file(pick-and-place-dev-common
       TARGET pickAndPlaceDevCommon
