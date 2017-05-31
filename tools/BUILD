@@ -78,6 +78,11 @@ exports_files(
 )
 
 exports_files(
+    ["bullet-create-cps.py"],
+    visibility = ["@bullet//:__pkg__"],
+)
+
+exports_files(
     ["eigen-create-cps.py"],
     visibility = ["@eigen//:__pkg__"],
 )

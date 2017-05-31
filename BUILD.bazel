@@ -35,6 +35,7 @@ exports_files(["LICENSE.TXT"])
 install(
     name = "install",
     deps = [
+        "@bullet//:install",
         "@eigen//:install",
         "@ipopt//:install",
         "@lcm//:install",
