@@ -88,6 +88,11 @@ exports_files(
 )
 
 exports_files(
+    ["nlopt-create-cps.py"],
+    visibility = ["@nlopt//:__pkg__"],
+)
+
+exports_files(
     ["pybind11-create-cps.py"],
     visibility = ["@pybind11//:__pkg__"],
 )
