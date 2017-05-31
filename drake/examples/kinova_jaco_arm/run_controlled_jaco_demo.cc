@@ -7,14 +7,13 @@
 /// task while applying a joint configuration constraint. Note that the
 /// end-effector orientation is not constrained in this demo.
 
-#include <iostream>
 #include <memory>
 
 #include <gflags/gflags.h>
 
-#include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -134,7 +133,6 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
       info_good = false;
     }
   }
-  printf("\n");
 
   if (!info_good) {
     throw std::runtime_error(
