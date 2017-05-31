@@ -33,6 +33,29 @@ namespace drake {
 namespace systems {
 namespace {
 
+// Tests witness function isolation when operating in fixed step mode without
+// specifying accuracy.
+GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
+  LogisticSystem system(1e-8, 100, 1);
+  double publish_time = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    publish_time = context.get_time();
+  });
+
+  const double dt = 1e-3;
+  Simulator<double> simulator(system);
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
+  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
+  simulator.set_publish_at_initialization(false);
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
+  (*context->get_mutable_continuous_state())[0] = -1;
+  simulator.StepTo(dt);
+
+  // Verify that the witness function triggered at dt.
+  EXPECT_EQ(publish_time, dt);
+}
+
 // Tests ability of simulation to identify the proper number of witness function
 // triggerings going from negative to non-negative witness function evaluation.
 // This particular example uses an empty system and a clock as the witness
