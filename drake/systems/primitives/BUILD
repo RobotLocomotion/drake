@@ -378,7 +378,7 @@ drake_cc_googletest(
         ":linear_system",
         ":signal_logger",
         "//drake/common:eigen_matrix_compare",
-        "//drake/systems/analysis",
+        "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
     ],
 )
