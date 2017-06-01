@@ -6,6 +6,7 @@ add_library_with_exports(LIB_NAME drakeMaliputDragway SOURCE_FILES
   segment.cc)
 
 target_link_libraries(drakeMaliputDragway
+  drakeAutomotive
   drakeCommon
 )
 

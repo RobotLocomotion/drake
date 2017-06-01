@@ -12,13 +12,13 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "common",
     srcs = [
-        "drake_assert.cc",
-        "drake_throw.cc",
+        "drake_assert_and_throw.cc",
         "text_logging.cc",
     ],
     hdrs = [
         "constants.h",
         "drake_assert.h",
+        "drake_assertion_error.h",
         "drake_compat.h",
         "drake_copyable.h",
         "drake_deprecated.h",
@@ -30,8 +30,8 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
-        "@eigen//:eigen",
-        "@spdlog//:spdlog",
+        "@eigen",
+        "@spdlog",
     ],
 )
 
@@ -72,7 +72,13 @@ drake_cc_library(
         ":common",
         ":cond",
         ":dummy_value",
+        ":eigen_autodiff_limits",
     ],
+)
+
+drake_cc_library(
+    name = "eigen_autodiff_limits",
+    hdrs = ["eigen_autodiff_limits.h"],
 )
 
 drake_cc_library(
@@ -119,6 +125,7 @@ drake_cc_library(
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
+        "symbolic_formula_visitor.cc",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -128,6 +135,7 @@ drake_cc_library(
         "symbolic_expression.h",
         "symbolic_expression_visitor.h",
         "symbolic_formula.h",
+        "symbolic_formula_visitor.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
@@ -155,29 +163,25 @@ drake_cc_library(
 # Miscellaneous utilities.
 
 drake_cc_library(
+    name = "find_resource",
+    srcs = ["find_resource.cc"],
+    hdrs = ["find_resource.h"],
+    deps = [
+        ":common",
+        "//drake/thirdParty:spruce",
+    ],
+)
+
+drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
     # drake_path are removed.
     # testonly = 1,
-    srcs = ["drake_path.cc"],
+    srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
     deps = [
         ":common",
     ],
-)
-
-# TODO(jwnimmer-tri) GetDrakePath has a long and storied history (#1471, #2174).
-# It serves multiple purposes (unit tests loading their models; installed demos
-# loading their models; etc.) but doesn't really do any of them well.  The rule
-# here in Bazel is intended as a temporary shim, in order to support Bazel and
-# CMake build systems concurrently.  We should endeavor to remove this rule (in
-# lieu of properly-declared data dependencies) once we are unchained from CMake.
-genrule(
-    name = "drake_path_genrule",
-    srcs = ["drake_path.cc.in"],
-    outs = ["drake_path.cc"],
-    # TODO(jwnimmer-tri) This should be an abspath, not relpath.
-    cmd = "sed 's#@PROJECT_SOURCE_DIR@#drake#g' $< > $@",
 )
 
 # TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
@@ -208,6 +212,12 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "is_memcpy_movable",
+    testonly = 1,
+    hdrs = ["test/is_memcpy_movable.h"],
+)
+
 cc_proto_library(
     name = "matlab_rpc",
     srcs = [
@@ -221,8 +231,8 @@ drake_cc_library(
     srcs = ["call_matlab.cc"],
     hdrs = ["call_matlab.h"],
     deps = [
-        "common",
-        "matlab_rpc",
+        ":common",
+        ":matlab_rpc",
     ],
 )
 
@@ -283,7 +293,7 @@ drake_cc_library(
     }),
     deps = [
         ":common",
-        "@gflags//:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -309,7 +319,7 @@ drake_cc_library(
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
     deps = [
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -380,6 +390,7 @@ drake_cc_googletest(
     ],
 )
 
+# Functional test of DRAKE_ASSERT at runtime.
 drake_cc_googletest(
     name = "drake_assert_test",
     deps = [
@@ -387,10 +398,60 @@ drake_cc_googletest(
     ],
 )
 
+# Same, but with assertions forced enabled.
+drake_cc_googletest(
+    name = "drake_assert_test_enabled",
+    srcs = ["test/drake_assert_test.cc"],
+    copts = [
+        "-DDRAKE_ENABLE_ASSERTS",
+        "-UDRAKE_DISABLE_ASSERTS",
+    ],
+    deps = [
+        ":common",
+    ],
+)
+
+# Same, but with assertions forced disabled.
+drake_cc_googletest(
+    name = "drake_assert_test_disabled",
+    srcs = ["test/drake_assert_test.cc"],
+    copts = [
+        "-UDRAKE_ENABLE_ASSERTS",
+        "-DDRAKE_DISABLE_ASSERTS",
+    ],
+    deps = [
+        ":common",
+    ],
+)
+
+# Functional test of DRAKE_ASSERT at compile time.
 drake_cc_googletest(
     name = "drake_assert_test_compile",
     deps = [
         ":common",
+        ":unused",
+    ],
+)
+
+# Needed by :drake_assert_test_compile_variants.
+genrule(
+    name = "capture_cc",
+    outs = ["capture_cc.env"],
+    cmd = "echo \"BAZEL_CC=$(CC)\" > '$@'",
+    visibility = ["//visibility:private"],
+)
+
+# Functional test that mistyped DRAKE_ASSERTs will failt to compile.
+sh_test(
+    name = "drake_assert_test_compile_variants",
+    srcs = ["test/drake_assert_test_compile_variants.sh"],
+    data = [
+        "capture_cc.env",
+        "drake_assert.h",
+        "drake_compat.h",
+        "test/drake_assert_test_compile.cc",
+        "unused.h",
+        "//tools:third_party/bazel/tools/cpp/osx_cc_wrapper.sh",
     ],
 )
 
@@ -463,6 +524,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "find_resource_test",
+    deps = [
+        ":find_resource",
+    ],
+    data = [
+        "test/find_resource_test_data.txt",
+    ],
+)
+
+drake_cc_googletest(
     name = "functional_form_test",
     deps = [
         ":common",
@@ -507,6 +578,13 @@ drake_cc_googletest(
     name = "is_dynamic_castable_test",
     deps = [
         ":is_dynamic_castable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_memcpy_movable_test",
+    deps = [
+        ":is_memcpy_movable",
     ],
 )
 
@@ -558,6 +636,7 @@ drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":common",
+        ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -629,6 +708,16 @@ drake_cc_googletest(
     name = "symbolic_formula_test",
     deps = [
         ":common",
+        ":is_memcpy_movable",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_formula_visitor_test",
+    deps = [
+        ":common",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -638,6 +727,7 @@ drake_cc_googletest(
     name = "symbolic_variable_test",
     deps = [
         ":common",
+        ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -668,7 +758,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "type_safe_index_test",
-    deps = [":type_safe_index"],
+    deps = [
+        ":type_safe_index",
+        ":unused",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_autodiff_types_test",
+    deps = [":autodiff"],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...

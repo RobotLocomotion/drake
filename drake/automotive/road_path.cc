@@ -7,6 +7,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/unused.h"
 #include "drake/math/saturate.h"
 
 namespace drake {
@@ -37,6 +38,7 @@ const PiecewisePolynomial<T>& RoadPath<T>::get_path() const {
 template <typename T>
 const T RoadPath<T>::GetClosestPathPosition(const Vector3<T>& geo_pos,
                                             const T& s_guess) const {
+  unused(geo_pos, s_guess);
   DRAKE_ABORT();
 }
 
@@ -58,7 +60,7 @@ const PiecewisePolynomial<T> RoadPath<T>::MakePiecewisePolynomial(
 
     GeoPosition geo_pos =
         ld.lane->ToGeoPosition({s_lane /* s */, 0. /* r */, 0. /* h */});
-    geo_knots[i] << T(geo_pos.x), T(geo_pos.y), T(geo_pos.z);
+    geo_knots[i] << T(geo_pos.x()), T(geo_pos.y()), T(geo_pos.z());
 
     // Take a step.
     if (ld.with_s) {
@@ -81,7 +83,7 @@ const PiecewisePolynomial<T> RoadPath<T>::MakePiecewisePolynomial(
           s_lane = cond(ld.with_s, T(ld.lane->length()), T(0.));
           geo_pos =
               ld.lane->ToGeoPosition({s_lane /* s */, 0. /* r */, 0. /* h */});
-          geo_knots[i + 1] << T(geo_pos.x), T(geo_pos.y), T(geo_pos.z);
+          geo_knots[i + 1] << T(geo_pos.x()), T(geo_pos.y()), T(geo_pos.z());
         }
         break;
       }

@@ -5,8 +5,8 @@
 
 #include "bot_core/robot_state_t.hpp"
 
-#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/synchronous_world_state.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
+#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/sparsity_matrix.h"
@@ -48,8 +48,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const systems::OutputPortDescriptor<double>& descriptor) const final;
 
   // This kind of a system is not a direct feedthrough.
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
-                              int input_port, int output_port) const final {
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
+                              int, int) const final {
     return false;
   }
 
@@ -148,8 +148,9 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
 
   const Isometry3<double> iiwa_base_;
 
-  const std::unique_ptr<IiwaIkPlanner> planner_{nullptr};
-  const std::unique_ptr<SynchronousWorldState> world_state_{nullptr};
+  const std::unique_ptr<
+    manipulation::planner::ConstraintRelaxingIk> planner_{nullptr};
+  const std::unique_ptr<pick_and_place::WorldState> world_state_{nullptr};
 };
 
 }  // namespace monolithic_pick_and_place

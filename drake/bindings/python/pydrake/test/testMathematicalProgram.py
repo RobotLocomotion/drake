@@ -7,6 +7,30 @@ from pydrake.solvers import mathematicalprogram as mp
 import pydrake.symbolic as sym
 
 
+class TestQP:
+    def __init__(self):
+        # Create a simple QP that uses all deduced linear constraint types,
+        # along with a quadratic and linear cost.
+        # The solution should be [1, 1].
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        self.prog = prog
+        self.x = x
+        self.constraints = [
+            # Bounding box
+            prog.AddLinearConstraint(x[0] >= 1),
+            # Bounding box
+            prog.AddLinearConstraint(sym.logical_and(x[1] >= 1, x[1] <= 2.)),
+            # Linear inequality
+            prog.AddLinearConstraint(3 * x[0] - x[1] <= 2),
+            # Linaer equality
+            prog.AddLinearConstraint(x[0] + 2 * x[1] == 3)]
+
+        # TODO(eric.cousineau): Add constant terms
+        self.costs = [prog.AddLinearCost(x[0] + x[1]),
+                      prog.AddQuadraticCost(0.5 * (x[0]**2 + x[1]**2))]
+
+
 class TestMathematicalProgram(unittest.TestCase):
     def test_program_construction(self):
         prog = mp.MathematicalProgram()
@@ -57,25 +81,40 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
 
     def test_bindings(self):
-        prog = mp.MathematicalProgram()
-        x = prog.NewContinuousVariables(2, "x")
-        prog.AddLinearConstraint(x[0] >= 1)
-        prog.AddLinearConstraint(x[1] >= 1)
-        prog.AddLinearConstraint(3 * x[0] - x[1] <= 2)
-        prog.AddLinearConstraint(x[0] + 2 * x[1] == 3)
-        cost = prog.AddQuadraticCost(0.5 * (x[0]**2 + x[1]**2))
-        self.assertTrue(np.allclose(cost.constraint().Q(), np.eye(2)))
-        self.assertTrue(np.allclose(cost.constraint().b(), np.zeros(2)))
+        qp = TestQP()
+        prog = qp.prog
+        x = qp.x
 
+        self.assertTrue(prog.linear_costs())
+        for (i, binding) in enumerate(prog.linear_costs()):
+            cost = binding.constraint()
+            self.assertTrue(np.allclose(cost.a(), np.ones((1, 2))))
+
+        self.assertTrue(prog.quadratic_costs())
+        for (i, binding) in enumerate(prog.quadratic_costs()):
+            cost = binding.constraint()
+            self.assertTrue(np.allclose(cost.Q(), np.eye(2)))
+            self.assertTrue(np.allclose(cost.b(), np.zeros(2)))
+
+        self.assertTrue(prog.bounding_box_constraints())
         for (i, binding) in enumerate(prog.bounding_box_constraints()):
             constraint = binding.constraint()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[i]))
-            self.assertTrue(np.allclose(constraint.A(), np.ones(1)))
-            self.assertEqual(constraint.lower_bound(), 1)
-            self.assertEqual(constraint.upper_bound(), np.inf)
+            num_constraints = constraint.num_constraints()
+            if num_constraints == 1:
+                self.assertEqual(constraint.A(), 1)
+                self.assertEqual(constraint.lower_bound(), 1)
+                self.assertEqual(constraint.upper_bound(), np.inf)
+            else:
+                self.assertTrue(np.allclose(constraint.A(), np.eye(2)))
+                self.assertTrue(np.allclose(constraint.lower_bound(),
+                                            [1, -np.inf]))
+                self.assertTrue(np.allclose(constraint.upper_bound(),
+                                            [np.inf, 2]))
 
+        self.assertTrue(prog.linear_constraints())
         for (i, binding) in enumerate(prog.linear_constraints()):
             constraint = binding.constraint()
             self.assertEqual(
@@ -88,6 +127,7 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertTrue(constraint.lower_bound(), -2)
             self.assertTrue(constraint.upper_bound(), np.inf)
 
+        self.assertTrue(prog.linear_equality_constraints())
         for (i, binding) in enumerate(prog.linear_equality_constraints()):
             constraint = binding.constraint()
             self.assertEqual(
@@ -107,19 +147,29 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
 
     def test_eval_binding(self):
-        prog = mp.MathematicalProgram()
-        x = prog.NewContinuousVariables(2, "x")
-        constraints = [prog.AddLinearConstraint(x[0] >= 1),
-                       prog.AddLinearConstraint(x[1] >= 1)]
-        cost = prog.AddLinearCost(np.sum(x))
-        result = prog.Solve()
-        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
-        x_expected = np.array([1, 1])
+        qp = TestQP()
+        prog = qp.prog
+
+        x = qp.x
+        x_expected = np.array([1., 1.])
+
+        costs = qp.costs
+        cost_values_expected = [2., 1.]
+        constraints = qp.constraints
+        constraint_values_expected = [1., 1., -2., 3.]
+
+        prog.Solve()
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
-        for constraint in constraints:
-            self.assertTrue(
-                np.isclose(prog.EvalBindingAtSolution(constraint), 1))
-        self.assertTrue(np.isclose(prog.EvalBindingAtSolution(cost), 2))
+
+        enum = zip(constraints, constraint_values_expected)
+        for (constraint, value_expected) in enum:
+            value = prog.EvalBindingAtSolution(constraint)
+            self.assertTrue(np.allclose(value, value_expected))
+
+        enum = zip(costs, cost_values_expected)
+        for (cost, value_expected) in enum:
+            value = prog.EvalBindingAtSolution(cost)
+            self.assertTrue(np.allclose(value, value_expected))
 
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()

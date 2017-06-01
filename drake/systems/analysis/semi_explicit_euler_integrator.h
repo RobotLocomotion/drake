@@ -62,7 +62,7 @@ namespace systems {
  *                       Impact. SIAM Review, 42:1, 2000.
  */
 template <class T>
-class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
+class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   virtual ~SemiExplicitEulerIntegrator() {}
 
@@ -124,7 +124,6 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   VectorBase<T>* v = xc->get_mutable_generalized_velocity();
   VectorBase<T>* z = xc->get_mutable_misc_continuous_state();
 
-  // Calcuate the derivatives.
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
   this->CalcTimeDerivatives(this->get_context(), derivs_.get());

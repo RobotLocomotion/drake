@@ -118,7 +118,7 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
 
 template <typename T>
 std::unique_ptr<AbstractValue> PoseAggregator<T>::AllocateOutputAbstract(
-    const OutputPortDescriptor<T>& descriptor) const {
+    const OutputPortDescriptor<T>&) const {
   return AbstractValue::Make(PoseBundle<T>(this->CountNumPoses()));
 }
 

@@ -83,7 +83,7 @@ TEST_F(ManipPlanTest, MoveEndEffectorInitializeTest) {
                                     robot_status_->time(),
                                     robot_status_->time() + 3};
 
-  const PiecewiseCartesianTrajectory<double>& ee_traj =
+  const manipulation::PiecewiseCartesianTrajectory<double>& ee_traj =
       dut_->get_body_trajectory(ee_body_);
   const Isometry3<double> ee_pose =
       robot_status_->robot().CalcBodyPoseInWorldFrame(robot_status_->cache(),
@@ -169,7 +169,7 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
   dut_->Initialize(*robot_status_, *params_, *alias_groups_);
 
   // Makes a copy of the current dof tracking trajectory.
-  const PiecewiseCubicTrajectory<double> expected_dof_traj =
+  const manipulation::PiecewiseCubicTrajectory<double> expected_dof_traj =
       dut_->get_dof_trajectory();
 
   std::vector<double> plan_times = {0, 2};
@@ -186,7 +186,7 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
   dut_->HandlePlanMessage(*robot_status_, *params_, *alias_groups_,
                           bytes.data(), bytes.size());
   {
-    const PiecewiseCartesianTrajectory<double>& body_traj =
+    const manipulation::PiecewiseCartesianTrajectory<double>& body_traj =
         dut_->get_body_trajectory(ee_body_);
     // The new body trajectory should run from cur_time, to cur_time +
     // plan_times[end]
@@ -211,8 +211,8 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
     }
 
     const Vector3<double> zero = Vector3<double>::Zero();
-    PiecewiseCartesianTrajectory<double> expected_traj =
-        PiecewiseCartesianTrajectory<
+    manipulation::PiecewiseCartesianTrajectory<double> expected_traj =
+        manipulation::PiecewiseCartesianTrajectory<
             double>::MakeCubicLinearWithEndLinearVelocity(traj_times,
                                                           traj_poses, zero,
                                                           zero);
@@ -247,7 +247,7 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
   dut_->HandlePlanMessage(*robot_status_, *params_, *alias_groups_,
                           bytes.data(), bytes.size());
   {
-    const PiecewiseCartesianTrajectory<double>& body_traj =
+    const manipulation::PiecewiseCartesianTrajectory<double>& body_traj =
         dut_->get_body_trajectory(ee_body_);
 
     // There should be no contacts, 1 tracked body.
@@ -276,8 +276,8 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
       traj_poses.push_back(plan_poses[i]);
     }
 
-    PiecewiseCartesianTrajectory<double> expected_traj =
-        PiecewiseCartesianTrajectory<double>::
+    manipulation::PiecewiseCartesianTrajectory<double> expected_traj =
+        manipulation::PiecewiseCartesianTrajectory<double>::
             MakeCubicLinearWithEndLinearVelocity(traj_times, traj_poses,
                                                  ee_vel_d_now.tail<3>(),
                                                  Vector3<double>::Zero());

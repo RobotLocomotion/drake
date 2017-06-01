@@ -126,7 +126,7 @@ void CarVisApplicator<T>::DoCalcOutput(
 template <typename T>
 std::unique_ptr<systems::AbstractValue>
 CarVisApplicator<T>::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
+    const systems::OutputPortDescriptor<double>&) const {
   PoseBundle<T> pose_bundle(num_vis_poses());
   int index{0};
   for (const auto& v : visualizers_) {

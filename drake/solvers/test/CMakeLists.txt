@@ -10,11 +10,14 @@ target_link_libraries(mathematical_program_test drakeOptimization drakeCommon)
 drake_add_cc_test(moby_lcp_solver_test)
 target_link_libraries(moby_lcp_solver_test drakeOptimization)
 
-drake_add_cc_test(NAME system_identification_test SIZE medium)
+drake_add_cc_test(NAME system_identification_test SIZE large)
 target_link_libraries(system_identification_test drakeOptimization)
 
 drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
+
+drake_add_cc_test(cost_test)
+target_link_libraries(cost_test drakeOptimization drakeCommon)
 
 set(drakeOptimizationTestSources
         add_solver_util.cc
@@ -27,7 +30,8 @@ set(drakeOptimizationHeaders
         optimization_examples.h
         linear_program_examples.h
         quadratic_program_examples.h
-        mathematical_program_test_util.h)
+        mathematical_program_test_util.h
+        generic_trivial_costs.h)
 add_library_with_exports(LIB_NAME drakeOptimizationTest
         SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
 target_link_libraries(drakeOptimizationTest
@@ -44,9 +48,8 @@ target_link_libraries(drakeRotationConstraintVisualization
         drakeLCMTypes)
 endif()
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-# drake_add_cc_test(convex_optimization_test)
-# target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
+drake_add_cc_test(convex_optimization_test)
+target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
 
 drake_add_cc_test(equality_constrained_qp_solver_test)
 target_link_libraries(equality_constrained_qp_solver_test drakeCommon drakeOptimizationTest)
@@ -57,13 +60,11 @@ target_link_libraries(nonlinear_program_test drakeCommon drakeOptimizationTest)
 drake_add_cc_test(linear_system_solver_test)
 target_link_libraries(linear_system_solver_test drakeCommon drakeOptimizationTest)
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-# drake_add_cc_test(mixed_integer_optimization_test)
-# target_link_libraries(mixed_integer_optimization_test drakeCommon drakeOptimizationTest)
+drake_add_cc_test(mixed_integer_optimization_test)
+target_link_libraries(mixed_integer_optimization_test drakeCommon drakeOptimizationTest)
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-# drake_add_cc_test(gurobi_solver_test)
-# target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
+drake_add_cc_test(gurobi_solver_test)
+target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
 
 drake_add_cc_test(mosek_solver_test)
 target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
@@ -77,20 +78,15 @@ target_link_libraries(ipopt_solver_test drakeOptimizationTest)
 drake_add_cc_test(snopt_solver_test)
 target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-# if (mosek_FOUND)
-if (FALSE)
-  drake_add_cc_test(rotation_constraint_test rotation_constraint_test.cc)
-  set_tests_properties(rotation_constraint_test PROPERTIES TIMEOUT 900)
+if (mosek_FOUND)
+  drake_add_cc_test(NAME rotation_constraint_test rotation_constraint_test.cc
+    SIZE large)
   target_link_libraries(rotation_constraint_test drakeRotationConstraint)
 endif()
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-# if (gurobi_FOUND)
-if (FALSE)
+if (gurobi_FOUND)
   if(NOT APPLE)
-	  drake_add_cc_test(rotation_constraint_limit_test)
-	  set_tests_properties(rotation_constraint_limit_test PROPERTIES TIMEOUT 900)
+	  drake_add_cc_test(NAME rotation_constraint_limit_test SIZE large)
 	  target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
   endif()
 endif()

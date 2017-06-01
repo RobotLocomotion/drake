@@ -152,12 +152,12 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
   /// methods.
   /// @{
-  MatrixX<T> A(const T& t) const final { return MatrixX<T>(A_); }
-  MatrixX<T> B(const T& t) const final { return MatrixX<T>(B_); }
-  VectorX<T> f0(const T& t) const final { return VectorX<T>(f0_); }
-  MatrixX<T> C(const T& t) const final { return MatrixX<T>(C_); }
-  MatrixX<T> D(const T& t) const final { return MatrixX<T>(D_); }
-  VectorX<T> y0(const T& t) const final { return VectorX<T>(y0_); }
+  MatrixX<T> A(const T&) const final { return MatrixX<T>(A_); }
+  MatrixX<T> B(const T&) const final { return MatrixX<T>(B_); }
+  VectorX<T> f0(const T&) const final { return VectorX<T>(f0_); }
+  MatrixX<T> C(const T&) const final { return MatrixX<T>(C_); }
+  MatrixX<T> D(const T&) const final { return MatrixX<T>(D_); }
+  VectorX<T> y0(const T&) const final { return VectorX<T>(y0_); }
   /// @}
 
  private:

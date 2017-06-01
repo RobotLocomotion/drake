@@ -6,3 +6,7 @@ drake_install_headers(
   road_geometry.h
   segment.h
   )
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

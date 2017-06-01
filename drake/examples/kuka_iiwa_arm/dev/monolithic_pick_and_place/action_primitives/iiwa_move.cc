@@ -53,7 +53,7 @@ IiwaMove::ExtendedAllocateOutputAbstract(
   return return_value;
 }
 
-void IiwaMove::SetExtendedDefaultState(const systems::Context<double>& context,
+void IiwaMove::SetExtendedDefaultState(const systems::Context<double>&,
                                        systems::State<double>* state) const {
   InternalState& iiwa_action_state =
       state->get_mutable_abstract_state<InternalState>(

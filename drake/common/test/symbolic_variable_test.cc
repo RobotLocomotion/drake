@@ -9,9 +9,13 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include "drake/common/test/is_memcpy_movable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
+
+using test::IsMemcpyMovable;
+
 namespace symbolic {
 namespace {
 
@@ -155,6 +159,41 @@ TEST_F(VariableTest, EigenVariableMatrixOutput) {
        << "z w";
 
   EXPECT_EQ(oss1.str(), oss2.str());
+}
+
+TEST_F(VariableTest, MemcpyKeepsVariableIntact) {
+  // We have it to test that a variable with a long name (>16 chars), which is
+  // not using SSO (Short String Optimization) internally, is memcpy-movable.
+  const Variable long_var("12345678901234567890");
+  for (const Variable& var : {x_, y_, z_, w_, long_var}) {
+    EXPECT_TRUE(IsMemcpyMovable(var));
+  }
+}
+
+TEST_F(VariableTest, CheckType) {
+  // By default, a symbolic variable has CONTINUOUS type if not specified at
+  // construction time.
+  const Variable v1("v1");
+  EXPECT_EQ(v1.get_type(), Variable::Type::CONTINUOUS);
+
+  // When a type is specified, it should be correctly assigned.
+  const Variable v2("v2", Variable::Type::CONTINUOUS);
+  const Variable v3("v3", Variable::Type::INTEGER);
+  const Variable v4("v4", Variable::Type::BINARY);
+  const Variable v5("v5", Variable::Type::BOOLEAN);
+  EXPECT_EQ(v2.get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(v3.get_type(), Variable::Type::INTEGER);
+  EXPECT_EQ(v4.get_type(), Variable::Type::BINARY);
+  EXPECT_EQ(v5.get_type(), Variable::Type::BOOLEAN);
+
+  // Dummy variable gets CONTINUOUS type.
+  EXPECT_TRUE(Variable{}.get_type() == Variable::Type::CONTINUOUS);
+
+  // Variables are identified by their IDs. Names and types are not considered
+  // in the identification process.
+  const Variable v_continuous("v", Variable::Type::CONTINUOUS);
+  const Variable v_int("v", Variable::Type::INTEGER);
+  EXPECT_FALSE(v_continuous.equal_to(v_int));
 }
 }  // namespace
 }  // namespace symbolic

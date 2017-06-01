@@ -66,10 +66,10 @@ TEST_F(RK3IntegratorTest, ErrorEstSupport) {
   EXPECT_NO_THROW(integrator_->request_initial_step_size_target(dt));
 }
 
-// Verifies that the stepping works with large magnitude times and small
+// Verifies that the stepping works with relatively small
 // magnitude step sizes.
 TEST_F(RK3IntegratorTest, MagDisparity) {
-  // Set a large magnitude time.
+  // Set a unit magnitude time.
   context_->set_time(1.0);
 
   // Set integrator parameters.
@@ -80,8 +80,8 @@ TEST_F(RK3IntegratorTest, MagDisparity) {
   // Take all the defaults.
   integrator_->Initialize();
 
-  // Take a variable step.
-  integrator_->IntegrateExactly(1e-40);
+  // Attempt to take a variable step- should not throw an exception.
+  EXPECT_NO_THROW(integrator_->IntegrateWithMultipleSteps(1e-40));
 }
 
 // Test scaling vectors
@@ -308,6 +308,51 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   EXPECT_LT(integrator_->get_num_steps_taken(), fixed_steps);
 }
 
+// Verify that attempting to take a step for a very large initial time throws
+// an exception.
+TEST_F(RK3IntegratorTest, MinTimeThrows) {
+  // Set integrator parameters: do error control.
+  integrator_->set_maximum_step_size(dt);
+  integrator_->set_fixed_step_mode(false);
+  integrator_->set_target_accuracy(1e-8);
+
+  // Initialize the integrator.
+  integrator_->Initialize();
+
+  // Setup the initial position and initial velocity
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass_->set_position(integrator_->get_mutable_context(),
+                             initial_position);
+  spring_mass_->set_velocity(integrator_->get_mutable_context(),
+                             initial_velocity);
+
+  // Set the time to a really large value in the context.
+  const double large_time = 1e20;
+  integrator_->get_mutable_context()->set_time(large_time);
+
+  // Step should be relatively small.
+  const double dt = 1e-4;
+
+  // It should throw if we try to integrate forward.
+  EXPECT_THROW(integrator_->IntegrateWithMultipleSteps(dt),
+               std::runtime_error);
+
+  // Set the requested minimum step size and try to integrate again; should
+  // still throw an exception.
+  integrator_->get_mutable_context()->set_time(0);
+  integrator_->set_requested_minimum_step_size(1e-3);
+  const double large_dt = 1e-2;
+  EXPECT_THROW(integrator_->IntegrateWithMultipleSteps(large_dt),
+               std::runtime_error);
+
+  // Disable the throw and verify that the exception does not still occur.
+  integrator_->set_throw_on_minimum_step_size_violation(false);
+  EXPECT_NO_THROW(integrator_->IntegrateWithMultipleSteps(large_dt));
+}
+
 // Verify that attempting to take a single fixed step throws an exception.
 TEST_F(RK3IntegratorTest, IllegalFixedStep) {
   // Set integrator parameters: do error control.
@@ -378,7 +423,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
 
   tree->compile();
 
-  // Instantiates a RigidBodyPlant from the  MBD model.
+  // Instantiates a RigidBodyPlant from the MBD model.
   RigidBodyPlant<double> plant(move(tree));
   auto context = plant.CreateDefaultContext();
 
@@ -432,9 +477,9 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   rk3.set_target_accuracy(1e-6);
   rk3.Initialize();
 
-  // Verify that IntegrateExactly works.
+  // Verify that IntegrateWithMultipleSteps works.
   const double tol = std::numeric_limits<double>::epsilon();
-  rk3.IntegrateExactly(t_final - context->get_time());
+  rk3.IntegrateWithMultipleSteps(t_final - context->get_time());
   EXPECT_NEAR(context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".

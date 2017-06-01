@@ -73,6 +73,10 @@ class KinematicsResults {
   Eigen::VectorBlock<const VectorX<T>> get_joint_velocity(
       const RigidBody<T>& body) const;
 
+  const KinematicsCache<T>& get_cache() const {
+    return kinematics_cache_;
+  }
+
  private:
   // RigidBodyPlant is the only class allowed to update KinematicsResults
   // through UpdateFromContext().

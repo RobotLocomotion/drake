@@ -39,7 +39,7 @@ class HelicalJoint : public FixedAxisOneDoFJoint<HelicalJoint> {
 
  protected:
   std::unique_ptr<DrakeJoint> DoClone() const final;
-  void DoInitializeClone(DrakeJoint* clone) const final {}
+  void DoInitializeClone(DrakeJoint*) const final {}
 
  private:
   static drake::TwistVector<double> spatialJointAxis(

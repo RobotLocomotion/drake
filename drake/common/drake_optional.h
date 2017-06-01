@@ -13,4 +13,6 @@ namespace drake {
 template <typename T>
 using optional = std::experimental::optional<T>;
 
+constexpr auto nullopt = std::experimental::nullopt;
+
 }  // namespace drake

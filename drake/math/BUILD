@@ -13,6 +13,7 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:unused",
     ],
 )
 
@@ -111,7 +112,7 @@ drake_cc_library(
     name = "evenly_distributed_pts_on_sphere",
     srcs = ["evenly_distributed_pts_on_sphere.cc"],
     hdrs = ["evenly_distributed_pts_on_sphere.h"],
-    deps = ["@eigen//:eigen"],
+    deps = ["@eigen"],
 )
 
 drake_cc_library(

@@ -32,6 +32,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common",
+        "//drake/common:unused",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
         "//drake/util",

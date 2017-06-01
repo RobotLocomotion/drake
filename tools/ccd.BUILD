@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
 # Generates config.h based on the defines= we want in Drake.
 cmake_configure_file(
@@ -15,7 +15,7 @@ cmake_configure_file(
 # sources instead of globbing, but conveniently puts the public headers in one
 # place and private sources and headers in another; we'll use globbing here.
 cc_library(
-    name = "lib",
+    name = "ccd",
     srcs = glob([
         "src/*.c",
         "src/*.h",

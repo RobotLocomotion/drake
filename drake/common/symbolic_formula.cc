@@ -27,7 +27,9 @@ bool operator<(FormulaKind k1, FormulaKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
 }
 
-Formula::Formula(const shared_ptr<FormulaCell> ptr) : ptr_{ptr} {}
+Formula::Formula(shared_ptr<FormulaCell> ptr) : ptr_{std::move(ptr)} {}
+
+Formula::Formula(const Variable& var) : ptr_{make_shared<FormulaVar>(var)} {}
 
 FormulaKind Formula::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -86,11 +88,10 @@ Formula Formula::Substitute(const Variable& var, const Expression& e) const {
 
 Formula Formula::Substitute(const Substitution& s) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  if (s.size() > 0) {
+  if (!s.empty()) {
     return Formula{ptr_->Substitute(s)};
-  } else {
-    return *this;
   }
+  return *this;
 }
 
 string Formula::to_string() const {
@@ -112,86 +113,99 @@ Formula forall(const Variables& vars, const Formula& f) {
   return Formula{make_shared<FormulaForall>(vars, f)};
 }
 
+Formula make_conjunction(const set<Formula>& formulas) {
+  set<Formula> operands;
+  for (const Formula& f : formulas) {
+    if (is_false(f)) {
+      // Short-circuits to False.
+      // f₁ ∧ ... ∧ False ∧ ... ∧ fₙ => False
+      return Formula::False();
+    }
+    if (is_true(f)) {
+      // Drop redundant True.
+      // f₁ ∧ ... ∧ True ∧ ... ∧ fₙ => f₁ ∧ ... ∧ fₙ
+      continue;
+    }
+    if (is_conjunction(f)) {
+      // Flattening.
+      //    f₁ ∧ ... ∧ (fᵢ₁ ∧ ... ∧ fᵢₘ) ∧ ... ∧ fₙ
+      // => f₁ ∧ ... ∧ fᵢ₁ ∧ ... ∧ fᵢₘ ∧ ... ∧ fₙ
+      const auto& operands_in_f = get_operands(f);
+      operands.insert(operands_in_f.cbegin(), operands_in_f.cend());
+    } else {
+      operands.insert(f);
+    }
+  }
+  if (operands.empty()) {
+    // ⋀{} = True
+    return Formula::True();
+  }
+  if (operands.size() == 1) {
+    return *(operands.begin());
+  }
+  // TODO(soonho-tri): Returns False if both f and ¬f appear in operands.
+  return Formula{make_shared<FormulaAnd>(operands)};
+}
+
 Formula operator&&(const Formula& f1, const Formula& f2) {
-  // ff && x => ff    x && ff => ff
-  if (f1.EqualTo(Formula::False()) || f2.EqualTo(Formula::False())) {
+  return make_conjunction({f1, f2});
+}
+
+Formula operator&&(const Variable& v, const Formula& f) {
+  return Formula(v) && f;
+}
+Formula operator&&(const Formula& f, const Variable& v) {
+  return f && Formula(v);
+}
+Formula operator&&(const Variable& v1, const Variable& v2) {
+  return Formula(v1) && Formula(v2);
+}
+
+Formula make_disjunction(const set<Formula>& formulas) {
+  set<Formula> operands;
+  for (const Formula& f : formulas) {
+    if (is_true(f)) {
+      // Short-circuits to True.
+      // f₁ ∨ ... ∨ True ∨ ... ∨ fₙ => True
+      return Formula::True();
+    }
+    if (is_false(f)) {
+      // Drop redundant False.
+      // f₁ ∨ ... ∨ False ∨ ... ∨ fₙ => f₁ ∨ ... ∨ fₙ
+      continue;
+    }
+    if (is_disjunction(f)) {
+      // Flattening.
+      //    f₁ ∨ ... ∨ (fᵢ₁ ∨ ... ∨ fᵢₘ) ∨ ... ∨ fₙ
+      // => f₁ ∨ ... ∨ fᵢ₁ ∨ ... ∨ fᵢₘ ∨ ... ∨ fₙ
+      const auto& operands_in_f = get_operands(f);
+      operands.insert(operands_in_f.cbegin(), operands_in_f.cend());
+    } else {
+      operands.insert(f);
+    }
+  }
+  if (operands.empty()) {
+    // ⋁{} = False
     return Formula::False();
   }
-  // tt && f2 => f2
-  if (f1.EqualTo(Formula::True())) {
-    return f2;
+  if (operands.size() == 1) {
+    return *(operands.begin());
   }
-  // f1 && tt => f1
-  if (f2.EqualTo(Formula::True())) {
-    return f1;
-  }
-  // Flattening
-  if (is_conjunction(f1)) {
-    set<Formula> formulas{get_operands(f1)};
-    if (is_conjunction(f2)) {
-      // (f1,1 ∧ ... f1,n) ∧ (f2,1 ∧ ... f2,m)
-      // => (f1,1 ∧ ... f1,n ∧ f2,1 ∧ ... f2,m)
-      const set<Formula>& formulas2{get_operands(f2)};
-      formulas.insert(formulas2.begin(), formulas2.end());
-    } else {
-      // (f1,1 ∧ ... f1,n) ∧ f2
-      // => (f1,1 ∧ ... f1,n ∧ f2)
-      formulas.insert(f2);
-    }
-    return Formula{make_shared<FormulaAnd>(formulas)};
-  } else {
-    if (is_conjunction(f2)) {
-      // f1 ∧ (f2,1 ∧ ... f2,m)
-      // => (f1 ∧ f2,1 ∧ ... f2,m)
-      set<Formula> formulas{get_operands(f2)};
-      formulas.insert(f1);
-      return Formula{make_shared<FormulaAnd>(formulas)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaAnd>(f1, f2)};
-    }
-  }
+  // TODO(soonho-tri): Returns True if both f and ¬f appear in operands.
+  return Formula{make_shared<FormulaOr>(operands)};
 }
 
 Formula operator||(const Formula& f1, const Formula& f2) {
-  // tt || x => tt    x || tt => tt
-  if (f1.EqualTo(Formula::True()) || f2.EqualTo(Formula::True())) {
-    return Formula::True();
-  }
-  // ff || f2 => f2
-  if (f1.EqualTo(Formula::False())) {
-    return f2;
-  }
-  // f1 || ff => f1
-  if (f2.EqualTo(Formula::False())) {
-    return f1;
-  }
-  // Flattening
-  if (is_disjunction(f1)) {
-    set<Formula> formulas{get_operands(f1)};
-    if (is_disjunction(f2)) {
-      // (f1,1 ∨ ... f1,n) ∨ (f2,1 ∨ ... f2,m)
-      // => (f1,1 ∨ ... f1,n ∨ f2,1 ∨ ... f2,m)
-      const set<Formula>& formulas2{get_operands(f2)};
-      formulas.insert(formulas2.begin(), formulas2.end());
-    } else {
-      // (f1,1 ∨ ... f1,n) ∨ f2
-      // => (f1,1 ∨ ... f1,n ∨ f2)
-      formulas.insert(f2);
-    }
-    return Formula{make_shared<FormulaOr>(formulas)};
-  } else {
-    if (is_disjunction(f2)) {
-      // f1 ∨ (f2,1 ∨ ... f2,m)
-      // => (f1 ∨ f2,1 ∨ ... f2,m)
-      set<Formula> formulas{get_operands(f2)};
-      formulas.insert(f1);
-      return Formula{make_shared<FormulaOr>(formulas)};
-    } else {
-      // Nothing to flatten.
-      return Formula{make_shared<FormulaOr>(f1, f2)};
-    }
-  }
+  return make_disjunction({f1, f2});
+}
+Formula operator||(const Variable& v, const Formula& f) {
+  return Formula(v) || f;
+}
+Formula operator||(const Formula& f, const Variable& v) {
+  return f || Formula(v);
+}
+Formula operator||(const Variable& v1, const Variable& v2) {
+  return Formula(v1) || Formula(v2);
 }
 
 Formula operator!(const Formula& f) {
@@ -203,6 +217,8 @@ Formula operator!(const Formula& f) {
   }
   return Formula{make_shared<FormulaNot>(f)};
 }
+
+Formula operator!(const Variable& v) { return !Formula(v); }
 
 ostream& operator<<(ostream& os, const Formula& f) {
   DRAKE_ASSERT(f.ptr_ != nullptr);
@@ -271,7 +287,6 @@ Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m) {
   return Formula{make_shared<FormulaPositiveSemidefinite>(m)};
 }
 
-#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 Formula positive_semidefinite(const MatrixX<Expression>& m,
                               const Eigen::UpLoType mode) {
   switch (mode) {
@@ -287,29 +302,10 @@ Formula positive_semidefinite(const MatrixX<Expression>& m,
           "Eigen::Lower nor Eigen::Upper.");
   }
 }
-#endif  // EIGEN_VERSION...
-
-Formula operator==(const Variable& v1, const Variable& v2) {
-  return Expression{v1} == Expression{v2};
-}
-Formula operator!=(const Variable& v1, const Variable& v2) {
-  return Expression{v1} != Expression{v2};
-}
-Formula operator<(const Variable& v1, const Variable& v2) {
-  return Expression{v1} < Expression{v2};
-}
-Formula operator<=(const Variable& v1, const Variable& v2) {
-  return Expression{v1} <= Expression{v2};
-}
-Formula operator>(const Variable& v1, const Variable& v2) {
-  return Expression{v1} > Expression{v2};
-}
-Formula operator>=(const Variable& v1, const Variable& v2) {
-  return Expression{v1} >= Expression{v2};
-}
 
 bool is_false(const Formula& f) { return is_false(*f.ptr_); }
 bool is_true(const Formula& f) { return is_true(*f.ptr_); }
+bool is_variable(const Formula& f) { return is_variable(*f.ptr_); }
 bool is_equal_to(const Formula& f) { return is_equal_to(*f.ptr_); }
 bool is_not_equal_to(const Formula& f) { return is_not_equal_to(*f.ptr_); }
 bool is_greater_than(const Formula& f) { return is_greater_than(*f.ptr_); }
@@ -335,6 +331,11 @@ bool is_forall(const Formula& f) { return is_forall(*f.ptr_); }
 bool is_isnan(const Formula& f) { return is_isnan(*f.ptr_); }
 bool is_positive_semidefinite(const Formula& f) {
   return is_positive_semidefinite(*f.ptr_);
+}
+
+const Variable& get_variable(const Formula& f) {
+  DRAKE_ASSERT(is_variable(f));
+  return to_variable(f)->get_variable();
 }
 
 const Expression& get_lhs_expression(const Formula& f) {

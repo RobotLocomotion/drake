@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("//tools:install.bzl", "exports_create_cps_scripts", "install_files")
+
 package(default_visibility = ["//visibility:public"])
 
 # Depend on this when you need to call clang-format.  (We don't have a label
@@ -7,6 +9,36 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "clang-format",
     srcs = ["//:.clang-format"],
+)
+
+sh_binary(
+    name = "asan",
+    srcs = ["asan.sh"],
+    data = ["asan.supp"],
+)
+
+sh_binary(
+    name = "lsan",
+    srcs = ["lsan.sh"],
+    data = ["lsan.supp"],
+)
+
+sh_binary(
+    name = "msan",
+    srcs = ["msan.sh"],
+    data = ["msan.supp"],
+)
+
+sh_binary(
+    name = "tsan",
+    srcs = ["tsan.sh"],
+    data = ["tsan.supp"],
+)
+
+sh_binary(
+    name = "ubsan",
+    srcs = ["ubsan.sh"],
+    data = ["ubsan.supp"],
 )
 
 sh_binary(
@@ -31,13 +63,47 @@ py_binary(
 )
 
 exports_files(
+    ["install.py.in"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(
     ["nlopt-gen-hpp.sh"],
     visibility = ["@nlopt//:__pkg__"],
 )
 
+exports_files(
+    ["ipopt_build_with_autotools.sh"],
+    visibility = ["@ipopt//:__pkg__"],
+)
+
+exports_create_cps_scripts([
+    "bullet",
+    "eigen",
+    "ipopt",
+    "lcm",
+    "nlopt",
+    "pybind11",
+])
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",
+)
+
+genrule(
+    name = "cmake_exports",
+    srcs = ["drake.cps"],
+    outs = ["drake-config.cmake"],
+    cmd = "$(location @pycps//:cps2cmake_executable) $(location drake.cps) > \"$@\"",
+    tools = ["@pycps//:cps2cmake_executable"],
+    visibility = ["//visibility:private"],
+)
+
+install_files(
+    name = "install",
+    dest = "lib/cmake/drake",
+    files = ["drake-config.cmake"],
 )
 
 # This pulls the otherwise-unused libbot targets into the "//..." label tree.
@@ -195,6 +261,16 @@ config_setting(
 config_setting(
     name = "no_ipopt",
     values = {"define": "NO_IPOPT=ON"},
+)
+
+# NLOPT is an open-source solver, and is included in the Drake build by default.
+# The NLOPT solver is irrelvant to some users of MathematicalProgram,
+# so we provide a hidden switch to shut it off for
+# developers who don't actually need it.  This is not a supported configuration.
+# Use at your own risk: --define=NO_NLOPT=ON
+config_setting(
+    name = "no_nlopt",
+    values = {"define": "NO_NLOPT=ON"},
 )
 
 config_setting(

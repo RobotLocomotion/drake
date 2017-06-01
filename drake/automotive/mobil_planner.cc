@@ -248,24 +248,20 @@ const T MobilPlanner<T>::EvaluateIdm(
     const IdmPlannerParameters<T>& idm_params,
     const RoadOdometry<T>& ego_odometry,
     const RoadOdometry<T>& lead_car_odometry) const {
-  const T& s_ego = ego_odometry.pos.s;
+  const T& s_ego = ego_odometry.pos.s();
   const T& s_dot_ego = pose_selector::GetSVelocity(ego_odometry);
-  const T& s_lead = lead_car_odometry.pos.s;
+  const T& s_lead = lead_car_odometry.pos.s();
   const T& s_dot_lead = pose_selector::GetSVelocity(lead_car_odometry);
 
   const T delta = s_lead - s_ego;
   // Saturate the net_distance at distance_lower_bound away from the ego car to
   // prevent the IDM equation from producing near-singular solutions.
-  // clang-format off
   // TODO(jadecastro): Move this to IdmPlanner::Evaluate().
   const T net_distance =
-      cond(delta > T(0.), saturate(delta - idm_params.bloat_diameter(),
-                                   idm_params.distance_lower_limit(),
-                                   std::numeric_limits<T>::infinity()),
-                          saturate(delta + idm_params.bloat_diameter(),
-                                   -std::numeric_limits<T>::infinity(),
-                                   -idm_params.distance_lower_limit()));
-  // clang-format on
+      cond(delta >= T(0.), std::max(delta - idm_params.bloat_diameter(),
+                                    idm_params.distance_lower_limit()),
+           std::min(delta + idm_params.bloat_diameter(),
+                    -idm_params.distance_lower_limit()));
   DRAKE_DEMAND(std::abs(net_distance) >= idm_params.distance_lower_limit());
   const T closing_velocity = s_dot_ego - s_dot_lead;
 

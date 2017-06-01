@@ -103,12 +103,12 @@ class RobotPlanRunner {
   }
 
  private:
-  void HandleStatus(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
+  void HandleStatus(const lcm::ReceiveBuffer*, const std::string&,
                     const lcmt_iiwa_status* status) {
     iiwa_status_ = *status;
   }
 
-  void HandlePlan(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
+  void HandlePlan(const lcm::ReceiveBuffer*, const std::string&,
                   const robotlocomotion::robot_plan_t* plan) {
     std::cout << "New plan received." << std::endl;
     if (iiwa_status_.utime == -1) {
@@ -163,7 +163,7 @@ class RobotPlanRunner {
   lcmt_iiwa_status iiwa_status_;
 };
 
-int do_main(int argc, const char* argv[]) {
+int do_main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
@@ -181,6 +181,6 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 
-int main(int argc, const char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::do_main(argc, argv);
+int main() {
+  return drake::examples::kuka_iiwa_arm::do_main();
 }

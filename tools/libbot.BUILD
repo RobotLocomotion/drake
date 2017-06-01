@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@//tools:lcm.bzl", "lcm_java_library", "lcm_py_library")
+load("@drake//tools:lcm.bzl", "lcm_java_library", "lcm_py_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -46,14 +46,14 @@ cc_binary(
     name = "bot-lcm-logfilter",
     srcs = ["bot2-lcm-utils/src/logfilter/lcm-logfilter.c"],
     copts = ["-std=gnu99"],
-    deps = ["@lcm//:lcm"],
+    deps = ["@lcm"],
 )
 
 cc_binary(
     name = "bot-lcm-logsplice",
     srcs = ["bot2-lcm-utils/src/logsplice/lcm-logsplice.c"],
     copts = ["-std=gnu99"],
-    deps = ["@lcm//:lcm"],
+    deps = ["@lcm"],
 )
 
 cc_library(
@@ -106,7 +106,7 @@ cc_library(
     ],
     copts = ["-std=gnu99"],
     visibility = ["//visibility:private"],
-    deps = ["@lcm//:lcm"],
+    deps = ["@lcm"],
 )
 
 cc_binary(
@@ -120,6 +120,6 @@ cc_binary(
     deps = [
         ":ldpc",
         ":tunnel_c99",
-        "@lcm//:lcm",
+        "@lcm",
     ],
 )

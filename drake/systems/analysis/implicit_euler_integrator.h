@@ -82,7 +82,7 @@ namespace systems {
  *                    Equations. John Wiley & Sons, 1991.
  */
 template <class T>
-class ImplicitEulerIntegrator : public IntegratorBase<T> {
+class ImplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitEulerIntegrator)
 
@@ -173,16 +173,18 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// count includes those Newton-Raphson iterations used during the error
   /// estimation process.
   int64_t get_num_newton_raphson_iterations() const {
-    return num_nr_iterations_; }
+    return num_nr_iterations_;
+  }
 
   /// Gets the number of Jacobian evaluations (i.e., the number of times
   /// that the Jacobian matrix was reformed) since the last call to
   /// ResetStatistics(). This count includes those evaluations necessary
   /// during the error estimation process.
   int64_t get_num_jacobian_evaluations() const { return
-        num_jacobian_evaluations_; }
+        num_jacobian_evaluations_;
+  }
 
-  /// Gets the number of iteration matrix factorizations since the last
+  /// Gets the number of factorizations of the iteration matrix since the last
   /// call to ResetStatistics(). This count includes those refactorizations
   /// necessary during the error estimation process.
   int64_t get_num_iteration_matrix_factorizations() const {
@@ -207,15 +209,18 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   /// systems of equation solving process for the error estimation process*
   /// since the last call to ResetStatistics().
   int64_t get_num_error_estimator_newton_raphson_iterations() const { return
-        num_err_est_nr_iterations_; }
+        num_err_est_nr_iterations_;
+  }
 
   /// Gets the number of Jacobian matrix evaluations *used only during
   /// the error estimation process* since the last call to ResetStatistics().
   int64_t get_num_error_estimator_jacobian_evaluations() const {
-    return num_err_est_jacobian_reforms_; }
+    return num_err_est_jacobian_reforms_;
+  }
 
-  /// Gets the number of iteration matrix factorizations *used only during
-  /// the error estimation process* since the last call to ResetStatistics().
+  /// Gets the number of factorizations of the iteration matrix *used only
+  /// during the error estimation process* since the last call to
+  /// ResetStatistics().
   int64_t get_num_error_estimator_iteration_matrix_factorizations() const {
     return num_err_est_iter_factorizations_;
   }
@@ -237,15 +242,14 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   bool StepImplicitEuler(const T& dt);
   bool StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
                              VectorX<T>* xtplus);
-  MatrixX<T> ComputeForwardDiffJacobian(const System<T>& system,
-                                        const Context<T>& context,
+  MatrixX<T> ComputeForwardDiffJacobian(const System<T>&,
+                                        const Context<T>&,
                                         ContinuousState<T>* state);
-  MatrixX<T> ComputeCentralDiffJacobian(const System<T>& system,
-                                        const Context<T>& context,
+  MatrixX<T> ComputeCentralDiffJacobian(const System<T>&,
+                                        const Context<T>&,
                                         ContinuousState<T>* state);
   MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
-                                     const Context<T>& context,
-                                     ContinuousState<T>* state);
+                                     const Context<T>& context);
   VectorX<T> CalcTimeDerivativesUsingContext();
 
   // This is a pre-allocated temporary for use by integration. It stores
@@ -253,7 +257,8 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> derivs_;
 
   // A simple LU factorization is all that is needed; robustness in the solve
-  // comes naturally as dt << 1.
+  // comes naturally as dt << 1. Keeping this data in the class definition
+  // serves to minimize heap allocations and deallocations.
   Eigen::PartialPivLU<MatrixX<double>> LU_;
 
   // A QR factorization is necessary for automatic differentiation (current
@@ -281,11 +286,16 @@ class ImplicitEulerIntegrator : public IntegratorBase<T> {
   JacobianComputationScheme jacobian_scheme_{
       JacobianComputationScheme::kForwardDifference};
 
-  // The Jacobian matrix.
+  // The last computed Jacobian matrix. Keeping this data in the class
+  // definitions serves to minimize heap allocations and deallocations.
   MatrixX<T> J_;
 
-  // The computed iteration matrix.
-  MatrixX<T> A_;
+  // The last computed *negation* of the "iteration matrix", equivalent to
+  // J_ * (dt / scale) - 1, where scale is either 1.0 or 2.0, depending on
+  // whether the implicit Euler or implicit trapezoid method was used. Keeping
+  // this data in the class definition serves to minimize heap allocations
+  // and deallocations.
+  MatrixX<T> iteration_matrix_;
 
   // Various combined statistics.
   int64_t num_jacobian_evaluations_{0};

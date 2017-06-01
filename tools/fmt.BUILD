@@ -17,5 +17,6 @@ pkg_tar(
     name = "license",
     extension = "tar.gz",
     files = ["LICENSE.rst"],
+    mode = "0644",
     package_dir = "fmt",
 )

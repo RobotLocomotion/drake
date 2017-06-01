@@ -1,8 +1,11 @@
-# We build IPOPT by shelling out to autotools.
+# -*- python -*-
 
-# A prefix-string for genrule cmd attributes, which uses the Kythe cdexec tool,
-# in quiet mode, to execute in the genrule output directory.
-CDEXEC = "$(location @//tools/third_party/kythe/tools/cdexec:cdexec) -q $(@D)"
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load("@drake//tools:python_lint.bzl", "python_lint")
+
+package(default_visibility = ["//visibility:public"])
+
+# We build IPOPT by shelling out to autotools.
 
 # We run autotools in a genrule, and only files explicitly identified as outputs
 # of that genrule can be made available to other rules. Therefore, we need a
@@ -98,42 +101,55 @@ IPOPT_LIBS = [
 # We emit static libraries because dynamic libraries would have different names
 # on OS X and on Linux, and Bazel genrules don't allow platform-dependent outs.
 # https://github.com/bazelbuild/bazel/issues/281
-HALF_THE_CORES = "$$[($$(getconf _NPROCESSORS_ONLN)+1)/2]"
-
-LOG = " 2>> ipopt.log"
-
-PRINT_ERRORS = (
-    "echo \"***IPOPT Build stderr***\"" +
-    " && cat ipopt.log" +
-    " && echo \"***IPOPT Build config.log***\"" +
-    " && find -L . -name config.log | xargs cat"
-)
-
-BUILD_IPOPT_CMD = (
-    "(ADD_CFLAGS=-fPIC ADD_CXXFLAGS=-fPIC " + CDEXEC + " `pwd`/external/ipopt/configure --disable-shared --with-pic" + LOG +
-    " && " + CDEXEC + " make -j " + HALF_THE_CORES + LOG +
-    " && " + CDEXEC + " make install" + LOG +
-    ") || (" + PRINT_ERRORS + " && false)"
-)
-
 genrule(
     name = "build_with_autotools",
     srcs = glob(["**/*"]),
     outs = IPOPT_HDRS + IPOPT_LIBS,
-    cmd = BUILD_IPOPT_CMD,
-    tools = ["@//tools/third_party/kythe/tools/cdexec:cdexec"],
+    cmd = " ".join([
+        "(",
+        "env",
+        "cdexec=$(location @kythe//tools/cdexec:cdexec)",
+        "top_builddir=$(@D)",
+        "$(location @drake//tools:ipopt_build_with_autotools.sh)",
+        " 2>&1 > ipopt_build_with_autotools.log",
+        ")",
+        "|| (cat ipopt_build_with_autotools.log && false)",
+    ]),
+    tools = [
+        "@drake//tools:ipopt_build_with_autotools.sh",
+        "@kythe//tools/cdexec:cdexec",
+    ],
     visibility = ["//visibility:private"],
 )
 
 cc_library(
-    name = "lib",
+    name = "ipopt",
     srcs = IPOPT_LIBS,
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
     linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        "@gfortran//:lib",
-    ],
+    deps = ["@gfortran"],
     alwayslink = 1,
 )
+
+cmake_config(
+    package = "IPOPT",
+    script = "@drake//tools:ipopt-create-cps.py",
+    version_file = "Ipopt/src/Common/config_ipopt_default.h",
+)
+
+install_cmake_config(package = "IPOPT")  # Creates rule :install_cmake_config.
+
+# TODO(jamiesnape): At the moment libipopt.a has gone AWOL.
+install(
+    name = "install",
+    doc_dest = "share/doc/ipopt",
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/ipopt",
+    hdr_strip_prefix = ["include/coin"],
+    license_docs = glob(["**/LICENSE"]),
+    targets = [":ipopt"],
+    deps = [":install_cmake_config"],
+)
+
+python_lint()

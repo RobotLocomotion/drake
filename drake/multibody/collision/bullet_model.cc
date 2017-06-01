@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/collision/drake_collision.h"
 
 using Eigen::Isometry3d;
@@ -58,6 +59,8 @@ struct BinaryContactResultCallback
                                    int partId0, int index0,
                                    const btCollisionObjectWrapper* colObj1Wrap,
                                    int partId1, int index1) {
+    drake::unused(cp, colObj0Wrap, partId0, index0, colObj1Wrap, partId1,
+                  index1);
     in_collision = true;
     return 0;
   }
@@ -131,6 +134,7 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(
 
 std::unique_ptr<btCollisionShape> BulletModel::newBulletSphereShape(
     const DrakeShapes::Sphere& geometry, bool use_margins) {
+  drake::unused(use_margins);  // TODO(jwnimmer-tri) This seems bad.
   std::unique_ptr<btCollisionShape> bt_shape(
       new btSphereShape(geometry.radius));
   return bt_shape;
@@ -138,6 +142,7 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletSphereShape(
 
 std::unique_ptr<btCollisionShape> BulletModel::newBulletCylinderShape(
     const DrakeShapes::Cylinder& geometry, bool use_margins) {
+  drake::unused(use_margins);  // TODO(jwnimmer-tri) This seems bad.
   std::unique_ptr<btCollisionShape> bt_shape(new btCylinderShapeZ(
       btVector3(geometry.radius, geometry.radius, geometry.length / 2)));
   return bt_shape;
@@ -145,6 +150,7 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletCylinderShape(
 
 std::unique_ptr<btCollisionShape> BulletModel::newBulletCapsuleShape(
     const DrakeShapes::Capsule& geometry, bool use_margins) {
+  drake::unused(use_margins);  // TODO(jwnimmer-tri) This seems bad.
   std::unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
   dynamic_cast<btConvexHullShape*>(bt_shape.get())
       ->addPoint(btVector3(0, 0, -geometry.length / 2));

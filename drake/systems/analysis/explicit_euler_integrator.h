@@ -16,7 +16,7 @@ namespace systems {
  * </pre>
  */
 template <class T>
-class ExplicitEulerIntegrator : public IntegratorBase<T> {
+class ExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExplicitEulerIntegrator)
 

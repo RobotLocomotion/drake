@@ -31,6 +31,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "pose_stamped_t_pose_vector_translator",
+    srcs = ["pose_stamped_t_pose_vector_translator.cc"],
+    hdrs = ["pose_stamped_t_pose_vector_translator.h"],
+    deps = [
+        ":pose_vector",
+        "//drake/common",
+        "//drake/systems/lcm:translator",
+        "@robotlocomotion_lcmtypes",
+    ],
+)
+
 # TODO(david-german-tri): Rename PoseVector to FramePose.
 drake_cc_library(
     name = "pose_vector",
@@ -71,7 +83,7 @@ drake_cc_library(
         "//drake/lcmtypes:viewer",
         "//drake/math:geometric_transform",
         "//drake/multibody/shapes",
-        "@eigen//:eigen",
+        "@eigen",
     ],
 )
 
@@ -90,6 +102,13 @@ drake_cc_googletest(
         ":pose_vector",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_stamped_t_pose_vector_translator_test",
+    deps = [
+        ":pose_stamped_t_pose_vector_translator",
     ],
 )
 

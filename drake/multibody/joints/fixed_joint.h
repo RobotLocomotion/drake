@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
 
 #pragma GCC diagnostic push
@@ -19,6 +20,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
+    drake::unused(q);
     return Eigen::Transform<typename DerivedQ::Scalar, 3,
                             Eigen::Isometry>::Identity();
   }
@@ -30,6 +32,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
+    drake::unused(q);
     motion_subspace.resize(drake::kTwistSize, get_num_velocities());
     if (dmotion_subspace) {
       dmotion_subspace->resize(motion_subspace.size(), get_num_positions());
@@ -48,6 +51,8 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
       typename drake::math::Gradient<
           Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type*
           dmotion_subspace_dot_times_vdv = nullptr) const {
+    drake::unused(q, v);
+
     motion_subspace_dot_times_v.setZero();
 
     if (dmotion_subspace_dot_times_vdq) {
@@ -67,6 +72,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
                     0, MAX_NUM_VELOCITIES, MAX_NUM_POSITIONS>& qdot_to_v,
       Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
           dqdot_to_v) const {
+    drake::unused(q);
     qdot_to_v.resize(get_num_velocities(), get_num_positions());
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), get_num_positions());
@@ -81,6 +87,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
                     0, MAX_NUM_POSITIONS, MAX_NUM_VELOCITIES>& v_to_qdot,
       Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
           dv_to_qdot) const {
+    drake::unused(q);
     v_to_qdot.resize(get_num_positions(), get_num_velocities());
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), get_num_positions());
@@ -90,6 +97,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(
       const Eigen::MatrixBase<DerivedV>& v) const {
+    drake::unused(v);
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>(
         get_num_velocities(), 1);
   }
@@ -108,6 +116,6 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
 
  protected:
   std::unique_ptr<DrakeJoint> DoClone() const final;
-  void DoInitializeClone(DrakeJoint* clone) const final {}
+  void DoInitializeClone(DrakeJoint*) const final {}
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

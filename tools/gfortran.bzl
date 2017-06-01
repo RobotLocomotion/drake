@@ -58,7 +58,7 @@ def _gfortran_impl(repository_ctx):
 
     BUILD = """
     cc_library(
-        name = "lib",
+        name = "gfortran",
         srcs = {},
         hdrs = [],
         linkopts = {},

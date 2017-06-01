@@ -62,18 +62,19 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to the state variables using automatic differentiation.
+// respect to the continuous state (at a point specified by @p state) using
+// automatic differentiation.
 template <>
 MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
-    ComputeAutoDiffJacobian(const System<AutoDiffXd>& system,
-                            const Context<AutoDiffXd>& context,
-                            ContinuousState<AutoDiffXd>* state) {
+    ComputeAutoDiffJacobian(const System<AutoDiffXd>&,
+                            const Context<AutoDiffXd>&) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitEulerIntegrator");
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to @p state using automatic differentiation.
+// respect to the continuous state (at a point specified by @p state) using
+// automatic differentiation.
 // @param system The dynamical system.
 // @param context The context at which to compute the time derivatives.
 // @param state The continuous state at which to compute the time derivatives.
@@ -82,13 +83,12 @@ MatrixX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeAutoDiffJacobian(
-    const System<T>& system, const Context<T>& context,
-    ContinuousState<T>* state) {
+    const System<T>& system, const Context<T>& context) {
   SPDLOG_DEBUG(drake::log(), "  IE Compute Autodiff Jacobian t={}",
                context.get_time());
   // Create AutoDiff versions of the state vector.
   typedef AutoDiffXd Scalar;
-  VectorX<Scalar> a_xtplus = state->CopyToVector();
+  VectorX<Scalar> a_xtplus = context.get_continuous_state()->CopyToVector();
 
   // Set the size of the derivatives and prepare for Jacobian calculation.
   const int n_state_dim = a_xtplus.size();
@@ -96,8 +96,12 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeAutoDiffJacobian(
     a_xtplus[i].derivatives() = VectorX<T>::Unit(n_state_dim, i);
 
   // Get the system and the context in AutoDiffable format. Inputs must also
-  // be copied to the AutoDiff'd system (which is accomplished using
-  // FixInputPortsFrom()).
+  // be copied to the context used by the AutoDiff'd system (which is
+  // accomplished using FixInputPortsFrom()).
+  // TODO(edrumwri): Investigate means for moving as many of the operations
+  //                 below offline (or with lower frequency than once-per-
+  //                 Jacobian calculation) as is possible. These operations
+  //                 are likely to be expensive.
   const auto adiff_system = system.ToAutoDiffXd();
   std::unique_ptr<Context<Scalar>> adiff_context = adiff_system->
       AllocateContext();
@@ -127,8 +131,8 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivativesUsingContext() {
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to @p state using a first-order forward difference (i.e., numerical
-// differentiation).
+// respect to the continuous state (at a point specified by @p state) using
+// a first-order forward difference (i.e., numerical differentiation).
 // @param system The dynamical system.
 // @param context The context at which to compute the time derivatives.
 // @param state The continuous state at which to compute the time derivatives.
@@ -137,8 +141,7 @@ VectorX<T> ImplicitEulerIntegrator<T>::CalcTimeDerivativesUsingContext() {
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
-    const System<T>& system, const Context<T>& context,
-    ContinuousState<T>* state) {
+    const System<T>&, const Context<T>& context, ContinuousState<T>* state) {
   using std::abs;
 
   // Set epsilon to the square root of machine precision.
@@ -153,6 +156,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
   SPDLOG_DEBUG(drake::log(), "  IE Compute Forwarddiff {}-Jacobian t={}",
                n, context.get_time());
   SPDLOG_DEBUG(drake::log(), "  computing from state {}", xtplus.transpose());
+
+  // Prevent compiler warnings for context.
+  unused(context);
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -188,8 +194,8 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
-// respect to @p state using a second-order central difference (i.e., numerical
-// differentiation).
+// respect to the continuous state (at a point specified by @p state) using
+// a second-order central difference (i.e., numerical differentiation).
 // @param system The dynamical system.
 // @param context The context at which to compute the time derivatives.
 // @param state The continuous state at which to compute the time derivatives.
@@ -198,8 +204,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
 // @post The continuous state will be indeterminate on return.
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
-    const System<T>& system, const Context<T>& context,
-    ContinuousState<T>* state) {
+    const System<T>&, const Context<T>& context, ContinuousState<T>* state) {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
@@ -211,6 +216,9 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
 
   SPDLOG_DEBUG(drake::log(), "  IE Compute Centraldiff {}-Jacobian t={}",
                n, context.get_time());
+
+  // Prevent compiler warnings for context.
+  unused(context);
 
   // Initialize the Jacobian.
   MatrixX<T> J(n, n);
@@ -263,6 +271,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::FactorAndSolve(const MatrixX<T>& A,
                                              const VectorX<T>& b) {
+  num_iter_factorizations_++;
   LU_.compute(A);
   return LU_.solve(b);
 }
@@ -275,6 +284,7 @@ template <>
 VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
     const MatrixX<AutoDiffXd>& A,
     const VectorX<AutoDiffXd>& b) {
+  num_iter_factorizations_++;
   QR_.compute(A);
   return QR_.solve(b);
 }
@@ -338,7 +348,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // The maximum number of Newton-Raphson iterations to take before declaring
   // failure. [Hairer, 1996] states, "It is our experience that the code becomes
   // more efficient when we allow a relatively high number of iterations (e.g.,
-  // [7 or 10])", p. 121.
+  // [7 or 10])", p. 121.  The focus of that quote is a higher order integrator
+  // with a quasi-Newton approach, so our mileage may vary.
   // TODO(edrumwri): Consider making this a settable parameter. Not putting it
   //                 toward staving off parameter overload.
   const int max_iterations = 10;
@@ -354,9 +365,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
     // TODO(edrumwri): Allow caller to provide their own solver.
     const int n = xtplus->size();
-    A_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-    num_iter_factorizations_++;
-    VectorX<T> dx = FactorAndSolve(A_, goutput);
+    iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+    VectorX<T> dx = FactorAndSolve(iteration_matrix_, goutput);
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector()->SetFromVector(dx);
@@ -551,7 +561,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
       break;
 
     case JacobianComputationScheme::kAutomatic:
-      J = ComputeAutoDiffJacobian(system, *context, continuous_state);
+      J = ComputeAutoDiffJacobian(system, *context);
       break;
 
     default:
@@ -596,7 +606,10 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& dt,
   const VectorX<T> xt0 = context->get_continuous_state_vector().
       CopyToVector();
 
-  // Compute the derivative at xt0.
+  // Compute the derivative at xt0. NOTE: the derivative is calculated at this
+  // point (early on in the integration process) in order to reuse the
+  // derivative evaluation, via the cache, from the last integration step (if
+  // possible).
   const VectorX<T> dx0 = CalcTimeDerivativesUsingContext();
 
   // Do the Euler step.
@@ -660,8 +673,7 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
   const T t0 = context->get_time();
   const VectorX<T> xt0 = context->get_continuous_state()->CopyToVector();
 
-  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={} x(t)={}",
-               dt, t0, xt0);
+  SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}", dt, t0);
 
   // If the requested dt is less than or equal to the minimum step size, an
   // explicit Euler step will be taken. We compute the error estimate using two
@@ -676,6 +688,26 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
     //                 The mitigating factor is that dt is already small, so a
     //                 test of, e.g., a square wave function, should quantify
     //                 the improvement (if any).
+
+    // The error estimation process for explicit Euler uses two half-steps
+    // of explicit Euler (for a total of two derivative evaluations). The error
+    // estimation process is derived as follows:
+    // (1) x*(t+h) = xₑ(t+h) + h²/2 df/dt + ...                [full step]
+    // (2) x*(t+h) = ̅xₑ(t+h) + h²/8 (df/dt + df₊/dt) + ...    [two 1/2-steps]
+    //
+    // where x*(t+h) is the true (generally unknown) answer that we seek,
+    // f() is the ordinary differential equation evaluated at x(t), and
+    // f₊() is the derivative evaluated at x(t + h/2). Subtracting (1) from
+    // (2), the above equations are rewritten as:
+    // 0 = x̅ₑ(t+h) - xₑ(t+h) + h²/8 (-3df/dt + df₊/dt) + ...
+    // The sum of all but the first two terms on the right hand side
+    // of the above equation is less in magnitude than ch², for some
+    // sufficiently large c. Or, written using Big-Oh notation:
+    // x̅ₑ(t+h) - xₑ(t+h) = O(h²)
+    // Thus, subtracting the two solutions yields a second order error estimate
+    // (we compute norms on the error estimate, so the apparent sign error
+    // in the algebra when arriving at the final equation is inconsequential).
+
     // Compute the Euler step.
     this->CalcTimeDerivatives(*context, derivs_.get());
     xtplus_ie = xt0 + dt*derivs_->CopyToVector();
@@ -696,20 +728,20 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
     // Update the error estimation ODE counts.
     num_err_est_function_evaluations_ += 2;
 
-    // Set the "trapezoid" state.
+    // Set the "trapezoid" state to be the result of taking two explicit Euler
+    // half steps. since the code below the if/then/else block
+    // simply subtracts the two results to obtain the error estimate.
     xtplus_itr = context->get_continuous_state()->CopyToVector();
+  } else {
+    // Try taking the requested step.
+    bool success = AttemptStepPaired(dt, &xtplus_ie, &xtplus_itr);
 
-    return true;
-  }
-
-  // Try taking the requested step.
-  bool success = AttemptStepPaired(dt, &xtplus_ie, &xtplus_itr);
-
-  // If the step was not successful, reset the time and state.
-  if (!success) {
-    context->set_time(t0);
-    context->get_mutable_continuous_state()->SetFromVector(xt0);
-    return false;
+    // If the step was not successful, reset the time and state.
+    if (!success) {
+      context->set_time(t0);
+      context->get_mutable_continuous_state()->SetFromVector(xt0);
+      return false;
+    }
   }
 
   // Reset the error estimate.

@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -130,15 +131,16 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// their default constructors if they need to.
   MultibodyTreeElement() {}
 
-  /// Gives MultibodyTree elements the opportunity to perform internal setup
+  /// Gives MultibodyTree elements the opportunity to retrieve their topology
   /// when MultibodyTree::Finalize() is invoked.
-  /// NVI to pure virtual method DoFinalize().
-  void Finalize(const MultibodyTree<T>& tree) {
-    DoFinalize(tree);
+  /// NVI to pure virtual method DoSetTopology().
+  void SetTopology(const MultibodyTreeTopology& tree) {
+    DoSetTopology(tree);
   }
 
-  /// Implementation of the NVI Finalize().
-  virtual void DoFinalize(const MultibodyTree<T>& tree) = 0;
+  /// Implementation of the NVI SetTopology(). For advanced use only for
+  /// developers implementing new MultibodyTree components.
+  virtual void DoSetTopology(const MultibodyTreeTopology& tree) = 0;
 
  private:
   void set_parent_tree(
@@ -153,8 +155,9 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
   const MultibodyTree<T>* parent_tree_{nullptr};
 
-  // ElementIndexType requires a valid initialization.
-  ElementIndexType index_{0};
+  // The default index value is *invalid*. This must be set to a valid index
+  // value before the element is released to the wild.
+  ElementIndexType index_;
 };
 
 }  // namespace multibody

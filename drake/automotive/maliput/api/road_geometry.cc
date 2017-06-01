@@ -31,15 +31,18 @@ GeoPosition LaneEndGeoPosition(const LaneEnd& lane_end) {
 // orientation of (-s,-r,h).  This is equivalent to a pre-rotation by PI in
 // the s/r plane.
 Rotation ReverseOrientation(const Rotation& rot) {
-  const double ca = std::cos(rot.roll);
-  const double sa = std::sin(rot.roll);
-  const double cb = std::cos(rot.pitch);
-  const double sb = std::sin(rot.pitch);
-  const double cg = std::cos(rot.yaw);
-  const double sg = std::sin(rot.yaw);
-  return Rotation(std::atan2(-sa, ca),  // roll
-                  std::atan2(-sb, cb),  // pitch
-                  std::atan2(-sg, -cg));  // yaw
+  // TODO(maddog@tri.global)  Find a better way to do this, and probably move
+  //                          it into api::Rotation itself.  seancurtis-tri has
+  //                          volunteered, when the time comes.
+  const double ca = std::cos(rot.roll());
+  const double sa = std::sin(rot.roll());
+  const double cb = std::cos(rot.pitch());
+  const double sb = std::sin(rot.pitch());
+  const double cg = std::cos(rot.yaw());
+  const double sg = std::sin(rot.yaw());
+  return Rotation::FromRpy(std::atan2(-sa, ca),  // roll
+                           std::atan2(-sb, cb),  // pitch
+                           std::atan2(-sg, -cg));  // yaw
 }
 
 
@@ -60,8 +63,7 @@ Rotation OrientationOutFromLane(const LaneEnd& lane_end) {
 
 // Return the Cartesian distance between two GeoPositions.
 double Distance(const GeoPosition& a, const GeoPosition& b) {
-  const GeoPosition d {a.x - b.x, a.y - b.y, a.z - b.z};
-  return std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
+  return (a.xyz() - b.xyz()).norm();
 }
 
 
@@ -69,25 +71,25 @@ double Distance(const GeoPosition& a, const GeoPosition& b) {
 // TODO(maddog@tri.global)  This should probably be a method of Rotation, and or
 //                          consolidated with something else somehow.
 GeoPosition Rotate(const Rotation& rot, const GeoPosition& in) {
-  const double sa = std::sin(rot.roll);
-  const double ca = std::cos(rot.roll);
-  const double sb = std::sin(rot.pitch);
-  const double cb = std::cos(rot.pitch);
-  const double sg = std::sin(rot.yaw);
-  const double cg = std::cos(rot.yaw);
+  const double sa = std::sin(rot.roll());
+  const double ca = std::cos(rot.roll());
+  const double sb = std::sin(rot.pitch());
+  const double cb = std::cos(rot.pitch());
+  const double sg = std::sin(rot.yaw());
+  const double cg = std::cos(rot.yaw());
 
   return GeoPosition(
-      ((cb * cg) * in.x) +
-      ((-ca*sg + sa*sb*cg) * in.y) +
-      ((sa*sg + ca*sb*cg) * in.z),
+      ((cb * cg) * in.x()) +
+      ((-ca*sg + sa*sb*cg) * in.y()) +
+      ((sa*sg + ca*sb*cg) * in.z()),
 
-      ((cb*sg) * in.x) +
-      ((ca*cg + sa*sb*sg) * in.y) +
-      ((-sa*cg + ca*sb*sg) * in.z),
+      ((cb*sg) * in.x()) +
+      ((ca*cg + sa*sb*sg) * in.y()) +
+      ((-sa*cg + ca*sb*sg) * in.z()),
 
-      ((-sb) * in.x) +
-      ((sa*cb) * in.y) +
-      ((ca*cb) * in.z));
+      ((-sb) * in.x()) +
+      ((sa*cb) * in.y()) +
+      ((ca*cb) * in.z()));
 }
 
 
@@ -103,15 +105,20 @@ double Distance(const Rotation& a, const Rotation& b) {
   GeoPosition br = Rotate(b, {0., 1., 0.});
   GeoPosition bh = Rotate(b, {0., 0., 1.});
   // Compute angles between pairs of unit vectors.
-  double ds = std::acos((as.x * bs.x) + (as.y * bs.y) + (as.z * bs.z));
-  double dr = std::acos((ar.x * br.x) + (ar.y * br.y) + (ar.z * br.z));
-  double dh = std::acos((ah.x * bh.x) + (ah.y * bh.y) + (ah.z * bh.z));
+  double ds = std::acos(as.xyz().dot(bs.xyz()));
+  double dr = std::acos(ar.xyz().dot(br.xyz()));
+  double dh = std::acos(ah.xyz().dot(bh.xyz()));
 
   return std::sqrt((ds * ds) + (dr * dr) + (dh * dh));
 }
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& out,
+    const RoadGeometryId& road_geometry_id) {
+  return out << std::string("RoadGeometry(") << road_geometry_id.id
+      << std::string(")");
+}
 
 std::vector<std::string> RoadGeometry::CheckInvariants() const {
   std::vector<std::string> failures;
@@ -174,7 +181,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
   for (int bpi = 0; bpi < num_branch_points(); ++bpi) {
     const BranchPoint* bp = branch_point(bpi);
     // For each BranchPoint:
-    //  - all branches should map to same GEO-space (x,y,z);
+    //  - all branches should map to same world frame (x,y,z);
     //  - orientation *into* BranchPoint should be the same for all A-side
     //     branches;
     //  - orientation *into* BranchPoint should be the same for all B-side
@@ -193,7 +200,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         (bp->GetASide()->size() > 0)
         ? bp->GetASide()->get(0)
         : bp->GetBSide()->get(0);
-    // ...test GEO-space position similarity.
+    // ...test world frame position similarity.
     const GeoPosition ref_geo = LaneEndGeoPosition(ref_end);
     const auto test_geo_position = [&](const LaneEndSet& ends) {
       for (int bi = 0; bi < ends.size(); ++bi) {

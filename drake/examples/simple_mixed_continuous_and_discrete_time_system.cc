@@ -54,7 +54,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
   }
 };
 
-int main(int argc, char* argv[]) {
+int main() {
   // Create the simple system.
   SimpleMixedContinuousTimeDiscreteTimeSystem system;
 

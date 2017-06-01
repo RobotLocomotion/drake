@@ -1,22 +1,17 @@
 # -*- python -*-
 
-load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load("@drake//tools:python_lint.bzl", "python_lint")
 
-# Lets other packages inspect the CMake code, e.g., for the version number.
-filegroup(
-    name = "cmakelists_with_version",
-    srcs = ["CMakeLists.txt"],
-    visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:public"])
 
 # Chooses the nlopt preprocessor substitutions that we want to use from Bazel.
 cmake_configure_file(
     name = "config",
     src = "nlopt_config.h.in",
     out = "nlopt_config.h",
-    cmakelists = [
-        ":cmakelists_with_version",
-    ],
+    cmakelists = ["CMakeLists.txt"],
     defines = [
         # These end up being unused; empty-string is a fail-fast value.
         "SIZEOF_UNSIGNED_INT=",
@@ -49,7 +44,7 @@ cmake_configure_file(
         # Yes, we are going to build the C++ bindings.
         "WITH_CXX=1",
     ],
-    visibility = [],
+    visibility = ["//visibility:private"],
 )
 
 # Creates api/nlopt.hpp based on api/nlopt.h.
@@ -60,14 +55,14 @@ genrule(
         "api/nlopt.h",
     ],
     outs = ["api/nlopt.hpp"],
-    cmd = "$(location @//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
+    cmd = "$(location @drake//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
           " || (cat log && false)",
-    tools = ["@//tools:nlopt-gen-hpp.sh"],
-    visibility = [],
+    tools = ["@drake//tools:nlopt-gen-hpp.sh"],
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
-    name = "lib",
+    name = "nlopt",
     srcs = [
         # This comes from a genrule above.
         "nlopt_config.h",
@@ -95,8 +90,7 @@ cc_library(
     ).split(" ", None),
     hdrs = [
         "api/nlopt.h",
-        # This comes from a genrule above.
-        "api/nlopt.hpp",
+        ":nlopt_hpp_genrule",
     ],
     copts = [
         "-Wno-all",
@@ -124,5 +118,31 @@ cc_library(
         "esch",
         "api",
     ],
-    visibility = ["//visibility:public"],
 )
+
+cmake_config(
+    package = "NLopt",
+    script = "@drake//tools:nlopt-create-cps.py",
+    version_file = "nlopt_config.h",
+)
+
+install_cmake_config(package = "NLopt")  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    doc_dest = "share/doc/nlopt",
+    docs = [
+        "AUTHORS",
+        "NEWS",
+    ],
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/nlopt",
+    license_docs = glob([
+        "**/COPYING",
+        "**/COPYRIGHT",
+    ]),
+    targets = [":nlopt"],
+    deps = [":install_cmake_config"],
+)
+
+python_lint()

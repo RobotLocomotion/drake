@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -18,26 +19,40 @@ class Variable {
  public:
   typedef size_t Id;
 
+  /** Supported types of symbolic variables. */
+  // TODO(soonho-tri): refines the following descriptions.
+  enum class Type {
+    CONTINUOUS,  ///< A CONTINUOUS variable takes a `double` value.
+    INTEGER,     ///< An INTEGER variable takes an `int` value.
+    BINARY,      ///< A BINARY variable takes an integer value from {0, 1}.
+    BOOLEAN,     ///< A BOOLEAN variable takes a `bool` value.
+  };
+
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
 
-  /** Default constructor. Constructs a dummy variable. This is needed to have
-   *  Eigen::Matrix<Variable>. The objects created by the default constructor
-   *  share the same ID, zero. As a result, they all are identified as a single
-   *  variable by equality operator (==). They all have the same hash value as
-   *  well.
+  /** Default constructor. Constructs a dummy variable of CONTINUOUS type. This
+   *  is needed to have Eigen::Matrix<Variable>. The objects created by the
+   *  default constructor share the same ID, zero. As a result, they all are
+   *  identified as a single variable by equality operator (==). They all have
+   *  the same hash value as well.
    *
    *  It is allowed to construct a dummy variable but it should not be used to
    *  construct a symbolic expression.
    */
-  Variable() : id_{0}, name_{std::string()} {}
+  Variable()
+      : id_{0},
+        type_{Type::CONTINUOUS},
+        name_{std::make_shared<std::string>()} {}
 
-  /** Constructs a variable with a string . */
-  explicit Variable(const std::string& name);
+  /** Constructs a variable with a string. If not specified, it has CONTINUOUS
+   * type by default.*/
+  explicit Variable(std::string name, Type type = Type::CONTINUOUS);
 
   /** Checks if this is a dummy variable (ID = 0) which is created by
    *  the default constructor. */
   bool is_dummy() const { return get_id() == 0; }
   Id get_id() const;
+  Type get_type() const;
   size_t get_hash() const { return std::hash<Id>{}(id_); }
   std::string get_name() const;
   std::string to_string() const;
@@ -53,9 +68,18 @@ class Variable {
  private:
   // Produces a unique ID for a variable.
   static Id get_next_id();
-  Id id_{};           // Unique identifier.
-  std::string name_;  // Name of variable.
+  Id id_{};  // Unique identifier.
+  Type type_{Type::CONTINUOUS};
+
+  // Variable class has shared_ptr<string> instead of string to be
+  // drake::test::IsMemcpyMovable.
+  // Please check https://github.com/RobotLocomotion/drake/issues/5974
+  // for more information.
+  std::shared_ptr<std::string> name_;  // Name of variable.
 };
+
+std::ostream& operator<<(std::ostream& os, Variable::Type type);
+
 }  // namespace symbolic
 
 /** Computes the hash value of a variable. */
@@ -110,7 +134,6 @@ typename std::enable_if<
         std::is_same<typename DerivedB::Scalar, Variable>::value,
     bool>::type
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
-  namespace internal = Eigen::internal;  // Fix for broken Eigen 3.3~beta1.
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
   return m1.binaryExpr(m2, std::equal_to<Variable>{}).all();

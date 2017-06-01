@@ -24,6 +24,11 @@ DEFINE_string(simple_car_names, "",
               "would spawn 3 cars subscribed to DRIVING_COMMAND_Russ, "
               "DRIVING_COMMAND_Jeremy, and DRIVING_COMMAND_Liang). If this "
               "option is provided, num_simple_car must not be provided.");
+DEFINE_int32(num_mobil_car, 0,
+             "Number of MOBIL-controlled SimpleCar vehicles. This option is "
+             "currently only applied when the road network is a dragway. "
+             "MOBIL-controlled vehicles are placed behind any idm-controlled "
+             "railcars and any fixed-speed railcars.");
 DEFINE_int32(num_trajectory_car, 0, "Number of TrajectoryCar vehicles. This "
              "option is currently only applied when the road network is a flat "
              "plane or a dragway.");
@@ -65,9 +70,9 @@ DEFINE_double(dragway_lane_speed_delta, 2,
               "dragway_base_speed + dragway_lane_speed_delta m/s. Finally, "
               "vehicles in the left-most lane will travel at "
               "dragway_base_speed + 2 * dragway_lane_speed_delta m/s.");
-DEFINE_double(dragway_vehicle_delay, 3,
-              "The starting time delay between consecutive vehicles on a "
-              "lane.");
+DEFINE_double(dragway_vehicle_spacing, 10,
+              "The initial spacing (in meters) between consecutive vehicles "
+              "traveling on a lane.");
 
 DEFINE_bool(with_onramp, false, "Loads the onramp road network. Only one road "
             "network can be enabled. Thus, if this option is enabled, no other "
@@ -75,7 +80,7 @@ DEFINE_bool(with_onramp, false, "Loads the onramp road network. Only one road "
 DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles added to the "
               "onramp.");
 DEFINE_bool(onramp_swap_start, false, "Whether to swap the starting lanes of "
-    "the vehicles on the onramp.");
+            "the vehicles on the onramp.");
 
 DEFINE_bool(with_stalled_cars, false, "Places a stalled vehicle at the end of "
             "each lane of a dragway. This option is only enabled when the "
@@ -88,10 +93,11 @@ using maliput::api::Lane;
 namespace automotive {
 namespace {
 
-// The distance between the coordinates of consecutive rows of railcars on a
-// dragway. 5 m ensures a gap between consecutive rows of Prius vehicles. It was
-// empirically chosen.
+// The distance between the coordinates of consecutive rows of railcars and
+// other controlled cars (e.g. MOBIL) on a dragway. 5 m ensures a gap between
+// consecutive rows of Prius vehicles. It was empirically chosen.
 constexpr double kRailcarRowSpacing{5};
+constexpr double kControlledCarRowSpacing{5};
 
 enum class RoadNetworkType {
   flat = 0,
@@ -206,21 +212,42 @@ void AddVehicles(RoadNetworkType road_network_type,
       const int lane_index = i % FLAGS_num_dragway_lanes;
       const double speed = FLAGS_dragway_base_speed +
           lane_index * FLAGS_dragway_lane_speed_delta;
-      const double start_time = i / FLAGS_num_dragway_lanes *
-           FLAGS_dragway_vehicle_delay;
+      const double start_position = i / FLAGS_num_dragway_lanes *
+           FLAGS_dragway_vehicle_spacing;
       const auto& params = CreateTrajectoryParamsForDragway(
-          *dragway_road_geometry, lane_index, speed, start_time);
+          *dragway_road_geometry, lane_index, speed, start_position);
       simulator->AddPriusTrajectoryCar("TrajectoryCar" + std::to_string(i),
                                        std::get<0>(params),
                                        std::get<1>(params),
                                        std::get<2>(params));
     }
+
+    for (int i = 0; i < FLAGS_num_mobil_car; ++i) {
+      const int lane_index = i % FLAGS_num_dragway_lanes;
+      const std::string name = "MOBIL" + std::to_string(i);
+      SimpleCarState<double> state;
+      const int row = i / FLAGS_num_dragway_lanes;
+      const double x_offset = kControlledCarRowSpacing * row;
+      const Lane* lane =
+          dragway_road_geometry->junction(0)->segment(0)->lane(lane_index);
+      if (x_offset >= lane->length()) {
+        throw std::runtime_error(
+            "Ran out of lane length to add new MOBIL-controlled SimpleCars.");
+      }
+      const double y_offset = lane->ToGeoPosition({0., 0., 0.}).y();
+      state.set_x(x_offset);
+      state.set_y(y_offset);
+      simulator->AddMobilControlledSimpleCar(name, true /* with_s */, state);
+    }
+
     AddMaliputRailcar(FLAGS_num_idm_controlled_maliput_railcar,
         true /* IDM controlled */, 0 /* initial s offset */,
         dragway_road_geometry, simulator);
     const double initial_s_offset =
-      std::ceil(FLAGS_num_idm_controlled_maliput_railcar /
-          FLAGS_num_dragway_lanes) * kRailcarRowSpacing;
+        std::ceil(FLAGS_num_idm_controlled_maliput_railcar /
+                  FLAGS_num_dragway_lanes) * kRailcarRowSpacing +
+        std::ceil(FLAGS_num_mobil_car /
+                  FLAGS_num_dragway_lanes) * kControlledCarRowSpacing;
     AddMaliputRailcar(FLAGS_num_maliput_railcar, false /* IDM controlled */,
         initial_s_offset, dragway_road_geometry, simulator);
     if (FLAGS_with_stalled_cars) {
@@ -231,12 +258,13 @@ void AddVehicles(RoadNetworkType road_network_type,
         const maliput::api::GeoPosition position = lane->ToGeoPosition(
             {lane->length() /* s */, 0 /* r */, 0 /* h */});
         SimpleCarState<double> state;
-        state.set_x(position.x);
-        state.set_y(position.y);
+        state.set_x(position.x());
+        state.set_y(position.y());
         simulator->AddPriusSimpleCar("StalledCar" + std::to_string(i),
             "StalledCarChannel" + std::to_string(i), state);
       }
     }
+
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     for (int i = 0; i < FLAGS_num_maliput_railcar; ++i) {
@@ -267,8 +295,8 @@ void AddVehicles(RoadNetworkType road_network_type,
   }
 }
 
-// Adds a flat terrain to the provided `simulator`.
-void AddFlatTerrain(AutomotiveSimulator<double>* simulator) {
+// Adds a flat terrain to the provided simulator.
+void AddFlatTerrain(AutomotiveSimulator<double>*) {
   // Intentially do nothing. This is possible since only non-physics-based
   // vehicles are supported and they will not fall through the "ground" when no
   // flat terrain is present.

@@ -130,11 +130,10 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    * MathematicalProgram::AddCost().
    */
   template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
+  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
+                          std::shared_ptr<solvers::Cost>>::type
   AddRunningCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::MakeFunctionCost(std::forward<F>(f));
     AddRunningCost(c);
     return c;
   }
@@ -150,8 +149,8 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   //
   // @param constraint A constraint which expects a timestep, state, and input
   // as the elements of x when Eval is invoked.
-  void AddRunningCost(std::shared_ptr<solvers::Constraint> constraint) {
-    DoAddRunningCost(constraint);
+  void AddRunningCost(std::shared_ptr<solvers::Cost> cost) {
+    DoAddRunningCost(cost);
   }
 
   /**
@@ -234,11 +233,11 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /**
    * Add a cost to the final state and total time.
    *
-   * @param constraint A constraint which expects total time as the
+   * @param cost A cost which expects total time as the
    * first element of x when Eval is invoked, followed by the final
    * state (num_states additional elements).
    */
-  void AddFinalCost(std::shared_ptr<solvers::Constraint> constraint);
+  void AddFinalCost(std::shared_ptr<solvers::Cost> cost);
 
   /// Adds a cost to the final time, of the form
   ///    @f[ cost = e(t,x,u), @f]
@@ -266,11 +265,10 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    * MathematicalProgram::AddCost().
    */
   template <typename F>
-  typename std::enable_if<
-      !std::is_convertible<F, std::shared_ptr<solvers::Constraint>>::value,
-      std::shared_ptr<solvers::Constraint>>::type
+  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
+                          std::shared_ptr<solvers::Cost>>::type
   AddFinalCostFunc(F&& f) {
-    auto c = solvers::MathematicalProgram::MakeCost(std::forward<F>(f));
+    auto c = solvers::MakeFunctionCost(std::forward<F>(f));
     AddFinalCost(c);
     return c;
   }
@@ -389,8 +387,7 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
 
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
 
-  virtual void DoAddRunningCost(
-      std::shared_ptr<solvers::Constraint> constraint) = 0;
+  virtual void DoAddRunningCost(std::shared_ptr<solvers::Cost> cost) = 0;
 
   const int num_inputs_{};
   const int num_states_{};

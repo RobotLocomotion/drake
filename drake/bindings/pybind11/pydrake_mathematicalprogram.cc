@@ -1,30 +1,64 @@
 #include "drake/bindings/pybind11/pydrake_symbolic_types.h"
 #include "drake/solvers/mathematical_program.h"
 
+#include <cstddef>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
 
 namespace py = pybind11;
+using std::string;
+
+using drake::symbolic::Variable;
+using drake::symbolic::Expression;
+using drake::symbolic::Formula;
+using drake::solvers::Binding;
+using drake::solvers::MathematicalProgram;
+using drake::solvers::EvaluatorBase;
+using drake::solvers::Constraint;
+using drake::solvers::LinearConstraint;
+using drake::solvers::LinearEqualityConstraint;
+using drake::solvers::BoundingBoxConstraint;
+using drake::solvers::Cost;
+using drake::solvers::LinearCost;
+using drake::solvers::QuadraticCost;
+using drake::solvers::VectorXDecisionVariable;
+using drake::solvers::MatrixXDecisionVariable;
+using drake::solvers::SolutionResult;
+using drake::solvers::MathematicalProgramSolverInterface;
+using drake::solvers::SolverType;
+
+/*
+ * Register a Binding template, and add the corresponding overloads to the
+ * pybind11 MathematicalProgram class.
+ * @param scope The scope this will be added to (e.g., the module).
+ * @param pprog_cls Pointer to Python MathematicalProgram class. Overloads will
+ * be added to the binding
+ * @param name Name of the Cost / Constraint class.
+ */
+template <typename C>
+auto RegisterBinding(py::handle* pscope,
+                     py::class_<MathematicalProgram>* pprog_cls,
+                     const string& name) {
+  auto& scope = *pscope;
+  auto& prog_cls = *pprog_cls;
+  typedef Binding<C> B;
+  string pyname = "Binding_" + name;
+  auto binding_cls = py::class_<B>(scope, pyname.c_str())
+    .def("constraint", &B::constraint)
+    .def("variables", &B::variables);
+  // Register overloads for MathematicalProgram class
+  prog_cls
+    .def("EvalBindingAtSolution",
+          (Eigen::VectorXd(MathematicalProgram::*)(
+           const B&) const)
+          &MathematicalProgram::EvalBindingAtSolution);
+  return binding_cls;
+}
 
 PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
-  using drake::symbolic::Variable;
-  using drake::symbolic::Expression;
-  using drake::symbolic::Formula;
-  using drake::solvers::Binding;
-  using drake::solvers::MathematicalProgram;
-  using drake::solvers::Constraint;
-  using drake::solvers::LinearConstraint;
-  using drake::solvers::LinearEqualityConstraint;
-  using drake::solvers::BoundingBoxConstraint;
-  using drake::solvers::QuadraticConstraint;
-  using drake::solvers::VectorXDecisionVariable;
-  using drake::solvers::MatrixXDecisionVariable;
-  using drake::solvers::SolutionResult;
-  using drake::solvers::MathematicalProgramSolverInterface;
-  using drake::solvers::SolverType;
-
   py::module m("_pydrake_mathematicalprogram",
                "Drake MathematicalProgram Bindings");
 
@@ -53,7 +87,8 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .value("kNlopt", SolverType::kNlopt)
     .value("kSnopt", SolverType::kSnopt);
 
-  py::class_<MathematicalProgram>(m, "MathematicalProgram")
+  py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram");
+  prog_cls
     .def(py::init<>())
     .def("NewContinuousVariables", (VectorXDecisionVariable
           (MathematicalProgram::*)(
@@ -100,17 +135,17 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           const Formula&))
           &MathematicalProgram::AddLinearConstraint)
     .def("AddLinearCost",
-         (Binding<LinearConstraint>
+         (Binding<LinearCost>
           (MathematicalProgram::*)(
           const Expression&))
           &MathematicalProgram::AddLinearCost)
-    .def("AddQuadraticCost", (Binding<QuadraticConstraint>
+    .def("AddQuadraticCost", (Binding<QuadraticCost>
          (MathematicalProgram::*)(
           const Eigen::Ref<const Eigen::MatrixXd>&,
           const Eigen::Ref<const Eigen::VectorXd>&,
           const Eigen::Ref<const VectorXDecisionVariable>&))
          &MathematicalProgram::AddQuadraticCost)
-    .def("AddQuadraticCost", (Binding<QuadraticConstraint>
+    .def("AddQuadraticCost", (Binding<QuadraticCost>
          (MathematicalProgram::*)(const Expression&))
          &MathematicalProgram::AddQuadraticCost)
     .def("Solve", &MathematicalProgram::Solve)
@@ -138,14 +173,6 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
             const MatrixXDecisionVariable& var) {
       return prog.GetSolution(var);
     })
-    .def("EvalBindingAtSolution",
-         (Eigen::VectorXd(MathematicalProgram::*)(
-          const Binding<LinearConstraint>&) const)
-         &MathematicalProgram::EvalBindingAtSolution)
-    .def("EvalBindingAtSolution",
-         (Eigen::VectorXd(MathematicalProgram::*)(
-          const Binding<QuadraticConstraint>&) const)
-         &MathematicalProgram::EvalBindingAtSolution)
     .def("SetSolverOption", (void(MathematicalProgram::*)(
          SolverType, const std::string&, double))
          &MathematicalProgram::SetSolverOption)
@@ -169,10 +196,12 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   // Assign the wrapped Constraint class to the name 'constraint'
   // so we can use it in this file to indicate that the other constraint
   // types inherit from it.
-  py::class_<Constraint, std::shared_ptr<Constraint>> constraint(
+  py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
+    .def("num_constraints", &EvaluatorBase::num_constraints)
+    .def("lower_bound", &EvaluatorBase::lower_bound)
+    .def("upper_bound", &EvaluatorBase::upper_bound);
+  py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
     m, "Constraint");
-  constraint.def("lower_bound", &Constraint::lower_bound)
-            .def("upper_bound", &Constraint::upper_bound);
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
     m, "LinearConstraint")
@@ -186,30 +215,29 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
              std::shared_ptr<BoundingBoxConstraint>>(
     m, "BoundingBoxConstraint");
 
-  py::class_<QuadraticConstraint, Constraint,
-             std::shared_ptr<QuadraticConstraint>>(m, "QuadraticConstraint")
-    .def("Q", &QuadraticConstraint::Q)
-    .def("b", &QuadraticConstraint::b);
+  RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
+  RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
+                                            "LinearEqualityConstraint");
+  RegisterBinding<BoundingBoxConstraint>(&m, &prog_cls,
+                                         "BoundingBoxConstraint");
 
-  py::class_<Binding<LinearConstraint>>(
-    m, "Binding_LinearConstraint")
-    .def("constraint", &Binding<LinearConstraint>::constraint)
-    .def("variables", &Binding<LinearConstraint>::variables);
+  // Mirror procedure for costs
+  py::class_<Cost, std::shared_ptr<Cost>> cost(
+    m, "Cost");
 
-  py::class_<Binding<QuadraticConstraint>>(
-    m, "Binding_QuadraticConstraint")
-    .def("constraint", &Binding<QuadraticConstraint>::constraint)
-    .def("variables", &Binding<QuadraticConstraint>::variables);
+  py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(
+    m, "LinearCost")
+    .def("a", &LinearCost::a)
+    .def("b", &LinearCost::b);
 
-  py::class_<Binding<LinearEqualityConstraint>>(
-    m, "Binding_LinearEqualityConstraint")
-    .def("constraint", &Binding<LinearEqualityConstraint>::constraint)
-    .def("variables", &Binding<LinearEqualityConstraint>::variables);
+  py::class_<QuadraticCost, Cost,
+             std::shared_ptr<QuadraticCost>>(m, "QuadraticCost")
+    .def("Q", &QuadraticCost::Q)
+    .def("b", &QuadraticCost::b)
+    .def("c", &QuadraticCost::c);
 
-  py::class_<Binding<BoundingBoxConstraint>>(
-    m, "Binding_BoundingBoxConstraint")
-    .def("constraint", &Binding<BoundingBoxConstraint>::constraint)
-    .def("variables", &Binding<BoundingBoxConstraint>::variables);
+  RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
+  RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
 
   return m.ptr();
 }

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <list>
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -7,6 +8,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/solvers/test/add_solver_util.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
+
+using std::make_shared;
 
 using Eigen::Vector2d;
 using Eigen::Matrix2d;
@@ -239,9 +242,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   prog_socp.AddLinearConstraint(A, b_lb, b_ub, x_socp);
 
-  std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(
-      c.transpose(), drake::Vector1d(-std::numeric_limits<double>::infinity()),
-      drake::Vector1d(std::numeric_limits<double>::infinity())));
+  auto cost_socp1 = make_shared<LinearCost>(c.transpose());
   prog_socp.AddCost(cost_socp1, x_socp);
   prog_socp.AddLinearCost(drake::Vector1d(1.0), y);
   RunSolver(&prog_socp, solver);
@@ -729,8 +730,7 @@ GTEST_TEST(TestSemidefiniteProgram, TestEigenvalueProblem) {
     // clang-format on
     auto z = prog.NewContinuousVariables<1>("z");
     prog.AddLinearMatrixInequalityConstraint(
-        {Matrix3d::Zero(), Matrix3d::Identity(), -F1, -F2},
-        {z, x});
+        {Matrix3d::Zero(), Matrix3d::Identity(), -F1, -F2}, {z, x});
 
     Vector2d x_lb(0.1, 1);
     Vector2d x_ub(2, 3);

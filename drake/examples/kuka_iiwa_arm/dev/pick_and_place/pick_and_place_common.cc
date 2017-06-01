@@ -5,13 +5,14 @@
 #include <vector>
 
 #include "drake/common/trajectories/piecewise_quaternion.h"
-#include "drake/examples/kuka_iiwa_arm/dev/iiwa_ik_planner.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
+
+using manipulation::planner::ConstraintRelaxingIk;
 
 // Determines which table is holding the object based on the object's xy
 // distance to the center of each table.
@@ -56,7 +57,7 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
                             const Isometry3<double>& X_WEndEffector1,
                             const Vector3<double>& via_points_pos_tolerance,
                             const double via_points_rot_tolerance,
-                            IiwaIkPlanner* planner, IKResults* ik_res,
+                            ConstraintRelaxingIk* planner, IKResults* ik_res,
                             std::vector<double>* times) {
   DRAKE_DEMAND(duration > 0 && num_via_points >= 0);
   // Makes a slerp trajectory from start to end.
@@ -70,7 +71,8 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
   PiecewisePolynomial<double> pos_traj =
       PiecewisePolynomial<double>::FirstOrderHold({0, duration}, pos);
 
-  std::vector<IiwaIkPlanner::IkCartesianWaypoint> waypoints(num_via_points + 1);
+  std::vector<
+    ConstraintRelaxingIk::IkCartesianWaypoint> waypoints(num_via_points + 1);
   const double dt = duration / (num_via_points + 1);
   double time = 0;
   times->clear();

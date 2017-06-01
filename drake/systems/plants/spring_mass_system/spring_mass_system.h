@@ -67,7 +67,8 @@ class SpringMassStateVector : public BasicVector<T> {
 /// Units are MKS (meters-kilograms-seconds).
 ///
 /// Instantiated templates for the following kinds of T's are provided:
-/// - const T&
+/// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -211,8 +212,8 @@ class SpringMassSystem : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
 
-  /// Returns the closed-form position and velocity solution for the unforced
-  /// spring-mass-damper from the given initial conditions.
+  /// Returns the closed-form position and velocity solution for this system
+  /// from the given initial conditions.
   /// @param x0 the position of the spring at time t = 0.
   /// @param v0 the velocity of the spring at time t = 0.
   /// @param tf the time at which to return the position and velocity.
@@ -220,8 +221,8 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @param[out] vf the velocity of the spring at time tf, on return.
   /// @throws std::logic_error if xf or vf is nullptr or if the system is
   ///         forced.
-  virtual void get_closed_form_solution(const T& x0, const T& v0, const T& tf,
-                                        T* xf, T* vf) const {
+  void GetClosedFormSolution(const T& x0, const T& v0, const T& tf,
+                             T* xf, T* vf) const {
     using std::sqrt;
     using std::sin;
     using std::cos;
@@ -235,8 +236,8 @@ class SpringMassSystem : public LeafSystem<T> {
     // d^2x/dt^2 = -kx/m
     // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
     // where omega = sqrt(k/m)
-    // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
-    // for t = 0, x(0) = c1, x'(0) = c2*omega
+    // ẋ(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
+    // for t = 0, x(0) = c1, ẋ(0) = c2*omega
 
     // Setup c1 and c2 for ODE constants.
     const T omega = sqrt(get_spring_constant() / get_mass());
@@ -258,8 +259,7 @@ class SpringMassSystem : public LeafSystem<T> {
 
  private:
   /// This system is not direct feedthrough.
-  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
-                              int output_port) const override {
+  bool DoHasDirectFeedthrough(const SparsityMatrix*, int, int) const override {
     return false;
   }
 

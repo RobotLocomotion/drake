@@ -35,13 +35,13 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
     const std::string original_name = NiceTypeName::Get(*basic_vector);
     const std::string cloned_name = NiceTypeName::Get(*cloned_vector);
     throw std::runtime_error(
-        "CheckVectorValueInvariants failed: " + original_name + "::Clone "
+        "CheckBasicVectorInvariants failed: " + original_name + "::Clone "
         "produced a " + cloned_name + " object instead of the same type");
   }
 }
 
-/// If @p abstract_value is a VectorValue<T>, then checks some BasicVector
-/// invariants.  If this is not a VectorValue<Scalar>, does nothing.
+/// If @p abstract_value is a Value<BasicVector<T>>, then checks some
+/// BasicVector invariants.  Otherwise, does nothing.
 ///
 /// Because this function uses shady implementation tricks, it should ONLY be
 /// called from within DRAKE_ASSERT_VOID or unit test code.
@@ -50,18 +50,19 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
 /// should be used sparingly.  In particular, only a few select locations
 /// within the Systems Framework itself should likely call this function.
 ///
-/// @tparam T the supposed element type of the VectorValue<T> that has been
-/// erased into an AbstractValue
+/// @tparam T the supposed element type of the Value<BasicVector<T>> that has
+/// been erased into an AbstractValue
 ///
 /// @throw exception if invariants are violated or abstract_value is nullptr
 template <typename T>
 void CheckVectorValueInvariants(const AbstractValue* abstract_value) {
   DRAKE_THROW_UNLESS(abstract_value != nullptr);
-  const VectorValue<T>* const vector_value =
-      dynamic_cast<const VectorValue<T>*>(abstract_value);
+  const Value<BasicVector<T>>* const vector_value =
+      dynamic_cast<const Value<BasicVector<T>>*>(abstract_value);
   if (vector_value != nullptr) {
-    // We are a VectorValue<T>, so check the invariants.
-    CheckBasicVectorInvariants<T>(vector_value->get_value());
+    // We are a Value<BasicVector<T>>, so check the invariants.
+    const BasicVector<T>& basic_vector = vector_value->get_value();
+    CheckBasicVectorInvariants<T>(&basic_vector);
   }
 }
 

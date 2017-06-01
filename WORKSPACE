@@ -16,10 +16,15 @@
 
 workspace(name = "drake")
 
-load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
 load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
+
+local_repository(
+    name = "kythe",
+    path = "tools/third_party/kythe",
+)
+load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
     name = "glib",
@@ -47,10 +52,10 @@ github_archive(
 )
 
 github_archive(
-    name = "gflags",
+    name = "com_github_gflags_gflags",
     repository = "gflags/gflags",
-    commit = "a69b2544d613b4bee404988710503720c487119a",
-    sha256 = "8b3836d5ca34a2da4d6375cf5f2030c719b508ca16014fcc9d5e9b295b56a6c1",
+    commit = "95ffb27c9c7496ede1409e042571054c70cb9519",
+    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",
 )
 
 github_archive(
@@ -104,9 +109,9 @@ maven_jar(
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
-    commit = "755d8108bf4447d83786e0e6586875371ba859e5",
+    commit = "c0a0093a950fc83e12e8d5918a0319b590356e7e",
     build_file = "tools/lcm.BUILD",
-    sha256 = "062b2daf35deb617552ffc2145ec238a2898710c8c5e9c49dc2514519c5f7930",
+    sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
 )
 
 github_archive(
@@ -152,9 +157,9 @@ github_archive(
 github_archive(
     name = "ipopt",
     repository = "RobotLocomotion/ipopt-mirror",
-    commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
+    commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
     build_file = "tools/ipopt.BUILD",
-    sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
+    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",
 )
 
 github_archive(
@@ -163,6 +168,13 @@ github_archive(
     commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
     build_file = "tools/nlopt.BUILD",
     sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",
+)
+
+github_archive(
+    name = "optitrack_driver",
+    repository = "RobotLocomotion/optitrack-driver",
+    commit = "3a5da8d7c66c95ca98cda4dc7ca604f681464168",
+    sha256 = "a4d4c61ed5af59f12a273629eb28fa95ac2349abffe8912468bc5cf6dff34d28",
 )
 
 github_archive(
@@ -183,10 +195,10 @@ github_archive(
 
 github_archive(
     name = "robotlocomotion_lcmtypes",
-    repository = "robotlocomotion/lcmtypes",
-    commit = "4bd59a1b62a1eca31a2550b37f356426bc793d67",
+    repository = "RobotLocomotion/lcmtypes",
+    commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
     build_file = "tools/robotlocomotion_lcmtypes.BUILD",
-    sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
+    sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",
 )
 
 github_archive(
@@ -201,21 +213,28 @@ github_archive(
 github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
-    commit = "0.4.0",
-    sha256 = "ef1aa6a368808d3aa18cbe588924f15fb8fac75d80860080355595e75eb9a529",
+    commit = "0.4.4",
+    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",
 )
 
 # Necessary for buildifier.
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
+load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
 
 # Necessary for buildifier.
 go_repositories()
 
+# Necessary for buildifier.
+new_go_repository(
+    name = "org_golang_x_tools",
+    commit = "3d92dd60033c312e3ae7cac319c792271cf67e37",
+    importpath = "golang.org/x/tools",
+)
+
 github_archive(
     name = "com_github_bazelbuild_buildtools",
     repository = "bazelbuild/buildtools",
-    commit = "93929369232fcda305607a2e0aa7b3cd9cf8912d",
-    sha256 = "2ffb39756767165133f9861d8bf52c76d5474bb462583edfe47d2ea0a759c62b",
+    commit = "0.4.5",
+    sha256 = "7a732ea12d88ddbf9adc99ff5b5c39bfda53b6286ecc79c3bc082d5f53f46f44",
 )
 
 github_archive(
@@ -250,13 +269,15 @@ gfortran_repository(
 git_repository(
   name = "snopt",
   remote = "git@github.com:RobotLocomotion/snopt.git",
-  commit = "a9a5f3f209573b96a2b355ef88f00aefa3d7ec7e",
+  commit = "2ec980370eeb72897135b11570033a19bda885a7",
 )
 
 # Python Libraries
-new_http_archive(
+load("//tools:pypi.bzl", "pypi_archive")
+pypi_archive(
     name = "six_archive",
-    url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz",
+    package = "six",
+    version = "1.10.0",
     sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
     build_file = "tools/six.BUILD",
 )
@@ -273,6 +294,22 @@ github_archive(
     sha256 = "0a0ae63cbffc274efb573bdde9a253e3f32e458c41261df51c5dbc5ad541e8f7",
 )
 
+pypi_archive(
+    name = "semantic_version",
+    version = "2.6.0",
+    sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",
+    build_file = "tools/semantic_version.BUILD",
+    strip_prefix = "semantic_version",
+)
+
+github_archive(
+    name = "pycps",
+    repository = "mwoehlke/pycps",
+    commit = "d68a10ce1130f87d38a13ae42ddb263042e2352a",
+    sha256 = "4de60f6b260b286dc2e68e9cdc31decc8f9ef43f77894c3d33a6fd097549008b",
+    build_file = "tools/pycps.BUILD",
+)
+
 # The "@python_headers//:python_headers" target is required by protobuf
 # during "bazel query" but not "bazel build", so a stub is fine.
 new_local_repository(
@@ -285,10 +322,10 @@ new_local_repository(
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
-    commit = "ignition-math3_3.0.0",
-    sha256 = "9315a64d806d7b90fc1c41b1845ba62b92f25007f413b1d3c03f3539de0d5bcd",
+    commit = "ignition-math3_3.2.0",
+    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",
     build_file = "tools/ignition_math.BUILD",
-    strip_prefix = "ignitionrobotics-ign-math-a06d26055d07",
+    strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4"
 )
 
 bitbucket_archive(
@@ -298,4 +335,28 @@ bitbucket_archive(
     sha256 = "e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a",
     build_file = "tools/ignition_rndf.BUILD",
     strip_prefix = "ignitionrobotics-ign-rndf-b20a4f68333f",
+)
+
+bitbucket_archive(
+    name = "sdformat",
+    repository = "osrf/sdformat",
+    commit = "deca28cd6cd5",
+    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",
+    build_file = "tools/sdformat.BUILD",
+    strip_prefix = "osrf-sdformat-deca28cd6cd5",
+)
+
+load("//tools:vtk.bzl", "vtk_repository")
+vtk_repository(
+    name = "vtk",
+)
+
+pkg_config_package(
+    name = "libpng",
+    modname = "libpng",
+)
+
+pkg_config_package(
+    name = "zlib",
+    modname = "zlib",
 )

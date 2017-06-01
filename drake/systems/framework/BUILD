@@ -58,6 +58,8 @@ drake_cc_library(
     deps = [
         ":vector",
         "//drake/common",
+        "//drake/common:copyable_unique_ptr",
+        "//drake/common:is_cloneable",
     ],
 )
 
@@ -514,7 +516,6 @@ drake_cc_googletest(
     deps = [
         ":value",
         "//drake/common",
-        "//drake/systems/framework/test_utilities",
     ],
 )
 

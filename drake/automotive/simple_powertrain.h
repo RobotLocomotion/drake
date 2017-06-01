@@ -24,7 +24,7 @@ namespace automotive {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// @ingroup automotive_systems
+/// @ingroup automotive_plants
 template <typename T>
 class SimplePowertrain : public systems::LinearSystem<T> {
  public:

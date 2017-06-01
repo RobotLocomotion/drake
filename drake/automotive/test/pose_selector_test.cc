@@ -66,6 +66,28 @@ static void SetDefaultPoses(PoseVector<double>* ego_pose,
                           Eigen::Isometry3d(translation_far_behind));
 }
 
+static void SetDefaultPosesSideBySide(PoseVector<double>* ego_pose,
+                                      PoseBundle<double>* traffic_poses) {
+  DRAKE_DEMAND(traffic_poses->get_num_poses() == 1);
+  DRAKE_DEMAND(kEgoSPosition > 0. && kLaneLength > kEgoSPosition);
+  DRAKE_DEMAND(kLeadingSPosition > kEgoSPosition &&
+               kLaneLength > kLeadingSPosition);
+  DRAKE_DEMAND(kEgoSPosition > kTrailingSPosition && kTrailingSPosition > 0.);
+
+  // Create poses for one traffic car and one ego positioned side-by-side, with
+  // the ego vehicle in the right lane and the traffic vehicle in the left lane.
+  ego_pose->set_translation(Eigen::Translation3d(
+      kEgoSPosition /* s */, kEgoRPosition /* r */, 0. /* h */));
+  const Eigen::Translation3d translation(
+      kEgoSPosition /* s */, kEgoRPosition + kLaneWidth /* r */, 0. /* h */);
+  FrameVelocity<double> velocity{};
+  velocity.get_mutable_value() << 0. /* ωx */, 0. /* ωy */,
+      0. /* ωz */, kTrafficXVelocity /* vx */, 0. /* vy */, 0. /* vz */;
+  traffic_poses->set_pose(0, Eigen::Isometry3d(translation));
+  traffic_poses->set_velocity(0, velocity);
+}
+
+
 GTEST_TEST(PoseSelectorTest, DragwayTest) {
   // Create a straight road, two lanes wide, in which the two s-r
   // Lane-coordinate frames are aligned with the x-y world coordinates, with s_i
@@ -97,21 +119,22 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Verifies that we are on the road and that the correct car was identified.
-  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s);
-  EXPECT_EQ(kTrailingSPosition, trailing_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s());
+  EXPECT_EQ(kTrailingSPosition, trailing_odometry.pos.s());
 
   // Test that we get the same result when just the leading car is returned.
   const RoadOdometry<double>& traffic_odometry =
       FindClosestLeading(road, ego_pose, traffic_poses);
-  EXPECT_EQ(kLeadingSPosition, traffic_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition, traffic_odometry.pos.s());
 
   // Peer into the adjacent lane to the left.
   std::tie(leading_odometry, trailing_odometry) = FindClosestPair(
       road, ego_pose, traffic_poses, ego_position.lane->to_left());
 
   // Expect to see no cars in the left lane.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s);
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_odometry.pos.s);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s());
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            trailing_odometry.pos.s());
 
   // Bump the "just ahead" car into the lane to the left.
   Isometry3<double> isometry_just_ahead =
@@ -122,7 +145,7 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Expect the "far ahead" car to be identified and with the correct speed.
-  EXPECT_EQ(kLeadingSPosition + kSOffset, leading_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition + kSOffset, leading_odometry.pos.s());
   EXPECT_EQ(kTrafficXVelocity, leading_odometry.vel[3]);
 
   // Bump the "far ahead" car into the lane to the left.
@@ -133,7 +156,7 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
       FindClosestPair(road, ego_pose, traffic_poses);
 
   // Looking forward, we expect there to be no car in sight.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s());
   for (int i = 0; i < 6; ++i) {
     EXPECT_EQ(0., leading_odometry.vel[i]);  // Defaults to zero velocity.
   }
@@ -144,8 +167,36 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
 
   // Expect there to be no car behind on the immediate left and the "just ahead"
   // car to be leading.
-  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s);
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), trailing_odometry.pos.s);
+  EXPECT_EQ(kLeadingSPosition, leading_odometry.pos.s());
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            trailing_odometry.pos.s());
+}
+
+// Verifies the result when the s-positions of the ego traffic vehicles have the
+// same s-position (side-by-side in adjacent lanes).
+GTEST_TEST(PoseSelectorTest, IdenticalSValues) {
+  // Instantiate a two-lane Dragway, identical to DragwayTest.
+  const int kNumLanes{2};
+  const maliput::dragway::RoadGeometry road(
+      maliput::api::RoadGeometryId({"Test Dragway"}), kNumLanes, kLaneLength,
+      kLaneWidth, 0. /* shoulder width */);
+  PoseVector<double> ego_pose;
+  PoseBundle<double> traffic_poses(1);
+
+  // Define the default poses.
+  SetDefaultPosesSideBySide(&ego_pose, &traffic_poses);
+
+  RoadOdometry<double> leading_odometry{};
+  RoadOdometry<double> trailing_odometry{};
+  // Peer into the adjacent lane to the left.
+  std::tie(leading_odometry, trailing_odometry) = FindClosestPair(
+      road, ego_pose, traffic_poses,
+      CalcRoadPosition(road, ego_pose.get_isometry()).lane->to_left());
+
+  // Verifies that the if the cars are side-by-side, then the traffic car is
+  // classified as a trailing car.
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), leading_odometry.pos.s());
+  EXPECT_EQ(kEgoSPosition, trailing_odometry.pos.s());
 }
 
 GTEST_TEST(PoseSelectorTest, TestGetSVelocity) {
