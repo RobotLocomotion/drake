@@ -41,6 +41,7 @@ install(
         "@lcm//:install",
         "@nlopt//:install",
         "@pybind11//:install",
+        "@robotlocomotion_lcmtypes//:install",
         "//drake:install",
         "//tools:install",
     ],

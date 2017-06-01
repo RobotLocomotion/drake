@@ -86,6 +86,11 @@ exports_create_cps_scripts([
     "pybind11",
 ])
 
+exports_files(
+    ["robotlocomotion-lcmtypes.cps"],
+    visibility = ["@robotlocomotion_lcmtypes//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",
