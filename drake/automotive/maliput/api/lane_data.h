@@ -172,6 +172,12 @@ class GeoPosition {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position);
 
+/// GeoPosition overload for the equality operator.
+bool operator==(const GeoPosition& lhs, const GeoPosition& rhs);
+
+/// GeoPosition overload for the inequality operator.
+bool operator!=(const GeoPosition& lhs, const GeoPosition& rhs);
+
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
 ///  * r is lateral position, perpendicular to the reference line at s.

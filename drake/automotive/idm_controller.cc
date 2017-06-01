@@ -1,13 +1,14 @@
 #include "drake/automotive/idm_controller.h"
 
+#include <algorithm>
 #include <limits>
 #include <utility>
 #include <vector>
 
+#include "drake/automotive/road_odometry.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/symbolic_formula.h"
-#include "drake/math/saturate.h"
 
 namespace drake {
 namespace automotive {
@@ -15,8 +16,6 @@ namespace automotive {
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
 using maliput::api::Rotation;
-using math::saturate;
-using pose_selector::RoadOdometry;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
@@ -99,25 +98,30 @@ void IdmController<T>::ImplDoCalcOutput(
     const PoseBundle<T>& traffic_poses,
     const IdmPlannerParameters<T>& idm_params,
     systems::BasicVector<T>* command) const {
+  using std::max;
+
   DRAKE_DEMAND(idm_params.IsValid());
+  // Initialize to a "model value" that has entries for the derivatives.
+
+  auto translation = ego_pose.get_isometry().translation();
+  const maliput::api::GeoPosition geo_position(
+      translation.x(), translation.y(), translation.z());
+  const RoadPosition ego_position =
+      road_.ToRoadPosition(geo_position, nullptr, nullptr, nullptr);
 
   // Find the single closest car ahead.
-  const RoadOdometry<T>& lead_car_odom =
-      pose_selector::FindClosestLeading(road_, ego_pose, traffic_poses);
-  const RoadPosition ego_position =
-      pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
+  const ClosestPose<T> lead_car_pose = PoseSelector<T>::FindSingleClosestPose(
+      ego_position.lane, ego_pose, ego_velocity, traffic_poses,
+      idm_params.scan_ahead_distance(), AheadOrBehind::kAhead);
+  const double headway_distance = lead_car_pose.distance;
 
-  const T& s_ego = ego_position.pos.s();
-  const T& s_dot_ego = pose_selector::GetSVelocity(
-      RoadOdometry<double>(ego_position, ego_velocity));
-  const T& s_lead = lead_car_odom.pos.s();
-  const T& s_dot_lead = pose_selector::GetSVelocity(lead_car_odom);
+  T s_dot_ego = PoseSelector<T>::GetSigmaVelocity({ego_position, ego_velocity});
+  T s_dot_lead = PoseSelector<T>::GetSigmaVelocity(lead_car_pose.odometry);
 
   // Saturate the net_distance at distance_lower_bound away from the ego car to
   // avoid near-singular solutions inherent to the IDM equation.
-  const T net_distance = saturate(s_lead - s_ego - idm_params.bloat_diameter(),
-                                  idm_params.distance_lower_limit(),
-                                  std::numeric_limits<T>::infinity());
+  const T actual_headway = headway_distance - idm_params.bloat_diameter();
+  const T net_distance = max(actual_headway, idm_params.distance_lower_limit());
   const T closing_velocity = s_dot_ego - s_dot_lead;
 
   // Compute the acceleration command from the IDM equation.
