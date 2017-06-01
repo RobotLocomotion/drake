@@ -51,7 +51,7 @@ class RandomSource : public LeafSystem<double> {
     const int N = updates->size();
     for (int i = 0; i < N; i++) {
       double random_value = distribution_(generator_);
-      (*updates)[0] = random_value;
+      (*updates)[i] = random_value;
     }
   }
 
