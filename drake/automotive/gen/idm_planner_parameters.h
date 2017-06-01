@@ -19,7 +19,7 @@ namespace automotive {
 /// Describes the row indices of a IdmPlannerParameters.
 struct IdmPlannerParametersIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 8;
+  static const int kNumCoordinates = 9;
 
   // The index of each individual coordinate.
   static const int kVRef = 0;
@@ -30,6 +30,7 @@ struct IdmPlannerParametersIndices {
   static const int kDelta = 5;
   static const int kBloatDiameter = 6;
   static const int kDistanceLowerLimit = 7;
+  static const int kScanAheadDistance = 8;
 
   /// Returns a vector containing the names of each coordinate within this
   /// class. The indices within the returned vector matches that of this class.
@@ -54,6 +55,7 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   /// @arg @c delta defaults to 4.0 in units of dimensionless.
   /// @arg @c bloat_diameter defaults to 4.5 in units of m.
   /// @arg @c distance_lower_limit defaults to 1e-2 in units of m.
+  /// @arg @c scan_ahead_distance defaults to 100.0 in units of m.
   IdmPlannerParameters() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_v_ref(10.0);
     this->set_a(1.0);
@@ -63,6 +65,7 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     this->set_delta(4.0);
     this->set_bloat_diameter(4.5);
     this->set_distance_lower_limit(1e-2);
+    this->set_scan_ahead_distance(100.0);
   }
 
   IdmPlannerParameters<T>* DoClone() const override {
@@ -123,6 +126,15 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   void set_distance_lower_limit(const T& distance_lower_limit) {
     this->SetAtIndex(K::kDistanceLowerLimit, distance_lower_limit);
   }
+  /// distance to scan ahead on road for a leading vehicle
+  /// @note @c scan_ahead_distance is expressed in units of m.
+  /// @note @c scan_ahead_distance has a limited domain of [0.0, +Inf].
+  const T& scan_ahead_distance() const {
+    return this->GetAtIndex(K::kScanAheadDistance);
+  }
+  void set_scan_ahead_distance(const T& scan_ahead_distance) {
+    this->SetAtIndex(K::kScanAheadDistance, scan_ahead_distance);
+  }
   //@}
 
   /// See IdmPlannerParametersIndices::GetCoordinateNames().
@@ -150,6 +162,8 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     result = result && (bloat_diameter() >= T(0.0));
     result = result && !isnan(distance_lower_limit());
     result = result && (distance_lower_limit() >= T(0.0));
+    result = result && !isnan(scan_ahead_distance());
+    result = result && (scan_ahead_distance() >= T(0.0));
     return result;
   }
 };
