@@ -12,6 +12,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
@@ -23,8 +24,11 @@
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
 using drake::systems::RungeKutta3Integrator;
+using drake::systems::ImplicitEulerIntegrator;
 using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
 using EmptySystem = drake::systems::analysis_test::EmptySystem<double>;
+using LogisticWitness = drake::systems::analysis_test::LogisticWitness<double>;
+using ClockWitness = drake::systems::analysis_test::ClockWitness<double>;
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
 using std::complex;
@@ -32,6 +36,33 @@ using std::complex;
 namespace drake {
 namespace systems {
 namespace {
+
+// Make a composite system using the logistic system with the clock-based
+// witness function.
+class CompositeSystem : public LogisticSystem {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeSystem)
+
+  CompositeSystem(double k, double alpha, double nu, double trigger_time) :
+      LogisticSystem(k, alpha, nu) {
+    this->DeclareContinuousState(1);
+    logistic_witness_ = std::make_unique<LogisticWitness>(*this);
+    clock_witness_ = std::make_unique<ClockWitness>(trigger_time, *this,
+                          WitnessFunction<double>::DirectionType::kCrossesZero);
+  }
+
+ protected:
+  void DoGetWitnessFunctions(
+      const Context<double>&,
+      std::vector<const systems::WitnessFunction<double>*>* w) const override {
+    w->push_back(clock_witness_.get());
+    w->push_back(logistic_witness_.get());
+  }
+
+ private:
+  std::unique_ptr<LogisticWitness> logistic_witness_;
+  std::unique_ptr<ClockWitness> clock_witness_;
+};
 
 // Tests witness function isolation when operating in fixed step mode without
 // specifying accuracy.
@@ -54,6 +85,170 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
 
   // Verify that the witness function triggered at dt.
   EXPECT_EQ(publish_time, dt);
+}
+
+// Tests witness function isolation when operating in error-controlled
+// integration mode.
+GTEST_TEST(SimulatorTest, VariableStepIsolation) {
+  // Set empty system to trigger when time is +1.
+  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
+  double publish_time = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    publish_time = context.get_time();
+  });
+
+  const double dt = 10;
+  Simulator<double> simulator(system);
+  simulator.reset_integrator<
+      RungeKutta3Integrator<double>>(system, simulator.get_mutable_context());
+  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
+  simulator.set_publish_at_initialization(false);
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
+
+  // Get the (one) witness function.
+  std::vector<const systems::WitnessFunction<double>*> witness;
+  system.GetWitnessFunctions(*context, &witness);
+  DRAKE_DEMAND(witness.size() == 1);
+
+  // Set the initial accuracy in the context and the integrator.
+  double accuracy = 1.0;
+  context->set_accuracy(accuracy);
+  simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
+
+  // Set the initial logistic system evaluation.
+  double eval = std::numeric_limits<double>::infinity();
+
+  // Loop, decreasing accuracy as we go.
+  while (accuracy > 1e-8) {
+    // (Re)set the time and initial state.
+    context->set_time(0);
+    simulator.get_mutable_integrator()->request_initial_step_size_target(dt);
+
+    // Simulate to dt.
+    simulator.StepTo(dt);
+
+    // Evaluate the witness function.
+    context->set_time(publish_time);
+    double new_eval = witness.front()->Evaluate(*context);
+
+    // Verify that the new evaluation is closer to zero than the old one.
+    EXPECT_LT(new_eval, eval);
+    eval = new_eval;
+
+    // Increase the accuracy.
+    accuracy *= 0.01;
+    context->set_accuracy(accuracy);
+    simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
+  }
+}
+
+// Tests witness function isolation accuracy increases with increasing accuracy
+// in the context.
+GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
+  // Set empty system to trigger when time is +1.
+  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
+  double publish_time = 0;
+  system.set_publish_callback([&](const Context<double>& context){
+    publish_time = context.get_time();
+  });
+
+  const double dt = 10;
+  Simulator<double> simulator(system);
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
+  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
+  simulator.set_publish_at_initialization(false);
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
+
+  // Get the (one) witness function.
+  std::vector<const systems::WitnessFunction<double>*> witness;
+  system.GetWitnessFunctions(*context, &witness);
+  DRAKE_DEMAND(witness.size() == 1);
+
+  // Set the initial accuracy in the context.
+  double accuracy = 1.0;
+  context->set_accuracy(accuracy);
+
+  // Set the initial logistic system evaluation.
+  double eval = std::numeric_limits<double>::infinity();
+
+  // Loop, decreasing accuracy as we go.
+  while (accuracy > 1e-8) {
+    // (Re)set the time and initial state.
+    context->set_time(0);
+
+    // Simulate to dt.
+    simulator.StepTo(dt);
+
+    // Evaluate the witness function.
+    context->set_time(publish_time);
+    double new_eval = witness.front()->Evaluate(*context);
+
+    // Verify that the new evaluation is closer to zero than the old one.
+    EXPECT_LT(new_eval, eval);
+    eval = new_eval;
+
+    // Increase the accuracy.
+    accuracy *= 0.1;
+    context->set_accuracy(accuracy);
+  }
+}
+
+// Tests ability of simulation to identify the witness function triggering
+// over an interval *where both witness functions change sign from the beginning
+// to the end of the interval.
+GTEST_TEST(SimulatorTest, MultipleWitnesses) {
+  // Create a CompositeSystem, which uses two witness functions.
+  CompositeSystem system(1e-8, 100, 1, 1e-2);
+  std::vector<std::pair<double, const WitnessFunction<double> *>> triggers;
+  system.set_publish_callback([&](const Context<double> &context) {
+    // Get the witness functions.
+    std::vector<const WitnessFunction<double> *> witnesses;
+    system.GetWitnessFunctions(context, &witnesses);
+    DRAKE_DEMAND(witnesses.size() == 2);
+
+    // Evaluate them.
+    double w1 = witnesses.front()->Evaluate(context);
+    double w2 = witnesses.back()->Evaluate(context);
+
+    // Store the one that evaluates closest to zero.
+    if (std::abs(w1) < std::abs(w2)) {
+      triggers.emplace_back(context.get_time(), witnesses.front());
+    } else {
+      // They should not be very close to one another.
+      const double tol = 1e-8;
+      assert(std::abs(w2 - w1) > tol);
+      triggers.emplace_back(context.get_time(), witnesses.back());
+    }
+  });
+
+  const double dt = 1e-3;
+  Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
+  simulator.set_publish_every_time_step(false);
+  simulator.reset_integrator<ImplicitEulerIntegrator<double>>(system, dt,
+      simulator.get_mutable_context());
+  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
+  Context<double>* context = simulator.get_mutable_context();
+  context->set_time(0);
+
+  // Isolate witness functions to high accuracy.
+  const double tol = 1e-15;
+  context->set_accuracy(tol);
+
+  // Simulate.
+  simulator.StepTo(0.1);
+
+  // We expect exactly two triggerings.
+  EXPECT_EQ(triggers.size(), 2);
+
+  // Check that the witnesses triggered in the order we expect.
+  EXPECT_TRUE(dynamic_cast<const LogisticWitness*>(triggers.front().second));
+  EXPECT_TRUE(dynamic_cast<const ClockWitness*>(triggers.back().second));
+
+  // We expect that the clock witness will trigger second at a time of ~1s.
+  EXPECT_NEAR(triggers.back().first, 1.0, tol);
 }
 
 // Tests ability of simulation to identify the proper number of witness function

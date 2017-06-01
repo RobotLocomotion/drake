@@ -655,8 +655,8 @@ void Simulator<T>::IsolateWitnessTriggers(
   // because it is ineffectual to attempt to isolate intervals smaller than
   // the current time in the context can allow.
   const double eps = std::numeric_limits<double>::epsilon();
-  const T witness_iso_len = max(GetWitnessTimeIsolation(),
-                                max(T(1), T(abs(t0) * eps)));
+  const T rel_ttol = max(T(1), t0) * eps;
+  const T witness_iso_len = max(GetWitnessTimeIsolation(), rel_ttol);
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
