@@ -29,7 +29,7 @@ class MobilPlannerTest : public ::testing::Test {
     // Create a dragway with the specified number of lanes starting at `x = 0`
     // and centered at `y = 0`.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId({"Two-Lane Dragway"}), num_lanes,
+        maliput::api::RoadGeometryId({"Test Dragway"}), num_lanes,
         100 /* length */, kLaneWidth /* lane_width */,
         0. /* shoulder_width */,
         5. /* maximum_height */,
@@ -41,7 +41,8 @@ class MobilPlannerTest : public ::testing::Test {
     left_lane_index_ = num_lanes - 1;
   }
 
-  // Initializes MobilPlanner with the dragway at a given LaneDirection.
+  // Initializes MobilPlanner with the dragway at a given initial direction of
+  // travel.
   void InitializeMobilPlanner(bool initial_with_s) {
     DRAKE_DEMAND(road_ != nullptr);
     dut_.reset(new MobilPlanner<double>(*road_, initial_with_s));
@@ -76,8 +77,8 @@ class MobilPlannerTest : public ::testing::Test {
     }
   }
 
-  // Creates poses for one ego car and two traffic cars.  One traffic car is
-  // positioned within each parallel lane in the road.
+  // Creates poses for one ego car and N traffic cars situated within each of
+  // the N parallel lanes in the road.
   void SetDefaultMultiLanePoses(const LaneDirection& initial_lane_direction,
                                 const std::vector<double> delta_positions) {
     const int num_lanes = delta_positions.size();
@@ -88,8 +89,10 @@ class MobilPlannerTest : public ::testing::Test {
                                                       // traffic cars.
 
     // Configure the ego car pose and velocity.
+    const bool with_s = initial_lane_direction.with_s;
+    const double length = initial_lane_direction.lane->length();
     const Eigen::Translation3d translation_ego(
-        kEgoXPosition,                                     /* x */
+        with_s ? kEgoXPosition : length - kEgoXPosition,   /* x */
         (lane_index - 0.5 * (num_lanes - 1)) * kLaneWidth, /* y */
         0.);                                               /* z */
     ego_pose->set_translation(translation_ego);
@@ -112,7 +115,7 @@ class MobilPlannerTest : public ::testing::Test {
     all_velocity.set_velocity(multibody::SpatialVelocity<double>(velocity));
     for (int i = 0; i < num_lanes; ++i) {
       const Eigen::Translation3d translation(
-          kEgoXPosition + delta_positions[i],       /* x */
+          translation_ego.x() + delta_positions[i], /* x */
           (i - 0.5 * (num_lanes - 1)) * kLaneWidth, /* y */
           0.);                                      /* z */
       traffic_poses.set_pose(i, Eigen::Isometry3d(translation));
@@ -198,10 +201,12 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgatingInBackwardLane) {
   // Arrange the ego car facing in the direction opposite to the canonical lane
   // direction.
   InitializeDragway(2 /* num_lanes */);
-  InitializeMobilPlanner(true /* initial_with_s */);
+  InitializeMobilPlanner(false /* initial_with_s */);
 
   // Arrange two traffic cars ahead of the ego, with the right car closer ahead.
-  SetDefaultMultiLanePoses(lane_directions_[right_lane_index_], /* ego lane */
+  auto reversed_right_lane = lane_directions_[right_lane_index_];
+  reversed_right_lane.with_s = false;
+  SetDefaultMultiLanePoses(reversed_right_lane, /* ego lane */
                            {-5.,    /* right car position */
                             -40.}); /* left car position */
 
@@ -212,6 +217,26 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgatingInBackwardLane) {
 
   // Expect the left lane to be more desirable.
   EXPECT_EQ(lane_directions_[left_lane_index_].lane->id().id,
+            lane_direction.lane->id().id);
+}
+
+// Tests that valid results can be obtained with no cars in the road, and that
+// no exceptions are thrown.
+TEST_F(MobilPlannerTest, NoCars) {
+  InitializeDragway(2 /* num_lanes */);
+  InitializeMobilPlanner(true /* initial_with_s */);
+
+  // Situate the ego car, by iteself, in the right lane.
+  auto right_lane = lane_directions_[right_lane_index_];
+  right_lane.with_s = true;
+  SetDefaultMultiLanePoses(right_lane, /* ego lane */ {}); /* car position */
+
+  const auto result = output_->GetMutableData(lane_output_index_);
+  dut_->CalcOutput(*context_, output_.get());
+  auto lane_direction = result->template GetMutableValue<LaneDirection>();
+
+  // Expect the right lane to be more desirable (the left is above threshold).
+  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id().id,
             lane_direction.lane->id().id);
 }
 
