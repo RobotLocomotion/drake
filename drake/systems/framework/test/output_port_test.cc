@@ -10,7 +10,10 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
@@ -172,35 +175,99 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
 #endif
 
 // For testing diagram output ports we need a couple of subsystems that have
-// recognizably different Contexts so we can verify that the diagram output
-// port passes down the right subcontext.
-class SystemWithOneState : public LeafSystem<double> {
+// recognizably different Contexts so we can verify that (1) the diagram exports
+// the correct ports, and (2) the diagram passes down the right subcontext. Here
+// we just vary the number of continuous state variables which lets us check
+// both things. We also need to test that nested diagrams manage to export
+// already-exported ports correctly.
+class SystemWithNStates : public LeafSystem<double> {
  public:
-  SystemWithOneState() {
-    DeclareContinuousState(1);
-    DeclareAbstractOutputPort(alloc_string, calc_string);
+  explicit SystemWithNStates(int num_states) {
+    DeclareContinuousState(num_states);
+    DeclareAbstractOutputPort(&SystemWithNStates::ReturnNumContinuous);
   }
-  ~SystemWithOneState() override {}
+  ~SystemWithNStates() override {}
+ private:
+  void ReturnNumContinuous(const Context<double>& context, int* nc) const {
+    ASSERT_NE(nc, nullptr);
+    *nc = context.get_state().get_continuous_state()->size();
+  }
 };
 
-class SystemWithTwoStates : public LeafSystem<double> {
+// A one-level diagram.
+class MyDiagram : public Diagram<double> {
  public:
-  SystemWithTwoStates() {
-    DeclareContinuousState(2);
-    DeclareVectorOutputPort(alloc_myvector3, 3, calc_vector3);
+  MyDiagram() {
+    DiagramBuilder<double> builder;
+    auto sys1 = builder.AddSystem<SystemWithNStates>(1);
+    auto sys2 = builder.AddSystem<SystemWithNStates>(2);
+    builder.ExportOutput(sys1->get_output_port(0));
+    builder.ExportOutput(sys2->get_output_port(0));
+    builder.BuildInto(this);
   }
-  ~SystemWithTwoStates() override {}
 };
 
-GTEST_TEST(DiagramOutputPortTest, Basics) {
-  SystemWithOneState sys1;
-  SystemWithTwoStates sys2;
-  auto context1 = sys1.CreateDefaultContext();
-  auto context2 = sys2.CreateDefaultContext();
+// A two-level nested diagram.
+class MyNestedDiagram : public Diagram<double> {
+ public:
+  MyNestedDiagram() {
+    DiagramBuilder<double> builder;
+    auto leaf = builder.AddSystem<SystemWithNStates>(3);
+    auto diag = builder.AddSystem<MyDiagram>();
 
-  // TODO(sherm1) MORE TESTS COMING.
+    // Order so that the nested ports have to change numbering.
+    builder.ExportOutput(leaf->get_output_port(0));  // Should have 3 states.
+    builder.ExportOutput(diag->get_output_port(0));  // 1 state.
+    builder.ExportOutput(diag->get_output_port(1));  // 2 states.
+
+    builder.BuildInto(this);
+  }
+};
+
+GTEST_TEST(DiagramOutputPortTest, OneLevel) {
+  MyDiagram diagram;
+  auto context = diagram.CreateDefaultContext();
+  auto& out0 = diagram.get_output_port(0);
+  auto& out1 = diagram.get_output_port(1);
+  auto value0 = out0.Allocate(*context);
+  auto value1 = out1.Allocate(*context);
+  const int* int0{};
+  const int* int1{};
+  EXPECT_NO_THROW(int0 = &value0->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(int1 = &value1->GetValueOrThrow<int>());
+  EXPECT_EQ(*int0, 0);  // Default value initialized.
+  EXPECT_EQ(*int1, 0);
+  out0.Calc(*context, value0.get());
+  out1.Calc(*context, value1.get());
+  EXPECT_EQ(*int0, 1);  // Make sure we got the right Context.
+  EXPECT_EQ(*int1, 2);
 }
 
+GTEST_TEST(DiagramOutputPortTest, Nested) {
+  MyNestedDiagram diagram;
+  auto context = diagram.CreateDefaultContext();
+  auto& out0 = diagram.get_output_port(0);
+  auto& out1 = diagram.get_output_port(1);
+  auto& out2 = diagram.get_output_port(2);
+  auto value0 = out0.Allocate(*context);
+  auto value1 = out1.Allocate(*context);
+  auto value2 = out2.Allocate(*context);
+  const int* int0{};
+  const int* int1{};
+  const int* int2{};
+  EXPECT_NO_THROW(int0 = &value0->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(int1 = &value1->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(int2 = &value2->GetValueOrThrow<int>());
+  EXPECT_EQ(*int0, 0);  // Default value initialized.
+  EXPECT_EQ(*int1, 0);
+  EXPECT_EQ(*int2, 0);
+  out0.Calc(*context, value0.get());
+  out1.Calc(*context, value1.get());
+  out2.Calc(*context, value2.get());
+  EXPECT_EQ(*int0, 3);  // Make sure we got the right Context.
+  EXPECT_EQ(*int1, 1);
+  EXPECT_EQ(*int2, 2);
+}
 
 }  // namespace
 }  // namespace systems

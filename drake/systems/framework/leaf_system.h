@@ -422,6 +422,18 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // New methods for subclasses to use
 
+  /// Declares a numeric parameter using the given @p model_vector.  This is
+  /// the best way to declare LeafSystem numeric parameters.  LeafSystem's
+  /// default implementation of AllocateParameters uses model_vector.Clone(),
+  /// and the default implementation of SetDefaultParameters will reset
+  /// parameters to their model vectors.  Returns the index of the new
+  /// parameter.
+  int DeclareNumericParameter(const BasicVector<T>& model_vector) {
+    const int next_index = model_numeric_parameters_.size();
+    model_numeric_parameters_.AddVectorModel(next_index, model_vector.Clone());
+    return next_index;
+  }
+
   /// Extracts the numeric parameters of type U from the @p context at @p index.
   /// Asserts if the context is not a LeafContext, or if it does not have a
   /// vector-valued parameter of type U at @p index.
@@ -586,7 +598,7 @@ class LeafSystem : public System<T> {
     return index;
   }
 
-  //----------------------------------------------------------------------------
+  // =========================================================================
   /// @name                    Declare input ports
   /// Methods in this section are used by derived classes to declare their
   /// output ports, which may be vector valued or abstract valued.
@@ -620,7 +632,7 @@ class LeafSystem : public System<T> {
   }
   //@}
 
-  //----------------------------------------------------------------------------
+  // =========================================================================
   /// @name                    Declare output ports
   /// Methods in this section are used by derived classes to declare their
   /// output ports, which may be vector valued or abstract valued. Every output
@@ -645,9 +657,10 @@ class LeafSystem : public System<T> {
   /// Because output port values are ultimately stored in AbstractValue objects,
   /// the underlying types must be suitable. For vector ports, that means the
   /// type must be BasicVector or a class derived from BasicVector. For abstract
-  /// ports, the type must be copy constructible and copy assignable. For
+  /// ports, the type must be copy constructible or cloneable. For
   /// methods below that are not given an explicit model value or construction
   /// ("make") method, the underlying type must be default constructible.
+  /// @see drake::systems::Value for more about abstract values.
   //@{
 
   /// Declares a vector-valued output port by specifying (1) a model vector of
@@ -690,7 +703,7 @@ class LeafSystem : public System<T> {
   /// where `MySystem` is a class derived from `LeafSystem<T>` and
   /// `BasicVectorSubtype` is derived from `BasicVector<T>` and has a suitable
   /// default constructor that allocates a vector of the expected size. This
-  /// will use `BasicVectorSubtype()` (that is, the default constructor) to
+  /// will use `BasicVectorSubtype{}` (that is, the default constructor) to
   /// produce a model vector for the output port's value.
   /// Template arguments will be deduced and do not need to be specified.
   ///
@@ -707,7 +720,8 @@ class LeafSystem : public System<T> {
         std::is_default_constructible<BasicVectorSubtype>::value,
         "LeafSystem::DeclareVectorOutputPort(calc): the one-argument form of "
         "this method requires that the output type has a default constructor");
-    return DeclareVectorOutputPort(BasicVectorSubtype(), calc);
+    // Invokes the previous method.
+    return DeclareVectorOutputPort(BasicVectorSubtype{}, calc);
   }
 
   /// (Advanced) Declares a vector-valued output port using the given
@@ -784,7 +798,7 @@ class LeafSystem : public System<T> {
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           (this_ptr->*calc)(context, result);
         };
-    // Invoke the above method.
+    // Invokes "Advanced" signature below.
     return DeclareAbstractOutputPort(model_value, calc_func);
   }
 
@@ -795,7 +809,8 @@ class LeafSystem : public System<T> {
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>`. `OutputType`
   /// must be default constructible, so that we can create a model value using
-  /// `Value<OutputType>()`.
+  /// `Value<OutputType>{}` (value initialized so numerical types will be
+  /// zeroed in the model).
   /// Template arguments will be deduced and do not need to be specified.
   ///
   /// @note The default constructor will be called once immediately, and
@@ -811,7 +826,7 @@ class LeafSystem : public System<T> {
         std::is_default_constructible<OutputType>::value,
         "LeafSystem::DeclareAbstractOutputPort(calc): the one-argument form of "
         "this method requires that the output type has a default constructor");
-    return DeclareAbstractOutputPort(OutputType(), calc);
+    return DeclareAbstractOutputPort(OutputType{}, calc);
   }
 
   /// Declares an abstract-valued output port by specifying member functions to
@@ -892,18 +907,6 @@ class LeafSystem : public System<T> {
     return port;
   }
   //@}
-
-  /// Declares a numeric parameter using the given @p model_vector.  This is
-  /// the best way to declare LeafSystem numeric parameters.  LeafSystem's
-  /// default implementation of AllocateParameters uses model_vector.Clone(),
-  /// and the default implementation of SetDefaultParameters will reset
-  /// parameters to their model vectors.  Returns the index of the new
-  /// parameter.
-  int DeclareNumericParameter(const BasicVector<T>& model_vector) {
-    const int next_index = model_numeric_parameters_.size();
-    model_numeric_parameters_.AddVectorModel(next_index, model_vector.Clone());
-    return next_index;
-  }
 
  private:
   void DoGetPerStepEvents(
