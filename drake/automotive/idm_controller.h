@@ -6,6 +6,7 @@
 
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/automotive/idm_planner.h"
+#include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/pose_selector.h"
 #include "drake/common/drake_copyable.h"
@@ -38,6 +39,13 @@ namespace automotive {
 ///
 /// Output Port 0: A BasicVector containing the acceleration request.
 ///   OutputPortDescriptor getter: acceleration_output())
+///
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - drake::AutoDiffXd
+///
+/// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_controllers
 template <typename T>
@@ -79,6 +87,8 @@ class IdmController : public systems::LeafSystem<T> {
 
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::SystemOutput<T>* output) const override;
+
+  IdmController<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   const maliput::api::RoadGeometry& road_;
 

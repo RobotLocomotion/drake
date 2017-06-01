@@ -161,6 +161,11 @@ class GeoPosition {
   void set_z(double z) { xyz_.z() = z; }
   //@}
 
+  /// GeoPosition overload for the equality operator.
+  bool operator==(const GeoPosition& rhs) const {
+    return (x() == rhs.x()) && (y() == rhs.y()) && (z() == rhs.z());
+  }
+
  private:
   Vector3<double> xyz_;
 
