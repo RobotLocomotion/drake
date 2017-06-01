@@ -13,10 +13,12 @@
 namespace drake {
 namespace systems {
 
+#if !defined(DRAKE_DOXYGEN_CXX)
+class AbstractValue;
+
 template <typename T>
 class Value;
 
-#if !defined(DRAKE_DOXYGEN_CXX)
 // Declare some private helper structs.
 namespace value_detail {
 
@@ -65,6 +67,19 @@ struct ValueTraitsImpl<T, false> {
   static const T& access(const Storage& storage) { return *storage; }
   // NOLINTNEXTLINE(runtime/references)
   static T& access(Storage& storage) { return *storage; }
+};
+
+// We explicitly disallow Value<AbstractValue>.  In cases where it occurs, it
+// is likely that someone has created functions such as
+//   template DoBar(const AbstractValue& foo) { ... }
+//   template <class Foo> DoBar(const Foo& foo) { DoBar(Value<Foo>{foo}); }
+// and accidentally called DoBar<AbstractValue>, or similar mistakes.
+template <>
+struct ValueTraitsImpl<AbstractValue, false> {
+  using UseCopy = std::false_type;
+
+  class Error;  // Forward declaration; Value<AbstractValue> is not allowed.
+  using Storage = Error;
 };
 
 template <typename T>
