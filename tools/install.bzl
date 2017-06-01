@@ -440,7 +440,7 @@ def exports_create_cps_scripts(packages):
         )
 
 #------------------------------------------------------------------------------
-def cmake_config(package, script, version_file):
+def cmake_config(package, script=None, version_file=None):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -450,23 +450,27 @@ def cmake_config(package, script, version_file):
         version_file (:obj:`str`): File that the script will search to
             determine the version of the package.
     """
-    native.py_binary(
-        name = "create-cps",
-        srcs = [script],
-        main = script,
-        visibility = ["//visibility:private"],
-    )
 
-    cps_file_name = "{}.cps".format(package)
+    if script and version_file:
+        native.py_binary(
+            name = "create-cps",
+            srcs = [script],
+            main = script,
+            visibility = ["//visibility:private"],
+        )
 
-    native.genrule(
-        name = "cps",
-        srcs = [version_file],
-        outs = [cps_file_name],
-        cmd = "$(location :create-cps) \"$<\" > \"$@\"",
-        tools = [":create-cps"],
-        visibility = ["//visibility:private"],
-    )
+        cps_file_name = "{}.cps".format(package)
+
+        native.genrule(
+            name = "cps",
+            srcs = [version_file],
+            outs = [cps_file_name],
+            cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+            tools = [":create-cps"],
+            visibility = ["//visibility:private"],
+        )
+    else:
+        cps_file_name = "@drake//tools:{}.cps".format(package)
 
     config_file_name = "{}Config.cmake".format(package)
 
