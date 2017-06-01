@@ -362,8 +362,8 @@ def _impl(repository_ctx):
             ":vtkCommonExecutionModel",
             ":vtkDICOMParser",
             ":vtkmetaio",
-            "@libpng//:lib",
-            "@zlib//:lib",
+            "@libpng",
+            "@zlib",
         ],
     )
 
@@ -463,7 +463,7 @@ cc_library(
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtklz4")
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtkmetaio",
-        deps = ["@zlib//:lib"],
+        deps = ["@zlib"],
     )
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtksys")

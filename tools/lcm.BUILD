@@ -71,7 +71,7 @@ cc_library(
         "lcm",
     ],
     linkstatic = 0,
-    deps = ["@glib//:lib"],
+    deps = ["@glib"],
 )
 
 cc_binary(

@@ -14,7 +14,7 @@ cc_system_package_configure:
 
 cc_system_package:
   This is a macro which munges the name passed into a 'local_{name}'
-  repository, whose `:lib` target is then bound to '{name}'.
+  repository, whose `:local_{name}` target is then bound to '{name}'.
 """
 
 load("@kythe//tools/build_rules/config:wrapped_ctx.bzl", "wrapctx")
@@ -70,4 +70,4 @@ def cc_system_package(*, name, **kwargs):
   if 'modname' not in kwargs:
     kwargs['modname'] = name
   cc_system_package_configure(name="local_" + name, **kwargs)
-  native.bind(name=name, actual="@local_{name}//:lib".format(name=name))
+  native.bind(name=name, actual="@local_{name}//:{name}".format(name=name))
