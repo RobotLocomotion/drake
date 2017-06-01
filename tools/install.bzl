@@ -509,10 +509,8 @@ def install_cmake_config(package):
     install_files(
         name = "install_cmake_config",
         dest = cmake_config_dest,
-        files = [
-            config_file_name,
-            config_version_file_name,
-        ],
+        files = [config_file_name] + native.glob([config_version_file_name]),
+        visibility = ["//visibility:private"],
     )
 
 #END macros
