@@ -37,3 +37,10 @@ install(
     ],
     deps = [":install_cmake_config"],
 )
+
+# See https://github.com/RobotLocomotion/lcmtypes/issues/2 and
+# https://github.com/openhumanoids/bot_core_lcmtypes/issues/33.
+exports_files(
+    ["LICENSE.txt"],
+    visibility = ["@bot_core_lcmtypes//:__pkg__"],
+)
