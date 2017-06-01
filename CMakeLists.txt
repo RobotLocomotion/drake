@@ -5,7 +5,6 @@ include(CTest)
 
 include(cmake/config.cmake)
 include(cmake/externals.cmake)
-include(cmake/examples.cmake)
 include(cmake/options.cmake)
 include(cmake/package.cmake)
 include(cmake/tools.cmake)
@@ -383,14 +382,6 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
 )
 
 # END external projects
-###############################################################################
-# BEGIN examples
-
-# Optional examples
-drake_add_example(LittleDog OFF
-  "planning and control for a small quadruped robot")
-
-# END examples
 ###############################################################################
 # BEGIN ros packages
 
