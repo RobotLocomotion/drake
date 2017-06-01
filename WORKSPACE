@@ -196,9 +196,9 @@ github_archive(
 github_archive(
     name = "robotlocomotion_lcmtypes",
     repository = "RobotLocomotion/lcmtypes",
-    commit = "409a2d1fedfffea07b3e56c18efe1d0d9352f468",
+    commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
     build_file = "tools/robotlocomotion_lcmtypes.BUILD",
-    sha256 = "3131ae0e72da26b968cac74c07a2e471f9ff5c5ab75cb4d32fc42aa6f5744b99",
+    sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",
 )
 
 github_archive(
@@ -305,8 +305,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "a05280f1ef1d8970aca8c67dc4cf753953e3cdf7",
-    sha256 = "3024d25ddcb6bb6835834575e577f36bfd6e768501b8c2a2fd66181eb27108ce",
+    commit = "d68a10ce1130f87d38a13ae42ddb263042e2352a",
+    sha256 = "4de60f6b260b286dc2e68e9cdc31decc8f9ef43f77894c3d33a6fd097549008b",
     build_file = "tools/pycps.BUILD",
 )
 
@@ -344,4 +344,19 @@ bitbucket_archive(
     sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",
     build_file = "tools/sdformat.BUILD",
     strip_prefix = "osrf-sdformat-deca28cd6cd5",
+)
+
+load("//tools:vtk.bzl", "vtk_repository")
+vtk_repository(
+    name = "vtk",
+)
+
+pkg_config_package(
+    name = "libpng",
+    modname = "libpng",
+)
+
+pkg_config_package(
+    name = "zlib",
+    modname = "zlib",
 )

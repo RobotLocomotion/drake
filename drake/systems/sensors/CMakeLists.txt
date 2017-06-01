@@ -45,8 +45,22 @@ target_link_libraries(drakeSensors
     ${drakeSensors_TARGET_LINK_LIBRARIES})
 
 if(VTK_FOUND)
-  target_link_libraries(drakeSensors drakeRendering vtkIO vtkRendering)
-  target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
+  target_link_libraries(drakeSensors drakeRendering)
+  if(VTK_MAJOR_VERSION GREATER 5)
+    target_link_libraries(drakeSensors
+      vtkCommonCore
+      vtkCommonDataModel
+      vtkCommonTransforms
+      vtkFiltersGeneral
+      vtkFiltersSources
+      vtkIOGeometry
+      vtkIOImage
+      vtkRenderingCore
+      vtkRenderingOpenGL2)
+    else()
+      target_link_libraries(drakeSensors vtkIO vtkRendering)
+    endif()
+    target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
 endif()
 
 if(LCM_FOUND)

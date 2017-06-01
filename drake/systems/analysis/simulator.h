@@ -281,24 +281,31 @@ class Simulator {
   }
 
   /// Gets the length of the interval used for witness function time isolation.
-  /// The length of the interval is determined differently to support multiple
-  /// applications, as described below:
+  /// The length of the interval is computed differently, depending on context,
+  /// to support multiple applications, as described below:
   ///
-  /// * **Simulations with continuous state advanced using integration with
-  ///   error control**: the isolation time interval will be the
-  ///   product of the system's characteristic time and the accuracy stored in
-  ///   the Context.
-  /// * **Simulations with continuous state advanced using integration with
-  ///   fixed steps**: the isolation time interval will be determined
-  ///   differently depending on whether the accuracy is set in the Context or
-  ///   not. If the accuracy *is* set in the Context, the nominally fixed
-  ///   steps for integrating continuous state will be subdivided until events
-  ///   have been isolated to the requisite interval length, which is computed
-  ///   as the step size times the accuracy in the Context. *Otherwise* (i.e.,
-  ///   accuracy is not set in the Context), the Simulator will not do any
-  ///   isolation whatsoever (witnesses will always trigger at the end of time
-  ///   step); this latter setting is appropriate for applications (e.g., direct
-  ///   transcription) where variable integration steps are not recommended.
+  /// * **Simulations using error controlled integrators**: the isolation time
+  ///   interval will be scaled by the product of the system's characteristic
+  ///   time and the accuracy stored in the Context.
+  /// * **Simulations using integrators taking fixed steps**: the isolation time
+  ///   interval will be determined differently depending on whether the
+  ///   accuracy is set in the Context or not. If the accuracy *is* set in the
+  ///   Context, the nominally fixed steps for integrating continuous state will
+  ///   be subdivided until events have been isolated to the requisite interval
+  ///   length, which is scaled by the step size times the accuracy in the
+  ///   Context. *Otherwise* (i.e., accuracy is not set in the Context), the
+  ///   Simulator will not do any isolation whatsoever (witnesses will always
+  ///   trigger at the end of time step); this latter setting is appropriate for
+  ///   applications (e.g., direct transcription) where variable integration
+  ///   steps are not recommended.
+  ///
+  /// The isolation window length will never be smaller than the integrator's
+  /// working minimum tolerance (see
+  /// IntegratorBase::get_working_minimum_step_size());
+  ///
+  /// @throws std::logic_error if the accuracy is not set in the Context and
+  ///         the integrator is not operating in fixed step mode (see
+  ///         IntegratorBase::get_fixed_step_mode().
   T GetWitnessTimeIsolation() const;
 
   /**
@@ -645,9 +652,8 @@ void Simulator<T>::IsolateWitnessTriggers(
   // Get the witness isolation interval length. The max computation is used
   // because it is ineffectual to attempt to isolate intervals smaller than
   // the current time in the context can allow.
-  const double eps = std::numeric_limits<double>::epsilon();
   const T witness_iso_len = max(GetWitnessTimeIsolation(),
-                                integrator_->
+                                integrator_->get_working_minimum_step_size());
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
@@ -657,7 +663,7 @@ void Simulator<T>::IsolateWitnessTriggers(
     context->get_mutable_continuous_state()->SetFromVector(x0);
     T t_remaining = t_des - t0;
     while (t_remaining > 0) {
-      integrator_->StepOnceAtMost(inf, inf, t_remaining);
+      integrator_->IntegrateAtMost(inf, inf, t_remaining);
       t_remaining = t_des - context->get_time();
     }
   };
@@ -778,7 +784,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   // distinguished between. See internal documentation for
   // IntegratorBase::StepOnceAtMost() for more information.
   typename IntegratorBase<T>::StepResult result =
-      integrator_->StepOnceAtMost(next_publish_dt, next_update_dt,
+      integrator_->IntegrateAtMost(next_publish_dt, next_update_dt,
                                   boundary_dt);
   const T tf = context.get_time();
 

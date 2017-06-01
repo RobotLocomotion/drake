@@ -377,8 +377,7 @@ class Context {
   /// Requires a constructor T(double).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
-    if (source.get_accuracy())
-      set_accuracy(source.get_accuracy().value());
+    set_accuracy(source.get_accuracy());
     get_mutable_state()->SetFrom(source.get_state());
     get_mutable_parameters().SetFrom(source.get_parameters());
   }

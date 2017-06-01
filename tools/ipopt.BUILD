@@ -1,5 +1,10 @@
 # -*- python -*-
 
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load("@drake//tools:python_lint.bzl", "python_lint")
+
+package(default_visibility = ["//visibility:public"])
+
 # We build IPOPT by shelling out to autotools.
 
 # We run autotools in a genrule, and only files explicitly identified as outputs
@@ -123,9 +128,28 @@ cc_library(
     hdrs = IPOPT_HDRS,
     includes = ["include/coin"],
     linkstatic = 1,
-    visibility = ["//visibility:public"],
-    deps = [
-        "@gfortran",
-    ],
+    deps = ["@gfortran"],
     alwayslink = 1,
 )
+
+cmake_config(
+    package = "IPOPT",
+    script = "@drake//tools:ipopt-create-cps.py",
+    version_file = "Ipopt/src/Common/config_ipopt_default.h",
+)
+
+install_cmake_config(package = "IPOPT")  # Creates rule :install_cmake_config.
+
+# TODO(jamiesnape): At the moment libipopt.a has gone AWOL.
+install(
+    name = "install",
+    doc_dest = "share/doc/ipopt",
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/ipopt",
+    hdr_strip_prefix = ["include/coin"],
+    license_docs = glob(["**/LICENSE"]),
+    targets = [":ipopt"],
+    deps = [":install_cmake_config"],
+)
+
+python_lint()
