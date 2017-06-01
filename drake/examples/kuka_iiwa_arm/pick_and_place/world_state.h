@@ -22,7 +22,7 @@ namespace pick_and_place {
  */
 class WorldState {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorldState)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WorldState)
 
   /**
    * Constructs an WorldState object that holds the states that
@@ -78,12 +78,14 @@ class WorldState {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  // We can't initialize the RigidBodyTree unless we know where its base is
-  // located. Since this information comes from LCM and thus may be delayed,
-  // it's easier for us to own a model internally.
-  std::unique_ptr<RigidBodyTree<double>> iiwa_;
-  const std::string iiwa_model_path_;
-  const std::string end_effector_name_;
+  // We can't initialize the RigidBodyTree unless we know where its
+  // base is located. Since this information comes from LCM and thus
+  // may be delayed, it's easier for us to own a model internally.
+  // Also, we store the model as a shared_ptr to allow instances to be
+  // (relatively) cheaply copied as part of a system's state.
+  std::shared_ptr<const RigidBodyTree<double>> iiwa_;
+  std::string iiwa_model_path_;
+  std::string end_effector_name_;
   const RigidBody<double>* end_effector_{nullptr};
 
   // Iiwa status.
