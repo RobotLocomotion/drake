@@ -30,7 +30,8 @@ class Junction final : public api::Junction {
       int num_lanes,
       double length,
       double lane_width,
-      double shoulder_width);
+      double shoulder_width,
+      double maximum_height);
 
   ~Junction() final = default;
 
