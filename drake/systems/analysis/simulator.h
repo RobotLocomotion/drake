@@ -139,9 +139,6 @@ class Simulator {
     target_realtime_rate_ = std::max(realtime_rate, 0.);
   }
 
-  /// Sets the simulation accuracy. The simulation accuracy is a single meta
-  /// parameter that automatically
-
   /** Return the real time rate target currently in effect. The default is
    * zero, meaning the %Simulator runs as fast as possible. You can change the
    * target with set_target_realtime_rate().
@@ -315,8 +312,16 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  // Goes through every event in @p events and calls unrestricted update only
+  // if that event's action type is kUnrestrictedUpdateAction.
   void HandleUnrestrictedUpdate(const std::vector<DiscreteEvent<T>>& events);
+
+  // Goes through every event in @p events and calls discrete update only if
+  // that event's action type is kDiscreteUpdateAction.
   void HandleDiscreteUpdate(const std::vector<DiscreteEvent<T>>& events);
+
+  // Goes through every event in @p events and calls publish only if that
+  // event's action type is kPublishAction.
   void HandlePublish(const std::vector<DiscreteEvent<T>>& events);
 
   bool IntegrateContinuousState(const T& next_publish_dt,
@@ -666,7 +671,7 @@ void Simulator<T>::IsolateWitnessTriggers(
     context->get_mutable_continuous_state()->SetFromVector(x0);
     T t_remaining = t_des - t0;
     while (t_remaining > 0) {
-      integrator_->StepOnceAtMost(inf, inf, t_remaining);
+      integrator_->IntegrateAtMost(inf, inf, t_remaining);
       t_remaining = t_des - context->get_time();
     }
   };
@@ -787,7 +792,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   // distinguished between. See internal documentation for
   // IntegratorBase::StepOnceAtMost() for more information.
   typename IntegratorBase<T>::StepResult result =
-      integrator_->StepOnceAtMost(next_publish_dt, next_update_dt,
+      integrator_->IntegrateAtMost(next_publish_dt, next_update_dt,
                                   boundary_dt);
   const T tf = context.get_time();
 

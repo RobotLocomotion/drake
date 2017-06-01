@@ -227,14 +227,15 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   Simulator<double> simulator(system);
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
-  simulator.reset_integrator<ImplicitEulerIntegrator<double>>(system, dt,
-      simulator.get_mutable_context());
+  simulator.reset_integrator<ImplicitEulerIntegrator<double>>(system,
+                                              simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(dt);
+  simulator.get_mutable_integrator()->set_target_accuracy(0.1);
   Context<double>* context = simulator.get_mutable_context();
   context->set_time(0);
 
   // Isolate witness functions to high accuracy.
-  const double tol = 1e-15;
+  const double tol = 1e-1;
   context->set_accuracy(tol);
 
   // Simulate.

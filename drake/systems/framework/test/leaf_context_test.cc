@@ -354,8 +354,16 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   target.get_mutable_parameters().set_abstract_parameters(
       std::make_unique<AbstractValues>(std::move(abstract_params)));
 
+  // Set the accuracy in the target- setting time, state, and parameters
+  // should reset it.
+  const double accuracy = 0.1;
+  target.set_accuracy(accuracy);
+
   // Set the target from the source.
   target.SetTimeStateAndParametersFrom(context_);
+
+  // Verify that accuracy is no longer set.
+  EXPECT_FALSE(target.get_accuracy());
 
   // Verify that time was set.
   EXPECT_EQ(kTime, target.get_time());
@@ -368,6 +376,11 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Verify that parameters were set.
   target.get_numeric_parameter(0);
   EXPECT_EQ(2.0, (target.get_numeric_parameter(0)->GetAtIndex(1).value()));
+
+  // Set the accuracy in the context.
+  context_.set_accuracy(accuracy);
+  target.SetTimeStateAndParametersFrom(context_);
+  EXPECT_EQ(target.get_accuracy(), accuracy);
 }
 
 // Verifies that accuracy is set properly.
@@ -379,7 +392,7 @@ TEST_F(LeafContextTest, Accuracy) {
   const double unity = 1.0;
   context_.set_accuracy(unity);
   std::unique_ptr<Context<double>> clone = context_.Clone();
-  EXPECT_EQ(clone->get_accuracy().value(), unity);
+  EXPECT_EQ(clone->get_accuracy().value_or(999), unity);
 }
 
 }  // namespace systems
