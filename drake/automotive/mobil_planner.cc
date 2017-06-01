@@ -21,7 +21,6 @@ using maliput::api::LanePosition;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
 using math::saturate;
-using automotive::pose_selector::RoadOdometry;
 using systems::BasicVector;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
@@ -131,8 +130,9 @@ void MobilPlanner<T>::ImplCalcLaneDirection(
   DRAKE_DEMAND(idm_params.IsValid());
   DRAKE_DEMAND(mobil_params.IsValid());
 
-  const RoadPosition& ego_position =
-      pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
+  const RoadPosition ego_position =
+      road_.ToRoadPosition(GeoPosition(ego_pose.get_isometry().translation()),
+                           nullptr, nullptr, nullptr);
   // Prepare a list of (possibly nullptr) Lanes to evaluate.
   std::pair<const Lane*, const Lane*> lanes = std::make_pair(
       ego_position.lane->to_left(), ego_position.lane->to_right());
@@ -166,40 +166,45 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   // second elements correspond to the left and right lanes, respectively.
   std::pair<T, T> incentives(-kDefaultLargeAccel, -kDefaultLargeAccel);
 
-  const RoadPosition& ego_position =
-      pose_selector::CalcRoadPosition(road_, ego_pose.get_isometry());
+  const RoadPosition ego_position =
+      road_.ToRoadPosition(GeoPosition(ego_pose.get_isometry().translation()),
+                           nullptr, nullptr, nullptr);
   DRAKE_DEMAND(ego_position.lane != nullptr);
-  RoadOdometry<T> leading_odometry{};
-  RoadOdometry<T> trailing_odometry{};
-  std::tie(leading_odometry, trailing_odometry) =
-      pose_selector::FindClosestPair(road_, ego_pose, traffic_poses);
+  const ClosestPoses current_closest_poses = PoseSelector<T>::FindClosestPair(
+      ego_position.lane, ego_pose, traffic_poses,
+      idm_params.scan_ahead_distance());
+  // Construct ClosestPose containers for the leading, trailing, and ego car.
+  const ClosestPose<T>& leading_closest_pose =
+      current_closest_poses.at(AheadOrBehind::kAhead);
+  const ClosestPose<T>& trailing_closest_pose =
+      current_closest_poses.at(AheadOrBehind::kBehind);
+  const ClosestPose<T> ego_closest_pose(
+      RoadOdometry<T>(ego_position, ego_velocity), 0.);
 
-  // Current acceleration of the ego car.
-  const RoadOdometry<T>& ego_odometry =
-      RoadOdometry<T>(ego_position, ego_velocity);
   // Current acceleration of the trailing car.
   const T trailing_this_old_accel =
-      EvaluateIdm(idm_params, trailing_odometry, ego_odometry);
+      EvaluateIdm(idm_params, trailing_closest_pose, ego_closest_pose);
   // New acceleration of the trailing car if the ego were to change lanes.
   const T trailing_this_new_accel =
-      EvaluateIdm(idm_params, trailing_odometry, leading_odometry);
+      EvaluateIdm(idm_params, trailing_closest_pose, leading_closest_pose);
   // Acceleration delta of the trailing car in the ego car's current lane.
   const T trailing_delta_accel_this =
       trailing_this_new_accel - trailing_this_old_accel;
   // Compute the incentive for the left lane.
   if (lanes.first != nullptr) {
-    const OdometryPair& odometries = pose_selector::FindClosestPair(
-        road_, ego_pose, traffic_poses, lanes.first);
-    ComputeIncentiveOutOfLane(idm_params, mobil_params, odometries,
-                              ego_odometry, ego_acceleration,
+    const ClosestPoses left_closest_poses = PoseSelector<T>::FindClosestPair(
+        lanes.first, ego_pose, traffic_poses, idm_params.scan_ahead_distance());
+    ComputeIncentiveOutOfLane(idm_params, mobil_params, left_closest_poses,
+                              ego_closest_pose, ego_acceleration,
                               trailing_delta_accel_this, &incentives.first);
   }
   // Compute the incentive for the right lane.
   if (lanes.second != nullptr) {
-    const OdometryPair& odometries = pose_selector::FindClosestPair(
-        road_, ego_pose, traffic_poses, lanes.second);
-    ComputeIncentiveOutOfLane(idm_params, mobil_params, odometries,
-                              ego_odometry, ego_acceleration,
+    const ClosestPoses right_closest_poses =
+        PoseSelector<T>::FindClosestPair(lanes.second, ego_pose, traffic_poses,
+                                         idm_params.scan_ahead_distance());
+    ComputeIncentiveOutOfLane(idm_params, mobil_params, right_closest_poses,
+                              ego_closest_pose, ego_acceleration,
                               trailing_delta_accel_this, &incentives.second);
   }
   return incentives;
@@ -209,22 +214,24 @@ template <typename T>
 void MobilPlanner<T>::ComputeIncentiveOutOfLane(
     const IdmPlannerParameters<T>& idm_params,
     const MobilPlannerParameters<T>& mobil_params,
-    const OdometryPair& odometries, const RoadOdometry<T>& ego_odometry,
+    const ClosestPoses& closest_poses, const ClosestPose<T>& ego_closest_pose,
     const T& ego_old_accel, const T& trailing_delta_accel_this,
     T* incentive) const {
-  RoadOdometry<T> leading_odometry{};
-  RoadOdometry<T> trailing_odometry{};
-  std::tie(leading_odometry, trailing_odometry) = odometries;
+  const ClosestPose<T>& leading_closest_pose =
+      closest_poses.at(AheadOrBehind::kAhead);
+  const ClosestPose<T>& trailing_closest_pose =
+      closest_poses.at(AheadOrBehind::kBehind);
+
   // Acceleration of the ego car if it were to move to the neighboring lane.
   const T ego_new_accel =
-      EvaluateIdm(idm_params, ego_odometry, leading_odometry);
+      EvaluateIdm(idm_params, ego_closest_pose, leading_closest_pose);
   // Original acceleration of the trailing car in the neighboring lane.
   const T trailing_old_accel =
-      EvaluateIdm(idm_params, trailing_odometry, leading_odometry);
+      EvaluateIdm(idm_params, trailing_closest_pose, leading_closest_pose);
   // Acceleration of the trailing car in the neighboring lane if the ego moves
   // here.
   const T trailing_new_accel =
-      EvaluateIdm(idm_params, trailing_odometry, ego_odometry);
+      EvaluateIdm(idm_params, trailing_closest_pose, ego_closest_pose);
   // Acceleration delta of the trailing car in the neighboring (other) lane.
   const T trailing_delta_accel_other = trailing_new_accel - trailing_old_accel;
   const T ego_delta_accel = ego_new_accel - ego_old_accel;
@@ -242,26 +249,42 @@ void MobilPlanner<T>::ComputeIncentiveOutOfLane(
 template <typename T>
 const T MobilPlanner<T>::EvaluateIdm(
     const IdmPlannerParameters<T>& idm_params,
-    const RoadOdometry<T>& ego_odometry,
-    const RoadOdometry<T>& lead_car_odometry) const {
-  const T& s_ego = ego_odometry.pos.s();
-  const T& s_dot_ego = pose_selector::GetSVelocity(ego_odometry);
-  const T& s_lead = lead_car_odometry.pos.s();
-  const T& s_dot_lead = pose_selector::GetSVelocity(lead_car_odometry);
+    const ClosestPose<T>& trailing_closest_pose,
+    const ClosestPose<T>& leading_closest_pose) const {
+  using std::abs;
 
-  const T delta = s_lead - s_ego;
-  // Saturate the net_distance at distance_lower_bound away from the ego car to
+  const T headway_distance =
+      leading_closest_pose.distance + trailing_closest_pose.distance;
+  // Saturate the net_distance at distance_lower_limit away from the ego car to
   // prevent the IDM equation from producing near-singular solutions.
   // TODO(jadecastro): Move this to IdmPlanner::Evaluate().
   const T net_distance =
-      cond(delta >= T(0.), std::max(delta - idm_params.bloat_diameter(),
-                                    idm_params.distance_lower_limit()),
-           std::min(delta + idm_params.bloat_diameter(),
+      cond(headway_distance >= T(0.),
+           saturate(headway_distance - idm_params.bloat_diameter(),
+                    idm_params.distance_lower_limit(),
+                    std::numeric_limits<T>::infinity()),
+           saturate(headway_distance + idm_params.bloat_diameter(),
+                    -std::numeric_limits<T>::infinity(),
                     -idm_params.distance_lower_limit()));
   DRAKE_DEMAND(std::abs(net_distance) >= idm_params.distance_lower_limit());
-  const T closing_velocity = s_dot_ego - s_dot_lead;
 
-  return IdmPlanner<T>::Evaluate(idm_params, s_dot_ego, net_distance,
+  const RoadOdometry<T> trailing_car_odometry(
+      {trailing_closest_pose.odometry.lane, trailing_closest_pose.odometry.pos},
+      trailing_closest_pose.odometry.vel);
+  const T& s_dot_behind =
+      (abs(trailing_car_odometry.pos.s()) == std::numeric_limits<T>::infinity())
+          ? 0.
+          : PoseSelector<T>::GetSigmaVelocity(trailing_car_odometry);
+  const RoadOdometry<T> leading_car_odometry(
+      {leading_closest_pose.odometry.lane, leading_closest_pose.odometry.pos},
+      leading_closest_pose.odometry.vel);
+  const T& s_dot_ahead =
+      (abs(leading_car_odometry.pos.s()) == std::numeric_limits<T>::infinity())
+          ? 0.
+          : PoseSelector<T>::GetSigmaVelocity(leading_car_odometry);
+  const T closing_velocity = s_dot_behind - s_dot_ahead;
+
+  return IdmPlanner<T>::Evaluate(idm_params, s_dot_behind, net_distance,
                                  closing_velocity);
 }
 
