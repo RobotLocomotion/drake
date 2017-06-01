@@ -145,8 +145,8 @@ drake_cc_library(
         ":generated_vectors",
         ":idm_planner",
         ":pose_selector",
+        ":road_odometry",
         "//drake/automotive/maliput/api",
-        "//drake/math:saturate",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -181,6 +181,7 @@ drake_cc_library(
         ":lane_direction",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
+        "//drake/math:saturate",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -195,6 +196,7 @@ drake_cc_library(
         ":idm_planner",
         ":lane_direction",
         ":pose_selector",
+        ":road_odometry",
         "//drake/automotive/maliput/api",
         "//drake/common:cond",
         "//drake/common:symbolic",
@@ -220,7 +222,11 @@ drake_cc_library(
     hdrs = ["pose_selector.h"],
     visibility = [],
     deps = [
+        ":lane_direction",
+        ":road_odometry",
         "//drake/automotive/maliput/api",
+        "//drake/math:geometric_transform",
+        "//drake/math:saturate",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -250,7 +256,6 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         ":lane_direction",
-        ":pose_selector",
         "//drake/automotive/maliput/api",
         "//drake/common:cond",
         "//drake/common:symbolic",
@@ -266,9 +271,18 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         ":lane_direction",
-        ":pose_selector",
         ":pure_pursuit",
         "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "road_odometry",
+    srcs = ["road_odometry.cc"],
+    hdrs = ["road_odometry.h"],
+    deps = [
+        "//drake/automotive/maliput/api",
+        "//drake/systems/rendering:frame_velocity",
     ],
 )
 
@@ -366,7 +380,7 @@ drake_cc_library(
         "//drake/systems/analysis",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcmt_drake_signal_translator",
-        "//drake/systems/primitives:multiplexer",
+        "//drake/systems/primitives",
         "//drake/systems/rendering:pose_aggregator",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
     ],
@@ -566,6 +580,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "pose_selector_test",
     deps = [
+        "//drake/automotive:monolane_onramp_merge",
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
     ],
@@ -641,7 +656,7 @@ drake_cc_googletest(
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
-        ":simple_car",
+        "//drake/automotive:simple_car",
         "//drake/common:call_matlab",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/trajectory_optimization:direct_collocation",
