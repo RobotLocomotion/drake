@@ -4,7 +4,6 @@
 #include "drake/automotive/gen/simple_car_params.h"
 #include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/lane_data.h"
-#include "drake/automotive/pose_selector.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/rendering/pose_vector.h"
 

@@ -2,7 +2,6 @@
 
 #include <cmath>
 
-#include "drake/automotive/pose_selector.h"
 #include "drake/automotive/pure_pursuit.h"
 #include "drake/common/drake_assert.h"
 

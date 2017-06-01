@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <utility>
 
@@ -12,6 +13,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/pose_selector.h"
+#include "drake/automotive/road_odometry.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_bundle.h"
@@ -80,6 +82,8 @@ namespace automotive {
 template <typename T>
 class MobilPlanner : public systems::LeafSystem<T> {
  public:
+  typedef typename std::map<AheadOrBehind, const ClosestPose<T>> ClosestPoses;
+
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilPlanner)
 
   /// A constructor that initializes the MOBIL planner.
@@ -99,10 +103,6 @@ class MobilPlanner : public systems::LeafSystem<T> {
   /// @}
 
  private:
-  typedef typename std::pair<const pose_selector::RoadOdometry<T>,
-                             const pose_selector::RoadOdometry<T>>
-      OdometryPair;
-
   void CalcLaneDirection(const systems::Context<T>& context,
                          LaneDirection* lane_direction) const;
 
@@ -133,22 +133,21 @@ class MobilPlanner : public systems::LeafSystem<T> {
 
   // Computes a pair of incentive measures that consider the leading and
   // trailing vehicles that are closest to the pre-computed result in the
-  // current lane.  The first and second elements of `odometries`
-  // correspond to, respectively, odometries of the leading and trailing cars.
-  void ComputeIncentiveOutOfLane(
-      const IdmPlannerParameters<T>& idm_params,
-      const MobilPlannerParameters<T>& mobil_params,
-      const OdometryPair& odometries,
-      const pose_selector::RoadOdometry<T>& ego_odometry,
-      const T& ego_old_accel, const T& trailing_delta_accel_this,
-      T* incentive) const;
+  // current lane.  `closest_poses` contains the odometries and relative
+  // distances to the leading and trailing cars.
+  void ComputeIncentiveOutOfLane(const IdmPlannerParameters<T>& idm_params,
+                                 const MobilPlannerParameters<T>& mobil_params,
+                                 const ClosestPoses& closest_poses,
+                                 const ClosestPose<T>& ego_closest_pose,
+                                 const T& ego_old_accel,
+                                 const T& trailing_delta_accel_this,
+                                 T* incentive) const;
 
   // Computes an acceleration based on the IDM equation (via a call to
   // IdmPlanner::Eval()).
-  const T EvaluateIdm(
-      const IdmPlannerParameters<T>& idm_params,
-      const pose_selector::RoadOdometry<T>& ego_odometry,
-      const pose_selector::RoadOdometry<T>& lead_car_odometry) const;
+  const T EvaluateIdm(const IdmPlannerParameters<T>& idm_params,
+                      const ClosestPose<T>& trailing_closest_pose,
+                      const ClosestPose<T>& leading_closest_pose) const;
 
   const maliput::api::RoadGeometry& road_;
   const bool with_s_{true};
