@@ -349,4 +349,10 @@ drake_cc_googletest(
     deps = [":vtk_util"],
 )
 
+drake_cc_googletest(
+    name = "image_to_lcm_image_array_t_test",
+    deps = [":image_to_lcm_image_array_t"],
+)
+
+
 cpplint()
