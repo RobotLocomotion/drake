@@ -17,6 +17,10 @@ namespace {
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 
+// Tests the implicit integrator on Robertson's stiff chemical reaction
+// problem, which has been used to benchmark various implicit integrators.
+// This problem is particularly good at testing large step sizes (since the
+// solution quickly converges) and long simulation times.
 GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   std::unique_ptr<analysis_test::RobertsonSystem<double>> robertson =
     std::make_unique<analysis_test::RobertsonSystem<double>>();
