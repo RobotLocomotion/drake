@@ -117,6 +117,26 @@ GTEST_TEST(GeoPositionTest, ComponentSetters) {
   CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 99., 2.3, 42.);
 }
 
+GTEST_TEST(GeoPositionTest, EqualityInequalityOperators) {
+  // Checks that equality is true iff the constituent components are all equal,
+  // and that inequality is true otherwise.
+  GeoPosition gp1(0.1, 0.2, 0.3);
+  GeoPosition gp2(0.1, 0.2, 0.3);
+
+  EXPECT_TRUE(gp1 == gp2);
+  EXPECT_FALSE(gp1 != gp2);
+
+  GeoPosition gp_xerror(gp2.x() + 1e-6, gp2.y(), gp2.z());
+  EXPECT_FALSE(gp1 == gp_xerror);
+  EXPECT_TRUE(gp1 != gp_xerror);
+  GeoPosition gp_yerror(gp2.x(), gp2.y() + 1e-6, gp2.z());
+  EXPECT_FALSE(gp1 == gp_yerror);
+  EXPECT_TRUE(gp1 != gp_xerror);
+  GeoPosition gp_zerror(gp2.x(), gp2.y(), gp2.z() + 1e-6);
+  EXPECT_FALSE(gp1 == gp_zerror);
+  EXPECT_TRUE(gp1 != gp_xerror);
+}
+
 #undef CHECK_ALL_GEO_POSITION_ACCESSORS
 
 // An arbitrary very small number (that passes the tests).
