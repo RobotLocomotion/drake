@@ -15,13 +15,14 @@ const int IdmPlannerParametersIndices::kTimeHeadway;
 const int IdmPlannerParametersIndices::kDelta;
 const int IdmPlannerParametersIndices::kBloatDiameter;
 const int IdmPlannerParametersIndices::kDistanceLowerLimit;
+const int IdmPlannerParametersIndices::kScanAheadDistance;
 
 const std::vector<std::string>&
 IdmPlannerParametersIndices::GetCoordinateNames() {
   static const never_destroyed<std::vector<std::string>> coordinates(
       std::vector<std::string>{
           "v_ref", "a", "b", "s_0", "time_headway", "delta", "bloat_diameter",
-          "distance_lower_limit",
+          "distance_lower_limit", "scan_ahead_distance",
       });
   return coordinates.access();
 }

@@ -12,6 +12,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/pose_selector.h"
+#include "drake/automotive/road_odometry.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_bundle.h"
@@ -99,8 +100,7 @@ class MobilPlanner : public systems::LeafSystem<T> {
   /// @}
 
  private:
-  typedef typename std::pair<const pose_selector::RoadOdometry<T>,
-                             const pose_selector::RoadOdometry<T>>
+  typedef typename std::pair<const RoadOdometry<T>, const RoadOdometry<T>>
       OdometryPair;
 
   void DoCalcOutput(const systems::Context<T>& context,
@@ -134,20 +134,21 @@ class MobilPlanner : public systems::LeafSystem<T> {
   // trailing vehicles that are closest to the pre-computed result in the
   // current lane.  The first and second elements of `odometries`
   // correspond to, respectively, odometries of the leading and trailing cars.
-  void ComputeIncentiveOutOfLane(
-      const IdmPlannerParameters<T>& idm_params,
-      const MobilPlannerParameters<T>& mobil_params,
-      const OdometryPair& odometries,
-      const pose_selector::RoadOdometry<T>& ego_odometry,
-      const T& ego_old_accel, const T& trailing_delta_accel_this,
-      T* incentive) const;
+  void ComputeIncentiveOutOfLane(const IdmPlannerParameters<T>& idm_params,
+                                 const MobilPlannerParameters<T>& mobil_params,
+                                 const OdometryPair& odometries,
+                                 const RoadOdometry<T>& ego_odometry,
+                                 const T& ego_old_accel,
+                                 const T& trailing_delta_accel_this,
+                                 const std::pair<T, T>& distances,
+                                 T* incentive) const;
 
   // Computes an acceleration based on the IDM equation (via a call to
   // IdmPlanner::Eval()).
-  const T EvaluateIdm(
-      const IdmPlannerParameters<T>& idm_params,
-      const pose_selector::RoadOdometry<T>& ego_odometry,
-      const pose_selector::RoadOdometry<T>& lead_car_odometry) const;
+  const T EvaluateIdm(const IdmPlannerParameters<T>& idm_params,
+                      const RoadOdometry<T>& ego_odometry,
+                      const RoadOdometry<T>& lead_car_odometry,
+                      const T& headway_distance) const;
 
   const maliput::api::RoadGeometry& road_;
   const bool with_s_{true};
