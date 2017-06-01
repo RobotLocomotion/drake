@@ -139,9 +139,6 @@ class Simulator {
     target_realtime_rate_ = std::max(realtime_rate, 0.);
   }
 
-  /// Sets the simulation accuracy. The simulation accuracy is a single meta
-  /// parameter that automatically
-
   /** Return the real time rate target currently in effect. The default is
    * zero, meaning the %Simulator runs as fast as possible. You can change the
    * target with set_target_realtime_rate().
@@ -269,7 +266,7 @@ class Simulator {
    * Resets the integrator with a new one. An example usage is:
    * @code
    * simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-   *               (sys, context, DT).
+   *               (sys, DT, context).
    * @endcode
    * The %Simulator must be reinitialized after resetting the integrator to
    * ensure the integrator is properly initialized. You can do that explicitly
@@ -302,10 +299,6 @@ class Simulator {
   ///   isolation whatsoever (witnesses will always trigger at the end of time
   ///   step); this latter setting is appropriate for applications (e.g., direct
   ///   transcription) where variable integration steps are not recommended.
-  ///
-  /// @throws std::logic_error() if the accuracy is not set in the Context
-  ///         *and* the Simulator's integrator is not operating in fixed-step
-  ///         mode.
   T GetWitnessTimeIsolation() const;
 
   /**
@@ -612,9 +605,7 @@ T Simulator<T>::GetWitnessTimeIsolation() const {
       return iso_scale_factor * accuracy.value() *
           integrator_->get_maximum_step_size();
     } else {
-      // This method should not be called for fixed step integration without
-      // setting accuracy.
-      DRAKE_ABORT();
+      return integrator_->get_maximum_step_size();
     }
   }
 
@@ -656,7 +647,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   // the current time in the context can allow.
   const double eps = std::numeric_limits<double>::epsilon();
   const T witness_iso_len = max(GetWitnessTimeIsolation(),
-                                max(T(1), T(abs(t0) * eps)));
+                                integrator_->
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
