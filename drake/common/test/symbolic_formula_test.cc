@@ -32,6 +32,7 @@ namespace {
 using std::map;
 using std::runtime_error;
 using std::set;
+using std::transform;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -754,6 +755,21 @@ TEST_F(SymbolicFormulaTest, Not2) {
 
   EXPECT_EQ((!(x_ == 5)).to_string(), "!((x = 5))");
   EXPECT_TRUE(is_negation(!(x_ == 5)));
+}
+
+// Tests if `!(!f)` is simplified into `f` for all formulas in
+// SymbolicFormulaTest.
+TEST_F(SymbolicFormulaTest, DoubleNegationSimplification) {
+  const vector<Formula> collection{b1_,   b2_,       tt_,       ff_,     f1_,
+                                   f2_,   f3_,       f4_,       f_eq_,   f_neq_,
+                                   f_lt_, f_lte_,    f_gt_,     f_gte_,  f_and_,
+                                   f_or_, not_f_or_, f_forall_, f_isnan_};
+  vector<Formula> negated_collection{collection.size()};
+  transform(collection.cbegin(), collection.cend(), negated_collection.begin(),
+            [](const Formula& f) { return !f; });
+  for (size_t i = 0; i < collection.size(); ++i) {
+    EXPECT_PRED2(FormulaEqual, collection[i], !(negated_collection[i]));
+  }
 }
 
 TEST_F(SymbolicFormulaTest, NotWithBooleanVariableOperator) {

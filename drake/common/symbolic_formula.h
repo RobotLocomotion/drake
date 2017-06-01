@@ -89,6 +89,7 @@ The following simple simplifications are implemented:
     E1 ≤ E2        ->  True    (if E1 and E2 are structurally equal)
     F1 ∧ F2        ->  False   (if either F1 or F2 is False)
     F1 ∨ F2        ->  True    (if either F1 or F2 is True)
+    ¬(¬(F))        ->  F
 \endverbatim
 
 We flatten nested conjunctions (or disjunctions) at the construction. A
