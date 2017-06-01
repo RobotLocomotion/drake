@@ -41,21 +41,6 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     return Vector2<T>(f1 - f2, f2);
   }
 
-  T DoCalcPotentialEnergy(const Context<T>& context) const override {
-    const Eigen::Vector2d k = get_spring_constants();
-    const Vector2<T> x = get_position(context);
-    const T stretch0 = x(0) - 0;
-    const T stretch1 = x(1) - x(0) - 1;
-    const T pe = k(0) * stretch0 * stretch0 / 2 +
-                 k(1) * stretch1 * stretch1 / 2;
-    return pe;
-  }
-
-  T DoCalcKineticEnergy(const Context<T>& context) const override {
-    const Vector2<T> v = get_velocity(context);
-    return (Eigen::DiagonalMatrix<T, 2>(get_mass()) * v).dot(v) / 2;
-  }
-
   /// Gets the two spring constants.
   Eigen::Vector2d get_spring_constants() const { return
         Eigen::Vector2d(750, 1e20); }
@@ -95,15 +80,15 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     deriv->get_mutable_generalized_velocity()->SetFromVector(a);
   }
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
-  }
+  void DoCalcOutput(const Context<T>&, SystemOutput<T>*) const override {}
 
   /// Gets the end time for integration.
   T get_end_time() const { return 1e1; }
 
   /// Sets the initial conditions for the system.
-  void SetDefaultState(const Context<T>& context,
+  /// The first mass will be located at x1 = 0.5 and second will be located at
+  /// x2 = 1.5. No initial velocity is present.
+  void SetDefaultState(const Context<T>&,
                        State<T>* state) const override {
     Vector2<T> x, xd;
     x(0) = 0.5;
@@ -116,9 +101,10 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
         SetFromVector(xd);
   }
 
-  /// Gets the solution for the system with initial state defined at @p context.
-  void get_solution(const Context<T>& context, T t,
-                    ContinuousState<T>* state) const {
+  /// Gets the solution for the system with initial state defined at @p context,
+  /// returning the solution at time @p t, in @p state.
+  void GetSolution(const Context<T>& context, const T& t,
+                   ContinuousState<T>* state) const {
     using std::cos;
     using std::sin;
 

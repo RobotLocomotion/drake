@@ -50,7 +50,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   integrator.IntegrateWithMultipleSteps(t_final);
 
   // Verify the solution.
-  const Eigen::Vector3d sol = robertson->get_solution(t_final);
+  const Eigen::Vector3d sol = robertson->GetSolution(t_final);
   EXPECT_NEAR(state->GetAtIndex(0), sol(0), tol);
   EXPECT_NEAR(state->GetAtIndex(1), sol(1), tol);
   EXPECT_NEAR(state->GetAtIndex(2), sol(2), tol);
@@ -269,7 +269,7 @@ TEST_F(ImplicitIntegratorTest, DoubleSpringMassDamper) {
 
   // Get the solution at the target time.
   const double t_final = 1.0;
-  stiff_double_system_->get_solution(*double_context_, t_final,
+  stiff_double_system_->GetSolution(*double_context_, t_final,
                                     state_copy->get_mutable_continuous_state());
 
   // Take all the defaults.
@@ -718,7 +718,6 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-//  drake::log()->set_level(spdlog::level::debug);
   return RUN_ALL_TESTS();
 }
 

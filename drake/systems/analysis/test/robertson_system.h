@@ -45,7 +45,7 @@ class RobertsonSystem : public LeafSystem<T> {
   T get_end_time() const { return 1e11; }
 
   /// Gets the system solution. Only works for time 10^11.
-  static Vector3<T> get_solution(T t) {
+  static Vector3<T> GetSolution(const T& t) {
     DRAKE_DEMAND(t == 1e11);
     Vector3<T> sol;
     sol(0) = 0.208334014970122e-7;
