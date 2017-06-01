@@ -2,15 +2,16 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_state_machine.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/sparsity_matrix.h"
-#include "drake/util/lcmUtil.h"
 
 namespace drake {
 namespace examples {
@@ -29,23 +30,18 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   /**
    * Constructor for the PickAndPlaceStateMachineSystem
    * @param iiwa_base, The pose of the base of the IIWA robot system.
-   * @param update_interval : The update interval of the unrestricted update of
+   * @param period_sec : The update interval of the unrestricted update of
    * this system. This should be bigger than that of the PlanSource components.
    */
-  PickAndPlaceStateMachineSystem(const Isometry3<double>& iiwa_base,
-                                 const double update_interval = 0.1);
+  PickAndPlaceStateMachineSystem(
+      const std::string& iiwa_model_path,
+      const std::string& end_effector_name,
+      const Isometry3<double>& iiwa_base,
+      const std::vector<Isometry3<double>>& place_locations,
+      const double period_sec = 0.01);
 
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
-
-  /**
-   * Allocates abstract value types for output @p descriptor. This function
-   * allocates `IiwaActionInput` when @p matches the port for
-   * `output_port_iiwa_action_`, and 'GripperActionInput` for
-   * `output_port_wsg_action_`.
-   */
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const final;
 
   // This kind of a system is not a direct feedthrough.
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
@@ -91,46 +87,24 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
     return this->get_input_port(input_port_wsg_status_);
   }
 
-  /**
-   * Getter for the input port corresponding to the abstract input with the
-   * `IiwaMove`
-   * status message (`ActionPrimitiveState`).
-   * @return The corresponding `sytems::InputPortDescriptor`.
-   */
-  const systems::InputPortDescriptor<double>&
-  get_input_port_iiwa_action_status() const {
-    return this->get_input_port(input_port_iiwa_action_status_);
+  const systems::OutputPortDescriptor<double>& get_output_port_iiwa_plan()
+      const {
+    return this->get_output_port(output_port_iiwa_plan_);
   }
 
-  /**
-   * Getter for the input port corresponding to the abstract input with the
-   * `GripperAction`
-   * status message (`ActionPrimitiveState`).
-   * @return The corresponding `sytems::InputPortDescriptor`.
-   */
-  const systems::InputPortDescriptor<double>& get_input_port_wsg_action_status()
+  const systems::OutputPortDescriptor<double>& get_output_port_wsg_command()
       const {
-    return this->get_input_port(input_port_wsg_action_status_);
+    return this->get_output_port(output_port_wsg_command_);
   }
 
-  /**
-   * Getter for the output port corresponding to the `IiwaActionInput` abstract
-   * output.
-   * @return The corresponding `sytems::OutputPortDescriptor`.
-   */
-  const systems::OutputPortDescriptor<double>& get_output_port_iiwa_action()
-      const {
-    return this->get_output_port(output_port_iiwa_action_);
-  }
-  /**
-   * Getter for the output port corresponding to the `GripperActionInput`
-   * abstract output.
-   * @return The corresponding `sytems::OutputPortDescriptor`.
-   */
-  const systems::OutputPortDescriptor<double>& get_output_port_wsg_action()
-      const {
-    return this->get_output_port(output_port_wsg_action_);
-  }
+  /// Return the state of the pick and place state machine.
+  pick_and_place::PickAndPlaceState state(
+      const systems::Context<double>&) const;
+
+  /// Return the state of the pick and place world.  Note that this
+  /// reference is into data contained inside the passed in context.
+  const pick_and_place::WorldState& world_state(
+      const systems::Context<double>&) const;
 
  private:
   struct InternalState;
@@ -140,17 +114,18 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   int input_port_iiwa_state_{-1};
   int input_port_box_state_{-1};
   int input_port_wsg_status_{-1};
-  int input_port_iiwa_action_status_{-1};
-  int input_port_wsg_action_status_{-1};
   // Output ports.
-  int output_port_iiwa_action_{-1};
-  int output_port_wsg_action_{-1};
+  int output_port_iiwa_plan_{-1};
+  int output_port_wsg_command_{-1};
 
+  std::string iiwa_model_path_;
+  std::string end_effector_name_;
   const Isometry3<double> iiwa_base_;
 
   const std::unique_ptr<
     manipulation::planner::ConstraintRelaxingIk> planner_{nullptr};
-  const std::unique_ptr<pick_and_place::WorldState> world_state_{nullptr};
+
+  std::vector<Isometry3<double>> place_locations_;
 };
 
 }  // namespace monolithic_pick_and_place
