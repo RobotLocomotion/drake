@@ -16,8 +16,6 @@
 #include "drake/systems/rendering/pose_stamped_t_pose_vector_translator.h"
 #include "drake/systems/sensors/rgbd_camera.h"
 
-DEFINE_double(duration, 5., "Total duration of the simulation in secondes.");
-
 using std::cout;
 using std::endl;
 using std::string;
@@ -27,37 +25,36 @@ using drake::multibody::joints::kQuaternion;
 namespace drake {
 namespace systems {
 namespace sensors {
-
 namespace {
-const double kCameraPosePublishPeriod{0.01};
-const double kImageArrayPublishPeriod{0.01};
 
-const char* kCameraBaseFrameName = "camera_base_frame";
-const char* kColorCameraFrameName = "color_camera_optical_frame";
-const char* kDepthCameraFrameName = "depth_camera_optical_frame";
-const char* kLabelCameraFrameName = "label_camera_optical_frame";
+bool ValidateSdf(const char* flagname, const std::string& sdf) {
+  if (sdf.empty()) {
+    cout << "Invalid filename for --" << flagname << ": " << sdf << endl;
+    return false;
+  }
+  return true;
+}
 
-const char* kImageArrayLcmChannelName = "DRAKE_RGBD_CAMERA_IMAGES";
-const char* kPoseLcmChannelName = "DRAKE_RGBD_CAMERA_POSE";
+DEFINE_double(duration, 5., "Total duration of the simulation in secondes.");
+DEFINE_string(sdf, "", "The filename for SDF.");
+DEFINE_validator(sdf, &ValidateSdf);
+
+constexpr double kCameraPosePublishPeriod{0.01};
+constexpr double kImageArrayPublishPeriod{0.01};
+
+constexpr char kCameraBaseFrameName[] = "camera_base_frame";
+constexpr char kColorCameraFrameName[] = "color_camera_optical_frame";
+constexpr char kDepthCameraFrameName[] = "depth_camera_optical_frame";
+constexpr char kLabelCameraFrameName[] = "label_camera_optical_frame";
+
+constexpr char kImageArrayLcmChannelName[] = "DRAKE_RGBD_CAMERA_IMAGES";
+constexpr char kPoseLcmChannelName[] = "DRAKE_RGBD_CAMERA_POSE";
 }  // anonymous namespace
 
 int main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-  if (argc != 2) {
-    cout << "Usage:" << endl;
-    cout << "  $ ./rgbd_camera_publish_lcm_example "
-         << "[options] path_to_sdf" << endl;
-    cout << "    options:" << endl;
-    cout << "      -duration=(seconds)  the duration for simulation."
-         << endl;
-    return 0;
-  }
-
-  const string filename(argv[1]);
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-      filename, kQuaternion, tree.get());
+      FLAGS_sdf, kQuaternion, tree.get());
 
   systems::DiagramBuilder<double> builder;
 
@@ -133,5 +130,6 @@ int main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::systems::sensors::main(argc, argv);
 }
