@@ -9,8 +9,10 @@
 namespace drake {
 namespace solvers {
 
-MosekSolver::~MosekSolver() {
-  DRAKE_ASSERT(mosek_env_ == nullptr);
+std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
+  throw std::runtime_error(
+      "Mosek is not installed in your build. You'll need to use a different "
+      "solver.");
 }
 
 bool MosekSolver::available() const {
