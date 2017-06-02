@@ -11,6 +11,8 @@
 #include <Eigen/SparseCore>
 #include <mosek.h>
 
+#include "drake/common/scoped_singleton.h"
+
 namespace drake {
 namespace solvers {
 namespace {
@@ -579,19 +581,45 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 }
 }  // anonymous namespace
 
-MosekSolver::~MosekSolver() {
-  if (mosek_env_ != nullptr) {
-    MSKenv_t env = static_cast<MSKenv_t>(mosek_env_);
-    mosek_env_ = nullptr;
-    MSK_deleteenv(&env);
+/*
+ * Implements RAII for a Mosek license / environment.
+ */
+class MosekSolver::License {
+ public:
+  License() {
+    MSKrescodee rescode = MSK_makeenv(&mosek_env_, nullptr);
+    if (rescode != MSK_RES_OK) {
+      throw std::runtime_error("Could not acquire MOSEK license.");
+    }
+    DRAKE_DEMAND(mosek_env_ != nullptr);
   }
+
+  ~License() {
+    MSK_deleteenv(&mosek_env_);
+    mosek_env_ = nullptr;  // Fail-fast if accidentally used after destruction.
+  }
+
+  MSKenv_t mosek_env() const {
+    return mosek_env_;
+  }
+ private:
+  MSKenv_t mosek_env_{nullptr};
+};
+
+std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
+  // According to
+  // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
+  // an env used between threads is safe, but nothing mentions thread-safety
+  // when allocating the environment. We can safeguard against this ambiguity
+  // by using GetScopedSingleton for basic thread-safety when acquiring /
+  // releasing the license.
+  return GetScopedSingleton<MosekSolver::License>();
 }
 
 bool MosekSolver::available() const { return true; }
 
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
-  MSKenv_t env = nullptr;
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
 
@@ -605,29 +633,13 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // in MathematicalProgram prog, but added to Mosek solver.
   std::vector<bool> is_new_variable(num_vars, false);
 
-  // According to
-  // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
-  // an env between threads is safe, but since we allocate on the
-  // first call to Solve() we need to at least be safe about
-  // allocating the environment initially.
-  {
-    std::lock_guard<std::mutex> lock(env_mutex_);
-    if (mosek_env_ == nullptr) {
-      // Create the Mosek environment.
-      rescode = MSK_makeenv(&env, nullptr);
-      if (rescode == MSK_RES_OK) {
-        mosek_env_ = env;
-      }
-    } else {
-      env = static_cast<MSKenv_t>(mosek_env_);
-      rescode = MSK_RES_OK;
-    }
+  if (!license_) {
+    license_ = AcquireLicense();
   }
+  MSKenv_t env = license_->mosek_env();
 
-  if (rescode == MSK_RES_OK) {
-    // Create the optimization task.
-    rescode = MSK_maketask(env, 0, num_vars, &task);
-  }
+  // Create the optimization task.
+  rescode = MSK_maketask(env, 0, num_vars, &task);
   if (rescode == MSK_RES_OK) {
     rescode = MSK_appendvars(task, num_vars);
   }
