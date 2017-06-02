@@ -83,7 +83,7 @@ class Curve2 {
     }
 
     // Iterate over the segments, up through the requested path_distance.
-    T remaining_distance = std::max(T{}, path_distance);
+    T remaining_distance = std::max(T{0.0}, path_distance);
     for (auto point0 = waypoints_.begin(), point1 = point0 + 1;
          point1 != waypoints_.end();  // BR
          point0 = point1++) {

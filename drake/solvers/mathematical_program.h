@@ -103,16 +103,16 @@ namespace solvers {
  * </tr>
  * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">
  *    Gurobi</a></td>
- *    <td></td>
- *    <td></td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  *    <td></td>
  *  </tr>
  * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
  *    Mosek</a></td>
- *    <td></td>
- *    <td></td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  *    <td></td>
  * </tr>
  * </table>

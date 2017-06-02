@@ -545,10 +545,10 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // Attempt to integrate. Updates and boundary times are consciously
     // distinguished between. See internal documentation for
-    // IntegratorBase::StepOnceAtMost() for more information.
+    // IntegratorBase::IntegrateAtMost() for more information.
     typename IntegratorBase<T>::StepResult result =
-        integrator_->StepOnceAtMost(next_publish_dt, next_update_dt,
-                                    boundary_dt);
+        integrator_->IntegrateAtMost(next_publish_dt, next_update_dt,
+                                     boundary_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
       case IntegratorBase<T>::kReachedPublishTime:

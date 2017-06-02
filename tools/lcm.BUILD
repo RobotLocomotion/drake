@@ -1,9 +1,9 @@
 # -*- python -*-
 
-load("@//tools:drake.bzl", "drake_generate_file")
-load("@//tools:generate_export_header.bzl", "generate_export_header")
-load("@//tools:install.bzl", "install", "install_files")
-load("@//tools:python_lint.bzl", "python_lint")
+load("@drake//tools:drake.bzl", "drake_generate_file")
+load("@drake//tools:generate_export_header.bzl", "generate_export_header")
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config", "install_files")
+load("@drake//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = ["//visibility:public"])
@@ -71,7 +71,7 @@ cc_library(
         "lcm",
     ],
     linkstatic = 0,
-    deps = ["@glib//:lib"],
+    deps = ["@glib"],
 )
 
 cc_binary(
@@ -198,48 +198,18 @@ pkg_tar(
     package_dir = "lcm",
 )
 
-py_binary(
-    name = "create-cps",
-    srcs = ["@//tools:lcm-create-cps.py"],
-    main = "@//tools:lcm-create-cps.py",
-    visibility = ["//visibility:private"],
+cmake_config(
+    package = "lcm",
+    script = "@drake//tools:lcm-create-cps.py",
+    version_file = "lcm/lcm_version.h",
 )
 
-genrule(
-    name = "cps",
-    srcs = ["lcm/lcm_version.h"],
-    outs = ["lcm.cps"],
-    cmd = "$(location :create-cps) \"$<\" > \"$@\"",
-    tools = [":create-cps"],
-    visibility = ["//visibility:private"],
-)
-
-genrule(
-    name = "cmake_exports",
-    srcs = ["lcm.cps"],
-    outs = ["lcmConfig.cmake"],
-    cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
-    tools = ["@pycps//:cps2cmake_executable"],
-    visibility = ["//visibility:private"],
-)
-
-genrule(
-    name = "cmake_package_version",
-    srcs = ["lcm.cps"],
-    outs = ["lcmConfigVersion.cmake"],
-    cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
-    tools = ["@pycps//:cps2cmake_executable"],
-    visibility = ["//visibility:private"],
-)
+install_cmake_config(package = "lcm")  # Creates rule :install_cmake_config.
 
 install_files(
-    name = "install_cmake",
+    name = "install_extra_cmake",
     dest = "lib/cmake/lcm",
-    files = [
-        "lcm-cmake/lcmUtilities.cmake",
-        "lcmConfig.cmake",
-        "lcmConfigVersion.cmake",
-    ],
+    files = ["lcm-cmake/lcmUtilities.cmake"],
     strip_prefix = ["**/"],
 )
 
@@ -249,18 +219,21 @@ install(
     doc_dest = "share/doc/lcm",
     docs = [
         "AUTHORS",
-        "COPYING",
         "NEWS",
     ],
+    license_docs = ["COPYING"],
     targets = [
-        "lcm",
-        "lcm-gen",
-        "lcm-java",
-        "lcm-logger",
-        "lcm-logplayer",
-        "lcm-spy",
+        ":lcm",
+        ":lcm-gen",
+        ":lcm-java",
+        ":lcm-logger",
+        ":lcm-logplayer",
+        ":lcm-spy",
     ],
-    deps = [":install_cmake"],
+    deps = [
+        ":install_cmake_config",
+        ":install_extra_cmake",
+    ],
 )
 
 # TODO(mwoehlke-kitware): install Python bits

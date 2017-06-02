@@ -173,7 +173,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
       std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"TestDragway"}), 2 /* num lanes */,
-          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+          5 /* maximum_height */,
+          std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+          std::numeric_limits<double>::epsilon() /* angular_tolerance */)));
 
   // Create one MOBIL car and two stopped cars arranged as follows:
   //
@@ -384,7 +387,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
       road = simulator->SetRoadGeometry(
           std::make_unique<const maliput::dragway::RoadGeometry>(
               maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-              100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+              5 /* maximum_height */,
+              std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+              std::numeric_limits<double>::epsilon() /* angular_tolerance */)));
 
   EXPECT_THROW(
       simulator->AddPriusMaliputRailcar("bar", LaneDirection(), params),
@@ -393,7 +399,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
   const auto different_road =
       std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"DifferentDragway"}), 2 /* num lanes */,
-          50 /* length */, 3 /* lane width */, 2 /* shoulder width */);
+          50 /* length */, 3 /* lane width */, 2 /* shoulder width */,
+          5 /* maximum_height */,
+          std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+          std::numeric_limits<double>::epsilon() /* angular_tolerance */);
 
   EXPECT_THROW(simulator->AddPriusMaliputRailcar(
                    "bar", LaneDirection(
@@ -535,7 +544,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
       road = simulator->SetRoadGeometry(
           std::make_unique<const maliput::dragway::RoadGeometry>(
               maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-              100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+              5 /* maximum_height */,
+              std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+              std::numeric_limits<double>::epsilon() /* angular_tolerance */)));
   EXPECT_NO_THROW(simulator->AddPriusMaliputRailcar(
       "Foo", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
       MaliputRailcarState<double>() /* initial state */));
@@ -561,7 +573,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
   const maliput::api::RoadGeometry* road = simulator->SetRoadGeometry(
       std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-          100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+          5 /* maximum_height */,
+          std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+          std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   simulator->AddIdmControlledPriusMaliputRailcar(
       "Alice", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
       MaliputRailcarState<double>() /* initial state */);
@@ -583,7 +598,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestRailcarVelocityOutput) {
       simulator->SetRoadGeometry(
           std::make_unique<const maliput::dragway::RoadGeometry>(
               maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-              100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+              5 /* maximum_height */,
+              std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+              std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   MaliputRailcarState<double> alice_initial_state;
   alice_initial_state.set_s(5);
   alice_initial_state.set_speed(1);

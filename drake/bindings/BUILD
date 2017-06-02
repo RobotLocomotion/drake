@@ -4,8 +4,28 @@
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:python_lint.bzl", "python_lint")
 load("//tools:drake.bzl", "drake_cc_binary")
+load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools:mosek.bzl", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:private"])
+
+drake_cc_binary(
+    name = "python/pydrake/_pydrake_common.so",
+    srcs = [
+        "pybind11/pydrake_common.cc",
+    ],
+    copts = [
+        "-Wno-#warnings",
+        "-Wno-cpp",
+        "-Wno-unknown-warning-option",
+    ],
+    linkshared = 1,
+    linkstatic = 1,
+    deps = [
+        "//drake/common",
+        "@pybind11",
+    ],
+)
 
 drake_cc_binary(
     name = "python/pydrake/_pydrake_autodiffutils.so",
@@ -148,6 +168,7 @@ py_library(
     srcs = [
         "python/pydrake/__init__.py",
         "python/pydrake/autodiffutils.py",
+        "python/pydrake/common.py",
         "python/pydrake/forwarddiff.py",
         "python/pydrake/rbtree.py",
         "python/pydrake/solvers/__init__.py",
@@ -158,6 +179,7 @@ py_library(
     ],
     data = [
         ":python/pydrake/_pydrake_autodiffutils.so",
+        ":python/pydrake/_pydrake_common.so",
         ":python/pydrake/_pydrake_rbtree.so",
         ":python/pydrake/_pydrake_symbolic.so",
         ":python/pydrake/parsers.so",
@@ -180,6 +202,14 @@ py_test(
 )
 
 py_test(
+    name = "pydrake_common_test",
+    size = "small",
+    srcs = ["python/pydrake/test/testCommon.py"],
+    main = "python/pydrake/test/testCommon.py",
+    deps = [":pydrake"],
+)
+
+py_test(
     name = "pydrake_forward_diff_test",
     size = "small",
     srcs = ["python/pydrake/test/testForwardDiff.py"],
@@ -187,41 +217,32 @@ py_test(
     deps = [":pydrake"],
 )
 
-#py_test(
-#    name = "pydrake_mathematical_program_gurobi_solver_test",
-#    size = "small",
-#    srcs = ["python/pydrake/test/testGurobiSolver.py"],
-#    main = "python/pydrake/test/testGurobiSolver.py",
-#    tags = [
-#        "exclusive",
-#        "gurobi",
-#        "local",
-#    ],
-#    deps = [":pydrake"],
-#)
+py_test(
+    name = "pydrake_mathematical_program_gurobi_solver_test",
+    size = "small",
+    srcs = ["python/pydrake/test/testGurobiSolver.py"],
+    main = "python/pydrake/test/testGurobiSolver.py",
+    tags = gurobi_test_tags(),
+    deps = [":pydrake"],
+)
 
 py_test(
     name = "pydrake_mathematical_program_mosek_solver_test",
     size = "small",
     srcs = ["python/pydrake/test/testMosekSolver.py"],
     main = "python/pydrake/test/testMosekSolver.py",
-    tags = ["mosek"],
+    tags = mosek_test_tags(),
     deps = [":pydrake"],
 )
 
-# Temporarily disabled because we have no Gurobi license in CI. #5862
-#py_test(
-#    name = "DISABLED_pydrake_mathematical_program_test",
-#    size = "small",
-#    srcs = ["python/pydrake/test/testMathematicalProgram.py"],
-#    main = "python/pydrake/test/testMathematicalProgram.py",
-#    tags = [
-#        "exclusive",
-#        "gurobi",
-#        "local",
-#    ],
-#    deps = [":pydrake"],
-#)
+py_test(
+    name = "pydrake_mathematical_program_test",
+    size = "small",
+    srcs = ["python/pydrake/test/testMathematicalProgram.py"],
+    main = "python/pydrake/test/testMathematicalProgram.py",
+    tags = gurobi_test_tags(),
+    deps = [":pydrake"],
+)
 
 py_test(
     name = "pydrake_pr2ik_test",

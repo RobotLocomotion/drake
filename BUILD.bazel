@@ -30,11 +30,19 @@ alias(
     actual="@protobuf//:protobuf_python",
 )
 
+exports_files(["LICENSE.TXT"])
+
 install(
     name = "install",
     deps = [
+        "@bullet//:install",
         "@eigen//:install",
+        "@fmt//:install",
+        "@ipopt//:install",
         "@lcm//:install",
+        "@nlopt//:install",
+        "@pybind11//:install",
+        "@spdlog//:install",
         "//drake:install",
         "//tools:install",
     ],
