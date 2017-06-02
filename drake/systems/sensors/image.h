@@ -64,6 +64,9 @@ class Image {
   /// The number of channels in a pixel.
   static constexpr int kNumChannels = Traits::kNumChannels;
 
+  /// The size of a pixel in bytes.
+  static constexpr int kPixelSize = kNumChannels * sizeof(T);
+
   /// The format for pixels.
   static constexpr PixelFormat kPixelFormat = Traits::kPixelFormat;
 
@@ -145,6 +148,9 @@ class Image {
 
 template <PixelType kPixelType>
 constexpr int Image<kPixelType>::kNumChannels;
+
+template <PixelType kPixelType>
+constexpr int Image<kPixelType>::kPixelSize;
 
 template <PixelType kPixelType>
 constexpr PixelFormat Image<kPixelType>::kPixelFormat;

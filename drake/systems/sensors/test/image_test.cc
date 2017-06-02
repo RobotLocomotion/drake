@@ -18,6 +18,7 @@ GTEST_TEST(TestImage, EmptyTest) {
   EXPECT_EQ(dut.height(), 0);
   EXPECT_EQ(dut.size(), 0);
   EXPECT_EQ(dut.kNumChannels, 3);
+  EXPECT_EQ(dut.kPixelSize, 3);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kRgb);
 }
 
@@ -28,6 +29,7 @@ GTEST_TEST(TestImage, InstantiateTest) {
   EXPECT_EQ(dut.width(), kWidth);
   EXPECT_EQ(dut.height(), kHeight);
   EXPECT_EQ(dut.kNumChannels, kNumChannels);
+  EXPECT_EQ(dut.kPixelSize, 3);
   EXPECT_EQ(dut.size(), kWidth * kHeight * kNumChannels);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kBgr);
 }
@@ -46,6 +48,7 @@ GTEST_TEST(TestImage, InitializeAndAccessToPixelValuesTest) {
     }
   }
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kRgba);
+  EXPECT_EQ(dut.kPixelSize, 4);
   EXPECT_EQ(dut2.kPixelFormat, PixelFormat::kRgba);
 }
 
@@ -57,10 +60,12 @@ GTEST_TEST(TestImage, CopyConstructorTest) {
   EXPECT_EQ(dut.width(), image.width());
   EXPECT_EQ(dut.height(), image.height());
   EXPECT_EQ(dut.kNumChannels, image.kNumChannels);
+  EXPECT_EQ(dut.kPixelSize, 4);
 
   EXPECT_EQ(dut2.width(), image.width());
   EXPECT_EQ(dut2.height(), image.height());
   EXPECT_EQ(dut2.kNumChannels, image.kNumChannels);
+  EXPECT_EQ(dut2.kPixelSize, 4);
 
   EXPECT_EQ(image.kPixelFormat, PixelFormat::kBgra);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kBgra);
@@ -85,6 +90,7 @@ GTEST_TEST(TestImage, AssignmentOperatorTest) {
   EXPECT_EQ(dut.height(), image.height());
   EXPECT_EQ(dut.kNumChannels, image.kNumChannels);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kDepth);
+  EXPECT_EQ(dut.kPixelSize, 4);
   EXPECT_EQ(image.kPixelFormat, PixelFormat::kDepth);
 
   for (int u = 0; u < kWidth; ++u) {
@@ -106,6 +112,7 @@ GTEST_TEST(TestImage, MoveConstructorTest) {
   EXPECT_EQ(dut.height(), kHeight);
   EXPECT_EQ(dut.kNumChannels, kNumChannels);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kLabel);
+  EXPECT_EQ(dut.kPixelSize, 2);
 
   EXPECT_EQ(image.width(), 0);
   EXPECT_EQ(image.height(), 0);
@@ -132,6 +139,7 @@ GTEST_TEST(TestImage, MoveAssignmentOperatorTest) {
   EXPECT_EQ(dut.height(), kHeight);
   EXPECT_EQ(dut.kNumChannels, kNumChannels);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kGrey);
+  EXPECT_EQ(dut.kPixelSize, 1);
 
   EXPECT_EQ(image.width(), 0);
   EXPECT_EQ(image.height(), 0);
@@ -158,6 +166,8 @@ GTEST_TEST(TestImage, ResizeTest) {
   EXPECT_EQ(dut.height(), kHeightResized);
   EXPECT_EQ(dut.kNumChannels, kNumChannels);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kDepth);
+  EXPECT_EQ(dut.kPixelSize, 2);
+
   EXPECT_EQ(dut.size(), kWidthResized * kHeightResized * kNumChannels);
 }
 
