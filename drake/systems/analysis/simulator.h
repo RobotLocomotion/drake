@@ -300,9 +300,10 @@ class Simulator {
   /// IntegratorBase::get_working_minimum_step_size());
   ///
   /// @returns the computed isolation window *unless* accuracy is not set in the
-  ///   Context), in which case an "empty" (i.e., unset) optional value is
-  ///   Simulator will not do any isolation whatsoever (witnesses will always
-  ///   trigger at the end of time step); this latter setting is appropriate for
+  ///   Context), in which case an "empty" (i.e., unset) optional value will
+  ///   be returned. That return value would indicate that the Simulator would
+  ///   not isolate witness function trigger times (witnesses will always
+  ///   trigger at the end of time step), which is appropriate for
   ///   applications (e.g., direct transcription) where variable integration
   ///   steps are not recommended.
   /// @throws std::logic_error if the accuracy is not set in the Context and
@@ -664,7 +665,9 @@ void Simulator<T>::IsolateWitnessTriggers(
   // Get the witness isolation interval length.
   const optional<T> witness_iso_len = GetWitnessTimeIsolation(*context);
 
-  // If the
+  // Check whether the witness function is to be isolated.
+  if (!witness_iso_len)
+    return;
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
@@ -729,7 +732,10 @@ void Simulator<T>::IsolateWitnessTriggers(
 
       // If the time is sufficiently isolated- to an absolute tolerance if t0
       // is small, to a relative tolerance if t0 is large- then quit.
-      if (b - a < witness_iso_len) {
+      // NOTE: we have already validated that witness_iso_len contains a value.
+      // The hack below prevents OS X from throwing a vtable exception during
+      // build.
+      if (b - a < witness_iso_len.value_or(999)) {
         // The trigger time is always at the right endpoint of the interval,
         // thereby ensuring that the witness will not trigger immediately when
         // the continuous state integration process continues (after the
