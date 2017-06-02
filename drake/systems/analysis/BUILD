@@ -103,16 +103,14 @@ drake_cc_library(
     name = "robertson_system",
     testonly = 1,
     hdrs = ["test/robertson_system.h"],
-    deps = [
-    ],
+    deps = [],
 )
 
 drake_cc_library(
     name = "stiff_double_mass_spring_system",
     testonly = 1,
     hdrs = ["test/stiff_double_mass_spring_system.h"],
-    deps = [
-    ],
+    deps = [],
 )
 
 drake_cc_library(

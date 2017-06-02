@@ -378,9 +378,13 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // The check below looks for convergence using machine epsilon. Without
     // this check, the convergence criteria can be applied when
     // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
-    // allow the norm to be reduced further.
-    if (dx_norm < 10 * std::numeric_limits<double>::epsilon())
+    // allow the norm to be reduced further. What happens: dx_norm will become
+    // equivalent to last_dx_norm, making theta = 1, and eta = infinity. Thus,
+    // convergence would never be identified.
+    if (dx_norm < 10 * std::numeric_limits<double>::epsilon()) {
+      context->get_mutable_continuous_state()->SetFromVector(*xtplus);
       return true;
+    }
 
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
@@ -403,6 +407,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
+        context->get_mutable_continuous_state()->SetFromVector(*xtplus);
         return true;
       }
     }
@@ -470,8 +475,8 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& dt) {
 //       return.
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
-                                                    const VectorX<T>& dx0,
-                                                    VectorX<T>* xtplus) {
+                                                       const VectorX<T>& dx0,
+                                                       VectorX<T>* xtplus) {
   using std::abs;
 
   // Get the current continuous state.

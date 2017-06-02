@@ -6,7 +6,8 @@
 
 namespace drake {
 namespace systems {
-namespace analysis_test {
+namespace analysis {
+namespace test {
 
 /// Robertson's stiff chemical reaction problem. This example is taken from
 /// [Hairer, 1996] and is described in more detail in:
@@ -19,12 +20,12 @@ class RobertsonSystem : public LeafSystem<T> {
     this->DeclareContinuousState(3);
   }
 
-  void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* deriv) const override {
+  void DoCalcTimeDerivatives(const Context <T> &context,
+                             ContinuousState <T> *deriv) const override {
     // Get state.
-    const T& y1 = context.get_continuous_state_vector().GetAtIndex(0);
-    const T& y2 = context.get_continuous_state_vector().GetAtIndex(1);
-    const T& y3 = context.get_continuous_state_vector().GetAtIndex(2);
+    const T &y1 = context.get_continuous_state_vector().GetAtIndex(0);
+    const T &y2 = context.get_continuous_state_vector().GetAtIndex(1);
+    const T &y3 = context.get_continuous_state_vector().GetAtIndex(2);
 
     // Compute derivatives.
     T y1_prime = -0.04 * y1 + 1e4 * y2 * y3;
@@ -37,15 +38,15 @@ class RobertsonSystem : public LeafSystem<T> {
     deriv->get_mutable_vector()->SetAtIndex(2, y3_prime);
   }
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
+  void DoCalcOutput(const Context <T> &context,
+                    SystemOutput <T> *output) const override {
   }
 
   /// Gets the end time for integration.
   T get_end_time() const { return 1e11; }
 
   /// Gets the system solution. Only works for time 10^11.
-  static Vector3<T> GetSolution(const T& t) {
+  static Vector3 <T> GetSolution(const T &t) {
     DRAKE_DEMAND(t == 1e11);
     Vector3<T> sol;
     sol(0) = 0.208334014970122e-7;
@@ -55,6 +56,7 @@ class RobertsonSystem : public LeafSystem<T> {
   }
 };
 
-}  // namespace analysis_test
+}  // namespace test
+}  // namespace analysis
 }  // namespace systems
 }  // namespace drake

@@ -42,7 +42,6 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/solvers:mathematical_program",
-        "//drake/systems/analysis",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_vector",
     ],
