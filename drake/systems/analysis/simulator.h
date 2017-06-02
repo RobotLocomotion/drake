@@ -593,7 +593,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 }
 
 template <class T>
-T Simulator<T>::GetWitnessTimeIsolation() const {
+T Simulator<T>::GetWitnessTimeIsolation(const Context<T>& context) const {
   // The scale factor for witness isolation.
   // TODO(edrumwri): Consider making this user-settable.
   const double iso_scale_factor = 1.0;
@@ -603,13 +603,14 @@ T Simulator<T>::GetWitnessTimeIsolation() const {
   const double characteristic_time = 1.0;
 
   // Get the accuracy setting.
-  const optional<double> accuracy = get_context().get_accuracy();
+  const optional<double> accuracy = context.get_accuracy();
 
   // Determine the length of the isolation interval.
   if (integrator_->get_fixed_step_mode()) {
-    // Look for accuracy information.
+    // Look for accuracy information. value_or(999) trick necessary because
+    // OS X currently fails to build using value().
     if (accuracy) {
-      return iso_scale_factor * accuracy.value() *
+      return iso_scale_factor * accuracy.value_or(999) *
           integrator_->get_maximum_step_size();
     } else {
       return integrator_->get_maximum_step_size();
@@ -621,7 +622,8 @@ T Simulator<T>::GetWitnessTimeIsolation() const {
     throw std::logic_error("Integrator is not operating in fixed step mode"
                                "and accuracy is not set in the context.");
   }
-  return iso_scale_factor * accuracy.value() * characteristic_time;
+
+  return iso_scale_factor * accuracy.value_or(999) * characteristic_time;
 }
 
 // Isolates the first time at one or more witness functions triggered (in the
