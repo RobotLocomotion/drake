@@ -111,8 +111,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
-  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BQ_E) {
-    this->translational() += this->rotational().cross(p_BQ_E);
+  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BpBq_E) {
+    this->translational() += this->rotational().cross(p_BpBq_E);
     return *this;
   }
 
@@ -134,9 +134,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///   A and expressed in frame E.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
-  ///      modifying the original object.
-  SpatialVelocity<T> Shift(const Vector3<T>& p_BQ_E) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(p_BQ_E);
+  ///      modifying the original obje  ct.
+  SpatialVelocity<T> Shift(const Vector3<T>& p_BpBq_E) const {
+    return SpatialVelocity<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
   /// Given `this` spatial velocity `V_IBp_E` of point P of body B,
@@ -154,6 +154,23 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///          which cannot be enforced by this class.
   T dot(const SpatialForce<T>& F_Q_E) const;
 };
+
+///
+/// @f$ ^W V^{B_q} = ^W V^{P_{B_q}} + [^P V^{B_q}]_W @f$
+// or in monogram notation:
+/// V_WBq = V_WPBq + V_PBq
+/// where:
+///  - V_PBq is the velocity of point q rigidly moving with frame B measured
+///         and expressed in frame P
+///  - V_WPBq is the instantaneous velocity of point q on frame B as if it was
+///           moving rigidly attached to frame P, measured and expressed in W.
+template <typename T>
+inline SpatialVelocity<T> operator+(
+    const SpatialVelocity<T>& V_WPBq, const SpatialVelocity<T>& Vb)
+{
+  return GeneralSpatialVector<T>(Va.get_coeffs() + Vb.get_coeffs());
+}
+
 
 }  // namespace multibody
 }  // namespace drake

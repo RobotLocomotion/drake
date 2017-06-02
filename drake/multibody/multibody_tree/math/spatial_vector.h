@@ -147,6 +147,12 @@ class SpatialVector {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
+  /// Sets both rotational and translational components of `this`
+  /// %SpatialVector to zero.
+  void SetZero() {
+    V_.setZero();
+  }
+
   /// Returns a reference to the underlying storage.
   CoeffsEigenType& get_coeffs() { return V_;}
 

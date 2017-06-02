@@ -44,6 +44,15 @@ class Frame : public FrameBase<T> {
     return body_;
   }
 
+  /// Returns the pose `X_BF` of `this` frame F as measured and expressed in
+  /// frame B of the body associated with this frame.
+  /// In the particular case `F = B`, this method directly returns the identity
+  /// transformation.
+  /// @sa CalcBodyPoseInThisFrame() which returns the inverse
+  /// transformation `X_FB`.
+  virtual Isometry3<T> CalcPoseInBodyFrame(
+      const MultibodyTreeContext<T>& context) const = 0;
+
   /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
   /// compute the pose of frame Q measured and expressed in the frame B of
   /// the body to which this frame is attached.
@@ -57,6 +66,7 @@ class Frame : public FrameBase<T> {
   /// In the particular case `F = B`, this method directly returns the identity
   /// transformation.
   /// @sa CalcBodyPoseInOtherFrame()
+  /// @sa CalcPoseInBodyFrame() which returns the inverse transformation `X_BF`.
   virtual Isometry3<T> CalcBodyPoseInThisFrame(
       const MultibodyTreeContext<T>& context) const = 0;
 

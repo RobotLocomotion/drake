@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"

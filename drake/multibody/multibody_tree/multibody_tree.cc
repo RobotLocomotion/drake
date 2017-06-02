@@ -146,6 +146,29 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   }
 }
 
+template <typename T>
+void MultibodyTree<T>::CalcVelocityKinematicsCache(
+    const MultibodyTreeContext<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    VelocityKinematicsCache<T>* vc) const {
+  // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
+  // corresponding to flexible bodies.
+
+  // Performs a base-to-tip recursion computing body velocities.
+  // This skips the world, level = 0.
+  for (int level = 1; level < get_num_levels(); ++level) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[level]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+      DRAKE_ASSERT(node.get_topology().level == level);
+      DRAKE_ASSERT(node.get_index() == body_node_index);
+
+      // Update per-node kinematics.
+      node.CalcVelocityKinematicsCache_BaseToTip(context, pc, vc);
+    }
+  }
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;

@@ -478,6 +478,11 @@ class MultibodyTree {
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
+  void CalcVelocityKinematicsCache(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      VelocityKinematicsCache<T>* vc) const;
+
  private:
   void CreateBodyNode(BodyNodeIndex body_node_index);
 

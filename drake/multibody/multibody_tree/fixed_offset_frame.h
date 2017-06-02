@@ -54,6 +54,16 @@ class FixedOffsetFrame : public Frame<T> {
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<T>& X_BF);
 
+  /// Returns the pose `X_BF` of `this` frame F as measured and expressed in
+  /// frame B of the body associated with this frame.
+  /// @sa CalcBodyPoseInThisFrame() which returns the inverse
+  /// transformation `X_FB`.
+  Isometry3<T> CalcPoseInBodyFrame(
+      const MultibodyTreeContext<T>& context) const final {
+    // X_BF = X_BP * X_PF
+    parent_frame_.CalcPoseInBodyFrame(context) * X_PF_;
+  }
+
   /// Returns the pose `X_FB` of the body B associated with this frame F,
   /// measured in this frame F.
   /// @sa CalcBodyPoseInOtherFrame()
