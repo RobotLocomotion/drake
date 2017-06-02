@@ -35,7 +35,6 @@ set(drakeSensors_TARGET_LINK_LIBRARIES
 if(VTK_FOUND)
   list(APPEND drakeSensors_SRC_FILES rgbd_camera.cc vtk_util.cc)
   list(APPEND drakeSensors_HEADERS rgbd_camera.h vtk_util.h)
-  list(APPEND drakeSensors_TARGET_LINK_LIBRARIES drakeRendering vtkIO vtkRendering)
 endif()
 
 if(lcm_FOUND AND Bullet_FOUND)
