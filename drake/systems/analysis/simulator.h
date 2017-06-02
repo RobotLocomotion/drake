@@ -306,7 +306,7 @@ class Simulator {
   /// @throws std::logic_error if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().
-  T GetWitnessTimeIsolation() const;
+  T GetWitnessTimeIsolation(const Context<T>& context) const;
 
   /**
    * Gets a constant reference to the system.
@@ -654,7 +654,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   // Get the witness isolation interval length. The max computation is used
   // because it is ineffectual to attempt to isolate intervals smaller than
   // the current time in the context can allow.
-  const T witness_iso_len = max(GetWitnessTimeIsolation(),
+  const T witness_iso_len = max(GetWitnessTimeIsolation(*context),
                                 integrator_->get_working_minimum_step_size());
 
   // Mini function for integrating the system forward in time.
