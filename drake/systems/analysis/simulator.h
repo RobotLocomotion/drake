@@ -293,20 +293,22 @@ class Simulator {
   ///   Context, the nominally fixed steps for integrating continuous state will
   ///   be subdivided until events have been isolated to the requisite interval
   ///   length, which is scaled by the step size times the accuracy in the
-  ///   Context. *Otherwise* (i.e., accuracy is not set in the Context), the
-  ///   Simulator will not do any isolation whatsoever (witnesses will always
-  ///   trigger at the end of time step); this latter setting is appropriate for
-  ///   applications (e.g., direct transcription) where variable integration
-  ///   steps are not recommended.
+  ///   Context.
   ///
   /// The isolation window length will never be smaller than the integrator's
   /// working minimum tolerance (see
   /// IntegratorBase::get_working_minimum_step_size());
   ///
+  /// @returns the computed isolation window *unless* accuracy is not set in the
+  ///   Context), in which case an "empty" (i.e., unset) optional value is
+  ///   Simulator will not do any isolation whatsoever (witnesses will always
+  ///   trigger at the end of time step); this latter setting is appropriate for
+  ///   applications (e.g., direct transcription) where variable integration
+  ///   steps are not recommended.
   /// @throws std::logic_error if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().
-  T GetWitnessTimeIsolation(const Context<T>& context) const;
+  optional<T> GetWitnessTimeIsolation(const Context<T>& context) const;
 
   /**
    * Gets a constant reference to the system.
@@ -593,7 +595,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 }
 
 template <class T>
-T Simulator<T>::GetWitnessTimeIsolation(const Context<T>& context) const {
+optional<T> Simulator<T>::GetWitnessTimeIsolation(const Context<T>& context) const {
+  using std::max;
+
   // The scale factor for witness isolation.
   // TODO(edrumwri): Consider making this user-settable.
   const double iso_scale_factor = 1.0;
@@ -610,10 +614,11 @@ T Simulator<T>::GetWitnessTimeIsolation(const Context<T>& context) const {
     // Look for accuracy information. value_or(999) trick necessary because
     // OS X currently fails to build using value().
     if (accuracy) {
-      return iso_scale_factor * accuracy.value_or(999) *
-          integrator_->get_maximum_step_size();
+      return max(integrator_->get_working_minimum_step_size(),
+                 T(iso_scale_factor * accuracy.value_or(999) *
+                     integrator_->get_maximum_step_size()));
     } else {
-      return integrator_->get_maximum_step_size();
+      return optional<T>();
     }
   }
 
@@ -623,12 +628,20 @@ T Simulator<T>::GetWitnessTimeIsolation(const Context<T>& context) const {
                                "and accuracy is not set in the context.");
   }
 
-  return iso_scale_factor * accuracy.value_or(999) * characteristic_time;
+  // Note: the max computation is used (here and above) because it is
+  // ineffectual to attempt to isolate intervals smaller than the current time
+  // in the context can allow.
+  return max(integrator_->get_working_minimum_step_size(),
+             iso_scale_factor * accuracy.value_or(999) * characteristic_time);
 }
 
 // Isolates the first time at one or more witness functions triggered (in the
 // interval [t0, tf]), to the requisite interval length.
-// @pre triggered_witnesses is empty and non-null (aborts if condition not met).
+// @param[in,out] on entry, the set of witness functions that triggered over
+//                [t0, tf]; on exit, the set of witness functions that triggered
+//                over [t0, tw], where tw is the first time that any witness
+//                function triggered.
+// @pre The context and state are at tf and x(tf), respectively.
 // @post The context will be isolated to the first witness function trigger(s),
 //       to within the requisite interval length.
 template <class T>
@@ -637,12 +650,9 @@ void Simulator<T>::IsolateWitnessTriggers(
     const VectorX<T>& w0,
     const T& t0, const VectorX<T>& x0, const T& tf,
     std::vector<const WitnessFunction<T>*>* triggered_witnesses) {
-  using std::max;
-  using std::abs;
 
-  // Verify that the vector of triggered witnesses is non-null and empty.
+  // Verify that the vector of triggered witnesses is non-null.
   DRAKE_DEMAND(triggered_witnesses);
-  DRAKE_DEMAND(triggered_witnesses->empty());
 
   // TODO(edrumwri): Speed this process using interpolation between states,
   // more powerful root finding methods, and/or introducing the concept of
@@ -651,11 +661,10 @@ void Simulator<T>::IsolateWitnessTriggers(
   // Will need to alter the context repeatedly.
   Context<T>* context = get_mutable_context();
 
-  // Get the witness isolation interval length. The max computation is used
-  // because it is ineffectual to attempt to isolate intervals smaller than
-  // the current time in the context can allow.
-  const T witness_iso_len = max(GetWitnessTimeIsolation(*context),
-                                integrator_->get_working_minimum_step_size());
+  // Get the witness isolation interval length.
+  const optional<T> witness_iso_len = GetWitnessTimeIsolation(*context);
+
+  // If the
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
@@ -807,13 +816,9 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
 
   // Triggering requires isolating the witness function time.
   if (witness_triggered) {
-    // Isolate the time that the witness function triggered unless no time
-    // isolation is done.
-    if (!integrator_->get_fixed_step_mode() || context_->get_accuracy()) {
-      triggered_witnesses_.clear();
-      IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
+    // Isolate the time that the witness function triggered.
+    IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
                              &triggered_witnesses_);
-    }
 
     // TODO(edrumwri): Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
