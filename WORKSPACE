@@ -16,10 +16,15 @@
 
 workspace(name = "drake")
 
-load("//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
 load('@bazel_tools//tools/build_defs/repo:git.bzl', 'git_repository')
+
+local_repository(
+    name = "kythe",
+    path = "tools/third_party/kythe",
+)
+load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
     name = "glib",
@@ -152,9 +157,9 @@ github_archive(
 github_archive(
     name = "ipopt",
     repository = "RobotLocomotion/ipopt-mirror",
-    commit = "11649b7a063e03af38fcc59cf8cdb0694735c84c",
+    commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
     build_file = "tools/ipopt.BUILD",
-    sha256 = "e497c849f0787c8eb3a918d72cf4b4ae48117a183d2b3ae800049cc09e102c8d",
+    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",
 )
 
 github_archive(
@@ -191,9 +196,9 @@ github_archive(
 github_archive(
     name = "robotlocomotion_lcmtypes",
     repository = "RobotLocomotion/lcmtypes",
-    commit = "4bd59a1b62a1eca31a2550b37f356426bc793d67",
+    commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
     build_file = "tools/robotlocomotion_lcmtypes.BUILD",
-    sha256 = "d4b7b006ffd8918ecafda050d94c18388d9cd113a8849263bbedc7c488144ed4",
+    sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",
 )
 
 github_archive(
@@ -300,8 +305,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "a05280f1ef1d8970aca8c67dc4cf753953e3cdf7",
-    sha256 = "3024d25ddcb6bb6835834575e577f36bfd6e768501b8c2a2fd66181eb27108ce",
+    commit = "d68a10ce1130f87d38a13ae42ddb263042e2352a",
+    sha256 = "4de60f6b260b286dc2e68e9cdc31decc8f9ef43f77894c3d33a6fd097549008b",
     build_file = "tools/pycps.BUILD",
 )
 
@@ -330,4 +335,28 @@ bitbucket_archive(
     sha256 = "e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a",
     build_file = "tools/ignition_rndf.BUILD",
     strip_prefix = "ignitionrobotics-ign-rndf-b20a4f68333f",
+)
+
+bitbucket_archive(
+    name = "sdformat",
+    repository = "osrf/sdformat",
+    commit = "deca28cd6cd5",
+    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",
+    build_file = "tools/sdformat.BUILD",
+    strip_prefix = "osrf-sdformat-deca28cd6cd5",
+)
+
+load("//tools:vtk.bzl", "vtk_repository")
+vtk_repository(
+    name = "vtk",
+)
+
+pkg_config_package(
+    name = "libpng",
+    modname = "libpng",
+)
+
+pkg_config_package(
+    name = "zlib",
+    modname = "zlib",
 )

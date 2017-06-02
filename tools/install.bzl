@@ -162,11 +162,17 @@ def _output_path(ctx, input_file, strip_prefix):
         out_root = _join_paths("bazel-out/*/*", package_root)
         input_path = _remove_prefix(input_path, out_root)
 
+    # Deal with possible case of file outside the package root.
+    if input_path == None:
+        print("%s installing file %s which is not in current package"
+              % (package_root, input_file.path))
+        return input_file.basename
+
     # Possibly remove prefixes.
     for p in strip_prefix:
         output_path = _remove_prefix(input_path, p)
-        if input_path != None:
-            return input_path
+        if output_path != None:
+            return output_path
 
     return input_path
 
@@ -207,8 +213,11 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
 # Compute install actions for a cc_library or cc_binary.
 def _install_cc_actions(ctx, target):
     # Compute actions for target artifacts.
-    # TODO(mwoehlke-kitware): make these parameters.
-    dests = {"a": "lib", "so": "lib", None: "bin"}
+    dests = {
+        "a": ctx.attr.archive_dest,
+        "so": ctx.attr.library_dest,
+        None: ctx.attr.runtime_dest,
+    }
     actions = _install_actions(ctx, [target], dests)
 
     # Compute actions for guessed headers.
@@ -260,11 +269,17 @@ def _install_code(action):
 def _install_impl(ctx):
     actions = []
 
+    # Check for missing license files.
+    if len(ctx.attr.targets) or len(ctx.attr.hdrs):
+        if not len(ctx.attr.license_docs):
+            fail("'install' missing 'license_docs'")
+
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d.install_actions
 
     # Generate actions for docs and includes.
+    actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest)
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest)
     actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
                                 ctx.attr.hdr_strip_prefix)
@@ -296,11 +311,15 @@ install = rule(
         "deps": attr.label_list(providers = ["install_actions"]),
         "docs": attr.label_list(allow_files = True),
         "doc_dest": attr.string(default = "share/doc"),
+        "license_docs": attr.label_list(allow_files = True),
         "hdrs": attr.label_list(allow_files = True),
         "hdr_dest": attr.string(default = "include"),
         "hdr_strip_prefix": attr.string_list(),
         "guess_hdrs": attr.string(default = "NONE"),
         "targets": attr.label_list(),
+        "archive_dest": attr.string(default = "lib"),
+        "library_dest": attr.string(default = "lib"),
+        "runtime_dest": attr.string(default = "bin"),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -340,11 +359,15 @@ Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
     doc_dest: Destination for documentation files (default = "share/doc").
+    license_docs: List of license files to install (uses doc_dest).
     guess_hdrs: See note.
     hdrs: List of header files to install.
     hdr_dest: Destination for header files (default = "include").
     hdr_strip_prefix: List of prefixes to remove from header paths.
     targets: List of targets to install.
+    archive_dest: Destination for static library targets (default = "lib").
+    library_dest: Destination for shared library targets (default = "lib").
+    runtime_dest: Destination for executable targets (default = "bin").
 """
 
 #------------------------------------------------------------------------------
@@ -399,3 +422,93 @@ Args:
 """
 
 #END rules
+#==============================================================================
+#BEGIN macros
+
+#------------------------------------------------------------------------------
+def exports_create_cps_scripts(packages):
+    """Export scripts that create CPS files to other packages.
+
+    Args:
+        packages (:obj:`list` of :obj:`str`): Bazel package names.
+    """
+
+    for package in packages:
+        native.exports_files(
+            ["{}-create-cps.py".format(package)],
+            visibility = ["@{}//:__pkg__".format(package)],
+        )
+
+#------------------------------------------------------------------------------
+def cmake_config(package, script, version_file):
+    """Create CMake package configuration and package version files via an
+    intermediate CPS file.
+
+    Args:
+        package (:obj:`str`): CMake package name.
+        script (:obj:`Label`): Script that creates the intermediate CPS file.
+        version_file (:obj:`str`): File that the script will search to
+            determine the version of the package.
+    """
+    native.py_binary(
+        name = "create-cps",
+        srcs = [script],
+        main = script,
+        visibility = ["//visibility:private"],
+    )
+
+    cps_file_name = "{}.cps".format(package)
+
+    native.genrule(
+        name = "cps",
+        srcs = [version_file],
+        outs = [cps_file_name],
+        cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+        tools = [":create-cps"],
+        visibility = ["//visibility:private"],
+    )
+
+    config_file_name = "{}Config.cmake".format(package)
+
+    native.genrule(
+        name = "cmake_exports",
+        srcs = [cps_file_name],
+        outs = [config_file_name],
+        cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+        tools = ["@pycps//:cps2cmake_executable"],
+        visibility = ["//visibility:private"],
+    )
+
+    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+
+    native.genrule(
+        name = "cmake_package_version",
+        srcs = [cps_file_name],
+        outs = [config_version_file_name],
+        cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+        tools = ["@pycps//:cps2cmake_executable"],
+        visibility = ["//visibility:private"],
+    )
+
+#------------------------------------------------------------------------------
+def install_cmake_config(package):
+    """Generate installation information for CMake package configuration and
+    package version files. The rule name is always ``:install_cmake_config``.
+
+    Args:
+        package (:obj:`str`): CMake package name.
+    """
+    cmake_config_dest = "lib/cmake/{}".format(package.lower())
+    config_file_name = "{}Config.cmake".format(package)
+    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+
+    install_files(
+        name = "install_cmake_config",
+        dest = cmake_config_dest,
+        files = [
+            config_file_name,
+            config_version_file_name,
+        ],
+    )
+
+#END macros

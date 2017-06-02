@@ -178,12 +178,17 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     return get_outboard_frame().get_body();
   }
 
+  /// Returns the topology information for this mobilizer. Users should not
+  /// need to call this method since MobilizerTopology is an internal
+  /// bookkeeping detail.
+  const MobilizerTopology& get_topology() const { return topology_; }
+
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.mobilizers[this->get_index()];
+    topology_ = tree_topology.get_mobilizer(this->get_index());
   }
 
   const Frame<T>& inboard_frame_;

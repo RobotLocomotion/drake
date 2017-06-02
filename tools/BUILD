@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools:install.bzl", "install_files")
+load("//tools:install.bzl", "exports_create_cps_scripts", "install_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -9,6 +9,36 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "clang-format",
     srcs = ["//:.clang-format"],
+)
+
+sh_binary(
+    name = "asan",
+    srcs = ["asan.sh"],
+    data = ["asan.supp"],
+)
+
+sh_binary(
+    name = "lsan",
+    srcs = ["lsan.sh"],
+    data = ["lsan.supp"],
+)
+
+sh_binary(
+    name = "msan",
+    srcs = ["msan.sh"],
+    data = ["msan.supp"],
+)
+
+sh_binary(
+    name = "tsan",
+    srcs = ["tsan.sh"],
+    data = ["tsan.supp"],
+)
+
+sh_binary(
+    name = "ubsan",
+    srcs = ["ubsan.sh"],
+    data = ["ubsan.supp"],
 )
 
 sh_binary(
@@ -47,10 +77,14 @@ exports_files(
     visibility = ["@ipopt//:__pkg__"],
 )
 
-exports_files(
-    ["lcm-create-cps.py"],
-    visibility = ["@lcm//:__pkg__"],
-)
+exports_create_cps_scripts([
+    "bullet",
+    "eigen",
+    "ipopt",
+    "lcm",
+    "nlopt",
+    "pybind11",
+])
 
 alias(
     name = "buildifier",
@@ -68,7 +102,7 @@ genrule(
 
 install_files(
     name = "install",
-    dest = "lib/drake/cmake",
+    dest = "lib/cmake/drake",
     files = ["drake-config.cmake"],
 )
 

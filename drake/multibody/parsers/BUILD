@@ -121,6 +121,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "sdformat_test",
+    srcs = ["test/sdformat_test.cc"],
+    deps = [
+        "@sdformat",
+    ],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,

@@ -10,7 +10,9 @@
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -79,7 +81,7 @@ class MultibodyTree {
   const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body) {
     static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
-    if (topology_.is_valid) {
+    if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more bodies is not allowed. "
                              "See documentation for Finalize() for details.");
@@ -177,7 +179,7 @@ class MultibodyTree {
   const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame) {
     static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
                   "FrameType must be a sub-class of Frame<T>.");
-    if (topology_.is_valid) {
+    if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more frames is not allowed. "
                              "See documentation for Finalize() for details.");
@@ -285,7 +287,7 @@ class MultibodyTree {
       std::unique_ptr<MobilizerType<T>> mobilizer) {
     static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
                   "MobilizerType must be a sub-class of mobilizer<T>.");
-    if (topology_.is_valid) {
+    if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more bodies is not allowed. "
                              "See documentation for Finalize() for details.");
@@ -299,9 +301,12 @@ class MultibodyTree {
     // later to define mobilizers between those frames in a second tree2.
     mobilizer->get_inboard_frame().HasThisParentTreeOrThrow(this);
     mobilizer->get_outboard_frame().HasThisParentTreeOrThrow(this);
+    const int num_positions = mobilizer->get_num_positions();
+    const int num_velocities = mobilizer->get_num_velocities();
     MobilizerIndex mobilizer_index = topology_.add_mobilizer(
         mobilizer->get_inboard_frame().get_index(),
-        mobilizer->get_outboard_frame().get_index());
+        mobilizer->get_outboard_frame().get_index(),
+        num_positions, num_velocities);
 
     // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
     // below. Do not move it around!
@@ -409,7 +414,7 @@ class MultibodyTree {
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
   /// Finalize() is called, which validates the topology.
   /// @see Finalize().
-  bool topology_is_valid() const { return topology_.is_valid; }
+  bool topology_is_valid() const { return topology_.is_valid(); }
 
   /// Returns the topology information for this multibody tree. Users should not
   /// need to call this method since MultibodyTreeTopology is an internal
@@ -435,13 +440,30 @@ class MultibodyTree {
   // automatically when CreateDefaultContext() is called.
   void Finalize();
 
+  /// Allocates a new context for this %MultibodyTree uniquely identifying the
+  /// state of the multibody system.
+  ///
+  /// @pre The method Finalize() must be called before attempting to create a
+  /// context in order for the %MultibodyTree topology to be valid at the moment
+  /// of allocation.
+  ///
+  /// @throws std::logic_error If users attempt to call this method on a
+  ///         %MultibodyTree with an invalid topology.
+  // TODO(amcastro-tri): Split this method into implementations to be used by
+  // System::AllocateContext() so that MultibodyPlant() can make use of it
+  // within the system's infrastructure. This will require at least the
+  // introduction of system's methods to:
+  //  - Create a context different from LeafContext, in this case MBTContext.
+  //  - Create or request cache entries.
+  std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
+
+  /// Sets default values in the context including pre-computed cache entries.
+  void SetDefaults(systems::Context<T>*) const {}
+
  private:
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckInvariants().
-
-  // Sets a flag indicate the topology is valid.
-  void set_valid_topology() { topology_.set_valid(); }
 
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;

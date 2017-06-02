@@ -9,100 +9,185 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
 namespace systems {
 namespace {
 
-using MyVector2d = MyVector<2, double>;
-
-struct NoDefaultCtor {
-  explicit NoDefaultCtor(int i) : data{i} {}
-  NoDefaultCtor(int c1, int c2) : data{c1 * c2} {}
-  int data;
-};
-
+// A type with no constructors.
 struct BareStruct {
   int data;
 };
 
+// A copyable type with no default constructor.
+struct CopyableInt {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CopyableInt);
+  explicit CopyableInt(int i) : data{i} {}
+  CopyableInt(int c1, int c2) : data{c1 * c2} {}
+
+  int data;
+};
+
+// A clone-only type with no default constructor.
+struct CloneableInt {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CloneableInt);
+  explicit CloneableInt(int i) : data{i} {}
+
+  std::unique_ptr<CloneableInt> Clone() const {
+    return std::make_unique<CloneableInt>(data);
+  }
+
+  const int data;
+};
+
+// A move-or-clone (not copy) type with a default constructor.
+struct MoveOrCloneInt {
+  MoveOrCloneInt() {}
+  explicit MoveOrCloneInt(int i) : data{i} {}
+  MoveOrCloneInt(MoveOrCloneInt&& other) {
+    std::swap(data, other.data);
+  }
+  MoveOrCloneInt& operator=(MoveOrCloneInt&& other)  {
+    std::swap(data, other.data);
+    return *this;
+  }
+  MoveOrCloneInt(const MoveOrCloneInt&) = delete;
+  void operator=(const MoveOrCloneInt&) = delete;
+
+  std::unique_ptr<MoveOrCloneInt> Clone() const {
+    return std::make_unique<MoveOrCloneInt>(data);
+  }
+
+  int data{};
+};
+
+// Helper for EXPECT_EQ to unwrap the data field.
+template <typename T>
+bool operator==(int i, const T& value) { return i == value.data; }
+
+// Boilerplate for tests that are identical across different types.  Our
+// TYPED_TESTs will run using all of the below types as the TypeParam.
+template <typename TypeParam> class TypedValueTest : public ::testing::Test {};
+typedef ::testing::Types<
+    int,
+    CopyableInt,
+    CloneableInt,
+    MoveOrCloneInt
+    > Implementations;
+TYPED_TEST_CASE(TypedValueTest, Implementations);
+
+// Value<T>() should work if and only if T is default-constructible.
 GTEST_TEST(ValueTest, DefaultConstructor) {
-  // Value<int>() should work because int is default-constructible.
-  const AbstractValue& abstract_value = Value<int>();
-  EXPECT_EQ(0, abstract_value.GetValue<int>());
+  const AbstractValue& value_int = Value<int>();
+  EXPECT_EQ(0, value_int.GetValue<int>());
 
-  // Value<NoDefaultCtor>() should not work because NoDefaultCtor is not.
-  static_assert(!std::is_default_constructible<Value<NoDefaultCtor>>::value,
-                "Value<NoDefaultCtor>() should not work.");
+  const AbstractValue& value_bare_struct = Value<BareStruct>();
+  EXPECT_EQ(0, value_bare_struct.GetValue<BareStruct>().data);
+
+  static_assert(!std::is_default_constructible<Value<CopyableInt>>::value,
+                "Value<CopyableInt>() should not work.");
+
+  static_assert(!std::is_default_constructible<Value<CloneableInt>>::value,
+                "Value<CloneableInt>() should not work.");
+
+  const AbstractValue& value_move_or_clone_int = Value<MoveOrCloneInt>();
+  EXPECT_EQ(0, value_move_or_clone_int.GetValue<MoveOrCloneInt>().data);
 }
 
-GTEST_TEST(ValueTest, ForwardingConstructor) {
-  // Value<NoDefaultCtor>(int) should work using forwarding.
-  const AbstractValue& abstract_value = Value<NoDefaultCtor>(22);
-  EXPECT_EQ(22, abstract_value.GetValue<NoDefaultCtor>().data);
-
-  // Value<NoDefaultCtor>(int, int) should work using forwarding.
-  const AbstractValue& value2 = Value<NoDefaultCtor>(11, 2);
-  EXPECT_EQ(22, value2.GetValue<NoDefaultCtor>().data);
-
-  // Value<BareStruct>(BareStruct&&) should use the `(const T&)` constructor,
-  // not the forwarding constructor.
-  const Value<BareStruct> xvalue_bare(BareStruct{});
-
-  // Value<BareStruct>(BareStruct&) should use the `(const T&)` constructor,
-  // not the forwarding constructor.
-  BareStruct bare_struct{};
-  const Value<BareStruct> lvalue_bare(bare_struct);
-
-  // Value<BareStruct>(const BareStruct&) should use the `(const T&)`
-  // constructor, not the forwarding constructor.
-  const BareStruct const_bare_struct{};
-  const Value<BareStruct> crvalue_bare(const_bare_struct);
+// Value<T>(int) should work (possibly using forwarding).
+TYPED_TEST(TypedValueTest, ForwardingConstructor) {
+  using T = TypeParam;
+  const AbstractValue& abstract_value = Value<T>(22);
+  EXPECT_EQ(22, abstract_value.GetValue<T>());
 }
 
-GTEST_TEST(ValueTest, Make) {
-  auto abstract_value = AbstractValue::Make<int>(42);
-  EXPECT_EQ(42, abstract_value->GetValue<int>());
+// A two-argument constructor should work using forwarding.  (The forwarding
+// test case above is not quite enough, because the Value implementation treats
+// the first argument and rest of the arguments separately.)
+GTEST_TEST(ValueTest, ForwardingConstructorTwoArgs) {
+  using T = CopyableInt;
+  const AbstractValue& value = Value<T>(11, 2);
+  EXPECT_EQ(22, value.GetValue<T>());
 }
 
-GTEST_TEST(ValueTest, Access) {
-  Value<int> value(3);
+// Passing a single reference argument to the Value<T> constructor should use
+// the `(const T&)` constructor, not the forwarding constructor.
+TYPED_TEST(TypedValueTest, CopyConstructor) {
+  using T = TypeParam;
+  T param{0};
+  const T const_param{0};
+  const Value<T> xvalue(T{0});          // Called with `T&&`.
+  const Value<T> lvalue(param);         // Called with `T&`.
+  const Value<T> crvalue(const_param);  // Called with `const T&`.
+}
+
+// Ditto for BareStruct.
+GTEST_TEST(ValueTest, BareCopyConstructor) {
+  using T = BareStruct;
+  T param{};
+  const T const_param{};
+  const Value<T> xvalue(T{});           // Called with `T&&`.
+  const Value<T> lvalue(param);         // Called with `T&`.
+  const Value<T> crvalue(const_param);  // Called with `const T&`.
+}
+
+// Passing a unique_ptr<T> to Value<T> should take over the value.
+TYPED_TEST(TypedValueTest, UniquePtrConstructor) {
+  using T = TypeParam;
+  auto original = std::make_unique<T>(22);
+  const Value<T> value{std::move(original)};
+  EXPECT_EQ(original.get(), nullptr);
+  EXPECT_EQ(22, value.template GetValue<T>());
+}
+
+TYPED_TEST(TypedValueTest, Make) {
+  using T = TypeParam;
+  // TODO(jwnimmer-tri) We should be able to forward this too, and lose the
+  // explicit construction of T{42}.
+  auto abstract_value = AbstractValue::Make<T>(T{42});
+  EXPECT_EQ(42, abstract_value->template GetValue<T>());
+}
+
+TYPED_TEST(TypedValueTest, Access) {
+  using T = TypeParam;
+  Value<T> value(3);
   const AbstractValue& erased = value;
-  EXPECT_EQ(3, erased.GetValue<int>());
-  EXPECT_EQ(3, erased.GetValueOrThrow<int>());
+  EXPECT_EQ(3, erased.GetValue<T>());
+  EXPECT_EQ(3, erased.GetValueOrThrow<T>());
 }
 
-GTEST_TEST(ValueTest, Clone) {
-  Value<int> value(43);
+TYPED_TEST(TypedValueTest, Clone) {
+  using T = TypeParam;
+  Value<T> value(43);
   const AbstractValue& erased = value;
   std::unique_ptr<AbstractValue> cloned = erased.Clone();
-  EXPECT_EQ(43, cloned->GetValue<int>());
+  EXPECT_EQ(43, cloned->GetValue<T>());
 }
 
-GTEST_TEST(ValueTest, Mutation) {
-  Value<int> value(5);
-  value.set_value(6);
+TYPED_TEST(TypedValueTest, Mutation) {
+  using T = TypeParam;
+  Value<T> value(5);
+  value.set_value(T{6});
   AbstractValue& erased = value;
-  EXPECT_EQ(6, erased.GetValue<int>());
-  erased.SetValue<int>(7);
-  EXPECT_EQ(7, erased.GetValue<int>());
-  erased.SetValueOrThrow<int>(8);
-  EXPECT_EQ(8, erased.GetValue<int>());
-  erased.SetFrom(Value<int>(9));
-  EXPECT_EQ(9, erased.GetValue<int>());
-  erased.SetFromOrThrow(Value<int>(10));
-  EXPECT_EQ(10, erased.GetValue<int>());
+  EXPECT_EQ(6, erased.GetValue<T>());
+  erased.SetValue<T>(T{7});
+  EXPECT_EQ(7, erased.GetValue<T>());
+  erased.SetValueOrThrow<T>(T{8});
+  EXPECT_EQ(8, erased.GetValue<T>());
+  erased.SetFrom(Value<T>(9));
+  EXPECT_EQ(9, erased.GetValue<T>());
+  erased.SetFromOrThrow(Value<T>(10));
+  EXPECT_EQ(10, erased.GetValue<T>());
 }
 
-GTEST_TEST(ValueTest, BadCast) {
+TYPED_TEST(TypedValueTest, BadCast) {
+  using T = TypeParam;
   Value<double> value(4);
   AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetValueOrThrow<int>(), std::bad_cast);
-  EXPECT_THROW(erased.GetMutableValueOrThrow<int>(), std::bad_cast);
-  EXPECT_THROW(erased.SetValueOrThrow<int>(3), std::bad_cast);
-  EXPECT_THROW(erased.SetFromOrThrow(Value<int>(2)), std::bad_cast);
+  EXPECT_THROW(erased.GetValueOrThrow<T>(), std::bad_cast);
+  EXPECT_THROW(erased.GetMutableValueOrThrow<T>(), std::bad_cast);
+  EXPECT_THROW(erased.SetValueOrThrow<T>(T{3}), std::bad_cast);
+  EXPECT_THROW(erased.SetFromOrThrow(Value<T>(2)), std::bad_cast);
 }
 
 class PrintInterface {
@@ -201,84 +286,6 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
       dynamic_cast<PrintInterface*>(cloned.get());
   ASSERT_NE(nullptr, printable_erased);
   EXPECT_EQ("5,6", printable_erased->print());
-}
-
-GTEST_TEST(VectorValueTest, Access) {
-  VectorValue<double> value(BasicVector<double>::Make({1, 2, 3}));
-  EXPECT_EQ(1, value.get_value()->get_value().x());
-  EXPECT_EQ(2, value.get_value()->get_value().y());
-  EXPECT_EQ(3, value.get_value()->get_value().z());
-}
-
-GTEST_TEST(VectorValueTest, CopyConstructor) {
-  VectorValue<double> value(BasicVector<double>::Make({1, 2, 3}));
-
-  VectorValue<double> other_value(value);
-  EXPECT_EQ(1, other_value.get_value()->get_value().x());
-  EXPECT_EQ(2, other_value.get_value()->get_value().y());
-  EXPECT_EQ(3, other_value.get_value()->get_value().z());
-}
-
-GTEST_TEST(VectorValueTest, CopyConstructorSubclass) {
-  VectorValue<double> value(MyVector2d::Make(1, 2));
-  VectorValue<double> other_value(value);
-  value.get_value()->set_value(Eigen::Vector2d(3, 4));
-
-  const MyVector2d* const vector =
-      dynamic_cast<const MyVector2d*>(other_value.get_value());
-  ASSERT_NE(vector, nullptr);
-  EXPECT_EQ(vector->get_value()(0), 1);
-  EXPECT_EQ(vector->get_value()(1), 2);
-}
-
-GTEST_TEST(VectorValueTest, CopyConstructorNull) {
-  VectorValue<double> value{nullptr};
-
-  VectorValue<double> other_value(value);
-  EXPECT_EQ(other_value.get_value(), nullptr);
-}
-
-GTEST_TEST(VectorValueTest, AssignmentOperator) {
-  VectorValue<double> value(BasicVector<double>::Make({1, 2, 3}));
-  VectorValue<double> other_value(BasicVector<double>::Make({4, 5, 6}));
-
-  value = other_value;
-  EXPECT_EQ(4, value.get_value()->get_value().x());
-  EXPECT_EQ(5, value.get_value()->get_value().y());
-  EXPECT_EQ(6, value.get_value()->get_value().z());
-}
-
-GTEST_TEST(VectorValueTest, AssignmentOperatorSubclass) {
-  VectorValue<double> value(MyVector2d::Make(1, 2));
-  VectorValue<double> other_value(BasicVector<double>::Make({5, 6}));
-  other_value = value;
-  value.get_value()->set_value(Eigen::Vector2d(3, 4));
-
-  const MyVector2d* const vector =
-      dynamic_cast<const MyVector2d*>(other_value.get_value());
-  ASSERT_NE(vector, nullptr);
-  EXPECT_EQ(vector->get_value()(0), 1);
-  EXPECT_EQ(vector->get_value()(1), 2);
-}
-
-GTEST_TEST(VectorValueTest, AssignmentOperatorNull) {
-  VectorValue<double> value{nullptr};
-  VectorValue<double> other_value(BasicVector<double>::Make({4, 5, 6}));
-
-  value = other_value;
-  other_value = VectorValue<double>{nullptr};
-  EXPECT_EQ(4, value.get_value()->get_value().x());
-  EXPECT_EQ(5, value.get_value()->get_value().y());
-  EXPECT_EQ(6, value.get_value()->get_value().z());
-  EXPECT_EQ(other_value.get_value(), nullptr);
-}
-
-GTEST_TEST(VectorValueTest, AssignmentOperatorSelf) {
-  VectorValue<double> value(BasicVector<double>::Make({4, 5, 6}));
-  value = value;
-  EXPECT_EQ(4, value.get_value()->get_value().x());
-  EXPECT_EQ(5, value.get_value()->get_value().y());
-  EXPECT_EQ(6, value.get_value()->get_value().z());
 }
 
 }  // namespace

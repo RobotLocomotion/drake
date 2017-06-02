@@ -70,9 +70,9 @@ DEFINE_double(dragway_lane_speed_delta, 2,
               "dragway_base_speed + dragway_lane_speed_delta m/s. Finally, "
               "vehicles in the left-most lane will travel at "
               "dragway_base_speed + 2 * dragway_lane_speed_delta m/s.");
-DEFINE_double(dragway_vehicle_delay, 3,
-              "The starting time delay between consecutive vehicles on a "
-              "lane.");
+DEFINE_double(dragway_vehicle_spacing, 10,
+              "The initial spacing (in meters) between consecutive vehicles "
+              "traveling on a lane.");
 
 DEFINE_bool(with_onramp, false, "Loads the onramp road network. Only one road "
             "network can be enabled. Thus, if this option is enabled, no other "
@@ -80,7 +80,7 @@ DEFINE_bool(with_onramp, false, "Loads the onramp road network. Only one road "
 DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles added to the "
               "onramp.");
 DEFINE_bool(onramp_swap_start, false, "Whether to swap the starting lanes of "
-    "the vehicles on the onramp.");
+            "the vehicles on the onramp.");
 
 DEFINE_bool(with_stalled_cars, false, "Places a stalled vehicle at the end of "
             "each lane of a dragway. This option is only enabled when the "
@@ -212,10 +212,10 @@ void AddVehicles(RoadNetworkType road_network_type,
       const int lane_index = i % FLAGS_num_dragway_lanes;
       const double speed = FLAGS_dragway_base_speed +
           lane_index * FLAGS_dragway_lane_speed_delta;
-      const double start_time = i / FLAGS_num_dragway_lanes *
-           FLAGS_dragway_vehicle_delay;
+      const double start_position = i / FLAGS_num_dragway_lanes *
+           FLAGS_dragway_vehicle_spacing;
       const auto& params = CreateTrajectoryParamsForDragway(
-          *dragway_road_geometry, lane_index, speed, start_time);
+          *dragway_road_geometry, lane_index, speed, start_position);
       simulator->AddPriusTrajectoryCar("TrajectoryCar" + std::to_string(i),
                                        std::get<0>(params),
                                        std::get<1>(params),
@@ -313,13 +313,17 @@ void AddFlatTerrain(AutomotiveSimulator<double>*) {
 // flags.
 const maliput::api::RoadGeometry* AddDragway(
     AutomotiveSimulator<double>* simulator) {
+  const double kMaximumHeight = 5.;  // meters
+  const double kLinearTolerance = std::numeric_limits<double>::epsilon();
+  const double kAngularTolerance = std::numeric_limits<double>::epsilon();
   std::unique_ptr<const maliput::api::RoadGeometry> road_geometry
       = std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"Automotive Demo Dragway"}),
           FLAGS_num_dragway_lanes,
           FLAGS_dragway_length,
           FLAGS_dragway_lane_width,
-          FLAGS_dragway_shoulder_width);
+          FLAGS_dragway_shoulder_width,
+          kMaximumHeight, kLinearTolerance, kAngularTolerance);
   return simulator->SetRoadGeometry(std::move(road_geometry));
 }
 

@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
@@ -28,9 +29,12 @@ void MultibodyTree<T>::Finalize() {
         "MultibodyTree.");
   }
 
+  // Before performing any setup that depends on the scalar type <T>, compile
+  // all the type-T independent topological information.
+  topology_.Finalize();
+
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
-  //   - Finalize non-T dependent topological information.
   //   - Compute degrees of freedom, array sizes and any other information to
   //     allocate a context and request the required cache entries.
   //   - Setup computational structures (BodyNode based).
@@ -49,8 +53,20 @@ void MultibodyTree<T>::Finalize() {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
   }
+}
 
-  set_valid_topology();
+template <typename T>
+std::unique_ptr<systems::Context<T>>
+MultibodyTree<T>::CreateDefaultContext() const {
+  if (!topology_is_valid()) {
+    throw std::logic_error(
+        "Attempting to create a Context for a MultibodyTree with an invalid "
+        "topology. MultibodyTree::Finalize() must be called before attempting "
+        "to create a context.");
+  }
+  auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
+  SetDefaults(context.get());
+  return std::move(context);
 }
 
 // Explicitly instantiates on the most common scalar types.

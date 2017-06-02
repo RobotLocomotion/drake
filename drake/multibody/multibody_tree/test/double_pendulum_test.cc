@@ -11,16 +11,19 @@
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
 namespace {
 
 using Eigen::Isometry3d;
+using Eigen::Matrix4d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
+using systems::Context;
 
 // Set of MultibodyTree tests for a double pendulum model.
 // This double pendulum is similar to the acrobot model described in Section 3.1
@@ -94,7 +97,6 @@ class PendulumTests : public ::testing::Test {
     elbow_outboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_);
 
-
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
     //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
@@ -109,7 +111,26 @@ class PendulumTests : public ::testing::Test {
         Vector3d::UnitZ() /*revolute axis*/);
   }
 
+  // Helper method to extract a pose from the position kinematics.
+  // TODO(amcastro-tri):
+  // Replace this by a method Body<T>::get_pose_in_world(const Context<T>&)
+  // when we can place cache entries in the context.
+  const Isometry3d& get_body_pose_in_world(
+      const PositionKinematicsCache<double>& pc,
+      const Body<double>& body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
+  }
+
  protected:
+  // For testing only so that we can retrieve/set (future to be) cache entries,
+  // this method initializes the poses of each link in the position kinematics
+  // cache.
+  void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
+    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
+  }
+
   std::unique_ptr<MultibodyTree<double>> model_;
   const Body<double>* world_body_;
   // Bodies:
@@ -263,6 +284,51 @@ TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   EXPECT_EQ(&bodies[world_body_->get_index()].get(), world_body_);
   EXPECT_EQ(&bodies[upper_link_->get_index()].get(), upper_link_);
   EXPECT_EQ(&bodies[lower_link_->get_index()].get(), lower_link_);
+}
+
+TEST_F(PendulumTests, CreateContext) {
+  CreatePendulumModel();
+
+  // Verifies the number of multibody elements is correct.
+  EXPECT_EQ(model_->get_num_bodies(), 3);
+
+  // Verify we cannot create a Context until we have a valid topology.
+  EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
+  EXPECT_THROW(model_->CreateDefaultContext(), std::logic_error);
+
+  // Finalize() stage.
+  EXPECT_NO_THROW(model_->Finalize());
+  EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
+
+  // Create Context.
+  std::unique_ptr<Context<double>> context;
+  EXPECT_NO_THROW(context = model_->CreateDefaultContext());
+
+  // Tests MultibodyTreeContext accessors.
+  auto mbt_context =
+      dynamic_cast<MultibodyTreeContext<double> *>(context.get());
+
+  // Verifies the correct number of generalized positions and velocities.
+  EXPECT_EQ(mbt_context->get_positions().size(), 2);
+  EXPECT_EQ(mbt_context->get_mutable_positions().size(), 2);
+  EXPECT_EQ(mbt_context->get_velocities().size(), 2);
+  EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
+
+  // Set the poses of each body in the position kinematics cache to have an
+  // arbitrary value that we can use for unit testing. In practice the poses in
+  // the position kinematics will be the result of a position kinematics update
+  // and will live in the context as a cache entry.
+  PositionKinematicsCache<double> pc(model_->get_topology());
+  SetPendulumPoses(&pc);
+
+  // Retrieve body poses from position kinematics cache.
+  const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
+  const Isometry3d &X_WLu = get_body_pose_in_world(pc, *upper_link_);
+
+  // Asserts that the retrieved poses match with the ones specified by the unit
+  // test method SetPendulumPoses().
+  EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
+  EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
 }
 
 }  // namespace

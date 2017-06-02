@@ -173,7 +173,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
       std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"TestDragway"}), 2 /* num lanes */,
-          100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+          5 /* maximum_height */,
+          std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+          std::numeric_limits<double>::epsilon() /* angular_tolerance */)));
 
   // Create one MOBIL car and two stopped cars arranged as follows:
   //
@@ -229,13 +232,13 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   };
   const Curve2d curve{waypoints};
 
-  // Set up a basic simulation with a couple Prius TrajectoryCars. The first
-  // car starts a time zero while the second starts at time 10. They both follow
-  // a straight 100 m long line.
+  // Set up a basic simulation with a couple Prius TrajectoryCars. Both cars
+  // start at position zero; the first has a speed of 1 m/s, while the other is
+  // stationary. They both follow a straight 100 m long line.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
   const int id1 = simulator->AddPriusTrajectoryCar("alice", curve, 1.0, 0.0);
-  const int id2 = simulator->AddPriusTrajectoryCar("bob", curve, 1.0, 10.0);
+  const int id2 = simulator->AddPriusTrajectoryCar("bob", curve, 0.0, 0.0);
   EXPECT_EQ(id1, 0);
   EXPECT_EQ(id2, 1);
 
@@ -336,7 +339,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
 
   // Verifies that the first car is about 1 m ahead of the second car. This is
   // expected since the first car is traveling at 1 m/s for a second while the
-  // second car hasn't started to move yet.
+  // second car is immobile.
   const int n = draw_message.num_links / 2;
   for (int i = 0; i < n; ++i) {
     EXPECT_EQ(draw_message.link_name.at(i), draw_message.link_name.at(i + n));
@@ -384,7 +387,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
       road = simulator->SetRoadGeometry(
           std::make_unique<const maliput::dragway::RoadGeometry>(
               maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-              100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+              5 /* maximum_height */,
+              std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+              std::numeric_limits<double>::epsilon() /* angular_tolerance */)));
 
   EXPECT_THROW(
       simulator->AddPriusMaliputRailcar("bar", LaneDirection(), params),
@@ -393,7 +399,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
   const auto different_road =
       std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"DifferentDragway"}), 2 /* num lanes */,
-          50 /* length */, 3 /* lane width */, 2 /* shoulder width */);
+          50 /* length */, 3 /* lane width */, 2 /* shoulder width */,
+          5 /* maximum_height */,
+          std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+          std::numeric_limits<double>::epsilon() /* angular_tolerance */);
 
   EXPECT_THROW(simulator->AddPriusMaliputRailcar(
                    "bar", LaneDirection(
@@ -535,7 +544,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
       road = simulator->SetRoadGeometry(
           std::make_unique<const maliput::dragway::RoadGeometry>(
               maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-              100 /* length */, 4 /* lane width */, 1 /* shoulder width */)));
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+              5 /* maximum_height */,
+              std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+              std::numeric_limits<double>::epsilon() /* angular_tolerance */)));
   EXPECT_NO_THROW(simulator->AddPriusMaliputRailcar(
       "Foo", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
       MaliputRailcarState<double>() /* initial state */));
@@ -561,7 +573,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
   const maliput::api::RoadGeometry* road = simulator->SetRoadGeometry(
       std::make_unique<const maliput::dragway::RoadGeometry>(
           maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-          100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+          100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+          5 /* maximum_height */,
+          std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+          std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   simulator->AddIdmControlledPriusMaliputRailcar(
       "Alice", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
       MaliputRailcarState<double>() /* initial state */);
@@ -583,7 +598,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestRailcarVelocityOutput) {
       simulator->SetRoadGeometry(
           std::make_unique<const maliput::dragway::RoadGeometry>(
               maliput::api::RoadGeometryId({"TestDragway"}), 1 /* num lanes */,
-              100 /* length */, 4 /* lane width */, 1 /* shoulder width */));
+              100 /* length */, 4 /* lane width */, 1 /* shoulder width */,
+              5 /* maximum_height */,
+              std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+              std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   MaliputRailcarState<double> alice_initial_state;
   alice_initial_state.set_s(5);
   alice_initial_state.set_speed(1);

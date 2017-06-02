@@ -15,11 +15,10 @@ package(
 drake_cc_library(
     name = "schunk_wsg_constants",
     hdrs = ["schunk_wsg_constants.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/common",
     ],
-    visibility = ["//visibility:public"],
-
 )
 
 drake_cc_library(
@@ -35,6 +34,7 @@ drake_cc_library(
     name = "schunk_wsg_lcm",
     srcs = ["schunk_wsg_lcm.cc"],
     hdrs = ["schunk_wsg_lcm.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":schunk_wsg_trajectory_generator_state_vector",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
@@ -42,7 +42,6 @@ drake_cc_library(
         "//drake/lcmtypes:schunk",
         "//drake/systems/framework:leaf_system",
     ],
-    visibility = ["//visibility:public"],
 )
 
 # === test/ ===

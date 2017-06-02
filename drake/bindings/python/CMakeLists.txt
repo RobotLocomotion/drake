@@ -21,15 +21,14 @@ if(BUILD_TESTING)
     drake_add_python_test(pydrake.test.testPR2IK)
   endif()
 
+  drake_add_python_test(pydrake.test.testCommon)
   drake_add_python_test(pydrake.test.test_urdf_parser)
   drake_add_python_test(pydrake.test.testRBTTransformPoints)
   drake_add_python_test(pydrake.test.testRBTCoM)
   drake_add_python_test(pydrake.test.testForwardDiff)
   drake_add_python_test(pydrake.test.testSymbolic)
 
-  # Temporarily disabled because we have no Gurobi license in CI. #5862
-  # if(gurobi_FOUND)
-  if (FALSE)
+  if(gurobi_FOUND)
     drake_add_python_test(pydrake.test.testMathematicalProgram)
     drake_add_python_test(pydrake.test.testGurobiSolver)
   endif()
