@@ -596,8 +596,12 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 }
 
 template <class T>
-optional<T> Simulator<T>::GetWitnessTimeIsolation(const Context<T>& context) const {
+optional<T> Simulator<T>::GetWitnessTimeIsolation(
+    const Context<T>& context) const {
   using std::max;
+
+  // TODO(edrumwri): Add ability to disable witness time isolation through
+  // a Simulator setting.
 
   // The scale factor for witness isolation.
   // TODO(edrumwri): Consider making this user-settable.
