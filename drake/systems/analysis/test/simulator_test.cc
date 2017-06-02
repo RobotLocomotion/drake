@@ -37,7 +37,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-// Make a composite system using the logistic system with the clock-based
+// A composite system using the logistic system with the clock-based
 // witness function.
 class CompositeSystem : public LogisticSystem {
  public:
@@ -62,6 +62,43 @@ class CompositeSystem : public LogisticSystem {
  private:
   std::unique_ptr<LogisticWitness> logistic_witness_;
   std::unique_ptr<ClockWitness> clock_witness_;
+};
+
+// An empty system using two clock witnesses.
+class TwoWitnessEmptySystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessEmptySystem)
+
+  explicit TwoWitnessEmptySystem(const double& off1, const double& off2) {
+    const auto dir_type = WitnessFunction<double>::DirectionType::kCrossesZero;
+    witness1_ = std::make_unique<ClockWitness>(off1, *this, dir_type);
+    witness2_ = std::make_unique<ClockWitness>(off2, *this, dir_type);
+  }
+
+  void set_publish_callback(
+      std::function<void(const Context<double>&)> callback) {
+    publish_callback_ = callback;
+  }
+
+ protected:
+  void DoCalcOutput(const Context<double>&,
+                    SystemOutput<double>*) const override {}
+
+  void DoGetWitnessFunctions(
+      const systems::Context<double>&,
+      std::vector<const systems::WitnessFunction<double>*>* w) const override {
+    w->push_back(witness1_.get());
+    w->push_back(witness2_.get());
+  }
+
+  void DoPublish(
+      const drake::systems::Context<double>& context) const override {
+    if (publish_callback_ != nullptr) publish_callback_(context);
+  }
+
+ private:
+  std::unique_ptr<ClockWitness> witness1_, witness2_;
+  std::function<void(const Context<double>&)> publish_callback_{nullptr};
 };
 
 // Tests witness function isolation when operating in fixed step mode without
@@ -199,8 +236,11 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
 // over an interval *where both witness functions change sign from the beginning
 // to the end of the interval.
 GTEST_TEST(SimulatorTest, MultipleWitnesses) {
+  // Set up the trigger time.
+  const double trigger_time = 1e-2;
+
   // Create a CompositeSystem, which uses two witness functions.
-  CompositeSystem system(1e-8, 100, 1, 1e-2);
+  CompositeSystem system(1e-8, 100, 1, trigger_time);
   std::vector<std::pair<double, const WitnessFunction<double> *>> triggers;
   system.set_publish_callback([&](const Context<double> &context) {
     // Get the witness functions.
@@ -231,7 +271,10 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
                                               simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(dt);
   simulator.get_mutable_integrator()->set_target_accuracy(0.1);
+
+  // Set initial time and state.
   Context<double>* context = simulator.get_mutable_context();
+  (*context->get_mutable_continuous_state())[0] = -1;
   context->set_time(0);
 
   // Isolate witness functions to high accuracy.
@@ -249,7 +292,91 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   EXPECT_TRUE(dynamic_cast<const ClockWitness*>(triggers.back().second));
 
   // We expect that the clock witness will trigger second at a time of ~1s.
-  EXPECT_NEAR(triggers.back().first, 1.0, tol);
+  EXPECT_NEAR(triggers.back().first, trigger_time, tol);
+}
+
+// Tests ability of simulation to identify two witness functions triggering
+// at the identical time over an interval.
+GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
+  // Create an EmptySystem that uses two identical witness functions.
+  TwoWitnessEmptySystem system(+1, +1);
+  bool published = false;
+  std::unique_ptr<Simulator<double>> simulator;
+  system.set_publish_callback([&](const Context<double> &context) {
+    // Get the witness functions.
+    std::vector<const WitnessFunction<double> *> witnesses;
+    system.GetWitnessFunctions(context, &witnesses);
+    DRAKE_DEMAND(witnesses.size() == 2);
+
+    // Evaluate them.
+    double w1 = witnesses.front()->Evaluate(context);
+    double w2 = witnesses.back()->Evaluate(context);
+
+    // Verify both are equivalent.
+    EXPECT_EQ(w1, w2);
+
+    // Verify that they are triggering.
+    EXPECT_LT(std::abs(w1), simulator->GetWitnessTimeIsolation());
+
+    // Indicate that the method has been called.
+    published = true;
+  });
+
+  const double dt = 2;
+  simulator = std::make_unique<Simulator<double>>(system);
+  simulator->set_publish_at_initialization(false);
+  simulator->set_publish_every_time_step(false);
+  simulator->get_mutable_integrator()->set_maximum_step_size(dt);
+
+  // Isolate witness functions to high accuracy.
+  const double tol = 1e-12;
+  simulator->get_mutable_context()->set_accuracy(tol);
+
+  // Simulate.
+  simulator->StepTo(10);
+
+  // Verify one publish.
+  EXPECT_TRUE(published);
+}
+
+// Tests ability of simulation to identify two witness functions triggering
+// over an interval where (a) both functions change sign over the interval and
+// (b) after the interval is "chopped down" (to isolate the first witness
+// triggering), the second witness does not trigger.
+GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
+  // Set the trigger times.
+  const double first_time = +1;
+  const double second_time = +2;
+
+  // Create an EmptySystem that uses clock witnesses.
+  TwoWitnessEmptySystem system(first_time, second_time);
+  std::vector<double> publish_times;
+  system.set_publish_callback([&](const Context<double> &context) {
+    publish_times.push_back(context.get_time());
+  });
+
+  const double dt = 3;
+  Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
+  simulator.set_publish_every_time_step(false);
+  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
+
+  // Isolate witness functions to high accuracy.
+  const double tol = 1e-12;
+  simulator.get_mutable_context()->set_accuracy(tol);
+
+  // Get the isolation interval tolerance.
+  const double iso_tol = simulator.GetWitnessTimeIsolation();
+
+  // Simulate to right after the second one should have triggered.
+  simulator.StepTo(2.1);
+
+  // Verify two publishes.
+  EXPECT_EQ(publish_times.size(), 2);
+
+  // Verify that the publishes are at the expected times.
+  EXPECT_NEAR(publish_times.front(), first_time, iso_tol);
+  EXPECT_NEAR(publish_times.back(), second_time, iso_tol);
 }
 
 // Tests ability of simulation to identify the proper number of witness function
@@ -1047,3 +1174,9 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
 }  // namespace
 }  // namespace systems
 }  // namespace drake
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+//  drake::log()->set_level(spdlog::level::debug);
+  return RUN_ALL_TESTS();
+}
