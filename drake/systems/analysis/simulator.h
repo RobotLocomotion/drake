@@ -21,46 +21,46 @@
 namespace drake {
 namespace systems {
 
-/** A forward dynamics solver for hybrid dynamic systems represented by
- * `System<T>` objects. Starting with an initial Context for a given System,
- * %Simulator advances time and produces a series of Context values that forms a
- * trajectory satisfying the system's dynamic equations to a specified accuracy.
- * Only the Context is modified by a %Simulator; the System is const.
- *
- * A Drake System is a continuous/discrete/hybrid dynamic system where the
- * continuous part is a DAE, that is, it is expected to consist of a set of
- * differential equations and bilateral algebraic constraints. The set of active
- * constraints may change as a result of particular events, such as contact.
- *
- * Given a current Context, we expect a System to provide us with
- * - derivatives for the continuous differential equations that already satisfy
- * the differentiated form of the constraints (typically, acceleration
- * constraints),
- * - a projection method for least-squares correction of violated higher-level
- * constraints (position and velocity level),
- * - a time-of-next-update method that can be used to adjust the integrator
- * step size in preparation for a discrete update,
- * - a method that can update discrete variables when their update time is
- * reached,
- * - witness (guard) functions for event isolation,
- * - event handlers (reset functions) for making appropriate changes to state
- * and mode variables when an event has been isolated.
- *
- * The continuous parts of the trajectory are advanced using a numerical
- * integrator. Different integrators have different properties; if you know
- * about that you can choose the one that is most appropriate for your
- * application. Otherwise, a default is provided which is adequate for most
- * systems.
- *
- * @tparam T The vector element type, which must be a valid Eigen scalar.
- *
- * Instantiated templates for the following kinds of T's are provided and
- * available to link against in the containing library:
- * - double
- * - AutoDiffXd
- *
- * Other instantiations are permitted but take longer to compile.
- */
+/// A forward dynamics solver for hybrid dynamic systems represented by
+/// `System<T>` objects. Starting with an initial Context for a given System,
+/// %Simulator advances time and produces a series of Context values that forms
+/// a trajectory satisfying the system's dynamic equations to a specified
+/// accuracy. Only the Context is modified by a %Simulator; the System is const.
+///
+/// A Drake System is a continuous/discrete/hybrid dynamic system where the
+/// continuous part is a DAE, that is, it is expected to consist of a set of
+/// differential equations and bilateral algebraic constraints. The set of
+/// active constraints may change as a result of particular events, such as
+/// contact.
+///
+/// Given a current Context, we expect a System to provide us with
+/// - derivatives for the continuous differential equations that already satisfy
+/// the differentiated form of the constraints (typically, acceleration
+/// constraints),
+/// - a projection method for least-squares correction of violated higher-level
+/// constraints (position and velocity level),
+/// - a time-of-next-update method that can be used to adjust the integrator
+/// step size in preparation for a discrete update,
+/// - a method that can update discrete variables when their update time is
+/// reached,
+/// - witness (guard) functions for event isolation,
+/// - event handlers (reset functions) for making appropriate changes to state
+/// and mode variables when an event has been isolated.
+///
+/// The continuous parts of the trajectory are advanced using a numerical
+/// integrator. Different integrators have different properties; if you know
+/// about that you can choose the one that is most appropriate for your
+/// application. Otherwise, a default is provided which is adequate for most
+/// systems.
+///
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided and
+/// available to link against in the containing library:
+/// - double
+/// - AutoDiffXd
+///
+/// Other instantiations are permitted but take longer to compile.
 // TODO(sherm1) When API stabilizes, should list the methods above in addition
 // to describing them.
 template <typename T>
@@ -68,211 +68,192 @@ class Simulator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Simulator)
 
-  /** Create a %Simulator that can advance a given System through time to
-   * produce a trajectory consisting of a sequence of Context values. The System
-   * must not have unresolved input ports if the values of those ports are
-   * necessary for computations performed during simulation (see class
-   * documentation).
-   *
-   * The Simulator holds an internal, non-owned reference to the System
-   * object so you must ensure that `system` has a longer lifetime than the
-   * %Simulator. It also owns a compatible Context internally that takes on each
-   * of the trajectory values. You may optionally provide a Context that will be
-   * used as the initial condition for the simulation; otherwise the %Simulator
-   * will obtain a default Context from `system`.
-   */
+  /// Create a %Simulator that can advance a given System through time to
+  /// produce a trajectory consisting of a sequence of Context values. The
+  /// System must not have unresolved input ports if the values of those ports
+  /// are necessary for computations performed during simulation (see class
+  /// documentation).
+  ///
+  /// The Simulator holds an internal, non-owned reference to the System
+  /// object so you must ensure that `system` has a longer lifetime than the
+  /// %Simulator. It also owns a compatible Context internally that takes on
+  /// each of the trajectory values. You may optionally provide a Context that
+  /// will be used as the initial condition for the simulation; otherwise the
+  /// %Simulator will obtain a default Context from `system`.
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
-  /** Prepares the %Simulator for a simulation. If the initial Context does not
-   * satisfy the System's constraints, an attempt is made to modify the values
-   * of the continuous state variables to satisfy the constraints. This method
-   * will throw `std::logic_error` if the combination of options doesn't make
-   * sense, and `std::runtime_error` if it is unable to find a
-   * constraint-satisfying initial condition. */
+  /// Prepares the %Simulator for a simulation. If the initial Context does not
+  /// satisfy the System's constraints, an attempt is made to modify the values
+  /// of the continuous state variables to satisfy the constraints. This method
+  /// will throw `std::logic_error` if the combination of options doesn't make
+  /// sense, and `std::runtime_error` if it is unable to find a
+  /// constraint-satisfying initial condition.
   void Initialize();
 
   // TODO(edrumwri): add ability to account for final time
-  /** Advance the System's trajectory until `boundary_time` is reached in
-   * the context or some
-   * other termination condition occurs. A variety of `std::runtime_error`
-   * conditions are possible here, as well as error conditions that may be
-   * thrown by the System when it is asked to perform computations. Be sure to
-   * enclose your simulation in a `try-catch` block and display the
-   * `what()` message.
-   *
-   * We recommend that you call `Initialize()` prior to making the first call to
-   * `StepTo()`. However, if you don't it will be called for you the first
-   * time you attempt a step, possibly resulting in unexpected error conditions.
-   * See documentation for `Initialize()` for the error conditions it might
-   * produce.
-   */
+  /// Advance the System's trajectory until `boundary_time` is reached in
+  /// the context or some
+  /// other termination condition occurs. A variety of `std::runtime_error`
+  /// conditions are possible here, as well as error conditions that may be
+  /// thrown by the System when it is asked to perform computations. Be sure to
+  /// enclose your simulation in a `try-catch` block and display the
+  /// `what()` message.
+  ///
+  /// We recommend that you call `Initialize()` prior to making the first call
+  /// to `StepTo()`. However, if you don't it will be called for you the first
+  /// time you attempt a step, possibly resulting in unexpected error
+  /// conditions. See documentation for `Initialize()` for the error conditions
+  /// it might produce.
   void StepTo(const T& boundary_time);
 
-  /** Slow the simulation down to *approximately* synchronize with real time
-   * when it would otherwise run too fast. Normally the %Simulator takes steps
-   * as quickly as it can. You can request that it slow down to synchronize with
-   * real time by providing a realtime rate greater than zero here.
-   *
-   * @warning No guarantees can be made about how accurately the simulation
-   * can be made to track real time, even if computation is fast enough. That's
-   * because the system utilities used to implement this do not themselves
-   * provide such guarantees. So this is likely to work nicely for visualization
-   * purposes where human perception is the only concern. For any other uses
-   * you should consider whether approximate real time is adequate for your
-   * purposes.
-   *
-   * @note If the full-speed simulation is already slower than real time you
-   * can't speed it up with this call! Instead consider requesting less
-   * integration accuracy, using a faster integration method or fixed time
-   * step, or using a simpler model.
-   *
-   * @param realtime_rate
-   *   Desired rate relative to real time. Set to 1 to track real time, 2 to
-   *   run twice as fast as real time, 0.5 for half speed, etc. Zero or
-   *   negative restores the rate to its default of 0, meaning the simulation
-   *   will proceed as fast as possible.
-   */
+  /// Slow the simulation down to *approximately* synchronize with real time
+  /// when it would otherwise run too fast. Normally the %Simulator takes steps
+  /// as quickly as it can. You can request that it slow down to synchronize
+  /// with real time by providing a realtime rate greater than zero here.
+  ///
+  /// @warning No guarantees can be made about how accurately the simulation
+  /// can be made to track real time, even if computation is fast enough. That's
+  /// because the system utilities used to implement this do not themselves
+  /// provide such guarantees. So this is likely to work nicely for
+  /// visualization purposes where human perception is the only concern. For any
+  /// other uses you should consider whether approximate real time is adequate
+  /// for your purposes.
+  ///
+  /// @note If the full-speed simulation is already slower than real time you
+  /// can't speed it up with this call! Instead consider requesting less
+  /// integration accuracy, using a faster integration method or fixed time
+  /// step, or using a simpler model.
+  ///
+  /// @param realtime_rate
+  ///   Desired rate relative to real time. Set to 1 to track real time, 2 to
+  ///   run twice as fast as real time, 0.5 for half speed, etc. Zero or
+  ///   negative restores the rate to its default of 0, meaning the simulation
+  ///   will proceed as fast as possible.
   // TODO(sherm1): Provide options for issuing a warning or aborting the
   // simulation if the desired rate cannot be achieved.
   void set_target_realtime_rate(double realtime_rate) {
     target_realtime_rate_ = std::max(realtime_rate, 0.);
   }
 
-  /** Return the real time rate target currently in effect. The default is
-   * zero, meaning the %Simulator runs as fast as possible. You can change the
-   * target with set_target_realtime_rate().
-   */
+  /// Return the real time rate target currently in effect. The default is
+  /// zero, meaning the %Simulator runs as fast as possible. You can change the
+  /// target with set_target_realtime_rate().
   double get_target_realtime_rate() const {
     return target_realtime_rate_;
   }
 
-  /** Return the rate that simulated time has progressed relative to real time.
-   * A return of 1 means the simulation just matched real
-   * time, 2 means the simulation was twice as fast as real time, 0.5 means
-   * it was running in 2X slow motion, etc.
-   *
-   * The value returned here is calculated as follows: <pre>
-   *
-   *          simulated_time_now - initial_simulated_time
-   *   rate = -------------------------------------------
-   *                realtime_now - initial_realtime
-   * </pre>
-   * The `initial` times are recorded when Initialize() or ResetStatistics()
-   * is called. The returned rate is undefined if Initialize() has not yet
-   * been called.
-   *
-   * @returns The rate achieved since the last Initialize() or ResetStatistics()
-   *          call.
-   *
-   * @see set_target_realtime_rate()
-   */
+  /// Return the rate that simulated time has progressed relative to real time.
+  /// A return of 1 means the simulation just matched real
+  /// time, 2 means the simulation was twice as fast as real time, 0.5 means
+  /// it was running in 2X slow motion, etc.
+  ///
+  /// The value returned here is calculated as follows: <pre>
+  ///
+  ///          simulated_time_now - initial_simulated_time
+  ///   rate = -------------------------------------------
+  ///                realtime_now - initial_realtime
+  /// </pre>
+  /// The `initial` times are recorded when Initialize() or ResetStatistics()
+  /// is called. The returned rate is undefined if Initialize() has not yet
+  /// been called.
+  ///
+  /// @returns The rate achieved since the last Initialize() or
+  ///           ResetStatistics() call.
+  ///
+  /// @see set_target_realtime_rate()
   double get_actual_realtime_rate() const;
 
-  /** Sets whether the simulation should invoke Publish on the System under
-   * simulation during every time step. If enabled, Publish will be invoked
-   * after discrete updates and before continuous integration. Regardless of
-   * whether publishing every time step is enabled, Publish will be invoked at
-   * Simulator initialize time, and as System<T>::CalcNextUpdateTime requests.
-   */
+  /// Sets whether the simulation should invoke Publish on the System under
+  /// simulation during every time step. If enabled, Publish will be invoked
+  /// after discrete updates and before continuous integration. Regardless of
+  /// whether publishing every time step is enabled, Publish will be invoked at
+  /// Simulator initialize time, and as System<T>::CalcNextUpdateTime requests.
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
 
-  /** Sets whether the simulation should invoke Publish in Initialize().
-   */
+  /// Sets whether the simulation should invoke Publish in Initialize().
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
 
-  /** Returns true if the simulation should invoke Publish on the System under
-   * simulation every time step.  By default, returns true.
-   */
+  /// Returns true if the simulation should invoke Publish on the System under
+  /// simulation every time step.  By default, returns true.
   // TODO(sherm1, edrumwri): Consider making this false by default.
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
-  /** Returns a const reference to the internally-maintained Context holding the
-   * most recent step in the trajectory. This is suitable for publishing or
-   * extracting information about this trajectory step.
-   */
+  /// Returns a const reference to the internally-maintained Context holding the
+  /// most recent step in the trajectory. This is suitable for publishing or
+  /// extracting information about this trajectory step.
   const Context<T>& get_context() const { return *context_; }
 
-  /** Returns a mutable pointer to the internally-maintained Context holding the
-   * most recent step in the trajectory. This is suitable for use in updates,
-   * sampling operations, event handlers, and constraint projection. You can
-   * also modify this prior to calling Initialize() to set initial conditions.
-   */
+  /// Returns a mutable pointer to the internally-maintained Context holding the
+  /// most recent step in the trajectory. This is suitable for use in updates,
+  /// sampling operations, event handlers, and constraint projection. You can
+  /// also modify this prior to calling Initialize() to set initial conditions.
   Context<T>* get_mutable_context() { return context_.get(); }
 
-  /** Replace the internally-maintained Context with a different one. The
-   * current Context is deleted. This is useful for supplying a new set of
-   * initial conditions. You should invoke Initialize() after replacing the
-   * Context.
-   * @param context The new context, which may be null. If the context is
-   *                null, a new context must be set before attempting to step
-   *                the system forward.
-   */
+  /// Replace the internally-maintained Context with a different one. The
+  /// current Context is deleted. This is useful for supplying a new set of
+  /// initial conditions. You should invoke Initialize() after replacing the
+  /// Context.
+  /// @param context The new context, which may be null. If the context is
+  ///                null, a new context must be set before attempting to step
+  ///                the system forward.
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
     integrator_->reset_context(context_.get());
     initialization_done_ = false;
   }
 
-  /** Transfer ownership of this %Simulator's internal Context to the caller.
-   * The %Simulator will no longer contain a Context. The caller must not
-   * attempt to advance the simulator in time after that point.
-   * @sa reset_context()
-   */
+  /// Transfer ownership of this %Simulator's internal Context to the caller.
+  /// The %Simulator will no longer contain a Context. The caller must not
+  /// attempt to advance the simulator in time after that point.
+  /// @sa reset_context()
   std::unique_ptr<Context<T>> release_context() {
     integrator_->reset_context(nullptr);
     initialization_done_ = false;
     return std::move(context_);
   }
 
-  /** Forget accumulated statistics. Statistics are reset to the values they
-   * have post construction or immediately after `Initialize()`.
-   */
+  /// Forget accumulated statistics. Statistics are reset to the values they
+  /// have post construction or immediately after `Initialize()`.
   void ResetStatistics();
 
-  /**
-   * Gets the number of publishes made since the last Initialize() or
-   * ResetStatistics() call.
-   */
+  /// Gets the number of publishes made since the last Initialize() or
+  /// ResetStatistics() call.
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /** Gets the number of integration steps since the last Initialize() call. */
+  /// Gets the number of integration steps since the last Initialize() call.
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** Gets the number of discrete variable updates performed since the last
-  Initialize() call. */
+  /// Gets the number of discrete variable updates performed since the last
+  /// Initialize() call.
   int64_t get_num_discrete_updates() const { return num_discrete_updates_; }
 
-  /** Gets the number of "unrestricted" updates performed since the last
-  Initialize() call. */
+  /// Gets the number of "unrestricted" updates performed since the last
+  /// Initialize() call.
   int64_t get_num_unrestricted_updates() const {
     return num_unrestricted_updates_; }
 
-  /** Gets a pointer to the integrator used to advance the continuous aspects
-   *  of the system.
-   */
+  /// Gets a pointer to the integrator used to advance the continuous aspects
+  /// of the system.
   const IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
 
-  /** Gets a pointer to the mutable integrator used to advance the continuous
-   * aspects of the system.
-   */
+  /// Gets a pointer to the mutable integrator used to advance the continuous
+  /// aspects of the system.
   IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
 
-  /**
-   * Resets the integrator with a new one. An example usage is:
-   * @code
-   * simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-   *               (sys, DT, context).
-   * @endcode
-   * The %Simulator must be reinitialized after resetting the integrator to
-   * ensure the integrator is properly initialized. You can do that explicitly
-   * with the Initialize() method or it will be done implicitly at the first
-   * time step.
-   */
+  /// Resets the integrator with a new one. An example usage is:
+  /// @code
+  /// simulator.reset_integrator<ExplicitEulerIntegrator<double>>
+  ///               (sys, DT, context).
+  /// @endcode
+  /// The %Simulator must be reinitialized after resetting the integrator to
+  /// ensure the integrator is properly initialized. You can do that explicitly
+  /// with the Initialize() method or it will be done implicitly at the first
+  /// time step.
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
     initialization_done_ = false;
@@ -299,22 +280,15 @@ class Simulator {
   /// working minimum tolerance (see
   /// IntegratorBase::get_working_minimum_step_size());
   ///
-  /// @returns the computed isolation window *unless* accuracy is not set in the
-  ///   Context), in which case an "empty" (i.e., unset) optional value will
-  ///   be returned. That return value would indicate that the Simulator would
-  ///   not isolate witness function trigger times (witnesses will always
-  ///   trigger at the end of time step), which is appropriate for
-  ///   applications (e.g., direct transcription) where variable integration
-  ///   steps are not recommended.
+  /// @returns the isolation window if the Simulator should be isolating
+  ///          witness-triggered events in time, or returns empty otherwise.
   /// @throws std::logic_error if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().
-  optional<T> GetWitnessTimeIsolation(const Context<T>& context) const;
+  optional<T> GetCurrentWitnessTimeIsolation() const;
 
-  /**
-   * Gets a constant reference to the system.
-   * @note a mutable reference is not available.
-   */
+  /// Gets a constant reference to the system.
+  /// @note a mutable reference is not available.
   const System<T>& get_system() const { return system_; }
 
  private:
@@ -501,17 +475,15 @@ void Simulator<T>::HandlePublish(
   }
 }
 
-/**
- * Steps the simulation to the specified time.
- * The simulation loop is as follows:
- * 1. Perform necessary discrete variable updates.
- * 2. Publish.
- * 3. Integrate the smooth system (the ODE or DAE)
- * 4. Perform post-step stabilization for DAEs (if desired).
- * @param boundary_time The time to advance the context to.
- * @pre The simulation state is valid  (i.e., no discrete updates or state
- *      projections are necessary) at the present time.
- */
+/// Steps the simulation to the specified time.
+/// The simulation loop is as follows:
+/// 1. Perform necessary discrete variable updates.
+/// 2. Publish.
+/// 3. Integrate the smooth system (the ODE or DAE)
+/// 4. Perform post-step stabilization for DAEs (if desired).
+/// @param boundary_time The time to advance the context to.
+/// @pre The simulation state is valid  (i.e., no discrete updates or state
+/// projections are necessary) at the present time.
 template <typename T>
 void Simulator<T>::StepTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
@@ -596,8 +568,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 }
 
 template <class T>
-optional<T> Simulator<T>::GetWitnessTimeIsolation(
-    const Context<T>& context) const {
+optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   using std::max;
 
   // TODO(edrumwri): Add ability to disable witness time isolation through
@@ -612,7 +583,7 @@ optional<T> Simulator<T>::GetWitnessTimeIsolation(
   const double characteristic_time = 1.0;
 
   // Get the accuracy setting.
-  const optional<double> accuracy = context.get_accuracy();
+  const optional<double> accuracy = get_context().get_accuracy();
 
   // Determine the length of the isolation interval.
   if (integrator_->get_fixed_step_mode()) {
@@ -667,7 +638,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   Context<T>* context = get_mutable_context();
 
   // Get the witness isolation interval length.
-  const optional<T> witness_iso_len = GetWitnessTimeIsolation(*context);
+  const optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
 
   // Check whether the witness function is to be isolated.
   if (!witness_iso_len)
