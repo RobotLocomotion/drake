@@ -25,7 +25,7 @@ template <PixelType kPixelType>
 void Compress(const Image<kPixelType>& image, image_t* msg) {
   msg->compression_method = image_t::COMPRESSION_METHOD_ZLIB;
 
-  const int source_size = image.size() * sizeof(image.at(0, 0)[0]);
+  const int source_size = image.width() * image.height() * image.kPixelSize;
   // The destination buf_size must be slightly larger than the source size.
   // http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/zlib-compress2-1.html
   uint64_t buf_size = source_size * 1.001 + 12;
@@ -43,16 +43,21 @@ void Compress(const Image<kPixelType>& image, image_t* msg) {
 }
 
 template <PixelType kPixelType>
-void PackImageToLcmImageT(const Image<kPixelType>& image,
-                          int64_t utime, image_t* msg) {
+void PackImageToLcmImageT(const Image<kPixelType>& image, int64_t utime,
+			  uint8_t pixel_format, uint8_t channel_type,
+			  const string& frame_name,image_t* msg) {
   // TODO(kunimatsu-tri) Fix seq here that is always set to zero.
   msg->header.seq = 0;
   msg->header.utime = utime;
+  msg->header.frame_name = frame_name;
   msg->width = image.width();
   msg->height = image.height();
-  msg->row_stride = image.kNumChannels * msg->width * sizeof(image.at(0, 0)[0]);
+  msg->row_stride = image.kPixelSize * msg->width;
   msg->bigendian = false;
+  msg->pixel_format = pixel_format;
+  msg->channel_type = channel_type;
 
+  // TODO(kunimatsu-tri) Make compression optional and/or selectable.
   Compress(image, msg);
 }
 
@@ -113,22 +118,19 @@ void ImageToLcmImageArrayT::DoCalcOutput(
       static_cast<int64_t>(context.get_time() * kSecToMillisec);
 
   image_t color_image_msg;
-  color_image_msg.pixel_format = image_t::PIXEL_FORMAT_BGRA;
-  color_image_msg.channel_type = image_t::CHANNEL_TYPE_UINT8;
-  color_image_msg.header.frame_name = color_frame_name_;
-  PackImageToLcmImageT(color_image, utime, &color_image_msg);
+  PackImageToLcmImageT(color_image, utime, image_t::PIXEL_FORMAT_BGRA,
+		       image_t::CHANNEL_TYPE_UINT8, color_frame_name_,
+		       &color_image_msg);
 
   image_t depth_image_msg;
-  depth_image_msg.pixel_format = image_t::PIXEL_FORMAT_DEPTH;
-  depth_image_msg.channel_type = image_t::CHANNEL_TYPE_FLOAT32;
-  depth_image_msg.header.frame_name = depth_frame_name_;
-  PackImageToLcmImageT(depth_image, utime, &depth_image_msg);
+  PackImageToLcmImageT(depth_image, utime, image_t::PIXEL_FORMAT_DEPTH,
+		       image_t::CHANNEL_TYPE_FLOAT32, depth_frame_name_,
+		       &depth_image_msg);
 
   image_t label_image_msg;
-  label_image_msg.pixel_format = image_t::PIXEL_FORMAT_LABEL;
-  label_image_msg.channel_type = image_t::CHANNEL_TYPE_INT16;
-  label_image_msg.header.frame_name = label_frame_name_;
-  PackImageToLcmImageT(label_image, utime, &label_image_msg);
+  PackImageToLcmImageT(label_image, utime, image_t::PIXEL_FORMAT_LABEL,
+		       image_t::CHANNEL_TYPE_INT16, label_frame_name_,
+		       &label_image_msg);
 
   image_array_t& msg =
       output->GetMutableData(image_array_t_msg_output_port_index_)->

@@ -15,7 +15,9 @@ namespace sensors {
 /// `Value<robotlocomotion::image_array_t>` LCM message that defines an array
 /// of images (image_t). This message can then be sent to other processes that
 /// sbscribe it using LcmPublisherSystem.
-
+// TODO(kunimatsu-tri) Instead of assuming fixed pixel types for the input
+// ports, e.g. ImageBgra8U, change the interface to be able to handle arbitrary
+// pixel types of `Image`.
 class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageToLcmImageArrayT)
