@@ -320,6 +320,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scoped_singleton",
+    hdrs = ["scoped_singleton.h"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_library(
     name = "protobuf",
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
@@ -772,6 +780,13 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "eigen_autodiff_types_test",
     deps = [":autodiff"],
+)
+
+drake_cc_googletest(
+    name = "scoped_singleton_test",
+    deps = [
+        ":scoped_singleton",
+    ],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...
