@@ -35,7 +35,7 @@ class KukaIIwaRobot {
   /// @param[in] q robot's joint angles (generalized coordinates).
   /// @param[in] v time-derivatives of q (generalized speeds).
   ///
-  /// @returns Machine-precision values are returned as defined below.
+  /// @returns Machine-precision values as defined below.
   ///
   /// std::tuple | Description
   /// -----------|-------------------------------------------------

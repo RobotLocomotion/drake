@@ -10,57 +10,110 @@ namespace multibody {
 namespace math {
 namespace {
 
-// Test forward kinematics for joint angles.
-GTEST_TEST(KukaIIwaRobot, ForwardKinematics) {
-  using benchmarks::KukaIIwaRobot;
-  KukaIIwaRobot<double> kukaIIwaRobot;
+// Utility method for comparing Kuka iiwa robot arm end-effector orientation,
+// position, angular velocity, and velocity to expected solution.
+void CompareEndEffectorPositionVelocityVsExpectedSolution(
+  const Eigen::Matrix<double, 7, 1>& joint_angles,
+  const Eigen::Matrix<double, 7, 1>& joint_anglesDt,
+  const Eigen::Matrix3d& R_NG_expected,
+  const Eigen::Vector3d& p_No_Go_N_expected,
+  const Eigen::Vector3d& w_NG_N_expected,
+  const Eigen::Vector3d& v_NGo_N_expected) {
 
-  const double qA = 0.0;
-  const double qB = 0.0;
-  const double qC = 0.0;
-  const double qD = 0.0;
-  const double qE = 0.0;
-  const double qF = 0.0;
-  const double qG = 0.0;
-  const double qADt = 0.0;
-  const double qBDt = 0.0;
-  const double qCDt = 0.0;
-  const double qDDt = 0.0;
-  const double qEDt = 0.0;
-  const double qFDt = 0.0;
-  const double qGDt = 0.0;
+  benchmarks::KukaIIwaRobot<double> kukaIIwaRobot;
+  // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
+  // p_NoGo_N   | Go's position from No, expressed in N.
+  // w_NG_N     | G's angular velocity in N, expressed in N.
+  // v_NGo_N    | Go's velocity in N, expressed in N.
+  Eigen::Matrix3d R_NG;
+  Eigen::Vector3d p_No_Go_N, w_NG_N, v_NGo_N;
+  std::tie(R_NG, p_No_Go_N, w_NG_N, v_NGo_N) =
+    kukaIIwaRobot.CalcForwardKinematicsEndEffector(joint_angles,
+                                                   joint_anglesDt);
+
+  // Compare actual results with expected results.
+  constexpr double epsilon = std::numeric_limits<double>::epsilon();
+  const double tolerance = 10*epsilon;
+  EXPECT_TRUE(R_NG.isApprox(R_NG_expected, tolerance));
+  EXPECT_TRUE(p_No_Go_N.isApprox(p_No_Go_N_expected, tolerance));
+  EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_expected, tolerance));
+  EXPECT_TRUE(v_NGo_N.isApprox(v_NGo_N_expected, tolerance));
+}
+
+
+// Test accuracy of calculations for Kuka iiwa robot arm end-effector
+// orientation, position, angular velocity, and velocity for the
+// situation when the Kuka arm is static and straight up.
+GTEST_TEST(KukaIIwaRobot, ForwardKinematicsA) {
+  const double qA = 0.0, qADt = 0.0;
+  const double qB = 0.0, qBDt = 0.0;
+  const double qC = 0.0, qCDt = 0.0;
+  const double qD = 0.0, qDDt = 0.0;
+  const double qE = 0.0, qEDt = 0.0;
+  const double qF = 0.0, qFDt = 0.0;
+  const double qG = 0.0, qGDt = 0.0;
 
   Eigen::Matrix<double, 7, 1> joint_angles, joint_anglesDt;
   joint_angles << qA, qB, qC, qD, qE, qF, qG;
   joint_anglesDt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
 
-  // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
-  // p_NoGo_N   | Go's position from No, expressed in N.
-  // w_NG_N     | G's angular velocity in N, expressed in N.
-  // v_NGo_N    | Go's velocity in N, expressed in N.
-  Eigen::Matrix3d R_NG_exact;
-  Eigen::Vector3d p_No_Go_N_exact, w_NG_N_exact, v_NGo_N_exact;
-  std::tie(R_NG_exact, p_No_Go_N_exact, w_NG_N_exact, v_NGo_N_exact) =
-    kukaIIwaRobot.CalcForwardKinematicsEndEffector(joint_angles,
-                                                   joint_anglesDt);
+  // MotionGenesis solution for these joint angles/time-derivatives.
+  // This solution can also be calculated by-hand (very simple case).
+  Eigen::Matrix3d R_NG_expected;
+  Eigen::Vector3d p_No_Go_N_expected, w_NG_N_expected, v_NGo_N_expected;
+  R_NG_expected << 1, 0, 0,  0, 1, 0,  0, 0, 1;
+  p_No_Go_N_expected << 0, 0, 1.261;
+  w_NG_N_expected << 0, 0, 0;
+  v_NGo_N_expected << 0, 0, 0;
 
-  // TODO(mitiguy) Connect to Drake's calculations when ready.
-  Eigen::Matrix3d R_NG_drake;
-  Eigen::Vector3d p_No_Go_N_drake, w_NG_N_drake, v_NGo_N_drake;
-  R_NG_drake << 1, 0, 0,  0, 1, 0,  0, 0, 1;
-  p_No_Go_N_drake << 0, 0, 1.261;  // Arm in straight-up position.
-  w_NG_N_drake << 0, 0, 0;
-  v_NGo_N_drake << 0, 0, 0;
-
-  // Compare drake results with exact (MotionGenesis) results.
-  constexpr double epsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(R_NG_drake.isApprox(R_NG_exact, 10*epsilon));
-  EXPECT_TRUE(p_No_Go_N_drake.isApprox(p_No_Go_N_exact, 10*epsilon));
-  EXPECT_TRUE(w_NG_N_drake.isApprox(w_NG_N_exact, 10*epsilon));
-  EXPECT_TRUE(v_NGo_N_drake.isApprox(v_NGo_N_exact, 10*epsilon));
+  CompareEndEffectorPositionVelocityVsExpectedSolution(joint_angles,
+                                                       joint_anglesDt,
+                                                       R_NG_expected,
+                                                       p_No_Go_N_expected,
+                                                       w_NG_N_expected,
+                                                       v_NGo_N_expected);
 }
+
+
+// Test accuracy of calculations for Kuka iiwa robot arm end-effector
+// orientation, position, angular velocity, velocity for the situation when
+// the Kuka arm is static with joint angles of 30 or 60 degrees.
+GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
+  const double q30 = M_PI / 6, q60 = M_PI / 3;
+  const double qA = q60, qADt = 0.0;
+  const double qB = q30, qBDt = 0.0;
+  const double qC = q60, qCDt = 0.0;
+  const double qD = q30, qDDt = 0.0;
+  const double qE = q60, qEDt = 0.0;
+  const double qF = q30, qFDt = 0.0;
+  const double qG = q60, qGDt = 0.0;
+
+  Eigen::Matrix<double, 7, 1> joint_angles, joint_anglesDt;
+  joint_angles << qA, qB, qC, qD, qE, qF, qG;
+  joint_anglesDt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
+
+  // MotionGenesis solution for these joint angles/time-derivatives.
+  Eigen::Matrix3d R_NG_expected;
+  Eigen::Vector3d p_No_Go_N_expected, w_NG_N_expected, v_NGo_N_expected;
+  R_NG_expected << -0.5939002959880204, 0.8043869080239565, -0.015625,
+      -0.8043869080239565, -0.5932991120359317, 0.03094940802395521,
+      0.015625, 0.03094940802395527, 0.9993988160479114;
+  p_No_Go_N_expected << 0.2970356451892219, 0.1727696964662288,
+      1.154681973689345;
+  w_NG_N_expected << 0, 0, 0;
+  v_NGo_N_expected << 0, 0, 0;
+
+  CompareEndEffectorPositionVelocityVsExpectedSolution(joint_angles,
+                                                       joint_anglesDt,
+                                                       R_NG_expected,
+                                                       p_No_Go_N_expected,
+                                                       w_NG_N_expected,
+                                                       v_NGo_N_expected);
+}
+
 
 }  // namespace
 }  // namespace math
 }  // namespace multibody
 }  // namespace drake
+

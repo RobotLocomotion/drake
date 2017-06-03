@@ -3,9 +3,7 @@
 // the 3-clause BSD license.  https://opensource.org/licenses/BSD-3-Clause
 // MotionGenesis Professional Licensee: Paul Mitiguy.
 //------------------------------------------------------------------------------
-
-// GENERATED FILE DO NOT EDIT
-
+// GENERATED FILE DO NOT EDIT·
 #include <cmath>
 
 //------------------------------------------------------------------------------
@@ -17,20 +15,19 @@ namespace MotionGenesis {
 
 
 //------------------------------------------------------------------------------
-class MGKukaIIwaRobot
-{
-public:
-   MGKukaIIwaRobot() {}
+class MGKukaIIwaRobot {
+ public:
+  MGKukaIIwaRobot() {}
 
-   // Set member state variables from array.
-   void  SetVariablesFromArray( const double VAR[14] );
+  // Set member state variables from array.
+  void  SetVariablesFromArray(const double VAR[14]);
 
-   // Calculate quantities listed in MotionGenesis Output statements.
-   void  CalculateOutput();
+  // Calculate quantities listed in MotionGenesis Output statements.
+  void  CalculateOutput();
 
-   // Class data.
-   double qA, qB, qC, qD, qE, qF, qG, qAp, qBp, qCp, qDp, qEp, qFp, qGp;
-   double z[262], R_NG[3][3], p_NoGo_N[3], w_NG_N[3], v_NGo_N[3];
+  // Class data.
+  double qA, qB, qC, qD, qE, qF, qG, qAp, qBp, qCp, qDp, qEp, qFp, qGp;
+  double z[262], R_NG[3][3], p_NoGo_N[3], w_NG_N[3], v_NGo_N[3];
 };
 
 
