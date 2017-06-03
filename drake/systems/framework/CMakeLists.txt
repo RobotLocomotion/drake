@@ -71,7 +71,7 @@ set(installed_headers
   value.h
   value_checker.h
   vector_base.h
-  witness_functions.h
+  witness_function.h
   )
 
 # Headers that are needed by code here but should not
