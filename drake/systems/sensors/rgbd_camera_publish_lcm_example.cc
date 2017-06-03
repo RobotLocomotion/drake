@@ -5,6 +5,7 @@
 #include <gflags/gflags.h>
 #include "robotlocomotion/image_array_t.hpp"
 
+#include "drake/common/unused.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -51,7 +52,9 @@ constexpr char kImageArrayLcmChannelName[] = "DRAKE_RGBD_CAMERA_IMAGES";
 constexpr char kPoseLcmChannelName[] = "DRAKE_RGBD_CAMERA_POSE";
 }  // anonymous namespace
 
-int main(int argc, char* argv[]) {
+int main() {
+  drake::unused(sdf_validator_registered);
+
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld(
       FLAGS_sdf, kQuaternion, tree.get());
@@ -131,5 +134,5 @@ int main(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::systems::sensors::main(argc, argv);
+  return drake::systems::sensors::main();
 }

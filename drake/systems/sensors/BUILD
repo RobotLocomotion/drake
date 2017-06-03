@@ -192,6 +192,7 @@ drake_cc_binary(
     deps = [
         ":rgbd_camera",
         ":image_to_lcm_image_array_t",
+        "//drake/common:unused",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:rigid_body_plant",

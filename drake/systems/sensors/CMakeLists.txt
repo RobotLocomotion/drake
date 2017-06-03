@@ -70,6 +70,7 @@ if(VTK_FOUND)
   if(lcm_FOUND)
     add_executable(rgbd_camera_publish_lcm_example rgbd_camera_publish_lcm_example.cc)
     target_link_libraries(rgbd_camera_publish_lcm_example
+      drakeCommon
       drakeSensors
       drakeSystemAnalysis
       drakeLcmSystem
