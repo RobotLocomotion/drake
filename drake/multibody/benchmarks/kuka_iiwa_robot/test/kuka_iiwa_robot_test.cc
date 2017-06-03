@@ -19,7 +19,6 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
   const Eigen::Vector3d& p_No_Go_N_expected,
   const Eigen::Vector3d& w_NG_N_expected,
   const Eigen::Vector3d& v_NGo_N_expected) {
-
   benchmarks::KukaIIwaRobot<double> kukaIIwaRobot;
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
