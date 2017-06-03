@@ -6,10 +6,6 @@
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
-const int8_t robotlocomotion::image_t::PIXEL_FORMAT_BGRA;
-const int8_t robotlocomotion::image_t::CHANNEL_TYPE_UINT8;
-const int8_t robotlocomotion::image_t::COMPRESSION_METHOD_ZLIB;
-
 namespace drake {
 namespace systems {
 namespace sensors {
@@ -83,8 +79,8 @@ GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
     EXPECT_EQ(image.height, kImageHeight);
     EXPECT_EQ(image.data.size(), image.size);
     EXPECT_FALSE(image.bigendian);
-    EXPECT_EQ(image.compression_method,
-              robotlocomotion::image_t::COMPRESSION_METHOD_ZLIB);
+    uint8_t expected_compression_method = robotlocomotion::image_t::COMPRESSION_METHOD_ZLIB;
+    EXPECT_EQ(image.compression_method, expected_compression_method);
 
     std::string frame_name;
     int row_stride;
