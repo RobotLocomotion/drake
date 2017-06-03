@@ -19,64 +19,14 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/discrete_event.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace systems {
-
-/// A description of a discrete-time event, which is passed from the Simulator
-/// to the recipient System's appropriate event handling method. Different
-/// DiscreteEvent ActionTypes trigger different event handlers, which are
-/// permitted to modify different state fields. For instance, publish events may
-/// not modify any state at all, discrete update events may modify the discrete
-/// state only, and unrestricted update events may modify any state. The
-/// event handlers do not apply state updates to the Context directly. Instead,
-/// they write the updates into a separate buffer that the Simulator provides.
-
-template <typename T>
-struct DiscreteEvent {
-  typedef std::function<void(const Context<T>&)> PublishCallback;
-  typedef std::function<void(const Context<T>&, DiscreteValues<T>*)>
-      DiscreteUpdateCallback;
-  typedef std::function<void(const Context<T>&, State<T>*)>
-      UnrestrictedUpdateCallback;
-
-  /// These enumerations represent an indication of the type of event that
-  /// triggered the event handler, toward obviating the need to redetermine
-  /// the reason that the event handler is called.
-  enum ActionType {
-    /// A default value that causes the handler to abort.
-    kUnknownAction = 0,
-
-    /// On publish actions, state does not change.
-    kPublishAction = 1,
-
-    /// On discrete updates, discrete state may change.
-    kDiscreteUpdateAction = 2,
-
-    /// On unrestricted updates, the state variables may change arbitrarily.
-    kUnrestrictedUpdateAction = 3,
-  };
-
-  /// The type of action the system must take in response to the event.
-  ActionType action{kUnknownAction};
-
-  /// An optional callback, supplied by the recipient, to carry out a
-  /// kPublishAction. If nullptr, Publish() will be used.
-  PublishCallback do_publish{nullptr};
-
-  /// An optional callback, supplied by the recipient, to carry out a
-  /// kDiscreteUpdateAction. If nullptr, DoCalcDiscreteVariableUpdates() will
-  /// be used.
-  DiscreteUpdateCallback do_calc_discrete_variable_update{nullptr};
-
-  /// An optional callback, supplied by the recipient, to carry out a
-  /// kUpdateUnrestrictedAction. If nullptr, DoCalcUnrestrictedUpdate() will be
-  /// used.
-  UnrestrictedUpdateCallback do_unrestricted_update{nullptr};
-};
 
 /// A token that identifies the next sample time at which a System must
 /// perform some actions, and the actions that must be performed.
@@ -1057,7 +1007,31 @@ class System {
 
   //@}
 
+  /// Gets the witness functions active at the beginning of a continuous time
+  /// interval. DoGetWitnessFunctions() does the actual work.
+  /// @param context a valid context for the System (aborts if not true).
+  /// @param[out] w a valid pointer to an empty vector that will store
+  ///             pointers to the witness functions active at the beginning of
+  ///             the continuous time interval. The method aborts if witnesses
+  ///             is null or non-empty.
+  void GetWitnessFunctions(const Context<T>& context,
+                           std::vector<const WitnessFunction<T>*>* w) const {
+    DRAKE_DEMAND(w);
+    DRAKE_DEMAND(w->empty());
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DoGetWitnessFunctions(context, w);
+  }
+
  protected:
+  /// Derived classes can override this method to provide witness functions
+  /// active at the beginning of a continuous time interval. The default
+  /// implementation does nothing. On entry to this function, the context will
+  /// have already been validated and the vector of witness functions will have
+  /// been validated to be both empty and non-null.
+  virtual void DoGetWitnessFunctions(const Context<T>&,
+      std::vector<const WitnessFunction<T>*>*) const {
+  }
+
   //----------------------------------------------------------------------------
   /// @name                 System construction
   /// Authors of derived %Systems can use these methods in the constructor
