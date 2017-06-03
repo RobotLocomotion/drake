@@ -79,6 +79,8 @@ GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
     EXPECT_EQ(image.height, kImageHeight);
     EXPECT_EQ(image.data.size(), image.size);
     EXPECT_FALSE(image.bigendian);
+    // This is a workaround for const variable to avoid undefined reference
+    // error: https://goo.gl/3PU0eq
     uint8_t expected_compression_method =
         robotlocomotion::image_t::COMPRESSION_METHOD_ZLIB;
     EXPECT_EQ(image.compression_method, expected_compression_method);
