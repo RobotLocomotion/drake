@@ -586,12 +586,12 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   const optional<double> accuracy = get_context().get_accuracy();
 
   // Hack necessary to get around error:
-  // "error `accuracy` may be used unitialized in this function"
-  // " [-Werror=maybe-unitialized]"
+  // "error `accuracy` may be used uninitialized in this function"
+  // " [-Werror=maybe-uninitialized]"
   #ifdef __GNUG__
   #ifndef __clang__
   #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-unitialized"
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   #endif
   #endif
 
