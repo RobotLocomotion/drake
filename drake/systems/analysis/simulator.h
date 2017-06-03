@@ -585,6 +585,12 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   // Get the accuracy setting.
   const optional<double> accuracy = get_context().get_accuracy();
 
+  // Hack necessary to get around error:
+  // "error `accuracy` may be used unitialized in this function"
+  // " [-Werror=maybe-unitialized]"
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-unitialized"
+
   // Determine the length of the isolation interval.
   if (integrator_->get_fixed_step_mode()) {
     // Look for accuracy information. value_or(999) trick necessary because
@@ -609,6 +615,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   // in the context can allow.
   return max(integrator_->get_working_minimum_step_size(),
              iso_scale_factor * accuracy.value_or(999) * characteristic_time);
+  #pragma pop
 }
 
 // Isolates the first time at one or more witness functions triggered (in the
