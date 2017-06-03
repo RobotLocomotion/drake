@@ -44,8 +44,8 @@ void Compress(const Image<kPixelType>& image, image_t* msg) {
 
 template <PixelType kPixelType>
 void PackImageToLcmImageT(const Image<kPixelType>& image, int64_t utime,
-			  uint8_t pixel_format, uint8_t channel_type,
-			  const string& frame_name,image_t* msg) {
+                          uint8_t pixel_format, uint8_t channel_type,
+                          const string& frame_name, image_t* msg) {
   // TODO(kunimatsu-tri) Fix seq here that is always set to zero.
   msg->header.seq = 0;
   msg->header.utime = utime;
@@ -119,18 +119,18 @@ void ImageToLcmImageArrayT::DoCalcOutput(
 
   image_t color_image_msg;
   PackImageToLcmImageT(color_image, utime, image_t::PIXEL_FORMAT_BGRA,
-		       image_t::CHANNEL_TYPE_UINT8, color_frame_name_,
-		       &color_image_msg);
+                       image_t::CHANNEL_TYPE_UINT8, color_frame_name_,
+                       &color_image_msg);
 
   image_t depth_image_msg;
   PackImageToLcmImageT(depth_image, utime, image_t::PIXEL_FORMAT_DEPTH,
-		       image_t::CHANNEL_TYPE_FLOAT32, depth_frame_name_,
-		       &depth_image_msg);
+                       image_t::CHANNEL_TYPE_FLOAT32, depth_frame_name_,
+                       &depth_image_msg);
 
   image_t label_image_msg;
   PackImageToLcmImageT(label_image, utime, image_t::PIXEL_FORMAT_LABEL,
-		       image_t::CHANNEL_TYPE_INT16, label_frame_name_,
-		       &label_image_msg);
+                       image_t::CHANNEL_TYPE_INT16, label_frame_name_,
+                       &label_image_msg);
 
   image_array_t& msg =
       output->GetMutableData(image_array_t_msg_output_port_index_)->
