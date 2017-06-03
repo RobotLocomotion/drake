@@ -290,6 +290,12 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   // definitions serves to minimize heap allocations and deallocations.
   MatrixX<T> J_;
 
+  // The state at which the last Jacobian matrix was computed. The time should
+  // be stored as well to ensure that any time-dependent dynamics are captured.
+  // Instead, we assume any time-dependent dynamics have minimal effects and
+  // cache using only the state.
+  VectorX<T> last_jacobian_x_;
+
   // The last computed *negation* of the "iteration matrix", equivalent to
   // J_ * (dt / scale) - 1, where scale is either 1.0 or 2.0, depending on
   // whether the implicit Euler or implicit trapezoid method was used. Keeping

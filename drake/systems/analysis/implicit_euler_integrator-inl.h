@@ -342,7 +342,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // Compute the initial Jacobian matrix.
+  // Compute the initial Jacobian matrix (or retrieve it from the cache).
   J_ = CalcJacobian(tf, *xtplus);
 
   // The maximum number of Newton-Raphson iterations to take before declaring
@@ -404,12 +404,12 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // Update the state in the context and compute g(xⁱ⁺¹).
     context->get_mutable_continuous_state()->SetFromVector(*xtplus);
     goutput = g();
-
-    // Recompute the Jacobian matrix.
-    J_ = CalcJacobian(tf, *xtplus);
   }
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() convergence failed");
+
+  // Recompute the Jacobian matrix.
+  J_ = CalcJacobian(tf, *xtplus);
 
   // Failed because of divergence or after the maximum number of iterations.
   return false;
@@ -510,6 +510,21 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
                                                     const VectorX<T>& x) {
+  // Try to use the cached Jacobian.
+  if (last_jacobian_x_.size() == x.size()) {
+    // Time is identical to that in the case; see whether state is identical.
+    bool state_identical = true;
+    for (int i = 0; i < x.size(); ++i)
+      if (last_jacobian_x_[i] != x[i]) {
+        state_identical = false;
+        break;
+      }
+
+    // If Jacobian is cached; return it.
+    if (state_identical)
+      return J_;
+  }
+
   // We change the context but will change it back.
   Context<T>* context = this->get_mutable_context();
 
@@ -561,6 +576,10 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
   // Reset the time and state.
   context->set_time(t_current);
   continuous_state->SetFromVector(x_current);
+
+  // Store the state for which the Jacobian was computed.
+  last_jacobian_x_ = x;
+
   return J;
 }
 
