@@ -10,21 +10,12 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
-#include "drake/systems/analysis/test/empty_system.h"
-#include "drake/systems/analysis/test/logistic_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
-using drake::systems::WitnessFunction;
-using drake::systems::Simulator;
-using drake::systems::RungeKutta3Integrator;
-using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
-using EmptySystem = drake::systems::analysis_test::EmptySystem<double>;
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
 using std::complex;
@@ -32,141 +23,6 @@ using std::complex;
 namespace drake {
 namespace systems {
 namespace {
-
-// Tests ability of simulation to identify the proper number of witness function
-// triggerings going from negative to non-negative witness function evaluation.
-// This particular example uses an empty system and a clock as the witness
-// function, which makes it particularly easy to determine when the witness
-// function should trigger.
-GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
-  // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
-  int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
-    num_publishes++;
-  });
-
-  const double dt = 1;
-  Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
-  Context<double>* context = simulator.get_mutable_context();
-  context->set_time(0);
-  simulator.StepTo(1);
-
-  // Publication should occur at witness function crossing.
-  EXPECT_EQ(1, num_publishes);
-}
-
-// Tests ability of simulation to identify the proper number of witness function
-// triggerings going from zero to positive witness function evaluation. This
-// particular example uses an empty system and a clock as the witness function,
-// which makes it particularly easy to determine when the witness function
-// should trigger.
-GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
-  // Set empty system to trigger when time is zero.
-  EmptySystem system(0, WitnessFunction<double>::DirectionType::kCrossesZero);
-  int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
-    num_publishes++;
-  });
-
-  const double dt = 1;
-  Simulator<double> simulator(system);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
-  Context<double>* context = simulator.get_mutable_context();
-  context->set_time(0);
-  simulator.StepTo(1);
-
-  // Verify that no publication is performed when stepping to 1.
-  EXPECT_EQ(0, num_publishes);
-}
-
-// Tests ability of simulation to identify the proper number of witness function
-// triggerings (zero) for a positive-to-negative trigger. Uses the same empty
-// system from WitnessTestCountSimple.
-GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
-  // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::
-      kPositiveThenNonPositive);
-  int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
-    num_publishes++;
-  });
-
-  const double dt = 1;
-  Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
-  Context<double>* context = simulator.get_mutable_context();
-  context->set_time(0);
-  simulator.StepTo(2);
-
-  // Publication should not occur (witness function should initially evaluate
-  // to a negative value, then will evolve to a positive value).
-  EXPECT_EQ(0, num_publishes);
-}
-
-// Tests ability of simulation to identify the proper number of witness function
-// triggerings (zero) for a negative-to-positive trigger. Uses the same empty
-// system from WitnessTestCountSimple.
-GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
-  EmptySystem system(0, WitnessFunction<double>::DirectionType::
-      kNegativeThenNonNegative);
-  int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
-    num_publishes++;
-  });
-
-  const double dt = 1;
-  Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
-  Context<double>* context = simulator.get_mutable_context();
-  context->set_time(-1);
-  simulator.StepTo(1);
-
-  // Publication should occur at witness function crossing.
-  EXPECT_EQ(1, num_publishes);
-}
-
-// Tests ability of simulation to identify the proper number of witness function
-// triggerings. This particular example, the logistic function, is particularly
-// challenging for detecting exactly one zero crossing under the
-// parameterization in use. The logic system's state just barely crosses zero
-// (at t << 1) and then hovers around zero afterward.
-GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
-  LogisticSystem system(1e-8, 100, 1);
-  int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
-    num_publishes++;
-  });
-
-  const double dt = 1e-6;
-  Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
-  Context<double>* context = simulator.get_mutable_context();
-  (*context->get_mutable_continuous_state())[0] = -1;
-  simulator.StepTo(1e-4);
-
-  // Publication should occur only at witness function crossing.
-  EXPECT_EQ(1, num_publishes);
-}
-
-// TODO(edrumwri): Add tests for verifying that correct interval returned
-// in the case of multiple witness functions. See issue #6184.
 
 GTEST_TEST(SimulatorTest, SecondConstructor) {
   // Create the spring-mass sytem and context.
