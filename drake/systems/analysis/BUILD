@@ -12,6 +12,7 @@ drake_cc_library(
     hdrs = [],
     deps = [
         ":explicit_euler_integrator",
+        ":implicit_euler_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":semi_explicit_euler_integrator",
@@ -47,6 +48,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "implicit_euler_integrator",
+    srcs = ["implicit_euler_integrator.cc"],
+    hdrs = [
+        "implicit_euler_integrator.h",
+        "implicit_euler_integrator-inl.h",
+    ],
+    deps = [
+        ":integrator_base",
+        "//drake/math:gradient",
+    ],
+)
+
+drake_cc_library(
     name = "runge_kutta3_integrator",
     srcs = ["runge_kutta3_integrator.cc"],
     hdrs = [
@@ -76,6 +90,7 @@ drake_cc_library(
     hdrs = ["simulator.h"],
     deps = [
         ":runge_kutta2_integrator",
+        ":runge_kutta3_integrator",
         "//drake/common:extract_double",
         "//drake/systems/framework:context",
         "//drake/systems/framework:system",
@@ -83,6 +98,22 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_library(
+    name = "spring_mass_damper_system",
+    testonly = 1,
+    hdrs = ["test/spring_mass_damper_system.h"],
+    deps = [
+        "//drake/systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_library(
+    name = "discontinuous_spring_mass_damper_system",
+    testonly = 1,
+    hdrs = ["test/discontinuous_spring_mass_damper_system.h"],
+    deps = [":spring_mass_damper_system"],
+)
 
 drake_cc_library(
     name = "my_spring_mass_system",
@@ -93,11 +124,32 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "logistic_system",
+    testonly = 1,
+    hdrs = ["test/logistic_system.h"],
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "empty_system",
+    testonly = 1,
+    hdrs = ["test/empty_system.h"],
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
 drake_cc_googletest(
     name = "simulator_test",
     deps = [
         ":explicit_euler_integrator",
+        ":runge_kutta3_integrator",
         ":my_spring_mass_system",
+        ":logistic_system",
+        ":empty_system",
         ":simulator",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],
@@ -108,6 +160,16 @@ drake_cc_googletest(
     deps = [
         ":explicit_euler_integrator",
         ":my_spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "implicit_euler_integrator_test",
+    deps = [
+        ":discontinuous_spring_mass_damper_system",
+        ":spring_mass_damper_system",
+        ":implicit_euler_integrator",
+        "//drake/systems/plants/spring_mass_system",
     ],
 )
 

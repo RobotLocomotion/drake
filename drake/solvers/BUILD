@@ -336,6 +336,7 @@ drake_cc_library(
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
+            "//drake/common:scoped_singleton",
             "@mosek",
         ],
         "//conditions:default": [
@@ -605,6 +606,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
     ],
+    use_default_main = False,
 )
 
 drake_cc_googletest(

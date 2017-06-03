@@ -17,6 +17,7 @@ set(sources
   double_overloads.cc
   drake_assert_and_throw.cc
   drake_path_cmake.cc
+  find_resource.cc
   functional_form.cc
   monomial.cc
   nice_type_name.cc
@@ -57,6 +58,7 @@ set(installed_headers
   eigen_stl_types.h
   eigen_types.h
   extract_double.h
+  find_resource.h
   functional_form.h
   hash.h
   is_approx_equal_abstol.h
@@ -66,11 +68,13 @@ set(installed_headers
   nice_type_name.h
   number_traits.h
   polynomial.h
+  scoped_singleton.h
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
   symbolic_expression_visitor.h
   symbolic_formula.h
+  symbolic_formula_visitor.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
@@ -94,6 +98,7 @@ target_link_libraries(drakeCommon
   Eigen3::Eigen
   fmt
   gflags
+  spruce
   Threads::Threads
   ${PROTOBUF_LIBRARIES})
 

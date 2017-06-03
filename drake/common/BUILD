@@ -125,6 +125,7 @@ drake_cc_library(
         "symbolic_formula.cc",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
+        "symbolic_formula_visitor.cc",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -134,6 +135,7 @@ drake_cc_library(
         "symbolic_expression.h",
         "symbolic_expression_visitor.h",
         "symbolic_formula.h",
+        "symbolic_formula_visitor.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
@@ -161,6 +163,16 @@ drake_cc_library(
 # Miscellaneous utilities.
 
 drake_cc_library(
+    name = "find_resource",
+    srcs = ["find_resource.cc"],
+    hdrs = ["find_resource.h"],
+    deps = [
+        ":common",
+        "//drake/thirdParty:spruce",
+    ],
+)
+
+drake_cc_library(
     name = "drake_path",
     # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
     # drake_path are removed.
@@ -169,6 +181,11 @@ drake_cc_library(
     hdrs = ["drake_path.h"],
     deps = [
         ":common",
+        ":find_resource",
+        "//drake/thirdParty:spruce",
+    ],
+    data = [
+        "drake_path.sentinel",
     ],
 )
 
@@ -297,6 +314,14 @@ drake_cc_library(
 drake_cc_library(
     name = "unused",
     hdrs = ["unused.h"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_library(
+    name = "scoped_singleton",
+    hdrs = ["scoped_singleton.h"],
     deps = [
         ":common",
     ],
@@ -512,6 +537,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "find_resource_test",
+    deps = [
+        ":find_resource",
+    ],
+    data = [
+        "test/find_resource_test_data.txt",
+    ],
+)
+
+drake_cc_googletest(
     name = "functional_form_test",
     deps = [
         ":common",
@@ -693,6 +728,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_formula_visitor_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_variable_test",
     deps = [
         ":common",
@@ -736,6 +780,13 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "eigen_autodiff_types_test",
     deps = [":autodiff"],
+)
+
+drake_cc_googletest(
+    name = "scoped_singleton_test",
+    deps = [
+        ":scoped_singleton",
+    ],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...

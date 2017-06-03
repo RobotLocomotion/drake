@@ -246,8 +246,10 @@ drake_cc_library(
         "system.cc",
     ],
     hdrs = [
+        "discrete_event.h",
         "output_port.h",
         "system.h",
+        "witness_function.h",
     ],
     deps = [
         ":cache",

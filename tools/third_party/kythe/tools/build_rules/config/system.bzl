@@ -14,12 +14,12 @@ cc_system_package_configure:
 
 cc_system_package:
   This is a macro which munges the name passed into a 'local_{name}'
-  repository, whose `:lib` target is then bound to '{name}'.
+  repository, whose `:local_{name}` target is then bound to '{name}'.
 """
 
-load("@//tools/third_party/kythe/tools/build_rules/config:wrapped_ctx.bzl", "wrapctx")
-load("@//tools/third_party/kythe/tools/build_rules/config:local.bzl", "setup_local_cc_library")
-load("@//tools/third_party/kythe/tools/build_rules/config:pkg_config.bzl", "setup_pkg_config_package")
+load("@kythe//tools/build_rules/config:wrapped_ctx.bzl", "wrapctx")
+load("@kythe//tools/build_rules/config:local.bzl", "setup_local_cc_library")
+load("@kythe//tools/build_rules/config:pkg_config.bzl", "setup_pkg_config_package")
 
 def try_local_library(repo_ctx):
   if repo_ctx.attr.envvar and repo_ctx.attr.envvar in repo_ctx.os.environ:
@@ -58,7 +58,7 @@ cc_system_package_configure = repository_rule(
         "default": attr.string(),
         "defines": attr.string_list(),
         "build_file_template": attr.label(
-            default = Label("@//tools/third_party/kythe/tools/build_rules/config:BUILD.tpl"),
+            default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
             single_file = True,
             allow_files = True,
         ),
@@ -70,4 +70,4 @@ def cc_system_package(*, name, **kwargs):
   if 'modname' not in kwargs:
     kwargs['modname'] = name
   cc_system_package_configure(name="local_" + name, **kwargs)
-  native.bind(name=name, actual="@local_{name}//:lib".format(name=name))
+  native.bind(name=name, actual="@local_{name}//:{name}".format(name=name))

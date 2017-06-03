@@ -38,6 +38,9 @@ class RoadGeometry final : public api::RoadGeometry {
   /// @param[in] shoulder_width The width of the shoulders on each side of the
   /// road.
   ///
+  /// @param[in] maximum_height The maximum height above the road surface
+  /// modelled by the RoadGeometry.
+  ///
   /// @param[in] linear_tolerance The tolerance guaranteed for linear
   /// measurements (positions).
   ///
@@ -49,10 +52,9 @@ class RoadGeometry final : public api::RoadGeometry {
                double length,
                double lane_width,
                double shoulder_width,
-               double linear_tolerance =
-                   std::numeric_limits<double>::epsilon(),
-               double angular_tolerance =
-                   std::numeric_limits<double>::epsilon());
+               double maximum_height,
+               double linear_tolerance,
+               double angular_tolerance);
 
   ~RoadGeometry() final = default;
 

@@ -1,18 +1,24 @@
 // This file is the Bazel build's implementation of drake_path.h.
 #include "drake/common/drake_path.h"
 
+#include <spruce.hh>
+
+#include "drake/common/drake_throw.h"
+#include "drake/common/find_resource.h"
+
 namespace drake {
 
 std::string GetDrakePath() {
-  // TODO(jwnimmer-tri) GetDrakePath has a long and storied history (#1471,
-  // #2174).  It serves multiple purposes (unit tests loading their models;
-  // installed demos loading their models; etc.) but doesn't really do any of
-  // them well.  This implementation is intended as a temporary shim, in order
-  // to support Bazel and CMake build systems concurrently.
-  //
-  // TODO(jwnimmer-tri) This implementation only works when running inside the
-  // sandbox, or when CWD is drake-distro.
-  return std::string("drake");
+  // Find something that represents where Drake lives.
+  const auto& find_result = FindResource("drake/common/drake_path.sentinel");
+  const std::string resource_path = find_result.get_absolute_path_or_throw();
+
+  // Chop off two path elements to get back to drake-distro/drake.
+  spruce::path working_path = resource_path;  // Set to "/foo/drake/common".
+  working_path = working_path.root();         // Set to "/foo/drake".
+  working_path = working_path.root();         // Set to "/foo".
+  DRAKE_THROW_UNLESS(working_path.isDir());
+  return working_path.getStr();
 }
 
 }  // namespace drake

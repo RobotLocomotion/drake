@@ -30,6 +30,12 @@ target_link_libraries(eigen_stl_types_test Eigen3::Eigen)
 drake_add_cc_test(extract_double_test)
 target_link_libraries(extract_double_test drakeCommon)
 
+# TODO(jwnimmer-tri) Drake CI's ROS configuration uses an out-of-source build,
+# which this unit test does not yet support:
+#   drake_add_cc_test(find_resource_test)
+add_executable(find_resource_test find_resource_test.cc)
+target_link_libraries(find_resource_test drakeCommon GTest::GTest GTest::Main)
+
 drake_add_cc_test(functional_form_test)
 target_link_libraries(functional_form_test drakeCommon)
 
@@ -87,6 +93,9 @@ target_link_libraries(symbolic_mixing_scalar_types_test drakeCommon)
 drake_add_cc_test(symbolic_formula_test)
 target_link_libraries(symbolic_formula_test drakeCommon)
 
+drake_add_cc_test(symbolic_formula_visitor_test)
+target_link_libraries(symbolic_formula_visitor_test drakeCommon)
+
 drake_add_cc_test(sorted_vectors_have_intersection_test)
 target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)
 
@@ -113,6 +122,9 @@ target_link_libraries(drake_assert_test drakeCommon)
 
 drake_add_cc_test(drake_assert_test_compile)
 target_link_libraries(drake_assert_test_compile drakeCommon)
+
+drake_add_cc_test(scoped_singleton_test scoped_singleton_test.cc)
+target_link_libraries(scoped_singleton_test drakeCommon)
 
 # "text_logging.h" unit testing:  If spdlog is available, test that:
 add_executable(text_logging_test_default ../text_logging.cc text_logging_test.cc)

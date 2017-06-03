@@ -33,9 +33,6 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
 void SchunkWsgTrajectoryGenerator::OutputTarget(
     const Context<double>& context,
     BasicVector<double>* output) const {
-  const systems::BasicVector<double>* state =
-      this->EvalVectorInput(context, 1);
-  const double cur_position = state->GetAtIndex(position_index_);
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
@@ -46,7 +43,7 @@ void SchunkWsgTrajectoryGenerator::OutputTarget(
         context.get_time() - traj_state->trajectory_start_time());
   } else {
     output->get_mutable_value()=
-        Eigen::Vector2d(cur_position, 0);
+        Eigen::Vector2d(traj_state->last_position(), 0);
   }
 }
 
@@ -76,6 +73,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
   SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
       dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           discrete_state->get_mutable_vector(0));
+  new_traj_state->set_last_position(cur_position);
 
   if (std::abs(last_traj_state->last_target_position() - target_position) >
       kTargetEpsilon) {

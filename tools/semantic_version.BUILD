@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@//tools:drake.bzl", "drake_generate_file")
+load("@drake//tools:drake.bzl", "drake_generate_file")
 
 py_library(
     name = "semantic_version",

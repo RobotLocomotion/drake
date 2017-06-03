@@ -13,10 +13,12 @@
 namespace drake {
 namespace systems {
 
+#if !defined(DRAKE_DOXYGEN_CXX)
+class AbstractValue;
+
 template <typename T>
 class Value;
 
-#if !defined(DRAKE_DOXYGEN_CXX)
 // Declare some private helper structs.
 namespace value_detail {
 
@@ -50,6 +52,15 @@ struct ValueTraitsImpl<T, false> {
   static_assert(
       drake::is_cloneable<T>::value,
       "Types placed into a Value<T> must either be copyable or cloneable");
+
+  // We explicitly disallow Value<AbstractValue>.  In cases where it occurs, it
+  // is likely that someone has created functions such as
+  //   template DoBar(const AbstractValue& foo) { ... }
+  //   template <class Foo> DoBar(const Foo& foo) { DoBar(Value<Foo>{foo}); }
+  // and accidentally called DoBar<AbstractValue>, or similar mistakes.
+  static_assert(!std::is_same<T, std::remove_cv<AbstractValue>::type>::value,
+                "T in Value<T> cannnot be AbstractValue.");
+
   using UseCopy = std::false_type;
   using Storage = typename drake::copyable_unique_ptr<T>;
   static void reinitialize_if_necessary(Storage* value) {
