@@ -588,8 +588,12 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   // Hack necessary to get around error:
   // "error `accuracy` may be used unitialized in this function"
   // " [-Werror=maybe-unitialized]"
+  #ifdef __GNUG__
+  #ifndef __clang__
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wmaybe-unitialized"
+  #endif
+  #endif
 
   // Determine the length of the isolation interval.
   if (integrator_->get_fixed_step_mode()) {
@@ -615,7 +619,11 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   // in the context can allow.
   return max(integrator_->get_working_minimum_step_size(),
              iso_scale_factor * accuracy.value_or(999) * characteristic_time);
-  #pragma pop
+  #ifdef __GNUG__
+  #ifndef __clang__
+  #pragma GCC diagnostic pop
+  #endif
+  #endif
 }
 
 // Isolates the first time at one or more witness functions triggered (in the
