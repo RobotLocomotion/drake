@@ -17,7 +17,10 @@ class PurePursuitTest : public ::testing::Test {
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId({"Single-Lane Dragway"}),
         1 /* num_lanes */, 100 /* length */, 4. /* lane_width */,
-        0. /* shoulder_width */));
+        0. /* shoulder_width */,
+        5. /* maximum_height */,
+        std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+        std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   }
 
   const PurePursuitParams<double> pp_params_{};

@@ -84,6 +84,13 @@ class Lane {
   /// the lane's segment.
   RBounds driveable_bounds(double s) const { return do_driveable_bounds(s); }
 
+  /// Returns the elevation (`h`) bounds of the lane as a function of `(s, r)`.
+  ///
+  /// These are the elevation bounds for a position that is considered to be
+  /// within the volume modelled by the RoadGeometry.
+  HBounds elevation_bounds(double s, double r) const {
+    return do_elevation_bounds(s, r); }
+
   /// Returns the GeoPosition corresponding to the given LanePosition.
   ///
   /// @pre The s component of @p lane_pos must be in domain [0, Lane::length()].
@@ -193,6 +200,8 @@ class Lane {
   virtual RBounds do_lane_bounds(double s) const = 0;
 
   virtual RBounds do_driveable_bounds(double s) const = 0;
+
+  virtual HBounds do_elevation_bounds(double s, double r) const = 0;
 
   virtual GeoPosition DoToGeoPosition(const LanePosition& lane_pos) const = 0;
 

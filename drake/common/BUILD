@@ -181,6 +181,11 @@ drake_cc_library(
     hdrs = ["drake_path.h"],
     deps = [
         ":common",
+        ":find_resource",
+        "//drake/thirdParty:spruce",
+    ],
+    data = [
+        "drake_path.sentinel",
     ],
 )
 
@@ -309,6 +314,14 @@ drake_cc_library(
 drake_cc_library(
     name = "unused",
     hdrs = ["unused.h"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_library(
+    name = "scoped_singleton",
+    hdrs = ["scoped_singleton.h"],
     deps = [
         ":common",
     ],
@@ -767,6 +780,13 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "eigen_autodiff_types_test",
     deps = [":autodiff"],
+)
+
+drake_cc_googletest(
+    name = "scoped_singleton_test",
+    deps = [
+        ":scoped_singleton",
+    ],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...
