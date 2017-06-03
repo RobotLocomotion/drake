@@ -49,6 +49,7 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   diagram_continuous_state.h
+  discrete_event.h
   discrete_values.h
   input_port_evaluator_interface.h
   input_port_value.h
