@@ -21,6 +21,7 @@ using drake::solvers::Constraint;
 using drake::solvers::LinearConstraint;
 using drake::solvers::LinearEqualityConstraint;
 using drake::solvers::BoundingBoxConstraint;
+using drake::solvers::PositiveSemidefiniteConstraint;
 using drake::solvers::Cost;
 using drake::solvers::LinearCost;
 using drake::solvers::QuadraticCost;
