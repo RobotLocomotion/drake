@@ -27,6 +27,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
+class Diagram;
+template <typename T>
 class DiagramBuilder;
 
 namespace internal {
@@ -75,7 +77,6 @@ void FilterSubsystemEventsByType(int subsystem_id,
   }
 }
 
-
 //==============================================================================
 //                          DIAGRAM OUTPUT PORT
 //==============================================================================
@@ -88,18 +89,16 @@ class DiagramOutputPort : public OutputPort<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutputPort)
 
-  /// Construct a %DiagramOutputPort that exports the indicated port from
-  /// the subsystem whose index is provided.
-  DiagramOutputPort(const System<T>& system,
-                    const OutputPort<T>* source_output_port,
-                    int subsystem_index)
-      : OutputPort<T>(system, source_output_port->get_data_type(),
+  /// Construct a %DiagramOutputPort for the given `diagram` that exports the
+  /// indicated port. That port's owning system must be a subsystem of the
+  /// diagram.
+  DiagramOutputPort(const Diagram<T>& diagram,
+                    const OutputPort<T>* source_output_port)
+      : OutputPort<T>(diagram, source_output_port->get_data_type(),
                       source_output_port->size()),
         source_output_port_(source_output_port),
-        subsystem_index_(subsystem_index) {
-    DRAKE_DEMAND(source_output_port_ != nullptr);
-    DRAKE_DEMAND(subsystem_index_ >= 0);
-  }
+        subsystem_index_(
+            diagram.GetSystemIndexOrAbort(&source_output_port->get_system())) {}
 
   ~DiagramOutputPort() final = default;
 
@@ -687,6 +686,14 @@ class Diagram : public System<T>,
       const PortIdentifier& prerequisite = upstream_it->second;
       this->EvaluateOutputPort(*diagram_context, prerequisite);
     }
+  }
+
+  /// Returns the index of the given @p sys in the sorted order of this diagram,
+  /// or aborts if @p sys is not a member of the diagram.
+  int GetSystemIndexOrAbort(const System<T>* sys) const {
+    auto it = sorted_systems_map_.find(sys);
+    DRAKE_DEMAND(it != sorted_systems_map_.end());
+    return it->second;
   }
 
  protected:
@@ -1305,28 +1312,14 @@ class Diagram : public System<T>,
                            subsystem_descriptor.size());
   }
 
-  // Creates a new DiagramOutputPort in this System and returns a reference to
-  // it. The arguments to this method are forwarded to the matching
-  // DiagramOutputPort constructor.
-  template <typename... Args>
-  internal::DiagramOutputPort<T>& CreateDiagramOutputPort(Args&&... args) {
-    auto port = std::make_unique<internal::DiagramOutputPort<T>>(
-        *this, std::forward<Args>(args)...);
-    internal::DiagramOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::move(port));
-    return *port_ptr;
-  }
-
   // Exposes the given subsystem output port as an output of the Diagram.
   void ExportOutput(const PortIdentifier& port) {
     const System<T>* const sys = port.first;
-    // Fail quickly if this system is not part of the sort order.
-    const int subsystem_index = GetSystemIndexOrAbort(sys);
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
-
-    // Add this port to our externally visible topology.
-    CreateDiagramOutputPort(&source_output_port, subsystem_index);
+    auto diagram_port = std::make_unique<internal::DiagramOutputPort<T>>(
+        *this, &source_output_port);
+    this->CreateOutputPort(std::move(diagram_port));
   }
 
   // Evaluates the value of the output port with the given @p id in the given
@@ -1350,14 +1343,6 @@ class Diagram : public System<T>,
     SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
     AbstractValue* port_output = subsystem_output->GetMutableData(port_index);
     port.Calc(*subsystem_context, port_output);
-  }
-
-  // Returns the index of the given @p sys in the sorted order of this diagram,
-  // or aborts if @p sys is not a member of the diagram.
-  int GetSystemIndexOrAbort(const System<T>* sys) const {
-    auto it = sorted_systems_map_.find(sys);
-    DRAKE_DEMAND(it != sorted_systems_map_.end());
-    return it->second;
   }
 
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.
