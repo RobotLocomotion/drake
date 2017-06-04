@@ -85,9 +85,13 @@ class LeafOutputPort : public OutputPort<T> {
   /** Constructs a fixed-size vector-valued output port. The supplied allocator
   returns a BasicVector of the correct size in which to hold the result. The
   supplied calculator function writes to a BasicVector of the same underlying
-  concrete type as is returned by the allocator. If a particular size is
-  required, supply it here; otherwise use kAutoSize. (Note: currently a fixed
-  size is required.) **/
+  concrete type as is returned by the allocator. Requires the fixed to be
+  given explicitly here. The allocator function is not invoked during
+  construction of the port. **/
+  // Note: there is no guarantee that the allocator can be invoked successfully
+  // here since construction of the containing System is likely incomplete when
+  // this method is invoked. Do not attempt to extract the size from
+  // the allocator by calling it here.
   LeafOutputPort(const System<T>& system,
                  AllocVectorCallback vector_alloc_function, int size,
                  CalcVectorCallback vector_calc_function)
@@ -115,19 +119,7 @@ class LeafOutputPort : public OutputPort<T> {
   // Sets or replaces the allocation function for this vector-valued output
   // port, using a function that returns an object derived from
   // `BasicVector<T>`.
-  void set_allocation_function(AllocVectorCallback vector_alloc_function) {
-    if (!vector_alloc_function) {
-      alloc_function_ = nullptr;
-    } else {
-      // Wrap the vector-returning function with an AbstractValue-returning
-      // allocator.
-      alloc_function_ = [vector_alloc_function](const Context<T>& context) {
-        std::unique_ptr<BasicVector<T>> vector = vector_alloc_function(context);
-        return std::unique_ptr<AbstractValue>(
-            new Value<BasicVector<T>>(std::move(vector)));
-      };
-    }
-  }
+  void set_allocation_function(AllocVectorCallback vector_alloc_function);
 
   // Sets or replaces the calculation function for this output port, using
   // a function that writes into an `AbstractValue`.
