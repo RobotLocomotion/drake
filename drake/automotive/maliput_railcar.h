@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/automotive/gen/maliput_railcar_params.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
@@ -87,11 +88,21 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   /// next update time to be strictly after the current time.
   static constexpr double kTimeEpsilon{1e-12};
 
-  /// The constructor.
+  /// A constructor that uses the default system name.
   ///
   /// @param initial_lane_direction The initial lane and direction of travel.
   ///
   explicit MaliputRailcar(const LaneDirection& initial_lane_direction);
+
+  /// A constructor that uses the provided system name.
+  ///
+  /// @param name The name of the system. This name must be unique among all
+  /// systems in the same systems::Diagram.
+  ///
+  /// @param initial_lane_direction The initial lane and direction of travel.
+  ///
+  MaliputRailcar(const std::string& name,
+      const LaneDirection& initial_lane_direction);
 
   // System<T> overrides.
   void DoCalcOutput(const systems::Context<T>& context,

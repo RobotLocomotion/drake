@@ -42,7 +42,7 @@ namespace {
 
 class MaliputRailcarTest : public ::testing::Test {
  protected:
-  void InitializeDragwayLane(bool with_s = true) {
+  std::unique_ptr<const maliput::dragway::RoadGeometry> CreateDragway() const {
     // Defines the dragway's parameters.
     const int kNumLanes{1};
     const double kDragwayLength{50};
@@ -51,11 +51,13 @@ class MaliputRailcarTest : public ::testing::Test {
     const double kMaximumHeight{5.};
     const double kLinearTolerance{std::numeric_limits<double>::epsilon()};
     const double kAngularTolerance{std::numeric_limits<double>::epsilon()};
-    Initialize(
-        std::make_unique<const maliput::dragway::RoadGeometry>(
+    return std::make_unique<const maliput::dragway::RoadGeometry>(
             maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
             kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth,
-            kMaximumHeight, kLinearTolerance, kAngularTolerance), with_s);
+            kMaximumHeight, kLinearTolerance, kAngularTolerance);
+  }
+  void InitializeDragwayLane(bool with_s = true) {
+    Initialize(CreateDragway(), with_s);
   }
 
   void InitializeCurvedMonoLane(bool with_s = true) {
@@ -172,10 +174,14 @@ class MaliputRailcarTest : public ::testing::Test {
   }
 
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road,
-      bool with_s) {
+      bool with_s, const std::string& name = "") {
     road_ = std::move(road);
     const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
-    dut_.reset(new MaliputRailcar<double>(LaneDirection(lane, with_s)));
+    if (name.empty()) {
+      dut_.reset(new MaliputRailcar<double>(LaneDirection(lane, with_s)));
+    } else {
+      dut_.reset(new MaliputRailcar<double>(name, LaneDirection(lane, with_s)));
+    }
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -1098,6 +1104,15 @@ TEST_F(MaliputRailcarTest, TraverseLaneBoundaryConsistentS) {
 // s-curve of the continuing lane is inconsistent.
 TEST_F(MaliputRailcarTest, TraverseLaneBoundaryInconsistentS) {
   DoTestLaneTraversalTest(true /* flip_curve_lane */);
+}
+
+// Tests the ability to specify MaliputRailcar's name upon construction.
+TEST_F(MaliputRailcarTest, SpecifyNameUponConstruction) {
+  const std::string kCustomName = "FooBarSystem";
+  std::unique_ptr<const maliput::dragway::RoadGeometry> dragway =
+      CreateDragway();
+  Initialize(std::move(dragway), true /* with_s */, kCustomName);
+  EXPECT_EQ(dut_->get_name(), kCustomName);
 }
 
 }  // namespace
