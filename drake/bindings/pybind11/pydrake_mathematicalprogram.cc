@@ -122,6 +122,13 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          py::arg("rows"),
          py::arg("cols"),
          py::arg("name") = "b")
+    .def("NewSymmetricContinuousVariables", (MatrixXDecisionVariable
+         (MathematicalProgram::*)(
+          size_t,
+          const std::string&))
+         &MathematicalProgram::NewSymmetricContinuousVariables,
+         py::arg("rows"),
+         py::arg("name") = "Symmetric")
     .def("AddLinearConstraint",
          (Binding<LinearConstraint>
           (MathematicalProgram::*)(
@@ -134,6 +141,11 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           (MathematicalProgram::*)(
           const Formula&))
           &MathematicalProgram::AddLinearConstraint)
+    .def("AddPositiveSemidefiniteConstraint",
+         (Binding<PositiveSemidefiniteConstraint>
+          (MathematicalProgram::*)(
+          const Eigen::ref<const MatrixXd>&))
+         &MathematicalProgram::AddPositiveSemidefiniteConstraint)
     .def("AddLinearCost",
          (Binding<LinearCost>
           (MathematicalProgram::*)(
