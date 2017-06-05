@@ -375,7 +375,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // Update the state vector.
     *xtplus += dx;
 
-<<<<<<< HEAD
     // The check below looks for convergence using machine epsilon. Without
     // this check, the convergence criteria can be applied when
     // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
@@ -383,8 +382,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     if (dx_norm < 10 * std::numeric_limits<double>::epsilon())
       return true;
 
-||||||| merged common ancestors
-=======
     // The check below looks for convergence using machine epsilon. Without
     // this check, the convergence criteria can be applied when
     // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
@@ -396,7 +393,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       return true;
     }
 
->>>>>>> 721e77c0bdcf90976668d399abd2c91efdc40299
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
     // applied after *at least* two iterations (p. 121).

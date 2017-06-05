@@ -316,7 +316,11 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
     EXPECT_EQ(w1, w2);
 
     // Verify that they are triggering.
-    EXPECT_LT(std::abs(w1), simulator->GetWitnessTimeIsolation());
+    // NOTE: value_or(999) necessary to work around Mac OS X bug where value()
+    // function is declared but not defined. 
+    optional<double> iso_time = simulator->GetCurrentWitnessTimeIsolation();
+    EXPECT_TRUE(iso_time);
+    EXPECT_LT(std::abs(w1), iso_time.value_or(999));
 
     // Indicate that the method has been called.
     published = true;
@@ -366,7 +370,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   simulator.get_mutable_context()->set_accuracy(tol);
 
   // Get the isolation interval tolerance.
-  const double iso_tol = simulator.GetWitnessTimeIsolation();
+  const optional<double> iso_tol = simulator.GetCurrentWitnessTimeIsolation();
+  EXPECT_TRUE(iso_tol);
 
   // Simulate to right after the second one should have triggered.
   simulator.StepTo(2.1);
@@ -375,8 +380,10 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   EXPECT_EQ(publish_times.size(), 2);
 
   // Verify that the publishes are at the expected times.
-  EXPECT_NEAR(publish_times.front(), first_time, iso_tol);
-  EXPECT_NEAR(publish_times.back(), second_time, iso_tol);
+  // NOTE: value_or(999) necessary to work around Mac OS X bug where value()
+  // function is declared but not defined. 
+  EXPECT_NEAR(publish_times.front(), first_time, iso_tol.value_or(999));
+  EXPECT_NEAR(publish_times.back(), second_time, iso_tol.value_or(999));
 }
 
 // Tests ability of simulation to identify the proper number of witness function
