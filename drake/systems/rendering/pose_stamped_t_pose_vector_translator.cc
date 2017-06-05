@@ -2,8 +2,9 @@
 
 #include <string>
 
-#include "drake/systems/rendering/pose_vector.h"
 #include "robotlocomotion/pose_stamped_t.hpp"
+
+#include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
 namespace systems {

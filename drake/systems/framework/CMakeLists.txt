@@ -49,6 +49,7 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   diagram_continuous_state.h
+  discrete_event.h
   discrete_values.h
   input_port_evaluator_interface.h
   input_port_value.h
@@ -70,6 +71,7 @@ set(installed_headers
   value.h
   value_checker.h
   vector_base.h
+  witness_function.h
   )
 
 # Headers that are needed by code here but should not

@@ -4,9 +4,9 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-#include "drake/systems/analysis/test/spring_mass_damper_system.h"
 #include "drake/systems/analysis/test/discontinuous_spring_mass_damper_system.h"
+#include "drake/systems/analysis/test/spring_mass_damper_system.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 using drake::systems::implicit_integrator_test::SpringMassDamperSystem;
 using drake::systems::implicit_integrator_test::
