@@ -747,8 +747,8 @@ class CustomContextSystem : public LeafSystem<T> {
   void DoCalcOutput(const Context<T>& context,
                     SystemOutput<T>* output) const override {}
  protected:
-  LeafContext<T>* DoMakeContext() const override {
-    return new CustomContext<T>();
+  std::unique_ptr<LeafContext<T>> DoMakeContext() const override {
+    return std::unique_ptr<LeafContext<T>>(new CustomContext<T>());
   }
 };
 
