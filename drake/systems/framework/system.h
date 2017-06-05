@@ -1070,6 +1070,7 @@ class System {
   /// already contains a reference to this System, and that the port's index is
   /// already set to the next available output port index for this System.
   void CreateOutputPort(std::unique_ptr<OutputPort<T>> port) {
+    DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system() == this);
     DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
     output_ports_.push_back(std::move(port));

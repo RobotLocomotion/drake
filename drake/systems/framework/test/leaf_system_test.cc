@@ -612,6 +612,12 @@ class DummyVec2 : public BasicVector<double> {
   DummyVec2* DoClone() const override { return new DummyVec2; }
 };
 
+// This bare struct is used to verify that we value-initialize output ports.
+struct SomePOD {
+  int some_int;
+  double some_double;
+};
+
 class DeclaredNonModelOutputSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredNonModelOutputSystem);
@@ -654,6 +660,10 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     // methods for both allocator and calculator for an abstract port.
     this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::MakeString,
                                     &DeclaredNonModelOutputSystem::CalcString);
+
+    // Output port 5 uses a default-constructed bare struct which should be
+    // value-initialized.
+    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
   }
 
  private:
@@ -672,6 +682,11 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     ASSERT_NE(out, nullptr);
     *out = "calc'ed string";
   }
+
+  void CalcPOD(const Context<double>&, SomePOD* out) const {
+    ASSERT_NE(out, nullptr);
+    *out = {-10, 3.25};
+  }
 };
 
 // Tests that non-model based Declare{Vector,Abstract}OutputPort generate
@@ -683,18 +698,20 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
 
   // Check topology.
   EXPECT_EQ(dut.get_num_input_ports(), 0);
-  EXPECT_EQ(dut.get_num_output_ports(), 5);
+  EXPECT_EQ(dut.get_num_output_ports(), 6);
 
   auto& out0 = dut.get_output_port(0);
   auto& out1 = dut.get_output_port(1);
   auto& out2 = dut.get_output_port(2);
   auto& out3 = dut.get_output_port(3);
   auto& out4 = dut.get_output_port(4);
+  auto& out5 = dut.get_output_port(5);
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
   EXPECT_EQ(out1.get_data_type(), kAbstractValued);
   EXPECT_EQ(out2.get_data_type(), kVectorValued);
   EXPECT_EQ(out3.get_data_type(), kAbstractValued);
   EXPECT_EQ(out4.get_data_type(), kAbstractValued);
+  EXPECT_EQ(out5.get_data_type(), kAbstractValued);
 
   // Check that DummyVec2 came out, default constructed to (100,200).
   auto output0 = system_output->GetMutableVectorData(0);
@@ -725,7 +742,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   out2.Calc(*context, system_output->GetMutableData(2));
   EXPECT_EQ(out2_dummy->get_value(), Eigen::Vector2d(10., 20.));
 
-  // Check that Value<int>() came out, default initialized to -2.
+  // Check that Value<int> came out, default initialized to -2.
   auto output3 = system_output->GetMutableData(3);
   ASSERT_NE(output3, nullptr);
   const int* downcast_output3{};
@@ -740,8 +757,19 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   const std::string* downcast_output4{};
   EXPECT_NO_THROW(downcast_output4 = &output4->GetValueOrThrow<std::string>());
   EXPECT_EQ(*downcast_output4, "freshly made");
-  out1.Calc(*context, output4);
+  out4.Calc(*context, output4);
   EXPECT_EQ(*downcast_output4, "calc'ed string");
+
+  // Check that Value<SomePOD>{} came out, value initialized.
+  auto output5 = system_output->GetMutableData(5);
+  ASSERT_NE(output5, nullptr);
+  const SomePOD* downcast_output5{};
+  EXPECT_NO_THROW(downcast_output5 = &output5->GetValueOrThrow<SomePOD>());
+  EXPECT_EQ(downcast_output5->some_int, 0);
+  EXPECT_EQ(downcast_output5->some_double, 0.0);
+  out5.Calc(*context, output5);
+  EXPECT_EQ(downcast_output5->some_int, -10);
+  EXPECT_EQ(downcast_output5->some_double, 3.25);
 }
 
 // Tests both that an unrestricted update callback is called and that

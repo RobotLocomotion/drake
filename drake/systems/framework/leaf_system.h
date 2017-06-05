@@ -464,10 +464,10 @@ class LeafSystem : public System<T> {
     return params;
   }
 
-  /// Declares that this System has a simple, fixed-period discrete action. The
-  /// first tick will be at t=offset_sec, if offset_sec > 0, otherwise at
-  /// t=period_sec. It will recur at every period_sec thereafter. On the
-  /// discrete tick, the system may perform the given type of action.
+  /// Declares that this System has a simple, fixed-period discrete action.
+  /// The first tick will be at t = period_sec, and it will recur at every
+  /// period_sec thereafter. On the discrete tick, the system may perform
+  /// the given type of action.
   void DeclarePeriodicAction(double period_sec, double offset_sec,
       const typename DiscreteEvent<T>::ActionType& action) {
     PeriodicEvent<T> event;
@@ -647,8 +647,8 @@ class LeafSystem : public System<T> {
   /// of `DeclareVectorOutputPort()` and `DeclareAbstractOutputPort()`
   /// signatures here for convenient specification, with mapping to the generic
   /// form handled invisibly. In particular, allocators are most easily defined
-  /// simply by providing a model value that can be used to construct an
-  /// allocator that simply copies the model when a new value object is needed.
+  /// by providing a model value that can be used to construct an
+  /// allocator that copies the model when a new value object is needed.
   /// Alternatively a method can be provided that constructs a value object when
   /// invoked (those methods are conventionally, but not necessarily, named
   /// `MakeSomething()` where `Something` is replaced by the output port value
@@ -674,7 +674,7 @@ class LeafSystem : public System<T> {
   /// where `MySystem` is a class derived from `LeafSystem<T>`. Template
   /// arguments will be deduced and do not need to be specified.
   template <class MySystem, typename BasicVectorSubtype>
-  const LeafOutputPort<T>& DeclareVectorOutputPort(
+  const OutputPort<T>& DeclareVectorOutputPort(
       const BasicVectorSubtype& model_vector,
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const) {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
@@ -714,7 +714,7 @@ class LeafSystem : public System<T> {
   /// provide a method for the allocator to call; that method can then invoke
   /// the `BasicVectorSubtype` default constructor.
   template <class MySystem, typename BasicVectorSubtype>
-  const LeafOutputPort<T>& DeclareVectorOutputPort(
+  const OutputPort<T>& DeclareVectorOutputPort(
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const) {
     static_assert(
         std::is_default_constructible<BasicVectorSubtype>::value,
@@ -731,7 +731,7 @@ class LeafSystem : public System<T> {
   /// function in its most generic form; if you have a member function available
   /// use one of the other signatures.
   /// @see LeafOutputPort::CalcVectorCallback
-  const LeafOutputPort<T>& DeclareVectorOutputPort(
+  const OutputPort<T>& DeclareVectorOutputPort(
       const BasicVector<T>& model_vector,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
     auto& port =
@@ -748,7 +748,7 @@ class LeafSystem : public System<T> {
   /// of the other signatures.
   /// @see LeafOutputPort::AllocVectorCallback
   /// @see LeafOutputPort::CalcVectorCallback
-  const LeafOutputPort<T>& DeclareVectorOutputPort(
+  const OutputPort<T>& DeclareVectorOutputPort(
       typename LeafOutputPort<T>::AllocVectorCallback vector_alloc_function,
       int size,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
@@ -758,15 +758,17 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares an abstract-valued output port by specifying a model value of
-  /// copy constructible concrete type `OutputType` and a calculator
-  /// function that is a class member function (method) with signature:
+  /// concrete type `OutputType` and a calculator function that is a class
+  /// member function (method) with signature:
   /// @code
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>`.
+  /// where `MySystem` is a class derived from `LeafSystem<T>`. `OutputType`
+  /// must be such that `Value<OutputType>` is permitted.
   /// Template arguments will be deduced and do not need to be specified.
+  /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
-  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+  const OutputPort<T>& DeclareAbstractOutputPort(
       const OutputType& model_value,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -789,7 +791,7 @@ class LeafSystem : public System<T> {
   /// where `MySystem` is a class derived from `LeafSystem<T>`.
   /// Template arguments will be deduced and do not need to be specified.
   template <class MySystem>
-  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+  const OutputPort<T>& DeclareAbstractOutputPort(
       const AbstractValue& model_value,
       void (MySystem::*calc)(const Context<T>&, AbstractValue*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -808,6 +810,7 @@ class LeafSystem : public System<T> {
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>`. `OutputType`
+  /// is a concrete type such that `Value<OutputType>` is permitted, and
   /// must be default constructible, so that we can create a model value using
   /// `Value<OutputType>{}` (value initialized so numerical types will be
   /// zeroed in the model).
@@ -819,8 +822,9 @@ class LeafSystem : public System<T> {
   /// allocation (not common), use one of the other signatures to explicitly
   /// provide a method for the allocator to call; that method can then invoke
   /// the `OutputType` default constructor.
+  /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
-  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+  const OutputPort<T>& DeclareAbstractOutputPort(
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     static_assert(
         std::is_default_constructible<OutputType>::value,
@@ -836,11 +840,12 @@ class LeafSystem : public System<T> {
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  /// may be any copy constructible type. See alternate signature if your
-  /// allocator method does not need a Context.
+  /// is any concrete type such that `Value<OutputType>` is permitted. See
+  /// alternate signature if your allocator method does not need a Context.
   /// Template arguments will be deduced and do not need to be specified.
+  /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
-  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+  const OutputPort<T>& DeclareAbstractOutputPort(
       OutputType (MySystem::*make)(const Context<T>&) const,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -863,11 +868,12 @@ class LeafSystem : public System<T> {
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  /// may be any copy constructible and copy assignable type. See alternate
-  /// signature if your allocator method needs a Context.
+  /// may be any concrete type such that `Value<OutputType>` is permitted.
+  /// See alternate signature if your allocator method needs a Context.
   /// Template arguments will be deduced and do not need to be specified.
+  /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
-  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+  const OutputPort<T>& DeclareAbstractOutputPort(
       OutputType (MySystem::*make)() const,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -888,7 +894,7 @@ class LeafSystem : public System<T> {
   /// allocator function will simply clone the `model_value`, which is given as
   /// an AbstractValue.
   /// @see LeafOutputPort::CalcCallback
-  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+  const OutputPort<T>& DeclareAbstractOutputPort(
       const AbstractValue& model_value,
       typename LeafOutputPort<T>::CalcCallback calc_function) {
     auto& port =
@@ -900,7 +906,7 @@ class LeafSystem : public System<T> {
   /// allocator and calculator functions provided in their most generic forms.
   /// If you have a member function available use one of the other signatures.
   /// @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback
-  const LeafOutputPort<T>& DeclareAbstractOutputPort(
+  const OutputPort<T>& DeclareAbstractOutputPort(
       typename LeafOutputPort<T>::AllocCallback alloc_function,
       typename LeafOutputPort<T>::CalcCallback calc_function) {
     auto& port = CreateLeafOutputPort(alloc_function, calc_function);

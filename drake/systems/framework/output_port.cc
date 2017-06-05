@@ -30,8 +30,8 @@ template <typename T>
 void OutputPort<T>::Calc(const Context<T>& context,
                          AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
-  DRAKE_ASSERT_VOID(CheckValidOutputType(context, *value));
   DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
+  DRAKE_ASSERT_VOID(CheckValidOutputType(context, *value));
 
   DoCalc(context, value);
 }

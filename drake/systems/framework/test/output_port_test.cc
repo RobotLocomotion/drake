@@ -1,4 +1,5 @@
 #include "drake/systems/framework/output_port.h"
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_output_port.h"
 
 #include <cctype>
@@ -10,7 +11,6 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"

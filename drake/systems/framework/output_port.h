@@ -83,7 +83,7 @@ class OutputPort {
   given context, into an already-allocated AbstractValue object whose concrete
   type must be the correct type for this output port. If Drake assertions are
   enabled (typically only in Debug builds), validates that the given `value` has
-  the same concrete type as is returned by the Allocate() method. **/
+  exactly the same concrete type as is returned by the Allocate() method. **/
   void Calc(const Context<T>& context, AbstractValue* value) const;
 
   /** Returns a reference to the value of this output port contained in the
