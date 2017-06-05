@@ -317,7 +317,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
 
     // Verify that they are triggering.
     // NOTE: value_or(999) necessary to work around Mac OS X bug where value()
-    // function is declared but not defined. 
+    // function is declared but not defined.
     optional<double> iso_time = simulator->GetCurrentWitnessTimeIsolation();
     EXPECT_TRUE(iso_time);
     EXPECT_LT(std::abs(w1), iso_time.value_or(999));
@@ -381,7 +381,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
 
   // Verify that the publishes are at the expected times.
   // NOTE: value_or(999) necessary to work around Mac OS X bug where value()
-  // function is declared but not defined. 
+  // function is declared but not defined.
   EXPECT_NEAR(publish_times.front(), first_time, iso_tol.value_or(999));
   EXPECT_NEAR(publish_times.back(), second_time, iso_tol.value_or(999));
 }
