@@ -16,6 +16,7 @@ drake_cc_library(
         ":diagram",
         ":diagram_builder",
         ":diagram_context",
+        ":modal_subsystem",
         ":leaf_context",
         ":leaf_system",
         ":parameters",
@@ -316,6 +317,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "modal_subsystem",
+    srcs = ["modal_subsystem.cc"],
+    hdrs = ["modal_subsystem.h"],
+    linkstatic = 1,
+    deps = [
+        ":context",
+        ":system",
+        ":vector",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "sparsity_matrix",
     srcs = ["sparsity_matrix.cc"],
     hdrs = ["sparsity_matrix.h"],
@@ -441,6 +455,20 @@ drake_cc_googletest(
         ":leaf_system",
         "//drake/common",
         "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "modal_subsystem_test",
+    deps = [
+        ":diagram",
+        "diagram_builder",
+        ":modal_subsystem",
+        "//drake/common",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities:pack_value",
+        "//drake/systems/primitives:integrator",
+        "//drake/systems/primitives:zero_order_hold",
     ],
 )
 

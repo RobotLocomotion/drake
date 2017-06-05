@@ -14,6 +14,7 @@ set(sources
   input_port_value.cc
   leaf_context.cc
   leaf_system.cc
+  modal_subsystem.cc
   model_values.cc
   output_port_listener_interface.cc
   output_port_value.cc
@@ -55,6 +56,7 @@ set(installed_headers
   input_port_value.h
   leaf_context.h
   leaf_system.h
+  modal_subsystem.h
   model_values.h
   output_port_listener_interface.h
   output_port_value.h
