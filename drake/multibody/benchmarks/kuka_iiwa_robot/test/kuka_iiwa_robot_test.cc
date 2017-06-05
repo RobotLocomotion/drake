@@ -10,11 +10,18 @@ namespace multibody {
 namespace math {
 namespace {
 
-// Utility method for comparing Kuka iiwa robot arm end-effector orientation,
-// position, angular velocity, and velocity to expected solution.
+// Function to compare Kuka iiwa robot arm end-effector (frame G)'s orientation
+// position, angular velocity, velocity in World (frame N) to expected solution.
+// The inputs to this method are the state (q, qDt) and expected values.
+// q                  |  robot's joint angles (generalized coordinates).
+// qDt                |  time-derivatives of q (generalized speeds).
+// R_NG_expected      |  Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
+// p_NoGo_N_expected  |  Go's position from No, expressed in N.
+// w_NG_N_expected    |  G's angular velocity in N, expressed in N.
+// v_NGo_N_expected   |  Go's velocity in N, expressed in N.
 void CompareEndEffectorPositionVelocityVsExpectedSolution(
-  const Eigen::Matrix<double, 7, 1>& joint_angles,
-  const Eigen::Matrix<double, 7, 1>& joint_anglesDt,
+  const Eigen::Matrix<double, 7, 1>& q,
+  const Eigen::Matrix<double, 7, 1>& qDt,
   const Eigen::Matrix3d& R_NG_expected,
   const Eigen::Vector3d& p_No_Go_N_expected,
   const Eigen::Vector3d& w_NG_N_expected,
@@ -27,12 +34,11 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
   Eigen::Matrix3d R_NG;
   Eigen::Vector3d p_No_Go_N, w_NG_N, v_NGo_N;
   std::tie(R_NG, p_No_Go_N, w_NG_N, v_NGo_N) =
-    kukaIIwaRobot.CalcForwardKinematicsEndEffector(joint_angles,
-                                                   joint_anglesDt);
+    kukaIIwaRobot.CalcForwardKinematicsEndEffectorViaMotionGenesis(q, qDt);
 
   // Compare actual results with expected results.
   constexpr double epsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 10*epsilon;
+  const double tolerance = 10 * epsilon;
   EXPECT_TRUE(R_NG.isApprox(R_NG_expected, tolerance));
   EXPECT_TRUE(p_No_Go_N.isApprox(p_No_Go_N_expected, tolerance));
   EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_expected, tolerance));
@@ -52,9 +58,10 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsA) {
   const double qF = 0.0, qFDt = 0.0;
   const double qG = 0.0, qGDt = 0.0;
 
-  Eigen::Matrix<double, 7, 1> joint_angles, joint_anglesDt;
-  joint_angles << qA, qB, qC, qD, qE, qF, qG;
-  joint_anglesDt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
+  // Create a state with joint angles (q) and their time-derivatives (qDt).
+  Eigen::Matrix<double, 7, 1> q, qDt;
+  q << qA, qB, qC, qD, qE, qF, qG;
+  qDt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
 
   // MotionGenesis solution for these joint angles/time-derivatives.
   // This solution can also be calculated by-hand (very simple case).
@@ -65,8 +72,7 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsA) {
   w_NG_N_expected << 0, 0, 0;
   v_NGo_N_expected << 0, 0, 0;
 
-  CompareEndEffectorPositionVelocityVsExpectedSolution(joint_angles,
-                                                       joint_anglesDt,
+  CompareEndEffectorPositionVelocityVsExpectedSolution(q, qDt,
                                                        R_NG_expected,
                                                        p_No_Go_N_expected,
                                                        w_NG_N_expected,
@@ -87,9 +93,10 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
   const double qF = q30, qFDt = 0.0;
   const double qG = q60, qGDt = 0.0;
 
-  Eigen::Matrix<double, 7, 1> joint_angles, joint_anglesDt;
-  joint_angles << qA, qB, qC, qD, qE, qF, qG;
-  joint_anglesDt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
+  // Create a state with joint angles (q) and their time-derivatives (qDt).
+  Eigen::Matrix<double, 7, 1> q, qDt;
+  q << qA, qB, qC, qD, qE, qF, qG;
+  qDt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
 
   // MotionGenesis solution for these joint angles/time-derivatives.
   Eigen::Matrix3d R_NG_expected;
@@ -102,8 +109,7 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
   w_NG_N_expected << 0, 0, 0;
   v_NGo_N_expected << 0, 0, 0;
 
-  CompareEndEffectorPositionVelocityVsExpectedSolution(joint_angles,
-                                                       joint_anglesDt,
+  CompareEndEffectorPositionVelocityVsExpectedSolution(q, qDt,
                                                        R_NG_expected,
                                                        p_No_Go_N_expected,
                                                        w_NG_N_expected,
