@@ -60,7 +60,8 @@ class LeafSystem : public System<T> {
   // Implementations of System<T> methods.
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
-    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
+    LeafContext<T>* context = DoMakeContext();
+    std::unique_ptr<Context<T>> return_value(context);
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
@@ -95,7 +96,7 @@ class LeafSystem : public System<T> {
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
 
-    return std::unique_ptr<Context<T>>(context.release());
+    return return_value;
   }
 
   /// Default implementation: sets all continuous and discrete state variables
@@ -221,6 +222,14 @@ class LeafSystem : public System<T> {
 
  protected:
   LeafSystem() {}
+
+  /// Provides a new instance of the leaf context for this system. Derived
+  /// leaf systems with custom derived leaf system contexts should override this
+  /// to provide a context of the appropriate type. The returned pointer must
+  /// immediately be wrapped in a unique pointer by the caller.
+  virtual LeafContext<T>* DoMakeContext() const {
+    return new LeafContext<T>();
+  }
 
   /// Returns the per step events declared through DeclarePerStepAction().
   const std::vector<DiscreteEvent<T>>& get_per_step_events() const {

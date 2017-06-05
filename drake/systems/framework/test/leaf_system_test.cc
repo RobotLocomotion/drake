@@ -7,6 +7,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -732,6 +733,31 @@ GTEST_TEST(GraphvizTest, Ports) {
   const std::string dot = system.GetGraphvizString();
   EXPECT_THAT(dot, ::testing::HasSubstr(
       "{{<u0>u0|<u1>u1} | {<y0>y0}}"));
+}
+
+// The custom context type for the CustomContextSystem.
+template <typename T>
+class CustomContext : public LeafContext<T> {};
+
+// CustomContextSystem has a LeafContext-derived custom context type. This
+// confirms that the appropriate context type is generated..
+template <typename T>
+class CustomContextSystem : public LeafSystem<T> {
+ public:
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {}
+ protected:
+  LeafContext<T>* DoMakeContext() const override {
+    return new CustomContext<T>();
+  }
+};
+
+GTEST_TEST(CustomContextTest, AllocatedContext) {
+  CustomContextSystem<double> system;
+  auto allocated = system.AllocateContext();
+  ASSERT_TRUE(is_dynamic_castable<CustomContext<double>>(allocated.get()));
+  auto defaulted = system.CreateDefaultContext();
+  ASSERT_TRUE(is_dynamic_castable<CustomContext<double>>(defaulted.get()));
 }
 
 }  // namespace
