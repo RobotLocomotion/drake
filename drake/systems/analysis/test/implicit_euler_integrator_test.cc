@@ -3,13 +3,15 @@
 #include "drake/systems/analysis/test/spring_mass_damper_system.h"
 #include "drake/systems/analysis/test/stiff_double_mass_spring_system.h"
 #include "drake/systems/analysis/test/discontinuous_spring_mass_damper_system.h"
-#include "drake/systems/analysis/test/spring_mass_damper_system.h"
-#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
+
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace systems {
 namespace {
 
+using drake::systems::ImplicitEulerIntegrator;
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 

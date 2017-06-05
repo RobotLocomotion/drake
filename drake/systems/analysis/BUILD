@@ -185,7 +185,6 @@ drake_cc_googletest(
         ":robertson_system",
         ":spring_mass_damper_system",
         ":stiff_double_mass_spring_system",
-        ":spring_mass_damper_system",
         "//drake/systems/plants/spring_mass_system",
     ],
 )
