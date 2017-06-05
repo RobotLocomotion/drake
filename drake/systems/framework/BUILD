@@ -227,9 +227,11 @@ drake_cc_library(
 drake_cc_library(
     name = "system",
     srcs = ["system.cc"],
-    hdrs = ["system.h",
-            "discrete_event.h",
-            "witness_function.h"],
+    hdrs = [
+        "discrete_event.h",
+        "system.h",
+        "witness_function.h",
+    ],
     deps = [
         ":cache",
         ":context",
