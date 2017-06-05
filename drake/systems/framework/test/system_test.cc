@@ -80,6 +80,10 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  std::unique_ptr<Context<double>> MakeContext() const override {
+    return nullptr;
+  }
+
   BasicVector<double>* DoAllocateInputVector(
       const InputPortDescriptor<double>& descriptor) const override {
     return nullptr;
@@ -349,9 +353,11 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
-    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
+    std::unique_ptr<Context<T>> return_value = MakeContext();
+    LeafContext<T>* context =
+        dynamic_cast<LeafContext<T>*>(return_value.get());
     context->SetNumInputPorts(this->get_num_input_ports());
-    return std::unique_ptr<Context<T>>(context.release());
+    return return_value;
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -398,6 +404,11 @@ class ValueIOTestSystem : public System<T> {
         std::make_unique<BasicVector<T>>(1)));
 
     return std::unique_ptr<SystemOutput<T>>(output.release());
+  }
+
+ protected:
+  std::unique_ptr<Context<T>> MakeContext() const override {
+    return std::unique_ptr<Context<T>>(new LeafContext<T>);
   }
 };
 

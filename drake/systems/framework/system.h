@@ -1040,6 +1040,11 @@ class System {
   /// Constructs an empty %System base class object.
   System() {}
 
+  /// Constructs an uninitialized context. Derived classes can use this to
+  /// exploit the infrastructure for generally allocating contexts on custom
+  /// context types.
+  virtual std::unique_ptr<Context<T>> MakeContext() const = 0;
+
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
   const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
