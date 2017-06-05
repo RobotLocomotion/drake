@@ -101,7 +101,10 @@ GTEST_TEST(PoseSelectorTest, DragwayTest) {
   const int kNumLanes{2};
   const maliput::dragway::RoadGeometry road(
       maliput::api::RoadGeometryId({"Test Dragway"}), kNumLanes, kLaneLength,
-      kLaneWidth, 0. /* shoulder width */);
+      kLaneWidth, 0. /* shoulder width */,
+      5. /* maximum_height */,
+      std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+      std::numeric_limits<double>::epsilon() /* angular_tolerance */);
   PoseVector<double> ego_pose;
   PoseBundle<double> traffic_poses(4);
 
@@ -179,7 +182,10 @@ GTEST_TEST(PoseSelectorTest, IdenticalSValues) {
   const int kNumLanes{2};
   const maliput::dragway::RoadGeometry road(
       maliput::api::RoadGeometryId({"Test Dragway"}), kNumLanes, kLaneLength,
-      kLaneWidth, 0. /* shoulder width */);
+      kLaneWidth, 0. /* shoulder width */,
+      5. /* maximum_height */,
+      std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+      std::numeric_limits<double>::epsilon() /* angular_tolerance */);
   PoseVector<double> ego_pose;
   PoseBundle<double> traffic_poses(1);
 
@@ -203,7 +209,10 @@ GTEST_TEST(PoseSelectorTest, TestGetSVelocity) {
   // Create a single-lane dragway.
   const maliput::dragway::RoadGeometry road(
       maliput::api::RoadGeometryId({"Single-lane dragway"}), 1 /* num_lanes */,
-      kLaneLength, kLaneWidth, 0. /* shoulder width */);
+      kLaneLength, kLaneWidth, 0. /* shoulder width */,
+      5. /* maximum_height */,
+      std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+      std::numeric_limits<double>::epsilon() /* angular_tolerance */);
   const maliput::api::Lane* lane = road.junction(0)->segment(0)->lane(0);
 
   maliput::api::RoadPosition position =

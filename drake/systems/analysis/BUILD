@@ -138,11 +138,32 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "logistic_system",
+    testonly = 1,
+    hdrs = ["test/logistic_system.h"],
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "empty_system",
+    testonly = 1,
+    hdrs = ["test/empty_system.h"],
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
 drake_cc_googletest(
     name = "simulator_test",
     deps = [
+        ":empty_system",
         ":explicit_euler_integrator",
+        ":logistic_system",
         ":my_spring_mass_system",
+        ":runge_kutta3_integrator",
         ":simulator",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],
@@ -164,6 +185,7 @@ drake_cc_googletest(
         ":robertson_system",
         ":spring_mass_damper_system",
         ":stiff_double_mass_spring_system",
+        ":spring_mass_damper_system",
         "//drake/systems/plants/spring_mass_system",
     ],
 )

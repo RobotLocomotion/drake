@@ -37,10 +37,12 @@ install(
     deps = [
         "@bullet//:install",
         "@eigen//:install",
+        "@fmt//:install",
         "@ipopt//:install",
         "@lcm//:install",
         "@nlopt//:install",
         "@pybind11//:install",
+        "@spdlog//:install",
         "//drake:install",
         "//tools:install",
     ],

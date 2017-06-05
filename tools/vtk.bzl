@@ -82,23 +82,31 @@ def _impl(repository_ctx):
         repository_ctx.file("empty.cc", executable=False)
 
     elif repository_ctx.os.name == "linux":
-        lsb_release = repository_ctx.which("lsb_release")
-        result = repository_ctx.execute([lsb_release, "--codename"])
+        sed = repository_ctx.which("sed")
+        if sed == None:
+            fail("Could NOT determine Linux distribution information" +
+                 "('sed' is missing?!)", sed)
+        result = repository_ctx.execute([
+            sed,
+            "-n",
+            "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
+            "/etc/os-release"])
 
         if result.return_code != 0:
-            fail("Could NOT determine Linux distribution codename",
+            fail("Could NOT determine Linux distribution information",
                  attr=result.stderr)
 
-        codename = result.stdout.split(':')[1].strip()
+        distro = [l.strip() for l in result.stdout.strip().split("\n")]
+        distro = " ".join(distro)
 
-        if codename == "trusty":
+        if distro == "Ubuntu 14.04":
             archive = "vtk-v7.1.1-1584-g28deb56-qt-4.8.6-trusty-x86_64.tar.gz"
             sha256 = "709fb9a5197ee5a87bc92760c2fe960b89326acd11a0ce6adf9d7d023563f5d4"
-        elif codename == "xenial":
+        elif distro == "Ubuntu 16.04":
             archive = "vtk-v7.1.1-1584-g28deb56-qt-5.5.1-xenial-x86_64.tar.gz"
             sha256 = "d21cae88b2276fd59c94f0e41244fc8f7e31ff796518f731e4fffc25f8e01cbc"
         else:
-            fail("Linux distribution is NOT supported", attr=codename)
+            fail("Linux distribution is NOT supported", attr=distro)
 
         url = "https://d2mbb5ninhlpdu.cloudfront.net/vtk/{}".format(archive)
         root_path = repository_ctx.path("")
@@ -362,8 +370,8 @@ def _impl(repository_ctx):
             ":vtkCommonExecutionModel",
             ":vtkDICOMParser",
             ":vtkmetaio",
-            "@libpng//:lib",
-            "@zlib//:lib",
+            "@libpng",
+            "@zlib",
         ],
     )
 
@@ -463,7 +471,7 @@ cc_library(
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtklz4")
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtkmetaio",
-        deps = ["@zlib//:lib"],
+        deps = ["@zlib"],
     )
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtksys")
