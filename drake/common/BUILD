@@ -179,13 +179,13 @@ drake_cc_library(
     # testonly = 1,
     srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
+    data = [
+        "drake_path.sentinel",
+    ],
     deps = [
         ":common",
         ":find_resource",
         "//drake/thirdParty:spruce",
-    ],
-    data = [
-        "drake_path.sentinel",
     ],
 )
 
@@ -538,11 +538,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "find_resource_test",
-    deps = [
-        ":find_resource",
-    ],
     data = [
         "test/find_resource_test_data.txt",
+    ],
+    deps = [
+        ":find_resource",
     ],
 )
 
