@@ -29,7 +29,6 @@ def setup_local_cc_library(repo_ctx):
   # All dynamic linking should prefer the specified path, but will
   # use the system search path as well.
   write_build(repo_ctx,
-              name="lib",
               # In theory, Bazel supports versioned .so files,
               # but in practice including them breaks static linking.
               srcs=globvalue(["lib/*.a", "lib/*.so", "lib/*.dylib"]),

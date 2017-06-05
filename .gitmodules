@@ -58,9 +58,6 @@
 [submodule "externals/nlopt"]
 	path = externals/nlopt
 	url = https://github.com/stevengj/nlopt.git
-[submodule "drake/examples/LittleDog"]
-	path = drake/examples/LittleDog
-	url = https://github.com/RobotLocomotion/LittleDog.git
 [submodule "externals/ipopt"]
 	path = externals/ipopt
 	url = https://github.com/RobotLocomotion/ipopt-mirror.git

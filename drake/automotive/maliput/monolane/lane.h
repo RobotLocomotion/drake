@@ -238,6 +238,10 @@ class Lane : public api::Lane {
     return driveable_bounds_;
   }
 
+  api::HBounds do_elevation_bounds(double, double) const override {
+    DRAKE_ABORT();  // TODO(maddog@tri.global)  Implement me.
+  }
+
   api::GeoPosition DoToGeoPosition(
       const api::LanePosition& lane_pos) const override;
 
