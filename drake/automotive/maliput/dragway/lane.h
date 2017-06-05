@@ -65,6 +65,10 @@ class Segment;
   `z = h` for all values of `s` and `r` and, in the Dragway's case, `z = 0` for
   the surface itself. The origin of the lane's frame is defined by the `o` along
   the above-shown `s = 0` line.
+
+  Note: Each dagway lane has a teleportation feature at both ends: the (default)
+  ongoing lane for LaneEnd::kFinish is LaneEnd::kStart of the same lane, and
+  vice versa.
 **/
 class Lane final : public api::Lane {
  public:
