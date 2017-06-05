@@ -375,6 +375,17 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // Update the state vector.
     *xtplus += dx;
 
+    // The check below looks for convergence using machine epsilon. Without
+    // this check, the convergence criteria can be applied when
+    // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
+    // allow the norm to be reduced further. What happens: dx_norm will become
+    // equivalent to last_dx_norm, making theta = 1, and eta = infinity. Thus,
+    // convergence would never be identified.
+    if (dx_norm < 10 * std::numeric_limits<double>::epsilon()) {
+      context->get_mutable_continuous_state()->SetFromVector(*xtplus);
+      return true;
+    }
+
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
     // applied after *at least* two iterations (p. 121).
@@ -385,6 +396,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       const double kappa = 0.05;
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
+      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
+                   i, theta, eta);
 
       // Look for divergence.
       if (theta > 1)
@@ -394,6 +407,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
+        context->get_mutable_continuous_state()->SetFromVector(*xtplus);
         return true;
       }
     }
@@ -452,10 +466,17 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& dt) {
 //        step.
 // @param xtplus the state computed by the implicit Euler method.
 // @returns `true` if the step was successful and `false` otherwise.
+// @pre The time and state in the system's context (stored within the
+//      integrator) are set to those at t0 (the beginning of the integration
+//      step).
+// @post The time and state in the system's context (stored within the
+//       integrator) are set to those at t0+dt on successful return (i.e., when
+//       the function returns `true`). State will be indeterminate on `false`
+//       return.
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
-                                                    const VectorX<T>& dx0,
-                                                    VectorX<T>* xtplus) {
+                                                       const VectorX<T>& dx0,
+                                                       VectorX<T>* xtplus) {
   using std::abs;
 
   // Get the current continuous state.
