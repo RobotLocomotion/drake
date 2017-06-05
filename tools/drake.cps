@@ -19,6 +19,10 @@
     "lcm": {
       "Version": "1.3.95",
       "Hints": ["@prefix@/lib/cmake/lcm"],
+      "X-CMake-Find-Args": [ "CONFIG" ]
+    },
+    "robotlocomotion-lcmtypes": {
+      "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
     }
   },
@@ -33,7 +37,8 @@
       "Requires": [
         "bot2-core-lcmtypes:bot2-core-lcmtypes-cpp",
         "Eigen3:Eigen",
-        "lcm:lcm"
+        "lcm:lcm",
+        "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp"
       ]
     }
   }
