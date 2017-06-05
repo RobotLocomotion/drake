@@ -34,26 +34,8 @@ if(Doxygen_FOUND)
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doxygen_cxx/html/
     DESTINATION ${DRAKE_DOCUMENTATION_DIR}/doxygen_cxx OPTIONAL)
   list(APPEND DRAKE_DOCUMENTATION_OUTPUTS doxygen_cxx_output)
-
-  if(Perl_FOUND)
-    configure_file(Doxyfile_MATLAB.in Doxyfile_MATLAB @ONLY)
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/DoxygenMatlab
-      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-    add_custom_command(
-      COMMAND ${DOXYGEN_EXECUTABLE}
-              ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_MATLAB
-      COMMENT "Building MATLAB Doxygen documentation..."
-      OUTPUT doxygen_matlab_output
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    set_property(SOURCE doxygen_matlab_output PROPERTY SYMBOLIC ON)
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doxygen_matlab/html/
-      DESTINATION ${DRAKE_DOCUMENTATION_DIR}/doxygen_matlab OPTIONAL)
-    list(APPEND DRAKE_DOCUMENTATION_OUTPUTS doxygen_matlab_output)
-  else()
-    message(STATUS "PERL_EXECUTABLE (perl) not found. MATLAB Doxygen will be excluded from the documentation build.")
-  endif()
 else()
-  message(STATUS "DOXYGEN_EXECUTABLE (doxygen) not found. C++ and MATLAB Doxygen will be excluded from the documentation build.")
+  message(STATUS "DOXYGEN_EXECUTABLE (doxygen) not found. Doxygen will be excluded from the documentation build.")
 endif()
 
 if(DEFINED ENV{OXYGEN_DIR})
