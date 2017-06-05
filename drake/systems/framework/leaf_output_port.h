@@ -85,7 +85,7 @@ class LeafOutputPort : public OutputPort<T> {
   /** Constructs a fixed-size vector-valued output port. The supplied allocator
   returns a BasicVector of the correct size in which to hold the result. The
   supplied calculator function writes to a BasicVector of the same underlying
-  concrete type as is returned by the allocator. Requires the fixed to be
+  concrete type as is returned by the allocator. Requires the fixed size to be
   given explicitly here. The allocator function is not invoked during
   construction of the port. **/
   // Note: there is no guarantee that the allocator can be invoked successfully

@@ -58,7 +58,6 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
 
     VectorX<T> q = state->get_value().head(robot_.get_num_positions());
     VectorX<T> v = state->get_value().tail(robot_.get_num_velocities());
-    KinematicsCache<T> cache = robot_.doKinematics(q, v);
 
     bot_core::robot_state_t& msg = *output;
     msg.utime = static_cast<int64_t>(context.get_time() * 1e6);

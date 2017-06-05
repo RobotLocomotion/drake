@@ -108,12 +108,6 @@ class PoseAggregator : public LeafSystem<T> {
   // This is the method used by the allocator for the output port.
   PoseBundle<T> MakePoseBundle() const;
 
-  enum PoseInputType {
-    kUnknown = 0,
-    kSinglePose = 1,
-    kSingleVelocity = 2,
-    kBundle = 3,
-  };
   using InputRecord = pose_aggregator_detail::InputRecord;
 
   // Allow different specializations to access each other's private data.

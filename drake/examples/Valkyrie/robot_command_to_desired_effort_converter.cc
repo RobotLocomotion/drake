@@ -60,10 +60,10 @@ RobotCommandToDesiredEffortConverter::DeclareDesiredEffortOutputPorts(
   // Currently, all RigidBodyActuators are assumed to be one-dimensional.
   const int desired_effort_length = 1;
   std::map<const RigidBodyActuator*, OutputPortIndex> ret;
-  for (const auto& actuator : actuators) {
+  for (const RigidBodyActuator* actuator : actuators) {
     // Create a function with the signature of a vector output port calculator.
-    auto calc_method = [this, &actuator](const Context<double>& context,
-                                         BasicVector<double>* output) {
+    auto calc_method = [this, actuator](const Context<double>& context,
+                                        BasicVector<double>* output) {
       this->OutputDesiredEffort(context, *actuator, output);
     };
     ret[actuator] = DeclareVectorOutputPort(
