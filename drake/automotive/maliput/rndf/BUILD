@@ -19,6 +19,7 @@ drake_cc_library(
         "lane.cc",
         "road_geometry.cc",
         "segment.cc",
+        "spline_helpers.cc",
         "spline_lane.cc",
     ],
     hdrs = [
@@ -27,6 +28,7 @@ drake_cc_library(
         "lane.h",
         "road_geometry.h",
         "segment.h",
+        "spline_helpers.h",
         "spline_lane.h",
     ],
     deps = [
@@ -49,6 +51,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "junction_test",
+    size = "small",
+    deps = [
+        ":lanes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spline_helpers_test",
     size = "small",
     deps = [
         ":lanes",
