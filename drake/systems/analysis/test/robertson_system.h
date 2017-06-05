@@ -25,8 +25,8 @@ class RobertsonSystem : public LeafSystem<T> {
     this->DeclareContinuousState(3);
   }
 
-  void DoCalcTimeDerivatives(const Context <T>& context,
-                             ContinuousState <T>* deriv) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* deriv) const override {
     // Get state.
     const T& y1 = context.get_continuous_state_vector().GetAtIndex(0);
     const T& y2 = context.get_continuous_state_vector().GetAtIndex(1);
@@ -43,15 +43,15 @@ class RobertsonSystem : public LeafSystem<T> {
     deriv->get_mutable_vector()->SetAtIndex(2, y3_prime);
   }
 
-  void DoCalcOutput(const Context <T>& context,
-                    SystemOutput <T>* output) const override {
+  void DoCalcOutput(const Context<T>& context,
+                    SystemOutput<T>* output) const override {
   }
 
   /// Gets the end time for integration.
   T get_end_time() const { return 1e11; }
 
   /// Gets the system solution. Only works for time 10^11.
-  static Vector3 <T> GetSolution(const T& t) {
+  static Vector3<T> GetSolution(const T& t) {
     DRAKE_DEMAND(t == 1e11);
     Vector3<T> sol;
     sol(0) = 0.208334014970122e-7;

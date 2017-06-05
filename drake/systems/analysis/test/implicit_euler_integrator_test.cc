@@ -11,7 +11,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-using drake::systems::ImplicitEulerIntegrator;
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 

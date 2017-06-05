@@ -42,7 +42,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
 
   /// Evaluates the spring and damping forces, returning the forces on each
   /// body.
-  Vector2 <T> EvalSpringDamperForces(const Context <T>& context) const {
+  Vector2<T> EvalSpringDamperForces(const Context<T>& context) const {
     const Eigen::Vector2d k = get_spring_constants();
     const Eigen::Vector2d b = get_damping_constants();
 
@@ -74,13 +74,13 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   }
 
   /// Gets the positions of the two point mass bodies.
-  Vector2 <T> get_position(const Context <T>& c) const {
+  Vector2<T> get_position(const Context<T>& c) const {
     return
         c.get_continuous_state()->get_generalized_position().CopyToVector();
   }
 
   /// Gets the velocity of the two point mass bodies.
-  Vector2 <T> get_velocity(const Context <T>& c) const {
+  Vector2<T> get_velocity(const Context<T>& c) const {
     return
         c.get_continuous_state()->get_generalized_velocity().CopyToVector();
   }
@@ -88,8 +88,8 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   /// Gets the mass for the bodies in the system.
   Eigen::Vector2d get_mass() const { return Eigen::Vector2d(1.0, 1.0); }
 
-  void DoCalcTimeDerivatives(const Context <T>& context,
-                             ContinuousState <T>* deriv) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* deriv) const override {
     // Get velocity.
     const VectorBase<T>& xd = context.get_continuous_state()->
         get_generalized_velocity();
@@ -108,7 +108,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     deriv->get_mutable_generalized_velocity()->SetFromVector(a);
   }
 
-  void DoCalcOutput(const Context <T>&, SystemOutput <T>*) const override {}
+  void DoCalcOutput(const Context<T>&, SystemOutput<T>*) const override {}
 
   /// Gets the end time for integration.
   T get_end_time() const { return 1e1; }
@@ -116,8 +116,8 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   /// Sets the initial conditions for the system.
   /// The first mass will be located at x1 = 0.5 and second will be located at
   /// x2 = 1.5. No initial velocity is present.
-  void SetDefaultState(const Context <T>&,
-                       State <T>* state) const override {
+  void SetDefaultState(const Context<T>&,
+                       State<T>* state) const override {
     Vector2<T> x, xd;
     x(0) = 0.5;
     x(1) = 1.5;
@@ -134,8 +134,8 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   /// assumption that there is zero initial stretching between the two point
   /// masses, initial conditions are arbitrary. The solution is predicated
   /// on zero damping (aborts if this is not true).
-  void GetSolution(const Context <T>& context, const T& t,
-                   ContinuousState <T>* state) const {
+  void GetSolution(const Context<T>& context, const T& t,
+                   ContinuousState<T>* state) const {
     const Eigen::Vector2d b = get_damping_constants();
     DRAKE_DEMAND(b[0] == b[1] && b[0] == 0.0);
 
