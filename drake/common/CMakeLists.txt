@@ -68,11 +68,13 @@ set(installed_headers
   nice_type_name.h
   number_traits.h
   polynomial.h
+  scoped_singleton.h
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
   symbolic_expression_visitor.h
   symbolic_formula.h
+  symbolic_formula_visitor.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h

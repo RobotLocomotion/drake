@@ -62,7 +62,7 @@ namespace systems {
  *                       Impact. SIAM Review, 42:1, 2000.
  */
 template <class T>
-class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
+class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   virtual ~SemiExplicitEulerIntegrator() {}
 
@@ -100,7 +100,7 @@ class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
   bool supports_error_estimation() const override { return false; }
 
  private:
-  void DoStepOnceFixedSize(const T& dt) override;
+  bool DoStep(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
@@ -112,7 +112,7 @@ class SemiExplicitEulerIntegrator : public IntegratorBase<T> {
  * by IntegratorBase::StepOnce().
  */
 template <class T>
-void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
+bool SemiExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = this->get_mutable_context();
   const auto& xc = context->get_mutable_continuous_state();
@@ -124,7 +124,6 @@ void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   VectorBase<T>* v = xc->get_mutable_generalized_velocity();
   VectorBase<T>* z = xc->get_mutable_misc_continuous_state();
 
-  // Calcuate the derivatives.
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
   this->CalcTimeDerivatives(this->get_context(), derivs_.get());
@@ -144,6 +143,9 @@ void SemiExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // Update the time.
   context->set_time(context->get_time() + dt);
+
+  // This integrator always succeeds at taking the step.
+  return true;
 }
 }  // namespace systems
 }  // namespace drake

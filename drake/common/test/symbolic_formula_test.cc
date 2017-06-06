@@ -32,6 +32,7 @@ namespace {
 using std::map;
 using std::runtime_error;
 using std::set;
+using std::transform;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -566,6 +567,13 @@ TEST_F(SymbolicFormulaTest, And1) {
   EXPECT_PRED2(FormulaEqual, ff_, ff_ && ff_);
   EXPECT_PRED2(FormulaEqual, f1_, tt_ && f1_);
   EXPECT_PRED2(FormulaEqual, f1_, f1_ && tt_);
+  EXPECT_PRED2(FormulaEqual, make_conjunction({tt_, f1_, tt_}), f1_);
+  EXPECT_PRED2(FormulaEqual, make_conjunction({tt_, tt_, ff_}), ff_);
+  // Checks if flattening works: (f₁ ∧ f₂) ∧ (f₃ ∧ f₄) => f₁ ∧ f₂ ∧ f₃ ∧ f₄.
+  EXPECT_PRED2(FormulaEqual, make_conjunction({f1_ && f2_, f3_ && f4_}),
+               make_conjunction({f1_, f2_, f3_, f4_}));
+  // Empty conjunction = True.
+  EXPECT_PRED2(FormulaEqual, make_conjunction({}), Formula::True());
 }
 
 TEST_F(SymbolicFormulaTest, And2) {
@@ -648,6 +656,13 @@ TEST_F(SymbolicFormulaTest, Or1) {
   EXPECT_PRED2(FormulaEqual, ff_, ff_ || ff_);
   EXPECT_PRED2(FormulaEqual, f1_, ff_ || f1_);
   EXPECT_PRED2(FormulaEqual, f1_, f1_ || ff_);
+  EXPECT_PRED2(FormulaEqual, make_disjunction({ff_, f1_, ff_}), f1_);
+  EXPECT_PRED2(FormulaEqual, make_disjunction({ff_, ff_, tt_}), tt_);
+  // Checks if flattening works: (f₁ ∨ f₂) ∨ (f₃ ∨ f₄) => f₁ ∨ f₂ ∨ f₃ ∨ f₄.
+  EXPECT_PRED2(FormulaEqual, make_disjunction({f1_ || f2_, f3_ || f4_}),
+               make_disjunction({f1_, f2_, f3_, f4_}));
+  // Empty disjunction = False.
+  EXPECT_PRED2(FormulaEqual, make_disjunction({}), Formula::False());
 }
 
 TEST_F(SymbolicFormulaTest, Or2) {
@@ -740,6 +755,21 @@ TEST_F(SymbolicFormulaTest, Not2) {
 
   EXPECT_EQ((!(x_ == 5)).to_string(), "!((x = 5))");
   EXPECT_TRUE(is_negation(!(x_ == 5)));
+}
+
+// Tests if `!(!f)` is simplified into `f` for all formulas in
+// SymbolicFormulaTest.
+TEST_F(SymbolicFormulaTest, DoubleNegationSimplification) {
+  const vector<Formula> collection{b1_,   b2_,       tt_,       ff_,     f1_,
+                                   f2_,   f3_,       f4_,       f_eq_,   f_neq_,
+                                   f_lt_, f_lte_,    f_gt_,     f_gte_,  f_and_,
+                                   f_or_, not_f_or_, f_forall_, f_isnan_};
+  vector<Formula> negated_collection{collection.size()};
+  transform(collection.cbegin(), collection.cend(), negated_collection.begin(),
+            [](const Formula& f) { return !f; });
+  for (size_t i = 0; i < collection.size(); ++i) {
+    EXPECT_PRED2(FormulaEqual, collection[i], !(negated_collection[i]));
+  }
 }
 
 TEST_F(SymbolicFormulaTest, NotWithBooleanVariableOperator) {

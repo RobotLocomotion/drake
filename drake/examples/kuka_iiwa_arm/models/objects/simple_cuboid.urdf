@@ -3,22 +3,84 @@
   <link name="base_link">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.5" />
-      <inertia ixx="0.00541" ixy="0" ixz="0" iyy="0.004166" iyz="0"
-          izz="0.020833" />
+      <mass value="0.068" />
+      <inertia ixx="0.0000408" ixy="0" ixz="0" iyy="0.0000408" iyz="0"
+          izz="0.0000408" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />git
       <geometry>
-        <box size="0.1 0.2 0.3" />
+        <box size="0.06 0.06 0.06" />
       </geometry>
-      <material name="dark blue">
-        <color rgba="0.1 0.1 0.9 1" />
+      <material name="bright green">
+        <color rgba="0.0 0.9 0.0 1" />
       </material>
     </visual>
+    <!--
+      This places contact spheres on the corners of the visual box and a
+      *slightly* smaller inset contact box (centered on the visual origin). This
+      accounts for issues in the contact computation providing stable table
+      contact *and* supports grasping.
+
+      When the box is in stable contact with the ground plane, the corner
+      spheres will provide fixed contact points (simulating distributed contact
+      points around the face).  However, for arbitrary grip configuration, the
+      slightly inset box will provide contact with a *slight* offset (in this
+      case a deviation of 0.0005 m from the visual surface).
+     -->
     <collision>
       <geometry>
-        <box size="0.1 0.2 0.3" />
+        <box size="0.059 0.059 0.056" />
+      </geometry>
+    </collision>
+
+    <collision>
+      <origin xyz="-0.03 -0.03 -0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.03 0.03 -0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 0.03 -0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 -0.03 -0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <origin xyz="-0.03 -0.03 0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.03 0.03 0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 0.03 0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.03 -0.03 0.03" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
    </link>

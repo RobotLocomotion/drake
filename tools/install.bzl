@@ -422,3 +422,93 @@ Args:
 """
 
 #END rules
+#==============================================================================
+#BEGIN macros
+
+#------------------------------------------------------------------------------
+def exports_create_cps_scripts(packages):
+    """Export scripts that create CPS files to other packages.
+
+    Args:
+        packages (:obj:`list` of :obj:`str`): Bazel package names.
+    """
+
+    for package in packages:
+        native.exports_files(
+            ["{}-create-cps.py".format(package)],
+            visibility = ["@{}//:__pkg__".format(package)],
+        )
+
+#------------------------------------------------------------------------------
+def cmake_config(package, script, version_file):
+    """Create CMake package configuration and package version files via an
+    intermediate CPS file.
+
+    Args:
+        package (:obj:`str`): CMake package name.
+        script (:obj:`Label`): Script that creates the intermediate CPS file.
+        version_file (:obj:`str`): File that the script will search to
+            determine the version of the package.
+    """
+    native.py_binary(
+        name = "create-cps",
+        srcs = [script],
+        main = script,
+        visibility = ["//visibility:private"],
+    )
+
+    cps_file_name = "{}.cps".format(package)
+
+    native.genrule(
+        name = "cps",
+        srcs = [version_file],
+        outs = [cps_file_name],
+        cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+        tools = [":create-cps"],
+        visibility = ["//visibility:private"],
+    )
+
+    config_file_name = "{}Config.cmake".format(package)
+
+    native.genrule(
+        name = "cmake_exports",
+        srcs = [cps_file_name],
+        outs = [config_file_name],
+        cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+        tools = ["@pycps//:cps2cmake_executable"],
+        visibility = ["//visibility:private"],
+    )
+
+    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+
+    native.genrule(
+        name = "cmake_package_version",
+        srcs = [cps_file_name],
+        outs = [config_version_file_name],
+        cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+        tools = ["@pycps//:cps2cmake_executable"],
+        visibility = ["//visibility:private"],
+    )
+
+#------------------------------------------------------------------------------
+def install_cmake_config(package):
+    """Generate installation information for CMake package configuration and
+    package version files. The rule name is always ``:install_cmake_config``.
+
+    Args:
+        package (:obj:`str`): CMake package name.
+    """
+    cmake_config_dest = "lib/cmake/{}".format(package.lower())
+    config_file_name = "{}Config.cmake".format(package)
+    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+
+    install_files(
+        name = "install_cmake_config",
+        dest = cmake_config_dest,
+        files = [
+            config_file_name,
+            config_version_file_name,
+        ],
+    )
+
+#END macros

@@ -21,6 +21,8 @@ DEFINE_double(lane_width, 3.7, "The width of each lane in meters.");
 DEFINE_double(shoulder_width, 3.0,
     "The width of the shoulders in meters. Both shoulders have the same "
     "width.");
+DEFINE_double(maximum_height, 5.2,
+              "The maximum modelled height above the road surface (meters).");
 DEFINE_string(dirpath, ".",
     "The path to where the URDF and OBJ files should be saved. If this path "
     " does not exist, it is created.");
@@ -44,7 +46,10 @@ int exec(int argc, char* argv[]) {
       FLAGS_num_lanes,
       FLAGS_length,
       FLAGS_lane_width,
-      FLAGS_shoulder_width);
+      FLAGS_shoulder_width,
+      FLAGS_maximum_height,
+      std::numeric_limits<double>::epsilon(),
+      std::numeric_limits<double>::epsilon());
 
   utility::ObjFeatures features;
 

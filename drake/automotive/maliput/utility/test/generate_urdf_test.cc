@@ -40,7 +40,8 @@ TEST_F(GenerateUrdfTest, AtLeastRunIt) {
   const double kAngularTolerance = 0.01 * M_PI;
   const api::RBounds kLaneBounds{-1., 1.};
   const api::RBounds kDriveableBounds{-2., 2.};
-  mono::Builder b(kLaneBounds, kDriveableBounds,
+  const api::HBounds kElevationBounds{0., 5.};
+  mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                   kLinearTolerance, kAngularTolerance);
 
   const mono::EndpointZ kZeroZ{0., 0., 0., 0.};

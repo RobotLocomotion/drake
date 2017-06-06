@@ -29,7 +29,6 @@ def setup_local_cc_library(repo_ctx):
   # All dynamic linking should prefer the specified path, but will
   # use the system search path as well.
   write_build(repo_ctx,
-              name="lib",
               # In theory, Bazel supports versioned .so files,
               # but in practice including them breaks static linking.
               srcs=globvalue(["lib/*.a", "lib/*.so", "lib/*.dylib"]),
@@ -50,7 +49,7 @@ local_cc_library_configure = repository_rule(
         "default": attr.string(),
         "defines": attr.string_list(),
         "build_file_template": attr.label(
-            default = Label("@//tools/third_party/kythe/tools/build_rules/config:BUILD.tpl"),
+            default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
             single_file = True,
             allow_files = True,
         ),

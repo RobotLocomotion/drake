@@ -35,7 +35,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);\
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.StepOnceAtMost(dt, dt, dt), std::logic_error);
+  EXPECT_THROW(integrator.IntegrateAtMost(dt, dt, dt), std::logic_error);
 }
 
 // Verifies error estimation is unsupported.
@@ -101,7 +101,7 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   const double t_final = 1.0;
   double t_remaining = t_final - context->get_time();
   do {
-    ee.StepOnceAtMost(t_remaining, t_remaining, t_remaining);
+    ee.IntegrateAtMost(t_remaining, t_remaining, t_remaining);
     t_remaining = t_final - context->get_time();
   } while (t_remaining > 0.0);
 
@@ -120,7 +120,7 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   // Integrate for one second.
   t_remaining = t_final - context->get_time();
   do {
-    see.StepOnceAtMost(t_remaining, t_remaining, t_remaining);
+    see.IntegrateAtMost(t_remaining, t_remaining, t_remaining);
     t_remaining = t_final - context->get_time();
   } while (t_remaining > 0.0);
 
@@ -175,7 +175,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kTFinal = 1.0;
   double t;
   for (t = 0.0; std::abs(t - kTFinal) > dt; t += dt)
-    integrator.StepOnceAtMost(inf, inf, dt);
+    integrator.IntegrateAtMost(inf, inf, dt);
 
   EXPECT_NEAR(context->get_time(), t, dt);  // Should be exact.
 

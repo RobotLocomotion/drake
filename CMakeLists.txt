@@ -5,7 +5,6 @@ include(CTest)
 
 include(cmake/config.cmake)
 include(cmake/externals.cmake)
-include(cmake/examples.cmake)
 include(cmake/options.cmake)
 include(cmake/package.cmake)
 include(cmake/tools.cmake)
@@ -236,8 +235,8 @@ drake_add_external(ignition_math PUBLIC CMAKE
 
 # ignition_rndf
 drake_add_external(ignition_rndf PUBLIC CMAKE
-  URL https://bitbucket.org/ignitionrobotics/ign-rndf/get/ignition-rndf_0.1.2.tar.gz
-  URL_HASH SHA256=e0aa1489311679639717d3614c7c55edaa5f6de9a78c31ea48ea637bc1ba001a
+  URL https://bitbucket.org/ignitionrobotics/ign-rndf/get/ignition-rndf_0.1.5.tar.gz
+  URL_HASH SHA256=fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf
   CMAKE_ARGS
     -DENABLE_TESTS_COMPILATION=OFF
     -DUSE_HOST_CFLAGS=OFF
@@ -383,14 +382,6 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
 )
 
 # END external projects
-###############################################################################
-# BEGIN examples
-
-# Optional examples
-drake_add_example(LittleDog OFF
-  "planning and control for a small quadruped robot")
-
-# END examples
 ###############################################################################
 # BEGIN ros packages
 

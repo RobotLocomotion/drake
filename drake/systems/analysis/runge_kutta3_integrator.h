@@ -54,7 +54,7 @@ namespace systems {
  *   rev. ed. Springer, 1993. p. 166.
  */
 template <class T>
-class RungeKutta3Integrator : public IntegratorBase<T> {
+class RungeKutta3Integrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta3Integrator)
 
@@ -78,8 +78,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
 
  private:
   void DoInitialize() override;
-  std::pair<bool, T> DoStepOnceAtMost(const T& max_dt) override;
-  void DoStepOnceFixedSize(const T& dt) override;
+  bool DoStep(const T& dt) override;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;

@@ -49,49 +49,25 @@ void RungeKutta3Integrator<T>::DoInitialize() {
   this->set_accuracy_in_use(working_accuracy);
 }
 
-/**
- * RK3-specific stepping function.
- */
 template <class T>
-std::pair<bool, T> RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& max_dt) {
-  using std::isnan;
-
-  // TODO(edrumwri): move derivative evaluation at t0 to the simulator where
-  // it can be used for efficient guard function zero finding.
-  auto& context = this->get_context();
-  this->CalcTimeDerivatives(context, derivs0_.get());
-
-  // Call the generic error controlled stepper unless error control is
-  // disabled.
-  if (this->get_fixed_step_mode()) {
-    this->get_mutable_interval_start_state() =
-        context.get_continuous_state_vector().CopyToVector();
-    this->DoStepOnceFixedSize(max_dt);
-    return std::make_pair(true, max_dt);
-  } else {
-    this->StepErrorControlled(max_dt, derivs0_.get());
-    const T& dt = this->get_previous_integration_step_size();
-    return std::make_pair(dt == max_dt, dt);
-  }
-}
-
-template <class T>
-void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
+bool RungeKutta3Integrator<T>::DoStep(const T& dt) {
   using std::abs;
 
   // Find the continuous state xc within the Context, just once.
   VectorBase<T>* xc = this->get_mutable_context()
                           ->get_mutable_continuous_state_vector();
+  const VectorX<T> xt0 = xc->CopyToVector();
 
   // Setup ta and tb.
   T ta = this->get_context().get_time();
   T tb = ta + dt;
 
-  // Get the derivative at the current state (x0) and time (t0).
-  const auto& xcdot0 = derivs0_->get_vector();
-
   // Get the context.
   auto& context = this->get_context();
+
+  // Get the derivative at the current state (x0) and time (t0).
+  this->CalcTimeDerivatives(context, derivs0_.get());
+  const auto& xcdot0 = derivs0_->get_vector();
 
   // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
   this->get_mutable_context()->set_time(ta + dt * 0.5);
@@ -101,14 +77,14 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // Compute the second intermediate state and derivative (at t=1, x(1)).
   this->get_mutable_context()->set_time(tb);
-  xc->SetFromVector(this->get_interval_start_state());
+  xc->SetFromVector(xt0);
   xc->PlusEqScaled({{-dt, xcdot0}, {dt * 2, xcdot1}});
   this->CalcTimeDerivatives(context, derivs2_.get());
   const auto& xcdot2 = derivs2_->get_vector();
 
   // calculate the state at dt.
   const double kOneSixth = 1.0 / 6.0;
-  xc->SetFromVector(this->get_interval_start_state());
+  xc->SetFromVector(xt0);
   xc->PlusEqScaled({{dt * kOneSixth, xcdot0},
                     {4.0 * dt * kOneSixth, xcdot1},
                     {dt * kOneSixth, xcdot2}});
@@ -121,11 +97,14 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Calculate the error estimate using an Eigen vector then copy it to the
   // continuous state vector, where the various state components can be
   // analyzed.
-  err_est_vec_ = -this->get_interval_start_state();
+  err_est_vec_ = -xt0;
   xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
   xc->ScaleAndAddToVector(1.0, err_est_vec_);
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
+
+  // RK3 always succeeds in taking its desired step.
+  return true;
 }
 
 }  // namespace systems

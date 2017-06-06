@@ -19,12 +19,13 @@ LineLane* Segment::NewLineLane(api::LaneId id,
                                const V2& xy0, const V2& dxy,
                                const api::RBounds& lane_bounds,
                                const api::RBounds& driveable_bounds,
+                               const api::HBounds& elevation_bounds,
                                const CubicPolynomial& elevation,
                                const CubicPolynomial& superelevation) {
   DRAKE_DEMAND(lane_.get() == nullptr);
   std::unique_ptr<LineLane> lane = std::make_unique<LineLane>(
       id, this, xy0, dxy,
-      lane_bounds, driveable_bounds,
+      lane_bounds, driveable_bounds, elevation_bounds,
       elevation, superelevation);
   LineLane* result = lane.get();
   lane_ = std::move(lane);
@@ -37,12 +38,13 @@ ArcLane* Segment::NewArcLane(api::LaneId id,
                              const double theta0, const double d_theta,
                              const api::RBounds& lane_bounds,
                              const api::RBounds& driveable_bounds,
+                             const api::HBounds& elevation_bounds,
                              const CubicPolynomial& elevation,
                              const CubicPolynomial& superelevation) {
   DRAKE_DEMAND(lane_.get() == nullptr);
   std::unique_ptr<ArcLane> lane = std::make_unique<ArcLane>(
       id, this, center, radius, theta0, d_theta,
-      lane_bounds, driveable_bounds,
+      lane_bounds, driveable_bounds, elevation_bounds,
       elevation, superelevation);
   ArcLane* result = lane.get();
   lane_ = std::move(lane);

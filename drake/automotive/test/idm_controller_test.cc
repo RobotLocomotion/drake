@@ -25,7 +25,10 @@ class IdmControllerTest : public ::testing::Test {
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId({"Single-Lane Dragway"}),
         1 /* num_lanes */, 100. /* length */, 2. /* lane_width */,
-        0. /* shoulder_width */));
+        0. /* shoulder_width */,
+        5. /* maximum_height */,
+        std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+        std::numeric_limits<double>::epsilon() /* angular_tolerance */));
 
     // Initialize IdmController with the road.
     dut_.reset(new IdmController<double>(*road_));

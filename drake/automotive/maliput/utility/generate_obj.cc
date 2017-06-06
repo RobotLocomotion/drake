@@ -699,6 +699,54 @@ void RenderBranchPoint(
   draw_arrows(branch_point->GetBSide());
 }
 
+
+void RenderSegment(const api::Segment* segment,
+                   const ObjFeatures& features,
+                   GeoMesh* asphalt_mesh,
+                   GeoMesh* lane_mesh,
+                   GeoMesh* marker_mesh) {
+  // Lane 0 should be as good as any other for driveable-bounds.
+  CoverLaneWithQuads(asphalt_mesh, segment->lane(0),
+                     PickGridUnit(segment->lane(0),
+                                  features.max_grid_unit,
+                                  features.min_grid_resolution),
+                     true, 0.);
+  for (int li = 0; li < segment->num_lanes(); ++li) {
+    const api::Lane* lane = segment->lane(li);
+    const double grid_unit = PickGridUnit(lane,
+                                          features.max_grid_unit,
+                                          features.min_grid_resolution);
+    if (features.draw_lane_haze) {
+      CoverLaneWithQuads(lane_mesh, lane, grid_unit,
+                         false,
+                         features.lane_haze_elevation);
+    }
+    if (features.draw_stripes) {
+      StripeLaneBounds(marker_mesh, lane, grid_unit,
+                       features.stripe_elevation,
+                       features.stripe_width);
+    }
+    if (features.draw_arrows) {
+      MarkLaneEnds(marker_mesh, lane, grid_unit,
+                   features.arrow_elevation);
+    }
+  }
+}
+
+
+bool IsSegmentRenderedNormally(const api::SegmentId& id,
+                               const std::vector<api::SegmentId>& highlights) {
+  if (highlights.empty()) {
+    return true;
+  }
+  for (const api::SegmentId& highlighted_id : highlights) {
+    if (id.id == highlighted_id.id) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 
@@ -711,36 +759,24 @@ void GenerateObjFile(const api::RoadGeometry* rg,
   GeoMesh marker_mesh;
   GeoMesh branch_point_mesh;
 
+  GeoMesh grayed_asphalt_mesh;
+  GeoMesh grayed_lane_mesh;
+  GeoMesh grayed_marker_mesh;
+
   // Walk the network.
   for (int ji = 0; ji < rg->num_junctions(); ++ji) {
     const api::Junction* junction = rg->junction(ji);
     for (int si = 0; si < junction->num_segments(); ++si) {
       const api::Segment* segment = junction->segment(si);
-      // Lane 0 should be as good as any other for driveable-bounds.
-      CoverLaneWithQuads(&asphalt_mesh, segment->lane(0),
-                         PickGridUnit(segment->lane(0),
-                                      features.max_grid_unit,
-                                      features.min_grid_resolution),
-                         true, 0.);
-      for (int li = 0; li < segment->num_lanes(); ++li) {
-        const api::Lane* lane = segment->lane(li);
-        const double grid_unit = PickGridUnit(lane,
-                                              features.max_grid_unit,
-                                              features.min_grid_resolution);
-        if (features.draw_lane_haze) {
-          CoverLaneWithQuads(&lane_mesh, lane, grid_unit,
-                             false,
-                             features.lane_haze_elevation);
-        }
-        if (features.draw_stripes) {
-          StripeLaneBounds(&marker_mesh, lane, grid_unit,
-                           features.stripe_elevation,
-                           features.stripe_width);
-        }
-        if (features.draw_arrows) {
-          MarkLaneEnds(&marker_mesh, lane, grid_unit,
-                       features.arrow_elevation);
-        }
+      // TODO(maddog@tri.global)  Id's need well-defined comparison semantics.
+      if (IsSegmentRenderedNormally(segment->id(),
+                                    features.highlighted_segments)) {
+        RenderSegment(segment, features,
+                      &asphalt_mesh, &lane_mesh, &marker_mesh);
+      } else {
+        RenderSegment(segment, features,
+                      &grayed_asphalt_mesh, &grayed_lane_mesh,
+                      &grayed_marker_mesh);
       }
     }
   }
@@ -761,6 +797,10 @@ void GenerateObjFile(const api::RoadGeometry* rg,
   const std::string kMarkerPaint("marker_paint");
   const std::string kBlandAsphalt("bland_asphalt");
   const std::string kBranchPointGlow("branch_point_glow");
+
+  const std::string kGrayedLaneHaze("grayed_lane_haze");
+  const std::string kGrayedMarkerPaint("grayed_marker_paint");
+  const std::string kGrayedBlandAsphalt("grayed_bland_asphalt");
 
   const std::string obj_filename = fileroot + ".obj";
   const std::string mtl_filename = fileroot + ".mtl";
@@ -815,6 +855,19 @@ mtllib {}
         branch_point_mesh.EmitObj(os, kBranchPointGlow,
                                   precision, features.origin,
                                   vertex_index_offset, normal_index_offset);
+
+    std::tie(vertex_index_offset, normal_index_offset) =
+        grayed_asphalt_mesh.EmitObj(os, kGrayedBlandAsphalt,
+                                    precision, features.origin,
+                                    vertex_index_offset, normal_index_offset);
+    std::tie(vertex_index_offset, normal_index_offset) =
+        grayed_lane_mesh.EmitObj(os, kGrayedLaneHaze,
+                                 precision, features.origin,
+                                 vertex_index_offset, normal_index_offset);
+    std::tie(vertex_index_offset, normal_index_offset) =
+        grayed_marker_mesh.EmitObj(os, kGrayedMarkerPaint,
+                                   precision, features.origin,
+                                   vertex_index_offset, normal_index_offset);
   }
 
   // Create the MTL file referenced by the OBJ file.
@@ -855,8 +908,33 @@ Ks 0.0 0.0 1.0
 Ns 10.0
 illum 2
 d 0.80
+
+newmtl {}
+Ka 0.8 0.8 0.0
+Kd 1.0 1.0 0.0
+Ks 1.0 1.0 0.5
+Ns 10.0
+illum 2
+d 0.1
+
+newmtl {}
+Ka 0.1 0.1 0.1
+Kd 0.2 0.2 0.2
+Ks 0.3 0.3 0.3
+Ns 10.0
+illum 2
+d 0.10
+
+newmtl {}
+Ka 0.9 0.9 0.9
+Kd 0.9 0.9 0.9
+Ks 0.9 0.9 0.9
+Ns 10.0
+illum 2
+d 0.10
 )X",
-               kMarkerPaint, kBlandAsphalt, kLaneHaze, kBranchPointGlow);
+               kMarkerPaint, kBlandAsphalt, kLaneHaze, kBranchPointGlow,
+               kGrayedMarkerPaint, kGrayedBlandAsphalt, kGrayedLaneHaze);
   }
 }
 

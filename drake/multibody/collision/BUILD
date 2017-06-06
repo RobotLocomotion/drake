@@ -46,7 +46,7 @@ drake_cc_library(
     deps = [
         ":collision_api",
         "//drake/common:unused",
-        "@bullet",
+        "@bullet//:BulletCollision",
     ],
 )
 

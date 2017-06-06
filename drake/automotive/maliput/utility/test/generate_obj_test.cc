@@ -73,11 +73,12 @@ class GenerateObjBasicDutTest : public GenerateObjTest {
   const double kAngularTolerance = 0.01 * M_PI;
   const api::RBounds kLaneBounds{-0.5, 0.5};
   const api::RBounds kDriveableBounds{-1., 1.};
+  const api::HBounds kElevationBounds{0., 5.};
 
   void SetUp() override {
     GenerateObjTest::SetUp();
 
-    mono::Builder b(kLaneBounds, kDriveableBounds,
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                     kLinearTolerance, kAngularTolerance);
 
     const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
@@ -129,7 +130,7 @@ TEST_F(GenerateObjBasicDutTest, ChangeOrigin) {
 
   // Reconstruct the basic DUT, but starting at the offset instead of (0,0,0).
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds,
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                     kLinearTolerance, kAngularTolerance);
 
     const mono::EndpointZ kZeroZ{kOffsetZ, 0., 0., 0.};
@@ -220,7 +221,7 @@ TEST_F(GenerateObjBasicDutTest, StackedBranchPointsObjContent) {
 
   // Construct a RoadGeometry with two lanes that don't quite connect.
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds,
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
                     kLinearTolerance, kAngularTolerance);
 
     const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
@@ -259,6 +260,7 @@ maliput_monolane_builder:
   id: city_1
   lane_bounds: [-2, 2]
   driveable_bounds: [-4, 4]
+  elevation_bounds: [0, 5]
   position_precision: 0.01
   orientation_precision: 0.5
   points:
@@ -290,6 +292,44 @@ maliput_monolane_builder:
 
   paths_to_cleanup_.push_back(actual_obj_path);
   paths_to_cleanup_.push_back(actual_mtl_path);
+}
+
+
+TEST_F(GenerateObjBasicDutTest, HighlightedSegments) {
+  const std::string basename{"HighlightedSegments"};
+
+  // Construct a RoadGeometry with two segments.
+  {
+    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
+                    kLinearTolerance, kAngularTolerance);
+
+    const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
+    const mono::Endpoint start0{{0., 0., 0.}, kZeroZ};
+    auto c0 = b.Connect("0", start0, 2., kZeroZ);
+    b.Connect("1", c0->end(), 2., kZeroZ);
+    dut_ = b.Build({"dut"});
+  }
+
+  ObjFeatures features;
+  features.highlighted_segments.push_back(dut_->junction(1)->segment(0)->id());
+  GenerateObjFile(dut_.get(), directory_.getStr(), basename, features);
+
+  spruce::path actual_obj_path(directory_);
+  actual_obj_path.append(basename + ".obj");
+  EXPECT_TRUE(actual_obj_path.isFile());
+  paths_to_cleanup_.push_back(actual_obj_path);
+
+  spruce::path actual_mtl_path(directory_);
+  actual_mtl_path.append(basename + ".mtl");
+  EXPECT_TRUE(actual_mtl_path.isFile());
+  paths_to_cleanup_.push_back(actual_mtl_path);
+
+  std::string expected_obj_contents;
+  ReadExpectedData(basename + ".obj", &expected_obj_contents);
+
+  std::string actual_obj_contents;
+  ReadAsString(actual_obj_path, &actual_obj_contents);
+  EXPECT_EQ(expected_obj_contents, actual_obj_contents);
 }
 
 

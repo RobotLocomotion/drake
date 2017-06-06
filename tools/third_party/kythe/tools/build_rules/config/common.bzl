@@ -51,13 +51,13 @@ def _tmpl_dict(values):
     tmpl[key] = value
   return tmpl
 
-def write_build(repo_ctx, name, includes, defines, linkopts, srcs=None):
+def write_build(repo_ctx, includes, defines, linkopts, srcs=None):
   if srcs == None:
     srcs = ["empty.cc"]
     # TODO(shahms): See if we can finally do away with this on OS X.
     repo_file(repo_ctx, "empty.cc", "", False)
   subs = _tmpl_dict({
-      "name": name,
+      "name": repo_ctx.name,
       "srcs": srcs,
       "includes": includes,
       "defines": defines,

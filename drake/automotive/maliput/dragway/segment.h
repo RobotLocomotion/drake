@@ -68,11 +68,15 @@ class Segment final : public api::Segment {
   ///
   /// @param[in] shoulder_width The width of the shoulders on each side of the
   /// road.
+  ///
+  /// @param[in] maximum_height The maximum height above the road surface.
+  /// modelled by the RoadGeometry.
   Segment(Junction* junction,
       int num_lanes,
       double length,
       double lane_width,
-      double shoulder_width);
+      double shoulder_width,
+      double maximum_height);
 
   ~Segment() final = default;
 

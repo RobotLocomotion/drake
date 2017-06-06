@@ -24,6 +24,13 @@ api::RBounds r_bounds(const YAML::Node& node) {
 }
 
 
+api::HBounds h_bounds(const YAML::Node& node) {
+  DRAKE_DEMAND(node.IsSequence());
+  DRAKE_DEMAND(node.size() == 2);
+  return api::HBounds(node[0].as<double>(), node[1].as<double>());
+}
+
+
 double deg_to_rad(double degrees) {
   return degrees * M_PI / 180.;
 }
@@ -147,6 +154,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
 
   Builder builder(r_bounds(mmb["lane_bounds"]),
                   r_bounds(mmb["driveable_bounds"]),
+                  h_bounds(mmb["elevation_bounds"]),
                   mmb["position_precision"].as<double>(),
                   deg_to_rad(mmb["orientation_precision"].as<double>()));
 

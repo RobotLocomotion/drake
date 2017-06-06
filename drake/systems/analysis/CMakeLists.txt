@@ -1,5 +1,6 @@
 # Source files used to build drakeSystemAnalysis
 set(sources
+  implicit_euler_integrator.cc
   runge_kutta3_integrator.cc
   simulator.cc
 )
@@ -7,6 +8,7 @@ set(sources
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
 set(installed_headers
+    implicit_euler_integrator.h
     integrator_base.h
     explicit_euler_integrator.h
     runge_kutta2_integrator.h

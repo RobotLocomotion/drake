@@ -65,6 +65,10 @@ class Segment;
   `z = h` for all values of `s` and `r` and, in the Dragway's case, `z = 0` for
   the surface itself. The origin of the lane's frame is defined by the `o` along
   the above-shown `s = 0` line.
+
+  Note: Each dagway lane has a teleportation feature at both ends: the (default)
+  ongoing lane for LaneEnd::kFinish is LaneEnd::kStart of the same lane, and
+  vice versa.
 **/
 class Lane final : public api::Lane {
  public:
@@ -91,9 +95,13 @@ class Lane final : public api::Lane {
   /// @param driveable_bounds The driveable bounds of the lane, uniform along
   ///        the entire reference path.
   ///
+  /// @param elevation_bounds The elevation bounds of the lane, uniform along
+  ///        the entire reference path.
+  ///
   Lane(const Segment* segment, const api::LaneId& id,  int index, double length,
       double y_offset, const api::RBounds& lane_bounds,
-      const api::RBounds& driveable_bounds);
+       const api::RBounds& driveable_bounds,
+       const api::HBounds& elevation_bounds);
 
   ~Lane() final = default;
 
@@ -139,6 +147,8 @@ class Lane final : public api::Lane {
 
   api::RBounds do_driveable_bounds(double) const final;
 
+  api::HBounds do_elevation_bounds(double, double) const final;
+
   api::LanePosition DoEvalMotionDerivatives(
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const final;
@@ -160,6 +170,7 @@ class Lane final : public api::Lane {
   const double y_offset_{};
   const api::RBounds lane_bounds_;
   const api::RBounds driveable_bounds_;
+  const api::HBounds elevation_bounds_;
 
   // The following variable is actually `const` after construction.
   std::unique_ptr<api::BranchPoint> branch_point_;

@@ -1,7 +1,7 @@
 # -*- python -*-
 
-load("@//tools:install.bzl", "install", "install_files")
-load("@//tools:python_lint.bzl", "python_lint")
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load("@drake//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(
@@ -23,48 +23,13 @@ cc_library(
     includes = ["."],
 )
 
-py_binary(
-    name = "create-cps",
-    srcs = ["@//tools:eigen-create-cps.py"],
-    main = "@//tools:eigen-create-cps.py",
-    visibility = ["//visibility:private"],
+cmake_config(
+    package = "Eigen3",
+    script = "@drake//tools:eigen-create-cps.py",
+    version_file = "Eigen/src/Core/util/Macros.h",
 )
 
-genrule(
-    name = "cps",
-    srcs = ["Eigen/src/Core/util/Macros.h"],
-    outs = ["Eigen3.cps"],
-    cmd = "$(location :create-cps) \"$<\" > \"$@\"",
-    tools = [":create-cps"],
-    visibility = ["//visibility:private"],
-)
-
-genrule(
-    name = "cmake_exports",
-    srcs = ["Eigen3.cps"],
-    outs = ["Eigen3Config.cmake"],
-    cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
-    tools = ["@pycps//:cps2cmake_executable"],
-    visibility = ["//visibility:private"],
-)
-
-genrule(
-    name = "cmake_package_version",
-    srcs = ["Eigen3.cps"],
-    outs = ["Eigen3ConfigVersion.cmake"],
-    cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
-    tools = ["@pycps//:cps2cmake_executable"],
-    visibility = ["//visibility:private"],
-)
-
-install_files(
-    name = "install_cmake",
-    dest = "lib/cmake/eigen3",
-    files = [
-        "Eigen3Config.cmake",
-        "Eigen3ConfigVersion.cmake",
-    ],
-)
+install_cmake_config(package = "Eigen3")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
@@ -72,8 +37,8 @@ install(
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/eigen3",
     license_docs = glob(["COPYING.*"]),
-    targets = ["eigen"],
-    deps = ["install_cmake"],
+    targets = [":eigen"],
+    deps = [":install_cmake_config"],
 )
 
 pkg_tar(

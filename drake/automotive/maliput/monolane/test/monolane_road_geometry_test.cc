@@ -12,10 +12,12 @@ namespace maliput {
 namespace monolane {
 
 using api::RBounds;
+using api::HBounds;
 using monolane::ArcOffset;
 
 const double kVeryExact = 1e-11;
 const double kWidth{2.};  // Lane and drivable width.
+const double kHeight{5.};  // Elevation bound.
 
 const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
                                      const std::string& junction_id) {
@@ -31,6 +33,7 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
   // Define a serpentine road with multiple segments and branches.
   std::unique_ptr<monolane::Builder> rb(
       new monolane::Builder(RBounds(-kWidth, kWidth), RBounds(-kWidth, kWidth),
+                            HBounds(0., kHeight),
                             0.01, /* linear tolerance */
                             0.01 * M_PI /* angular tolerance */));
 
@@ -120,6 +123,24 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
   EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
                   kVeryExact);
 
+  // Place a point high above the middle of lane3a (straight segment).
+  geo_pos = api::GeoPosition(2. * kArcRadius + kLength / 2.,
+                             -2. * kArcRadius - kLength,
+                             50.);
+
+  actual_position =
+      rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
+
+  // Expect to locate the point centered above lane3a.
+  EXPECT_LANE_NEAR(actual_position.pos,
+                   (kLength / 2. /* s */, 0. /* r */, kHeight /* h */),
+                   kVeryExact);
+  EXPECT_EQ(actual_position.lane->id().id, "l:lane3a");
+  EXPECT_EQ(distance, 50. - kHeight);
+  EXPECT_GEO_NEAR(nearest_position,
+                  (geo_pos.x(), geo_pos.y(), kHeight),
+                  kVeryExact);
+
   // Place a point at the end of lane3b (arc segment).
   geo_pos =
       api::GeoPosition(2. * kArcRadius + kLength, -kArcRadius - kLength, 0.);
@@ -168,6 +189,7 @@ GTEST_TEST(MonolaneLanesTest, HintWithDisconnectedLanes) {
   // position given by the hint.
   std::unique_ptr<monolane::Builder> rb(
       new monolane::Builder(RBounds(-kWidth, kWidth), RBounds(-kWidth, kWidth),
+                            HBounds(0., kHeight),
                             0.01, /* linear tolerance */
                             0.01 * M_PI /* angular tolerance */));
 

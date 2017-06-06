@@ -19,6 +19,9 @@ test --test_summary=terse
 # config_setting rules for proprietary software are provided in //tools.
 test --test_tag_filters=-gurobi,-mosek,-snopt
 
+# Inject DISPLAY into test runner environment for tests that use X.
+test --test_env=DISPLAY
+
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GUROBI_PATH environment variable must be the
 # -- linux64 directory in the Gurobi 6.0.5 release.

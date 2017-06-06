@@ -93,6 +93,9 @@ target_link_libraries(symbolic_mixing_scalar_types_test drakeCommon)
 drake_add_cc_test(symbolic_formula_test)
 target_link_libraries(symbolic_formula_test drakeCommon)
 
+drake_add_cc_test(symbolic_formula_visitor_test)
+target_link_libraries(symbolic_formula_visitor_test drakeCommon)
+
 drake_add_cc_test(sorted_vectors_have_intersection_test)
 target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)
 
@@ -119,6 +122,9 @@ target_link_libraries(drake_assert_test drakeCommon)
 
 drake_add_cc_test(drake_assert_test_compile)
 target_link_libraries(drake_assert_test_compile drakeCommon)
+
+drake_add_cc_test(scoped_singleton_test scoped_singleton_test.cc)
+target_link_libraries(scoped_singleton_test drakeCommon)
 
 # "text_logging.h" unit testing:  If spdlog is available, test that:
 add_executable(text_logging_test_default ../text_logging.cc text_logging_test.cc)

@@ -28,6 +28,9 @@
       points around the face).  However, for arbitrary grip configuration, the
       slightly inset box will provide contact with a *slight* offset (in this
       case a deviation of 0.0005 m from the visual surface).
+
+      https://github.com/RobotLocomotion/drake/issues/6254 tracks the
+      difficulty in supporting face-to-face contact.
      -->
     <collision>
       <geometry>

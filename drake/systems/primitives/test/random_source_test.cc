@@ -18,9 +18,9 @@ namespace {
 GTEST_TEST(TestSignalLogger, GaussianWhiteNoise) {
   systems::DiagramBuilder<double> builder;
 
-  auto source = builder.AddSystem<systems::GaussianRandomSource>(1, 0.0025);
+  auto source = builder.AddSystem<systems::GaussianRandomSource>(2, 0.0025);
   source->set_name("source");
-  auto logger = builder.AddSystem<systems::SignalLogger<double>>(1);
+  auto logger = builder.AddSystem<systems::SignalLogger<double>>(2);
   logger->set_name("logger");
   builder.Cascade(*source, *logger);
 
@@ -51,9 +51,9 @@ GTEST_TEST(TestSignalLogger, GaussianWhiteNoise) {
 GTEST_TEST(TestSignalLogger, UniformWhiteNoise) {
   systems::DiagramBuilder<double> builder;
 
-  auto source = builder.AddSystem<systems::UniformRandomSource>(1, 0.0025);
+  auto source = builder.AddSystem<systems::UniformRandomSource>(2, 0.0025);
   source->set_name("source");
-  auto logger = builder.AddSystem<systems::SignalLogger<double>>(1);
+  auto logger = builder.AddSystem<systems::SignalLogger<double>>(2);
   logger->set_name("logger");
   builder.Cascade(*source, *logger);
 

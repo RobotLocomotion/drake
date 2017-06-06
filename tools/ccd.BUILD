@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
 
 # Generates config.h based on the defines= we want in Drake.
 cmake_configure_file(

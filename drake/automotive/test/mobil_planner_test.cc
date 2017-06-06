@@ -31,7 +31,10 @@ class MobilPlannerTest : public ::testing::Test {
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId({"Two-Lane Dragway"}), num_lanes,
         100 /* length */, kLaneWidth /* lane_width */,
-        0. /* shoulder_width */));
+        0. /* shoulder_width */,
+        5. /* maximum_height */,
+        std::numeric_limits<double>::epsilon() /* linear_tolerance */,
+        std::numeric_limits<double>::epsilon() /* angular_tolerance */));
     segment_ = road_->junction(0)->segment(0);
     ExtractLaneDirectionsFromDragway();
     right_lane_index_ = 0;

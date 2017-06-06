@@ -12,7 +12,7 @@ pkg_config_module(name, modname,
     max_version: Optional, string.  Require less than this version.
 
   The configured repository will have a `cc_library` target with the
-  provided `modname` as well as an alias to `lib`.
+  provided `name`.
 """
 
 load(":common.bzl", "error", "success", "write_build")
@@ -20,7 +20,7 @@ load(":wrapped_ctx.bzl", "unwrap")
 
 def _write_build(repo_ctx, cflags, linkopts):
   includes, defines = _parse_cflags(repo_ctx, cflags)
-  write_build(repo_ctx, "lib", includes, defines, linkopts)
+  write_build(repo_ctx, includes, defines, linkopts)
 
 def _fail(repo_ctx, message, tail=""):
   """Fail with message if repo_ctx.attr.mandatory, otherwise warn."""
@@ -174,7 +174,7 @@ pkg_config_package = repository_rule(
         "max_version": attr.string(),
         "exact_version": attr.string(),
         "build_file_template": attr.label(
-            default = Label("@//tools/third_party/kythe/tools/build_rules/config:BUILD.tpl"),
+            default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
             single_file = True,
             allow_files = True,
         ),

@@ -23,6 +23,7 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace systems {
@@ -1051,7 +1052,31 @@ class System {
 
   //@}
 
+  /// Gets the witness functions active at the beginning of a continuous time
+  /// interval. DoGetWitnessFunctions() does the actual work.
+  /// @param context a valid context for the System (aborts if not true).
+  /// @param[out] w a valid pointer to an empty vector that will store
+  ///             pointers to the witness functions active at the beginning of
+  ///             the continuous time interval. The method aborts if witnesses
+  ///             is null or non-empty.
+  void GetWitnessFunctions(const Context<T>& context,
+                           std::vector<const WitnessFunction<T>*>* w) const {
+    DRAKE_DEMAND(w);
+    DRAKE_DEMAND(w->empty());
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DoGetWitnessFunctions(context, w);
+  }
+
  protected:
+  /// Derived classes can override this method to provide witness functions
+  /// active at the beginning of a continuous time interval. The default
+  /// implementation does nothing. On entry to this function, the context will
+  /// have already been validated and the vector of witness functions will have
+  /// been validated to be both empty and non-null.
+  virtual void DoGetWitnessFunctions(const Context<T>&,
+      std::vector<const WitnessFunction<T>*>*) const {
+  }
+
   //----------------------------------------------------------------------------
   /// @name                 Event handler dispatch mechanism
   /// For a LeafSystem (or user implemented equivalent classes), these functions

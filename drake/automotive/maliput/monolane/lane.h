@@ -136,6 +136,8 @@ class Lane : public api::Lane {
   ///        reference path, which must be a subset of @p driveable_bounds
   /// @param driveable_bounds driveable bounds of the lane, uniform along the
   ///        entire reference path
+  /// @param elevation_bounds elevation bounds of the lane, uniform along the
+  ///        entire driveable surface
   /// @param p_scale isotropic scale factor for elevation and superelevation
   /// @param elevation elevation function (see below)
   /// @param superelevation superelevation function (see below)
@@ -178,12 +180,14 @@ class Lane : public api::Lane {
   Lane(const api::LaneId& id, const api::Segment* segment,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
+       const api::HBounds& elevation_bounds,
        double p_scale,
        const CubicPolynomial& elevation,
        const CubicPolynomial& superelevation)
       : id_(id), segment_(segment),
         lane_bounds_(lane_bounds),
         driveable_bounds_(driveable_bounds),
+        elevation_bounds_(elevation_bounds),
         p_scale_(p_scale),
         elevation_(elevation),
         superelevation_(superelevation) {
@@ -236,6 +240,10 @@ class Lane : public api::Lane {
 
   api::RBounds do_driveable_bounds(double) const override {
     return driveable_bounds_;
+  }
+
+  api::HBounds do_elevation_bounds(double, double) const override {
+    return elevation_bounds_;
   }
 
   api::GeoPosition DoToGeoPosition(
@@ -340,6 +348,7 @@ class Lane : public api::Lane {
 
   const api::RBounds lane_bounds_;
   const api::RBounds driveable_bounds_;
+  const api::HBounds elevation_bounds_;
   const double p_scale_{};
   const CubicPolynomial elevation_;
   const CubicPolynomial superelevation_;
