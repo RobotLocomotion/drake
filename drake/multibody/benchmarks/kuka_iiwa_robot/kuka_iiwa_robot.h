@@ -1,9 +1,3 @@
-/// @file kuka_iiwa_robot.h Drake interface to the MotionGenesis solution for a
-/// 7-DOF KUKA LBR iiwa robot (14 kg payload) which is described at:
-/// https://www.kuka.com/en-de/products/robot-systems/industrial-robots/lbr-iiwa
-/// Geometry, joint-types, and mass/inertia properties are contained in:
-/// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
-//-----------------------------------------------------------------------------
 #pragma once
 
 #include <cmath>
@@ -19,13 +13,19 @@ namespace benchmarks {
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
+/// This class is Drake's interface to the MotionGenesis solution for a
+/// 7-DOF KUKA LBR iiwa robot (14 kg payload) which is described at:
+/// https://www.kuka.com/en-de/products/robot-systems/industrial-robots/lbr-iiwa
+/// Geometry, joint-types, and mass/inertia properties are contained in:
+/// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
 template <typename T>
 class KukaIIwaRobot {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KukaIIwaRobot);
 
-  /// This empty constructor is like the default constructor (there are no
-  /// members to initialize).
+  /// Constructs an object that serves as Drake's interface to a Motion Genesis
+  /// model of the aforementioned KUKA robot.  All model parameters are from:
+  /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
   KukaIIwaRobot() {}
 
   /// This method calculates kinematic properties of the end-effector (herein

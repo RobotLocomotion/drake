@@ -12,9 +12,9 @@ namespace {
 
 // Function to compare Kuka iiwa robot arm end-effector (frame G)'s orientation
 // position, angular velocity, velocity in World (frame N) to expected solution.
-// The inputs to this method are the state (q, qDt) and expected values.
+// This method's inputs are the state (q, qDt) and expected values for frame G.
 // q                  |  robot's joint angles (generalized coordinates).
-// qDt                |  time-derivatives of q (generalized speeds).
+// qDt                |  time-derivatives of joint angles (a.k.a. qdot).
 // R_NG_expected      |  Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
 // p_NoGo_N_expected  |  Go's position from No, expressed in N.
 // w_NG_N_expected    |  G's angular velocity in N, expressed in N.

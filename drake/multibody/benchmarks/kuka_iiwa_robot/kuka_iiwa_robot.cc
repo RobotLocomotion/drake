@@ -12,9 +12,6 @@ namespace benchmarks {
 using Eigen::Map;
 using Eigen::Matrix;
 
-// Convenient type to convert matrix from C++ row-major to Eigen's column-major.
-typedef Matrix<double, 3, 3, Eigen::RowMajor> RowMajorToColumnMajorVector3d;
-
 template <typename T>
 std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d>
 KukaIIwaRobot<T>::CalcForwardKinematicsEndEffectorViaMotionGenesis(
@@ -34,10 +31,13 @@ KukaIIwaRobot<T>::CalcForwardKinematicsEndEffectorViaMotionGenesis(
   mgKukaIIwaRobot.SetVariablesFromArray(state.data());
   mgKukaIIwaRobot.CalculateOutput();
 
-  // Convert MotionGenesis data to Eigen classes.
-  // Note: Standard C/C++ stores two-dimensional matrices in row-major form.
-  // However, Eigen stores two-dimensional matrices in column-major form.
-  const Matrix3d R_NG = RowMajorToColumnMajorVector3d(mgKukaIIwaRobot.R_NG[0]);
+  // Convert MotionGenesis standard C++ matrix to an Eigen matrix.
+  // Note: Standard C++ stores two-dimensional matrices in row-major form.
+  // By default, Eigen stores two-dimensional matrices in column-major form.
+  // After an Eigen matrix is constructed from the C++ matrix (interpreting the
+  // C++ matrix in row-order), column-major R_NG is populated via operator=.
+  const double *matrix33 = mgKukaIIwaRobot.R_NG[0];
+  const Matrix3d R_NG = Matrix<double, 3, 3, Eigen::RowMajor>(matrix33);
 
   const Vector3d p_NoGo_N(mgKukaIIwaRobot.p_NoGo_N);
   const Vector3d w_NG_N(mgKukaIIwaRobot.w_NG_N);
