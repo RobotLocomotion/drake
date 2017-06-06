@@ -392,9 +392,9 @@ class MultibodyTree {
     return static_cast<int>(owned_mobilizers_.size());
   }
 
-  /// Returns the number of tree levels in the model.
-  int get_num_levels() const {
-    return topology_.get_num_levels();
+  /// Returns the height of the tree data structure of `this` %MultibodyTree.
+  int get_tree_height() const {
+    return topology_.get_tree_height();
   }
 
   /// Returns a constant reference to the *world* body.
@@ -472,8 +472,10 @@ class MultibodyTree {
   ///   body B.
   /// - Pose `X_WB` of each body B in the model as measured and expressed in
   ///   the world frame W.
-  /// - Across-moibizer Jacobian matrices `H_FM` and `H_PB_W`.
+  /// - Across-mobilizer Jacobian matrices `H_FM` and `H_PB_W`.
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
+  ///
+  /// @throws std::runtime_error if `pc` is the nullptr.
   void CalcPositionKinematicsCache(
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const;
@@ -495,8 +497,9 @@ class MultibodyTree {
   // pointer to each BodyFrame, which are owned by their corresponding Body.
   std::vector<const Frame<T>*> frames_;
 
-  // Body node indexes ordered by level. Therefore for the i-th level
-  // body_node_levels_[i] contains the list of body node indexes in that level.
+  // Body node indexes ordered by level (a.k.a depth). Therefore for the
+  // i-th level body_node_levels_[i] contains the list of all body node indexes
+  // in that level.
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
 
   MultibodyTreeTopology topology_;

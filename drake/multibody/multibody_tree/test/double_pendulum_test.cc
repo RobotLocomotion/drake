@@ -412,10 +412,16 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
       Isometry3d X_EiEo(AngleAxisd(elbow_angle, Vector3d::UnitZ()));
 
       // Verify the values in the position kinematics cache.
-      EXPECT_TRUE(pc.get_mutable_X_FM(shoulder_node).matrix().isApprox(
+      EXPECT_TRUE(pc.get_X_FM(shoulder_node).matrix().isApprox(
           X_SiSo.matrix()));
-      EXPECT_TRUE(pc.get_mutable_X_FM(elbow_node).matrix().isApprox(
+      EXPECT_TRUE(pc.get_X_FM(elbow_node).matrix().isApprox(
           X_EiEo.matrix()));
+
+      // Verify that both, const and mutable versions point to the same address.
+      EXPECT_EQ(&pc.get_X_FM(shoulder_node),
+                &pc.get_mutable_X_FM(shoulder_node));
+      EXPECT_EQ(&pc.get_X_FM(elbow_node),
+                &pc.get_mutable_X_FM(elbow_node));
 
       // Retrieve body poses from position kinematics cache.
       const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);

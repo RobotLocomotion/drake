@@ -56,7 +56,7 @@ void MultibodyTree<T>::Finalize() {
   }
 
   // Create a list of body nodes organized by levels.
-  body_node_levels_.resize(topology_.get_num_levels());
+  body_node_levels_.resize(topology_.get_tree_height());
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     const BodyNodeTopology& node_topology =
@@ -116,6 +116,8 @@ template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
     const MultibodyTreeContext<T>& context,
     PositionKinematicsCache<T>* pc) const {
+  DRAKE_DEMAND(pc != nullptr);
+
   // TODO(amcastro-tri): Loop over bodies to update their position dependent
   // kinematics. This gives the chance to flexible bodies to update the pose
   // X_BQ(qb_B) of each frame Q that is attached to the body.
@@ -133,7 +135,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
-  for (int level = 1; level < get_num_levels(); ++level) {
+  for (int level = 1; level < get_tree_height(); ++level) {
     for (BodyNodeIndex body_node_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 

@@ -535,7 +535,7 @@ class MultibodyTreeTopology {
     // Count number of generalized positions and velocities.
     num_positions_ = 0;
     num_velocities_ = 0;
-    for (const auto& mobilizer: mobilizers_) {
+    for (const auto& mobilizer : mobilizers_) {
       num_positions_ += mobilizer.num_positions;
       num_velocities_ += mobilizer.num_velocities;
     }
