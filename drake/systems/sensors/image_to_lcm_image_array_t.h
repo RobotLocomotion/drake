@@ -10,7 +10,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// A ImageToLcmMessage takes as input a ImageBgra8U, ImageDepth32F and
+/// An ImageToLcmImageArrayT takes as input a ImageBgra8U, ImageDepth32F and
 /// ImageLabel16I. This system outputs an AbstractValue containing a
 /// `Value<robotlocomotion::image_array_t>` LCM message that defines an array
 /// of images (image_t). This message can then be sent to other processes that
