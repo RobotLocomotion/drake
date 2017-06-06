@@ -224,10 +224,15 @@ class LeafSystem : public System<T> {
 
   /// Provides a new instance of the leaf context for this system. Derived
   /// leaf systems with custom derived leaf system contexts should override this
-  /// to provide a context of the appropriate type. The returned pointer must
-  /// immediately be wrapped in a unique pointer by the caller.
+  /// to provide a context of the appropriate type. The returned context should
+  /// be "empty"; invoked by AllocateContext(), the caller will take the
+  /// responsibility to initialize the core LeafContext data.
+  // TODO(SeanCurtis-TRI): This currently assumes that derived LeafContext
+  // classes do *not* add new data members. If that changes, e.g., with the
+  // advent of the cache, this documentation should be changed to include the
+  // initialization of the sub-class's *unique* data members.
   virtual std::unique_ptr<LeafContext<T>> DoMakeContext() const {
-    return std::unique_ptr<LeafContext<T>>(new LeafContext<T>());
+    return std::make_unique<LeafContext<T>>();
   }
 
   /// Returns the per step events declared through DeclarePerStepAction().
