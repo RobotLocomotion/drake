@@ -95,7 +95,7 @@ class LeafSystem : public System<T> {
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
 
-    return std::unique_ptr<LeafContext<T>>(context.release());
+    return std::move(context);
   }
 
   /// Default implementation: sets all continuous and discrete state variables
