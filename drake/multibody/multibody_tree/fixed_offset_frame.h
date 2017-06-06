@@ -61,7 +61,7 @@ class FixedOffsetFrame : public Frame<T> {
   Isometry3<T> CalcPoseInBodyFrame(
       const MultibodyTreeContext<T>& context) const final {
     // X_BF = X_BP * X_PF
-    parent_frame_.CalcPoseInBodyFrame(context) * X_PF_;
+    return parent_frame_.CalcPoseInBodyFrame(context) * X_PF_;
   }
 
   /// Returns the pose `X_FB` of the body B associated with this frame F,

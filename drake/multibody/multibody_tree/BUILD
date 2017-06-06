@@ -160,7 +160,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "double_pendulum_test",
-    deps = [":multibody_tree"],
+    deps = [
+        ":multibody_tree",
+        "//drake/multibody/benchmarks/acrobot",
+    ],
 )
 
 drake_cc_googletest(

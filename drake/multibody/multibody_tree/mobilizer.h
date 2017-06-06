@@ -219,6 +219,10 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const = 0;
 
+  virtual SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v) const = 0;
+
   /// @}
 
   /// Computes position dependent kinematics associated with `this` mobilizer
@@ -250,6 +254,10 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Returns the first entry in the global array of generalized coordinates in
   /// the MultibodyTree model.
   int get_positions_start() const { return get_topology().positions_start; }
+
+  /// Returns the first entry in the global array of generalized velocities in
+  /// the MultibodyTree model.
+  int get_velocities_start() const { return get_topology().velocities_start; }
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().

@@ -14,6 +14,8 @@ namespace multibody {
 namespace math {
 namespace {
 
+using Eigen::AngleAxis;
+
 // Generic declaration of a traits class to figure out at compile time the
 // scalar type a spatial quantity is instantiated with.
 template <class SpatialQuantity> struct spatial_vector_traits {};
@@ -205,6 +207,25 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   // Verify the multiplication by a scalar is commutative.
   EXPECT_EQ(sxV.rotational(), Vxs.rotational());
   EXPECT_EQ(sxV.translational(), Vxs.translational());
+}
+
+// Re-express in another frame.
+TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& V_AB_F = this->V_;
+
+  // Some arbitrary rotation between frames E and F.
+  const Matrix3<T> R_EF =
+      (AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitY()) *
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ())).matrix();
+
+  SpatialQuantity V_AB_E = R_EF * V_AB_F;
+
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V_AB_E.rotational(), R_EF * V_AB_F.rotational());
+  EXPECT_EQ(V_AB_E.translational(), R_EF * V_AB_F.translational());
 }
 
 // Create a list of scalar types for the unit tests that follow below.

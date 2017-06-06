@@ -88,6 +88,22 @@ class MobilizerImpl : public Mobilizer<T> {
     return context->template get_mutable_state_segment<nq>(
         this->get_positions_start());
   }
+
+  /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
+  /// segment in the state vector corresponding to `this` mobilizer's state.
+  Eigen::VectorBlock<const VectorX<T>, nv> get_velocities(
+      const MultibodyTreeContext<T>& context) const {
+    return context.template get_state_segment<nv>(
+        this->get_velocities_start());
+  }
+
+  /// Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
+  /// segment in the state vector corresponding to `this` mobilizer's state.
+  Eigen::VectorBlock<VectorX<T>, nv> get_mutable_velocities(
+      MultibodyTreeContext<T>* context) const {
+    return context->template get_mutable_state_segment<nv>(
+        this->get_velocities_start());
+  }
   /// @}
 
   /// @name Helper Methods to Retrieve Entries from PositionKinematicsCache.

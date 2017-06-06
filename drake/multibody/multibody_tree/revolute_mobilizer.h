@@ -84,12 +84,31 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angle(
       systems::Context<T>* context, const T& angle) const;
 
+  /// Gets the rotation angle of `this` mobilizer from `context`.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @returns The angle coordinate of `this` mobilizer in the `context`.
+  const T& get_angular_velocity(const systems::Context<T>& context) const;
+
+  /// Sets the `context` so that the generalized coordinate coresponding the
+  /// rotation angle of `this` mobilizer equals `angle`.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @param[in] angle The desired angle in radians.
+  /// @returns a constant reference to `this` mobilizer.
+  const RevoluteMobilizer<T>& set_angular_velocity(
+      systems::Context<T>* context, const T& w_FM) const;
+
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
   /// about this mobilizer's axis (@see get_revolute_axis().)
   void CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const final;
+
+  SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v) const final;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;

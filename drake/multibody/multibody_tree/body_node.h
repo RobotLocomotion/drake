@@ -198,7 +198,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // kinematics cache.
     SpatialVelocity<T> V_PB_W = R_WF * V_FM.Shift(p_MB_F);
 
-    // Shift operator between the parent body P and this node's body B,
+    // Shift vector between the parent body P and this node's body B,
     // expressed in the world frame W.
     // TODO(amcastro-tri): consider computing p_PB_W in
     // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
@@ -206,10 +206,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     /* p_PB_W = R_WP * p_PB */
     Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
 
-    // Update velocity V_WB of this body's node in the world frame.
+    // Since we are in a base-to-tip recursion the parent body P's spatial
+    // velocity is already available in the cache.
     const SpatialVelocity<T>& V_WP = get_V_WP(*vc);
 
-    // This is Eq. 5.6 in Jain (2010), p. 77.
+    // Update velocity V_WB of this node's body B in the world frame.
+    // The recursive relation to update V_WB can be found in Eq. 5.6 in
+    // Jain (2010), p. 77.
     // V_WBo = V_WPBo_W + V_PBo_W (where PBo means the point of P coincident
     // with Bo).
     get_mutable_V_WB(vc) = V_WP.Shift(p_PB_W) + V_PB_W;
@@ -227,6 +230,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
  private:
   // Returns the index to the parent body of the body associated with this node.
   BodyIndex get_parent_body_index() const { return topology_.parent_body;}
+
+  // =========================================================================
+  // Helpers to access the state.
+  /// Returns an Eigen expression of the vector of generalized velocities.
+  Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
+      const MultibodyTreeContext<T>& context) const {
+    return context.get_state_segment(
+        topology_.mobilizer_velocities_start,
+        topology_.num_mobilizer_velocities);
+  }
 
   // =========================================================================
   // PositionKinematicsCache Accessors and Mutators.

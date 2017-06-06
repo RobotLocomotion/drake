@@ -155,22 +155,38 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   T dot(const SpatialForce<T>& F_Q_E) const;
 };
 
+/// Operator to perform the addition of two spatial velocities. This operator
+/// returns the spatial velocity that results from adding the operands as if
+/// they were 6-dimensional vectors. In other words, the resulting spatial
+/// velocity containes a rotational component which is the 3-dimensional
+/// addition of the operand's rotational components and a translational
+/// component which is the 3-dimensional addition of the operand's translational
+/// components.
 ///
-/// @f$ ^W V^{B_q} = ^W V^{P_{B_q}} + [^P V^{B_q}]_W @f$
-// or in monogram notation:
-/// V_WBq = V_WPBq + V_PBq
-/// where:
-///  - V_PBq is the velocity of point q rigidly moving with frame B measured
-///         and expressed in frame P
-///  - V_WPBq is the instantaneous velocity of point q on frame B as if it was
-///           moving rigidly attached to frame P, measured and expressed in W.
+/// The addition of two spatial velocities has a clear physical meaning.
+/// Given the velocity V_EP of a frame P with respect to another frame E, and
+/// the velocity V_PBq_E of a point Q on a frame B measured in frame P (both
+/// expressed in frame E), the velocity of point Q on frame B measured and
+/// expressed in frame E is obtained as:
+/// <pre>
+///   V_EBq = V_EP.Shift(p_PoBq_E) + V_PBq_E
+/// </pre>
+///
+/// where `p_PoBq_E` is the position vector from P's origin to point Q. The
+/// first term corresponds to the velocity of point Q as if instantaneously
+/// (rigidly attached) moving with frame P. We deonte this spatial velocity with
+/// `V_EPBq`. Therefore the above equation can be written more compactly as:
+/// <pre>
+///   V_EBq = V_EPBq + V_PBq_E
+/// </pre>
+///
+/// The addition in the last expression is carried out by this operator.
 template <typename T>
 inline SpatialVelocity<T> operator+(
-    const SpatialVelocity<T>& V_WPBq, const SpatialVelocity<T>& Vb)
+    const SpatialVelocity<T>& V_EPBq, const SpatialVelocity<T>& V_PBq_E)
 {
-  return GeneralSpatialVector<T>(Va.get_coeffs() + Vb.get_coeffs());
+  return SpatialVelocity<T>(V_EPBq.get_coeffs() + V_PBq_E.get_coeffs());
 }
-
 
 }  // namespace multibody
 }  // namespace drake
