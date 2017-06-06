@@ -56,9 +56,8 @@ class BodyFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
-  /// Overrides Frame::CalcBodyPoseInThisFrame() that returns the pose the body
-  /// associated with this frame. For a %BodyFrame this method simply resolves
-  /// to return the identity pose.
+  /// Since this **is** the %BodyFrame this method simply returns the identity
+  /// pose.
   Isometry3<T> CalcBodyPoseInThisFrame(
       const MultibodyTreeContext<T>& context) const final {
     unused(context);
