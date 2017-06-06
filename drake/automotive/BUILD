@@ -133,7 +133,7 @@ drake_cc_library(
     hdrs = ["curve2.h"],
     deps = [
         ":generated_vectors",
-        "//drake/common:autodiff"
+        "//drake/common:autodiff",
     ],
 )
 

@@ -182,8 +182,8 @@ TEST_F(IdentifierDeathTests, InvalidGetValueCall) {
   int64_t value = -1;
   ASSERT_DEATH(
       {value = invalid.get_value();},
-      "abort: failure at .*identifier.h:.+ in get_value.+"
-          "assertion 'is_valid\\(\\)' failed");
+      "abort: .*identifier.h:.+ in get_value.+"
+          "'is_valid\\(\\)' failed");
   // This lets gcc thinks the variable is used.
   EXPECT_EQ(value, -1);
 }
@@ -195,8 +195,8 @@ TEST_F(IdentifierDeathTests, InvlalidEqualityCompare) {
   bool result = true;
   EXPECT_DEATH(
       {result = invalid == a1_;},
-      "abort: failure at .*identifier.h:.+ in operator==.+"
-          "assertion 'is_valid\\(\\) && other.is_valid\\(\\)' failed");
+      "abort: .*identifier.h:.+ in operator==.+"
+          "'is_valid\\(\\) && other.is_valid\\(\\)' failed");
   // This lets gcc thinks the variable is used.
   EXPECT_EQ(result, true);
 }
@@ -208,8 +208,8 @@ TEST_F(IdentifierDeathTests, InvlalidInequalityCompare) {
   bool result = true;
   EXPECT_DEATH(
       {result = invalid != a1_;},
-      "abort: failure at .*identifier.h:.+ in operator!=.+"
-          "assertion 'is_valid\\(\\) && other.is_valid\\(\\)' failed");
+      "abort:.*identifier.h:.+ in operator!=.+"
+          "'is_valid\\(\\) && other.is_valid\\(\\)' failed");
   // This lets gcc thinks the variable is used.
   EXPECT_EQ(result, true);
 }

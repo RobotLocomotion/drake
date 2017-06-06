@@ -121,24 +121,16 @@ GTEST_TEST(ModelValuesTest, NullTest) {
   EXPECT_EQ(dut.size(), 4);
 
   // Clone using the AbstractValue base type.
-  // Note that for 1..3, VectorValue<T> is non-nullptr -- it _wraps_ a nullptr.
   EXPECT_EQ(dut.CloneModel(0).get(), nullptr);
-  EXPECT_NE(dut.CloneModel(1).get(), nullptr);
-  EXPECT_NE(dut.CloneModel(2).get(), nullptr);
-  EXPECT_NE(dut.CloneModel(3).get(), nullptr);
+  EXPECT_EQ(dut.CloneModel(1).get(), nullptr);
+  EXPECT_EQ(dut.CloneModel(2).get(), nullptr);
+  EXPECT_EQ(dut.CloneModel(3).get(), nullptr);
 
   // Clone as VectorValue (yielding a nullptr BasicVector).
   EXPECT_EQ(dut.CloneVectorModel<double>(0), nullptr);
   EXPECT_EQ(dut.CloneVectorModel<double>(1), nullptr);
   EXPECT_EQ(dut.CloneVectorModel<AutoDiffXd>(2), nullptr);
   EXPECT_EQ(dut.CloneVectorModel<Expression>(3), nullptr);
-
-  // Even with nullptr, type mismatches still show up, if a specific T for a
-  // VectorValue<T> has been provided.
-  EXPECT_EQ(dut.CloneVectorModel<double>(0), nullptr);
-  EXPECT_THROW(dut.CloneVectorModel<AutoDiffXd>(1), std::exception);
-  EXPECT_THROW(dut.CloneVectorModel<Expression>(2), std::exception);
-  EXPECT_THROW(dut.CloneVectorModel<double>(3), std::exception);
 }
 
 }  // namespace

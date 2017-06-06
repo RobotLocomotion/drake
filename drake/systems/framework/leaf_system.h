@@ -516,28 +516,51 @@ class LeafSystem : public System<T> {
     return params;
   }
 
+  /// Declares that this System has a simple, fixed-period event specified with
+  /// no custom callback function, and its attribute field contains an
+  /// Event<T>::PeriodicAttribute constructed from the specified @p period_sec
+  /// and @p offset_set. The first tick will occur at t = @p offset_sec, and it
+  /// will recur at every @p period_sec thereafter. Note that the periodic
+  /// events returned by system::CalcNextUpdateTime() will happen at a time
+  /// strictly after the querying time. E.g. if there is a periodic event with
+  /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
+  /// the returned event will happen at t = 5 not t = 0.
+  ///
+  /// @tparam EventType A class derived from Event (e.g., PublishEvent,
+  /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
+  template <typename EventType>
+  void DeclarePeriodicEvent(double period_sec, double offset_sec) {
+    EventType event(Event<T>::TriggerType::kPeriodic);
+    typename Event<T>::PeriodicAttribute attribute;
+    attribute.period_sec = period_sec;
+    attribute.offset_sec = offset_sec;
+    event.set_attribute(
+        AbstractValue::Make<typename Event<T>::PeriodicAttribute>(attribute));
+    periodic_events_.push_back(std::make_pair(attribute, event.Clone()));
+  }
+
   /// Declares that this System has a simple, fixed-period event specified by
   /// @p event. A deep copy of @p event will be made and maintained by `this`.
-  /// The first tick will occur at t = @p period_sec, and it will recur at every
-  /// @p period_sec thereafter. @p event's trigger type must be
-  /// Event::TriggerType::kPeriodic or this method aborts. Note that @p event's
-  /// attribute field is NOT preserved during the deep copy. Instead, it will
-  /// contain a Event<T>::PeriodicAttribute constructed from the specified
-  /// @p period_sec and @p offset_set.
+  /// @p event's trigger type must be Event::TriggerType::kPeriodic or this
+  /// method aborts. The first tick will occur at t = @p offset_sec, and it
+  /// will recur at every @p period_sec thereafter. Note that the periodic
+  /// events returned by system::CalcNextUpdateTime() will happen at a time
+  /// strictly after the querying time. E.g. if there is a periodic event with
+  /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
+  /// the returned event will happen at t = 5 not t = 0.
+  ///
+  /// Note that @p event's attribute field is preserved.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
   /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
-                            const EventType& event) {
+      const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPeriodic);
-    auto clone = event.Clone();
     typename Event<T>::PeriodicAttribute attribute;
     attribute.period_sec = period_sec;
     attribute.offset_sec = offset_sec;
-    clone->set_attribute(
-        AbstractValue::Make<typename Event<T>::PeriodicAttribute>(attribute));
-    periodic_events_.push_back(std::move(clone));
+    periodic_events_.push_back(std::make_pair(attribute, event.Clone()));
   }
 
   /// Declares a periodic discrete update event with period = @p period_sec and
@@ -546,9 +569,7 @@ class LeafSystem : public System<T> {
   /// attribute will be an Event<T>::PeriodicAttribute of 0 offset and
   /// @p period_sec.
   void DeclareDiscreteUpdatePeriodSec(double period_sec) {
-    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
-        period_sec, 0.0,
-        DiscreteUpdateEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(period_sec, 0.0);
   }
 
   /// Declares a periodic discrete update event with period = @p period_sec and
@@ -557,9 +578,7 @@ class LeafSystem : public System<T> {
   /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
   /// @p period_sec.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
-    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(
-        period_sec, offset_sec,
-        DiscreteUpdateEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(period_sec, offset_sec);
   }
 
   /// Declares a periodic unrestricted update event with period = @p period_sec
@@ -568,9 +587,7 @@ class LeafSystem : public System<T> {
   /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
   /// @p period_sec.
   void DeclarePeriodicUnrestrictedUpdate(double period_sec, double offset_sec) {
-    DeclarePeriodicEvent<UnrestrictedUpdateEvent<T>>(
-        period_sec, offset_sec,
-        UnrestrictedUpdateEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<UnrestrictedUpdateEvent<T>>(period_sec, offset_sec);
   }
 
   /// Declares a periodic publish event with period = @p period_sec
@@ -579,8 +596,7 @@ class LeafSystem : public System<T> {
   /// Its attribute will be an Event<T>::PeriodicAttribute of 0 offset and
   /// @p period_sec.
   void DeclarePublishPeriodSec(double period_sec) {
-    DeclarePeriodicEvent<PublishEvent<T>>(
-        period_sec, 0, PublishEvent<T>(Event<T>::TriggerType::kPeriodic));
+    DeclarePeriodicEvent<PublishEvent<T>>(period_sec, 0);
   }
 
   /// Declares a per step event using @p event, which is deep copied (the
@@ -919,16 +935,16 @@ class LeafSystem : public System<T> {
     // Find the minimum next sample time across all registered events, and
     // the set of registered events that will occur at that time.
     std::vector<const Event<T1>*> next_events;
-    for (const auto& event : periodic_events_) {
+    for (const auto& event_pair : periodic_events_) {
       const typename Event<T1>::PeriodicAttribute& attribute =
-          event
-              ->template get_attribute<typename Event<T1>::PeriodicAttribute>();
+          event_pair.first;
+      const Event<T>* const event = event_pair.second.get();
       T1 t = GetNextSampleTime(attribute, context.get_time());
       if (t < min_time) {
         min_time = t;
-        next_events = {event.get()};
+        next_events = {event};
       } else if (t == min_time) {
-        next_events.push_back(event.get());
+        next_events.push_back(event);
       }
     }
 
@@ -983,7 +999,9 @@ class LeafSystem : public System<T> {
   }
 
   // Periodic Update or Publish events registered on this system.
-  std::vector<std::unique_ptr<Event<T>>> periodic_events_;
+  std::vector<std::pair<typename Event<T>::PeriodicAttribute,
+                        std::unique_ptr<Event<T>>>>
+      periodic_events_;
 
   // Update or Publish events registered on this system for every simulator
   // major time step.

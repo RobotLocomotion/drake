@@ -5,8 +5,8 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 

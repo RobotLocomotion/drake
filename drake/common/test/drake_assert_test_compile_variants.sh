@@ -2,7 +2,7 @@
 
 set -ex
 
-find  # Get some debugging output.
+find .  # Get some debugging output.
 
 # Make sure we know what C++ compiler to use.
 source drake/common/capture_cc.env

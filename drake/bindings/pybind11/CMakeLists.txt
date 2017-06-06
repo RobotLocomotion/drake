@@ -9,6 +9,11 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shadow")
 include_directories("${NUMPY_INCLUDE_DIRS}")
 
+pybind11_add_module(_pydrake_common pydrake_common.cc)
+target_link_libraries(_pydrake_common PRIVATE drakeCommon)
+target_compile_options(_pydrake_common PRIVATE "-fvisibility=default")
+install(TARGETS _pydrake_common DESTINATION ${PYDRAKE_INSTALL_DIR})
+
 pybind11_add_module(_pydrake_rbtree pydrake_rbtree.cc)
 target_link_libraries(_pydrake_rbtree PRIVATE drakeRBM drakeMultibodyParsers Eigen3::Eigen)
 target_compile_options(_pydrake_rbtree PRIVATE "-fvisibility=default")

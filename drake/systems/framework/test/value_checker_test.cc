@@ -76,11 +76,12 @@ void CheckValue(const AbstractValue* abstract_value) {
 }
 
 GTEST_TEST(ValueCheckerTest, CheckVectorValueInvariantsTest) {
-  const VectorValue<double> basic(BasicVector<double>::Make({1, 2}));
-  const VectorValue<double> good(make_unique<GoodVector>());
-  const VectorValue<double> missing_clone(make_unique<MissingCloneVector>());
-  const VectorValue<double> not_so_good(make_unique<NotSoGoodVector>());
-  const VectorValue<double> not_quite_good(make_unique<NotQuiteGoodVector>());
+  using VectorValue = Value<BasicVector<double>>;
+  const VectorValue basic(BasicVector<double>::Make({1, 2}));
+  const VectorValue good(make_unique<GoodVector>());
+  const VectorValue missing_clone(make_unique<MissingCloneVector>());
+  const VectorValue not_so_good(make_unique<NotSoGoodVector>());
+  const VectorValue not_quite_good(make_unique<NotQuiteGoodVector>());
 
   EXPECT_NO_THROW(CheckValue(&basic));
   EXPECT_NO_THROW(CheckValue(&good));

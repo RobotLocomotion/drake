@@ -69,27 +69,6 @@ class System {
   virtual std::unique_ptr<CompositeEventCollection<T>>
       AllocateCompositeEventCollection() const = 0;
 
-  /// @cond
-  // Consumers of this class should never need to call the three methods below.
-  // These three methods would ideally be designated as "protected", but
-  // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
-  // perhaps surprisingly, is not able to access these methods when they are
-  // protected. See: https://stackoverflow.com/questions/16785069/why-cant-a-derived-class-call-protected-member-function-in-this-code.
-  // To address this problem, we keep the methods "public" and
-  // (1) Make the overriding methods in LeafSystem and Diagram "final" and
-  // (2) Use the doxygen cond/endcond tags so that these methods are hidden
-  //     from the user (in the doxygen documentation).
-
-  virtual std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateForcedPublishEventCollection() const = 0;
-
-  virtual std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateForcedDiscreteUpdateEventCollection() const = 0;
-
-  virtual std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateForcedUnrestrictedUpdateEventCollection() const = 0;
-  /// @endcond
-
   /// Given a port descriptor, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses must
   /// override the NVI implementation of this function, DoAllocateInputVector,
@@ -676,41 +655,60 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name Functions to avoid RTTI in Diagram. Conceptually, these should be
-  /// protected and should not be directly called.
-  //@{
+  /// @cond
+  // Functions to avoid RTTI in Diagram. Conceptually, these should be protected
+  // and should not be directly called.
 
-  /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
-  /// Should not be directly called.
+  // Returns @p context if @p target_system equals `this`, nullptr otherwise.
+  // Should not be directly called.
   virtual Context<T>* DoGetMutableTargetSystemContext(
       const System<T>* target_system, Context<T>* context) const {
     if (target_system == this) return context;
     return nullptr;
   }
 
-  /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
-  /// Should not be directly called.
+  // Returns @p context if @p target_system equals `this`, nullptr otherwise.
+  // Should not be directly called.
   virtual const Context<T>* DoGetTargetSystemContext(
       const System<T>* target_system, const Context<T>* context) const {
     if (target_system == this) return context;
     return nullptr;
   }
 
-  /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
-  /// Should not be directly called.
+  // Returns @p state if @p target_system equals `this`, nullptr otherwise.
+  // Should not be directly called.
   virtual State<T>* DoGetMutableTargetSystemState(
       const System<T>* target_system, State<T>* state) const {
     if (target_system == this) return state;
     return nullptr;
   }
 
-  /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
-  /// Should not be directly called.
+  // Returns @p state if @p target_system equals `this`, nullptr otherwise.
+  // Should not be directly called.
   virtual const State<T>* DoGetTargetSystemState(const System<T>* target_system,
                                                  const State<T>* state) const {
     if (target_system == this) return state;
     return nullptr;
   }
+
+  // Consumers of this class should never need to call the three methods below.
+  // These three methods would ideally be designated as "protected", but
+  // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
+  // perhaps surprisingly, is not able to access these methods when they are
+  // protected. See: https://stackoverflow.com/questions/16785069/why-cant-a-derived-class-call-protected-member-function-in-this-code.
+  // To address this problem, we keep the methods "public" and
+  // (1) Make the overriding methods in LeafSystem and Diagram "final" and
+  // (2) Use the doxygen cond/endcond tags so that these methods are hidden
+  //     from the user (in the doxygen documentation).
+  virtual std::unique_ptr<EventCollection<PublishEvent<T>>>
+  AllocateForcedPublishEventCollection() const = 0;
+
+  virtual std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
+  AllocateForcedDiscreteUpdateEventCollection() const = 0;
+
+  virtual std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
+  AllocateForcedUnrestrictedUpdateEventCollection() const = 0;
+  /// @endcond
 
   //----------------------------------------------------------------------------
   /// @name                      Utility methods

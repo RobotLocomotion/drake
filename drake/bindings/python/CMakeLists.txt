@@ -21,6 +21,7 @@ if(BUILD_TESTING)
     drake_add_python_test(pydrake.test.testPR2IK)
   endif()
 
+  drake_add_python_test(pydrake.test.testCommon)
   drake_add_python_test(pydrake.test.test_urdf_parser)
   drake_add_python_test(pydrake.test.testRBTTransformPoints)
   drake_add_python_test(pydrake.test.testRBTCoM)

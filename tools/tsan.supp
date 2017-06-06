@@ -7,11 +7,18 @@ mutex:l_mt_unlock
 # unlock of an unlocked mutex (libmosek64.*) in lc_checkout
 mutex:lc_checkout
 
+# The OpenMP runtime bundled with MOSEK has not been generated with TSan support on. https://reviews.llvm.org/D13072
 # data race (libiomp5.*) in __kmp_resume
 race:__kmp_resume
 
-# data race (libglib-2.0.*) in g_static_rec_mutex_lock
-race:g_static_rec_mutex_lock
+# data race (libiomp5.*) in __kmp_suspend_uninitialize_thread
+race:__kmp_suspend_uninitialize_thread
+
+# data race (libiomp5.*) in __kmp_launch_monitor
+race:__kmp_launch_monitor
 
 # thread leak (libiomp5.*) in __kmp_create_worker
 thread:__kmp_create_worker
+
+# data race (libglib-2.0.*) in g_static_rec_mutex_lock
+race:g_static_rec_mutex_lock
