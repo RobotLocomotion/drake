@@ -10,10 +10,9 @@ namespace drake {
 namespace geometry {
 
 /** This class is used to represent the pose of a frame, `X_PF` --  the position
- and orientation of a frame F, relative to a parent frame P. Mathematically, it
- is equivalent to using an Isometry3 but it is more compact. This serves as the
- basis for communicating frame kinematics to GeometryWorld and GeometrySystem
- via the FrameKinematicsSet.
+ and orientation of a frame F, relative to a parent frame P--used, for example,
+ as the basis for communicating frame kinematics values to GeometryWorld and
+ GeometrySystem via the FrameKinematicsSet.
 
  The %SpatialPose is _related_ to a SpatialVelocity. Whereas the SpatialVelocity
  `V_PF` represents the rate at which frame F moves with respect to frame P, the
@@ -44,15 +43,16 @@ class SpatialPose {
     DRAKE_ASSERT_VOID(SetNaN());
   }
 
-  /** Construction from the orientation `q_PF` and a position `p_PF` of frame
-   F relative to parent frame P. Both quantities must be measured and expressed
-   in the same frame. */
-  SpatialPose(const Quaternion<T>& q, const Eigen::Ref<const Vector3<T>>& p)
-      : orientation_(q), position_(p) {}
+  /** Construction from the orientation `q_PF_E` and a position `p_PF_E` of
+   frame F relative to parent frame P. Both quantities must be expressed in the
+   same frame E. */
+  SpatialPose(const Quaternion<T>& q_PF_E,
+              const Eigen::Ref<const Vector3<T>>& p_PF_E)
+      : orientation_(q_PF_E), position_(p_PF_E) {}
 
   /** Construction from the pose `X_PF` represented by an Eigen::Isometry. */
-  explicit SpatialPose(const Isometry3<T>& isometry)
-      : orientation_(isometry.linear()), position_(isometry.translation()) {}
+  explicit SpatialPose(const Isometry3<T>& X_PF)
+      : orientation_(X_PF.linear()), position_(X_PF.translation()) {}
 
   //@}
 
@@ -112,7 +112,7 @@ class SpatialPose {
 
   //@}
 
- protected:
+ private:
   // Sets all entries in `this` %SpatialPose to NaN. Typically used to quickly
   // detect uninitialized values since NaN will trigger a chain of invalid
   // computations that can then be tracked back to the source.
@@ -123,7 +123,6 @@ class SpatialPose {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
- private:
   Quaternion<T> orientation_;
   Vector3<T> position_;
 };
