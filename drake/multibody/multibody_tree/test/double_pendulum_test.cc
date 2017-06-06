@@ -373,43 +373,17 @@ class PendulumKinematicTests : public PendulumTests {
   MultibodyTreeContext<double>* mbt_context_;
 };
 
-TEST_F(PendulumTests, CalcPositionKinematics) {
-  CreatePendulumModel();
+TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
+  // This is the minimum factor of the machine precision within which these
+  // tests pass.
+  const int kEpsilonFactor = 2;
+  const double kEpsilon =
+      kEpsilonFactor * std::numeric_limits<double>::epsilon();
 
-  // Verifies the number of multibody elements is correct.
-  EXPECT_EQ(model_->get_num_bodies(), 3);
-
-  // Verify we cannot create a Context until we have a valid topology.
-  EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
-  EXPECT_THROW(model_->CreateDefaultContext(), std::logic_error);
-
-  // Finalize() stage.
-  EXPECT_NO_THROW(model_->Finalize());
-  EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
-
-  // Create Context.
-  std::unique_ptr<Context<double>> context;
-  EXPECT_NO_THROW(context = model_->CreateDefaultContext());
-
-  // Tests MultibodyTreeContext accessors.
-  auto mbt_context =
-      dynamic_cast<MultibodyTreeContext<double>*>(context.get());
-
-  // Verifies the correct number of generalized positions and velocities.
-  EXPECT_EQ(mbt_context->get_positions().size(), 2);
-  EXPECT_EQ(mbt_context->get_mutable_positions().size(), 2);
-  EXPECT_EQ(mbt_context->get_velocities().size(), 2);
-  EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
-
-  // Verifies methods to retrieve fixed-sized segments of the state.
-  EXPECT_EQ(mbt_context->get_state_segment<1>(1).size(), 1);
-  EXPECT_EQ(mbt_context->get_mutable_state_segment<1>(1).size(), 1);
-
-  shoulder_mobilizer_->set_zero_configuration(context.get());
-  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), 0.0);
+  shoulder_mobilizer_->set_zero_configuration(context_.get());
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
 
   PositionKinematicsCache<double> pc(model_->get_topology());
-  VelocityKinematicsCache<double> vc(model_->get_topology());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -418,12 +392,12 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
     for (double ielbow = 0; ielbow < num_angles; ++ielbow) {
       const double elbow_angle = -M_PI + ielbow * kDeltaAngle;
 
-      shoulder_mobilizer_->set_angle(context.get(), shoulder_angle);
-      EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), shoulder_angle);
-      elbow_mobilizer_->set_angle(context.get(), elbow_angle);
-      EXPECT_EQ(elbow_mobilizer_->get_angle(*context), elbow_angle);
+      shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+      EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), shoulder_angle);
+      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+      EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), elbow_angle);
 
-      model_->CalcPositionKinematicsCache(*mbt_context, &pc);
+      model_->CalcPositionKinematicsCache(*mbt_context_, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
       const BodyNodeIndex shoulder_node =
@@ -455,35 +429,14 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
 
       // Asserts that the retrieved poses match with the ones specified by the
       // unit test method SetPendulumPoses().
-      EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
-      EXPECT_TRUE(X_WU.matrix().isApprox(X_WU_expected.matrix()));
-      EXPECT_TRUE(X_WL.matrix().isApprox(X_WL_expected.matrix()));
-
-      // Verify the velocity kinematics correctness.
-      model_->CalcVelocityKinematicsCache(*mbt_context, pc, &vc);
-
-      const SpatialVelocity<double>& V_WU =
-          get_body_spatial_velocity_in_world(vc, *upper_link_);
-      const SpatialVelocity<double>& V_WL =
-          get_body_spatial_velocity_in_world(vc, *lower_link_);
-
-      (void) V_WU;
-      (void) V_WL;
-
-//      const SpatialVelocity<double> V_WU_expected =
-//          acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame()
-
+      EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity(), kEpsilon));
+      EXPECT_TRUE(X_WU.matrix().isApprox(X_WU_expected.matrix(), kEpsilon));
+      EXPECT_TRUE(X_WL.matrix().isApprox(X_WL_expected.matrix(), kEpsilon));
     }
   }
 }
 
-TEST_F(PendulumKinematicTests, VelocityKinematics) {
-  // Indexes to the BodyNode objects associated with each mobilizer.
-  //const BodyNodeIndex shoulder_node =
-  //    shoulder_mobilizer_->get_topology().body_node;
-  //const BodyNodeIndex elbow_node =
-    //  elbow_mobilizer_->get_topology().body_node;
-
+TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
   const int kEpsilonFactor = 5;
@@ -503,9 +456,6 @@ TEST_F(PendulumKinematicTests, VelocityKinematics) {
       const double w_WU = 1.0;
       const double w_UL = -0.5;
 
-      //INT_VAR(shoulder_angle);
-      //INT_VAR(elbow_angle);
-
       // Update position kinematics.
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
@@ -524,9 +474,6 @@ TEST_F(PendulumKinematicTests, VelocityKinematics) {
       const SpatialVelocity<double>& V_WL =
           get_body_spatial_velocity_in_world(vc, *lower_link_);
 
-      (void) V_WU;
-      (void) V_WL;
-
       const SpatialVelocity<double> V_WU_expected(
           acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
               shoulder_angle, w_WU));
@@ -534,23 +481,8 @@ TEST_F(PendulumKinematicTests, VelocityKinematics) {
           acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
               shoulder_angle, elbow_angle, w_WU, w_UL));
 
-      if (!V_WU.IsApprox(V_WU_expected, kEpsilon)) {
-        PRINT_VAR(shoulder_angle);
-        PRINT_VARn(V_WU);
-        PRINT_VARn(V_WU_expected);
-      }
-
-      if (!V_WL.IsApprox(V_WL_expected, kEpsilon)) {
-        PRINT_VAR(shoulder_angle);
-        PRINT_VARn(V_WL);
-        PRINT_VARn(V_WL_expected);
-      }
-
       EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kEpsilon));
       EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));
-
-      (void) V_WU_expected;
-
     }
   }
 }
