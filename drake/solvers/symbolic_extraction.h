@@ -163,7 +163,8 @@ DecomposeLinearExpression(
       // Linear coefficient.
       const auto& p_monomial_powers = p_monomial.get_powers();
       DRAKE_DEMAND(p_monomial_powers.size() == 1);
-      const symbolic::Variable::Id var_id = p_monomial_powers.begin()->first;
+      const symbolic::Variable::Id var_id =
+          p_monomial_powers.begin()->first.get_id();
       // TODO(eric.cousineau): Avoid using const_cast.
       const_cast<Eigen::MatrixBase<Derived>&>(coeffs)(
           map_var_to_index.at(var_id)) = p_coeff;
