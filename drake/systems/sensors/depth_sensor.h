@@ -161,6 +161,17 @@ class DepthSensor : public systems::LeafSystem<double> {
   /// Outputs the depth information.
   void DoCalcOutput(const systems::Context<double>& context,
                     systems::SystemOutput<double>* output) const override;
+  /// Applies the min / max range of the sensor. Any measurement that is less
+  /// than the minimum or greater than the maximum is set to an invalid value.
+  /// This is so users of this sensor can distinguish between an object at the
+  /// maximum sensing distance and not detecting any object within the sensing
+  /// range.
+  void ApplyLimits(VectorX<double>* dists) const;
+
+  /// Evaluates the output port containing the depth measurements.
+  void UpdateOutputs(const VectorX<double>& distances,
+                     const KinematicsCache<double>& kinematics_cache,
+                     SystemOutput<double>* output) const;
 
  private:
   // The depth sensor will cast a ray with its start point at (0,0,0) in the
@@ -170,18 +181,6 @@ class DepthSensor : public systems::LeafSystem<double> {
   // computed once at the time of construction since the end points are constant
   // in the sensor's base frame.
   void PrecomputeRaycastEndpoints();
-
-  // Applies the min / max range of the sensor. Any measurement that is less
-  // than the minimum or greater than the maximum is set to an invalid value.
-  // This is so users of this sensor can distinguish between an object at the
-  // maximum sensing distance and not detecting any object within the sensing
-  // range.
-  void ApplyLimits(VectorX<double>* dists) const;
-
-  // Evaluates the output port containing the depth measurements.
-  void UpdateOutputs(const VectorX<double>& distances,
-                     const KinematicsCache<double>& kinematics_cache,
-                     SystemOutput<double>* output) const;
 
   const std::string name_;
   const RigidBodyTree<double>& tree_;
