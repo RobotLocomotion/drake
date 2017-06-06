@@ -43,5 +43,4 @@ def read_requires():
         package = cps.read(p)
         if package.version is not None:
             defs["%s_VERSION" % package.name] = package.version
-
     return defs
