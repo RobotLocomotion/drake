@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<robot name="yellow_post">
+  <link name="base"/>
+   <joint name="base_joint" type="fixed">
+     <origin rpy="0 0 0" xyz="0 0 0.0325"/>
+     <parent link="base"/>
+     <child link="cylinder_base"/>
+   </joint>
+  <link name="cylinder_base">
+    <inertial>
+      <origin xyz="0 0 0.025" rpy="0 0 0" />
+      <mass value="18.0" />
+      <inertia ixx="0.01703125" ixy="0" ixz="0" iyy="0.01703125" iyz="0"
+          izz="0.0003125" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder length="0.065" radius="0.177" />
+      </geometry>
+      <material name="Black">
+        <color rgba="0.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.065" radius="0.177" />
+      </geometry>
+    </collision>
+   </link>
+   <joint name="post_joint" type="fixed">
+     <origin rpy="0 0 0" xyz="0 0 0.51"/>
+     <parent link="cylinder_base"/>
+     <child link="post"/>
+   </joint>
+   <link name="post">
+     <inertial>
+       <origin xyz="0 0 0" rpy="0 0 0" />
+       <mass value="2.0" />
+       <inertia ixx="0.01703125" ixy="0" ixz="0" iyy="0.01703125" iyz="0"
+                izz="0.0003125" />
+     </inertial>
+     <visual>
+       <origin xyz="0 0 0" rpy="0 0 0" />
+       <geometry>
+         <cylinder length="0.955" radius="0.065" />
+       </geometry>
+       <material name="Yellow">
+         <color rgba="1.0 1.0 0.0 1.0"/>
+       </material>
+     </visual>
+     <collision>
+       <geometry>
+         <cylinder length="0.955" radius="0.065" />
+       </geometry>
+     </collision>
+   </link>
+</robot>

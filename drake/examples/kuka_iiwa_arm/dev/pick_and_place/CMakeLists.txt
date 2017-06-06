@@ -24,7 +24,7 @@ if(lcm_FOUND)
 
 
   add_executable(pick_and_place_demo
-    pick_and_place_state_machine.cc)
+    pick_and_place_demo.cc)
   target_link_libraries(pick_and_place_demo
     drakeKukaIiwaArmCommon
     drakeManipulationPlanner
