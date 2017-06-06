@@ -1,6 +1,19 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load(
+    "@drake//tools:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load("@drake//tools:check_lists_consistency.bzl", "check_lists_consistency")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+
+package(default_visibility = ["//visibility:public"])
 
 # Generates config.hh based on the version numbers in CMake code.
 cmake_configure_file(
@@ -17,13 +30,15 @@ cmake_configure_file(
         # just hard code the major version here.
         "PROJECT_NAME_NO_VERSION=ignition-math",
         "PROJECT_MAJOR_VERSION=3",
-        "PROJECT_VERSION_FULL=3.0.0",
+        "PROJECT_VERSION_FULL=3.2.0",
     ],
+    visibility = ["//visibility:private"],
 )
 
 public_headers = [
     "include/ignition/math/Angle.hh",
     "include/ignition/math/Box.hh",
+    "include/ignition/math/Color.hh",
     "include/ignition/math/Filter.hh",
     "include/ignition/math/Frustum.hh",
     "include/ignition/math/Helpers.hh",
@@ -34,6 +49,7 @@ public_headers = [
     "include/ignition/math/MassMatrix3.hh",
     "include/ignition/math/Matrix3.hh",
     "include/ignition/math/Matrix4.hh",
+    "include/ignition/math/OrientedBox.hh",
     "include/ignition/math/PID.hh",
     "include/ignition/math/Plane.hh",
     "include/ignition/math/Pose3.hh",
@@ -54,6 +70,16 @@ public_headers = [
     "include/ignition/math/Vector4.hh",
 ]
 
+private_headers = [
+    "include/ignition/math/BoxPrivate.hh",
+    "include/ignition/math/FrustumPrivate.hh",
+    "include/ignition/math/KmeansPrivate.hh",
+    "include/ignition/math/RotationSplinePrivate.hh",
+    "include/ignition/math/SignalStatsPrivate.hh",
+    "include/ignition/math/SplinePrivate.hh",
+    "include/ignition/math/Vector3StatsPrivate.hh",
+]
+
 # Generates math.hh, which consists of #include statements for all of the
 # public headers in the library.  The first line is
 # '#include <ignition/math/config.hh>' followed by one line like
@@ -69,6 +95,12 @@ genrule(
         "echo '$(SRCS)' | tr ' ' '\\n' | " +
         "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g'"
     ) + ") > '$@'",
+    visibility = ["//visibility:private"],
+)
+
+check_lists_consistency(
+    file_list = private_headers + public_headers,
+    glob = ["include/**/*.hh"],
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -78,14 +110,7 @@ cc_library(
     name = "ignition_math",
     srcs = [
         "include/ignition/math.hh",
-        "include/ignition/math/BoxPrivate.hh",
-        "include/ignition/math/FrustumPrivate.hh",
-        "include/ignition/math/KmeansPrivate.hh",
-        "include/ignition/math/RotationSplinePrivate.hh",
-        "include/ignition/math/SignalStatsPrivate.hh",
-        "include/ignition/math/SplinePrivate.hh",
-        "include/ignition/math/Vector3StatsPrivate.hh",
-        "include/ignition/math/config.hh",  # from cmake_configure_file above
+        "include/ignition/math/config.hh",  # created above
         "src/Angle.cc",
         "src/Box.cc",
         "src/Frustum.cc",
@@ -102,8 +127,32 @@ cc_library(
         "src/SplinePrivate.cc",
         "src/Temperature.cc",
         "src/Vector3Stats.cc",
-    ],
+    ] + private_headers,
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
+)
+
+CMAKE_PACKAGE = "ignition-math3"
+
+cmake_config(
+    package = CMAKE_PACKAGE,
+    script = "@drake//tools:ignition_math-create-cps.py",
+    version_file = ":config",
+)
+
+install_cmake_config(package = CMAKE_PACKAGE)  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    hdrs = public_headers + [
+        ":config",
+        ":mathhh_genrule",
+    ],
+    doc_dest = "share/doc/" + CMAKE_PACKAGE,
+    hdr_dest = "include",
+    hdr_strip_prefix = ["include"],
+    license_docs = ["LICENSE", "COPYING"],
+    targets = [":ignition_math"],
+    deps = [":install_cmake_config"],
 )
