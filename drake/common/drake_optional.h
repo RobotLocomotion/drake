@@ -1,8 +1,7 @@
 #pragma once
 
-#include <experimental/optional>
-
 #include "drake/common/drake_compat.h"
+#include "drake/thirdParty/boost/tcbrindle_cpp17_headers/stx/optional.hpp"
 
 /// @file
 /// Provides drake::optional as an alias for the appropriate implementation of
@@ -11,8 +10,8 @@
 namespace drake {
 
 template <typename T>
-using optional = std::experimental::optional<T>;
+using optional = stx::optional<T>;
 
-constexpr auto nullopt = std::experimental::nullopt;
+constexpr auto nullopt = stx::nullopt;
 
 }  // namespace drake
