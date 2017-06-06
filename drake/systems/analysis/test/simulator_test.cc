@@ -1184,6 +1184,5 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-//  drake::log()->set_level(spdlog::level::debug);
   return RUN_ALL_TESTS();
 }
