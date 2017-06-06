@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 
-import re
 import sys
 
-def_re = re.compile("project\(spdlog\sVERSION\s([0-9]+).([0-9]+).([0-9]+)")
-defs = {}
-with open(sys.argv[1]) as h:
-    for l in h:
-        m = def_re.match(l)
-        if m is not None:
-            defs['VERSION_MAJOR'] = m.group(1)
-            defs['VERSION_MINOR'] = m.group(2)
-            defs['VERSION_PATCH'] = m.group(3)
+from cpsutils import read_version_defs, read_requires
+
+def_re = "project\(spdlog\sVERSION\s([0-9]+).([0-9]+).([0-9]+)"
+defs = read_version_defs(def_re, sys.argv[1])
+
+defs.update(read_requires(sys.argv[2:]))
 
 content = """
 {
@@ -22,7 +18,7 @@ content = """
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
   "Requires": {
     "fmt": {
-      "Version": "3.0.1",
+      "Version": "%(fmt_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": [ "CONFIG" ]
     }

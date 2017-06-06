@@ -62,6 +62,12 @@ py_binary(
     srcs = ["drakelint.py"],
 )
 
+py_library(
+    name = "cpsutils",
+    srcs = ["cpsutils.py"],
+    deps = ["@pycps//:cps"]
+)
+
 exports_files(
     ["install.py.in"],
     visibility = ["//visibility:public"],

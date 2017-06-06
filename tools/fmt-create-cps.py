@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 
-import re
 import sys
 
-def_re = re.compile("set\(FMT_VERSION\s([0-9]+).([0-9]+).([0-9]+)")
-defs = {}
-with open(sys.argv[1]) as h:
-    for l in h:
-        m = def_re.match(l)
-        if m is not None:
-            defs['VERSION_MAJOR'] = m.group(1)
-            defs['VERSION_MINOR'] = m.group(2)
-            defs['VERSION_PATCH'] = m.group(3)
+from cpsutils import read_version_defs
+
+def_re = "set\(FMT_VERSION\s([0-9]+).([0-9]+).([0-9]+)"
+defs = read_version_defs(def_re, sys.argv[1])
 
 content = """
 {

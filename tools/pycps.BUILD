@@ -7,10 +7,11 @@ genrule(
     cmd = "cp \"$<\" \"$(@)\"",
 )
 
+# LGPL; don't use externally (okay for build-time stuff only)
 py_library(
     name = "cps",
     srcs = ["cps.py"],
-    visibility = ["//visibility:private"],  # LGPL; don't use externally
+    visibility = ["//visibility:public"],
     deps = ["@semantic_version"],
 )
 
