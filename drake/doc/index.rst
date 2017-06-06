@@ -135,3 +135,4 @@ Using Drake from other Programming Languages
 
     python_bindings
     julia_bindings
+    matlab_bindings
