@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
   ext_input->SetAtIndex(2, 0.0);
   rod_context->FixInputPort(0, std::move(ext_input));
 
-  // Set up the integrator. 
+  // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));
   if (FLAGS_simulation_type == "compliant") {
     auto context = simulator.get_mutable_context();
