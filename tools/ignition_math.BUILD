@@ -1,6 +1,9 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+
+package(default_visibility = ["//visibility:public"])
 
 # Generates config.hh based on the version numbers in CMake code.
 cmake_configure_file(
@@ -17,13 +20,15 @@ cmake_configure_file(
         # just hard code the major version here.
         "PROJECT_NAME_NO_VERSION=ignition-math",
         "PROJECT_MAJOR_VERSION=3",
-        "PROJECT_VERSION_FULL=3.0.0",
+        "PROJECT_VERSION_FULL=3.2.0",
     ],
+    visibility = ["//visibility:private"],
 )
 
 public_headers = [
     "include/ignition/math/Angle.hh",
     "include/ignition/math/Box.hh",
+    "include/ignition/math/Color.hh",
     "include/ignition/math/Filter.hh",
     "include/ignition/math/Frustum.hh",
     "include/ignition/math/Helpers.hh",
@@ -34,6 +39,7 @@ public_headers = [
     "include/ignition/math/MassMatrix3.hh",
     "include/ignition/math/Matrix3.hh",
     "include/ignition/math/Matrix4.hh",
+    "include/ignition/math/OrientedBox.hh",
     "include/ignition/math/PID.hh",
     "include/ignition/math/Plane.hh",
     "include/ignition/math/Pose3.hh",
@@ -69,6 +75,7 @@ genrule(
         "echo '$(SRCS)' | tr ' ' '\\n' | " +
         "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g'"
     ) + ") > '$@'",
+    visibility = ["//visibility:private"],
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -106,4 +113,26 @@ cc_library(
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
+)
+
+cmake_config(
+    package = "ignition_math",
+    script = "@drake//tools:ignition_math-create-cps.py",
+    version_file = ":config",
+)
+
+install_cmake_config(package = "ignition_math")  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    hdrs = public_headers + [
+        ":config",
+        ":mathhh_genrule",
+    ],
+    doc_dest = "share/doc/ignition_math",
+    hdr_dest = "include",
+    hdr_strip_prefix = ["include"],
+    license_docs = ["COPYING"],
+    targets = [":ignition_math"],
+    deps = [":install_cmake_config"],
 )

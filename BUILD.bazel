@@ -42,6 +42,8 @@ install(
         "@bullet//:install",
         "@eigen//:install",
         "@fmt//:install",
+        "@ignition_math//:install",
+        "@ignition_rndf//:install",
         "@ipopt//:install",
         "@lcm//:install",
         "@nlopt//:install",
