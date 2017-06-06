@@ -378,13 +378,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // The check below looks for convergence using machine epsilon. Without
     // this check, the convergence criteria can be applied when
     // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
-    // allow the norm to be reduced further.
-    if (dx_norm < 10 * std::numeric_limits<double>::epsilon())
-      return true;
-
-    // The check below looks for convergence using machine epsilon. Without
-    // this check, the convergence criteria can be applied when
-    // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
     // allow the norm to be reduced further. What happens: dx_norm will become
     // equivalent to last_dx_norm, making theta = 1, and eta = infinity. Thus,
     // convergence would never be identified.
