@@ -87,9 +87,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
   /// about this mobilizer's axis (@see get_revolute_axis().)
-  void CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context,
-      PositionKinematicsCache<T>* pc) const final;
+  Isometry3<T> CalcAcrossMobilizerTransform(
+      const MultibodyTreeContext<T>& context) const final;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;

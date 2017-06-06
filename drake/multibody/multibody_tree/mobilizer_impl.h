@@ -54,7 +54,8 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Default implementation to Mobilizer::set_zero_configuration() that sets
   /// all generalized positions related to this mobilizer to zero.
   /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclases must override this method.
+  /// mobilizers and specific subclases must override this method for
+  /// correctness.
   void set_zero_configuration(systems::Context<T>* context) const override {
     auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
     DRAKE_DEMAND(mbt_context != nullptr);
@@ -99,6 +100,13 @@ class MobilizerImpl : public Mobilizer<T> {
     return pc->get_mutable_X_FM(this->get_topology().body_node);
   }
   /// @}
+
+ private:
+  // Returns the first entry in the global array of generalized coordinates in
+  // the MultibodyTree model.
+  int get_positions_start() const {
+    return this->get_topology().positions_start;
+  }
 };
 
 }  // namespace multibody
