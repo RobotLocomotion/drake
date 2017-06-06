@@ -32,9 +32,6 @@ class ConstantValueSource : public LeafSystem<T> {
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 
  private:
-  // Use this as the calculation function for the output port.
-  void CopyOutValue(const Context<T>& context, AbstractValue* value) const;
-
   // TODO(david-german-tri): move source_value_ to the system's parameters.
   const std::unique_ptr<AbstractValue> source_value_;
 };

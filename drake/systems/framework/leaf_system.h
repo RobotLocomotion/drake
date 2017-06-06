@@ -684,7 +684,7 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateLeafOutputPort(
-        MakeAllocVectorCallback(model_vector),
+        MakeAllocCallback<BasicVector<T>>(model_vector),
         model_vector.size(),
         [this_ptr, calc](const Context<T>& context, BasicVector<T>* result) {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
@@ -735,25 +735,8 @@ class LeafSystem : public System<T> {
       const BasicVector<T>& model_vector,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
     auto& port =
-        CreateLeafOutputPort(MakeAllocVectorCallback(model_vector),
+        CreateLeafOutputPort(MakeAllocCallback(model_vector),
                              model_vector.size(), vector_calc_function);
-    return port;
-  }
-
-  /// (Advanced) Declares a vector-valued output port using the given
-  /// vector-valued allocator and calculator functions. The expected size is
-  /// also required; a runtime error will occur if the allocator doesn't produce
-  /// a vector of that size when invoked. Note that this takes the functions in
-  /// their most generic forms; if you have a member function available use one
-  /// of the other signatures.
-  /// @see LeafOutputPort::AllocVectorCallback
-  /// @see LeafOutputPort::CalcVectorCallback
-  const OutputPort<T>& DeclareVectorOutputPort(
-      typename LeafOutputPort<T>::AllocVectorCallback vector_alloc_function,
-      int size,
-      typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
-    auto& port = CreateLeafOutputPort(
-        vector_alloc_function, size, vector_calc_function);
     return port;
   }
 
@@ -780,28 +763,6 @@ class LeafSystem : public System<T> {
           (this_ptr->*calc)(context, &typed_result);
         });
     return port;
-  }
-
-  /// Declares an abstract-valued output port by specifying an AbstractValue
-  /// model value and a calculator function that is a class member function
-  /// (method) with signature:
-  /// @code
-  /// void MySystem::CalcOutputValue(const Context<T>&, AbstractValue*) const;
-  /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>`.
-  /// Template arguments will be deduced and do not need to be specified.
-  template <class MySystem>
-  const OutputPort<T>& DeclareAbstractOutputPort(
-      const AbstractValue& model_value,
-      void (MySystem::*calc)(const Context<T>&, AbstractValue*) const) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-    typename LeafOutputPort<T>::CalcCallback calc_func =
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          (this_ptr->*calc)(context, result);
-        };
-    // Invokes "Advanced" signature below.
-    return DeclareAbstractOutputPort(model_value, calc_func);
   }
 
   /// Declares an abstract-valued output port by specifying only a calculator
@@ -886,19 +847,6 @@ class LeafSystem : public System<T> {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
         });
-    return port;
-  }
-
-  /// (Advanced) Declares an abstract-valued output port using the given
-  /// `model_value` and calculator function in its most generic form. The
-  /// allocator function will simply clone the `model_value`, which is given as
-  /// an AbstractValue.
-  /// @see LeafOutputPort::CalcCallback
-  const OutputPort<T>& DeclareAbstractOutputPort(
-      const AbstractValue& model_value,
-      typename LeafOutputPort<T>::CalcCallback calc_function) {
-    auto& port =
-        CreateLeafOutputPort(MakeAllocCallback(model_value), calc_function);
     return port;
   }
 
@@ -1021,18 +969,6 @@ class LeafSystem : public System<T> {
     return *port_ptr;
   }
 
-  // Creates a vector output port allocator function from a BasicVector model
-  // value.
-  template <typename BasicVectorSubtype>
-  static typename LeafOutputPort<T>::AllocVectorCallback
-  MakeAllocVectorCallback(const BasicVectorSubtype& model_vector) {
-    // Allows a capture-by-value to produce a functor-owned copy of the model.
-    copyable_unique_ptr<BasicVector<T>> owned_model(model_vector.Clone());
-    return [owned_model](const Context<T>&) {
-      return owned_model->Clone();
-    };
-  }
-
   // Creates an abstract output port allocator function from an arbitrary type
   // model value.
   template <typename OutputType>
@@ -1041,15 +977,6 @@ class LeafSystem : public System<T> {
     // Allows a capture-by-value to produce a functor-owned copy of the model.
     copyable_unique_ptr<AbstractValue> owned_model(
         new Value<OutputType>(model_value));
-    return [owned_model](const Context<T>&) { return owned_model->Clone(); };
-  }
-
-  // Preferred overload for the above when the model value is already
-  // an AbstractValue.
-  static typename LeafOutputPort<T>::AllocCallback MakeAllocCallback(
-      const AbstractValue& model_value) {
-    // Allows a capture-by-value to produce a functor-owned copy of the model.
-    copyable_unique_ptr<AbstractValue> owned_model(model_value.Clone());
     return [owned_model](const Context<T>&) { return owned_model->Clone(); };
   }
 

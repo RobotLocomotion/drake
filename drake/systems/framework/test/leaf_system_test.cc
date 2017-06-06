@@ -26,10 +26,6 @@ class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {
     this->set_name("TestSystem");
-
-    // We're not providing calculators for these output ports.
-    this->DeclareVectorOutputPort(BasicVector<T>(17), nullptr);
-    this->DeclareAbstractOutputPort(Value<int>(42), nullptr);
   }
   ~TestSystem() override {}
 
@@ -301,22 +297,6 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 }
 
-// Tests that the vector-valued output has been allocated with the correct
-// dimensions.
-TEST_F(LeafSystemTest, DeclareVectorOutput) {
-  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  auto output = system_.AllocateOutput(*context);
-  EXPECT_EQ(17, output->get_vector_data(0)->size());
-}
-
-// Tests that the abstract-valued output has been allocated with the correct
-// type.
-TEST_F(LeafSystemTest, DeclareAbstractOutput) {
-  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  auto output = system_.AllocateOutput(*context);
-  EXPECT_EQ(42, UnpackIntValue(output->get_data(1)));
-}
-
 TEST_F(LeafSystemTest, DeclarePerStepActions) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
 
@@ -352,15 +332,17 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     // Output port 1 uses a class derived from BasicVector.
     this->DeclareVectorOutputPort(MyVector4d(),
                                   &DeclaredModelPortsSystem::CalcMyVector4d);
-    // Output port 2 uses a type-erased AbstractValue model (string inside).
-    this->DeclareAbstractOutputPort(
-        Value<std::string>("44"),
-        &DeclaredModelPortsSystem::CalcAbstractString);
+
+    // Output port 2 is no longer testing anything meaningful.
+    // TODO(sherm1) Renumber everything.
+    this->DeclareVectorOutputPort(MyVector4d(),
+                                  &DeclaredModelPortsSystem::CalcMyVector4d);
+
     // Output port 3 uses a concrete string model.
     this->DeclareAbstractOutputPort(std::string("45"),
                                     &DeclaredModelPortsSystem::CalcString);
 
-    // Output ports 4 & 5 use the "Advanced" methods that take a model
+    // Output port 4 uses the "Advanced" methods that take a model
     // and a general calc function rather than a calc method.
     this->DeclareVectorOutputPort(
         BasicVector<double>(2),
@@ -369,15 +351,6 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
           EXPECT_EQ(out->size(), 2);
           out->SetAtIndex(0, 10.);
           out->SetAtIndex(1, 20.);
-        });
-
-    this->DeclareAbstractOutputPort(
-        Value<int>(-1),  // An AbstractValue.
-        [](const Context<double>&, AbstractValue* out) {
-          ASSERT_NE(out, nullptr);
-          int* int_out{};
-          EXPECT_NO_THROW(int_out = &out->GetMutableValueOrThrow<int>());
-          *int_out = 123;
         });
 
     this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
@@ -421,7 +394,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
   ASSERT_EQ(dut.get_num_input_ports(), 3);
-  ASSERT_EQ(dut.get_num_output_ports(), 6);
+  ASSERT_EQ(dut.get_num_output_ports(), 5);
 
   const InputPortDescriptor<double>& in0 = dut.get_input_port(0);
   const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
@@ -432,7 +405,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   const OutputPort<double>& out2 = dut.get_output_port(2);
   const OutputPort<double>& out3 = dut.get_output_port(3);
   const OutputPort<double>& out4 = dut.get_output_port(4);
-  const OutputPort<double>& out5 = dut.get_output_port(5);
 
   EXPECT_EQ(in0.get_data_type(), kVectorValued);
   EXPECT_EQ(in1.get_data_type(), kVectorValued);
@@ -440,10 +412,13 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
 
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
   EXPECT_EQ(out1.get_data_type(), kVectorValued);
+#if 0
   EXPECT_EQ(out2.get_data_type(), kAbstractValued);
+#else
+  (void)(out2);
+#endif
   EXPECT_EQ(out3.get_data_type(), kAbstractValued);
   EXPECT_EQ(out4.get_data_type(), kVectorValued);
-  EXPECT_EQ(out5.get_data_type(), kAbstractValued);
 
   EXPECT_EQ(in0.size(), 1);
   EXPECT_EQ(in1.size(), 2);
@@ -495,12 +470,14 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   MyVector4d* downcast_output1 = dynamic_cast<MyVector4d*>(output1);
   ASSERT_NE(downcast_output1, nullptr);
 
+#if 0
   // Check that Value<string>("44") came out.
   auto output2 = system_output->get_data(2);
   ASSERT_NE(output2, nullptr);
   std::string downcast_output2{};
   EXPECT_NO_THROW(downcast_output2 = output2->GetValueOrThrow<std::string>());
   EXPECT_EQ(downcast_output2, "44");
+#endif
 
   // Check that Value<string>("45") came out (even though we only specified
   // a concrete string.
@@ -515,12 +492,14 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   ASSERT_NE(output4, nullptr);
   EXPECT_EQ(output4->size(), 2);
 
+#if 0
   // Check that Value<int>(-1) came out.
   auto output5 = system_output->get_data(5);
   ASSERT_NE(output5, nullptr);
   int downcast_output5{};
   EXPECT_NO_THROW(downcast_output5 = output5->GetValueOrThrow<int>());
   EXPECT_EQ(downcast_output5, -1);
+#endif
 }
 
 // Tests that calculator functions were generated correctly for the
@@ -530,7 +509,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   auto context = dut.CreateDefaultContext();
 
   std::vector<std::unique_ptr<AbstractValue>> values;
-  for (int i=0; i < 6; ++i) {
+  for (int i=0; i < 5; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
     values.emplace_back(out.Allocate(*context));
     out.Calc(*context, values.back().get());
@@ -546,18 +525,30 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   EXPECT_NO_THROW(vec0 = &values[0]->GetValueOrThrow<BasicVector<double>>());
   EXPECT_NO_THROW(vec1 = dynamic_cast<const MyVector4d*>(
                       &values[1]->GetValueOrThrow<BasicVector<double>>()));
+#if 0
   EXPECT_NO_THROW(str2 = &values[2]->GetValueOrThrow<std::string>());
+#else
+  (void)(str2);
+#endif
   EXPECT_NO_THROW(str3 = &values[3]->GetValueOrThrow<std::string>());
   EXPECT_NO_THROW(vec4 = &values[4]->GetValueOrThrow<BasicVector<double>>());
+#if 0
   EXPECT_NO_THROW(int5 = &values[5]->GetValueOrThrow<int>());
+#else
+  (void)(int5);
+#endif
 
   // Check the calculated values.
   EXPECT_EQ(vec0->get_value(), dut.expected_basic().get_value());
   EXPECT_EQ(vec1->get_value(), dut.expected_myvector().get_value());
+#if 0
   EXPECT_EQ(*str2, "abstract string");
+#endif
   EXPECT_EQ(*str3, "concrete string");
   EXPECT_EQ(vec4->get_value(), Eigen::Vector2d(10., 20.));
+#if 0
   EXPECT_EQ(*int5, 123);
+#endif
 }
 
 // Tests that the leaf system reserved the declared parameters of interesting
@@ -629,20 +620,9 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     // Output port 1 default-constructs a string as its allocator.
     this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcString);
 
-    // Output port 2 uses an "Advanced" method that takes a general vector
-    // allocator function, a fixed size, and a general vector calculator.
-    this->DeclareVectorOutputPort(
-        [](const Context<double>&) {
-          return std::unique_ptr<BasicVector<double>>(
-              new DummyVec2(8., 9.));
-        },
-        2,  // Fixed vector size.
-        [](const Context<double>&, BasicVector<double>* out) {
-          ASSERT_NE(out, nullptr);
-          EXPECT_EQ(out->size(), 2);
-          out->SetAtIndex(0, 10.);
-          out->SetAtIndex(1, 20.);
-        });
+    // Output port 2 is no longer testing anything meaningful.
+    // TODO(sherm1) Renumber everything.
+    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcString);
 
     // Output port 3 uses the similar "Advanced" method for abstract ports.
     this->DeclareAbstractOutputPort(
@@ -708,7 +688,11 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto& out5 = dut.get_output_port(5);
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
   EXPECT_EQ(out1.get_data_type(), kAbstractValued);
+#if 0
   EXPECT_EQ(out2.get_data_type(), kVectorValued);
+#else
+  (void)(out2);
+#endif
   EXPECT_EQ(out3.get_data_type(), kAbstractValued);
   EXPECT_EQ(out4.get_data_type(), kAbstractValued);
   EXPECT_EQ(out5.get_data_type(), kAbstractValued);
@@ -732,6 +716,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   out1.Calc(*context, output1);
   EXPECT_EQ(*downcast_output1, "calc'ed string");
 
+#if 0
   // Check that DummyVec2 came out, custom constructed to (8,9).
   auto output2 = system_output->GetMutableVectorData(2);
   ASSERT_NE(output2, nullptr);
@@ -741,6 +726,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(out2_dummy->get_value(), Eigen::Vector2d(8., 9.));
   out2.Calc(*context, system_output->GetMutableData(2));
   EXPECT_EQ(out2_dummy->get_value(), Eigen::Vector2d(10., 20.));
+#endif
 
   // Check that Value<int> came out, default initialized to -2.
   auto output3 = system_output->GetMutableData(3);

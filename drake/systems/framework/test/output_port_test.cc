@@ -44,8 +44,8 @@ unique_ptr<AbstractValue> alloc_string(const Context<double>&) {
 }
 
 // AllocVectorCallback returns a MyVector3d(-1,-2,-3).
-unique_ptr<BasicVector<double>> alloc_myvector3(const Context<double>&) {
-  return MyVector3d::Make(-1., -2., -3.);
+unique_ptr<AbstractValue> alloc_myvector3(const Context<double>&) {
+  return Value<BasicVector<double>>(MyVector3d::Make(-1., -2., -3.)).Clone();
 }
 
 // CalcCallback that expects to have a string to write on.

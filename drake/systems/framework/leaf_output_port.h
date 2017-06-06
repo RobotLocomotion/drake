@@ -50,11 +50,6 @@ class LeafOutputPort : public OutputPort<T> {
   using AllocCallback = std::function<std::unique_ptr<AbstractValue>(
       const Context<T>&)>;
 
-  /** Signature of a function suitable for allocating a BasicVector of the
-  right size and concrete type for a particular vector-valued output port. */
-  using AllocVectorCallback = std::function<std::unique_ptr<BasicVector<T>>(
-      const Context<T>&)>;
-
   /** Signature of a function suitable for calculating a value of a particular
   output port, given a place to put the value. */
   using CalcCallback =
@@ -83,7 +78,8 @@ class LeafOutputPort : public OutputPort<T> {
   }
 
   /** Constructs a fixed-size vector-valued output port. The supplied allocator
-  returns a BasicVector of the correct size in which to hold the result. The
+  returns a Value<BasicVector> of the correct size in which to hold the result.
+  The
   supplied calculator function writes to a BasicVector of the same underlying
   concrete type as is returned by the allocator. Requires the fixed size to be
   given explicitly here. The allocator function is not invoked during
@@ -93,7 +89,7 @@ class LeafOutputPort : public OutputPort<T> {
   // this method is invoked. Do not attempt to extract the size from
   // the allocator by calling it here.
   LeafOutputPort(const System<T>& system,
-                 AllocVectorCallback vector_alloc_function, int size,
+                 AllocCallback vector_alloc_function, int size,
                  CalcVectorCallback vector_calc_function)
       : OutputPort<T>(system, kVectorValued, size) {
     set_allocation_function(vector_alloc_function);
@@ -115,11 +111,6 @@ class LeafOutputPort : public OutputPort<T> {
   void set_allocation_function(AllocCallback alloc_function) {
     alloc_function_ = alloc_function;
   }
-
-  // Sets or replaces the allocation function for this vector-valued output
-  // port, using a function that returns an object derived from
-  // `BasicVector<T>`.
-  void set_allocation_function(AllocVectorCallback vector_alloc_function);
 
   // Sets or replaces the calculation function for this output port, using
   // a function that writes into an `AbstractValue`.

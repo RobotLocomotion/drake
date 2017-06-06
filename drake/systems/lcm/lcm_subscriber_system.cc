@@ -1,5 +1,6 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
+#include <functional>
 #include <iostream>
 #include <utility>
 
@@ -47,26 +48,14 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   // to proper callbacks, due to downstream effects of using the translator
   // or serializer for allocation. So we'll just create the callbacks here.
   if (translator_ != nullptr) {
-    LeafOutputPort<double>::AllocVectorCallback alloc_func =
-        [this](const Context<double>&) {
-          return this->LcmSubscriberSystem::AllocateTranslatorOutputValue();
-        };
-    LeafOutputPort<double>::CalcVectorCallback calc_func =
-        [this](const Context<double>& context, BasicVector<double>* output) {
-          this->LcmSubscriberSystem::CalcTranslatorOutputValue(context, output);
-        };
-    DeclareVectorOutputPort(alloc_func, translator->get_vector_size(),
-                            calc_func);
+    DeclareVectorOutputPort(
+        *AllocateTranslatorOutputValue(),
+        &LcmSubscriberSystem::CalcTranslatorOutputValue);
   } else {
-    LeafOutputPort<double>::AllocCallback alloc_func =
-        [this](const Context<double>&) {
-          return this->LcmSubscriberSystem::AllocateSerializerOutputValue();
-        };
-    LeafOutputPort<double>::CalcCallback calc_func =
-        [this](const Context<double>& context, AbstractValue* output) {
-          this->LcmSubscriberSystem::CalcSerializerOutputValue(context, output);
-        };
-    DeclareAbstractOutputPort(alloc_func, calc_func);
+    DeclareAbstractOutputPort(
+        std::bind(&LcmSubscriberSystem::AllocateSerializerOutputValue, this),
+        std::bind(&LcmSubscriberSystem::CalcSerializerOutputValue,
+                  this, std::placeholders::_1, std::placeholders::_2));
   }
 
   set_name(make_name(channel_));

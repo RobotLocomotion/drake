@@ -331,7 +331,9 @@ class ValueIOTestSystem : public System<T> {
 
     this->DeclareInputPort(kVectorValued, 1);
     CreateLeafOutputPort(
-        [](const Context<T>&) { return std::make_unique<BasicVector<T>>(1); },
+        [](const Context<T>&) {
+          return std::make_unique<Value<BasicVector<T>>>(1);
+        },
         1,  // Vector size.
         [this](const Context<T>& context, BasicVector<T>* output) {
           this->CalcVectorOutput(context, output);

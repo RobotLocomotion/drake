@@ -13,22 +13,6 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-void LeafOutputPort<T>::set_allocation_function(
-    AllocVectorCallback vector_alloc_function) {
-  if (!vector_alloc_function) {
-    alloc_function_ = nullptr;
-  } else {
-    // Wrap the vector-returning function with an AbstractValue-returning
-    // allocator.
-    alloc_function_ = [vector_alloc_function](const Context<T>& context) {
-      std::unique_ptr<BasicVector<T>> vector = vector_alloc_function(context);
-      return std::unique_ptr<AbstractValue>(
-          new Value<BasicVector<T>>(std::move(vector)));
-    };
-  }
-}
-
-template <typename T>
 void LeafOutputPort<T>::set_calculation_function(
     CalcVectorCallback vector_calc_function) {
   if (!vector_calc_function) {
