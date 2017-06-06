@@ -129,17 +129,17 @@ int main(int argc, char* argv[]) {
   ext_input->SetAtIndex(2, 0.0);
   rod_context->FixInputPort(0, std::move(ext_input));
 
-  // Build the simulator.
+  // Set up the integrator. 
   Simulator<double> simulator(*diagram, std::move(context));
   if (FLAGS_simulation_type == "compliant") {
     auto context = simulator.get_mutable_context();
     simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
                                                                 context);
-    simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   }
+  simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
+  simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
 
   // Start simulating.
-  simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
   simulator.set_target_realtime_rate(1.0);
   while (simulator.get_context().get_time() < FLAGS_sim_duration) {
     const double t = simulator.get_context().get_time();
