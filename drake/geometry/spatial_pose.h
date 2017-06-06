@@ -9,15 +9,24 @@
 namespace drake {
 namespace geometry {
 
-/** This class is used to represent the pose of a frame, `X_PF`. It represents
- the position and orientation of a frame F, relative to another frame P. It is
- *related* to spatial vectors (e.g., SpatialVelocity), but it differs in several
- ways:
-    - It serves as value storage and supports no mathematical operators.
-    - It doesn't expose a monolithic array of coefficients but represents the
-      pose as discrete orientation and position components.
+/** This class is used to represent the pose of a frame, `X_PF` --  the position
+ and orientation of a frame F, relative to a parent frame P. Mathematically, it
+ is equivalent to using an Isometry3 but it is more compact. This serves as the
+ basis for communicating frame kinematics to GeometryWorld and GeometrySystem
+ via the FrameKinematicsSet.
 
- @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
+ The %SpatialPose is _related_ to a SpatialVelocity. Whereas the SpatialVelocity
+ `V_PF` represents the rate at which frame F moves with respect to frame P, the
+ %SpatialPose `X_PF` represents the pose of frame F measured in frame P. It is
+ worth emphasizing that `V_PF` ≠ `d(X_PF)/dt` on an element-wise basis. See
+ @ref multibody_concepts for a full discussion.
+
+ The %SpatialPose has no knowledge of its semantics (most particularly which
+ frame it is associated with or which frame it is measured in). It assumes the
+ context of its definition and use can maintain those associations consistently.
+
+ @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+ @see FrameKinematicsSet */
 template <typename T>
 class SpatialPose {
  public:
@@ -35,22 +44,29 @@ class SpatialPose {
     DRAKE_ASSERT_VOID(SetNaN());
   }
 
-  /** Construction from an orientation `q` and a position `p`. */
+  /** Construction from the orientation `q_PF` and a position `p_PF` of frame
+   F relative to parent frame P. Both quantities must be measured and expressed
+   in the same frame. */
   SpatialPose(const Quaternion<T>& q, const Eigen::Ref<const Vector3<T>>& p)
       : orientation_(q), position_(p) {}
 
-  /** Construction from an isometry. */
+  /** Construction from the pose `X_PF` represented by an Eigen::Isometry. */
   explicit SpatialPose(const Isometry3<T>& isometry)
       : orientation_(isometry.linear()), position_(isometry.translation()) {}
 
   //@}
 
-  /** @name  Const access to pose values */
+  /** @name  Const access to pose values
+
+   The pose values returned by these methods are implicitly measured and
+   expressed in the same frame as the user-provided values (either in the
+   constructor or through the setter methods). %SpatialPose will take no action
+   to re-express the values in any other frame.  Therefore, if the user-provided
+   values are for frame F relative to frame P, these functions will return
+   the quantity `q_PF` for the corresponding quantity. */
   //@{
 
-  /** Returns the pose represented by a 4x4 homogeneous matrix (or isometry).
-   The matrix is measured and expressed in the same frame as the underlying
-   pose. */
+  /** Returns the full pose represented by an Eigen::Isometry. */
   Isometry3<T> get_isometry() const {
     Isometry3<T> isometry;
     isometry.linear() = orientation_.toRotationMatrix();
@@ -58,32 +74,37 @@ class SpatialPose {
     return isometry;
   }
 
-  /** Const access to the rotational component of this spatial vector. */
+  /** Returns the rotational component of this pose. */
   const Quaternion<T>& rotational() const {
     return orientation_;
   }
 
-  /** Const access to the translational component of this spatial vector. */
+  /** Returns the translational component of this pose. */
   const Vector3<T>& translational() const {
     return position_;
   }
 
   //@}
 
-  /** @name  Updating pose values  */
+  /** @name  Setting pose values
+
+   It is the responsibility of the caller to confirm that the values provided
+   to these methods are meaningful. If provided separately, the rotational and
+   translational components must both be measured and expressed relative to the
+   same frame. There is no error checking in this regard.  */
   // @{
 
-  /** Sets the rotational component of the pose from the given `rotational`. */
+  /** Sets the rotational component of the pose from the given quaternion. */
   void set_rotational(const Quaternion<T>& rotational) {
     orientation_ = rotational;
   }
 
-  /** Sets the translational component of the pose from the given `position`. */
+  /** Sets the translational component of the pose from the given vector. */
   void set_translational(const Vector3<T>& position) {
     position_ = position;
   }
 
-  /** Sets the pose from the given isometry. */
+  /** Sets the full pose from the given isometry. */
   void set_pose(const Isometry3<T>& pose) {
     orientation_ = pose.linear();
     position_ = pose.translation();
@@ -91,32 +112,16 @@ class SpatialPose {
 
   //@}
 
-  /** @name  Data access and manipulation  */
-  // @{
-
-  /** Compares `this` spatial pose to the provided spatial pose `other`
-   with respect to a specified precision.
-   @returns `true` if `other`'s values lie within a precision given by
-   `tolerance`. The comparison is performed by comparing the translational
-   components and rotational components of `this` and `other`
-   using the fuzzy comparison provided by Eigen's method isApprox(). */
-  bool IsApprox(const SpatialPose& other,
-                double tolerance = Eigen::NumTraits<T>::epsilon()) const {
-    return position_.isApprox(other.position_, tolerance) &&
-        orientation_.isApprox(other.orientation_, tolerance);
-  }
-
-  /** Sets all entries in `this` %SpatialPose to NaN. Typically used to
-   quickly detect uninitialized values since NaN will trigger a chain of
-   invalid computations that can then be tracked back to the source. */
+ protected:
+  // Sets all entries in `this` %SpatialPose to NaN. Typically used to quickly
+  // detect uninitialized values since NaN will trigger a chain of invalid
+  // computations that can then be tracked back to the source.
   void SetNaN() {
     orientation_.coeffs().setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
     position_.setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
-
-  //@}
 
  private:
   Quaternion<T> orientation_;
