@@ -54,36 +54,17 @@ class MaliputRailcarTest : public ::testing::Test {
     Initialize(
         std::make_unique<const maliput::dragway::RoadGeometry>(
             maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
-<<<<<<< HEAD
-            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth),
-        with_s);
-||||||| merged common ancestors
-            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth), with_s);
-=======
             kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth,
             kMaximumHeight, kLinearTolerance, kAngularTolerance), with_s);
->>>>>>> 8b3ed1a3f0614ff7f4ce295ccf69dbb26a45cf82
   }
 
   void InitializeCurvedMonoLane(bool with_s = true) {
     maliput::monolane::Builder builder(
-<<<<<<< HEAD
-        maliput::api::RBounds(-2, 2), /* lane_bounds       */
-        maliput::api::RBounds(-4, 4), /* driveable_bounds  */
-        0.01,                         /* linear tolerance  */
-        0.5 * M_PI / 180.0);          /* angular_tolerance */
-||||||| merged common ancestors
-        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
-        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
-        0.01,                           /* linear tolerance  */
-        0.5 * M_PI / 180.0);            /* angular_tolerance */
-=======
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
         maliput::api::HBounds(0, 5),    /* elevation bounds */
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
->>>>>>> 8b3ed1a3f0614ff7f4ce295ccf69dbb26a45cf82
     builder.Connect(
         "point.0",                                            /* id    */
         Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)), /* start */
@@ -96,23 +77,11 @@ class MaliputRailcarTest : public ::testing::Test {
 
   void InitializeSlopedCurvedMonoLane(bool with_s = true) {
     maliput::monolane::Builder builder(
-<<<<<<< HEAD
-        maliput::api::RBounds(-2, 2), /* lane_bounds       */
-        maliput::api::RBounds(-4, 4), /* driveable_bounds  */
-        0.01,                         /* linear tolerance  */
-        0.5 * M_PI / 180.0);          /* angular_tolerance */
-||||||| merged common ancestors
-        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
-        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
-        0.01,                           /* linear tolerance  */
-        0.5 * M_PI / 180.0);            /* angular_tolerance */
-=======
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
         maliput::api::HBounds(0, 5),    /* elevation bounds */
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
->>>>>>> 8b3ed1a3f0614ff7f4ce295ccf69dbb26a45cf82
     builder.Connect(
         "point.0",                                            /* id    */
         Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)), /* start */
@@ -136,23 +105,11 @@ class MaliputRailcarTest : public ::testing::Test {
   void InitializeTwoLaneStretchOfRoad(bool with_s = true,
                                       bool flip_curve_lane = false) {
     maliput::monolane::Builder builder(
-<<<<<<< HEAD
-        maliput::api::RBounds(-2, 2), /* lane_bounds       */
-        maliput::api::RBounds(-4, 4), /* driveable_bounds  */
-        0.01,                         /* linear tolerance  */
-        0.5 * M_PI / 180.0);          /* angular_tolerance */
-||||||| merged common ancestors
-        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
-        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
-        0.01,                           /* linear tolerance  */
-        0.5 * M_PI / 180.0);            /* angular_tolerance */
-=======
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
         maliput::api::HBounds(0, 5),    /* elevation bounds */
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
->>>>>>> 8b3ed1a3f0614ff7f4ce295ccf69dbb26a45cf82
     const Connection* straight_lane_connection = builder.Connect(
         "point.0",                                            /* id     */
         Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)), /* start  */
