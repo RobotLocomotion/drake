@@ -34,6 +34,10 @@ class TestAbstractType {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestAbstractType)
   TestAbstractType() = default;
+  int get_data() const { return data_;}
+  void set_data(int data) { data_ = data;}
+ private:
+  int data_;
 };
 
 class LeafContextTest : public ::testing::Test {
@@ -238,6 +242,33 @@ TEST_F(LeafContextTest, SetAndGetCache) {
 
   ctx.SetCachedValue<int>(ticket, 43);
   EXPECT_EQ(43, UnpackIntValue(ctx.GetCachedValue(ticket)));
+}
+
+// Unit tests to work with cache entries using in the LeafContext.
+TEST_F(LeafContextTest, MakeCacheEntry) {
+  const LeafContext<double>& ctx = context_;
+  CacheTicket ticket0 = ctx.MakeCacheEntry<TestAbstractType>({});
+  // Create a cache entry dependent on it to test recursive invalidation.
+  CacheTicket ticket1 = ctx.CreateCacheEntry({ticket0});
+  // MakeCacheEntry() only allocates but does not initialize. Therefore the new
+  // created entries are marked invalid.
+  EXPECT_FALSE(ctx.is_cache_entry_valid(ticket0));
+  // Retrieve mutable cache entry value so we can work on it.
+  TestAbstractType& cached_value =
+      ctx.GetMutableCachedValue<TestAbstractType>(ticket0);
+  cached_value.set_data(21);  // Do some work with this entry.
+  ctx.validate_cache_entry(ticket0);  // Intentionally validate.
+  // Initialize dependent cache entry, and therefore validate it.
+  ctx.InitCachedValue(ticket1, PackValue(4));
+  EXPECT_TRUE(ctx.is_cache_entry_valid(ticket0));
+  EXPECT_TRUE(ctx.is_cache_entry_valid(ticket1));
+  // Verify the value of the cache entries.
+  EXPECT_EQ(21, ctx.GetCachedValue<TestAbstractType>(ticket0).get_data());
+  EXPECT_EQ(4, ctx.GetCachedValue<int>(ticket1));
+  // Verify recursive invalidation when GetMutableCachedValue() is called.
+  ctx.GetMutableCachedValue<TestAbstractType>(ticket0);
+  EXPECT_FALSE(ctx.is_cache_entry_valid(ticket0));
+  EXPECT_FALSE(ctx.is_cache_entry_valid(ticket1));
 }
 
 TEST_F(LeafContextTest, Clone) {

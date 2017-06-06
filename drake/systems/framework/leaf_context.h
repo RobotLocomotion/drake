@@ -74,6 +74,32 @@ class LeafContext : public Context<T> {
     return cache_.MakeCacheTicket(prerequisites);
   }
 
+  /// Creates a new cache entry of type `EntryType` and returns the new ticket
+  /// to it, marking the entry itself as **invalid**. This entry will
+  /// be invalidated whenever any of the @p prerequisites are invalidated.
+  /// As an example of usage consider the code below:
+  ///
+  /// @code
+  ///   LeafContext<double> context;
+  ///   CacheTicket foos_ticket =
+  ///       context.MakeCacheEntry<Foo<double>>(
+  ///           {ticket1, ticket2}, /* Entry prerequisites. */
+  ///           "name", 3.14);      /* Foo<double>'s constructor parameters. */
+  /// @endcode
+  ///
+  /// @param[in] prerequisites A list of cache tickets corresponding to the
+  ///                          cache entries the newly created entry depends on.
+  /// @param[in] args The list of arguments to EntryType's constructor.
+  ///
+  /// @tparam EntryType The type of the cache entry to be created. It must be
+  ///                   copy-constructible and assignable.
+  template<class EntryType, typename... Args>
+  CacheTicket MakeCacheEntry(const std::set<CacheTicket>& prerequisites,
+                             Args&&... args) const {
+    return cache_.MakeCacheEntry<EntryType>(
+        prerequisites, std::forward<Args>(args)...);
+  }
+
   /// Stores the given @p value in the cache entry for the given @p ticket,
   /// and returns a bare pointer to @p value.  That pointer will be invalidated
   /// whenever any of the @p ticket's declared prerequisites change, and
@@ -103,10 +129,52 @@ class LeafContext : public Context<T> {
     cache_.Set<V>(ticket, value);
   }
 
-  // Returns the cached value for the given @p ticket, or nullptr if the
-  // cache entry has been invalidated.
+  bool is_cache_entry_valid(CacheTicket ticket) const {
+    return cache_.is_entry_valid(ticket);
+  }
+
+  /// Returns the cached value for the given @p ticket, or nullptr if the
+  /// cache entry has been invalidated.
   const AbstractValue* GetCachedValue(CacheTicket ticket) const {
     return cache_.Get(ticket);
+  }
+
+  /// Returns a mutable reference to the value contained in the cache entry
+  /// identified by @p ticket, which must be of exactly type `EntryType`.
+  /// This call invalidates this cache entry itself and recursively invalidates
+  /// all of its dependents.
+  /// In Debug builds, if the types don't match, std::bad_cast will be
+  /// thrown.  In Release builds, this is not guaranteed.
+  template <class EntryType>
+  EntryType& GetMutableCachedValue(CacheTicket ticket) const {
+    return cache_.GetMutable(ticket)->template GetMutableValue<EntryType>();
+  }
+
+  /// Returns a const reference to the value contained in the cache entry
+  /// identified by @p ticket, which must be of exactly type `EntryType`.
+  /// In Debug builds, if the types don't match, std::bad_cast will be
+  /// thrown.  In Release builds, this is not guaranteed.
+  template <class EntryType>
+  const EntryType& GetCachedValue(CacheTicket ticket) const {
+    return cache_.Get(ticket)->template GetValue<EntryType>();
+  }
+
+  /// Validates the cache entry corresponding to the provided @p ticket.
+  /// In order to make use of the automatic validation capability of cache
+  /// entries provided by the caching system, users should use SetCachedValue()
+  /// whenever copies of the particular entry type are cheap to perform since
+  /// SetCachedValue() validates the entry being modified and invalidates its
+  /// dependents automatically.
+  /// However, in many cases cache entries are large complex data structures and
+  /// it might be more convenient to first retrieve a mutable entry with
+  /// GetMutableCachedValue() (which automatically invalidates the requested
+  /// entry and its dependents), make the necessary updates to the entry and
+  /// finally, validate it with a call to this method.
+  ///
+  /// @warning Only advanced, careful users should call this method since
+  /// validating cache entries by hand can be error prone. Use with care.
+  void validate_cache_entry(CacheTicket ticket) const {
+    cache_.validate(ticket);
   }
 
   // =========================================================================
