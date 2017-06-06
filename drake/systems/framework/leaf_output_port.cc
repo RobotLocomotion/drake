@@ -43,7 +43,7 @@ void LeafOutputPort<T>::set_calculation_function(
       if (value == nullptr) {
         std::ostringstream oss;
         oss << "LeafOutputPort::Calc(): Expected a vector output type for "
-            << this->GetPortIdMsg() << " but got a "
+            << this->GetPortIdString() << " but got a "
             << NiceTypeName::Get(*abstract) << " instead.";
         throw std::logic_error(oss.str());
       }
@@ -63,13 +63,13 @@ std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
     result = alloc_function_(context);
   } else {
     throw std::logic_error(
-        "LeafOutputPort::DoAllocate(): " + this->GetPortIdMsg() +
+        "LeafOutputPort::DoAllocate(): " + this->GetPortIdString() +
         " has no allocation function so cannot be allocated.");
   }
   if (result.get() == nullptr) {
     throw std::logic_error(
         "LeafOutputPort::DoAllocate(): allocator returned a nullptr for " +
-        this->GetPortIdMsg());
+            this->GetPortIdString());
   }
   return result;
 }
@@ -80,7 +80,7 @@ void LeafOutputPort<T>::DoCalc(const Context<T>& context,
   if (calc_function_) {
     calc_function_(context, value);
   } else {
-    throw std::logic_error("LeafOutputPort::DoCalc(): " + this->GetPortIdMsg() +
+    throw std::logic_error("LeafOutputPort::DoCalc(): " + this->GetPortIdString() +
                            " had no calculation function available.");
   }
 }

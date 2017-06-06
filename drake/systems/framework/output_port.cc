@@ -20,7 +20,7 @@ std::unique_ptr<AbstractValue> OutputPort<T>::Allocate(
   std::unique_ptr<AbstractValue> value = DoAllocate(context);
   if (value == nullptr) {
     throw std::logic_error("Allocate(): allocator returned a nullptr for " +
-                           GetPortIdMsg());
+        GetPortIdString());
   }
   DRAKE_ASSERT_VOID(CheckValidAllocation(*value));
   return value;
@@ -55,11 +55,10 @@ OutputPort<T>::OutputPort(const System<T>& system, PortDataType data_type,
 }
 
 template <typename T>
-std::string OutputPort<T>::GetPortIdMsg() const {
+std::string OutputPort<T>::GetPortIdString() const {
   std::ostringstream oss;
   oss << "output port " << this->get_index() << " of "
-      << NiceTypeName::Get(this->get_system()) << " System "
-      << this->get_system().GetPath();
+      << this->get_system().GetSystemIdString();
   return oss.str();
 }
 
@@ -75,7 +74,7 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   if (proposed_vec == nullptr) {
     std::ostringstream oss;
     oss << "Allocate(): expected BasicVector output type but got "
-        << NiceTypeName::Get(proposed) << " for " << GetPortIdMsg();
+        << NiceTypeName::Get(proposed) << " for " << GetPortIdString();
     throw std::logic_error(oss.str());
   }
 
@@ -87,7 +86,7 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
     std::ostringstream oss;
     oss << "Allocate(): expected vector output type of size " << this->size()
         << " but got a vector of size " << proposed_size
-        << " for " << GetPortIdMsg();
+        << " for " << GetPortIdString();
     throw std::logic_error(oss.str());
   }
 }
@@ -115,7 +114,7 @@ void OutputPort<T>::CheckValidAbstractValue(
     std::ostringstream oss;
     oss << "Calc(): expected AbstractValue output type "
         << NiceTypeName::Get(good) << " but got " << NiceTypeName::Get(proposed)
-        << " for " << GetPortIdMsg();
+        << " for " << GetPortIdString();
     throw std::logic_error(oss.str());
   }
 }
@@ -127,7 +126,7 @@ void OutputPort<T>::CheckValidBasicVector(
     std::ostringstream oss;
     oss << "Calc(): expected BasicVector output type "
         << NiceTypeName::Get(good) << " but got " << NiceTypeName::Get(proposed)
-        << " for " << GetPortIdMsg();
+        << " for " << GetPortIdString();
     throw std::logic_error(oss.str());
   }
 }

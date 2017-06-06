@@ -1033,6 +1033,19 @@ class System {
     DoGetWitnessFunctions(context, w);
   }
 
+  /// Returns a string suitable for identifying this particular %System in
+  /// error messages, when it is a subsystem of a larger Diagram. This method
+  /// captures human-readable subsystem identification best practice; the
+  /// specifics of that are likely to change over time. However it will always
+  /// be formatted like "System xxx" or "adjective System xxx" so that the
+  /// remainder of the error message will continue to make sense. Currently it
+  /// returns "system_type_name System subsystem_pathname".
+  // TODO(sherm1) Remove the system type noise once the subsystem path is
+  // a fully reliable identifier.
+  std::string GetSystemIdString() const {
+    return NiceTypeName::Get(*this) + " System " + GetPath();
+  }
+
  protected:
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default

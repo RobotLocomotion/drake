@@ -35,7 +35,7 @@ Instantiated templates for the following kinds of T's are provided:
 - symbolic::Expression
 
 They are already available to link against in the containing library.
-No other values for T are currently supported. **/
+No other values for T are currently supported. */
 // TODO(sherm1) Implement caching for output ports.
 template <typename T>
 class LeafOutputPort : public OutputPort<T> {
@@ -46,27 +46,27 @@ class LeafOutputPort : public OutputPort<T> {
 
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular output port. The result is returned as an
-  AbstractValue even if this is a vector-valued port. **/
+  AbstractValue even if this is a vector-valued port. */
   using AllocCallback = std::function<std::unique_ptr<AbstractValue>(
       const Context<T>&)>;
 
   /** Signature of a function suitable for allocating a BasicVector of the
-  right size and concrete type for a particular vector-valued output port. **/
+  right size and concrete type for a particular vector-valued output port. */
   using AllocVectorCallback = std::function<std::unique_ptr<BasicVector<T>>(
       const Context<T>&)>;
 
   /** Signature of a function suitable for calculating a value of a particular
-  output port, given a place to put the value. **/
+  output port, given a place to put the value. */
   using CalcCallback =
   std::function<void(const Context<T>&, AbstractValue*)>;
 
   /** Signature of a function suitable for calculating a value of a particular
-  vector-valued output port, given a place to put the value. **/
+  vector-valued output port, given a place to put the value. */
   using CalcVectorCallback =
   std::function<void(const Context<T>&, BasicVector<T>*)>;
 
   /** Signature of a function suitable for obtaining the cached value of a
-  particular output port. **/
+  particular output port. */
   using EvalCallback = std::function<const AbstractValue&(const Context<T>&)>;
 
   // There is no EvalVectorCallback.
@@ -74,7 +74,7 @@ class LeafOutputPort : public OutputPort<T> {
   /** Constructs an abstract-valued output port. The supplied allocator returns
   a suitable AbstractValue in which to hold the result. The supplied calculator
   function writes to an AbstractValue of the same underlying concrete type as is
-  returned by the allocator. **/
+  returned by the allocator. */
   LeafOutputPort(const System<T>& system, AllocCallback alloc_function,
                  CalcCallback calc_function)
       : OutputPort<T>(system, kAbstractValued, 0 /* size */) {
@@ -87,7 +87,7 @@ class LeafOutputPort : public OutputPort<T> {
   supplied calculator function writes to a BasicVector of the same underlying
   concrete type as is returned by the allocator. Requires the fixed size to be
   given explicitly here. The allocator function is not invoked during
-  construction of the port. **/
+  construction of the port. */
   // Note: there is no guarantee that the allocator can be invoked successfully
   // here since construction of the containing System is likely incomplete when
   // this method is invoked. Do not attempt to extract the size from
@@ -103,7 +103,7 @@ class LeafOutputPort : public OutputPort<T> {
   /** (Advanced) Sets or replaces the evaluation function for this output
   port, using a function that returns an `AbstractValue`. By default, an
   evaluation function is automatically provided that calls the calculation
-  function. **/
+  function. */
   // TODO(sherm1) Not useful yet; implement with caching.
   void set_evaluation_function(EvalCallback eval_function) {
     eval_function_ = eval_function;
