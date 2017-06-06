@@ -21,6 +21,7 @@ using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix4d;
 using Eigen::Translation3d;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
@@ -335,10 +336,19 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
 }
 
+// Verify the correctness of method MultibodyTree::CalcPositionKinematicsCache()
+// comparing the computed results with a known solution. In this case the known
+// solution corresponds to that of the double pendulum described in the
+// documentation of the test fixture PendulumTests in this file.
 TEST_F(PendulumTests, CalcPositionKinematics) {
+  const double kEpsilon = std::numeric_limits<double>::epsilon();
+
   CreatePendulumModel();
 
-  // Verifies the number of multibody elements is correct.
+  // Verifies the number of multibody elements is correct. In this case:
+  // - world_
+  // - upper_link_
+  // - lower_link_
   EXPECT_EQ(model_->get_num_bodies(), 3);
 
   // Verify we cannot create a Context until we have a valid topology.
@@ -356,6 +366,7 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
   // Tests MultibodyTreeContext accessors.
   auto mbt_context =
       dynamic_cast<MultibodyTreeContext<double>*>(context.get());
+  ASSERT_TRUE(mbt_context != nullptr);
 
   // Verifies the correct number of generalized positions and velocities.
   EXPECT_EQ(mbt_context->get_positions().size(), 2);
@@ -383,6 +394,10 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
       EXPECT_EQ(shoulder_mobilizer_->get_angle(*context), shoulder_angle);
       elbow_mobilizer_->set_angle(context.get(), elbow_angle);
       EXPECT_EQ(elbow_mobilizer_->get_angle(*context), elbow_angle);
+
+      // Verify this matches the corresponding entries in the context.
+      EXPECT_NEAR(mbt_context->get_positions()(0), shoulder_angle, kEpsilon);
+      EXPECT_NEAR(mbt_context->get_positions()(1), elbow_angle, kEpsilon);
 
       model_->CalcPositionKinematicsCache(*mbt_context, &pc);
 
