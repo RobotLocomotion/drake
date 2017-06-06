@@ -290,10 +290,10 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   // definitions serves to minimize heap allocations and deallocations.
   MatrixX<T> J_;
 
-  // The state at which the last Jacobian matrix was computed. The time should
-  // be stored as well to ensure that any time-dependent dynamics are captured.
-  // Instead, we assume any time-dependent dynamics have minimal effects and
-  // cache using only the state.
+  // The state at which the last Jacobian matrix was computed. Storing the
+  // time as well would ensure that any time-dependent dynamics are captured.
+  // However, we assume any time-dependent dynamics have minimal effects and
+  // cache using the state only.
   VectorX<T> last_jacobian_x_;
 
   // The last computed *negation* of the "iteration matrix", equivalent to

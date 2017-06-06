@@ -422,7 +422,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() convergence failed");
 
-  // Recompute the Jacobian matrix.
+  // Recompute the Jacobian matrix (or retrieve it from the cache).
   J_ = CalcJacobian(tf, *xtplus);
 
   // Failed because of divergence or after the maximum number of iterations.
@@ -533,7 +533,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
                                                     const VectorX<T>& x) {
   // Try to use the cached Jacobian.
   if (last_jacobian_x_.size() == x.size()) {
-    // Time is identical to that in the case; see whether state is identical.
+    // See whether state is identical.
     bool state_identical = true;
     for (int i = 0; i < x.size(); ++i)
       if (last_jacobian_x_[i] != x[i]) {
