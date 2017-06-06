@@ -440,6 +440,7 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         "//drake/common",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
