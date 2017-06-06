@@ -17,8 +17,10 @@ namespace multibody {
 /// implementations so that all operations can be perfomed with fixed-size
 /// stack-allocated Eigen variables.
 /// In particular, most of the across mobilizer code for velocity kinematics
-/// lives in this class since the acrooss mobilizer Jacobian matrices have a
-/// compile-time fixed size.
+/// lives in this class since the acrooss mobilizer Jacobian matrices `H_FM(q)`
+/// have a compile-time fixed size.
+/// For a more detailed discussion of the role of a BodyNode in a MultibodyTree
+/// refer to the class documentation for BodyNode.
 template <typename T, int  num_positions, int num_velocities>
 class BodyNodeImpl : public BodyNode<T> {
  public:
@@ -26,9 +28,7 @@ class BodyNodeImpl : public BodyNode<T> {
   // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
 
-  /// A node is a computational cell encompassing a Body in a MultibodyTree
-  /// and the inboard Mobilizer that connects this body to the tree. Given a
-  /// body and its inboard mobilizer in a MultibodyTree this constructor
+  /// Given a body and its inboard mobilizer in a MultibodyTree this constructor
   /// creates the corresponding %BodyNode. See the BodyNode class documentation
   /// for details on how a BodyNode is defined.
   /// @param[in] body The body B associated with `this` node. It must be a valid
