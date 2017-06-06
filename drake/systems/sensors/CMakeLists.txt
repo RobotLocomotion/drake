@@ -68,6 +68,17 @@ if(VTK_FOUND)
     target_link_libraries(drakeSensors vtkIO vtkRendering)
   endif()
   target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
+
+  if(lcm_FOUND AND robotlocomotion-lcmtypes_FOUND)
+    add_executable(rgbd_camera_publish_lcm_example rgbd_camera_publish_lcm_example.cc)
+    target_link_libraries(rgbd_camera_publish_lcm_example
+      drakeCommon
+      drakeSensors
+      drakeSystemAnalysis
+      drakeLcmSystem
+      drakeMultibodyParsers
+      gflags)
+  endif()
 endif()
 
 drake_install_libraries(drakeSensors)

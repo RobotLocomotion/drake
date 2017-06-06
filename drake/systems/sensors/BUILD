@@ -184,6 +184,27 @@ drake_cc_library(
     ],
 )
 
+drake_cc_binary(
+    name = "rgbd_camera_publish_lcm_example",
+    srcs = [
+        "rgbd_camera_publish_lcm_example.cc",
+    ],
+    deps = [
+        ":rgbd_camera",
+        ":image_to_lcm_image_array_t",
+        "//drake/common:unused",
+        "//drake/lcm",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:rigid_body_plant",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/lcm:lcm",
+        "//drake/systems/rendering:pose_stamped_t_pose_vector_translator",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
 drake_cc_library(
     name = "accelerometer_example_diagram",
     srcs = [
