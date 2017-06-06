@@ -440,7 +440,7 @@ def exports_create_cps_scripts(packages):
         )
 
 #------------------------------------------------------------------------------
-def cmake_config(package, script, version_file):
+def cmake_config(package, script, version_file, deps = []):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -455,17 +455,18 @@ def cmake_config(package, script, version_file):
         srcs = [script],
         main = script,
         visibility = ["//visibility:private"],
+        deps = ["@drake//tools:cpsutils"],
     )
 
     cps_file_name = "{}.cps".format(package)
 
     native.genrule(
         name = "cps",
-        srcs = [version_file],
+        srcs = [version_file] + deps,
         outs = [cps_file_name],
-        cmd = "$(location :create-cps) \"$<\" > \"$@\"",
+        cmd = "$(location :create-cps) $(SRCS) > \"$@\"",
         tools = [":create-cps"],
-        visibility = ["//visibility:private"],
+        visibility = ["//visibility:public"],
     )
 
     config_file_name = "{}Config.cmake".format(package)
