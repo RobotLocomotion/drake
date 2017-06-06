@@ -89,6 +89,8 @@ exports_create_cps_scripts([
     "eigen",
     "fcl",
     "fmt",
+    "ignition_math",
+    "ignition_rndf",
     "ipopt",
     "lcm",
     "nlopt",
