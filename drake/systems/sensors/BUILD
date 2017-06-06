@@ -51,6 +51,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "image_to_lcm_image_array_t",
+    srcs = [
+        "image_to_lcm_image_array_t.cc",
+    ],
+    hdrs = [
+        "image_to_lcm_image_array_t.h",
+    ],
+    deps = [
+        ":image",
+        "//drake/common",
+        "//drake/systems/framework",
+        "@robotlocomotion_lcmtypes",
+        "@zlib",
+    ],
+)
+
+drake_cc_library(
     name = "rotary_encoders",
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
@@ -311,5 +328,11 @@ drake_cc_googletest(
     name = "vtk_util_test",
     deps = [":vtk_util"],
 )
+
+drake_cc_googletest(
+    name = "image_to_lcm_image_array_t_test",
+    deps = [":image_to_lcm_image_array_t"],
+)
+
 
 cpplint()
