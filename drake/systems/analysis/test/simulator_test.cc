@@ -278,7 +278,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   context->set_time(0);
 
   // Isolate witness functions to high accuracy.
-  const double tol = 1e-1;
+  const double tol = 1e-10;
   context->set_accuracy(tol);
 
   // Simulate.
