@@ -258,7 +258,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
     } else {
       // They should not be very close to one another.
       const double tol = 1e-8;
-      assert(std::abs(w2 - w1) > tol);
+      DRAKE_ASSERT(std::abs(w2 - w1) > tol);
       triggers.emplace_back(context.get_time(), witnesses.back());
     }
   });
