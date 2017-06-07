@@ -114,9 +114,11 @@ MultibodyTree<T>::CreateDefaultContext() const {
 
 template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
-    const MultibodyTreeContext<T>& context,
+    const systems::Context<T>& context,
     PositionKinematicsCache<T>* pc) const {
   DRAKE_DEMAND(pc != nullptr);
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   // TODO(amcastro-tri): Loop over bodies to update their position dependent
   // kinematics. This gives the chance to flexible bodies to update the pose
@@ -129,7 +131,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // of freedom qr. These are: X_FM(qr), H_FM(qr), HdotTimesV(qr), N(qr).
   // Notice this loop can be performed in any order, even in parallel.
   for (const auto& mobilizer : owned_mobilizers_)
-    mobilizer->CalcPositionKinematicsCache(context, pc);
+    mobilizer->CalcPositionKinematicsCache(mbt_context, pc);
 
   // With the kinematics information across mobilizer's and the kinematics
   // information for each body, we are now in position to perform a base-to-tip
@@ -143,7 +145,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
       DRAKE_ASSERT(node.get_index() == body_node_index);
 
       // Update per-node kinematics.
-      node.CalcPositionKinematicsCache_BaseToTip(context, pc);
+      node.CalcPositionKinematicsCache_BaseToTip(mbt_context, pc);
     }
   }
 }

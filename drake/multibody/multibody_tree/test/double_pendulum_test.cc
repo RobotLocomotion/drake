@@ -399,7 +399,7 @@ TEST_F(PendulumTests, CalcPositionKinematics) {
       EXPECT_NEAR(mbt_context->get_positions()(0), shoulder_angle, kEpsilon);
       EXPECT_NEAR(mbt_context->get_positions()(1), elbow_angle, kEpsilon);
 
-      model_->CalcPositionKinematicsCache(*mbt_context, &pc);
+      model_->CalcPositionKinematicsCache(*context, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
       const BodyNodeIndex shoulder_node =

@@ -480,9 +480,10 @@ class MultibodyTree {
   /// - Across-mobilizer Jacobian matrices `H_FM` and `H_PB_W`.
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
   ///
+  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   /// @throws std::runtime_error if `pc` is the nullptr.
   void CalcPositionKinematicsCache(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
  private:

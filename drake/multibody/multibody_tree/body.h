@@ -59,7 +59,7 @@ class BodyFrame : public Frame<T> {
   /// Since this **is** the %BodyFrame this method simply returns the identity
   /// pose.
   Isometry3<T> CalcBodyPoseInThisFrame(
-      const MultibodyTreeContext<T>& context) const final {
+      const systems::Context<T>& context) const final {
     unused(context);
     return Isometry3<T>::Identity();
   }
@@ -71,7 +71,7 @@ class BodyFrame : public Frame<T> {
   /// In this particular case since `this` frame `F` **is** the frame of
   /// body `B`, this method directly returns `X_FQ`.
   Isometry3<T> CalcOffsetPoseInBody(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const final {
     unused(context);
     return X_FQ;
@@ -82,7 +82,7 @@ class BodyFrame : public Frame<T> {
   /// in Q.
   /// Since in this case `F = B`, this method simply returns `X_QB = X_QF`.
   Isometry3<T> CalcBodyPoseInOtherFrame(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Isometry3<T>& X_QF) const final {
     unused(context);
     return X_QF;
