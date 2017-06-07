@@ -496,24 +496,25 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
     )
 
 #------------------------------------------------------------------------------
-def install_cmake_config(package):
+def install_cmake_config(package, versioned=True):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
     Args:
         package (:obj:`str`): CMake package name.
+        versioned (:obj:`bool`): True if a version file should be installed.
     """
     cmake_config_dest = "lib/cmake/{}".format(package.lower())
-    config_file_name = "{}Config.cmake".format(package)
-    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+    cmake_config_files = ["{}Config.cmake".format(package)]
+
+    if versioned:
+        cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
 
     install_files(
         name = "install_cmake_config",
         dest = cmake_config_dest,
-        files = [
-            config_file_name,
-            config_version_file_name,
-        ],
+        files = cmake_config_files,
+        visibility = ["//visibility:private"],
     )
 
 #END macros
