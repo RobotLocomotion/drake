@@ -246,7 +246,7 @@ lcm_py_library(
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
     deps = [
-        "@bot_core_lcmtypes//:py",
+        "@bot_core_lcmtypes//:bot_core_lcmtypes_py",
     ],
 )
 
