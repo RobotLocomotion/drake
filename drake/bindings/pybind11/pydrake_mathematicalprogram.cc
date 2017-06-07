@@ -92,15 +92,15 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def(py::init<>())
     .def("NewContinuousVariables", (VectorXDecisionVariable
           (MathematicalProgram::*)(
-          size_t,
+          int,
           const std::string&))
          &MathematicalProgram::NewContinuousVariables,
          py::arg("rows"),
          py::arg("name") = "x")
     .def("NewContinuousVariables", (MatrixXDecisionVariable
           (MathematicalProgram::*)(
-          size_t,
-          size_t,
+          int,
+          int,
           const std::string&))
          &MathematicalProgram::NewContinuousVariables,
          py::arg("rows"),
@@ -108,15 +108,15 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          py::arg("name") = "x")
     .def("NewBinaryVariables", (VectorXDecisionVariable
          (MathematicalProgram::*)(
-         size_t,
+         int,
          const std::string&))
          &MathematicalProgram::NewBinaryVariables,
          py::arg("rows"),
          py::arg("name") = "b")
     .def("NewBinaryVariables", (MatrixXDecisionVariable
          (MathematicalProgram::*)(
-         size_t,
-         size_t,
+         int,
+         int,
          const std::string&))
          &MathematicalProgram::NewBinaryVariables,
          py::arg("rows"),
