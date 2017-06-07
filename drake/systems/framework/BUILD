@@ -246,7 +246,6 @@ drake_cc_library(
     name = "system",
     srcs = ["system.cc"],
     hdrs = [
-        "discrete_event.h",
         "system.h",
         "witness_function.h",
     ],

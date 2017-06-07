@@ -17,7 +17,6 @@ namespace monolithic_pick_and_place {
 /// sense of the pick-and-place demo are systems that can be used to
 /// independently perform some kind of action on the simulated robot / gripper
 /// system. The functionality they offer is to decouple the state transition
-/// system. The functionality they offer is to decouple the state transition
 /// style logic of high level planners and the implementation level logic of
 /// how long an action needs to run, or what kind of LCM message an action
 /// must be encoded in etc. Each `ActionPrimitive` can maintain internal state
@@ -67,9 +66,10 @@ class ActionPrimitive : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const final;
 
   // LeafSystem override.
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-            const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-            systems::State<double>* state) const final {
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<double>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+      systems::State<double>* state) const final {
     DoExtendedCalcUnrestrictedUpdate(context, state);
   }
 
