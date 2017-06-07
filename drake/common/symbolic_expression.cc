@@ -21,10 +21,12 @@
 
 namespace drake {
 namespace symbolic {
+
 using std::make_shared;
 using std::map;
 using std::ostream;
 using std::ostringstream;
+using std::pair;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
@@ -158,6 +160,17 @@ double Expression::Evaluate(const Environment& env) const {
   return ptr_->Evaluate(env);
 }
 
+Expression Expression::EvaluatePartial(const Environment& env) const {
+  if (env.empty()) {
+    return *this;
+  }
+  Substitution subst;
+  for (const pair<Variable, double>& p : env) {
+    subst.emplace(p.first, p.second);
+  }
+  return Substitute(subst);
+}
+
 Expression Expression::Expand() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Expand();
@@ -172,14 +185,14 @@ Expression Expression::Substitute(const Variable& var,
 Expression Expression::Substitute(const Substitution& s) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   if (!s.empty()) {
-    return Expression{ptr_->Substitute(s)};
+    return ptr_->Substitute(s);
   }
   return *this;
 }
 
 Expression Expression::Differentiate(const Variable& x) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return Expression{ptr_->Differentiate(x)};
+  return ptr_->Differentiate(x);
 }
 
 string Expression::to_string() const {
