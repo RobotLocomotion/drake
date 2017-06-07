@@ -38,4 +38,5 @@ install(
     hdr_dest = "include/drake",
     license_docs = ["//:LICENSE.TXT"],
     targets = ["libdrake.so"],
+    deps = ["//drake/bindings:install"],
 )

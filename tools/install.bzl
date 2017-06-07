@@ -186,10 +186,12 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
     Args:
         file_labels (:obj:`list` of :obj:`Label`): labels to install.
         dests (:obj:`str` or :obj:`dict` of :obj:`str` to :obj:`str`):
-            Install destination. If a :obj:`dict` may be given to supply a
-            mapping of file extension to destination path.
-        strip_prefix (:obj:`list` of :obj:`str`): List of prefixes to strip
-            from the input path before prepending the destination.
+            Install destination. A :obj:`dict` may be given to supply a mapping
+            of file extension to destination path.
+        strip_prefix (:obj:`list` of :obj:`str` or :obj:`dict` of :obj:`list`
+            of :obj:`str` to :obj:`str`): List of prefixes to strip from the
+            input path before prepending the destination. A :obj:`dict` may be
+            given to supply a mapping of prefixes to strip to destination path.
 
     Returns:
         :obj:`list`: A list of install actions.
@@ -204,7 +206,13 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
                 dest = dests.get(a.extension, dests[None])
             else:
                 dest = dests
-            p = _output_path(ctx, a, strip_prefix)
+
+            if type(strip_prefix) == "dict":
+                sp = strip_prefix.get(a.extension, strip_prefix[None])
+            else:
+                sp = strip_prefix
+
+            p = _output_path(ctx, a, sp)
             actions.append(struct(src = a, dst = _join_paths(dest, p)))
 
     return actions
@@ -218,7 +226,11 @@ def _install_cc_actions(ctx, target):
         "so": ctx.attr.library_dest,
         None: ctx.attr.runtime_dest,
     }
-    actions = _install_actions(ctx, [target], dests)
+    strip_prefix = {
+        "so": ctx.attr.library_strip_prefix,
+        None: [],
+    }
+    actions = _install_actions(ctx, [target], dests, strip_prefix)
 
     # Compute actions for guessed headers.
     if ctx.attr.guess_hdrs != "NONE":
@@ -331,6 +343,7 @@ install = rule(
         "targets": attr.label_list(),
         "archive_dest": attr.string(default = "lib"),
         "library_dest": attr.string(default = "lib"),
+        "library_strip_prefix": attr.string_list(),
         "runtime_dest": attr.string(default = "bin"),
         "java_dest": attr.string(default = "share/java"),
         "py_dest": attr.string(default = "lib/python2.7/site_packages"),
@@ -382,6 +395,7 @@ Args:
     targets: List of targets to install.
     archive_dest: Destination for static library targets (default = "lib").
     library_dest: Destination for shared library targets (default = "lib").
+    library_strip_prefix: List of prefixes to remove from shared library paths.
     runtime_dest: Destination for executable targets (default = "bin").
     java_dest: Destination for Java targets (default = "share/java").
     py_dest: Destination for Python targets
