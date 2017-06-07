@@ -18,7 +18,13 @@
 #include "drake/systems/analysis/test/empty_system.h"
 #include "drake/systems/analysis/test/logistic_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
@@ -32,6 +38,104 @@ using std::complex;
 namespace drake {
 namespace systems {
 namespace {
+
+/// ExampleDiagram has the following structure:
+/// adder0_: (input0_ + input1_) -> A
+/// adder1_: (A + input2_)       -> B, output 0
+/// adder2_: (A + B)             -> output 1
+/// integrator1_: A              -> C
+/// integrator2_: C              -> output 2
+class ExampleDiagram : public Diagram<double> {
+ public:
+  explicit ExampleDiagram(int size) {
+    DiagramBuilder<double> builder;
+
+    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
+    adder0_->set_name("adder0");
+    adder1_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
+    adder1_->set_name("adder1");
+    adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
+    adder2_->set_name("adder2");
+
+    // Add the empty system (and its witness function).
+    empty_ = builder.AddSystem<EmptySystem>(1.0,
+        WitnessFunction<double>::DirectionType::kCrossesZero);
+    empty_->set_name("empty");
+
+    integrator0_ = builder.AddSystem<Integrator<double>>(size);
+    integrator0_->set_name("integrator0");
+    integrator1_ = builder.AddSystem<Integrator<double>>(size);
+    integrator1_->set_name("integrator1");
+
+    builder.Connect(adder0_->get_output_port(), adder1_->get_input_port(0));
+    builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
+    builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
+
+    builder.Connect(adder0_->get_output_port(),
+                    integrator0_->get_input_port());
+    builder.Connect(integrator0_->get_output_port(),
+                    integrator1_->get_input_port());
+
+    builder.ExportInput(adder0_->get_input_port(0));
+    builder.ExportInput(adder0_->get_input_port(1));
+    builder.ExportInput(adder1_->get_input_port(1));
+    builder.ExportOutput(adder1_->get_output_port());
+    builder.ExportOutput(adder2_->get_output_port());
+    builder.ExportOutput(integrator1_->get_output_port());
+
+    builder.BuildInto(this);
+  }
+
+  Adder<double>* adder0() { return adder0_; }
+  Adder<double>* adder1() { return adder1_; }
+  Adder<double>* adder2() { return adder2_; }
+  Integrator<double>* integrator0() { return integrator0_; }
+  Integrator<double>* integrator1() { return integrator1_; }
+
+  void set_publish_callback(
+      std::function<void(const Context<double>&)> callback) {
+    publish_callback_ = callback;
+  }
+
+ private:
+  std::function<void(const Context<double>&)> publish_callback_{nullptr};
+  EmptySystem* empty_ = nullptr;
+
+  Adder<double>* adder0_ = nullptr;
+  Adder<double>* adder1_ = nullptr;
+  Adder<double>* adder2_ = nullptr;
+
+  Integrator<double>* integrator0_ = nullptr;
+  Integrator<double>* integrator1_ = nullptr;
+};
+
+// Tests ability of simulation to identify the proper number of witness function
+// triggerings going from negative to non-negative witness function evaluation
+// using a Diagram. This particular example uses an empty system and a clock as
+// the witness function, which makes it particularly easy to determine when the
+// witness function should trigger.
+GTEST_TEST(SimulatorTest, DiagramWitness) {
+  // Set empty system to trigger when time is +1.
+  const unsigned size = 3;
+  ExampleDiagram system(size);
+  int num_publishes = 0;
+  system.set_publish_callback([&](const Context<double>& context) {
+    num_publishes++;
+  });
+
+  const double dt = 1;
+  Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+                                                            simulator.get_mutable_context());
+  simulator.set_publish_every_time_step(false);
+  Context<double>* context = simulator.get_mutable_context();
+  context->set_time(0);
+  simulator.StepTo(1);
+
+  // Publication should occur at witness function crossing.
+  EXPECT_EQ(1, num_publishes);
+}
 
 // Tests ability of simulation to identify the proper number of witness function
 // triggerings going from negative to non-negative witness function evaluation.

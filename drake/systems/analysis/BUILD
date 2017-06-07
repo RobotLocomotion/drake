@@ -165,6 +165,7 @@ drake_cc_googletest(
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
         ":simulator",
+        "//drake/systems/primitives",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],
 )
