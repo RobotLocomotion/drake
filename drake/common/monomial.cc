@@ -259,12 +259,13 @@ class DecomposePolynomialVisitor {
   // the same during visiting each type of symbolic expressions.
   MonomialToCoefficientMap Visit(const Expression& e,
                                  const Variables& vars) const {
-    return VisitPolynomial<MonomialToCoefficientMap>(*this, e, vars);
+    return VisitPolynomial<MonomialToCoefficientMap>(this, e, vars);
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionVar>& e,
-                                      const Variables& vars) const {
-    const auto& var = e->get_variable();
+ private:
+  MonomialToCoefficientMap VisitVariable(const Expression& e,
+                                         const Variables& vars) const {
+    const Variable& var{get_variable(e)};
     Expression coeff{};
     int exponent{};
     if (vars.include(var)) {
@@ -277,25 +278,26 @@ class DecomposePolynomialVisitor {
     return MonomialToCoefficientMap({{Monomial(var, exponent), coeff}});
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionConstant>& e,
-                                      const Variables&) const {
-    if (e->get_value() != 0) {
-      return MonomialToCoefficientMap({{Monomial(), e->get_value()}});
+  MonomialToCoefficientMap VisitConstant(const Expression& e,
+                                         const Variables&) const {
+    const double v{get_constant_value(e)};
+    if (v != 0) {
+      return MonomialToCoefficientMap({{Monomial(), v}});
     }
     return MonomialToCoefficientMap();
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionAdd>& e,
-                                      const Variables& vars) const {
+  MonomialToCoefficientMap VisitAddition(const Expression& e,
+                                         const Variables& vars) const {
     MonomialToCoefficientMap map;
-    double e_constant = e->get_constant();
+    const double e_constant{get_constant_in_addition(e)};
     if (e_constant != 0) {
       map.emplace(Monomial(), e_constant);
     }
     // For an expression 2*(3*x*y+4*x) + 4*y.
     // expr_to_coeff_map_[3*x*y+4*x] = 2
     // expr_to_coeff_map_[y] = 4
-    for (const auto& p : e->get_expr_to_coeff_map()) {
+    for (const auto& p : get_expr_to_coeff_map_in_addition(e)) {
       // For expr_to_coeff_map_[3*x*y+4*x] = 2
       // map_p[x*y] = 3
       // map_p[x] = 4
@@ -310,8 +312,8 @@ class DecomposePolynomialVisitor {
     return map;
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionMul>& e,
-                                      const Variables& vars) const {
+  MonomialToCoefficientMap VisitMultiplication(const Expression& e,
+                                               const Variables& vars) const {
     MonomialToCoefficientMap map;
     // We iterate through base_to_exponent_map
     // Suppose e = pow(e₁, p₁) * pow(e₂, p₂) * ... * pow(eₖ, pₖ)
@@ -334,7 +336,8 @@ class DecomposePolynomialVisitor {
     // The divide and conquer approach requires splitting the map
     // base_to_exponent_map to two halves, which can be inefficient, so we do
     // not implement this approach.
-    const auto& base_to_exponent_map = e->get_base_to_exponent_map();
+    const auto& base_to_exponent_map =
+        get_base_to_exponent_map_in_multiplication(e);
     for (const auto& p : base_to_exponent_map) {
       if (map.empty()) {
         map = Visit(pow(p.first, p.second), vars);
@@ -355,13 +358,13 @@ class DecomposePolynomialVisitor {
     }
     // Finally multiply the constant coefficient.
     for (auto& p : map) {
-      p.second *= e->get_constant();
+      p.second *= get_constant_in_multiplication(e);
     }
     return map;
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionPow>& e,
-                                      const Variables& vars) const {
+  MonomialToCoefficientMap VisitPow(const Expression& e,
+                                    const Variables& vars) const {
     // We use a divide and conquer approach here
     // pow(e, p) can be computed as pow(e, ⌊p/2⌋) * pow(e, ⌈p/2⌉)
     // We can decompose the first term as a polynomial
@@ -371,25 +374,24 @@ class DecomposePolynomialVisitor {
     // We then multiply the term cᵢ * pow(x, kᵢ) with the term dⱼ * pow(x, kⱼ)
     // to get each monomial in the product.
     MonomialToCoefficientMap map;
-    const int exponent{
-        static_cast<int>(get_constant_value(e->get_second_argument()))};
+    const Expression& first_arg{get_first_argument(e)};
+    const Expression& second_arg{get_second_argument(e)};
+    const int exponent{static_cast<int>(get_constant_value(second_arg))};
     if (exponent == 1) {
-      return Visit(e->get_first_argument(), vars);
+      return Visit(first_arg, vars);
     }
     if (exponent % 2 == 0) {
       // compute the square of a polynomial (c₀ + c₁ * pow(x, k₁) + ... + cₙ *
       // pow(x, kₙ)).
-      const auto& map1 =
-          Visit(pow(e->get_first_argument(), exponent / 2), vars);
+      const auto& map1 = Visit(pow(first_arg, exponent / 2), vars);
       map = PolynomialSqaure(map1);
     } else {
       // For expression pow(e, k) with odd exponent k, compute
       // e1 = pow(e, ⌊k/2⌋) first, and then compute the square of e1, finally
       // multiply the squared result with e.
-      const auto& map1 =
-          Visit(pow(e->get_first_argument(), exponent / 2), vars);
+      const auto& map1 = Visit(pow(first_arg, exponent / 2), vars);
       const auto& map1_square = PolynomialSqaure(map1);
-      const auto& map2 = Visit(e->get_first_argument(), vars);
+      const auto& map2 = Visit(first_arg, vars);
       map.reserve(map1_square.size() * map2.size());
       for (const auto& p1 : map1_square) {
         for (const auto& p2 : map2) {
@@ -402,11 +404,14 @@ class DecomposePolynomialVisitor {
     return map;
   }
 
-  MonomialToCoefficientMap operator()(const shared_ptr<ExpressionDiv>& e,
-                                      const Variables& vars) const {
+  MonomialToCoefficientMap VisitDivision(const Expression& e,
+                                         const Variables& vars) const {
+    const Expression& first_arg{get_first_argument(e)};
+    const Expression& second_arg{get_second_argument(e)};
+
     // Currently we can only handle the case of a monomial as the divisor.
-    const auto& map1 = Visit(e->get_first_argument(), vars);
-    const auto& map2 = Visit(e->get_second_argument(), vars);
+    const auto& map1 = Visit(first_arg, vars);
+    const auto& map2 = Visit(second_arg, vars);
     if (map2.size() != 1) {
       throw std::runtime_error(
           "The divisor is not a monomial. The Div expression cannot be "
@@ -440,6 +445,12 @@ class DecomposePolynomialVisitor {
     }
     return map;
   }
+
+  // Makes VisitPolynomial a friend of this class so that it can use private
+  // methods.
+  friend MonomialToCoefficientMap
+  drake::symbolic::VisitPolynomial<MonomialToCoefficientMap>(
+      const DecomposePolynomialVisitor*, const Expression&, const Variables&);
 };
 
 MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
@@ -481,33 +492,29 @@ MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
 class DegreeVisitor {
  public:
   int Visit(const Expression& e, const Variables& vars) const {
-    return VisitPolynomial<int>(*this, e, vars);
+    return VisitPolynomial<int>(this, e, vars);
   }
 
-  int operator()(const shared_ptr<ExpressionVar>& e,
-                 const Variables& vars) const {
-    return vars.include(e->get_variable()) ? 1 : 0;
+ private:
+  int VisitVariable(const Expression& e, const Variables& vars) const {
+    return vars.include(get_variable(e)) ? 1 : 0;
   }
 
-  int operator()(const shared_ptr<ExpressionConstant>&,
-                 const Variables&) const {
-    return 0;
-  }
+  int VisitConstant(const Expression&, const Variables&) const { return 0; }
 
-  int operator()(const shared_ptr<ExpressionAdd>& e,
-                 const Variables& vars) const {
+  int VisitAddition(const Expression& e, const Variables& vars) const {
     int degree = 0;
-    for (const auto& p : e->get_expr_to_coeff_map()) {
+    for (const auto& p : get_expr_to_coeff_map_in_addition(e)) {
       degree = std::max(degree, Visit(p.first, vars));
     }
     return degree;
   }
 
-  int operator()(const shared_ptr<ExpressionMul>& e,
-                 const Variables& vars) const {
+  int VisitMultiplication(const Expression& e, const Variables& vars) const {
+    const auto& base_to_exponent_map =
+        get_base_to_exponent_map_in_multiplication(e);
     return accumulate(
-        e->get_base_to_exponent_map().begin(),
-        e->get_base_to_exponent_map().end(), 0,
+        base_to_exponent_map.begin(), base_to_exponent_map.end(), 0,
         [this, &vars](const int& degree,
                       const pair<Expression, Expression>& p) {
           const Expression& base{p.first};
@@ -517,18 +524,22 @@ class DegreeVisitor {
         });
   }
 
-  int operator()(const shared_ptr<ExpressionDiv>& e,
-                 const Variables& vars) const {
-    return Visit(e->get_first_argument(), vars) -
-           Visit(e->get_second_argument(), vars);
+  int VisitDivision(const Expression& e, const Variables& vars) const {
+    return Visit(get_first_argument(e), vars) -
+           Visit(get_second_argument(e), vars);
   }
 
-  int operator()(const shared_ptr<ExpressionPow>& e,
-                 const Variables& vars) const {
+  int VisitPow(const Expression& e, const Variables& vars) const {
     const int exponent{
-        static_cast<int>(get_constant_value(e->get_second_argument()))};
-    return Visit(e->get_first_argument(), vars) * exponent;
+        static_cast<int>(get_constant_value(get_second_argument(e)))};
+    return Visit(get_first_argument(e), vars) * exponent;
   }
+
+  // Makes VisitPolynomial a friend of this class so that it can use private
+  // methods.
+  friend int drake::symbolic::VisitPolynomial<int>(const DegreeVisitor*,
+                                                   const Expression&,
+                                                   const Variables&);
 };
 
 int Degree(const Expression& e, const Variables& vars) {
