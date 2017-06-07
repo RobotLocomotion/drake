@@ -1,0 +1,13 @@
+package drake;
+
+// This holds timestamp and a particular coordinate frame.
+// This follows ROS's convention except the timestamp since
+// utime has been widely used in Drake LCM.
+struct lcmt_header {
+  // Sequence ID: consecutively increasing ID.
+  int32_t seq;
+  // Timestamp in microseconds.
+  int64_t utime;
+  // The name of a frame this data is associated with.
+  string frame_name;
+}
