@@ -17,7 +17,7 @@ namespace multibody {
 /// implementations so that all operations can be perfomed with fixed-size
 /// stack-allocated Eigen variables.
 /// In particular, most of the across mobilizer code for velocity kinematics
-/// lives in this class since the acrooss mobilizer Jacobian matrices `H_FM(q)`
+/// lives in this class since the across mobilizer Jacobian matrices `H_FM(q)`
 /// have a compile-time fixed size.
 /// For a more detailed discussion of the role of a BodyNode in a MultibodyTree
 /// refer to the class documentation for BodyNode.

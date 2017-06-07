@@ -219,7 +219,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @}
 
   /// Computes position dependent kinematics associated with `this` mobilizer
-  /// which inludes:
+  /// which includes:
   /// - X_FM(q): The pose of the outboard frame M as measured and expressed in
   ///            the inboard frame F.
   /// - H_FM(q): the Jacobian matrix describing the relationship between
