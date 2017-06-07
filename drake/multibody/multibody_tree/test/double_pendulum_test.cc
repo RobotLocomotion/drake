@@ -401,10 +401,10 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), elbow_angle);
 
       // Verify this matches the corresponding entries in the context.
-      EXPECT_NEAR(mbt_context->get_positions()(0), shoulder_angle, kEpsilon);
-      EXPECT_NEAR(mbt_context->get_positions()(1), elbow_angle, kEpsilon);
+      EXPECT_NEAR(mbt_context_->get_positions()(0), shoulder_angle, kEpsilon);
+      EXPECT_NEAR(mbt_context_->get_positions()(1), elbow_angle, kEpsilon);
 
-      model_->CalcPositionKinematicsCache(*context, &pc);
+      model_->CalcPositionKinematicsCache(*context_, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
       const BodyNodeIndex shoulder_node =

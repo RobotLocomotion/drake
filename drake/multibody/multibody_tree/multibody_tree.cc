@@ -159,12 +159,12 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // corresponding to flexible bodies.
 
   // Performs a base-to-tip recursion computing body velocities.
-  // This skips the world, level = 0.
-  for (int level = 1; level < get_num_levels(); ++level) {
-    for (BodyNodeIndex body_node_index : body_node_levels_[level]) {
+  // This skips the world, depth = 0.
+  for (int depth = 1; depth < get_tree_height(); ++depth) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
-      DRAKE_ASSERT(node.get_topology().level == level);
+      DRAKE_ASSERT(node.get_topology().level == depth);
       DRAKE_ASSERT(node.get_index() == body_node_index);
 
       // Update per-node kinematics.

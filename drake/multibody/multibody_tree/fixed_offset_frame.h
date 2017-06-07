@@ -53,7 +53,7 @@ class FixedOffsetFrame : public Frame<T> {
   /// @sa CalcBodyPoseInThisFrame() which returns the inverse
   /// transformation `X_FB`.
   Isometry3<T> CalcPoseInBodyFrame(
-      const MultibodyTreeContext<T>& context) const final {
+      const systems::Context<T>& context) const final {
     // X_BF = X_BP * X_PF
     return parent_frame_.CalcPoseInBodyFrame(context) * X_PF_;
   }

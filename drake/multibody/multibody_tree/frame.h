@@ -51,7 +51,7 @@ class Frame : public FrameBase<T> {
   /// @sa CalcBodyPoseInThisFrame() which returns the inverse
   /// transformation `X_FB`.
   virtual Isometry3<T> CalcPoseInBodyFrame(
-      const MultibodyTreeContext<T>& context) const = 0;
+      const systems::Context<T>& context) const = 0;
 
   /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
   /// compute the pose of frame Q measured and expressed in the frame B of
