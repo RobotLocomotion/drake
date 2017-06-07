@@ -1,5 +1,5 @@
 {
-  "Meta-Comment": "Common Package Specification for Drake",
+  "Meta-Comment": "Common Package Specification for DRAKE",
   "Meta-Schema": "https://mwoehlke.github.io/cps/",
   "X-Purpose": "Used to generate drake-config.cmake via cps2cmake",
   "X-See-Also": "https://github.com/mwoehlke/pycps",
