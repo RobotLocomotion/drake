@@ -186,7 +186,7 @@ def wait_for_lcm_message_on_channel(channel):
 def main():
     demo_path = "drake/automotive/automotive_demo"
     steering_command_driver_path = "drake/automotive/steering_command_driver"
-    drake_visualizer_path = "external/drake_visualizer/drake-visualizer"
+    drake_visualizer_path = "tools/drake_visualizer"
     lcm_spy_path = "drake/automotive/lcm-spy"
     lcm_logger_path = "external/lcm/lcm-logger"
 

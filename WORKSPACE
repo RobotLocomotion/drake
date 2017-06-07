@@ -360,3 +360,8 @@ pkg_config_package(
     name = "zlib",
     modname = "zlib",
 )
+
+load("//tools:director.bzl", "director_repository")
+director_repository(
+    name = "director",
+)
