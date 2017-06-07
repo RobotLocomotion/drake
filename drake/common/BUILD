@@ -30,6 +30,7 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
+        "//drake/thirdParty:stx",
         "@eigen",
         "@spdlog",
     ],
