@@ -35,6 +35,7 @@ exports_files(["LICENSE.TXT"])
 install(
     name = "install",
     deps = [
+        "@bot_core_lcmtypes//:install",
         "@bullet//:install",
         "@eigen//:install",
         "@fmt//:install",
@@ -42,6 +43,7 @@ install(
         "@lcm//:install",
         "@nlopt//:install",
         "@pybind11//:install",
+        "@robotlocomotion_lcmtypes//:install",
         "@spdlog//:install",
         "//drake:install",
         "//tools:install",

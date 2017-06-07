@@ -250,9 +250,19 @@ def _install_cc_actions(ctx, target):
 #------------------------------------------------------------------------------
 # Compute install actions for a java_library or java_binary.
 def _install_java_actions(ctx, target):
-    # TODO(mwoehlke-kitware): Implement this. Probably it mainly needs the
-    # logic to pick install destinations appropriately.
-    return []
+    dests = {
+        "jar": ctx.attr.java_dest,
+        None: ctx.attr.runtime_dest,
+    }
+
+    return _install_actions(ctx, [target], dests)
+
+#------------------------------------------------------------------------------
+# Compute install actions for a py_library or py_binary.
+# TODO(jamiesnape): Install native shared libraries that the target may use.
+def _install_py_actions(ctx, target):
+    return _install_actions(ctx, [target], ctx.attr.py_dest,
+                            ctx.attr.py_strip_prefix)
 
 #------------------------------------------------------------------------------
 # Generate install code for an install action.
@@ -290,6 +300,8 @@ def _install_impl(ctx):
             actions += _install_cc_actions(ctx, t)
         elif hasattr(t, "java"):
             actions += _install_java_actions(ctx, t)
+        elif hasattr(t, "py"):
+            actions += _install_py_actions(ctx, t)
 
     # Generate code for install actions.
     script_actions = [_install_code(a) for a in actions]
@@ -320,6 +332,9 @@ install = rule(
         "archive_dest": attr.string(default = "lib"),
         "library_dest": attr.string(default = "lib"),
         "runtime_dest": attr.string(default = "bin"),
+        "java_dest": attr.string(default = "share/java"),
+        "py_dest": attr.string(default = "lib/python2.7/site_packages"),
+        "py_strip_prefix": attr.string_list(),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -368,6 +383,10 @@ Args:
     archive_dest: Destination for static library targets (default = "lib").
     library_dest: Destination for shared library targets (default = "lib").
     runtime_dest: Destination for executable targets (default = "bin").
+    java_dest: Destination for Java targets (default = "share/java").
+    py_dest: Destination for Python targets
+        (default = "lib/python2.7/site_packages").
+    py_strip_prefix: List of prefixes to remove from Python paths.
 """
 
 #------------------------------------------------------------------------------
@@ -440,7 +459,7 @@ def exports_create_cps_scripts(packages):
         )
 
 #------------------------------------------------------------------------------
-def cmake_config(package, script, version_file, deps = []):
+def cmake_config(package, script=None, version_file=None, deps=[]):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -450,24 +469,28 @@ def cmake_config(package, script, version_file, deps = []):
         version_file (:obj:`str`): File that the script will search to
             determine the version of the package.
     """
-    native.py_binary(
-        name = "create-cps",
-        srcs = [script],
-        main = script,
-        visibility = ["//visibility:private"],
-        deps = ["@drake//tools:cpsutils"],
-    )
 
-    cps_file_name = "{}.cps".format(package)
+    if script and version_file:
+        native.py_binary(
+            name = "create-cps",
+            srcs = [script],
+            main = script,
+            visibility = ["//visibility:private"],
+            deps = ["@drake//tools:cpsutils"],
+        )
 
-    native.genrule(
-        name = "cps",
-        srcs = [version_file] + deps,
-        outs = [cps_file_name],
-        cmd = "$(location :create-cps) $(SRCS) > \"$@\"",
-        tools = [":create-cps"],
-        visibility = ["//visibility:public"],
-    )
+        cps_file_name = "{}.cps".format(package)
+
+        native.genrule(
+            name = "cps",
+            srcs = [version_file] + deps,
+            outs = [cps_file_name],
+            cmd = "$(location :create-cps) $(SRCS) > \"$@\"",
+            tools = [":create-cps"],
+            visibility = ["//visibility:public"],
+        )
+    else:
+        cps_file_name = "@drake//tools:{}.cps".format(package)
 
     config_file_name = "{}Config.cmake".format(package)
 
@@ -492,24 +515,25 @@ def cmake_config(package, script, version_file, deps = []):
     )
 
 #------------------------------------------------------------------------------
-def install_cmake_config(package):
+def install_cmake_config(package, versioned=True):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
     Args:
         package (:obj:`str`): CMake package name.
+        versioned (:obj:`bool`): True if a version file should be installed.
     """
     cmake_config_dest = "lib/cmake/{}".format(package.lower())
-    config_file_name = "{}Config.cmake".format(package)
-    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+    cmake_config_files = ["{}Config.cmake".format(package)]
+
+    if versioned:
+        cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
 
     install_files(
         name = "install_cmake_config",
         dest = cmake_config_dest,
-        files = [
-            config_file_name,
-            config_version_file_name,
-        ],
+        files = cmake_config_files,
+        visibility = ["//visibility:private"],
     )
 
 #END macros
