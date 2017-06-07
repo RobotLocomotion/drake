@@ -14,6 +14,7 @@
 #include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
@@ -36,6 +37,7 @@ using drake::systems::rendering::PoseAggregator;
 using drake::systems::rendering::PoseBundleToDrawMessage;
 using drake::systems::Simulator;
 using drake::systems::ImplicitEulerIntegrator;
+using drake::systems::RungeKutta3Integrator;
 
 // Simulation parameters.
 DEFINE_string(simulation_type, "timestepping",
@@ -135,6 +137,9 @@ int main(int argc, char* argv[]) {
     auto context = simulator.get_mutable_context();
     simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
                                                                 context);
+  } else {
+    simulator.reset_integrator<RungeKutta3Integrator<double>>(*diagram,
+                                                              context);
   }
   simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
