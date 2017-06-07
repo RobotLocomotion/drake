@@ -11,7 +11,6 @@ namespace multibody {
 /// degrees of freedom but also solves the problem of instantiating a
 /// BodyNodeImpl with zero compile-time sizes, which leads to Eigen expressions
 /// that assert at compile-time.
-/// Also, this class results in absolutely zero cost for WeldMobilizer objects.
 template <typename T>
 class BodyNodeWelded : public BodyNode<T> {
  public:

@@ -167,6 +167,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "frames_test",
+    deps = [":multibody_tree"],
+)
+
+drake_cc_googletest(
     name = "multibody_tree_creation_tests",
     deps = [":multibody_tree"],
 )

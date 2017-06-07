@@ -123,6 +123,9 @@ target_link_libraries(drake_assert_test drakeCommon)
 drake_add_cc_test(drake_assert_test_compile)
 target_link_libraries(drake_assert_test_compile drakeCommon)
 
+drake_add_cc_test(scoped_singleton_test scoped_singleton_test.cc)
+target_link_libraries(scoped_singleton_test drakeCommon)
+
 # "text_logging.h" unit testing:  If spdlog is available, test that:
 add_executable(text_logging_test_default ../text_logging.cc text_logging_test.cc)
 target_link_libraries(text_logging_test_default GTest::GTest GTest::Main gflags)

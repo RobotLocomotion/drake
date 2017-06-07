@@ -277,6 +277,41 @@ struct RBounds {
   double r_max{};
 };
 
+
+/// Bounds in the elevation dimension (`h` component) of a `Lane`-frame,
+/// consisting of a pair of minimum and maximum `h` value.  The bounds
+/// must straddle `h = 0`, i.e., the minimum must be `<= 0` and the
+/// maximum must be `>= 0`.
+class HBounds {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HBounds)
+
+  /// Default constructor.
+  HBounds() = default;
+
+  /// Fully parameterized constructor.
+  HBounds(double min, double max) : min_(min), max_(max) {
+    DRAKE_DEMAND(min <= 0.);
+    DRAKE_DEMAND(max >= 0.);
+  }
+
+  /// @name Getters and Setters
+  //@{
+  /// Gets minimum bound.
+  double min() const { return min_; }
+  /// Sets minimum bound.
+  void set_min(double min) { min_ = min; }
+  /// Gets maximum bound.
+  double max() const { return max_; }
+  /// Sets maximum bound.
+  void set_max(double max) { max_ = max; }
+  //@}
+
+ private:
+  double min_{};
+  double max_{};
+};
+
 }  // namespace api
 }  // namespace maliput
 }  // namespace drake

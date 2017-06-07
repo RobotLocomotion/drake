@@ -48,13 +48,12 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_velocity(
 }
 
 template <typename T>
-void RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
-    const MultibodyTreeContext<T>& context,
-    PositionKinematicsCache<T>* pc) const {
+Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
+    const MultibodyTreeContext<T>& context) const {
   auto q = this->get_positions(context);
-  Isometry3<T>& X_FM = this->get_mutable_X_FM(pc);
-  X_FM = Isometry3<T>::Identity();
+  Isometry3<T> X_FM = Isometry3<T>::Identity();
   X_FM.linear() = Eigen::AngleAxis<T>(q[0], axis_F_).toRotationMatrix();
+  return X_FM;
 }
 
 template <typename T>

@@ -58,7 +58,7 @@ class Frame : public FrameBase<T> {
   /// the body to which this frame is attached.
   /// In the particular case `F = B`, this method directly returns `X_FQ`.
   virtual Isometry3<T> CalcOffsetPoseInBody(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const = 0;
 
   /// Returns the pose `X_FB` of the body B associated with this frame F,
@@ -68,7 +68,7 @@ class Frame : public FrameBase<T> {
   /// @sa CalcBodyPoseInOtherFrame()
   /// @sa CalcPoseInBodyFrame() which returns the inverse transformation `X_BF`.
   virtual Isometry3<T> CalcBodyPoseInThisFrame(
-      const MultibodyTreeContext<T>& context) const = 0;
+      const systems::Context<T>& context) const = 0;
 
   /// Returns the pose `X_QB` of the body B associated with this frame F
   /// measured in a frame Q, given the pose `X_QF` of this frame F measured
@@ -76,7 +76,7 @@ class Frame : public FrameBase<T> {
   /// @sa CalcBodyPoseInThisFrame() to compute the pose of the body associated
   /// with this frame as measured in this frame.
   virtual Isometry3<T> CalcBodyPoseInOtherFrame(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Isometry3<T>& X_QF) const = 0;
 
  protected:

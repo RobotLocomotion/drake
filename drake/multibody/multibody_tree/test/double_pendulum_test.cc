@@ -316,7 +316,10 @@ TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
 TEST_F(PendulumTests, CreateContext) {
   CreatePendulumModel();
 
-  // Verifies the number of multibody elements is correct.
+  // Verifies the number of multibody elements is correct. In this case:
+  // - world_
+  // - upper_link_
+  // - lower_link_
   EXPECT_EQ(model_->get_num_bodies(), 3);
 
   // Verify we cannot create a Context until we have a valid topology.
@@ -397,7 +400,11 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
       EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), elbow_angle);
 
-      model_->CalcPositionKinematicsCache(*mbt_context_, &pc);
+      // Verify this matches the corresponding entries in the context.
+      EXPECT_NEAR(mbt_context->get_positions()(0), shoulder_angle, kEpsilon);
+      EXPECT_NEAR(mbt_context->get_positions()(1), elbow_angle, kEpsilon);
+
+      model_->CalcPositionKinematicsCache(*context, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
       const BodyNodeIndex shoulder_node =
@@ -410,10 +417,16 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       Isometry3d X_EiEo(AngleAxisd(elbow_angle, Vector3d::UnitZ()));
 
       // Verify the values in the position kinematics cache.
-      EXPECT_TRUE(pc.get_mutable_X_FM(shoulder_node).matrix().isApprox(
+      EXPECT_TRUE(pc.get_X_FM(shoulder_node).matrix().isApprox(
           X_SiSo.matrix()));
-      EXPECT_TRUE(pc.get_mutable_X_FM(elbow_node).matrix().isApprox(
+      EXPECT_TRUE(pc.get_X_FM(elbow_node).matrix().isApprox(
           X_EiEo.matrix()));
+
+      // Verify that both, const and mutable versions point to the same address.
+      EXPECT_EQ(&pc.get_X_FM(shoulder_node),
+                &pc.get_mutable_X_FM(shoulder_node));
+      EXPECT_EQ(&pc.get_X_FM(elbow_node),
+                &pc.get_mutable_X_FM(elbow_node));
 
       // Retrieve body poses from position kinematics cache.
       const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);

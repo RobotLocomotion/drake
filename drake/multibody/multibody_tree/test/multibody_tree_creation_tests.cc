@@ -319,7 +319,7 @@ TEST_F(TreeTopologyTests, Finalize) {
 
   const MultibodyTreeTopology& topology = model_->get_topology();
   EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
-  EXPECT_EQ(topology.get_num_levels(), 4);
+  EXPECT_EQ(topology.get_tree_height(), 4);
 
   // These sets contain the indexes of the bodies in each tree level.
   // The order of these indexes in each set is not important, but only the fact
@@ -376,7 +376,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
 
   const MultibodyTreeTopology& topology = model_->get_topology();
   EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
-  EXPECT_EQ(topology.get_num_levels(), 4);
+  EXPECT_EQ(topology.get_tree_height(), 4);
 
   // Verifies the total number of generalized positions and velocities.
   EXPECT_EQ(topology.get_num_positions(), 7);
@@ -386,7 +386,8 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   // Tip-to-Base recursion.
   // In this case all mobilizers are RevoluteMobilizer objects with one
   // generalized position and one generalized velocity per mobilizer.
-  int state_vector_index = 0;
+  int positions_index = 0;
+  int velocities_index = topology.get_num_positions();
   for (BodyNodeIndex node_index(1); /* Skips the world node. */
        node_index < topology.get_num_body_nodes(); ++node_index) {
     const BodyNodeTopology& node = topology.get_body_node(node_index);
@@ -400,19 +401,21 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->get_index());
 
     // Verify positions index.
-    EXPECT_EQ(state_vector_index, node.mobilizer_positions_start);
-    EXPECT_EQ(state_vector_index, mobilizer_topology.positions_start);
+    EXPECT_EQ(positions_index, node.mobilizer_positions_start);
+    EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
 
     // For this case we know there is one generalized position per mobilizer.
-    state_vector_index += 1;
+    positions_index += 1;
 
     // Verify velocities index.
-    EXPECT_EQ(state_vector_index, node.mobilizer_velocities_start);
-    EXPECT_EQ(state_vector_index, mobilizer_topology.velocities_start);
+    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start);
+    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start);
 
     // For this case we know there is one generalized velocities per mobilizer.
-    state_vector_index += 1;
+    velocities_index += 1;
   }
+  EXPECT_EQ(positions_index, topology.get_num_positions());
+  EXPECT_EQ(velocities_index, topology.get_num_states());
 }
 
 }  // namespace

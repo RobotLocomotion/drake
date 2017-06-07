@@ -179,12 +179,15 @@ def drake_cc_test(
 def drake_cc_googletest(
         name,
         deps=None,
+        use_default_main=True,
         **kwargs):
     """Creates a rule to declare a C++ unit test using googletest.  Always adds
     a deps= entry for googletest main (@gtest//:main).
 
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
+    By default, sets use_default_main=True to use GTest's main, via
+    @gtest//:main. Otherwise, it will depend on @gtest//:without_main.
 
     If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
     in debug-mode builds, so the test will trivially pass. This option should
@@ -192,49 +195,14 @@ def drake_cc_googletest(
     """
     if deps == None:
         deps = []
-    deps.append("@gtest//:main")
+    if use_default_main:
+        deps.append("@gtest//:main")
+    else:
+        deps.append("@gtest//:without_main")
     drake_cc_test(
         name=name,
         deps=deps,
         **kwargs)
-
-# Collects the transitive closure of header files from ctx.attr.deps.
-def _transitive_hdrs_impl(ctx):
-    headers = set()
-    for dep in ctx.attr.deps:
-        # TODO(mwoehlke-kitware): Figure out a better way to exclude system
-        # headers from being slurped in?
-        headers += [h for h in dep.cc.transitive_headers
-                    if not "/_usr_" in h.path]
-    return struct(files=headers)
-
-_transitive_hdrs = rule(
-    attrs = {
-        "deps": attr.label_list(
-            allow_files = False,
-            providers = ["cc"],
-        ),
-    },
-    implementation = _transitive_hdrs_impl,
-)
-
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-
-def drake_header_tar(name, deps=[], **kwargs):
-    """Creates a .tar.gz that includes all the headers exported by the deps."""
-    # TODO(david-german-tri): The --flagfile that Bazel generates to drive `tar`
-    # tacks a spurious `..` onto the paths of external headers, which we then
-    # have to clean up in package_drake.sh. It's not clear whether this is a
-    # Bazel bug, or a bug in these macros.
-    _transitive_hdrs(name=name + "_gather",
-                     deps=deps)
-    # We must specify a non-default strip prefix so that the tarball contains
-    # relative and not absolute paths.
-    pkg_tar(name=name,
-            extension="tar.gz",
-            mode="0644",
-            files=[":" + name + "_gather"],
-            strip_prefix="/")
 
 # Generate a file with specified content
 def _generate_file_impl(ctx):

@@ -279,8 +279,8 @@ class MultibodyTreeTopology {
   }
 
   /// Returns the number of tree levels in the topology.
-  int get_num_levels() const {
-    return num_levels_;
+  int get_tree_height() const {
+    return tree_height_;
   }
 
   /// Returns a constant reference to the corresponding FrameTopology given the
@@ -461,7 +461,7 @@ class MultibodyTreeTopology {
     // Breadth First Traversal (a.k.a. Level Order Traversal).
     std::queue<BodyIndex> queue;
     queue.push(BodyIndex(0));  // Starts at the root.
-    num_levels_ = 1;  // At least one level with the world body at the root.
+    tree_height_ = 1;  // At least one level with the world body at the root.
     // While at it, create body nodes and index them in this BFT order for
     // fast tree traversals of MultibodyTree recursive algorithms.
     body_nodes_.reserve(get_num_bodies());
@@ -482,7 +482,7 @@ class MultibodyTreeTopology {
       // Updates body levels.
       bodies_[current].level = level;
       // Keep track of the number of levels, the deepest (i.e. max) level.
-      num_levels_ = std::max(num_levels_, level + 1);
+      tree_height_ = std::max(tree_height_, level + 1);
 
       // Since we are doing a BFT, it is valid to ask for the parent node,
       // unless we are at the root.
@@ -531,27 +531,38 @@ class MultibodyTreeTopology {
     // TODO(amcastro-tri): count body dofs (i.e. for flexible dofs).
     //
     // Base-to-Tip loop in BFT order, skipping the world (node = 0).
+
+    // Count number of generalized positions and velocities.
     num_positions_ = 0;
     num_velocities_ = 0;
-    num_states_ = 0;
+    for (const auto& mobilizer : mobilizers_) {
+      num_positions_ += mobilizer.num_positions;
+      num_velocities_ += mobilizer.num_velocities;
+    }
+    num_states_ = num_positions_ + num_velocities_;
+
+    // Place all the generalized positions first followed by the generalized
+    // velocities.
+    int position_index = 0;
+    int velocity_index = num_positions_;
     for (BodyNodeIndex node_index(1);
          node_index < get_num_body_nodes(); ++node_index) {
       BodyNodeTopology& node = body_nodes_[node_index];
       MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
 
-      mobilizer.positions_start = num_states_;
-      num_states_ += mobilizer.num_positions;
-      mobilizer.velocities_start = num_states_;
-      num_states_ += mobilizer.num_velocities;
+      mobilizer.positions_start = position_index;
+      mobilizer.velocities_start = velocity_index;
 
-      num_positions_ += mobilizer.num_positions;
-      num_velocities_ += mobilizer.num_velocities;
+      position_index += mobilizer.num_positions;
+      velocity_index += mobilizer.num_velocities;
 
       node.mobilizer_positions_start = mobilizer.positions_start;
       node.num_mobilizer_positions = mobilizer.num_positions;
       node.mobilizer_velocities_start = mobilizer.velocities_start;
       node.num_mobilizer_velocities = mobilizer.num_velocities;
     }
+    DRAKE_DEMAND(position_index == num_positions_);
+    DRAKE_DEMAND(velocity_index == num_states_);
 
     // We are done with a successful Finalize() and we mark it as so.
     // Do not add any more code after this!
@@ -596,7 +607,7 @@ class MultibodyTreeTopology {
   bool is_valid_{false};
   // Number of levels (or generations) in the tree topology. After Finalize()
   // there will be at least one level (level = 0) with the world body.
-  int num_levels_{-1};
+  int tree_height_{-1};
 
   // Topological elements:
   std::vector<FrameTopology> frames_;

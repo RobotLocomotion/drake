@@ -70,6 +70,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   const Vector3<double>& get_revolute_axis() const { return axis_F_; }
 
   /// Gets the rotation angle of `this` mobilizer from `context`.
+  /// @throws std::bad_cast if `context` is not a MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @returns The angle coordinate of `this` mobilizer in the `context`.
@@ -77,6 +78,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
 
   /// Sets the `context` so that the generalized coordinate coresponding the
   /// rotation angle of `this` mobilizer equals `angle`.
+  /// @throws std::runtime_error if `context` is not a MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @param[in] angle The desired angle in radians.
@@ -102,9 +104,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
   /// about this mobilizer's axis (@see get_revolute_axis().)
-  void CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context,
-      PositionKinematicsCache<T>* pc) const final;
+  Isometry3<T> CalcAcrossMobilizerTransform(
+      const MultibodyTreeContext<T>& context) const final;
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,

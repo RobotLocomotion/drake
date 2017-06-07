@@ -21,15 +21,18 @@ RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
                double length,
                double lane_width,
                double shoulder_width,
+               double maximum_height,
                double linear_tolerance,
                double angular_tolerance)
   : id_(id),
     linear_tolerance_(linear_tolerance),
     angular_tolerance_(angular_tolerance),
-    junction_(this, num_lanes, length, lane_width, shoulder_width) {
+    junction_(this, num_lanes, length,
+              lane_width, shoulder_width, maximum_height) {
   DRAKE_DEMAND(length > 0);
   DRAKE_DEMAND(lane_width > 0);
   DRAKE_DEMAND(shoulder_width >= 0);
+  DRAKE_DEMAND(maximum_height >= 0);
   DRAKE_DEMAND(linear_tolerance >= 0);
   DRAKE_DEMAND(angular_tolerance >= 0);
 }
@@ -133,6 +136,8 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
   const double max_y = lane->y_offset() + lane_driveable_bounds.r_max;
   const double min_x = 0;
   const double max_x = length;
+  const double min_z = lane->elevation_bounds(0, 0).min();
+  const double max_z = lane->elevation_bounds(0, 0).max();
 
   /*
       A figure of a typical dragway is shown below. The minimum and maximum
@@ -166,7 +171,7 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
   api::GeoPosition closest_position;
   closest_position.set_x(math::saturate(geo_pos.x(), min_x, max_x));
   closest_position.set_y(math::saturate(geo_pos.y(), min_y, max_y));
-  closest_position.set_z(geo_pos.z());
+  closest_position.set_z(math::saturate(geo_pos.z(), min_z, max_z));
 
   if (distance != nullptr) {
     *distance = (geo_pos.xyz() - closest_position.xyz()).norm();
@@ -183,7 +188,7 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(
   const api::LanePosition closest_lane_position(
       closest_position.x()                             /* s */,
       closest_position.y() - closest_lane->y_offset()  /* r */,
-      geo_pos.z()                                      /* h */);
+      closest_position.z()                             /* h */);
   return api::RoadPosition(closest_lane, closest_lane_position);
 }
 

@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools:install.bzl", "install_files")
+load("//tools:install.bzl", "exports_create_cps_scripts", "install_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -62,6 +62,12 @@ py_binary(
     srcs = ["drakelint.py"],
 )
 
+py_library(
+    name = "cpsutils",
+    srcs = ["cpsutils.py"],
+    deps = ["@pycps//:cps"]
+)
+
 exports_files(
     ["install.py.in"],
     visibility = ["//visibility:public"],
@@ -77,15 +83,16 @@ exports_files(
     visibility = ["@ipopt//:__pkg__"],
 )
 
-exports_files(
-    ["eigen-create-cps.py"],
-    visibility = ["@eigen//:__pkg__"],
-)
-
-exports_files(
-    ["lcm-create-cps.py"],
-    visibility = ["@lcm//:__pkg__"],
-)
+exports_create_cps_scripts([
+    "bullet",
+    "eigen",
+    "fmt",
+    "ipopt",
+    "lcm",
+    "nlopt",
+    "pybind11",
+    "spdlog",
+])
 
 alias(
     name = "buildifier",

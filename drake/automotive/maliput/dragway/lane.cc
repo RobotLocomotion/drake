@@ -17,14 +17,16 @@ namespace dragway {
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
     double length, double y_offset, const api::RBounds& lane_bounds,
-    const api::RBounds& driveable_bounds)
+    const api::RBounds& driveable_bounds,
+    const api::HBounds& elevation_bounds)
     : segment_(segment),
       id_(id),
       index_(index),
       length_(length),
       y_offset_(y_offset),
       lane_bounds_(lane_bounds),
-      driveable_bounds_(driveable_bounds) {
+      driveable_bounds_(driveable_bounds),
+      elevation_bounds_(elevation_bounds) {
   DRAKE_DEMAND(segment != nullptr);
   DRAKE_DEMAND(lane_bounds_.r_min >= driveable_bounds_.r_min);
   DRAKE_DEMAND(lane_bounds_.r_max <= driveable_bounds_.r_max);
@@ -75,6 +77,10 @@ api::RBounds Lane::do_driveable_bounds(double) const {
   return driveable_bounds_;
 }
 
+api::HBounds Lane::do_elevation_bounds(double, double) const {
+  return elevation_bounds_;
+}
+
 api::LanePosition Lane::DoEvalMotionDerivatives(
     const api::LanePosition&,
     const api::IsoLaneVelocity& velocity) const {
@@ -100,11 +106,13 @@ api::LanePosition Lane::DoToLanePosition(
   const double max_x = length_;
   const double min_y = driveable_bounds_.r_min + y_offset_;
   const double max_y = driveable_bounds_.r_max + y_offset_;
+  const double min_z = elevation_bounds_.min();
+  const double max_z = elevation_bounds_.max();
 
   const api::GeoPosition closest_point{
     math::saturate(geo_pos.x(), min_x, max_x),
     math::saturate(geo_pos.y(), min_y, max_y),
-    geo_pos.z()};
+    math::saturate(geo_pos.z(), min_z, max_z)};
   if (nearest_point != nullptr) {
     *nearest_point = closest_point;
   }

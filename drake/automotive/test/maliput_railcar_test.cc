@@ -48,16 +48,21 @@ class MaliputRailcarTest : public ::testing::Test {
     const double kDragwayLength{50};
     const double kDragwayLaneWidth{0.5};
     const double kDragwayShoulderWidth{0.25};
+    const double kMaximumHeight{5.};
+    const double kLinearTolerance{std::numeric_limits<double>::epsilon()};
+    const double kAngularTolerance{std::numeric_limits<double>::epsilon()};
     Initialize(
         std::make_unique<const maliput::dragway::RoadGeometry>(
             maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
-            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth), with_s);
+            kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth,
+            kMaximumHeight, kLinearTolerance, kAngularTolerance), with_s);
   }
 
   void InitializeCurvedMonoLane(bool with_s = true) {
     maliput::monolane::Builder builder(
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        maliput::api::HBounds(0, 5),    /* elevation bounds */
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
     builder.Connect(
@@ -74,6 +79,7 @@ class MaliputRailcarTest : public ::testing::Test {
     maliput::monolane::Builder builder(
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        maliput::api::HBounds(0, 5),    /* elevation bounds */
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
     builder.Connect(
@@ -101,6 +107,7 @@ class MaliputRailcarTest : public ::testing::Test {
     maliput::monolane::Builder builder(
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
+        maliput::api::HBounds(0, 5),    /* elevation bounds */
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
     const Connection* straight_lane_connection = builder.Connect(

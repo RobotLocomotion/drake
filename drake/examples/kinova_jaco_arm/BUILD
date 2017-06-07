@@ -34,7 +34,6 @@ drake_cc_binary(
         "//drake/manipulation/models/jaco_description:models",
     ],
     test_rule_args = ["--simulation_sec=0.1"],
-    test_rule_size = "medium",
     deps = [
         ":jaco_common",
         "//drake/common:text_logging_gflags",
@@ -57,7 +56,6 @@ drake_cc_binary(
     ],
     tags = ["snopt"],
     test_rule_args = ["--simulation_sec=0.1"],
-    test_rule_size = "medium",
     deps = [
         ":jaco_common",
         "//drake/lcm",
@@ -68,6 +66,31 @@ drake_cc_binary(
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/controllers:state_feedback_controller_base",
         "//drake/systems/primitives:constant_vector_source",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_controlled_jaco_demo",
+    srcs = ["run_controlled_jaco_demo.cc"],
+    add_test_rule = 1,
+    data = [
+        "//drake/manipulation/models/jaco_description:models",
+    ],
+    tags = ["snopt"],
+    test_rule_args = ["--simulation_sec=0.1"],
+    deps = [
+        ":jaco_common",
+        "//drake/common/trajectories:piecewise_polynomial_trajectory",
+        "//drake/lcm",
+        "//drake/multibody:inverse_kinematics",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/controllers:state_feedback_controller_base",
+        "//drake/systems/primitives:trajectory_source",
         "@com_github_gflags_gflags//:gflags",
     ],
 )
