@@ -16,7 +16,7 @@
 namespace drake {
 
 /// An autodiff variable with a dynamic number of partials, up to 73 maximum.
-using AutoDiffUpTo73d = Eigen::AutoDiffScalar<VectorUpTo73d>;
+using AutoDiffUpTo73d = Eigen::AutoDiffScalar<VectorUpTo73d>
 
 /// An autodiff variable with a dynamic number of partials.
 using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
