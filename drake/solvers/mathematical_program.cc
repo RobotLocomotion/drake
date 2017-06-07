@@ -102,8 +102,7 @@ enum {
 // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
 
 MathematicalProgram::MathematicalProgram()
-    : num_vars_(0),
-      x_initial_guess_(
+    : x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
@@ -131,17 +130,17 @@ VectorXDecisionVariable MathematicalProgram::NewVariables(
 }
 
 VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    size_t rows, const vector<string>& names) {
+    int rows, const vector<string>& names) {
   return NewVariables(VarType::CONTINUOUS, rows, names);
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    size_t rows, size_t cols, const vector<string>& names) {
+    int rows, int cols, const vector<string>& names) {
   return NewVariables(VarType::CONTINUOUS, rows, cols, false, names);
 }
 
 VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    size_t rows, const string& name) {
+    int rows, const string& name) {
   vector<string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + "(" + to_string(i) + ")";
@@ -150,7 +149,7 @@ VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    size_t rows, size_t cols, const string& name) {
+    int rows, int cols, const string& name) {
   vector<string> names(rows * cols);
   int count = 0;
   for (int j = 0; j < static_cast<int>(cols); ++j) {
@@ -163,12 +162,12 @@ MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewBinaryVariables(
-    size_t rows, size_t cols, const vector<string>& names) {
+    int rows, int cols, const vector<string>& names) {
   return NewVariables(VarType::BINARY, rows, cols, false, names);
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewBinaryVariables(
-    size_t rows, size_t cols, const string& name) {
+    int rows, int cols, const string& name) {
   vector<string> names(rows * cols);
   int count = 0;
   for (int j = 0; j < static_cast<int>(cols); ++j) {
@@ -181,12 +180,12 @@ MatrixXDecisionVariable MathematicalProgram::NewBinaryVariables(
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
-    size_t rows, const vector<string>& names) {
+    int rows, const vector<string>& names) {
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
-    size_t rows, const string& name) {
+    int rows, const string& name) {
   vector<string> names(rows * (rows + 1) / 2);
   int count = 0;
   for (int j = 0; j < static_cast<int>(rows); ++j) {
@@ -199,7 +198,7 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
 }
 
 VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
-    size_t rows, const string& name) {
+    int rows, const string& name) {
   vector<string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + "(" + to_string(i) + ")";
@@ -319,8 +318,8 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
     return AddConstraint(
         BindingDynamicCast<PositiveSemidefiniteConstraint>(binding));
   } else if (dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
-    return AddConstraint(BindingDynamicCast<RotatedLorentzConeConstraint>(
-        binding));
+    return AddConstraint(
+        BindingDynamicCast<RotatedLorentzConeConstraint>(binding));
   } else if (dynamic_cast<LorentzConeConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<LorentzConeConstraint>(binding));
   } else if (dynamic_cast<LinearConstraint*>(constraint)) {
@@ -590,8 +589,7 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
-size_t MathematicalProgram::FindDecisionVariableIndex(
-    const Variable& var) const {
+int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
     ostringstream oss;

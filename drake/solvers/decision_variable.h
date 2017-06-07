@@ -1,13 +1,6 @@
 #pragma once
 
-#include <cstddef>
 #include <list>
-#include <memory>
-#include <string>
-#include <type_traits>
-#include <unordered_set>
-#include <vector>
-
 #include <Eigen/Core>
 
 #include "drake/common/symbolic_variable.h"
