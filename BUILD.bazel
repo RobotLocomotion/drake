@@ -44,6 +44,7 @@ install(
         "@lcm//:install",
         "@nlopt//:install",
         "@pybind11//:install",
+        "@sdformat//:install",
         "@spdlog//:install",
         "//drake:install",
         "//tools:install",
