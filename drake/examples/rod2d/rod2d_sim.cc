@@ -134,12 +134,13 @@ int main(int argc, char* argv[]) {
   // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));
   if (FLAGS_simulation_type == "compliant") {
-    auto context = simulator.get_mutable_context();
+    auto mut_context = simulator.get_mutable_context();
     simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
-                                                                context);
+                                                                mut_context);
   } else {
+    auto mut_context = simulator.get_mutable_context();
     simulator.reset_integrator<RungeKutta3Integrator<double>>(*diagram,
-                                                              context);
+                                                              mut_context);
   }
   simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
