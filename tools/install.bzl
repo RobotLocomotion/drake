@@ -250,9 +250,12 @@ def _install_cc_actions(ctx, target):
 #------------------------------------------------------------------------------
 # Compute install actions for a java_library or java_binary.
 def _install_java_actions(ctx, target):
-    # TODO(mwoehlke-kitware): Implement this. Probably it mainly needs the
-    # logic to pick install destinations appropriately.
-    return []
+    dests = {
+        "jar": ctx.attr.java_dest,
+        None: ctx.attr.runtime_dest,
+    }
+
+    return _install_actions(ctx, [target], dests)
 
 #------------------------------------------------------------------------------
 # Compute install actions for a py_library or py_binary.
@@ -329,7 +332,8 @@ install = rule(
         "archive_dest": attr.string(default = "lib"),
         "library_dest": attr.string(default = "lib"),
         "runtime_dest": attr.string(default = "bin"),
-        "py_dest":  attr.string(default = "lib/python2.7/site_packages"),
+        "java_dest": attr.string(default = "share/java"),
+        "py_dest": attr.string(default = "lib/python2.7/site_packages"),
         "py_strip_prefix": attr.string_list(),
         "install_script_template": attr.label(
             allow_files = True,
@@ -379,6 +383,7 @@ Args:
     archive_dest: Destination for static library targets (default = "lib").
     library_dest: Destination for shared library targets (default = "lib").
     runtime_dest: Destination for executable targets (default = "bin").
+    java_dest: Destination for Java targets (default = "share/java").
     py_dest: Destination for Python targets
         (default = "lib/python2.7/site_packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
