@@ -28,7 +28,7 @@ void Compress(const Image<kPixelType>& image, image_t* msg) {
   const int source_size = image.width() * image.height() * image.kPixelSize;
   // The destination buf_size must be slightly larger than the source size.
   // http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/zlib-compress2-1.html
-  uint64_t buf_size = source_size * 1.001 + 12;
+  size_t buf_size = source_size * 1.001 + 12;
   std::unique_ptr<uint8_t[]> buf(new uint8_t[buf_size]);
 
   auto compress_status = compress2(
