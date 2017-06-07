@@ -21,6 +21,10 @@
       "Hints": ["@prefix@/lib/cmake/bot2-core-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "robotlocomotion-lcmtypes": {
+      "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    }
   },
   "Components": {
     "drake": {
@@ -34,6 +38,7 @@
         "Eigen3:Eigen",
         "lcm:lcm",
         "bot2-core-lcmtypes:bot2-core-lcmtypes-cpp",
+        "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp"
       ]
     }
   }
