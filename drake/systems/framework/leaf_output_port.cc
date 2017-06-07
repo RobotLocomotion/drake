@@ -80,7 +80,8 @@ void LeafOutputPort<T>::DoCalc(const Context<T>& context,
   if (calc_function_) {
     calc_function_(context, value);
   } else {
-    throw std::logic_error("LeafOutputPort::DoCalc(): " + this->GetPortIdString() +
+    throw std::logic_error("LeafOutputPort::DoCalc(): " +
+                           this->GetPortIdString() +
                            " had no calculation function available.");
   }
 }
