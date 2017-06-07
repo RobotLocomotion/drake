@@ -120,10 +120,10 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
     if (monomial_powers.size() == 2) {
       // cross terms.
       auto it = monomial_powers.begin();
-      const int x1_index = map_var_to_index.at(it->first);
+      const int x1_index = map_var_to_index.at(it->first.get_id());
       DRAKE_DEMAND(it->second == 1);
       ++it;
-      const int x2_index = map_var_to_index.at(it->first);
+      const int x2_index = map_var_to_index.at(it->first.get_id());
       DRAKE_DEMAND(it->second == 1);
       (*Q)(x1_index, x2_index) += coefficient;
       (*Q)(x2_index, x1_index) = (*Q)(x1_index, x2_index);
@@ -133,7 +133,7 @@ void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
       // 2. linear term b*x
       auto it = monomial_powers.begin();
       DRAKE_DEMAND(it->second == 2 || it->second == 1);
-      const int x_index = map_var_to_index.at(it->first);
+      const int x_index = map_var_to_index.at(it->first.get_id());
       if (it->second == 2) {
         // quadratic term a * x^2
         (*Q)(x_index, x_index) += 2 * coefficient;
