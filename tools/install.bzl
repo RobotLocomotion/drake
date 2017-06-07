@@ -118,6 +118,16 @@ def _remove_prefix(path, prefix):
     return __remove_prefix(path.split("/"), prefix.split("/"))
 
 #------------------------------------------------------------------------------
+def _is_drake_label(x):
+    root = x.workspace_root
+    if root == "":
+        x.package.startswith("drake") or fail("Unknown '%s'" % x.package)
+        return True
+    else:
+        root.startswith("external") or fail("Unknown '%s'" % root)
+        return False
+
+#------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix):
     """Compute output path (without destination prefix) for install action.
 
@@ -270,9 +280,12 @@ def _install_impl(ctx):
     actions = []
 
     # Check for missing license files.
-    if len(ctx.attr.targets) or len(ctx.attr.hdrs):
-        if not len(ctx.attr.license_docs):
-            fail("'install' missing 'license_docs'")
+    non_drake_labels = [
+        x.label for x in ctx.attr.targets + ctx.attr.hdrs
+        if not _is_drake_label(x.label)]
+    if non_drake_labels and not ctx.attr.license_docs:
+        fail("%s is missing required license_docs= attribute for %s" % (
+            ctx.label, non_drake_labels))
 
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
