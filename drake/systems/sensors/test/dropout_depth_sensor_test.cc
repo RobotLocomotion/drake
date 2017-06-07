@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/dropout_depth_sensor.h"
 
+#include <stdlib.h>  //abs
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
@@ -8,7 +9,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/rendering/pose_vector.h"
-//#include "drake/systems/sensors/depth_sensor.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
@@ -28,6 +28,41 @@ using rendering::PoseVector;
 namespace sensors {
 namespace {
 
+// Helper function that checks if sensor output is a vector of error values
+bool is_error(Eigen::VectorXd output) {
+  Eigen::VectorXd error_data = VectorXd::Constant(
+      output.size(), DepthSensorOutput<double>::GetErrorDistance());
+
+  return CompareMatrices(error_data, output, 1e-10);
+}
+
+// Helper function that checks if sensor output is a vector of too far values
+bool is_too_far(Eigen::VectorXd output) {
+  Eigen::VectorXd too_far_data = VectorXd::Constant(
+      output.size(), DepthSensorOutput<double>::GetTooFarDistance());
+
+  return CompareMatrices(too_far_data, output, 1e-10);
+}
+
+// Helper function that gets the output data vector
+Eigen::VectorXd get_output_data_vector(
+    const DropoutDepthSensor<double>& dut,
+    const unique_ptr<SystemOutput<double>>& output,
+    const unique_ptr<Context<double>>& context, RigidBodyTree<double>& tree) {
+  const int sensor_data_output_port_index =
+      dut.get_sensor_state_output_port().get_index();
+
+  int input_port_index = dut.get_rigid_body_tree_state_input_port().get_index();
+
+  context->FixInputPort(
+      input_port_index,
+      VectorXd::Zero(tree.get_num_positions() + tree.get_num_velocities()));
+
+  dut.CalcOutput(*context, output.get());
+
+  return output->get_vector_data(sensor_data_output_port_index)->get_value();
+}
+
 // Tests DepthSensor's various accessor and streaming to-string methods.
 GTEST_TEST(TestDropoutDepthSensor, AccessorsAndToStringTest) {
   const char* const kSensorName = "foo sensor";
@@ -40,7 +75,8 @@ GTEST_TEST(TestDropoutDepthSensor, AccessorsAndToStringTest) {
   DepthSensorSpecification specification;
   DepthSensorSpecification::set_octant_1_spec(&specification);
 
-  DropoutDepthSensor<double> dut(kSensorName, tree, frame, specification, 1.0, 0.0);
+  DropoutDepthSensor<double> dut(kSensorName, tree, frame, specification, 1.0,
+                                 0.0);
   EXPECT_EQ(dut.get_specification(), specification);
   EXPECT_EQ(dut.get_num_input_ports(), 1);
   EXPECT_EQ(dut.get_num_output_ports(), 2);
@@ -56,9 +92,10 @@ GTEST_TEST(TestDropoutDepthSensor, AccessorsAndToStringTest) {
   EXPECT_EQ(std::count(dut_string.begin(), dut_string.end(), '\n'), 3);
 }
 
-// A helper method that evaluates the sensor-in-an-empty-world scenario, without dropout. This is
-// useful for verifying that the sensor can be instantiated and that it will
-// return a vector of the correct size containing invalid range measurements.
+// A helper method that evaluates the sensor-in-an-empty-world scenario, without
+// dropout. This is useful for verifying that the sensor can be instantiated and
+// that it will return a vector of the correct size containing invalid range
+// measurements.
 void DoEmptyWorldTest(const char* const name,
                       const DepthSensorSpecification& specification) {
   RigidBodyTree<double> tree;
@@ -70,25 +107,12 @@ void DoEmptyWorldTest(const char* const name,
 
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
   unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
-
-  int input_port_index = dut.get_rigid_body_tree_state_input_port().get_index();
-  context->FixInputPort(
-      input_port_index,
-      VectorXd::Zero(tree.get_num_positions() + tree.get_num_velocities()));
-
-  dut.CalcOutput(*context, output.get());
-
-  Eigen::VectorXd expected_sensor_data_output =
-      VectorXd::Constant(dut.get_num_depth_readings(),
-          DepthSensorOutput<double>::GetTooFarDistance());
-
   const int sensor_data_output_port_index =
       dut.get_sensor_state_output_port().get_index();
 
-  EXPECT_TRUE(CompareMatrices(
-      expected_sensor_data_output,
-      output->get_vector_data(sensor_data_output_port_index)->get_value(),
-      1e-10));
+  Eigen::VectorXd output_data_vector =
+      get_output_data_vector(dut, output, context, tree);
+  EXPECT_TRUE(is_too_far(output_data_vector));
 
   // Confirms that Clone is correct.
   std::unique_ptr<BasicVector<double>> cloned_base =
@@ -96,17 +120,52 @@ void DoEmptyWorldTest(const char* const name,
   const DepthSensorOutput<double>* const cloned_sub =
       dynamic_cast<const DepthSensorOutput<double>*>(cloned_base.get());
   ASSERT_NE(cloned_sub, nullptr);
-  EXPECT_TRUE(CompareMatrices(
-      expected_sensor_data_output, cloned_sub->get_value(),
-      1e-10));
 
-  const int pose_output_port_index =
-      dut.get_pose_output_port().get_index();
+  EXPECT_TRUE(is_too_far(cloned_sub->get_value()));
+
+  const int pose_output_port_index = dut.get_pose_output_port().get_index();
 
   EXPECT_TRUE(CompareMatrices(
       PoseVector<double>().get_value(),
-      output->get_vector_data(pose_output_port_index)->get_value(),
-      1e-10));
+      output->get_vector_data(pose_output_port_index)->get_value(), 1e-10));
+}
+
+// A helper method that evaluates the sensor-in-an-empty-world scenario, with
+// full dropout. This is useful for verifying that the sensor can be
+// instantiated and that it will return a vector of the correct size containing
+// error range measurements.
+void DoDropoutEmptyWorldTest(const char* const name,
+                             const DepthSensorSpecification& specification) {
+  RigidBodyTree<double> tree;
+  tree.compile();
+  RigidBodyFrame<double> frame("foo frame", &tree.world(),
+                               Eigen::Isometry3d::Identity());
+
+  DropoutDepthSensor<double> dut(name, tree, frame, specification, 1.0, 100.0);
+
+  unique_ptr<Context<double>> context = dut.CreateDefaultContext();
+  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+  const int sensor_data_output_port_index =
+      dut.get_sensor_state_output_port().get_index();
+
+  Eigen::VectorXd output_data_vector =
+      get_output_data_vector(dut, output, context, tree);
+  EXPECT_TRUE(is_error(output_data_vector));
+
+  // Confirms that Clone is correct.
+  std::unique_ptr<BasicVector<double>> cloned_base =
+      output->get_vector_data(sensor_data_output_port_index)->Clone();
+  const DepthSensorOutput<double>* const cloned_sub =
+      dynamic_cast<const DepthSensorOutput<double>*>(cloned_base.get());
+  ASSERT_NE(cloned_sub, nullptr);
+
+  EXPECT_TRUE(is_error(cloned_sub->get_value()));
+
+  const int pose_output_port_index = dut.get_pose_output_port().get_index();
+
+  EXPECT_TRUE(CompareMatrices(
+      PoseVector<double>().get_value(),
+      output->get_vector_data(pose_output_port_index)->get_value(), 1e-10));
 }
 
 // Tests the ability to scan the sensor's X,Y plane (i.e., pitch = 0).
@@ -114,6 +173,7 @@ GTEST_TEST(TestDropoutDepthSensor, XyEmptyWorldTest) {
   DepthSensorSpecification specification;
   DepthSensorSpecification::set_xy_planar_spec(&specification);
   DoEmptyWorldTest("foo depth sensor", specification);
+  DoDropoutEmptyWorldTest("foo depth sensor", specification);
 }
 
 // Tests the ability to scan the sensor's X,Z plane (i.e., yaw = 0).
@@ -121,6 +181,7 @@ GTEST_TEST(TestDropoutDepthSensor, XzEmptyWorldTest) {
   DepthSensorSpecification specification;
   DepthSensorSpecification::set_xz_planar_spec(&specification);
   DoEmptyWorldTest("foo depth sensor", specification);
+  DoDropoutEmptyWorldTest("foo depth sensor", specification);
 }
 
 // Tests the ability to scan the sensor's surrounding X,Y,Z volume.
@@ -128,15 +189,16 @@ GTEST_TEST(TestDropoutDepthSensor, XyzEmptyWorldTest) {
   DepthSensorSpecification specification;
   DepthSensorSpecification::set_xyz_spherical_spec(&specification);
   DoEmptyWorldTest("foo depth sensor", specification);
+  DoDropoutEmptyWorldTest("foo depth sensor", specification);
 }
 
 const double kBoxWidth{0.1};
 
 // A helper method that evaluates a scenario containing a depth sensor in the
-// world's origin and a 0.1 x 0.1 x 0.1 meter box located at position
-// (@p box_x, @p box_y, @p box_z) in the world frame. This is useful for
-// verifying that the sensor can detect the box. The return value is a vector of
-// depth measurements.
+// world's origin and a 0.1 x 0.1 x 0.1 meter box located at position (@p
+// box_x, @p box_y, @p box_z) in the world frame. This is useful for verifying
+// that the sensor can detect the box. The return value is a vector of depth
+// measurements.
 std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
     const char* const name, const DepthSensorSpecification& specification,
     const Vector3d& box_xyz) {
@@ -209,7 +271,7 @@ GTEST_TEST(TestDropoutDepthSensor, XyBoxInWorldTest) {
 
   Eigen::VectorXd expected_depths =
       VectorXd::Constant(depth_measurements.size(),
-          DepthSensorOutput<double>::GetTooFarDistance());
+                         DepthSensorOutput<double>::GetTooFarDistance());
 
   const double box_distance = box_xyz(0) - kBoxWidth / 2;
   expected_depths(23) = box_distance / cos(specification.min_yaw() +
@@ -249,8 +311,8 @@ GTEST_TEST(TestDropoutDepthSensor, XyBoxInWorldTest) {
 
 // Tests the ability to scan the sensor's X,Z plane (i.e., pitch in [0, M_PI /
 // 2], yaw = 0) in a world containing a box at (0, 0, 0.5). This also verifies
-// that pitch rotates the sensor's opti, without dropoutcal frame around the sensor's base
-// frame's -Y axis.
+// that pitch rotates the sensor's opti, without dropoutcal frame around the
+// sensor's base frame's -Y axis.
 GTEST_TEST(TestDropoutDepthSensor, XzBoxInWorldTest) {
   DepthSensorSpecification specification;
   DepthSensorSpecification::set_xz_planar_spec(&specification);
@@ -262,7 +324,7 @@ GTEST_TEST(TestDropoutDepthSensor, XzBoxInWorldTest) {
 
   Eigen::VectorXd expected_output =
       VectorXd::Constant(depth_measurements.size(),
-          DepthSensorOutput<double>::GetTooFarDistance());
+                         DepthSensorOutput<double>::GetTooFarDistance());
 
   const double box_distance = box_xyz(2) - kBoxWidth / 2;
   // sin() is used below because pitch is the angle between the sensor's base
@@ -289,14 +351,14 @@ GTEST_TEST(TestDropoutDepthSensor, TestTooClose) {
   // Note that the minimum sensing distance is 1m but the box is placed 0.5m in
   // front of the sensor.
   const Vector3d box_xyz(0.5, 0, 0);  // x, y, z location of box.
-  const std::pair<VectorX<double>, Matrix3Xd> result = DoBoxOcclusionTest(
-      "foo depth sensor", specification, box_xyz);
+  const std::pair<VectorX<double>, Matrix3Xd> result =
+      DoBoxOcclusionTest("foo depth sensor", specification, box_xyz);
   const VectorX<double> depth_measurements = std::get<0>(result);
 
   EXPECT_EQ(depth_measurements.size(), 1);
   Eigen::VectorXd expected_output =
       VectorXd::Constant(depth_measurements.size(),
-          DepthSensorOutput<double>::GetTooCloseDistance());
+                         DepthSensorOutput<double>::GetTooCloseDistance());
 
   EXPECT_TRUE(CompareMatrices(depth_measurements, expected_output, 1e-8,
                               MatrixCompareType::absolute));

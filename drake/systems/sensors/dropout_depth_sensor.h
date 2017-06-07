@@ -38,7 +38,7 @@ class DropoutDepthSensor : public DepthSensor {
                                  const systems::Context<double>& context,
                                  systems::SystemOutput<double>* output) const;
   bool is_time_to_drop_frame(const Context<T>& context) const;
-  T dropout_count_increment;
+  T dropout_count_increment_;
 
  private:
   void PrecomputeDroppedFrame();

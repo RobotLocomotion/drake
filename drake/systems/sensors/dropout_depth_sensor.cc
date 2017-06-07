@@ -16,7 +16,7 @@ DropoutDepthSensor<T>::DropoutDepthSensor(
     const T dropout_duty_cycle)
     : DepthSensor::DepthSensor(name, tree, frame, specification) {
   DRAKE_THROW_UNLESS((0 <= dropout_duty_cycle) && (dropout_duty_cycle <= 100));
-  dropout_count_increment = (dropout_duty_cycle * sample_time) / 100.0;
+  dropout_count_increment_ = (dropout_duty_cycle * sample_time) / 100.0;
   PrecomputeDroppedFrame();
 
   DeclareDiscreteState(1);
@@ -31,7 +31,7 @@ DropoutDepthSensor<T>::DropoutDepthSensor(
     : DepthSensor::DepthSensor(name, tree, frame, specification) {
   DRAKE_THROW_UNLESS((0 <= dropout_duty_cycle) && (dropout_duty_cycle <= 100));
   double sample_time = 1;  // Default value if none is provided
-  dropout_count_increment = (dropout_duty_cycle * sample_time) / 100.0;
+  dropout_count_increment_ = (dropout_duty_cycle * sample_time) / 100.0;
   PrecomputeDroppedFrame();
 
   DeclareDiscreteState(1);
@@ -54,7 +54,7 @@ template <typename T>
 void DropoutDepthSensor<T>::DoCalcDiscreteVariableUpdates(
     const Context<T>& context, DiscreteValues<T>* updates) const {
   T accumulated_error = context.get_discrete_state(0)->GetAtIndex(0);
-  accumulated_error += dropout_count_increment;
+  accumulated_error += dropout_count_increment_;
   if (accumulated_error >= 100) {
     accumulated_error = 0.0;
   }
@@ -78,8 +78,8 @@ bool DropoutDepthSensor<T>::is_time_to_drop_frame(
   T accumulated_error = context.get_discrete_state(0)->GetAtIndex(0);
 
   if (accumulated_error <
-      dropout_count_increment) {  // This will happen if it was
-                                  // set to zero in the update
+      dropout_count_increment_) {  // This will happen if it was
+                                   // set to zero in the update
     return true;
   } else {
     return false;
@@ -93,12 +93,13 @@ VectorX<double> DropoutDepthSensor<T>::get_dropped_frame() const {
 
 template <typename T>
 void DropoutDepthSensor<T>::PrecomputeDroppedFrame() {
+  kDroppedFrame = VectorX<double>::Zero(get_num_depth_readings());
   for (int i = 0; i < kDroppedFrame.size(); ++i) {
     kDroppedFrame[i] = DepthSensorOutput<double>::GetErrorDistance();
   }
 }
 
-    template class DropoutDepthSensor<double>;
+template class DropoutDepthSensor<double>;
 
 }  // namespace sensors
 }  // namespace systems
