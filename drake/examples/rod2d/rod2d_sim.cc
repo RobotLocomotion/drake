@@ -13,6 +13,8 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
@@ -34,6 +36,8 @@ using drake::systems::rendering::MakeGeometryData;
 using drake::systems::rendering::PoseAggregator;
 using drake::systems::rendering::PoseBundleToDrawMessage;
 using drake::systems::Simulator;
+using drake::systems::ImplicitEulerIntegrator;
+using drake::systems::RungeKutta3Integrator;
 
 // Simulation parameters.
 DEFINE_string(simulation_type, "timestepping",
@@ -42,6 +46,8 @@ DEFINE_string(simulation_type, "timestepping",
 DEFINE_double(dt, 1e-2, "Integration step size");
 DEFINE_double(rod_radius, 5e-2, "Radius of the rod (for visualization only)");
 DEFINE_double(sim_duration, 10, "Simulation duration in virtual seconds");
+DEFINE_double(accuracy, 1e-5,
+              "Requested simulation accuracy (ignored for time stepping)");
 
 int main(int argc, char* argv[]) {
   // Parse any flags.
@@ -125,9 +131,21 @@ int main(int argc, char* argv[]) {
   ext_input->SetAtIndex(2, 0.0);
   rod_context->FixInputPort(0, std::move(ext_input));
 
-  // Start simulating.
+  // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));
+  if (FLAGS_simulation_type == "compliant") {
+    auto mut_context = simulator.get_mutable_context();
+    simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
+                                                                mut_context);
+  } else {
+    auto mut_context = simulator.get_mutable_context();
+    simulator.reset_integrator<RungeKutta3Integrator<double>>(*diagram,
+                                                              mut_context);
+  }
+  simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
+
+  // Start simulating.
   simulator.set_target_realtime_rate(1.0);
   while (simulator.get_context().get_time() < FLAGS_sim_duration) {
     const double t = simulator.get_context().get_time();
