@@ -94,6 +94,11 @@ exports_create_cps_scripts([
     "spdlog",
 ])
 
+exports_files(
+    ["bot2-core-lcmtypes.cps"],
+    visibility = ["@bot_core_lcmtypes//:__pkg__"],
+)
+
 alias(
     name = "buildifier",
     actual = "@com_github_bazelbuild_buildtools//buildifier",
