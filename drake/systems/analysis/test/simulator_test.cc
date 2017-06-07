@@ -101,21 +101,45 @@ class TwoWitnessEmptySystem : public LeafSystem<double> {
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
 };
 
+// Disables non-witness based publishing for witness function testing.
+void DisableDefaultPublishing(Simulator<double>* s) {
+  s->set_publish_at_initialization(false);
+  s->set_publish_every_time_step(false);
+}
+
+// Initializes the Simulator's integrator to fixed step mode for witness
+// function related tests.
+void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double dt) {
+  const System<double>& system = s->get_system();
+  auto context = s->get_mutable_context();
+  s->reset_integrator<RungeKutta2Integrator<double>>(system, dt, context);
+  s->get_mutable_integrator()->set_fixed_step_mode(true);
+  s->get_mutable_integrator()->set_maximum_step_size(dt);
+  DisableDefaultPublishing(s);
+}
+
+// Initializes the Simulator's integrator to fixed step mode for witness
+// function related tests.
+void InitVariableStepIntegratorForWitnessTesting(Simulator<double>* s) {
+  const System<double>& system = s->get_system();
+  auto context = s->get_mutable_context();
+  s->reset_integrator<RungeKutta3Integrator<double>>(system, context);
+  DisableDefaultPublishing(s);
+}
+
 // Tests witness function isolation when operating in fixed step mode without
 // specifying accuracy.
 GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
   LogisticSystem system(1e-8, 100, 1);
   double publish_time = 0;
-  system.set_publish_callback([&](const Context<double>& context){
+  system.set_publish_callback([&](const Context<double>& context) {
     publish_time = context.get_time();
   });
 
   const double dt = 1e-3;
   Simulator<double> simulator(system);
-  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
+
   Context<double>* context = simulator.get_mutable_context();
   (*context->get_mutable_continuous_state())[0] = -1;
   simulator.StepTo(dt);
@@ -125,10 +149,13 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
 }
 
 // Tests witness function isolation when operating in error-controlled
-// integration mode.
+// integration mode, implying a particular mechanism for the witness window
+// isolation length (see Simulator::GetCurrentWitnessTimeIsolation()). This
+// function tests that the accuracy of the witness function isolation time
+// increases as accuracy (in the Context) is increased.
 GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
+  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
@@ -136,11 +163,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
 
   const double dt = 10;
   Simulator<double> simulator(system);
-  simulator.reset_integrator<
-      RungeKutta3Integrator<double>>(system, simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
+  InitVariableStepIntegratorForWitnessTesting(&simulator);
   Context<double>* context = simulator.get_mutable_context();
 
   // Get the (one) witness function.
@@ -180,11 +203,15 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   }
 }
 
-// Tests witness function isolation accuracy increases with increasing accuracy
-// in the context.
+// Tests that witness function isolation accuracy increases with increasing
+// accuracy in the context. This test uses fixed step integration, which implies
+// a particular mechanism for the witness window isolation length (see
+// Simulator::GetCurrentWitnessTimeIsolation()). This function tests that the
+// accuracy of the witness function isolation time increases as accuracy
+// (in the Context) is increased.
 GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
+  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
@@ -192,10 +219,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
 
   const double dt = 10;
   Simulator<double> simulator(system);
-  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>* context = simulator.get_mutable_context();
 
   // Get the (one) witness function.
@@ -249,24 +273,23 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
     DRAKE_DEMAND(witnesses.size() == 2);
 
     // Evaluate them.
-    double w1 = witnesses.front()->Evaluate(context);
-    double w2 = witnesses.back()->Evaluate(context);
+    double clock_eval = witnesses.front()->Evaluate(context);
+    double logistic_eval = witnesses.back()->Evaluate(context);
 
     // Store the one that evaluates closest to zero.
-    if (std::abs(w1) < std::abs(w2)) {
+    if (std::abs(clock_eval) < std::abs(logistic_eval)) {
       triggers.emplace_back(context.get_time(), witnesses.front());
     } else {
       // They should not be very close to one another.
       const double tol = 1e-8;
-      DRAKE_ASSERT(std::abs(w2 - w1) > tol);
+      DRAKE_ASSERT(std::abs(logistic_eval - clock_eval) > tol);
       triggers.emplace_back(context.get_time(), witnesses.back());
     }
   });
 
   const double dt = 1e-3;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
+  DisableDefaultPublishing(&simulator);
   simulator.reset_integrator<ImplicitEulerIntegrator<double>>(system,
                                               simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(dt);
@@ -299,7 +322,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
 // at the identical time over an interval.
 GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
   // Create an EmptySystem that uses two identical witness functions.
-  TwoWitnessEmptySystem system(+1, +1);
+  TwoWitnessEmptySystem system(1.0, 1.0);
   bool published = false;
   std::unique_ptr<Simulator<double>> simulator;
   system.set_publish_callback([&](const Context<double> &context) {
@@ -328,8 +351,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
 
   const double dt = 2;
   simulator = std::make_unique<Simulator<double>>(system);
-  simulator->set_publish_at_initialization(false);
-  simulator->set_publish_every_time_step(false);
+  DisableDefaultPublishing(simulator.get());
   simulator->get_mutable_integrator()->set_maximum_step_size(dt);
 
   // Isolate witness functions to high accuracy.
@@ -349,8 +371,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
 // triggering), the second witness does not trigger.
 GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   // Set the trigger times.
-  const double first_time = +1;
-  const double second_time = +2;
+  const double first_time = 1.0;
+  const double second_time = 2.0;
 
   // Create an EmptySystem that uses clock witnesses.
   TwoWitnessEmptySystem system(first_time, second_time);
@@ -361,8 +383,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
 
   const double dt = 3;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
+  DisableDefaultPublishing(&simulator);
   simulator.get_mutable_integrator()->set_maximum_step_size(dt);
 
   // Isolate witness functions to high accuracy.
@@ -393,7 +414,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
 // function should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
+  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -401,10 +422,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>* context = simulator.get_mutable_context();
   context->set_time(0);
   simulator.StepTo(1);
@@ -428,10 +446,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>* context = simulator.get_mutable_context();
   context->set_time(0);
   simulator.StepTo(1);
@@ -445,7 +460,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::
+  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::
       kPositiveThenNonPositive);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -454,10 +469,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>* context = simulator.get_mutable_context();
   context->set_time(0);
   simulator.StepTo(2);
@@ -480,10 +492,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>* context = simulator.get_mutable_context();
   context->set_time(-1);
   simulator.StepTo(1);
@@ -506,10 +515,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
 
   const double dt = 1e-6;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-      simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
+  InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>* context = simulator.get_mutable_context();
   (*context->get_mutable_continuous_state())[0] = -1;
   simulator.StepTo(1e-4);
