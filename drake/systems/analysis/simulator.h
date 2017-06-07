@@ -274,7 +274,8 @@ class Simulator {
   ///   Context, the nominally fixed steps for integrating continuous state will
   ///   be subdivided until events have been isolated to the requisite interval
   ///   length, which is scaled by the step size times the accuracy in the
-  ///   Context.
+  ///   Context. If accuracy is not set in the Context, event isolation will
+  ///   not be performed.
   ///
   /// The isolation window length will never be smaller than the integrator's
   /// working minimum tolerance (see

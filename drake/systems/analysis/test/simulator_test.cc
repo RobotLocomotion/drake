@@ -128,7 +128,8 @@ void InitVariableStepIntegratorForWitnessTesting(Simulator<double>* s) {
 }
 
 // Tests witness function isolation when operating in fixed step mode without
-// specifying accuracy.
+// specifying accuracy (i.e., no isolation should be performed, and the witness
+// function should trigger at the end of the step).
 GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
   LogisticSystem system(1e-8, 100, 1);
   double publish_time = 0;
@@ -143,6 +144,9 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
   Context<double>* context = simulator.get_mutable_context();
   (*context->get_mutable_continuous_state())[0] = -1;
   simulator.StepTo(dt);
+
+  // Verify that no witness isolation is done.
+  EXPECT_FALSE(simulator.GetCurrentWitnessTimeIsolation());
 
   // Verify that the witness function triggered at dt.
   EXPECT_EQ(publish_time, dt);
@@ -196,7 +200,11 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
     EXPECT_LT(new_eval, eval);
     eval = new_eval;
 
-    // Increase the accuracy.
+    // Increase the accuracy. NOTE: variable step integrator means that we do
+    // not have total control over the endpoints of the continuous interval
+    // (as we do for the FixedStepIncreasingIsolationAccuracy test, immediately
+    // below). Correspondingly, accuracy has to be significantly tightened to
+    // guarantee more accurate witness function isolation.
     accuracy *= 0.01;
     context->set_accuracy(accuracy);
     simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
