@@ -255,6 +255,13 @@ def _install_java_actions(ctx, target):
     return []
 
 #------------------------------------------------------------------------------
+# Compute install actions for a py_library or py_binary.
+# TODO(jamiesnape): Install native shared libraries that the target may use.
+def _install_py_actions(ctx, target):
+    return _install_actions(ctx, [target], ctx.attr.py_dest,
+                            ctx.attr.py_strip_prefix)
+
+#------------------------------------------------------------------------------
 # Generate install code for an install action.
 def _install_code(action):
     return "install(%r, %r)" % (action.src.short_path, action.dst)
@@ -290,6 +297,8 @@ def _install_impl(ctx):
             actions += _install_cc_actions(ctx, t)
         elif hasattr(t, "java"):
             actions += _install_java_actions(ctx, t)
+        elif hasattr(t, "py"):
+            actions += _install_py_actions(ctx, t)
 
     # Generate code for install actions.
     script_actions = [_install_code(a) for a in actions]
@@ -320,6 +329,8 @@ install = rule(
         "archive_dest": attr.string(default = "lib"),
         "library_dest": attr.string(default = "lib"),
         "runtime_dest": attr.string(default = "bin"),
+        "py_dest":  attr.string(default = "lib/python2.7/site_packages"),
+        "py_strip_prefix": attr.string_list(),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -368,6 +379,9 @@ Args:
     archive_dest: Destination for static library targets (default = "lib").
     library_dest: Destination for shared library targets (default = "lib").
     runtime_dest: Destination for executable targets (default = "bin").
+    py_dest: Destination for Python targets
+        (default = "lib/python2.7/site_packages").
+    py_strip_prefix: List of prefixes to remove from Python paths.
 """
 
 #------------------------------------------------------------------------------
