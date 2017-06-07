@@ -218,9 +218,52 @@ const Variable& FormulaVar::get_variable() const { return var_; }
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
 
+namespace {
+// Helper function for ExpressionEq::Evaluate and ExpressionNeq::Evaluate.
+//
+// Checks if `e1.EvaluatePartial(env)` and `e2.EvaluatePartial(env)` are
+// structurally equal.
+bool AreStructurallyEqualAfterEvaluatePartial(const Expression& e1,
+                                              const Expression& e2,
+                                              const Environment& env) {
+  // Trivial case where env = ∅.
+  if (env.empty()) {
+    return e1.EqualTo(e2);
+  }
+
+  // `Expression::Evaluate` is faster than `Expression::EvaluatePartial`.
+  // Therefore, first check if (variables(e₁) ∪ variables(e₂) ⊂ dom(env).
+  // If it's the case, use `Expression::Evaluate`. Otherwise, use
+  // `Expression::EvaluatePartial`.
+
+  const Variables vars{e1.GetVariables() + e2.GetVariables()};
+  bool env_is_sufficient_to_call_eval{true};
+  // Check 1. |dom(env)| >= |vars|.
+  if (vars.size() > env.size()) {
+    env_is_sufficient_to_call_eval = false;
+  }
+  // Check 2. v ∈ vars → v ∈ dom(env).
+  if (env_is_sufficient_to_call_eval) {
+    for (const Variable& v : vars) {
+      if (env.find(v) == env.end()) {
+        env_is_sufficient_to_call_eval = false;
+      }
+    }
+  }
+  if (env_is_sufficient_to_call_eval) {
+    // This is faster.
+    return e1.Evaluate(env) == e2.Evaluate(env);
+  } else {
+    // First partially evaluate e1 and e2, then compare the two results using
+    // structurally equality.
+    return e1.EvaluatePartial(env).EqualTo(e2.EvaluatePartial(env));
+  }
+}
+}  // namespace
+
 bool FormulaEq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) ==
-         get_rhs_expression().Evaluate(env);
+  return AreStructurallyEqualAfterEvaluatePartial(get_lhs_expression(),
+                                                  get_rhs_expression(), env);
 }
 
 Formula FormulaEq::Substitute(const Substitution& s) const {
@@ -237,8 +280,8 @@ FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Neq, e1, e2} {}
 
 bool FormulaNeq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) !=
-         get_rhs_expression().Evaluate(env);
+  return !AreStructurallyEqualAfterEvaluatePartial(get_lhs_expression(),
+                                                   get_rhs_expression(), env);
 }
 
 Formula FormulaNeq::Substitute(const Substitution& s) const {
