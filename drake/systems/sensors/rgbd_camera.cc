@@ -25,13 +25,22 @@
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
+#include <vtkVersion.h>
 #include <vtkWindowToImageFilter.h>
+
+#if VTK_MAJOR_VERSION >= 6
+#include <vtkAutoInit.h>
+#endif
 
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/vtk_util.h"
+
+#if VTK_MAJOR_VERSION >= 6
+VTK_AUTOINIT_DECLARE(vtkRenderingOpenGL2)
+#endif
 
 // TODO(kunimatsu-tri) Refactor RenderingWorld out from RgbdCamera,
 // so that other vtk dependent sensor simulators can share the RenderingWorld
@@ -198,8 +207,16 @@ class ColorPalette {
   std::unordered_map<const Color, int, ColorHash> color_id_map_;
 };
 
-}  // namespace
+// Register the object factories for the vtkRenderingOpenGL2 module.
+struct ModuleInitVtkRenderingOpenGL2 {
+  ModuleInitVtkRenderingOpenGL2() {
+#if VTK_MAJOR_VERSION >= 6
+    VTK_AUTOINIT_CONSTRUCT(vtkRenderingOpenGL2)
+#endif
+  }
+};
 
+}  // namespace
 
 void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                                const CameraInfo& camera_info,
@@ -233,8 +250,7 @@ void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
 }
 
 
-
-class RgbdCamera::Impl {
+class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
  public:
   Impl(const RigidBodyTree<double>& tree, const RigidBodyFrame<double>& frame,
        double fov_y, bool show_window, bool fix_camera);

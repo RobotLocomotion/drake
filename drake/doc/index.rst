@@ -119,7 +119,6 @@ Next steps
    design
    developers
    Doxygen (C++) <doxygen_cxx/index.html#://>
-   Doxygen (MATLAB) <doxygen_matlab/index.html#://>
    models
    faq
    issues
@@ -136,3 +135,4 @@ Using Drake from other Programming Languages
 
     python_bindings
     julia_bindings
+    matlab_bindings

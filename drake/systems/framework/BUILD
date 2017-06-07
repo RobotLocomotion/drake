@@ -227,7 +227,11 @@ drake_cc_library(
 drake_cc_library(
     name = "system",
     srcs = ["system.cc"],
-    hdrs = ["system.h"],
+    hdrs = [
+        "discrete_event.h",
+        "system.h",
+        "witness_function.h",
+    ],
     deps = [
         ":cache",
         ":context",
@@ -436,6 +440,7 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         "//drake/common",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
