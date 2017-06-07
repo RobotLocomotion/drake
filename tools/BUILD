@@ -93,6 +93,7 @@ exports_create_cps_scripts([
     "lcm",
     "nlopt",
     "pybind11",
+    "sdformat",
     "spdlog",
 ])
 
