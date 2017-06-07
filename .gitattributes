@@ -4,3 +4,4 @@
 **/BUILD diff=python
 **/BUILD.bazel diff=python
 WORKSPACE diff=python
+**/*.cps diff=json
