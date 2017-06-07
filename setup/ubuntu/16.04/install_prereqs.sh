@@ -26,7 +26,7 @@ while true; do
   read -p "Do you want to continue? [Y/n] " yn
   case $yn in
     [Yy]*)
-      apt-get install --no-install-recommends lsb-core software-properties-common wget
+      apt-get install --no-install-recommends lsb-core software-properties-common wget sudo
       wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
       add-apt-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
       apt-get update
