@@ -21,25 +21,65 @@ namespace systems {
 namespace rendering {
 namespace {
 
+using std::move;
+
+// Utility function for asserting the identity pose.
+template <typename T>
+void ExpectIdentity(const PoseVector<T>& pose) {
+  // Check that the underlying storage has the values we'd expect.
+  for (int i = 0; i < 3; ++i) {
+    // p_WA is entirely zero.
+    EXPECT_EQ(0.0, pose[i]);
+  }
+
+  // The real part of quaternion R_WA is cos(0) = 1.
+  EXPECT_EQ(1.0, pose[3]);
+
+  for (int i = 4; i < pose.kSize; ++i) {
+    // The imaginary parts of quaternion R_WA are sin(0) = 0.
+    EXPECT_EQ(0.0, pose[i]);
+  }
+}
+
 /// Tests that the PoseVector is initialized to identity.
 GTEST_TEST(PoseVector, InitiallyIdentity) {
   const PoseVector<double> vec;
   EXPECT_TRUE(CompareMatrices(Isometry3<double>::Identity().matrix(),
                               vec.get_isometry().matrix()));
 
-  // Check that the underlying storage has the values we'd expect.
-  for (int i = 0; i < 3; ++i) {
-    // p_WA is entirely zero.
-    EXPECT_EQ(0.0, vec[i]);
-  }
+  ExpectIdentity(vec);
+}
 
-  // The real part of R_WA is cos(0) = 1.
-  EXPECT_EQ(1.0, vec[3]);
+// Tests that the copy constructor and copy assignment behaves properly.
+GTEST_TEST(PoseVector, CopySemantics) {
+  PoseVector<double> vec;
+  vec.set_translation(Eigen::Translation<double, 3>(1, 2, 3));
+  vec.set_rotation(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5));
 
-  for (int i = 4; i < vec.kSize; ++i) {
-    // The imaginary parts of R_WA are sin(0) = 0.
-    EXPECT_EQ(0.0, vec[i]);
-  }
+  PoseVector<double> copy_ctor(vec);
+  EXPECT_EQ(copy_ctor.get_value(), vec.get_value());
+
+  PoseVector<double> assign;
+  ExpectIdentity(assign);
+  assign = vec;
+  EXPECT_EQ(assign.get_value(), copy_ctor.get_value());
+}
+
+// Tests that the move constructor and move assignment behaves properly.
+GTEST_TEST(PoseVector, MoveSemantics) {
+  PoseVector<double> vec;
+  vec.set_translation(Eigen::Translation<double, 3>(1, 2, 3));
+  vec.set_rotation(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5));
+
+  PoseVector<double> assign_ctor(move(vec));
+  ExpectIdentity(vec);
+  EXPECT_NE(assign_ctor.get_value(), vec.get_value());
+
+  PoseVector<double> assign;
+  ExpectIdentity(assign);
+  assign = move(assign_ctor);
+  ExpectIdentity(assign_ctor);
+  EXPECT_NE(assign.get_value(), assign_ctor.get_value());
 }
 
 GTEST_TEST(PoseVector, Rotation) {

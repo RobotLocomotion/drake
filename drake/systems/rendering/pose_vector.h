@@ -16,9 +16,18 @@ namespace rendering {
 /// @tparam T The Eigen scalar type. Supported scalar types are double,
 ///         AutoDiffXd, and symbolic::Expression.
 template <typename T>
-class PoseVector : public BasicVector<T> {
+class PoseVector final : public BasicVector<T> {
  public:
   PoseVector();
+
+  // Parent class is *not* copyable/assignable; default operators are not
+  // possible. However, because PoseVector is fixed size and final, we don't
+  // have to worry about slicing or resizing.
+  PoseVector(const PoseVector& vec);
+  PoseVector& operator=(const PoseVector& vec);
+  PoseVector(PoseVector&& vec);
+  PoseVector& operator=(PoseVector&& vec);
+
   ~PoseVector() override;
 
   /// Returns the transform X_WA.
