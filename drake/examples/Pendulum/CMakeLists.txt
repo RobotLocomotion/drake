@@ -60,17 +60,3 @@ endif()
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
-
-drake_add_matlab_test(NAME examples/Pendulum/PendulumEnergyShaping.run OPTIONAL lcm COMMAND PendulumEnergyShaping.run SIZE large)
-drake_add_matlab_test(NAME examples/Pendulum/globalStability REQUIRES mosek spotless OPTIONAL lcm COMMAND globalStability)
-drake_add_matlab_test(NAME examples/Pendulum/runDLQR OPTIONAL lcm COMMAND runDLQR SIZE large)
-drake_add_matlab_test(NAME examples/Pendulum/runLQR OPTIONAL lcm COMMAND runLQR)
-drake_add_matlab_test(NAME examples/Pendulum/runLQRtest REQUIRES spotless OPTIONAL lcm mosek sedumi COMMAND runLQRtest)
-drake_add_matlab_test(NAME examples/Pendulum/runPassive OPTIONAL lcm COMMAND runPassive)
-drake_add_matlab_test(NAME examples/Pendulum/runPassiveURDF OPTIONAL bullet COMMAND runPassiveURDF)
-drake_add_matlab_test(NAME examples/Pendulum/runSwingUp OPTIONAL lcm snopt COMMAND runSwingUp)
-drake_add_matlab_test(NAME examples/Pendulum/runTrigLQR REQUIRES spotless OPTIONAL lcm COMMAND runTrigLQR)
-drake_add_matlab_test(NAME examples/Pendulum/PendulumEnergyControl.run REQUIRES spotless OPTIONAL lcm mosek sedumi COMMAND PendulumEnergyControl.run)
-
-# drake_add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance REQUIRES spotless OPTIONAL mosek sedumi snopt COMMAND runTrajectorySwingUpAndBalance)  # FIXME: see #2305
-drake_add_matlab_test(NAME examples/Pendulum/runValueIteration COMMAND runValueIteration SIZE large)
