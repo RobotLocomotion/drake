@@ -454,7 +454,7 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
     )
 
 #------------------------------------------------------------------------------
-def install_cmake_config(package, versioned=True):
+def install_cmake_config(package, versioned=True, name = "install_cmake_config"):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
@@ -469,7 +469,7 @@ def install_cmake_config(package, versioned=True):
         cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
 
     install_files(
-        name = "install_cmake_config",
+        name = name,
         dest = cmake_config_dest,
         files = cmake_config_files,
         visibility = ["//visibility:private"],

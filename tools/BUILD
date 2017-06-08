@@ -117,6 +117,11 @@ exports_create_cps_scripts([
 ])
 
 exports_files(
+    ["gflags.cps"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(
     ["bot2-core-lcmtypes.cps"],
     visibility = ["@bot_core_lcmtypes//:__pkg__"],
 )
