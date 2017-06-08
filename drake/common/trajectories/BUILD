@@ -85,6 +85,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "piecewise_generation_test",
+    size = "medium",
     srcs = ["test/piecewise_polynomial_generation_test.cc"],
     deps = [
         ":piecewise_polynomial",

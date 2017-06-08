@@ -46,6 +46,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",
+    size = "medium",
     deps = [
         ":direct_collocation",
         "//drake/common:eigen_matrix_compare",

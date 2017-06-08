@@ -679,7 +679,7 @@ drake_cc_googletest(
     # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
     # To avoid timeouts in dbg or valgrind, we need "moderate" here.
     # TODO(bazelbuild/bazel#1748) This produces a spurious complaint.
-    timeout = "moderate",
+    size = "large",
     deps = [
         ":system_identification",
         "//drake/common:eigen_matrix_compare",
