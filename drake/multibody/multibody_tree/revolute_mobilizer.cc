@@ -37,14 +37,28 @@ Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<T>> RevoluteMobilizer<T>::Clone(
-    const MultibodyTree<T>& tree_clone) const {
-  const Frame<T>& inboard_frame_clone =
+template <typename ToScalar>
+std::unique_ptr<Mobilizer<ToScalar>>
+RevoluteMobilizer<T>::TemplatedDoCloneToScalar(
+    const MultibodyTree<ToScalar>& tree_clone) const {
+  const Frame<ToScalar>& inboard_frame_clone =
       tree_clone.get_frame(this->get_inboard_frame().get_index());
-  const Frame<T>& outboard_frame_clone =
+  const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_frame(this->get_outboard_frame().get_index());
-  return std::make_unique<RevoluteMobilizer<T>>(
+  return std::make_unique<RevoluteMobilizer<ToScalar>>(
       inboard_frame_clone, outboard_frame_clone, this->get_revolute_axis());
+}
+
+template <typename T>
+std::unique_ptr<Mobilizer<double>> RevoluteMobilizer<T>::DoCloneToScalar(
+    const MultibodyTree<double>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+std::unique_ptr<Mobilizer<AutoDiffXd>> RevoluteMobilizer<T>::DoCloneToScalar(
+    const MultibodyTree<AutoDiffXd>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
 }
 
 // Explicitly instantiates on the most common scalar types.

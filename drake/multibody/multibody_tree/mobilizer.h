@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
@@ -244,12 +245,27 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     X_FM = this->CalcAcrossMobilizerTransform(context);
   }
 
-  virtual std::unique_ptr<Mobilizer<T>> Clone(
-      const MultibodyTree<T>& cloned_tree) const = 0;
+  std::unique_ptr<Mobilizer<T>> Clone(
+      const MultibodyTree<T>& cloned_tree) const {
+    return CloneToScalar(cloned_tree);
+  }
+
+  template <typename ToScalar>
+  std::unique_ptr<Mobilizer<ToScalar>> CloneToScalar(
+      const MultibodyTree<ToScalar>& cloned_tree) const {
+    return DoCloneToScalar(cloned_tree);
+  }
 
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<BodyNode<T>> CreateBodyNode(
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
+
+ protected:
+  virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const = 0;
+
+  virtual std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
