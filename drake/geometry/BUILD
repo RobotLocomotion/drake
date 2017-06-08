@@ -17,9 +17,26 @@ drake_cc_library(
     deps = ["//drake/common"],
 )
 
+drake_cc_library(
+    name = "spatial_pose",
+    srcs = [],
+    hdrs = ["spatial_pose.h"],
+    deps = ["//drake/common"],
+)
+
+# -----------------------------------------------------
+
 drake_cc_googletest(
     name = "identifier_test",
     deps = [":identifier"],
+)
+
+drake_cc_googletest(
+    name = "spatial_pose_test",
+    deps = [
+        ":spatial_pose",
+        "//drake/common:eigen_matrix_compare",
+    ],
 )
 
 cpplint()
