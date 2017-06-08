@@ -163,10 +163,15 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 
+DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
+
 drake_cc_library(
     name = "find_resource",
     srcs = ["find_resource.cc"],
     hdrs = ["find_resource.h"],
+    data = [
+        DRAKE_RESOURCE_SENTINEL,
+    ],
     deps = [
         ":common",
         "//drake/thirdParty:spruce",
@@ -181,7 +186,7 @@ drake_cc_library(
     srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
     data = [
-        "//:.drake-resource-sentinel",
+        DRAKE_RESOURCE_SENTINEL,
     ],
     deps = [
         ":common",
