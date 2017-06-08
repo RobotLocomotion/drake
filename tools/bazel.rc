@@ -6,8 +6,6 @@ build -c opt
 build --force_pic
 build --strip=never
 build --crosstool_top=//tools:default-toolchain
-# Only show warnings from Drake, not from externals.
-build --output_filter="^//"
 
 # Default test options.
 test --test_output=errors
