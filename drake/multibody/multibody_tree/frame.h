@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/frame_base.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -71,12 +72,25 @@ class Frame : public FrameBase<T> {
 
   /// @pre The body to which this frame is attached already has a clone in
   /// `tree_clone`.
-  virtual std::unique_ptr<Frame<T>> Clone(
-      const MultibodyTree<T>& tree_clone) const = 0;
+  std::unique_ptr<Frame<T>> Clone(const MultibodyTree<T>& tree_clone) const {
+    return CloneToScalar(tree_clone);
+  }
+
+  template <typename ToScalar>
+  std::unique_ptr<Frame<ToScalar>> CloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const {
+    return DoCloneToScalar(tree_clone);
+  }
 
  protected:
   // Only derived classes can use this constructor.
   explicit Frame(const Body<T>& body) : body_(body) {}
+
+  virtual std::unique_ptr<Frame<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const = 0;
+
+  virtual std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().

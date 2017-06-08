@@ -13,22 +13,24 @@ namespace multibody {
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
-    const Frame<T>& P, const Isometry3<T>& X_PF) :
+    const Frame<T>& P, const Isometry3<double>& X_PF) :
     Frame<T>(P.get_body()), parent_frame_(P),
     X_PF_(X_PF), X_FP_(X_PF.inverse()) {}
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
-    const Body<T>& B, const Isometry3<T>& X_BF) :
+    const Body<T>& B, const Isometry3<double>& X_BF) :
     Frame<T>(B), parent_frame_(B.get_body_frame()),
     X_PF_(X_BF), X_FP_(X_BF.inverse()) {}
 
 template <typename T>
-std::unique_ptr<Frame<T>> FixedOffsetFrame<T>::Clone(
-    const MultibodyTree<T>& tree_clone) const {
-  const Frame<T>& parent_frame_clone =
+template <typename ToScalar>
+std::unique_ptr<Frame<ToScalar>> FixedOffsetFrame<T>::TemplatedDoCloneToScalar(
+    const MultibodyTree<ToScalar>& tree_clone) const {
+  const Frame<ToScalar>& parent_frame_clone =
       tree_clone.get_frame(parent_frame_.get_index());
-  return std::make_unique<FixedOffsetFrame<T>>(parent_frame_clone, X_PF_);
+  return std::make_unique<FixedOffsetFrame<ToScalar>>(
+      parent_frame_clone, X_PF_);
 }
 
 // Explicitly instantiates on the most common scalar types.

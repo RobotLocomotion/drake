@@ -89,18 +89,32 @@ class BodyFrame : public Frame<T> {
     return X_QF;
   }
 
-  std::unique_ptr<Frame<T>> Clone(
-      const MultibodyTree<T>& tree_clone) const final;
+ protected:
+  std::unique_ptr<Frame<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const final {
+    return TemplatedDoCloneToScalar(tree_clone);
+  }
+
+  std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const final {
+    return TemplatedDoCloneToScalar(tree_clone);
+  }
 
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
   // every time a Body object is created and they are associated with each
   // other.
   friend class Body<T>;
+  friend class BodyFrame<double>;
+  friend class BodyFrame<AutoDiffXd>;
 
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame.
   explicit BodyFrame(const Body<T>& body) : Frame<T>(body) {}
+
+  template <typename ToScalar>
+  std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const;
 };
 
 // Forward declarations for Body<T>.

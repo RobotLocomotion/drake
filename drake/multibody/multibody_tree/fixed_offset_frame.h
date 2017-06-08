@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -37,7 +38,7 @@ class FixedOffsetFrame : public Frame<T> {
   ///
   /// @param[in] P The frame to which this frame is attached with a fixed pose.
   /// @param[in] X_PF The transform giving the pose of F in P.
-  FixedOffsetFrame(const Frame<T>& P, const Isometry3<T>& X_PF);
+  FixedOffsetFrame(const Frame<T>& P, const Isometry3<double>& X_PF);
 
   /// Creates a material Frame F whose pose is fixed with respect to the
   /// BodyFrame B of the given Body, which serves as F's parent frame.
@@ -46,14 +47,14 @@ class FixedOffsetFrame : public Frame<T> {
   ///
   /// @param[in] bodyB The body whose BodyFrame B is to be F's parent frame.
   /// @param[in] X_BF  The transform giving the pose of F in B.
-  FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<T>& X_BF);
+  FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<double>& X_BF);
 
   /// Returns the pose `X_FB` of the body B associated with this frame F,
   /// measured in this frame F.
   /// @sa CalcBodyPoseInOtherFrame()
   Isometry3<T> CalcBodyPoseInThisFrame(
       const systems::Context<T>& context) const final {
-    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_FP_);
+    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_FP_.cast<T>());
   }
 
   /// Returns the pose `X_QB` of the body B associated with this frame F
@@ -66,7 +67,8 @@ class FixedOffsetFrame : public Frame<T> {
       const Isometry3<T>& X_QF) const final {
     // This method computes: X_QB = X_QP * X_PB
     // where P is this frame's parent frame
-    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_QF * X_FP_);
+    return parent_frame_.CalcBodyPoseInOtherFrame(context,
+                                                  X_QF * X_FP_.cast<T>());
   }
 
   /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
@@ -75,24 +77,38 @@ class FixedOffsetFrame : public Frame<T> {
   Isometry3<T> CalcOffsetPoseInBody(
       const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const final {
-    return parent_frame_.CalcOffsetPoseInBody(context, X_PF_ * X_FQ);
+    return parent_frame_.CalcOffsetPoseInBody(context,
+                                              X_PF_.cast<T>() * X_FQ);
+  }
+
+ protected:
+  /// @pre The parent frame to this frame already has a clone in `tree_clone`.
+  std::unique_ptr<Frame<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const final {
+    return TemplatedDoCloneToScalar(tree_clone);
   }
 
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
-  std::unique_ptr<Frame<T>> Clone(
-      const MultibodyTree<T>& tree_clone) const final;
+  std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const final {
+    return TemplatedDoCloneToScalar(tree_clone);
+  }
 
  private:
+  template <typename ToScalar>
+  std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const;
+
   // The frame to which this frame is attached.
   const Frame<T>& parent_frame_;
 
   // Spatial transform giving the fixed pose of this frame F measured in the
   // parent frame P.
-  const Isometry3<T> X_PF_;
+  const Isometry3<double> X_PF_;
 
   // Spatial transform giving the fixed pose of the parent frame P measured in
   // this frame F.
-  const Isometry3<T> X_FP_;
+  const Isometry3<double> X_FP_;
 };
 
 }  // namespace multibody
