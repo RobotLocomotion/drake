@@ -6,7 +6,6 @@ drake_add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover_translation REQUI
 # drake_add_matlab_test(NAME matlab/solvers/test/sixHumpCamel REQUIRES spotless OPTIONAL  snopt COMMAND sixHumpCamel)  # FIXME: see #3313
 drake_add_matlab_test(NAME matlab/solvers/test/testConstraint COMMAND testConstraint)
 drake_add_matlab_test(NAME matlab/solvers/test/testGurobiLCP REQUIRES gurobi COMMAND testGurobiLCP)
-drake_add_matlab_test(NAME matlab/solvers/test/testLQRmex OPTIONAL bullet COMMAND testLQRmex)
 drake_add_matlab_test(NAME matlab/solvers/test/testMixedIntegerConvexDemo REQUIRES gurobi yalmip COMMAND testMixedIntegerConvexDemo)
 drake_add_matlab_test(NAME matlab/solvers/test/testMultipleTaskSpaceRRTStar REQUIRES lcm OPTIONAL bullet COMMAND testMultipleTaskSpaceRRTStar SIZE large)
 drake_add_matlab_test(NAME matlab/solvers/test/testNLP OPTIONAL ipopt snopt COMMAND testNLP)
