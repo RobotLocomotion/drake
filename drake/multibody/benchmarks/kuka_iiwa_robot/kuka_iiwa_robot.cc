@@ -1,6 +1,5 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.h"
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/extract_double.h"
 
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MGKukaIIwaRobot.h"
@@ -14,7 +13,7 @@ using Eigen::Matrix;
 
 template <typename T>
 std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d>
-KukaIIwaRobot<T>::CalcForwardKinematicsEndEffectorViaMotionGenesis(
+KukaIIwaRobot<T>::CalcForwardKinematicsEndEffector(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& v) const {
 

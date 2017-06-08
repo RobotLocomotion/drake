@@ -47,9 +47,8 @@ class KukaIIwaRobot {
   /// w_NG_N     | G's angular velocity in N, expressed in N.
   /// v_NGo_N    | Go's velocity in N, expressed in N.
   std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d>
-  CalcForwardKinematicsEndEffectorViaMotionGenesis(
-      const Eigen::Ref<const VectorX<T>>& q,
-      const Eigen::Ref<const VectorX<T>>& v) const;
+  CalcForwardKinematicsEndEffector(const Eigen::Ref<const VectorX<T>>& q,
+                                   const Eigen::Ref<const VectorX<T>>& v) const;
 };
 
 }  // namespace benchmarks

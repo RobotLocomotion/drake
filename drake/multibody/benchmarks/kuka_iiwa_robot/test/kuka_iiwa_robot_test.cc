@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace math {
+namespace benchmarks {
 namespace {
 
 // Function to compare Kuka iiwa robot arm end-effector (frame G)'s orientation
@@ -26,7 +26,7 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
   const Eigen::Vector3d& p_No_Go_N_expected,
   const Eigen::Vector3d& w_NG_N_expected,
   const Eigen::Vector3d& v_NGo_N_expected) {
-  benchmarks::KukaIIwaRobot<double> kukaIIwaRobot;
+  KukaIIwaRobot<double> kukaIIwaRobot;
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
   // w_NG_N     | G's angular velocity in N, expressed in N.
@@ -34,7 +34,7 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
   Eigen::Matrix3d R_NG;
   Eigen::Vector3d p_No_Go_N, w_NG_N, v_NGo_N;
   std::tie(R_NG, p_No_Go_N, w_NG_N, v_NGo_N) =
-    kukaIIwaRobot.CalcForwardKinematicsEndEffectorViaMotionGenesis(q, qDt);
+    kukaIIwaRobot.CalcForwardKinematicsEndEffector(q, qDt);
 
   // Compare actual results with expected results.
   constexpr double epsilon = std::numeric_limits<double>::epsilon();
@@ -118,7 +118,7 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
 
 
 }  // namespace
-}  // namespace math
+}  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
 
