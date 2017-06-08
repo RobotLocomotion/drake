@@ -38,6 +38,7 @@ install(
     deps = [
         "//drake:install",
         "//tools:install",
+        "//tools/externals/gflags:install",
         "@bot_core_lcmtypes//:install",
         "@bullet//:install",
         "@ccd//:install",

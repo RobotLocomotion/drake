@@ -7,8 +7,11 @@ build --force_pic
 build --strip=never
 build --crosstool_top=//tools:default-toolchain
 # Only show warnings from Drake, not from externals.
-build --output_filter="^//"
-
+# build --output_filter="^//"
+# Hide warnings from gflags. Warnings are thrown by install.bzl
+# TODO(mwoehlke) Uncomment line above and remove line below once install.bzl
+# has been updated.
+build --output_filter='^//((?!(gflags):).)*$'
 # Default test options.
 test --test_output=errors
 test --test_summary=terse
