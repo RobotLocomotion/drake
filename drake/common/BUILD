@@ -181,7 +181,7 @@ drake_cc_library(
     srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
     data = [
-        "drake_path.sentinel",
+        "//:.drake-resource-sentinel",
     ],
     deps = [
         ":common",
