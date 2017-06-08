@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:drake.bzl", "drake_generate_include_header")
 
 # Generates config.h based on the version numbers in CMake code.
 cmake_configure_file(
@@ -17,15 +18,11 @@ cmake_configure_file(
 # Generates fcl.h, which consists of #include statements for *all* of the other
 # headers in the library (!!!).  The first line is '#pragma once' followed by
 # one line like '#include "fcl/common/types.h"' for each non-generated header.
-genrule(
+drake_generate_include_header(
     name = "fcl_h_genrule",
-    srcs = glob(["include/**/*.h"]),
-    outs = ["include/fcl/fcl.h"],
-    cmd = "(" + (
-        "echo '#pragma once' && " +
-        "echo '$(SRCS)' | tr ' ' '\\n' | " +
-        "sed 's|.*include/\(.*\)|#include \\\"\\1\\\"|g'"
-    ) + ") > '$@'",
+    out = "include/fcl/fcl.h",
+    hdrs = glob(["include/**/*.h"]),
+    prologue = "#pragma once\n",
 )
 
 # The globbed srcs= and hdrs= matches upstream's explicit globs of the same.
