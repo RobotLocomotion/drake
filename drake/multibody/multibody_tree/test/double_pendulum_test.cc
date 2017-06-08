@@ -162,9 +162,6 @@ class PendulumTests : public ::testing::Test {
   const Isometry3d X_UEi_{Translation3d(0.0, -half_link_length, 0.0)};
   // Pose of the elbow outboard frame Eo in the lower link frame L.
   const Isometry3d X_LEo_{Translation3d(0.0, half_link_length, 0.0)};
-  // Reference benchmark for verification.
-  Acrobot<double> acrobot_benchmark_{Vector3d::UnitZ() /* Plane normal */,
-                                     Vector3d::UnitY() /* Up vector */};
 };
 
 TEST_F(PendulumTests, CreateModelBasics) {
@@ -319,12 +316,17 @@ TEST_F(PendulumTests, CreateContext) {
   // Tests MultibodyTreeContext accessors.
   auto mbt_context =
       dynamic_cast<MultibodyTreeContext<double>*>(context.get());
+  ASSERT_TRUE(mbt_context != nullptr);
 
   // Verifies the correct number of generalized positions and velocities.
   EXPECT_EQ(mbt_context->get_positions().size(), 2);
   EXPECT_EQ(mbt_context->get_mutable_positions().size(), 2);
   EXPECT_EQ(mbt_context->get_velocities().size(), 2);
   EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
+
+  // Verifies methods to retrieve fixed-sized segments of the state.
+  EXPECT_EQ(mbt_context->get_state_segment<1>(1).size(), 1);
+  EXPECT_EQ(mbt_context->get_mutable_state_segment<1>(1).size(), 1);
 
   // Set the poses of each body in the position kinematics cache to have an
   // arbitrary value that we can use for unit testing. In practice the poses in
@@ -343,6 +345,9 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
 }
 
+// Unit test fixture to verify the correctness of MultibodyTree methods for
+// computing kinematics. This fixture uses the reference solution provided by
+// benchmarks::Acrobot.
 class PendulumKinematicTests : public PendulumTests {
  public:
   void SetUp() override {
@@ -356,8 +361,14 @@ class PendulumKinematicTests : public PendulumTests {
  protected:
   std::unique_ptr<Context<double>> context_;
   MultibodyTreeContext<double>* mbt_context_;
+  // Reference benchmark for verification.
+  Acrobot<double> acrobot_benchmark_{Vector3d::UnitZ() /* Plane normal */,
+                                     Vector3d::UnitY() /* Up vector */};
 };
 
+// Verify the correctness of method MultibodyTree::CalcPositionKinematicsCache()
+// comparing the computed results the reference solution provided by
+// benchmarks::Acrobot.
 TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
