@@ -145,7 +145,7 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("AddPositiveSemidefiniteConstraint",
          (Binding<PositiveSemidefiniteConstraint>
           (MathematicalProgram::*)(
-          const Eigen::ref<const MatrixXd>&))
+          const Eigen::ref<const MatrixXDecisionVariable>&))
          &MathematicalProgram::AddPositiveSemidefiniteConstraint)
     .def("AddLinearCost",
          (Binding<LinearCost>
@@ -228,11 +228,17 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
              std::shared_ptr<BoundingBoxConstraint>>(
     m, "BoundingBoxConstraint");
 
+  py::class_<PositiveSemidefiniteConstraint, Constraint,
+             std::shared_ptr<PositiveSemidefiniteConstraint>>(
+    m, "PositiveSemidefiniteConstraint");
+
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
   RegisterBinding<BoundingBoxConstraint>(&m, &prog_cls,
                                          "BoundingBoxConstraint");
+  RegisterBinding<PositiveSemidefiniteConstraint>(&m, &prog_cls,
+    "PositiveSemidefiniteConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, std::shared_ptr<Cost>> cost(
