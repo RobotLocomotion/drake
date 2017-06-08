@@ -417,6 +417,31 @@ drake_cc_library(
     }),
 )
 
+# This library is empty unless Gurobi is available.
+drake_cc_library(
+    name = "gurobi_qp",
+    srcs = select({
+        "//tools:with_gurobi": [
+            "qp.cc",
+        ],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//tools:with_gurobi": [
+            "fast_qp.h",
+            "gurobi_qp.h",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = select({
+        "//tools:with_gurobi": [
+            "@eigen",
+            "@gurobi",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
 # === test/ ===
 drake_cc_googletest(
     name = "binding_test",
@@ -698,6 +723,8 @@ drake_cc_binary(
 # The extra_srcs are required here because cpplint() doesn't understand how to
 # extract labels from select() functions yet.
 cpplint(extra_srcs = [
+    "fast_qp.h",
+    "gurobi_qp.h",
     "gurobi_solver.cc",
     "gurobi_solver.h",
     "ipopt_solver.cc",
@@ -711,6 +738,7 @@ cpplint(extra_srcs = [
     "no_mosek.cc",
     "no_nlopt.cc",
     "no_snopt.cc",
+    "qp.cc",
     "snopt_solver.cc",
     "snopt_solver.h",
 ])
