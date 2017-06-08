@@ -23,6 +23,8 @@ template <typename T>
 ConstantValueSource<T>::ConstantValueSource(
     std::unique_ptr<AbstractValue> value)
     : source_value_(std::move(value)) {
+  // Use the "advanced" method to provide explicit non-member functors here
+  // since we already have AbstractValues.
   this->DeclareAbstractOutputPort(
       [this](const Context<T>&) {
         return source_value_->Clone();

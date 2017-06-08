@@ -73,7 +73,7 @@ class OutputPort {
   by this output port, and return that as an AbstractValue. The returned object
   will never be null. If Drake assertions are enabled (typically only in Debug
   builds), validates for a vector-valued port that the returned AbstractValue
-  is actually BasicVector-derived type and that it has an acceptable size.
+  is actually a BasicVector-derived type and that it has an acceptable size.
   @note If this is a vector-valued port, the underlying type is
   `Value<BasicVector<T>>`; downcast to `BasicVector<T>` before downcasting to
   the specific `BasicVector` subclass. */

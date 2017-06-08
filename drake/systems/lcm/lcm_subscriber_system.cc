@@ -44,18 +44,20 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
   lcm->Subscribe(channel_, this);
 
-  // No sugar methods exist for converting these oddly-typed member functions
-  // to proper callbacks, due to downstream effects of using the translator
-  // or serializer for allocation. So we'll just create the callbacks here.
   if (translator_ != nullptr) {
-    DeclareVectorOutputPort(
-        *AllocateTranslatorOutputValue(),
-        &LcmSubscriberSystem::CalcTranslatorOutputValue);
+    // Invoke the translator allocate method once to provide a model value.
+    DeclareVectorOutputPort(*AllocateTranslatorOutputValue(),
+                            &LcmSubscriberSystem::CalcTranslatorOutputValue);
   } else {
+    // Use the "advanced" method to construct explicit non-member functors
+    // to deal with the unusual methods we have available.
     DeclareAbstractOutputPort(
-        std::bind(&LcmSubscriberSystem::AllocateSerializerOutputValue, this),
-        std::bind(&LcmSubscriberSystem::CalcSerializerOutputValue,
-                  this, std::placeholders::_1, std::placeholders::_2));
+        [this](const Context<double>&) {
+          return this->AllocateSerializerOutputValue();
+        },
+        [this](const Context<double>& context, AbstractValue* out) {
+          this->CalcSerializerOutputValue(context, out);
+        });
   }
 
   set_name(make_name(channel_));

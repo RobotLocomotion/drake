@@ -38,12 +38,13 @@ class DummySystem : public LeafSystem<double> {
 
 // These functions match the signatures required by LeafOutputPort.
 
-// AllocCallback returns a string in an AbstractValue.
+// AllocCallback that returns a string in an AbstractValue.
 unique_ptr<AbstractValue> alloc_string(const Context<double>&) {
   return AbstractValue::Make(string("from alloc_string"));
 }
 
-// AllocVectorCallback returns a MyVector3d(-1,-2,-3).
+// AllocCallback that returns a MyVector3d(-1,-2,-3), wrapped in a
+// Value<BasicVector>.
 unique_ptr<AbstractValue> alloc_myvector3(const Context<double>&) {
   return Value<BasicVector<double>>(MyVector3d::Make(-1., -2., -3.)).Clone();
 }
