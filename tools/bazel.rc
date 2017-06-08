@@ -225,6 +225,7 @@ test:msan_everything --test_env=MSAN_SYMBOLIZER_PATH
 test:msan_everything --test_timeout=180,900,2700,10800
 
 ### TSan build. ###
+build:tsan --noforce_pic
 build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
