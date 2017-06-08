@@ -350,18 +350,19 @@ class Context {
   // Accessors and Mutators for Accuracy.
 
   /// Records the user's requested accuracy. If no accuracy is requested,
-  /// suitable computation-dependent defaults will be used. Some
-  /// computations may specify that accuracy must be set explicitly.
-  /// 
+  /// computations are free to choose suitable defaults, or to refuse to
+  /// proceed without an explicit accuracy setting.
+  ///
   /// Requested accuracy is stored in the %Context for two reasons:
   /// - It permits all computations performed on a System to see the _same_
-  ///   accuracy request, and
+  ///   accuracy request since accuracy is stored in one shared place, and
   /// - it allows us to invalidate accuracy-dependent cached computations when
   ///   the requested accuracy has changed.
   ///
-  /// The accuracy of a complete simulation depends on _all_ contributing
-  /// computations, so it is important that they all work to the same end.
-  /// Some examples of where this is needed:
+  /// The accuracy of a complete simulation or other numerical study depends on
+  /// the accuracy of _all_ contributing computations, so it is important that
+  /// each computation is done in accordance with the overall requested
+  /// accuracy. Some examples of where this is needed:
   /// - Error-controlled numerical integrators use the accuracy setting to
   ///   decide what step sizes to take.
   /// - The Simulator employs a numerical integrator, but also uses accuracy to
