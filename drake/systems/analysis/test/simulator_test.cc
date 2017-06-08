@@ -47,7 +47,7 @@ namespace {
 /// integrator2_: C              -> output 2
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram() {
+  ExampleDiagram() {
     DiagramBuilder<double> builder;
 
     // Add the empty system (and its witness function).
@@ -89,10 +89,10 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
   const double dt = 1;
   Simulator<double> simulator(system);
   simulator.set_publish_at_initialization(false);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
-                                                            simulator.get_mutable_context());
-  simulator.set_publish_every_time_step(false);
   Context<double>* context = simulator.get_mutable_context();
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+                                                            context);
+  simulator.set_publish_every_time_step(false);
 
   context->set_time(0);
   simulator.StepTo(1);
