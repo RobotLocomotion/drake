@@ -1,7 +1,16 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load("@drake//tools:ignition_math.bzl", "ignition_math_cc_library")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config", "install",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -78,18 +87,10 @@ all_headers = glob([
 # public headers in the library.  The first line is
 # '#include <ignition/math/config.hh>' followed by one line like
 # '#include <ignition/math/Angle.hh>' for each non-generated header.
-genrule(
+drake_generate_include_header(
     name = "mathhh_genrule",
-    srcs = public_headers,
-    outs = ["include/ignition/math.hh"],
-    # TODO: centralize this logic, as it is used here, in sdformat.BUILD, and
-    # in fcl.BUILD
-    cmd = "(" + (
-        "echo '#include <ignition/math/config.hh>' && " +
-        "echo '$(SRCS)' | tr ' ' '\\n' | " +
-        "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g'"
-    ) + ") > '$@'",
-    visibility = ["//visibility:private"],
+    out = "include/ignition/math.hh",
+    hdrs = [":config"] + public_headers,
 )
 
 ignition_math_cc_library(

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang.
 CLANG_FLAGS = [
@@ -204,6 +202,7 @@ def drake_cc_googletest(
         deps=deps,
         **kwargs)
 
+
 # Generate a file with specified content
 def _generate_file_impl(ctx):
     ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
@@ -213,5 +212,17 @@ drake_generate_file = rule(
         "content": attr.string(),
         "out": attr.output(mandatory = True),
     },
+    output_to_genfiles = True,
     implementation = _generate_file_impl,
 )
+
+"""Generate a file with specified content.
+
+This creates a rule to generate a file with specified content (which is either
+static or has been previously computed).
+
+Args:
+    content (:obj:`str`): Desired content of the generated file.
+"""
+
+
