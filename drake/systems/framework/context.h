@@ -354,7 +354,7 @@ class Context {
   /// proceed without an explicit accuracy setting.
   ///
   /// Requested accuracy is stored in the %Context for two reasons:
-  /// - It permits all computations performed on a System to see the _same_
+  /// - It permits all computations performed over a System to see the _same_
   ///   accuracy request since accuracy is stored in one shared place, and
   /// - it allows us to invalidate accuracy-dependent cached computations when
   ///   the requested accuracy has changed.
