@@ -58,11 +58,6 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
       drake-yaml-util
       eigen3
       lcm)
-
-  if(bot2-lcmgl-client_FOUND)
-    add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
-    target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes bot2-lcmgl-client lcm)
-  endif()
 endif()
 
 add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
