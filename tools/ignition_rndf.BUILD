@@ -1,6 +1,15 @@
 # -*- python -*-
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -23,24 +32,17 @@ cmake_configure_file(
 )
 
 public_headers = glob([
-        "include/**/*.hh",
-    ])
+    "include/**/*.hh",
+])
 
 # Generates rndf.hh, which consists of #include statements for all of the
 # public headers in the library.  The first line is
 # '#include <ignition/rndf/config.hh>' followed by one line like
 # '#include <ignition/rndf/Checkpoint.hh>' for each non-generated header.
-genrule(
+drake_generate_include_header(
     name = "rndfhh_genrule",
-    srcs = public_headers,
-    outs = ["include/ignition/rndf.hh"],
-    # TODO: centralize this logic, as it is used here, in ignition_math.BUILD,
-    # in sdformat.BUILD, and in fcl.BUILD
-    cmd = "(" + (
-        "echo '#include <ignition/rndf/config.hh>' && " +
-        "echo '$(SRCS)' | tr ' ' '\\n' | " +
-        "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g'"
-    ) + ") > '$@'",
+    out = "include/ignition/rndf.hh",
+    hdrs = [":config"] + public_headers,
     visibility = ["//visibility:private"],
 )
 
@@ -78,7 +80,10 @@ install(
     doc_dest = "share/doc/" + CMAKE_PACKAGE,
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = ["LICENSE", "COPYING"],
+    license_docs = [
+        "LICENSE",
+        "COPYING",
+    ],
     targets = [":ignition_rndf"],
     deps = [":install_cmake_config"],
 )
