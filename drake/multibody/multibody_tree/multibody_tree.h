@@ -429,6 +429,15 @@ class MultibodyTree {
     return *frames_[frame_index];
   }
 
+  /// Returns a constant reference to the mobilizer with unique index
+  /// `mobilizer_index`. This method aborts in Debug builds when
+  /// `mobilizer_index` does not correspond to a mobilizer in this multibody
+  /// tree.
+  const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
+    DRAKE_ASSERT(mobilizer_index < get_num_mobilizers());
+    return *owned_mobilizers_[mobilizer_index];
+  }
+
   /// Returns `true` if this %MultibodyTree was finalized with Finalize() after
   /// all multibody elements were added, and `false` otherwise.
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
@@ -495,6 +504,35 @@ class MultibodyTree {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
+  template <template <typename> class BodyType, typename Scalar>
+  const BodyType<T>& retrieve_body_variant(const BodyType<Scalar>& body) {
+    static_assert(std::is_convertible<BodyType<T> *,
+                                      Body<T> *>::value,
+                  "BodyType must be a sub-class of Body<T>.");
+    BodyIndex body_index = body.get_index();
+    DRAKE_DEMAND(body_index < get_num_bodies());
+    const BodyType<T>* body_variant =
+        dynamic_cast<const BodyType<T>*>(
+            owned_bodies_[body_index].get());
+    DRAKE_DEMAND(body_variant != nullptr);
+    return *body_variant;
+  }
+
+  template <template <typename> class MobilizerType, typename Scalar>
+  const MobilizerType<T>& retrieve_mobilizer_variant(
+      const MobilizerType<Scalar>& mobilizer) {
+    static_assert(std::is_convertible<MobilizerType<T> *,
+                                      Mobilizer<T> *>::value,
+                  "MobilizerType must be a sub-class of Mobilizer<T>.");
+    MobilizerIndex mobilizer_index = mobilizer.get_index();
+    DRAKE_DEMAND(mobilizer_index < get_num_mobilizers());
+    const MobilizerType<T>* mobilizer_variant =
+        dynamic_cast<const MobilizerType<T>*>(
+            owned_mobilizers_[mobilizer_index].get());
+    DRAKE_DEMAND(mobilizer_variant != nullptr);
+    return *mobilizer_variant;
+  }
+
   std::unique_ptr<MultibodyTree<T>> Clone() const {
     return CloneToScalar<T>();
   }
@@ -509,6 +547,9 @@ class MultibodyTree {
 
     tree_clone->frames_.resize(get_num_frames());
     for (const auto& body : owned_bodies_) {
+      // Skip cloning the world since it is automatically created by
+      // MultibodyTree's constructor.
+      if (body->get_index() == world_index()) continue;
       tree_clone->CloneBodyAndAdd(*body);
     }
 

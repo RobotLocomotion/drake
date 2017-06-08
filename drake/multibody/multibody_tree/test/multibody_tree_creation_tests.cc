@@ -423,7 +423,7 @@ TEST_F(TreeTopologyTests, Clone) {
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto cloned_model = model_->Clone();
-  EXPECT_EQ(model_->get_num_bodies(), 8);
+  EXPECT_EQ(cloned_model->get_num_bodies(), 8);
   const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
 
   // The topology of the clone must be exactly equal to the topology of the
@@ -433,6 +433,25 @@ TEST_F(TreeTopologyTests, Clone) {
   // Even though the test above confirms the two topologies are exactly equal,
   // we perform a number of additional tests.
   VerifyTopology(clone_topology);
+}
+
+TEST_F(TreeTopologyTests, ToAutoDiffXd) {
+  model_->Finalize();
+  EXPECT_EQ(model_->get_num_bodies(), 8);
+  EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  const MultibodyTreeTopology& topology = model_->get_topology();
+
+  auto autodiff_model = model_->ToAutoDiffXd();
+  EXPECT_EQ(autodiff_model->get_num_bodies(), 8);
+  const MultibodyTreeTopology& autodiff_topology = autodiff_model->get_topology();
+
+  // The topology of the clone must be exactly equal to the topology of the
+  // original MultibodyTree.
+  EXPECT_EQ(topology, autodiff_topology);
+
+  // Even though the test above confirms the two topologies are exactly equal,
+  // we perform a number of additional tests.
+  VerifyTopology(autodiff_topology);
 }
 
 }  // namespace
