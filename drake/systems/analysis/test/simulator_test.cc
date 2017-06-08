@@ -39,12 +39,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-/// ExampleDiagram has the following structure:
-/// adder0_: (input0_ + input1_) -> A
-/// adder1_: (A + input2_)       -> B, output 0
-/// adder2_: (A + B)             -> output 1
-/// integrator1_: A              -> C
-/// integrator2_: C              -> output 2
+// Diagram for testing witness functions.
 class ExampleDiagram : public Diagram<double> {
  public:
   ExampleDiagram() {
