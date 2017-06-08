@@ -20,11 +20,6 @@
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-#include "drake/systems/primitives/adder.h"
-#include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/gain.h"
-#include "drake/systems/primitives/integrator.h"
-#include "drake/systems/primitives/zero_order_hold.h"
 
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
@@ -42,11 +37,11 @@ namespace {
 // Diagram for testing witness functions.
 class ExampleDiagram : public Diagram<double> {
  public:
-  ExampleDiagram() {
+  ExampleDiagram(double offset) {
     DiagramBuilder<double> builder;
 
     // Add the empty system (and its witness function).
-    empty_ = builder.AddSystem<EmptySystem>(1.0,
+    empty_ = builder.AddSystem<EmptySystem>(offset,
         WitnessFunction<double>::DirectionType::kCrossesZero);
     empty_->set_name("empty");
     builder.BuildInto(this);
@@ -75,10 +70,13 @@ class ExampleDiagram : public Diagram<double> {
 // witness function should trigger.
 GTEST_TEST(SimulatorTest, DiagramWitness) {
   // Set empty system to trigger when time is +1.
-  ExampleDiagram system;
+  const double trigger_time = 1.0;
+  ExampleDiagram system(trigger_time);
+  double publish_time = -1;
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context) {
     num_publishes++;
+    publish_time = context.get_time();
   });
 
   const double dt = 1;
@@ -94,6 +92,7 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 
   // Publication should occur at witness function crossing.
   EXPECT_EQ(1, num_publishes);
+  EXPECT_EQ(publish_time, trigger_time);
 }
 
 // Tests ability of simulation to identify the proper number of witness function

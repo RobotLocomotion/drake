@@ -1025,7 +1025,7 @@ class System {
   /// Derived classes will implement this method to evaluate a witness function
   /// at the given context.
   virtual T EvaluateWitness(const Context<T>& context,
-                            const WitnessFunction<T>& wf) const = 0;
+                            const WitnessFunction<T>& witness_func) const = 0;
 
  protected:
   /// Derived classes can override this method to provide witness functions
