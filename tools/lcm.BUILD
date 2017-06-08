@@ -129,7 +129,7 @@ cc_binary(
     copts = LCM_COPTS,
     linkshared = 1,
     linkstatic = 1,
-    visibility = [],
+    visibility = ["//visibility:private"],
     deps = [
         ":lcm",
         "@python",
@@ -154,15 +154,20 @@ drake_generate_file(
     name = "init_genrule",
     out = "__init__.py",
     content = "execfile(__path__[0] + \"/lcm-python/lcm/__init__.py\")",
+    visibility = ["//visibility:private"],
+)
+
+py_library(
+    name = "lcm-python-upstream",
+    srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
+    data = [":_lcm.so"],
+    visibility = ["//visibility:private"],
 )
 
 py_library(
     name = "lcm-python",
-    srcs = [
-        "__init__.py",  # Shim, from the genrule above.
-        "lcm-python/lcm/__init__.py",  # Actual code from upstream.
-    ],
-    data = [":_lcm.so"],
+    srcs = ["__init__.py"],  # Shim, from the genrule above.
+    deps = [":lcm-python-upstream"],
 )
 
 java_library(
@@ -190,14 +195,6 @@ java_binary(
     ],
 )
 
-pkg_tar(
-    name = "license",
-    extension = "tar.gz",
-    files = ["COPYING"],
-    mode = "0644",
-    package_dir = "lcm",
-)
-
 cmake_config(
     package = "lcm",
     script = "@drake//tools:lcm-create-cps.py",
@@ -213,15 +210,33 @@ install_files(
     strip_prefix = ["**/"],
 )
 
+# TODO(jamiesnape): Find an alternative to the requirement that a license file
+# must be passed to every single use of the install rule.
+DOC_DEST = "share/doc/lcm"
+LICENSE_DOCS = ["COPYING"]
+
+install(
+    name = "install_python",
+    doc_dest = DOC_DEST,
+    library_dest = "lib/python2.7/site_packages/lcm",
+    license_docs = LICENSE_DOCS,
+    py_strip_prefix = ["lcm-python"],
+    targets = [
+        ":_lcm.so",
+        ":lcm-python-upstream",
+    ]
+)
+
 install(
     name = "install",
     hdrs = LCM_PUBLIC_HEADERS,
-    doc_dest = "share/doc/lcm",
+    doc_dest = DOC_DEST,
     docs = [
         "AUTHORS",
         "NEWS",
     ],
-    license_docs = ["COPYING"],
+    license_docs = LICENSE_DOCS,
+    py_strip_prefix = ["lcm-python"],
     targets = [
         ":lcm",
         ":lcm-gen",
@@ -233,9 +248,8 @@ install(
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",
+        ":install_python",
     ],
 )
-
-# TODO(mwoehlke-kitware): install Python bits
 
 python_lint()
