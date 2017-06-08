@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
@@ -164,7 +165,22 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return body_frame_;
   }
 
-  virtual std::unique_ptr<Body<T>> Clone() const = 0;
+  std::unique_ptr<Body<T>> Clone(const MultibodyTree<T>& tree_clone) const {
+    return CloneToScalar(tree_clone);
+  }
+
+  template <typename ToScalar>
+  std::unique_ptr<Body<ToScalar>> CloneToScalar(
+  const MultibodyTree<ToScalar>& tree_clone) const {
+    return DoCloneToScalar(tree_clone);
+  }
+
+ protected:
+  virtual std::unique_ptr<Body<double>> DoCloneToScalar(
+  const MultibodyTree<double>& tree_clone) const = 0;
+
+  virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
+  const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected

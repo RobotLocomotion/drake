@@ -66,11 +66,24 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-  std::unique_ptr<Body<T>> Clone() const final {
-    return std::make_unique<RigidBody<T>>(default_spatial_inertia_);
+ protected:
+  std::unique_ptr<Body<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const final {
+    return TemplatedDoCloneToScalar(tree_clone);
+  }
+
+  std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const final {
+    return TemplatedDoCloneToScalar(tree_clone);
   }
 
  private:
+  template <typename ToScalar>
+  std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const {
+    return std::make_unique<RigidBody<ToScalar>>(default_spatial_inertia_);
+  }
+
   SpatialInertia<double> default_spatial_inertia_;
 };
 

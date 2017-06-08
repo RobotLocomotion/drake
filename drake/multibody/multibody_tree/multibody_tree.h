@@ -547,7 +547,7 @@ class MultibodyTree {
     BodyIndex body_index = body.get_index();
     FrameIndex body_frame_index = body.get_body_frame().get_index();
 
-    auto body_clone = body.Clone();
+    auto body_clone = body.Clone(*this);
     body_clone->set_parent_tree(this, body_index);
     // MultibodyTree can access selected private methods in Body through its
     // BodyAttorney.
