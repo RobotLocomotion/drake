@@ -31,10 +31,10 @@ alias(
     actual = "@protobuf//:protobuf_python",
 )
 
-exports_files(["LICENSE.TXT"])
-
 install(
     name = "install",
+    doc_dest = "share/doc/drake",
+    license_docs = ["LICENSE.TXT"],
     deps = [
         "//drake:install",
         "//tools:install",
