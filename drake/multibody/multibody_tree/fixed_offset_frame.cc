@@ -5,6 +5,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -21,6 +22,14 @@ FixedOffsetFrame<T>::FixedOffsetFrame(
     const Body<T>& B, const Isometry3<T>& X_BF) :
     Frame<T>(B), parent_frame_(B.get_body_frame()),
     X_PF_(X_BF), X_FP_(X_BF.inverse()) {}
+
+template <typename T>
+std::unique_ptr<Frame<T>> FixedOffsetFrame<T>::Clone(
+    const MultibodyTree<T>& tree_clone) const {
+  const Frame<T>& parent_frame_clone =
+      tree_clone.get_frame(parent_frame_.get_index());
+  return std::make_unique<FixedOffsetFrame<T>>(parent_frame_clone, X_PF_);
+}
 
 // Explicitly instantiates on the most common scalar types.
 template class FixedOffsetFrame<double>;

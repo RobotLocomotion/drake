@@ -88,6 +88,9 @@ class BodyFrame : public Frame<T> {
     return X_QF;
   }
 
+  std::unique_ptr<Frame<T>> Clone(
+      const MultibodyTree<T>& tree_clone) const final;
+
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
   // every time a Body object is created and they are associated with each
@@ -160,6 +163,8 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   const BodyFrame<T>& get_body_frame() const {
     return body_frame_;
   }
+
+  virtual std::unique_ptr<Body<T>> Clone() const = 0;
 
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected

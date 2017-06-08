@@ -78,6 +78,10 @@ class FixedOffsetFrame : public Frame<T> {
     return parent_frame_.CalcOffsetPoseInBody(context, X_PF_ * X_FQ);
   }
 
+  /// @pre The parent frame to this frame already has a clone in `tree_clone`.
+  std::unique_ptr<Frame<T>> Clone(
+      const MultibodyTree<T>& tree_clone) const final;
+
  private:
   // The frame to which this frame is attached.
   const Frame<T>& parent_frame_;

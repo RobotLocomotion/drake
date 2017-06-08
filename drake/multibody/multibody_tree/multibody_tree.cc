@@ -21,19 +21,22 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
-void MultibodyTree<T>::Finalize() {
+void MultibodyTree<T>::FinalizeTopology() {
   // If the topology is valid it means that this MultibodyTree was already
   // finalized. Re-compilation is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
         "Attempting to call MultibodyTree::Finalize() on an already finalized "
-        "MultibodyTree.");
+            "MultibodyTree.");
   }
 
   // Before performing any setup that depends on the scalar type <T>, compile
   // all the type-T independent topological information.
   topology_.Finalize();
+}
 
+template <typename T>
+void MultibodyTree<T>::FinalizeInternals() {
   // TODO(amcastro-tri): This is a brief list of operations to be added in
   // subsequent PR's:
   //   - Compute degrees of freedom, array sizes and any other information to
@@ -69,6 +72,12 @@ void MultibodyTree<T>::Finalize() {
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     CreateBodyNode(body_node_index);
   }
+}
+
+template <typename T>
+void MultibodyTree<T>::Finalize() {
+  FinalizeTopology();
+  FinalizeInternals();
 }
 
 template <typename T>

@@ -244,6 +244,9 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     X_FM = this->CalcAcrossMobilizerTransform(context);
   }
 
+  virtual std::unique_ptr<Mobilizer<T>> Clone(
+      const MultibodyTree<T>& cloned_tree) const = 0;
+
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<BodyNode<T>> CreateBodyNode(
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;

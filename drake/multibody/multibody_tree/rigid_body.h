@@ -66,6 +66,10 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
+  std::unique_ptr<Body<T>> Clone() const final {
+    return std::make_unique<RigidBody<T>>(default_spatial_inertia_);
+  }
+
  private:
   SpatialInertia<double> default_spatial_inertia_;
 };

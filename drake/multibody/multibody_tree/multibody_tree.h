@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/frame.h"
@@ -290,7 +291,7 @@ class MultibodyTree {
                   "MobilizerType must be a sub-class of mobilizer<T>.");
     if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more bodies is not allowed. "
+                             "Therefore adding more mobilizers is not allowed. "
                              "See documentation for Finalize() for details.");
     }
     if (mobilizer == nullptr) {
@@ -420,6 +421,14 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
+  /// Returns a constant reference to the body with unique index `body_index`.
+  /// This method aborts in Debug builds when `body_index` does not correspond
+  /// to a body in this multibody tree.
+  const Frame<T>& get_frame(FrameIndex frame_index) const {
+    DRAKE_ASSERT(frame_index < get_num_frames());
+    return *frames_[frame_index];
+  }
+
   /// Returns `true` if this %MultibodyTree was finalized with Finalize() after
   /// all multibody elements were added, and `false` otherwise.
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
@@ -486,8 +495,79 @@ class MultibodyTree {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
+#if 0
+  template <typename T>
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> ToAutoDiffXd() const {
+    return new MultibodyTree<AutoDiffXd>();
+  }
+#endif
+
+  std::unique_ptr<MultibodyTree<T>> Clone() const {
+    auto tree_clone = std::make_unique<MultibodyTree<T>>();
+
+    tree_clone->frames_.resize(get_num_frames());
+    for (const auto& body : owned_bodies_) {
+      tree_clone->CloneBodyAndAdd(*body);
+    }
+
+    for (const auto& frame : owned_frames_) {
+      tree_clone->CloneFrameAndAdd(*frame);
+    }
+
+    for (const auto& mobilizer : owned_mobilizers_) {
+      // This call assumes that tree_clone already contains all the cloned
+      // frames.
+      tree_clone->CloneMobilizerAndAdd(*mobilizer);
+    }
+
+    tree_clone->topology_ = this->topology_;
+    tree_clone->FinalizeInternals();
+    return tree_clone;
+  }
+
  private:
+  void FinalizeTopology();
+  void FinalizeInternals();
+
   void CreateBodyNode(BodyNodeIndex body_node_index);
+
+  Frame<T>* CloneFrameAndAdd(const Frame<T>& frame) {
+    FrameIndex frame_index = frame.get_index();
+
+    auto frame_clone = frame.Clone(*this);
+    frame_clone->set_parent_tree(this, frame_index);
+
+    Frame<T>* raw_frame_clone_ptr = frame_clone.get();
+    frames_[frame_index] = raw_frame_clone_ptr;
+    owned_frames_.push_back(std::move(frame_clone));
+    return raw_frame_clone_ptr;
+  }
+  
+  Body<T>* CloneBodyAndAdd(const Body<T>& body) {
+    BodyIndex body_index = body.get_index();
+    FrameIndex body_frame_index = body.get_body_frame().get_index();
+
+    auto body_clone = body.Clone();
+    body_clone->set_parent_tree(this, body_index);
+    // MultibodyTree can access selected private methods in Body through its
+    // BodyAttorney.
+    Frame<T>* body_frame_clone =
+        &internal::BodyAttorney<T>::get_mutable_body_frame(body_clone.get());
+    body_frame_clone->set_parent_tree(this, body_frame_index);
+    frames_[body_frame_index] = body_frame_clone;
+    Body<T>* raw_body_clone_ptr = body_clone.get();
+    owned_bodies_.push_back(std::move(body_clone));
+    return raw_body_clone_ptr;
+  }
+
+  Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<T>& mobilizer) {
+    MobilizerIndex mobilizer_index = mobilizer.get_index();
+    auto mobilizer_clone = mobilizer.Clone(*this);
+    mobilizer_clone->set_parent_tree(this, mobilizer_index);
+    Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
+    owned_mobilizers_.push_back(std::move(mobilizer_clone));
+    return raw_mobilizer_clone_ptr;
+  }
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar

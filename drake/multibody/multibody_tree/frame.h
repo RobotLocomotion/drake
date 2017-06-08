@@ -69,6 +69,11 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context,
       const Isometry3<T>& X_QF) const = 0;
 
+  /// @pre The body to which this frame is attached already has a clone in
+  /// `tree_clone`.
+  virtual std::unique_ptr<Frame<T>> Clone(
+      const MultibodyTree<T>& tree_clone) const = 0;
+
  protected:
   // Only derived classes can use this constructor.
   explicit Frame(const Body<T>& body) : body_(body) {}

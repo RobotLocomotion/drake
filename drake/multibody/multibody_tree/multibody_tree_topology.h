@@ -46,6 +46,22 @@ struct BodyTopology {
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
+  bool operator==(const BodyTopology& other) const {
+    if (index != other.index) return false;
+    if (inboard_mobilizer.is_valid() !=
+        other.inboard_mobilizer.is_valid()) return false;
+    if (inboard_mobilizer.is_valid() &&
+        inboard_mobilizer != other.inboard_mobilizer) return false;
+    if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
+    if (parent_body.is_valid() &&
+        parent_body != other.parent_body) return false;
+    if (child_bodies != other.child_bodies) return false;
+    if (body_frame != other.body_frame) return false;
+    if (level != other.level) return false;
+    if (body_node != other.body_node) return false;
+    return true;
+  }
+
   /// Unique index in the MultibodyTree.
   BodyIndex index{0};
 
@@ -91,6 +107,12 @@ struct FrameTopology {
   FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
 
+  bool operator==(const FrameTopology& other) const {
+    if (index != other.index) return false;
+    if (body != other.body) return false;
+    return true;
+  }
+
   /// Unique index in the MultibodyTree.
   FrameIndex index{0};
 
@@ -130,6 +152,24 @@ struct MobilizerTopology {
       inboard_frame(in_frame), outboard_frame(out_frame),
       inboard_body(in_body), outboard_body(out_body),
       num_positions(num_positions_in), num_velocities(num_velocities_in) {}
+
+  bool operator==(const MobilizerTopology& other) const {
+    if (index != other.index) return false;
+
+    if (inboard_frame != other.inboard_frame) return false;
+    if (outboard_frame != other.outboard_frame) return false;
+    if (inboard_body != other.inboard_body) return false;
+    if (outboard_body != other.outboard_body) return false;
+
+    if (body_node != other.body_node) return false;
+
+    if (num_positions != other.num_positions) return false;
+    if (positions_start != other.positions_start) return false;
+    if (num_velocities != other.num_velocities) return false;
+    if (velocities_start != other.velocities_start) return false;
+
+    return true;
+  }
 
   /// Returns `true` if this %MobilizerTopology connects frames identified by
   /// indexes `frame1` and `frame2`.
@@ -209,6 +249,47 @@ struct BodyNodeTopology {
       parent_body_node(parent_node_in),
       body(body_in), parent_body(parent_body_in), mobilizer(mobilizer_in) {}
 
+  bool operator==(const BodyNodeTopology& other) const {
+    if (index != other.index) return false;
+    if (level != other.level) return false;
+
+    if (parent_body_node.is_valid() !=
+        other.parent_body_node.is_valid()) return false;
+    if (parent_body_node.is_valid() &&
+        parent_body_node != other.parent_body_node) return false;
+
+    if (body != other.body) return false;
+
+    if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
+    if (parent_body.is_valid() &&
+        parent_body != other.parent_body) return false;
+
+    if (mobilizer.is_valid() != other.mobilizer.is_valid()) return false;
+    if (mobilizer.is_valid() && mobilizer != other.mobilizer) return false;
+
+    if (child_nodes != other.child_nodes) return false;
+
+    if (num_mobilizer_positions != other.num_mobilizer_positions)
+      return false;
+    if (mobilizer_positions_start != other.mobilizer_positions_start)
+      return false;
+    if (num_mobilizer_velocities != other.num_mobilizer_velocities)
+      return false;
+    if (mobilizer_velocities_start != other.mobilizer_velocities_start)
+      return false;
+
+    if (num_flexible_positions != other.num_flexible_positions)
+      return false;
+    if (flexible_positions_start != other.flexible_positions_start)
+      return false;
+    if (num_flexible_velocities != other.num_flexible_velocities)
+      return false;
+    if (flexible_velocities_start != other.flexible_velocities_start)
+      return false;
+
+    return true;
+  }
+
   /// Unique index of this node in the MultibodyTree.
   BodyNodeIndex index{};
 
@@ -255,6 +336,22 @@ class MultibodyTreeTopology {
   /// added until MultibodyTree construction, which creates a _world_ body
   /// and adds it to the tree.
   MultibodyTreeTopology() {}
+
+  bool operator==(const MultibodyTreeTopology& other) const {
+    if (is_valid_ != other.is_valid_) return false;
+    if (tree_height_ != other.tree_height_) return false;
+
+    if (num_positions_ != other.num_positions_) return false;
+    if (num_velocities_ != other.num_velocities_) return false;
+    if (num_states_ != other.num_states_) return false;
+
+    if (bodies_ != other.bodies_) return false;
+    if (frames_ != other.frames_) return false;
+    if (mobilizers_ != other.mobilizers_) return false;
+    if (body_nodes_ != other.body_nodes_) return false;
+
+    return true;
+  }
 
   /// Returns the number of bodies in the multibody tree. This includes the
   /// "world" body and therefore the minimum number of bodies after

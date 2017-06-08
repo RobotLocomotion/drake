@@ -92,6 +92,11 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const final;
 
+  /// @pre Inboard and outbard frames for this mobilizer already have a clone in
+  /// `tree_clone`.
+  std::unique_ptr<Mobilizer<T>> Clone(
+      const MultibodyTree<T>& tree_clone) const final;
+
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;
   // Bring the handy number of position and velocities MobilizerImpl enums into

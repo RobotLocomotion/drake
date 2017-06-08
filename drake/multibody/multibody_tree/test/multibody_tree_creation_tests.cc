@@ -303,6 +303,10 @@ class TreeTopologyTests : public ::testing::Test {
     return topology.get_body_node(BodyNodeIndex(body_node_index));
   }
 
+  void VerifyTopology(const MultibodyTreeTopology& topology) const {
+
+  }
+
  protected:
   std::unique_ptr<MultibodyTree<double>> model_;
   // Bodies:
@@ -417,6 +421,74 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(positions_index, topology.get_num_positions());
   EXPECT_EQ(velocities_index, topology.get_num_states());
 }
+
+TEST_F(TreeTopologyTests, Clone) {
+  model_->Finalize();
+  EXPECT_EQ(model_->get_num_bodies(), 8);
+  EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  const MultibodyTreeTopology& topology = model_->get_topology();
+
+  auto cloned_model = model_->Clone();
+  EXPECT_EQ(model_->get_num_bodies(), 8);
+  const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
+
+  // The topology of the clone must be exactly equal to the topology of the
+  // original MultibodyTree.
+  EXPECT_EQ(topology, clone_topology);
+
+  // Even though the test above confirms the two topologies are exactly equal,
+  // we perform a number of additional tests.
+#if 0
+  EXPECT_EQ(clone_topology.get_num_body_nodes(), model_->get_num_bodies());
+  EXPECT_EQ(clone_topology.get_tree_height(), 4);
+
+  // These sets contain the indexes of the bodies in each tree level.
+  // The order of these indexes in each set is not important, but only the fact
+  // that they belong to the appropriate set.
+  set<BodyIndex> expected_level0 = {BodyIndex(0)};
+  set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5)};
+  set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
+  set<BodyIndex> expected_level3 = {BodyIndex(6)};
+
+  set<BodyIndex> level0 = {get_body_node_topology(0).body};
+  set<BodyIndex> level1 = {get_body_node_topology(1).body,
+                           get_body_node_topology(2).body,
+                           get_body_node_topology(3).body};
+  set<BodyIndex> level2 = {get_body_node_topology(4).body,
+                           get_body_node_topology(5).body,
+                           get_body_node_topology(6).body};
+  set<BodyIndex> level3 = {get_body_node_topology(7).body};
+
+  // Comparison of sets. The order of the elements is not important.
+  EXPECT_EQ(level0, expected_level0);
+  EXPECT_EQ(level1, expected_level1);
+  EXPECT_EQ(level2, expected_level2);
+  EXPECT_EQ(level3, expected_level3);
+
+  // Verifies the expected number of child nodes.
+  EXPECT_EQ(get_body_node_topology(0).get_num_children(), 3);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(4).body_node).get_num_children(), 2);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(7).body_node).get_num_children(), 0);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(5).body_node).get_num_children(), 1);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(2).body_node).get_num_children(), 0);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(1).body_node).get_num_children(), 1);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(3).body_node).get_num_children(), 0);
+  EXPECT_EQ(get_body_node_topology(
+      get_body_topology(6).body_node).get_num_children(), 0);
+
+  // Checks the correctness of each BodyNode associated with a body.
+  for (BodyIndex body(0); body < model_->get_num_bodies(); ++body) {
+    TestBodyNode(body);
+  }
+#endif
+}
+
 
 }  // namespace
 }  // namespace multibody
