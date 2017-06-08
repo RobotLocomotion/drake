@@ -116,6 +116,12 @@ exports_create_cps_scripts([
     "yaml_cpp",
 ])
 
+# This file needs to be declared here to be used with "cmake_config"
+exports_files(
+    ["gflags.cps"],
+    visibility = ["//visibility:public"],
+)
+
 exports_files(
     ["bot2-core-lcmtypes.cps"],
     visibility = ["@bot_core_lcmtypes//:__pkg__"],

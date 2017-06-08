@@ -53,7 +53,7 @@ def _install_actions(
     file_labels,
     dests,
     strip_prefixes = [],
-    guess_hdrs_exclude = []
+    excluded_files = []
     ):
     """Compute install actions for files.
 
@@ -74,6 +74,8 @@ def _install_actions(
             strip. The :obj:`dict` must have an entry with the key ``None``
             that is used as the default when there is no entry for the specific
             extension.
+        excluded_files (:obj:`list` of :obj:`str`): List of files excluded from
+            installation.
 
     Returns:
         :obj:`list`: A list of install actions.
@@ -84,7 +86,7 @@ def _install_actions(
     # attribute that is a list of File artifacts. Thus this two-level loop.
     for f in file_labels:
         for a in f.files:
-            if _output_path(ctx,a,[]) in guess_hdrs_exclude:
+            if _output_path(ctx,a,[]) in excluded_files:
                 continue
 
             if type(dests) == "dict":
@@ -302,6 +304,7 @@ Args:
     doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
     guess_hdrs: See note.
+    guess_hdrs_exclude: Headers found with guess_hdrs to exclude from install
     hdrs: List of header files to install.
     hdr_dest: Destination for header files (default = "include").
     hdr_strip_prefix: List of prefixes to remove from header paths.
@@ -451,7 +454,7 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
     )
 
 #------------------------------------------------------------------------------
-def install_cmake_config(package, versioned=True):
+def install_cmake_config(package, versioned=True, name = "install_cmake_config"):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
@@ -466,7 +469,7 @@ def install_cmake_config(package, versioned=True):
         cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
 
     install_files(
-        name = "install_cmake_config",
+        name = name,
         dest = cmake_config_dest,
         files = cmake_config_files,
         visibility = ["//visibility:private"],
