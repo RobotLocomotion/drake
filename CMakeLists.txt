@@ -30,6 +30,10 @@ drake_add_external(yalmip PUBLIC CMAKE MATLAB)
 
 # eigen
 # N.B. See #5785; do your best not to have to bump this to a newer commit.
+# Consider removing drake/common/eigen_autodiff_limits.h, the corresponding test
+# and inclusion in drake/common/eigen_autodiff_types.h before updating the version
+# because the fix maybe included in Eigen's codebase
+# https://bitbucket.org/eigen/eigen/commits/043c847d2c3488d69f8ef101cc66c14d3ef69e19?at=default
 drake_add_external(eigen PUBLIC CMAKE
   URL https://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz
   URL_HASH SHA256=94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f
