@@ -195,4 +195,155 @@
     fun:_Z22btAlignedAllocInternalmi
 }
 
+# ubuntu-14-* ones don't happen on Xenial.  We guess it has to do with
+# the implementation of strings on Trusty and how they are handled in EXPECT_DEATH.
+# Most of these suppressions are a result of EXPECT_DEATH.  If you remove EXPECT_DEATH,
+# two kinds of leaks remain, due to leakage in ProtoBuf and the leakage in 
+# log parser. However, some suppressions needed for ProtoBuf share stack with the suppressions
+# needed for EXPECT_DEATH.
+# We claim that the leaks are possibly due to string handling related differences because 
+# all the suppressions below go through fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+# which is 
+# std::basic_string<char, std::char_traits<char>, std::allocator<char> >::_Rep::_S_create(unsigned long, unsigned long, std::allocator<char> const&)
+# And we have noticed that copy-on-write is still used in g++-4.9 but not on g++-5.
+# ubuntu-14-* suppressions could be removed when the support is discontinued.
 
+# In pattern_formatter_impl.h
+# static const std::string days[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+{
+    <ubuntu-14-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs12_S_constructIPKcEEPcT_S3_RKSaIcESt20forward_iterator_tag
+    fun:_ZNSsC1EPKcRKSaIcE
+    ...
+    fun:*__static_initialization_and_destruction_0*
+}
+
+# On line world_body->set_name( <string>) in file rigid_body_tree.cc
+{
+    <ubuntu-14-2>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs12_S_constructIPKcEEPcT_S3_RKSaIcESt20forward_iterator_tag
+    fun:_ZNSsC1EPKcRKSaIcE
+    ...
+    fun:*RigidBody*
+}
+
+# On line  visualizer_->set_name("visualizer"); in file sim_diagram_builder.cc
+{
+    <ubuntu-14-3>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs12_S_constructIPKcEEPcT_S3_RKSaIcESt20forward_iterator_tag
+    fun:_ZNSsC1EPKcRKSaIcE
+    ...
+    fun:_ZN5drake8examples13kuka_iiwa_arm12_GLOBAL__N_149SimDiagramBuilderTest_TestMultiAdd*er_Test8TestBodyEv
+}
+
+# Death tests
+{
+    <ubuntu-14-4>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    ...
+    fun:*DeathTest*
+}
+
+# append function in world_sim_tree_builder.cc
+#  info.model_path = drake::GetDrakePath() + model_map_[model_name];
+{
+    <ubuntu-14-5>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs4_Rep8_M_cloneERKSaIcEm
+    fun:_ZNSs7reserveEm
+    fun:_ZNSs6appendERKSs
+}
+
+# operator= in "parser_common.cc" [EXPECT DEATH]
+# floating_joint_name = FloatingJointConstants::kFloatingJointName;
+{
+    <ubuntu-14-6>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs9_M_mutateEmmm
+    fun:_ZNSs15_M_replace_safeEmmPKcm
+}
+
+# Google Test string leakage, gtest.cc
+# result.reserve(2 * (end - start));
+{
+    <ubuntu-14-7>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs4_Rep8_M_cloneERKSaIcEm
+    fun:_ZNSs7reserveEm
+    fun:_ZN7testing8internal20StringStreamToStringEPSt18basic_stringstreamIcSt11char_traitsIcESaIcEE
+    fun:_ZNK7testing7Message9GetStringEv
+    fun:_ZN7testing8internal18StreamableToStringIPcEESsRKT_
+    fun:_ZN7testing8internal18InitGoogleTestImplIcEEvPiPPT_
+    fun:_ZN7testing14InitGoogleTestEPiPPc
+    fun:main
+}
+
+# Google protobuf leaks on Ubuntu-14.  Again seems 
+# due to the string handling difference in g++-5 and g++-4.9,
+# because many suppressions string related functions in the stack.
+{
+    <ubuntu-14-8>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs4_Rep8_M_cloneERKSaIcEm
+    ...
+    fun:*google8protobuf*
+}
+
+{
+    <ubuntu-14-9>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs4_Rep8_M_cloneERKSaIcEm
+    fun:_ZNSs7reserveEm
+    fun:_ZNSs9push_backEc
+    fun:_ZNSt20back_insert_iteratorISsEaSERKc
+    fun:_ZNSt11__copy_moveILb0ELb0ESt26random_access_iterator_tagE8__copy_mIPKcSt20back_insert_iteratorISsEEET0_T_S8_S7_
+    fun:_ZSt13__copy_move_aILb0EPKcSt20back_insert_iteratorISsEET1_T0_S5_S4_
+    fun:_ZSt14__copy_move_a2ILb0EN9__gnu_cxx17__normal_iteratorIPKcSsEESt20back_insert_iteratorISsEET1_T0_S8_S7_
+    fun:_ZSt4copyIN9__gnu_cxx17__normal_iteratorIPKcSsEESt20back_insert_iteratorISsEET0_T_S8_S7_
+    fun:_ZSt13regex_replaceISt20back_insert_iteratorISsEN9__gnu_cxx17__normal_iteratorIPKcSsEESt12regex_traitsIcEcET_S9_T0_SA_RKSt11basic_regexIT2_T1_EPKSC_NSt15regex_constants15match_flag_typeE
+    fun:_ZSt13regex_replaceISt20back_insert_iteratorISsEN9__gnu_cxx17__normal_iteratorIPKcSsEESt12regex_traitsIcEcSt11char_traitsIcESaIcEET_SC_T0_SD_RKSt11basic_regexIT2_T1_ERKSbISF_T3_T4_ENSt15regex_constants15match_flag_typeE
+}
+
+# One time log:
+# result = spdlog::stderr_logger_mt("console");
+{
+    <ubuntu-14-10>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:_Znwm
+    fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+    fun:_ZNSs12_S_constructIPKcEEPcT_S3_RKSaIcESt20forward_iterator_tag
+    fun:_ZNSsC1EPKcRKSaIcE
+    fun:_ZN5drake12_GLOBAL__N_118onetime_create_logEv
+    fun:_ZN5drake3logEv
+}
