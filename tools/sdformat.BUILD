@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:drake.bzl", "drake_generate_include_header")
 load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
 
 package(default_visibility = ["//visibility:public"])
@@ -42,17 +43,10 @@ public_headers = [
 # headers in the library.  There is one line like '#include <sdf/Assert.hh>'
 # for each non-generated header, followed at the end by a
 # single '#include <sdf/sdf_config.h>'.
-genrule(
+drake_generate_include_header(
     name = "sdfhh_genrule",
-    srcs = public_headers,
-    outs = ["include/sdf/sdf.hh"],
-    # TODO: We should centralize this logic, as it is used here, in
-    # ignition_math.BUILD, and in fcl.BUILD.
-    cmd = "(" + (
-        "echo '$(SRCS)' | tr ' ' '\\n' | " +
-        "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g' &&" +
-        "echo '#include <sdf/sdf_config.h>'"
-    ) + ") > '$@'",
+    out = "include/sdf/sdf.hh",
+    hdrs = public_headers + [":config"],
     visibility = ["//visibility:private"],
 )
 
@@ -107,6 +101,7 @@ cc_library(
         "src/urdf/urdf_sensor/types.h",
         "src/urdf/urdf_world/types.h",
         "src/urdf/urdf_world/world.h",
+        "@ignition_math//:mathhh_genrule",
     ],
     hdrs = public_headers,
     # TODO: We are currently using the vendored version of urdfdom embedded
