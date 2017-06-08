@@ -13,6 +13,7 @@ package(
 exports_files([
     "CPPLINT.cfg",
     ".clang-format",
+    ".drake-resource-sentinel",
 ])
 
 alias(
