@@ -495,15 +495,17 @@ class MultibodyTree {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
-#if 0
-  template <typename T>
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> ToAutoDiffXd() const {
-    return new MultibodyTree<AutoDiffXd>();
-  }
-#endif
-
   std::unique_ptr<MultibodyTree<T>> Clone() const {
-    auto tree_clone = std::make_unique<MultibodyTree<T>>();
+    return CloneToScalar<T>();
+  }
+
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> ToAutoDiffXd() const {
+    return CloneToScalar<AutoDiffXd>();
+  }
+
+  template <typename ToScalar>
+  std::unique_ptr<MultibodyTree<ToScalar>> CloneToScalar() const {
+    auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
 
     tree_clone->frames_.resize(get_num_frames());
     for (const auto& body : owned_bodies_) {
@@ -526,15 +528,21 @@ class MultibodyTree {
   }
 
  private:
+  // Make MultibodyTree templated on any other scalar type a friend of
+  // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
+  // private methods from MultibodyTree<T>.
+  template <typename> friend class MultibodyTree;
+
   void FinalizeTopology();
   void FinalizeInternals();
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 
-  Frame<T>* CloneFrameAndAdd(const Frame<T>& frame) {
+  template <typename FromScalar>
+  Frame<T>* CloneFrameAndAdd(const Frame<FromScalar>& frame) {
     FrameIndex frame_index = frame.get_index();
 
-    auto frame_clone = frame.Clone(*this);
+    auto frame_clone = frame.CloneToScalar(*this);
     frame_clone->set_parent_tree(this, frame_index);
 
     Frame<T>* raw_frame_clone_ptr = frame_clone.get();
@@ -542,12 +550,13 @@ class MultibodyTree {
     owned_frames_.push_back(std::move(frame_clone));
     return raw_frame_clone_ptr;
   }
-  
-  Body<T>* CloneBodyAndAdd(const Body<T>& body) {
+
+  template <typename FromScalar>
+  Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body) {
     BodyIndex body_index = body.get_index();
     FrameIndex body_frame_index = body.get_body_frame().get_index();
 
-    auto body_clone = body.Clone(*this);
+    auto body_clone = body.CloneToScalar(*this);
     body_clone->set_parent_tree(this, body_index);
     // MultibodyTree can access selected private methods in Body through its
     // BodyAttorney.
@@ -560,9 +569,10 @@ class MultibodyTree {
     return raw_body_clone_ptr;
   }
 
-  Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<T>& mobilizer) {
+  template <typename FromScalar>
+  Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<FromScalar>& mobilizer) {
     MobilizerIndex mobilizer_index = mobilizer.get_index();
-    auto mobilizer_clone = mobilizer.Clone(*this);
+    auto mobilizer_clone = mobilizer.CloneToScalar(*this);
     mobilizer_clone->set_parent_tree(this, mobilizer_index);
     Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
     owned_mobilizers_.push_back(std::move(mobilizer_clone));

@@ -105,8 +105,11 @@ class BodyFrame : public Frame<T> {
   // every time a Body object is created and they are associated with each
   // other.
   friend class Body<T>;
-  friend class BodyFrame<double>;
-  friend class BodyFrame<AutoDiffXd>;
+
+  // Make BodyFrame templated on any other scalar type a friend of
+  // BodyFrame<T> so that CloneToScalar<ToAnyOtherScalar>() can access
+  // private methods from BodyFrame<T>.
+  template <typename> friend class BodyFrame;
 
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame.
