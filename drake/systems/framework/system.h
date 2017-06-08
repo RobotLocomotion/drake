@@ -1022,6 +1022,11 @@ class System {
     DoGetWitnessFunctions(context, w);
   }
 
+  /// Derived classes will implement this method to evaluate a witness function
+  /// at the given context.
+  virtual T EvaluateWitness(const Context<T>& context,
+                            const WitnessFunction<T>& wf) const = 0;
+
  protected:
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default

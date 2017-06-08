@@ -47,66 +47,30 @@ namespace {
 /// integrator2_: C              -> output 2
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(int size) {
+  explicit ExampleDiagram() {
     DiagramBuilder<double> builder;
-
-    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
-    adder0_->set_name("adder0");
-    adder1_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
-    adder1_->set_name("adder1");
-    adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
-    adder2_->set_name("adder2");
 
     // Add the empty system (and its witness function).
     empty_ = builder.AddSystem<EmptySystem>(1.0,
         WitnessFunction<double>::DirectionType::kCrossesZero);
     empty_->set_name("empty");
-
-    integrator0_ = builder.AddSystem<Integrator<double>>(size);
-    integrator0_->set_name("integrator0");
-    integrator1_ = builder.AddSystem<Integrator<double>>(size);
-    integrator1_->set_name("integrator1");
-
-    builder.Connect(adder0_->get_output_port(), adder1_->get_input_port(0));
-    builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
-    builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
-
-    builder.Connect(adder0_->get_output_port(),
-                    integrator0_->get_input_port());
-    builder.Connect(integrator0_->get_output_port(),
-                    integrator1_->get_input_port());
-
-    builder.ExportInput(adder0_->get_input_port(0));
-    builder.ExportInput(adder0_->get_input_port(1));
-    builder.ExportInput(adder1_->get_input_port(1));
-    builder.ExportOutput(adder1_->get_output_port());
-    builder.ExportOutput(adder2_->get_output_port());
-    builder.ExportOutput(integrator1_->get_output_port());
-
     builder.BuildInto(this);
   }
-
-  Adder<double>* adder0() { return adder0_; }
-  Adder<double>* adder1() { return adder1_; }
-  Adder<double>* adder2() { return adder2_; }
-  Integrator<double>* integrator0() { return integrator0_; }
-  Integrator<double>* integrator1() { return integrator1_; }
 
   void set_publish_callback(
       std::function<void(const Context<double>&)> callback) {
     publish_callback_ = callback;
   }
 
+ protected:
+  void DoPublish(
+      const drake::systems::Context<double>& context) const override {
+    if (publish_callback_ != nullptr) publish_callback_(context);
+  }
+
  private:
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
   EmptySystem* empty_ = nullptr;
-
-  Adder<double>* adder0_ = nullptr;
-  Adder<double>* adder1_ = nullptr;
-  Adder<double>* adder2_ = nullptr;
-
-  Integrator<double>* integrator0_ = nullptr;
-  Integrator<double>* integrator1_ = nullptr;
 };
 
 // Tests ability of simulation to identify the proper number of witness function
@@ -116,8 +80,7 @@ class ExampleDiagram : public Diagram<double> {
 // witness function should trigger.
 GTEST_TEST(SimulatorTest, DiagramWitness) {
   // Set empty system to trigger when time is +1.
-  const unsigned size = 3;
-  ExampleDiagram system(size);
+  ExampleDiagram system;
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context) {
     num_publishes++;
@@ -130,6 +93,7 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
                                                             simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
   Context<double>* context = simulator.get_mutable_context();
+
   context->set_time(0);
   simulator.StepTo(1);
 

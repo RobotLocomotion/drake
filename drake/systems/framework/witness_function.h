@@ -115,6 +115,9 @@ class WitnessFunction {
     return DoEvaluate(context);
   }
 
+  /// Gets a reference to the System used by this witness function.
+  const System<T>& get_system() const { return system_; }
+
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.

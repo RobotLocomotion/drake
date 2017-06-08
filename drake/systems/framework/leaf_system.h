@@ -59,6 +59,13 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Implementations of System<T> methods.
 
+  /// Evaluates the witness function at the given context.
+  T EvaluateWitness(const Context<T>& context,
+                    const WitnessFunction<T>& wf) const final {
+    DRAKE_ASSERT(this == &wf.get_system());
+    return wf.Evaluate(context);
+  }
+
   std::unique_ptr<Context<T>> AllocateContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     // Reserve inputs that have already been declared.

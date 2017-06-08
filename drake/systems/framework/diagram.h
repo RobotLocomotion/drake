@@ -633,6 +633,16 @@ class Diagram : public System<T>,
     }
   }
 
+  /// Evaluates the given witness function at the given context.
+  T EvaluateWitness(const Context<T>& context,
+                    const WitnessFunction<T>& wf) const final {
+    const System<T>& system = wf.get_system();
+    const int i = GetSystemIndexOrAbort(&system);
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    return wf.Evaluate(*diagram_context->GetSubsystemContext(i));
+  }
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
