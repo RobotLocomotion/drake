@@ -84,18 +84,10 @@ private_headers = [
 # public headers in the library.  The first line is
 # '#include <ignition/math/config.hh>' followed by one line like
 # '#include <ignition/math/Angle.hh>' for each non-generated header.
-genrule(
+drake_generate_include_header(
     name = "mathhh_genrule",
-    srcs = public_headers,
-    outs = ["include/ignition/math.hh"],
-    # TODO: centralize this logic, as it is used here, in sdformat.BUILD, and
-    # in fcl.BUILD
-    cmd = "(" + (
-        "echo '#include <ignition/math/config.hh>' && " +
-        "echo '$(SRCS)' | tr ' ' '\\n' | " +
-        "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g'"
-    ) + ") > '$@'",
-    visibility = ["//visibility:private"],
+    out = "include/ignition/math.hh",
+    hdrs = [":config"] + public_headers,
 )
 
 check_lists_consistency(
@@ -152,7 +144,10 @@ install(
     doc_dest = "share/doc/" + CMAKE_PACKAGE,
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = ["LICENSE", "COPYING"],
+    license_docs = [
+        "LICENSE",
+        "COPYING",
+    ],
     targets = [":ignition_math"],
     deps = [":install_cmake_config"],
 )
