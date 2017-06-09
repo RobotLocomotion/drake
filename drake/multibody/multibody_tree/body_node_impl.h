@@ -18,9 +18,10 @@ namespace multibody {
 /// stack-allocated Eigen variables.
 /// In particular, most of the across mobilizer code for velocity kinematics
 /// lives in this class since the across mobilizer Jacobian matrices `H_FM(q)`
-/// have a compile-time fixed size.
-/// For a more detailed discussion of the role of a BodyNode in a MultibodyTree
-/// refer to the class documentation for BodyNode.
+/// (defined such that the across mobilizer spatial velocity relates to the
+/// generalized velocities v by `V_FM = H_FM(q) * v`) have a compile-time fixed
+/// size. For a more detailed discussion of the role of a BodyNode in a
+/// MultibodyTree refer to the class documentation for BodyNode.
 template <typename T, int  num_positions, int num_velocities>
 class BodyNodeImpl : public BodyNode<T> {
  public:

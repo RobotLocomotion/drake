@@ -19,7 +19,7 @@ template<typename T> class MultibodyTree;
 
 /// For internal use only of the MultibodyTree implementation.
 /// This is a base class representing a **node** in the tree structure of a
-/// MultibodyTree. %BodyNode provides implementations for convinience methods to
+/// MultibodyTree. %BodyNode provides implementations for convenience methods to
 /// be used in MultibodyTree recursive algorithms but that however should not
 /// leak into the public API for the Mobilizer class. In this regard, %BodyNode
 /// provides an additional separation layer between implementation internals and
@@ -39,7 +39,7 @@ template<typename T> class MultibodyTree;
 /// `X_FM` as a function of the generalized coordinates associated with that
 /// mobilizer.
 ///
-/// In addition, body B could be a flexible body, case in which the pose of each
+/// In addition, body B could be a flexible body, in which case the pose of each
 /// frame attached to B would in general be a function of a number of
 /// generalized positions associated with body B. In particular, the pose
 /// `X_BM` of the outboard frame M will be a function of body B's generalized
@@ -56,7 +56,7 @@ template<typename T> class MultibodyTree;
 ///
 /// <h4>Associated State</h4>
 ///
-/// In the same way a Mobilizer or a Body have a number of generalized
+/// In the same way a Mobilizer and a Body have a number of generalized
 /// positions associated with them, a %BodyNode is associated with the
 /// generalized positions of body B and of its inboard mobilizer.
 ///
@@ -74,9 +74,11 @@ template<typename T> class MultibodyTree;
 /// body P's generalized positions `qb_P`.
 ///
 /// Therefore, the generalized positions associated with a given body node
-/// correspond to the concatenation `qn_B = [qm_B, qb_B]`. Similarly for
-/// generalized velocities. [Jain 2010] uses a similar grouping of generalized
-/// coordinates when flexible bodies are considered, see Chapter 13.
+/// correspond to the concatenation `qn_B = [qm_B, qb_B]`. Similarly,
+/// mobilizer's generalized velocities `vm_B` and body generalized velocities
+/// `vb_B` are grouped into `vn_B = [vm_B, vb_B]`. [Jain 2010] uses a similar
+/// grouping of generalized coordinates when flexible bodies are considered,
+/// see Chapter 13.
 ///
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
@@ -87,11 +89,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
-  /// A node is a computational cell encompassing a Body in a MultibodyTree
-  /// and the inboard Mobilizer that connects this body to the tree. Given a
-  /// body and its inboard mobilizer in a MultibodyTree this constructor
-  /// creates the corresponding %BodyNode. See this class' documentation for
-  /// details on how a %BodyNode is defined.
+  /// A node encompasses a Body in a MultibodyTree and the inboard Mobilizer
+  /// that connects this body to the rest of tree. Given a body and its inboard
+  /// mobilizer in a MultibodyTree this constructor creates the corresponding
+  /// %BodyNode. See this class' documentation for details on how a %BodyNode is
+  /// defined.
   /// @param[in] body The body B associated with `this` node. It must be a valid
   ///                 pointer.
   /// @param[in] mobilizer The mobilizer associated with this `node`. It can
@@ -213,7 +215,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // - X_PB(qb_P, qm_B, qb_B)
   // - X_WB(q(W:P), qb_P, qm_B, qb_B)
   // where qb_P are the generalized coordinates associated with body P, qm_B
-  // the generalized coordinates associated with this node's mobilizer and
+  // the generalized coordinates associated with this node's mobilizer, and
   // qb_B the generalized coordinates associated with body B. q(W:P) denotes
   // all generalized positions in the kinematics path between the world and
   // the parent body P.
@@ -221,7 +223,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // - Body B already updated the pose `X_BM(qb_B)` of the inboard
   //   mobilizer M.
   // - We are in a base-to-tip recursion and therefore `X_PF(qb_P)` and `X_WP`
-  //   are already updated.
+  //   have already been updated.
   void CalcAcrossMobilizerBodyPoses_BaseToTip(
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const {
