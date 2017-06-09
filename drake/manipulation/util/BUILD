@@ -64,3 +64,5 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
     ],
 )
+
+cpplint()
