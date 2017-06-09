@@ -8,7 +8,7 @@ git ls-files |
     sort > /tmp/git_files.txt
 
 # Files covered by cc_ something.
-bazel query 'kind("source file", deps(kind("cc_.* rule", //...)))' |
+bazel query 'kind("source file", deps(kind("cc_.* rule", //... except //externals/...)))' |
     grep -v '^@' | grep -v '^//externals' | grep -v '/thirdParty' |
     egrep '\.(h|cc|hpp|cpp)$' |
     perl -pe 's#^//:?##g; s#:#/#g;' |
@@ -17,7 +17,7 @@ bazel query 'kind("source file", deps(kind("cc_.* rule", //...)))' |
 # Files covered by cpplint.
 bazel query 'kind("source file", deps(attr(tags, cpplint, tests(//...))))' |
     grep -v '^@' | grep -v '^//externals' | grep -v '/thirdParty' |
-    egrep '\.(h|cc)$' |
+    egrep '\.(h|cc|hpp|cpp)$' |
     perl -pe 's#^//:?##g; s#:#/#g;'|
     sort > /tmp/cpplint_files.txt
 
