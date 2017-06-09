@@ -189,7 +189,7 @@ class Accelerometer : public systems::LeafSystem<double> {
  private:
   // Computes the "sensed" linear acceleration.
   void CalcAccelerationOutput(const Context<double>& context,
-                              AccelerometerOutput<double>* output) const;
+                              AccelerometerOutput<double>* output_vector) const;
 
   const std::string name_;
   const RigidBodyFrame<double> frame_;

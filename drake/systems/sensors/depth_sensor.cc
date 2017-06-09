@@ -121,8 +121,7 @@ DepthSensor::get_rigid_body_tree_state_input_port() const {
   return this->get_input_port(input_port_index_);
 }
 
-const OutputPort<double>& DepthSensor::get_sensor_state_output_port()
-const {
+const OutputPort<double>& DepthSensor::get_sensor_state_output_port() const {
   return System<double>::get_output_port(depth_output_port_index_);
 }
 
@@ -169,7 +168,6 @@ void DepthSensor::CalcDepthOutput(
   ApplyLimits(&distances);
 
   // Evaluates the output port containing the depth measurements.
-  DRAKE_ASSERT(data_output != nullptr);
   data_output->SetFromVector(distances);
 }
 
@@ -189,13 +187,11 @@ void DepthSensor::ApplyLimits(VectorX<double>* distances) const {
   }
 }
 
-
 // Evaluates the output port containing X_WS.
 // TODO(sherm1) Should be accessing an already-calculated kinematics cache,
 // not recalculating.
 void DepthSensor::CalcPoseOutput(const Context<double>& context,
                                  PoseVector<double>* pose_output) const {
-  DRAKE_ASSERT(pose_output != nullptr);
   VectorXd u = this->EvalEigenVectorInput(context, 0);
   auto q = u.head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);

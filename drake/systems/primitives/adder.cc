@@ -14,8 +14,9 @@ namespace systems {
 
 template <typename T>
 Adder<T>::Adder(int num_inputs, int size) {
-  for (int i = 0; i < num_inputs; i++)
+  for (int i = 0; i < num_inputs; i++) {
     this->DeclareInputPort(kVectorValued, size);
+  }
 
   output_port_ = &this->DeclareVectorOutputPort(
       BasicVector<T>(size), &Adder<T>::CalcSum);

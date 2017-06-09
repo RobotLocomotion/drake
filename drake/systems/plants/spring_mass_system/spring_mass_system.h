@@ -267,15 +267,6 @@ class SpringMassSystem : public LeafSystem<T> {
         cstate->get_mutable_vector());
   }
 
-  static const SpringMassStateVector<T>& get_output(
-      const BasicVector<T>& output) {
-    return dynamic_cast<const SpringMassStateVector<T>&>(output);
-  }
-
-  static SpringMassStateVector<T>* get_mutable_output(BasicVector<T>* output) {
-    return dynamic_cast<SpringMassStateVector<T>*>(output);
-  }
-
   static const SpringMassStateVector<T>& get_state(const Context<T>& context) {
     return get_state(*context.get_continuous_state());
   }

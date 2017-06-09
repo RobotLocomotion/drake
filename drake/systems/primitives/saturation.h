@@ -100,11 +100,10 @@ class Saturation : public LeafSystem<T> {
   // TODO(naveenoid) : Add a witness function for capturing events when
   // saturation limits are reached.
 
- protected:
+ private:
   void CalcSaturatedOutput(const Context<T>& context,
                            BasicVector<T>* output_vector) const;
 
- private:
   int input_port_index_{};
   int min_value_port_index_{};
   int max_value_port_index_{};

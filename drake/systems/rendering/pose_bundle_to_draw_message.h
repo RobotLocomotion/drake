@@ -5,11 +5,10 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-class lcmt_viewer_draw;
-
 namespace systems {
 namespace rendering {
 

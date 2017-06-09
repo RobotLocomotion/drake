@@ -21,8 +21,6 @@ void PoseBundleToDrawMessage::CalcViewerDrawMessage(
       this->EvalAbstractInput(context, 0)
           ->template GetValue<PoseBundle<double>>();
 
-  //  lcmt_viewer_draw& message =
-  //  output->GetMutableData(0)->template GetMutableValue<lcmt_viewer_draw>();
   lcmt_viewer_draw& message = *output;
 
   const int n = poses.get_num_poses();

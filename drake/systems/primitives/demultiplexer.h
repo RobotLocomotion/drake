@@ -43,7 +43,7 @@ class Demultiplexer : public LeafSystem<T> {
  private:
   // Sets the i-th output port to the value of the i-th component of the input
   // port.
-  void CopyToOutput(const Context<T>& context, OutputPortIndex oport,
+  void CopyToOutput(const Context<T>& context, OutputPortIndex port_index,
                     BasicVector<T>* output) const;
 
   // Returns a Demultiplexer<symbolic::Expression> with the same dimensions as

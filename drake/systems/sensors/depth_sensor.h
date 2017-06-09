@@ -161,10 +161,10 @@ class DepthSensor : public systems::LeafSystem<double> {
  private:
   // These are calculators for the depth data and sensor pose outputs.
   void CalcDepthOutput(const Context<double>& context,
-                       DepthSensorOutput<double>* output) const;
+                       DepthSensorOutput<double>* data_output) const;
 
   void CalcPoseOutput(const Context<double>& context,
-                      rendering::PoseVector<double>* output) const;
+                      rendering::PoseVector<double>* pose_output) const;
 
 
   // The depth sensor will cast a ray with its start point at (0,0,0) in the
@@ -181,11 +181,6 @@ class DepthSensor : public systems::LeafSystem<double> {
   // maximum sensing distance and not detecting any object within the sensing
   // range.
   void ApplyLimits(VectorX<double>* dists) const;
-
-  // Evaluates the output port containing the depth measurements.
-  void UpdateOutputs(const VectorX<double>& distances,
-                     const KinematicsCache<double>& kinematics_cache,
-                     SystemOutput<double>* output) const;
 
   const std::string name_;
   const RigidBodyTree<double>& tree_;
