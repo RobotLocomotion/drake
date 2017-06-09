@@ -23,7 +23,7 @@ Argument:
     name: A unique name for this rule.
 """
 
-VTK_MAJOR_MINOR_VERSION = "7.1"
+VTK_MAJOR_MINOR_VERSION = "8.0"
 
 def _vtk_cc_library(os_name, name, hdrs=None, visibility=None, deps=None,
                     header_only=False):
@@ -54,7 +54,7 @@ def _vtk_cc_library(os_name, name, hdrs=None, visibility=None, deps=None,
 
         if not header_only:
             linkopts = [
-                "-L/usr/local/opt/vtk@8.0/lib",
+                "-L/usr/local/opt/vtk@{}/lib".format(VTK_MAJOR_MINOR_VERSION),
                 "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
             ]
     else:
@@ -77,8 +77,8 @@ cc_library(
 
 def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
-        # TODO(jamiesnape): Use VTK_MAJOR_MINOR_VERSION instead of hard-coding.
-        repository_ctx.symlink("/usr/local/opt/vtk@8.0/include", "include")
+        repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
+            VTK_MAJOR_MINOR_VERSION), "include")
         repository_ctx.file("empty.cc", executable=False)
 
     elif repository_ctx.os.name == "linux":
@@ -100,11 +100,11 @@ def _impl(repository_ctx):
         distro = " ".join(distro)
 
         if distro == "Ubuntu 14.04":
-            archive = "vtk-v7.1.1-1584-g28deb56-qt-4.8.6-trusty-x86_64.tar.gz"
-            sha256 = "709fb9a5197ee5a87bc92760c2fe960b89326acd11a0ce6adf9d7d023563f5d4"
+            archive = "vtk-v8.0.0.rc2-qt-4.8.6-trusty-x86_64.tar.gz"
+            sha256 = "78880d8b951355a6ad5a6bfc42275ae42f31e2e05f1b52e3a9883226556b1685"
         elif distro == "Ubuntu 16.04":
-            archive = "vtk-v7.1.1-1584-g28deb56-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "d21cae88b2276fd59c94f0e41244fc8f7e31ff796518f731e4fffc25f8e01cbc"
+            archive = "vtk-v8.0.0.rc2-qt-5.5.1-xenial-x86_64.tar.gz "
+            sha256 = "963f81abd90da4470df1fb20aee8b4ead815f543f3ae9fa00ef2ea6be5cc2c0c"
         else:
             fail("Linux distribution is NOT supported", attr=distro)
 
