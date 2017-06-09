@@ -1,6 +1,7 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.h"
 
 #include <cmath>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

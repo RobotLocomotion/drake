@@ -1,3 +1,5 @@
+#include "drake/automotive/maliput/rndf/road_geometry.h"
+
 #include <iostream>
 #include <string>
 #include <tuple>
@@ -7,7 +9,6 @@
 
 #include "drake/automotive/maliput/rndf/branch_point.h"
 #include "drake/automotive/maliput/rndf/junction.h"
-#include "drake/automotive/maliput/rndf/road_geometry.h"
 
 namespace drake {
 namespace maliput {
