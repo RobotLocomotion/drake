@@ -954,9 +954,6 @@ class CustomContext : public LeafContext<T> {};
 // confirms that the appropriate context type is generated..
 template <typename T>
 class CustomContextSystem : public LeafSystem<T> {
- public:
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {}
  protected:
   std::unique_ptr<LeafContext<T>> DoMakeContext() const override {
     return std::make_unique<CustomContext<T>>();

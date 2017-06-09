@@ -4,7 +4,6 @@
 #include "robotlocomotion/image_array_t.hpp"
 
 #include "drake/systems/sensors/image.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
