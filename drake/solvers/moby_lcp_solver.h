@@ -59,8 +59,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver)
 
-  MobyLCPSolver();
-
+  MobyLCPSolver() = default;
   ~MobyLCPSolver() override = default;
 
   void SetLoggingEnabled(bool enabled);
@@ -279,6 +278,10 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
+  SolverType solver_type() const override { return SolverType::kMobyLCP; }
+
+  std::string SolverName() const override { return "Moby LCP"; }
+
   /// Returns the number of pivoting operations made by the last LCP solve.
   int get_num_pivots() const { return pivots_; }
 
@@ -295,7 +298,8 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   // TODO(sammy-tri) replace this with a proper logging hookup
   std::ostream& Log() const;
-  bool log_enabled_;
+
+  bool log_enabled_{false};
   mutable std::ofstream null_stream_;
 
   // Records the number of pivoting operations used during the last solve.
