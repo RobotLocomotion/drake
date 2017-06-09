@@ -197,12 +197,16 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
         file_labels (:obj:`list` of :obj:`Label`): labels to install.
         dests (:obj:`str` or :obj:`dict` of :obj:`str` to :obj:`str`):
             Install destination. A :obj:`dict` may be given to supply a mapping
-            of file extension to destination path.
+            of file extension to destination path. The :obj:`dict` must have an
+            entry with the key ``None`` that is used as the default when there
+            is no entry for the specific extension.
         strip_prefixes (:obj:`list` of :obj:`str` or :obj:`dict` of :obj:`list`
             of :obj:`str` to :obj:`str`): List of prefixes to strip from the
             input path before prepending the destination. A :obj:`dict` may be
             given to supply a mapping of file extension to list of prefixes to
-            strip.
+            strip. The :obj:`dict` must have an entry with the key ``None``
+            that is used as the default when there is no entry for the specific
+            extension.
 
     Returns:
         :obj:`list`: A list of install actions.
