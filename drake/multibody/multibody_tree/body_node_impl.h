@@ -32,11 +32,10 @@ class BodyNodeImpl : public BodyNode<T> {
   /// Given a body and its inboard mobilizer in a MultibodyTree this constructor
   /// creates the corresponding %BodyNode. See the BodyNode class documentation
   /// for details on how a BodyNode is defined.
-  /// @param[in] body The body B associated with `this` node. It must be a valid
-  ///                 pointer.
+  /// @param[in] body The body B associated with `this` node.
   /// @param[in] mobilizer The mobilizer associated with this `node`. It can
   ///                      only be a `nullptr` for the **world** body.
-  BodyNodeImpl(const Body<T>* body, const Mobilizer<T>* mobilizer) :
+  BodyNodeImpl(const Body<T>& body, const Mobilizer<T>* mobilizer) :
       BodyNode<T>(body, mobilizer) {}
 
   // TODO(amcastro-tri): Implement methods for computing velocity kinematics

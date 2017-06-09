@@ -94,19 +94,17 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// mobilizer in a MultibodyTree this constructor creates the corresponding
   /// %BodyNode. See this class' documentation for details on how a %BodyNode is
   /// defined.
-  /// @param[in] body The body B associated with `this` node. It must be a valid
-  ///                 pointer.
+  /// @param[in] body The body B associated with `this` node.
   /// @param[in] mobilizer The mobilizer associated with this `node`. It can
   ///                      only be a `nullptr` `body` **is** the **world** body.
-  BodyNode(const Body<T>* body, const Mobilizer<T>* mobilizer) :
+  BodyNode(const Body<T>& body, const Mobilizer<T>* mobilizer) :
       body_(body), mobilizer_(mobilizer) {
-    DRAKE_DEMAND(body != nullptr);
-    DRAKE_DEMAND(!(mobilizer == nullptr && body->get_index() != world_index()));
+    DRAKE_DEMAND(!(mobilizer == nullptr && body.get_index() != world_index()));
   }
 
   /// Returns a constant reference to the body B associated with this node.
   const Body<T>& get_body() const {
-    return *body_;
+    return body_;
   }
 
   /// Returns a constant reference to the unique parent body P of the body B
@@ -176,7 +174,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
  protected:
   BodyNodeTopology topology_;
   // Pointers for fast access.
-  const Body<T>* body_{nullptr};
+  const Body<T>& body_;
   const Mobilizer<T>* mobilizer_{nullptr};
 
  private:

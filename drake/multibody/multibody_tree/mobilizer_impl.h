@@ -64,7 +64,7 @@ class MobilizerImpl : public Mobilizer<T> {
 
   /// For MultibodyTree internal use only.
   std::unique_ptr<BodyNode<T>> CreateBodyNode(
-    const Body<T>* body, const Mobilizer<T>* mobilizer) const final;
+    const Body<T>& body, const Mobilizer<T>* mobilizer) const final;
 
  protected:
   // Handy enum to grant specific implementations compile time sizes.

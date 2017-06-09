@@ -10,7 +10,7 @@ namespace multibody {
 
 template <typename T, int  nq, int nv>
 std::unique_ptr<BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
-    const Body<T>* body, const Mobilizer<T>* mobilizer) const {
+    const Body<T>& body, const Mobilizer<T>* mobilizer) const {
   return std::make_unique<BodyNodeImpl<T, nq, nv>>(body, mobilizer);
 }
 
