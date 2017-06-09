@@ -45,7 +45,7 @@ template<typename T> class MultibodyTree;
 /// `X_BM` of the outboard frame M will be a function of body B's generalized
 /// positions while the pose `X_PF` of the inboard frame F will be a function of
 /// parent body P's generalized positions. A RigidBody has no generalized
-/// positions associated with it.
+/// positions associated with it (see RigidBody::get_num_flexible_positions()).
 ///
 /// In summary, there will a %BodyNode for each Body in the MultibodyTree which
 /// encompasses:
@@ -155,7 +155,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - Body B already updated the pose `X_BM(qb_B)` of the inboard
     //   mobilizer M.
     // - We are in a base-to-tip recursion and therefore `X_PF(qb_P)` and `X_WP`
-    //   are already updated.
+    //   have already been updated.
     CalcAcrossMobilizerBodyPoses_BaseToTip(context, pc);
 
     // TODO(amcastro-tri):

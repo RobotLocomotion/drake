@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
+#include <stdexcept>
+
 #include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {

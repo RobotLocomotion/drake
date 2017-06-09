@@ -190,9 +190,16 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// Sets what will be considered to be the _zero_ configuration for `this`
   /// mobilizer. For most mobilizers the _zero_ configuration corresponds to the
-  /// value of genelized positions at which the inboard frame F and the outboard
-  /// frame coincide or, in other words, when `X_FM = Id` is the identity pose.
-  /// This however, does not necessarily have to be the case for all mobilizers.
+  /// value of generalized positions at which the inboard frame F and the
+  /// outboard frame coincide or, in other words, when `X_FM = Id` is the
+  /// identity pose. In the general case however, the zero configuration will
+  /// correspond to a value of the generalized positions for which
+  /// `X_FM = X_FM_ref` where `X_FM_ref` will generally be different from the
+  /// identity transformation.
+  /// In other words, `X_FM_ref = CalcAcrossMobilizerTransform(ref_context)`
+  /// where `ref_context` is a Context set to the zero configuration with
+  /// `set_zero_configuration(&ref_context)`.
+  ///
   /// Most often the _zero_ configuration will correspond to setting
   /// the vector of generalized positions related to this mobilizer to zero.
   /// However, in the general case, setting all generalized coordinates to zero

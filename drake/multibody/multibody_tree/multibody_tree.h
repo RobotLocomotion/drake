@@ -40,7 +40,7 @@ class MultibodyTree {
   /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
-  /// @name Methods to add new multibody tree elements.
+  /// @name Methods to Add New MultibodyTree Elements.
   ///
   /// To create a %MultibodyTree users will add multibody elements like bodies,
   /// joints, force elements, constraints, etc, using one of these methods.

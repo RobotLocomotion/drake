@@ -35,8 +35,8 @@ using systems::Context;
 // The only difference is that this model has no actuation.
 // This double pendulum is defined in the x-y plane with gravity acting in the
 // negative y-axis direction.
-// In this model the two links of the pendulum have the same length and their
-// body frames are located at the links' centroids.
+// In this model the two links of the pendulum have the same length with their
+// respective centers of mass located at the links' centroids.
 class PendulumTests : public ::testing::Test {
  public:
   // Creates an "empty" MultibodyTree that only contains the "world" body and
@@ -85,9 +85,9 @@ class PendulumTests : public ::testing::Test {
     // Below we will create inboard and outboard frames associated with the
     // pendulum's elbow.
     // An inboard frame Ei is rigidly attached to the upper link. It is located
-    // at y = -half_link_length in the frame of the upper link body.
+    // at y = -half_link_length_ in the frame of the upper link body.
     // An outboard frame Eo is rigidly attached to the lower link. It is located
-    // at y = +half_link_length in the frame of the lower link body.
+    // at y = +half_link_length_ in the frame of the lower link body.
     // X_UEi specifies the pose of the elbow inboard frame Ei in the body
     // frame U of the upper link.
     // X_LEo specifies the pose of the elbow outboard frame Eo in the body
@@ -148,20 +148,20 @@ class PendulumTests : public ::testing::Test {
   const RevoluteMobilizer<double>* shoulder_mobilizer_;
   const RevoluteMobilizer<double>* elbow_mobilizer_;
   // Pendulum parameters:
-  const double link_length = 1.0;
-  const double half_link_length = link_length / 2;
+  const double link_length_ = 1.0;
+  const double half_link_length_ = link_length_ / 2;
   // COM positions, measured and expressed in body frame:
-  const Vector3d p_UBcm_{0.0, -half_link_length, 0.0};
-  const Vector3d p_LBcm_{0.0, -half_link_length, 0.0};
+  const Vector3d p_UBcm_{0.0, -half_link_length_, 0.0};
+  const Vector3d p_LBcm_{0.0, -half_link_length_, 0.0};
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
-  const Isometry3d X_WL_{Translation3d(0.0, -half_link_length, 0.0)};
+  const Isometry3d X_WL_{Translation3d(0.0, -half_link_length_, 0.0)};
   // Pose of the shoulder outboard frame So in the upper link frame U.
-  const Isometry3d X_USo_{Translation3d(0.0, half_link_length, 0.0)};
+  const Isometry3d X_USo_{Translation3d(0.0, half_link_length_, 0.0)};
   // Pose of the elbow inboard frame Ei in the upper link frame U.
-  const Isometry3d X_UEi_{Translation3d(0.0, -half_link_length, 0.0)};
+  const Isometry3d X_UEi_{Translation3d(0.0, -half_link_length_, 0.0)};
   // Pose of the elbow outboard frame Eo in the lower link frame L.
-  const Isometry3d X_LEo_{Translation3d(0.0, half_link_length, 0.0)};
+  const Isometry3d X_LEo_{Translation3d(0.0, half_link_length_, 0.0)};
 };
 
 TEST_F(PendulumTests, CreateModelBasics) {
@@ -422,9 +422,9 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
                 &pc.get_mutable_X_FM(elbow_node));
 
       // Retrieve body poses from position kinematics cache.
-      const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
-      const Isometry3d &X_WU = get_body_pose_in_world(pc, *upper_link_);
-      const Isometry3d &X_WL = get_body_pose_in_world(pc, *lower_link_);
+      const Isometry3d& X_WW = get_body_pose_in_world(pc, *world_body_);
+      const Isometry3d& X_WU = get_body_pose_in_world(pc, *upper_link_);
+      const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
 
       const Isometry3d X_WU_expected =
           acrobot_benchmark_.CalcLink1PoseInWorldFrame(shoulder_angle);
