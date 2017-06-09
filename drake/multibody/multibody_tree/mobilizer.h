@@ -218,33 +218,6 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context) const = 0;
   /// @}
 
-  /// Computes position dependent kinematics associated with `this` mobilizer
-  /// which includes:
-  /// - X_FM(q): The pose of the outboard frame M as measured and expressed in
-  ///            the inboard frame F.
-  /// - H_FM(q): the Jacobian matrix describing the relationship between
-  ///            generalized velocities v and the spatial velocity `V_FM` by
-  ///            `V_FM(q, v) = H_FM(q) * v`.
-  /// - Hdot_FM(q): The time derivative of the Jacobian matrix which allows
-  ///               computing the spatial acceleration between the F and M
-  ///               frames as:
-  ///               `A_FM(q, v, vdot) = H_FM(q) * vdot + Hdot_FM(q) * v`
-  /// - N(q): The kinematic coupling matrix describing the relationship between
-  ///         the rate of change of generalized coordinates and the generalized
-  ///         velocities by `q̇ = N(q) * v`.
-  ///
-  /// This method is used by MultibodyTree to update the position kinematics
-  /// quantities associated with `this` mobilizer. MultibodyTree will always
-  /// provide a valid PositionKinematicsCache pointer, otherwise this method
-  /// aborts in Debug builds.
-  void CalcPositionKinematicsCache(
-      const MultibodyTreeContext<T>& context,
-      PositionKinematicsCache<T>* pc) const {
-    DRAKE_ASSERT(pc != nullptr);
-    Isometry3<T>& X_FM = pc->get_mutable_X_FM(topology_.body_node);
-    X_FM = this->CalcAcrossMobilizerTransform(context);
-  }
-
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<BodyNode<T>> CreateBodyNode(
       const Body<T>& body, const Mobilizer<T>* mobilizer) const = 0;

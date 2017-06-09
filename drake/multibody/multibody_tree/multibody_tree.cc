@@ -126,13 +126,6 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // Notice this loop can be performed in any order and each X_BQ(qf_B) is
   // independent of all others. This could even be performed in parallel.
 
-  // Loop over all mobilizers to update their position dependent kinematics.
-  // This updates the kinematics quantities only dependent on the rigid degrees
-  // of freedom qr. These are: X_FM(qr), H_FM(qr), HdotTimesV(qr), N(qr).
-  // Notice this loop can be performed in any order, even in parallel.
-  for (const auto& mobilizer : owned_mobilizers_)
-    mobilizer->CalcPositionKinematicsCache(mbt_context, pc);
-
   // With the kinematics information across mobilizer's and the kinematics
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.

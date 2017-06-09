@@ -140,6 +140,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     DRAKE_ASSERT(pc != nullptr);
 
+    // Update mobilizers' position dependent kinematics.
+    CalcAcrossMobilizerPositionKinematicsCache(context, pc);
+
     // This computes into the PositionKinematicsCache:
     // - X_PB(qb_P, qm_B, qb_B)
     // - X_WB(q(W:P), qb_P, qm_B, qb_B)
@@ -200,6 +203,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // frame M as measured and expressed in the inboard frame F.
   const Isometry3<T>& get_X_FM(const PositionKinematicsCache<T>& pc) const {
     return pc.get_X_FM(topology_.index);
+  }
+
+  // Returns a mutable reference to the across-mobilizer pose of the outboard
+  // frame M as measured and expressed in the inboard frame F.
+  Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
+    return pc->get_mutable_X_FM(topology_.index);
   }
 
   // Returns a mutable reference to the pose of body B as measured and expressed
@@ -266,6 +275,33 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     X_PB = FrameF.CalcOffsetPoseInBody(context, X_FB);
 
     X_WB = X_WP * X_PB;
+  }
+
+  // Computes position dependent kinematics associated with `this` mobilizer
+  // which includes:
+  // - X_FM(q): The pose of the outboard frame M as measured and expressed in
+  //            the inboard frame F.
+  // - H_FM(q): the Jacobian matrix describing the relationship between
+  //            generalized velocities v and the spatial velocity `V_FM` by
+  //            `V_FM(q, v) = H_FM(q) * v`.
+  // - Hdot_FM(q): The time derivative of the Jacobian matrix which allows
+  //               computing the spatial acceleration between the F and M
+  //               frames as:
+  //               `A_FM(q, v, vdot) = H_FM(q) * vdot + Hdot_FM(q) * v`
+  // - N(q): The kinematic coupling matrix describing the relationship between
+  //         the rate of change of generalized coordinates and the generalized
+  //         velocities by `q̇ = N(q) * v`.
+  //
+  // This method is used by MultibodyTree to update the position kinematics
+  // quantities associated with `this` mobilizer. MultibodyTree will always
+  // provide a valid PositionKinematicsCache pointer, otherwise this method
+  // aborts in Debug builds.
+  void CalcAcrossMobilizerPositionKinematicsCache(
+      const MultibodyTreeContext<T>& context,
+      PositionKinematicsCache<T>* pc) const {
+    DRAKE_ASSERT(pc != nullptr);
+    Isometry3<T>& X_FM = get_mutable_X_FM(pc);
+    X_FM = mobilizer_->CalcAcrossMobilizerTransform(context);
   }
 
   // Implementation for MultibodyTreeElement::DoSetTopology().
