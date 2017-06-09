@@ -37,12 +37,12 @@ namespace {
 // Empty diagram
 class EmptyDiagram : public Diagram<double> {
  public:
-  EmptyDiagram(double offset) {
+  explicit EmptyDiagram(double offset) {
     DiagramBuilder<double> builder;
 
     // Add the empty system (and its witness function).
     empty_ = builder.AddSystem<EmptySystem>(offset,
-                                            WitnessFunction<double>::DirectionType::kCrossesZero);
+        WitnessFunction<double>::DirectionType::kCrossesZero);
     empty_->set_name("empty_diag");
     builder.BuildInto(this);
   }
@@ -54,7 +54,7 @@ class EmptyDiagram : public Diagram<double> {
 // Diagram for testing witness functions.
 class ExampleDiagram : public Diagram<double> {
  public:
-  ExampleDiagram(double offset) {
+  explicit ExampleDiagram(double offset) {
     DiagramBuilder<double> builder;
 
     // Add the empty system (and its witness function).
