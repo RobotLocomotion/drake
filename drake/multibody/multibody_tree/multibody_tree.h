@@ -504,10 +504,23 @@ class MultibodyTree {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
+  template <template <typename> class MultibodyElement, typename Scalar>
+  std::enable_if_t<std::is_base_of<Body<T>, MultibodyElement<T>>::value,
+                   const MultibodyElement<T>&> retrieve_variant(
+      const MultibodyElement<Scalar>& element) {
+    return retrieve_body_variant(element);
+  }
+
+  template <template <typename> class MultibodyElement, typename Scalar>
+  std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
+                   const MultibodyElement<T>&> retrieve_variant(
+      const MultibodyElement<Scalar>& element) {
+    return retrieve_mobilizer_variant(element);
+  }
+
   template <template <typename> class BodyType, typename Scalar>
   const BodyType<T>& retrieve_body_variant(const BodyType<Scalar>& body) {
-    static_assert(std::is_convertible<BodyType<T> *,
-                                      Body<T> *>::value,
+    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
     BodyIndex body_index = body.get_index();
     DRAKE_DEMAND(body_index < get_num_bodies());
@@ -521,8 +534,7 @@ class MultibodyTree {
   template <template <typename> class MobilizerType, typename Scalar>
   const MobilizerType<T>& retrieve_mobilizer_variant(
       const MobilizerType<Scalar>& mobilizer) {
-    static_assert(std::is_convertible<MobilizerType<T> *,
-                                      Mobilizer<T> *>::value,
+    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
                   "MobilizerType must be a sub-class of Mobilizer<T>.");
     MobilizerIndex mobilizer_index = mobilizer.get_index();
     DRAKE_DEMAND(mobilizer_index < get_num_mobilizers());
