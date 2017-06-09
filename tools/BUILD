@@ -18,6 +18,15 @@ sh_binary(
 )
 
 sh_binary(
+    name = "drake_visualizer",
+    srcs = select({
+        "//tools:apple": ["drake_visualizer_apple.sh"],
+        "//conditions:default": ["drake_visualizer_linux.sh"],
+    }),
+    data = ["@director"],
+)
+
+sh_binary(
     name = "lsan",
     srcs = ["lsan.sh"],
     data = ["lsan.supp"],
