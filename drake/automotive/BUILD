@@ -436,7 +436,7 @@ py_binary(
         ":automotive_demo",
         ":lcm-spy",
         ":steering_command_driver",
-        "@drake_visualizer//:drake-visualizer",
+        "//tools:drake_visualizer",
         "@lcm//:lcm-logger",
     ],
     main = "automotive_demo.py",
