@@ -227,7 +227,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   ///            `V_FM(q, v) = H_FM(q) * v`.
   /// - Hdot_FM(q): The time derivative of the Jacobian matrix which allows
   ///               computing the spatial acceleration between the F and M
-  ///               frames.
+  ///               frames as:
+  ///               `A_FM(q, v, vdot) = H_FM(q) * vdot + Hdot_FM(q) * v`
   /// - N(q): The kinematic coupling matrix describing the relationship between
   ///         the rate of change of generalized coordinates and the generalized
   ///         velocities by `q̇ = N(q) * v`.
