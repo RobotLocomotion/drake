@@ -46,6 +46,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     deps = [
         ":direct_collocation",
         "//drake/common:eigen_matrix_compare",
