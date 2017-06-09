@@ -19,8 +19,8 @@ void RunSolver(MathematicalProgram* prog,
     int solver_status;
     prog->GetSolverResult(&solver_type, &solver_status);
     EXPECT_EQ(result, SolutionResult::kSolutionFound)
-              << "Solver " << solver_type << " fails to find the solution."
-              << std::endl;
+        << "Solver " << solver.SolverName() << " fails to find the solution."
+        << std::endl;
   }
 }
 }  // namespace test
