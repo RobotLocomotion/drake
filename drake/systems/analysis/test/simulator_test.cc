@@ -118,7 +118,7 @@ void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double dt) {
   DisableDefaultPublishing(s);
 }
 
-// Initializes the Simulator's integrator to fixed step mode for witness
+// Initializes the Simulator's integrator to variable step mode for witness
 // function related tests.
 void InitVariableStepIntegratorForWitnessTesting(Simulator<double>* s) {
   const System<double>& system = s->get_system();
@@ -129,7 +129,8 @@ void InitVariableStepIntegratorForWitnessTesting(Simulator<double>* s) {
 
 // Tests witness function isolation when operating in fixed step mode without
 // specifying accuracy (i.e., no isolation should be performed, and the witness
-// function should trigger at the end of the step).
+// function should trigger at the end of the step). See
+// Simulator::GetCurrentWitnessTimeIsolation() for more information.
 GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
   LogisticSystem system(1e-8, 100, 1);
   double publish_time = 0;
@@ -152,62 +153,49 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
   EXPECT_EQ(publish_time, dt);
 }
 
-// Tests witness function isolation when operating in error-controlled
-// integration mode, implying a particular mechanism for the witness window
-// isolation length (see Simulator::GetCurrentWitnessTimeIsolation()). This
-// function tests that the accuracy of the witness function isolation time
-// increases as accuracy (in the Context) is increased.
+// Tests the witness function isolation window gets smaller *when Simulator
+// uses a variable step integrator*  as the accuracy in the context becomes
+// tighter. See Simulator::GetCurrentWitnessTimeIsolation() for documentation of
+// this effect. Note that we cannot guarantee that the witness function zero is
+// isolated to greater accuracy because variable step integration implies that
+// we will not know the brackets on the interval input to the witness isolation
+// function- simulating with low accuracy could inadvertently isolate a
+// zero to perfect tolerance because the step taken by the integrator
+// fortuitously lands on the zero.
 GTEST_TEST(SimulatorTest, VariableStepIsolation) {
-  // Set empty system to trigger when time is +1.
+  // Set empty system to trigger when time is +1 (setting is arbitrary for this
+  // test).
   EmptySystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
   });
 
-  const double dt = 10;
   Simulator<double> simulator(system);
   InitVariableStepIntegratorForWitnessTesting(&simulator);
   Context<double>* context = simulator.get_mutable_context();
 
-  // Get the (one) witness function.
-  std::vector<const systems::WitnessFunction<double>*> witness;
-  system.GetWitnessFunctions(*context, &witness);
-  DRAKE_DEMAND(witness.size() == 1);
-
-  // Set the initial accuracy in the context and the integrator.
+  // Set the initial accuracy in the context.
   double accuracy = 1.0;
   context->set_accuracy(accuracy);
-  simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
 
   // Set the initial logistic system evaluation.
   double eval = std::numeric_limits<double>::infinity();
 
   // Loop, decreasing accuracy as we go.
   while (accuracy > 1e-8) {
-    // (Re)set the time and initial state.
-    context->set_time(0);
-    simulator.get_mutable_integrator()->request_initial_step_size_target(dt);
-
-    // Simulate to dt.
-    simulator.StepTo(dt);
-
-    // Evaluate the witness function.
-    context->set_time(publish_time);
-    double new_eval = witness.front()->Evaluate(*context);
+    // Verify that the isolation window is computed.
+    optional<double> iso_win = simulator.GetCurrentWitnessTimeIsolation();
+    EXPECT_TRUE(iso_win);
 
     // Verify that the new evaluation is closer to zero than the old one.
-    EXPECT_LT(new_eval, eval);
-    eval = new_eval;
+    EXPECT_LT(iso_win.value(), eval);
+    eval = iso_win.value();
 
-    // Increase the accuracy. NOTE: variable step integrator means that we do
-    // not have total control over the endpoints of the continuous interval
-    // (as we do for the FixedStepIncreasingIsolationAccuracy test, immediately
-    // below). Correspondingly, accuracy has to be significantly tightened to
-    // guarantee more accurate witness function isolation.
-    accuracy *= 0.01;
+    // Increase the accuracy, which should shrink the isolation window when
+    // next retrieved.
+    accuracy *= 0.1;
     context->set_accuracy(accuracy);
-    simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
   }
 }
 
@@ -377,6 +365,13 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
 // over an interval where (a) both functions change sign over the interval and
 // (b) after the interval is "chopped down" (to isolate the first witness
 // triggering), the second witness does not trigger.
+//
+// How this function tests this functionality: Both functions will change sign
+// over the interval [0, 2.1]. Since the first witness function triggers at
+// t=1.0, isolating the firing time should cause the second witness to no longer
+// trigger (at t=1.0). When the Simulator continues stepping (i.e., after the
+// event corresponding to the first witness function is handled), the second
+// witness should then be triggered at t=2.0.
 GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   // Set the trigger times.
   const double first_time = 1.0;
