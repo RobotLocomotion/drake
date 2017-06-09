@@ -4,13 +4,13 @@ set -e
 
 # Files in git.
 git ls-files |
-    egrep '\.(h|cc)$' |
+    egrep '\.(h|cc|hpp|cpp)$' |
     sort > /tmp/git_files.txt
 
 # Files covered by cc_ something.
-bazel query 'kind("source file", deps(kind("cc_.* rule", //... except //externals/...)))' |
+bazel query 'kind("source file", deps(kind("cc_.* rule", //...)))' |
     grep -v '^@' | grep -v '^//externals' | grep -v '/thirdParty' |
-    egrep '\.(h|cc)$' |
+    egrep '\.(h|cc|hpp|cpp)$' |
     perl -pe 's#^//:?##g; s#:#/#g;' |
     sort > /tmp/cc_files.txt
 
