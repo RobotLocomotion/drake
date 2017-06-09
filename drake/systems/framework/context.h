@@ -349,13 +349,39 @@ class Context {
   // =========================================================================
   // Accessors and Mutators for Accuracy.
 
-  /// Returns the accuracy setting (if any).
-  const optional<double>& get_accuracy() const { return accuracy_; }
-
-  /// Sets the accuracy setting.
-  /// TODO(edrumwri) Invalidate all cached time- and state-dependent
-  /// computations.
+  /// Records the user's requested accuracy. If no accuracy is requested,
+  /// computations are free to choose suitable defaults, or to refuse to
+  /// proceed without an explicit accuracy setting.
+  ///
+  /// Requested accuracy is stored in the %Context for two reasons:
+  /// - It permits all computations performed over a System to see the _same_
+  ///   accuracy request since accuracy is stored in one shared place, and
+  /// - it allows us to invalidate accuracy-dependent cached computations when
+  ///   the requested accuracy has changed.
+  ///
+  /// The accuracy of a complete simulation or other numerical study depends on
+  /// the accuracy of _all_ contributing computations, so it is important that
+  /// each computation is done in accordance with the overall requested
+  /// accuracy. Some examples of where this is needed:
+  /// - Error-controlled numerical integrators use the accuracy setting to
+  ///   decide what step sizes to take.
+  /// - The Simulator employs a numerical integrator, but also uses accuracy to
+  ///   decide how precisely to isolate witness function zero crossings.
+  /// - Iterative calculations reported as results or cached internally depend
+  ///   on accuracy to decide how strictly to converge the results. Examples of
+  ///   these are: constraint projection, calculation of distances between
+  ///   smooth shapes, and deformation calculations for soft contact.
+  ///
+  /// The common thread among these examples is that they all share the
+  /// same %Context, so by keeping accuracy here it can be used effectively to
+  /// control all accuracy-dependent computations.
+  // TODO(edrumwri) Invalidate all cached accuracy-dependent computations, and
+  // propagate accuracy to all subcontexts in a diagram context.
   void set_accuracy(const optional<double>& accuracy) { accuracy_ = accuracy; }
+
+  /// Returns the accuracy setting (if any).
+  /// @see set_accuracy() for details.
+  const optional<double>& get_accuracy() const { return accuracy_; }
 
   // =========================================================================
   // Miscellaneous Public Methods
