@@ -22,8 +22,8 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/examples/kuka_iiwa_arm/pick_and_place",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place",
         "//drake/lcmtypes:schunk",
         "//drake/manipulation/planner:constraint_relaxing_ik",
         "//drake/multibody:rigid_body_tree",
@@ -33,9 +33,9 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "pick_and_place_state_machine",
+    name = "pick_and_place_demo",
     srcs = [
-        "pick_and_place_state_machine.cc",
+        "pick_and_place_demo.cc",
     ],
     deps = [
         ":kuka_pick_and_place",

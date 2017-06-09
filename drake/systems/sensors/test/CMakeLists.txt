@@ -7,6 +7,11 @@ target_link_libraries(image_test drakeSensors)
 drake_add_cc_test(camera_info_test)
 target_link_libraries(camera_info_test drakeSensors)
 
+if(robotlocomotion-lcmtypes_FOUND)
+  drake_add_cc_test(image_to_lcm_image_array_t_test)
+  target_link_libraries(image_to_lcm_image_array_t_test drakeSensors)
+endif()
+
 if(Bullet_FOUND)
   drake_add_cc_test(depth_sensor_test)
   target_link_libraries(depth_sensor_test

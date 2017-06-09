@@ -89,6 +89,7 @@ else
   find "$workspace" \
        -name third_party -prune -o \
        \( -name BUILD -o \
+          -name BUILD.bazel -o \
           -name '*.BUILD' -o \
           -name '*.bzl' \) -print |
       xargs -t "$buildifier" -mode=fix

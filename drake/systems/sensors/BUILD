@@ -51,6 +51,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "image_to_lcm_image_array_t",
+    srcs = [
+        "image_to_lcm_image_array_t.cc",
+    ],
+    hdrs = [
+        "image_to_lcm_image_array_t.h",
+    ],
+    deps = [
+        ":image",
+        "//drake/common",
+        "//drake/systems/framework",
+        "@robotlocomotion_lcmtypes",
+        "@zlib",
+    ],
+)
+
+drake_cc_library(
     name = "rotary_encoders",
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
@@ -164,6 +181,27 @@ drake_cc_library(
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_binary(
+    name = "rgbd_camera_publish_lcm_example",
+    srcs = [
+        "rgbd_camera_publish_lcm_example.cc",
+    ],
+    deps = [
+        ":rgbd_camera",
+        ":image_to_lcm_image_array_t",
+        "//drake/common:unused",
+        "//drake/lcm",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:rigid_body_plant",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/lcm:lcm",
+        "//drake/systems/rendering:pose_stamped_t_pose_vector_translator",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -311,5 +349,11 @@ drake_cc_googletest(
     name = "vtk_util_test",
     deps = [":vtk_util"],
 )
+
+drake_cc_googletest(
+    name = "image_to_lcm_image_array_t_test",
+    deps = [":image_to_lcm_image_array_t"],
+)
+
 
 cpplint()

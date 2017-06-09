@@ -62,6 +62,12 @@ py_binary(
     srcs = ["drakelint.py"],
 )
 
+py_library(
+    name = "cpsutils",
+    srcs = ["cpsutils.py"],
+    deps = ["@pycps//:cps"],
+)
+
 exports_files(
     ["install.py.in"],
     visibility = ["//visibility:public"],
@@ -79,14 +85,27 @@ exports_files(
 
 exports_create_cps_scripts([
     "bullet",
+    "ccd",
     "eigen",
+    "fcl",
     "fmt",
     "ipopt",
     "lcm",
     "nlopt",
+    "octomap",
     "pybind11",
     "spdlog",
 ])
+
+exports_files(
+    ["bot2-core-lcmtypes.cps"],
+    visibility = ["@bot_core_lcmtypes//:__pkg__"],
+)
+
+exports_files(
+    ["robotlocomotion-lcmtypes.cps"],
+    visibility = ["@robotlocomotion_lcmtypes//:__pkg__"],
+)
 
 alias(
     name = "buildifier",

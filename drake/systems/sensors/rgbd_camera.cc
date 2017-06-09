@@ -25,8 +25,8 @@
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
-#include <vtkWindowToImageFilter.h>
 #include <vtkVersion.h>
+#include <vtkWindowToImageFilter.h>
 
 #if VTK_MAJOR_VERSION >= 6
 #include <vtkAutoInit.h>

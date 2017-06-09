@@ -105,12 +105,6 @@ bool is_relative_path(const string& path) {
   return !path.empty() && (path[0] != '/');
 }
 
-string get_cwd() {
-  spruce::path result;
-  result.setAsCurrent();
-  return result.getStr();
-}
-
 bool file_exists(const string& dirpath, const string& relpath) {
   DRAKE_ASSERT(is_relative_path(relpath));
   const spruce::path dir_query(dirpath);
@@ -119,7 +113,7 @@ bool file_exists(const string& dirpath, const string& relpath) {
   return file_query.exists();
 }
 
-optional<string> find_workspace() {
+optional<string> find_sentinel_dir() {
   spruce::path candidate_dir;
   candidate_dir.setAsCurrent();
   int num_attempts = 0;
@@ -132,8 +126,9 @@ optional<string> find_workspace() {
       return nullopt;
     }
 
-    // If we found the WORKSPACE, we win.
-    const spruce::path candidate_file = candidate_dir.getStr() + "/WORKSPACE";
+    // If we found the sentinel, we win.
+    spruce::path candidate_file = candidate_dir;
+    candidate_file.append(".drake-resource-sentinel");
     if (candidate_file.isFile()) {
       return candidate_dir.getStr();
     }
@@ -146,29 +141,18 @@ optional<string> find_workspace() {
 }  // namespace
 
 Result FindResource(string resource_path) {
-  // Check if resource_path is well-worked.
+  // Check if resource_path is well-formed.
   if (!is_relative_path(resource_path)) {
     return Result::make_error(
         std::move(resource_path),
         "resource_path is not a relative path");
   }
 
-  // Check if the resource is in cwd already.  At a minimum, this handles the
-  // case of runfiles in the Bazel sandbox, but could conceivably match in
-  // other situations as well.
-  const string cwd = get_cwd();
-  if (file_exists(cwd, resource_path)) {
-    return Result::make_success(std::move(resource_path), cwd);
-  }
-
-  // Check if the resource is in cwd's workspace.  Find the Bazel WORKSPACE
-  // file to determine the project's source code root, then look from there.
-  // TODO(jwnimmer-tri) We need automated regression tests for this, but can't
-  // really write them in Bazel, since this code is explicitly for finding
-  // resources when not run from Bazel.
-  const optional<string> workspace = find_workspace();
-  if (workspace && file_exists(*workspace, resource_path)) {
-    return Result::make_success(std::move(resource_path), *workspace);
+  // Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // resource-root sentinel file, then look for the resource_path in there.
+  const optional<string> sentinel_dir = find_sentinel_dir();
+  if (sentinel_dir && file_exists(*sentinel_dir, resource_path)) {
+    return Result::make_success(std::move(resource_path), *sentinel_dir);
   }
 
   // TODO(jwnimmer-tri) Add more search heuristics for installed copies of

@@ -1,6 +1,11 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 # Generates config.h based on the version numbers in CMake code.
 cmake_configure_file(
@@ -12,6 +17,7 @@ cmake_configure_file(
         "@octomap//:cmakelists_with_version",
     ],
     defines = ["FCL_HAVE_OCTOMAP"],
+    visibility = ["//visibility:private"],
 )
 
 # Generates fcl.h, which consists of #include statements for *all* of the other
@@ -26,6 +32,7 @@ genrule(
         "echo '$(SRCS)' | tr ' ' '\\n' | " +
         "sed 's|.*include/\(.*\)|#include \\\"\\1\\\"|g'"
     ) + ") > '$@'",
+    visibility = ["//visibility:private"],
 )
 
 # The globbed srcs= and hdrs= matches upstream's explicit globs of the same.
@@ -37,10 +44,33 @@ cc_library(
         ":fcl_h_genrule",
     ],
     includes = ["include"],
-    visibility = ["//visibility:public"],
     deps = [
         "@ccd",
         "@eigen",
         "@octomap",
     ],
+)
+
+cmake_config(
+    package = "fcl",
+    script = "@drake//tools:fcl-create-cps.py",
+    version_file = "CMakeModules/FCLVersion.cmake",
+    deps = [
+        "@ccd//:cps",
+        "@eigen//:cps",
+        "@octomap//:cps",
+    ],
+)
+
+install_cmake_config(package = "fcl")  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    doc_dest = "share/doc/fcl",
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/fcl",
+    hdr_strip_prefix = ["include/fcl"],
+    license_docs = glob(["LICENSE"]),
+    targets = [":fcl"],
+    deps = [":install_cmake_config"],
 )

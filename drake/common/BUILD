@@ -30,6 +30,7 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
+        "//drake/thirdParty:stx",
         "@eigen",
         "@spdlog",
     ],
@@ -162,10 +163,15 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 
+DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
+
 drake_cc_library(
     name = "find_resource",
     srcs = ["find_resource.cc"],
     hdrs = ["find_resource.h"],
+    data = [
+        DRAKE_RESOURCE_SENTINEL,
+    ],
     deps = [
         ":common",
         "//drake/thirdParty:spruce",
@@ -179,13 +185,13 @@ drake_cc_library(
     # testonly = 1,
     srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
+    data = [
+        DRAKE_RESOURCE_SENTINEL,
+    ],
     deps = [
         ":common",
         ":find_resource",
         "//drake/thirdParty:spruce",
-    ],
-    data = [
-        "drake_path.sentinel",
     ],
 )
 
@@ -538,11 +544,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "find_resource_test",
-    deps = [
-        ":find_resource",
-    ],
     data = [
         "test/find_resource_test_data.txt",
+    ],
+    deps = [
+        ":find_resource",
     ],
 )
 

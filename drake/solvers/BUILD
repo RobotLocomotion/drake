@@ -600,13 +600,13 @@ drake_cc_googletest(
         "test/mosek_solver_test.cc",
     ],
     tags = mosek_test_tags(),
+    use_default_main = False,
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
     ],
-    use_default_main = False,
 )
 
 drake_cc_googletest(
@@ -700,14 +700,17 @@ drake_cc_binary(
 cpplint(extra_srcs = [
     "gurobi_solver.cc",
     "gurobi_solver.h",
-    "no_gurobi.cc",
-    "snopt_solver.cc",
-    "snopt_solver.h",
-    "no_snopt.cc",
     "ipopt_solver.cc",
     "ipopt_solver.h",
-    "no_ipopt.cc",
+    "mosek_solver.cc",
+    "mosek_solver.h",
     "nlopt_solver.cc",
     "nlopt_solver.h",
+    "no_gurobi.cc",
+    "no_ipopt.cc",
+    "no_mosek.cc",
     "no_nlopt.cc",
+    "no_snopt.cc",
+    "snopt_solver.cc",
+    "snopt_solver.h",
 ])

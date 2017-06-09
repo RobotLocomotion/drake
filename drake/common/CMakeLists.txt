@@ -99,6 +99,7 @@ target_link_libraries(drakeCommon
   fmt
   gflags
   spruce
+  stx
   Threads::Threads
   ${PROTOBUF_LIBRARIES})
 
