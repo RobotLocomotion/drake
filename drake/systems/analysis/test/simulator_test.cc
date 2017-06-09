@@ -34,6 +34,23 @@ namespace drake {
 namespace systems {
 namespace {
 
+// Empty diagram
+class EmptyDiagram : public Diagram<double> {
+ public:
+  EmptyDiagram(double offset) {
+    DiagramBuilder<double> builder;
+
+    // Add the empty system (and its witness function).
+    empty_ = builder.AddSystem<EmptySystem>(offset,
+                                            WitnessFunction<double>::DirectionType::kCrossesZero);
+    empty_->set_name("empty_diag");
+    builder.BuildInto(this);
+  }
+
+ private:
+  EmptySystem* empty_ = nullptr;
+};
+
 // Diagram for testing witness functions.
 class ExampleDiagram : public Diagram<double> {
  public:
@@ -41,9 +58,8 @@ class ExampleDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     // Add the empty system (and its witness function).
-    empty_ = builder.AddSystem<EmptySystem>(offset,
-        WitnessFunction<double>::DirectionType::kCrossesZero);
-    empty_->set_name("empty");
+    empty_diag_ = builder.AddSystem<EmptyDiagram>(offset);
+    empty_diag_->set_name("empty");
     builder.BuildInto(this);
   }
 
@@ -60,7 +76,7 @@ class ExampleDiagram : public Diagram<double> {
 
  private:
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
-  EmptySystem* empty_ = nullptr;
+  EmptyDiagram* empty_diag_ = nullptr;
 };
 
 // Tests ability of simulation to identify the proper number of witness function
