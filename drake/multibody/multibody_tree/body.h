@@ -91,14 +91,10 @@ class BodyFrame : public Frame<T> {
 
  protected:
   std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const final {
-    return TemplatedDoCloneToScalar(tree_clone);
-  }
+      const MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const final {
-    return TemplatedDoCloneToScalar(tree_clone);
-  }
+      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created

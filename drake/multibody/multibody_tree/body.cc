@@ -20,6 +20,18 @@ std::unique_ptr<Frame<ToScalar>> BodyFrame<T>::TemplatedDoCloneToScalar(
       new BodyFrame<ToScalar>(body_clone));
 }
 
+template <typename T>
+std::unique_ptr<Frame<double>> BodyFrame<T>::DoCloneToScalar(
+    const MultibodyTree<double>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+std::unique_ptr<Frame<AutoDiffXd>> BodyFrame<T>::DoCloneToScalar(
+    const MultibodyTree<AutoDiffXd>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class BodyFrame<double>;
 template class BodyFrame<AutoDiffXd>;
