@@ -21,35 +21,29 @@ namespace drake {
 
 namespace symbolic {
 
-// Computes "n choose k", the number of ways, disregarding order, that k objects
-// can be chosen from among n objects.
-constexpr int NChooseK(int n, int k) {
-  return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
-}
-
 /** Represents a monomial, a product of powers of variables with non-negative
  * integer exponents. Note that it does not include the coefficient part of a
- * monomial. Internally, it is represented by a map from a variable ID to its
- * integer exponent. */
+ * monomial.
+ */
 class Monomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Monomial)
 
   /** Constructs a monomial equal to 1. Namely the total degree is zero. */
-  Monomial();
+  Monomial() = default;
 
   /** Constructs a Monomial from @p powers. */
-  explicit Monomial(const std::map<Variable::Id, int>& powers);
+  explicit Monomial(const std::map<Variable, int>& powers);
+
+  /**
+   * Converts an expression to a monomial if the expression is written as
+   * ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
+   * @pre is_polynomial(e) should be true.
+   */
+  explicit Monomial(const Expression& e);
 
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, int exponent);
-
-  /**
-   * Converts an expression to a monomial, if the expression is written as
-   * ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
-   * @pre{is_polynomial(e) should be true.}
-   */
-  explicit Monomial(const Expression& e);
 
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
@@ -58,14 +52,15 @@ class Monomial {
   size_t GetHash() const;
 
   /** Returns the internal representation of Monomial, the map from a base
-   * (Variable ID) to its exponent (int).*/
-  const std::map<Variable::Id, int>& get_powers() const { return powers_; }
+   * (Variable) to its exponent (int).*/
+  const std::map<Variable, int>& get_powers() const { return powers_; }
 
   /** Evaluates under a given environment @p env.
-   * Throws std::out_of_range exception if there is a variable ID in this
-   * monomial whose assignment is not provided by @p env.
+   *
+   * @throws std::out_of_range exception if there is a variable in this monomial
+   * whose assignment is not provided by @p env.
    */
-  double Evaluate(const std::unordered_map<Variable::Id, double>& env) const;
+  double Evaluate(const Environment& env) const;
 
   /** Substitutes using a given environment @p env. The substitution result is
    * of type pair<double, Monomial>. The first component (: double) represents
@@ -74,42 +69,50 @@ class Monomial {
    * allowed to provide a partial environment.
    *
    * Example 1. Substitution with a fully-specified environment
-   *     (x^3*y^2).Substitute({{ID_x, 2}, {ID_y, 3}})
+   *     (x^3*y^2).Substitute({{x, 2}, {y, 3}})
    *   = (2^3 * 3^2 = 8 * 9 = 72, Monomial{} = 1).
    *
    * Example 1. Substitution with a partial environment
-   *     (x^3*y^2).Substitute({{ID_x, 2}})
+   *     (x^3*y^2).Substitute({{x, 2}})
    *   = (2^3 = 8, y^2).
    */
-  std::pair<double, Monomial> Substitute(
-      const std::unordered_map<Variable::Id, double>& env) const;
+  std::pair<double, Monomial> Substitute(const Environment& env) const;
 
-  /** Returns a symbolic expression representing this monomial. Since, this
-   * class only includes the ID of a variable, not a variable itself, we need
-   * @id_to_var_map, a map from a variable ID to a variable as an argument of
-   * this method to build an expression. */
-  Expression ToExpression(
-      const std::unordered_map<Variable::Id, Variable>& id_to_var_map) const;
+  /** Returns a symbolic expression representing this monomial. */
+  Expression ToExpression() const;
 
-  /** Checks if this monomial and @p m represent the same monomial.
-   * Two monomials are equal iff they contain the same variable ID
-   * raised to the same exponent. */
+  /** Checks if this monomial and @p m represent the same monomial. Two
+   * monomials are equal iff they contain the same variable raised to the same
+   * exponent. */
   bool operator==(const Monomial& m) const;
 
- private:
-  // Computes the total degree of a monomial. This method is used in a
-  // constructor of Monomial to set its total degree at construction.
-  static int TotalDegree(const std::map<Variable::Id, int>& powers);
+  /** Checks if this monomial and @p m do not represent the same monomial. */
+  bool operator!=(const Monomial& m) const;
 
+  /** Returns this monomial multiplied by @p m. */
+  Monomial& operator*=(const Monomial& m);
+
+  /** Returns this monomial raised to @p p.
+   * @throws std::runtime_error if @p p is negative.
+   */
+  Monomial& pow_in_place(int p);
+
+ private:
   int total_degree_{0};
-  std::map<Variable::Id, int> powers_;
+  std::map<Variable, int> powers_;
   friend std::ostream& operator<<(std::ostream& out, const Monomial& m);
 };
 
 std::ostream& operator<<(std::ostream& out, const Monomial& m);
 
-/** Returns a multiplication of two monomials, m1 and m2. */
-Monomial operator*(const Monomial& m1, const Monomial& m2);
+/** Returns a multiplication of two monomials, @p m1 and @p m2. */
+Monomial operator*(Monomial m1, const Monomial& m2);
+
+/** Returns @p m1 raised to @p p.
+ * @throws std::runtime_error if @p p is negative.
+ */
+
+Monomial pow(Monomial m, int p);
 
 /** Implements Graded reverse lexicographic order.
  *
@@ -156,13 +159,13 @@ struct GradedReverseLexOrder {
       // Because both of them are 1.
       return false;
     }
-    const std::map<Variable::Id, int>& powers1{m1.get_powers()};
-    const std::map<Variable::Id, int>& powers2{m2.get_powers()};
-    std::map<Variable::Id, int>::const_iterator it1{powers1.cbegin()};
-    std::map<Variable::Id, int>::const_iterator it2{powers2.cbegin()};
+    const std::map<Variable, int>& powers1{m1.get_powers()};
+    const std::map<Variable, int>& powers2{m2.get_powers()};
+    std::map<Variable, int>::const_iterator it1{powers1.cbegin()};
+    std::map<Variable, int>::const_iterator it2{powers2.cbegin()};
     while (it1 != powers1.cend() && it2 != powers2.cend()) {
-      const Variable::Id var1{it1->first};
-      const Variable::Id var2{it2->first};
+      const Variable& var1{it1->first};
+      const Variable& var2{it2->first};
       const int exponent1{it1->second};
       const int exponent2{it2->second};
       if (variable_order_(var2, var1)) {
@@ -216,6 +219,7 @@ void AddMonomialsOfDegreeN(const Variables& vars, int degree, const Monomial& b,
  * outside of internal namespace.
  *
  * @tparam rows Number of rows or Dynamic
+ * TODO(soonho-tri): Change its return type to Eigen::Matrix<Monomial, rows, 1>.
  */
 template <int rows>
 Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
@@ -223,22 +227,17 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
   DRAKE_DEMAND(vars.size() > 0);
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect monomials.
-  std::set<Monomial, GradedReverseLexOrder<std::less<Variable::Id>>> monomials;
+  std::set<Monomial, GradedReverseLexOrder<std::less<Variable>>> monomials;
   for (int i{degree}; i >= 0; --i) {
     AddMonomialsOfDegreeN(vars, i, Monomial{}, &monomials);
   }
-  // 2. Build id_to_var_map (used in step 3).
-  std::unordered_map<Variable::Id, Variable> id_to_var_map;
-  for (const Variable& var : vars) {
-    id_to_var_map.emplace(var.get_id(), var);
-  }
-  // 3. Prepare the return value, basis.
+  // 2. Prepare the return value, basis.
   DRAKE_DEMAND((rows == Eigen::Dynamic) ||
                (static_cast<size_t>(rows) == monomials.size()));
   Eigen::Matrix<Expression, rows, 1> basis(monomials.size());
   size_t i{0};
   for (const auto& m : monomials) {
-    basis[i] = m.ToExpression(id_to_var_map);
+    basis[i] = m.ToExpression();
     i++;
   }
   return basis;
@@ -246,11 +245,10 @@ Eigen::Matrix<Expression, rows, 1> ComputeMonomialBasis(const Variables& vars,
 
 /**
  * Returns the total degrees of the polynomial @p e w.r.t the variables in @p
- * vars. For example, the total degree of
- * e = x^2*y + 2 * x*y*z^3 + x * z^2
- * w.r.t (x, y) is 3 (from x^2 * y)
- * w.r.t (x, z) is 4 (from x*y*z^3)
- * w.r.t (z)    is 3 (from x*y*z^3)
+ * vars. For example, the total degree of e = x^2*y + 2 * x*y*z^3 + x * z^2
+ *  - w.r.t (x, y) is 3 (from x^2 * y)
+ *  - w.r.t (x, z) is 4 (from x*y*z^3)
+ *  - w.r.t (z)    is 3 (from x*y*z^3)
  * Throws a runtime error if e.is_polynomial() is false.
  * @param vars A set of variables.
  * @return The total degree.
@@ -271,7 +269,7 @@ int Degree(const Expression& e);
  * factor. To generate a monomial x^2*y^3, @p map_var_to_exponent contains the
  * pair (x, 2) and (y, 3).
  *
- * \pre{All exponents in @p map_var_to_exponent are positive integers.}
+ * @pre All exponents in @p map_var_to_exponent are positive integers.
  */
 Expression GetMonomial(
     const std::unordered_map<Variable, int, hash_value<Variable>>&
@@ -284,11 +282,18 @@ Expression GetMonomial(
  * z}, 2)</tt> returns a column vector <tt>[x^2, xy, y^2, xz, yz, z^2, x, y, z,
  * 1]</tt>.
  *
- * \pre{@p vars is a non-empty set.}
- * \pre{@p degree is a non-negative integer.}
+ * @pre @p vars is a non-empty set.
+ * @pre @p degree is a non-negative integer.
  */
 Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
     const Variables& vars, int degree);
+
+// Computes "n choose k", the number of ways, disregarding order, that k objects
+// can be chosen from among n objects. It is used in the following MonomialBasis
+// function.
+constexpr int NChooseK(int n, int k) {
+  return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
+}
 
 /** Returns all monomials up to a given degree under the graded reverse
  * lexicographic order.
@@ -296,8 +301,8 @@ Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
  * @tparam n      number of variables
  * @tparam degree maximum total degree of monomials to compute
  *
- * \pre{@p vars is a non-empty set.}
- * \pre{<tt>vars.size()</tt> == @p.}
+ * @pre @p vars is a non-empty set.
+ * @pre vars.size() == @p n.
  */
 template <int n, int degree>
 Eigen::Matrix<Expression, NChooseK(n + degree, degree), 1> MonomialBasis(
