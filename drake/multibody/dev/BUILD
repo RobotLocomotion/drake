@@ -35,7 +35,7 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = gurobi_test_tags(),
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
@@ -48,7 +48,7 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = gurobi_test_tags(),
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
@@ -61,7 +61,7 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = gurobi_test_tags(),
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
