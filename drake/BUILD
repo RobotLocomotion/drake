@@ -12,10 +12,13 @@ load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 # When adding new components to the package, please also add the licenses for
 # any new external dependencies to :external_licenses.
 _LIBDRAKE_COMPONENTS = [
+    "//drake/lcm",
+    "//drake/multibody:inverse_kinematics",
+    "//drake/multibody:rigid_body_tree",
     "//drake/multibody/parsers",
+    "//drake/solvers:mathematical_program",
     "//drake/systems/framework",
     "//drake/systems/primitives",
-    "//drake/lcm",
 ]
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
@@ -37,4 +40,5 @@ install(
     guess_hdrs = "WORKSPACE",
     hdr_dest = "include/drake",
     targets = ["libdrake.so"],
+    deps = ["//drake/bindings:install"],
 )
