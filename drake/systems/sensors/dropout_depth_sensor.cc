@@ -12,15 +12,15 @@ template <typename T>
 DropoutDepthSensor<T>::DropoutDepthSensor(
     const std::string& name, const RigidBodyTree<double>& tree,
     const RigidBodyFrame<double>& frame,
-    const DepthSensorSpecification& specification, const double sample_time,
+    const DepthSensorSpecification& specification, const double update_period,
     const T dropout_duty_cycle)
     : DepthSensor::DepthSensor(name, tree, frame, specification) {
   DRAKE_THROW_UNLESS((0 <= dropout_duty_cycle) && (dropout_duty_cycle <= 100));
-  dropout_count_increment_ = (dropout_duty_cycle * sample_time) / 100.0;
+  dropout_count_increment_ = (dropout_duty_cycle * update_period) / 100.0;
   PrecomputeDroppedFrame();
 
   DeclareDiscreteState(1);
-  this->DeclareDiscreteUpdatePeriodSec(sample_time);
+  this->DeclareDiscreteUpdatePeriodSec(update_period);
 }
 
 template <typename T>
@@ -30,12 +30,12 @@ DropoutDepthSensor<T>::DropoutDepthSensor(
     const DepthSensorSpecification& specification, const T dropout_duty_cycle)
     : DepthSensor::DepthSensor(name, tree, frame, specification) {
   DRAKE_THROW_UNLESS((0 <= dropout_duty_cycle) && (dropout_duty_cycle <= 100));
-  double sample_time = 1;  // Default value if none is provided
-  dropout_count_increment_ = (dropout_duty_cycle * sample_time) / 100.0;
+  double update_period = 1;  // Default value if none is provided
+  dropout_count_increment_ = (dropout_duty_cycle * update_period) / 100.0;
   PrecomputeDroppedFrame();
 
   DeclareDiscreteState(1);
-  this->DeclareDiscreteUpdatePeriodSec(sample_time);
+  this->DeclareDiscreteUpdatePeriodSec(update_period);
 }
 
 template <typename T>
