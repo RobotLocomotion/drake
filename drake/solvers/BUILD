@@ -96,8 +96,6 @@ drake_cc_library(
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
     deps = [
-        "//drake/common",
-        "//drake/common:number_traits",
         "//drake/common:symbolic",
     ],
 )
@@ -507,7 +505,6 @@ drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
         ":mathematical_program",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic_test_util",
     ],
 )
