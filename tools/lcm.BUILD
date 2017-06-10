@@ -224,7 +224,7 @@ install(
     targets = [
         ":_lcm.so",
         ":lcm-python-upstream",
-    ]
+    ],
 )
 
 install(

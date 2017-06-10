@@ -1,7 +1,6 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.h"
 
 #include "drake/common/extract_double.h"
-
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MGKukaIIwaRobot.h"
 
 namespace drake {
