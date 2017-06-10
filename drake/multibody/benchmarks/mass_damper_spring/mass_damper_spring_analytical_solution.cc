@@ -1,16 +1,27 @@
 #include "drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h"
 
+#include <limits>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace multibody {
 namespace benchmarks {
 
+// For `this` mass-damper-spring system, and with the given initial
+// values, this method calculates the values of x, ẋ, ẍ at time t.
+// Algorithm from [Kane, 1985] Problem Set 14.7-14.10, Pages 349-352.
+//
+// - [Kane, 1985] "Dynamics: Theory and Applications," McGraw-Hill Book Co.,
+//   New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
+//   https://ecommons.cornell.edu/handle/1813/637
 Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
     const double t) const {
+  // TODO(@mitiguy) Enhance algorithm to provide for any real values of m, b, k,
+  // (except m = 0).
   DRAKE_DEMAND(m_ > 0  &&  b_ >= 0  &&  k_ > 0);
 
-  // Returned values x, x', x''.
+  // Quantities x, ẋ, ẍ are put into a three-element matrix and returned.
   double x, xDt, xDtDt;
 
   using std::sqrt;
@@ -20,8 +31,25 @@ Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
   const double wn = sqrt(k_ / m_);                // Natural frequency.
   const double zeta = b_ / (2 * sqrt(m_ * k_));   // Damping ratio.
 
-  if (zeta <= 1) {
-    // Undamped or underdamped (0 <= zeta < 1) free vibration.
+  constexpr double epsilon = std::numeric_limits<double>::epsilon();
+  const double is_zeta_nearly_1 = std::abs(zeta - 1) < 10 * epsilon;
+  if (is_zeta_nearly_1) {
+    // Critically damped free vibration (zeta = 1).
+    const double A = x0_;
+    const double B = xDt0_ + wn * x0_;
+
+    const double factor1 = A + B * t;
+    const double factor2 = exp(-wn * t);
+    x = factor1 * factor2;
+
+    const double factor1Dt = B;
+    const double factor2Dt = -wn * exp(-wn * t);
+    xDt = factor1Dt * factor2 + factor1 * factor2Dt;
+
+    const double factor2DtDt = wn * wn * exp(-wn * t);
+    xDtDt = 2 * factor1Dt * factor2Dt + factor1 * factor2DtDt;
+  } else if (zeta < 1) {
+    // Undamped or underdamped free vibration (0 <= zeta < 1).
     const double wd = wn * sqrt(1 - zeta * zeta);  // Damped natural frequency.
     const double A = (xDt0_ + zeta * wn * x0_) / wd;
     const double B = x0_;
@@ -37,23 +65,8 @@ Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
     const double factor1DtDt = -wd * wd * factor1;
     const double factor2DtDt = (-zeta*wn) * (-zeta*wn) * exp(-zeta * wn * t);
     xDtDt = factor1DtDt*factor2 + 2*factor1Dt*factor2Dt + factor1*factor2DtDt;
-  } else if (zeta == 1) {
-    // Critically damped (zeta = 1) free vibration.
-    const double A = x0_;
-    const double B = xDt0_ + wn * x0_;
-
-    const double factor1 = A + B*t;
-    const double factor2 = exp(-wn * t);
-    x = factor1 * factor2;
-
-    const double factor1Dt = B;
-    const double factor2Dt = -wn * exp(-wn * t);
-    xDt = factor1Dt * factor2 + factor1 * factor2Dt;
-
-    const double factor2DtDt = wn * wn * exp(-wn * t);
-    xDtDt = 2 * factor1Dt * factor2Dt + factor1 * factor2DtDt;
   } else if (zeta > 1) {
-    // Overdamped (zeta > 1) free vibration.
+    // Overdamped  free vibration (zeta > 1).
     const double p1 = -wn * (zeta - sqrt(zeta * zeta - 1));
     const double p2 = -wn * (zeta + sqrt(zeta * zeta - 1));
     const double A = xDt0_ - p2 * x0_ / (p1 - p2);

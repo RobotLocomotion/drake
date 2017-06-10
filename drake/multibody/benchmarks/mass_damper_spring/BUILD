@@ -17,7 +17,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "mass_damper_spring_analytical_solution_test",
-    size = "small",
     deps = [":mass_damper_spring_analytical_solution"],
 )
 
