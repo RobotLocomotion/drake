@@ -314,7 +314,8 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
 //        used by both implicit Euler and implicit trapezoid methods.
 // @param [in,out] the starting guess for x(t+dt); the value for x(t+h) on
 //        return (assuming that h > 0)
-// @param trial the attempt for this approach (1-4)
+// @param trial the attempt for this approach (1-4). StepAbstract() uses more
+//        computationally methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
 //           step of size @p dt (or `false` otherwise).
 // @pre The time and state of the system's context (stored by the integrator)
