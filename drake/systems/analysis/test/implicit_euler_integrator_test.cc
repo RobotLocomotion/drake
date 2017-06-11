@@ -14,7 +14,6 @@ namespace {
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 
-/*
 // Tests the implicit integrator on Robertson's stiff chemical reaction
 // problem, which has been used to benchmark various implicit integrators.
 // This problem is particularly good at testing large step sizes (since the
@@ -53,7 +52,6 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   EXPECT_NEAR(state->GetAtIndex(1), sol(1), tol);
   EXPECT_NEAR(state->GetAtIndex(2), sol(2), tol);
 }
-*/
 
 class ImplicitIntegratorTest : public ::testing::Test {
  public:

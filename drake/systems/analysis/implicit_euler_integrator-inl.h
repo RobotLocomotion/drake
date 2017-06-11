@@ -61,7 +61,7 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   this->set_accuracy_in_use(working_accuracy);
 
   // Reset the Jacobian matrix (so that recomputation is forced).
-  J_.resize(0,0);
+  J_.resize(0, 0);
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
@@ -267,19 +267,19 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
   return J;
 }
 
-// Factors a dense matrix (the iteration matrix) using LU factorization, which
-// should be faster than the QR factorization used in the specialized template
-// method immediately below.
+// Factors a dense matrix (the negated iteration matrix) using LU factorization,
+// which should be faster than the QR factorization used in the specialized
+// template method immediately below.
 template <class T>
 void ImplicitEulerIntegrator<T>::Factor(const MatrixX<T>& A) {
   num_iter_factorizations_++;
   LU_.compute(A);
 }
 
-// Factors a dense matrix (the iteration matrix). This AutoDiff-specialized
-// method is necessary because Eigen's LU factorization, which should be faster
-// than the QR factorization used here, is not currently AutoDiff-able (while
-// the QR factorization *is* AutoDiff-able).
+// Factors a dense matrix (the negated iteration matrix). This
+// AutoDiff-specialized method is necessary because Eigen's LU factorization,
+// which should be faster than the QR factorization used here, is not currently
+// AutoDiff-able (while the QR factorization *is* AutoDiff-able).
 template <>
 void ImplicitEulerIntegrator<AutoDiffXd>::Factor(
     const MatrixX<AutoDiffXd>& A) {
@@ -287,16 +287,16 @@ void ImplicitEulerIntegrator<AutoDiffXd>::Factor(
   QR_.compute(A);
 }
 
-// Solves a linear system Ax = b for x using an iteration matrix (A) factored
-// using LU decomposition.
+// Solves a linear system Ax = b for x using a negated iteration matrix (A)
+// factored using LU decomposition.
 // @sa Factor()
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::Solve(const VectorX<T>& b) const {
   return LU_.solve(b);
 }
 
-// Solves the linear system Ax = b for x using an iteration matrix (A) factored
-// using QR decomposition.
+// Solves the linear system Ax = b for x using a negated iteration matrix (A)
+// factored using QR decomposition.
 // @sa Factor()
 template <>
 VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
@@ -340,7 +340,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // Verify xtplus
   Context<T>* context = this->get_mutable_context();
   DRAKE_ASSERT(xtplus &&
-                   xtplus->size() == context->get_continuous_state_vector().size());
+               xtplus->size() == context->get_continuous_state_vector().size());
 
   // Get the initial state.
   VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
@@ -362,37 +362,40 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // Compute the initial Jacobian and iteration matrices and factor them, if
-  // necessary.
+  // Compute the initial Jacobian and negated iteration matrices (see
+  // rationale for the negation below) and factor  them, if necessary.
   if (J_.rows() == 0) {
     J_ = CalcJacobian(tf, *xtplus);
     const int n = xtplus->size();
-    iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-    Factor(iteration_matrix_);
+    neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+    Factor(neg_iteration_matrix_);
   }
 
-  // If this is the first trial, do nothing special.
-  if (trial == 1) {
-  } else {
+  // For the first trial, we do nothing special.
+  if (trial > 1) {
     if (trial == 2) {
       // For the second trial, re-construct and factor the iteration matrix.
       const int n = xtplus->size();
-      iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-      Factor(iteration_matrix_);
+      neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+      Factor(neg_iteration_matrix_);
     } else {
       if (trial == 3) {
         // If the last call to StepAbstract() ended in failure, we know that
         // the Jacobian matrix is fresh and the iteration matrix has been newly
         // formed and factored (on Trial #2), so there is nothing more to be
         // done.
-        if (last_call_failed_)
+        if (last_call_failed_) {
           return false;
-        else {
-          // Reform the Jacobian matrix and refactor the iteration matrix.
+        } else {
+          // Reform the Jacobian matrix and refactor the negation of
+          // the iteration matrix. The idea of using the negation of this matrix
+          // is that an O(n^2) subtraction is not necessary as would
+          // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
           J_ = CalcJacobian(tf, *xtplus);
           const int n = xtplus->size();
-          iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-          Factor(iteration_matrix_);
+          neg_iteration_matrix_ = J_ * (dt / scale) -
+              MatrixX<T>::Identity(n, n);
+          Factor(neg_iteration_matrix_);
         }
       } else {
         // Trial #4 indicates failure.
@@ -416,10 +419,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 
-    // Compute the state update by computing the negation of the iteration
-    // matrix, factorizing it, and solving it. The idea of using the negation
-    // of this matrix is that an O(n^2) subtraction is not necessary as would
-    // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
+    // Compute the state update by solving A*x = -g(), where A is the iteration
+    // matrix. Using nA as the negation of the iteration matrix, we
+    // instead solve nA*x = g().
     // TODO(edrumwri): Allow caller to provide their own solver.
     VectorX<T> dx = Solve(goutput);
 

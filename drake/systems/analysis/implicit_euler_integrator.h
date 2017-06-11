@@ -132,7 +132,7 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   /// @note Discards any already-computed Jacobian matrices.
   void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
     jacobian_scheme_ = scheme;
-    J_.resize(0,0);
+    J_.resize(0, 0);
   }
 
   JacobianComputationScheme get_jacobian_computation_scheme() const {
@@ -304,7 +304,7 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   // whether the implicit Euler or implicit trapezoid method was used. Keeping
   // this data in the class definition serves to minimize heap allocations
   // and deallocations.
-  MatrixX<T> iteration_matrix_;
+  MatrixX<T> neg_iteration_matrix_;
 
   /// Whether the last call to StepAbstract() was a failure.
   bool last_call_failed_{false};
