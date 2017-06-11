@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/monomial.h"
+#include "drake/common/monomial_util.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/decision_variable.h"
@@ -18,8 +19,8 @@ namespace internal {
 /*
  * Append a scalar value to an Eigen Vector.
  */
-template<typename Derived,
-    typename = typename std::enable_if<Derived::ColsAtCompileTime == 1>::type>
+template <typename Derived, typename = typename std::enable_if<
+                                Derived::ColsAtCompileTime == 1>::type>
 void AppendToVector(const typename Derived::Scalar& s,
                     Eigen::MatrixBase<Derived>* px) {
   Derived& derived = px->derived();

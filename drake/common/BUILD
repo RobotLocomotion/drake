@@ -249,8 +249,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "monomial",
-    srcs = ["monomial.cc"],
-    hdrs = ["monomial.h"],
+    srcs = [
+        "monomial.cc",
+        "monomial_util.cc",
+    ],
+    hdrs = [
+        "monomial.h",
+        "monomial_util.h",
+    ],
     deps = [
         ":common",
         ":symbolic",

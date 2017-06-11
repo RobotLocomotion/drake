@@ -1,11 +1,9 @@
-/* clang-format off */
-#include "drake/common/symbolic_expression.h"
-/* clang-format on */
-
 #include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
 #include "drake/common/monomial.h"
+#include "drake/common/monomial_util.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
@@ -44,7 +42,7 @@ void CheckMonomialToCoeffMap(
   const auto& map = DecomposePolynomialIntoExpression(e, vars);
   EXPECT_EQ(map.size(), map_expected.size());
   symbolic::Expression e_expected(0);
-  for (const auto &p : map) {
+  for (const auto& p : map) {
     const auto it = map_expected.find(p.first);
     ASSERT_NE(it, map_expected.end());
     EXPECT_PRED2(ExprEqual, p.second.Expand(), it->second.Expand());
@@ -99,13 +97,10 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial3) {
   CheckMonomialToCoeffMap(x_ + y_ + 2, var_xy_, map_expected1);
   CheckMonomialToCoeffMap(x_ + y_ + 2, var_xyz_, map_expected1);
   CheckMonomialToCoeffMap((x_ + y_) + 2, var_xy_, map_expected1);
-  CheckMonomialToCoeffMap((x_ + y_) + 2, var_xyz_,
-                          map_expected1);
+  CheckMonomialToCoeffMap((x_ + y_) + 2, var_xyz_, map_expected1);
   map_expected1[Expression(1)] = 4;
-  CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, var_xy_,
-                          map_expected1);
-  CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, var_xyz_,
-                          map_expected1);
+  CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, var_xy_, map_expected1);
+  CheckMonomialToCoeffMap((x_ + 1) + (y_ + 1) + 2, var_xyz_, map_expected1);
 }
 
 void DecomposePolynomialTest::CheckDecomposePolynomial4(const Expression& e) {
@@ -273,8 +268,8 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial8) {
 
   CheckDecomposePolynomial8((x_ + 2 * y_) * (x_ * x_ - 4 * y_ * y_));
 
-  CheckDecomposePolynomial8(
-      (x_ * x_ + 4 * x_ * y_ + 4 * y_ * y_) * (x_ - 2 * y_));
+  CheckDecomposePolynomial8((x_ * x_ + 4 * x_ * y_ + 4 * y_ * y_) *
+                            (x_ - 2 * y_));
 }
 
 TEST_F(DecomposePolynomialTest, DecomposePolynomial9) {
@@ -343,7 +338,6 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial11) {
 // TODO(hongkai.dai): enable the following tests, when ((x^2 * y +
 // x^3)/(x^2)).is_polynomial() returns true.
 
-
 TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial12) {
   // Decomposes x^2 * y / (x * y)
   MonomialAsExpressionToCoefficientMap map_expected1;
@@ -356,14 +350,13 @@ TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial12) {
   map_expected2.emplace(1, pow(x_, 2) / x_);
   CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), {var_y_}, map_expected2);
 
-  CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), var_xy_,
-map_expected1);
+  CheckMonomialToCoeffMap((x_ * x_ * y_) / (x_ * y_), var_xy_, map_expected1);
 }
 
 TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial13) {
   // Decomposes (3 * x^2 * y^3 + 2 * x^3 * y^2) / (3 * x * y)
-  Expression e = (3 * x_ * x_ * pow(y_, 3) + 2 * pow(x_, 3) * y_ * y_) / (3 * x_
-* y_);
+  Expression e =
+      (3 * x_ * x_ * pow(y_, 3) + 2 * pow(x_, 3) * y_ * y_) / (3 * x_ * y_);
 
   MonomialAsExpressionToCoefficientMap map_expected1;
   map_expected1.emplace(x_, 3 * pow(y_, 3) / (3 * y_));
@@ -372,7 +365,7 @@ TEST_F(DecomposePolynomialTest, DISABLED_DecomposePolynomial13) {
 
   MonomialAsExpressionToCoefficientMap map_expected2;
   map_expected2.emplace(y_ * y_, (3 * x_ * x_) / (3 * x_));
-  map_expected2.emplace(y_, (2 * pow(x_, 3))/(3 * x_));
+  map_expected2.emplace(y_, (2 * pow(x_, 3)) / (3 * x_));
   CheckMonomialToCoeffMap(e, {var_y_}, map_expected2);
 
   MonomialAsExpressionToCoefficientMap map_expected3;
@@ -389,7 +382,7 @@ TEST_F(DecomposePolynomialTest, DecomposePolynomial14) {
   CheckMonomialToCoeffMap(e, {var_x_, var_y_}, map_expected1);
 
   // Checks e = x^2 * y - (x+1) * (x-1) * y = y
-  e = x_ * x_ * y_  - (x_ + 1) * (x_ - 1) * y_;
+  e = x_ * x_ * y_ - (x_ + 1) * (x_ - 1) * y_;
   CheckMonomialToCoeffMap(e, {var_y_}, {{y_, 1}});
   CheckMonomialToCoeffMap(e, {var_x_}, {{1, y_}});
 

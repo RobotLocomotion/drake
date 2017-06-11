@@ -20,6 +20,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/monomial.h"
+#include "drake/common/monomial_util.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
