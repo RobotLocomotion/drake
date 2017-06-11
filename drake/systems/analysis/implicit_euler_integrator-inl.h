@@ -59,6 +59,9 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   else if (working_accuracy > kLoosestAccuracy)
     working_accuracy = kLoosestAccuracy;
   this->set_accuracy_in_use(working_accuracy);
+
+  // Reset the Jacobian matrix (so that recomputation is forced).
+  J_.resize(0,0);
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
@@ -269,10 +272,28 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
 // QR factorization used below, is not currently AutoDiff-able (while QR
 // factorization *is* AutoDiff-able).
 template <class T>
-VectorX<T> ImplicitEulerIntegrator<T>::FactorAndSolve(const MatrixX<T>& A,
-                                             const VectorX<T>& b) {
+void ImplicitEulerIntegrator<T>::Factor(const MatrixX<T>& A) {
   num_iter_factorizations_++;
   LU_.compute(A);
+}
+
+// Factors and solves a linear system. This AutoDiff-specialized method is
+// necessary because Eigen's LU factorization, which should be faster than the
+// QR factorization used below, is not currently AutoDiff-able (while QR
+// factorization *is* AutoDiff-able).
+template <>
+void ImplicitEulerIntegrator<AutoDiffXd>::Factor(
+    const MatrixX<AutoDiffXd>& A) {
+  num_iter_factorizations_++;
+  QR_.compute(A);
+}
+
+// Factors and solves a linear system. This AutoDiff-specialized method is
+// necessary because Eigen's LU factorization, which should be faster than the
+// QR factorization used below, is not currently AutoDiff-able (while QR
+// factorization *is* AutoDiff-able).
+template <class T>
+VectorX<T> ImplicitEulerIntegrator<T>::Solve(const VectorX<T>& b) const {
   return LU_.solve(b);
 }
 
@@ -281,11 +302,8 @@ VectorX<T> ImplicitEulerIntegrator<T>::FactorAndSolve(const MatrixX<T>& A,
 // QR factorization used below, is not currently AutoDiff-able (while QR
 // factorization *is* AutoDiff-able).
 template <>
-VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
-    const MatrixX<AutoDiffXd>& A,
-    const VectorX<AutoDiffXd>& b) {
-  num_iter_factorizations_++;
-  QR_.compute(A);
+VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
+    const VectorX<AutoDiffXd>& b) const {
   return QR_.solve(b);
 }
 
@@ -299,6 +317,7 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
 //        used by both implicit Euler and implicit trapezoid methods.
 // @param [in,out] the starting guess for x(t+dt); the value for x(t+h) on
 //        return (assuming that h > 0)
+// @param trial the attempt for this approach (1-4)
 // @returns `true` if the method was successfully able to take an integration
 //           step of size @p dt (or `false` otherwise).
 // @pre The time and state of the system's context (stored by the integrator)
@@ -310,9 +329,12 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
                           const std::function<VectorX<T>()>& g,
-                          int scale, VectorX<T>* xtplus) {
+                          int scale, VectorX<T>* xtplus, int trial) {
   using std::max;
   using std::min;
+
+  // Verify the trial number is correct.
+  DRAKE_ASSERT(trial >= 1 && trial <= 4);
 
   // Verify the scale factor is correct.
   DRAKE_ASSERT(scale == 1 || scale == 2);
@@ -320,7 +342,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // Verify xtplus
   Context<T>* context = this->get_mutable_context();
   DRAKE_ASSERT(xtplus &&
-               xtplus->size() == context->get_continuous_state_vector().size());
+                   xtplus->size() == context->get_continuous_state_vector().size());
 
   // Get the initial state.
   VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
@@ -342,8 +364,45 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // Compute the initial Jacobian matrix (or retrieve it from the cache).
-  J_ = CalcJacobian(tf, *xtplus);
+  // Compute the initial Jacobian and iteration matrices and factor them, if
+  // necessary.
+  if (J_.rows() == 0) {
+    J_ = CalcJacobian(tf, *xtplus);
+    const int n = xtplus->size();
+    iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+    Factor(iteration_matrix_);
+  }
+
+  // If this is the first trial, do nothing special.
+  if (trial == 1) {
+  } else {
+    if (trial == 2) {
+      // For the second trial, re-construct and factor the iteration matrix.
+      const int n = xtplus->size();
+      iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+      Factor(iteration_matrix_);
+    } else {
+      if (trial == 3) {
+        // If the last call to StepAbstract() ended in failure, we know that
+        // the Jacobian matrix is fresh and the iteration matrix has been newly
+        // formed and factored (on Trial #2), so there is nothing more to be
+        // done.
+        if (last_call_failed_)
+          return false;
+        else {
+          // Reform the Jacobian matrix and refactor the iteration matrix.
+          J_ = CalcJacobian(tf, *xtplus);
+          const int n = xtplus->size();
+          iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+          Factor(iteration_matrix_);
+        }
+      } else {
+        // Trial #4 indicates failure.
+        last_call_failed_ = true;
+        return false;
+      }
+    }
+  }
 
   // The maximum number of Newton-Raphson iterations to take before declaring
   // failure. [Hairer, 1996] states, "It is our experience that the code becomes
@@ -364,9 +423,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // of this matrix is that an O(n^2) subtraction is not necessary as would
     // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
     // TODO(edrumwri): Allow caller to provide their own solver.
-    const int n = xtplus->size();
-    iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-    VectorX<T> dx = FactorAndSolve(iteration_matrix_, goutput);
+    VectorX<T> dx = Solve(goutput);
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector()->SetFromVector(dx);
@@ -383,6 +440,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // convergence would never be identified.
     if (dx_norm < 10 * std::numeric_limits<double>::epsilon()) {
       context->get_mutable_continuous_state()->SetFromVector(*xtplus);
+      last_call_failed_ = false;
       return true;
     }
 
@@ -406,8 +464,10 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
+        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
+                     eta, dt);
         context->get_mutable_continuous_state()->SetFromVector(*xtplus);
+        last_call_failed_ = false;
         return true;
       }
     }
@@ -422,11 +482,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() convergence failed");
 
-  // Recompute the Jacobian matrix (or retrieve it from the cache).
-  J_ = CalcJacobian(tf, *xtplus);
-
-  // Failed because of divergence or after the maximum number of iterations.
-  return false;
+  // Try StepAbstract again, freshening Jacobians and iteration matrix
+  // factorizations as helpful.
+  return StepAbstract(dt, g, scale, xtplus, trial+1);
 }
 
 // Steps the system forward by a single step of at most dt using the implicit
@@ -531,21 +589,6 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& dt,
 template <class T>
 MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
                                                     const VectorX<T>& x) {
-  // Try to use the cached Jacobian.
-  if (last_jacobian_x_.size() == x.size()) {
-    // See whether state is identical.
-    bool state_identical = true;
-    for (int i = 0; i < x.size(); ++i)
-      if (last_jacobian_x_[i] != x[i]) {
-        state_identical = false;
-        break;
-      }
-
-    // If Jacobian is cached; return it.
-    if (state_identical)
-      return J_;
-  }
-
   // We change the context but will change it back.
   Context<T>* context = this->get_mutable_context();
 
@@ -597,9 +640,6 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
   // Reset the time and state.
   context->set_time(t_current);
   continuous_state->SetFromVector(x_current);
-
-  // Store the state for which the Jacobian was computed.
-  last_jacobian_x_ = x;
 
   return J;
 }

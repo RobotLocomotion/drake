@@ -129,8 +129,10 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
 
   /// Sets the Jacobian computation scheme. This function can be safely called
   /// at any time (i.e., the integrator need not be re-initialized afterward).
+  /// @note Discards any already-computed Jacobian matrices.
   void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
     jacobian_scheme_ = scheme;
+    J_.resize(0,0);
   }
 
   JacobianComputationScheme get_jacobian_computation_scheme() const {
@@ -230,13 +232,14 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
  private:
   void DoInitialize() override;
   void DoResetStatistics() override;
-  VectorX<T> FactorAndSolve(const MatrixX<T>& A, const VectorX<T>& b);
+  void Factor(const MatrixX<T>& A);
+  VectorX<T> Solve(const VectorX<T>& rhs) const;
   bool AttemptStepPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
   bool StepAbstract(const T& dt,
                     const std::function<VectorX<T>()>& g,
                     int scale,
-                    VectorX<T>* xtplus);
+                    VectorX<T>* xtplus, int trial = 1);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   bool DoStep(const T& dt) override;
   bool StepImplicitEuler(const T& dt);
@@ -302,6 +305,9 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   // this data in the class definition serves to minimize heap allocations
   // and deallocations.
   MatrixX<T> iteration_matrix_;
+
+  /// Whether the last call to StepAbstract() was a failure.
+  bool last_call_failed_{false};
 
   // Various combined statistics.
   int64_t num_jacobian_evaluations_{0};
