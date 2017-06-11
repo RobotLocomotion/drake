@@ -267,20 +267,19 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
   return J;
 }
 
-// Factors and solves a linear system. This AutoDiff-specialized method is
-// necessary because Eigen's LU factorization, which should be faster than the
-// QR factorization used below, is not currently AutoDiff-able (while QR
-// factorization *is* AutoDiff-able).
+// Factors a dense matrix (the iteration matrix) using LU factorization, which
+// should be faster than the QR factorization used in the specialized template
+// method immediately below.
 template <class T>
 void ImplicitEulerIntegrator<T>::Factor(const MatrixX<T>& A) {
   num_iter_factorizations_++;
   LU_.compute(A);
 }
 
-// Factors and solves a linear system. This AutoDiff-specialized method is
-// necessary because Eigen's LU factorization, which should be faster than the
-// QR factorization used below, is not currently AutoDiff-able (while QR
-// factorization *is* AutoDiff-able).
+// Factors a dense matrix (the iteration matrix). This AutoDiff-specialized
+// method is necessary because Eigen's LU factorization, which should be faster
+// than the QR factorization used here, is not currently AutoDiff-able (while
+// the QR factorization *is* AutoDiff-able).
 template <>
 void ImplicitEulerIntegrator<AutoDiffXd>::Factor(
     const MatrixX<AutoDiffXd>& A) {
@@ -288,19 +287,17 @@ void ImplicitEulerIntegrator<AutoDiffXd>::Factor(
   QR_.compute(A);
 }
 
-// Factors and solves a linear system. This AutoDiff-specialized method is
-// necessary because Eigen's LU factorization, which should be faster than the
-// QR factorization used below, is not currently AutoDiff-able (while QR
-// factorization *is* AutoDiff-able).
+// Solves a linear system Ax = b for x using an iteration matrix (A) factored
+// using LU decomposition.
+// @sa Factor()
 template <class T>
 VectorX<T> ImplicitEulerIntegrator<T>::Solve(const VectorX<T>& b) const {
   return LU_.solve(b);
 }
 
-// Factors and solves a linear system. This AutoDiff-specialized method is
-// necessary because Eigen's LU factorization, which should be faster than the
-// QR factorization used below, is not currently AutoDiff-able (while QR
-// factorization *is* AutoDiff-able).
+// Solves the linear system Ax = b for x using an iteration matrix (A) factored
+// using QR decomposition.
+// @sa Factor()
 template <>
 VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
     const VectorX<AutoDiffXd>& b) const {
