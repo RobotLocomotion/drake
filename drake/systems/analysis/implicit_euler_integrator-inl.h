@@ -419,8 +419,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 
-    // Compute the state update by solving A*x = -g(), where A is the iteration
-    // matrix. Using nA as the negation of the iteration matrix, we
+    // Compute the state update using the equation A*x = -g(), where A is the
+    // iteration matrix. Using nA as the negation of the iteration matrix, we
     // instead solve nA*x = g().
     // TODO(edrumwri): Allow caller to provide their own solver.
     VectorX<T> dx = Solve(goutput);
