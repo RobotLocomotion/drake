@@ -129,10 +129,12 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
 
   /// Sets the Jacobian computation scheme. This function can be safely called
   /// at any time (i.e., the integrator need not be re-initialized afterward).
-  /// @note Discards any already-computed Jacobian matrices.
+  /// @note Discards any already-computed Jacobian matrices if the scheme
+  ///       changes.
   void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
+    if (jacobian_scheme_ != scheme)
+      J_.resize(0, 0);
     jacobian_scheme_ = scheme;
-    J_.resize(0, 0);
   }
 
   JacobianComputationScheme get_jacobian_computation_scheme() const {
