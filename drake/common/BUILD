@@ -2,7 +2,13 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools:python_lint.bzl", "python_lint")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -339,6 +345,16 @@ drake_cc_library(
     hdrs = ["protobuf.h"],
     deps = [
         "@protobuf",
+    ],
+)
+
+drake_cc_binary(
+    name = "resource_tool",
+    srcs = ["resource_tool.cc"],
+    deps = [
+        ":common",
+        ":find_resource",
+        ":text_logging_gflags",
     ],
 )
 
@@ -795,6 +811,16 @@ drake_cc_googletest(
     ],
 )
 
+py_test(
+    name = "resource_tool_test",
+    srcs = ["test/resource_tool_test.py"],
+    data = [
+        "test/resource_tool_test_data.txt",
+        ":resource_tool",
+        "//drake/examples/Pendulum:models",
+    ],
+)
+
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
@@ -803,3 +829,4 @@ drake_cc_googletest(
 # - cpplint_wrapper_test.py
 
 cpplint()
+python_lint()
