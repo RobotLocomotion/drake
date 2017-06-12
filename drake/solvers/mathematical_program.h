@@ -86,7 +86,7 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
  *    <td></td>
  * </tr>
  * </table>
