@@ -129,7 +129,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   auto lifting_pid_ports =
       systems::PidControlledSystem<double>::ConnectController(
-          lifting_input_port, lifting_output_port, nullptr,
+          lifting_input_port, lifting_output_port,
           lift_kp, lift_ki, lift_kd, &builder);
 
   auto zero_source =
