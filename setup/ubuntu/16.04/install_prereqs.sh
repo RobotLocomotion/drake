@@ -114,6 +114,7 @@ unzip
 valgrind
 zip
 zlib1g-dev
+libqt5x11extras5-dev
 
 EOF
     )
