@@ -11,6 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
@@ -36,6 +37,8 @@ using std::complex;
 namespace drake {
 namespace systems {
 namespace {
+
+// @TODO(edrumwri): Use test fixtures to streamline this file and promote reuse.
 
 // A composite system using the logistic system with the clock-based
 // witness function.
@@ -69,7 +72,7 @@ class TwoWitnessEmptySystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessEmptySystem)
 
-  explicit TwoWitnessEmptySystem(const double& off1, const double& off2) {
+  explicit TwoWitnessEmptySystem(double off1, double off2) {
     const auto dir_type = WitnessFunction<double>::DirectionType::kCrossesZero;
     witness1_ = std::make_unique<ClockWitness>(off1, *this, dir_type);
     witness2_ = std::make_unique<ClockWitness>(off2, *this, dir_type);
@@ -154,7 +157,7 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
 }
 
 // Tests the witness function isolation window gets smaller *when Simulator
-// uses a variable step integrator*  as the accuracy in the context becomes
+// uses a variable step integrator* as the accuracy in the context becomes
 // tighter. See Simulator::GetCurrentWitnessTimeIsolation() for documentation of
 // this effect. Note that we cannot guarantee that the witness function zero is
 // isolated to greater accuracy because variable step integration implies that
@@ -179,7 +182,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   double accuracy = 1.0;
   context->set_accuracy(accuracy);
 
-  // Set the initial logistic system evaluation.
+  // Set the initial empty system evaluation.
   double eval = std::numeric_limits<double>::infinity();
 
   // Loop, decreasing accuracy as we go.
@@ -227,7 +230,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   double accuracy = 1.0;
   context->set_accuracy(accuracy);
 
-  // Set the initial logistic system evaluation.
+  // Set the initial empty system evaluation.
   double eval = std::numeric_limits<double>::infinity();
 
   // Loop, decreasing accuracy as we go.
@@ -304,11 +307,12 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   simulator.StepTo(0.1);
 
   // We expect exactly two triggerings.
-  EXPECT_EQ(triggers.size(), 2);
+  ASSERT_EQ(triggers.size(), 2);
 
   // Check that the witnesses triggered in the order we expect.
-  EXPECT_TRUE(dynamic_cast<const LogisticWitness*>(triggers.front().second));
-  EXPECT_TRUE(dynamic_cast<const ClockWitness*>(triggers.back().second));
+  EXPECT_TRUE(is_dynamic_castable<const LogisticWitness>(
+      triggers.front().second));
+  EXPECT_TRUE(is_dynamic_castable<const ClockWitness>(triggers.back().second));
 
   // We expect that the clock witness will trigger second at a time of ~1s.
   EXPECT_NEAR(triggers.back().first, trigger_time, tol);
@@ -404,10 +408,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   EXPECT_EQ(publish_times.size(), 2);
 
   // Verify that the publishes are at the expected times.
-  // NOTE: value_or(999) necessary to work around Mac OS X bug where value()
-  // function is declared but not defined.
-  EXPECT_NEAR(publish_times.front(), first_time, iso_tol.value_or(999));
-  EXPECT_NEAR(publish_times.back(), second_time, iso_tol.value_or(999));
+  EXPECT_NEAR(publish_times.front(), first_time, iso_tol.value());
+  EXPECT_NEAR(publish_times.back(), second_time, iso_tol.value());
 }
 
 // Tests ability of simulation to identify the proper number of witness function

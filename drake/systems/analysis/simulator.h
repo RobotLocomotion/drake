@@ -285,7 +285,7 @@ class Simulator {
   ///          witness-triggered events in time, or returns empty otherwise
   ///          (indicating that any witness-triggered events should trigger
   ///          at the end of a time interval over which continuous state is
-  ///          integrated.
+  ///          integrated).
   /// @throws std::logic_error if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().

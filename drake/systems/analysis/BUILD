@@ -166,6 +166,7 @@ drake_cc_googletest(
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
         ":simulator",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],
 )
