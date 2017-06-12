@@ -6,11 +6,14 @@
 #include <map>
 
 #include <gtest/gtest.h>
+#include <gflags/gflags.h>
+
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/common/test/is_dynamic_castable.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -1195,5 +1198,7 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
+  google::ParseCommandLineFlags(&argc, &argv, true);
   return RUN_ALL_TESTS();
 }
+
