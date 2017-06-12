@@ -44,7 +44,10 @@ drake_cc_library(
         ":pid_controller",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:pass_through",
     ],
 )
 
@@ -65,15 +68,8 @@ drake_cc_library(
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
     deps = [
-        ":state_feedback_controller_base",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:adder",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:gain",
-        "//drake/systems/primitives:integrator",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/primitives:matrix_gain",
-        "//drake/systems/primitives:pass_through",
-        "//drake/systems/primitives:saturation",
     ],
 )
 
@@ -83,7 +79,11 @@ drake_cc_library(
     hdrs = ["pid_controlled_system.h"],
     deps = [
         ":pid_controller",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:gain",
+        "//drake/systems/primitives:saturation",
     ],
 )
 
