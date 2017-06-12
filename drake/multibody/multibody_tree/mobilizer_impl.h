@@ -91,6 +91,42 @@ class MobilizerImpl : public Mobilizer<T> {
   }
   /// @}
 
+ protected:
+  /// Helper method to retrieve a const reference to the MultibodyTreeContext
+  /// object referenced by `context`.
+  /// @throws `std::runtime_error` if `context` is not a MultibodyTreeContext
+  /// object.
+  const MultibodyTreeContext<T>& GetMultibodyTreeContextOrThrow(
+      const systems::Context<T>& context) const {
+    // TODO(amcastro-tri): Implement this in terms of
+    // MultibodyTree::GetMultibodyTreeContextOrThrow() with additional validity
+    // checks.
+    const MultibodyTreeContext<T>* mbt_context =
+        dynamic_cast<const MultibodyTreeContext<T>*>(&context);
+    if (mbt_context == nullptr) {
+      throw std::runtime_error("The provided systems::Context is not a"
+                               "drake::multibody::MultibodyTreeContext.");
+    }
+    return *mbt_context;
+  }
+
+  /// Helper method to retrieve a mutable pointer to the MultibodyTreeContext
+  /// object referenced by `context`.
+  /// @throws `std::runtime_error` if `context` is not a MultibodyTreeContext
+  /// object.
+  MultibodyTreeContext<T>* GetMutableMultibodyTreeContextOrThrow(
+      systems::Context<T>* context) const {
+    // TODO(amcastro-tri): Implement this in terms of
+    // MultibodyTree::GetMutableMultibodyTreeContextOrThrow().
+    MultibodyTreeContext<T>* mbt_context =
+        dynamic_cast<MultibodyTreeContext<T>*>(context);
+    if (mbt_context == nullptr) {
+      throw std::runtime_error("The provided systems::Context is not a"
+                               "drake::multibody::MultibodyTreeContext.");
+    }
+    return mbt_context;
+  }
+
  private:
   // Returns the index to the first entry in the global array of generalized
   // coordinates in the MultibodyTree model.

@@ -73,7 +73,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
 
   /// Gets the rotation angle of `this` mobilizer from `context`. See class
   /// documentation for sign convention.
-  /// @throws std::bad_cast if `context` is not a MultibodyTreeContext.
+  /// @throws std::runtime_error if `context` is not a valid
+  /// MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @returns The angle coordinate of `this` mobilizer in the `context`.
@@ -81,7 +82,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
   /// rotation angle of `this` mobilizer equals `angle`.
-  /// @throws std::runtime_error if `context` is not a MultibodyTreeContext.
+  /// @throws std::runtime_error if `context` is not a valid
+  /// MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @param[in] angle The desired angle in radians.
