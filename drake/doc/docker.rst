@@ -19,7 +19,7 @@ Getting Started
 Docker containers have emerged as a solution to running code or services in a
 way that is isolated from the host operating system. This allows code to be
 run/compiled with conflicting dependencies from those of the host operating
-system while also isolating these executables from the host filesystem.
+system while also isolating these executables from the host file system.
 Docker is available for all major operating systems. Please see Docker's
 `Getting Started <https://docs.docker.com/get-started/>`_ for basic information
 on Docker.
@@ -35,14 +35,19 @@ Building
 ::
 
   $ cd <drake-distro>
+  $ docker build -t drake -f setup/docker/Dockerfile .
 
-If you have the Nvidia drivers installed:::
+If successful::
 
-  $ docker build -t drake -f setup/docker/Dockerfile.nvidia .
+  $ drake images
 
-If you are using open source graphics drivers (Nouveau, Intel, ...):::
+should show an image named drake.
 
-  $ docker build -t drake -f setup/docker/Dockerfile.opensource .
+Note:::
+
+  $ drake ps
+
+will show any running drake containers on your system.
 
 .. _docker_running:
 
@@ -56,8 +61,13 @@ Passive Acrobot Simulation
 
 .. _docker_running_simulation_nvidia:
 
-Nvidia drivers:  (requires nvidia-docker plugin)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Nvidia drivers:
+~~~~~~~~~~~~~~~
+The `nvidia-docker <https://github.com/NVIDIA/nvidia-docker/>`_ plugin is
+required in order to pass X drawing commands to your host system when the
+proprietary Nvidia GPU drivers are installed.
+
+
 ::
 
   $ xhost +local:root; nvidia-docker run -ti --rm -e DISPLAY \
