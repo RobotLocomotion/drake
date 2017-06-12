@@ -11,7 +11,7 @@ namespace systems {
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
                                             double Kp, double Ki, double Kd)
-    : PidControlledSystem(std::move(plant), nullptr /* feedback selector */, Kp,
+    : PidControlledSystem(std::move(plant), MatrixX<double>::Identity(plant->get_input_port(0).size() * 2, plant->get_input_port(0).size() * 2), Kp,
                           Ki, Kd) {}
 
 template <typename T>
@@ -19,33 +19,33 @@ PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
                                             const Eigen::VectorXd& Kp,
                                             const Eigen::VectorXd& Ki,
                                             const Eigen::VectorXd& Kd)
-    : PidControlledSystem(std::move(plant), nullptr /* feedback selector */, Kp,
+    : PidControlledSystem(std::move(plant), MatrixX<double>::Identity(2 * Kp.size(), 2 * Kp.size()), Kp,
                           Ki, Kd) {}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
-    std::unique_ptr<MatrixGain<T>> feedback_selector, double Kp, double Ki,
+    const MatrixX<double>& feedback_selector, double Kp, double Ki,
     double Kd) {
   const int input_size = plant->get_input_port(0).size();
   const Eigen::VectorXd Kp_v = Eigen::VectorXd::Ones(input_size) * Kp;
   const Eigen::VectorXd Ki_v = Eigen::VectorXd::Ones(input_size) * Ki;
   const Eigen::VectorXd Kd_v = Eigen::VectorXd::Ones(input_size) * Kd;
-  Initialize(std::move(plant), std::move(feedback_selector), Kp_v, Ki_v, Kd_v);
+  Initialize(std::move(plant), feedback_selector, Kp_v, Ki_v, Kd_v);
 }
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
-    std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& Kp,
+    const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd) {
-  Initialize(std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
+  Initialize(std::move(plant), feedback_selector, Kp, Ki, Kd);
 }
 
 template <typename T>
 void PidControlledSystem<T>::Initialize(
     std::unique_ptr<System<T>> plant,
-    std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& Kp,
+    const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd) {
   DRAKE_DEMAND(plant != nullptr);
 
@@ -60,7 +60,7 @@ void PidControlledSystem<T>::Initialize(
 
   auto input_ports =
       ConnectController(plant_->get_input_port(0), plant_->get_output_port(0),
-                        std::move(feedback_selector), Kp, Ki, Kd, &builder);
+                        feedback_selector, Kp, Ki, Kd, &builder);
 
   builder.ExportInput(input_ports.control_input_port);
   builder.ExportInput(input_ports.state_input_port);
@@ -73,11 +73,11 @@ typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectController(
     const InputPortDescriptor<T>& plant_input,
     const OutputPortDescriptor<T>& plant_output,
-    std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& Kp,
+    const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
     DiagramBuilder<T>* builder) {
   auto controller = builder->template AddSystem<PidController<T>>(
-      std::move(feedback_selector),
+      feedback_selector,
       Kp, Ki, Kd);
   controller->set_name("pid_controller");
 
@@ -102,7 +102,7 @@ typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectControllerWithInputSaturation(
     const InputPortDescriptor<T>& plant_input,
     const OutputPortDescriptor<T>& plant_output,
-    std::unique_ptr<MatrixGain<T>> feedback_selector, const Eigen::VectorXd& Kp,
+    const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
     const VectorX<T>& min_plant_input, const VectorX<T>& max_plant_input,
     DiagramBuilder<T>* builder) {
@@ -114,7 +114,7 @@ PidControlledSystem<T>::ConnectControllerWithInputSaturation(
 
   return
     PidControlledSystem<T>::ConnectController(saturation->get_input_port(),
-    plant_output, std::move(feedback_selector), Kp, Ki, Kd, builder);
+    plant_output, feedback_selector, Kp, Ki, Kd, builder);
 }
 
 template <typename T>

@@ -33,19 +33,22 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
   input_index_state_ =
       this->DeclareInputPort(kVectorValued, num_full_q_).get_index();
   input_index_desired_state_ =
-      this->DeclareInputPort(kVectorValued, num_full_q_).get_index();
+      this->DeclareInputPort(kVectorValued, num_controlled_q_).get_index();
 }
 
 template <typename T>
 void PidController<T>::DoCalcOutput(const Context<T>& context,
                                     SystemOutput<T>* output) const {
+  /*
   const Eigen::VectorBlock<const VectorX<T>> state =
       this->EvalEigenVectorInput(context, input_index_state_);
   const Eigen::VectorBlock<const VectorX<T>> state_d =
       this->EvalEigenVectorInput(context, input_index_desired_state_);
 
   // State error.
-  const VectorX<T> controlled_state_diff = state_selector_ * (state_d - state);
+  const VectorX<T> controlled_state_diff = state_d;
+  controlled_state_diff = state_selector_ * state;
+  //- (state_selector_ * state);
 
   // Intergral error.
   const VectorBase<T>& state_vector = context.get_continuous_state_vector();
@@ -61,6 +64,7 @@ void PidController<T>::DoCalcOutput(const Context<T>& context,
       (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
           .matrix() +
       (ki_.array() * state_block.array()).matrix();
+      */
 }
 
 template <typename T>
@@ -73,7 +77,7 @@ void PidController<T>::DoCalcTimeDerivatives(
 
   // Position error.
   VectorBase<T>* const derivatives_vector = derivatives->get_mutable_vector();
-  const VectorX<T> controlled_state_diff = state_selector_ * (state_d - state);
+  auto controlled_state_diff = state_d - (state_selector_ * state);
   derivatives_vector->SetFromVector(
       controlled_state_diff.head(num_controlled_q_));
 }
