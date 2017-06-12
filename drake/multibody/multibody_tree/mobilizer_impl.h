@@ -72,7 +72,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
 
-  /// @name Helper Methods to Retrieve Entries from MultibodyTreeContext.
+  /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.

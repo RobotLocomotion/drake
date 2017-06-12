@@ -185,7 +185,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// bookkeeping detail.
   const MobilizerTopology& get_topology() const { return topology_; }
 
-  /// @name Methods that Define a %Mobilizer
+  /// @name Methods that define a %Mobilizer
   /// @{
 
   /// Sets what will be considered to be the _zero_ configuration for `this`

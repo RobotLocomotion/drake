@@ -40,7 +40,7 @@ class MultibodyTree {
   /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
-  /// @name Methods to Add New MultibodyTree Elements.
+  /// @name Methods to add new MultibodyTree elements.
   ///
   /// To create a %MultibodyTree users will add multibody elements like bodies,
   /// joints, force elements, constraints, etc, using one of these methods.
@@ -469,8 +469,10 @@ class MultibodyTree {
   //  - Create or request cache entries.
   std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
 
-  /// Sets default values in the context including pre-computed cache entries.
-  void SetDefaults(systems::Context<T>*) const {}
+  /// Sets default values in the context. For mobilizers, this method sets them
+  /// to their _zero_ configuration according to
+  /// Mobilizer::set_zero_configuration().
+  void SetDefaults(systems::Context<T>* context) const;
 
   /// Computes into the position kinematics `pc` all the kinematic quantities
   /// that depend on the generalized positions only. These include:

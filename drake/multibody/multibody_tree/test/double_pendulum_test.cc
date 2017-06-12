@@ -376,6 +376,14 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   const double kEpsilon =
       kEpsilonFactor * std::numeric_limits<double>::epsilon();
 
+  // By default CreateDefaultContext() sets mobilizer to their zero
+  // configuration.
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
+  EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), 0.0);
+
+  // Test mobilizer's setter/getters.
+  shoulder_mobilizer_->set_angle(context_.get(), M_PI);
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), M_PI);
   shoulder_mobilizer_->set_zero_configuration(context_.get());
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
 

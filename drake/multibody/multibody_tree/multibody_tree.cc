@@ -113,6 +113,13 @@ MultibodyTree<T>::CreateDefaultContext() const {
 }
 
 template <typename T>
+void MultibodyTree<T>::SetDefaults(systems::Context<T>* context) const {
+  for (const auto& mobilizer : owned_mobilizers_) {
+    mobilizer->set_zero_configuration(context);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
     const systems::Context<T>& context,
     PositionKinematicsCache<T>* pc) const {
