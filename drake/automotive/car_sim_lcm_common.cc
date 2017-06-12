@@ -19,6 +19,7 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
+using systems::MatrixGain;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 

@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/systems/controllers/state_feedback_controller_base.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
@@ -25,7 +26,7 @@ namespace systems {
  * Note that this class assumes q and v have the same dimension.
  */
 template <typename T>
-class PidController : public LeafSystem<T> {
+class PidController : public StateFeedbackController<T>, public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
@@ -98,21 +99,21 @@ class PidController : public LeafSystem<T> {
   /**
    * Returns the input port for the estimated state.
    */
-  const InputPortDescriptor<T>& get_input_port_estimated_state() const {
+  const InputPortDescriptor<T>& get_input_port_estimated_state() const final {
     return this->get_input_port(input_index_state_);
   }
 
   /**
    * Returns the input port for the desired state.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_state() const {
+  const InputPortDescriptor<T>& get_input_port_desired_state() const final {
     return this->get_input_port(input_index_desired_state_);
   }
 
   /**
    * Returns the output port for computed control.
    */
-  const OutputPortDescriptor<T>& get_output_port_control() const {
+  const OutputPortDescriptor<T>& get_output_port_control() const final {
     return this->get_output_port(output_index_control_);
   }
 

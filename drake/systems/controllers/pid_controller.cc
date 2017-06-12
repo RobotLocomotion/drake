@@ -34,6 +34,7 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
 
   input_index_state_ =
       this->DeclareInputPort(kVectorValued, num_full_state_).get_index();
+
   input_index_desired_state_ =
       this->DeclareInputPort(kVectorValued, 2 * num_controlled_q_).get_index();
 }

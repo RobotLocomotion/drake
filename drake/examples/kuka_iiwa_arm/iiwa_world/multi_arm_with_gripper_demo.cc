@@ -125,13 +125,11 @@ void main() {
   const VectorX<double> wsg_ki = VectorX<double>::Constant(kWsgActDim, 0.0);
   const VectorX<double> wsg_kd = VectorX<double>::Constant(kWsgActDim, 5.0);
   for (const auto& info : wsg_info) {
-    std::unique_ptr<systems::MatrixGain<double>> feedback_selector =
-        std::make_unique<systems::MatrixGain<double>>(
-            manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>());
     auto controller =
         builder.template AddController<systems::PidController<double>>(
-            info.instance_id, std::move(feedback_selector), wsg_kp, wsg_ki,
-            wsg_kd);
+            info.instance_id,
+            manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>(),
+            wsg_kp, wsg_ki, wsg_kd);
     diagram_builder->Connect(wsg_traj_src->get_output_port(),
                              controller->get_input_port_desired_state());
   }
