@@ -127,6 +127,22 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   /// @see JacobianComputationScheme
   /// @{
 
+  /// Sets whether the integrator attempts to reuse Jacobian matrices and
+  /// iteration matrix factorizations (default is `true`). Forming Jacobian
+  /// matrices and factorizing iteration matrices are generally the two most
+  /// expensive operations performed by this integrator. For small systems
+  /// (those with on the order of ten state variables), the additional accuracy
+  /// that using fresh Jacobians and factorizations buys- which can permit
+  /// increased step sizes but should have no effect on solution accuracy- can
+  /// outweigh the small factorization cost.
+  /// @sa get_reuse
+  void set_reuse(bool reuse) { reuse_ = reuse; }
+
+  /// Gets whether the integrator attempts to reuse Jacobian matrices and
+  /// iteration matrix factorizations.
+  /// @sa set_reuse()
+  bool get_reuse() const { return reuse_; }
+
   /// Sets the Jacobian computation scheme. This function can be safely called
   /// at any time (i.e., the integrator need not be re-initialized afterward).
   /// @note Discards any already-computed Jacobian matrices if the scheme
@@ -308,8 +324,12 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   // and deallocations.
   MatrixX<T> neg_iteration_matrix_;
 
-  /// Whether the last call to StepAbstract() was a failure.
+  // Whether the last call to StepAbstract() was a failure.
   bool last_call_failed_{false};
+
+  // If set to `false`, Jacobian matrices and iteration matrix factorizations
+  // will not be reused.
+  bool reuse_{true};
 
   // Various combined statistics.
   int64_t num_jacobian_evaluations_{0};

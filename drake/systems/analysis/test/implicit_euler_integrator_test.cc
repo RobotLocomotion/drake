@@ -36,6 +36,9 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*robertson, context.get());
 
+  // Robertson will run a LONG time if we reuse Jacobian matrices.
+  integrator.set_reuse(false);
+
   // Very large step is necessary for this problem since given solution is
   // at t = 1e11.
   integrator.set_maximum_step_size(10000000.0);

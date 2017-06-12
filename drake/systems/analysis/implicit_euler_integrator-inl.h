@@ -363,8 +363,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
   // Compute the initial Jacobian and negated iteration matrices (see
-  // rationale for the negation below) and factor  them, if necessary.
-  if (J_.rows() == 0) {
+  // rationale for the negation below) and factor them, if necessary.
+  if (!reuse_ || J_.rows() == 0) {
     J_ = CalcJacobian(tf, *xtplus);
     const int n = xtplus->size();
     neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
@@ -481,6 +481,14 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   }
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() convergence failed");
+
+  // If Jacobian and iteration matrix factorizations are not reused, there
+  // is nothing else we can try.
+  if (!reuse_)
+  {
+    last_call_failed_ = true;
+    return false;
+  }
 
   // Try StepAbstract again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
