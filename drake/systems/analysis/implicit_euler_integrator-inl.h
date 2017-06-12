@@ -484,8 +484,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
-  if (!reuse_)
-  {
+  if (!reuse_) {
     last_call_failed_ = true;
     return false;
   }
