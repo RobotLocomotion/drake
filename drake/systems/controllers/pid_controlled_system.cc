@@ -10,12 +10,16 @@ namespace systems {
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
-                                            double Kp, double Ki, double Kd)
-    : PidControlledSystem(
-          std::move(plant),
-          MatrixX<double>::Identity(plant->get_input_port(0).size() * 2,
-                                    plant->get_input_port(0).size() * 2),
-          Kp, Ki, Kd) {}
+                                            double Kp, double Ki, double Kd) {
+  const int input_size = plant->get_input_port(0).size();
+  const Eigen::VectorXd Kp_v = Eigen::VectorXd::Ones(input_size) * Kp;
+  const Eigen::VectorXd Ki_v = Eigen::VectorXd::Ones(input_size) * Ki;
+  const Eigen::VectorXd Kd_v = Eigen::VectorXd::Ones(input_size) * Kd;
+  const MatrixX<double> selector =
+    MatrixX<double>::Identity(plant->get_input_port(0).size() * 2,
+                              plant->get_input_port(0).size() * 2);
+  Initialize(std::move(plant), selector, Kp_v, Ki_v, Kd_v);
+}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
