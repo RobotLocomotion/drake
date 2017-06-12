@@ -24,7 +24,9 @@ namespace multibody {
 /// The single generalized coordinate q introduced by this mobilizer
 /// corresponds to the rotation angle in radians of frame M with respect to
 /// frame F about the rotation axis `axis_F`. When `q = 0`, frames F and M are
-/// coincident. Notice that the components of the rotation axis as expressed in
+/// coincident. The rotation angle is defined to be positive according to the
+/// right-hand-rule with the thumb aligined in the direction of the `axis_F`.
+/// Notice that the components of the rotation axis as expressed in
 /// either frame F or M are constant. That is, `axis_F` and `axis_M` remain
 /// unchanged w.r.t. both frames by this mobilizer's motion.
 ///
@@ -69,14 +71,15 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   ///                frame F.
   const Vector3<double>& get_revolute_axis() const { return axis_F_; }
 
-  /// Gets the rotation angle of `this` mobilizer from `context`.
+  /// Gets the rotation angle of `this` mobilizer from `context`. See class
+  /// documentation for sign convention.
   /// @throws std::bad_cast if `context` is not a MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @returns The angle coordinate of `this` mobilizer in the `context`.
   const T& get_angle(const systems::Context<T>& context) const;
 
-  /// Sets the `context` so that the generalized coordinate coresponding the
+  /// Sets the `context` so that the generalized coordinate corresponding to the
   /// rotation angle of `this` mobilizer equals `angle`.
   /// @throws std::runtime_error if `context` is not a MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer

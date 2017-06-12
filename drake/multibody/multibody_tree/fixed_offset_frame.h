@@ -48,19 +48,11 @@ class FixedOffsetFrame : public Frame<T> {
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<T>& X_BF);
 
-  /// Returns the pose `X_FB` of the body B associated with this frame F,
-  /// measured in this frame F.
-  /// @sa CalcBodyPoseInOtherFrame()
   Isometry3<T> CalcBodyPoseInThisFrame(
       const systems::Context<T>& context) const final {
     return parent_frame_.CalcBodyPoseInOtherFrame(context, X_FP_);
   }
 
-  /// Returns the pose `X_QB` of the body B associated with this frame F
-  /// measured in a frame Q, given the pose `X_QF` of this frame F measured
-  /// in Q.
-  /// @sa CalcBodyPoseInThisFrame() to compute the pose of the body associated
-  /// with this frame as measured in this frame.
   Isometry3<T> CalcBodyPoseInOtherFrame(
       const systems::Context<T>& context,
       const Isometry3<T>& X_QF) const final {
@@ -69,9 +61,6 @@ class FixedOffsetFrame : public Frame<T> {
     return parent_frame_.CalcBodyPoseInOtherFrame(context, X_QF * X_FP_);
   }
 
-  /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
-  /// compute the pose of frame Q measured and expressed in the frame B of
-  /// the body to which this frame is attached.
   Isometry3<T> CalcOffsetPoseInBody(
       const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const final {

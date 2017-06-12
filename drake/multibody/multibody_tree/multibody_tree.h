@@ -394,10 +394,11 @@ class MultibodyTree {
 
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
   /// That is, the number of bodies in the longest kinematic path between the
-  /// world and any other leaf body. Kinematic paths are created by Mobilizer
-  /// objects connecting a chain of frames. Therefore, this method does not
-  /// count kinematic cycles, which could only be considered in the model using
-  /// constraints.
+  /// world and any other leaf body. For a model that only contains the _world_
+  /// body, the height of the tree is one.
+  /// Kinematic paths are created by Mobilizer objects connecting a chain of
+  /// frames. Therefore, this method does not count kinematic cycles, which
+  /// could only be considered in the model using constraints.
   int get_tree_height() const {
     return topology_.get_tree_height();
   }

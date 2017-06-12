@@ -78,13 +78,13 @@ class FrameTests : public ::testing::Test {
 
  protected:
   std::unique_ptr<MultibodyTree<double>> model_;
-  unique_ptr<Context<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   // Bodies:
   const RigidBody<double>* bodyB_;
   // Frames:
-  const Frame<double>* frameB_;
-  const Frame<double>* frameP_;
-  const Frame<double>* frameQ_;
+  const Frame<double>* frameB_{};
+  const Frame<double>* frameP_{};
+  const Frame<double>* frameQ_{};
   // Poses:
   Isometry3d X_BP_;
   Isometry3d X_PQ_;
@@ -95,9 +95,8 @@ class FrameTests : public ::testing::Test {
 TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // Since in this case the frame IS the body frame, this method should return
   // the identity transformation.
-  EXPECT_TRUE(
-      frameB_->CalcBodyPoseInThisFrame(*context_).
-          isApprox(Isometry3d::Identity()));
+  EXPECT_TRUE(frameB_->CalcBodyPoseInThisFrame(*context_).
+      isApprox(Isometry3d::Identity()));
 
   // Since in this case F = B, this method should return X_FG.
   EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_).isApprox(X_FG_));
@@ -126,9 +125,8 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
 // several FixedOffsetFrame objects are chained in sequence.
 TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   // X_QB = X_QP * X_PB = X_PQ.inverse() * X_BP.inverse()
-  EXPECT_TRUE(
-      frameQ_->CalcBodyPoseInThisFrame(*context_).
-          isApprox(X_PQ_.inverse() * X_BP_.inverse()));
+  EXPECT_TRUE(frameQ_->CalcBodyPoseInThisFrame(*context_).
+      isApprox(X_PQ_.inverse() * X_BP_.inverse()));
 
   // In this case F = Q and therefore:
   //   X_BG = X_BP * X_PQ * X_QG = X_BP * X_PQ * X_FG

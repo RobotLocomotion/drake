@@ -108,15 +108,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// Returns a constant reference to the unique parent body P of the body B
-  /// associated with this node.
+  /// associated with this node. This method aborts in Debug builds if called on
+  /// the root node corresponding to the _world_ body.
   const Body<T>& get_parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
   /// Returns a constant reference to the mobilizer associated with this node.
-  /// This method will abort if called on the root node (for which there is no
-  /// mobilizer) in Debug builds.
+  /// This method aborts in Debug builds if called on the root node
+  /// corresponding to the _world_ body, for which there is no mobilizer.
   const Mobilizer<T>& get_mobilizer() const {
     DRAKE_ASSERT(mobilizer_ != nullptr);
     return *mobilizer_;
@@ -140,7 +141,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     DRAKE_ASSERT(pc != nullptr);
 
-    // Update mobilizers' position dependent kinematics.
+    // Update mobilizer' position dependent kinematics.
     CalcAcrossMobilizerPositionKinematicsCache(context, pc);
 
     // This computes into the PositionKinematicsCache:
@@ -165,7 +166,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - M_Bo_W: Spatial inertia.
 
     // TODO(amcastro-tri):
-    // With H_FM(qr) already in the cache (computed by
+    // With H_FM(qm) already in the cache (computed by
     // Mobilizer::UpdatePositionKinematicsCache()) update the cache
     // entries for H_PB_W, the Jacobian for the SpatialVelocity jump between
     // body B and its parent body P expressed in the world frame W.
@@ -182,6 +183,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
  private:
   // Returns the index to the parent body of the body associated with this node.
+  // For the root node, corresponding to the world body, this method returns an
+  // invalid body index. Attempts to using invalid indexes leads to an exception
+  // being thrown in Debug builds.
   BodyIndex get_parent_body_index() const { return topology_.parent_body;}
 
   // =========================================================================
@@ -287,7 +291,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // - Hdot_FM(q): The time derivative of the Jacobian matrix which allows
   //               computing the spatial acceleration between the F and M
   //               frames as:
-  //               `A_FM(q, v, vdot) = H_FM(q) * vdot + Hdot_FM(q) * v`
+  //               `A_FM(q, v, v̇) = H_FM(q) * v̇ + Hdot_FM(q) * v`
   // - N(q): The kinematic coupling matrix describing the relationship between
   //         the rate of change of generalized coordinates and the generalized
   //         velocities by `q̇ = N(q) * v`.

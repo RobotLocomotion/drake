@@ -54,7 +54,7 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Default implementation to Mobilizer::set_zero_configuration() that sets
   /// all generalized positions related to this mobilizer to zero.
   /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclases must override this method for
+  /// mobilizers and specific subclasses must override this method for
   /// correctness.
   void set_zero_configuration(systems::Context<T>* context) const override {
     auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
@@ -91,19 +91,9 @@ class MobilizerImpl : public Mobilizer<T> {
   }
   /// @}
 
-  /// @name Helper Methods to Retrieve Entries from PositionKinematicsCache.
-  /// @{
-
-  /// Returns a mutable reference to the pose `X_FM` of the outboard frame M as
-  /// measured and expressed in the inboard frame F.
-  Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
-    return pc->get_mutable_X_FM(this->get_topology().body_node);
-  }
-  /// @}
-
  private:
-  // Returns the first entry in the global array of generalized coordinates in
-  // the MultibodyTree model.
+  // Returns the index to the first entry in the global array of generalized
+  // coordinates in the MultibodyTree model.
   int get_positions_start() const {
     return this->get_topology().positions_start;
   }
