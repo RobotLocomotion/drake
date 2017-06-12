@@ -8,7 +8,7 @@ We are currently implementing the MATLAB bindings for Drake's new C++ libraries.
 Stay tuned for more information.
 
 In the meantime,
-:ref:`Using Drake from Python <matlab-bindings>`
+:ref:`Using Drake from Python <python-bindings>`
 may also prove useful.
 
 
