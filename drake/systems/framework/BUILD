@@ -226,12 +226,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "system",
-    srcs = ["system.cc",
-            "witness_function.cc"],
+    srcs = ["system.cc"],
     hdrs = [
         "discrete_event.h",
         "system.h",
-        "witness_function.h",
     ],
     deps = [
         ":cache",
@@ -265,6 +263,7 @@ drake_cc_library(
         ":sparsity_matrix",
         ":system",
         ":value_checker",
+        ":witness",
         "//drake/common",
         "//drake/common:number_traits",
         "//drake/common:unused",
@@ -301,6 +300,7 @@ drake_cc_library(
         ":cache",
         ":diagram_context",
         ":system",
+        ":witness",
         "//drake/common",
         "//drake/common:number_traits",
     ],
@@ -346,6 +346,14 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "witness",
+    srcs = ["witness_function.cc"],
+    hdrs = ["witness_function.h"],
+    deps = [
+        ":system",
+    ],
+)
 # === test/ ===
 
 drake_cc_googletest(

@@ -79,8 +79,8 @@ class TestSystem : public System<double> {
     return updated_numbers_;
   }
 
-  double EvaluateWitness(const Context<double>&,
-                         const WitnessFunction<double>&) const override {
+  double DoEvaluateWitness(const Context<double>&,
+                           const WitnessFunction<double>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }
