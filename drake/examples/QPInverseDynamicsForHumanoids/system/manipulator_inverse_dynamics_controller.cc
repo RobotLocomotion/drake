@@ -60,21 +60,20 @@ ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
                   joint_level_controller->get_input_port_qp_output());
 
   // Exposes raw estimated state input.
-  int index = builder.ExportInput(rs_wrapper->get_input_port_state());
-  this->set_input_port_index_estimated_state(index);
+  input_port_index_estimated_state_ =
+      builder.ExportInput(rs_wrapper->get_input_port_state());
 
   // Exposes desired q + vd input.
-  index = builder.ExportInput(plan_eval_->get_input_port_desired_state());
-  this->set_input_port_index_desired_state(index);
+  input_port_index_desired_state_ =
+      builder.ExportInput(plan_eval_->get_input_port_desired_state());
 
   // Exposes desired vd input.
   input_port_index_desired_acceleration_ =
       builder.ExportInput(plan_eval_->get_input_port_desired_acceleration());
 
   // Exposes raw torque output.
-  index =
+  output_port_index_control_ =
       builder.ExportOutput(joint_level_controller->get_output_port_torque());
-  this->set_output_port_index_control(index);
 
   // Exposes plan eval's debug output.
   output_port_index_plan_eval_debug_ =
