@@ -23,6 +23,7 @@
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace systems {
@@ -633,18 +634,17 @@ class Diagram : public System<T>,
     }
   }
 
-  /// Evaluates the given witness function at the given context.
-  T EvaluateWitness(const Context<T>& context,
-                    const WitnessFunction<T>& wf) const final {
-    const System<T>& system = wf.get_system();
-    const Context<T>& subcontext = GetSubsystemContext(context, &system);
-    return wf.Evaluate(subcontext);
-  }
-
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
+
+  T DoEvaluateWitness(const Context<T>& context,
+                      const WitnessFunction<T>& witness_func) const final {
+    const System<T>& system = witness_func.get_system();
+    const Context<T>& subcontext = GetSubsystemContext(context, &system);
+    return witness_func.Evaluate(subcontext);
+  }
 
   /// Provides witness functions of subsystems that are active at the beginning
   /// of a continuous time interval. The vector of witness functions is not
@@ -658,13 +658,16 @@ class Diagram : public System<T>,
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
+    int index = 0;  // The subsystem index.
+
     for (const System<T>* const system : sorted_systems_) {
-      const int i = GetSystemIndexOrAbort(system);
+      DRAKE_ASSERT(index == GetSystemIndexOrAbort(system));
       temp_witnesses.clear();
-      system->GetWitnessFunctions(*diagram_context->GetSubsystemContext(i),
+      system->GetWitnessFunctions(*diagram_context->GetSubsystemContext(index),
                                   &temp_witnesses);
       witnesses->insert(witnesses->end(), temp_witnesses.begin(),
                         temp_witnesses.end());
+      ++index;
     }
   }
 

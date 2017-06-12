@@ -27,6 +27,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
+#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace systems {
@@ -58,13 +59,6 @@ class LeafSystem : public System<T> {
 
   // =========================================================================
   // Implementations of System<T> methods.
-
-  /// Evaluates the witness function at the given context.
-  T EvaluateWitness(const Context<T>& context,
-                    const WitnessFunction<T>& wf) const final {
-    DRAKE_ASSERT(this == &wf.get_system());
-    return wf.Evaluate(context);
-  }
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
@@ -236,6 +230,12 @@ class LeafSystem : public System<T> {
 
   // =========================================================================
   // Implementations of System<T> methods.
+
+  T DoEvaluateWitness(const Context<T>& context,
+                      const WitnessFunction<T>& witness_func) const final {
+    DRAKE_DEMAND(this == &witness_func.get_system());
+    return witness_func.Evaluate(context);
+  }
 
   /// Computes the next update time based on the configured periodic events, for
   /// scalar types that are arithmetic, or aborts for scalar types that are not

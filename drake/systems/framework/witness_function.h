@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/systems/framework/discrete_event.h"
+#include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
@@ -64,6 +65,8 @@ namespace systems {
 template <class T>
 class WitnessFunction {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WitnessFunction)
+
   virtual ~WitnessFunction() {}
 
   enum class DirectionType {

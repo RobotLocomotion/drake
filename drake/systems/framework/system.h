@@ -23,10 +23,12 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_port_descriptor.h"
-#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace systems {
+
+template <class T>
+class WitnessFunction;
 
 /// A token that identifies the next sample time at which a System must
 /// perform some actions, and the actions that must be performed.
@@ -1022,12 +1024,19 @@ class System {
     DoGetWitnessFunctions(context, w);
   }
 
-  /// Derived classes will implement this method to evaluate a witness function
-  /// at the given context.
-  virtual T EvaluateWitness(const Context<T>& context,
-                            const WitnessFunction<T>& witness_func) const = 0;
+  /// Evaluates a witness function at the given context.
+  T EvaluateWitness(const Context<T>& context,
+                    const WitnessFunction<T>& witness_func) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    return DoEvaluateWitness(context, witness_func);
+  }
 
  protected:
+  /// Derived classes will implement this method to evaluate a witness function
+  /// at the given context.
+  virtual T DoEvaluateWitness(const Context<T>& context,
+                              const WitnessFunction<T>& witness_func) const = 0;
+
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default
   /// implementation does nothing. On entry to this function, the context will

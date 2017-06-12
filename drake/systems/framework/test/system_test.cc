@@ -335,11 +335,12 @@ class ValueIOTestSystem : public System<T> {
 
   ~ValueIOTestSystem() override {}
 
-  T EvaluateWitness(const Context<T>&,
-                         const WitnessFunction<T>&) const override {
+  T DoEvaluateWitness(const Context<T>&,
+                      const WitnessFunction<T>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }
+
   AbstractValue* DoAllocateInputAbstract(
       const InputPortDescriptor<T>& descriptor) const override {
     // Should only get called for the first input.

@@ -29,6 +29,9 @@ class ClockWitness : public systems::WitnessFunction<T> {
         trigger_time_(trigger_time) {
   }
 
+  /// Get the time at which this witness triggers.
+  T get_trigger_time() const { return trigger_time_; }
+
  protected:
   // The witness function is the time value itself plus the offset value.
   T DoEvaluate(const Context<T>& context) const override {
@@ -57,6 +60,35 @@ class EmptySystem : public LeafSystem<T> {
   }
 
  protected:
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    AutoDiffXd trigger_time(witness_->get_trigger_time());
+    WitnessFunction<AutoDiffXd>::DirectionType dir_type;
+    switch (witness_->get_dir_type()) {
+      case WitnessFunction<T>::DirectionType::kCrossesZero:
+        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::kCrossesZero;
+        break;
+
+      case WitnessFunction<T>::DirectionType::kNegativeThenNonNegative:
+        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::
+            kNegativeThenNonNegative;
+        break;
+
+      case WitnessFunction<T>::DirectionType::kPositiveThenNonPositive:
+        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::
+            kPositiveThenNonPositive;
+        break;
+
+      case WitnessFunction<T>::DirectionType::kNone:
+        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::kNone;
+        break;
+
+      default:
+        DRAKE_ABORT_MSG("Unexpected witness function direction type.");
+    }
+    return new EmptySystem<AutoDiffXd>(trigger_time,
+                                       dir_type);
+  }
+
   void DoCalcOutput(const Context<T>&,
                     SystemOutput<T>*) const override {}
 
@@ -67,13 +99,13 @@ class EmptySystem : public LeafSystem<T> {
   }
 
   void DoPublish(
-      const drake::systems::Context<double>& context) const override {
+      const drake::systems::Context<T>& context) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
  private:
   std::unique_ptr<ClockWitness<T>> witness_;
-  std::function<void(const Context<double>&)> publish_callback_{nullptr};
+  std::function<void(const Context<T>&)> publish_callback_{nullptr};
 };
 
 }  // namespace analysis_test

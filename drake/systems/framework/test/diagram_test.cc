@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -14,6 +15,7 @@
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/zero_order_hold.h"
+#include "drake/systems/analysis/test/empty_system.h"
 
 namespace drake {
 namespace systems {
@@ -25,6 +27,8 @@ namespace {
 /// adder2_: (A + B)             -> output 1
 /// integrator1_: A              -> C
 /// integrator2_: C              -> output 2
+/// It also uses an EmptySystem to verify Diagram's ability to retrieve
+/// witness functions from its subsystems.
 class ExampleDiagram : public Diagram<double> {
  public:
   explicit ExampleDiagram(int size) {
@@ -36,6 +40,10 @@ class ExampleDiagram : public Diagram<double> {
     adder1_->set_name("adder1");
     adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
+    empty_ = builder.AddSystem<analysis_test::EmptySystem<double>>(
+        1.0 /* trigger time */,
+        WitnessFunction<double>::DirectionType::kCrossesZero);
+    empty_->set_name("empty");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);
     integrator0_->set_name("integrator0");
@@ -66,11 +74,13 @@ class ExampleDiagram : public Diagram<double> {
   Adder<double>* adder2() { return adder2_; }
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
+  analysis_test::EmptySystem<double>* empty() { return empty_; }
 
  private:
   Adder<double>* adder0_ = nullptr;
   Adder<double>* adder1_ = nullptr;
   Adder<double>* adder2_ = nullptr;
+  analysis_test::EmptySystem<double>* empty_ = nullptr;
 
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
@@ -166,6 +176,17 @@ class DiagramTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
+
+// Tests that the diagram returns the correct number of witness functions.
+TEST_F(DiagramTest, Witness) {
+  std::vector<const WitnessFunction<double>*> wf;
+  diagram_->GetWitnessFunctions(*context_, &wf);
+
+  // Empty function always returns the ClockWitness.
+  ASSERT_EQ(wf.size(), 1);
+  EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
+      wf.front()));
+}
 
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
@@ -813,7 +834,8 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ((std::vector<const System<double>*>{
                 diagram->adder0(), diagram->adder1(), diagram->adder2(),
-                diagram->integrator0(), diagram->integrator1(),
+                diagram->empty(),
+                diagram->integrator0(), diagram->integrator1()
             }),
             diagram->GetSystems());
 }
