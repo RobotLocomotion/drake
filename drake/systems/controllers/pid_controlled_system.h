@@ -161,6 +161,12 @@ class PidControlledSystem : public Diagram<T> {
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
 
+  static ConnectResult ConnectController(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
+      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+      const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
+
   /// Creates a PidController with input saturation and uses @p builder to
   /// connect @p plant_input and @p plant_output from an existing plant, adding
   /// additional systems (adders, multiplexers, gains, saturation etc.) as
@@ -170,6 +176,13 @@ class PidControlledSystem : public Diagram<T> {
       const InputPortDescriptor<T>& plant_input,
       const OutputPortDescriptor<T>& plant_output,
       const MatrixX<double>& feedback_selector,
+      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+      const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
+      const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);
+
+  static ConnectResult ConnectControllerWithInputSaturation(
+      const InputPortDescriptor<T>& plant_input,
+      const OutputPortDescriptor<T>& plant_output,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
       const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);

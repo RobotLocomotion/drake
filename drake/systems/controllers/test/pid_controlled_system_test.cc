@@ -128,11 +128,6 @@ class PidControlledSystemTest : public ::testing::Test {
 
     builder.Connect(input_source->get_output_port(),
                     controller->get_input_port(0));
-
-    std::cout << state_source->get_output_port().size() << ", " <<
-        controller->get_input_port(1).size() << ", " << feedback_selector.rows() <<
-        ", " << feedback_selector.cols() << "\n";
-
     builder.Connect(state_source->get_output_port(),
                     controller->get_input_port(1));
     builder.ExportOutput(controller->get_output_port(0));

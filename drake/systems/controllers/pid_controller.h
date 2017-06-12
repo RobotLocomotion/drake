@@ -142,7 +142,7 @@ class PidController : public LeafSystem<T> {
   VectorX<double> kd_;
   VectorX<double> ki_;
   const int num_controlled_q_;
-  const int num_full_q_;
+  const int num_full_state_;
   const MatrixX<double> state_selector_;
 
   int input_index_state_;

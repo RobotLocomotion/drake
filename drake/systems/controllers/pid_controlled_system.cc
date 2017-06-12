@@ -11,16 +11,21 @@ namespace systems {
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
                                             double Kp, double Ki, double Kd)
-    : PidControlledSystem(std::move(plant), MatrixX<double>::Identity(plant->get_input_port(0).size() * 2, plant->get_input_port(0).size() * 2), Kp,
-                          Ki, Kd) {}
+    : PidControlledSystem(
+          std::move(plant),
+          MatrixX<double>::Identity(plant->get_input_port(0).size() * 2,
+                                    plant->get_input_port(0).size() * 2),
+          Kp, Ki, Kd) {}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
                                             const Eigen::VectorXd& Kp,
                                             const Eigen::VectorXd& Ki,
                                             const Eigen::VectorXd& Kd)
-    : PidControlledSystem(std::move(plant), MatrixX<double>::Identity(2 * Kp.size(), 2 * Kp.size()), Kp,
-                          Ki, Kd) {}
+    : PidControlledSystem(
+          std::move(plant),
+          MatrixX<double>::Identity(2 * Kp.size(), 2 * Kp.size()), Kp, Ki, Kd) {
+}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
@@ -99,6 +104,19 @@ PidControlledSystem<T>::ConnectController(
 
 template <typename T>
 typename PidControlledSystem<T>::ConnectResult
+PidControlledSystem<T>::ConnectController(
+    const InputPortDescriptor<T>& plant_input,
+    const OutputPortDescriptor<T>& plant_output,
+    const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+    const Eigen::VectorXd& Kd,
+    DiagramBuilder<T>* builder) {
+  return ConnectController(plant_input, plant_output,
+      MatrixX<double>::Identity(plant_output.size(), plant_output.size()),
+      Kp, Ki, Kd, builder);
+}
+
+template <typename T>
+typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectControllerWithInputSaturation(
     const InputPortDescriptor<T>& plant_input,
     const OutputPortDescriptor<T>& plant_output,
@@ -115,6 +133,19 @@ PidControlledSystem<T>::ConnectControllerWithInputSaturation(
   return
     PidControlledSystem<T>::ConnectController(saturation->get_input_port(),
     plant_output, feedback_selector, Kp, Ki, Kd, builder);
+}
+
+template <typename T>
+typename PidControlledSystem<T>::ConnectResult
+PidControlledSystem<T>::ConnectControllerWithInputSaturation(
+    const InputPortDescriptor<T>& plant_input,
+    const OutputPortDescriptor<T>& plant_output,
+    const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+    const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
+    const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder) {
+  return ConnectControllerWithInputSaturation(plant_input, plant_output,
+      MatrixX<double>::Identity(plant_output.size(), plant_output.size()),
+      Kp, Ki, Kd, min_plant_input, max_plant_input, builder);
 }
 
 template <typename T>
