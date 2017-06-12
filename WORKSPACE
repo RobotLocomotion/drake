@@ -255,12 +255,6 @@ mosek_repository(
     name = "mosek",
 )
 
-load("//tools:soft_failure.bzl", "soft_failure_binary_repository")
-soft_failure_binary_repository(
-    name = "drake_visualizer",
-    local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
-)
-
 load("//tools:gfortran.bzl", "gfortran_repository")
 gfortran_repository(
     name = "gfortran",
@@ -359,4 +353,9 @@ pkg_config_package(
 pkg_config_package(
     name = "zlib",
     modname = "zlib",
+)
+
+load("//tools:director.bzl", "director_repository")
+director_repository(
+    name = "director",
 )
