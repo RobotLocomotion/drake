@@ -88,6 +88,7 @@ libpng12-dev
 libqt4-dev
 libqt4-opengl-dev
 libqt5opengl5-dev
+libqt5x11extras5
 libqwt-dev
 libtinyxml-dev
 libtool
