@@ -638,6 +638,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     deps = [
         ":simple_car",
         "//drake/common:call_matlab",
