@@ -135,6 +135,35 @@ drake_cc_library(
     ],
 )
 
+# This library is empty unless Gurobi is available.
+drake_cc_library(
+    name = "instantaneous_qp_controller",
+    srcs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.cpp"],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.h"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":control_util",
+        ":qp_common",
+        "//drake/common",
+        "//drake/common:drake_path",
+        "//drake/common:is_approx_equal_abstol",
+        "//drake/lcmtypes:qp_controller_input",
+        "//drake/lcmtypes:zmp_com_observer_state",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/joints",
+        "//drake/multibody/parsers",
+        "//drake/solvers:gurobi_qp",
+        "//drake/util",
+        "//drake/util:lcm_util",
+        "//drake/util:yaml_util",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -186,4 +215,9 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+# The extra_srcs are required here because cpplint() doesn't understand how to
+# extract labels from select() functions yet.
+cpplint(extra_srcs = [
+    "InstantaneousQPController.cpp",
+    "InstantaneousQPController.h",
+])

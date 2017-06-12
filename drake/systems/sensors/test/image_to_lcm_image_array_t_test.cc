@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include "robotlocomotion/image_array_t.hpp"
 
-#include "drake/systems/sensors/image.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace systems {

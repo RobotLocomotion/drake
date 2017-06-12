@@ -42,3 +42,5 @@ drake_cc_googletest(
         ":constraint_relaxing_ik",
     ],
 )
+
+cpplint()

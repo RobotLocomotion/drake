@@ -190,16 +190,16 @@ drake_cc_binary(
         "rgbd_camera_publish_lcm_example.cc",
     ],
     deps = [
-        ":rgbd_camera",
         ":image_to_lcm_image_array_t",
+        ":rgbd_camera",
         "//drake/common:unused",
         "//drake/lcm",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:rigid_body_plant",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/lcm:lcm",
+        "//drake/systems/lcm",
         "//drake/systems/rendering:pose_stamped_t_pose_vector_translator",
         "@com_github_gflags_gflags//:gflags",
     ],
@@ -354,6 +354,5 @@ drake_cc_googletest(
     name = "image_to_lcm_image_array_t_test",
     deps = [":image_to_lcm_image_array_t"],
 )
-
 
 cpplint()
