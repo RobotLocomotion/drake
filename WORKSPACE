@@ -100,6 +100,8 @@ github_archive(
     sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",
 )
 
+# In the unlikely event that you update the version here, verify that the
+# licenses in tools/third_party/jchart2d/LICENSE are still applicable.
 maven_jar(
     name = "net_sf_jchart2d_jchart2d",
     artifact = "net.sf.jchart2d:jchart2d:3.3.2",

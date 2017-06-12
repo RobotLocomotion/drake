@@ -283,8 +283,12 @@ def _install_java_actions(ctx, target):
         "jar": ctx.attr.java_dest,
         None: ctx.attr.runtime_dest,
     }
+    strip_prefixes = {
+        "jar": ctx.attr.java_strip_prefix,
+        None: ctx.attr.runtime_strip_prefix,
+    }
 
-    return _install_actions(ctx, [target], dests)
+    return _install_actions(ctx, [target], dests, strip_prefixes)
 
 #------------------------------------------------------------------------------
 # Compute install actions for a py_library or py_binary.
@@ -321,8 +325,10 @@ def _install_impl(ctx):
         actions += d.install_actions
 
     # Generate actions for docs and includes.
-    actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest)
-    actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest)
+    actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest,
+                                ctx.attr.doc_strip_prefix)
+    actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
+                                ctx.attr.doc_strip_prefix)
     actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
                                 ctx.attr.hdr_strip_prefix)
 
@@ -355,6 +361,7 @@ install = rule(
         "deps": attr.label_list(providers = ["install_actions"]),
         "docs": attr.label_list(allow_files = True),
         "doc_dest": attr.string(default = "share/doc"),
+        "doc_strip_prefix": attr.string_list(),
         "license_docs": attr.label_list(allow_files = True),
         "hdrs": attr.label_list(allow_files = True),
         "hdr_dest": attr.string(default = "include"),
@@ -368,6 +375,7 @@ install = rule(
         "runtime_dest": attr.string(default = "bin"),
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
+        "java_strip_prefix": attr.string_list(),
         "py_dest": attr.string(default = "lib/python2.7/site_packages"),
         "py_strip_prefix": attr.string_list(),
         "install_script_template": attr.label(
@@ -409,6 +417,7 @@ Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
     doc_dest: Destination for documentation files (default = "share/doc").
+    doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
     guess_hdrs: See note.
     hdrs: List of header files to install.
@@ -421,7 +430,8 @@ Args:
     library_strip_prefix: List of prefixes to remove from shared library paths.
     runtime_dest: Destination for executable targets (default = "bin").
     runtime_strip_prefix: List of prefixes to remove from executable paths.
-    java_dest: Destination for Java targets (default = "share/java").
+    java_dest: Destination for Java library targets (default = "share/java").
+    java_strip_prefix: List of prefixes to remove from Java library paths.
     py_dest: Destination for Python targets
         (default = "lib/python2.7/site_packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
