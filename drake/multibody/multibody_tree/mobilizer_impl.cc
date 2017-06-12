@@ -9,9 +9,9 @@ namespace drake {
 namespace multibody {
 
 template <typename T, int  nq, int nv>
-std::unique_ptr<BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
+std::unique_ptr<internal::BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
     const Body<T>& body, const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<BodyNodeImpl<T, nq, nv>>(body, mobilizer);
+  return std::make_unique<internal::BodyNodeImpl<T, nq, nv>>(body, mobilizer);
 }
 
 // Macro used to explicitly instantiate implementations on all sizes needed.

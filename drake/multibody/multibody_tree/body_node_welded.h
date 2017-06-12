@@ -4,6 +4,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This class represents a BodyNode for nodes with zero degrees of freedom.
 /// These include the world body and the WeldMobilzer.
@@ -17,5 +18,6 @@ class BodyNodeWelded : public BodyNode<T> {
   explicit BodyNodeWelded(const Body<T>& body) : BodyNode<T>(body, nullptr) {}
 };
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

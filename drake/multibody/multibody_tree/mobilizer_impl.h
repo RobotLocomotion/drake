@@ -63,7 +63,7 @@ class MobilizerImpl : public Mobilizer<T> {
   }
 
   /// For MultibodyTree internal use only.
-  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
     const Body<T>& body, const Mobilizer<T>* mobilizer) const final;
 
  protected:

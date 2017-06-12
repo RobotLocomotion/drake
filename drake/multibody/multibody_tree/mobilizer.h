@@ -16,7 +16,9 @@ namespace multibody {
 
 // Forward declarations.
 template<typename T> class Body;
+namespace internal {
 template<typename T> class BodyNode;
+}
 
 /// %Mobilizer is a fundamental object within Drake's multibody engine used to
 /// specify the allowed motions between two Frame objects within a
@@ -226,7 +228,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @}
 
   /// For MultibodyTree internal use only.
-  virtual std::unique_ptr<BodyNode<T>> CreateBodyNode(
+  virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const Body<T>& body, const Mobilizer<T>* mobilizer) const = 0;
 
  private:

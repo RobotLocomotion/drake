@@ -10,6 +10,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// For internal use only of the MultibodyTree implementation.
 /// While all code that is common to any node can be placed in the BodyNode
@@ -42,5 +43,6 @@ class BodyNodeImpl : public BodyNode<T> {
   // using fixed-size Eigen matrices.
 };
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

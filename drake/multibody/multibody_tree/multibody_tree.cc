@@ -14,6 +14,9 @@
 namespace drake {
 namespace multibody {
 
+using internal::BodyNode;
+using internal::BodyNodeWelded;
+
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.

@@ -17,6 +17,8 @@ namespace multibody {
 // Forward declaration.
 template<typename T> class MultibodyTree;
 
+namespace internal {
+
 /// For internal use only of the MultibodyTree implementation.
 /// This is a base class representing a **node** in the tree structure of a
 /// MultibodyTree. %BodyNode provides implementations for convenience methods to
@@ -315,5 +317,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   const Mobilizer<T>* mobilizer_{nullptr};
 };
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
