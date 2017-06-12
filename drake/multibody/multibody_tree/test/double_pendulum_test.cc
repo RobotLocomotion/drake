@@ -37,6 +37,54 @@ using systems::Context;
 // negative y-axis direction.
 // In this model the two links of the pendulum have the same length with their
 // respective centers of mass located at the links' centroids.
+//
+// The schematic below shows the location and relationship of the frames defined
+// by the model. A few comments:
+//  - The body frames for each link are placed at their geometrical center.
+//  - The origin of the shoulder frames (Si and So) are coincident at all times.
+//    So is aligned with Si for θ₁ = 0.
+//  - The origin of the elbow frames (Ei and Eo) are coincident at all times.
+//    Eo is aligned with Ei for θ₂ = 0.
+//
+//         ^
+//         | Si ≡ W World body frame.
+//         +-->     Shoulder inboard frame Si coincides with W.
+//      X_SiSo(θ₁) Shoulder revolute mobilizer with generalized position θ₁.
+//      +--+-----+
+//      |  ^     |
+//      |  | So  | Shoulder outboard frame So.
+//      |  +-->  |
+//      |        |
+//      |  X_USo | Pose of So in U.
+//      |        |
+//      |  ^     |
+//      |  | U   | Upper link body frame U.
+//      |  +-->  |
+//      |        |
+//      |  X_UEi | Pose of Ei in U.
+//      |        |
+//      |  ^     |
+//      |  | Ei  | Elbow inboard frame Ei.
+//      |  +-->  |
+//      +--------+
+//      X_SiSo(θ₂) Elbow revolute mobilizer with generalized position θ₂.
+//      +--+-----+
+//      |  ^     |
+//      |  | Eo  | Elbow outboard frame Eo.
+//      |  +-->  |
+//      |        |
+//      |  X_LEo | Pose of Eo in L.
+//      |        |
+//      |  ^     |
+//      |  | L   | Lower link body frame L.
+//      |  +-->  |
+//      |        |
+//      |        |
+//      |        |
+//      |        |
+//      |        |
+//      |        |
+//      +--------+
 class PendulumTests : public ::testing::Test {
  public:
   // Creates an "empty" MultibodyTree that only contains the "world" body and
