@@ -95,6 +95,8 @@ exports_create_cps_scripts([
     "octomap",
     "pybind11",
     "spdlog",
+    "tinyobjloader",
+    "yaml_cpp",
 ])
 
 exports_files(

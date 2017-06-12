@@ -20,8 +20,7 @@ uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 When using Bazel
 ================
 
-At the moment, only the website (Sphinx) documentation is supported via the
-Bazel build::
+To generate the website (Sphinx) documentation::
 
     $ bazel run //drake/doc:serve_sphinx
 
@@ -32,6 +31,14 @@ To merely compile the website into ``bazel-genfiles/drake/doc/sphinx.zip``
 without launching a preview::
 
     $ bazel build //drake/doc:sphinx.zip
+
+To generate the Doxygen documentation::
+
+    $ cd drake-distro
+    $ drake/doc/doxygen.py [--quick]
+
+To view the generated documentation, open using a web browser to
+``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
 
 .. _documentation-generation-instructions-cmake:
 
