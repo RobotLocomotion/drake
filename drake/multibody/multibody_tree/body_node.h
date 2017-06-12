@@ -175,12 +175,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
- protected:
-  BodyNodeTopology topology_;
-  // Pointers for fast access.
-  const Body<T>& body_;
-  const Mobilizer<T>* mobilizer_{nullptr};
-
  private:
   // Returns the index to the parent body of the body associated with this node.
   // For the root node, corresponding to the world body, this method returns an
@@ -305,7 +299,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       PositionKinematicsCache<T>* pc) const {
     DRAKE_ASSERT(pc != nullptr);
     Isometry3<T>& X_FM = get_mutable_X_FM(pc);
-    X_FM = mobilizer_->CalcAcrossMobilizerTransform(context);
+    X_FM = get_mobilizer().CalcAcrossMobilizerTransform(context);
   }
 
   // Implementation for MultibodyTreeElement::DoSetTopology().
@@ -314,6 +308,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
     topology_ = tree_topology.get_body_node(this->get_index());
   }
+
+  BodyNodeTopology topology_;
+  // Pointers for fast access.
+  const Body<T>& body_;
+  const Mobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace multibody
