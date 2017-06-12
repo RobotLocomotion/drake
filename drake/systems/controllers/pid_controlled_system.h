@@ -102,7 +102,7 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      std::unique_ptr<MatrixGain<T>> feedback_selector,
+                      const MatrixX<double>& feedback_selector,
                       double Kp, double Ki, double Kd);
 
   /// A constructor where the gains are vector values and some of the plant's
@@ -125,7 +125,7 @@ class PidControlledSystem : public Diagram<T> {
   ///
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      std::unique_ptr<MatrixGain<T>> feedback_selector,
+                      const MatrixX<double>& feedback_selector,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd);
 
@@ -157,7 +157,7 @@ class PidControlledSystem : public Diagram<T> {
   static ConnectResult ConnectController(
       const InputPortDescriptor<T>& plant_input,
       const OutputPortDescriptor<T>& plant_output,
-      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const MatrixX<double>& feedback_selector,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
 
@@ -169,7 +169,7 @@ class PidControlledSystem : public Diagram<T> {
   static ConnectResult ConnectControllerWithInputSaturation(
       const InputPortDescriptor<T>& plant_input,
       const OutputPortDescriptor<T>& plant_output,
-      std::unique_ptr<MatrixGain<T>> feedback_selector,
+      const MatrixX<double>& feedback_selector,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
       const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);
@@ -179,7 +179,7 @@ class PidControlledSystem : public Diagram<T> {
   // faults caused by simultaneously moving the plant and calling methods on
   // the plant when one constructor delegates to another constructor.
   void Initialize(std::unique_ptr<System<T>> plant,
-                  std::unique_ptr<MatrixGain<T>> feedback_selector,
+                  const MatrixX<double>& feedback_selector,
                   const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                   const Eigen::VectorXd& Kd);
 
