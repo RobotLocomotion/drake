@@ -105,42 +105,23 @@ class TrajectoryCar : public systems::LeafSystem<T> {
 
   void CalcStateOutput(const systems::Context<T>& context,
                        SimpleCarState<T>* output_vector) const {
-    // Obtain the state vector.
-    const TrajectoryCarState<T>* const state =
-        dynamic_cast<const TrajectoryCarState<T>*>(
-            &context.get_continuous_state_vector());
-    DRAKE_ASSERT(state);
-
-    // Compute the pose.
-    const auto raw_pose = CalcRawPose(*state);
-    ImplCalcOutput(raw_pose, *state, output_vector);
+    const TrajectoryCarState<T>& state = GetState(context);
+    const auto raw_pose = CalcRawPose(state);
+    ImplCalcOutput(raw_pose, state, output_vector);
   }
 
   void CalcPoseOutput(const systems::Context<T>& context,
                       systems::rendering::PoseVector<T>* pose) const {
-    // Obtain the state vector.
-    const TrajectoryCarState<T>* const state =
-        dynamic_cast<const TrajectoryCarState<T>*>(
-            &context.get_continuous_state_vector());
-    DRAKE_ASSERT(state);
-
-    // Compute the pose.
-    const auto raw_pose = CalcRawPose(*state);
+    const auto raw_pose = CalcRawPose(GetState(context));
     ImplCalcPose(raw_pose, pose);
   }
 
   void CalcVelocityOutput(
       const systems::Context<T>& context,
       systems::rendering::FrameVelocity<T>* velocity) const {
-    // Obtain the state vector.
-    const TrajectoryCarState<T>* const state =
-        dynamic_cast<const TrajectoryCarState<T>*>(
-            &context.get_continuous_state_vector());
-    DRAKE_ASSERT(state);
-
-    // Compute the pose and velocities.
-    const auto raw_pose = CalcRawPose(*state);
-    ImplCalcVelocity(raw_pose, *state, velocity);
+    const TrajectoryCarState<T>& state = GetState(context);
+    const auto raw_pose = CalcRawPose(state);
+    ImplCalcVelocity(raw_pose, state, velocity);
   }
 
   void DoCalcTimeDerivatives(
@@ -240,6 +221,15 @@ class TrajectoryCar : public systems::LeafSystem<T> {
 
     rates->set_position(nonneg_velocity);
     rates->set_speed(smooth_acceleration);
+  }
+
+  // Extract the appropriately-typed state from the context.
+  const TrajectoryCarState<T>& GetState(
+      const systems::Context<T>& context) const {
+    auto state = dynamic_cast<const TrajectoryCarState<T>*>(
+        &context.get_continuous_state_vector());
+    DRAKE_DEMAND(state != nullptr);
+    return *state;
   }
 
   // Computes the PositionHeading of the trajectory car based on the car's

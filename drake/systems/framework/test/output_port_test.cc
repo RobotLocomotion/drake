@@ -2,13 +2,13 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_output_port.h"
 
-#include <cctype>
 #include <memory>
 #include <stdexcept>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -65,16 +65,16 @@ void calc_vector3(const Context<double>& context, BasicVector<double>* value) {
 
 // EvalCallback returning a string.
 const AbstractValue& eval_string(const Context<double>& context) {
-  static Value<string> fake_cache;
-  fake_cache.set_value("from eval_string");
-  return fake_cache;
+  static const never_destroyed<Value<string>> fake_cache(
+      string("from eval_string"));
+  return fake_cache.access();
 }
 
 // EvalCallback returning a MyVector3d(3,1,4).
 const AbstractValue& eval_vector3(const Context<double>& context) {
-  static Value<BasicVector<double>> fake_cache(*MyVector3d::Make(0., 0., 0.));
-  fake_cache.get_mutable_value().set_value(Vector3d(3., 1., 4.));
-  return fake_cache;
+  static const never_destroyed<Value<BasicVector<double>>> fake_cache(
+      *MyVector3d::Make(3., 1., 4.));
+  return fake_cache.access();
 }
 
 // This class creates some isolated ports we can play with. They are not
@@ -96,7 +96,7 @@ class LeafOutputPortTest : public ::testing::Test {
   // Create abstract- and vector-valued ports.
   DummySystem dummy_;
   LeafOutputPort<double> absport_general_{dummy_, alloc_string, calc_string};
-  LeafOutputPort<double> vecport_general_{dummy_, alloc_myvector3, 3,
+  LeafOutputPort<double> vecport_general_{dummy_, 3, alloc_myvector3,
                                           calc_vector3};
 };
 
@@ -153,9 +153,9 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   EXPECT_THROW(null_port.Allocate(*context_), std::logic_error);
 }
 
-// Check that Debug builds catch bad output types. We can't
-// run these tests unchecked since they may execute or segfault depending on
-// memory contents.
+// Check that Debug builds catch bad output types. We can't run these tests
+// unchecked since the results would be indeterminate -- they may run to
+// completion or segfault depending on memory contents.
 #ifndef DRAKE_ASSERT_IS_DISARMED
 TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   // The abstract port is a string; let's give it an int.
@@ -167,8 +167,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
 
   // The vector port is a MyVector<3,double>, we'll give it a shorter one.
   auto good_vec = vecport_general_.Allocate(*context_);
-  auto bad_vec = AbstractValue::Make<BasicVector<double>>(
-      *MyVector<2, double>::Make(2., 3.));
+  auto bad_vec = AbstractValue::Make(BasicVector<double>(2));
   EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
   EXPECT_THROW(vecport_general_.Calc(*context_, bad_vec.get()),
                std::logic_error);
@@ -230,7 +229,7 @@ GTEST_TEST(DiagramOutputPortTest, OneLevel) {
   auto context = diagram.CreateDefaultContext();
   auto& out0 = diagram.get_output_port(0);
   auto& out1 = diagram.get_output_port(1);
-  auto value0 = out0.Allocate(*context);
+  auto value0 = out0.Allocate(*context);  // unique_ptr<AbstractValue>
   auto value1 = out1.Allocate(*context);
   const int* int0{};
   const int* int1{};
@@ -250,7 +249,7 @@ GTEST_TEST(DiagramOutputPortTest, Nested) {
   auto& out0 = diagram.get_output_port(0);
   auto& out1 = diagram.get_output_port(1);
   auto& out2 = diagram.get_output_port(2);
-  auto value0 = out0.Allocate(*context);
+  auto value0 = out0.Allocate(*context);  // unique_ptr<AbstractValue>
   auto value1 = out1.Allocate(*context);
   auto value2 = out2.Allocate(*context);
   const int* int0{};

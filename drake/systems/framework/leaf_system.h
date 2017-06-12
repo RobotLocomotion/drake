@@ -696,9 +696,9 @@ class LeafSystem : public System<T> {
                   "Expected vector type derived from BasicVector.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = CreateLeafOutputPort(
-        MakeAllocCallback<BasicVector<T>>(model_vector),
+    auto& port = CreateVectorLeafOutputPort(
         model_vector.size(),
+        MakeAllocCallback<BasicVector<T>>(model_vector),
         [this_ptr, calc](const Context<T>& context, BasicVector<T>* result) {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
           DRAKE_DEMAND(typed_result != nullptr);
@@ -747,9 +747,9 @@ class LeafSystem : public System<T> {
   const OutputPort<T>& DeclareVectorOutputPort(
       const BasicVector<T>& model_vector,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function) {
-    auto& port =
-        CreateLeafOutputPort(MakeAllocCallback(model_vector),
-                             model_vector.size(), vector_calc_function);
+    auto& port = CreateVectorLeafOutputPort(model_vector.size(),
+                                            MakeAllocCallback(model_vector),
+                                            vector_calc_function);
     return port;
   }
 
@@ -769,7 +769,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = CreateLeafOutputPort(
+    auto& port = CreateAbstractLeafOutputPort(
         MakeAllocCallback(model_value),
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
@@ -824,7 +824,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = CreateLeafOutputPort(
+    auto& port = CreateAbstractLeafOutputPort(
         [this_ptr, make](const Context<T>& context) {
           return AbstractValue::Make((this_ptr->*make)(context));
         },
@@ -852,7 +852,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = CreateLeafOutputPort(
+    auto& port = CreateAbstractLeafOutputPort(
         [this_ptr, make](const Context<T>&) {  // Swallow the context.
           return AbstractValue::Make((this_ptr->*make)());
         },
@@ -870,7 +870,7 @@ class LeafSystem : public System<T> {
   const OutputPort<T>& DeclareAbstractOutputPort(
       typename LeafOutputPort<T>::AllocCallback alloc_function,
       typename LeafOutputPort<T>::CalcCallback calc_function) {
-    auto& port = CreateLeafOutputPort(alloc_function, calc_function);
+    auto& port = CreateAbstractLeafOutputPort(alloc_function, calc_function);
     return port;
   }
   //@}
@@ -970,13 +970,26 @@ class LeafSystem : public System<T> {
     }
   }
 
-  // Creates a new LeafOutputPort in this LeafSystem and returns a reference to
-  // it. The arguments to this method are forwarded to the matching
-  // LeafOutputPort constructor.
-  template <typename... Args>
-  LeafOutputPort<T>& CreateLeafOutputPort(Args&&... args) {
+  // Creates a new vector-valued LeafOutputPort in this LeafSystem and returns
+  // a reference to it.
+  LeafOutputPort<T>& CreateVectorLeafOutputPort(
+      int fixed_size,
+      typename LeafOutputPort<T>::AllocCallback vector_allocator,
+      typename LeafOutputPort<T>::CalcVectorCallback vector_calculator) {
     auto port = std::make_unique<LeafOutputPort<T>>(
-        *this, std::forward<Args>(args)...);
+        *this, fixed_size, vector_allocator, vector_calculator);
+    LeafOutputPort<T>* const port_ptr = port.get();
+    this->CreateOutputPort(std::move(port));
+    return *port_ptr;
+  }
+
+  // Creates a new abstract-valued LeafOutputPOrt in this Leafsystem and returns
+  // a reference to it.
+  LeafOutputPort<T>& CreateAbstractLeafOutputPort(
+      typename LeafOutputPort<T>::AllocCallback allocator,
+      typename LeafOutputPort<T>::CalcCallback calculator) {
+    auto port =
+        std::make_unique<LeafOutputPort<T>>(*this, allocator, calculator);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;

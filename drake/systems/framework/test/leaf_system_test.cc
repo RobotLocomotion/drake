@@ -354,11 +354,6 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
   const MyVector4d& expected_myvector() const { return *expected_myvector_; }
 
  private:
-  std::unique_ptr<BasicVector<double>> expected_basic_{
-      BasicVector<double>::Make(1., .5, .25)};
-  std::unique_ptr<MyVector4d> expected_myvector_{
-      MyVector4d::Make(4., 3., 2., 1.)};
-
   void CalcBasicVector3(const Context<double>&,
                         BasicVector<double>* out) const {
     ASSERT_NE(out, nullptr);
@@ -380,6 +375,11 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     ASSERT_NE(out, nullptr);
     *out = "concrete string";
   }
+
+  std::unique_ptr<BasicVector<double>> expected_basic_{
+      BasicVector<double>::Make(1., .5, .25)};
+  std::unique_ptr<MyVector4d> expected_myvector_{
+      MyVector4d::Make(4., 3., 2., 1.)};
 };
 
 // Tests that Declare{Vector,Abstract}{Input,Output}Port end up with the
@@ -479,7 +479,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   auto context = dut.CreateDefaultContext();
 
   std::vector<std::unique_ptr<AbstractValue>> values;
-  for (int i=0; i < 4; ++i) {
+  for (int i = 0; i < 4; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
     values.emplace_back(out.Allocate(*context));
     out.Calc(*context, values.back().get());

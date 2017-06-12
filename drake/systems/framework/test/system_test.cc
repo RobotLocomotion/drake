@@ -323,21 +323,21 @@ class ValueIOTestSystem : public System<T> {
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
     this->DeclareAbstractInputPort();
-    CreateLeafOutputPort(
+    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
         [](const Context<T>&) { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
-        });
+        }));
 
     this->DeclareInputPort(kVectorValued, 1);
-    CreateLeafOutputPort(
+    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
+        1,  // Vector size.
         [](const Context<T>&) {
           return std::make_unique<Value<BasicVector<T>>>(1);
         },
-        1,  // Vector size.
         [this](const Context<T>& context, BasicVector<T>* output) {
           this->CalcVectorOutput(context, output);
-        });
+        }));
 
     this->set_name("ValueIOTestSystem");
   }
@@ -410,20 +410,6 @@ class ValueIOTestSystem : public System<T> {
     output->add_port(this->get_output_port(0).Allocate(context));
     output->add_port(this->get_output_port(1).Allocate(context));
     return std::move(output);
-  }
-
- private:
-  // Creates a new LeafOutputPort in this System and returns a reference to
-  // it. The arguments to this method are forwarded to the matching
-  // LeafOutputPort constructor. (This method is normally supplied by
-  // LeafSystem but we're not including that here.)
-  template <typename... Args>
-  LeafOutputPort<T>& CreateLeafOutputPort(Args&&... args) {
-    auto port =
-        std::make_unique<LeafOutputPort<T>>(*this, std::forward<Args>(args)...);
-    LeafOutputPort<T>* const port_ptr = port.get();
-    this->CreateOutputPort(std::move(port));
-    return *port_ptr;
   }
 };
 

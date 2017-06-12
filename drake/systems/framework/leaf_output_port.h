@@ -70,7 +70,8 @@ class LeafOutputPort : public OutputPort<T> {
   a suitable AbstractValue in which to hold the result. The supplied calculator
   function writes to an AbstractValue of the same underlying concrete type as is
   returned by the allocator. */
-  LeafOutputPort(const System<T>& system, AllocCallback alloc_function,
+  LeafOutputPort(const System<T>& system,
+                 AllocCallback alloc_function,
                  CalcCallback calc_function)
       : OutputPort<T>(system, kAbstractValued, 0 /* size */) {
     set_allocation_function(alloc_function);
@@ -88,9 +89,10 @@ class LeafOutputPort : public OutputPort<T> {
   // this method is invoked. Do not attempt to extract the size from
   // the allocator by calling it here.
   LeafOutputPort(const System<T>& system,
-                 AllocCallback vector_alloc_function, int size,
+                 int fixed_size,
+                 AllocCallback vector_alloc_function,
                  CalcVectorCallback vector_calc_function)
-      : OutputPort<T>(system, kVectorValued, size) {
+      : OutputPort<T>(system, kVectorValued, fixed_size) {
     set_allocation_function(vector_alloc_function);
     set_calculation_function(vector_calc_function);
   }
