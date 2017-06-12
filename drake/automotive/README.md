@@ -84,7 +84,7 @@ To run `car_sim_lcm`, open a new terminal and execute the following commands:
 ```
 $ cd drake-distro
 $ bazel build drake/automotive:demo drake/automotive:car_sim_lcm
-$ bazel-bin/external/drake_visualizer/drake-visualizer &
+$ bazel-bin/tools/drake_visualizer &
 $ bazel-bin/drake/automotive/steering_command_driver &
 $ bazel run drake/automotive:car_sim_lcm
 ```
