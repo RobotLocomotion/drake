@@ -42,7 +42,7 @@ class ExampleDiagram : public Diagram<double> {
     adder2_->set_name("adder2");
     empty_ = builder.AddSystem<analysis_test::EmptySystem<double>>(
         1.0 /* trigger time */,
-        WitnessFunction<double>::DirectionType::kCrossesZero);
+        WitnessFunctionDirectionType::kCrossesZero);
     empty_->set_name("empty");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);

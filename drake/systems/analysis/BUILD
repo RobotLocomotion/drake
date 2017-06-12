@@ -94,6 +94,7 @@ drake_cc_library(
         "//drake/common:extract_double",
         "//drake/systems/framework:context",
         "//drake/systems/framework:system",
+        "//drake/systems/framework:witness",
     ],
 )
 

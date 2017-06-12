@@ -23,7 +23,7 @@ class ClockWitness : public systems::WitnessFunction<T> {
   explicit ClockWitness(
       const T& trigger_time,
       const EmptySystem<T>& system,
-      const typename systems::WitnessFunction<T>::DirectionType& dir_type) :
+      const typename systems::WitnessFunctionDirectionType& dir_type) :
         systems::WitnessFunction<T>(system, dir_type,
           systems::DiscreteEvent<T>::kPublishAction),
         trigger_time_(trigger_time) {
@@ -50,7 +50,7 @@ class EmptySystem : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptySystem)
 
   explicit EmptySystem(const T& offset,
-      const typename systems::WitnessFunction<T>::DirectionType& dir_type) {
+      const systems::WitnessFunctionDirectionType& dir_type) {
     witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
 
@@ -62,31 +62,8 @@ class EmptySystem : public LeafSystem<T> {
  protected:
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
     AutoDiffXd trigger_time(witness_->get_trigger_time());
-    WitnessFunction<AutoDiffXd>::DirectionType dir_type;
-    switch (witness_->get_dir_type()) {
-      case WitnessFunction<T>::DirectionType::kCrossesZero:
-        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::kCrossesZero;
-        break;
-
-      case WitnessFunction<T>::DirectionType::kNegativeThenNonNegative:
-        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::
-            kNegativeThenNonNegative;
-        break;
-
-      case WitnessFunction<T>::DirectionType::kPositiveThenNonPositive:
-        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::
-            kPositiveThenNonPositive;
-        break;
-
-      case WitnessFunction<T>::DirectionType::kNone:
-        dir_type = WitnessFunction<AutoDiffXd>::DirectionType::kNone;
-        break;
-
-      default:
-        DRAKE_ABORT_MSG("Unexpected witness function direction type.");
-    }
     return new EmptySystem<AutoDiffXd>(trigger_time,
-                                       dir_type);
+                                       witness_->get_dir_type());
   }
 
   void DoCalcOutput(const Context<T>&,

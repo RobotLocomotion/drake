@@ -10,6 +10,25 @@
 namespace drake {
 namespace systems {
 
+enum class WitnessFunctionDirectionType {
+  /// This witness function will never be triggered.
+  kNone,
+
+  /// Witness function triggers when the function crosses or touches zero
+  /// after an initial positive evaluation.
+  kPositiveThenNonPositive,
+
+  /// Witness function triggers when the function crosses or touches zero
+  /// after an initial negative evaluation.
+  kNegativeThenNonNegative,
+
+  /// Witness function triggers *any time* the function crosses/touches zero,
+  /// *except* when the witness function evaluates to zero at the beginning
+  /// of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
+  /// kNegativeThenNonNegative.
+  kCrossesZero,
+};
+
 /// Abstract class that describes a function that is able to help determine
 /// the time and state at which a simulation should be halted, which may be
 /// done for any number of purposes, including publishing or state
@@ -69,29 +88,10 @@ class WitnessFunction {
 
   virtual ~WitnessFunction() {}
 
-  enum class DirectionType {
-    /// This witness function will never be triggered.
-    kNone,
-
-    /// Witness function triggers when the function crosses or touches zero
-    /// after an initial positive evaluation.
-    kPositiveThenNonPositive,
-
-    /// Witness function triggers when the function crosses or touches zero
-    /// after an initial negative evaluation.
-    kNegativeThenNonNegative,
-
-    /// Witness function triggers *any time* the function crosses/touches zero,
-    /// *except* when the witness function evaluates to zero at the beginning
-    /// of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
-    /// kNegativeThenNonNegative.
-    kCrossesZero,
-  };
-
   /// Constructs the witness function with the given direction type and action
   /// type.
   WitnessFunction(const System<T>& system,
-                  const DirectionType& dtype,
+                  const WitnessFunctionDirectionType& dtype,
                   const typename DiscreteEvent<T>::ActionType& atype) :
                   system_(system), dir_type_(dtype), action_type_(atype) {}
 
@@ -110,7 +110,7 @@ class WitnessFunction {
       return action_type_; }
 
   /// Gets the direction(s) under which this witness function triggers.
-  DirectionType get_dir_type() const { return dir_type_; }
+  WitnessFunctionDirectionType get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
   T Evaluate(const Context<T>& context) const {
@@ -125,19 +125,19 @@ class WitnessFunction {
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
   bool should_trigger(const T& w0, const T& wf) const {
-    DirectionType dtype = get_dir_type();
+    WitnessFunctionDirectionType dtype = get_dir_type();
 
     switch (dtype) {
-      case DirectionType::kNone:
+      case WitnessFunctionDirectionType::kNone:
         return false;
 
-      case DirectionType::kPositiveThenNonPositive:
+      case WitnessFunctionDirectionType::kPositiveThenNonPositive:
         return (w0 > 0 && wf <= 0);
 
-      case DirectionType::kNegativeThenNonNegative:
+      case WitnessFunctionDirectionType::kNegativeThenNonNegative:
         return (w0 < 0 && wf >= 0);
 
-      case DirectionType::kCrossesZero:
+      case WitnessFunctionDirectionType::kCrossesZero:
         return ((w0 > 0 && wf <= 0) ||
                 (w0 < 0 && wf >= 0));
 
@@ -160,7 +160,7 @@ class WitnessFunction {
   const System<T>& system_;
 
   // Direction(s) under which this witness function triggers.
-  DirectionType dir_type_;
+  WitnessFunctionDirectionType dir_type_;
 
   // Action (event type) to be taken when this witness function triggers.
   typename DiscreteEvent<T>::ActionType action_type_;

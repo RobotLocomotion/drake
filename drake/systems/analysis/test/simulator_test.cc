@@ -42,7 +42,7 @@ class EmptyDiagram : public Diagram<double> {
 
     // Add the empty system (and its witness function).
     empty_ = builder.AddSystem<EmptySystem>(offset,
-        WitnessFunction<double>::DirectionType::kCrossesZero);
+        WitnessFunctionDirectionType::kCrossesZero);
     empty_->set_name("empty_diag");
     builder.BuildInto(this);
   }
@@ -118,7 +118,7 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 // function should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
+  EmptySystem system(+1, WitnessFunctionDirectionType::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -145,7 +145,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
 // should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
   // Set empty system to trigger when time is zero.
-  EmptySystem system(0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  EmptySystem system(0, WitnessFunctionDirectionType::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -170,7 +170,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(+1, WitnessFunction<double>::DirectionType::
+  EmptySystem system(+1, WitnessFunctionDirectionType::
       kPositiveThenNonPositive);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -196,7 +196,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
 // triggerings (zero) for a negative-to-positive trigger. Uses the same empty
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
-  EmptySystem system(0, WitnessFunction<double>::DirectionType::
+  EmptySystem system(0, WitnessFunctionDirectionType::
       kNegativeThenNonNegative);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
