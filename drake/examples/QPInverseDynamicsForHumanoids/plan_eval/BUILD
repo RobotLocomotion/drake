@@ -96,3 +96,5 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
     ],
 )
+
+cpplint()

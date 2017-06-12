@@ -15,7 +15,8 @@ class MosekSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
 
-  MosekSolver() : MathematicalProgramSolverInterface(SolverType::kMosek) {}
+  MosekSolver() = default;
+  ~MosekSolver() override = default;
 
   /**
    * Defined true if Mosek was included during compilation, false otherwise.
@@ -23,6 +24,10 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   bool available() const override;
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
+
+  SolverType solver_type() const override { return SolverType::kMosek; }
+
+  std::string SolverName() const override { return "Mosek"; }
 
   /**
    * This type contains a valid MOSEK license environment, and is only to be

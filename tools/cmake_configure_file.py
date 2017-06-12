@@ -20,7 +20,7 @@ from collections import OrderedDict
 _cmakedefine = re.compile(r'^#cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)')
 
 # Looks like "@VAR@" or "${VAR}".
-_varsubst = re.compile(r'^(.*?)(@.+?@|\$\{.+?\})(.*)([\r\n]*)')
+_varsubst = re.compile(r'^(.*?)(@[^ ]+?@|\$\{[^ ]+?\})(.*)([\r\n]*)')
 
 
 # Transform a source code line per CMake's configure_file semantics.

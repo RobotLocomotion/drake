@@ -89,12 +89,6 @@ Eigen::Index minCoeffIdx(const Eigen::MatrixBase<Derived>& in) {
 const double kSqrtEps = std::sqrt(std::numeric_limits<double>::epsilon());
 }  // anonymous namespace
 
-// Sole constructor
-template <typename T>
-MobyLCPSolver<T>::MobyLCPSolver()
-    : MathematicalProgramSolverInterface(SolverType::kMobyLCP),
-      log_enabled_(false) {}
-
 template <typename T>
 void MobyLCPSolver<T>::SetLoggingEnabled(bool enabled) {
   log_enabled_ = enabled; }

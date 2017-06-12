@@ -10,7 +10,20 @@
     "Eigen3": {
       "Version": "3.3.3",
       "Hints": ["@prefix@/lib/cmake/eigen3"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "lcm": {
+      "Version": "1.3.95",
+      "Hints": ["@prefix@/lib/cmake/lcm"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "bot2-core-lcmtypes": {
+      "Hints": ["@prefix@/lib/cmake/bot2-core-lcmtypes"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "robotlocomotion-lcmtypes": {
+      "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
   "Components": {
@@ -21,7 +34,12 @@
         "@prefix@/include"
       ],
       "Compile-Features": ["c++14"],
-      "Requires": [ "Eigen3:Eigen" ]
+      "Requires": [
+        "Eigen3:Eigen",
+        "lcm:lcm",
+        "bot2-core-lcmtypes:bot2-core-lcmtypes-cpp",
+        "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp"
+      ]
     }
   }
 }

@@ -28,3 +28,5 @@ drake_cc_binary(
         "@com_github_gflags_gflags//:gflags",
     ],
 )
+
+cpplint()

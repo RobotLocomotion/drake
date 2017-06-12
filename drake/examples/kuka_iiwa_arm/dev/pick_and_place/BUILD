@@ -49,3 +49,5 @@ drake_cc_binary(
 )
 
 # === test/ ===
+
+cpplint()

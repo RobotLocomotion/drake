@@ -36,8 +36,7 @@ class MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgramSolverInterface)
 
-  explicit MathematicalProgramSolverInterface(SolverType solver_type)
-      : solver_type_(solver_type) {}
+  MathematicalProgramSolverInterface() = default;
   virtual ~MathematicalProgramSolverInterface() = default;
 
   /// Returns true iff this solver was enabled at compile-time.
@@ -51,18 +50,11 @@ class MathematicalProgramSolverInterface {
   virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
 
   /// Returns the type of the solver.
-  SolverType solver_type() const {return solver_type_;}
+  virtual SolverType solver_type() const = 0;
 
-  std::string SolverName() const;
-
- private:
-  const SolverType solver_type_;
+  /// Returns the name of the solver.
+  virtual std::string SolverName() const = 0;
 };
 
-std::ostream& operator<<(
-    std::ostream& os,
-    const SolverType& solver_type);
-
-std::string Name(SolverType solver_type);
 }  // namespace solvers
 }  // namespace drake
