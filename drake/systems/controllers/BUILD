@@ -10,7 +10,7 @@ drake_cc_library(
     name = "state_feedback_controller_base",
     hdrs = ["state_feedback_controller_base.h"],
     deps = [
-        "//drake/systems/framework",
+        "//drake/systems/framework:system_port_descriptor",
     ],
 )
 
@@ -68,6 +68,7 @@ drake_cc_library(
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
     deps = [
+        ":state_feedback_controller_base",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/primitives:matrix_gain",
     ],
