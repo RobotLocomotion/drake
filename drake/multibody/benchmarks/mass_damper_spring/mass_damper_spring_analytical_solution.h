@@ -19,7 +19,9 @@ namespace benchmarks {
 /// constant.  The damper force on Q is -b*ẋ*Nx where b is a damper constant
 /// and ẋ is the time-derivative of x.
 ///
-/// @note All units must be self-consistent (e.g., standard SI units).
+/// @note All units must be self-consistent (e.g., standard SI with MKS units).
+///       The solution provided herein is also applicable to a rotating system,
+///       e.g., having rigid-body inertia, rotational damper, rotational spring.
 class MassDamperSpringAnalyticalSolution {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MassDamperSpringAnalyticalSolution);
@@ -67,6 +69,31 @@ class MassDamperSpringAnalyticalSolution {
   // x0_    |  Initial value of x (at time t = 0).
   // xDt0_  |  Initial value of ẋ (at time t = 0).
   double m_, b_, k_, x0_, xDt0_;
+
+  // Calculate `this` mass-damper-spring system's natural frequency (wn).
+  double CalculateNaturalFrequency() const  { return std::sqrt(k_ / m_); }
+
+  // Calculate `this` mass-damper-spring system's damping ratio (zeta).
+  double CalculateDampingRatio() const  { return b_ / (2 * std::sqrt(m_ * k_));}
+
+  // Calculates the values of x, ẋ, ẍ at time t associated with the ODE
+  // ẍ  +  2 ζ ωₙ ẋ  +  ωₙ²  =  0  and with the initial values from `this`.
+  //
+  // @param[in] zeta Damping ratio (ζ) associated with this 2nd-order ODE.
+  //                 There are no units for zeta (ζ) (dimensionless quantity).
+  // @param[in] wn  Natural frequency (ωₙ) associated with this 2nd-order ODE.
+  //                The units of wn are typically in rad/sec.
+  // @param[in] t The value of time at which output is requested (usually in s)
+  //              The units of t are typically in seconds.
+  // @param[in] x0 Initial value of x (value of x at time t = 0).
+  //               For translation, the units of x0 are typically in meters.
+  // @param[in] xDt0 Initial value of ẋ (value of ẋ at time t = 0).
+  //                 For translation, the units of xDt0 are typically in m/s.
+  //
+  // @returns Three-element matrix consisting of x, ẋ, ẍ, respectively.
+  static Eigen::Vector3d CalculateOutput(const double zeta, const double wn,
+                                         const double x0, const double xDt0,
+                                         const double t);
 };
 
 
