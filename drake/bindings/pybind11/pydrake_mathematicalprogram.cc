@@ -145,7 +145,7 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("AddPositiveSemidefiniteConstraint",
          (Binding<PositiveSemidefiniteConstraint>
           (MathematicalProgram::*)(
-          const Eigen::ref<const MatrixXDecisionVariable>&))
+          const Eigen::Ref<const MatrixXDecisionVariable>&))
          &MathematicalProgram::AddPositiveSemidefiniteConstraint)
     .def("AddLinearCost",
          (Binding<LinearCost>
