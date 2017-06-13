@@ -167,9 +167,7 @@ drake_cc_googletest(
         ":runge_kutta3_integrator",
         ":simulator",
         "//drake/common:is_dynamic_castable",
-        "//drake/common:text_logging_gflags",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
-        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
