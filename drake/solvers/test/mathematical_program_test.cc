@@ -20,9 +20,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/monomial.h"
+#include "drake/common/monomial_util.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/test/is_dynamic_castable.h"
 #include "drake/common/test/symbolic_test_util.h"
@@ -1525,26 +1527,17 @@ GTEST_TEST(testMathematicalProgram,
 }
 
 namespace {
-bool AreTwoPolynomialsNear(const symbolic::MonomialToCoefficientMap& poly1,
-                           const symbolic::MonomialToCoefficientMap& poly2,
+bool AreTwoPolynomialsNear(const symbolic::Polynomial& p1,
+                           const symbolic::Polynomial& p2,
                            double tol = numeric_limits<double>::epsilon()) {
-  // TODO(hongkai.dai): rewrite this part when we have function to add and
-  // subtract two polynomials.
-  symbolic::MonomialToCoefficientMap poly_diff;
-  poly_diff.reserve(poly1.size() + poly2.size());
-  poly_diff.insert(poly1.begin(), poly1.end());
-  for (const auto& p2 : poly2) {
-    const auto it = poly_diff.find(p2.first);
-    if (it == poly_diff.end()) {
-      poly_diff.emplace_hint(it, p2.first, -p2.second);
-    } else {
-      it->second -= p2.second;
-    }
-  }
-  return all_of(poly_diff.begin(), poly_diff.end(), [&tol](const auto& p) {
-    return std::abs(symbolic::get_constant_value(p.second)) <= tol;
-  });
-}
+  symbolic::Polynomial diff{p1 - p2};
+  const auto& monomial_to_coeff_map = diff.monomial_to_coefficient_map();
+  return all_of(monomial_to_coeff_map.begin(), monomial_to_coeff_map.end(),
+                [tol](const auto& p) {
+                  return std::abs(symbolic::get_constant_value(p.second)) <=
+                         tol;
+                });
+}  // namespace
 
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog, const Expression& linear_expr,
@@ -1566,14 +1559,10 @@ void CheckParsedSymbolicLorentzConeConstraint(
   // do not match exactly.So we will compare each term in the two polynomials,
   // and regard them to be equal if the error in the coefficient is sufficiently
   // small.
-  const auto& monomial_to_coeff_map_parsed =
-      symbolic::DecomposePolynomialIntoMonomial(
-          quadratic_expr_parsed, quadratic_expr_parsed.GetVariables());
-  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
-      quadratic_expr, quadratic_expr.GetVariables());
-  double tol = 100 * numeric_limits<double>::epsilon();
-  EXPECT_TRUE(AreTwoPolynomialsNear(monomial_to_coeff_map_parsed,
-                                    monomial_to_coeff_map, tol));
+  const symbolic::Polynomial poly_parsed{quadratic_expr_parsed};
+  const symbolic::Polynomial poly{quadratic_expr};
+  const double tol = 100 * numeric_limits<double>::epsilon();
+  EXPECT_TRUE(AreTwoPolynomialsNear(poly_parsed, poly, tol));
 }
 
 void CheckParsedSymbolicLorentzConeConstraint(
@@ -2041,10 +2030,10 @@ symbolic::Monomial transform(const symbolic::Monomial& monomial,
 // @pre `var_id_to_var` is 1-1.
 // @pre The domain of `var_id_to_var` includes all variables in `m`.
 // @pre `var_id_to_var` should be chain-free.
-symbolic::MonomialToCoefficientMap transform(
-    const symbolic::MonomialToCoefficientMap& m,
+symbolic::Polynomial::MapType transform(
+    const symbolic::Polynomial::MapType& m,
     const map<Variable::Id, Variable>& var_id_to_var) {
-  symbolic::MonomialToCoefficientMap new_map;
+  symbolic::Polynomial::MapType new_map;
   for (const pair<symbolic::Monomial, symbolic::Expression>& p : m) {
     new_map.emplace(transform(p.first, var_id_to_var), p.second);
   }
@@ -2053,15 +2042,15 @@ symbolic::MonomialToCoefficientMap transform(
 
 // Helper function for CheckAddedPolynomialCost.
 //
-// Checks if two MonomialToCoefficientMap `map1` and `map2` are isomorphic with
+// Checks if two Polynomial::MapType `map1` and `map2` are isomorphic with
 // respect to a bijection `var_id_to_var`.
 //
 // @pre `var_id_to_var` is 1-1.
 // @pre The domain of `var_id_to_var` includes all variables in `m`.
 // @pre `var_id_to_var` should be chain-free.
 bool AreMonomialToCoefficientMapIsomorphic(
-    const symbolic::MonomialToCoefficientMap& map1,
-    const symbolic::MonomialToCoefficientMap& map2,
+    const symbolic::Polynomial::MapType& map1,
+    const symbolic::Polynomial::MapType& map2,
     const map<Variable::Id, Variable>& var_id_to_var) {
   return transform(map1, var_id_to_var) == map2;
 }
@@ -2075,7 +2064,7 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   const auto polynomial = binding.constraint()->polynomials()(0);
 
   // map_expected : symbolic::Monomial → symbolic::Expression.
-  symbolic::MonomialToCoefficientMap map_expected;
+  symbolic::Polynomial::MapType map_expected;
   // var_id_to_var : Variable::Id → Variable. It keeps the relation between a
   // variable in a Polynomial<double> and symbolic::Monomial.
   map<Variable::Id, Variable> var_id_to_var;
@@ -2095,10 +2084,10 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
     map_expected.emplace(m_symbolic, m.coefficient);
   }
   // Now compare the reconstructed symbolic polynomial with `e`.
-  const symbolic::MonomialToCoefficientMap map =
-      symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
-  // Checks if the two map, `map` and `map_expected` are isomorphic with respect
-  // to `var_id_to_var`.
+  const symbolic::Polynomial poly{e};
+  const auto& map = poly.monomial_to_coefficient_map();
+  // Checks if the two maps, `map` and `map_expected` are isomorphic with
+  // respect to `var_id_to_var`.
   EXPECT_TRUE(
       AreMonomialToCoefficientMapIsomorphic(map, map_expected, var_id_to_var));
 }

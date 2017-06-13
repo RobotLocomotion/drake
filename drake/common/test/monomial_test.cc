@@ -9,6 +9,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
+#include "drake/common/monomial_util.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
@@ -142,84 +143,59 @@ TEST_F(MonomialTest, MonomialWithZeroExponent) {
   EXPECT_EQ(m2.get_powers(), power_expected);
 }
 
-TEST_F(MonomialTest, Monomial) {
-  // clang-format off
-  EXPECT_PRED2(
-      ExprEqual,
-      GetMonomial(unordered_map<Variable, int, hash_value<Variable>>{}),
-      Expression{1.0});
-
-  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}}),
-               x_);
-
-  EXPECT_PRED2(ExprEqual, GetMonomial({{var_y_, 1}}),
-               y_);
-
-  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 1}}),
-               x_ * y_);
-
-  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 2}, {var_y_, 3}}),
-               x_ * x_ * y_ * y_ * y_);
-
-  EXPECT_PRED2(ExprEqual, GetMonomial({{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}),
-               pow(x_, 1) * pow(y_, 2) * pow(z_, 3));
-  // clang-format on
-}
-
 TEST_F(MonomialTest, MonomialBasis_x_0) {
-  const drake::Vector1<Expression> basis1{MonomialBasis({var_x_}, 0)};
+  const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_}, 0)};
   const auto basis2 = MonomialBasis<1, 0>({var_x_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 1);
-  drake::Vector1<Expression> expected;
+  drake::Vector1<Monomial> expected;
 
-  // MonomialBasis({x}, 0)
-  expected << Expression{1.0};
+  // MonomialBasis({x}, 0) = {x⁰} = {1}.
+  expected << Monomial{};
 
   EXPECT_EQ(basis1, expected);
   EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_2) {
-  const drake::Vector3<Expression> basis1{MonomialBasis({var_x_}, 2)};
+  const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_}, 2)};
   const auto basis2 = MonomialBasis<1, 2>({var_x_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 3);
-  drake::Vector3<Expression> expected;
+  drake::Vector3<Monomial> expected;
 
-  // MonomialBasis({x}, 2)
+  // MonomialBasis({x}, 2) = {x², x, 1}.
   // clang-format off
-  expected << x_ * x_,
-              x_,
-              1.0;
+  expected << Monomial{var_x_, 2},
+              Monomial{var_x_},
+              Monomial{};
   // clang-format on
-
   EXPECT_EQ(basis1, expected);
   EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_0) {
-  const drake::VectorX<Expression> basis1{MonomialBasis({var_x_, var_y_}, 0)};
+  const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 0)};
   const auto basis2 = MonomialBasis<2, 0>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 1);
-  drake::Vector1<Expression> expected;
+  drake::Vector1<Monomial> expected;
 
-  // MonomialBasis({x, y}, 0)
-  expected << Expression{1.0};
+  // MonomialBasis({x, y}, 0) = {1}.
+  expected << Monomial{{{var_x_, 0}, {var_y_, 0}}};  // = {1}.
 
   EXPECT_EQ(basis1, expected);
   EXPECT_EQ(basis2, expected);
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_1) {
-  const drake::VectorX<Expression> basis1{MonomialBasis({var_x_, var_y_}, 1)};
+  const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 1)};
   const auto basis2 = MonomialBasis<2, 1>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 3);
-  drake::Vector3<Expression> expected;
+  drake::Vector3<Monomial> expected;
 
-  // MonomialBasis({x, y}, 1)
+  // MonomialBasis({x, y}, 1) = {x, y, 1}.
   // clang-format off
-  expected << x_,
-              y_,
-              1.0;
+  expected << Monomial{var_x_},
+              Monomial{var_y_},
+              Monomial{};
   // clang-format on
 
   EXPECT_EQ(basis1, expected);
@@ -227,19 +203,19 @@ TEST_F(MonomialTest, MonomialBasis_x_y_1) {
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_2) {
-  const drake::VectorX<Expression> basis1{MonomialBasis({var_x_, var_y_}, 2)};
+  const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 2)};
   const auto basis2 = MonomialBasis<2, 2>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 6);
-  drake::Vector6<Expression> expected;
+  drake::Vector6<Monomial> expected;
 
-  // MonomialBasis({x, y}, 2)
+  // MonomialBasis({x, y}, 2) = {x², xy, y², x, y, 1}.
   // clang-format off
-  expected << x_ * x_,
-              x_ * y_,
-              y_ * y_,
-              x_,
-              y_,
-              1.0;
+  expected << Monomial{var_x_, 2},
+              Monomial{{{var_x_, 1}, {var_y_, 1}}},
+              Monomial{var_y_, 2},
+              Monomial{var_x_},
+              Monomial{var_y_},
+              Monomial{};
   // clang-format on
 
   EXPECT_EQ(basis1, expected);
@@ -247,23 +223,23 @@ TEST_F(MonomialTest, MonomialBasis_x_y_2) {
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_3) {
-  const drake::VectorX<Expression> basis1{MonomialBasis({var_x_, var_y_}, 3)};
+  const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 3)};
   const auto basis2 = MonomialBasis<2, 3>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 10);
-  Eigen::Matrix<Expression, 10, 1> expected;
+  Eigen::Matrix<Monomial, 10, 1> expected;
 
-  // MonomialBasis({x, y}, 3)
+  // MonomialBasis({x, y}, 3) = {x³, x²y, xy², y³, x², xy, y², x, y, 1}.
   // clang-format off
-  expected << pow(x_, 3),
-              (pow(x_, 2) * y_),
-              (x_ * pow(y_, 2)),
-              pow(y_, 3),
-              pow(x_, 2),
-              (x_ * y_),
-              pow(y_, 2),
-              x_,
-              y_,
-              1;
+  expected << Monomial{var_x_, 3},
+              Monomial{{{var_x_, 2}, {var_y_, 1}}},
+              Monomial{{{var_x_, 1}, {var_y_, 2}}},
+              Monomial{var_y_, 3},
+              Monomial{var_x_, 2},
+              Monomial{{{var_x_, 1}, {var_y_, 1}}},
+              Monomial{var_y_, 2},
+              Monomial{var_x_},
+              Monomial{var_y_},
+              Monomial{};
   // clang-format on
 
   EXPECT_EQ(basis1, expected);
@@ -271,25 +247,25 @@ TEST_F(MonomialTest, MonomialBasis_x_y_3) {
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
-  const drake::VectorX<Expression> basis1{
+  const drake::VectorX<Monomial> basis1{
       MonomialBasis({var_x_, var_y_, var_z_}, 2)};
   const auto basis2 = MonomialBasis<3, 2>({var_x_, var_y_, var_z_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 10);
 
-  Eigen::Matrix<Expression, 10, 1> expected;
+  Eigen::Matrix<Monomial, 10, 1> expected;
 
   // MonomialBasis({x, y, z}, 2)
   // clang-format off
-  expected << pow(x_, 2),
-              (x_ * y_),
-              pow(y_, 2),
-              (x_ * z_),
-              (y_ * z_),
-              pow(z_, 2),
-              x_,
-              y_,
-              z_,
-              1;
+  expected << Monomial{var_x_, 2},
+              Monomial{{{var_x_, 1}, {var_y_, 1}}},
+              Monomial{var_y_, 2},
+              Monomial{{{var_x_, 1}, {var_z_, 1}}},
+              Monomial{{{var_y_, 1}, {var_z_, 1}}},
+              Monomial{var_z_, 2},
+              Monomial{var_x_},
+              Monomial{var_y_},
+              Monomial{var_z_},
+              Monomial{};
   // clang-format on
 
   EXPECT_EQ(basis1, expected);
@@ -297,34 +273,36 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
-  const drake::VectorX<Expression> basis1{
+  const drake::VectorX<Monomial> basis1{
       MonomialBasis({var_x_, var_y_, var_z_}, 3)};
   const auto basis2 = MonomialBasis<3, 3>({var_x_, var_y_, var_z_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 20);
-  Eigen::Matrix<Expression, 20, 1> expected;
+  Eigen::Matrix<Monomial, 20, 1> expected;
 
   // MonomialBasis({x, y, z}, 3)
+  // = {x³, x²y, xy², y³, x²z, xyz, y²z, xz², yz²,
+  //    z³, x², xy, y², xz, yz, z², x, y, z, 1}
   // clang-format off
-  expected << pow(x_, 3),
-              (pow(x_, 2) * y_),
-              (x_ * pow(y_, 2)),
-              pow(y_, 3),
-              (pow(x_, 2) * z_),
-              (y_ * x_ * z_),
-              (pow(y_, 2) * z_),
-              (x_ * pow(z_, 2)),
-              (y_ * pow(z_, 2)),
-              pow(z_, 3),
-              pow(x_, 2),
-              (x_ * y_),
-              pow(y_, 2),
-              (x_ * z_),
-              (y_ * z_),
-              pow(z_, 2),
-              x_,
-              y_,
-              z_,
-              1;
+  expected << Monomial{var_x_, 3},
+              Monomial{{{var_x_, 2}, {var_y_, 1}}},
+              Monomial{{{var_x_, 1}, {var_y_, 2}}},
+              Monomial{var_y_, 3},
+              Monomial{{{var_x_, 2}, {var_z_, 1}}},
+              Monomial{{{var_x_, 1}, {var_y_, 1}, {var_z_, 1}}},
+              Monomial{{{var_y_, 2}, {var_z_, 1}}},
+              Monomial{{{var_x_, 1}, {var_z_, 2}}},
+              Monomial{{{var_y_, 1}, {var_z_, 2}}},
+              Monomial{var_z_, 3},
+              Monomial{var_x_, 2},
+              Monomial{{{var_x_, 1}, {var_y_, 1}}},
+              Monomial{var_y_, 2},
+              Monomial{{{var_x_, 1}, {var_z_, 1}}},
+              Monomial{{{var_y_, 1}, {var_z_, 1}}},
+              Monomial{var_z_, 2},
+              Monomial{var_x_},
+              Monomial{var_y_},
+              Monomial{var_z_},
+              Monomial{};
   // clang-format on
 
   EXPECT_EQ(basis1, expected);
@@ -332,49 +310,49 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
 }
 
 TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
-  const drake::VectorX<Expression> basis1{
+  const drake::VectorX<Monomial> basis1{
       MonomialBasis({var_x_, var_y_, var_z_, var_w_}, 3)};
   const auto basis2 = MonomialBasis<4, 3>({var_x_, var_y_, var_z_, var_w_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 35);
-  Eigen::Matrix<Expression, 35, 1> expected;
+  Eigen::Matrix<Monomial, 35, 1> expected;
 
   // MonomialBasis({x, y, z, w}, 3)
   // clang-format off
-  expected << pow(x_, 3),
-              (pow(x_, 2) * y_),
-              (x_ * pow(y_, 2)),
-              pow(y_, 3),
-              (pow(x_, 2) * z_),
-              (x_ * y_ * z_),
-              (pow(y_, 2) * z_),
-              (x_ * pow(z_, 2)),
-              (y_ * pow(z_, 2)),
-              pow(z_, 3),
-              (pow(x_, 2) * w_),
-              (y_ * x_ * w_),
-              (pow(y_, 2) * w_),
-              (z_ * x_ * w_),
-              (z_ * y_ * w_),
-              (pow(z_, 2) * w_),
-              (x_ * pow(w_, 2)),
-              (y_ * pow(w_, 2)),
-              (z_ * pow(w_, 2)),
-              pow(w_, 3),
-              pow(x_, 2),
-              (x_ * y_),
-              pow(y_, 2),
-              (x_ * z_),
-              (y_ * z_),
-              pow(z_, 2),
-              (x_ * w_),
-              (y_ * w_),
-              (z_ * w_),
-              pow(w_, 2),
-              x_,
-              y_,
-              z_,
-              w_,
-              1;
+  expected << Monomial{var_x_, 3},
+              Monomial{{{var_x_, 2}, {var_y_, 1}}},
+              Monomial{{{var_x_, 1}, {var_y_, 2}}},
+              Monomial{var_y_, 3},
+              Monomial{{{var_x_, 2}, {var_z_, 1}}},
+              Monomial{{{var_x_, 1}, {var_y_, 1}, {var_z_, 1}}},
+              Monomial{{{var_y_, 2}, {var_z_, 1}}},
+              Monomial{{{var_x_, 1}, {var_z_, 2}}},
+              Monomial{{{var_y_, 1}, {var_z_, 2}}},
+              Monomial{var_z_, 3},
+              Monomial{{{var_x_, 2}, {var_w_, 1}}},
+              Monomial{{{var_y_, 1}, {var_x_, 1}, {var_w_, 1}}},
+              Monomial{{{var_y_, 2}, {var_w_, 1}}},
+              Monomial{{{var_z_, 1}, {var_x_, 1}, {var_w_, 1}}},
+              Monomial{{{var_z_, 1}, {var_y_, 1}, {var_w_, 1}}},
+              Monomial{{{var_z_, 2}, {var_w_, 1}}},
+              Monomial{{{var_x_, 1}, {var_w_, 2}}},
+              Monomial{{{var_y_, 1}, {var_w_, 2}}},
+              Monomial{{{var_z_, 1}, {var_w_, 2}}},
+              Monomial{var_w_, 3},
+              Monomial{var_x_, 2},
+              Monomial{{{var_x_, 1}, {var_y_, 1}}},
+              Monomial{var_y_, 2},
+              Monomial{{{var_x_, 1}, {var_z_, 1}}},
+              Monomial{{{var_y_, 1}, {var_z_, 1}}},
+              Monomial{var_z_, 2},
+              Monomial{{{var_x_, 1}, {var_w_, 1}}},
+              Monomial{{{var_y_, 1}, {var_w_, 1}}},
+              Monomial{{{var_z_, 1}, {var_w_, 1}}},
+              Monomial{var_w_, 2},
+              Monomial{var_x_},
+              Monomial{var_y_},
+              Monomial{var_z_},
+              Monomial{var_w_},
+              Monomial{};
   // clang-format on
 
   EXPECT_EQ(basis1, expected);

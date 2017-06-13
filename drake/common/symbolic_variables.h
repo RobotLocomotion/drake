@@ -144,6 +144,9 @@ Variables operator-(Variables vars1, const Variables& vars2);
 /** Returns set-minus(@p vars, { @p var }). */
 Variables operator-(Variables vars, const Variable& var);
 
+/** Returns the intersection of @p vars1 and @p vars2. */
+Variables intersect(const Variables& vars1, const Variables& vars2);
+
 }  // namespace symbolic
 
 /** Computes the hash value of a symbolic variables. */

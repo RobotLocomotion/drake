@@ -34,8 +34,7 @@ using internal::SymbolicError;
 namespace {
 
 Binding<QuadraticCost> DoParseQuadraticCost(
-    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
-    const VectorXDecisionVariable& vars_vec,
+    const symbolic::Polynomial& poly, const VectorXDecisionVariable& vars_vec,
     const unordered_map<Variable::Id, int>& map_var_to_index) {
   // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
   // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
@@ -43,15 +42,13 @@ Binding<QuadraticCost> DoParseQuadraticCost(
   Eigen::VectorXd b(vars_vec.size());
   double constant_term;
   DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-      monomial_to_coeff_map, map_var_to_index, vars_vec.size(), &Q, &b,
-      &constant_term);
+      poly, map_var_to_index, vars_vec.size(), &Q, &b, &constant_term);
   return CreateBinding(make_shared<QuadraticCost>(Q, b, constant_term),
                        vars_vec);
 }
 
 Binding<LinearCost> DoParseLinearCost(
-    const Expression &e,
-    const VectorXDecisionVariable& vars_vec,
+    const Expression& e, const VectorXDecisionVariable& vars_vec,
     const unordered_map<Variable::Id, int>& map_var_to_index) {
   Eigen::RowVectorXd c(vars_vec.size());
   double constant_term{};
@@ -69,23 +66,21 @@ Binding<LinearCost> ParseLinearCost(const Expression& e) {
 
 Binding<QuadraticCost> ParseQuadraticCost(const Expression& e) {
   // First build an Eigen vector, that contains all the bound variables.
-  const symbolic::Variables& vars = e.GetVariables();
   auto p = ExtractVariablesFromExpression(e);
   const auto& vars_vec = p.first;
   const auto& map_var_to_index = p.second;
 
   // Now decomposes the expression into coefficients and monomials.
-  auto monomial_to_coeff_map =
-      symbolic::DecomposePolynomialIntoMonomial(e, vars);
-  return DoParseQuadraticCost(monomial_to_coeff_map,
-                              vars_vec, map_var_to_index);
+  const symbolic::Polynomial poly{e};
+  return DoParseQuadraticCost(poly, vars_vec, map_var_to_index);
 }
 
 Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
   if (!e.is_polynomial()) {
     ostringstream oss;
-    oss << "Expression" << e << " is not a polynomial. ParsePolynomialCost"
-                                " only supports polynomial expression.\n";
+    oss << "Expression" << e
+        << " is not a polynomial. ParsePolynomialCost"
+           " only supports polynomial expression.\n";
     throw runtime_error(oss.str());
   }
   const symbolic::Variables& vars = e.GetVariables();
@@ -110,11 +105,9 @@ Binding<Cost> ParseCost(const symbolic::Expression& e) {
         << " support non-polynomial expression.\n";
     throw runtime_error(oss.str());
   }
-  const symbolic::Variables& vars = e.GetVariables();
-  const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map =
-      symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  const symbolic::Polynomial poly{e};
   int total_degree = 0;
-  for (const auto& p : monomial_to_coeff_map) {
+  for (const auto& p : poly.monomial_to_coefficient_map()) {
     total_degree = std::max(total_degree, p.first.total_degree());
   }
 
@@ -125,8 +118,7 @@ Binding<Cost> ParseCost(const symbolic::Expression& e) {
   if (total_degree > 2) {
     return ParsePolynomialCost(e);
   } else if (total_degree == 2) {
-    return DoParseQuadraticCost(monomial_to_coeff_map,
-                                vars_vec, map_var_to_index);
+    return DoParseQuadraticCost(poly, vars_vec, map_var_to_index);
   } else {
     return DoParseLinearCost(e, vars_vec, map_var_to_index);
   }

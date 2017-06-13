@@ -249,10 +249,31 @@ drake_cc_library(
 
 drake_cc_library(
     name = "monomial",
-    srcs = ["monomial.cc"],
-    hdrs = ["monomial.h"],
+    srcs = [
+        "monomial.cc",
+        "monomial_util.cc",
+    ],
+    hdrs = [
+        "monomial.h",
+        "monomial_util.h",
+    ],
     deps = [
         ":common",
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "symbolic_polynomial",
+    srcs = [
+        "symbolic_polynomial.cc",
+    ],
+    hdrs = [
+        "symbolic_polynomial.h",
+    ],
+    deps = [
+        ":common",
+        ":monomial",
         ":symbolic",
     ],
 )
@@ -387,16 +408,6 @@ drake_cc_googletest(
     name = "cond_test",
     deps = [
         ":cond",
-    ],
-)
-
-drake_cc_googletest(
-    name = "decompose_polynomial_test",
-    deps = [
-        ":common",
-        ":monomial",
-        ":symbolic",
-        ":symbolic_test_util",
     ],
 )
 
@@ -702,6 +713,14 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_polynomial_test",
+    deps = [
+        ":symbolic_polynomial",
+        ":symbolic_test_util",
     ],
 )
 
