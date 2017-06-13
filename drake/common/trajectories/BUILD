@@ -85,6 +85,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "piecewise_generation_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     srcs = ["test/piecewise_polynomial_generation_test.cc"],
     deps = [
         ":piecewise_polynomial",

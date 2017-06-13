@@ -13,7 +13,7 @@ namespace systems {
 namespace analysis_test {
 
 template <class T>
-class EmptySystem;
+class StatelessSystem;
 
 /// Witness function for determining when the time of the empty system
 /// crosses zero. The witness function is just the time in the context.
@@ -22,7 +22,7 @@ class ClockWitness : public systems::WitnessFunction<T> {
  public:
   explicit ClockWitness(
       const T& trigger_time,
-      const EmptySystem<T>& system,
+      const StatelessSystem<T>& system,
       const typename systems::WitnessFunctionDirectionType& dir_type) :
         systems::WitnessFunction<T>(system, dir_type,
           systems::DiscreteEvent<T>::kPublishAction),
@@ -45,11 +45,11 @@ class ClockWitness : public systems::WitnessFunction<T> {
 
 /// System with no state evolution for testing a simplistic witness function.
 template <class T>
-class EmptySystem : public LeafSystem<T> {
+class StatelessSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptySystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
 
-  explicit EmptySystem(const T& offset,
+  explicit StatelessSystem(const T& offset,
       const systems::WitnessFunctionDirectionType& dir_type) {
     witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
@@ -62,7 +62,7 @@ class EmptySystem : public LeafSystem<T> {
  protected:
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
     AutoDiffXd trigger_time(witness_->get_trigger_time());
-    return new EmptySystem<AutoDiffXd>(trigger_time,
+    return new StatelessSystem<AutoDiffXd>(trigger_time,
                                        witness_->get_dir_type());
   }
 

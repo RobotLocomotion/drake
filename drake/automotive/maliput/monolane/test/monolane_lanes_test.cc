@@ -35,13 +35,15 @@ GTEST_TEST(MonolaneLanesTest, Rot3) {
 
 GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  const double half_width = 10.;
+  const double kHalfWidth = 10.;
+  const double kMaxHeight = 5.;
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
   Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
   Lane* l1 = s1->NewLineLane(
       {"l1"},
       {100., -75.}, {100., 50.},
-      {-5., 5.}, {-half_width, half_width},
+      // lane/driveable/elevation bounds
+      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       // Zero elevation, zero superelevation == flat.
       zp, zp);
 
@@ -59,6 +61,8 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   EXPECT_NEAR(l1->lane_bounds(0.).r_max,  5., kVeryExact);
   EXPECT_NEAR(l1->driveable_bounds(0.).r_min, -10., kVeryExact);
   EXPECT_NEAR(l1->driveable_bounds(0.).r_max,  10., kVeryExact);
+  EXPECT_NEAR(l1->elevation_bounds(0., 0.).min(), 0., kVeryExact);
+  EXPECT_NEAR(l1->elevation_bounds(0., 0.).max(), 5., kVeryExact);
 
   EXPECT_GEO_NEAR(l1->ToGeoPosition({0., 0., 0.}),
                   (100., -75., 0.), kLinearTolerance);
@@ -94,18 +98,19 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
 
   // Case 2: Tests LineLane::ToLanePosition() with a closest point that lies
   // outside of the lane bounds, verifying that the result saturates.
-  const api::GeoPosition point_outside_lane{-75., 25., 0.};
-  const double expected_r_outside = half_width;
-  const double x_dist_to_edge = half_width * std::sin(std::atan(0.5));
-  const double y_dist_to_edge = half_width * std::cos(std::atan(0.5));
+  const api::GeoPosition point_outside_lane{-75., 25., 20.};
+  const double expected_r_outside = kHalfWidth;
+  const double x_dist_to_edge = kHalfWidth * std::sin(std::atan(0.5));
+  const double y_dist_to_edge = kHalfWidth * std::cos(std::atan(0.5));
   EXPECT_LANE_NEAR(l1->ToLanePosition(point_outside_lane, &nearest_position,
                                       &distance),
-                   (0., expected_r_outside, 0.), kVeryExact);
+                   (0., expected_r_outside, kMaxHeight), kVeryExact);
   EXPECT_GEO_NEAR(nearest_position,
-                  (100. - x_dist_to_edge, -75. + y_dist_to_edge, 0.),
+                  (100. - x_dist_to_edge, -75. + y_dist_to_edge, kMaxHeight),
                   kVeryExact);
   EXPECT_NEAR(distance, std::sqrt(std::pow(175. - x_dist_to_edge, 2.)
-                                  + std::pow(100. - y_dist_to_edge, 2.)),
+                                  + std::pow(100. - y_dist_to_edge, 2.)
+                                  + std::pow(20. - kMaxHeight, 2.)),
               kVeryExact);
 
   // Case 3: Tests LineLane::ToLanePosition() at a non-zero but flat elevation.
@@ -115,18 +120,20 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   Lane* l1_with_z = s2->NewLineLane(
       {"l1_with_z"},
       {100., -75.}, {100., 50.},
-      {-5., 5.}, {-half_width, half_width},
-      {-elevation / length, 0., 0., 0.} /* constant elevation */,
+      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
+      {elevation / length, 0., 0., 0.} /* constant elevation */,
       zp /* zero superelevation */);
   EXPECT_LANE_NEAR(
       l1_with_z->ToLanePosition(point_outside_lane, &nearest_position,
                                 &distance),
-      (0., expected_r_outside, elevation), kVeryExact);
+      (0., expected_r_outside, kMaxHeight), kVeryExact);
   EXPECT_GEO_NEAR(nearest_position,
-                  (100. - x_dist_to_edge, -75. + y_dist_to_edge, 0.),
+                  (100. - x_dist_to_edge, -75. + y_dist_to_edge,
+                   kMaxHeight + elevation),
                   kVeryExact);
   EXPECT_NEAR(distance, std::sqrt(std::pow(175. - x_dist_to_edge, 2.)
-                                  + std::pow(100. - y_dist_to_edge, 2.)),
+                                  + std::pow(100. - y_dist_to_edge, 2.)
+                                  + std::pow(20. - kMaxHeight - elevation, 2.)),
               kVeryExact);
 
   // Tests the integrity of LineLane::ToLanePosition() with various null
@@ -177,12 +184,14 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   const double d_theta = 1.5 * M_PI;
   const double radius = 100.;
   const V2 center{100., -75.};
-  const double half_width = 10.;
+  const double kHalfWidth = 10.;
+  const double kMaxHeight = 5.;
   Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
   Lane* l2 = s1->NewArcLane(
       {"l2"},
       center, radius, theta0, d_theta,
-      {-5., 5.}, {-half_width, half_width},
+      // lane/driveable/elevation bounds
+      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       // Zero elevation, zero superelevation == flat.
       zp, zp);
 
@@ -198,8 +207,10 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
 
   EXPECT_NEAR(l2->lane_bounds(0.).r_min, -5., kVeryExact);
   EXPECT_NEAR(l2->lane_bounds(0.).r_max,  5., kVeryExact);
-  EXPECT_NEAR(l2->driveable_bounds(0.).r_min, -10., kVeryExact);  // half_width
-  EXPECT_NEAR(l2->driveable_bounds(0.).r_max,  10., kVeryExact);  // half_width
+  EXPECT_NEAR(l2->driveable_bounds(0.).r_min, -10., kVeryExact);  // kHalfWidth
+  EXPECT_NEAR(l2->driveable_bounds(0.).r_max,  10., kVeryExact);  // kHalfWidth
+  EXPECT_NEAR(l2->elevation_bounds(0., 0.).min(), 0., kVeryExact);
+  EXPECT_NEAR(l2->elevation_bounds(0., 0.).max(), 5., kVeryExact);
 
   // Recall that the arc has center (100, -75) and radius 100.
   EXPECT_GEO_NEAR(l2->ToGeoPosition({0., 0., 0.}),
@@ -231,39 +242,38 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   api::GeoPosition nearest_position;
   double distance{};
   const double expected_s = 0.5 * M_PI / d_theta * l2->length();
-  const double expected_r = std::min(radius - std::sqrt(2) * 50., half_width);
+  const double expected_r = std::min(radius - std::sqrt(2) * 50., kHalfWidth);
   EXPECT_LANE_NEAR(l2->ToLanePosition(point_within_lane, &nearest_position,
                                       &distance),
                    (expected_s, expected_r, 0.), kVeryExact);
   EXPECT_GEO_NEAR(nearest_position,
-                  ((radius - half_width)
+                  ((radius - kHalfWidth)
                    * std::cos(0.5 * M_PI + theta0) + center(0),
-                   (radius - half_width)
+                   (radius - kHalfWidth)
                    * std::sin(0.5 * M_PI + theta0) + center(1), 0.),
                   kVeryExact);
   EXPECT_NEAR(distance,
-              (radius - half_width) - std::sqrt(std::pow(50., 2.) +
+              (radius - kHalfWidth) - std::sqrt(std::pow(50., 2.) +
                                                 std::pow(50., 2.)),
               kVeryExact);
 
   // Case 2: Tests ArcLane::ToLanePosition() with a closest point that lies
   // outside of the lane bounds, verifying that the result saturates.
   const api::GeoPosition point_outside_lane{
-    center(0) + 200., center(1) - 20., 0.};  // θ ~= 1.9π.
-  const double expected_r_outside = -half_width;
+    center(0) + 200., center(1) - 20., 20.};  // θ ~= 1.9π.
+  const double expected_r_outside = -kHalfWidth;
   EXPECT_LANE_NEAR(l2->ToLanePosition(point_outside_lane, &nearest_position,
                                       &distance),
-                   (l2->length(), expected_r_outside, 0.), kVeryExact);
+                   (l2->length(), expected_r_outside, kMaxHeight), kVeryExact);
   EXPECT_GEO_NEAR(nearest_position,
-                  ((radius + half_width) * std::cos(theta0 + d_theta)
+                  ((radius + kHalfWidth) * std::cos(theta0 + d_theta)
                    + center(0),
-                   (radius + half_width) * std::sin(theta0 + d_theta)
-                   + center(1), 0.),
+                   (radius + kHalfWidth) * std::sin(theta0 + d_theta)
+                   + center(1),
+                   kMaxHeight),
                   kVeryExact);
-  // Because we have saturated, expect the distance to the circle to be less
-  // than the distance to the point on the arc.
-  EXPECT_GT(distance,
-            std::sqrt(std::pow(200., 2.) + std::pow(20., 2.)) - radius);
+  EXPECT_DOUBLE_EQ(distance,
+                   (nearest_position.xyz() - point_outside_lane.xyz()).norm());
 
   // Case 3: Tests ArcLane::ToLanePosition() at a non-zero but flat elevation.
   const double elevation = 10.;
@@ -271,19 +281,22 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   Lane* l2_with_z = s2->NewArcLane(
       {"l2_with_z"},
       center, radius, theta0, d_theta,
-      {-5., 5.}, {-half_width, half_width},
-      {-elevation / radius / d_theta, 0., 0., 0.} /* constant elevation */,
+      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
+      {elevation / radius / d_theta, 0., 0., 0.} /* constant elevation */,
       zp /* zero superelevation */);
   EXPECT_LANE_NEAR(
       l2_with_z->ToLanePosition(point_outside_lane, &nearest_position,
                                 &distance),
-      (l2_with_z->length(), expected_r_outside, elevation), kVeryExact);
+      (l2_with_z->length(), expected_r_outside, kMaxHeight), kVeryExact);
   EXPECT_GEO_NEAR(nearest_position,
-                  ((radius + half_width) * std::cos(theta0 + d_theta)
+                  ((radius + kHalfWidth) * std::cos(theta0 + d_theta)
                    + center(0),
-                   (radius + half_width) * std::sin(theta0 + d_theta)
-                   + center(1), 0.),
+                   (radius + kHalfWidth) * std::sin(theta0 + d_theta)
+                   + center(1),
+                   kMaxHeight + elevation),
                   kVeryExact);
+  EXPECT_DOUBLE_EQ(distance,
+                   (nearest_position.xyz() - point_outside_lane.xyz()).norm());
 
   // Case 4: Tests ArcLane::ToLanePosition() with a lane that overlaps itself.
   // The result should be identical to Case 1.
@@ -292,7 +305,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   Lane* l2_overlapping = s3->NewArcLane(
       {"l2_overlapping"},
       center, radius, theta0, d_theta_overlap,
-      {-5., 5.}, {-half_width, half_width},
+      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       // Zero elevation, zero superelevation == flat.
       zp, zp);
   EXPECT_LANE_NEAR(l2_overlapping->ToLanePosition(point_within_lane,
@@ -300,13 +313,13 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
                                                   &distance),
                    (expected_s, expected_r, 0.), kVeryExact);
   EXPECT_GEO_NEAR(nearest_position,
-                  ((radius - half_width)
+                  ((radius - kHalfWidth)
                    * std::cos(0.5 * M_PI + theta0) + center(0),
-                   (radius - half_width)
+                   (radius - kHalfWidth)
                    * std::sin(0.5 * M_PI + theta0) + center(1), 0.),
                   kVeryExact);
   EXPECT_NEAR(distance,
-              (radius - half_width) - std::sqrt(std::pow(50., 2.) +
+              (radius - kHalfWidth) - std::sqrt(std::pow(50., 2.) +
                                                 std::pow(50., 2.)),
               kVeryExact);
 
@@ -320,7 +333,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   Lane* l2_wrap = s4->NewArcLane(
       {"l2_wrap"},
       center, radius, theta0_wrap, d_theta_wrap,
-      {-5., 5.}, {-half_width, half_width},
+      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       // Zero elevation, zero superelevation == flat.
       zp, zp);
   const api::GeoPosition point_in_third_quadrant{
@@ -394,7 +407,7 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
   Lane* l2 = s1->NewArcLane(
       {"l2"},
       {100., -75.}, 100., 0.25 * M_PI, 1.5 * M_PI,
-      {-5., 5.}, {-10., 10.},
+      {-5., 5.}, {-10., 10.}, {0., 5.},  // lane/driveable/elevation bounds
       zp,
       { (kTheta) / (100. * 1.5 * M_PI), 0., 0., 0. });
 
@@ -502,7 +515,7 @@ GTEST_TEST(MonolaneLanesTest, HillIntegration) {
   Lane* l1 = s1->NewArcLane(
       {"l2"},
       {-100., -100.}, 100., theta0, d_theta,
-      {-5., 5.}, {-10., 10.},
+      {-5., 5.}, {-10., 10.}, {0., 5.},  // lane/driveable/elevation bounds
       kHillPolynomial,
       zp);
 

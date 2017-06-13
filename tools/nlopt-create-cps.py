@@ -1,16 +1,8 @@
 #!/usr/bin/env python
 
-import re
-import sys
+from cpsutils import read_defs
 
-def_re = re.compile("#define ([^\s]+_VERSION)\s+([^\s]+)")
-
-defs = {}
-with open(sys.argv[1]) as h:
-    for l in h:
-        m = def_re.match(l)
-        if m is not None:
-            defs[m.group(1)] = m.group(2)
+defs = read_defs("#define ([^\s]+_VERSION)\s+([^\s]+)")
 
 content = """
 {

@@ -28,6 +28,9 @@ genrule(
         # Cleanup temporary files.
         "rm -rf $(@D)/.doctrees/ $(@D)/.tmpout",
     ]),
+    # Some (currently disabled) Sphinx extentions try to reach out to the
+    # network; we should fail-fast if someone tries to turn them on.
+    tags = ["block-network"],
 )
 
 py_binary(

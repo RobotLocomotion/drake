@@ -24,3 +24,8 @@ drake_cc_library(
     srcs = ["zlib/tinyxml2/tinyxml2.cpp"],
     hdrs = ["zlib/tinyxml2/tinyxml2.h"],
 )
+
+drake_cc_library(
+    name = "stx",
+    hdrs = ["boost/tcbrindle_cpp17_headers/stx/optional.hpp"],
+)

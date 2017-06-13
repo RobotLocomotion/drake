@@ -274,14 +274,18 @@ class Simulator {
   ///   Context, the nominally fixed steps for integrating continuous state will
   ///   be subdivided until events have been isolated to the requisite interval
   ///   length, which is scaled by the step size times the accuracy in the
-  ///   Context.
+  ///   Context. If accuracy is not set in the Context, event isolation will
+  ///   not be performed.
   ///
   /// The isolation window length will never be smaller than the integrator's
   /// working minimum tolerance (see
   /// IntegratorBase::get_working_minimum_step_size());
   ///
   /// @returns the isolation window if the Simulator should be isolating
-  ///          witness-triggered events in time, or returns empty otherwise.
+  ///          witness-triggered events in time, or returns empty otherwise
+  ///          (indicating that any witness-triggered events should trigger
+  ///          at the end of a time interval over which continuous state is
+  ///          integrated).
   /// @throws std::logic_error if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().
