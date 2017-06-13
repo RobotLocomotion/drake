@@ -651,7 +651,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rotation_constraint_test",
     size = "medium",
-    tags = gurobi_test_tags() + mosek_test_tags(),
+    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    tags = gurobi_test_tags() + mosek_test_tags() + ["no_tsan"],
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
@@ -675,7 +676,8 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "rotation_constraint_limit_test",
     size = "large",
-    tags = gurobi_test_tags(),
+    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
