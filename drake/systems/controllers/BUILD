@@ -7,20 +7,10 @@ load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "state_feedback_controller_base",
-    hdrs = ["state_feedback_controller_base.h"],
+    name = "state_feedback_controller_interface",
+    hdrs = ["state_feedback_controller_interface.h"],
     deps = [
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "model_based_controller_base",
-    hdrs = ["model_based_controller_base.h"],
-    deps = [
-        ":state_feedback_controller_base",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/systems/framework:system_port_descriptor",
     ],
 )
 
@@ -40,11 +30,15 @@ drake_cc_library(
     hdrs = ["inverse_dynamics_controller.h"],
     deps = [
         ":inverse_dynamics",
-        ":model_based_controller_base",
         ":pid_controller",
+        ":state_feedback_controller_interface",
+        "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:pass_through",
     ],
 )
 
@@ -65,15 +59,9 @@ drake_cc_library(
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
     deps = [
-        ":state_feedback_controller_base",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:adder",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:gain",
-        "//drake/systems/primitives:integrator",
+        ":state_feedback_controller_interface",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/primitives:matrix_gain",
-        "//drake/systems/primitives:pass_through",
-        "//drake/systems/primitives:saturation",
     ],
 )
 
@@ -83,7 +71,9 @@ drake_cc_library(
     hdrs = ["pid_controlled_system.h"],
     deps = [
         ":pid_controller",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:saturation",
     ],
 )
 

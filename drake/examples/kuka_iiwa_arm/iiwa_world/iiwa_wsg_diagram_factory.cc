@@ -11,6 +11,7 @@
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -83,9 +84,6 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   output_port_iiwa_state_ = base_builder->ExportOutput(iiwa_output_port);
 
   // Sets up the WSG gripper part.
-  std::unique_ptr<systems::MatrixGain<T>> feedback_selector =
-      std::make_unique<systems::MatrixGain<T>>(
-          manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<T>());
   // TODO(sam.creasey) The choice of position gains below is completely
   // arbitrary. We'll need to revisit this once we switch to force control
   // for the gripper.
@@ -95,8 +93,9 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
 
   wsg_controller_ = builder.template AddController<systems::PidController<T>>(
-      wsg_info.instance_id, std::move(feedback_selector), wsg_kp, wsg_ki,
-      wsg_kd);
+      wsg_info.instance_id,
+      manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<T>(),
+      wsg_kp, wsg_ki, wsg_kd);
   wsg_controller_->set_name("SchunkWSGPIDController");
 
   //  Export wsg's desired state input, and state output.

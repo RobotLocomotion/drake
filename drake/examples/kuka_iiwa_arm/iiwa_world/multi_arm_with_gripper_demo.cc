@@ -3,6 +3,7 @@
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -125,13 +126,11 @@ void main() {
   const VectorX<double> wsg_ki = VectorX<double>::Constant(kWsgActDim, 0.0);
   const VectorX<double> wsg_kd = VectorX<double>::Constant(kWsgActDim, 5.0);
   for (const auto& info : wsg_info) {
-    std::unique_ptr<systems::MatrixGain<double>> feedback_selector =
-        std::make_unique<systems::MatrixGain<double>>(
-            manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>());
     auto controller =
         builder.template AddController<systems::PidController<double>>(
-            info.instance_id, std::move(feedback_selector), wsg_kp, wsg_ki,
-            wsg_kd);
+            info.instance_id,
+            manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>(),
+            wsg_kp, wsg_ki, wsg_kd);
     diagram_builder->Connect(wsg_traj_src->get_output_port(),
                              controller->get_input_port_desired_state());
   }

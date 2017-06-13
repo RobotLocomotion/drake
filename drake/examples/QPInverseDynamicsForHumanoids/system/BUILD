@@ -98,7 +98,8 @@ drake_cc_library(
         ":joint_level_controller_system",
         ":manipulator_plan_eval_system",
         ":qp_controller_system",
-        "//drake/systems/controllers:model_based_controller_base",
+        "//drake/multibody/parsers",
+        "//drake/systems/controllers:state_feedback_controller_interface",
         "//drake/systems/framework",
     ],
 )
