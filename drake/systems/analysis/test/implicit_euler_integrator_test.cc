@@ -36,14 +36,15 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*robertson, context.get());
 
-  // Robertson will run a LONG time if we reuse Jacobian matrices.
-  integrator.set_reuse(false);
-
   // Very large step is necessary for this problem since given solution is
-  // at t = 1e11.
+  // at t = 1e11. However, the current initial step size selection algorithm
+  // will use a large factor of the maximum step size, which can result in
+  // too large an initial step for this problem. Accordingly, we explicitly
+  // select a small initial step size.
   integrator.set_maximum_step_size(10000000.0);
   integrator.set_throw_on_minimum_step_size_violation(false);
   integrator.set_target_accuracy(tol);
+  integrator.request_initial_step_size_target(1e-4);
 
   // Integrate the system
   integrator.Initialize();

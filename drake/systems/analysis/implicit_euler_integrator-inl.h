@@ -315,7 +315,7 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
 // @param [in,out] the starting guess for x(t+dt); the value for x(t+h) on
 //        return (assuming that h > 0)
 // @param trial the attempt for this approach (1-4). StepAbstract() uses more
-//        computationally methods as the trial numbers increase.
+//        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
 //           step of size @p dt (or `false` otherwise).
 // @pre The time and state of the system's context (stored by the integrator)
@@ -331,7 +331,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   using std::max;
   using std::min;
 
-  // Verify the trial number is correct.
+  // Verify the trial number is valid.
   DRAKE_ASSERT(trial >= 1 && trial <= 4);
 
   // Verify the scale factor is correct.
@@ -371,36 +371,44 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     Factor(neg_iteration_matrix_);
   }
 
-  // For the first trial, we do nothing special.
-  if (trial > 1) {
-    if (trial == 2) {
+  switch (trial) {
+    case 1:
+      // For the first trial, we do nothing special.
+      break;
+
+    case 2: {
       // For the second trial, re-construct and factor the iteration matrix.
       const int n = xtplus->size();
       neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
       Factor(neg_iteration_matrix_);
-    } else {
-      if (trial == 3) {
-        // If the last call to StepAbstract() ended in failure, we know that
-        // the Jacobian matrix is fresh and the iteration matrix has been newly
-        // formed and factored (on Trial #2), so there is nothing more to be
-        // done.
-        if (last_call_failed_) {
-          return false;
-        } else {
-          // Reform the Jacobian matrix and refactor the negation of
-          // the iteration matrix. The idea of using the negation of this matrix
-          // is that an O(n^2) subtraction is not necessary as would
-          // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
-          J_ = CalcJacobian(tf, *xtplus);
-          const int n = xtplus->size();
-          neg_iteration_matrix_ = J_ * (dt / scale) -
-              MatrixX<T>::Identity(n, n);
-          Factor(neg_iteration_matrix_);
-        }
+      break;
+    }
+
+    case 3: {
+      // If the last call to StepAbstract() ended in failure, we know that
+      // the Jacobian matrix is fresh and the iteration matrix has been newly
+      // formed and factored (on Trial #2), so there is nothing more to be
+      // done.
+      if (last_call_failed_) {
+        return false;
       } else {
+        // Reform the Jacobian matrix and refactor the negation of
+        // the iteration matrix. The idea of using the negation of this matrix
+        // is that an O(n^2) subtraction is not necessary as would
+        // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
+        J_ = CalcJacobian(tf, *xtplus);
+        const int n = xtplus->size();
+        neg_iteration_matrix_ = J_ * (dt / scale) -
+            MatrixX<T>::Identity(n, n);
+        Factor(neg_iteration_matrix_);
+      }
+      break;
+
+      case 4: {
         // Trial #4 indicates failure.
         last_call_failed_ = true;
         return false;
+        break;
       }
     }
   }

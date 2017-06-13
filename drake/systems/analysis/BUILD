@@ -179,6 +179,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
+    size = "large",
     deps = [
         ":discontinuous_spring_mass_damper_system",
         ":implicit_euler_integrator",
