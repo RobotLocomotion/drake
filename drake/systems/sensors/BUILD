@@ -19,6 +19,7 @@ drake_cc_library(
         ":accelerometer",
         ":camera_info",
         ":depth_sensor",
+        ":dropout_depth_sensor",
         ":rgbd_camera",
         ":rotary_encoders",
     ],
@@ -126,6 +127,22 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/rendering:pose_vector",
         "@bot_core_lcmtypes",
+    ],
+)
+
+drake_cc_library(
+    name = "dropout_depth_sensor",
+    srcs = [
+        "dropout_depth_sensor.cc",
+    ],
+    hdrs = [
+        "dropout_depth_sensor.h",
+    ],
+    deps = [
+        ":depth_sensor",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -304,6 +321,16 @@ drake_cc_googletest(
         ":depth_sensor_to_lcm_point_cloud_message",
         "//drake/common:drake_path",
         "//drake/lcm:mock",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dropout_depth_sensor_test",
+    srcs = ["test/dropout_depth_sensor_test.cc"],
+    deps = [
+        ":dropout_depth_sensor",
+        "//drake/common:drake_path",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
