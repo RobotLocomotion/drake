@@ -1017,7 +1017,9 @@ class LeafSystem : public System<T> {
     // allocator functor here.
     copyable_unique_ptr<AbstractValue> owned_model(
         new Value<OutputType>(model_value));
-    return [owned_model](const Context<T>&) { return owned_model->Clone(); };
+    return [model = std::move(owned_model)](const Context<T>&) {
+      return model->Clone();
+    };
   }
 
   // Periodic Update or Publish events registered on this system.
