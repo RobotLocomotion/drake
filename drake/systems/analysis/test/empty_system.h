@@ -22,7 +22,7 @@ class ClockWitness : public systems::WitnessFunction<T> {
  public:
   explicit ClockWitness(
       const T& trigger_time,
-      const EmptySystem<T>& system,
+      const System<T>& system,
       const typename systems::WitnessFunction<T>::DirectionType& dir_type) :
         systems::WitnessFunction<T>(system, dir_type,
           systems::DiscreteEvent<T>::kPublishAction),
