@@ -181,7 +181,7 @@ class LeafSystem : public System<T> {
     return AllocateDiscreteState();
   }
 
-  /// Returns to `true` if any of the inputs to the system is directly
+  /// Returns `true` if any of the inputs to the system is directly
   /// fed through to any of its outputs and `false` otherwise.
   bool HasAnyDirectFeedthrough() const final {
     auto sparsity = MakeSparsityMatrix();
@@ -438,7 +438,7 @@ class LeafSystem : public System<T> {
   /// Declares a numeric parameter using the given @p model_vector.  This is
   /// the best way to declare LeafSystem numeric parameters.  LeafSystem's
   /// default implementation of AllocateParameters uses model_vector.Clone(),
-  /// and the default implementation of SetDefaultParameters will reset
+  /// and the default implementation of SetDefaultParameters() will reset
   /// parameters to their model vectors.  Returns the index of the new
   /// parameter.
   int DeclareNumericParameter(const BasicVector<T>& model_vector) {
@@ -694,11 +694,19 @@ class LeafSystem : public System<T> {
                   "Expected to be invoked from a LeafSystem-derived System.");
     static_assert(std::is_base_of<BasicVector<T>, BasicVectorSubtype>::value,
                   "Expected vector type derived from BasicVector.");
+    // We need to obtain a `this` pointer of the right derived type to capture
+    // in the calculator functor, so that it will be able to invoke the given
+    // mmember function `calc()`.
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
+    // Currently all vector ports in Drake require a fixed size that is known
+    // at the time the port is declared.
     auto& port = CreateVectorLeafOutputPort(
         model_vector.size(),
+        // Allocator function just clones the given model vector.
         MakeAllocCallback<BasicVector<T>>(model_vector),
+        // Calculator function downcasts to specific vector type and invokes
+        // the given member function.
         [this_ptr, calc](const Context<T>& context, BasicVector<T>* result) {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
           DRAKE_DEMAND(typed_result != nullptr);
@@ -759,8 +767,8 @@ class LeafSystem : public System<T> {
   /// @code
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>`. `OutputType`
-  /// must be such that `Value<OutputType>` is permitted.
+  /// where `MySystem` must be a class derived from `LeafSystem<T>`.
+  /// `OutputType` must be such that `Value<OutputType>` is permitted.
   /// Template arguments will be deduced and do not need to be specified.
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
@@ -804,6 +812,7 @@ class LeafSystem : public System<T> {
         std::is_default_constructible<OutputType>::value,
         "LeafSystem::DeclareAbstractOutputPort(calc): the one-argument form of "
         "this method requires that the output type has a default constructor");
+    // Note that value initialization {} is required here.
     return DeclareAbstractOutputPort(OutputType{}, calc);
   }
 
@@ -958,8 +967,8 @@ class LeafSystem : public System<T> {
     return next_t;
   }
 
-  /// Returns a SparsityMatrix for this system, or nullptr if a SparsityMatrix
-  /// cannot be constructed because this System has no symbolic representation.
+  // Returns a SparsityMatrix for this system, or nullptr if a SparsityMatrix
+  // cannot be constructed because this System has no symbolic representation.
   std::unique_ptr<SparsityMatrix> MakeSparsityMatrix() const {
     std::unique_ptr<System<symbolic::Expression>> symbolic_system =
         this->ToSymbolic();
@@ -983,7 +992,7 @@ class LeafSystem : public System<T> {
     return *port_ptr;
   }
 
-  // Creates a new abstract-valued LeafOutputPOrt in this Leafsystem and returns
+  // Creates a new abstract-valued LeafOutputPort in this LeafSystem and returns
   // a reference to it.
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
       typename LeafOutputPort<T>::AllocCallback allocator,
@@ -1000,7 +1009,12 @@ class LeafSystem : public System<T> {
   template <typename OutputType>
   static typename LeafOutputPort<T>::AllocCallback MakeAllocCallback(
       const OutputType& model_value) {
-    // Allows a capture-by-value to produce a functor-owned copy of the model.
+    // The given model value may have *either* a copy constructor or a Clone()
+    // method, since it just has to be suitable for containing in an
+    // AbstractValue. We need to create a functor that is copy constructible,
+    // so need to wrap the model value to give it a copy constructor. Drake's
+    // copyable_unique_ptr does just that, so is suitable for capture by the
+    // allocator functor here.
     copyable_unique_ptr<AbstractValue> owned_model(
         new Value<OutputType>(model_value));
     return [owned_model](const Context<T>&) { return owned_model->Clone(); };

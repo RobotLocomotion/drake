@@ -70,7 +70,7 @@ class OutputPort {
   virtual ~OutputPort() = default;
 
   /** Allocates a concrete object suitable for holding the value to be exposed
-  by this output port, and return that as an AbstractValue. The returned object
+  by this output port, and returns that as an AbstractValue. The returned object
   will never be null. If Drake assertions are enabled (typically only in Debug
   builds), validates for a vector-valued port that the returned AbstractValue
   is actually a BasicVector-derived type and that it has an acceptable size.
@@ -122,7 +122,8 @@ class OutputPort {
   @param data_type
     Whether the port described is vector or abstract valued.
   @param size
-    If the port described is vector-valued, the number of elements expected. */
+    If the port described is vector-valued, the number of elements expected,
+    otherwise ignored. */
   OutputPort(const System<T>& system, PortDataType data_type, int size);
 
   /** A concrete %OutputPort must provide a way to allocate a suitable object

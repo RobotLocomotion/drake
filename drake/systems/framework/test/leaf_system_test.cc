@@ -552,6 +552,7 @@ class DummyVec2 : public BasicVector<double> {
   }
   DummyVec2() : DummyVec2(100., 200.) {}
 
+  // Note that the actual data is copied by the BasicVector base class.
   DummyVec2* DoClone() const override { return new DummyVec2; }
 };
 

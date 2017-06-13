@@ -66,10 +66,13 @@ class LeafOutputPort : public OutputPort<T> {
 
   // There is no EvalVectorCallback.
 
-  /** Constructs an abstract-valued output port. The supplied allocator returns
-  a suitable AbstractValue in which to hold the result. The supplied calculator
-  function writes to an AbstractValue of the same underlying concrete type as is
-  returned by the allocator. */
+  /** Constructs an abstract-valued output port. The supplied allocator must
+  return a suitable AbstractValue in which to hold the result. The supplied
+  calculator function must write to an AbstractValue of the same underlying
+  concrete type as is returned by the allocator. The allocator function is not
+  invoked here during construction of the port so it may depend on data that
+  becomes available only after completion of the containing System or
+  Diagram. */
   LeafOutputPort(const System<T>& system,
                  AllocCallback alloc_function,
                  CalcCallback calc_function)
@@ -79,11 +82,12 @@ class LeafOutputPort : public OutputPort<T> {
   }
 
   /** Constructs a fixed-size vector-valued output port. The supplied allocator
-  returns a `Value<BasicVector>` of the correct size in which to hold the
-  result. The supplied calculator function writes to a BasicVector of the same
-  underlying concrete type as is returned by the allocator. Requires the fixed
-  size to be given explicitly here. The allocator function is not invoked during
-  construction of the port. */
+  must return a `Value<BasicVector>` of the correct size in which to hold the
+  result. The supplied calculator function must write to a BasicVector of the
+  same underlying concrete type as is returned by the allocator. Requires the
+  fixed size to be given explicitly here. The allocator function is not invoked
+  here during construction of the port so it may depend on data that becomes
+  available only after completion of the containing System or Diagram. */
   // Note: there is no guarantee that the allocator can be invoked successfully
   // here since construction of the containing System is likely incomplete when
   // this method is invoked. Do not attempt to extract the size from
