@@ -2,10 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:python_lint.bzl", "python_lint")
 load("//tools:drake.bzl", "drake_cc_binary")
 load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools:install.bzl", "install")
 load("//tools:mosek.bzl", "mosek_test_tags")
+load("//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -189,6 +190,26 @@ py_library(
         ":python/pydrake/solvers/mosek.so",
     ],
     imports = ["python"],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    library_dest = "lib/python2.7/site_packages",
+    library_strip_prefix = ["python"],
+    py_strip_prefix = ["python"],
+    targets = [
+        ":pydrake",
+        ":python/pydrake/_pydrake_autodiffutils.so",
+        ":python/pydrake/_pydrake_common.so",
+        ":python/pydrake/_pydrake_rbtree.so",
+        ":python/pydrake/_pydrake_symbolic.so",
+        ":python/pydrake/parsers.so",
+        ":python/pydrake/solvers/_pydrake_ik.so",
+        ":python/pydrake/solvers/_pydrake_mathematicalprogram.so",
+        ":python/pydrake/solvers/gurobi.so",
+        ":python/pydrake/solvers/mosek.so",
+    ],
     visibility = ["//visibility:public"],
 )
 

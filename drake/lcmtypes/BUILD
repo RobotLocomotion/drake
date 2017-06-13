@@ -168,6 +168,12 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "zmp_com_observer_state",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_zmp_com_observer_state.lcm"],
+)
+
+lcm_cc_library(
     name = "drake_signal",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_drake_signal.lcm"],
@@ -246,7 +252,7 @@ lcm_py_library(
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
     deps = [
-        "@bot_core_lcmtypes//:py",
+        "@bot_core_lcmtypes//:bot_core_lcmtypes_py",
     ],
 )
 

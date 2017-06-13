@@ -514,7 +514,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   double stiffness_{10000};   // Normal stiffness of the ground plane (N/m).
   double dissipation_{1};     // Dissipation factor in 1/velocity (s/m).
   double mu_s_{mu_};          // Static coefficient of friction (>= mu).
-  double v_stick_tol_{1e-3};  // Slip speed below which the compliant model
+  double v_stick_tol_{1e-5};  // Slip speed below which the compliant model
                               //   considers the rod to be in stiction.
 
   // Output port descriptors.

@@ -70,7 +70,7 @@ drake_cc_googletest(
 
 py_test(
     name = "yaml_to_obj_test",
-    size = "small",
+    size = "medium",
     srcs = ["test/yaml_to_obj_test.py"],
     args = ["drake/automotive/maliput/utility/yaml_to_obj"],
     data = [

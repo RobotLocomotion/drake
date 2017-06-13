@@ -27,6 +27,27 @@ drake_cc_library(
     ],
 )
 
+# This library is empty unless Gurobi is available.
+drake_cc_library(
+    name = "approximate_ik",
+    srcs = select({
+        "//tools:with_gurobi": [
+            "ik_options.h",
+            "rigid_body_ik.h",
+            "approximate_ik.cc",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = select({
+        "//tools:with_gurobi": [
+            ":rigid_body_constraint",
+            ":rigid_body_tree",
+            "@gurobi",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
 drake_cc_library(
     name = "inverse_kinematics",
     srcs = [
@@ -47,6 +68,7 @@ drake_cc_library(
         "rigid_body_ik.h",
     ],
     deps = [
+        ":approximate_ik",
         ":rigid_body_constraint",
         ":rigid_body_tree",
         "//drake/common:unused",
@@ -498,6 +520,28 @@ drake_cc_googletest(
     ],
 )
 
+# This test is empty unless Gurobi is enabled.
+drake_cc_test(
+    name = "test_approximate_ik",
+    srcs = select({
+        "//tools:with_gurobi": [
+            "test/test_approximate_ik.cc",
+        ],
+        "//conditions:default": [],
+    }),
+    data = ["//drake/examples/Atlas:models"],
+    deps = select({
+        "//tools:with_gurobi": [
+            ":inverse_kinematics",
+            "//drake/common:drake_path",
+            "//drake/multibody/parsers",
+        ],
+        "//conditions:default": [
+            "@gtest//:main",  # No-op stub for main().
+        ],
+    }),
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,
@@ -517,6 +561,14 @@ filegroup(
     ],
 )
 
-cpplint(data = [
-    "constraint/CPPLINT.cfg",
-])
+# The extra_srcs are required here because cpplint() doesn't understand how to
+# extract labels from select() functions yet.
+cpplint(
+    data = [
+        "constraint/CPPLINT.cfg",
+    ],
+    extra_srcs = [
+        "approximate_ik.cc",
+        "test/test_approximate_ik.cc",
+    ],
+)

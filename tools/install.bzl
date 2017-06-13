@@ -118,6 +118,16 @@ def _remove_prefix(path, prefix):
     return __remove_prefix(path.split("/"), prefix.split("/"))
 
 #------------------------------------------------------------------------------
+def _is_drake_label(x):
+    root = x.workspace_root
+    if root == "":
+        x.package.startswith("drake") or fail("Unknown '%s'" % x.package)
+        return True
+    else:
+        root.startswith("external") or fail("Unknown '%s'" % root)
+        return False
+
+#------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix):
     """Compute output path (without destination prefix) for install action.
 
@@ -177,7 +187,7 @@ def _output_path(ctx, input_file, strip_prefix):
     return input_path
 
 #------------------------------------------------------------------------------
-def _install_actions(ctx, file_labels, dests, strip_prefix = []):
+def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
@@ -186,10 +196,17 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
     Args:
         file_labels (:obj:`list` of :obj:`Label`): labels to install.
         dests (:obj:`str` or :obj:`dict` of :obj:`str` to :obj:`str`):
-            Install destination. If a :obj:`dict` may be given to supply a
-            mapping of file extension to destination path.
-        strip_prefix (:obj:`list` of :obj:`str`): List of prefixes to strip
-            from the input path before prepending the destination.
+            Install destination. A :obj:`dict` may be given to supply a mapping
+            of file extension to destination path. The :obj:`dict` must have an
+            entry with the key ``None`` that is used as the default when there
+            is no entry for the specific extension.
+        strip_prefixes (:obj:`list` of :obj:`str` or :obj:`dict` of :obj:`list`
+            of :obj:`str` to :obj:`str`): List of prefixes to strip from the
+            input path before prepending the destination. A :obj:`dict` may be
+            given to supply a mapping of file extension to list of prefixes to
+            strip. The :obj:`dict` must have an entry with the key ``None``
+            that is used as the default when there is no entry for the specific
+            extension.
 
     Returns:
         :obj:`list`: A list of install actions.
@@ -204,6 +221,13 @@ def _install_actions(ctx, file_labels, dests, strip_prefix = []):
                 dest = dests.get(a.extension, dests[None])
             else:
                 dest = dests
+
+            if type(strip_prefixes) == "dict":
+                strip_prefix = strip_prefixes.get(a.extension,
+                                                  strip_prefixes[None])
+            else:
+                strip_prefix = strip_prefixes
+
             p = _output_path(ctx, a, strip_prefix)
             actions.append(struct(src = a, dst = _join_paths(dest, p)))
 
@@ -218,7 +242,12 @@ def _install_cc_actions(ctx, target):
         "so": ctx.attr.library_dest,
         None: ctx.attr.runtime_dest,
     }
-    actions = _install_actions(ctx, [target], dests)
+    strip_prefixes = {
+        "a": ctx.attr.archive_strip_prefix,
+        "so": ctx.attr.library_strip_prefix,
+        None: ctx.attr.runtime_strip_prefix,
+    }
+    actions = _install_actions(ctx, [target], dests, strip_prefixes)
 
     # Compute actions for guessed headers.
     if ctx.attr.guess_hdrs != "NONE":
@@ -250,9 +279,23 @@ def _install_cc_actions(ctx, target):
 #------------------------------------------------------------------------------
 # Compute install actions for a java_library or java_binary.
 def _install_java_actions(ctx, target):
-    # TODO(mwoehlke-kitware): Implement this. Probably it mainly needs the
-    # logic to pick install destinations appropriately.
-    return []
+    dests = {
+        "jar": ctx.attr.java_dest,
+        None: ctx.attr.runtime_dest,
+    }
+    strip_prefixes = {
+        "jar": ctx.attr.java_strip_prefix,
+        None: ctx.attr.runtime_strip_prefix,
+    }
+
+    return _install_actions(ctx, [target], dests, strip_prefixes)
+
+#------------------------------------------------------------------------------
+# Compute install actions for a py_library or py_binary.
+# TODO(jamiesnape): Install native shared libraries that the target may use.
+def _install_py_actions(ctx, target):
+    return _install_actions(ctx, [target], ctx.attr.py_dest,
+                            ctx.attr.py_strip_prefix)
 
 #------------------------------------------------------------------------------
 # Generate install code for an install action.
@@ -270,17 +313,22 @@ def _install_impl(ctx):
     actions = []
 
     # Check for missing license files.
-    if len(ctx.attr.targets) or len(ctx.attr.hdrs):
-        if not len(ctx.attr.license_docs):
-            fail("'install' missing 'license_docs'")
+    non_drake_labels = [
+        x.label for x in ctx.attr.targets + ctx.attr.hdrs
+        if not _is_drake_label(x.label)]
+    if non_drake_labels and not ctx.attr.license_docs:
+        fail("%s is missing required license_docs= attribute for %s" % (
+            ctx.label, non_drake_labels))
 
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d.install_actions
 
     # Generate actions for docs and includes.
-    actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest)
-    actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest)
+    actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest,
+                                ctx.attr.doc_strip_prefix)
+    actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
+                                ctx.attr.doc_strip_prefix)
     actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
                                 ctx.attr.hdr_strip_prefix)
 
@@ -290,6 +338,8 @@ def _install_impl(ctx):
             actions += _install_cc_actions(ctx, t)
         elif hasattr(t, "java"):
             actions += _install_java_actions(ctx, t)
+        elif hasattr(t, "py"):
+            actions += _install_py_actions(ctx, t)
 
     # Generate code for install actions.
     script_actions = [_install_code(a) for a in actions]
@@ -311,6 +361,7 @@ install = rule(
         "deps": attr.label_list(providers = ["install_actions"]),
         "docs": attr.label_list(allow_files = True),
         "doc_dest": attr.string(default = "share/doc"),
+        "doc_strip_prefix": attr.string_list(),
         "license_docs": attr.label_list(allow_files = True),
         "hdrs": attr.label_list(allow_files = True),
         "hdr_dest": attr.string(default = "include"),
@@ -318,8 +369,15 @@ install = rule(
         "guess_hdrs": attr.string(default = "NONE"),
         "targets": attr.label_list(),
         "archive_dest": attr.string(default = "lib"),
+        "archive_strip_prefix": attr.string_list(),
         "library_dest": attr.string(default = "lib"),
+        "library_strip_prefix": attr.string_list(),
         "runtime_dest": attr.string(default = "bin"),
+        "runtime_strip_prefix": attr.string_list(),
+        "java_dest": attr.string(default = "share/java"),
+        "java_strip_prefix": attr.string_list(),
+        "py_dest": attr.string(default = "lib/python2.7/site_packages"),
+        "py_strip_prefix": attr.string_list(),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -359,6 +417,7 @@ Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
     doc_dest: Destination for documentation files (default = "share/doc").
+    doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
     guess_hdrs: See note.
     hdrs: List of header files to install.
@@ -366,8 +425,16 @@ Args:
     hdr_strip_prefix: List of prefixes to remove from header paths.
     targets: List of targets to install.
     archive_dest: Destination for static library targets (default = "lib").
+    archive_strip_prefix: List of prefixes to remove from static library paths.
     library_dest: Destination for shared library targets (default = "lib").
+    library_strip_prefix: List of prefixes to remove from shared library paths.
     runtime_dest: Destination for executable targets (default = "bin").
+    runtime_strip_prefix: List of prefixes to remove from executable paths.
+    java_dest: Destination for Java library targets (default = "share/java").
+    java_strip_prefix: List of prefixes to remove from Java library paths.
+    py_dest: Destination for Python targets
+        (default = "lib/python2.7/site_packages").
+    py_strip_prefix: List of prefixes to remove from Python paths.
 """
 
 #------------------------------------------------------------------------------
@@ -440,7 +507,7 @@ def exports_create_cps_scripts(packages):
         )
 
 #------------------------------------------------------------------------------
-def cmake_config(package, script, version_file):
+def cmake_config(package, script=None, version_file=None, deps=[]):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -450,23 +517,28 @@ def cmake_config(package, script, version_file):
         version_file (:obj:`str`): File that the script will search to
             determine the version of the package.
     """
-    native.py_binary(
-        name = "create-cps",
-        srcs = [script],
-        main = script,
-        visibility = ["//visibility:private"],
-    )
 
-    cps_file_name = "{}.cps".format(package)
+    if script and version_file:
+        native.py_binary(
+            name = "create-cps",
+            srcs = [script],
+            main = script,
+            visibility = ["//visibility:private"],
+            deps = ["@drake//tools:cpsutils"],
+        )
 
-    native.genrule(
-        name = "cps",
-        srcs = [version_file],
-        outs = [cps_file_name],
-        cmd = "$(location :create-cps) \"$<\" > \"$@\"",
-        tools = [":create-cps"],
-        visibility = ["//visibility:private"],
-    )
+        cps_file_name = "{}.cps".format(package)
+
+        native.genrule(
+            name = "cps",
+            srcs = [version_file] + deps,
+            outs = [cps_file_name],
+            cmd = "$(location :create-cps) $(SRCS) > \"$@\"",
+            tools = [":create-cps"],
+            visibility = ["//visibility:public"],
+        )
+    else:
+        cps_file_name = "@drake//tools:{}.cps".format(package)
 
     config_file_name = "{}Config.cmake".format(package)
 
@@ -491,24 +563,25 @@ def cmake_config(package, script, version_file):
     )
 
 #------------------------------------------------------------------------------
-def install_cmake_config(package):
+def install_cmake_config(package, versioned=True):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
     Args:
         package (:obj:`str`): CMake package name.
+        versioned (:obj:`bool`): True if a version file should be installed.
     """
     cmake_config_dest = "lib/cmake/{}".format(package.lower())
-    config_file_name = "{}Config.cmake".format(package)
-    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+    cmake_config_files = ["{}Config.cmake".format(package)]
+
+    if versioned:
+        cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
 
     install_files(
         name = "install_cmake_config",
         dest = cmake_config_dest,
-        files = [
-            config_file_name,
-            config_version_file_name,
-        ],
+        files = cmake_config_files,
+        visibility = ["//visibility:private"],
     )
 
 #END macros

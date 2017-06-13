@@ -32,6 +32,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -44,6 +45,7 @@ namespace examples {
 namespace schunk_wsg {
 namespace {
 
+using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
@@ -111,7 +113,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kDissipation = 2.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
-  const double kVStictionTolerance = 0.01;
+  const double kVStictionTolerance = 1e-5;
   plant->set_normal_contact_parameters(kStiffness, kDissipation);
   plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                          kVStictionTolerance);
@@ -243,15 +245,24 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   auto context = simulator.get_mutable_context();
 
+//  drake::log()->set_level(spdlog::level::debug);
   simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+  simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*model, context);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
+  simulator.get_mutable_integrator()->set_requested_minimum_step_size(1e-4);
+  simulator.get_mutable_integrator()->set_throw_on_minimum_step_size_violation(false);
 
   simulator.Initialize();
 
   // Simulate to one second beyond the trajectory motion.
+  const double dt = 1e-2;
   const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
-  simulator.StepTo(kSimDuration);
+  for (double t = 0; t < kSimDuration; t += dt)
+  {
+    std::cout << "time: " << t << std::endl;
+    simulator.StepTo(t + dt);
+  }
 
   // Extract and log the state of the robot.
   auto state_output = model->AllocateOutput(simulator.get_context());

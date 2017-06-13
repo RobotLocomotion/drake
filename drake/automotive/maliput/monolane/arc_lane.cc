@@ -68,10 +68,13 @@ ArcLane::ArcLane(const api::LaneId& id, const api::Segment* segment,
                  const V2& center, double radius, const double theta0,
                  const double d_theta, const api::RBounds& lane_bounds,
                  const api::RBounds& driveable_bounds,
+                 const api::HBounds& elevation_bounds,
                  const CubicPolynomial& elevation,
                  const CubicPolynomial& superelevation)
-    : Lane(id, segment, lane_bounds, driveable_bounds,
-           radius * std::abs(d_theta), elevation, superelevation),
+    : Lane(id, segment,
+           lane_bounds, driveable_bounds, elevation_bounds,
+           radius * std::abs(d_theta),
+           elevation, superelevation),
       r_(radius),
       cx_(center.x()),
       cy_(center.y()),
@@ -222,7 +225,10 @@ api::LanePosition ArcLane::DoToLanePosition(
   const double p_scale = r_ * d_theta_;
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h = geo_position.z() - elevation().a() * p_scale;
+  const double h_unsaturated = geo_position.z() - elevation().a() * p_scale;
+  const double h = math::saturate(h_unsaturated,
+                                  elevation_bounds(s, r).min(),
+                                  elevation_bounds(s, r).max());
 
   const api::LanePosition lane_position{s, r, h};
 
@@ -231,8 +237,7 @@ api::LanePosition ArcLane::DoToLanePosition(
     *nearest_position = nearest;
   }
   if (distance != nullptr) {
-    const V2 p_to_nearest{p(0) - nearest.x(), p(1) - nearest.y()};
-    *distance = p_to_nearest.norm();
+    *distance = (nearest.xyz() - geo_position.xyz()).norm();
   }
 
   return lane_position;

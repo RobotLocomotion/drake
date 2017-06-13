@@ -147,9 +147,8 @@ class NegationNormalFormConverter {
   }
 
   // Makes VisitFormula a friend of this class so that it can use private
-  // operator()s.
-  friend Formula drake::symbolic::VisitFormula<
-      Formula, const NegationNormalFormConverter, const bool&>(
+  // methods.
+  friend Formula drake::symbolic::VisitFormula<Formula>(
       const NegationNormalFormConverter*, const Formula&, const bool&);
 };
 
