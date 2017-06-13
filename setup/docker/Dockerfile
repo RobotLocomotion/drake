@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 RUN mkdir /drake-distro
-COPY drake /drake-distro
+COPY . /drake-distro
 RUN apt-get update && yes "Y" \
       | /drake-distro/setup/ubuntu/16.04/install_prereqs.sh \
       && rm -rf /var/lib/apt/lists/* \
