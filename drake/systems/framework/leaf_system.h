@@ -259,11 +259,6 @@ class LeafSystem : public System<T> {
     return std::make_unique<LeafContext<T>>();
   }
 
-  /// Returns the per step events declared through DeclarePerStepAction().
-  const std::vector<DiscreteEvent<T>>& get_per_step_events() const {
-    return per_step_events_;
-  }
-
   // =========================================================================
   // Implementations of System<T> methods.
 
