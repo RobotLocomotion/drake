@@ -344,6 +344,7 @@ void Rod2D<T>::CopyPoseOut(
 template <class T>
 void Rod2D<T>::DoCalcDiscreteVariableUpdates(
     const systems::Context<T>& context,
+    const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
     systems::DiscreteValues<T>* discrete_state) const {
   // Set ERP (error reduction parameter) and CFM (constraint force mixing)
   // to make this problem "mostly rigid" and with rapid stabilization. These

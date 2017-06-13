@@ -42,6 +42,8 @@ using systems::SystemOutput;
 using systems::VectorBase;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
+using systems::Event;
+using systems::UnrestrictedUpdateEvent;
 
 namespace automotive {
 
@@ -150,7 +152,7 @@ void MaliputRailcar<T>::CalcLaneOutput(const Context<T>& context,
 
 template <typename T>
 T MaliputRailcar<T>::CalcR(const MaliputRailcarParams<T>& params,
-    const LaneDirection& lane_direction) const {
+                           const LaneDirection& lane_direction) const {
   if (lane_direction.with_s == initial_lane_direction_.with_s) {
     return params.r();
   } else {
@@ -176,8 +178,7 @@ void MaliputRailcar<T>::CalcPose(const Context<T>& context,
                                    params.h());
   const GeoPosition geo_position =
       lane_direction.lane->ToGeoPosition(lane_position);
-  const Rotation rotation =
-      lane_direction.lane->GetOrientation(lane_position);
+  const Rotation rotation = lane_direction.lane->GetOrientation(lane_position);
 
   using std::atan2;
   using std::sin;
@@ -235,9 +236,8 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
   const LaneDirection& lane_direction = get_lane_direction(context);
 
   // Obtains the input.
-  const BasicVector<T>* input =
-      this->template EvalVectorInput<BasicVector>(context,
-          command_input_port_index_);
+  const BasicVector<T>* input = this->template EvalVectorInput<BasicVector>(
+      context, command_input_port_index_);
 
   // Allocates and uses a BasicVector containing a zero acceleration command in
   // case the input contains nullptr.
@@ -257,12 +257,10 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
   ImplCalcTimeDerivatives(params, state, lane_direction, *input, rates);
 }
 
-template<typename T>
+template <typename T>
 void MaliputRailcar<T>::ImplCalcTimeDerivatives(
-    const MaliputRailcarParams<T>& params,
-    const MaliputRailcarState<T>& state,
-    const LaneDirection& lane_direction,
-    const BasicVector<T>& input,
+    const MaliputRailcarParams<T>& params, const MaliputRailcarState<T>& state,
+    const LaneDirection& lane_direction, const BasicVector<T>& input,
     MaliputRailcarState<T>* rates) const {
   const T speed = state.speed();
   const T sigma_v = cond(lane_direction.with_s, speed, -speed);
@@ -279,9 +277,9 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
   rates->set_s(motion_derivatives.s());
 
   const T desired_acceleration = input.GetAtIndex(0);
-  const T smooth_acceleration = calc_smooth_acceleration(
-      desired_acceleration, params.max_speed(), params.velocity_limit_kp(),
-      state.speed());
+  const T smooth_acceleration =
+      calc_smooth_acceleration(desired_acceleration, params.max_speed(),
+                               params.velocity_limit_kp(), state.speed());
   rates->set_speed(smooth_acceleration);
 }
 
@@ -296,29 +294,28 @@ MaliputRailcar<T>::AllocateAbstractState() const {
 }
 
 template <typename T>
-bool MaliputRailcar<T>::DoHasDirectFeedthrough(
-    const SparsityMatrix*, int, int) const {
+bool MaliputRailcar<T>::DoHasDirectFeedthrough(const SparsityMatrix*, int,
+                                               int) const {
   return false;
 }
 
 template <typename T>
 void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
-    State<T>* state) const {
-  MaliputRailcarState<T>* railcar_state =
-      dynamic_cast<MaliputRailcarState<T>*>(
-          state->get_mutable_continuous_state()->get_mutable_vector());
+                                        State<T>* state) const {
+  MaliputRailcarState<T>* railcar_state = dynamic_cast<MaliputRailcarState<T>*>(
+      state->get_mutable_continuous_state()->get_mutable_vector());
   DRAKE_DEMAND(railcar_state != nullptr);
   SetDefaultState(railcar_state);
 
   LaneDirection& lane_direction =
-      state->get_mutable_abstract_state()->get_mutable_value(0).
-          template GetMutableValue<LaneDirection>();
+      state->get_mutable_abstract_state()
+          ->get_mutable_value(0)
+          .template GetMutableValue<LaneDirection>();
   lane_direction = initial_lane_direction_;
 }
 
 template <typename T>
-void MaliputRailcar<T>::SetDefaultState(
-    MaliputRailcarState<T>* railcar_state) {
+void MaliputRailcar<T>::SetDefaultState(MaliputRailcarState<T>* railcar_state) {
   railcar_state->set_s(kDefaultInitialS);
   railcar_state->set_speed(kDefaultInitialSpeed);
 }
@@ -359,23 +356,24 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
 
     const T distance = cond(with_s, T(lane->length()) - s, -s);
 
-    actions->time = context.get_time() + distance / s_dot;
+    *time = context.get_time() + distance / s_dot;
   }
 
   // Gracefully handle the situation when the next update time is equal to the
   // current time. Since the integrator requires that the next update time be
   // strictly greater than the current time, a small time epsilon is used.
-  if (actions->time == context.get_time()) {
-    actions->time = context.get_time() + kTimeEpsilon;
+  if (*time == context.get_time()) {
+    *time = context.get_time() + kTimeEpsilon;
   }
-  actions->events.push_back(systems::DiscreteEvent<T>());
-  actions->events.back().action =
-      systems::DiscreteEvent<T>::kUnrestrictedUpdateAction;
+  events->add_unrestricted_update_event(
+      std::make_unique<UnrestrictedUpdateEvent<T>>(
+          Event<T>::TriggerType::kTimed));
 }
 
 template <typename T>
 void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
     systems::State<T>* next_state) const {
   const MaliputRailcarState<T>& current_railcar_state = get_state(context);
   const LaneDirection& current_lane_direction = get_lane_direction(context);
@@ -405,14 +403,16 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
 
   // Sets the speed to be zero if the car is at or is after the end of the road.
   if (current_with_s) {
-    const int num_branches = current_lane_direction.lane->
-        GetOngoingBranches(LaneEnd::kFinish)->size();
+    const int num_branches =
+        current_lane_direction.lane->GetOngoingBranches(LaneEnd::kFinish)
+            ->size();
     if (num_branches == 0 && current_s >= current_length - kLaneEndEpsilon) {
       next_railcar_state->set_speed(0);
     }
   } else {
-    const int num_branches = current_lane_direction.lane->
-        GetOngoingBranches(LaneEnd::kStart)->size();
+    const int num_branches =
+        current_lane_direction.lane->GetOngoingBranches(LaneEnd::kStart)
+            ->size();
     if (num_branches == 0 && current_s <= kLaneEndEpsilon) {
       next_railcar_state->set_speed(0);
     }
@@ -425,8 +425,8 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     // non-default branches or non-zero ongoing branches. See #5702.
     std::unique_ptr<LaneEnd> next_branch;
     if (current_with_s) {
-      next_branch = current_lane_direction.lane->GetDefaultBranch(
-          LaneEnd::kFinish);
+      next_branch =
+          current_lane_direction.lane->GetDefaultBranch(LaneEnd::kFinish);
       if (next_branch == nullptr) {
         const maliput::api::LaneEndSet* ongoing_lanes =
             current_lane_direction.lane->GetOngoingBranches(LaneEnd::kFinish);
@@ -437,8 +437,8 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
         }
       }
     } else {
-      next_branch = current_lane_direction.lane->GetDefaultBranch(
-          LaneEnd::kStart);
+      next_branch =
+          current_lane_direction.lane->GetDefaultBranch(LaneEnd::kStart);
       if (next_branch == nullptr) {
         const maliput::api::LaneEndSet* ongoing_lanes =
             current_lane_direction.lane->GetOngoingBranches(LaneEnd::kStart);
@@ -451,7 +451,8 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     }
 
     if (next_branch == nullptr) {
-      DRAKE_ABORT_MSG("MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
+      DRAKE_ABORT_MSG(
+          "MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
           "Vehicle should switch lanes but no default or ongoing branch "
           "exists.");
     } else {

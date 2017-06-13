@@ -66,10 +66,10 @@ class MaliputRailcarTest : public ::testing::Test {
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
     builder.Connect(
-        "point.0",                                             /* id    */
-        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
-        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
-        EndpointZ(0, 0, 0, 0));                                /* z_end */
+        "point.0",                                            /* id    */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)), /* start */
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),       /* arc   */
+        EndpointZ(0, 0, 0, 0));                               /* z_end */
     Initialize(
         builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
         with_s);
@@ -83,10 +83,10 @@ class MaliputRailcarTest : public ::testing::Test {
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
     builder.Connect(
-        "point.0",                                             /* id    */
-        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
-        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
-        EndpointZ(2, 0, 0.5, 0));                              /* z_end */
+        "point.0",                                            /* id    */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)), /* start */
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),       /* arc   */
+        EndpointZ(2, 0, 0.5, 0));                             /* z_end */
     Initialize(
         builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
         with_s);
@@ -103,7 +103,7 @@ class MaliputRailcarTest : public ::testing::Test {
   // useful for testing whether MaliputRailcar can traverse lanes that have
   // opposing s-directions.
   void InitializeTwoLaneStretchOfRoad(bool with_s = true,
-                                bool flip_curve_lane = false) {
+                                      bool flip_curve_lane = false) {
     maliput::monolane::Builder builder(
         maliput::api::RBounds(-2, 2),   /* lane_bounds       */
         maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
@@ -111,10 +111,10 @@ class MaliputRailcarTest : public ::testing::Test {
         0.01,                           /* linear tolerance  */
         0.5 * M_PI / 180.0);            /* angular_tolerance */
     const Connection* straight_lane_connection = builder.Connect(
-        "point.0",                                                /* id     */
-        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),     /* start  */
-        kStraightRoadLength,                                      /* length */
-        EndpointZ(0, 0, 0, 0));                                   /* z_end  */
+        "point.0",                                            /* id     */
+        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)), /* start  */
+        kStraightRoadLength,                                  /* length */
+        EndpointZ(0, 0, 0, 0));                               /* z_end  */
 
     if (flip_curve_lane) {
       /*
@@ -129,19 +129,19 @@ class MaliputRailcarTest : public ::testing::Test {
       An OBJ rendering of this configuration is given in #5552.
       */
       const Connection* curved_lane_connection = builder.Connect(
-          "point.1",                                              /* id     */
-          Endpoint(                                               /* start  */
-              EndpointXy(kStraightRoadLength + kCurvedRoadRadius,
-                         kCurvedRoadRadius, 1.5 * M_PI),
-              EndpointZ(0, 0, 0, 0)),
-          ArcOffset(kCurvedRoadRadius, -kCurvedRoadTheta),        /* arc    */
-          EndpointZ(0, 0, 0, 0));                                 /* z_end  */
+          "point.1", /* id     */
+          Endpoint(  /* start  */
+                   EndpointXy(kStraightRoadLength + kCurvedRoadRadius,
+                              kCurvedRoadRadius, 1.5 * M_PI),
+                   EndpointZ(0, 0, 0, 0)),
+          ArcOffset(kCurvedRoadRadius, -kCurvedRoadTheta), /* arc    */
+          EndpointZ(0, 0, 0, 0));                          /* z_end  */
       builder.SetDefaultBranch(
-          straight_lane_connection, LaneEnd::kFinish,             /* in_end */
-          curved_lane_connection, LaneEnd::kFinish);              /* out_end */
+          straight_lane_connection, LaneEnd::kFinish, /* in_end */
+          curved_lane_connection, LaneEnd::kFinish);  /* out_end */
       builder.SetDefaultBranch(
-          curved_lane_connection, LaneEnd::kFinish,               /* in_end */
-          straight_lane_connection, LaneEnd::kFinish);            /* out_end */
+          curved_lane_connection, LaneEnd::kFinish,    /* in_end */
+          straight_lane_connection, LaneEnd::kFinish); /* out_end */
     } else {
       /*
       When flip_curve_lane == false, the two lanes are configured as follows:
@@ -155,27 +155,26 @@ class MaliputRailcarTest : public ::testing::Test {
       An OBJ rendering of this configuration is given in #5552.
       */
       const Connection* curved_lane_connection = builder.Connect(
-          "point.1",                                              /* id     */
+          "point.1", /* id     */
           Endpoint(EndpointXy(kStraightRoadLength, 0, 0),
-                   EndpointZ(0, 0, 0, 0)),  /* start  */
-          ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),         /* arc    */
-          EndpointZ(0, 0, 0, 0));                                 /* z_end  */
+                   EndpointZ(0, 0, 0, 0)),                /* start  */
+          ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta), /* arc    */
+          EndpointZ(0, 0, 0, 0));                         /* z_end  */
       builder.SetDefaultBranch(
-          straight_lane_connection, LaneEnd::kFinish,             /* in_end */
-          curved_lane_connection, LaneEnd::kStart);               /* out_end */
+          straight_lane_connection, LaneEnd::kFinish, /* in_end */
+          curved_lane_connection, LaneEnd::kStart);   /* out_end */
       builder.SetDefaultBranch(
-          curved_lane_connection, LaneEnd::kStart,                /* in_end */
-          straight_lane_connection, LaneEnd::kFinish);            /* out_end */
+          curved_lane_connection, LaneEnd::kStart,     /* in_end */
+          straight_lane_connection, LaneEnd::kFinish); /* out_end */
     }
 
-    std::unique_ptr<const maliput::api::RoadGeometry> road =
-        builder.Build(maliput::api::RoadGeometryId(
-            {"RailcarTestTwoLaneStretchOfRoad"}));
+    std::unique_ptr<const maliput::api::RoadGeometry> road = builder.Build(
+        maliput::api::RoadGeometryId({"RailcarTestTwoLaneStretchOfRoad"}));
     Initialize(std::move(road), with_s);
   }
 
   void Initialize(std::unique_ptr<const maliput::api::RoadGeometry> road,
-      bool with_s) {
+                  bool with_s) {
     road_ = std::move(road);
     const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
     dut_.reset(new MaliputRailcar<double>(LaneDirection(lane, with_s)));
@@ -188,13 +187,15 @@ class MaliputRailcarTest : public ::testing::Test {
     DRAKE_DEMAND(dut_ != nullptr);
     DRAKE_DEMAND(context_ != nullptr);
     context_->FixInputPort(dut_->command_input().get_index(),
-        BasicVector<double>::Make(desired_acceleration));
+                           BasicVector<double>::Make(desired_acceleration));
   }
 
   MaliputRailcarState<double>* continuous_state() {
     auto result = dynamic_cast<MaliputRailcarState<double>*>(
         context_->get_mutable_continuous_state_vector());
-    if (result == nullptr) { throw std::bad_cast(); }
+    if (result == nullptr) {
+      throw std::bad_cast();
+    }
     return result;
   }
 
@@ -237,10 +238,8 @@ class MaliputRailcarTest : public ::testing::Test {
   std::pair<const maliput::api::Lane*, const maliput::api::Lane*>
   GetStraightAndCurvedLanes() {
     DRAKE_DEMAND(road_->num_junctions() == 2);
-    const maliput::api::Lane* lane_0 =
-        road_->junction(0)->segment(0)->lane(0);
-    const maliput::api::Lane* lane_1 =
-        road_->junction(1)->segment(0)->lane(0);
+    const maliput::api::Lane* lane_0 = road_->junction(0)->segment(0)->lane(0);
+    const maliput::api::Lane* lane_1 = road_->junction(1)->segment(0)->lane(0);
 
     const maliput::api::Lane* straight_lane =
         (lane_0->length() == kStraightRoadLength) ? lane_0 : lane_1;
@@ -254,8 +253,8 @@ class MaliputRailcarTest : public ::testing::Test {
   // boundary and proceed onto a default branch. The parameter `flip_curve_lane`
   // specifies whether the s-axis of the ongoing lane should be flipped.
   void DoTestLaneTraversalTest(bool flip_curve_lane) {
-    EXPECT_NO_FATAL_FAILURE(InitializeTwoLaneStretchOfRoad(true /* with_s */,
-                                                           flip_curve_lane));
+    EXPECT_NO_FATAL_FAILURE(
+        InitializeTwoLaneStretchOfRoad(true /* with_s */, flip_curve_lane));
     const maliput::api::Lane* straight_lane{};
     const maliput::api::Lane* curved_lane{};
     std::tie(straight_lane, curved_lane) = GetStraightAndCurvedLanes();
@@ -294,11 +293,7 @@ class MaliputRailcarTest : public ::testing::Test {
     std::unique_ptr<BasicVector<double>> prior_velocity =
         velocity_output()->Clone();
 
-    systems::DiscreteEvent<double> event;
-    event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
-
-    dut_->CalcUnrestrictedUpdate(
-        *context_, event, context_->get_mutable_state());
+    dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
 
     if (flip_curve_lane) {
       EXPECT_EQ(continuous_state()->s(), curved_lane->length());
@@ -316,8 +311,8 @@ class MaliputRailcarTest : public ::testing::Test {
     // result in the vehicle's s_dot being greater than kForwardSpeed.
     dut_->CalcTimeDerivatives(*context_, derivatives_.get());
     const MaliputRailcarState<double>* const railcar_derivatives =
-      dynamic_cast<const MaliputRailcarState<double>*>(
-          derivatives_->get_mutable_vector());
+        dynamic_cast<const MaliputRailcarState<double>*>(
+            derivatives_->get_mutable_vector());
     if (flip_curve_lane) {
       EXPECT_LT(railcar_derivatives->s(), -kForwardSpeed);
     } else {
@@ -331,8 +326,7 @@ class MaliputRailcarTest : public ::testing::Test {
     const PoseVector<double>* post_pose = pose_output();
     const FrameVelocity<double>* post_velocity = velocity_output();
     // The following tolerances were empirically determined.
-    EXPECT_TRUE(CompareMatrices(prior_pose->get_value(),
-                                post_pose->get_value(),
+    EXPECT_TRUE(CompareMatrices(prior_pose->get_value(), post_pose->get_value(),
                                 1e-14 /* tolerance */));
     EXPECT_TRUE(CompareMatrices(prior_velocity->get_value(),
                                 post_velocity->get_value(),
@@ -389,7 +383,8 @@ TEST_F(MaliputRailcarTest, ZeroInitialOutput) {
   EXPECT_EQ(translation.y(), 0);
   EXPECT_EQ(translation.z(), 0);
   auto velocity = velocity_output();
-  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
+  EXPECT_TRUE(CompareMatrices(
+      velocity->get_value(),
       (Vector6<double>() << 0, 0, 0, state->speed(), 0, 0).finished()));
 }
 
@@ -412,14 +407,13 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
   // `(x, y, z)` axes in world frame. In this case, `s = kS` while `r` and
   // `h` are by default zero.
   expected_pose.translation() = Eigen::Vector3d(kS, 0, 0);
-  EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
-                              expected_pose.matrix()));
+  EXPECT_TRUE(
+      CompareMatrices(pose->get_isometry().matrix(), expected_pose.matrix()));
 
   auto velocity = velocity_output();
   const Vector6<double> expected_velocity =
       (Vector6<double>() << 0, 0, 0, kSpeed, 0, 0).finished();
-  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
-                              expected_velocity));
+  EXPECT_TRUE(CompareMatrices(velocity->get_value(), expected_velocity));
 }
 
 TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
@@ -451,8 +445,8 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
   Vector6<double> expected_velocity;
   expected_velocity << 0, 0, 0, 0, kSpeed, 0;
   // The following tolerance was determined emperically.
-  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
-                              expected_velocity, 1e-15 /* tolerance */));
+  EXPECT_TRUE(CompareMatrices(velocity->get_value(), expected_velocity,
+                              1e-15 /* tolerance */));
 
   // Position the vehicle half way down the s-curve of the lane and verify that
   // the pose and velocity outputs are as expected. At this position, the
@@ -464,8 +458,8 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
   pose = pose_output();
   {
     const double expected_x = kCurvedRoadRadius * std::sin(45. / 180. * M_PI);
-    const double expected_y = kCurvedRoadRadius -
-        kCurvedRoadRadius * std::cos(45. / 180. * M_PI);
+    const double expected_y =
+        kCurvedRoadRadius - kCurvedRoadRadius * std::cos(45. / 180. * M_PI);
     const Eigen::Vector3d rpy(0, 0, M_PI_4);
     const Eigen::Vector3d xyz(expected_x, expected_y, 0 /* expected z */);
     expected_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
@@ -474,10 +468,10 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
                               expected_pose.matrix(), 1e-15 /* tolerance */));
 
   velocity = velocity_output();
-  expected_velocity
-      << 0, 0, 0, kSpeed * std::cos(M_PI_4), kSpeed * std::sin(M_PI_4), 0;
-  EXPECT_TRUE(CompareMatrices(velocity->get_value(),
-                              expected_velocity, 1e-15 /* tolerance */));
+  expected_velocity << 0, 0, 0, kSpeed * std::cos(M_PI_4),
+      kSpeed * std::sin(M_PI_4), 0;
+  EXPECT_TRUE(CompareMatrices(velocity->get_value(), expected_velocity,
+                              1e-15 /* tolerance */));
 }
 
 TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
@@ -496,8 +490,8 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
   auto pose = pose_output();
   Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
   expected_pose.translation() = Eigen::Vector3d(0, kR, kH);
-  EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
-                              expected_pose.matrix()));
+  EXPECT_TRUE(
+      CompareMatrices(pose->get_isometry().matrix(), expected_pose.matrix()));
 }
 
 TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
@@ -518,8 +512,8 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   {
     const Eigen::Vector3d rpy(0, 0, 0);
     const Eigen::Vector3d xyz(0, kR, kH);
-    expected_start_pose.matrix()
-        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    expected_start_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0,
+        1;
   }
   // The following tolerance was determined empirically.
   EXPECT_TRUE(CompareMatrices(start_pose->get_isometry().matrix(),
@@ -615,7 +609,7 @@ TEST_F(MaliputRailcarTest, DerivativesMonolane) {
   ASSERT_NE(nullptr, result);
 
   // Sets the input command.
-  SetInputValue(0  /* desired acceleration */);
+  SetInputValue(0 /* desired acceleration */);
 
   const double kInitialSpeed{1};
   const double kR{1};
@@ -629,8 +623,8 @@ TEST_F(MaliputRailcarTest, DerivativesMonolane) {
   params.set_velocity_limit_kp(8);
   SetParams(params);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_DOUBLE_EQ(result->s(),
-      kInitialSpeed * kCurvedRoadRadius / (kCurvedRoadRadius - kR));
+  EXPECT_DOUBLE_EQ(result->s(), kInitialSpeed * kCurvedRoadRadius /
+                                    (kCurvedRoadRadius - kR));
   EXPECT_DOUBLE_EQ(result->speed(), 0);
 }
 
@@ -694,15 +688,16 @@ TEST_F(MaliputRailcarTest, DecreasingSDragway) {
   expected_pose.set_translation({0, 0, 0});
   expected_pose.set_rotation({0, 0, 0, -1});
   // The following tolerance was determined empirically.
-  EXPECT_TRUE(CompareMatrices(
-      pose->get_value(), expected_pose.get_value(), 1e-15 /* tolerance */));
+  EXPECT_TRUE(CompareMatrices(pose->get_value(), expected_pose.get_value(),
+                              1e-15 /* tolerance */));
   const FrameVelocity<double>* frame_velocity = velocity_output();
   const multibody::SpatialVelocity<double> spatial_velocity =
       frame_velocity->get_velocity();
-  EXPECT_TRUE(CompareMatrices(spatial_velocity.translational(),
+  EXPECT_TRUE(CompareMatrices(
+      spatial_velocity.translational(),
       Eigen::Vector3d(-MaliputRailcar<double>::kDefaultInitialSpeed, 0, 0)));
-  EXPECT_TRUE(CompareMatrices(spatial_velocity.rotational(),
-                              Eigen::Vector3d(0, 0, 0)));
+  EXPECT_TRUE(
+      CompareMatrices(spatial_velocity.rotational(), Eigen::Vector3d(0, 0, 0)));
 }
 
 TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
@@ -758,7 +753,8 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
   // Verifies that the with-s and against-s translational velocities negate
   // each other.
   EXPECT_TRUE(CompareMatrices(against_s_spatial_velocity.translational() +
-      with_s_spatial_velocity.translational(), Eigen::Vector3d::Zero()));
+                                  with_s_spatial_velocity.translational(),
+                              Eigen::Vector3d::Zero()));
 
   // Verifies that the with-s and against-s rotational velocities are zero.
   // This will change once #5751 is resolved.
@@ -773,13 +769,13 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
 TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeWithSpeedZero) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(true /* with_s */));
   continuous_state()->set_speed(0);
-  systems::UpdateActions<double> actions;
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, std::numeric_limits<double>::infinity());
 
   lane_direction().with_s = false;
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, std::numeric_limits<double>::infinity());
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
@@ -789,8 +785,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
-  systems::UpdateActions<double> actions;
-
   // Computes the time to reach the end of the lane assuming a speed of kSpeed.
   const double kZeroAccelerationTime = lane->length() / kSpeed;
 
@@ -799,23 +793,27 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
   context_->set_time(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
-  EXPECT_EQ(actions.events.at(0).action,
-            systems::DiscreteEvent<double>::kUnrestrictedUpdateAction);
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
+  const systems::EventCollection<systems::UnrestrictedUpdateEvent<double>>& e =
+      events.get_unrestricted_update_events();
+  const auto& leaf_events = static_cast<const systems::LeafEventCollection<
+      systems::UnrestrictedUpdateEvent<double>>&>(e);
+  EXPECT_EQ(leaf_events.get_events().size(), 1);
 
   // Verifies that when the vehicle is mid-way through the lane, the time till
   // it reaches the end is cut in half.
   continuous_state()->set_s(lane->length() / 2);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GE(actions.time, 0);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime / 2);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GE(t, 0);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime / 2);
 
   // Verifies that when the vehicle is at the end of the lane, the time till it
   // reaches the end is MaliputRailcar<double>::kTimeEpsilon.
   continuous_state()->set_s(lane->length());
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, MaliputRailcar<double>::kTimeEpsilon);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, MaliputRailcar<double>::kTimeEpsilon);
 }
 
 // Same as the previous unit test except with_s is false.
@@ -824,33 +822,32 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
-  systems::UpdateActions<double> actions;
-
   // Computes the time to reach the end of the lane assuming a speed of kSpeed
   // and zero acceleration.
   const double kZeroAccelerationTime = lane->length() / kSpeed;
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
+  systems::LeafCompositeEventCollection<double> events;
   context_->set_time(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GE(actions.time, 0);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GE(t, 0);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
 
   // Verifies that when the vehicle is mid-way through the lane, the time till
   // it reaches the end is cut in half.
   continuous_state()->set_s(lane->length() / 2);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GE(actions.time, 0);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime / 2);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GE(t, 0);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime / 2);
 
   // Verifies that when the vehicle is at the end of the lane, the time till it
   // reaches the end is MaliputRailcar<double>::kTimeEpsilon.
   continuous_state()->set_s(0);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, MaliputRailcar<double>::kTimeEpsilon);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, MaliputRailcar<double>::kTimeEpsilon);
 }
 
 // Same as the previous unit test except the road network is a curved monolane
@@ -860,8 +857,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
-  systems::UpdateActions<double> actions;
-
   MaliputRailcarParams<double> params;
   params.set_r(0);
   params.set_h(0);
@@ -878,22 +873,23 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
   context_->set_time(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
 
   // Sets `r` to be positive and verifies that the time to reach the end is
   // shorter.
   params.set_r(1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_LT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_LT(t, kZeroAccelerationTime);
 
   // Sets `r` to be negative and verifies that the time to reach the end is
   // longer.
   params.set_r(-1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GT(t, kZeroAccelerationTime);
 }
 
 // Same as the previous unit test except with_s is false.
@@ -901,8 +897,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
   EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(false /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
-
-  systems::UpdateActions<double> actions;
 
   MaliputRailcarParams<double> params;
   params.set_r(0);
@@ -920,75 +914,76 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
   context_->set_time(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
 
   // Sets `r` to be positive and verifies that the time to reach the end is
   // shorter.
   params.set_r(1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_LT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_LT(t, kZeroAccelerationTime);
 
   // Sets `r` to be negative and verifies that the time to reach the end is
   // longer.
   params.set_r(-1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GT(t, kZeroAccelerationTime);
 }
 
 // Tests the two-lane stretch of road.
 TEST_F(MaliputRailcarTest, TestTwoLaneStretchOfRoad) {
-    EXPECT_NO_FATAL_FAILURE(InitializeTwoLaneStretchOfRoad(
-        true /* with_s */, false /* flip_curve_lane */));
-    const maliput::api::Lane* straight_lane{};
-    const maliput::api::Lane* curved_lane{};
-    std::tie(straight_lane, curved_lane) = GetStraightAndCurvedLanes();
+  EXPECT_NO_FATAL_FAILURE(InitializeTwoLaneStretchOfRoad(
+      true /* with_s */, false /* flip_curve_lane */));
+  const maliput::api::Lane* straight_lane{};
+  const maliput::api::Lane* curved_lane{};
+  std::tie(straight_lane, curved_lane) = GetStraightAndCurvedLanes();
 
-    // Verifies that the end of the straight lane is connected to the start of
-    // the curved lane if it is not flipped.
-    std::unique_ptr<LaneEnd> straight_lane_start =
-        straight_lane->GetDefaultBranch(LaneEnd::kStart);
-    std::unique_ptr<LaneEnd> straight_lane_finish =
-        straight_lane->GetDefaultBranch(LaneEnd::kFinish);
-    std::unique_ptr<LaneEnd> curved_lane_start =
-        curved_lane->GetDefaultBranch(LaneEnd::kStart);
-    std::unique_ptr<LaneEnd> curved_lane_finish =
-        curved_lane->GetDefaultBranch(LaneEnd::kFinish);
-    EXPECT_EQ(straight_lane_start, nullptr);
-    ASSERT_NE(straight_lane_finish, nullptr);
-    EXPECT_EQ(straight_lane_finish->lane, curved_lane);
-    EXPECT_EQ(straight_lane_finish->end, LaneEnd::kStart);
-    ASSERT_NE(curved_lane_start, nullptr);
-    EXPECT_EQ(curved_lane_finish, nullptr);
-    EXPECT_EQ(curved_lane_start->lane, straight_lane);
-    EXPECT_EQ(curved_lane_start->end, LaneEnd::kFinish);
+  // Verifies that the end of the straight lane is connected to the start of
+  // the curved lane if it is not flipped.
+  std::unique_ptr<LaneEnd> straight_lane_start =
+      straight_lane->GetDefaultBranch(LaneEnd::kStart);
+  std::unique_ptr<LaneEnd> straight_lane_finish =
+      straight_lane->GetDefaultBranch(LaneEnd::kFinish);
+  std::unique_ptr<LaneEnd> curved_lane_start =
+      curved_lane->GetDefaultBranch(LaneEnd::kStart);
+  std::unique_ptr<LaneEnd> curved_lane_finish =
+      curved_lane->GetDefaultBranch(LaneEnd::kFinish);
+  EXPECT_EQ(straight_lane_start, nullptr);
+  ASSERT_NE(straight_lane_finish, nullptr);
+  EXPECT_EQ(straight_lane_finish->lane, curved_lane);
+  EXPECT_EQ(straight_lane_finish->end, LaneEnd::kStart);
+  ASSERT_NE(curved_lane_start, nullptr);
+  EXPECT_EQ(curved_lane_finish, nullptr);
+  EXPECT_EQ(curved_lane_start->lane, straight_lane);
+  EXPECT_EQ(curved_lane_start->end, LaneEnd::kFinish);
 
-    // Verifies that the end of the straight lane is connected to the end of the
-    // curved lane if it is flipped.
-    EXPECT_NO_FATAL_FAILURE(InitializeTwoLaneStretchOfRoad(
-        true /* with_s */, true /* flip_curve_lane */));
-    std::tie(straight_lane, curved_lane) = GetStraightAndCurvedLanes();
-    straight_lane_start = straight_lane->GetDefaultBranch(LaneEnd::kStart);
-    straight_lane_finish = straight_lane->GetDefaultBranch(LaneEnd::kFinish);
-    curved_lane_start = curved_lane->GetDefaultBranch(LaneEnd::kStart);
-    curved_lane_finish = curved_lane->GetDefaultBranch(LaneEnd::kFinish);
-    EXPECT_EQ(straight_lane_start, nullptr);
-    ASSERT_NE(straight_lane_finish, nullptr);
-    EXPECT_EQ(straight_lane_finish->lane, curved_lane);
-    EXPECT_EQ(straight_lane_finish->end, LaneEnd::kFinish);
-    ASSERT_NE(curved_lane_finish, nullptr);
-    EXPECT_EQ(curved_lane_start, nullptr);
-    EXPECT_EQ(curved_lane_finish->lane, straight_lane);
-    EXPECT_EQ(curved_lane_finish->end, LaneEnd::kFinish);
+  // Verifies that the end of the straight lane is connected to the end of the
+  // curved lane if it is flipped.
+  EXPECT_NO_FATAL_FAILURE(InitializeTwoLaneStretchOfRoad(
+      true /* with_s */, true /* flip_curve_lane */));
+  std::tie(straight_lane, curved_lane) = GetStraightAndCurvedLanes();
+  straight_lane_start = straight_lane->GetDefaultBranch(LaneEnd::kStart);
+  straight_lane_finish = straight_lane->GetDefaultBranch(LaneEnd::kFinish);
+  curved_lane_start = curved_lane->GetDefaultBranch(LaneEnd::kStart);
+  curved_lane_finish = curved_lane->GetDefaultBranch(LaneEnd::kFinish);
+  EXPECT_EQ(straight_lane_start, nullptr);
+  ASSERT_NE(straight_lane_finish, nullptr);
+  EXPECT_EQ(straight_lane_finish->lane, curved_lane);
+  EXPECT_EQ(straight_lane_finish->end, LaneEnd::kFinish);
+  ASSERT_NE(curved_lane_finish, nullptr);
+  EXPECT_EQ(curved_lane_start, nullptr);
+  EXPECT_EQ(curved_lane_finish->lane, straight_lane);
+  EXPECT_EQ(curved_lane_finish->end, LaneEnd::kFinish);
 }
 
 // Tests that MaliputRailcar will stop when it has reached the end of the road,
 // and will not stop otherwise.
 TEST_F(MaliputRailcarTest, TestStopConditions) {
   EXPECT_NO_FATAL_FAILURE(InitializeTwoLaneStretchOfRoad(
-        true /* with_s */, false /* flip_curve_lane */));
+      true /* with_s */, false /* flip_curve_lane */));
   const maliput::api::Lane* straight_lane{};
   const maliput::api::Lane* curved_lane{};
   std::tie(straight_lane, curved_lane) = GetStraightAndCurvedLanes();
@@ -1002,9 +997,6 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   params.set_velocity_limit_kp(8);
   SetParams(params);
 
-  systems::DiscreteEvent<double> event;
-  event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
-
   // Verifies that when the car is on the straight lane and is just before the
   // lane, it does not stop if it is with s, but does stop if it is against s
   // since there are no ongoing branches.
@@ -1012,14 +1004,12 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = straight_lane;
   lane_direction().with_s = true;
-  dut_->CalcUnrestrictedUpdate(
-      *context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), kSpeed);
   continuous_state()->set_s(-1e-10);
   lane_direction().lane = straight_lane;
   lane_direction().with_s = false;
-  dut_->CalcUnrestrictedUpdate(
-      *context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), 0);
 
   // Verifies that the car does not stop when it is on the straight lane and is
@@ -1031,19 +1021,17 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   const double epsilon = MaliputRailcar<double>::kLaneEndEpsilon;
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = straight_lane;
-  for (const auto s : std::list<double>{
-      1.1 * epsilon,
-      straight_lane->length() / 2.0,
-      straight_lane->length() - 1.1 * epsilon,
-      straight_lane->length() + 1.1 * epsilon}) {
+  for (const auto s :
+       std::list<double>{1.1 * epsilon, straight_lane->length() / 2.0,
+                         straight_lane->length() - 1.1 * epsilon,
+                         straight_lane->length() + 1.1 * epsilon}) {
     continuous_state()->set_s(s);
     for (const auto with_s : std::list<bool>{true, false}) {
       lane_direction().with_s = with_s;
       for (const auto r : std::list<double>{-1, 0, 1}) {
         params.set_r(r);
         SetParams(params);
-        dut_->CalcUnrestrictedUpdate(
-            *context_, event, context_->get_mutable_state());
+        dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
       }
     }
@@ -1058,18 +1046,15 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = curved_lane;
   for (const auto s : std::list<double>{
-      -1.1 * epsilon,
-      1.1 * epsilon,
-      curved_lane->length() / 2.0,
-      curved_lane->length() - 1.1 * epsilon}) {
+           -1.1 * epsilon, 1.1 * epsilon, curved_lane->length() / 2.0,
+           curved_lane->length() - 1.1 * epsilon}) {
     continuous_state()->set_s(s);
     for (const auto with_s : std::list<bool>{true, false}) {
       lane_direction().with_s = with_s;
       for (const auto r : std::list<double>{-1, 0, 1}) {
         params.set_r(r);
         SetParams(params);
-        dut_->CalcUnrestrictedUpdate(
-            *context_, event, context_->get_mutable_state());
+        dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
       }
     }
@@ -1082,11 +1067,11 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = curved_lane;
   lane_direction().with_s = false;
-  dut_->CalcUnrestrictedUpdate(*context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), kSpeed);
   lane_direction().lane = curved_lane;
   lane_direction().with_s = true;
-  dut_->CalcUnrestrictedUpdate(*context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), 0);
 }
 
