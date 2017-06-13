@@ -11,6 +11,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/monomial.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_variable.h"
 
 using Eigen::Matrix3d;
@@ -106,14 +107,8 @@ GTEST_TEST(SymbolicExtraction, DecomposeQuadraticExpression) {
 
   Matrix3d Q_diagonal, Q_symmetric, Q_asymmetric;
   Q_diagonal.setZero().diagonal() = Vector3d(1, 2, 3);
-  Q_symmetric <<
-      3, 2, 1,
-      2, 4, 5,
-      1, 5, 6;
-  Q_asymmetric <<
-    3, 2, 1,
-    4, 6, 5,
-    7, 8, 9;
+  Q_symmetric << 3, 2, 1, 2, 4, 5, 1, 5, 6;
+  Q_asymmetric << 3, 2, 1, 4, 6, 5, 7, 8, 9;
 
   const Vector3d b_expected(10, 11, 12);
   const double c_expected = 13;
@@ -127,14 +122,13 @@ GTEST_TEST(SymbolicExtraction, DecomposeQuadraticExpression) {
     const MapVarToIndex& map_var_to_index = pair.second;
     EXPECT_EQ(vars_expected, vars);
 
-    const auto monomial_to_coeff_map =
-        symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
+    const symbolic::Polynomial poly{e};
 
     MatrixXd Q(num_variables, num_variables);
     VectorXd b(num_variables);
     double c;
     DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-        monomial_to_coeff_map, map_var_to_index, num_variables, &Q, &b, &c);
+        poly, map_var_to_index, num_variables, &Q, &b, &c);
     Matrix3d Q_expected;
     AverageOffDiagonalTerms(Q_in, &Q_expected);
     EXPECT_TRUE(CompareMatrices(Q_expected, Q, kTol));
@@ -182,10 +176,7 @@ GTEST_TEST(SymbolicExtraction, DecomposeLinearExpression) {
   {
     const int num_eq = 3;
     MatrixXd coeffs_expected(num_eq, num_variables);
-    coeffs_expected <<
-        1, 2, 3,
-        4, 5, 6,
-        7, 8, 9;
+    coeffs_expected << 1, 2, 3, 4, 5, 6, 7, 8, 9;
     VectorXd c_expected(num_eq);
     c_expected << 10, 11, 12;
 

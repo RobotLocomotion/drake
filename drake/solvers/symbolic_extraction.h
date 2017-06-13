@@ -9,6 +9,7 @@
 #include "drake/common/monomial.h"
 #include "drake/common/monomial_util.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_polynomial.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/decision_variable.h"
 
@@ -93,7 +94,7 @@ ExtractVariablesFromExpression(const symbolic::Expression& e);
  * @param c[out] The constant term of the quadratic expression.
  */
 void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
+    const symbolic::Polynomial& poly,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
     int num_variables, Eigen::MatrixXd* Q, Eigen::VectorXd* b, double* c);
 
@@ -149,10 +150,9 @@ DecomposeLinearExpression(
     throw std::runtime_error(oss.str());
   }
   const symbolic::Variables& vars = e.GetVariables();
-  const auto& monomial_to_coeff_map =
-      symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  const auto& poly = symbolic::Polynomial(e, vars);
   int num_variable = 0;
-  for (const auto& p : monomial_to_coeff_map) {
+  for (const auto& p : poly.monomial_to_coefficient_map()) {
     const auto& p_monomial = p.first;
     DRAKE_ASSERT(is_constant(p.second));
     const double p_coeff = symbolic::get_constant_value(p.second);
