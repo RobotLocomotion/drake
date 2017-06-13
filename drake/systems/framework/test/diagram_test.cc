@@ -15,7 +15,7 @@
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/zero_order_hold.h"
-#include "drake/systems/analysis/test/empty_system.h"
+#include "drake/systems/analysis/test/stateless_system.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +27,7 @@ namespace {
 /// adder2_: (A + B)             -> output 1
 /// integrator1_: A              -> C
 /// integrator2_: C              -> output 2
-/// It also uses an EmptySystem to verify Diagram's ability to retrieve
+/// It also uses an StatelessSystem to verify Diagram's ability to retrieve
 /// witness functions from its subsystems.
 class ExampleDiagram : public Diagram<double> {
  public:
@@ -40,10 +40,10 @@ class ExampleDiagram : public Diagram<double> {
     adder1_->set_name("adder1");
     adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
-    empty_ = builder.AddSystem<analysis_test::EmptySystem<double>>(
+    stateless_ = builder.AddSystem<analysis_test::StatelessSystem<double>>(
         1.0 /* trigger time */,
         WitnessFunctionDirectionType::kCrossesZero);
-    empty_->set_name("empty");
+    stateless_->set_name("stateless");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);
     integrator0_->set_name("integrator0");
@@ -74,13 +74,13 @@ class ExampleDiagram : public Diagram<double> {
   Adder<double>* adder2() { return adder2_; }
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
-  analysis_test::EmptySystem<double>* empty() { return empty_; }
+  analysis_test::StatelessSystem<double>* stateless() { return stateless_; }
 
  private:
   Adder<double>* adder0_ = nullptr;
   Adder<double>* adder1_ = nullptr;
   Adder<double>* adder2_ = nullptr;
-  analysis_test::EmptySystem<double>* empty_ = nullptr;
+  analysis_test::StatelessSystem<double>* stateless_ = nullptr;
 
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
@@ -182,7 +182,7 @@ TEST_F(DiagramTest, Witness) {
   std::vector<const WitnessFunction<double>*> wf;
   diagram_->GetWitnessFunctions(*context_, &wf);
 
-  // Empty function always returns the ClockWitness.
+  // Stateless function always returns the ClockWitness.
   ASSERT_EQ(wf.size(), 1);
   EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
       wf.front()));
@@ -834,7 +834,7 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ((std::vector<const System<double>*>{
                 diagram->adder0(), diagram->adder1(), diagram->adder2(),
-                diagram->empty(),
+                diagram->stateless(),
                 diagram->integrator0(), diagram->integrator1()
             }),
             diagram->GetSystems());
