@@ -116,8 +116,8 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   const auto& a_value = prog.GetSolution(a);
   const auto& R1a_value = R1.transpose() * a_value;
   const auto& R2a_value = R2.transpose() * a_value;
-  EXPECT_NEAR(prog.GetSolution((t(0))), R1a_value.norm(), 1e-6);
-  EXPECT_NEAR(prog.GetSolution((t(1))), R2a_value.norm(), 1e-6);
+  EXPECT_NEAR(prog.GetSolution((t(0))), R1a_value.norm(), 1.1e-6);
+  EXPECT_NEAR(prog.GetSolution((t(1))), R2a_value.norm(), 1.1e-6);
   EXPECT_TRUE(CompareMatrices((x2 - x1).transpose() * a_value,
                               drake::Vector1d(1.0), 1e-8,
                               MatrixCompareType::absolute));
