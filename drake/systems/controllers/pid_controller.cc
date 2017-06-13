@@ -51,7 +51,7 @@ void PidController<T>::DoCalcOutput(const Context<T>& context,
   const VectorX<T> controlled_state_diff =
       state_d - (state_selector_.cast<T>() * state);
 
-  // Intergral error.
+  // Intergral error, which is stored in the continuous state.
   const VectorBase<T>& state_vector = context.get_continuous_state_vector();
   const Eigen::VectorBlock<const VectorX<T>> state_block =
       dynamic_cast<const BasicVector<T>&>(state_vector).get_value();
@@ -75,7 +75,7 @@ void PidController<T>::DoCalcTimeDerivatives(
   const Eigen::VectorBlock<const VectorX<T>> state_d =
       this->EvalEigenVectorInput(context, input_index_desired_state_);
 
-  // Position error.
+  // The derivative of the continuous state is the instantaneous position error.
   VectorBase<T>* const derivatives_vector = derivatives->get_mutable_vector();
   const VectorX<T> controlled_state_diff =
       state_d - (state_selector_.cast<T>() * state);

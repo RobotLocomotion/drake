@@ -8,7 +8,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/controllers/state_feedback_controller_base.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 
 namespace drake {
 namespace systems {
@@ -19,7 +19,7 @@ namespace systems {
  * RigidBodyTree, which is used for control.
  */
 template <typename T>
-class ModelBasedController : public StateFeedbackController<T> {
+class ModelBasedController : public StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelBasedController)
 

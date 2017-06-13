@@ -8,7 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/controllers/state_feedback_controller_base.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -21,7 +21,8 @@ namespace kuka_iiwa_arm {
 /**
  * A wrapper class around DiagramBuilder that facilitates diagram building for
  * controlled simulation. This class provides three utilities: adding /
- * accessing RigidBodyPlant, StateFeedbackController and DrakeVisualizer.
+ * accessing RigidBodyPlant, StateFeedbackControllerInterface and
+ * DrakeVisualizer.
  * Access to a mutable DiagramBuilder is provided by get_mutable_builder().
  */
 template <typename T>
@@ -32,7 +33,8 @@ class SimDiagramBuilder {
   SimDiagramBuilder() {}
 
   /**
-   * Builds a Diagram in two steps: connects all the StateFeedbackController
+   * Builds a Diagram in two steps: connects all the
+   * StateFeedbackControllerInterface
    * added using AddController() with the RigidBodyPlant added using
    * AddPlant(), and connects the DrakeVisualizer if available with the plant.
    * Then calls DiagramBuilder's Build() method and returns the resulting
@@ -44,7 +46,8 @@ class SimDiagramBuilder {
   }
 
   /**
-   * Builds a Diagram in two steps: connects all the StateFeedbackController
+   * Builds a Diagram in two steps: connects all the
+   * StateFeedbackControllerInterface
    * added using AddController() with the RigidBodyPlant added using
    * AddPlant(), and connects the DrakeVisualizer if available with the plant.
    * Then calls DiagramBuilder's BuildInto() method. Must be called after
@@ -84,7 +87,7 @@ class SimDiagramBuilder {
 
   /**
    * Adds a controller of type ControllerType, which must be derived from
-   * StateFeedbackController.
+   * StateFeedbackControllerInterface.
    * @param instance_id Identifier for the model instance in the RigidBodyPlant
    * to be controlled by the added controller. Each model instance can have at
    * most one controller.
@@ -96,7 +99,7 @@ class SimDiagramBuilder {
   ControllerType* AddController(int instance_id,
                                 std::unique_ptr<ControllerType> controller) {
     DRAKE_DEMAND(controllers_.find(instance_id) == controllers_.end());
-    DRAKE_DEMAND(dynamic_cast<systems::StateFeedbackController<T>*>(
+    DRAKE_DEMAND(dynamic_cast<systems::StateFeedbackControllerInterface<T>*>(
                      controller.get()) != nullptr);
 
     ControllerType* controller_ptr =
@@ -108,7 +111,7 @@ class SimDiagramBuilder {
 
   /**
    * Adds a controller of type ControllerType, which must be derived from
-   * StateFeedbackController<T>. Assumes the RigidBodyPlant only has
+   * StateFeedbackControllerInterface<T>. Assumes the RigidBodyPlant only has
    * one model instance. Can be called at most once.
    * @param controller Unique pointer to the controller. Ownership will be
    * transfered.
@@ -117,12 +120,12 @@ class SimDiagramBuilder {
   template <class ControllerType>
   ControllerType* AddController(std::unique_ptr<ControllerType> controller) {
     return AddController(RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-        std::move(controller));
+                         std::move(controller));
   }
 
   /**
    * Adds a controller of type ControllerType, which must be derived from
-   * StateFeedbackController<T>.
+   * StateFeedbackControllerInterface<T>.
    * @param instance_id Identifier for the model instance in the RigidBodyPlant
    * to be controlled by the added controller. Each model instance can have at
    * most one controller.
@@ -136,18 +139,20 @@ class SimDiagramBuilder {
   }
 
   /**
-   * Returns a StateFeedbackController pointer to the controller for model
+   * Returns a StateFeedbackControllerInterface pointer to the controller for
+   * model
    * instance @p instance_id.
    */
-  systems::StateFeedbackController<T>* get_controller(int instance_id) const {
+  systems::StateFeedbackControllerInterface<T>* get_controller(
+      int instance_id) const {
     return controllers_.at(instance_id);
   }
 
   /**
-   * Returns a StateFeedbackController pointer to the controller.
+   * Returns a StateFeedbackControllerInterface pointer to the controller.
    * Assumes the RigidBodyPlant only has one model instance.
    */
-  systems::StateFeedbackController<T>* get_controller() const {
+  systems::StateFeedbackControllerInterface<T>* get_controller() const {
     return get_controller(
         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
   }
@@ -180,7 +185,8 @@ class SimDiagramBuilder {
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
   // A map from instance id to pointers to the added controllers.
-  std::unordered_map<int, systems::StateFeedbackController<T>*> controllers_;
+  std::unordered_map<int, systems::StateFeedbackControllerInterface<T>*>
+      controllers_;
 
   // Pointer to the added DrakeVisualizer.
   systems::DrakeVisualizer* visualizer_{nullptr};

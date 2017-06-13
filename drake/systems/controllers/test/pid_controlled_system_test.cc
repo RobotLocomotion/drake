@@ -9,7 +9,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/saturation.h"
 
 namespace drake {
