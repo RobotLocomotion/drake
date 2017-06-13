@@ -18,6 +18,15 @@ sh_binary(
 )
 
 sh_binary(
+    name = "drake_visualizer",
+    srcs = select({
+        "//tools:apple": ["drake_visualizer_apple.sh"],
+        "//conditions:default": ["drake_visualizer_linux.sh"],
+    }),
+    data = ["@director"],
+)
+
+sh_binary(
     name = "lsan",
     srcs = ["lsan.sh"],
     data = ["lsan.supp"],
@@ -83,17 +92,25 @@ exports_files(
     visibility = ["@ipopt//:__pkg__"],
 )
 
+exports_files(
+    ["third_party/jchart2d/LICENSE"],
+    visibility = ["//:__pkg__"],
+)
+
 exports_create_cps_scripts([
     "bullet",
     "ccd",
     "eigen",
     "fcl",
     "fmt",
+    "ignition_math",
+    "ignition_rndf",
     "ipopt",
     "lcm",
     "nlopt",
     "octomap",
     "pybind11",
+    "sdformat",
     "spdlog",
     "tinyobjloader",
     "yaml_cpp",

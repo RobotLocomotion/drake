@@ -372,6 +372,12 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
   }
 
+#if ((VTK_MAJOR_VERSION == 7) && (VTK_MINOR_VERSION >= 1)) || \
+    (VTK_MAJOR_VERSION >= 8)
+  color_depth_renderer_->SetUseDepthPeeling(1);
+  color_depth_renderer_->UseFXAAOn();
+#endif
+
   const auto windows = MakeVtkInstanceArray<vtkRenderWindow>(
       color_depth_render_window_, label_render_window_);
   for (size_t i = 0; i < windows.size(); ++i) {
