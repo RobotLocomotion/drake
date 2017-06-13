@@ -315,6 +315,9 @@ new_local_repository(
                           "visibility = ['//visibility:public'])")
 )
 
+# If updating ignition_math version, do not forget to also update
+# tools/ignition_math.BUILD in which the version number is hard-coded
+# to configure config.hh with cmake_configure_file().
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",

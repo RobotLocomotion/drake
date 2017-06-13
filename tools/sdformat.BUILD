@@ -1,6 +1,18 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
+load(
+    "@drake//tools:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+
+package(default_visibility = ["//visibility:public"])
 
 # Generates sdf_config.h based on the version numbers in CMake code.
 cmake_configure_file(
@@ -19,6 +31,7 @@ cmake_configure_file(
         "CMAKE_INSTALL_FULL_DATAROOTDIR=external/sdformat/sdf/1.6",
         "SDF_PKG_VERSION=",
     ],
+    visibility = ["//visibility:private"],
 )
 
 public_headers = [
@@ -38,17 +51,11 @@ public_headers = [
 # headers in the library.  There is one line like '#include <sdf/Assert.hh>'
 # for each non-generated header, followed at the end by a
 # single '#include <sdf/sdf_config.h>'.
-genrule(
+drake_generate_include_header(
     name = "sdfhh_genrule",
-    srcs = public_headers,
-    outs = ["include/sdf/sdf.hh"],
-    # TODO: We should centralize this logic, as it is used here, in
-    # ignition_math.BUILD, and in fcl.BUILD.
-    cmd = "(" + (
-        "echo '$(SRCS)' | tr ' ' '\\n' | " +
-        "sed 's|.*include/\(.*\)|#include \\<\\1\\>|g' &&" +
-        "echo '#include <sdf/sdf_config.h>'"
-    ) + ") > '$@'",
+    out = "include/sdf/sdf.hh",
+    hdrs = public_headers + [":config"],
+    visibility = ["//visibility:private"],
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -121,4 +128,30 @@ cc_library(
     deps = [
         "@ignition_math",
     ],
+)
+
+cmake_config(
+    package = "SDFormat",
+    script = "@drake//tools:sdformat-create-cps.py",
+    version_file = "CMakeLists.txt",
+    deps = ["@ignition_math//:cps"],
+)
+
+install_cmake_config(package = "SDFormat")  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    hdrs = public_headers + [
+        ":sdfhh_genrule",
+        ":config",
+    ],
+    doc_dest = "share/doc/sdformat",
+    hdr_dest = "include",
+    hdr_strip_prefix = ["include"],
+    license_docs = [
+        "LICENSE",
+        "COPYING",
+    ],
+    targets = [":sdformat"],
+    deps = [":install_cmake_config"],
 )
