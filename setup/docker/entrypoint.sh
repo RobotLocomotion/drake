@@ -1,10 +1,10 @@
 #!/bin/bash
+#This file is a script that defines the default run behavior of the Docker
+#image. If no command line arguments are given, it will run the passive Acrobot
+#demo, else it will execute privided arguments in a Bash shell.
 set -e -u
 [[ $# -eq 0 ]] && {
-  #Needed until bazel build produces a drake-visualizer
-  cd /drake-distro/build/install/bin
-  ./drake-visualizer &
-  sleep 3
+#TODO (brandon-northcutt) run the visualizer produced from Bazel
   cd /drake-distro
   bazel run //drake/examples/Acrobot:acrobot_run_passive
 } || {
