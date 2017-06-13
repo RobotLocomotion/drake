@@ -46,11 +46,13 @@ The Dockerfile will copy the <drake-distro> directory into the Docker
 container.
 
 ::
+
   $ docker build -t drake -f setup/docker/Dockerfile .
 
 If successful
 
 ::
+
   $ docker images
 
 should show an image named drake.
@@ -58,6 +60,7 @@ should show an image named drake.
 Note:
 
 ::
+
   $ docker ps
 
 will show any running drake containers on your system.
