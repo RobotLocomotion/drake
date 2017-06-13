@@ -103,7 +103,7 @@ template<typename T> class BodyNode;
 /// immediately implies a relationship between the analytical Jacobian
 /// `dX_FM/dq` and the geometric Jacobian matrix H_FM.
 /// The linear component of the spatial velocity V_FM relates to the time
-/// derivate of `X_FM` by: <pre>
+/// derivative of `X_FM` by: <pre>
 ///   v_FM = V_FM.translational() = dp_FM/dt = Xdot_FM.translational()
 /// </pre>
 /// where `p_FM = X_FM.translational()` and `Xdot_FM = dX_FM/dt`. The time
@@ -128,13 +128,13 @@ template<typename T> class BodyNode;
 ///   dR_FM/dt = dR_FM/dq * N(q) * v
 /// </pre>
 /// These last two equations show that the angular components of the Jacobian
-/// matrix `Hw_FM` are intimately related to the gradients of the rotation
+/// matrix `Hw_FM` are directly related to the gradients of the rotation
 /// matrix `R_FM`. This relationhip is: <pre>
 ///   [Hw_FMi(q)] * R_FM(q) = dR_FM/dqi(q) * N(q)
 /// </pre>
 /// corresponding to the i-th generalized position `qi` where `Hw_FMi(q)` is the
-/// i-th column of `Hw_FM(q)` and `dR_FM/dqi(q)` is partial derivative of `R_FM`
-/// with respect to the i-th generalized coordinate for this mobilizer.
+/// i-th column of `Hw_FM(q)` and `dR_FM/dqi(q)` is the partial derivative of
+/// `R_FM` with respect to the i-th generalized coordinate for this mobilizer.
 ///
 /// For a detailed discussion on the concept of a mobilizer please refer to
 /// [Seth 2010]. The Jacobian or "Hinge" matrix `H_FM(q)` is introduced in

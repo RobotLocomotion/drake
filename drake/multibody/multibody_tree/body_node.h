@@ -121,7 +121,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// This method aborts in Debug builds if called on the root node
   /// corresponding to the _world_ body, for which there is no mobilizer.
   const Mobilizer<T>& get_mobilizer() const {
-    DRAKE_ASSERT(mobilizer_ != nullptr);
+    DRAKE_DEMAND(mobilizer_ != nullptr);
     return *mobilizer_;
   }
 

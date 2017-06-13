@@ -43,7 +43,7 @@ using systems::Context;
 //  - The pendulum moves in the x-y plane, with angles θ₁ and θ₂ defined
 //    positive according to the right-hand-rule with the thumb aligned in the
 //    z-direction.
-//  - The body frames for each link are placed at their geometrical center.
+//  - The body frames for each link are placed at their geometric center.
 //  - The origin of the shoulder frames (Si and So) are coincident at all times.
 //    So is aligned with Si for θ₁ = 0.
 //  - The origin of the elbow frames (Ei and Eo) are coincident at all times.
