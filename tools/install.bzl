@@ -67,11 +67,15 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
 #------------------------------------------------------------------------------
 # Compute install actions for a cc_library or cc_binary.
 def _install_cc_actions(ctx, target):
+    # By default, drake binaries are installed with their package path.
+    runtime_dest = ctx.attr.runtime_dest
+    if runtime_dest == "bin" and _is_drake_label(target.label):
+        runtime_dest = "bin/" + target.label.package
     # Compute actions for target artifacts.
     dests = {
         "a": ctx.attr.archive_dest,
         "so": ctx.attr.library_dest,
-        None: ctx.attr.runtime_dest,
+        None: runtime_dest,
     }
     strip_prefixes = {
         "a": ctx.attr.archive_strip_prefix,
