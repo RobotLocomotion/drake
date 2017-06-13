@@ -98,6 +98,44 @@ template<typename T> class BodyNode;
 /// position vector) and `nv = 6` (3 dofs for an angular velocity and 3 dofs for
 /// a linear velocity).
 ///
+/// The time derivative of the across-mobilizer transform `X_FM` is intimately
+/// related to the across-mobilizer spatial velocity `V_FM`. This relationship
+/// immediately implies a relationship between the analytical Jacobian
+/// `dX_FM/dq` and the geometric Jacobian matrix H_FM.
+/// The linear component of the spatial velocity V_FM relates to the time
+/// derivate of `X_FM` by: <pre>
+///   v_FM = V_FM.translational() = dp_FM/dt = Xdot_FM.translational()
+/// </pre>
+/// where `p_FM = X_FM.translational()` and `Xdot_FM = dX_FM/dt`. The time
+/// derivative of `p_FM` can be rewritten as: <pre>
+///   dp_FM/dt = dp_FM/dq * N(q) * v = Hv_FM * v
+/// </pre>
+/// where `Hv_FM` denotes the first three rows in `H_FM` related with the
+/// translational component of the Jacobian matrix
+/// Therefore: <pre>
+///   Hv_FM = dX/dq(q) * N(q)
+/// </pre>
+///
+/// Similarly, for the rotational component: <pre>
+///  dR_FM/dt = Xdot_FM.linear() = [w_FM] * R_FM = [Hw_FM * v] * R_FM
+/// </pre>
+/// where `[w_FM]` is the cross product matrix of the across-mobilizer angular
+/// velocity `w_FM`, `R_FM` is the orientation of M in F, and `Hw_FM`
+/// corresponds to the last three rows in `H_FM` related with the angular
+/// component of the geometric Jacobian matrix.
+/// The time derivative of the orientation `R_FM` can be expressed in terms of
+/// the analytic Jacobian of `R_FM` as: <pre>
+///   dR_FM/dt = dR_FM/dq * N(q) * v
+/// </pre>
+/// These last two equations show that the angular components of the Jacobian
+/// matrix `Hw_FM` are intimately related to the gradients of the rotation
+/// matrix `R_FM`. This relationhip is: <pre>
+///   [Hw_FMi(q)] * R_FM(q) = dR_FM/dqi(q) * N(q)
+/// </pre>
+/// corresponding to the i-th generalized position `qi` where `Hw_FMi(q)` is the
+/// i-th column of `Hw_FM(q)` and `dR_FM/dqi(q)` is partial derivative of `R_FM`
+/// with respect to the i-th generalized coordinate for this mobilizer.
+///
 /// For a detailed discussion on the concept of a mobilizer please refer to
 /// [Seth 2010]. The Jacobian or "Hinge" matrix `H_FM(q)` is introduced in
 /// [Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
