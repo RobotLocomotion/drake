@@ -1196,9 +1196,3 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
 }  // namespace systems
 }  // namespace drake
 
-int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  return RUN_ALL_TESTS();
-}
-
