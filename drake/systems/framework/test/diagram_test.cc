@@ -42,7 +42,7 @@ class ExampleDiagram : public Diagram<double> {
     adder2_->set_name("adder2");
     stateless_ = builder.AddSystem<analysis_test::StatelessSystem<double>>(
         1.0 /* trigger time */,
-        WitnessFunctionDirectionType::kCrossesZero);
+        WitnessFunctionDirection::kCrossesZero);
     stateless_->set_name("stateless");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);
@@ -177,7 +177,8 @@ class DiagramTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
-// Tests that the diagram returns the correct number of witness functions.
+// Tests that the diagram returns the correct number of witness functions and
+// that the witness function can be called correctly.
 TEST_F(DiagramTest, Witness) {
   std::vector<const WitnessFunction<double>*> wf;
   diagram_->GetWitnessFunctions(*context_, &wf);
@@ -186,6 +187,8 @@ TEST_F(DiagramTest, Witness) {
   ASSERT_EQ(wf.size(), 1);
   EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
       wf.front()));
+
+  EXPECT_LT(diagram_->EvaluateWitness(*context_, *wf.front()), 0);
 }
 
 // Tests that the diagram exports the correct topology.

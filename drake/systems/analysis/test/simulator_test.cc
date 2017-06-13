@@ -45,12 +45,14 @@ namespace {
 // Empty diagram
 class StatelessDiagram : public Diagram<double> {
  public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessDiagram)
+
   explicit StatelessDiagram(double offset) {
     DiagramBuilder<double> builder;
 
     // Add the empty system (and its witness function).
     stateless_ = builder.AddSystem<StatelessSystem>(offset,
-        WitnessFunctionDirectionType::kCrossesZero);
+        WitnessFunctionDirection::kCrossesZero);
     stateless_->set_name("stateless_diag");
     builder.BuildInto(this);
   }
@@ -62,6 +64,8 @@ class StatelessDiagram : public Diagram<double> {
 // Diagram for testing witness functions.
 class ExampleDiagram : public Diagram<double> {
  public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiagram)
+
   explicit ExampleDiagram(double offset) {
     DiagramBuilder<double> builder;
 
@@ -130,7 +134,7 @@ class CompositeSystem : public LogisticSystem {
     this->DeclareContinuousState(1);
     logistic_witness_ = std::make_unique<LogisticWitness>(*this);
     clock_witness_ = std::make_unique<ClockWitness>(trigger_time, *this,
-                          WitnessFunction<double>::DirectionType::kCrossesZero);
+                          WitnessFunctionDirection::kCrossesZero);
   }
 
  protected:
@@ -152,7 +156,7 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessStatelessSystem)
 
   explicit TwoWitnessStatelessSystem(double off1, double off2) {
-    const auto dir_type = WitnessFunction<double>::DirectionType::kCrossesZero;
+    const auto dir_type = WitnessFunctionDirection::kCrossesZero;
     witness1_ = std::make_unique<ClockWitness>(off1, *this, dir_type);
     witness2_ = std::make_unique<ClockWitness>(off2, *this, dir_type);
   }
@@ -247,7 +251,7 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
 GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   // Set empty system to trigger when time is +1 (setting is arbitrary for this
   // test).
-  StatelessSystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  StatelessSystem system(1.0, WitnessFunctionDirection::kCrossesZero);
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
@@ -289,7 +293,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
 // (in the Context) is increased.
 GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   // Set empty system to trigger when time is +1.
-  StatelessSystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  StatelessSystem system(1.0, WitnessFunctionDirection::kCrossesZero);
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
@@ -491,7 +495,6 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   EXPECT_NEAR(publish_times.back(), second_time, iso_tol.value());
 }
 
->>>>>>> 7b3f9fbb08ccb3215bdc473b097cf1d866adec11
 // Tests ability of simulation to identify the proper number of witness function
 // triggerings going from negative to non-negative witness function evaluation.
 // This particular example uses an empty system and a clock as the witness
@@ -499,13 +502,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
 // function should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   // Set empty system to trigger when time is +1.
-<<<<<<< HEAD
-  StatelessSystem system(+1, WitnessFunctionDirectionType::kCrossesZero);
-||||||| merged common ancestors
-  StatelessSystem system(+1, WitnessFunction<double>::DirectionType::kCrossesZero);
-=======
-  StatelessSystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
->>>>>>> 7b3f9fbb08ccb3215bdc473b097cf1d866adec11
+  StatelessSystem system(+1, WitnessFunctionDirection::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -529,7 +526,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
 // should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
   // Set empty system to trigger when time is zero.
-  StatelessSystem system(0, WitnessFunctionDirectionType::kCrossesZero);
+  StatelessSystem system(0, WitnessFunctionDirection::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -551,13 +548,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   // Set empty system to trigger when time is +1.
-<<<<<<< HEAD
-  StatelessSystem system(+1, WitnessFunctionDirectionType::
-||||||| merged common ancestors
-  StatelessSystem system(+1, WitnessFunction<double>::DirectionType::
-=======
-  StatelessSystem system(1.0, WitnessFunction<double>::DirectionType::
->>>>>>> 7b3f9fbb08ccb3215bdc473b097cf1d866adec11
+  StatelessSystem system(+1, WitnessFunctionDirection::
       kPositiveThenNonPositive);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -580,7 +571,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
 // triggerings (zero) for a negative-to-positive trigger. Uses the same empty
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
-  StatelessSystem system(0, WitnessFunctionDirectionType::
+  StatelessSystem system(0, WitnessFunctionDirection::
       kNegativeThenNonNegative);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){

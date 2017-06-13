@@ -24,7 +24,7 @@ class LogisticWitness : public systems::WitnessFunction<T> {
   explicit LogisticWitness(const LogisticSystem<T>& system) :
     systems::WitnessFunction<T>(
         system,
-        systems::WitnessFunctionDirectionType::kCrossesZero,
+        systems::WitnessFunctionDirection::kCrossesZero,
         systems::DiscreteEvent<T>::kPublishAction) {
   }
 

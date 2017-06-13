@@ -22,8 +22,8 @@ class ClockWitness : public systems::WitnessFunction<T> {
  public:
   explicit ClockWitness(
       const T& trigger_time,
-      const StatelessSystem<T>& system,
-      const typename systems::WitnessFunctionDirectionType& dir_type) :
+      const System<T>& system,
+      const systems::WitnessFunctionDirection& dir_type) :
         systems::WitnessFunction<T>(system, dir_type,
           systems::DiscreteEvent<T>::kPublishAction),
         trigger_time_(trigger_time) {
@@ -50,20 +50,22 @@ class StatelessSystem : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
 
   explicit StatelessSystem(const T& offset,
-      const systems::WitnessFunctionDirectionType& dir_type) {
+      const systems::WitnessFunctionDirection& dir_type) {
     witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
 
   void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<void(const Context<T>&)> callback) {
     publish_callback_ = callback;
   }
 
  protected:
+  /// @note this function does not (and cannot) transmogrify any publish
+  ///       callback.
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
     AutoDiffXd trigger_time(witness_->get_trigger_time());
     return new StatelessSystem<AutoDiffXd>(trigger_time,
-                                       witness_->get_dir_type());
+        witness_->get_dir_type());
   }
 
   void DoCalcOutput(const Context<T>&,
