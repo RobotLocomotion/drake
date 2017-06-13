@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -20,7 +21,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   DiagramBuilder<T> builder;
   this->set_name("InverseDynamicsController");
 
-  const RigidBodyTree<T>& robot = this->get_robot_for_control();
+  const RigidBodyTree<T>& robot = *robot_for_control_;
   DRAKE_DEMAND(robot.get_num_positions() == kp.size());
   DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_velocities());
   DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_actuators());
@@ -73,12 +74,12 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
                   inverse_dynamics->get_input_port_desired_acceleration());
 
   // Exposes estimated state input port.
-  int index = builder.ExportInput(pass_through->get_input_port());
-  this->set_input_port_index_estimated_state(index);
+  input_port_index_estimated_state_ =
+      builder.ExportInput(pass_through->get_input_port());
 
   // Exposes reference state input port.
-  index = builder.ExportInput(pid_->get_input_port_desired_state());
-  this->set_input_port_index_desired_state(index);
+  input_port_index_desired_state_ =
+      builder.ExportInput(pid_->get_input_port_desired_state());
 
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
@@ -95,8 +96,8 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   }
 
   // Exposes inverse dynamics' output torque port.
-  index = builder.ExportOutput(inverse_dynamics->get_output_port_torque());
-  this->set_output_port_index_control(index);
+  output_port_index_control_ =
+      builder.ExportOutput(inverse_dynamics->get_output_port_torque());
 
   builder.BuildInto(this);
 }
@@ -114,9 +115,11 @@ InverseDynamicsController<T>::InverseDynamicsController(
     const std::string& model_path,
     std::shared_ptr<RigidBodyFrame<double>> world_offset, const VectorX<T>& kp,
     const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
-    : ModelBasedController<T>(model_path, world_offset,
-                              multibody::joints::kFixed),
-      has_reference_acceleration_(has_reference_acceleration) {
+    : has_reference_acceleration_(has_reference_acceleration) {
+  robot_for_control_ = std::make_unique<RigidBodyTree<T>>();
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+        model_path, multibody::joints::kFixed, world_offset,
+        robot_for_control_.get());
   SetUp(kp, ki, kd);
 }
 
@@ -124,8 +127,8 @@ template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     const RigidBodyTree<T>& robot, const VectorX<T>& kp, const VectorX<T>& ki,
     const VectorX<T>& kd, bool has_reference_acceleration)
-    : ModelBasedController<T>(robot),
-      has_reference_acceleration_(has_reference_acceleration) {
+    : has_reference_acceleration_(has_reference_acceleration) {
+  robot_for_control_ = robot.Clone();
   SetUp(kp, ki, kd);
 }
 
@@ -133,8 +136,8 @@ template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<T>& kp,
     const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
-    : ModelBasedController<T>(std::move(robot)),
-      has_reference_acceleration_(has_reference_acceleration) {
+    : has_reference_acceleration_(has_reference_acceleration) {
+  robot_for_control_ = std::move(robot);
   SetUp(kp, ki, kd);
 }
 
