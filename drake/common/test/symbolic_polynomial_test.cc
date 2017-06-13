@@ -1,9 +1,12 @@
 #include "drake/common/symbolic_polynomial.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/monomial.h"
+#include "drake/common/monomial_util.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
@@ -11,6 +14,7 @@ namespace symbolic {
 namespace {
 
 using std::vector;
+using std::to_string;
 
 using test::ExprEqual;
 
@@ -102,6 +106,22 @@ TEST_F(SymbolicPolynomialTest, Multiplication) {
                    (e1.Expand() * e2.Expand()).Expand());
     }
   }
+}
+
+// It checks if we can compute Xᵀ*Q*X in SOS. For now, this test doesn't have
+// any assertions and simply checks if it compiles.
+TEST_F(SymbolicPolynomialTest, SOSTest) {
+  // X = MonomialBasis({x}, 2) = {x², x, 1}.
+  const drake::VectorX<Monomial> X{MonomialBasis({var_x_}, 2)};
+  // Set up Q. You can do this by using
+  // MathematicalProgram::NewSymmetricContinuousVariables.
+  Eigen::Matrix<Variable, 3, 3> Q;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      Q(i, j) = Variable("q_" + to_string(i) + "_" + to_string(j));
+    }
+  }
+  const Polynomial p = (X.transpose() * Q * X)(0);
 }
 
 }  // namespace

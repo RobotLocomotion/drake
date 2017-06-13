@@ -133,5 +133,26 @@ struct NumTraits<drake::symbolic::Monomial>
     : GenericNumTraits<drake::symbolic::Monomial> {
   static inline int digits10() { return 0; }
 };
+
+// Informs Eigen that Monomial * Variable gets Monomial.
+template <>
+struct ScalarBinaryOpTraits<
+    drake::symbolic::Monomial, drake::symbolic::Variable,
+    internal::scalar_product_op<drake::symbolic::Monomial,
+                                drake::symbolic::Variable>> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Monomial ReturnType;
+};
+
+// Informs Eigen that Variable * Monomial gets Monomial.
+template <>
+struct ScalarBinaryOpTraits<
+    drake::symbolic::Variable, drake::symbolic::Monomial,
+    internal::scalar_product_op<drake::symbolic::Variable,
+                                drake::symbolic::Monomial>> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Monomial ReturnType;
+};
+
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)

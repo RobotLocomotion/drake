@@ -3,6 +3,8 @@
 #include <ostream>
 #include <unordered_map>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/monomial.h"
@@ -108,5 +110,86 @@ Polynomial pow(Polynomial p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
 
+// Matrix<Variable> * Matrix<Monomial> => Matrix<Polynomial>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Variable>::value &&
+        std::is_same<typename MatrixR::Scalar, Monomial>::value,
+    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
+}
+
+// Matrix<Monomial> * Matrix<Variable> => Matrix<Polynomial>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Monomial>::value &&
+        std::is_same<typename MatrixR::Scalar, Variable>::value,
+    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
+}
+
+// Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Polynomial>::value &&
+        std::is_same<typename MatrixR::Scalar, Monomial>::value,
+    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs * rhs.template cast<Polynomial>();
+}
+
+// Matrix<Monomial> * Matrix<Polynomial> => Matrix<Polynomial>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, Monomial>::value &&
+        std::is_same<typename MatrixR::Scalar, Polynomial>::value,
+    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Polynomial>() * rhs;
+}
+
 }  // namespace symbolic
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+
+// Define Eigen traits needed for Matrix<drake::symbolic::Polynomial>.
+template <>
+struct NumTraits<drake::symbolic::Polynomial>
+    : GenericNumTraits<drake::symbolic::Polynomial> {
+  static inline int digits10() { return 0; }
+};
+
+// Informs Eigen that Monomial op Polynomial gets Polynomial.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Monomial,
+                            drake::symbolic::Polynomial, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Polynomial ReturnType;
+};
+
+// Informs Eigen that Polynomial op Monomial gets Polynomial.
+template <typename BinaryOp>
+struct ScalarBinaryOpTraits<drake::symbolic::Polynomial,
+                            drake::symbolic::Monomial, BinaryOp> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Polynomial ReturnType;
+};
+
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)
