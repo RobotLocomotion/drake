@@ -85,9 +85,6 @@ class TwoWitnessEmptySystem : public LeafSystem<double> {
   }
 
  protected:
-  void DoCalcOutput(const Context<double>&,
-                    SystemOutput<double>*) const override {}
-
   void DoGetWitnessFunctions(
       const systems::Context<double>&,
       std::vector<const systems::WitnessFunction<double>*>* w) const override {
