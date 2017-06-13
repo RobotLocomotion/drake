@@ -32,10 +32,21 @@ alias(
 )
 
 install(
+    name = "install_net_sf_jchart2d_jchart2d",
+    doc_dest = "share/doc/jchart2d",
+    doc_strip_prefix = ["**/"],
+    license_docs = ["//tools:third_party/jchart2d/LICENSE"],
+    java_strip_prefix = ["**/"],
+    targets = ["@net_sf_jchart2d_jchart2d//jar"],
+    visibility = ["//visibility:private"],
+)
+
+install(
     name = "install",
     doc_dest = "share/doc/drake",
     license_docs = ["LICENSE.TXT"],
     deps = [
+        ":install_net_sf_jchart2d_jchart2d",
         "//drake:install",
         "//tools:install",
         "@bot_core_lcmtypes//:install",
