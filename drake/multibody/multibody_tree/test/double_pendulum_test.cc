@@ -40,15 +40,18 @@ using systems::Context;
 //
 // The schematic below shows the location and relationship of the frames defined
 // by the model. A few comments:
+//  - The pendulum moves in the x-y plane, with angles θ₁ and θ₂ defined
+//    positive according to the right-hand-rule with the thumb aligned in the
+//    z-direction.
 //  - The body frames for each link are placed at their geometrical center.
 //  - The origin of the shoulder frames (Si and So) are coincident at all times.
 //    So is aligned with Si for θ₁ = 0.
 //  - The origin of the elbow frames (Ei and Eo) are coincident at all times.
 //    Eo is aligned with Ei for θ₂ = 0.
 //
-//         ^
+//       y ^
 //         | Si ≡ W World body frame.
-//         +-->     Shoulder inboard frame Si coincides with W.
+//         +--> x  Shoulder inboard frame Si coincides with W.
 //      X_SiSo(θ₁) Shoulder revolute mobilizer with generalized position θ₁.
 //      +--+-----+
 //      |  ^     |
@@ -198,9 +201,6 @@ class PendulumTests : public ::testing::Test {
   // Pendulum parameters:
   const double link_length_ = 1.0;
   const double half_link_length_ = link_length_ / 2;
-  // COM positions, measured and expressed in body frame:
-  const Vector3d p_UBcm_{0.0, -half_link_length_, 0.0};
-  const Vector3d p_LBcm_{0.0, -half_link_length_, 0.0};
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
   const Isometry3d X_WL_{Translation3d(0.0, -half_link_length_, 0.0)};

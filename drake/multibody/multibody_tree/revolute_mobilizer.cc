@@ -20,9 +20,9 @@ const T& RevoluteMobilizer<T>::get_angle(
 template <typename T>
 const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angle(
     systems::Context<T>* context, const T& angle) const {
-  MultibodyTreeContext<T>* mbt_context =
+  MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto q = this->get_mutable_positions(mbt_context);
+  auto q = this->get_mutable_positions(&mbt_context);
   DRAKE_ASSERT(q.size() == nq);
   q[0] = angle;
   return *this;

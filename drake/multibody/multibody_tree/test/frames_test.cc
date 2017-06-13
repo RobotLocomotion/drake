@@ -100,7 +100,6 @@ class FrameTests : public ::testing::Test {
 };
 
 // Verifies the BodyFrame methods to compute poses in different frames.
-// In all these tests the frame
 TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // Verify this method computes the pose X_FB of the body this frame
   // attaches to measured in this frame F. Since in this case frame F IS the
@@ -136,7 +135,7 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
       frameP_->CalcBodyPoseInThisFrame(*context_).isApprox(X_BP_.inverse()));
 
   // Verify this method computes the pose X_BQ of a third frame Q measured in
-  // the body frame B given we know the pose X_PG of frame G in our frame P as:
+  // the body frame B given we know the pose X_PQ of frame G in our frame P as:
   // X_BQ = X_BP * X_PQ
   EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_).
       isApprox(X_BP_ * X_PQ_));
@@ -152,7 +151,7 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
 // Verifies FixedOffsetFrame methods to compute poses in different frames when
 // several FixedOffsetFrame objects are chained in sequence.
 // In these tests frame P is attached to body B with fixed offset X_BP while
-// frame Q attaches to frame Q with fixed offset X_PQ. Schematically:
+// frame Q attaches to frame P with fixed offset X_PQ. Schematically:
 //
 //         X_BP       X_PQ
 //     B -------> P -------> Q

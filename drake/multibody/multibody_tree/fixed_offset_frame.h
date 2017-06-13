@@ -50,21 +50,7 @@ class FixedOffsetFrame : public Frame<T> {
 
   Isometry3<T> CalcBodyPoseInThisFrame(
       const systems::Context<T>& context) const final {
-    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_FP_);
-  }
-
-  Isometry3<T> CalcBodyPoseInOtherFrame(
-      const systems::Context<T>& context,
-      const Isometry3<T>& X_QF) const final {
-    // This method computes: X_QB = X_QP * X_PB
-    // where P is this frame's parent frame
-    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_QF * X_FP_);
-  }
-
-  Isometry3<T> CalcOffsetPoseInBody(
-      const systems::Context<T>& context,
-      const Isometry3<T>& X_FQ) const final {
-    return parent_frame_.CalcOffsetPoseInBody(context, X_PF_ * X_FQ);
+    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_PF_.inverse());
   }
 
  private:
@@ -74,10 +60,6 @@ class FixedOffsetFrame : public Frame<T> {
   // Spatial transform giving the fixed pose of this frame F measured in the
   // parent frame P.
   const Isometry3<T> X_PF_;
-
-  // Spatial transform giving the fixed pose of the parent frame P measured in
-  // this frame F.
-  const Isometry3<T> X_FP_;
 };
 
 }  // namespace multibody
