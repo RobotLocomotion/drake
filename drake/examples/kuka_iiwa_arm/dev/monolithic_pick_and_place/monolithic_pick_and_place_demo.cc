@@ -13,16 +13,19 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_uint64(target, 0, "ID of the target to pick.");
@@ -215,10 +218,21 @@ int DoMain(void) {
                          box_origin, Vector3<double>(0, 0, FLAGS_orientation),
                          &iiwa_instance, &wsg_instance, &box_instance);
 
-
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
   plant->set_name("plant");
+
+  auto contact_viz =
+      builder.AddSystem<systems::ContactResultsToLcmSystem<double>>(
+          plant->get_tree());
+  auto contact_results_publisher = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
+  // Contact results to lcm msg.
+  builder.Connect(plant->get_output_port_contact_results(),
+                  contact_viz->get_input_port(0));
+  builder.Connect(contact_viz->get_output_port(0),
+                  contact_results_publisher->get_input_port(0));
 
   auto drake_visualizer = builder.AddSystem<systems::DrakeVisualizer>(
       plant->get_plant().get_rigid_body_tree(), &lcm);
