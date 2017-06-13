@@ -66,8 +66,10 @@ class ActionPrimitive : public systems::LeafSystem<double> {
                     systems::SystemOutput<double>* output) const final;
 
   // LeafSystem override.
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const final {
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<double>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+      systems::State<double>* state) const final {
     DoExtendedCalcUnrestrictedUpdate(context, state);
   }
 

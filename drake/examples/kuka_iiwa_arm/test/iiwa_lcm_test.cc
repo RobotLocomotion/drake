@@ -55,12 +55,10 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
   context->FixInputPort(
       0, std::make_unique<systems::Value<lcmt_iiwa_command>>(command));
 
-  systems::DiscreteEvent<double> update_event;
-  update_event.action = systems::DiscreteEvent<double>::kDiscreteUpdateAction;
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
   update->SetFrom(*context->get_mutable_discrete_state());
-  dut.CalcDiscreteVariableUpdates(*context, {update_event}, update.get());
+  dut.CalcDiscreteVariableUpdates(*context, update.get());
   context->set_discrete_state(std::move(update));
 
   dut.CalcOutput(*context, output.get());
@@ -127,12 +125,10 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
   context->FixInputPort(
       0, std::make_unique<systems::Value<lcmt_iiwa_status>>(status));
 
-  systems::DiscreteEvent<double> update_event;
-  update_event.action = systems::DiscreteEvent<double>::kDiscreteUpdateAction;
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
   update->SetFrom(*context->get_mutable_discrete_state());
-  dut.CalcDiscreteVariableUpdates(*context, {update_event}, update.get());
+  dut.CalcDiscreteVariableUpdates(*context, update.get());
   context->set_discrete_state(std::move(update));
 
   Eigen::VectorXd delta(kNumJoints);
@@ -145,7 +141,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
       0, std::make_unique<systems::Value<lcmt_iiwa_status>>(status));
   update = dut.AllocateDiscreteVariables();
   update->SetFrom(*context->get_mutable_discrete_state());
-  dut.CalcDiscreteVariableUpdates(*context, {update_event}, update.get());
+  dut.CalcDiscreteVariableUpdates(*context, update.get());
   context->set_discrete_state(std::move(update));
 
   dut.CalcOutput(*context, output.get());

@@ -23,12 +23,15 @@ class LogisticWitness : public systems::WitnessFunction<T> {
   ~LogisticWitness() override {}
   explicit LogisticWitness(const LogisticSystem<T>& system) :
     systems::WitnessFunction<T>(
-        system,
-        systems::WitnessFunction<T>::DirectionType::kCrossesZero,
-        systems::DiscreteEvent<T>::kPublishAction) {
+        system, systems::WitnessFunction<T>::DirectionType::kCrossesZero) {
   }
 
  protected:
+  void DoAddEvent(systems::CompositeEventCollection<T>* events) const override {
+    events->add_publish_event(
+        std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness));
+  }
+
   // The witness function is simply the state value itself.
   T DoEvaluate(const Context<T>& context) const override {
     return (*context.get_continuous_state())[0];
@@ -81,7 +84,8 @@ class LogisticSystem : public LeafSystem<T> {
   }
 
   void DoPublish(
-      const drake::systems::Context<double>& context) const override {
+      const drake::systems::Context<double>& context,
+      const std::vector<const systems::PublishEvent<double>*>&) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
