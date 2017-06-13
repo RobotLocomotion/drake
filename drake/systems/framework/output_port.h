@@ -42,7 +42,7 @@ computation or forwarding from other values within the associated leaf context.
 A diagram's output ports, on the other hand, are exported from output ports of
 its contained subsystems.
 
-An output port's value may always be treated as an AbstractValue, but we also
+An output port's value is always stored as an AbstractValue, but we also
 provide special handling for output ports known to have numeric (vector) values.
 Vector-valued ports may specify a particular vector length, or may leave that
 to be determined at runtime.
@@ -61,7 +61,8 @@ Instantiated templates for the following kinds of T's are provided:
 
 They are already available to link against in the containing library.
 No other values for T are currently supported. */
-// TODO(sherm1) Implement caching for output ports.
+// TODO(sherm1) Implement caching for output ports and update the above
+// documentation to explain in more detail.
 template <typename T>
 class OutputPort {
  public:
@@ -136,10 +137,9 @@ class OutputPort {
   virtual std::unique_ptr<AbstractValue> DoAllocate(
       const Context<T>& context) const = 0;
 
-  /** A concrete %OutputPort must provide a way to write to `value` the value
-  this output port should have given the contents of the supplied Context. The
-  value may be determined by computation or by copying from a source value in
-  the Context.
+  /** A concrete %OutputPort must implement this method to calculate the value
+  this output port should have, given the supplied Context. The value may be
+  determined by computation or by copying from a source value in the Context.
   @param context A Context that has already been validated as compatible with
                  the System whose output port this is.
   @param value   A pointer that has already be validated as non-null and
