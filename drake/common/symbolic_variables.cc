@@ -118,6 +118,17 @@ Variables operator-(Variables vars, const Variable& var) {
   return vars;
 }
 
+Variables intersect(const Variables& vars1, const Variables& vars2) {
+  Variables ret;
+  // Add v₁ ∈ vars₁ to ret if v₁ ∈ vars₂.
+  for (const Variable& v1 : vars1) {
+    if (vars2.include(v1)) {
+      ret += v1;
+    }
+  }
+  return ret;
+}
+
 ostream& operator<<(ostream& os, const Variables& vars) {
   os << "{";
   if (!vars.vars_.empty()) {

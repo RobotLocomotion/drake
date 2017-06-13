@@ -270,6 +270,44 @@ TEST_F(VariablesTest, IsStrictSuperSetOf) {
   EXPECT_FALSE(vars5.IsStrictSupersetOf(vars5));
 }
 
+TEST_F(VariablesTest, Intersection) {
+  const Variables vars1{x_, y_, z_, w_, v_};
+  const Variables vars2{x_, y_};
+  const Variables vars3{x_, y_, z_};
+  const Variables vars4{z_, w_, v_};
+  const Variables vars5{w_, v_};
+
+  EXPECT_EQ(intersect(vars1, vars1), vars1);
+  EXPECT_EQ(intersect(vars1, vars2), vars2);
+  EXPECT_EQ(intersect(vars1, vars3), vars3);
+  EXPECT_EQ(intersect(vars1, vars4), vars4);
+  EXPECT_EQ(intersect(vars1, vars5), vars5);
+
+  EXPECT_EQ(intersect(vars2, vars1), vars2);
+  EXPECT_EQ(intersect(vars2, vars2), vars2);
+  EXPECT_EQ(intersect(vars2, vars3), vars2);
+  EXPECT_EQ(intersect(vars2, vars4), Variables());
+  EXPECT_EQ(intersect(vars2, vars5), Variables());
+
+  EXPECT_EQ(intersect(vars3, vars1), vars3);
+  EXPECT_EQ(intersect(vars3, vars2), vars2);
+  EXPECT_EQ(intersect(vars3, vars3), vars3);
+  EXPECT_EQ(intersect(vars3, vars4), Variables({z_}));
+  EXPECT_EQ(intersect(vars3, vars5), Variables());
+
+  EXPECT_EQ(intersect(vars4, vars1), vars4);
+  EXPECT_EQ(intersect(vars4, vars2), Variables());
+  EXPECT_EQ(intersect(vars4, vars3), Variables({z_}));
+  EXPECT_EQ(intersect(vars4, vars4), vars4);
+  EXPECT_EQ(intersect(vars4, vars5), vars5);
+
+  EXPECT_EQ(intersect(vars5, vars1), vars5);
+  EXPECT_EQ(intersect(vars5, vars2), Variables());
+  EXPECT_EQ(intersect(vars5, vars3), Variables());
+  EXPECT_EQ(intersect(vars5, vars4), vars5);
+  EXPECT_EQ(intersect(vars5, vars5), vars5);
+}
+
 TEST_F(VariablesTest, ToString) {
   const Variables vars0{};
   const Variables vars1{x_, y_, z_, w_, v_};
