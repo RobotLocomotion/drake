@@ -12,7 +12,7 @@ There are two Docker containers provided that can build Drake in isolated
 Ubuntu 16.04 environments. The intention is to make it easy develop for and 
 use drake on a variety of host operating systems.
 
-Note: this docker image is provided as an experimental feature and are not
+Note: This docker image is provided as an experimental feature and is not
 presently covered by continuous integration.
 
 .. _docker_getting_started:
@@ -101,9 +101,9 @@ Open source drivers:
 This command will allow access for non-network connections to your local X
 server and pass the necessary X11 parameters for graphical display of programs
 within the Docker container. The `-i` switch assigns a tty for interactive
-text connections within the console. `-rm` will clean up after the image, omit
+text connections within the console. `--rm` will clean up after the image, omit
 this to allow the container's file system to persist.
-See the `Docker Run Referencee
+See the `Docker Run Reference
 <https://docs.docker.com/engine/reference/run/>`_. For more information on
 run options.
 
