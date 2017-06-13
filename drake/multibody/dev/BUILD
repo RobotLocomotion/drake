@@ -35,7 +35,8 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = gurobi_test_tags(),
+    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
@@ -48,7 +49,8 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = gurobi_test_tags(),
+    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
@@ -61,7 +63,8 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = gurobi_test_tags(),
+    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],

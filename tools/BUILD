@@ -92,17 +92,25 @@ exports_files(
     visibility = ["@ipopt//:__pkg__"],
 )
 
+exports_files(
+    ["third_party/jchart2d/LICENSE"],
+    visibility = ["//:__pkg__"],
+)
+
 exports_create_cps_scripts([
     "bullet",
     "ccd",
     "eigen",
     "fcl",
     "fmt",
+    "ignition_math",
+    "ignition_rndf",
     "ipopt",
     "lcm",
     "nlopt",
     "octomap",
     "pybind11",
+    "sdformat",
     "spdlog",
     "tinyobjloader",
     "yaml_cpp",
