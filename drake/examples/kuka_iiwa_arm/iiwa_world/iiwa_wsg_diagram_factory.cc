@@ -138,6 +138,9 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   output_port_box_robot_state_t_ =
       base_builder->ExportOutput(box_state_est_->get_output_port_msg());
 
+  output_port_contact_results_t_ =
+      base_builder->ExportOutput(plant_->contact_results_output_port());
+
   builder.BuildInto(this);
 }
 template class IiwaAndWsgPlantWithStateEstimator<double>;
