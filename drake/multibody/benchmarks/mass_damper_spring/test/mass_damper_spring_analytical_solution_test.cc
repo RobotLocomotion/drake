@@ -10,6 +10,9 @@ namespace multibody {
 namespace benchmarks {
 namespace {
 
+// Compare the analytical solution with the expected results.
+constexpr double epsilon = std::numeric_limits<double>::epsilon();
+
 // This function compares the analytical solution of a one-degree-of-freedom
 // mass-damper-spring system with an expected (special-case) solution at time t.
 // m                    |  Mass of system.
@@ -23,7 +26,8 @@ namespace {
 void CompareMassDamperSpringSolutionVsExpectedSolution(
   const double m, const double b, const double k,
   const double x0, const double xDt0, const double t,
-  const Eigen::Vector3d& x_xDt_xDtDt_expected ) {
+  const Eigen::Vector3d& x_xDt_xDtDt_expected,
+  const double tolerance ) {
   // Construct object for calculating analytical solution, set its initial
   // values, and then calculate the analytical solution at time t.
   MassDamperSpringAnalyticalSolution plant(m, b, k);
@@ -31,9 +35,8 @@ void CompareMassDamperSpringSolutionVsExpectedSolution(
   const Eigen::Vector3d x_xDt_xDtDt = plant.CalculateOutput(t);
 
   // Compare the analytical solution with the expected results.
-  constexpr double epsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 4 * epsilon;
-  EXPECT_TRUE(x_xDt_xDtDt.isApprox(x_xDt_xDtDt_expected, tolerance));
+  const bool is_close = x_xDt_xDtDt.isApprox(x_xDt_xDtDt_expected, tolerance);
+  EXPECT_TRUE(is_close);
 }
 
 // Test accuracy of calculations for undamped free vibration of a simple
@@ -51,14 +54,14 @@ GTEST_TEST(MassDamperSpringUndamped, UndampedVibrationA) {
                 -x0 * std::cos(wn * t) * wn * wn;
 
   CompareMassDamperSpringSolutionVsExpectedSolution(m, b, k, x0, xDt0, t,
-                                                    x_xDt_xDtDt);
+                                                    x_xDt_xDtDt, 4*epsilon);
 }
 
 // Test accuracy of calculations for underdamped free vibration of a simple
 // mass-damper-spring system (damping ratio = 0.2).
 GTEST_TEST(MassDamperSpringUndamped, UnderdampedVibrationB) {
   const double m = 1.0, k = 4.0 * M_PI * M_PI;
-  const double zeta = 0.2,  b = 2 * zeta* std::sqrt(m * k);
+  const double zeta = 0.2,  b = 2 * zeta * std::sqrt(m * k);
   const double x0 = 3.0, xDt0 = 0.0;
 
   // Expected solution is x(t) = (A*sin(wd*t) + B*cos(wd*t))*exp(-zeta * wn *t).
@@ -72,14 +75,14 @@ GTEST_TEST(MassDamperSpringUndamped, UnderdampedVibrationB) {
                 -x0 * wn * wn * std::exp(-zeta * wn * t);
 
   CompareMassDamperSpringSolutionVsExpectedSolution(m, b, k, x0, xDt0, t,
-                                                    x_xDt_xDtDt);
+                                                    x_xDt_xDtDt, 4*epsilon);
 }
 
 // Test accuracy of calculation for critically-damped free vibration of a simple
 // mass-damper-spring system (damping ratio = 1).
 GTEST_TEST(MassDamperSpringUndamped, CriticallyDampedC) {
   const double m = 1.0, k = 9.0;
-  const double zeta = 1,  b = 2 * zeta* std::sqrt(m * k);
+  const double zeta = 1,  b = 2 * zeta * std::sqrt(m * k);
   const double x0 = 0.0, xDt0 = 3.0, t = 0.25;
 
   // Expected special-case solution is x(t) = ẋ(0) * t * exp(-wn *t).
@@ -90,23 +93,50 @@ GTEST_TEST(MassDamperSpringUndamped, CriticallyDampedC) {
                  xDt0 * wn * (-2  + wn * t) * std::exp(-wn * t);
 
   CompareMassDamperSpringSolutionVsExpectedSolution(m, b, k, x0, xDt0, t,
-                                                    x_xDt_xDtDt);
+                                                    x_xDt_xDtDt, 4*epsilon);
 }
 
 // Test accuracy of calculations for over-damped free vibration of a simple
 // mass-damper-spring system (damping ratio = 1.5).
 GTEST_TEST(MassDamperSpringUndamped, OverDampedD) {
-  const double m = 1.0, k = 9.0, b = 3 * std::sqrt(m * k);
+  const double m = 1.0, k = 9.0;
+  const double zeta = 1.5,  b = 2 * zeta * std::sqrt(m * k);
   const double x0 = 0.0, xDt0 = 3.0, t = 0.25;
 
   // Expected solution was calculated via MotionGenesis.
   Eigen::Vector3d x_xDt_xDtDt;
-  x_xDt_xDtDt << 1.831630559910163,
-                 0.7258829929986823,
-               -23.01762197617961;
+  x_xDt_xDtDt << 0.2730433627750083,
+                 0.1082082477370706,
+                -3.43126449460871;
 
   CompareMassDamperSpringSolutionVsExpectedSolution(m, b, k, x0, xDt0, t,
-                                                    x_xDt_xDtDt);
+                                                    x_xDt_xDtDt, 4*epsilon);
+}
+
+// Test accuracy of calculation of free vibration of a simple mass-damper-spring
+// system at or near critically-damping (damping ratio near 1).
+GTEST_TEST(MassDamperSpringUndamped, CriticallyDampedAlmostE) {
+  const double m = 1.0, k = 9.0;
+  const double x0 = 0.0, xDt0 = 3.0, t = 0.25;
+
+  // For zeta = 1 and x0 = 0, expected solution is x(t) = ẋ(0)*t*exp(-wn*t).
+  const double wn = std::sqrt(k / m);
+  Eigen::Vector3d x_xDt_xDtDt;
+  x_xDt_xDtDt << xDt0 * t * std::exp(-wn * t),
+                 xDt0 * (1 - wn * t) * std::exp(-wn * t),
+                 xDt0 * wn * (-2  + wn * t) * std::exp(-wn * t);
+
+  // Test various values for damping ratio near critical damping.
+  for (int i = -100; i <= 100;  i++) {
+    const double zeta = 1 + i * epsilon;
+    const double b = 2 * zeta * std::sqrt(m * k);
+    // Tolerance must grow as move away from 1.
+    const double min_tolerance = 2E6 * epsilon;
+    const double max_tolerance = min_tolerance * std::abs(i);
+    const double tolerance = std::max(min_tolerance, max_tolerance);
+    CompareMassDamperSpringSolutionVsExpectedSolution(m, b, k, x0, xDt0, t,
+                                                      x_xDt_xDtDt, tolerance);
+  }
 }
 
 

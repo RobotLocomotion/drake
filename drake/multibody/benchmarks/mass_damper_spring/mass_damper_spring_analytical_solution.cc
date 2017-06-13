@@ -10,11 +10,6 @@ namespace benchmarks {
 
 // For `this` mass-damper-spring system, and with the given initial
 // values, this method calculates the values of x, ẋ, ẍ at time t.
-// Algorithm from [Kane, 1985] Problem Set 14.7-14.10, Pages 349-352.
-//
-// - [Kane, 1985] "Dynamics: Theory and Applications," McGraw-Hill Book Co.,
-//   New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
-//   https://ecommons.cornell.edu/handle/1813/637
 Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
     const double t) const {
   // TODO(@mitiguy) Enhance algorithm to allow for any real values of m, b, k,
@@ -23,34 +18,33 @@ Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
 
   const double zeta = CalculateDampingRatio();
   const double wn = CalculateNaturalFrequency();
-  return CalculateOutput(zeta, wn, x0_, xDt0_, t);
+  return CalculateOutputImpl(zeta, wn, x0_, xDt0_, t);
 }
 
-
-// For `this` mass-damper-spring system, and with the given initial
-// values, this method calculates the values of x, ẋ, ẍ at time t.
+// Calculates the values of x, ẋ, ẍ at time t associated with the ODE
+// ẍ  +  2 ζ ωₙ ẋ  +  ωₙ²  =  0  and the given initial values.
 // Algorithm from [Kane, 1985] Problem Set 14.7-14.10, Pages 349-352.
 //
 // - [Kane, 1985] "Dynamics: Theory and Applications," McGraw-Hill Book Co.,
 //   New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
 //   https://ecommons.cornell.edu/handle/1813/637
-Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
+Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutputImpl(
     const double zeta, const double wn,
-    const double x0, const double xDt0,
-    const double t) {
+    const double x0, const double xDt0,  const double t) {
   // TODO(@mitiguy) Enhance algorithm to allow for any real values of zeta, wn.
   DRAKE_DEMAND(zeta >= 0  &&  wn > 0);
 
   // Quantities x, ẋ, ẍ are put into a three-element matrix and returned.
   double x, xDt, xDtDt;
 
-  using std::sqrt;
-  using std::sin;
-  using std::cos;
+  using std::abs;
   using std::exp;
+  using std::sqrt;
+  using std::cos;
+  using std::sin;
 
   constexpr double epsilon = std::numeric_limits<double>::epsilon();
-  const double is_zeta_nearly_1 = std::abs(zeta - 1) < 10 * epsilon;
+  const double is_zeta_nearly_1 = abs(zeta - 1) < 10 * epsilon;
   if (is_zeta_nearly_1) {
     // Critically damped free vibration (zeta = 1).
     const double A = x0;
@@ -87,8 +81,8 @@ Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
     // Overdamped  free vibration (zeta > 1).
     const double p1 = -wn * (zeta - sqrt(zeta * zeta - 1));
     const double p2 = -wn * (zeta + sqrt(zeta * zeta - 1));
-    const double A = xDt0 - p2 * x0 / (p1 - p2);
-    const double B = xDt0 - p1 * x0 / (p1 - p2);
+    const double A = (xDt0 - p2 * x0) / (p1 - p2);
+    const double B = (xDt0 - p1 * x0) / (p1 - p2);
 
     const double term1 = A * exp(p1 * t);
     const double term2 = B * exp(p2 * t);

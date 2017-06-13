@@ -24,25 +24,21 @@ namespace benchmarks {
 ///       e.g., having rigid-body inertia, rotational damper, rotational spring.
 class MassDamperSpringAnalyticalSolution {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MassDamperSpringAnalyticalSolution);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MassDamperSpringAnalyticalSolution);
 
   /// This constructs the aforementioned mass-damper-spring system.
   ///
   /// @param[in] mass Mass of system (particle Q).
   /// @param[in] b Linear damping constant.
   /// @param[in] k Linear spring constant.
-  MassDamperSpringAnalyticalSolution(const double mass,
-                                     const double b,
-                                     const double k) :
+  MassDamperSpringAnalyticalSolution(double mass, double b, double k) :
                                      m_(mass), b_(b), k_(k) {}
 
   /// Sets the initial values of x and ẋ for `this` system.
   ///
   /// @param[in] x0 Initial value of x (value of x at time t = 0).
   /// @param[in] xDt0 Initial value of ẋ (value of ẋ at time t = 0).
-  void SetInitialValue(const double x0, const double xDt0) {
-    x0_ = x0;  xDt0_ = xDt0;
-  }
+  void SetInitialValue(double x0, double xDt0)  { x0_ = x0;  xDt0_ = xDt0; }
 
   /// For `this` mass-damper-spring system, and with the given initial
   /// values, this method calculates the values of x, ẋ, ẍ at time t.
@@ -50,16 +46,16 @@ class MassDamperSpringAnalyticalSolution {
   /// @param[in] t The value of time at which output is requested.
   ///
   /// @returns Three-element matrix consisting of x, ẋ, ẍ, respectively.
-  Eigen::Vector3d CalculateOutput(const double t) const;
+  Eigen::Vector3d CalculateOutput(double t) const;
 
   /// Returns x (Nx measure of Q's position from No) at time t.
-  double get_x (const double t)  { return CalculateOutput(t)(0); }
+  double get_x (double t)  { return CalculateOutput(t)(0); }
 
   /// Returns ẋ (Nx measure of Q's velocity in N) at time t.
-  double get_xDt(const double t)  { return CalculateOutput(t)(1); }
+  double get_xDt(double t)  { return CalculateOutput(t)(1); }
 
   /// Returns ẍ (Nx measure of Q's acceleration in N) at time t.
-  double get_xDtDt(const double t)  { return CalculateOutput(t)(2); }
+  double get_xDtDt(double t)  { return CalculateOutput(t)(2); }
 
  private:
   // Class data.
@@ -77,23 +73,22 @@ class MassDamperSpringAnalyticalSolution {
   double CalculateDampingRatio() const  { return b_ / (2 * std::sqrt(m_ * k_));}
 
   // Calculates the values of x, ẋ, ẍ at time t associated with the ODE
-  // ẍ  +  2 ζ ωₙ ẋ  +  ωₙ²  =  0  and with the initial values from `this`.
+  // ẍ  +  2 ζ ωₙ ẋ  +  ωₙ²  =  0  and the given initial values.
   //
   // @param[in] zeta Damping ratio (ζ) associated with this 2nd-order ODE.
   //                 There are no units for zeta (ζ) (dimensionless quantity).
   // @param[in] wn  Natural frequency (ωₙ) associated with this 2nd-order ODE.
   //                The units of wn are typically in rad/sec.
-  // @param[in] t The value of time at which output is requested (usually in s)
-  //              The units of t are typically in seconds.
   // @param[in] x0 Initial value of x (value of x at time t = 0).
   //               For translation, the units of x0 are typically in meters.
   // @param[in] xDt0 Initial value of ẋ (value of ẋ at time t = 0).
   //                 For translation, the units of xDt0 are typically in m/s.
+  // @param[in] t The value of time at which output is requested (usually in s)
+  //              The units of t are typically in seconds.
   //
   // @returns Three-element matrix consisting of x, ẋ, ẍ, respectively.
-  static Eigen::Vector3d CalculateOutput(const double zeta, const double wn,
-                                         const double x0, const double xDt0,
-                                         const double t);
+  static Eigen::Vector3d CalculateOutputImpl(double zeta, double wn,
+                                             double x0, double xDt0, double t);
 };
 
 
