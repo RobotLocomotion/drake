@@ -18,7 +18,43 @@ def _is_drake_label(x):
         return False
 
 #------------------------------------------------------------------------------
-def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
+def _output_path(ctx, input_file, strip_prefix):
+    """Compute output path (without destination prefix) for install action.
+
+    This computes the adjusted output path for an input file. It is the same as
+    :func:`output_path`, but additionally handles files outside the current
+    package when :func:`install` or :func:`install_files` is invoked with
+    non-empty ``allowed_externals``.
+    """
+
+    # Try the current package first
+    path = output_path(ctx, input_file, strip_prefix)
+    if path != None:
+        return path
+
+    # If we were unable to resolve a path, the file must be "foreign", so try
+    # to resolve against the list of allowed externals.
+    if path == None and hasattr(ctx.attr, "allowed_externals"):
+        for x in ctx.attr.allowed_externals:
+            package_root = join_paths(x.label.workspace_root, x.label.package)
+            path = output_path(ctx, input_file, strip_prefix, package_root)
+            if path != None:
+                return path
+
+    # If we get here, we were not able to resolve the path; give up, and print
+    # a warning about installing the "foreign" file.
+    print("%s installing file %s which is not in current package"
+          % (ctx.label, input_file.path))
+    return input_file.basename
+
+#------------------------------------------------------------------------------
+def _install_actions(
+    ctx,
+    file_labels,
+    dests,
+    strip_prefixes = [],
+    excluded_files = []
+    ):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
@@ -38,6 +74,8 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
             strip. The :obj:`dict` must have an entry with the key ``None``
             that is used as the default when there is no entry for the specific
             extension.
+        excluded_files (:obj:`list` of :obj:`str`): List of files to exclude
+            from installation.
 
     Returns:
         :obj:`list`: A list of install actions.
@@ -48,6 +86,9 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
     # attribute that is a list of File artifacts. Thus this two-level loop.
     for f in file_labels:
         for a in f.files:
+            if _output_path(ctx, a, []) in excluded_files:
+                continue
+
             if type(dests) == "dict":
                 dest = dests.get(a.extension, dests[None])
             else:
@@ -59,7 +100,7 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
             else:
                 strip_prefix = strip_prefixes
 
-            p = output_path(ctx, a, strip_prefix)
+            p = _output_path(ctx, a, strip_prefix)
             actions.append(struct(src = a, dst = join_paths(dest, p)))
 
     return actions
@@ -99,10 +140,13 @@ def _install_cc_actions(ctx, target):
         else:
             msg_fmt = "'install' given unknown 'guess_hdrs' value '%s'"
             fail(msg_fmt % ctx.attr.guess_hdrs, ctx.attr.guess_hdrs)
-
-        actions += _install_actions(ctx, [struct(files=hdrs)],
-                                    ctx.attr.hdr_dest,
-                                    ctx.attr.hdr_strip_prefix)
+        actions += _install_actions(
+            ctx,
+            [struct(files=hdrs)],
+            ctx.attr.hdr_dest,
+            ctx.attr.hdr_strip_prefix,
+            ctx.attr.guess_hdrs_exclude
+        )
 
     # Return computed actions.
     return actions
@@ -198,6 +242,7 @@ install = rule(
         "hdr_dest": attr.string(default = "include"),
         "hdr_strip_prefix": attr.string_list(),
         "guess_hdrs": attr.string(default = "NONE"),
+        "guess_hdrs_exclude": attr.string_list(),
         "targets": attr.label_list(),
         "archive_dest": attr.string(default = "lib"),
         "archive_strip_prefix": attr.string_list(),
@@ -209,6 +254,7 @@ install = rule(
         "java_strip_prefix": attr.string_list(),
         "py_dest": attr.string(default = "lib/python2.7/site_packages"),
         "py_strip_prefix": attr.string_list(),
+        "allowed_externals": attr.label_list(),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -226,6 +272,13 @@ This generates installation information for various artifacts, including
 documentation and header files, and targets (e.g. ``cc_binary``). By default,
 the path of any files is included in the install destination.
 See :rule:`install_files` for details.
+
+Normally, you should not install files or targets from a workspace other than
+the one invoking ``install``, and ``install`` will warn if asked to do so. In
+cases (e.g. adding install rules to a project that is natively built with
+bazel, but does not define an install) where this *is* the right thing to do,
+the ``allowed_externals`` argument may be used to specify a list of externals
+whose files it is okay to install, which will suppress the warning.
 
 Note:
     By default, headers to be installed must be explicitly listed. This is to
@@ -251,6 +304,8 @@ Args:
     doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
     guess_hdrs: See note.
+    guess_hdrs_exclude: List of headers found by ``guess_hdrs`` to exclude from
+        installation.
     hdrs: List of header files to install.
     hdr_dest: Destination for header files (default = "include").
     hdr_strip_prefix: List of prefixes to remove from header paths.
@@ -266,6 +321,7 @@ Args:
     py_dest: Destination for Python targets
         (default = "lib/python2.7/site_packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
+    allowed_externals: List of external packages whose files may be installed.
 """
 
 #------------------------------------------------------------------------------
@@ -286,6 +342,7 @@ install_files = rule(
         "dest": attr.string(mandatory = True),
         "files": attr.label_list(allow_files = True),
         "strip_prefix": attr.string_list(),
+        "allowed_externals": attr.string_list(),
     },
     implementation = _install_files_impl,
 )
@@ -313,10 +370,14 @@ complete path components (e.g. ``a/*/`` is okay, but ``a*/`` is not treated as
 a glob and will be matched literally). Due to Skylark limitations, at most one
 ``**`` may be matched.
 
+``install_files`` has the same caveats regarding external files as
+:func:`install`.
+
 Args:
     dest: Destination for files.
     files: List of files to install.
     strip_prefix: List of prefixes to remove from input paths.
+    allowed_externals: List of external packages whose files may be installed.
 """
 
 #END rules
