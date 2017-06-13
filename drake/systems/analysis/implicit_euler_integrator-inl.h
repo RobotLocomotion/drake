@@ -304,8 +304,10 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
   return QR_.solve(b);
 }
 
-// Computes any necessary matrices for the Newton-Raphson iteration.
-// @returns `false` if the calling StepAbstract method should indicate failure.
+// Computes any necessary matrices for the Newton-Raphson iteration in
+// StepAbstract().
+// @returns `false` if the calling StepAbstract method should indicate failure;
+//          `true` otherwise.
 template <class T>
 bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
                                               int scale,
@@ -423,7 +425,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // Do Jacobian and iteration matrix calculations, as desired.
+  // Calculate Jacobian and iteration matrices (and factorizations), as needed.
   if (!CalcMatrices(tf, dt, scale, *xtplus, trial)) {
     last_call_failed_ = true;
     return false;
