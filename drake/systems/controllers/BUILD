@@ -15,16 +15,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "model_based_controller_base",
-    hdrs = ["model_based_controller_base.h"],
-    deps = [
-        ":state_feedback_controller_interface",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-    ],
-)
-
-drake_cc_library(
     name = "inverse_dynamics",
     srcs = ["inverse_dynamics.cc"],
     hdrs = ["inverse_dynamics.h"],
@@ -40,8 +30,9 @@ drake_cc_library(
     hdrs = ["inverse_dynamics_controller.h"],
     deps = [
         ":inverse_dynamics",
-        ":model_based_controller_base",
         ":pid_controller",
+        ":state_feedback_controller_interface",
+        "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
         "//drake/systems/primitives:adder",

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/manipulator_plan_eval_system.h"
-#include "drake/systems/controllers/model_based_controller_base.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
@@ -32,7 +32,7 @@ namespace qp_inverse_dynamics {
  * implemented by different plan eval modules.
  */
 class ManipulatorInverseDynamicsController
-    : public systems::ModelBasedController<double>,
+    : public systems::StateFeedbackControllerInterface<double>,
       public systems::Diagram<double> {
  public:
   /**
@@ -146,7 +146,15 @@ class ManipulatorInverseDynamicsController
         output_port_index_qp_output_);
   }
 
+  /**
+   * Returns a constant reference to the RigidBodyTree used for control.
+   */
+  const RigidBodyTree<double>& get_robot_for_control() const {
+    return *robot_for_control_;
+  }
+
  private:
+  std::unique_ptr<RigidBodyTree<double>> robot_for_control_{nullptr};
   ManipulatorPlanEvalSystem* plan_eval_{nullptr};
   int input_port_index_estimated_state_{};
   int input_port_index_desired_state_{};

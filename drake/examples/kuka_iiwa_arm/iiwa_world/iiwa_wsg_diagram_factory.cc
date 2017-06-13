@@ -11,6 +11,7 @@
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"

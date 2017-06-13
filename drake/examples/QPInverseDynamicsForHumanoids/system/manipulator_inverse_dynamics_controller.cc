@@ -9,6 +9,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
 namespace examples {
@@ -17,10 +18,13 @@ namespace qp_inverse_dynamics {
 ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
     const std::string& model_path, const std::string& alias_group_path,
     const std::string& controller_config_path, double dt,
-    std::shared_ptr<RigidBodyFrame<double>> world_offset)
-    : systems::ModelBasedController<double>(model_path, world_offset,
-                                            multibody::joints::kFixed) {
-  const RigidBodyTree<double>& robot = get_robot_for_control();
+    std::shared_ptr<RigidBodyFrame<double>> world_offset) {
+  robot_for_control_ = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      model_path, multibody::joints::kFixed, world_offset,
+      robot_for_control_.get());
+
+  const RigidBodyTree<double>& robot = *robot_for_control_;
 
   this->set_name("ManipulatorInverseDynamicsController");
 

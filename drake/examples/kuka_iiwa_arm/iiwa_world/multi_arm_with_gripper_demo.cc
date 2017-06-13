@@ -3,6 +3,7 @@
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
