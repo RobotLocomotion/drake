@@ -12,9 +12,9 @@ namespace systems {
  * state input ports and control output port.
  */
 template <typename T>
-class StateFeedbackController {
+class StateFeedbackControllerInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackController)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackControllerInterface)
 
   /**
    * Returns the input port for the estimated state.
@@ -34,8 +34,8 @@ class StateFeedbackController {
   virtual const OutputPortDescriptor<T>& get_output_port_control() const = 0;
 
  protected:
-  StateFeedbackController() {}
-  virtual ~StateFeedbackController() {}
+  StateFeedbackControllerInterface() {}
+  virtual ~StateFeedbackControllerInterface() {}
 };
 
 }  // namespace systems

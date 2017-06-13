@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/controllers/state_feedback_controller_base.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
@@ -23,10 +23,17 @@ namespace systems {
  * </pre>
  * where `integral(q_d - q, dt)` is the integrated position error.
  *
- * Note that this class assumes q and v have the same dimension.
+ * This system has one continuous state which is the integral of position error,
+ * two input ports: estimated state (q, v) and desired state (q_d, v_d), and
+ * one output port y.
+ *
+ * Note that this class assumes |q| = |v|, and |q_d| = |v_d|. Also |q| >= |q_d|.
+ * The user can specify a selection matrix that picks the *controlled* states
+ * from (q, v) for feedback. See constructor documentations for more details.
  */
 template <typename T>
-class PidController : public StateFeedbackController<T>, public LeafSystem<T> {
+class PidController : public StateFeedbackControllerInterface<T>,
+                      public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
@@ -86,7 +93,7 @@ class PidController : public StateFeedbackController<T>, public LeafSystem<T> {
   double get_Kd_singleton() const { return get_single_gain(kd_); }
 
   /**
-   * Returns the portional gain vector.
+   * Returns the proportional gain vector.
    */
   const VectorX<double>& get_Kp_vector() const { return kp_; }
 
@@ -140,14 +147,6 @@ class PidController : public StateFeedbackController<T>, public LeafSystem<T> {
    */
   void GetGraphvizFragment(std::stringstream* dot) const override;
 
- private:
-  static double get_single_gain(const VectorX<double>& gain) {
-    if (!gain.isConstant(gain[0])) {
-      throw std::runtime_error("Gain is not singleton.");
-    }
-    return gain[0];
-  }
-
   PidController<symbolic::Expression>* DoToSymbolic() const override;
 
   void DoCalcOutput(const Context<T>& context,
@@ -155,6 +154,14 @@ class PidController : public StateFeedbackController<T>, public LeafSystem<T> {
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
+
+ private:
+  static double get_single_gain(const VectorX<double>& gain) {
+    if (!gain.isConstant(gain[0])) {
+      throw std::runtime_error("Gain is not singleton.");
+    }
+    return gain[0];
+  }
 
   VectorX<double> kp_;
   VectorX<double> kd_;
