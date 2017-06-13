@@ -304,6 +304,67 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
   return QR_.solve(b);
 }
 
+// Computes any necessary matrices for the Newton-Raphson iteration.
+// @returns `false` if the calling StepAbstract method should indicate failure.
+template <class T>
+bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
+                                              int scale,
+                                              const VectorX<T>& xtplus,
+                                              int trial) {
+  // Compute the initial Jacobian and negated iteration matrices (see
+  // rationale for the negation below) and factor them, if necessary.
+  if (!reuse_ || J_.rows() == 0) {
+    J_ = CalcJacobian(tf, xtplus);
+    const int n = xtplus.size();
+    neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+    Factor(neg_iteration_matrix_);
+    return true;
+  }
+
+  switch (trial) {
+    case 1:
+      // For the first trial, we do nothing special.
+      return true;
+
+    case 2: {
+      // For the second trial, re-construct and factor the iteration matrix.
+      const int n = xtplus.size();
+      neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+      Factor(neg_iteration_matrix_);
+      return true;
+    }
+
+    case 3: {
+      // If the last call to StepAbstract() ended in failure, we know that
+      // the Jacobian matrix is fresh and the iteration matrix has been newly
+      // formed and factored (on Trial #2), so there is nothing more to be
+      // done.
+      if (last_call_failed_) {
+        return false;
+      } else {
+        // Reform the Jacobian matrix and refactor the negation of
+        // the iteration matrix. The idea of using the negation of this matrix
+        // is that an O(n^2) subtraction is not necessary as would
+        // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
+        J_ = CalcJacobian(tf, xtplus);
+        const int n = xtplus.size();
+        neg_iteration_matrix_ = J_ * (dt / scale) -
+            MatrixX<T>::Identity(n, n);
+        Factor(neg_iteration_matrix_);
+      }
+      return true;
+
+      case 4: {
+        // Trial #4 indicates failure.
+        return false;
+      }
+
+      default:
+        DRAKE_ABORT_MSG("Unexpected trial number.");
+    }
+  }
+}
+
 // Performs the bulk of the stepping computation for both implicit Euler and
 // implicit trapezoid method; all those methods need to do is provide a
 // residual function (@p g) and a scale factor (@p scale) specific to the
@@ -362,55 +423,10 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // Compute the initial Jacobian and negated iteration matrices (see
-  // rationale for the negation below) and factor them, if necessary.
-  if (!reuse_ || J_.rows() == 0) {
-    J_ = CalcJacobian(tf, *xtplus);
-    const int n = xtplus->size();
-    neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-    Factor(neg_iteration_matrix_);
-  }
-
-  switch (trial) {
-    case 1:
-      // For the first trial, we do nothing special.
-      break;
-
-    case 2: {
-      // For the second trial, re-construct and factor the iteration matrix.
-      const int n = xtplus->size();
-      neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-      Factor(neg_iteration_matrix_);
-      break;
-    }
-
-    case 3: {
-      // If the last call to StepAbstract() ended in failure, we know that
-      // the Jacobian matrix is fresh and the iteration matrix has been newly
-      // formed and factored (on Trial #2), so there is nothing more to be
-      // done.
-      if (last_call_failed_) {
-        return false;
-      } else {
-        // Reform the Jacobian matrix and refactor the negation of
-        // the iteration matrix. The idea of using the negation of this matrix
-        // is that an O(n^2) subtraction is not necessary as would
-        // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
-        J_ = CalcJacobian(tf, *xtplus);
-        const int n = xtplus->size();
-        neg_iteration_matrix_ = J_ * (dt / scale) -
-            MatrixX<T>::Identity(n, n);
-        Factor(neg_iteration_matrix_);
-      }
-      break;
-
-      case 4: {
-        // Trial #4 indicates failure.
-        last_call_failed_ = true;
-        return false;
-        break;
-      }
-    }
+  // Do Jacobian and iteration matrix calculations, as desired.
+  if (!CalcMatrices(tf, dt, scale, *xtplus, trial)) {
+    last_call_failed_ = true;
+    return false;
   }
 
   // The maximum number of Newton-Raphson iterations to take before declaring

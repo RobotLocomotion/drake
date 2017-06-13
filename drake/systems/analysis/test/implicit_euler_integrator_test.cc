@@ -42,6 +42,8 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   // will use a large factor of the maximum step size, which can result in
   // too large an initial step for this problem. Accordingly, we explicitly
   // select a small initial step size.
+  // @TODO(edrumwri): Explore a better algorithm for selecting the initial
+  //                  step size (see issue #6329).
   integrator.set_maximum_step_size(10000000.0);
   integrator.set_throw_on_minimum_step_size_violation(false);
   integrator.set_target_accuracy(tol);

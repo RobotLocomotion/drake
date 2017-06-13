@@ -258,6 +258,8 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
                     const std::function<VectorX<T>()>& g,
                     int scale,
                     VectorX<T>* xtplus, int trial = 1);
+  bool CalcMatrices(const T& tf, const T& dt, int scale,
+                    const VectorX<T>& xtplus, int trial);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   bool DoStep(const T& dt) override;
   bool StepImplicitEuler(const T& dt);
