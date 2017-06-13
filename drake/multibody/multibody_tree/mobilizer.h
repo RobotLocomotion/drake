@@ -110,10 +110,10 @@ template<typename T> class BodyNode;
 /// derivative of `p_FM` can be rewritten as: <pre>
 ///   dp_FM/dt = dp_FM/dq * N(q) * v = Hv_FM * v
 /// </pre>
-/// where `Hv_FM` denotes the first three rows in `H_FM` related with the
+/// where `Hv_FM` denotes the last three rows in `H_FM` related with the
 /// translational component of the Jacobian matrix
 /// Therefore: <pre>
-///   Hv_FM = dX/dq(q) * N(q)
+///   Hv_FM = dp_FM/dq(q) * N(q)
 /// </pre>
 ///
 /// Similarly, for the rotational component: <pre>
@@ -121,7 +121,7 @@ template<typename T> class BodyNode;
 /// </pre>
 /// where `[w_FM]` is the cross product matrix of the across-mobilizer angular
 /// velocity `w_FM`, `R_FM` is the orientation of M in F, and `Hw_FM`
-/// corresponds to the last three rows in `H_FM` related with the angular
+/// corresponds to the first three rows in `H_FM` related to the angular
 /// component of the geometric Jacobian matrix.
 /// The time derivative of the orientation `R_FM` can be expressed in terms of
 /// the analytic Jacobian of `R_FM` as: <pre>
@@ -130,9 +130,9 @@ template<typename T> class BodyNode;
 /// These last two equations show that the angular components of the Jacobian
 /// matrix `Hw_FM` are directly related to the gradients of the rotation
 /// matrix `R_FM`. This relationhip is: <pre>
-///   [Hw_FMi(q)] * R_FM(q) = dR_FM/dqi(q) * N(q)
+///   [Hwi_FM(q)] * R_FM(q) = dR_FM/dqi(q) * N(q)
 /// </pre>
-/// corresponding to the i-th generalized position `qi` where `Hw_FMi(q)` is the
+/// corresponding to the i-th generalized position `qi` where `Hwi_FM(q)` is the
 /// i-th column of `Hw_FM(q)` and `dR_FM/dqi(q)` is the partial derivative of
 /// `R_FM` with respect to the i-th generalized coordinate for this mobilizer.
 ///
@@ -145,13 +145,17 @@ template<typename T> class BodyNode;
 ///
 /// %Mobilizer is an abstract base class defining the minimum functionality that
 /// derived %Mobilizer objects must implement in order to fully define the
-/// kinematic relationship between the two frames they connect.
+/// kinematic relationship between the two frames they connect. Geometric and
+/// analytical Jacobian matrices in the context of differential kinematics are
+/// described in [Sciavicco 2000].
 ///
 /// - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///               algorithms. Springer Science & Business Media.
 /// - [Seth 2010] Seth, A., Sherman, M., Eastman, P. and Delp, S., 2010.
 ///               Minimal formulation of joint motion for biomechanisms.
 ///               Nonlinear dynamics, 62(1), pp.291-303.
+/// - [Sciavicco 2000] Sciavicco, L. and Siciliano, B., 2000. Modelling and
+///               control of robot manipulators, 2nd Edn. Springer.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
