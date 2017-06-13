@@ -51,6 +51,7 @@ using std::vector;
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;
+using symbolic::Variables;
 
 using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
@@ -204,6 +205,30 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
     names[i] = name + "(" + to_string(i) + ")";
   }
   return NewVariables(VarType::BINARY, rows, names);
+}
+
+pair<drake::symbolic::Polynomial, VectorXDecisionVariable>
+MathematicalProgram::NewFreePolynomial(const Variables& indeterminates,
+                                       int degree) {
+  return make_pair(symbolic::Polynomial(), this->indeterminates());
+}
+
+pair<drake::symbolic::Polynomial, VectorXDecisionVariable>
+MathematicalProgram::NewFreePolynomial(
+    const VectorXIndeterminate& indeterminates, int degree) {
+  return make_pair(symbolic::Polynomial(), this->indeterminates());
+}
+
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
+                                      int degree) {
+  return make_pair(symbolic::Polynomial(), this->indeterminates());
+}
+
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewSosPolynomial(
+    const VectorXIndeterminate& indeterminates, int degree) {
+  return make_pair(symbolic::Polynomial(), this->indeterminates());
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -622,6 +647,15 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   auto constraint = make_shared<LinearMatrixInequalityConstraint>(F);
   return AddConstraint(constraint, vars);
 }
+
+// TODO(FischerGundlach) implement this function, first finish NewFreePolynomial
+// and NewSosPolynomial
+/*pair<Binding<PositiveSemidefiniteConstraint>,
+Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& poly) {
+  return pair<Binding<PositiveSemidefiniteConstraint>,
+              Binding<LinearEqualityConstraint>>();
+}*/
 
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());

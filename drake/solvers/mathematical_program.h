@@ -24,7 +24,9 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -630,6 +632,43 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /**   Returns a pair<symbolic::Polynomial,VectorXIndeterminate>, where
+   * symbolic::Polynomial is
+   * a free polynomial with decision variables as coefficients to all monomials
+   * created by @see MonomialBasis(const Variables& vars,int degree) and
+   * VectorXDecisionVariable stores the coefficients
+   */
+  // TODO(FischerGundlach) Add documentation incl. an example with list
+  // initialization and implicit conversion variable->variables
+  std::pair<symbolic::Polynomial, VectorXDecisionVariable> NewFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree);
+
+  /**   Returns a pair<symbolic::Polynomial,VectorXIndeterminate>, @see
+   * NewFreePolynomial(const symbolic::Variables& indeterminates, int degree)
+   */
+  // TODO(FischerGundlach) Add documentation incl. an example.
+  std::pair<symbolic::Polynomial, VectorXDecisionVariable> NewFreePolynomial(
+      const VectorXIndeterminate& indeterminates, int degree);
+
+  /** Returns a pair<symbolic::Polynomial,MatrixXDecisionVariable>, where
+   * symbolic::Polynomial is a
+   * SOS polynomial with decision variables as coefficients to all monomials
+   * created by @see MonomialBasis(const Variables& vars,int degree) and
+   * MatrixXDecisionVariable is a symmetric PSD constraint matrix with the
+   * coefficients.
+   */
+  // TODO(FischerGundlach) Add documentation incl. an example with list
+  // initialization and implicit conversion variable->variables
+  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
+      const symbolic::Variables& indeterminates, int degree);
+
+  /** Returns a pair<symbolic::Polynomial,MatrixXDecisionVariable>, @see
+   * NewSosPolynomial(const VectorXIndeterminate& indeterminates, int degree)
+   */
+  // TODO(FischerGundlach) Add documentation incl. an example.
+  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
+      const VectorXIndeterminate& indeterminates, int degree);
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -1881,6 +1920,17 @@ class MathematicalProgram {
   Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a sums-of-squares (SOS) constraint to the program. The free polynomial
+   * (@see MathematicalProgramm::NewFreePolynomial) poly is constraint to be a
+   * SOS.
+   */
+  // TODO(FischerGundlach) Add documentation for SOS decomposition, i.e.
+  // polynomial can be represented as z^t*Q*z + example how the function is used.
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+            Binding<LinearEqualityConstraint>>
+  AddSosConstraint(const symbolic::Polynomial& poly);
 
   // template <typename FunctionType>
   // void AddCost(std::function..);
