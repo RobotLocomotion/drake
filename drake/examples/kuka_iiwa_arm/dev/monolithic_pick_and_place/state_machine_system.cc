@@ -71,13 +71,18 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
   input_port_box_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_wsg_status_ = this->DeclareAbstractInputPort().get_index();
 
-  output_port_iiwa_plan_ = this->DeclareAbstractOutputPort(
-      systems::Value<robotlocomotion::robot_plan_t>(
-          MakeDefaultIiwaPlan())).get_index();
+  output_port_iiwa_plan_ =
+      this->DeclareAbstractOutputPort(
+              MakeDefaultIiwaPlan(),
+              &PickAndPlaceStateMachineSystem::CalcIiwaPlan)
+          .get_index();
 
-  output_port_wsg_command_ = this->DeclareAbstractOutputPort(
-      systems::Value<lcmt_schunk_wsg_command>(
-          MakeDefaultWsgCommand())).get_index();
+  output_port_wsg_command_ =
+      this->DeclareAbstractOutputPort(
+              MakeDefaultWsgCommand(),
+              &PickAndPlaceStateMachineSystem::CalcWsgCommand)
+          .get_index();
+
   this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
 }
 
@@ -100,24 +105,23 @@ void PickAndPlaceStateMachineSystem::SetDefaultState(
                                  place_locations_);
 }
 
-void PickAndPlaceStateMachineSystem::DoCalcOutput(
+void PickAndPlaceStateMachineSystem::CalcIiwaPlan(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    robotlocomotion::robot_plan_t* iiwa_plan) const {
   /* Call actions based on state machine logic */
-
-  robotlocomotion::robot_plan_t& iiwa_plan =
-      output->GetMutableData(output_port_iiwa_plan_)
-      ->GetMutableValue<robotlocomotion::robot_plan_t>();
-
-  lcmt_schunk_wsg_command& wsg_command =
-      output->GetMutableData(output_port_wsg_command_)
-      ->GetMutableValue<lcmt_schunk_wsg_command>();
-
   const InternalState& internal_state =
       context.get_abstract_state<InternalState>(0);
+  *iiwa_plan = internal_state.last_iiwa_plan;
+}
 
-  iiwa_plan = internal_state.last_iiwa_plan;
-  wsg_command = internal_state.last_wsg_command;
+
+void PickAndPlaceStateMachineSystem::CalcWsgCommand(
+    const systems::Context<double>& context,
+    lcmt_schunk_wsg_command* wsg_command) const {
+  /* Call actions based on state machine logic */
+  const InternalState& internal_state =
+      context.get_abstract_state<InternalState>(0);
+  *wsg_command = internal_state.last_wsg_command;
 }
 
 void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(

@@ -52,9 +52,6 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   void SetDefaultState(const systems::Context<double>& context,
                        systems::State<double>* state) const override;
 
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
                                 systems::State<double>* state) const override;
 
@@ -87,12 +84,12 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
     return this->get_input_port(input_port_wsg_status_);
   }
 
-  const systems::OutputPortDescriptor<double>& get_output_port_iiwa_plan()
+  const systems::OutputPort<double>& get_output_port_iiwa_plan()
       const {
     return this->get_output_port(output_port_iiwa_plan_);
   }
 
-  const systems::OutputPortDescriptor<double>& get_output_port_wsg_command()
+  const systems::OutputPort<double>& get_output_port_wsg_command()
       const {
     return this->get_output_port(output_port_wsg_command_);
   }
@@ -107,6 +104,14 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const systems::Context<double>&) const;
 
  private:
+  void CalcIiwaPlan(
+      const systems::Context<double>& context,
+      robotlocomotion::robot_plan_t* iiwa_plan) const;
+
+  void CalcWsgCommand(
+      const systems::Context<double>& context,
+      lcmt_schunk_wsg_command* wsg_command) const;
+
   struct InternalState;
 
   RigidBodyTree<double> iiwa_tree_{};
