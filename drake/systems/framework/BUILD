@@ -146,10 +146,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "system_port_descriptor",
-    srcs = ["system_port_descriptor.cc"],
-    hdrs = ["system_port_descriptor.h"],
+    name = "system_common",
+    srcs = [],
+    hdrs = [
+        "system_common.h",
+    ],
     deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "input_port_descriptor",
+    srcs = [
+        "input_port_descriptor.cc",
+    ],
+    hdrs = [
+        "input_port_descriptor.h",
+    ],
+    deps = [
+        ":system_common",
         "//drake/common",
     ],
 )
@@ -181,8 +196,8 @@ drake_cc_library(
     srcs = ["input_port_evaluator_interface.cc"],
     hdrs = ["input_port_evaluator_interface.h"],
     deps = [
+        ":input_port_descriptor",
         ":output_port_value",
-        ":system_port_descriptor",
         "//drake/common",
     ],
 )
@@ -226,19 +241,38 @@ drake_cc_library(
 
 drake_cc_library(
     name = "system",
-    srcs = ["system.cc"],
+    srcs = [
+        "output_port.cc",
+        "system.cc",
+    ],
     hdrs = [
         "discrete_event.h",
+        "output_port.h",
         "system.h",
         "witness_function.h",
     ],
     deps = [
         ":cache",
         ":context",
+        ":system_common",
+        ":value",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:symbolic",
+        "//drake/common:type_safe_index",
         "//drake/common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "leaf_output_port",
+    srcs = ["leaf_output_port.cc"],
+    hdrs = ["leaf_output_port.h"],
+    deps = [
+        ":system",
+        ":value",
+        ":vector",
+        "//drake/common",
     ],
 )
 
@@ -260,6 +294,7 @@ drake_cc_library(
     hdrs = ["leaf_system.h"],
     deps = [
         ":leaf_context",
+        ":leaf_output_port",
         ":model_values",
         ":sparsity_matrix",
         ":system",
@@ -507,9 +542,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "output_port_test",
+    deps = [
+        ":leaf_context",
+        ":system",
+        "//drake/common",
+        "//drake/systems/framework/test_utilities",
+        "//drake/systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
     name = "system_test",
     deps = [
         ":leaf_context",
+        ":leaf_output_port",
         ":system",
         "//drake/common",
         "//drake/systems/framework/test_utilities",

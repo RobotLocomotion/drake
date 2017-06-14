@@ -20,7 +20,10 @@ PlanEvalBaseSystem::PlanEvalBaseSystem(
   DRAKE_DEMAND(control_dt_ > 0);
 
   input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
-  output_port_index_qp_input_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_qp_input_ =
+      DeclareAbstractOutputPort(QpInput(GetDofNames(robot_)),
+                                &PlanEvalBaseSystem::CopyOutQpInput)
+          .get_index();
 
   // Declares discrete time update.
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
@@ -35,27 +38,10 @@ PlanEvalBaseSystem::PlanEvalBaseSystem(
       DeclareAbstractState(systems::AbstractValue::Make<QpInput>(QpInput()));
 }
 
-void PlanEvalBaseSystem::DoCalcOutput(
-    const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+void PlanEvalBaseSystem::CopyOutQpInput(const systems::Context<double>& context,
+                                        QpInput* qp_input) const {
   // Copies QpInput from AbstractState.
-  QpInput& qp_input = output->GetMutableData(output_port_index_qp_input_)
-                          ->GetMutableValue<QpInput>();
-
-  qp_input = context.get_abstract_state<QpInput>(abs_state_index_qp_input_);
-
-  // Does extended CalcOutput.
-  DoExtendedCalcOutput(context, output);
-}
-
-std::unique_ptr<systems::AbstractValue>
-PlanEvalBaseSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  if (descriptor.get_index() == output_port_index_qp_input_) {
-    return systems::AbstractValue::Make<QpInput>(QpInput(GetDofNames(robot_)));
-  } else {
-    return ExtendedAllocateOutputAbstract(descriptor);
-  }
+  *qp_input = context.get_abstract_state<QpInput>(abs_state_index_qp_input_);
 }
 
 }  // namespace qp_inverse_dynamics

@@ -37,13 +37,7 @@ class FixedOffsetFrame : public Frame<T> {
   ///
   /// @param[in] P The frame to which this frame is attached with a fixed pose.
   /// @param[in] X_PF The transform giving the pose of F in P.
-
-  // TODO(amcastro-tri): allow to chain multiple frames of type
-  // FixedOffsetFrame. An approach would consist on holding a reference to the
-  // parent frame of the root FixedOffsetFrame of the chain and X_PF_ would
-  // then be set to (at construction) to the pose of this frame on that parent
-  // frame.
-  FixedOffsetFrame(const BodyFrame<T>& P, const Isometry3<T>& X_PF);
+  FixedOffsetFrame(const Frame<T>& P, const Isometry3<T>& X_PF);
 
   /// Creates a material Frame F whose pose is fixed with respect to the
   /// BodyFrame B of the given Body, which serves as F's parent frame.
@@ -54,12 +48,18 @@ class FixedOffsetFrame : public Frame<T> {
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<T>& X_BF);
 
+  Isometry3<T> CalcBodyPoseInThisFrame(
+      const systems::Context<T>& context) const final {
+    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_PF_.inverse());
+  }
+
  private:
   // The frame to which this frame is attached.
   const Frame<T>& parent_frame_;
 
-  // Spatial transform giving the fixed pose of this frame F in another frame P.
-  Isometry3<T> X_PF_;
+  // Spatial transform giving the fixed pose of this frame F measured in the
+  // parent frame P.
+  const Isometry3<T> X_PF_;
 };
 
 }  // namespace multibody

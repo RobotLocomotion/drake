@@ -7,7 +7,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -33,11 +32,6 @@ class AccelerometerXdotHack : public systems::LeafSystem<double> {
   ///
   explicit AccelerometerXdotHack(int port_size);
 
-  /// Allocates the output vector. See this class' description for details of
-  /// this output vector.
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
   /// @name System input port descriptor accessors.
   ///@{
 
@@ -48,23 +42,21 @@ class AccelerometerXdotHack : public systems::LeafSystem<double> {
   }
   ///@}
 
-  /// @name System output port descriptor accessors.
+  /// @name System output port accessors.
   ///@{
 
-  /// Returns a descriptor of the output port. The size of this port is
+  /// Returns the output port. The size of this port's output vector is
   /// equal to the `port_size` parameter provided to the constructor.
-  const OutputPortDescriptor<double>& get_output_port() const {
+  const OutputPort<double>& get_output_port() const {
     return System<double>::get_output_port(output_port_index_);
   }
   ///@}
 
- protected:
-  /// Filters the input vector and outputs the reults.
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
  private:
-  int port_size_{};
+  // Filters the input vector and outputs the results.
+  void CalcXdotOutput(const systems::Context<double>& context,
+                      systems::BasicVector<double>* output) const;
+
   int input_port_index_{};
   int output_port_index_{};
 };

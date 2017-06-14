@@ -37,7 +37,7 @@ namespace automotive {
 ///   (InputPortDescriptor getter: traffic_input())
 ///
 /// Output Port 0: A BasicVector containing the acceleration request.
-///   OutputPortDescriptor getter: acceleration_output())
+///   (OutputPort getter: acceleration_output())
 ///
 /// @ingroup automotive_controllers
 template <typename T>
@@ -55,7 +55,7 @@ class IdmController : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& ego_pose_input() const;
   const systems::InputPortDescriptor<T>& ego_velocity_input() const;
   const systems::InputPortDescriptor<T>& traffic_input() const;
-  const systems::OutputPortDescriptor<T>& acceleration_output() const;
+  const systems::OutputPort<T>& acceleration_output() const;
   /// @}
 
  protected:
@@ -65,7 +65,7 @@ class IdmController : public systems::LeafSystem<T> {
   int traffic_index() const { return traffic_index_; }
   int acceleration_index() const { return acceleration_index_; }
 
-  void ImplDoCalcOutput(
+  void ImplCalcAcceleration(
       const systems::rendering::PoseVector<T>& ego_pose,
       const systems::rendering::FrameVelocity<T>& ego_velocity,
       const systems::rendering::PoseBundle<T>& traffic_poses,
@@ -77,8 +77,8 @@ class IdmController : public systems::LeafSystem<T> {
   const maliput::api::RoadPosition GetRoadPosition(
       const Isometry3<T>& pose) const;
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  void CalcAcceleration(const systems::Context<T>& context,
+                        systems::BasicVector<T>* accel_output) const;
 
   const maliput::api::RoadGeometry& road_;
 

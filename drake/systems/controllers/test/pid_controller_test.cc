@@ -98,7 +98,7 @@ TEST_F(PidControllerTest, GetterVectorKd) {
 TEST_F(PidControllerTest, Graphviz) {
   const std::string dot = controller_.GetGraphvizString();
   EXPECT_NE(std::string::npos, dot.find(
-      "label=\"PID Controller | { {<u0> q |<u1> q_d} |<y0> y}\"")) << dot;
+      "label=\"PID Controller | { {<u0> x |<u1> x_d} |<y0> y}\"")) << dot;
 }
 
 // Evaluates the output and asserts correctness.
@@ -139,11 +139,7 @@ TEST_F(PidControllerTest, CalcTimeDerivatives) {
   ASSERT_EQ(0, derivatives_->get_generalized_velocity().size());
   ASSERT_EQ(3, derivatives_->get_misc_continuous_state().size());
 
-  // The only state in the PID controller_ is the integral of the input signal.
-  // Therefore the time derivative of the state equals the input error signal.
-  // TODO(siyuanfeng): need to get rid of the - once we switch the integrator
-  // to be int(q_d - q), right not it's (q - q_d). so the derivative is flipped.
-  EXPECT_EQ(error_signal_, -derivatives_->CopyToVector());
+  EXPECT_EQ(error_signal_, derivatives_->CopyToVector());
 }
 
 TEST_F(PidControllerTest, DirectFeedthrough) {

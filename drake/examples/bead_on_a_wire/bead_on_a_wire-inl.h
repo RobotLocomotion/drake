@@ -20,11 +20,13 @@ BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
   if (type == BeadOnAWire<T>::kMinimalCoordinates) {
     this->DeclareContinuousState(1, 1, 0);
     this->DeclareInputPort(systems::kVectorValued, 1);
-    this->DeclareOutputPort(systems::kVectorValued, 2);
+    this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+                                  &BeadOnAWire::CopyStateOut);
   } else {
     this->DeclareContinuousState(3, 3, 0);
     this->DeclareInputPort(systems::kVectorValued, 3);
-    this->DeclareOutputPort(systems::kVectorValued, 6);
+    this->DeclareVectorOutputPort(systems::BasicVector<T>(6),
+                                  &BeadOnAWire::CopyStateOut);
   }
   coordinate_type_ = type;
 }
@@ -138,17 +140,9 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
 }
 
 template <typename T>
-void BeadOnAWire<T>::DoCalcOutput(const systems::Context<T>& context,
-                                  systems::SystemOutput<T>* output) const {
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
-  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
-
-  // Obtain the structure we need to write into.
-  systems::BasicVector<T>* const output_vector =
-      output->GetMutableVectorData(0);
-  DRAKE_ASSERT(output_vector != nullptr);
-
-  output_vector->get_mutable_value() =
+void BeadOnAWire<T>::CopyStateOut(const systems::Context<T>& context,
+                                  systems::BasicVector<T>* output) const {
+  output->get_mutable_value() =
       context.get_continuous_state()->CopyToVector();
 }
 

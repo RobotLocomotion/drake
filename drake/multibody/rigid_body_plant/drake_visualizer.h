@@ -141,9 +141,6 @@ class DrakeVisualizer : public LeafSystem<double> {
       const Context<double>& context,
       DiscreteValues<double>* discrete_state) const override;
 
-  void DoCalcOutput(const systems::Context<double>&,
-                    systems::SystemOutput<double>*) const override {}
-
   // Publishes a draw message if initialization is completed. Otherwise, it
   // emits a warning and return.
   void DoPublish(const systems::Context<double>& context) const override;

@@ -30,22 +30,22 @@ using lcm::LcmSubscriberSystem;
 using lcm::LcmPublisherSystem;
 
 ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
-    const RigidBodyTree<double>& robot,
-    const VectorX<double>& nominal_position,
-    const VectorX<double>& nominal_torque,
-    const VectorX<double>& Kp, const VectorX<double>& Kd)
-      : robot_(robot),
+    const RigidBodyTree<double>& robot, const VectorX<double>& nominal_position,
+    const VectorX<double>& nominal_torque, const VectorX<double>& Kp,
+    const VectorX<double>& Kd)
+    : robot_(robot),
       desired_position_(nominal_position),
       feedforward_torque_(nominal_torque),
       Kp_(Kp),
       Kd_(Kd) {
   input_port_index_kinematics_result_ = DeclareAbstractInputPort().get_index();
-  output_port_index_atlas_command_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_atlas_command_ =
+      DeclareAbstractOutputPort(
+          &ValkyriePDAndFeedForwardController::OutputCommand)
+          .get_index();
 
-  if (!Kp_.allFinite())
-    throw std::runtime_error("Invalid Kp.");
-  if (!Kd_.allFinite())
-    throw std::runtime_error("Invalid Kd.");
+  if (!Kp_.allFinite()) throw std::runtime_error("Invalid Kp.");
+  if (!Kd_.allFinite()) throw std::runtime_error("Invalid Kd.");
   if (!desired_position_.allFinite())
     throw std::runtime_error("Invalid set point.");
   if (!feedforward_torque_.allFinite())
@@ -54,18 +54,16 @@ ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
   set_name("pd_and_ff_controller_for_val");
 }
 
-void ValkyriePDAndFeedForwardController::DoCalcOutput(
+void ValkyriePDAndFeedForwardController::OutputCommand(
                   const Context<double>& context,
-                  SystemOutput<double>* output) const {
+                  bot_core::atlas_command_t* output) const {
   // State input
   const KinematicsCache<double>* state =
     EvalInputValue<KinematicsCache<double>>(
         context, input_port_index_kinematics_result_);
 
   // Output
-  bot_core::atlas_command_t& msg =
-    output->GetMutableData(output_port_index_atlas_command_)
-    ->GetMutableValue<bot_core::atlas_command_t>();
+  bot_core::atlas_command_t& msg = *output;
 
   // Make bot_core::atlas_command_t message.
   int act_size = robot_.actuators.size();

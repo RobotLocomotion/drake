@@ -299,33 +299,33 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   ///@}
 
-  /// @name System output port descriptor accessors.
-  /// These are accessors for obtaining descriptors of this RigidBodyPlant's
+  /// @name System output port accessors.
+  /// These are accessors for obtaining this RigidBodyPlant's
   /// output ports. See this class's description for details about these ports
   /// and how these accessors are typically used.
   ///@{
 
-  /// Returns a descriptor of the plant-centric state output port. The size of
+  /// Returns the plant-centric state output port. The size of
   /// this port is equal to get_num_states().
-  const OutputPortDescriptor<T>& state_output_port() const {
+  const OutputPort<T>& state_output_port() const {
     return System<T>::get_output_port(state_output_port_index_);
   }
 
-  /// Returns a descriptor of the output port containing the state of a
+  /// Returns he output port containing the state of a
   /// particular model with instance ID equal to `model_instance_id`. Throws a
   /// std::runtime_error if `model_instance_id` does not exist. This method can
   /// only be called when this class is instantiated with constructor parameter
   /// `export_model_instance_centric_ports` equal to `true`.
-  const OutputPortDescriptor<T>& model_instance_state_output_port(
+  const OutputPort<T>& model_instance_state_output_port(
       int model_instance_id) const;
 
-  /// Returns a descriptor of the KinematicsResults output port.
-  const OutputPortDescriptor<T>& kinematics_results_output_port() const {
+  /// Returns the KinematicsResults output port.
+  const OutputPort<T>& kinematics_results_output_port() const {
     return System<T>::get_output_port(kinematics_output_port_index_);
   }
 
-  /// Returns a descriptor of the ContactResults output port.
-  const OutputPortDescriptor<T>& contact_results_output_port() const {
+  /// Returns the ContactResults output port.
+  const OutputPort<T>& contact_results_output_port() const {
     return System<T>::get_output_port(contact_output_port_index_);
   }
   ///@}
@@ -354,8 +354,7 @@ class RigidBodyPlant : public LeafSystem<T> {
                              ContinuousState<T>* derivatives) const override;
   void DoCalcDiscreteVariableUpdates(const Context<T>& context,
                                      DiscreteValues<T>* updates) const override;
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
+
 
   bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity, int input_port,
                               int output_port) const override;
@@ -390,11 +389,21 @@ class RigidBodyPlant : public LeafSystem<T> {
       VectorBase<T>* generalized_velocity) const override;
 
  private:
-  void ExportModelInstanceCentricPorts();
+  // These four are the output port calculator methods.
+  void CopyStateToOutput(const Context<T>& context,
+                         BasicVector<T>* state_output_vector) const;
 
-  // Computes the contact results for feeding the corresponding output port.
-  void ComputeContactResults(const Context<T>& context,
-                             ContactResults<T>* contacts) const;
+  void CalcInstanceOutput(int instance_id,
+                          const Context<T>& context,
+                          BasicVector<T>* instance_output) const;
+
+  void CalcKinematicsResultsOutput(const Context<T>& context,
+                                   KinematicsResults<T>* output) const;
+
+  void CalcContactResultsOutput(const Context<T>& context,
+                                ContactResults<T>* output) const;
+
+  void ExportModelInstanceCentricPorts();
 
   // Evaluates the actuator command input ports and throws a runtime_error
   // exception if at least one of the ports is not connected.

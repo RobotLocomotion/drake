@@ -8,6 +8,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/lcmt_iiwa_command.hpp"
+#include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -36,9 +38,9 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
       systems::Context<double>* context,
       const Eigen::Ref<const VectorX<double>> x) const;
 
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+ private:
+  void OutputCommand(const systems::Context<double>& context,
+                     systems::BasicVector<double>* output) const;
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
@@ -57,7 +59,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 /// message.
 ///
 /// This system has one abstract valued output port that contains a
-/// systems::Value object templated on type `lcmt_iiwa_status`. Note that this
+/// systems::Value object templated on type `lcmt_iiwa_command`. Note that this
 /// system does not actually send this message on an LCM channel. To send the
 /// message, the output of this system should be connected to an input port of
 /// a systems::lcm::LcmPublisherSystem that accepts a
@@ -76,14 +78,10 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
     return this->get_input_port(torque_input_port_);
   }
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
  private:
+  void OutputCommand(const systems::Context<double>& context,
+                     lcmt_iiwa_command* output) const;
+
   const int num_joints_;
   const int position_input_port_{};
   const int torque_input_port_{};
@@ -106,25 +104,26 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
 
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
     get_measured_position_output_port() const {
     return this->get_output_port(measured_position_output_port_);
   }
 
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
     get_commanded_position_output_port() const {
     return this->get_output_port(commanded_position_output_port_);
   }
 
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+ private:
+  void OutputMeasuredPosition(const systems::Context<double>& context,
+                              systems::BasicVector<double>* output) const;
+  void OutputCommandedPosition(const systems::Context<double>& context,
+                               systems::BasicVector<double>* output) const;
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
       systems::DiscreteValues<double>* discrete_state) const override;
 
- private:
   const int num_joints_;
   const int measured_position_output_port_{};
   const int commanded_position_output_port_{};
@@ -159,14 +158,14 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
  private:
+  // This is the method to use for the output port allocator.
+  lcmt_iiwa_status MakeOutputStatus() const;
+
+  // This is the calculator method for the output port.
+  void OutputStatus(const systems::Context<double>& context,
+                    lcmt_iiwa_status* output) const;
+
   const int num_joints_;
 };
 

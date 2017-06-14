@@ -49,13 +49,6 @@ class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
       const systems::Context<double>& context,
       systems::State<double>* state) const override;
 
-  void DoExtendedCalcOutput(
-      const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const override;
-
-  std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   int abs_state_index_plan_{};
 };
 

@@ -36,14 +36,21 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
     : tree_(move(tree)), timestep_(timestep) {
   DRAKE_DEMAND(tree_ != nullptr);
   state_output_port_index_ =
-      this->DeclareOutputPort(kVectorValued, get_num_states()).get_index();
+      this->DeclareVectorOutputPort(BasicVector<T>(get_num_states()),
+                                    &RigidBodyPlant::CopyStateToOutput)
+          .get_index();
   ExportModelInstanceCentricPorts();
   // Declares an abstract valued output port for kinematics results.
-  kinematics_output_port_index_ = this->DeclareAbstractOutputPort(
-      Value<KinematicsResults<T>>(tree_.get())).get_index();
+  kinematics_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+              KinematicsResults<T>(tree_.get()),
+              &RigidBodyPlant::CalcKinematicsResultsOutput)
+          .get_index();
   // Declares an abstract valued output port for contact information.
-  contact_output_port_index_ = this->DeclareAbstractOutputPort(
-      Value<ContactResults<T>>()).get_index();
+  contact_output_port_index_ =
+      this->DeclareAbstractOutputPort(ContactResults<T>(),
+                                      &RigidBodyPlant::CalcContactResultsOutput)
+          .get_index();
 }
 
 template <typename T>
@@ -128,7 +135,10 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
         continue;
       }
       output_map_[i] =
-          this->DeclareOutputPort(kVectorValued, get_num_states(i)).get_index();
+          this->DeclareVectorOutputPort(BasicVector<T>(get_num_states(i)),
+          [this, i](const Context<T>& context, BasicVector<T>* output) {
+            this->CalcInstanceOutput(i, context, output);
+          }).get_index();
     }
   }
 }
@@ -283,7 +293,7 @@ void RigidBodyPlant<T>::set_state_vector(
 }
 
 template <typename T>
-const OutputPortDescriptor<T>&
+const OutputPort<T>&
 RigidBodyPlant<T>::model_instance_state_output_port(
     int model_instance_id) const {
   if (model_instance_id >= static_cast<int>(output_map_.size())) {
@@ -360,49 +370,45 @@ RigidBodyPlant<T>::model_instance_actuator_command_input_port(
   return System<T>::get_input_port(input_map_.at(model_instance_id));
 }
 
+// Updates the state output port.
 template <typename T>
-void RigidBodyPlant<T>::DoCalcOutput(const Context<T>& context,
-                                     SystemOutput<T>* output) const {
+void RigidBodyPlant<T>::CopyStateToOutput(const Context<T>& context,
+                       BasicVector<T>* state_output_vector) const {
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   const VectorX<T> state_vector =
       (timestep_ > 0.0) ? context.get_discrete_state(0)->CopyToVector()
                         : context.get_continuous_state()->CopyToVector();
 
-  // Evaluates the state output port.
-  BasicVector<T>* state_output_vector =
-      output->GetMutableVectorData(state_output_port_index_);
   state_output_vector->get_mutable_value() = state_vector;
+}
 
-  // Updates the model-instance-centric state output ports.
-  for (int instance_id = 0; instance_id < get_num_model_instances();
-       ++instance_id) {
-    if (output_map_[instance_id] == kInvalidPortIdentifier) {
-      continue;
-    }
-    BasicVector<T>* instance_output =
-        output->GetMutableVectorData(output_map_[instance_id]);
-    auto values = instance_output->get_mutable_value();
-    const auto& instance_positions = position_map_[instance_id];
-    values.head(instance_positions.second) = state_vector.segment(
-        instance_positions.first, instance_positions.second);
+// Updates one model-instance-centric state output port.
+template <typename T>
+void RigidBodyPlant<T>::CalcInstanceOutput(
+    int instance_id, const Context<T>& context,
+    BasicVector<T>* instance_output) const {
+  // TODO(sherm1) Should reference state rather than copy it here.
+  const VectorX<T> state_vector =
+      (timestep_ > 0.0) ? context.get_discrete_state(0)->CopyToVector()
+                        : context.get_continuous_state()->CopyToVector();
 
-    const auto& instance_velocities = velocity_map_[instance_id];
-    values.tail(instance_velocities.second) =
-        state_vector.segment(instance_velocities.first + get_num_positions(),
-                             instance_velocities.second);
-  }
+  auto values = instance_output->get_mutable_value();
+  const auto& instance_positions = position_map_[instance_id];
+  values.head(instance_positions.second) =
+      state_vector.segment(instance_positions.first, instance_positions.second);
 
-  // Updates the kinematics results output port.
-  auto& kinematics_results =
-      output->GetMutableData(kinematics_output_port_index_)
-          ->template GetMutableValue<KinematicsResults<T>>();
-  kinematics_results.UpdateFromContext(context);
+  const auto& instance_velocities = velocity_map_[instance_id];
+  values.tail(instance_velocities.second) =
+      state_vector.segment(instance_velocities.first + get_num_positions(),
+                           instance_velocities.second);
+}
 
-  // Updates the contact results output port.
-  auto& contact_results = output->GetMutableData(contact_output_port_index_)
-                              ->template GetMutableValue<ContactResults<T>>();
-  ComputeContactResults(context, &contact_results);
+// Updates the kinematics results output port.
+template <typename T>
+void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
+    const Context<T>& context, KinematicsResults<T>* kinematics_results) const {
+  kinematics_results->UpdateFromContext(context);
 }
 
 /*
@@ -671,8 +677,9 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
   return 0;
 }
 
+// Calculates the value of the contact results output port.
 template <typename T>
-void RigidBodyPlant<T>::ComputeContactResults(
+void RigidBodyPlant<T>::CalcContactResultsOutput(
     const Context<T>& context, ContactResults<T>* contacts) const {
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();

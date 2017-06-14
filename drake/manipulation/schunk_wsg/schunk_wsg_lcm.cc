@@ -13,9 +13,9 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
+using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteValues;
-using systems::SystemOutput;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
     int input_size, int position_index)
@@ -23,24 +23,26 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
   this->set_name("SchunkWsgTrajectoryGenerator");
   this->DeclareAbstractInputPort();
   this->DeclareInputPort(systems::kVectorValued, input_size);
-  this->DeclareOutputPort(systems::kVectorValued, 2);
+  this->DeclareVectorOutputPort(BasicVector<double>(2),
+                                &SchunkWsgTrajectoryGenerator::OutputTarget);
   // The update period below matches the polling rate from
   // drake-schunk-driver.
   this->DeclareDiscreteUpdatePeriodSec(0.05);
 }
 
-void SchunkWsgTrajectoryGenerator::DoCalcOutput(
+void SchunkWsgTrajectoryGenerator::OutputTarget(
     const Context<double>& context,
-    SystemOutput<double>* output) const {
+    BasicVector<double>* output) const {
+
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           context.get_discrete_state(0));
 
   if (trajectory_) {
-    this->GetMutableOutputVector(output, 0) = trajectory_->value(
+    output->get_mutable_value() = trajectory_->value(
         context.get_time() - traj_state->trajectory_start_time());
   } else {
-    this->GetMutableOutputVector(output, 0) =
+    output->get_mutable_value()=
         Eigen::Vector2d(traj_state->last_position(), 0);
   }
 }
@@ -158,21 +160,12 @@ SchunkWsgStatusSender(int input_size,
     : position_index_(position_index), velocity_index_(velocity_index) {
   this->set_name("SchunkWsgStatusSender");
   this->DeclareInputPort(systems::kVectorValued, input_size);
-  this->DeclareAbstractOutputPort();
+  this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
 }
 
-std::unique_ptr<systems::AbstractValue>
-SchunkWsgStatusSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>&) const {
-  lcmt_schunk_wsg_status msg{};
-  return std::make_unique<systems::Value<lcmt_schunk_wsg_status>>(msg);
-}
-
-void SchunkWsgStatusSender::DoCalcOutput(const Context<double>& context,
-                                         SystemOutput<double>* output) const {
-  systems::AbstractValue* mutable_data = output->GetMutableData(0);
-  lcmt_schunk_wsg_status& status =
-      mutable_data->GetMutableValue<lcmt_schunk_wsg_status>();
+void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
+                                         lcmt_schunk_wsg_status* output) const {
+  lcmt_schunk_wsg_status& status = *output;
 
   status.utime = context.get_time() * 1e6;
   const systems::BasicVector<double>* state =

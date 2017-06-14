@@ -98,6 +98,46 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return get_mutable_state_segment(get_num_positions(), get_num_velocities());
   }
 
+  /// Returns a const fixed-size Eigen::VectorBlock of `count` elements
+  /// referencing a segment in the state vector with its first element
+  /// at `start`.
+  template <int count>
+  Eigen::VectorBlock<const VectorX<T>, count> get_state_segment(
+      int start) const {
+    // We know that MultibodyTreeContext is a LeafContext and therefore the
+    // continuous state vector must be a BasicVector.
+    // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
+    // PR #6049 gets merged.
+    Eigen::VectorBlock<const VectorX<T>> xc =
+        dynamic_cast<const systems::BasicVector<T>&>(
+            this->get_continuous_state()->get_vector()).get_value();
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
+    return xc.nestedExpression().template segment<count>(start);
+  }
+
+  /// Returns a mutable fixed-size Eigen::VectorBlock of `count` elements
+  /// referencing a segment in the state vector with its first element
+  /// at `start`.
+  template <int count>
+  Eigen::VectorBlock<VectorX<T>, count> get_mutable_state_segment(int start) {
+    // We know that MultibodyTreeContext is a LeafContext and therefore the
+    // continuous state vector must be a BasicVector.
+    // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
+    // PR #6049 gets merged.
+    Eigen::VectorBlock<VectorX<T>> xc =
+        dynamic_cast<systems::BasicVector<T>*>(
+            this->get_mutable_continuous_state()->get_mutable_vector())->
+            get_mutable_value();
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
+    return xc.nestedExpression().template segment<count>(start);
+  }
+
  private:
   // Helper to return a const Eigen::VectorBlock referencing a segment in the
   // state vector with its first element at `start` and of size `count`.

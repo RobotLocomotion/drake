@@ -77,10 +77,10 @@ TEST_F(PurePursuitControllerTest, Topology) {
   EXPECT_EQ(7 /* PoseVector input */, ego_input_descriptor.size());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
-  const auto& command_output_descriptor =
+  const auto& command_output_port =
       dut_->get_output_port(dut_->steering_command_output().get_index());
-  EXPECT_EQ(systems::kVectorValued, command_output_descriptor.get_data_type());
-  EXPECT_EQ(1 /* steering angle output */, command_output_descriptor.size());
+  EXPECT_EQ(systems::kVectorValued, command_output_port.get_data_type());
+  EXPECT_EQ(1 /* steering angle output */, command_output_port.size());
 }
 
 TEST_F(PurePursuitControllerTest, Output) {

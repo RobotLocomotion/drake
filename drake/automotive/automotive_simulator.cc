@@ -37,7 +37,7 @@ using maliput::api::RoadGeometryId;
 using multibody::joints::kRollPitchYaw;
 using systems::AbstractValue;
 using systems::lcm::LcmPublisherSystem;
-using systems::OutputPortDescriptor;
+using systems::OutputPort;
 using systems::rendering::PoseBundle;
 using systems::System;
 using systems::SystemOutput;
@@ -87,10 +87,10 @@ systems::DiagramBuilder<T>* AutomotiveSimulator<T>::get_builder() {
 template <typename T>
 void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
     int id,
-    const OutputPortDescriptor<T>& pose_output,
-    const OutputPortDescriptor<T>& velocity_output) {
-  DRAKE_DEMAND(pose_output.get_system() == velocity_output.get_system());
-  const std::string name = pose_output.get_system()->get_name();
+    const OutputPort<T>& pose_output,
+    const OutputPort<T>& velocity_output) {
+  DRAKE_DEMAND(&pose_output.get_system() == &velocity_output.get_system());
+  const std::string name = pose_output.get_system().get_name();
   auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
   builder_->Connect(pose_output, ports.first);
   builder_->Connect(velocity_output, ports.second);
