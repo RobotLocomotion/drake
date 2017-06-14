@@ -51,26 +51,22 @@ class FixedOffsetFrame : public Frame<T> {
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<double>& X_BF);
 
-  /// Returns the pose `X_FB` of the body B associated with this frame F,
-  /// measured in this frame F.
-  /// @sa CalcBodyPoseInOtherFrame()
   Isometry3<T> CalcBodyPoseInThisFrame(
       const systems::Context<T>& context) const final {
     return parent_frame_.CalcBodyPoseInOtherFrame(context,
                                                   X_PF_.cast<T>().inverse());
   }
 
-  /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
-  /// compute the pose of frame Q measured and expressed in the frame B of
-  /// the body to which this frame is attached.
-  Isometry3<T> CalcOffsetPoseInBody(
-      const systems::Context<T>& context,
-      const Isometry3<T>& X_FQ) const final {
-    return parent_frame_.CalcOffsetPoseInBody(context,
-                                              X_PF_.cast<T>() * X_FQ);
-  }
-
  protected:
+  /// @name Methods to make a clone templated on different scalar types.
+  ///
+  /// These methods provide implementations to the different overrides of
+  /// Frame::DoCloneToScalar().
+  /// The only const argument to these methods is the new MultibodyTree clone
+  /// under construction, which is required to already own the clone to the
+  /// parent frame of the frame being cloned.
+  /// @{
+
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final {
@@ -82,8 +78,10 @@ class FixedOffsetFrame : public Frame<T> {
       const MultibodyTree<AutoDiffXd>& tree_clone) const final {
     return TemplatedDoCloneToScalar(tree_clone);
   }
+  /// @}
 
  private:
+  // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
