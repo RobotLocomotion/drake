@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
+#include <memory>
 #include <stdexcept>
 
 #include "drake/common/eigen_autodiff_types.h"

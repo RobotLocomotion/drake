@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/frame_base.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"

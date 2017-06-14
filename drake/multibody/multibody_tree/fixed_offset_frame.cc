@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 
 #include <exception>
+#include <memory>
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"

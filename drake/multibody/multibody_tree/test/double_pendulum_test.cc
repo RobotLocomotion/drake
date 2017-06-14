@@ -526,6 +526,10 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   }
 }
 
+// Compute the spatial velocity of each link as measured in the world frame
+// using automatic differentiation through
+// MultibodyTree::CalcPositionKinematicsCache(). The results are verified
+// comparing with the reference solution provided by benchmarks::Acrobot.
 TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
@@ -602,8 +606,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           Eigen::MatrixXd X_WL_value =
               math::autoDiffToValueMatrix(X_WL.matrix());
 
-          // Asserts that the retrieved poses match with the ones specified by the
-          // unit test method SetPendulumPoses().
+          // Asserts that the retrieved poses match with the ones specified by
+          // the unit test method SetPendulumPoses().
           EXPECT_TRUE(X_WU_value.isApprox(X_WU_expected.matrix(), kEpsilon));
           EXPECT_TRUE(X_WL_value.isApprox(X_WL_expected.matrix(), kEpsilon));
 
@@ -632,7 +636,6 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));
         }  // ielbow
       }  // ishoulder
-
     }  // iw_elbow
   }  // iw_shoulder
 }
