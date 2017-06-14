@@ -51,18 +51,16 @@ GTEST_TEST(TestGrayCode, TestGrayCodeToInteger) {
   EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 1)), 6);
   EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 0)), 7);
 }
-
+class LogarithmicSOS2Test : public ::testing::TestWithParam
 GTEST_TEST(TestMixedIntegerUtil, TestLogarithmicSOS2) {
   // Solve the program
   // min λᵀ * λ
   // s.t sum λ = 1
-  //     λ >= 0
   //     λ in sos2
-  // We loop over i such that only λ(i) and λ(i+1) can be non-zero.
+  // We loop over i such that only λ(i) and λ(i+1) can be strictly positive.
   // The optimal cost is λ(i) = λ(i + 1) = 0.5.
   MathematicalProgram prog;
-  auto lambda = prog.NewContinuousVariables<5>();
-  prog.AddBoundingBoxConstraint(0, 1, lambda);
+  auto lambda = prog.NewContinuousVariables<5>("lambda");
   prog.AddLinearConstraint(lambda.cast<symbolic::Expression>().sum() == 1);
 
   prog.AddCost(lambda.cast<symbolic::Expression>().dot(lambda.cast<symbolic::Expression>()));
