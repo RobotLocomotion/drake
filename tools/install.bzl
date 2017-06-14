@@ -399,7 +399,13 @@ def exports_create_cps_scripts(packages):
         )
 
 #------------------------------------------------------------------------------
-def cmake_config(package, script=None, version_file=None, deps=[]):
+def cmake_config(
+    package,
+    script = None,
+    version_file = None,
+    cps_file_name = None,
+    deps = []
+    ):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -411,6 +417,10 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
     """
 
     if script and version_file:
+        if cps_file_name:
+            fail("cps_file_name should not be set if"
+                + " script and version_file are set."
+            )
         native.py_binary(
             name = "create-cps",
             srcs = [script],
@@ -429,7 +439,7 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
             tools = [":create-cps"],
             visibility = ["//visibility:public"],
         )
-    else:
+    elif not cps_file_name:
         cps_file_name = "@drake//tools:{}.cps".format(package)
 
     config_file_name = "{}Config.cmake".format(package)
@@ -455,7 +465,11 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
     )
 
 #------------------------------------------------------------------------------
-def install_cmake_config(package, versioned=True):
+def install_cmake_config(
+    package,
+    versioned = True,
+    name = "install_cmake_config"
+    ):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
@@ -470,7 +484,7 @@ def install_cmake_config(package, versioned=True):
         cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
 
     install_files(
-        name = "install_cmake_config",
+        name = name,
         dest = cmake_config_dest,
         files = cmake_config_files,
         visibility = ["//visibility:private"],
