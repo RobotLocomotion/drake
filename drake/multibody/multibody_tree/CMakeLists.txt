@@ -1,4 +1,5 @@
 add_library_with_exports(LIB_NAME drakeMultibodyTree SOURCE_FILES
+  body.cc
   body_node_impl.cc
   fixed_offset_frame.cc
   mobilizer_impl.cc
@@ -20,7 +21,7 @@ drake_install_headers(
   fixed_offset_frame.h
   multibody_tree.h
   multibody_tree_element.h
-  multibody_tree_context.cc
+  multibody_tree_context.h
   multibody_tree_indexes.h
   position_kinematics_cache.h
   revolute_mobilizer.h
