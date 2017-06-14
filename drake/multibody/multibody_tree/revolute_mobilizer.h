@@ -5,7 +5,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer_impl.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/systems/framework/context.h"
 
 // Forward declarations.
 template <typename T> class MultibodyTree;
@@ -22,7 +24,9 @@ namespace multibody {
 /// The single generalized coordinate q introduced by this mobilizer
 /// corresponds to the rotation angle in radians of frame M with respect to
 /// frame F about the rotation axis `axis_F`. When `q = 0`, frames F and M are
-/// coincident. Notice that the components of the rotation axis as expressed in
+/// coincident. The rotation angle is defined to be positive according to the
+/// right-hand-rule with the thumb aligned in the direction of the `axis_F`.
+/// Notice that the components of the rotation axis as expressed in
 /// either frame F or M are constant. That is, `axis_F` and `axis_M` remain
 /// unchanged w.r.t. both frames by this mobilizer's motion.
 ///
@@ -66,6 +70,32 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// @retval axis_F The rotation axis as a unit vector expressed in the inboard
   ///                frame F.
   const Vector3<double>& get_revolute_axis() const { return axis_F_; }
+
+  /// Gets the rotation angle of `this` mobilizer from `context`. See class
+  /// documentation for sign convention.
+  /// @throws std::logic_error if `context` is not a valid
+  /// MultibodyTreeContext.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @returns The angle coordinate of `this` mobilizer in the `context`.
+  const T& get_angle(const systems::Context<T>& context) const;
+
+  /// Sets the `context` so that the generalized coordinate corresponding to the
+  /// rotation angle of `this` mobilizer equals `angle`.
+  /// @throws std::logic_error if `context` is not a valid
+  /// MultibodyTreeContext.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @param[in] angle The desired angle in radians.
+  /// @returns a constant reference to `this` mobilizer.
+  const RevoluteMobilizer<T>& set_angle(
+      systems::Context<T>* context, const T& angle) const;
+
+  /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
+  /// frame F and the outboard frame M as a function of the rotation angle
+  /// about this mobilizer's axis (@see get_revolute_axis().)
+  Isometry3<T> CalcAcrossMobilizerTransform(
+      const MultibodyTreeContext<T>& context) const final;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;

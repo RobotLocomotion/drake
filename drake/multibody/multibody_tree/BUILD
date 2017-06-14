@@ -74,6 +74,7 @@ drake_cc_library(
         "rigid_body.h",
     ],
     deps = [
+        ":multibody_tree_context",
         ":multibody_tree_element",
         ":spatial_inertia",
         "//drake/common:autodiff",
@@ -81,15 +82,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "mobilizers",
-    srcs = ["revolute_mobilizer.cc"],
+    name = "mobilizers_and_body_nodes",
+    srcs = [
+        "body_node_impl.cc",
+        "mobilizer_impl.cc",
+        "revolute_mobilizer.cc",
+    ],
     hdrs = [
+        "body_node.h",
+        "body_node_impl.h",
+        "body_node_welded.h",
         "mobilizer.h",
         "mobilizer_impl.h",
         "revolute_mobilizer.h",
     ],
     deps = [
         ":bodies_and_frames",
+        ":multibody_tree_context",
         "//drake/common:autodiff",
         "//drake/common:type_safe_index",
     ],
@@ -105,7 +114,7 @@ drake_cc_library(
     ],
     deps = [
         ":bodies_and_frames",
-        ":mobilizers",
+        ":mobilizers_and_body_nodes",
         ":multibody_tree_context",
         ":multibody_tree_indexes",
         ":spatial_inertia",
@@ -148,6 +157,14 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "double_pendulum_test",
+    deps = [
+        ":multibody_tree",
+        "//drake/multibody/benchmarks/acrobot",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frames_test",
     deps = [":multibody_tree"],
 )
 
