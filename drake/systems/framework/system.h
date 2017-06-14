@@ -1040,6 +1040,7 @@ class System {
                     const WitnessFunction<T>& witness_func) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     return DoEvaluateWitness(context, witness_func);
+  }
 
   /// Returns a string suitable for identifying this particular %System in
   /// error messages, when it is a subsystem of a larger Diagram. This method
