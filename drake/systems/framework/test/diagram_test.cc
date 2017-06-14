@@ -1465,9 +1465,6 @@ class MyEventTestSystem : public LeafSystem<double> {
   int get_per_step_count() const { return per_step_count_; }
 
  private:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {

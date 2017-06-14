@@ -93,7 +93,8 @@ class TwoWitnessEmptySystem : public LeafSystem<double> {
   }
 
   void DoPublish(
-      const drake::systems::Context<double>& context) const override {
+      const drake::systems::Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 

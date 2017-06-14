@@ -330,11 +330,11 @@ void MaliputRailcar<T>::SetDefaultState(MaliputRailcarState<T>* railcar_state) {
 // vehicle is not considered (see #5532).
 template <typename T>
 void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
-    systems::UpdateActions<T>* actions) const {
+    systems::CompositeEventCollection<T>* events, T* time) const {
   const MaliputRailcarState<T>& state = get_state(context);
 
   if (state.speed() == 0) {
-    actions->time = T(std::numeric_limits<double>::infinity());
+    *time = T(std::numeric_limits<double>::infinity());
   } else {
     const MaliputRailcarParams<T>& params = get_parameters(context);
     const LaneDirection& lane_direction = get_lane_direction(context);

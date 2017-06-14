@@ -43,40 +43,6 @@ std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
   return out;
 }
 
-/// A vector of pair of subsystem id and its DiscreteEvent.
-template <typename T>
-using SubsystemIdAndEventPairs = std::vector<std::pair<int, DiscreteEvent<T>>>;
-
-/// For a subsystem identified by @p subsystem_id, sorts all its discrete events
-/// @p subsystem_events based on their event types. The results are appended to
-/// @p all_publish, @p all_discrete_update and @p all_unrestricted_update.
-template <typename T>
-void FilterSubsystemEventsByType(int subsystem_id,
-    const std::vector<DiscreteEvent<T>>& subsystem_events,
-    SubsystemIdAndEventPairs<T>* all_publish,
-    SubsystemIdAndEventPairs<T>* all_discrete_update,
-    SubsystemIdAndEventPairs<T>* all_unrestricted_update) {
-  DRAKE_ASSERT(all_publish != nullptr);
-  DRAKE_ASSERT(all_discrete_update != nullptr);
-  DRAKE_ASSERT(all_unrestricted_update != nullptr);
-  for (const auto& event : subsystem_events) {
-    switch (event.action) {
-      case DiscreteEvent<T>::kPublishAction:
-        all_publish->emplace_back(subsystem_id, event);
-        break;
-      case DiscreteEvent<T>::kDiscreteUpdateAction:
-        all_discrete_update->emplace_back(subsystem_id, event);
-        break;
-      case DiscreteEvent<T>::kUnrestrictedUpdateAction:
-        all_unrestricted_update->emplace_back(subsystem_id, event);
-        break;
-      default:
-        DRAKE_ABORT_MSG("Unknown ActionType.");
-        break;
-    }
-  }
-}
-
 //==============================================================================
 //                          DIAGRAM OUTPUT PORT
 //==============================================================================
@@ -464,28 +430,6 @@ class Diagram : public System<T>,
         &System<T>::AllocateForcedUnrestrictedUpdateEventCollection);
   }
   /// @endcond
-
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
-    // Down-cast the context and output to DiagramContext and DiagramOutput.
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    auto diagram_output = dynamic_cast<internal::DiagramOutput<T>*>(output);
-    DRAKE_DEMAND(diagram_output != nullptr);
-
-    // Populate the output with pointers to the appropriate subsystem outputs
-    // in the DiagramContext. We do this on every call to CalcOutput, so
-    // that the diagram_context and diagram_output are not tightly coupled.
-    ExposeSubsystemOutputs(*diagram_context, diagram_output);
-
-    // Since the diagram output now contains pointers to the subsystem outputs,
-    // all we need to do is ask those subsystem outputs to evaluate themselves.
-    // They will recursively evaluate any intermediate inputs that they need.
-    for (const PortIdentifier& id : output_port_ids_) {
-      EvaluateOutputPort(*diagram_context, id);
-    }
->>>>>>> First successful commit.
-  }
 
   /// Aggregates the time derivatives from each subsystem into a
   /// DiagramTimeDerivatives.

@@ -1101,9 +1101,6 @@ class TestTriggerSystem : public LeafSystem<double> {
     int_data_.push_back(data);
   }
 
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   // Stores data copied from the abstract values in handled events.
   mutable std::vector<std::string> string_data_;
   mutable std::vector<int> int_data_;
