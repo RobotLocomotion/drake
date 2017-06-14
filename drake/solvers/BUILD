@@ -726,7 +726,6 @@ drake_cc_googletest(
     tags = mosek_test_tags(),
     deps = [
         ":mathematical_program",
-        ":mosek_solver",
     ],
 )
 
