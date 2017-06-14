@@ -9,8 +9,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/gain.h"
-#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/saturation.h"
 
 namespace drake {
@@ -115,7 +113,7 @@ class PidControlledSystemTest : public ::testing::Test {
   // correct relative to the hard-coded input and gain values.
   void DoPidControlledSystemTest(
       std::unique_ptr<TestPlant> plant,
-      std::unique_ptr<MatrixGain<double>> feedback_selector) {
+      const MatrixX<double>& feedback_selector) {
     DiagramBuilder<double> builder;
     const Vector1d input(1.);
     const Eigen::Vector2d state(1.1, 0.2);
@@ -125,7 +123,7 @@ class PidControlledSystemTest : public ::testing::Test {
     state_source->set_name("state");
 
     auto controller = builder.AddSystem<PidControlledSystem>(
-        std::move(plant), std::move(feedback_selector), Kp_, Ki_, Kd_);
+        std::move(plant), feedback_selector, Kp_, Ki_, Kd_);
     // Check that the controller automatically assigns a name to the plant.
     controller->set_name("controller");
 
@@ -159,36 +157,29 @@ class PidControlledSystemTest : public ::testing::Test {
   std::unique_ptr<Diagram<double>> diagram_;
 };
 
-// Tests that the PidController assigns default names to the plant and the
-// feedback selector, if they have no name.
+// Tests that the PidController assigns default names to the plant.
 TEST_F(PidControlledSystemTest, DefaultNamesAssigned) {
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
   auto plant_ptr = plant.get();
-  auto feedback_selector =
-    std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
-  auto feedback_selector_ptr = feedback_selector.get();
+  const int state_size = plant->get_output_port(0).size();
 
   PidControlledSystem<double> controller(
-      std::move(plant), std::move(feedback_selector), Kp_, Ki_, Kd_);
+      std::move(plant), MatrixX<double>::Identity(state_size, state_size),
+      Kp_, Ki_, Kd_);
   EXPECT_EQ("plant", plant_ptr->get_name());
-  EXPECT_EQ("custom_feedback_selector", feedback_selector_ptr->get_name());
 }
 
-// Tests that the PidController preserves the names of the plant and the
-// feedback selector.
+// Tests that the PidController preserves the names of the plant.
 TEST_F(PidControlledSystemTest, ExistingNamesRespected) {
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
   plant->set_name("my awesome plant!");
   auto plant_ptr = plant.get();
-  auto feedback_selector =
-      std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
-  feedback_selector->set_name("my boring feedback selector");
-  auto feedback_selector_ptr = feedback_selector.get();
+  const int state_size = plant->get_output_port(0).size();
 
   PidControlledSystem<double> controller(
-      std::move(plant), std::move(feedback_selector), Kp_, Ki_, Kd_);
+      std::move(plant), MatrixX<double>::Identity(state_size, state_size),
+      Kp_, Ki_, Kd_);
   EXPECT_EQ("my awesome plant!", plant_ptr->get_name());
-  EXPECT_EQ("my boring feedback selector", feedback_selector_ptr->get_name());
 }
 
 // Tests a plant where the size of output port zero is twice the size of input
@@ -197,9 +188,9 @@ TEST_F(PidControlledSystemTest, SimplePidControlledSystem) {
   // Our test plant is just a multiplexer which takes the input and outputs it
   // twice.
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
-  auto feedback_selector =
-      std::make_unique<MatrixGain<double>>(plant->get_output_port(0).size());
-  DoPidControlledSystemTest(std::move(plant), std::move(feedback_selector));
+  const int state_size = plant->get_output_port(0).size();
+  DoPidControlledSystemTest(std::move(plant),
+      MatrixX<double>::Identity(state_size, state_size));
 }
 
 // Tests a plant where the size of output port zero is more than twice the size
@@ -217,19 +208,16 @@ TEST_F(PidControlledSystemTest, PlantWithMoreOutputs) {
   EXPECT_EQ(feedback_selector_matrix.cols(), 6);
   feedback_selector_matrix << 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
 
-  auto feedback_selector =
-      std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
-
-  DoPidControlledSystemTest(std::move(plant), std::move(feedback_selector));
+  DoPidControlledSystemTest(std::move(plant), feedback_selector_matrix);
 }
 
 class ConnectControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     auto plant_ptr = std::make_unique<TestPlantWithMinOutputs>();
-    feedback_selector_ =
-        std::make_unique<MatrixGain<double>>(
-            plant_ptr->get_output_port(0).size());
+    feedback_selector_ = MatrixX<double>::Identity(
+        plant_ptr->get_output_port(0).size(),
+        plant_ptr->get_output_port(0).size());
 
     plant_ = builder_.AddSystem(std::move(plant_ptr));
     plant_->set_name("plant");
@@ -276,7 +264,7 @@ class ConnectControllerTest : public ::testing::Test {
   DiagramBuilder<double> builder_;
   ConstantVectorSource<double>* input_source_ = nullptr;
   ConstantVectorSource<double>* state_source_ = nullptr;
-  std::unique_ptr<MatrixGain<double>> feedback_selector_;
+  MatrixX<double> feedback_selector_;
 
   const Vector1d plant_input_{1.0};
   const Eigen::Vector2d desired_state_{1.1, 0.2};
@@ -289,7 +277,7 @@ class ConnectControllerTest : public ::testing::Test {
 TEST_F(ConnectControllerTest, NonSaturatingController) {
   auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
       plant_->get_input_port(0), plant_->get_output_port(0),
-      std::move(feedback_selector_), Kp, Ki, Kd, &builder_);
+      feedback_selector_, Kp, Ki, Kd, &builder_);
 
   ConnectPidPorts(plant_pid_ports);
 
@@ -310,7 +298,7 @@ TEST_F(ConnectControllerTest, SaturatingController) {
   auto plant_pid_ports =
       PidControlledSystem<double>::ConnectControllerWithInputSaturation(
           plant_->get_input_port(0), plant_->get_output_port(0),
-          std::move(feedback_selector_), Kp, Ki, Kd, Vector1d(0.0) /* u_min */,
+          feedback_selector_, Kp, Ki, Kd, Vector1d(0.0) /* u_min */,
           Vector1d(saturation_max), &builder_);
 
   ConnectPidPorts(plant_pid_ports);

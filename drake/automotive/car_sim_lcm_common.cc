@@ -8,7 +8,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/matrix_gain.h"
 
 using std::make_unique;
 using std::move;
@@ -123,11 +122,9 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
                            kStateIndexLeftWheelSpeed) = 1;
   feedback_selector_matrix(kFeedbackIndexRightWheelSpeed,
                            kStateIndexRightWheelSpeed) = 1;
-  auto feedback_selector =
-      std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
 
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
-      std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
+      std::move(plant), feedback_selector_matrix, Kp, Ki, Kd);
   controller->set_name("controller");
 
   // Instantiates a system for visualizing the model.
