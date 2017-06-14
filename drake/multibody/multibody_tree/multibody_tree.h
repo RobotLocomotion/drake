@@ -507,6 +507,41 @@ class MultibodyTree {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
+  /// @name Methods to retrieve multibody element variants.
+  ///
+  /// Given the user already has possession of a %MultibodyTree templated on a
+  /// scalar type T, a variant is a version of that %MultibodyTree templated on
+  /// a different scalar type `Tvariant`.
+  /// A typical use case is the call to ToAutoDiffXd() to obtain a
+  /// %MultibodyTree templated on AutoDiffXd from a %MultibodyTree templated on
+  /// `double`.
+  /// If a user has a given multibody tree, templated on a scalar type T,
+  /// and created a variant tree templated on another scalar
+  /// type `Tvariant`, the methods in this section provide a mechanism to
+  /// retrieve multibody elements from the variant tree that correspond to
+  /// elements in the original tree templated on T.
+  /// Considere the following code example:
+  /// @code
+  ///   // The user creates a model.
+  ///   MultibodyTree<T> model;
+  ///   // User adds a body and keeps a reference to it.
+  ///   const RigidBody<T>& body = model.AddBody<RigidBody>(...);
+  ///   // User creates a variant. ToAutoDiffXd() is available for
+  ///   // Tvariant = AutoDiffXd.
+  ///   std::unique_ptr<MultibodyTree<Tvariant>> variant_model =
+  ///       CloneToScalar<Tvariant>();
+  ///   // User retrieves the variant corresponding to the body added above.
+  ///   const RigidBody<AutoDiffXd>&
+  ///       variant_body = variant_model.retrieve_variant(body);
+  /// @endcode
+  ///
+  /// MultibodyTree::retrieve_variant() is templated on the multibody element
+  /// type which is deduced from its only input argument. The returned element
+  /// is templated on the scalar type T of the %MultibodyTree on which this
+  /// method is invoked.
+  /// @{
+
+  /// SFINAE overload for Body<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
   std::enable_if_t<std::is_base_of<Body<T>, MultibodyElement<T>>::value,
                    const MultibodyElement<T>&> retrieve_variant(
@@ -514,48 +549,31 @@ class MultibodyTree {
     return retrieve_body_variant(element);
   }
 
+  /// SFINAE overload for Mobilizer<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
   std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
                    const MultibodyElement<T>&> retrieve_variant(
       const MultibodyElement<Scalar>& element) {
     return retrieve_mobilizer_variant(element);
   }
+  /// @}
 
-  template <template <typename> class BodyType, typename Scalar>
-  const BodyType<T>& retrieve_body_variant(const BodyType<Scalar>& body) {
-    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
-                  "BodyType must be a sub-class of Body<T>.");
-    BodyIndex body_index = body.get_index();
-    DRAKE_DEMAND(body_index < get_num_bodies());
-    const BodyType<T>* body_variant =
-        dynamic_cast<const BodyType<T>*>(
-            owned_bodies_[body_index].get());
-    DRAKE_DEMAND(body_variant != nullptr);
-    return *body_variant;
-  }
-
-  template <template <typename> class MobilizerType, typename Scalar>
-  const MobilizerType<T>& retrieve_mobilizer_variant(
-      const MobilizerType<Scalar>& mobilizer) {
-    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
-                  "MobilizerType must be a sub-class of Mobilizer<T>.");
-    MobilizerIndex mobilizer_index = mobilizer.get_index();
-    DRAKE_DEMAND(mobilizer_index < get_num_mobilizers());
-    const MobilizerType<T>* mobilizer_variant =
-        dynamic_cast<const MobilizerType<T>*>(
-            owned_mobilizers_[mobilizer_index].get());
-    DRAKE_DEMAND(mobilizer_variant != nullptr);
-    return *mobilizer_variant;
-  }
-
+  /// Creates an exact clone of `this` %MultibodyTree templated on the same
+  /// scalar type T as `this` tree.
   std::unique_ptr<MultibodyTree<T>> Clone() const {
     return CloneToScalar<T>();
   }
 
+  /// Creates a deep copy of `this` %MultibodyTree templated on the same
+  /// scalar type T as `this` tree.
   std::unique_ptr<MultibodyTree<AutoDiffXd>> ToAutoDiffXd() const {
     return CloneToScalar<AutoDiffXd>();
   }
 
+  /// Creates a deep copy of `this` %MultibodyTree templated on the scalar type
+  /// `ToScalar`.
+  /// The new deep copy is guaranteed to have exactly the same
+  /// MultibodyTreeTopology as the original tree the method is called on.
   template <typename ToScalar>
   std::unique_ptr<MultibodyTree<ToScalar>> CloneToScalar() const {
     auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
@@ -589,11 +607,16 @@ class MultibodyTree {
   // private methods from MultibodyTree<T>.
   template <typename> friend class MultibodyTree;
 
+  // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();
+  // At Finalize(), this method performs all other finalization that is not
+  // topological (i.e. performed by FinalizeTopology()). This includes for
+  // instance the creation of BodyNode objects.
   void FinalizeInternals();
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 
+  // Helper method to create a clone of `frame` and add it to `this` tree.
   template <typename FromScalar>
   Frame<T>* CloneFrameAndAdd(const Frame<FromScalar>& frame) {
     FrameIndex frame_index = frame.get_index();
@@ -607,6 +630,7 @@ class MultibodyTree {
     return raw_frame_clone_ptr;
   }
 
+  // Helper method to create a clone of `body` and add it to `this` tree.
   template <typename FromScalar>
   Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body) {
     BodyIndex body_index = body.get_index();
@@ -625,6 +649,7 @@ class MultibodyTree {
     return raw_body_clone_ptr;
   }
 
+  // Helper method to create a clone of `mobilizer` and add it to `this` tree.
   template <typename FromScalar>
   Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<FromScalar>& mobilizer) {
     MobilizerIndex mobilizer_index = mobilizer.get_index();
@@ -633,6 +658,37 @@ class MultibodyTree {
     Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
     owned_mobilizers_.push_back(std::move(mobilizer_clone));
     return raw_mobilizer_clone_ptr;
+  }
+
+  // Helper method to retrieve the corresponding Body<T> variant to a Body in a
+  // MultibodyTree variant templated on Scalar.
+  template <template <typename> class BodyType, typename Scalar>
+  const BodyType<T>& retrieve_body_variant(const BodyType<Scalar>& body) {
+    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
+                  "BodyType must be a sub-class of Body<T>.");
+    BodyIndex body_index = body.get_index();
+    DRAKE_DEMAND(body_index < get_num_bodies());
+    const BodyType<T>* body_variant =
+        dynamic_cast<const BodyType<T>*>(
+            owned_bodies_[body_index].get());
+    DRAKE_DEMAND(body_variant != nullptr);
+    return *body_variant;
+  }
+
+  // Helper method to retrieve the corresponding Mobilizer<T> variant to a Body
+  // in a MultibodyTree variant templated on Scalar.
+  template <template <typename> class MobilizerType, typename Scalar>
+  const MobilizerType<T>& retrieve_mobilizer_variant(
+      const MobilizerType<Scalar>& mobilizer) {
+    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
+                  "MobilizerType must be a sub-class of Mobilizer<T>.");
+    MobilizerIndex mobilizer_index = mobilizer.get_index();
+    DRAKE_DEMAND(mobilizer_index < get_num_mobilizers());
+    const MobilizerType<T>* mobilizer_variant =
+        dynamic_cast<const MobilizerType<T>*>(
+            owned_mobilizers_[mobilizer_index].get());
+    DRAKE_DEMAND(mobilizer_variant != nullptr);
+    return *mobilizer_variant;
   }
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write

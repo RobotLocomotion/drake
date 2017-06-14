@@ -78,6 +78,7 @@ class RigidBody : public Body<T> {
   }
 
  private:
+  // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const {
