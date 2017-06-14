@@ -45,6 +45,18 @@ class RigidBodyTreeAliasGroups {
   explicit RigidBodyTreeAliasGroups(const RigidBodyTree<T>& tree)
       : tree_(tree) {}
 
+  /**
+   * Constructs a RigidBodyTreeAliasGroups from the config file specified by
+   * @p path.
+   * @param tree Reference to the RigidBodyTree. A pointer to this RigidBodyTree
+   * is stored, so @p tree needs to outlive this object.
+   * @param path Path to the config file.
+   */
+  RigidBodyTreeAliasGroups(const RigidBodyTree<T>& tree,
+      const std::string& path) : tree_(tree) {
+    LoadFromFile(path);
+  }
+
   RigidBodyTreeAliasGroups(const RigidBodyTreeAliasGroups&) = delete;
   RigidBodyTreeAliasGroups& operator=(const RigidBodyTreeAliasGroups&) = delete;
 

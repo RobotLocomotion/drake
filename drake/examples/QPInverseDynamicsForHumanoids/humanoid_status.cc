@@ -25,8 +25,8 @@ HumanoidStatus::HumanoidStatus(
 
   // These are humanoid specific special group names, and they do not exsit
   // for manupulators such as the iiwa arm.
-  const std::vector<std::string> body_names =
-      {"pelvis", "torso", "left_foot", "right_foot"};
+  const std::vector<std::string> body_names = {"pelvis", "torso", "left_foot",
+                                               "right_foot"};
 
   for (const auto& name : body_names) {
     if (alias_group.has_body_group(name)) {
@@ -40,16 +40,14 @@ HumanoidStatus::HumanoidStatus(
   if (alias_group.has_body_group("left_foot")) {
     bodies_of_interest_.emplace(
         "left_foot_sensor",
-        BodyOfInterest("left_foot_sensor",
-                       *alias_group.get_body("left_foot"),
+        BodyOfInterest("left_foot_sensor", *alias_group.get_body("left_foot"),
                        kFootToSensorPositionOffset));
   }
 
   if (alias_group.has_body_group("right_foot")) {
     bodies_of_interest_.emplace(
         "right_foot_sensor",
-        BodyOfInterest("right_foot_sensor",
-                       *alias_group.get_body("right_foot"),
+        BodyOfInterest("right_foot_sensor", *alias_group.get_body("right_foot"),
                        kFootToSensorPositionOffset));
   }
 
@@ -99,7 +97,7 @@ void HumanoidStatus::UpdateKinematics(
     double t, const Eigen::Ref<const VectorX<double>>& q,
     const Eigen::Ref<const VectorX<double>>& v) {
   Update(t, q, v, VectorX<double>::Zero(joint_torque_.size()),
-      Vector6<double>::Zero(), Vector6<double>::Zero());
+         Vector6<double>::Zero(), Vector6<double>::Zero());
 }
 
 void HumanoidStatus::Update() {
@@ -138,8 +136,7 @@ void HumanoidStatus::Update() {
       Isometry3<double> H1;
       H1.fromPositionOrientationScale(
           -kFootToSensorPositionOffset + kFootToSoleOffset,
-          kFootToSensorRotationOffset.transpose(),
-          Vector3<double>::Ones());
+          kFootToSensorRotationOffset.transpose(), Vector3<double>::Ones());
 
       foot_wrench_in_sole_frame_[i] =
           transformSpatialForce(H1, foot_wrench_raw_[i]);
