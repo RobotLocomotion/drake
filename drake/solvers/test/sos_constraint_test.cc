@@ -44,6 +44,28 @@ GTEST_TEST(SosConstraintTest, Multivariate1) {
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
+GTEST_TEST(SosConstraintTest, Multivariate2) {
+  // Find the global minimal of the non-convex polynomial
+  // f(x, y) = 4 * x(0)² − 21 / 10 * x(0)⁴ + 1 / 3 * x(0)⁶ + x(0) * x(1) − 4 * x(1)² + 4 * x(1)⁴
+  // through the following convex program
+  // max c
+  // s.t f(x, y) - c is sum-of-squares.
+  // The global minimal value is -1.0316
+  // The example is taken from page 19 of https://stanford.edu/class/ee364b/lectures/sos_slides.pdf
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates<2>();
+  auto c = prog.NewContinuousVariables<1>();
+
+  prog.AddCost(-c(0));
+
+  symbolic::Polynomial p(4 * pow(x(0), 2) - 2.1 * pow(x(0), 4) + 1.0 / 3.0 * pow(x(0), 6) + x(0) * x(1) - 4 * x(1) * x(1) + 4 * pow(x(1), 4) - c(0), symbolic::Variables({x(0), x(1)}));
+
+  prog.AddSosConstraint(p);
+
+  auto result = prog.Solve();
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  EXPECT_NEAR(prog.GetSolution(c(0)), -1.0316, 1E-4);
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
