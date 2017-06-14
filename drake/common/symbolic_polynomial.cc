@@ -279,7 +279,7 @@ Polynomial& Polynomial::operator*=(const Polynomial& p) {
       DoAdd(new_coeff, new_monomial, &new_map);
     }
   }
-  monomial_to_coefficient_map_ = new_map;
+  monomial_to_coefficient_map_ = std::move(new_map);
   CheckInvariant();
   return *this;
 }
