@@ -633,38 +633,36 @@ class MathematicalProgram {
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
 
-  /**   Returns a pair<symbolic::Polynomial,VectorXIndeterminate>, where
-   * symbolic::Polynomial is
-   * a free polynomial with decision variables as coefficients to all monomials
-   * created by @see MonomialBasis(const Variables& vars,int degree) and
-   * VectorXDecisionVariable stores the coefficients
+  /**
+   * Returns a pair of a free polynomial with decision variables as coefficients
+   * to all monomials created by `MonomialBasis(const Variables& vars, int
+   * degree)` and a VectorXDecisionVariable which stores the coefficients.
    */
   // TODO(FischerGundlach) Add documentation incl. an example with list
   // initialization and implicit conversion variable->variables
   std::pair<symbolic::Polynomial, VectorXDecisionVariable> NewFreePolynomial(
       const symbolic::Variables& indeterminates, int degree);
 
-  /**   Returns a pair<symbolic::Polynomial,VectorXIndeterminate>, @see
-   * NewFreePolynomial(const symbolic::Variables& indeterminates, int degree)
+  /**
+   * Returns a pair of a free polynomial and a vector of decision
+   * variables. @see NewFreePolynomial(const symbolic::Variables&
+   * indeterminates, int degree).
    */
   // TODO(FischerGundlach) Add documentation incl. an example.
   std::pair<symbolic::Polynomial, VectorXDecisionVariable> NewFreePolynomial(
       const VectorXIndeterminate& indeterminates, int degree);
 
-  /** Returns a pair<symbolic::Polynomial,MatrixXDecisionVariable>, where
-   * symbolic::Polynomial is a
-   * SOS polynomial with decision variables as coefficients to all monomials
-   * created by @see MonomialBasis(const Variables& vars,int degree) and
-   * MatrixXDecisionVariable is a symmetric PSD constraint matrix with the
-   * coefficients.
+  /** Returns a pair of a SOS polynomial with decision variables as coefficients
+   * to all monomials created by `MonomialBasis(const Variables& vars,int
+   * degree)` and a symmetric PSD constraint matrix with the coefficients.
    */
   // TODO(FischerGundlach) Add documentation incl. an example with list
   // initialization and implicit conversion variable->variables
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const symbolic::Variables& indeterminates, int degree);
 
-  /** Returns a pair<symbolic::Polynomial,MatrixXDecisionVariable>, @see
-   * NewSosPolynomial(const VectorXIndeterminate& indeterminates, int degree)
+  /** Returns a pair of a SOS polynomial and a PSD matrix. @see
+   * NewSosPolynomial(const VectorXIndeterminate& indeterminates, int degree).
    */
   // TODO(FischerGundlach) Add documentation incl. an example.
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
@@ -1926,8 +1924,9 @@ class MathematicalProgram {
    * (@see MathematicalProgramm::NewFreePolynomial) poly is constraint to be a
    * SOS.
    */
-  // TODO(FischerGundlach) Add documentation for SOS decomposition, i.e.
-  // polynomial can be represented as z^t*Q*z + example how the function is used.
+  // TODO(FischerGundlach) Add/Fix documentation for SOS decomposition, i.e.
+  // polynomial can be represented as z^t*Q*z + example how the function is
+  // used.
   std::pair<Binding<PositiveSemidefiniteConstraint>,
             Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& poly);

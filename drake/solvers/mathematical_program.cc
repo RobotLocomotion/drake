@@ -15,6 +15,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/monomial.h"
+#include "drake/common/monomial_util.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
@@ -209,26 +210,49 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
 
 pair<drake::symbolic::Polynomial, VectorXDecisionVariable>
 MathematicalProgram::NewFreePolynomial(const Variables& indeterminates,
-                                       int degree) {
-  return make_pair(symbolic::Polynomial(), this->indeterminates());
+                                       const int degree) {
+  const drake::VectorX<symbolic::Monomial> X{
+      MonomialBasis(indeterminates, degree)};
+  const VectorXDecisionVariable coeffs{NewContinuousVariables(X.size())};
+
+  // TODO(soonho): make coeffs.dot(X) work.
+  symbolic::Polynomial p;
+  for (int i = 0; i < X.size(); ++i) {
+    p += X(i) * coeffs(i);
+  }
+  return make_pair(p, coeffs);
 }
 
 pair<drake::symbolic::Polynomial, VectorXDecisionVariable>
 MathematicalProgram::NewFreePolynomial(
-    const VectorXIndeterminate& indeterminates, int degree) {
-  return make_pair(symbolic::Polynomial(), this->indeterminates());
+    const VectorXIndeterminate& indeterminates, const int degree) {
+  // Add indeterminates to vars of type Variables.
+  Variables vars;
+  for (int i = 0; i < indeterminates.size(); ++i) {
+    vars += indeterminates(i);
+  }
+  return NewFreePolynomial(vars, degree);
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
-                                      int degree) {
-  return make_pair(symbolic::Polynomial(), this->indeterminates());
+                                      const int degree) {
+  const drake::VectorX<symbolic::Monomial> X{
+      MonomialBasis(indeterminates, degree)};
+  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(X.size())};
+  const symbolic::Polynomial p{X.dot(Q * X)};
+  return make_pair(p, Q);
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(
-    const VectorXIndeterminate& indeterminates, int degree) {
-  return make_pair(symbolic::Polynomial(), this->indeterminates());
+    const VectorXIndeterminate& indeterminates, const int degree) {
+  // Add indeterminates to vars of type Variables.
+  Variables vars;
+  for (int i = 0; i < indeterminates.size(); ++i) {
+    vars += indeterminates(i);
+  }
+  return NewSosPolynomial(vars, degree);
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -648,21 +672,26 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
-// TODO(FischerGundlach) implement this function, first finish NewFreePolynomial
-// and NewSosPolynomial
-/*pair<Binding<PositiveSemidefiniteConstraint>,
-Binding<LinearEqualityConstraint>>
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& poly) {
-  return pair<Binding<PositiveSemidefiniteConstraint>,
-              Binding<LinearEqualityConstraint>>();
-}*/
+  const symbolic::Variables indeterminates{poly.indeterminates()};
+  const int d{poly.Degree()};
+  const auto p = NewSosPolynomial(indeterminates, d);
+  const symbolic::Polynomial& sos_poly{p.first};
+  const MatrixXDecisionVariable& Q{p.second};
+
+  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
+  const auto leq_binding = AddLinearEqualityConstraint(sos_poly == poly);
+  return make_pair(psd_binding, leq_binding);
+}
 
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
     ostringstream oss;
-    oss << var << " is not a decision variable in the mathematical program, "
-                  "when calling GetSolution.\n";
+    oss << var
+        << " is not a decision variable in the mathematical program, "
+           "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;
@@ -672,8 +701,9 @@ size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   auto it = indeterminates_index_.find(var.get_id());
   if (it == indeterminates_index_.end()) {
     ostringstream oss;
-    oss << var << " is not a indeterminate in the mathematical program, "
-                  "when calling GetSolution.\n";
+    oss << var
+        << " is not an indeterminate in the mathematical program, "
+           "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;
