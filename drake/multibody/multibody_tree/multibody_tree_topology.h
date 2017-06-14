@@ -46,6 +46,8 @@ struct BodyTopology {
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
+  /// Returns `true` if all members of `this` topology are exactly equal to the
+  /// members of `other`. Otherwise it returns `false`.
   bool operator==(const BodyTopology& other) const {
     if (index != other.index) return false;
     if (inboard_mobilizer.is_valid() !=
@@ -107,6 +109,8 @@ struct FrameTopology {
   FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
 
+  /// Returns `true` if all members of `this` topology are exactly equal to the
+  /// members of `other`. Otherwise it returns `false`.
   bool operator==(const FrameTopology& other) const {
     if (index != other.index) return false;
     if (body != other.body) return false;
@@ -153,6 +157,8 @@ struct MobilizerTopology {
       inboard_body(in_body), outboard_body(out_body),
       num_positions(num_positions_in), num_velocities(num_velocities_in) {}
 
+  /// Returns `true` if all members of `this` topology are exactly equal to the
+  /// members of `other`. Otherwise it returns `false`.
   bool operator==(const MobilizerTopology& other) const {
     if (index != other.index) return false;
 
@@ -249,6 +255,8 @@ struct BodyNodeTopology {
       parent_body_node(parent_node_in),
       body(body_in), parent_body(parent_body_in), mobilizer(mobilizer_in) {}
 
+  /// Returns `true` if all members of `this` topology are exactly equal to the
+  /// members of `other`. Otherwise it returns `false`.
   bool operator==(const BodyNodeTopology& other) const {
     if (index != other.index) return false;
     if (level != other.level) return false;
@@ -337,6 +345,8 @@ class MultibodyTreeTopology {
   /// and adds it to the tree.
   MultibodyTreeTopology() {}
 
+  /// Returns `true` if all members of `this` topology are exactly equal to the
+  /// members of `other`. Otherwise it returns `false`.
   bool operator==(const MultibodyTreeTopology& other) const {
     if (is_valid_ != other.is_valid_) return false;
     if (tree_height_ != other.tree_height_) return false;

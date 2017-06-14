@@ -215,9 +215,6 @@ class PendulumTests : public ::testing::Test {
   const Isometry3d X_UEi_{Translation3d(0.0, -half_link_length_, 0.0)};
   // Pose of the elbow outboard frame Eo in the lower link frame L.
   const Isometry3d X_LEo_{Translation3d(0.0, half_link_length_, 0.0)};
-  // Reference benchmark for verification.
-  Acrobot<double> acrobot_benchmark_{Vector3d::UnitZ() /* Plane normal */,
-                                     Vector3d::UnitY() /* Up vector */};
 };
 
 TEST_F(PendulumTests, CreateModelBasics) {
@@ -415,6 +412,9 @@ class PendulumKinematicTests : public PendulumTests {
         dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
   }
 
+  /// Given the transformation `X_AB` between two frames A and B and its time
+  /// derivative in frame A `Xdot_AB`, this method computes the spatial velocity
+  /// `V_AB` of frame B as measured and expressed in A.
   static SpatialVelocity<double> ComputeSpatialVelocityFromXdot(
       const Matrix4d& X_AB, const Matrix4d& X_AB_dot) {
     const Matrix3d R_AB = X_AB.topLeftCorner(3, 3);

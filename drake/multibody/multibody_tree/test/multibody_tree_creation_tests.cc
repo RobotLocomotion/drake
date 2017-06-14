@@ -416,6 +416,9 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(velocities_index, topology.get_num_states());
 }
 
+// Verifies that the clone of a given MultibodyTree model created with
+// MultibodyTree::Clone() has has exactly the same topology as the original
+// model.
 TEST_F(TreeTopologyTests, Clone) {
   model_->Finalize();
   EXPECT_EQ(model_->get_num_bodies(), 8);
@@ -435,6 +438,9 @@ TEST_F(TreeTopologyTests, Clone) {
   VerifyTopology(clone_topology);
 }
 
+// Verifies that the AutoDiffXd version of a given MultibodyTree model created
+// with MultibodyTree::ToAutoDiffXd() has exactly the same topology as the
+// original model.
 TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   model_->Finalize();
   EXPECT_EQ(model_->get_num_bodies(), 8);
