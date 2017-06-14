@@ -729,6 +729,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "mixed_integer_optimization_util_test",
+    tags = gurobi_test_tags(gurobi_required = False),
     deps = [
         ":gurobi_solver",
         ":mixed_integer_optimization_util",
