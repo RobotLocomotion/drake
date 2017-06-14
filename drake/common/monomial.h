@@ -154,5 +154,15 @@ struct ScalarBinaryOpTraits<
   typedef drake::symbolic::Monomial ReturnType;
 };
 
+// Informs Eigen that Monomial * Monomial gets Monomial.
+template <>
+struct ScalarBinaryOpTraits<
+    drake::symbolic::Monomial, drake::symbolic::Monomial,
+    internal::scalar_product_op<drake::symbolic::Monomial,
+                                drake::symbolic::Monomial>> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Monomial ReturnType;
+};
+
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
