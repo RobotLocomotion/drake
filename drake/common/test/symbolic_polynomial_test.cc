@@ -106,6 +106,14 @@ TEST_F(SymbolicPolynomialTest, Multiplication) {
                    (e1.Expand() * e2.Expand()).Expand());
     }
   }
+  // Evaluates (1 + x) * (1 - x) to confirm that the cross term 0 * x is erased
+  // from the product.
+  const Polynomial p1(1 + x_);
+  const Polynomial p2(1 - x_);
+  Polynomial::MapType product_map_expected{};
+  product_map_expected.emplace(Monomial(), 1);
+  product_map_expected.emplace(Monomial(var_x_, 2), -1);
+  EXPECT_EQ(product_map_expected, (p1 * p2).monomial_to_coefficient_map());
 }
 
 // It checks if we can compute Xᵀ*Q*X in SOS. For now, this test doesn't have
