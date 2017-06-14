@@ -59,6 +59,7 @@ install(
         "//drake:install",
         "//drake/common:install",
         "//tools:install",
+        "//tools/install/gflags:install",
         "@bot_core_lcmtypes//:install",
         "@bullet//:install",
         "@ccd//:install",
