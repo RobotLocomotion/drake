@@ -44,6 +44,9 @@ class Polynomial {
   /// Returns the decision variables of this polynomial.
   Variables decision_variables() const;
 
+  /// Returns the total degree of this polynomial.
+  int Degree() const;
+
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
   const MapType& monomial_to_coefficient_map() const;

@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_polynomial.h"
 
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -202,6 +203,15 @@ Variables Polynomial::decision_variables() const {
     vars += e_i.GetVariables();
   }
   return vars;
+}
+
+int Polynomial::Degree() const {
+  int degree{0};
+  for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
+    const Monomial& m{p.second};
+    degree = std::max(degree, m.total_degree());
+  }
+  return degree;
 }
 
 const Polynomial::MapType& Polynomial::monomial_to_coefficient_map() const {
