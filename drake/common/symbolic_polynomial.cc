@@ -208,7 +208,7 @@ Variables Polynomial::decision_variables() const {
 int Polynomial::Degree() const {
   int degree{0};
   for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
-    const Monomial& m{p.second};
+    const Monomial& m{p.first};
     degree = std::max(degree, m.total_degree());
   }
   return degree;
