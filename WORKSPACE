@@ -51,6 +51,8 @@ github_archive(
     build_file = "tools/gtest.BUILD",
 )
 
+# When updating the version of gflags, update tools/gflags.cps
+# TODO(fbudin69500): Create tools/gflags.cps from a configuration file
 github_archive(
     name = "com_github_gflags_gflags",
     repository = "gflags/gflags",

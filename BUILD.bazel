@@ -49,6 +49,7 @@ install(
         ":install_net_sf_jchart2d_jchart2d",
         "//drake:install",
         "//tools:install",
+        "//tools/install/gflags:install",
         "@bot_core_lcmtypes//:install",
         "@bullet//:install",
         "@ccd//:install",
