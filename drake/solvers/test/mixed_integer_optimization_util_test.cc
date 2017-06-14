@@ -38,18 +38,30 @@ GTEST_TEST(TestGrayCode, TestCalculateGrayCodes) {
 }
 
 GTEST_TEST(TestGrayCode, TestGrayCodeToInteger) {
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(0, 0)), 0);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(0, 1)), 1);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(1, 1)), 2);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(1, 0)), 3);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 0, 0)), 0);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 0, 1)), 1);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 1, 1)), 2);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 1, 0)), 3);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 1, 0)), 4);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 1, 1)), 5);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 1)), 6);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 0)), 7);
+  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(0, 0)),
+            0);
+  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(0, 1)),
+            1);
+  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(1, 1)),
+            2);
+  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(1, 0)),
+            3);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 0, 0)), 0);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 0, 1)), 1);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 1, 1)), 2);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 1, 0)), 3);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 1, 0)), 4);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 1, 1)), 5);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 1)), 6);
+  EXPECT_EQ(
+      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 0)), 7);
 }
 
 void LogarithmicSOS2Test(int num_lambda) {
@@ -63,12 +75,14 @@ void LogarithmicSOS2Test(int num_lambda) {
   auto lambda = prog.NewContinuousVariables(num_lambda, "lambda");
   prog.AddLinearConstraint(lambda.cast<symbolic::Expression>().sum() == 1);
   prog.AddCost(lambda.cast<symbolic::Expression>().dot(lambda));
-  auto y = AddLogarithmicSOS2Constraint(&prog, lambda.cast<symbolic::Expression>());
+  auto y =
+      AddLogarithmicSOS2Constraint(&prog, lambda.cast<symbolic::Expression>());
   int num_binary_vars = y.rows();
   int num_intervals = num_lambda - 1;
   auto y_assignment = prog.AddBoundingBoxConstraint(0, 1, y);
 
-  const auto gray_codes = drake::solvers::internal::CalculateReflectedGrayCodes(num_binary_vars);
+  const auto gray_codes =
+      drake::solvers::internal::CalculateReflectedGrayCodes(num_binary_vars);
   Eigen::VectorXd y_val(num_binary_vars);
   for (int i = 0; i < num_intervals; ++i) {
     y_val.setZero();
@@ -86,7 +100,8 @@ void LogarithmicSOS2Test(int num_lambda) {
       Eigen::VectorXd lambda_val_expected = Eigen::VectorXd::Zero(num_lambda);
       lambda_val_expected(i) = 0.5;
       lambda_val_expected(i + 1) = 0.5;
-      EXPECT_TRUE(CompareMatrices(lambda_val, lambda_val_expected, 1E-5, MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(lambda_val, lambda_val_expected, 1E-5,
+                                  MatrixCompareType::absolute));
     }
   }
 }

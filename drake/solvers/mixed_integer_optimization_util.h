@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -55,7 +57,9 @@ int GrayCodeToInteger(const Eigen::Ref<const Eigen::VectorXi>& gray_code);
  * (y(0), y(1), ..., y(⌈log2(n - 1)⌉)) in Gray code, then only λ(M) and λ(M + 1)
  * can be non-zero.
  */
-VectorXDecisionVariable
-AddLogarithmicSOS2Constraint(MathematicalProgram* prog, const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda, const std::string& binary_variable_name = "b");
+VectorXDecisionVariable AddLogarithmicSOS2Constraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const std::string& binary_variable_name = "b");
 }  // namespace solvers
 }  // namespace drake
