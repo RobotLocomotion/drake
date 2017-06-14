@@ -100,13 +100,9 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
       const MultibodyTreeContext<T>& context) const final;
 
  protected:
-  /// @pre Inboard and outbard frames for this mobilizer already have a clone in
-  /// `tree_clone`.
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
 
-  /// @pre Inboard and outbard frames for this mobilizer already have a clone in
-  /// `tree_clone`.
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
@@ -121,6 +117,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   using MobilizerBase::nq;
   using MobilizerBase::nv;
 
+  // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;

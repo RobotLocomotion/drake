@@ -270,11 +270,12 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context) const = 0;
   /// @}
 
-  std::unique_ptr<Mobilizer<T>> Clone(
-      const MultibodyTree<T>& cloned_tree) const {
-    return CloneToScalar(cloned_tree);
-  }
-
+  /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
+  /// be created. This method is mostly intended to be called by
+  /// MultibodyTree::CloneToScalar(). Most users should not call this clone
+  /// method directly but rather clone the entire parent MultibodyTree if
+  /// needed.
+  /// @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> CloneToScalar(
       const MultibodyTree<ToScalar>& cloned_tree) const {
@@ -286,11 +287,27 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const Body<T>& body, const Mobilizer<T>* mobilizer) const = 0;
 
  protected:
+  /// @name Methods to make a clone templated on different scalar types.
+  ///
+  /// The only const argument to these methods is the new MultibodyTree clone
+  /// under construction, which is required to already own the clones of the
+  /// inboard and outboard mobilizers of the mobilizer being cloned.
+  /// @{
+
+  /// Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /// `double`.
+  /// @pre Inboard and outbard frames for this mobilizer already have a clone in
+  /// `tree_clone`.
   virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const = 0;
 
+  /// Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /// AutoDiffXd.
+  /// @pre Inboard and outbard frames for this mobilizer already have a clone in
+  /// `tree_clone`.
   virtual std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+  /// @}
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
