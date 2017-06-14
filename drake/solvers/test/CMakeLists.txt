@@ -85,12 +85,15 @@ if (mosek_FOUND)
   drake_add_cc_test(NAME rotation_constraint_test rotation_constraint_test.cc
     SIZE large)
   target_link_libraries(rotation_constraint_test drakeRotationConstraint)
+
+  drake_add_cc_test(NAME sos_constraint_test sos_constraint_test.cc)
+  target_link_libraries(sos_constraint_test drakeOptimization)
 endif()
 
 if (gurobi_FOUND)
   if(NOT APPLE)
-	  drake_add_cc_test(NAME rotation_constraint_limit_test SIZE large)
-	  target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
+    drake_add_cc_test(NAME rotation_constraint_limit_test SIZE large)
+    target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
   endif()
 endif()
 
