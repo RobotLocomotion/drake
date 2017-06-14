@@ -285,6 +285,7 @@ drake_cc_library(
     deps = [
         ":value",
         ":vector",
+        ":system",
         "//drake/common",
     ],
 )
