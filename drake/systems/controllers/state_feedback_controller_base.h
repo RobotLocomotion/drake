@@ -35,7 +35,7 @@ class StateFeedbackController : public Diagram<T> {
   /**
    * Returns the output port for computed control.
    */
-  const OutputPortDescriptor<T>& get_output_port_control() const {
+  const OutputPort<T>& get_output_port_control() const {
     DRAKE_DEMAND(output_port_index_control_ >= 0);
     return Diagram<T>::get_output_port(output_port_index_control_);
   }

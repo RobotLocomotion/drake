@@ -73,7 +73,8 @@ SpringMassSystem<T>::SpringMassSystem(double spring_constant_N_per_m,
   if (system_is_forced_) this->DeclareInputPort(kVectorValued, 1);
 
   // Declares output port for q, qdot, Energy.
-  this->DeclareVectorOutputPort(SpringMassStateVector<T>());
+  this->DeclareVectorOutputPort(SpringMassStateVector<T>(),
+                                &SpringMassSystem::SetOutputValues);
 
   this->DeclareContinuousState(SpringMassStateVector<T>(),
       1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
@@ -91,12 +92,12 @@ const InputPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
+const OutputPort<T>& SpringMassSystem<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 
 template <typename T>
-T SpringMassSystem<T>::EvalSpringForce(const MyContext& context) const {
+T SpringMassSystem<T>::EvalSpringForce(const Context<T>& context) const {
   const double k = spring_constant_N_per_m_;
   const T& x = get_position(context);
   T x0 = 0;  // TODO(david-german-tri) should be a parameter.
@@ -105,7 +106,7 @@ T SpringMassSystem<T>::EvalSpringForce(const MyContext& context) const {
 }
 
 template <typename T>
-T SpringMassSystem<T>::DoCalcPotentialEnergy(const MyContext& context) const {
+T SpringMassSystem<T>::DoCalcPotentialEnergy(const Context<T>& context) const {
   const double k = spring_constant_N_per_m_;
   const T& x = get_position(context),
           x0 = 0.,  // TODO(david-german-tri) should be a parameter.
@@ -114,44 +115,30 @@ T SpringMassSystem<T>::DoCalcPotentialEnergy(const MyContext& context) const {
 }
 
 template <typename T>
-T SpringMassSystem<T>::DoCalcKineticEnergy(const MyContext& context) const {
+T SpringMassSystem<T>::DoCalcKineticEnergy(const Context<T>& context) const {
   const double m = mass_kg_;
   const T& v = get_velocity(context), ke = m * v * v / 2;
   return ke;
 }
 
 template <typename T>
-T SpringMassSystem<T>::DoCalcConservativePower(const MyContext& context) const {
+T SpringMassSystem<T>::DoCalcConservativePower(
+    const Context<T>& context) const {
   const T& power_c = EvalSpringForce(context) * get_velocity(context);
   return power_c;
 }
 
 template <typename T>
-T SpringMassSystem<T>::DoCalcNonConservativePower(const MyContext&) const {
+T SpringMassSystem<T>::DoCalcNonConservativePower(const Context<T>&) const {
   const T& power_nc = 0.;
   return power_nc;
 }
 
-template <typename T>
-std::unique_ptr<BasicVector<T>> SpringMassSystem<T>::AllocateOutputVector(
-    const OutputPortDescriptor<T>&) const {
-  return std::make_unique<SpringMassStateVector<T>>();
-}
-
-template <typename T>
-std::unique_ptr<ContinuousState<T>>
-SpringMassSystem<T>::AllocateContinuousState() const {
-  return std::make_unique<ContinuousState<T>>(
-      std::make_unique<SpringMassStateVector<T>>(),
-      1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
-}
-
 // Assign the state to the output.
 template <typename T>
-void SpringMassSystem<T>::DoCalcOutput(const Context<T>& context,
-                                       SystemOutput<T>* output) const {
+void SpringMassSystem<T>::SetOutputValues(
+    const Context<T>& context, SpringMassStateVector<T>* output_vector) const {
   const SpringMassStateVector<T>& state = get_state(context);
-  SpringMassStateVector<T>* output_vector = get_mutable_output(output);
   output_vector->set_position(state.get_position());
   output_vector->set_velocity(state.get_velocity());
 }

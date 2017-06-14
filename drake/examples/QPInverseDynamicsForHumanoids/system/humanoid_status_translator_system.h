@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -31,23 +32,28 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
   HumanoidStatusTranslatorSystem(const RigidBodyTree<double>& robot,
                                  const std::string& alias_group_path);
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
   /**
    * Returns the output port for HumanoidStatus.
    */
-  inline const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_output_port_humanoid_status() const {
     return get_output_port(output_port_index_humanoid_status_);
   }
 
  protected:
-  inline int get_output_port_index_humanoid_status() const {
-    return output_port_index_humanoid_status_;
+  /**
+   * Derived classes should use this method for the output port allocator.
+   */
+  HumanoidStatus MakeHumanoidStatus() const;
+
+  /**
+   * Derived classes should use this to record the output port index.
+   */
+  void set_output_port_index_humanoid_status(systems::OutputPortIndex index) {
+    output_port_index_humanoid_status_ = index;
   }
 
-  inline const RigidBodyTree<double>& get_robot() const { return robot_; }
+  const RigidBodyTree<double>& get_robot() const { return robot_; }
 
  private:
   const RigidBodyTree<double>& robot_;
@@ -73,18 +79,20 @@ class StateToHumanoidStatusSystem : public HumanoidStatusTranslatorSystem {
   StateToHumanoidStatusSystem(const RigidBodyTree<double>& robot,
                               const std::string& alias_group_path);
 
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
 
   /**
    * Returns the input port for a state vector.
    */
-  inline const systems::InputPortDescriptor<double>& get_input_port_state()
+  const systems::InputPortDescriptor<double>& get_input_port_state()
       const {
     return get_input_port(input_port_index_state_);
   }
 
  private:
+  // This is the calculator for the output port.
+  void CalcHumanoidStatus(const systems::Context<double>& context,
+                          HumanoidStatus* output) const;
+
   int input_port_index_state_{0};
 };
 
@@ -105,10 +113,6 @@ class RobotStateMsgToHumanoidStatusSystem
    */
   RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree<double>& robot,
                                       const std::string& alias_group_path);
-
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
   /**
    * Returns input port for bot_core::robot_state_t.
    */
@@ -118,6 +122,10 @@ class RobotStateMsgToHumanoidStatusSystem
   }
 
  private:
+  // This is the calculator for the output port.
+  void CalcHumanoidStatus(const systems::Context<double>& context,
+                          HumanoidStatus* output) const;
+
   const manipulation::RobotStateLcmMessageTranslator translator_;
   int input_port_index_lcm_msg_{0};
 };

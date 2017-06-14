@@ -20,24 +20,20 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
   SimpleCarToEulerFloatingJoint() {
     this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareVectorInputPort(SimpleCarState<T>());
-    this->DeclareVectorOutputPort(EulerFloatingJointState<T>());
+    this->DeclareVectorOutputPort(
+        &SimpleCarToEulerFloatingJoint::ConvertStateTo3dPose);
   }
 
  private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override {
+  // Converts the x,y,heading input state to a full 3D pose.
+  void ConvertStateTo3dPose(const systems::Context<T>& context,
+                            EulerFloatingJointState<T>* output_data) const {
     typedef systems::VectorBase<T> Base;
     const Base* const input_vector = this->EvalVectorInput(context, 0);
     DRAKE_ASSERT(input_vector != nullptr);
     const SimpleCarState<T>* const input_data =
         dynamic_cast<const SimpleCarState<T>*>(input_vector);
     DRAKE_ASSERT(input_data != nullptr);
-
-    Base* const output_vector = output->GetMutableVectorData(0);
-    DRAKE_ASSERT(output_vector != nullptr);
-    EulerFloatingJointState<T>* const output_data =
-        dynamic_cast<EulerFloatingJointState<T>*>(output_vector);
-    DRAKE_ASSERT(output_data != nullptr);
 
     using std::cos;
     using std::sin;

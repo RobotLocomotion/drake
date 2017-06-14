@@ -57,9 +57,6 @@ class EmptySystem : public LeafSystem<T> {
   }
 
  protected:
-  void DoCalcOutput(const Context<T>&,
-                    SystemOutput<T>*) const override {}
-
   void DoGetWitnessFunctions(
       const systems::Context<T>&,
       std::vector<const systems::WitnessFunction<T>*>* w) const override {

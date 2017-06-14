@@ -25,14 +25,15 @@ namespace examples {
 namespace rod2d {
 
 template <typename T>
-Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
-    simulation_type_(simulation_type), dt_(dt) {
+Rod2D<T>::Rod2D(SimulationType simulation_type, double dt)
+    : simulation_type_(simulation_type), dt_(dt) {
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
   if (simulation_type == SimulationType::kTimeStepping) {
     if (dt <= 0.0)
-      throw std::logic_error("Time stepping approach must be constructed using"
-                                 " strictly positive step size.");
+      throw std::logic_error(
+          "Time stepping approach must be constructed using"
+          " strictly positive step size.");
 
     // Time stepping approach requires three position variables and
     // three velocity variables, all discrete, and periodic update.
@@ -40,8 +41,9 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
     this->DeclareDiscreteState(6);
   } else {
     if (dt != 0)
-      throw std::logic_error("Piecewise DAE and compliant approaches must be "
-                                 "constructed using zero step size.");
+      throw std::logic_error(
+          "Piecewise DAE and compliant approaches must be "
+          "constructed using zero step size.");
 
     // Both piecewise DAE and compliant approach require six continuous
     // variables.
@@ -49,10 +51,9 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt) :
   }
 
   this->DeclareInputPort(systems::kVectorValued, 3);
-  state_output_descriptor_ = &this->DeclareOutputPort(systems::kVectorValued,
-                                                      6);
-  pose_output_descriptor_ = &this->DeclareVectorOutputPort(
-      systems::rendering::PoseVector<T>());
+  state_output_port_ = &this->DeclareVectorOutputPort(
+      systems::BasicVector<T>(6), &Rod2D::CopyStateOut);
+  pose_output_port_ = &this->DeclareVectorOutputPort(&Rod2D::CopyPoseOut);
 }
 
 // Computes the external forces on the rod.
@@ -319,27 +320,22 @@ Vector2<T> Rod2D<T>::CalcCoincidentRodPointVelocity(
 }
 
 template <typename T>
-void Rod2D<T>::DoCalcOutput(const systems::Context<T>& context,
-                               systems::SystemOutput<T>* output) const {
-  // Get the indices for the output ports.
-  const int state_output_port_index = state_output_descriptor_->get_index();
-  const int pose_output_port_index = pose_output_descriptor_->get_index();
-
-  // Obtain the structure we need to write into.
-  systems::BasicVector<T>* const state_port_value = output->
-      GetMutableVectorData(state_output_port_index);
-  systems::rendering::PoseVector<T>* const pose_port_value = dynamic_cast<
-      systems::rendering::PoseVector<T>*>(output->GetMutableVectorData(
-          pose_output_port_index));
-  DRAKE_ASSERT(state_port_value != nullptr);
-  DRAKE_ASSERT(pose_port_value != nullptr);
-
-  // Convert state to pose.
-  const VectorX<T>& state = (simulation_type_ ==
-      SimulationType::kTimeStepping) ?
-          context.get_discrete_state(0)->CopyToVector() :
-          context.get_continuous_state()->CopyToVector();
+void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
+                            systems::BasicVector<T>* state_port_value) const {
+  // Output port value is just the continuous or discrete state.
+  const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
+                               ? context.get_discrete_state(0)->CopyToVector()
+                               : context.get_continuous_state()->CopyToVector();
   state_port_value->SetFromVector(state);
+}
+
+template <typename T>
+void Rod2D<T>::CopyPoseOut(
+    const systems::Context<T>& context,
+    systems::rendering::PoseVector<T>* pose_port_value) const {
+  const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
+                               ? context.get_discrete_state(0)->CopyToVector()
+                               : context.get_continuous_state()->CopyToVector();
   ConvertStateToPose(state, pose_port_value);
 }
 

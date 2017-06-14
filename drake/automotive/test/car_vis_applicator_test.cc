@@ -69,9 +69,9 @@ TEST_F(CarVisApplicatorTest, Topology) {
   EXPECT_EQ(pose_port_descriptor.get_data_type(), systems::kAbstractValued);
 
   ASSERT_EQ(dut_->get_num_output_ports(), 1);
-  const auto& output_port_descriptor =
+  const auto& lane_output_port =
       dut_->get_visual_geometry_poses_output_port();
-  EXPECT_EQ(output_port_descriptor.get_data_type(), systems::kAbstractValued);
+  EXPECT_EQ(lane_output_port.get_data_type(), systems::kAbstractValued);
 
   EXPECT_TRUE(dut_->HasAnyDirectFeedthrough());
 }

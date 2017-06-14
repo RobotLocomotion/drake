@@ -43,13 +43,13 @@ namespace automotive {
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
 ///   heading is defined around the +z axis, so positive-turn-left
 /// * velocity
-///   (OutputPortDescriptor getter: raw_pose_output())
+///   (OutputPort getter: raw_pose_output())
 ///
 /// output port 1: A PoseVector containing X_WC, where C is the car frame.
-///   (OutputPortDescriptor getter: pose_output())
+///   (OutputPort getter: pose_output())
 ///
 /// output port 2: A FrameVelocity containing Xdot_WC, where C is the car frame.
-///   (OutputPortDescriptor getter: velocity_output())
+///   (OutputPort getter: velocity_output())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -72,9 +72,9 @@ class TrajectoryCar : public systems::LeafSystem<T> {
       throw std::invalid_argument{"empty curve"};
     }
     this->DeclareInputPort(systems::kVectorValued, 1 /* single-valued input */);
-    this->DeclareVectorOutputPort(SimpleCarState<T>());
-    this->DeclareVectorOutputPort(systems::rendering::PoseVector<T>());
-    this->DeclareVectorOutputPort(systems::rendering::FrameVelocity<T>());
+    this->DeclareVectorOutputPort(&TrajectoryCar::CalcStateOutput);
+    this->DeclareVectorOutputPort(&TrajectoryCar::CalcPoseOutput);
+    this->DeclareVectorOutputPort(&TrajectoryCar::CalcVelocityOutput);
     this->DeclareContinuousState(TrajectoryCarState<T>());
     this->DeclareNumericParameter(TrajectoryCarParams<T>());
   }
@@ -85,13 +85,13 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   }
   /// See class description for details about the following ports.
   /// @{
-  const systems::OutputPortDescriptor<T>& raw_pose_output() const {
+  const systems::OutputPort<T>& raw_pose_output() const {
     return this->get_output_port(0);
   }
-  const systems::OutputPortDescriptor<T>& pose_output() const {
+  const systems::OutputPort<T>& pose_output() const {
     return this->get_output_port(1);
   }
-  const systems::OutputPortDescriptor<T>& velocity_output() const {
+  const systems::OutputPort<T>& velocity_output() const {
     return this->get_output_port(2);
   }
   /// @}
@@ -103,33 +103,25 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     T heading{0.};
   };
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override {
-    // Obtain the state vector.
-    const TrajectoryCarState<T>* const state =
-        dynamic_cast<const TrajectoryCarState<T>*>(
-            &context.get_continuous_state_vector());
-    DRAKE_ASSERT(state);
+  void CalcStateOutput(const systems::Context<T>& context,
+                       SimpleCarState<T>* output_vector) const {
+    const TrajectoryCarState<T>& state = GetState(context);
+    const auto raw_pose = CalcRawPose(state);
+    ImplCalcOutput(raw_pose, state, output_vector);
+  }
 
-    // Compute the pose and velocities.
-    const auto raw_pose = CalcRawPose(*state);
-
-    SimpleCarState<T>* const output_vector =
-        dynamic_cast<SimpleCarState<T>*>(output->GetMutableVectorData(0));
-    DRAKE_ASSERT(output_vector);
-    ImplCalcOutput(raw_pose, *state, output_vector);
-
-    systems::rendering::PoseVector<T>* const pose =
-        dynamic_cast<systems::rendering::PoseVector<T>*>(
-            output->GetMutableVectorData(1));
-    DRAKE_ASSERT(pose);
+  void CalcPoseOutput(const systems::Context<T>& context,
+                      systems::rendering::PoseVector<T>* pose) const {
+    const auto raw_pose = CalcRawPose(GetState(context));
     ImplCalcPose(raw_pose, pose);
+  }
 
-    systems::rendering::FrameVelocity<T>* const velocity =
-        dynamic_cast<systems::rendering::FrameVelocity<T>*>(
-            output->GetMutableVectorData(2));
-    DRAKE_ASSERT(velocity);
-    ImplCalcVelocity(raw_pose, *state, velocity);
+  void CalcVelocityOutput(
+      const systems::Context<T>& context,
+      systems::rendering::FrameVelocity<T>* velocity) const {
+    const TrajectoryCarState<T>& state = GetState(context);
+    const auto raw_pose = CalcRawPose(state);
+    ImplCalcVelocity(raw_pose, state, velocity);
   }
 
   void DoCalcTimeDerivatives(
@@ -229,6 +221,15 @@ class TrajectoryCar : public systems::LeafSystem<T> {
 
     rates->set_position(nonneg_velocity);
     rates->set_speed(smooth_acceleration);
+  }
+
+  // Extract the appropriately-typed state from the context.
+  const TrajectoryCarState<T>& GetState(
+      const systems::Context<T>& context) const {
+    auto state = dynamic_cast<const TrajectoryCarState<T>*>(
+        &context.get_continuous_state_vector());
+    DRAKE_DEMAND(state != nullptr);
+    return *state;
   }
 
   // Computes the PositionHeading of the trajectory car based on the car's

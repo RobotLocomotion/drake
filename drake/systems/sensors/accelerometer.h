@@ -12,7 +12,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/sensors/accelerometer_output.h"
 
 namespace drake {
 namespace systems {
@@ -180,18 +180,17 @@ class Accelerometer : public systems::LeafSystem<double> {
         plant_state_derivative_input_port_index_);
   }
 
-  /// Returns a descriptor of the state output port, which contains the sensor's
+  /// Returns the state output port, which contains the sensor's
   /// sensed values.
-  const OutputPortDescriptor<double>& get_output_port() const {
+  const OutputPort<double>& get_output_port() const {
     return System<double>::get_output_port(output_port_index_);
   }
 
- protected:
-  /// Computes the "sensed" linear acceleration.
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
  private:
+  // Computes the "sensed" linear acceleration.
+  void CalcAccelerationOutput(const Context<double>& context,
+                              AccelerometerOutput<double>* output_vector) const;
+
   const std::string name_;
   const RigidBodyFrame<double> frame_;
   const RigidBodyTree<double>& tree_;

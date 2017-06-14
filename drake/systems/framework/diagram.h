@@ -22,11 +22,12 @@
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
 
+template <typename T>
+class Diagram;
 template <typename T>
 class DiagramBuilder;
 
@@ -76,6 +77,72 @@ void FilterSubsystemEventsByType(int subsystem_id,
   }
 }
 
+//==============================================================================
+//                          DIAGRAM OUTPUT PORT
+//==============================================================================
+/// Holds information about the subsystem output port that has been exported to
+/// become one of this Diagram's output ports. The actual methods for
+/// determining the port's value are supplied by the LeafSystem that ultimately
+/// underlies the source port, although that may be any number of levels down.
+template <typename T>
+class DiagramOutputPort : public OutputPort<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutputPort)
+
+  /// Construct a %DiagramOutputPort for the given `diagram` that exports the
+  /// indicated port. That port's owning system must be a subsystem of the
+  /// diagram.
+  DiagramOutputPort(const Diagram<T>& diagram,
+                    const OutputPort<T>* source_output_port)
+      : OutputPort<T>(diagram, source_output_port->get_data_type(),
+                      source_output_port->size()),
+        source_output_port_(source_output_port),
+        subsystem_index_(
+            diagram.GetSystemIndexOrAbort(&source_output_port->get_system())) {}
+
+  ~DiagramOutputPort() final = default;
+
+  /// Obtain a reference to the subsystem output port that was exported to
+  /// create this diagram port. Note that the source may itself be a diagram
+  /// output port.
+  const OutputPort<T>& get_source_output_port() const {
+    return *source_output_port_;
+  }
+
+ private:
+  // These forward to the source system output port, passing in just the source
+  // System's Context, not the whole Diagram context we're given.
+  std::unique_ptr<AbstractValue> DoAllocate(
+      const Context<T>& context) const final {
+    const Context<T>& subcontext = get_subcontext(context);
+    return source_output_port_->Allocate(subcontext);
+  }
+
+  void DoCalc(const Context<T>& context, AbstractValue* value) const final {
+    const Context<T>& subcontext = get_subcontext(context);
+    return source_output_port_->Calc(subcontext, value);
+  }
+
+  const AbstractValue& DoEval(const Context<T>& context) const final {
+    const Context<T>& subcontext = get_subcontext(context);
+    return source_output_port_->Eval(subcontext);
+  }
+
+  // Dig out the right subcontext for delegation.
+  const Context<T>& get_subcontext(const Context<T>& context) const {
+    const DiagramContext<T>* diagram_context =
+        dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    return *diagram_context->GetSubsystemContext(subsystem_index_);
+  }
+
+  const OutputPort<T>* const source_output_port_;
+  const int subsystem_index_;
+};
+
+//==============================================================================
+//                             DIAGRAM OUTPUT
+//==============================================================================
 /// DiagramOutput is an implementation of SystemOutput that holds unowned
 /// OutputPortValue pointers. It is used to expose the outputs of constituent
 /// systems as outputs of a Diagram.
@@ -115,6 +182,9 @@ class DiagramOutput : public SystemOutput<T> {
   std::vector<OutputPortValue*> ports_;
 };
 
+//==============================================================================
+//                          DIAGRAM TIME DERIVATIVES
+//==============================================================================
 /// DiagramTimeDerivatives is a version of DiagramContinuousState that owns
 /// the constituent continuous states. As the name implies, it is only useful
 /// for the time derivatives.
@@ -134,6 +204,9 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
   std::vector<std::unique_ptr<ContinuousState<T>>> substates_;
 };
 
+//==============================================================================
+//                          DIAGRAM DISCRETE VARIABLES
+//==============================================================================
 /// DiagramDiscreteVariables is a version of DiscreteState that owns
 /// the constituent discrete states. As the name implies, it is only useful
 /// for the discrete updates.
@@ -174,6 +247,9 @@ class DiagramDiscreteVariables : public DiscreteValues<T> {
 
 }  // namespace internal
 
+//==============================================================================
+//                                  DIAGRAM
+//==============================================================================
 /// Diagram is a System composed of one or more constituent Systems, arranged
 /// in a directed graph where the vertices are the constituent Systems
 /// themselves, and the edges connect the output of one constituent System
@@ -307,7 +383,7 @@ class Diagram : public System<T>,
 
     context->MakeState();
     context->MakeParameters();
-    return std::unique_ptr<Context<T>>(context.release());
+    return std::move(context);
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -349,28 +425,7 @@ class Diagram : public System<T>,
     auto output = std::make_unique<internal::DiagramOutput<T>>();
     output->get_mutable_port_values()->resize(output_port_ids_.size());
     ExposeSubsystemOutputs(*diagram_context, output.get());
-    return std::unique_ptr<SystemOutput<T>>(output.release());
-  }
-
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
-    // Down-cast the context and output to DiagramContext and DiagramOutput.
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    auto diagram_output = dynamic_cast<internal::DiagramOutput<T>*>(output);
-    DRAKE_DEMAND(diagram_output != nullptr);
-
-    // Populate the output with pointers to the appropriate subsystem outputs
-    // in the DiagramContext. We do this on every call to CalcOutput, so
-    // that the diagram_context and diagram_output are not tightly coupled.
-    ExposeSubsystemOutputs(*diagram_context, diagram_output);
-
-    // Since the diagram output now contains pointers to the subsystem outputs,
-    // all we need to do is ask those subsystem outputs to evaluate themselves.
-    // They will recursively evaluate any intermediate inputs that they need.
-    for (const PortIdentifier& id : output_port_ids_) {
-      EvaluateOutputPort(*diagram_context, id);
-    }
+    return std::move(output);
   }
 
   /// Aggregates the time derivatives from each subsystem into a
@@ -499,7 +554,7 @@ class Diagram : public System<T>,
 
   /// Returns a Graphviz fragment describing this Diagram. To obtain a complete
   /// Graphviz graph, call System<T>::GetGraphvizString.
-  void GetGraphvizFragment(std::stringstream *dot) const override {
+  void GetGraphvizFragment(std::stringstream* dot) const override {
     // Open the Diagram.
     const int64_t id = this->GetGraphvizId();
     *dot << "subgraph cluster" << id << "diagram" " {" << std::endl;
@@ -581,15 +636,15 @@ class Diagram : public System<T>,
     *dot << "}" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T> &port,
-                                 std::stringstream *dot) const override {
+  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+                                 std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_u" << port.get_index();
   }
 
-  void GetGraphvizOutputPortToken(const OutputPortDescriptor<T> &port,
-                                  std::stringstream *dot) const override {
-    DRAKE_DEMAND(port.get_system() == this);
+  void GetGraphvizOutputPortToken(const OutputPort<T>& port,
+                                  std::stringstream* dot) const override {
+    DRAKE_DEMAND(&port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_y" << port.get_index();
   }
 
@@ -631,6 +686,14 @@ class Diagram : public System<T>,
       const PortIdentifier& prerequisite = upstream_it->second;
       this->EvaluateOutputPort(*diagram_context, prerequisite);
     }
+  }
+
+  /// Returns the index of the given @p sys in the sorted order of this diagram,
+  /// or aborts if @p sys is not a member of the diagram.
+  int GetSystemIndexOrAbort(const System<T>* sys) const {
+    auto it = sorted_systems_map_.find(sys);
+    DRAKE_DEMAND(it != sorted_systems_map_.end());
+    return it->second;
   }
 
  protected:
@@ -1249,17 +1312,14 @@ class Diagram : public System<T>,
                            subsystem_descriptor.size());
   }
 
-  // Exposes the given port as an output of the Diagram.
+  // Exposes the given subsystem output port as an output of the Diagram.
   void ExportOutput(const PortIdentifier& port) {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
-    // Fail quickly if this system is not part of the sort order.
-    GetSystemIndexOrAbort(sys);
-
-    // Add this port to our externally visible topology.
-    const auto& subsystem_descriptor = sys->get_output_port(port_index);
-    this->DeclareOutputPort(subsystem_descriptor.get_data_type(),
-                            subsystem_descriptor.size());
+    const auto& source_output_port = sys->get_output_port(port_index);
+    auto diagram_port = std::make_unique<internal::DiagramOutputPort<T>>(
+        *this, &source_output_port);
+    this->CreateOutputPort(std::move(diagram_port));
   }
 
   // Evaluates the value of the output port with the given @p id in the given
@@ -1274,22 +1334,15 @@ class Diagram : public System<T>,
   void EvaluateOutputPort(const DiagramContext<T>& context,
                           const PortIdentifier& id) const {
     const System<T>* const system = id.first;
+    const OutputPortIndex port_index(id.second);
+    const OutputPort<T>& port = system->get_output_port(port_index);
     const int i = GetSystemIndexOrAbort(system);
     SPDLOG_TRACE(log(), "Evaluating output for subsystem {}, port {}",
-                 system->GetPath(), id.second);
+                 system->GetPath(), port_index);
     const Context<T>* subsystem_context = context.GetSubsystemContext(i);
     SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
-    // TODO(david-german-tri): Once #2890 is resolved, only evaluate the
-    // particular port specified in id.second.
-    system->CalcOutput(*subsystem_context, subsystem_output);
-  }
-
-  // Returns the index of the given @p sys in the sorted order of this diagram,
-  // or aborts if @p sys is not a member of the diagram.
-  int GetSystemIndexOrAbort(const System<T>* sys) const {
-    auto it = sorted_systems_map_.find(sys);
-    DRAKE_DEMAND(it != sorted_systems_map_.end());
-    return it->second;
+    AbstractValue* port_output = subsystem_output->GetMutableData(port_index);
+    port.Calc(*subsystem_context, port_output);
   }
 
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.

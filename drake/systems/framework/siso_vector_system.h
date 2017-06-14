@@ -11,14 +11,13 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port_value.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
 
-/// A base class that specializes LeafSystem for use with only a single input
-/// port, and only a single output port.  ("SISO" is an abbreviation for
-/// "single input single output".)
+/// A base class that specializes LeafSystem for use with only a single vector
+/// input port, and only a single vector output port. ("SISO" is an abbreviation
+/// for "single input single output".)
 ///
 /// By default, this base class does not declare any state; subclasses may
 /// optionally declare continuous or discrete state, but not both; subclasses
@@ -41,7 +40,7 @@ class SisoVectorSystem : public LeafSystem<T> {
   void get_input_port(int) = delete;
 
   /// Returns the sole output port.
-  const OutputPortDescriptor<T>& get_output_port() const {
+  const OutputPort<T>& get_output_port() const {
     return LeafSystem<T>::get_output_port(0);
   }
 
@@ -81,7 +80,8 @@ class SisoVectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(input_size > 0);
     DRAKE_THROW_UNLESS(output_size > 0);
     this->DeclareInputPort(kVectorValued, input_size);
-    this->DeclareOutputPort(kVectorValued, output_size);
+    this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                  &SisoVectorSystem::CalcVectorOutput);
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -150,8 +150,8 @@ class SisoVectorSystem : public LeafSystem<T> {
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
   /// DoCalcVectorOutput().
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const final {
+  void CalcVectorOutput(const Context<T>& context,
+                        BasicVector<T>* output) const {
     // Obtain the block form of u.
     const Eigen::VectorBlock<const VectorX<T>> input_block =
         this->EvalEigenVectorInput(context, 0);
@@ -171,8 +171,7 @@ class SisoVectorSystem : public LeafSystem<T> {
         state_vector->get_value();
 
     // Obtain the block form of y.
-    Eigen::VectorBlock<VectorX<T>> output_block =
-        System<T>::GetMutableOutputVector(output, 0);
+    Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();
 
     // Delegate to subclass.
     DoCalcVectorOutput(context, input_block, state_block, &output_block);

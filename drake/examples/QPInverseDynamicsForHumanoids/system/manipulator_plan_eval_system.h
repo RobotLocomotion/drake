@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_base_system.h"
+#include "drake/lcmt_plan_eval_debug_info.hpp"
 
 namespace drake {
 namespace examples {
@@ -65,7 +66,7 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
   /**
    * Returns the output port for debugging information.
    */
-  inline const systems::OutputPortDescriptor<double>&
+  inline const systems::OutputPort<double>&
   get_output_port_debug_info() const {
     return get_output_port(output_port_index_debug_info_);
   }
@@ -77,12 +78,10 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
       const systems::Context<double>& context,
       systems::State<double>* state) const override;
 
-  void DoExtendedCalcOutput(
+  // This is the calculator method for the output port.
+  void OutputDebugInfo(
       const systems::Context<double>& context,
-      systems::SystemOutput<double>* output) const override;
-
-  std::unique_ptr<systems::AbstractValue> ExtendedAllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
+      lcmt_plan_eval_debug_info* output) const;
 
   int input_port_index_desired_state_{};
   int input_port_index_desired_acceleration_{};

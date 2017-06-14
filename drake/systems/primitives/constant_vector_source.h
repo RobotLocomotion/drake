@@ -44,13 +44,12 @@ class ConstantVectorSource : public SingleOutputVectorSource<T> {
 
   ~ConstantVectorSource() override;
 
- protected:
-  /// Outputs a signal with a fixed value as specified by the user.
+ private:
+  // Outputs a signal with a fixed value as specified by the user.
   void DoCalcVectorOutput(
       const Context<T>& context,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
 
- private:
   // TODO(amcastro-tri): move source_value_ to the system's parameters.
   const VectorX<T> source_value_;
 };

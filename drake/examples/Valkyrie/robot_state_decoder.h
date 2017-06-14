@@ -29,18 +29,13 @@ class RobotStateDecoder : public LeafSystem<double> {
 
   ~RobotStateDecoder() override {}
 
- protected:
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override;
-
  private:
-  const manipulation::RobotStateLcmMessageTranslator translator_;
+  // This is the calculator method for the output port.
+  void OutputKinematics(const Context<double>& context,
+                        KinematicsCache<double>* output) const;
 
+  const manipulation::RobotStateLcmMessageTranslator translator_;
   const int robot_state_message_port_index_;
-  const int kinematics_cache_port_index_;
 };
 
 }  // namespace systems

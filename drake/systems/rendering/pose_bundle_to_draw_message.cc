@@ -9,18 +9,19 @@ namespace rendering {
 
 PoseBundleToDrawMessage::PoseBundleToDrawMessage() {
   this->DeclareAbstractInputPort();
-  this->DeclareAbstractOutputPort();
+  this->DeclareAbstractOutputPort(
+      &PoseBundleToDrawMessage::CalcViewerDrawMessage);
 }
 
 PoseBundleToDrawMessage::~PoseBundleToDrawMessage() {}
 
-void PoseBundleToDrawMessage::DoCalcOutput(const Context<double>& context,
-                                           SystemOutput<double>* output) const {
+void PoseBundleToDrawMessage::CalcViewerDrawMessage(
+    const Context<double>& context, lcmt_viewer_draw* output) const {
   const PoseBundle<double>& poses =
       this->EvalAbstractInput(context, 0)
           ->template GetValue<PoseBundle<double>>();
-  lcmt_viewer_draw& message =
-      output->GetMutableData(0)->template GetMutableValue<lcmt_viewer_draw>();
+
+  lcmt_viewer_draw& message = *output;
 
   const int n = poses.get_num_poses();
 
@@ -49,12 +50,6 @@ void PoseBundleToDrawMessage::DoCalcOutput(const Context<double>& context,
     message.quaternion[i][2] = q.y();
     message.quaternion[i][3] = q.z();
   }
-}
-
-std::unique_ptr<AbstractValue>
-PoseBundleToDrawMessage::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>&) const {
-  return AbstractValue::Make<lcmt_viewer_draw>(lcmt_viewer_draw());
 }
 
 }  // namespace rendering

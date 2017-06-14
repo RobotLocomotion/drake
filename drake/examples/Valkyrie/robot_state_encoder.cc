@@ -7,7 +7,6 @@
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
@@ -31,7 +30,10 @@ RobotStateEncoder::RobotStateEncoder(
     const RigidBodyTree<double>& tree,
     const std::vector<RigidBodyFrame<double>>& ft_sensor_info)
     : translator_(tree),
-      lcm_message_port_index_(DeclareAbstractOutputPort().get_index()),
+      lcm_message_port_index_(
+          DeclareAbstractOutputPort(&RobotStateEncoder::MakeRobotState,
+                                    &RobotStateEncoder::OutputRobotState)
+              .get_index()),
       kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
       contact_results_port_index_(DeclareAbstractInputPort().get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
@@ -54,10 +56,9 @@ RobotStateEncoder::RobotStateEncoder(
 
 RobotStateEncoder::~RobotStateEncoder() {}
 
-void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
-                                     SystemOutput<double>* output) const {
-  auto& message = output->GetMutableData(lcm_message_port_index_)
-                      ->GetMutableValue<robot_state_t>();
+void RobotStateEncoder::OutputRobotState(const Context<double>& context,
+                                         robot_state_t* output) const {
+  auto& message = *output;
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);
 
   // TODO(siyuan.feng): I explicitly evaluated kinematics and contacts
@@ -75,14 +76,13 @@ void RobotStateEncoder::DoCalcOutput(const Context<double>& context,
   SetForceTorque(kinematics_results, contact_results, &message);
 }
 
-std::unique_ptr<AbstractValue> RobotStateEncoder::AllocateOutputAbstract(
-    const OutputPortDescriptor<double>&) const {
+robot_state_t RobotStateEncoder::MakeRobotState() const {
   robot_state_t msg;
   translator_.InitializeMessage(&msg);
-  return make_unique<Value<robot_state_t>>(msg);
+  return msg;
 }
 
-const OutputPortDescriptor<double>& RobotStateEncoder::lcm_message_port()
+const OutputPort<double>& RobotStateEncoder::lcm_message_port()
     const {
   return get_output_port(lcm_message_port_index_);
 }

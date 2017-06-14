@@ -102,7 +102,7 @@ class PidControllerInternal : public Diagram<T> {
   const InputPortDescriptor<T>& get_error_derivative_port() const;
 
   /// Returns the output port to the control output.
-  const OutputPortDescriptor<T>& get_control_output_port() const;
+  const OutputPort<T>& get_control_output_port() const;
 
  private:
   Adder<T>* adder_ = nullptr;
@@ -211,7 +211,7 @@ PidControllerInternal<T>::get_error_derivative_port() const {
 
 
 template <typename T>
-const OutputPortDescriptor<T>&
+const OutputPort<T>&
 PidControllerInternal<T>::get_control_output_port() const {
   return System<T>::get_output_port(0);
 }
@@ -381,8 +381,8 @@ void PidController<T>::GetGraphvizInputPortToken(
 
 template <typename T>
 void PidController<T>::GetGraphvizOutputPortToken(
-    const OutputPortDescriptor<T>& port, std::stringstream* dot) const {
-  DRAKE_DEMAND(port.get_system() == this);
+    const OutputPort<T>& port, std::stringstream* dot) const {
+  DRAKE_DEMAND(&port.get_system() == this);
   *dot << this->GetGraphvizId() << ":y" << port.get_index();
 }
 
