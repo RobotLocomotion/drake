@@ -14,6 +14,8 @@ T WitnessFunction<T>::Evaluate(const Context<T>& context) const {
 
 template class WitnessFunction<double>;
 template class WitnessFunction<AutoDiffXd>;
+template class WitnessFunction<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
+template class WitnessFunction<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
 template class WitnessFunction<symbolic::Expression>;
 
 }  // namespace systems
