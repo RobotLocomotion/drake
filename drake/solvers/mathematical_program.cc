@@ -228,7 +228,18 @@ MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
   const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree)};
   const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
-  const symbolic::Polynomial p{x.dot(Q * x)};
+  // Need to construct a matrix of Polynomials Q_poly from Q.  In the process,
+  // we make sure that each Q_poly(i, j) is treated as a decision variable,
+  // not an indeterminate.
+  drake::MatrixX<symbolic::Polynomial> Q_poly(x.size(), x.size());
+  for (int i = 0; i < x.size(); ++i) {
+    for (int j = 0; j < x.size(); ++j) {
+      // The second argument {} in the following indicates that Q_poly(i, j)
+      // has no indeterminate.
+      Q_poly(i, j) = symbolic::Polynomial{Q(i, j), {}};
+    }
+  }
+  const symbolic::Polynomial p{x.dot(Q_poly * x)};
   const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
   return make_pair(p, psd_binding);
 }

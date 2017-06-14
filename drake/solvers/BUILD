@@ -720,6 +720,16 @@ drake_cc_googletest(
     ],
 )
 
+# TODO(soonho)
+drake_cc_googletest(
+    name = "sos_constraint_test",
+    tags = mosek_test_tags(),
+    deps = [
+        ":mathematical_program",
+        ":mosek_solver",
+    ],
+)
+
 drake_cc_googletest(
     name = "system_identification_test",
     # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
