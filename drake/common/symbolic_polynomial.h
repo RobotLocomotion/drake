@@ -46,6 +46,8 @@ class Polynomial {
 
   /// Returns the total degree of this polynomial.
   int Degree() const;
+  // TODO(soonho-tri) Implement int Degree(const Variables& vars), which returns
+  // the degrees for the specified variables.
 
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
