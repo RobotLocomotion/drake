@@ -64,11 +64,8 @@ class StatelessSystem : public LeafSystem<T> {
   ///       callback.
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
     AutoDiffXd trigger_time(witness_->get_trigger_time());
-    auto x = new StatelessSystem<AutoDiffXd>(trigger_time,
+    return new StatelessSystem<AutoDiffXd>(trigger_time,
         witness_->get_dir_type());
-    x->set_publish_callback(ExtractDoubleOrThrow(publish_callback_));
-//    return new StatelessSystem<AutoDiffXd>(trigger_time,
-//        witness_->get_dir_type());
   }
 
   void DoGetWitnessFunctions(
