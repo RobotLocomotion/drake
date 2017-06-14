@@ -36,6 +36,8 @@ DEFINE_int32(end_position, 2, "Position index to end at");
 DEFINE_double(dt, 1e-3, "Integration step size");
 DEFINE_double(realtime_rate, 0.0,
               "Rate at which to run the simulation, relative to realtime");
+DEFINE_bool(quick, false, "Run only a brief simulation and return success "
+            "without executing the entire task");
 
 using robotlocomotion::robot_plan_t;
 
@@ -314,12 +316,17 @@ int DoMain(void) {
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the
   // object is near the target.
-  const double simulation_step = 1.;
+  const double simulation_step = 0.1;
   while (state_machine->state(
              sys->GetSubsystemContext(*state_machine,
                                       simulator.get_context()))
          != pick_and_place::kDone) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
+    if (FLAGS_quick) {
+      // We've run a single step, just get out now since we won't have
+      // reached our destination.
+      return 0;
+    }
   }
 
   const pick_and_place::WorldState& world_state =
