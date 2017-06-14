@@ -54,21 +54,8 @@ class FixedOffsetFrame : public Frame<T> {
   /// @sa CalcBodyPoseInOtherFrame()
   Isometry3<T> CalcBodyPoseInThisFrame(
       const systems::Context<T>& context) const final {
-    return parent_frame_.CalcBodyPoseInOtherFrame(context, X_FP_.cast<T>());
-  }
-
-  /// Returns the pose `X_QB` of the body B associated with this frame F
-  /// measured in a frame Q, given the pose `X_QF` of this frame F measured
-  /// in Q.
-  /// @sa CalcBodyPoseInThisFrame() to compute the pose of the body associated
-  /// with this frame as measured in this frame.
-  Isometry3<T> CalcBodyPoseInOtherFrame(
-      const systems::Context<T>& context,
-      const Isometry3<T>& X_QF) const final {
-    // This method computes: X_QB = X_QP * X_PB
-    // where P is this frame's parent frame
     return parent_frame_.CalcBodyPoseInOtherFrame(context,
-                                                  X_QF * X_FP_.cast<T>());
+                                                  X_PF_.cast<T>().inverse());
   }
 
   /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
@@ -92,12 +79,6 @@ class FixedOffsetFrame : public Frame<T> {
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const final {
     return TemplatedDoCloneToScalar(tree_clone);
-  }
-
-  Isometry3<T> CalcBodyPoseInThisFrame(
-      const systems::Context<T>& context) const final {
-    return parent_frame_.CalcBodyPoseInOtherFrame(context,
-                                                  X_PF_.cast<T>().inverse());
   }
 
  private:
