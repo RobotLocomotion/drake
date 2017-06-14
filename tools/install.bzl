@@ -71,7 +71,7 @@ def _install_cc_actions(ctx, target):
     dests = {
         "a": ctx.attr.archive_dest,
         "so": ctx.attr.library_dest,
-        None: ctx.attr.runtime_dest,
+        None: join_paths(ctx.attr.runtime_dest, target.label.package)
     }
     strip_prefixes = {
         "a": ctx.attr.archive_strip_prefix,

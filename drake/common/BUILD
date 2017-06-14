@@ -9,6 +9,7 @@ load(
     "drake_cc_library",
 )
 load("//tools:python_lint.bzl", "python_lint")
+load("//tools:install.bzl", "install")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -356,6 +357,12 @@ drake_cc_binary(
         ":find_resource",
         ":text_logging_gflags",
     ],
+)
+
+install(
+    name = "install",
+    targets = [":resource_tool"],
+    deps = ["//:install_resource_tool_data"],
 )
 
 # === test/ ===
@@ -818,6 +825,14 @@ py_test(
         "test/resource_tool_test_data.txt",
         ":resource_tool",
         "//drake/examples/Pendulum:models",
+    ],
+)
+
+py_test(
+    name = "resource_tool_installed_test",
+    srcs = ["test/resource_tool_installed_test.py"],
+    data = [
+        ":install",
     ],
 )
 
