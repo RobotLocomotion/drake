@@ -8,7 +8,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -203,10 +203,10 @@ TEST_F(DiagramTest, Topology) {
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
   for (int i = 0; i < kSize; ++i) {
-    const auto& descriptor = diagram_->get_output_port(i);
-    EXPECT_EQ(diagram_.get(), descriptor.get_system());
-    EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kSize, descriptor.size());
+    const auto& port = diagram_->get_output_port(i);
+    EXPECT_EQ(diagram_.get(), &port.get_system());
+    EXPECT_EQ(kVectorValued, port.get_data_type());
+    EXPECT_EQ(kSize, port.size());
   }
 
   // The diagram has direct feedthrough.
@@ -619,9 +619,6 @@ class PublishingSystem : public LeafSystem<double> {
   }
 
  protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   void DoPublish(const Context<double>& context) const override {
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
@@ -744,9 +741,6 @@ class SecondOrderStateSystem : public LeafSystem<double> {
   }
 
  protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   std::unique_ptr<ContinuousState<double>> AllocateContinuousState()
       const override {
     return std::make_unique<ContinuousState<double>>(
@@ -857,9 +851,6 @@ class TestPublishingSystem : public LeafSystem<double> {
   bool published() { return published_; }
 
  protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   void DoPublish(const Context<double>& context) const override {
     published_ = true;
   }
@@ -1012,9 +1003,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
   }
 
   ~SystemWithAbstractState() override {}
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 
   std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
     std::vector<std::unique_ptr<AbstractValue>> values;
@@ -1361,9 +1349,6 @@ class PerStepActionTestSystem : public LeafSystem<double> {
     (*state->get_mutable_discrete_state())[0] = 0;
     state->get_mutable_abstract_state<std::string>(0) = "wow";
   }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 
   void DoCalcDiscreteVariableUpdates(const Context<double>& context,
       DiscreteValues<double>* discrete_state) const override {

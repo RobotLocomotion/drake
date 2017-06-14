@@ -50,10 +50,9 @@ class CarVisApplicator : public systems::LeafSystem<T> {
   /// the form of a PoseBundle.
   const systems::InputPortDescriptor<T>& get_car_poses_input_port() const;
 
-  /// Returns a descriptor of the output port that contains the visual geometry
+  /// Returns the output port that contains the visual geometry
   /// poses of all vehicle visualizations.
-  const systems::OutputPortDescriptor<T>&
-  get_visual_geometry_poses_output_port() const;
+  const systems::OutputPort<T>& get_visual_geometry_poses_output_port() const;
 
   /// Adds a CarVis object for a vehicle. The ID returned by CarVis::id() must
   /// be unique among the CarVis objects added to this method. A
@@ -73,13 +72,11 @@ class CarVisApplicator : public systems::LeafSystem<T> {
   /// Returns the total number of poses of bodies being visualized.
   int num_vis_poses() const;
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
  private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  systems::rendering::PoseBundle<T> MakePoseBundleOutput() const;
+
+  void CalcPoseBundleOutput(const systems::Context<T>& context,
+                            systems::rendering::PoseBundle<T>* output) const;
 
   // The key is the car ID.
   std::map<int, std::unique_ptr<const CarVis<T>>> visualizers_;

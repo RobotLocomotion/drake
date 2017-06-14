@@ -23,7 +23,10 @@ PurePursuitController<T>::PurePursuitController()
           this->DeclareInputPort(systems::kVectorValued, PoseVector<T>::kSize)
               .get_index()},
       steering_command_index_{
-          this->DeclareVectorOutputPort(BasicVector<T>(1)).get_index()} {
+          this->DeclareVectorOutputPort(
+                  BasicVector<T>(1),
+                  &PurePursuitController::OutputSteeringCommand)
+              .get_index()} {
   this->DeclareNumericParameter(PurePursuitParams<T>());
   this->DeclareNumericParameter(SimpleCarParams<T>());
 }
@@ -44,15 +47,15 @@ PurePursuitController<T>::ego_pose_input() const {
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>&
+const systems::OutputPort<T>&
 PurePursuitController<T>::steering_command_output() const {
   return systems::System<T>::get_output_port(steering_command_index_);
 }
 
 template <typename T>
-void PurePursuitController<T>::DoCalcOutput(
+void PurePursuitController<T>::OutputSteeringCommand(
     const systems::Context<T>& context,
-    systems::SystemOutput<T>* output) const {
+    systems::BasicVector<T>* steering_output) const {
   // Obtain the parameters.
   const PurePursuitParams<T>& pp_params =
       this->template GetNumericParameter<PurePursuitParams>(context,
@@ -72,16 +75,12 @@ void PurePursuitController<T>::DoCalcOutput(
           context, this->ego_pose_input().get_index());
   DRAKE_ASSERT(ego_pose != nullptr);
 
-  systems::BasicVector<T>* const steering_output =
-      output->GetMutableVectorData(0);
-  DRAKE_ASSERT(steering_output != nullptr);
-
-  ImplDoCalcOutput(pp_params, car_params, *lane_direction, *ego_pose,
-                   steering_output);
+  CalcSteeringCommand(pp_params, car_params, *lane_direction, *ego_pose,
+                      steering_output);
 }
 
 template <typename T>
-void PurePursuitController<T>::ImplDoCalcOutput(
+void PurePursuitController<T>::CalcSteeringCommand(
     const PurePursuitParams<T>& pp_params, const SimpleCarParams<T>& car_params,
     const LaneDirection& lane_direction, const PoseVector<T>& ego_pose,
     BasicVector<T>* command) const {

@@ -15,7 +15,9 @@ namespace qp_inverse_dynamics {
 AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
     const RigidBodyTree<double>& robot)
     : JointLevelControllerBaseSystem(robot) {
-  output_port_index_atlas_cmd_ = DeclareAbstractOutputPort().get_index();
+  output_port_index_atlas_cmd_ =
+      DeclareAbstractOutputPort(&AtlasJointLevelControllerSystem::OutputCommand)
+          .get_index();
 
   // TODO(siyuan.feng): Load gains from some config.
   const int act_size = get_robot().get_num_actuators();
@@ -30,13 +32,11 @@ AtlasJointLevelControllerSystem::AtlasJointLevelControllerSystem(
   ff_const_ = VectorX<double>::Zero(act_size);
 }
 
-void AtlasJointLevelControllerSystem::DoCalcExtendedOutput(
+void AtlasJointLevelControllerSystem::OutputCommand(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    bot_core::atlas_command_t* output) const {
   // Gets a mutable reference to bot_core::atlas_command_t from output.
-  bot_core::atlas_command_t& msg =
-      output->GetMutableData(output_port_index_atlas_cmd_)
-          ->GetMutableValue<bot_core::atlas_command_t>();
+  bot_core::atlas_command_t& msg = *output;
 
   // Makes bot_core::atlas_command_t message.
   msg.utime = static_cast<uint64_t>(context.get_time() * 1e6);
@@ -47,11 +47,10 @@ void AtlasJointLevelControllerSystem::DoCalcExtendedOutput(
   msg.velocity.resize(msg.num_joints);
   msg.effort.resize(msg.num_joints);
 
-  // The torques have already been computed and set in
-  // JointLevelControllerBaseSystem::DoCalcOutput()
-  VectorX<double> act_torques =
-      output->get_vector_data(get_output_port_torque().get_index())
-          ->get_value();
+  // TODO(sherm1) These torques should be cached so they don't need to be
+  // recomputed here.
+  systems::BasicVector<double> act_torques(get_robot().get_num_actuators());
+  CalcActuationTorques(context, &act_torques);
 
   // Set desired position, velocity and torque for all actuators.
   for (int i = 0; i < msg.num_joints; ++i) {
@@ -77,15 +76,6 @@ void AtlasJointLevelControllerSystem::DoCalcExtendedOutput(
   // deprecated simulation as well.
   // Consider removing this from atlas_command_t.
   msg.desired_controller_period_ms = 0;
-}
-
-std::unique_ptr<systems::AbstractValue>
-AtlasJointLevelControllerSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_DEMAND(output_port_index_atlas_cmd_ == descriptor.get_index());
-
-  return systems::AbstractValue::Make<bot_core::atlas_command_t>(
-      bot_core::atlas_command_t());
 }
 
 }  // namespace qp_inverse_dynamics

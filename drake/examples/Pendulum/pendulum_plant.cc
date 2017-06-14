@@ -10,7 +10,8 @@ namespace pendulum {
 template <typename T>
 PendulumPlant<T>::PendulumPlant() {
   this->DeclareInputPort(systems::kVectorValued, 1);
-  this->DeclareVectorOutputPort(PendulumStateVector<T>());
+  this->DeclareVectorOutputPort(PendulumStateVector<T>(),
+                                &PendulumPlant::CopyStateOut);
   this->DeclareContinuousState(
       PendulumStateVector<T>(),
       1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
@@ -27,15 +28,15 @@ PendulumPlant<T>::get_tau_port() const {
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>&
+const systems::OutputPort<T>&
 PendulumPlant<T>::get_output_port() const {
   return systems::System<T>::get_output_port(0);
 }
 
 template <typename T>
-void PendulumPlant<T>::DoCalcOutput(const systems::Context<T>& context,
-                                    systems::SystemOutput<T>* output) const {
-  get_mutable_output(output)->set_value(get_state(context).get_value());
+void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
+                                    PendulumStateVector<T>* output) const {
+  output->set_value(get_state(context).get_value());
 }
 
 // Compute the actual physics.

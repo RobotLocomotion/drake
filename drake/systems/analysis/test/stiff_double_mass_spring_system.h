@@ -108,8 +108,6 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     deriv->get_mutable_generalized_velocity()->SetFromVector(a);
   }
 
-  void DoCalcOutput(const Context<T>&, SystemOutput<T>*) const override {}
-
   /// Gets the end time for integration.
   T get_end_time() const { return 1e1; }
 

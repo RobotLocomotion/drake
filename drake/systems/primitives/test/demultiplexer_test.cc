@@ -22,13 +22,13 @@ class DemultiplexerTest : public ::testing::Test {
   void SetUp() override {
     demux_ = make_unique<Demultiplexer<double>>(3 /* size */);
     context_ = demux_->CreateDefaultContext();
-    output_ = demux_->AllocateOutput(*context_);
+    output_ = demux_->get_output_port(0).Allocate(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> demux_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<AbstractValue> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
 
@@ -45,22 +45,15 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   // Hook input of the expected size.
   context_->FixInputPort(0, std::move(input_));
 
-  demux_->CalcOutput(*context_, output_.get());
-
-  // Checks that the number of output ports in the system and in the
-  // output are consistent.
   // The number of output ports must match the size of the input vector.
-  ASSERT_EQ(input_vector.size(), output_->get_num_ports());
   ASSERT_EQ(input_vector.size(), demux_->get_num_output_ports());
 
-  ASSERT_EQ(1, output_->get_vector_data(0)->size());
-  ASSERT_EQ(input_vector[0], output_->get_vector_data(0)->get_value()[0]);
-
-  ASSERT_EQ(1, output_->get_vector_data(1)->size());
-  ASSERT_EQ(input_vector[1], output_->get_vector_data(1)->get_value()[0]);
-
-  ASSERT_EQ(1, output_->get_vector_data(2)->size());
-  ASSERT_EQ(input_vector[2], output_->get_vector_data(2)->get_value()[0]);
+  for (int i=0; i < input_vector.size(); ++i) {
+    demux_->get_output_port(i).Calc(*context_, output_.get());
+    const auto& output_vector = output_->GetValueOrThrow<BasicVector<double>>();
+    ASSERT_EQ(1, output_vector.size());
+    ASSERT_EQ(input_vector[i], output_vector.get_value()[0]);
+  }
 }
 
 // Tests that the input signal gets demultiplexed into its individual
@@ -75,7 +68,7 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   auto demux = make_unique<Demultiplexer<double>>(
       kInputSize /* size */, kOutputSize /* output_ports_sizes */);
   auto context = demux->CreateDefaultContext();
-  auto output = demux->AllocateOutput(*context);
+  auto output = demux->get_output_port(0).Allocate(*context);
   auto input = make_unique<BasicVector<double>>(kInputSize /* size */);
 
   // Checks that the number of input ports in the system and in the context
@@ -88,20 +81,17 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   // Hook input of the expected size.
   context->FixInputPort(0, std::move(input));
 
-  demux->CalcOutput(*context, output.get());
-
-  // Checks that the number of output ports in the system and in the
-  // SystemOutput<T> output are consistent.
   // The number of output ports must equal the size of the input port divided
   // by the size of the output ports provided in the constructor, in this case
   // 10 / 2 = 5.
-  ASSERT_EQ(kNumOutputs, output->get_num_ports());
   ASSERT_EQ(kNumOutputs, demux->get_num_output_ports());
 
   for (int output_index = 0; output_index < kNumOutputs; ++output_index) {
-    ASSERT_EQ(kOutputSize, output->get_vector_data(output_index)->size());
+    demux->get_output_port(output_index).Calc(*context, output.get());
+    const auto& output_vector = output->GetValueOrThrow<BasicVector<double>>();
+    ASSERT_EQ(kOutputSize, output_vector.size());
     ASSERT_EQ(input_vector.segment<kOutputSize>(output_index * kOutputSize),
-              output->get_vector_data(output_index)->get_value());
+              output_vector.get_value());
   }
 }
 

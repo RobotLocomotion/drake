@@ -60,6 +60,7 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
  protected:
+<<<<<<< HEAD:drake/systems/analysis/test/stateless_system.h
   /// @note this function does not (and cannot) transmogrify any publish
   ///       callback.
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
@@ -71,6 +72,8 @@ class StatelessSystem : public LeafSystem<T> {
   void DoCalcOutput(const Context<T>&,
                     SystemOutput<T>*) const override {}
 
+=======
+>>>>>>> f5d188ad7ecae4d759c4cfca512c6fb299303547:drake/systems/analysis/test/empty_system.h
   void DoGetWitnessFunctions(
       const systems::Context<T>&,
       std::vector<const systems::WitnessFunction<T>*>* w) const override {

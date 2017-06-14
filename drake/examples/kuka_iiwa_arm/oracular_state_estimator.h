@@ -44,18 +44,22 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
                 systems::kVectorValued,
                 robot.get_num_positions() + robot.get_num_velocities())
             .get_index();
-    output_port_index_msg_ = this->DeclareAbstractOutputPort().get_index();
+    output_port_index_msg_ =
+        this->DeclareAbstractOutputPort(
+                &OracularStateEstimation::MakeRobotState,
+                &OracularStateEstimation::OutputRobotState)
+            .get_index();
   }
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override {
+  void OutputRobotState(const systems::Context<T>& context,
+                        bot_core::robot_state_t* output) const {
     const systems::BasicVector<T>* state =
         this->EvalVectorInput(context, input_port_index_state_);
 
-    bot_core::robot_state_t& msg =
-        output->template GetMutableData(output_port_index_msg_)
-            ->template GetMutableValue<bot_core::robot_state_t>();
+    VectorX<T> q = state->get_value().head(robot_.get_num_positions());
+    VectorX<T> v = state->get_value().tail(robot_.get_num_velocities());
 
+    bot_core::robot_state_t& msg = *output;
     msg.utime = static_cast<int64_t>(context.get_time() * 1e6);
     translator_.EncodeMessageKinematics(
         state->get_value().head(robot_.get_num_positions()),
@@ -63,19 +67,18 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
         &msg);
   }
 
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<T>&) const override {
+  bot_core::robot_state_t MakeRobotState() const {
     bot_core::robot_state_t msg;
     // Resize and zeros the message.
     translator_.InitializeMessage(&msg);
-    return systems::AbstractValue::Make<bot_core::robot_state_t>(msg);
+    return msg;
   }
 
   inline const systems::InputPortDescriptor<T>& get_input_port_state() const {
     return this->get_input_port(input_port_index_state_);
   }
 
-  inline const systems::OutputPortDescriptor<T>& get_output_port_msg() const {
+  inline const systems::OutputPort<T>& get_output_port_msg() const {
     return this->get_output_port(output_port_index_msg_);
   }
 

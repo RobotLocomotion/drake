@@ -18,7 +18,7 @@ template <typename T>
 BicycleCar<T>::BicycleCar() {
   auto& steering_input = this->DeclareInputPort(systems::kVectorValued, 1);
   auto& force_input = this->DeclareInputPort(systems::kVectorValued, 1);
-  auto& state_output = this->DeclareVectorOutputPort(BicycleCarState<T>());
+  auto& state_output = this->DeclareVectorOutputPort(&BicycleCar::CopyOutState);
   static_assert(BicycleCarStateIndices::kPsi == 0,
                 "BicycleCar requires BicycleCarStateIndices::kPsi to be the "
                 "0th element.");
@@ -56,25 +56,20 @@ const systems::InputPortDescriptor<T>& BicycleCar<T>::get_force_input_port()
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>& BicycleCar<T>::get_state_output_port()
+const systems::OutputPort<T>& BicycleCar<T>::get_state_output_port()
     const {
   return systems::System<T>::get_output_port(state_output_port_);
 }
 
 template <typename T>
-void BicycleCar<T>::DoCalcOutput(const systems::Context<T>& context,
-                              systems::SystemOutput<T>* output) const {
+void BicycleCar<T>::CopyOutState(const systems::Context<T>& context,
+                                 BicycleCarState<T>* output_vector) const {
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
   const BicycleCarState<T>* const state =
       dynamic_cast<const BicycleCarState<T>*>(&context_state);
   DRAKE_ASSERT(state != nullptr);
-
-  // Obtain the output pointer and mutate with our state.
-  BicycleCarState<T>* const output_vector =
-      dynamic_cast<BicycleCarState<T>*>(output->GetMutableVectorData(0));
-  DRAKE_ASSERT(output_vector != nullptr);
 
   output_vector->set_value(state->get_value());
 }

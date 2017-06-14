@@ -16,18 +16,14 @@ namespace bouncing_ball {
 template <typename T>
 Ball<T>::Ball() {
   this->DeclareContinuousState(1, 1, 0);
-  this->DeclareOutputPort(systems::kVectorValued, 2);
+  this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+                                &Ball::CopyStateOut);
 }
 
 template <typename T>
-void Ball<T>::DoCalcOutput(const systems::Context<T>& context,
-                           systems::SystemOutput<T>* output) const {
-  // Obtain the structure we need to write into.
-  systems::BasicVector<T>* const output_vector =
-      output->GetMutableVectorData(0);
-  DRAKE_ASSERT(output_vector != nullptr);
-
-  output_vector->get_mutable_value() =
+void Ball<T>::CopyStateOut(const systems::Context<T>& context,
+                           systems::BasicVector<T>* output) const {
+  output->get_mutable_value() =
       context.get_continuous_state()->CopyToVector();
 }
 

@@ -34,7 +34,7 @@ class PendulumPlant : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& get_tau_port() const;
 
   /// Returns the port to output state.
-  const systems::OutputPortDescriptor<T>& get_output_port() const;
+  const systems::OutputPort<T>& get_output_port() const;
 
   void set_theta(MyContext* context, const T& theta) const {
     get_mutable_state(context)->set_theta(theta);
@@ -64,7 +64,9 @@ class PendulumPlant : public systems::LeafSystem<T> {
   PendulumPlant<symbolic::Expression>* DoToSymbolic() const override;
 
  private:
-  void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
+  // This is the calculator method for the state output port.
+  void CopyStateOut(const MyContext& context,
+                    PendulumStateVector<T>* output) const;
 
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;

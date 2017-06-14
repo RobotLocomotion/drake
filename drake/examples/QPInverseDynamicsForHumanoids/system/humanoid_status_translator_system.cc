@@ -9,19 +9,16 @@ namespace qp_inverse_dynamics {
 HumanoidStatusTranslatorSystem::HumanoidStatusTranslatorSystem(
     const RigidBodyTree<double>& robot, const std::string& alias_group_path)
     : robot_(robot), alias_group_path_(alias_group_path) {
-  output_port_index_humanoid_status_ = DeclareAbstractOutputPort().get_index();
+  // Defer creation of the output port to derived classes where the appropriate
+  // calculator method is known.
 }
 
-std::unique_ptr<systems::AbstractValue>
-HumanoidStatusTranslatorSystem::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>& descriptor) const {
-  DRAKE_DEMAND(descriptor.get_index() == output_port_index_humanoid_status_);
-
+HumanoidStatus
+HumanoidStatusTranslatorSystem::MakeHumanoidStatus() const {
   param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot_);
   alias_groups.LoadFromFile(alias_group_path_);
 
-  return systems::AbstractValue::Make<HumanoidStatus>(
-      HumanoidStatus(robot_, alias_groups));
+  return HumanoidStatus(robot_, alias_groups);
 }
 
 StateToHumanoidStatusSystem::StateToHumanoidStatusSystem(
@@ -30,17 +27,20 @@ StateToHumanoidStatusSystem::StateToHumanoidStatusSystem(
   const int kDim = robot.get_num_positions() + robot.get_num_velocities();
   input_port_index_state_ =
       DeclareInputPort(systems::kVectorValued, kDim).get_index();
+  set_output_port_index_humanoid_status(
+      DeclareAbstractOutputPort<StateToHumanoidStatusSystem, HumanoidStatus>(
+          &StateToHumanoidStatusSystem::MakeHumanoidStatus,
+          &StateToHumanoidStatusSystem::CalcHumanoidStatus)
+          .get_index());
 }
 
-void StateToHumanoidStatusSystem::DoCalcOutput(
+void StateToHumanoidStatusSystem::CalcHumanoidStatus(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    HumanoidStatus* output) const {
   const VectorX<double> x =
       EvalEigenVectorInput(context, input_port_index_state_);
 
-  HumanoidStatus& humanoid_status =
-      output->GetMutableData(get_output_port_index_humanoid_status())
-          ->GetMutableValue<HumanoidStatus>();
+  HumanoidStatus& humanoid_status = *output;
 
   const int kPosDim = get_robot().get_num_positions();
   const int kVelDim = get_robot().get_num_velocities();
@@ -53,17 +53,21 @@ RobotStateMsgToHumanoidStatusSystem::RobotStateMsgToHumanoidStatusSystem(
     : HumanoidStatusTranslatorSystem(robot, alias_group_path),
       translator_(robot) {
   input_port_index_lcm_msg_ = DeclareAbstractInputPort().get_index();
+  set_output_port_index_humanoid_status(
+      DeclareAbstractOutputPort<RobotStateMsgToHumanoidStatusSystem,
+                                HumanoidStatus>(
+          &RobotStateMsgToHumanoidStatusSystem::MakeHumanoidStatus,
+          &RobotStateMsgToHumanoidStatusSystem::CalcHumanoidStatus)
+          .get_index());
 }
 
-void RobotStateMsgToHumanoidStatusSystem::DoCalcOutput(
+void RobotStateMsgToHumanoidStatusSystem::CalcHumanoidStatus(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    HumanoidStatus* output) const {
   const bot_core::robot_state_t* msg = EvalInputValue<bot_core::robot_state_t>(
       context, input_port_index_lcm_msg_);
 
-  HumanoidStatus& humanoid_status =
-      output->GetMutableData(get_output_port_index_humanoid_status())
-          ->GetMutableValue<HumanoidStatus>();
+  HumanoidStatus& humanoid_status = *output;
 
   VectorX<double> pos(humanoid_status.position().size());
   VectorX<double> vel(humanoid_status.velocity().size());

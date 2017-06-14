@@ -217,7 +217,7 @@ class AbstractValue {
 /// A container class for an arbitrary type T. User-defined classes that
 /// require additional type-erased features should subclass Value<T>, taking
 /// care to define the copy constructors and override Clone().
-/// @tparam T Must be copy-constructible and assignable.
+/// @tparam T Must be copy-constructible or cloneable.
 template <typename T>
 class Value : public AbstractValue {
  public:
