@@ -4,7 +4,7 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:install.bzl", "install")
+load("//tools:install.bzl", "install", "install_files")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -31,6 +31,15 @@ alias(
     actual = "@protobuf//:protobuf_python",
 )
 
+# TODO(jwnimmer-tri) The install.bzl should do this automatically, based on the
+# runfiles of //drake/common/resource_tool.  For now, we'll backfill manually.
+install_files(
+    name = "install_resource_tool_data",
+    dest = "share/drake",
+    files = [".drake-resource-sentinel"],
+    visibility = ["//drake/common:__pkg__"],
+)
+
 install(
     name = "install_net_sf_jchart2d_jchart2d",
     doc_dest = "share/doc/jchart2d",
@@ -48,6 +57,7 @@ install(
     deps = [
         ":install_net_sf_jchart2d_jchart2d",
         "//drake:install",
+        "//drake/common:install",
         "//tools:install",
         "@bot_core_lcmtypes//:install",
         "@bullet//:install",
