@@ -10,8 +10,8 @@ namespace solvers {
  * @param n A positive integer.
  * @return The minimal integer no smaller than log2(n).
  */
-constexpr int ceil_log2(int n) {
-  return n == 1? 0 : 1 + ceil_log2((n + 1) / 2);
+constexpr int CeilLog2(int n) {
+  return n == 1? 0 : 1 + CeilLog2((n + 1) / 2);
 }
 
 
@@ -38,20 +38,23 @@ int GrayCodeToInteger(const Eigen::Ref<const Eigen::VectorXi>& gray_code);
 
 /**
  * Adds the special ordered set 2 (SOS2) constraint, that at most two
- * consecutive entries in lambda can be non-zero. We will need to add
- * ⌈log2(n - 1)⌉ binary variables, where n is the number of rows in lambda. For
+ * entries in λ can be non-zero, and these two entries have to be adjacent.
+ * We will need to add ⌈log2(n - 1)⌉ binary variables, where n is the number of
+ * rows in λ. For
  * more information, please refer to
  *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
  *   Variables and Constraints
  *   by J. Vielma and G. Nemhauser
  * @param prog
- * @param lambda
- * @return The newly added binary variables, and the linear constraints.
- * To recover which two λ(i) and λ(i+1) are non-zero from the binary variables,
- * first convert the binary variables to an integer \p M using Gray code, the
- * non-zero λ is λ(M) and λ(M + 1)
+ * @param lambda At most two entries in λ can be non-zero, and these two entries
+ * have to be adjacent.
+ * @return y The newly added binary variables. The inactivation of the binary
+ * variable y implies the inactivation of the expression λ.
+ * With an binary assignment on y, and suppose the integer M corresponds to
+ * (y(0), y(1), ..., y(⌈log2(n - 1)⌉)) in Gray code, then only λ(M) and λ(M + 1)
+ * can be non-zero.
  */
-std::pair<VectorXDecisionVariable, Binding<LinearConstraint>>
-AddLogarithmicSOS2Constraint(MathematicalProgram* prog, const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda);
+VectorXDecisionVariable
+AddLogarithmicSOS2Constraint(MathematicalProgram* prog, const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda, const std::string& binary_variable_name = "b");
 }  // namespace solvers
 }  // namespace drake
