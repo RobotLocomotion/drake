@@ -9,15 +9,11 @@ namespace drake {
 namespace solvers {
 namespace {
 GTEST_TEST(TestMixedIntegerUtil, TestCeilLog2) {
+  // Check that CeilLog2(j) returns i + 1 for all j = 2ⁱ + 1, 2ⁱ + 2, ... , 2ⁱ⁺¹
   const int kMaxExponent = 15;
-  std::array<int, kMaxExponent + 1> two_to_exponent;
-  two_to_exponent[0] = 1;
-  for (int i = 1; i <= kMaxExponent; ++i) {
-    two_to_exponent[i] = 2 * two_to_exponent[i - 1];
-  }
   EXPECT_EQ(0, CeilLog2(1));
   for (int i = 0; i < kMaxExponent; ++i) {
-    for (int j = two_to_exponent[i] + 1; j <= two_to_exponent[i]; ++j) {
+    for (int j = (1 << i) + 1; j <= (1 << (i + 1)); ++j) {
       EXPECT_EQ(i + 1, CeilLog2(j));
     }
   }
@@ -73,7 +69,6 @@ void LogarithmicSOS2Test(int num_lambda) {
   // The optimal cost is λ(i) = λ(i + 1) = 0.5.
   MathematicalProgram prog;
   auto lambda = prog.NewContinuousVariables(num_lambda, "lambda");
-  prog.AddLinearConstraint(lambda.cast<symbolic::Expression>().sum() == 1);
   prog.AddCost(lambda.cast<symbolic::Expression>().dot(lambda));
   auto y =
       AddLogarithmicSOS2Constraint(&prog, lambda.cast<symbolic::Expression>());
@@ -81,6 +76,7 @@ void LogarithmicSOS2Test(int num_lambda) {
   int num_intervals = num_lambda - 1;
   auto y_assignment = prog.AddBoundingBoxConstraint(0, 1, y);
 
+  // We assign the binary variables y with value i, expressed in Gray code.
   const auto gray_codes =
       drake::solvers::internal::CalculateReflectedGrayCodes(num_binary_vars);
   Eigen::VectorXd y_val(num_binary_vars);
