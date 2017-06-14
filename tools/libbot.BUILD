@@ -1,35 +1,90 @@
 # -*- python -*-
 
-load("@drake//tools:lcm.bzl", "lcm_java_library", "lcm_py_library")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-LCM_SRCS = glob(["bot2-core/lcmtypes/*.lcm"])
-
-LCM_STRUCTS = [
-    pathname[len("bot2-core/lcmtypes/bot_core_"):-len(".lcm")]
-    for pathname in LCM_SRCS
+BOT_CORE_PUBLIC_HDRS = [
+    "bot2-core/src/bot_core/bot_core.h",
+    "bot2-core/src/bot_core/camtrans.h",
+    "bot2-core/src/bot_core/circular.h",
+    "bot2-core/src/bot_core/color_util.h",
+    "bot2-core/src/bot_core/ctrans.h",
+    "bot2-core/src/bot_core/fasttrig.h",
+    "bot2-core/src/bot_core/fileutils.h",
+    "bot2-core/src/bot_core/glib_util.h",
+    "bot2-core/src/bot_core/gps_linearize.h",
+    "bot2-core/src/bot_core/lcm_util.h",
+    "bot2-core/src/bot_core/math_util.h",
+    "bot2-core/src/bot_core/minheap.h",
+    "bot2-core/src/bot_core/ppm.h",
+    "bot2-core/src/bot_core/ptr_circular.h",
+    "bot2-core/src/bot_core/rand_util.h",
+    "bot2-core/src/bot_core/ringbuf.h",
+    "bot2-core/src/bot_core/rotations.h",
+    "bot2-core/src/bot_core/serial.h",
+    "bot2-core/src/bot_core/set.h",
+    "bot2-core/src/bot_core/signal_pipe.h",
+    "bot2-core/src/bot_core/small_linalg.h",
+    "bot2-core/src/bot_core/ssocket.h",
+    "bot2-core/src/bot_core/tictoc.h",
+    "bot2-core/src/bot_core/timespec.h",
+    "bot2-core/src/bot_core/timestamp.h",
+    "bot2-core/src/bot_core/trans.h",
 ]
 
-lcm_java_library(
-    name = "lcmtypes_bot2-core-java",
-    lcm_package = "bot_core",
-    lcm_srcs = LCM_SRCS,
-    lcm_structs = LCM_STRUCTS,
-)
-
-lcm_py_library(
-    name = "lcmtypes_bot2-core-py",
-    lcm_package = "bot_core",
-    lcm_srcs = LCM_SRCS,
-    lcm_structs = LCM_STRUCTS,
+cc_library(
+    name = "bot2-core",
+    srcs = [
+        "bot2-core/src/bot_core/camtrans.c",
+        "bot2-core/src/bot_core/circular.c",
+        "bot2-core/src/bot_core/color_util.c",
+        "bot2-core/src/bot_core/ctrans.c",
+        "bot2-core/src/bot_core/fasttrig.c",
+        "bot2-core/src/bot_core/fileutils.c",
+        "bot2-core/src/bot_core/glib_util.c",
+        "bot2-core/src/bot_core/gps_linearize.c",
+        "bot2-core/src/bot_core/lcm_util.c",
+        "bot2-core/src/bot_core/minheap.c",
+        "bot2-core/src/bot_core/ppm.c",
+        "bot2-core/src/bot_core/ptr_circular.c",
+        "bot2-core/src/bot_core/rand_util.c",
+        "bot2-core/src/bot_core/ringbuf.c",
+        "bot2-core/src/bot_core/rotations.c",
+        "bot2-core/src/bot_core/serial.c",
+        "bot2-core/src/bot_core/set.c",
+        "bot2-core/src/bot_core/signal_pipe.c",
+        "bot2-core/src/bot_core/small_linalg.c",
+        "bot2-core/src/bot_core/ssocket.c",
+        "bot2-core/src/bot_core/tictoc.c",
+        "bot2-core/src/bot_core/timespec.c",
+        "bot2-core/src/bot_core/timestamp.c",
+        "bot2-core/src/bot_core/trans.c",
+    ],
+    hdrs = BOT_CORE_PUBLIC_HDRS,
+    copts = ["-std=gnu99"],
+    includes = ["bot2-core/src"],
+    deps = [
+        "@bot_core_lcmtypes//:bot_core_lcmtypes_c",
+        "@glib",
+        "@lcm",
+    ],
 )
 
 java_library(
     name = "lcmspy_plugins_bot2",
-    srcs = glob(["bot2-core/java/src/**/*.java"]),
+    srcs = [
+        "bot2-core/java/src/bot2_spy/ImagePlugin.java",
+        "bot2-core/java/src/bot2_spy/PlanarLidarPlugin.java",
+    ],
+    visibility = ["//visibility:private"],
     deps = [
-        ":lcmtypes_bot2-core-java",
+        "@bot_core_lcmtypes//:bot_core_lcmtypes_java",
         "@lcm//:lcm-java",
     ],
 )
@@ -46,14 +101,20 @@ cc_binary(
     name = "bot-lcm-logfilter",
     srcs = ["bot2-lcm-utils/src/logfilter/lcm-logfilter.c"],
     copts = ["-std=gnu99"],
-    deps = ["@lcm"],
+    deps = [
+        "@glib",
+        "@lcm",
+    ],
 )
 
 cc_binary(
     name = "bot-lcm-logsplice",
     srcs = ["bot2-lcm-utils/src/logsplice/lcm-logsplice.c"],
     copts = ["-std=gnu99"],
-    deps = ["@lcm"],
+    deps = [
+        "@glib",
+        "@lcm",
+    ],
 )
 
 cc_library(
@@ -106,7 +167,11 @@ cc_library(
     ],
     copts = ["-std=gnu99"],
     visibility = ["//visibility:private"],
-    deps = ["@lcm"],
+    deps = [
+        "@glib",
+        "@gthread",
+        "@lcm",
+    ],
 )
 
 cc_binary(
@@ -122,4 +187,46 @@ cc_binary(
         ":tunnel_c99",
         "@lcm",
     ],
+)
+
+cc_binary(
+    name = "bot-lcm-who",
+    srcs = [
+        "bot2-lcm-utils/src/who/lcm-who.c",
+        "bot2-lcm-utils/src/who/signal_pipe.c",
+        "bot2-lcm-utils/src/who/signal_pipe.h",
+    ],
+    copts = ["-std=gnu99"],
+    deps = [
+        "@glib",
+        "@lcm",
+    ],
+)
+
+CMAKE_PACKAGE = "libbot"
+
+cmake_config(package = CMAKE_PACKAGE)
+
+install_cmake_config(
+    package = CMAKE_PACKAGE,
+    versioned = 0,
+)
+
+install(
+    name = "install",
+    hdrs = BOT_CORE_PUBLIC_HDRS,
+    doc_dest = "share/doc/libbot",
+    hdr_dest = "include/libbot",
+    hdr_strip_prefix = ["bot2-core/src"],
+    license_docs = ["LICENSE"],
+    targets = [
+        ":bot-lcm-logfilter",
+        ":bot-lcm-logsplice",
+        ":bot-lcm-tunnel",
+        ":bot-lcm-who",
+        ":bot-spy",
+        ":bot2-core",
+        ":lcmspy_plugins_bot2",
+    ],
+    deps = [":install_cmake_config"],
 )
