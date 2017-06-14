@@ -60,8 +60,9 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
  protected:
-  /// @note this function does not (and cannot) transmogrify any publish
-  ///       callback.
+  /// @note this function does not transmogrify the publish callback because
+  ///       this is test code for which it is expected that no one will care
+  ///       whether the publish callback survives transmogrification. 
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
     AutoDiffXd trigger_time(witness_->get_trigger_time());
     return new StatelessSystem<AutoDiffXd>(trigger_time,
