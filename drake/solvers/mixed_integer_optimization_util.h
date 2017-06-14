@@ -38,7 +38,8 @@ int GrayCodeToInteger(const Eigen::Ref<const Eigen::VectorXi>& gray_code);
 
 /**
  * Adds the special ordered set 2 (SOS2) constraint, that at most two
- * entries in λ can be non-zero, and these two entries have to be adjacent.
+ * entries in λ can be strictly positive, and these two entries have to be
+ * adjacent. All other λ should be zero.
  * We will need to add ⌈log2(n - 1)⌉ binary variables, where n is the number of
  * rows in λ. For
  * more information, please refer to
