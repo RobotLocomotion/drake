@@ -420,7 +420,7 @@ class PendulumKinematicTests : public PendulumTests {
 TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
-  const int kEpsilonFactor = 2;
+  const int kEpsilonFactor = 3;
   const double kEpsilon =
       kEpsilonFactor * std::numeric_limits<double>::epsilon();
 
@@ -450,8 +450,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), elbow_angle);
 
       // Verify this matches the corresponding entries in the context.
-      EXPECT_NEAR(mbt_context_->get_positions()(0), shoulder_angle, kEpsilon);
-      EXPECT_NEAR(mbt_context_->get_positions()(1), elbow_angle, kEpsilon);
+      EXPECT_EQ(mbt_context_->get_positions()(0), shoulder_angle);
+      EXPECT_EQ(mbt_context_->get_positions()(1), elbow_angle);
 
       model_->CalcPositionKinematicsCache(*context_, &pc);
 
