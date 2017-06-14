@@ -39,6 +39,7 @@ VectorXDecisionVariable AddLogarithmicSOS2Constraint(
     prog->AddLinearConstraint(lambda(i) >= 0);
     prog->AddLinearConstraint(lambda(i) <= 1);
   }
+  prog->AddLinearConstraint(lambda.sum() == 1);
   const int num_interval = num_lambda - 1;
   const int num_binary_vars = CeilLog2(num_interval);
   const auto gray_codes =
