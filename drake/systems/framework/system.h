@@ -24,12 +24,10 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace systems {
-
-template <class T>
-class WitnessFunction;
 
 /// A token that identifies the next sample time at which a System must
 /// perform some actions, and the actions that must be performed.

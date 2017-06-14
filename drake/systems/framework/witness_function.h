@@ -4,11 +4,15 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/discrete_event.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
+
+template <class T>
+class System;
 
 enum class WitnessFunctionDirection {
   /// This witness function will never be triggered.
@@ -113,10 +117,7 @@ class WitnessFunction {
   WitnessFunctionDirection get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
-  T Evaluate(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(system_.CheckValidContext(context));
-    return DoEvaluate(context);
-  }
+  T Evaluate(const Context<T>& context) const;
 
   /// Gets a reference to the System used by this witness function.
   const System<T>& get_system() const { return system_; }
@@ -124,27 +125,29 @@ class WitnessFunction {
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
-  bool should_trigger(const T& w0, const T& wf) const {
+  decltype(T() < T()) should_trigger(const T& w0, const T& wf) const {
     WitnessFunctionDirection dtype = get_dir_type();
 
+    const T zero(0);
     switch (dtype) {
       case WitnessFunctionDirection::kNone:
-        return false;
+        return (T() > T());
 
       case WitnessFunctionDirection::kPositiveThenNonPositive:
-        return (w0 > 0 && wf <= 0);
+        return (w0 > zero && wf <= zero);
 
       case WitnessFunctionDirection::kNegativeThenNonNegative:
-        return (w0 < 0 && wf >= 0);
+        return (w0 < zero && wf >= zero);
 
       case WitnessFunctionDirection::kCrossesZero:
-        return ((w0 > 0 && wf <= 0) ||
-                (w0 < 0 && wf >= 0));
+        return ((w0 > zero && wf <= zero) ||
+                (w0 < zero && wf >= zero));
 
       default:
         DRAKE_ABORT();
     }
   }
+
 
  protected:
   /// Derived classes will implement this function to evaluate the witness

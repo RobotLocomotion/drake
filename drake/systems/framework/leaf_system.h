@@ -28,7 +28,6 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
-#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace systems {
