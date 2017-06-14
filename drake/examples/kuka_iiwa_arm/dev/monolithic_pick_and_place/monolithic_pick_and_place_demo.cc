@@ -28,6 +28,8 @@ DEFINE_uint64(target, 0, "ID of the target to pick.");
 DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
 DEFINE_uint32(start_position, 1, "Position index to start from");
 DEFINE_uint32(end_position, 2, "Position index to end at");
+DEFINE_double(realtime_rate, 0.0,
+              "Rate at which to run the simulation, relative to realtime");
 
 using robotlocomotion::robot_plan_t;
 
@@ -272,6 +274,7 @@ int DoMain(void) {
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
   simulator.Initialize();
+  simulator.set_target_realtime_rate(FLAGS_realtime_rate);
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
       *iiwa_trajectory_generator, simulator.get_mutable_context());
