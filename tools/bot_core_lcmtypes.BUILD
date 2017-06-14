@@ -2,8 +2,19 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
-load("@drake//tools:lcm.bzl", "lcm_cc_library", "lcm_java_library", "lcm_py_library")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+load(
+    "@drake//tools:lcm.bzl",
+    "lcm_c_library",
+    "lcm_cc_library",
+    "lcm_java_library",
+    "lcm_py_library",
+)
 
 LCM_SRCS = glob(["lcmtypes/*.lcm"])
 
@@ -12,6 +23,14 @@ LCM_STRUCTS = [
     f.replace("lcmtypes/bot_core_", "").replace(".lcm", "")
     for f in LCM_SRCS
 ]
+
+lcm_c_library(
+    name = "bot_core_lcmtypes_c",
+    includes = ["lcmtypes"],
+    lcm_package = "bot_core",
+    lcm_srcs = LCM_SRCS,
+    lcm_structs = LCM_STRUCTS,
+)
 
 lcm_cc_library(
     name = "bot_core_lcmtypes",
@@ -56,6 +75,7 @@ install(
     py_strip_prefix = ["lcmtypes"],
     targets = [
         ":bot_core_lcmtypes",
+        ":bot_core_lcmtypes_c",
         ":bot_core_lcmtypes_java",
         ":bot_core_lcmtypes_py",
     ],
