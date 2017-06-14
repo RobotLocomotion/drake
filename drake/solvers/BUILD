@@ -232,8 +232,8 @@ drake_cc_library(
     srcs = ["test/mathematical_program_test_util.cc"],
     hdrs = ["test/mathematical_program_test_util.h"],
     deps = [
-        ":mathematical_program",
         "@gtest//:main",
+        ":mathematical_program",
     ],
 )
 
@@ -243,10 +243,10 @@ drake_cc_library(
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
     deps = [
+        "@gtest//:main",
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
     ],
 )
 
@@ -438,6 +438,15 @@ drake_cc_library(
         ],
         "//conditions:default": [],
     }),
+)
+
+drake_cc_library(
+    name = "mixed_integer_optimization_util",
+    srcs = ["mixed_integer_optimization_util.cc"],
+    hdrs = ["mixed_integer_optimization_util.h"],
+    deps = [
+        ":mathematical_program",
+    ],
 )
 
 # === test/ ===
@@ -715,6 +724,13 @@ drake_cc_binary(
     srcs = ["test/plot_rotation_mccormick_envelope.cc"],
     deps = [
         ":rotation_constraint_visualization",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mixed_integer_optimization_util_test",
+    deps = [
+        ":mixed_integer_optimization_util",
     ],
 )
 
