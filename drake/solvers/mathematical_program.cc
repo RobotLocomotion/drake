@@ -211,14 +211,14 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
 pair<drake::symbolic::Polynomial, VectorXDecisionVariable>
 MathematicalProgram::NewFreePolynomial(const Variables& indeterminates,
                                        const int degree) {
-  const drake::VectorX<symbolic::Monomial> X{
+  const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree)};
-  const VectorXDecisionVariable coeffs{NewContinuousVariables(X.size())};
+  const VectorXDecisionVariable coeffs{NewContinuousVariables(x.size())};
 
   // TODO(soonho): make coeffs.dot(X) work.
   symbolic::Polynomial p;
-  for (int i = 0; i < X.size(); ++i) {
-    p += X(i) * coeffs(i);
+  for (int i = 0; i < x.size(); ++i) {
+    p += x(i) * coeffs(i);
   }
   return make_pair(p, coeffs);
 }
@@ -237,10 +237,10 @@ MathematicalProgram::NewFreePolynomial(
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
                                       const int degree) {
-  const drake::VectorX<symbolic::Monomial> X{
+  const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree)};
-  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(X.size())};
-  const symbolic::Polynomial p{X.dot(Q * X)};
+  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
+  const symbolic::Polynomial p{x.dot(Q * x)};
   return make_pair(p, Q);
 }
 
