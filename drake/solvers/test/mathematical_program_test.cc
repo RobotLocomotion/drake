@@ -2135,6 +2135,19 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
 }
 
+// GTEST_TEST(testMathematicalProgram, testAddSosConstraint) {
+//   MathematicalProgram prog;
+//   auto x = prog.NewIndeterminates<2>();
+
+//   // p = 2x₀⁴ + 2x₀³x₁ - x₀²x₁² + 5x₁⁴
+//   symbolic::Polynomial p{2 * pow(x(0), 4) + 2 * pow(x(0), 3) * x(1) -
+//                          pow(x(0), 2) * pow(x(1), 2) + 5 * pow(x(1), 4)};
+//   prog.AddSosConstraint(p);
+//   auto result = prog.Solve();
+//   EXPECT_EQ(result, SolutionResult::kSolutionFound);
+//   std::cerr << "OKOKOK";
+// }
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -208,9 +208,8 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
   return NewVariables(VarType::BINARY, rows, names);
 }
 
-pair<drake::symbolic::Polynomial, VectorXDecisionVariable>
-MathematicalProgram::NewFreePolynomial(const Variables& indeterminates,
-                                       const int degree) {
+drake::symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
+    const Variables& indeterminates, const int degree) {
   const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree)};
   const VectorXDecisionVariable coeffs{NewContinuousVariables(x.size())};
@@ -220,39 +219,18 @@ MathematicalProgram::NewFreePolynomial(const Variables& indeterminates,
   for (int i = 0; i < x.size(); ++i) {
     p += x(i) * coeffs(i);
   }
-  return make_pair(p, coeffs);
+  return p;
 }
 
-pair<drake::symbolic::Polynomial, VectorXDecisionVariable>
-MathematicalProgram::NewFreePolynomial(
-    const VectorXIndeterminate& indeterminates, const int degree) {
-  // Add indeterminates to vars of type Variables.
-  Variables vars;
-  for (int i = 0; i < indeterminates.size(); ++i) {
-    vars += indeterminates(i);
-  }
-  return NewFreePolynomial(vars, degree);
-}
-
-pair<symbolic::Polynomial, MatrixXDecisionVariable>
+pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
 MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
                                       const int degree) {
   const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree)};
   const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
   const symbolic::Polynomial p{x.dot(Q * x)};
-  return make_pair(p, Q);
-}
-
-pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewSosPolynomial(
-    const VectorXIndeterminate& indeterminates, const int degree) {
-  // Add indeterminates to vars of type Variables.
-  Variables vars;
-  for (int i = 0; i < indeterminates.size(); ++i) {
-    vars += indeterminates(i);
-  }
-  return NewSosPolynomial(vars, degree);
+  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
+  return make_pair(p, psd_binding);
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -678,9 +656,7 @@ MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& poly) {
   const int d{poly.Degree()};
   const auto p = NewSosPolynomial(indeterminates, d);
   const symbolic::Polynomial& sos_poly{p.first};
-  const MatrixXDecisionVariable& Q{p.second};
-
-  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
+  const Binding<PositiveSemidefiniteConstraint> psd_binding{p.second};
   const auto leq_binding = AddLinearEqualityConstraint(sos_poly == poly);
   return make_pair(psd_binding, leq_binding);
 }

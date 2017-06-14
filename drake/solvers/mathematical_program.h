@@ -634,39 +634,23 @@ class MathematicalProgram {
   }
 
   /**
-   * Returns a pair of a free polynomial with decision variables as coefficients
+   * Returns a free polynomial with decision variables as coefficients
    * to all monomials created by `MonomialBasis(const Variables& vars, int
-   * degree)` and a VectorXDecisionVariable which stores the coefficients.
+   * degree)`.
    */
   // TODO(FischerGundlach) Add documentation incl. an example with list
   // initialization and implicit conversion variable->variables
-  std::pair<symbolic::Polynomial, VectorXDecisionVariable> NewFreePolynomial(
+  symbolic::Polynomial NewFreePolynomial(
       const symbolic::Variables& indeterminates, int degree);
-
-  /**
-   * Returns a pair of a free polynomial and a vector of decision
-   * variables. @see NewFreePolynomial(const symbolic::Variables&
-   * indeterminates, int degree).
-   */
-  // TODO(FischerGundlach) Add documentation incl. an example.
-  std::pair<symbolic::Polynomial, VectorXDecisionVariable> NewFreePolynomial(
-      const VectorXIndeterminate& indeterminates, int degree);
 
   /** Returns a pair of a SOS polynomial with decision variables as coefficients
    * to all monomials created by `MonomialBasis(const Variables& vars,int
-   * degree)` and a symmetric PSD constraint matrix with the coefficients.
+   * degree)` and a PSD constraint for the coefficients matrix.
    */
   // TODO(FischerGundlach) Add documentation incl. an example with list
   // initialization and implicit conversion variable->variables
-  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
-      const symbolic::Variables& indeterminates, int degree);
-
-  /** Returns a pair of a SOS polynomial and a PSD matrix. @see
-   * NewSosPolynomial(const VectorXIndeterminate& indeterminates, int degree).
-   */
-  // TODO(FischerGundlach) Add documentation incl. an example.
-  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
-      const VectorXIndeterminate& indeterminates, int degree);
+  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+  NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
