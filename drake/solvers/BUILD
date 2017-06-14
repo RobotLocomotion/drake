@@ -173,6 +173,7 @@ drake_cc_library(
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
+        "//drake/common:symbolic_polynomial",
     ],
 )
 
@@ -716,6 +717,15 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+# TODO(soonho)
+drake_cc_googletest(
+    name = "sos_constraint_test",
+    tags = mosek_test_tags(),
+    deps = [
+        ":mathematical_program",
     ],
 )
 

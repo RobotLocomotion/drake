@@ -93,6 +93,9 @@ class Monomial {
   /** Returns this monomial multiplied by @p m. */
   Monomial& operator*=(const Monomial& m);
 
+  /** Returns this monomial multiplied by @p v. */
+  Monomial& operator*=(const Variable& v);
+
   /** Returns this monomial raised to @p p.
    * @throws std::runtime_error if @p p is negative.
    */
@@ -108,6 +111,12 @@ std::ostream& operator<<(std::ostream& out, const Monomial& m);
 
 /** Returns a multiplication of two monomials, @p m1 and @p m2. */
 Monomial operator*(Monomial m1, const Monomial& m2);
+
+/** Returns a multiplication of @p m and @p v. */
+Monomial operator*(Monomial m, const Variable& v);
+
+/** Returns a multiplication of @p v and @p m. */
+Monomial operator*(const Variable& v, Monomial m);
 
 /** Returns @p m1 raised to @p p.
  * @throws std::runtime_error if @p p is negative.
@@ -149,6 +158,16 @@ template <>
 struct ScalarBinaryOpTraits<
     drake::symbolic::Variable, drake::symbolic::Monomial,
     internal::scalar_product_op<drake::symbolic::Variable,
+                                drake::symbolic::Monomial>> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Monomial ReturnType;
+};
+
+// Informs Eigen that Monomial * Monomial gets Monomial.
+template <>
+struct ScalarBinaryOpTraits<
+    drake::symbolic::Monomial, drake::symbolic::Monomial,
+    internal::scalar_product_op<drake::symbolic::Monomial,
                                 drake::symbolic::Monomial>> {
   enum { Defined = 1 };
   typedef drake::symbolic::Monomial ReturnType;

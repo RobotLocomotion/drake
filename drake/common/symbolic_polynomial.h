@@ -44,6 +44,11 @@ class Polynomial {
   /// Returns the decision variables of this polynomial.
   Variables decision_variables() const;
 
+  /// Returns the total degree of this polynomial.
+  int Degree() const;
+  // TODO(soonho-tri) Implement int Degree(const Variables& vars), which returns
+  // the degrees for the specified variables.
+
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
   const MapType& monomial_to_coefficient_map() const;
@@ -61,6 +66,7 @@ class Polynomial {
 
   Polynomial& operator*=(const Polynomial& p);
   Polynomial& operator*=(const Monomial& m);
+  Polynomial& operator*=(const Variable& v);
   Polynomial& operator*=(double c);
 
   /// Returns true if this polynomial and @p p are structurally equal.
@@ -102,6 +108,8 @@ Polynomial operator-(double c, Polynomial p);
 Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
 Polynomial operator*(const Monomial& m, Polynomial p);
+Polynomial operator*(Polynomial p, const Variable& v);
+Polynomial operator*(const Variable& v, Polynomial p);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(Polynomial p, double c);
 
@@ -173,6 +181,16 @@ template <>
 struct NumTraits<drake::symbolic::Polynomial>
     : GenericNumTraits<drake::symbolic::Polynomial> {
   static inline int digits10() { return 0; }
+};
+
+// Informs Eigen that Monomial + Monomial gets Polynomial.
+template <>
+struct ScalarBinaryOpTraits<
+    drake::symbolic::Monomial, drake::symbolic::Monomial,
+    internal::scalar_sum_op<drake::symbolic::Monomial,
+                            drake::symbolic::Monomial>> {
+  enum { Defined = 1 };
+  typedef drake::symbolic::Polynomial ReturnType;
 };
 
 // Informs Eigen that Monomial op Polynomial gets Polynomial.

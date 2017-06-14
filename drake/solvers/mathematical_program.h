@@ -24,7 +24,9 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -630,6 +632,25 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /**
+   * Returns a free polynomial with decision variables as coefficients
+   * to all monomials created by `MonomialBasis(const Variables& vars, int
+   * degree)`.
+   */
+  // TODO(FischerGundlach) Add documentation incl. an example with list
+  // initialization and implicit conversion variable->variables
+  symbolic::Polynomial NewFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree);
+
+  /** Returns a pair of a SOS polynomial with decision variables as coefficients
+   * to all monomials created by `MonomialBasis(const Variables& vars,int
+   * degree)` and a PSD constraint for the coefficients matrix.
+   */
+  // TODO(FischerGundlach) Add documentation incl. an example with list
+  // initialization and implicit conversion variable->variables
+  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+  NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -1881,6 +1902,18 @@ class MathematicalProgram {
   Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a sums-of-squares (SOS) constraint to the program. The free polynomial
+   * (@see MathematicalProgramm::NewFreePolynomial) poly is constraint to be a
+   * SOS.
+   */
+  // TODO(FischerGundlach) Add/Fix documentation for SOS decomposition, i.e.
+  // polynomial can be represented as z^t*Q*z + example how the function is
+  // used.
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+            Binding<LinearEqualityConstraint>>
+  AddSosConstraint(const symbolic::Polynomial& poly);
 
   // template <typename FunctionType>
   // void AddCost(std::function..);

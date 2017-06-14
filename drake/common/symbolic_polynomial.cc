@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_polynomial.h"
 
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -204,6 +205,15 @@ Variables Polynomial::decision_variables() const {
   return vars;
 }
 
+int Polynomial::Degree() const {
+  int degree{0};
+  for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
+    const Monomial& m{p.first};
+    degree = std::max(degree, m.total_degree());
+  }
+  return degree;
+}
+
 const Polynomial::MapType& Polynomial::monomial_to_coefficient_map() const {
   return monomial_to_coefficient_map_;
 }
@@ -281,6 +291,12 @@ Polynomial& Polynomial::operator*=(const Monomial& m) {
   return *this;
 }
 
+Polynomial& Polynomial::operator*=(const Variable& v) {
+  // No need to call CheckInvariant() since this method relies on
+  // operator*=(const Monomial& m) where we call CheckInvariant.
+  return *this *= Monomial{v};
+}
+
 Polynomial& Polynomial::operator*=(const double c) {
   for (pair<const Monomial, Expression>& p : monomial_to_coefficient_map_) {
     Expression& coeff{p.second};
@@ -354,6 +370,8 @@ Polynomial operator-(const double c, Polynomial p) { return p = -p + c; }
 Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
 Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
 Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
+Polynomial operator*(Polynomial p, const Variable& v) { return p *= v; }
+Polynomial operator*(const Variable& v, Polynomial p) { return p *= v; }
 Polynomial operator*(const double c, Polynomial p) { return p *= c; }
 Polynomial operator*(Polynomial p, const double c) { return p *= c; }
 
