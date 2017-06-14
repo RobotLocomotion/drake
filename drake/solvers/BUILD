@@ -730,7 +730,9 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "mixed_integer_optimization_util_test",
     deps = [
+        ":gurobi_solver",
         ":mixed_integer_optimization_util",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 
