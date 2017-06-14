@@ -271,9 +271,20 @@ Polynomial& Polynomial::operator*=(const Polynomial& p) {
   // =   (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * c₂₁ * m₂₁
   //   + ...
   //   + (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * c₂ₘ * m₂ₘ
-  // TODO(soonho-tri): Optimize this by not relying on ToExpression() method.
-  *this = Polynomial{this->ToExpression() * p.ToExpression(),
-                     indeterminates() + p.indeterminates()};
+  MapType new_map;
+  for (const auto& p1 : monomial_to_coefficient_map_) {
+    for (const auto& p2 : p.monomial_to_coefficient_map()) {
+      const Monomial new_monomial{p1.first * p2.first};
+      const Expression new_coeff{p1.second * p2.second};
+      auto it = new_map.find(new_monomial);
+      if (it == new_map.end()) {
+        new_map.emplace_hint(it, new_monomial, new_coeff);
+      } else {
+        it->second += new_coeff;
+      }
+    }
+  }
+  monomial_to_coefficient_map_ = new_map;
   CheckInvariant();
   return *this;
 }
