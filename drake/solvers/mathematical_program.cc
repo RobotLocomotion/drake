@@ -672,6 +672,17 @@ MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& poly) {
   return make_pair(psd_binding, leq_binding);
 }
 
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
+  // TODO(soonho-tri): Simplify the following by adding a constructor of
+  // Variables taking a Eigen matrix/vector of Variables.
+  Variables vars;
+  for (int i = 0; i < num_indeterminates(); ++i) {
+    vars += indeterminates_(i);
+  }
+  return AddSosConstraint(symbolic::Polynomial{e, vars});
+}
+
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
