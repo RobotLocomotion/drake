@@ -108,8 +108,6 @@ Polynomial operator*(Polynomial p, const Monomial& m);
 Polynomial operator*(const Monomial& m, Polynomial p);
 Polynomial operator*(Polynomial p, const Variable& v);
 Polynomial operator*(const Variable& v, Polynomial p);
-Polynomial operator*(const Variable& v, const Monomial& m);
-Polynomial operator*(const Monomial& m, const Variable& v);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(Polynomial p, double c);
 

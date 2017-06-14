@@ -372,12 +372,6 @@ Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
 Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
 Polynomial operator*(Polynomial p, const Variable& v) { return p *= v; }
 Polynomial operator*(const Variable& v, Polynomial p) { return p *= v; }
-Polynomial operator*(const Variable& v, const Monomial& m) {
-  return Polynomial{m} * v;
-}
-Polynomial operator*(const Monomial& m, const Variable& v) {
-  return Polynomial{m} * v;
-}
 Polynomial operator*(const double c, Polynomial p) { return p *= c; }
 Polynomial operator*(Polynomial p, const double c) { return p *= c; }
 
