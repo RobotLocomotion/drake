@@ -420,7 +420,7 @@ class PendulumKinematicTests : public PendulumTests {
 TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
-  const int kEpsilonFactor = 2;
+  const int kEpsilonFactor = 3;
   const double kEpsilon =
       kEpsilonFactor * std::numeric_limits<double>::epsilon();
 
