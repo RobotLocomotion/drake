@@ -150,9 +150,9 @@ TEST_F(SisoVectorSystemTest, Topology) {
 
   // One output port.
   ASSERT_EQ(dut.get_num_output_ports(), 1);
-  const OutputPortDescriptor<double>& descriptor_out = dut.get_output_port();
-  EXPECT_EQ(descriptor_out.get_data_type(), kVectorValued);
-  EXPECT_EQ(descriptor_out.size(), TestSisoSystem::kSize);
+  const OutputPort<double>& output_port = dut.get_output_port();
+  EXPECT_EQ(output_port.get_data_type(), kVectorValued);
+  EXPECT_EQ(output_port.size(), TestSisoSystem::kSize);
 
   // No state by default ...
   auto context = dut.CreateDefaultContext();
@@ -177,7 +177,7 @@ TEST_F(SisoVectorSystemTest, TopologyFailFast) {
   { // A second output.
     TestSisoSystem dut;
     EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.DeclareAbstractOutputPort();
+    dut.DeclareAbstractOutputPort(nullptr, nullptr);  // No alloc or calc.
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
@@ -215,13 +215,15 @@ TEST_F(SisoVectorSystemTest, TopologyFailFast) {
 TEST_F(SisoVectorSystemTest, OutputStateless) {
   TestSisoSystem dut;
   auto context = dut.CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+  auto& output_port = dut.get_output_port();
+  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  dut.CalcOutput(*context, output.get());
+  output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  EXPECT_EQ(output->get_vector_data(0)->GetAtIndex(0), 1.0);
-  EXPECT_EQ(output->get_vector_data(0)->GetAtIndex(1), 2.0);
+  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(basic.GetAtIndex(0), 1.0);
+  EXPECT_EQ(basic.GetAtIndex(1), 2.0);
 }
 
 // Forwarding of CalcOutput with continuous state.
@@ -229,15 +231,17 @@ TEST_F(SisoVectorSystemTest, OutputContinuous) {
   TestSisoSystem dut;
   dut.DeclareContinuousState(TestSisoSystem::kSize);
   auto context = dut.CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+  auto& output_port = dut.get_output_port();
+  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_continuous_state_vector()->SetFromVector(
       Eigen::Vector2d::Ones());
-  dut.CalcOutput(*context, output.get());
+  output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  EXPECT_EQ(output->get_vector_data(0)->GetAtIndex(0), 2.0);
-  EXPECT_EQ(output->get_vector_data(0)->GetAtIndex(1), 3.0);
+  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(basic.GetAtIndex(0), 2.0);
+  EXPECT_EQ(basic.GetAtIndex(1), 3.0);
 }
 
 // Forwarding of CalcOutput with discrete state.
@@ -245,15 +249,17 @@ TEST_F(SisoVectorSystemTest, OutputDiscrete) {
   TestSisoSystem dut;
   dut.set_prototype_discrete_state_count(1);
   auto context = dut.CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+  auto& output_port = dut.get_output_port();
+  std::unique_ptr<AbstractValue>  output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_discrete_state(0)->SetFromVector(
       Eigen::Vector2d::Ones());
-  dut.CalcOutput(*context, output.get());
+  output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  EXPECT_EQ(output->get_vector_data(0)->GetAtIndex(0), 2.0);
-  EXPECT_EQ(output->get_vector_data(0)->GetAtIndex(1), 3.0);
+  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(basic.GetAtIndex(0), 2.0);
+  EXPECT_EQ(basic.GetAtIndex(1), 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);

@@ -22,7 +22,8 @@ const double kIiwaLcmStatusPeriod = 0.005;
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
   this->DeclareAbstractInputPort();
-  this->DeclareOutputPort(systems::kVectorValued, num_joints_ * 2);
+  this->DeclareVectorOutputPort(systems::BasicVector<double>(num_joints_ * 2),
+                                &IiwaCommandReceiver::OutputCommand);
   this->DeclareDiscreteUpdatePeriodSec(kIiwaLcmStatusPeriod);
   this->DeclareDiscreteState(num_joints_ * 2);
 }
@@ -64,10 +65,10 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
   }
 }
 
-void IiwaCommandReceiver::DoCalcOutput(const Context<double>& context,
-                                       SystemOutput<double>* output) const {
+void IiwaCommandReceiver::OutputCommand(const Context<double>& context,
+                                        BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec =
-      this->GetMutableOutputVector(output, 0);
+      output->get_mutable_value();
   output_vec = context.get_discrete_state(0)->get_value();
 }
 
@@ -79,21 +80,12 @@ IiwaCommandSender::IiwaCommandSender(int num_joints)
       torque_input_port_(
           this->DeclareInputPort(
               systems::kVectorValued, num_joints_).get_index()) {
-  this->DeclareAbstractOutputPort();
+  this->DeclareAbstractOutputPort(&IiwaCommandSender::OutputCommand);
 }
 
-std::unique_ptr<systems::AbstractValue>
-IiwaCommandSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>&) const {
-  lcmt_iiwa_command msg{};
-  return std::make_unique<systems::Value<lcmt_iiwa_command>>(msg);
-}
-
-void IiwaCommandSender::DoCalcOutput(
-    const Context<double>& context, SystemOutput<double>* output) const {
-  systems::AbstractValue* mutable_data = output->GetMutableData(0);
-  lcmt_iiwa_command& command =
-      mutable_data->GetMutableValue<lcmt_iiwa_command>();
+void IiwaCommandSender::OutputCommand(
+    const Context<double>& context, lcmt_iiwa_command* output) const {
+  lcmt_iiwa_command& command = *output;
 
   command.utime = context.get_time() * 1e6;
   const systems::BasicVector<double>* positions =
@@ -119,15 +111,18 @@ void IiwaCommandSender::DoCalcOutput(
   }
 }
 
-
 IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
     : num_joints_(num_joints),
       measured_position_output_port_(
-          this->DeclareOutputPort(
-              systems::kVectorValued, num_joints_ * 2).get_index()),
+          this->DeclareVectorOutputPort(
+                  systems::BasicVector<double>(num_joints_ * 2),
+                  &IiwaStatusReceiver::OutputMeasuredPosition)
+              .get_index()),
       commanded_position_output_port_(
-          this->DeclareOutputPort(
-              systems::kVectorValued, num_joints_).get_index()) {
+          this->DeclareVectorOutputPort(
+                  systems::BasicVector<double>(num_joints_),
+                  &IiwaStatusReceiver::OutputCommandedPosition)
+              .get_index()) {
   this->DeclareAbstractInputPort();
   this->DeclareDiscreteState(num_joints_ * 3);
   this->DeclareDiscreteUpdatePeriodSec(kIiwaLcmStatusPeriod);
@@ -162,31 +157,33 @@ void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
   }
 }
 
-void IiwaStatusReceiver::DoCalcOutput(const Context<double>& context,
-                                       SystemOutput<double>* output) const {
+void IiwaStatusReceiver::OutputMeasuredPosition(const Context<double>& context,
+                                       BasicVector<double>* output) const {
   const auto state_value = context.get_discrete_state(0)->get_value();
 
   Eigen::VectorBlock<VectorX<double>> measured_position_output =
-      this->GetMutableOutputVector(output, measured_position_output_port_);
+      output->get_mutable_value();
   measured_position_output = state_value.head(num_joints_ * 2);
+}
+
+void IiwaStatusReceiver::OutputCommandedPosition(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const auto state_value = context.get_discrete_state(0)->get_value();
+
   Eigen::VectorBlock<VectorX<double>> commanded_position_output =
-      this->GetMutableOutputVector(output, commanded_position_output_port_);
+      output->get_mutable_value();
   commanded_position_output = state_value.tail(num_joints_);
-  DRAKE_ASSERT(
-      measured_position_output.size() + commanded_position_output.size() ==
-      state_value.size());
 }
 
 IiwaStatusSender::IiwaStatusSender(int num_joints)
     : num_joints_(num_joints) {
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
-  this->DeclareAbstractOutputPort();
+  this->DeclareAbstractOutputPort(&IiwaStatusSender::MakeOutputStatus,
+                                  &IiwaStatusSender::OutputStatus);
 }
 
-std::unique_ptr<systems::AbstractValue>
-IiwaStatusSender::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>&) const {
+lcmt_iiwa_status IiwaStatusSender::MakeOutputStatus() const {
   lcmt_iiwa_status msg{};
   msg.num_joints = num_joints_;
   msg.joint_position_measured.resize(msg.num_joints, 0);
@@ -195,14 +192,12 @@ IiwaStatusSender::AllocateOutputAbstract(
   msg.joint_torque_measured.resize(msg.num_joints, 0);
   msg.joint_torque_commanded.resize(msg.num_joints, 0);
   msg.joint_torque_external.resize(msg.num_joints, 0);
-  return std::make_unique<systems::Value<lcmt_iiwa_status>>(msg);
+  return msg;
 }
 
-void IiwaStatusSender::DoCalcOutput(
-    const Context<double>& context, SystemOutput<double>* output) const {
-  systems::AbstractValue* mutable_data = output->GetMutableData(0);
-  lcmt_iiwa_status& status =
-      mutable_data->GetMutableValue<lcmt_iiwa_status>();
+void IiwaStatusSender::OutputStatus(
+    const Context<double>& context, lcmt_iiwa_status* output) const {
+  lcmt_iiwa_status& status = *output;
 
   status.utime = context.get_time() * 1e6;
   const systems::BasicVector<double>* command =

@@ -15,7 +15,8 @@ template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant() {
   this->DeclareInputPort(systems::kVectorValued, kInputDimension);
   this->DeclareContinuousState(kStateDimension);
-  this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
+  this->DeclareVectorOutputPort(systems::BasicVector<T>(kStateDimension),
+                                &QuadrotorPlant::CopyStateOut);
 }
 
 template <typename T>
@@ -25,7 +26,8 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
     : m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
   this->DeclareInputPort(systems::kVectorValued, kInputDimension);
   this->DeclareContinuousState(kStateDimension);
-  this->DeclareOutputPort(systems::kVectorValued, kStateDimension);
+  this->DeclareVectorOutputPort(systems::BasicVector<T>(kStateDimension),
+                                &QuadrotorPlant::CopyStateOut);
 }
 
 template <typename T>
@@ -37,9 +39,9 @@ QuadrotorPlant<AutoDiffXd>* QuadrotorPlant<T>::DoToAutoDiffXd() const {
 }
 
 template <typename T>
-void QuadrotorPlant<T>::DoCalcOutput(const systems::Context<T> &context,
-                                     systems::SystemOutput<T> *output) const {
-  output->GetMutableVectorData(0)->set_value(
+void QuadrotorPlant<T>::CopyStateOut(const systems::Context<T> &context,
+                                     systems::BasicVector<T> *output) const {
+  output->set_value(
       context.get_continuous_state_vector().CopyToVector());
 }
 

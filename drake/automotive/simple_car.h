@@ -56,15 +56,13 @@ class SimpleCar : public systems::LeafSystem<T> {
   SimpleCar();
 
   // System<T> overrides
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  const systems::OutputPortDescriptor<T>& state_output() const;
-  const systems::OutputPortDescriptor<T>& pose_output() const;
-  const systems::OutputPortDescriptor<T>& velocity_output() const;
+  const systems::OutputPort<T>& state_output() const;
+  const systems::OutputPort<T>& pose_output() const;
+  const systems::OutputPort<T>& velocity_output() const;
 
  protected:
   // System<T> overrides
@@ -72,11 +70,12 @@ class SimpleCar : public systems::LeafSystem<T> {
   systems::System<symbolic::Expression>* DoToSymbolic() const override;
 
  private:
-  void ImplCalcOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
-  void ImplCalcPose(const SimpleCarState<T>& state,
-                    systems::rendering::PoseVector<T>* pose) const;
-  void ImplCalcVelocity(const SimpleCarState<T>& state,
-                        systems::rendering::FrameVelocity<T>* velocity) const;
+  void CalcStateOutput(const systems::Context<T>&, SimpleCarState<T>*) const;
+  void CalcPose(const systems::Context<T>&,
+                systems::rendering::PoseVector<T>*) const;
+  void CalcVelocity(const systems::Context<T>&,
+                    systems::rendering::FrameVelocity<T>*) const;
+
   void ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
                                const SimpleCarState<T>& state,
                                const DrivingCommand<T>& input,

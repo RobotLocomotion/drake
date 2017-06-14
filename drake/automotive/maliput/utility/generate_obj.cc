@@ -292,11 +292,13 @@ class SrhFace {
 // @param use_driveable_bounds  if true, use the lane's driveable_bounds()
 //        to determine the lateral extent of the coverage; otherwise, use
 //        lane_bounds()
-// @param h_offset  h value of each vertex (height above road surface)
-void CoverLaneWithQuads(GeoMesh* mesh, const api::Lane* lane,
-                        double grid_unit,
-                        bool use_driveable_bounds,
-                        double h_offset) {
+// @param elevation a function taking `(s, r)` as parameters and returning
+//        the corresponding elevation `h`, to yield a quad vertex `(s, r, h)`
+void CoverLaneWithQuads(
+    GeoMesh* mesh, const api::Lane* lane,
+    double grid_unit,
+    bool use_driveable_bounds,
+    const std::function<double(double, double)>& elevation) {
   const double s_max = lane->length();
   for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
     double s1 = s0 + grid_unit;
@@ -321,10 +323,10 @@ void CoverLaneWithQuads(GeoMesh* mesh, const api::Lane* lane,
         // (s0,r01) o --> * (s0,r00)
         //
         SrhFace srh_face({
-            {s0, r00, h_offset},
-            {s1, r10, h_offset},
-            {s1, r11, h_offset},
-            {s0, r01, h_offset}}, {0., 0., 1.});
+            {s0, r00, elevation(s0, r00)},
+            {s1, r10, elevation(s1, r10)},
+            {s1, r11, elevation(s1, r11)},
+            {s0, r01, elevation(s0, r01)}}, {0., 0., 1.});
         mesh->PushFace(srh_face.ToGeoFace(lane));
 
         r00 += grid_unit;
@@ -345,10 +347,10 @@ void CoverLaneWithQuads(GeoMesh* mesh, const api::Lane* lane,
         // (s0,r00) * --> o (s0,r01)
         //
         SrhFace srh_face({
-            {s0, r00, h_offset},
-            {s0, r01, h_offset},
-            {s1, r11, h_offset},
-            {s1, r10, h_offset}}, {0., 0., 1.});
+            {s0, r00, elevation(s0, r00)},
+            {s0, r01, elevation(s0, r01)},
+            {s1, r11, elevation(s1, r11)},
+            {s1, r10, elevation(s1, r10)}}, {0., 0., 1.});
         mesh->PushFace(srh_face.ToGeoFace(lane));
 
         r00 -= grid_unit;
@@ -704,13 +706,35 @@ void RenderSegment(const api::Segment* segment,
                    const ObjFeatures& features,
                    GeoMesh* asphalt_mesh,
                    GeoMesh* lane_mesh,
-                   GeoMesh* marker_mesh) {
+                   GeoMesh* marker_mesh,
+                   GeoMesh* h_bounds_mesh) {
   // Lane 0 should be as good as any other for driveable-bounds.
   CoverLaneWithQuads(asphalt_mesh, segment->lane(0),
                      PickGridUnit(segment->lane(0),
                                   features.max_grid_unit,
                                   features.min_grid_resolution),
-                     true, 0.);
+                     true /*use_driveable_bounds*/,
+                     [](double, double) { return 0.; });
+  if (features.draw_elevation_bounds) {
+    CoverLaneWithQuads(
+        h_bounds_mesh,
+        segment->lane(0),
+        PickGridUnit(segment->lane(0),
+                     features.max_grid_unit,
+                     features.min_grid_resolution),
+        true /*use_driveable_bounds*/,
+        [&segment](double s, double r) {
+          return segment->lane(0)->elevation_bounds(s, r).max(); });
+    CoverLaneWithQuads(
+        h_bounds_mesh,
+        segment->lane(0),
+        PickGridUnit(segment->lane(0),
+                     features.max_grid_unit,
+                     features.min_grid_resolution),
+        true /*use_driveable_bounds*/,
+        [&segment](double s, double r) {
+          return segment->lane(0)->elevation_bounds(s, r).min(); });
+  }
   for (int li = 0; li < segment->num_lanes(); ++li) {
     const api::Lane* lane = segment->lane(li);
     const double grid_unit = PickGridUnit(lane,
@@ -718,8 +742,10 @@ void RenderSegment(const api::Segment* segment,
                                           features.min_grid_resolution);
     if (features.draw_lane_haze) {
       CoverLaneWithQuads(lane_mesh, lane, grid_unit,
-                         false,
-                         features.lane_haze_elevation);
+                         false /*use_driveable_bounds*/,
+                         [&features](double, double) {
+                           return features.lane_haze_elevation;
+                         });
     }
     if (features.draw_stripes) {
       StripeLaneBounds(marker_mesh, lane, grid_unit,
@@ -757,6 +783,7 @@ void GenerateObjFile(const api::RoadGeometry* rg,
   GeoMesh asphalt_mesh;
   GeoMesh lane_mesh;
   GeoMesh marker_mesh;
+  GeoMesh h_bounds_mesh;
   GeoMesh branch_point_mesh;
 
   GeoMesh grayed_asphalt_mesh;
@@ -772,11 +799,11 @@ void GenerateObjFile(const api::RoadGeometry* rg,
       if (IsSegmentRenderedNormally(segment->id(),
                                     features.highlighted_segments)) {
         RenderSegment(segment, features,
-                      &asphalt_mesh, &lane_mesh, &marker_mesh);
+                      &asphalt_mesh, &lane_mesh, &marker_mesh, &h_bounds_mesh);
       } else {
         RenderSegment(segment, features,
                       &grayed_asphalt_mesh, &grayed_lane_mesh,
-                      &grayed_marker_mesh);
+                      &grayed_marker_mesh, &h_bounds_mesh);
       }
     }
   }
@@ -797,6 +824,7 @@ void GenerateObjFile(const api::RoadGeometry* rg,
   const std::string kMarkerPaint("marker_paint");
   const std::string kBlandAsphalt("bland_asphalt");
   const std::string kBranchPointGlow("branch_point_glow");
+  const std::string kHBoundsHaze("h_bounds_haze");
 
   const std::string kGrayedLaneHaze("grayed_lane_haze");
   const std::string kGrayedMarkerPaint("grayed_marker_paint");
@@ -868,6 +896,11 @@ mtllib {}
         grayed_marker_mesh.EmitObj(os, kGrayedMarkerPaint,
                                    precision, features.origin,
                                    vertex_index_offset, normal_index_offset);
+
+    std::tie(vertex_index_offset, normal_index_offset) =
+        h_bounds_mesh.EmitObj(os, kHBoundsHaze,
+                              precision, features.origin,
+                              vertex_index_offset, normal_index_offset);
   }
 
   // Create the MTL file referenced by the OBJ file.
@@ -932,9 +965,18 @@ Ks 0.9 0.9 0.9
 Ns 10.0
 illum 2
 d 0.10
+
+newmtl {}
+Ka 0.0 0.0 1.0
+Kd 0.0 0.0 1.0
+Ks 0.0 0.0 1.0
+Ns 10.0
+illum 2
+d 0.20
 )X",
                kMarkerPaint, kBlandAsphalt, kLaneHaze, kBranchPointGlow,
-               kGrayedMarkerPaint, kGrayedBlandAsphalt, kGrayedLaneHaze);
+               kGrayedMarkerPaint, kGrayedBlandAsphalt, kGrayedLaneHaze,
+               kHBoundsHaze);
   }
 }
 

@@ -100,6 +100,8 @@ github_archive(
     sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",
 )
 
+# In the unlikely event that you update the version here, verify that the
+# licenses in tools/third_party/jchart2d/LICENSE are still applicable.
 maven_jar(
     name = "net_sf_jchart2d_jchart2d",
     artifact = "net.sf.jchart2d:jchart2d:3.3.2",
@@ -255,12 +257,6 @@ mosek_repository(
     name = "mosek",
 )
 
-load("//tools:soft_failure.bzl", "soft_failure_binary_repository")
-soft_failure_binary_repository(
-    name = "drake_visualizer",
-    local_path = __workspace_dir__ + "/build/install/bin/drake-visualizer",
-)
-
 load("//tools:gfortran.bzl", "gfortran_repository")
 gfortran_repository(
     name = "gfortran",
@@ -319,6 +315,9 @@ new_local_repository(
                           "visibility = ['//visibility:public'])")
 )
 
+# If updating ignition_math version, do not forget to also update
+# tools/ignition_math.BUILD in which the version number is hard-coded
+# to configure config.hh with cmake_configure_file().
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
@@ -359,4 +358,9 @@ pkg_config_package(
 pkg_config_package(
     name = "zlib",
     modname = "zlib",
+)
+
+load("//tools:director.bzl", "director_repository")
+director_repository(
+    name = "director",
 )

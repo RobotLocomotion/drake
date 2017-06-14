@@ -15,7 +15,11 @@ namespace rendering {
 
 template <typename T>
 PoseAggregator<T>::PoseAggregator() {
-  this->DeclareAbstractOutputPort();
+  // Declare the output port and provide an allocator for a PoseBundle of length
+  // equal to the concatenation of all inputs. This can't be done with a model
+  // value because we don't know at construction how big the output will be.
+  this->DeclareAbstractOutputPort(&PoseAggregator::MakePoseBundle,
+                                  &PoseAggregator::CalcPoseBundle);
 }
 
 template <typename T>
@@ -49,10 +53,9 @@ const InputPortDescriptor<T>& PoseAggregator<T>::AddBundleInput(
 }
 
 template <typename T>
-void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
-                                     SystemOutput<T>* output) const {
-  PoseBundle<T>& bundle =
-      output->GetMutableData(0)->template GetMutableValue<PoseBundle<T>>();
+void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
+                                       PoseBundle<T>* output) const {
+  PoseBundle<T>& bundle = *output;
   int pose_index = 0;
 
   const int num_ports = this->get_num_input_ports();
@@ -117,9 +120,8 @@ void PoseAggregator<T>::DoCalcOutput(const Context<T>& context,
 }
 
 template <typename T>
-std::unique_ptr<AbstractValue> PoseAggregator<T>::AllocateOutputAbstract(
-    const OutputPortDescriptor<T>&) const {
-  return AbstractValue::Make(PoseBundle<T>(this->CountNumPoses()));
+PoseBundle<T> PoseAggregator<T>::MakePoseBundle() const {
+  return PoseBundle<T>(this->CountNumPoses());
 }
 
 template <typename T>

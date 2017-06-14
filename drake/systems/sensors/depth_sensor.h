@@ -12,7 +12,8 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/rendering/pose_vector.h"
+#include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
 namespace drake {
@@ -146,23 +147,26 @@ class DepthSensor : public systems::LeafSystem<double> {
   const InputPortDescriptor<double>& get_rigid_body_tree_state_input_port()
       const;
 
-  /// Returns a descriptor of the state output port, which contains the sensor's
+  /// Returns the state output port, which contains the sensor's
   /// sensed values.
-  const OutputPortDescriptor<double>& get_sensor_state_output_port() const;
+  const OutputPort<double>& get_sensor_state_output_port() const;
 
-  /// Returns a descriptor of the `X_WS` output port, which contains the
+  /// Returns the `X_WS` output port, which contains the
   /// transform from this sensor's frame to the world frame.
-  const OutputPortDescriptor<double>& get_pose_output_port() const;
+  const OutputPort<double>& get_pose_output_port() const;
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const DepthSensor& depth_sensor);
 
- protected:
-  /// Outputs the depth information.
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
-
  private:
+  // These are calculators for the depth data and sensor pose outputs.
+  void CalcDepthOutput(const Context<double>& context,
+                       DepthSensorOutput<double>* data_output) const;
+
+  void CalcPoseOutput(const Context<double>& context,
+                      rendering::PoseVector<double>* pose_output) const;
+
+
   // The depth sensor will cast a ray with its start point at (0,0,0) in the
   // sensor's base frame (as defined by get_frame()). Its end, also in the
   // sensor's base frame, is computed by this method and stored in
@@ -177,11 +181,6 @@ class DepthSensor : public systems::LeafSystem<double> {
   // maximum sensing distance and not detecting any object within the sensing
   // range.
   void ApplyLimits(VectorX<double>* dists) const;
-
-  // Evaluates the output port containing the depth measurements.
-  void UpdateOutputs(const VectorX<double>& distances,
-                     const KinematicsCache<double>& kinematics_cache,
-                     SystemOutput<double>* output) const;
 
   const std::string name_;
   const RigidBodyTree<double>& tree_;

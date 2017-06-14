@@ -26,7 +26,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/rendering/pose_aggregator.h"
 #include "drake/systems/rendering/pose_bundle.h"
@@ -269,8 +268,8 @@ class AutomotiveSimulator {
   // Connects the provided pose and velocity output ports of a vehicle model to
   // the PoseAggregator and adds a PriusVis for visualizing the vehicle.
   void ConnectCarOutputsAndPriusVis(int id,
-    const systems::OutputPortDescriptor<T>& pose_output,
-    const systems::OutputPortDescriptor<T>& velocity_output);
+    const systems::OutputPort<T>& pose_output,
+    const systems::OutputPort<T>& velocity_output);
 
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.

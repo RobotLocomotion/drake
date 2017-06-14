@@ -436,7 +436,7 @@ py_binary(
         ":automotive_demo",
         ":lcm-spy",
         ":steering_command_driver",
-        "@drake_visualizer//:drake-visualizer",
+        "//tools:drake_visualizer",
         "@lcm//:lcm-logger",
     ],
     main = "automotive_demo.py",
@@ -638,6 +638,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     deps = [
         ":simple_car",
         "//drake/common:call_matlab",

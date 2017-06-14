@@ -27,6 +27,8 @@ struct ObjFeatures {
   bool draw_lane_haze{true};
   /// Draw branching at BranchPoints?
   bool draw_branch_points{true};
+  /// Draw highlighting of elevation_bounds of each lane?
+  bool draw_elevation_bounds{true};
   /// Absolute width of stripes
   double stripe_width{0.25};
   /// Absolute elevation (h) of stripes above road surface

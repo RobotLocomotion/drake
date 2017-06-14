@@ -1,5 +1,7 @@
 #include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
 
+#include <algorithm>
+
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 
 namespace drake {
@@ -8,19 +10,21 @@ namespace systems {
 RobotCommandToDesiredEffortConverter::RobotCommandToDesiredEffortConverter(
     const std::vector<const RigidBodyActuator*>& actuators)
     : robot_command_port_index_(DeclareAbstractInputPort().get_index()),
-      desired_effort_port_indices_(DeclareDesiredEffortOutputPorts(actuators)),
-      name_to_actuator_(CreateNameToActuatorMap(actuators)) {
+      desired_effort_port_indices_(DeclareDesiredEffortOutputPorts(actuators)) {
   set_name("RobotCommandToDesiredEffortConverter");
 }
 
-void RobotCommandToDesiredEffortConverter::DoCalcOutput(
+void RobotCommandToDesiredEffortConverter::OutputDesiredEffort(
     const systems::Context<double>& context,
-    systems::SystemOutput<double>* output) const {
+    const RigidBodyActuator& actuator,
+    systems::BasicVector<double>* output) const {
   using bot_core::atlas_command_t;
 
-  const AbstractValue* input =
-      EvalAbstractInput(context, robot_command_port_index_);
-  const atlas_command_t& message = input->GetValue<atlas_command_t>();
+  // TODO(sherm1) Should use a cache entry to hold a joint name-to-index map
+  // if each message can have unique joint ordering.
+  const atlas_command_t* message =
+      EvalInputValue<atlas_command_t>(context, robot_command_port_index_);
+  DRAKE_DEMAND(message != nullptr);
 
   // Note: currently, all RigidBodyActuators are assumed to be one-dimensional.
   // The following code is written based on that assumption.
@@ -30,50 +34,41 @@ void RobotCommandToDesiredEffortConverter::DoCalcOutput(
   // simulation, before we've received a command message from the controller,
   // in which case the subscriber system returns a default-constructed message
   // (with empty std::vectors for the efforts and such).
-  for (const auto& actuator_and_port_index : desired_effort_port_indices_) {
-    int port_index = actuator_and_port_index.second;
-    output->get_mutable_port_value(port_index)
-        ->GetMutableVectorData<double>()
-        ->SetAtIndex(0, 0.0);
-  }
+  output->SetAtIndex(0, 0.0);
 
-  // Copy effort information from LCM message to appropriate output port.
-  for (size_t i = 0; i < message.joint_names.size(); i++) {
-    const std::string& joint_name = message.joint_names[i];
-    const double& effort = message.effort[i];
-    const RigidBodyActuator* actuator = name_to_actuator_.at(joint_name);
-    int port_index = desired_effort_port_indices_.at(actuator);
-    output->get_mutable_port_value(port_index)
-        ->GetMutableVectorData<double>()
-        ->SetAtIndex(0, effort);
-  }
+  // See if the name associated with this actuator is in the message.
+  // TODO(sherm1) O(n) search repeated here for each port; see above.
+  const auto& names = message->joint_names;
+  auto entry = std::find(names.begin(), names.end(), actuator.name_);
+  if (entry == names.end())
+    return;  // Nothing for this port.
+
+  const int index = static_cast<int>(entry - names.begin());
+  const double& effort = message->effort[index];
+  output->SetAtIndex(0, effort);
 }
 
-const OutputPortDescriptor<double>&
+const OutputPort<double>&
 RobotCommandToDesiredEffortConverter::desired_effort_output_port(
     const RigidBodyActuator& actuator) const {
   return get_output_port(desired_effort_port_indices_.at(&actuator));
 }
 
-std::map<const RigidBodyActuator*, int>
+std::map<const RigidBodyActuator*, OutputPortIndex>
 RobotCommandToDesiredEffortConverter::DeclareDesiredEffortOutputPorts(
     const std::vector<const RigidBodyActuator*>& actuators) {
   // Currently, all RigidBodyActuators are assumed to be one-dimensional.
   const int desired_effort_length = 1;
-  std::map<const RigidBodyActuator*, int> ret;
-  for (const auto& actuator : actuators) {
-    ret[actuator] =
-        DeclareOutputPort(kVectorValued, desired_effort_length).get_index();
-  }
-  return ret;
-}
-
-std::map<std::string, const RigidBodyActuator*>
-RobotCommandToDesiredEffortConverter::CreateNameToActuatorMap(
-    const std::vector<const RigidBodyActuator*>& actuators) {
-  std::map<std::string, const RigidBodyActuator*> ret;
-  for (const auto& actuator : actuators) {
-    ret[actuator->name_] = actuator;
+  std::map<const RigidBodyActuator*, OutputPortIndex> ret;
+  for (const RigidBodyActuator* actuator : actuators) {
+    // Create a function with the signature of a vector output port calculator.
+    auto calc_method = [this, actuator](const Context<double>& context,
+                                        BasicVector<double>* output) {
+      this->OutputDesiredEffort(context, *actuator, output);
+    };
+    ret[actuator] = DeclareVectorOutputPort(
+                        BasicVector<double>(desired_effort_length), calc_method)
+                        .get_index();
   }
   return ret;
 }

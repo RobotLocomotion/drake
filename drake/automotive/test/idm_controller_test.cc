@@ -116,10 +116,10 @@ TEST_F(IdmControllerTest, Topology) {
   EXPECT_EQ(systems::kAbstractValued, traffic_input_descriptor.get_data_type());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
-  const auto& output_descriptor =
+  const auto& output_port =
       dut_->get_output_port(acceleration_output_index_);
-  EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(1 /* accleration output */, output_descriptor.size());
+  EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
+  EXPECT_EQ(1 /* accleration output */, output_port.size());
 }
 
 TEST_F(IdmControllerTest, Output) {

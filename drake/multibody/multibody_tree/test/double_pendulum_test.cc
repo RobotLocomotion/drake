@@ -43,8 +43,59 @@ using systems::Context;
 // The only difference is that this model has no actuation.
 // This double pendulum is defined in the x-y plane with gravity acting in the
 // negative y-axis direction.
-// In this model the two links of the pendulum have the same length and their
-// body frames are located at the links' centroids.
+// In this model the two links of the pendulum have the same length with their
+// respective centers of mass located at the links' centroids.
+//
+// The schematic below shows the location and relationship of the frames defined
+// by the model. A few comments:
+//  - The pendulum moves in the x-y plane, with angles θ₁ and θ₂ defined
+//    positive according to the right-hand-rule with the thumb aligned in the
+//    z-direction.
+//  - The body frames for each link are placed at their geometric center.
+//  - The origin of the shoulder frames (Si and So) are coincident at all times.
+//    So is aligned with Si for θ₁ = 0.
+//  - The origin of the elbow frames (Ei and Eo) are coincident at all times.
+//    Eo is aligned with Ei for θ₂ = 0.
+//
+//       y ^
+//         | Si ≡ W World body frame.
+//         +--> x  Shoulder inboard frame Si coincides with W.
+//      X_SiSo(θ₁) Shoulder revolute mobilizer with generalized position θ₁.
+//      +--+-----+
+//      |  ^     |
+//      |  | So  | Shoulder outboard frame So.
+//      |  +-->  |
+//      |        |
+//      |  X_USo | Pose of So in U.
+//      |        |
+//      |  ^     |
+//      |  | U   | Upper link body frame U.
+//      |  +-->  |
+//      |        |
+//      |  X_UEi | Pose of Ei in U.
+//      |        |
+//      |  ^     |
+//      |  | Ei  | Elbow inboard frame Ei.
+//      |  +-->  |
+//      +--------+
+//      X_SiSo(θ₂) Elbow revolute mobilizer with generalized position θ₂.
+//      +--+-----+
+//      |  ^     |
+//      |  | Eo  | Elbow outboard frame Eo.
+//      |  +-->  |
+//      |        |
+//      |  X_LEo | Pose of Eo in L.
+//      |        |
+//      |  ^     |
+//      |  | L   | Lower link body frame L.
+//      |  +-->  |
+//      |        |
+//      |        |
+//      |        |
+//      |        |
+//      |        |
+//      |        |
+//      +--------+
 class PendulumTests : public ::testing::Test {
  public:
   // Creates an "empty" MultibodyTree that only contains the "world" body and
@@ -93,9 +144,9 @@ class PendulumTests : public ::testing::Test {
     // Below we will create inboard and outboard frames associated with the
     // pendulum's elbow.
     // An inboard frame Ei is rigidly attached to the upper link. It is located
-    // at y = -half_link_length in the frame of the upper link body.
+    // at y = -half_link_length_ in the frame of the upper link body.
     // An outboard frame Eo is rigidly attached to the lower link. It is located
-    // at y = +half_link_length in the frame of the lower link body.
+    // at y = +half_link_length_ in the frame of the lower link body.
     // X_UEi specifies the pose of the elbow inboard frame Ei in the body
     // frame U of the upper link.
     // X_LEo specifies the pose of the elbow outboard frame Eo in the body
@@ -157,20 +208,17 @@ class PendulumTests : public ::testing::Test {
   const RevoluteMobilizer<double>* shoulder_mobilizer_;
   const RevoluteMobilizer<double>* elbow_mobilizer_;
   // Pendulum parameters:
-  const double link_length = 1.0;
-  const double half_link_length = link_length / 2;
-  // COM positions, measured and expressed in body frame:
-  const Vector3d p_UBcm_{0.0, -half_link_length, 0.0};
-  const Vector3d p_LBcm_{0.0, -half_link_length, 0.0};
+  const double link_length_ = 1.0;
+  const double half_link_length_ = link_length_ / 2;
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
-  const Isometry3d X_WL_{Translation3d(0.0, -half_link_length, 0.0)};
+  const Isometry3d X_WL_{Translation3d(0.0, -half_link_length_, 0.0)};
   // Pose of the shoulder outboard frame So in the upper link frame U.
-  const Isometry3d X_USo_{Translation3d(0.0, half_link_length, 0.0)};
+  const Isometry3d X_USo_{Translation3d(0.0, half_link_length_, 0.0)};
   // Pose of the elbow inboard frame Ei in the upper link frame U.
-  const Isometry3d X_UEi_{Translation3d(0.0, -half_link_length, 0.0)};
+  const Isometry3d X_UEi_{Translation3d(0.0, -half_link_length_, 0.0)};
   // Pose of the elbow outboard frame Eo in the lower link frame L.
-  const Isometry3d X_LEo_{Translation3d(0.0, half_link_length, 0.0)};
+  const Isometry3d X_LEo_{Translation3d(0.0, half_link_length_, 0.0)};
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{Vector3d::UnitZ() /* Plane normal */,
                                      Vector3d::UnitY() /* Up vector */};
@@ -328,12 +376,17 @@ TEST_F(PendulumTests, CreateContext) {
   // Tests MultibodyTreeContext accessors.
   auto mbt_context =
       dynamic_cast<MultibodyTreeContext<double>*>(context.get());
+  ASSERT_TRUE(mbt_context != nullptr);
 
   // Verifies the correct number of generalized positions and velocities.
   EXPECT_EQ(mbt_context->get_positions().size(), 2);
   EXPECT_EQ(mbt_context->get_mutable_positions().size(), 2);
   EXPECT_EQ(mbt_context->get_velocities().size(), 2);
   EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
+
+  // Verifies methods to retrieve fixed-sized segments of the state.
+  EXPECT_EQ(mbt_context->get_state_segment<1>(1).size(), 1);
+  EXPECT_EQ(mbt_context->get_mutable_state_segment<1>(1).size(), 1);
 
   // Set the poses of each body in the position kinematics cache to have an
   // arbitrary value that we can use for unit testing. In practice the poses in
@@ -352,6 +405,9 @@ TEST_F(PendulumTests, CreateContext) {
   EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
 }
 
+// Unit test fixture to verify the correctness of MultibodyTree methods for
+// computing kinematics. This fixture uses the reference solution provided by
+// benchmarks::Acrobot.
 class PendulumKinematicTests : public PendulumTests {
  public:
   void SetUp() override {
@@ -381,8 +437,14 @@ class PendulumKinematicTests : public PendulumTests {
  protected:
   std::unique_ptr<Context<double>> context_;
   MultibodyTreeContext<double>* mbt_context_;
+  // Reference benchmark for verification.
+  Acrobot<double> acrobot_benchmark_{Vector3d::UnitZ() /* Plane normal */,
+                                     Vector3d::UnitY() /* Up vector */};
 };
 
+// Verify the correctness of method MultibodyTree::CalcPositionKinematicsCache()
+// comparing the computed results the reference solution provided by
+// benchmarks::Acrobot.
 TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
@@ -390,6 +452,14 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   const double kEpsilon =
       kEpsilonFactor * std::numeric_limits<double>::epsilon();
 
+  // By default CreateDefaultContext() sets mobilizer to their zero
+  // configuration.
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
+  EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), 0.0);
+
+  // Test mobilizer's setter/getters.
+  shoulder_mobilizer_->set_angle(context_.get(), M_PI);
+  EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), M_PI);
   shoulder_mobilizer_->set_zero_configuration(context_.get());
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
 
@@ -436,9 +506,9 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
                 &pc.get_mutable_X_FM(elbow_node));
 
       // Retrieve body poses from position kinematics cache.
-      const Isometry3d &X_WW = get_body_pose_in_world(pc, *world_body_);
-      const Isometry3d &X_WU = get_body_pose_in_world(pc, *upper_link_);
-      const Isometry3d &X_WL = get_body_pose_in_world(pc, *lower_link_);
+      const Isometry3d& X_WW = get_body_pose_in_world(pc, *world_body_);
+      const Isometry3d& X_WU = get_body_pose_in_world(pc, *upper_link_);
+      const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
 
       const Isometry3d X_WU_expected =
           acrobot_benchmark_.CalcLink1PoseInWorldFrame(shoulder_angle);

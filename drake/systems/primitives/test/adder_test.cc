@@ -8,7 +8,6 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 using std::make_unique;
 
@@ -21,14 +20,14 @@ class AdderTest : public ::testing::Test {
   void SetUp() override {
     adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
     context_ = adder_->CreateDefaultContext();
-    output_ = adder_->AllocateOutput(*context_);
+    output_ = adder_->get_output_port().Allocate(*context_);
     input0_.reset(new BasicVector<double>(3 /* size */));
     input1_.reset(new BasicVector<double>(3 /* size */));
   }
 
-  std::unique_ptr<System<double>> adder_;
+  std::unique_ptr<Adder<double>> adder_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<AbstractValue> output_;
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;
 };
@@ -43,9 +42,11 @@ TEST_F(AdderTest, Topology) {
   }
 
   ASSERT_EQ(1, adder_->get_num_output_ports());
-  const OutputPortDescriptor<double>& descriptor = adder_->get_output_port(0);
-  EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-  EXPECT_EQ(3, descriptor.size());
+  const OutputPort<double>& output_port =
+      static_cast<LeafSystem<double>*>(adder_.get())->get_output_port(0);
+  EXPECT_EQ(&output_port, &adder_->get_output_port());
+  EXPECT_EQ(kVectorValued, output_port.get_data_type());
+  EXPECT_EQ(3, output_port.size());
 }
 
 // Tests that the system computes the correct sum.
@@ -57,13 +58,11 @@ TEST_F(AdderTest, AddTwoVectors) {
   context_->FixInputPort(0, std::move(input0_));
   context_->FixInputPort(1, std::move(input1_));
 
-  adder_->CalcOutput(*context_, output_.get());
+  adder_->get_output_port().Calc(*context_, output_.get());
+  const auto& output_vector = output_->GetValueOrThrow<BasicVector<double>>();
 
-  ASSERT_EQ(1, output_->get_num_ports());
-  const BasicVector<double>* output_port = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_port);
   Eigen::Vector3d expected(5, 7, 9);
-  EXPECT_EQ(expected, output_port->get_value());
+  EXPECT_EQ(expected, output_vector.get_value());
 }
 
 // Tests that Adder allocates no state variables in the context_.

@@ -10,6 +10,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace systems {
@@ -96,17 +97,17 @@ class PoseAggregator : public LeafSystem<T> {
   const InputPortDescriptor<T>& AddBundleInput(const std::string& bundle_name,
                                                int num_poses);
 
-  /// Aggregates the input poses into the output PoseBundle, in the order
-  /// the input ports were added. Aborts if any inputs have an unexpected
-  /// dimension.
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-
-  /// Allocates a PoseBundle of length equal to the concatenation of all inputs.
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<T>& descriptor) const override;
-
  private:
+  // Aggregates the input poses into the output PoseBundle, in the order
+  // the input ports were added. Aborts if any inputs have an unexpected
+  // dimension.
+  void CalcPoseBundle(const Context<T>& context,
+                      PoseBundle<T>* output) const;
+
+  // Constructs a PoseBundle of length equal to the concatenation of all inputs.
+  // This is the method used by the allocator for the output port.
+  PoseBundle<T> MakePoseBundle() const;
+
   using InputRecord = pose_aggregator_detail::InputRecord;
 
   // Allow different specializations to access each other's private data.

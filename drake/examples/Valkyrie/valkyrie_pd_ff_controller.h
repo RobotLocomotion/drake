@@ -24,21 +24,15 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
     return get_input_port(input_port_index_kinematics_result_);
   }
 
-  inline const OutputPortDescriptor<double>& get_output_port_atlas_command()
+  inline const OutputPort<double>& get_output_port_atlas_command()
       const {
     return get_output_port(output_port_index_atlas_command_);
   }
 
- protected:
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>&) const override {
-    return std::make_unique<Value<bot_core::atlas_command_t>>(
-        bot_core::atlas_command_t());
-  }
-
  private:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override;
+  // This is the calculator method for the output port.
+  void OutputCommand(const Context<double>& context,
+                     bot_core::atlas_command_t* output) const;
 
   const RigidBodyTree<double>& robot_;
   int input_port_index_kinematics_result_;

@@ -20,9 +20,10 @@
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/discrete_event.h"
+#include "drake/systems/framework/input_port_descriptor.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
@@ -102,8 +103,10 @@ class System {
     return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(descriptor));
   }
 
-  /// Returns a default output, initialized with the correct number of
-  /// concrete output ports for this System. @p context is provided as
+  /// Returns a container that can hold the values of all of this System's
+  /// output ports. It is sized with the number of output ports and uses each
+  /// output port's allocation method to provide an object of the right type
+  /// for that port. A Context is provided as
   /// an argument to support some specialized use cases. Most typical
   /// System implementations should ignore it.
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -317,7 +320,7 @@ class System {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                        Constraint-related functions.
+  /// @name               Constraint-related functions.
   ///
   // @{
 
@@ -465,7 +468,7 @@ class System {
     const int abstract_state_dim = state->get_abstract_state()->size();
 
     // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalclUnrestrictedUpdate().
+    // documentation for DoCalcUnrestrictedUpdate().
     state->CopyFrom(context.get_state());
 
     if (event.do_unrestricted_update == nullptr) {
@@ -511,14 +514,22 @@ class System {
     DoGetPerStepEvents(context, events);
   }
 
-  /// Computes the output values that should result from the current contents
-  /// of the given Context. The result may depend on time and the current values
-  /// of input ports, parameters, and state variables.
-  void CalcOutput(const Context<T>& context, SystemOutput<T>* output) const {
-    DRAKE_DEMAND(output != nullptr);
+  /// Utility method that computes for _every_ output port i the value y(i) that
+  /// should result from the current contents of the given Context. Note that
+  /// individual output port values can be calculated using
+  /// `get_output_port(i).Calc()`; this method invokes that for each output port
+  /// in index order. The result may depend on time and the current values of
+  /// input ports, parameters, and state variables. The result is written to
+  /// `outputs` which must already have been allocated to have the right number
+  /// of entries of the right types.
+  void CalcOutput(const Context<T>& context, SystemOutput<T>* outputs) const {
+    DRAKE_DEMAND(outputs != nullptr);
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DRAKE_ASSERT_VOID(CheckValidOutput(output));
-    DoCalcOutput(context, output);
+    DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
+    for (OutputPortIndex i(0); i < get_num_output_ports(); ++i) {
+      get_output_port(i).Calc(
+          context, outputs->get_mutable_port_value(i)->GetMutableData());
+    }
   }
 
   /// Calculates and returns the potential energy current stored in the
@@ -729,8 +740,8 @@ class System {
     return *input_ports_[port_index];
   }
 
-  /// Returns the descriptor of the output port at index @p port_index.
-  const OutputPortDescriptor<T>& get_output_port(int port_index) const {
+  /// Returns the output port at index @p port_index.
+  const OutputPort<T>& get_output_port(int port_index) const {
     if (port_index < 0 || port_index >= get_num_output_ports()) {
       throw std::out_of_range(
           "System " + get_name() + ": Port index " +
@@ -849,7 +860,7 @@ class System {
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
-  virtual void GetGraphvizOutputPortToken(const OutputPortDescriptor<T>& port,
+  virtual void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                           std::stringstream* dot) const {
     unused(port, dot);
   }
@@ -1022,6 +1033,19 @@ class System {
     DoGetWitnessFunctions(context, w);
   }
 
+  /// Returns a string suitable for identifying this particular %System in
+  /// error messages, when it is a subsystem of a larger Diagram. This method
+  /// captures human-readable subsystem identification best practice; the
+  /// specifics of that are likely to change over time. However it will always
+  /// be formatted like "System xxx" or "adjective System xxx" so that the
+  /// remainder of the error message will continue to make sense. Currently it
+  /// returns "system_type_name System subsystem_pathname".
+  // TODO(sherm1) Remove the system type noise once the subsystem path is
+  // a fully reliable identifier.
+  std::string GetSystemIdString() const {
+    return NiceTypeName::Get(*this) + " System " + GetPath();
+  }
+
  protected:
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default
@@ -1055,20 +1079,14 @@ class System {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
-  /// Adds a port with the specified @p type and @p size to the output topology.
-  /// @return descriptor of declared port.
-  const OutputPortDescriptor<T>& DeclareOutputPort(PortDataType type,
-                                                   int size) {
-    int port_index = get_num_output_ports();
-    output_ports_.push_back(std::make_unique<OutputPortDescriptor<T>>(
-        this, port_index, type, size));
-    return *output_ports_.back();
-  }
-
-  /// Adds an abstract-valued port with to the output topology.
-  /// @return descriptor of declared port.
-  const OutputPortDescriptor<T>& DeclareAbstractOutputPort() {
-    return DeclareOutputPort(kAbstractValued, 0 /* size */);
+  /// Adds an already-created output port to this System. Insists that the port
+  /// already contains a reference to this System, and that the port's index is
+  /// already set to the next available output port index for this System.
+  void CreateOutputPort(std::unique_ptr<OutputPort<T>> port) {
+    DRAKE_DEMAND(port != nullptr);
+    DRAKE_DEMAND(&port->get_system() == this);
+    DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
+    output_ports_.push_back(std::move(port));
   }
   //@}
 
@@ -1103,17 +1121,6 @@ class System {
   /// protected. You should place your overrides in the protected or private
   /// sections of your concrete class.
   //@{
-
-  /// You must override this method to calculate values for output ports into
-  /// the supplied argument, based on the contents of the given Context.
-  ///
-  /// This method is called only from the public non-virtual CalcOutput()
-  /// which will already have error-checked the parameters so you don't have to.
-  /// In particular, implementations may assume that the given Context is valid
-  /// for this %System; that the `output` pointer is non-null, and that
-  /// the referenced object is valid for this %System.
-  virtual void DoCalcOutput(const Context<T>& context,
-                            SystemOutput<T>* output) const = 0;
 
   /// Override this if you have any continuous state variables `xc` in your
   /// concrete %System to calculate their time derivatives.
@@ -1378,10 +1385,10 @@ class System {
   virtual System<symbolic::Expression>* DoToSymbolic() const { return nullptr; }
   //@}
 
-  //----------------------------------------------------------------------------
-  /// @name                        Constraint-related functions (protected).
-  ///
-  // @{
+//----------------------------------------------------------------------------
+/// @name             Constraint-related functions (protected).
+///
+// @{
 
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
@@ -1488,7 +1495,7 @@ class System {
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.
   std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
-  std::vector<std::unique_ptr<OutputPortDescriptor<T>>> output_ports_;
+  std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.

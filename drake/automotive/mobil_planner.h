@@ -69,7 +69,7 @@ namespace automotive {
 ///   move into and the direction of travel with respect to the lane's canonical
 ///   direction of travel.  LaneDirection must be consistent with the provided
 ///   road.
-///   (OutputPortDescriptor getter: lane_output())
+///   (OutputPort getter: lane_output())
 ///
 /// @ingroup automotive_controllers
 ///
@@ -95,7 +95,7 @@ class MobilPlanner : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& ego_velocity_input() const;
   const systems::InputPortDescriptor<T>& ego_acceleration_input() const;
   const systems::InputPortDescriptor<T>& traffic_input() const;
-  const systems::OutputPortDescriptor<T>& lane_output() const;
+  const systems::OutputPort<T>& lane_output() const;
   /// @}
 
  private:
@@ -103,17 +103,18 @@ class MobilPlanner : public systems::LeafSystem<T> {
                              const pose_selector::RoadOdometry<T>>
       OdometryPair;
 
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  void CalcLaneDirection(const systems::Context<T>& context,
+                         LaneDirection* lane_direction) const;
 
   // Performs the calculations for the lane_output() port.
-  void ImplDoCalcLane(const systems::rendering::PoseVector<T>& ego_pose,
-                      const systems::rendering::FrameVelocity<T>& ego_velocity,
-                      const systems::rendering::PoseBundle<T>& traffic_poses,
-                      const systems::BasicVector<T>& ego_accel_command,
-                      const IdmPlannerParameters<T>& idm_params,
-                      const MobilPlannerParameters<T>& mobil_params,
-                      LaneDirection* lane_direction) const;
+  void ImplCalcLaneDirection(
+      const systems::rendering::PoseVector<T>& ego_pose,
+      const systems::rendering::FrameVelocity<T>& ego_velocity,
+      const systems::rendering::PoseBundle<T>& traffic_poses,
+      const systems::BasicVector<T>& ego_accel_command,
+      const IdmPlannerParameters<T>& idm_params,
+      const MobilPlannerParameters<T>& mobil_params,
+      LaneDirection* lane_direction) const;
 
   // Computes a pair of incentive measures for the provided neighboring lanes.
   // The first and second elements in `lanes` correspond to, respectively, a

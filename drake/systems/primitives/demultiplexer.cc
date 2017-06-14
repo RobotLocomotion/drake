@@ -18,23 +18,26 @@ Demultiplexer<T>::Demultiplexer(int size, int output_ports_sizes) {
   this->DeclareInputPort(kVectorValued, size);
   // TODO(david-german-tri): Provide a way to infer the type.
   for (int i = 0; i < num_output_ports; ++i) {
-    this->DeclareOutputPort(kVectorValued, output_ports_sizes);
+    this->DeclareVectorOutputPort(
+        BasicVector<T>(output_ports_sizes),
+        [this, i](const Context<T>& context, BasicVector<T>* vector) {
+          this->CopyToOutput(context, OutputPortIndex(i), vector);
+        });
   }
 }
 
 template <typename T>
-void Demultiplexer<T>::DoCalcOutput(const Context<T>& context,
-                                    SystemOutput<T>* output) const {
+void Demultiplexer<T>::CopyToOutput(const Context<T>& context,
+                                    OutputPortIndex port_index,
+                                    BasicVector<T>* output) const {
   // All output ports have the same size as defined in the constructor.
   const int out_size = this->get_output_port(0).size();
 
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
   auto in_vector = System<T>::EvalEigenVectorInput(context, 0);
-  for (int iport = 0; iport < this->get_num_output_ports(); ++iport) {
-    auto out_vector = System<T>::GetMutableOutputVector(output, iport);
-    out_vector = in_vector.segment(iport * out_size, out_size);
-  }
+  auto out_vector = output->get_mutable_value();
+  out_vector = in_vector.segment(port_index * out_size, out_size);
 }
 
 template <typename T>

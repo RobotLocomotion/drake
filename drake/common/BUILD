@@ -2,7 +2,13 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools:python_lint.bzl", "python_lint")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -163,10 +169,15 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 
+DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
+
 drake_cc_library(
     name = "find_resource",
     srcs = ["find_resource.cc"],
     hdrs = ["find_resource.h"],
+    data = [
+        DRAKE_RESOURCE_SENTINEL,
+    ],
     deps = [
         ":common",
         "//drake/thirdParty:spruce",
@@ -181,7 +192,7 @@ drake_cc_library(
     srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
     data = [
-        "drake_path.sentinel",
+        DRAKE_RESOURCE_SENTINEL,
     ],
     deps = [
         ":common",
@@ -334,6 +345,16 @@ drake_cc_library(
     hdrs = ["protobuf.h"],
     deps = [
         "@protobuf",
+    ],
+)
+
+drake_cc_binary(
+    name = "resource_tool",
+    srcs = ["resource_tool.cc"],
+    deps = [
+        ":common",
+        ":find_resource",
+        ":text_logging_gflags",
     ],
 )
 
@@ -790,6 +811,16 @@ drake_cc_googletest(
     ],
 )
 
+py_test(
+    name = "resource_tool_test",
+    srcs = ["test/resource_tool_test.py"],
+    data = [
+        "test/resource_tool_test_data.txt",
+        ":resource_tool",
+        "//drake/examples/Pendulum:models",
+    ],
+)
+
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
@@ -798,3 +829,4 @@ drake_cc_googletest(
 # - cpplint_wrapper_test.py
 
 cpplint()
+python_lint()

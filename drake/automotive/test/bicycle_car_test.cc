@@ -77,9 +77,9 @@ TEST_F(BicycleCarTest, Topology) {
 
   ASSERT_EQ(1, dut_->get_num_output_ports()); /* state vector */
 
-  const auto& state_descriptor = dut_->get_output_port(0);
-  EXPECT_EQ(systems::kVectorValued, state_descriptor.get_data_type());
-  EXPECT_EQ(kStateDimension, state_descriptor.size());
+  const auto& state_port = dut_->get_output_port(0);
+  EXPECT_EQ(systems::kVectorValued, state_port.get_data_type());
+  EXPECT_EQ(kStateDimension, state_port.size());
 }
 
 TEST_F(BicycleCarTest, DirectFeedthrough) {

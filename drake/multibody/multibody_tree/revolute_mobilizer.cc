@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
+#include <stdexcept>
+
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
@@ -9,8 +11,8 @@ namespace multibody {
 template <typename T>
 const T& RevoluteMobilizer<T>::get_angle(
     const systems::Context<T>& context) const {
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  const MultibodyTreeContext<T>& mbt_context =
+      this->GetMultibodyTreeContextOrThrow(context);
   auto q = this->get_positions(mbt_context);
   DRAKE_ASSERT(q.size() == nq);
   return q.coeffRef(0);
@@ -19,9 +21,9 @@ const T& RevoluteMobilizer<T>::get_angle(
 template <typename T>
 const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angle(
     systems::Context<T>* context, const T& angle) const {
-  auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
-  DRAKE_DEMAND(mbt_context != nullptr);
-  auto q = this->get_mutable_positions(mbt_context);
+  MultibodyTreeContext<T>& mbt_context =
+      this->GetMutableMultibodyTreeContextOrThrow(context);
+  auto q = this->get_mutable_positions(&mbt_context);
   DRAKE_ASSERT(q.size() == nq);
   q[0] = angle;
   return *this;

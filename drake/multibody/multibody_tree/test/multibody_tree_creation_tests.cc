@@ -443,7 +443,8 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
 
   auto autodiff_model = model_->ToAutoDiffXd();
   EXPECT_EQ(autodiff_model->get_num_bodies(), 8);
-  const MultibodyTreeTopology& autodiff_topology = autodiff_model->get_topology();
+  const MultibodyTreeTopology& autodiff_topology =
+      autodiff_model->get_topology();
 
   // The topology of the clone must be exactly equal to the topology of the
   // original MultibodyTree.

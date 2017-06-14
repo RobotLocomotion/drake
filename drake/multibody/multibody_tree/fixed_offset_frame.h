@@ -94,6 +94,12 @@ class FixedOffsetFrame : public Frame<T> {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
+  Isometry3<T> CalcBodyPoseInThisFrame(
+      const systems::Context<T>& context) const final {
+    return parent_frame_.CalcBodyPoseInOtherFrame(context,
+                                                  X_PF_.cast<T>().inverse());
+  }
+
  private:
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
@@ -105,10 +111,6 @@ class FixedOffsetFrame : public Frame<T> {
   // Spatial transform giving the fixed pose of this frame F measured in the
   // parent frame P.
   const Isometry3<double> X_PF_;
-
-  // Spatial transform giving the fixed pose of the parent frame P measured in
-  // this frame F.
-  const Isometry3<double> X_FP_;
 };
 
 }  // namespace multibody
