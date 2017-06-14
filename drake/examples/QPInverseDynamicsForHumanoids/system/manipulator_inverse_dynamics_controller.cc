@@ -5,11 +5,13 @@
 #include <utility>
 #include <vector>
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status_translator.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram_builder.h"
+
+#include "drake/systems/lcm/translator_system.h"
 
 namespace drake {
 namespace examples {
@@ -31,8 +33,10 @@ ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
   systems::DiagramBuilder<double> builder;
 
   // Converts raw state to humanoid status.
-  StateToHumanoidStatusSystem* rs_wrapper =
-      builder.AddSystem<StateToHumanoidStatusSystem>(robot, alias_group_path);
+  auto rs_wrapper = builder.AddSystem<systems::lcm::LcmEncoderSystem<
+      systems::BasicVector<double>, HumanoidStatus>>(
+      std::make_unique<StateVectorAndHumanoidStatusTranslator>(
+          robot, alias_group_path));
   rs_wrapper->set_name("rs_wrapper");
   // Converts qp output to raw torque.
   TrivialJointLevelControllerSystem* joint_level_controller =
@@ -48,11 +52,11 @@ ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
   id_controller->set_name("id_controller");
 
   // Connects state translator to plan eval.
-  builder.Connect(rs_wrapper->get_output_port_humanoid_status(),
+  builder.Connect(rs_wrapper->get_output_port(0),
                   plan_eval_->get_input_port_humanoid_status());
 
   // Connects state translator to inverse dynamics.
-  builder.Connect(rs_wrapper->get_output_port_humanoid_status(),
+  builder.Connect(rs_wrapper->get_output_port(0),
                   id_controller->get_input_port_humanoid_status());
 
   // Connects plan eval to inverse dynamics.

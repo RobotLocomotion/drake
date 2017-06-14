@@ -22,6 +22,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "translator_system",
+    hdrs = [
+        "translator_system.h"
+    ],
+    deps = [
+        "//drake/lcm:translator_base",
+        "//drake/common",
+        "//drake/systems/framework",
+        "//drake/lcmtypes:drake_signal",
+    ],
+)
+
+drake_cc_library(
     name = "lcm",
     srcs = [
         "lcm_publisher_system.cc",
@@ -125,6 +138,15 @@ drake_cc_googletest(
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
+    ],
+)
+
+drake_cc_googletest(
+    name = "translator_test",
+    deps = [
+        ":translator_system",
+        "//drake/lcm:lcmt_drake_signal_utils",
+        "@robotlocomotion_lcmtypes",
     ],
 )
 
