@@ -34,6 +34,7 @@ drake_cc_library(
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",
+        "//drake/common/trajectories:piecewise_polynomial",
         "//drake/math:geometric_transform",
         "//drake/math:saturate",
         "@ignition_math",
