@@ -703,6 +703,26 @@ class System {
     return nullptr;
   }
 
+  // Returns @p events if @p target_system equals `this`, nullptr otherwise.
+  // Should not be directly called.
+  virtual CompositeEventCollection<T>*
+  DoGetMutableTargetSystemCompositeEventCollection(
+      const System<T>* target_system,
+      CompositeEventCollection<T>* events) const {
+    if (target_system == this) return events;
+    return nullptr;
+  }
+
+  // Returns @p events if @p target_system equals `this`, nullptr otherwise.
+  // Should not be directly called.
+  virtual const CompositeEventCollection<T>*
+  DoGetTargetSystemCompositeEventCollection(
+      const System<T>* target_system,
+      const CompositeEventCollection<T>* events) const {
+    if (target_system == this) return events;
+    return nullptr;
+  }
+
   // Consumers of this class should never need to call the three methods below.
   // These three methods would ideally be designated as "protected", but
   // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
@@ -1085,6 +1105,13 @@ class System {
     return DoEvaluateWitness(context, witness_func);
   }
 
+  void AddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<T>& witness_func,
+      CompositeEventCollection<T>* events) const {
+    DoAddTriggeredWitnessFunctionToCompositeEventCollection(
+        witness_func, events);
+  }
+
   /// Returns a string suitable for identifying this particular %System in
   /// error messages, when it is a subsystem of a larger Diagram. This method
   /// captures human-readable subsystem identification best practice; the
@@ -1103,6 +1130,10 @@ class System {
   /// at the given context.
   virtual T DoEvaluateWitness(const Context<T>& context,
                               const WitnessFunction<T>& witness_func) const = 0;
+
+  virtual void DoAddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<T>& witness_func,
+      CompositeEventCollection<T>* events) const = 0;
 
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default

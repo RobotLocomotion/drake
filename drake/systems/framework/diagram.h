@@ -511,6 +511,14 @@ class Diagram : public System<T>,
     return ret;
   }
 
+  CompositeEventCollection<T>* GetMutableSubsystemCompositeEventCollection(
+      CompositeEventCollection<T>* events, const System<T>* subsystem) const {
+    auto ret = DoGetMutableTargetSystemCompositeEventCollection(subsystem,
+        events);
+    DRAKE_DEMAND(ret != nullptr);
+    return ret;
+  }
+
   /// Retrieves the state for a particular subsystem from the context for the
   /// entire diagram. Invalidates all entries in that subsystem's cache that
   /// depend on State. Aborts if @p subsystem is not actually a subsystem of
@@ -706,9 +714,18 @@ class Diagram : public System<T>,
 
   T DoEvaluateWitness(const Context<T>& context,
                       const WitnessFunction<T>& witness_func) const final {
-    const System<T>& system = witness_func.get_system();
-    const Context<T>& subcontext = GetSubsystemContext(context, &system);
+    const System<T>& subsystem = witness_func.get_system();
+    const Context<T>& subcontext = GetSubsystemContext(context, &subsystem);
     return witness_func.Evaluate(subcontext);
+  }
+
+  void DoAddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<T>& witness_func,
+      CompositeEventCollection<T>* events) const final {
+    const System<T>& subsystem = witness_func.get_system();
+    CompositeEventCollection<T>* subevents =
+        GetMutableSubsystemCompositeEventCollection(events, &subsystem);
+    witness_func.AddEvent(subevents);
   }
 
   /// Provides witness functions of subsystems that are active at the beginning
@@ -778,6 +795,34 @@ class Diagram : public System<T>,
     return GetSubsystemStuff<const State<T>*, const DiagramState<T>*>(
         target_system, state, &System<T>::DoGetTargetSystemState,
         &DiagramState<T>::get_substate);
+  }
+
+  /// Returns a pointer to mutable composite event collection if
+  /// @p target_system is a subsystem of this, nullptr is returned otherwise.
+  CompositeEventCollection<T>* DoGetMutableTargetSystemCompositeEventCollection(
+      const System<T>* target_system,
+      CompositeEventCollection<T>* events) const final {
+    if (target_system == this) return events;
+
+    return GetSubsystemStuff<CompositeEventCollection<T>*,
+                             DiagramCompositeEventCollection<T>*>(
+        target_system, events,
+        &System<T>::DoGetMutableTargetSystemCompositeEventCollection,
+        &DiagramCompositeEventCollection<T>::get_mutable_subevent_collection);
+  }
+
+  /// Returns a pointer to const composite event collection if
+  /// @p target_system is a subsystem of this, nullptr is returned otherwise.
+  const CompositeEventCollection<T>* DoGetTargetSystemCompositeEventCollection(
+      const System<T>* target_system,
+      const CompositeEventCollection<T>* events) const final {
+    if (target_system == this) return events;
+
+    return GetSubsystemStuff<const CompositeEventCollection<T>*,
+                             const DiagramCompositeEventCollection<T>*>(
+        target_system, events,
+        &System<T>::DoGetTargetSystemCompositeEventCollection,
+        &DiagramCompositeEventCollection<T>::get_subevent_collection);
   }
 
   /// The @p generalized_velocity vector must have the same size and ordering as
@@ -1212,20 +1257,20 @@ class Diagram : public System<T>,
     // imminent updates.
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
-      CompositeEventCollection<T1>& subinfo =
+      CompositeEventCollection<T1>* subinfo =
           info->get_mutable_subevent_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
       const T1 sub_time =
-          sorted_systems_[i]->CalcNextUpdateTime(*subcontext, &subinfo);
+          sorted_systems_[i]->CalcNextUpdateTime(*subcontext, subinfo);
       if (sub_time < *time) {
         // i is the earliest, need to clear all the previous ones.
         for (int j = 0; j < i; ++j) {
-          info->get_mutable_subevent_collection(j).Clear();
+          info->get_mutable_subevent_collection(j)->Clear();
         }
         *time = sub_time;
       } else if (sub_time > *time) {
         // i is too late, clear it.
-        subinfo.Clear();
+        subinfo->Clear();
       }
     }
   }
@@ -1240,11 +1285,11 @@ class Diagram : public System<T>,
 
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      CompositeEventCollection<T>& subinfo =
+      CompositeEventCollection<T>* subinfo =
           info->get_mutable_subevent_collection(i);
       DRAKE_DEMAND(subcontext != nullptr);
 
-      sorted_systems_[i]->GetPerStepEvents(*subcontext, &subinfo);
+      sorted_systems_[i]->GetPerStepEvents(*subcontext, subinfo);
     }
   }
 

@@ -685,17 +685,17 @@ class DiagramCompositeEventCollection final
   // Gets a mutable pointer to the CompositeEventCollection specified for the
   // given subsystem. Aborts if the 0-index @p index is greater than or equal
   // to the number of subsystems or if @p index is negative.
-  CompositeEventCollection<T>& get_mutable_subevent_collection(int index) {
+  CompositeEventCollection<T>* get_mutable_subevent_collection(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
-    return *owned_subevent_collection_[index].get();
+    return owned_subevent_collection_[index].get();
   }
 
   // Gets a conference reference to the CompositeEventCollection specified for
   // the given subsystem. Aborts if the 0-index @p index is greater than or
   // equal to the number of subsystems or if @p index is negative.
-  const CompositeEventCollection<T>& get_subevent_collection(int index) const {
+  const CompositeEventCollection<T>* get_subevent_collection(int index) const {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
-    return *owned_subevent_collection_[index];
+    return owned_subevent_collection_[index].get();
   }
 
  private:
