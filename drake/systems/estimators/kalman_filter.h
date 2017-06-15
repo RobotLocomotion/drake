@@ -32,6 +32,7 @@ namespace estimators {
 /// num_outputs.
 ///
 /// @throws std::runtime_error if V is not positive definite.
+/// @ingroup estimator_systems
 ///
 Eigen::MatrixXd SteadyStateKalmanFilter(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -51,6 +52,7 @@ Eigen::MatrixXd SteadyStateKalmanFilter(
 /// @returns A unique_ptr to the constructed observer system.
 ///
 /// @throws std::runtime_error if V is not positive definite.
+/// @ingroup estimator_systems
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::unique_ptr<LinearSystem<double>> system,
     const Eigen::Ref<const Eigen::MatrixXd>& W,
@@ -74,6 +76,7 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
 /// @returns A unique_ptr to the constructed observer system.
 ///
 /// @throws std::runtime_error if V is not positive definite.
+/// @ingroup estimator_systems
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::unique_ptr<System<double>> system,
     std::unique_ptr<Context<double>> context,

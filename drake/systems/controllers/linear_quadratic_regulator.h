@@ -28,6 +28,7 @@ struct LinearQuadraticRegulatorResult {
 /// quadratic cost term S. The optimal feedback control is u = -Kx;
 ///
 /// @throws std::runtime_error if R is not positive definite.
+/// @ingroup control_systems
 ///
 LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -52,6 +53,7 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
 /// coordinates.
 ///
 /// @throws std::runtime_error if R is not positive definite.
+/// @ingroup control_systems
 ///
 std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
@@ -80,6 +82,7 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 /// coordinates.
 ///
 /// @throws std::runtime_error if R is not positive definite.
+/// @ingroup control_systems
 ///
 std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
