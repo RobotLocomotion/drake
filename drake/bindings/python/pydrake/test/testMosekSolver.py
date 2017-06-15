@@ -36,6 +36,20 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(all([v >= 0 for v in np.linalg.eigvals(S)]))
         self.assertTrue(S[0, 1] >= 0)
 
+        prog = mp.MathematicalProgram()
+        S = prog.NewSymmetricContinuousVariables(3, ["S1", "S2", "S3", "S4", "S5", "S6"])
+        prog.AddLinearConstraint(S[0, 1] >= 1)
+        prog.AddPositiveSemidefiniteConstraint(S)
+        prog.AddLinearCost(np.trace(S))
+        solver = MosekSolver()
+        self.assertTrue(solver.available())
+        self.assertEqual(solver.solver_type(), mp.SolverType.kMosek)
+        result = solver.Solve(prog)
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        S = prog.GetSolution(S)
+        self.assertTrue(all([v >= 0 for v in np.linalg.eigvals(S)]))
+        self.assertTrue(S[0, 1] >= 0)
+
 
 if __name__ == '__main__':
     unittest.main()

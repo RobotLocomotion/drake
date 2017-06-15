@@ -125,11 +125,18 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          py::arg("name") = "b")
     .def("NewSymmetricContinuousVariables", (MatrixXDecisionVariable
          (MathematicalProgram::*)(
-          size_t,
+          int,
           const std::string&))
          &MathematicalProgram::NewSymmetricContinuousVariables,
          py::arg("rows"),
          py::arg("name") = "Symmetric")
+    .def("NewSymmetricContinuousVariables", (MatrixXDecisionVariable
+         (MathematicalProgram::*)(
+          int,
+          const std::vector<std::string>&))
+         &MathematicalProgram::NewSymmetricContinuousVariables,
+         py::arg("rows"),
+         py::arg("names"))
     .def("AddLinearConstraint",
          (Binding<LinearConstraint>
           (MathematicalProgram::*)(
