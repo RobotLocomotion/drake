@@ -195,7 +195,7 @@ py_library(
 
 install(
     name = "install",
-    library_dest = "lib/python2.7/site_packages",
+    library_dest = "lib/python2.7/site-packages",
     library_strip_prefix = ["python"],
     py_strip_prefix = ["python"],
     targets = [

@@ -218,7 +218,7 @@ LICENSE_DOCS = ["COPYING"]
 install(
     name = "install_python",
     doc_dest = DOC_DEST,
-    library_dest = "lib/python2.7/site_packages/lcm",
+    library_dest = "lib/python2.7/site-packages/lcm",
     license_docs = LICENSE_DOCS,
     py_strip_prefix = ["lcm-python"],
     targets = [
