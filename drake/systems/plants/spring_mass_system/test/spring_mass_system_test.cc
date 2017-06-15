@@ -384,9 +384,9 @@ TEST_F(SpringMassSystemTest, Integrate) {
 
   // Resource indices for each of the three integrators.
   enum { kXe = 0, kIe = 1, kSxe = 2 };
-  std::vector<unique_ptr<SpringMassSystem<double>::MyContext>> contexts;
-  std::vector<unique_ptr<SpringMassSystem<double>::MyOutput>> outputs;
-  std::vector<unique_ptr<SpringMassSystem<double>::MyContinuousState>> derivs;
+  std::vector<unique_ptr<Context<double>>> contexts;
+  std::vector<unique_ptr<SystemOutput<double>>> outputs;
+  std::vector<unique_ptr<ContinuousState<double>>> derivs;
 
   // Allocate resources.
   for (int i = 0; i < kNumIntegrators; ++i) {
@@ -453,9 +453,8 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
   const double h = 0.00001, kTfinal = 5;
 
   // Resources.
-  unique_ptr<SpringMassSystem<double>::MyContext> context =
-      system_->CreateDefaultContext();
-  unique_ptr<SpringMassSystem<double>::MyContinuousState> derivs =
+  unique_ptr<Context<double>> context = system_->CreateDefaultContext();
+  unique_ptr<ContinuousState<double>> derivs =
       system_->AllocateTimeDerivatives();
 
   // Set initial conditions..

@@ -8,23 +8,21 @@ ActuatorEffortToRigidBodyPlantInputConverter<T>::
     ActuatorEffortToRigidBodyPlantInputConverter(
         const std::vector<const RigidBodyActuator*>& ordered_actuators)
     : ordered_actuators_(ordered_actuators),
-      effort_ports_indices_(DeclareEffortInputPorts(ordered_actuators)),
-      rigid_body_plant_input_port_index_(
-          DeclareOutputPort(kVectorValued,
-                            static_cast<int>(ordered_actuators.size()))
-              .get_index()) {
-  set_name("ActuatorEffortToRigidBodyPlantInputConverter");
+      effort_ports_indices_(DeclareEffortInputPorts(ordered_actuators)) {
+  this->DeclareVectorOutputPort(
+      BasicVector<T>(static_cast<int>(ordered_actuators.size())),
+      &ActuatorEffortToRigidBodyPlantInputConverter::OutputActuation);
+  this->set_name("ActuatorEffortToRigidBodyPlantInputConverter");
 }
 
 template <typename T>
-void ActuatorEffortToRigidBodyPlantInputConverter<T>::DoCalcOutput(
-    const Context<T>& context, SystemOutput<T>* output) const {
+void ActuatorEffortToRigidBodyPlantInputConverter<T>::OutputActuation(
+    const Context<T>& context, BasicVector<T>* output) const {
   int index = 0;
   for (const auto& actuator : ordered_actuators_) {
     int port_index = effort_ports_indices_.at(actuator);
-    T effort = EvalVectorInput(context, port_index)->get_value()[0];
-    output->GetMutableVectorData(rigid_body_plant_input_port_index_)
-        ->SetAtIndex(index++, effort);
+    T effort = this->EvalVectorInput(context, port_index)->get_value()[0];
+    output->SetAtIndex(index++, effort);
   }
 }
 
@@ -37,7 +35,8 @@ ActuatorEffortToRigidBodyPlantInputConverter<T>::DeclareEffortInputPorts(
   // Currently, all RigidBodyActuators are assumed to be one-dimensional.
   const int effort_length = 1;
   for (const auto& actuator : ordered_actuators) {
-    ret[actuator] = DeclareInputPort(kVectorValued, effort_length).get_index();
+    ret[actuator] =
+        this->DeclareInputPort(kVectorValued, effort_length).get_index();
   }
   return ret;
 }
@@ -45,7 +44,7 @@ ActuatorEffortToRigidBodyPlantInputConverter<T>::DeclareEffortInputPorts(
 template <typename T>
 const InputPortDescriptor<T>& ActuatorEffortToRigidBodyPlantInputConverter<
     T>::effort_input_port(const RigidBodyActuator& actuator) {
-  return get_input_port(effort_ports_indices_.at(&actuator));
+  return this->get_input_port(effort_ports_indices_.at(&actuator));
 }
 
 // Explicit instantiations.

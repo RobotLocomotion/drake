@@ -17,9 +17,11 @@ namespace multibody {
 // Forward declaration.
 template<typename T> class MultibodyTree;
 
+namespace internal {
+
 /// For internal use only of the MultibodyTree implementation.
 /// This is a base class representing a **node** in the tree structure of a
-/// MultibodyTree. %BodyNode provides implementations for convinience methods to
+/// MultibodyTree. %BodyNode provides implementations for convenience methods to
 /// be used in MultibodyTree recursive algorithms but that however should not
 /// leak into the public API for the Mobilizer class. In this regard, %BodyNode
 /// provides an additional separation layer between implementation internals and
@@ -39,13 +41,13 @@ template<typename T> class MultibodyTree;
 /// `X_FM` as a function of the generalized coordinates associated with that
 /// mobilizer.
 ///
-/// In addition, body B could be a flexible body, case in which the pose of each
+/// In addition, body B could be a flexible body, in which case the pose of each
 /// frame attached to B would in general be a function of a number of
 /// generalized positions associated with body B. In particular, the pose
 /// `X_BM` of the outboard frame M will be a function of body B's generalized
 /// positions while the pose `X_PF` of the inboard frame F will be a function of
 /// parent body P's generalized positions. A RigidBody has no generalized
-/// positions associated with it.
+/// positions associated with it (see RigidBody::get_num_flexible_positions()).
 ///
 /// In summary, there will a %BodyNode for each Body in the MultibodyTree which
 /// encompasses:
@@ -56,7 +58,7 @@ template<typename T> class MultibodyTree;
 ///
 /// <h4>Associated State</h4>
 ///
-/// In the same way a Mobilizer or a Body have a number of generalized
+/// In the same way a Mobilizer and a Body have a number of generalized
 /// positions associated with them, a %BodyNode is associated with the
 /// generalized positions of body B and of its inboard mobilizer.
 ///
@@ -74,9 +76,11 @@ template<typename T> class MultibodyTree;
 /// body P's generalized positions `qb_P`.
 ///
 /// Therefore, the generalized positions associated with a given body node
-/// correspond to the concatenation `qn_B = [qm_B, qb_B]`. Similarly for
-/// generalized velocities. [Jain 2010] uses a similar grouping of generalized
-/// coordinates when flexible bodies are considered, see Chapter 13.
+/// correspond to the concatenation `qn_B = [qm_B, qb_B]`. Similarly,
+/// mobilizer's generalized velocities `vm_B` and body generalized velocities
+/// `vb_B` are grouped into `vn_B = [vm_B, vb_B]`. [Jain 2010] uses a similar
+/// grouping of generalized coordinates when flexible bodies are considered,
+/// see Chapter 13.
 ///
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
@@ -87,38 +91,37 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
-  /// A node is a computational cell encompassing a Body in a MultibodyTree
-  /// and the inboard Mobilizer that connects this body to the tree. Given a
-  /// body and its inboard mobilizer in a MultibodyTree this constructor
-  /// creates the corresponding %BodyNode. See this class' documentation for
-  /// details on how a %BodyNode is defined.
-  /// @param[in] body The body B associated with `this` node. It must be a valid
-  ///                 pointer.
+  /// A node encompasses a Body in a MultibodyTree and the inboard Mobilizer
+  /// that connects this body to the rest of tree. Given a body and its inboard
+  /// mobilizer in a MultibodyTree this constructor creates the corresponding
+  /// %BodyNode. See this class' documentation for details on how a %BodyNode is
+  /// defined.
+  /// @param[in] body The body B associated with `this` node.
   /// @param[in] mobilizer The mobilizer associated with this `node`. It can
   ///                      only be a `nullptr` `body` **is** the **world** body.
-  BodyNode(const Body<T>* body, const Mobilizer<T>* mobilizer) :
+  BodyNode(const Body<T>& body, const Mobilizer<T>* mobilizer) :
       body_(body), mobilizer_(mobilizer) {
-    DRAKE_DEMAND(body != nullptr);
-    DRAKE_DEMAND(!(mobilizer == nullptr && body->get_index() != world_index()));
+    DRAKE_DEMAND(!(mobilizer == nullptr && body.get_index() != world_index()));
   }
 
   /// Returns a constant reference to the body B associated with this node.
   const Body<T>& get_body() const {
-    return *body_;
+    return body_;
   }
 
   /// Returns a constant reference to the unique parent body P of the body B
-  /// associated with this node.
+  /// associated with this node. This method aborts in Debug builds if called on
+  /// the root node corresponding to the _world_ body.
   const Body<T>& get_parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
   /// Returns a constant reference to the mobilizer associated with this node.
-  /// This method will abort if called on the root node (for which there is no
-  /// mobilizer) in Debug builds.
+  /// This method aborts in Debug builds if called on the root node
+  /// corresponding to the _world_ body, for which there is no mobilizer.
   const Mobilizer<T>& get_mobilizer() const {
-    DRAKE_ASSERT(mobilizer_ != nullptr);
+    DRAKE_DEMAND(mobilizer_ != nullptr);
     return *mobilizer_;
   }
 
@@ -150,6 +153,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     DRAKE_ASSERT(pc != nullptr);
 
+    // Update mobilizer' position dependent kinematics.
+    CalcAcrossMobilizerPositionKinematicsCache(context, pc);
+
     // This computes into the PositionKinematicsCache:
     // - X_PB(qb_P, qm_B, qb_B)
     // - X_WB(q(W:P), qb_P, qm_B, qb_B)
@@ -162,7 +168,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - Body B already updated the pose `X_BM(qb_B)` of the inboard
     //   mobilizer M.
     // - We are in a base-to-tip recursion and therefore `X_PF(qb_P)` and `X_WP`
-    //   are already updated.
+    //   have already been updated.
     CalcAcrossMobilizerBodyPoses_BaseToTip(context, pc);
 
     // TODO(amcastro-tri):
@@ -172,7 +178,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - M_Bo_W: Spatial inertia.
 
     // TODO(amcastro-tri):
-    // With H_FM(qr) already in the cache (computed by
+    // With H_FM(qm) already in the cache (computed by
     // Mobilizer::UpdatePositionKinematicsCache()) update the cache
     // entries for H_PB_W, the Jacobian for the SpatialVelocity jump between
     // body B and its parent body P expressed in the world frame W.
@@ -266,19 +272,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
- protected:
-  BodyNodeTopology topology_;
-  // Pointers for fast access.
-  const Body<T>* body_{nullptr};
-  const Mobilizer<T>* mobilizer_{nullptr};
-
  private:
   // Returns the index to the parent body of the body associated with this node.
+  // For the root node, corresponding to the world body, this method returns an
+  // invalid body index. Attempts to using invalid indexes leads to an exception
+  // being thrown in Debug builds.
   BodyIndex get_parent_body_index() const { return topology_.parent_body;}
 
   // =========================================================================
   // Helpers to access the state.
-  /// Returns an Eigen expression of the vector of generalized velocities.
+  // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const MultibodyTreeContext<T>& context) const {
     return context.get_state_segment(
@@ -305,6 +308,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // frame M as measured and expressed in the inboard frame F.
   const Isometry3<T>& get_X_FM(const PositionKinematicsCache<T>& pc) const {
     return pc.get_X_FM(topology_.index);
+  }
+
+  // Returns a mutable reference to the across-mobilizer pose of the outboard
+  // frame M as measured and expressed in the inboard frame F.
+  Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
+    return pc->get_mutable_X_FM(topology_.index);
   }
 
   // Returns a const reference to the pose of body B as measured and expressed
@@ -343,7 +352,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // - X_PB(qb_P, qm_B, qb_B)
   // - X_WB(q(W:P), qb_P, qm_B, qb_B)
   // where qb_P are the generalized coordinates associated with body P, qm_B
-  // the generalized coordinates associated with this node's mobilizer and
+  // the generalized coordinates associated with this node's mobilizer, and
   // qb_B the generalized coordinates associated with body B. q(W:P) denotes
   // all generalized positions in the kinematics path between the world and
   // the parent body P.
@@ -351,7 +360,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // - Body B already updated the pose `X_BM(qb_B)` of the inboard
   //   mobilizer M.
   // - We are in a base-to-tip recursion and therefore `X_PF(qb_P)` and `X_WP`
-  //   are already updated.
+  //   have already been updated.
   void CalcAcrossMobilizerBodyPoses_BaseToTip(
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const {
@@ -398,13 +407,46 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     X_WB = X_WP * X_PB;
   }
 
+  // Computes position dependent kinematics associated with `this` mobilizer
+  // which includes:
+  // - X_FM(q): The pose of the outboard frame M as measured and expressed in
+  //            the inboard frame F.
+  // - H_FM(q): the Jacobian matrix describing the relationship between
+  //            generalized velocities v and the spatial velocity `V_FM` by
+  //            `V_FM(q, v) = H_FM(q) * v`.
+  // - Hdot_FM(q): The time derivative of the Jacobian matrix which allows
+  //               computing the spatial acceleration between the F and M
+  //               frames as:
+  //               `A_FM(q, v, v̇) = H_FM(q) * v̇ + Hdot_FM(q) * v`
+  // - N(q): The kinematic coupling matrix describing the relationship between
+  //         the rate of change of generalized coordinates and the generalized
+  //         velocities by `q̇ = N(q) * v`.
+  //
+  // This method is used by MultibodyTree to update the position kinematics
+  // quantities associated with `this` mobilizer. MultibodyTree will always
+  // provide a valid PositionKinematicsCache pointer, otherwise this method
+  // aborts in Debug builds.
+  void CalcAcrossMobilizerPositionKinematicsCache(
+      const MultibodyTreeContext<T>& context,
+      PositionKinematicsCache<T>* pc) const {
+    DRAKE_ASSERT(pc != nullptr);
+    Isometry3<T>& X_FM = get_mutable_X_FM(pc);
+    X_FM = get_mobilizer().CalcAcrossMobilizerTransform(context);
+  }
+
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
     topology_ = tree_topology.get_body_node(this->get_index());
   }
+
+  BodyNodeTopology topology_;
+  // Pointers for fast access.
+  const Body<T>& body_;
+  const Mobilizer<T>* mobilizer_{nullptr};
 };
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -17,28 +17,23 @@ Adder<T>::Adder(int num_inputs, int size) {
   for (int i = 0; i < num_inputs; i++) {
     this->DeclareInputPort(kVectorValued, size);
   }
-  this->DeclareOutputPort(kVectorValued, size);
+
+  output_port_ = &this->DeclareVectorOutputPort(
+      BasicVector<T>(size), &Adder<T>::CalcSum);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& Adder<T>::get_output_port() const {
-  return System<T>::get_output_port(0);
-}
-
-template <typename T>
-void Adder<T>::DoCalcOutput(const Context<T>& context,
-                            SystemOutput<T>* output) const {
-  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
+void Adder<T>::CalcSum(const Context<T>& context,
+                       BasicVector<T>* sum) const {
+  Eigen::VectorBlock<VectorX<T>> sum_vector = sum->get_mutable_value();
 
   // Zeroes the output.
-  const int n = static_cast<int>(output_vector->get_value().rows());
-  output_vector->get_mutable_value() = VectorX<T>::Zero(n);
+  sum_vector.setZero();
 
-  // Sum each input port into the output, after checking that it has the
-  // expected size.
+  // Sum each input port into the output.
   for (int i = 0; i < context.get_num_input_ports(); i++) {
     const BasicVector<T>* input_vector = this->EvalVectorInput(context, i);
-    output_vector->get_mutable_value() += input_vector->get_value();
+    sum_vector += input_vector->get_value();
   }
 }
 

@@ -54,7 +54,7 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Default implementation to Mobilizer::set_zero_configuration() that sets
   /// all generalized positions related to this mobilizer to zero.
   /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclases must override this method for
+  /// mobilizers and specific subclasses must override this method for
   /// correctness.
   void set_zero_configuration(systems::Context<T>* context) const override {
     auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
@@ -63,8 +63,8 @@ class MobilizerImpl : public Mobilizer<T> {
   }
 
   /// For MultibodyTree internal use only.
-  std::unique_ptr<BodyNode<T>> CreateBodyNode(
-    const Body<T>* body, const Mobilizer<T>* mobilizer) const final;
+  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+    const Body<T>& body, const Mobilizer<T>* mobilizer) const final;
 
  protected:
   // Handy enum to grant specific implementations compile time sizes.
@@ -72,7 +72,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
 
-  /// @name Helper Methods to Retrieve Entries from MultibodyTreeContext.
+  /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
@@ -107,19 +107,45 @@ class MobilizerImpl : public Mobilizer<T> {
   }
   /// @}
 
-  /// @name Helper Methods to Retrieve Entries from PositionKinematicsCache.
-  /// @{
-
-  /// Returns a mutable reference to the pose `X_FM` of the outboard frame M as
-  /// measured and expressed in the inboard frame F.
-  Isometry3<T>& get_mutable_X_FM(PositionKinematicsCache<T>* pc) const {
-    return pc->get_mutable_X_FM(this->get_topology().body_node);
+ protected:
+  /// Helper method to retrieve a const reference to the MultibodyTreeContext
+  /// object referenced by `context`.
+  /// @throws `std::logic_error` if `context` is not a MultibodyTreeContext
+  /// object.
+  const MultibodyTreeContext<T>& GetMultibodyTreeContextOrThrow(
+      const systems::Context<T>& context) const {
+    // TODO(amcastro-tri): Implement this in terms of
+    // MultibodyTree::GetMultibodyTreeContextOrThrow() with additional validity
+    // checks.
+    const MultibodyTreeContext<T>* mbt_context =
+        dynamic_cast<const MultibodyTreeContext<T>*>(&context);
+    if (mbt_context == nullptr) {
+      throw std::logic_error("The provided systems::Context is not a"
+                             "drake::multibody::MultibodyTreeContext.");
+    }
+    return *mbt_context;
   }
-  /// @}
+
+  /// Helper method to retrieve a mutable pointer to the MultibodyTreeContext
+  /// object referenced by `context`.
+  /// @throws `std::logic_error` if `context` is not a MultibodyTreeContext
+  /// object.
+  MultibodyTreeContext<T>& GetMutableMultibodyTreeContextOrThrow(
+      systems::Context<T>* context) const {
+    // TODO(amcastro-tri): Implement this in terms of
+    // MultibodyTree::GetMutableMultibodyTreeContextOrThrow().
+    MultibodyTreeContext<T>* mbt_context =
+        dynamic_cast<MultibodyTreeContext<T>*>(context);
+    if (mbt_context == nullptr) {
+      throw std::logic_error("The provided systems::Context is not a"
+                               "drake::multibody::MultibodyTreeContext.");
+    }
+    return *mbt_context;
+  }
 
  private:
-  // Returns the first entry in the global array of generalized coordinates in
-  // the MultibodyTree model.
+  // Returns the index to the first entry in the global array of generalized
+  // coordinates in the MultibodyTree model.
   int get_positions_start() const {
     return this->get_topology().positions_start;
   }

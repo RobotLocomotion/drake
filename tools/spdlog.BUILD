@@ -26,7 +26,7 @@ cmake_config(
     package = "spdlog",
     script = "@drake//tools:spdlog-create-cps.py",
     version_file = "CMakeLists.txt",
-    deps = ["@fmt//:cps"]
+    deps = ["@fmt//:cps"],
 )
 
 install_cmake_config(package = "spdlog")  # Creates rule :install_cmake_config.

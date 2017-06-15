@@ -7,20 +7,11 @@ load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "state_feedback_controller_base",
-    hdrs = ["state_feedback_controller_base.h"],
+    name = "state_feedback_controller_interface",
+    hdrs = ["state_feedback_controller_interface.h"],
     deps = [
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "model_based_controller_base",
-    hdrs = ["model_based_controller_base.h"],
-    deps = [
-        ":state_feedback_controller_base",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/systems/framework:input_port_descriptor",
+        "//drake/systems/framework:system",
     ],
 )
 
@@ -40,11 +31,15 @@ drake_cc_library(
     hdrs = ["inverse_dynamics_controller.h"],
     deps = [
         ":inverse_dynamics",
-        ":model_based_controller_base",
         ":pid_controller",
+        ":state_feedback_controller_interface",
+        "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:pass_through",
     ],
 )
 
@@ -65,15 +60,9 @@ drake_cc_library(
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
     deps = [
-        ":state_feedback_controller_base",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:adder",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:gain",
-        "//drake/systems/primitives:integrator",
+        ":state_feedback_controller_interface",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/primitives:matrix_gain",
-        "//drake/systems/primitives:pass_through",
-        "//drake/systems/primitives:saturation",
     ],
 )
 
@@ -83,7 +72,9 @@ drake_cc_library(
     hdrs = ["pid_controlled_system.h"],
     deps = [
         ":pid_controller",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:saturation",
     ],
 )
 
@@ -132,6 +123,35 @@ drake_cc_library(
     hdrs = ["zmpUtil.h"],
     deps = [
         "//drake/common/trajectories:piecewise_polynomial",
+    ],
+)
+
+# This library is empty unless Gurobi is available.
+drake_cc_library(
+    name = "instantaneous_qp_controller",
+    srcs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.cpp"],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.h"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":control_util",
+        ":qp_common",
+        "//drake/common",
+        "//drake/common:drake_path",
+        "//drake/common:is_approx_equal_abstol",
+        "//drake/lcmtypes:qp_controller_input",
+        "//drake/lcmtypes:zmp_com_observer_state",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/joints",
+        "//drake/multibody/parsers",
+        "//drake/solvers:gurobi_qp",
+        "//drake/util",
+        "//drake/util:lcm_util",
+        "//drake/util:yaml_util",
     ],
 )
 
@@ -186,4 +206,9 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+# The extra_srcs are required here because cpplint() doesn't understand how to
+# extract labels from select() functions yet.
+cpplint(extra_srcs = [
+    "InstantaneousQPController.cpp",
+    "InstantaneousQPController.h",
+])

@@ -43,7 +43,7 @@ namespace automotive {
 /// Output:
 ///  - A BicycleCarState containing the 6-dimensional state vector of the
 ///    bicycle.
-///    (OutputPortDescriptor getter: get_state_output_port())
+///    (OutputPort getter: get_state_output_port())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -76,12 +76,12 @@ class BicycleCar : public systems::LeafSystem<T> {
   /// powertrain force.
   const systems::InputPortDescriptor<T>& get_force_input_port() const;
 
-  /// Returns a descriptor of the output port that contains the bicycle states.
-  const systems::OutputPortDescriptor<T>& get_state_output_port() const;
+  /// Returns the output port that contains the bicycle states.
+  const systems::OutputPort<T>& get_state_output_port() const;
 
  private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  void CopyOutState(const systems::Context<T>& context,
+                    BicycleCarState<T>* output) const;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,

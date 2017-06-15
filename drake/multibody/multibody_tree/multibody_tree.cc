@@ -14,6 +14,9 @@
 namespace drake {
 namespace multibody {
 
+using internal::BodyNode;
+using internal::BodyNodeWelded;
+
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
@@ -81,7 +84,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWelded<T>>(&get_world_body());
+    body_node = std::make_unique<BodyNodeWelded<T>>(get_world_body());
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());
@@ -90,7 +93,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
     // Only the mobilizer knows how to create a body node with compile-time
     // fixed sizes.
-    body_node = mobilizer->CreateBodyNode(body, mobilizer);
+    body_node = mobilizer->CreateBodyNode(*body, mobilizer);
   }
   body_node->set_parent_tree(this, body_node_index);
   body_node->SetTopology(topology_);
@@ -113,6 +116,13 @@ MultibodyTree<T>::CreateDefaultContext() const {
 }
 
 template <typename T>
+void MultibodyTree<T>::SetDefaults(systems::Context<T>* context) const {
+  for (const auto& mobilizer : owned_mobilizers_) {
+    mobilizer->set_zero_configuration(context);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
     const systems::Context<T>& context,
     PositionKinematicsCache<T>* pc) const {
@@ -125,13 +135,6 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // X_BQ(qb_B) of each frame Q that is attached to the body.
   // Notice this loop can be performed in any order and each X_BQ(qf_B) is
   // independent of all others. This could even be performed in parallel.
-
-  // Loop over all mobilizers to update their position dependent kinematics.
-  // This updates the kinematics quantities only dependent on the rigid degrees
-  // of freedom qr. These are: X_FM(qr), H_FM(qr), HdotTimesV(qr), N(qr).
-  // Notice this loop can be performed in any order, even in parallel.
-  for (const auto& mobilizer : owned_mobilizers_)
-    mobilizer->CalcPositionKinematicsCache(mbt_context, pc);
 
   // With the kinematics information across mobilizer's and the kinematics
   // information for each body, we are now in position to perform a base-to-tip

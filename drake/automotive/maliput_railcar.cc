@@ -34,7 +34,7 @@ using systems::Context;
 using systems::ContinuousState;
 using systems::InputPortDescriptor;
 using systems::LeafContext;
-using systems::OutputPortDescriptor;
+using systems::OutputPort;
 using systems::Parameters;
 using systems::SparsityMatrix;
 using systems::State;
@@ -44,6 +44,29 @@ using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
 namespace automotive {
+
+namespace {  // Local helper functions.
+
+// Finds our continuous state in a context.
+template <typename T>
+const MaliputRailcarState<T>& get_state(
+    const systems::Context<T>& context) {
+  const MaliputRailcarState<T>* const state =
+      dynamic_cast<const MaliputRailcarState<T>*>(
+          &context.get_continuous_state_vector());
+  DRAKE_DEMAND(state != nullptr);
+  return *state;
+}
+
+// Finds the lane direction state variable in a context.
+template <typename T>
+const LaneDirection& get_lane_direction(
+    const systems::Context<T>& context) {
+  return context.template get_abstract_state<LaneDirection>(0);
+}
+
+}  // namespace
+
 
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialS;
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialSpeed;
@@ -55,15 +78,21 @@ MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
     : initial_lane_direction_(initial_lane_direction) {
   command_input_port_index_ =
       this->DeclareInputPort(systems::kVectorValued, 1).get_index();
+
   state_output_port_index_ =
-      this->DeclareVectorOutputPort(MaliputRailcarState<T>()).get_index();
+      this->DeclareVectorOutputPort(&MaliputRailcar::CalcStateOutput)
+          .get_index();
   lane_state_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-          systems::Value<LaneDirection>(initial_lane_direction)).get_index();
+      this->DeclareAbstractOutputPort(LaneDirection(initial_lane_direction),
+                                      &MaliputRailcar::CalcLaneOutput)
+          .get_index();
   pose_output_port_index_ =
-      this->DeclareVectorOutputPort(PoseVector<T>()).get_index();
+      this->DeclareVectorOutputPort(&MaliputRailcar::CalcPose)
+          .get_index();
   velocity_output_port_index_ =
-      this->DeclareVectorOutputPort(FrameVelocity<T>()).get_index();
+      this->DeclareVectorOutputPort(&MaliputRailcar::CalcVelocity)
+          .get_index();
+
   this->DeclareContinuousState(MaliputRailcarState<T>());
   this->DeclareNumericParameter(MaliputRailcarParams<T>());
 }
@@ -74,22 +103,22 @@ const InputPortDescriptor<T>& MaliputRailcar<T>::command_input() const {
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::state_output() const {
+const OutputPort<T>& MaliputRailcar<T>::state_output() const {
   return this->get_output_port(state_output_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::lane_state_output() const {
+const OutputPort<T>& MaliputRailcar<T>::lane_state_output() const {
   return this->get_output_port(lane_state_output_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::pose_output() const {
+const OutputPort<T>& MaliputRailcar<T>::pose_output() const {
   return this->get_output_port(pose_output_port_index_);
 }
 
 template <typename T>
-const OutputPortDescriptor<T>& MaliputRailcar<T>::velocity_output() const {
+const OutputPort<T>& MaliputRailcar<T>::velocity_output() const {
   return this->get_output_port(velocity_output_port_index_);
 }
 
@@ -101,49 +130,9 @@ MaliputRailcarParams<T>* MaliputRailcar<T>::get_mutable_parameters(
 }
 
 template <typename T>
-void MaliputRailcar<T>::DoCalcOutput(const Context<T>& context,
-    SystemOutput<T>* output) const {
-  // Obtains the parameters.
-  const MaliputRailcarParams<T>& params =
-      this->template GetNumericParameter<MaliputRailcarParams>(context, 0);
-
-  // Obtains the state.
-  const MaliputRailcarState<T>* const state =
-      dynamic_cast<const MaliputRailcarState<T>*>(
-          &context.get_continuous_state_vector());
-  DRAKE_ASSERT(state != nullptr);
-
-  const LaneDirection& lane_direction =
-      context.template get_abstract_state<LaneDirection>(0);
-
-  // Obtains and updates the output vectors.
-  MaliputRailcarState<T>* const state_vector =
-      dynamic_cast<MaliputRailcarState<T>*>(
-          output->GetMutableVectorData(state_output_port_index_));
-  DRAKE_ASSERT(state_vector != nullptr);
-  ImplCalcOutput(*state, state_vector);
-
-  LaneDirection& lane_direction_output =
-      output->GetMutableData(lane_state_output_port_index_)->
-          template GetMutableValue<LaneDirection>();
-  ImplCalcLaneOutput(lane_direction, &lane_direction_output);
-
-  PoseVector<T>* const pose_vector =
-      dynamic_cast<PoseVector<T>*>(
-          output->GetMutableVectorData(pose_output_port_index_));
-  DRAKE_ASSERT(pose_vector != nullptr);
-  ImplCalcPose(params, *state, lane_direction, pose_vector);
-
-  FrameVelocity<T>* const frame_velocity =
-      dynamic_cast<FrameVelocity<T>*>(
-          output->GetMutableVectorData(velocity_output_port_index_));
-  DRAKE_ASSERT(frame_velocity != nullptr);
-  ImplCalcVelocity(params, *state, lane_direction, frame_velocity);
-}
-
-template <typename T>
-void MaliputRailcar<T>::ImplCalcOutput(const MaliputRailcarState<T>& state,
+void MaliputRailcar<T>::CalcStateOutput(const Context<T>& context,
     MaliputRailcarState<T>* output) const {
+  const MaliputRailcarState<T>& state = get_state(context);
   output->set_value(state.get_value());
 
   // Don't allow small negative speed to escape our state.
@@ -153,8 +142,9 @@ void MaliputRailcar<T>::ImplCalcOutput(const MaliputRailcarState<T>& state,
 }
 
 template <typename T>
-void MaliputRailcar<T>::ImplCalcLaneOutput(const LaneDirection& lane_direction,
+void MaliputRailcar<T>::CalcLaneOutput(const Context<T>& context,
     LaneDirection* output) const {
+  const LaneDirection& lane_direction = get_lane_direction(context);
   *output = lane_direction;
 }
 
@@ -169,9 +159,18 @@ T MaliputRailcar<T>::CalcR(const MaliputRailcarParams<T>& params,
 }
 
 template <typename T>
-void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarParams<T>& params,
-    const MaliputRailcarState<T>& state, const LaneDirection& lane_direction,
+const MaliputRailcarParams<T>& MaliputRailcar<T>::get_parameters(
+    const systems::Context<T>& context) const {
+  return this->template GetNumericParameter<MaliputRailcarParams>(context, 0);
+}
+
+template <typename T>
+void MaliputRailcar<T>::CalcPose(const Context<T>& context,
     PoseVector<T>* pose) const {
+  // Start with context archeology.
+  const MaliputRailcarParams<T>& params = get_parameters(context);
+  const MaliputRailcarState<T>& state = get_state(context);
+  const LaneDirection& lane_direction = get_lane_direction(context);
 
   const LanePosition lane_position(state.s(), CalcR(params, lane_direction),
                                    params.h());
@@ -198,9 +197,12 @@ void MaliputRailcar<T>::ImplCalcPose(const MaliputRailcarParams<T>& params,
 }
 
 template <typename T>
-void MaliputRailcar<T>::ImplCalcVelocity(const MaliputRailcarParams<T>& params,
-    const MaliputRailcarState<T>& state, const LaneDirection& lane_direction,
+void MaliputRailcar<T>::CalcVelocity(const Context<T>& context,
     FrameVelocity<T>* frame_velocity) const {
+  // Start with context archeology.
+  const MaliputRailcarParams<T>& params = get_parameters(context);
+  const MaliputRailcarState<T>& state = get_state(context);
+  const LaneDirection& lane_direction = get_lane_direction(context);
 
   // In the following code:
   //  - v is the translational component of the spatial velocity.
@@ -228,18 +230,9 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT(derivatives != nullptr);
 
-  // Obtains the parameters.
-  const MaliputRailcarParams<T>& params =
-      this->template GetNumericParameter<MaliputRailcarParams>(context, 0);
-
-  // Obtains the state.
-  const VectorBase<T>& context_state = context.get_continuous_state_vector();
-  const MaliputRailcarState<T>* const state =
-      dynamic_cast<const MaliputRailcarState<T>*>(&context_state);
-  DRAKE_ASSERT(state != nullptr);
-
-  const LaneDirection& lane_direction =
-      context.template get_abstract_state<LaneDirection>(0);
+  const MaliputRailcarParams<T>& params = get_parameters(context);
+  const MaliputRailcarState<T>& state = get_state(context);
+  const LaneDirection& lane_direction = get_lane_direction(context);
 
   // Obtains the input.
   const BasicVector<T>* input =
@@ -261,7 +254,7 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
       dynamic_cast<MaliputRailcarState<T>*>(vector_derivatives);
   DRAKE_ASSERT(rates != nullptr);
 
-  ImplCalcTimeDerivatives(params, *state, lane_direction, *input, rates);
+  ImplCalcTimeDerivatives(params, state, lane_direction, *input, rates);
 }
 
 template<typename T>
@@ -341,20 +334,16 @@ void MaliputRailcar<T>::SetDefaultState(
 template <typename T>
 void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
     systems::UpdateActions<T>* actions) const {
-  const VectorBase<T>& context_state = context.get_continuous_state_vector();
-  const MaliputRailcarState<T>* const state =
-      dynamic_cast<const MaliputRailcarState<T>*>(&context_state);
-  DRAKE_ASSERT(state != nullptr);
-  if (state->speed() == 0) {
+  const MaliputRailcarState<T>& state = get_state(context);
+
+  if (state.speed() == 0) {
     actions->time = T(std::numeric_limits<double>::infinity());
   } else {
-    const MaliputRailcarParams<T>& params =
-        this->template GetNumericParameter<MaliputRailcarParams>(context, 0);
-    const LaneDirection& lane_direction =
-        context.template get_abstract_state<LaneDirection>(0);
+    const MaliputRailcarParams<T>& params = get_parameters(context);
+    const LaneDirection& lane_direction = get_lane_direction(context);
 
-    const T& s = state->s();
-    const T& speed = state->speed();
+    const T& s = state.s();
+    const T& speed = state.speed();
     const maliput::api::Lane* lane = lane_direction.lane;
     const bool with_s = lane_direction.with_s;
 
@@ -388,15 +377,11 @@ template <typename T>
 void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
     systems::State<T>* next_state) const {
-  const MaliputRailcarState<T>* const current_railcar_state =
-      dynamic_cast<const MaliputRailcarState<T>*>(
-          &context.get_continuous_state_vector());
-  DRAKE_ASSERT(current_railcar_state != nullptr);
-  const LaneDirection& current_lane_direction =
-      context.template get_abstract_state<LaneDirection>(0);
+  const MaliputRailcarState<T>& current_railcar_state = get_state(context);
+  const LaneDirection& current_lane_direction = get_lane_direction(context);
   DRAKE_ASSERT(current_lane_direction.lane != nullptr);
   const bool current_with_s = current_lane_direction.with_s;
-  const double current_s = current_railcar_state->s();
+  const double current_s = current_railcar_state.s();
   const double current_length = current_lane_direction.lane->length();
 
   // Copies the present state into the new one.

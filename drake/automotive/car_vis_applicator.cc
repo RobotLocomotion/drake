@@ -18,6 +18,7 @@ namespace drake {
 
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
+using systems::Context;
 using systems::Value;
 
 namespace automotive {
@@ -25,10 +26,12 @@ namespace automotive {
 template <typename T>
 CarVisApplicator<T>::CarVisApplicator() {
   input_port_index_ =
-      systems::LeafSystem<T>::DeclareAbstractInputPort(
-          Value<PoseBundle<T>>(0)).get_index();
+      systems::LeafSystem<T>::DeclareAbstractInputPort(Value<PoseBundle<T>>(0))
+          .get_index();
   output_port_index_ =
-      systems::LeafSystem<T>::DeclareAbstractOutputPort().get_index();
+      systems::LeafSystem<T>::DeclareAbstractOutputPort(
+          &CarVisApplicator::MakePoseBundleOutput,
+          &CarVisApplicator::CalcPoseBundleOutput).get_index();
 }
 
 template <typename T>
@@ -38,7 +41,7 @@ CarVisApplicator<T>::get_car_poses_input_port() const {
 }
 
 template <typename T>
-const systems::OutputPortDescriptor<T>&
+const systems::OutputPort<T>&
 CarVisApplicator<T>::get_visual_geometry_poses_output_port() const {
   return systems::System<T>::get_output_port(output_port_index_);
 }
@@ -68,20 +71,18 @@ lcmt_viewer_load_robot CarVisApplicator<T>::get_load_robot_message() const {
 }
 
 template <typename T>
-void CarVisApplicator<T>::DoCalcOutput(
+void CarVisApplicator<T>::CalcPoseBundleOutput(
     const systems::Context<T>& context,
-    systems::SystemOutput<T>* output) const {
+    PoseBundle<T>* visualization_poses) const {
   // Obtains the input and output.
   const PoseBundle<T>& vehicle_poses =
       systems::System<T>::EvalAbstractInput(context,
           input_port_index_)->template GetValue<PoseBundle<T>>();
   DRAKE_ASSERT(vehicle_poses.get_num_poses() == num_cars());
-  PoseBundle<T>& visualization_poses =
-      output->GetMutableData(output_port_index_)->
-          template GetMutableValue<PoseBundle<T>>();
+
   // Resize the output PoseBundle as necessary.
-  if (visualization_poses.get_num_poses() != num_vis_poses()) {
-    visualization_poses = PoseBundle<T>(num_vis_poses());
+  if (visualization_poses->get_num_poses() != num_vis_poses()) {
+    *visualization_poses = PoseBundle<T>(num_vis_poses());
   }
 
   if (vehicle_poses.get_num_poses() != static_cast<int>(visualizers_.size())) {
@@ -117,16 +118,15 @@ void CarVisApplicator<T>::DoCalcOutput(
     const Isometry3<T>& root_pose = vehicle_poses.get_pose(i);
     const PoseBundle<T> model_vis_poses = car_vis->CalcPoses(root_pose);
     for (int j = 0; j < model_vis_poses.get_num_poses(); ++j) {
-      visualization_poses.set_pose(index, model_vis_poses.get_pose(j));
+      visualization_poses->set_pose(index, model_vis_poses.get_pose(j));
       index++;
     }
   }
 }
 
 template <typename T>
-std::unique_ptr<systems::AbstractValue>
-CarVisApplicator<T>::AllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>&) const {
+PoseBundle<T>
+CarVisApplicator<T>::MakePoseBundleOutput() const {
   PoseBundle<T> pose_bundle(num_vis_poses());
   int index{0};
   for (const auto& v : visualizers_) {
@@ -144,7 +144,7 @@ CarVisApplicator<T>::AllocateOutputAbstract(
       ++index;
     }
   }
-  return systems::AbstractValue::Make<PoseBundle<T>>(pose_bundle);
+  return pose_bundle;
 }
 
 template <typename T>

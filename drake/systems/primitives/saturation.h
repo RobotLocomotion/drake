@@ -91,7 +91,7 @@ class Saturation : public LeafSystem<T> {
   }
 
   /// Returns the output port.
-  const OutputPortDescriptor<T>& get_output_port() const {
+  const OutputPort<T>& get_output_port() const {
     return System<T>::get_output_port(output_port_index_);
   }
 
@@ -100,11 +100,10 @@ class Saturation : public LeafSystem<T> {
   // TODO(naveenoid) : Add a witness function for capturing events when
   // saturation limits are reached.
 
- protected:
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override;
-
  private:
+  void CalcSaturatedOutput(const Context<T>& context,
+                           BasicVector<T>* output_vector) const;
+
   int input_port_index_{};
   int min_value_port_index_{};
   int max_value_port_index_{};

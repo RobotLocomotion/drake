@@ -1,0 +1,145 @@
+<?xml version="1.0" ?>
+<robot name="iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Defines a base link that will serve as the model's root. -->
+  <link name="base"/>
+  <!--joint between {parent} and link_0-->
+  <joint name="iiwa_base_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base"/>
+    <child link="iiwa_link_0"/>
+  </joint>
+
+  <link name="iiwa_link_0">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.1 0 0.07"/>
+      <mass value="5"/>
+      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.06" iyz="0" izz="0.03"/>
+    </inertial>
+  </link>
+
+  <!-- joint between link_0 and link_1 -->
+  <joint name="iiwa_joint_1" type="revolute">
+    <parent link="iiwa_link_0"/>
+    <child link="iiwa_link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 0.1575"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="iiwa_link_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 -0.03 0.12"/>
+      <mass value="5.76"/>
+      <inertia ixx="0.033" ixy="0" ixz="0" iyy="0.0333" iyz="0" izz="0.0123"/>
+    </inertial>
+  </link>
+
+  <!-- joint between link_1 and link_2 -->
+  <joint name="iiwa_joint_2" type="revolute">
+    <parent link="iiwa_link_1"/>
+    <child link="iiwa_link_2"/>
+    <origin rpy="1.570796326794897   0  3.141592653589793" xyz="0 0 0.2025"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="iiwa_link_2">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0003 0.059 0.042"/>
+      <mass value="6.35"/>
+      <!-- 3.95 kuka CAD value-->
+      <!--4 Original Drake URDF value-->
+      <inertia ixx="0.0305" ixy="0" ixz="0" iyy="0.0304" iyz="0" izz="0.011"/>
+    </inertial>
+  </link>
+
+  <!-- joint between link_2 and link_3 -->
+  <joint name="iiwa_joint_3" type="revolute">
+    <parent link="iiwa_link_2"/>
+    <child link="iiwa_link_3"/>
+    <origin rpy="1.570796326794897  0  3.141592653589793" xyz="0 0.2045 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="iiwa_link_3">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0.03 0.13"/>
+      <mass value="3.5"/>
+      <!--3.18 kuka CAD value-->
+      <!--3 Original Drake URDF value-->
+      <inertia ixx="0.025" ixy="0" ixz="0" iyy="0.0238" iyz="0" izz="0.0076"/>
+    </inertial>
+  </link>
+
+  <!-- joint between link_3 and link_4 -->
+  <joint name="iiwa_joint_4" type="revolute">
+    <parent link="iiwa_link_3"/>
+    <child link="iiwa_link_4"/>
+    <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="iiwa_link_4">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0.067 0.034"/>
+      <mass value="3.5"/>
+      <!--2.74 kuka CAD value-->
+      <!--2.7 Original Drake URDF value-->
+      <inertia ixx="0.017" ixy="0" ixz="0" iyy="0.0164" iyz="0" izz="0.006"/>
+    </inertial>
+  </link>
+
+  <!-- joint between link_4 and link_5 -->
+  <joint name="iiwa_joint_5" type="revolute">
+    <parent link="iiwa_link_4"/>
+    <child link="iiwa_link_5"/>
+    <origin rpy="-1.570796326794897  3.141592653589793  0" xyz="0 0.1845 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="iiwa_link_5">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0001 0.021 0.076"/>
+      <mass value="3.5"/>
+      <!--1.69 kuka CAD value-->
+      <!--1.7 Original Drake URDF value-->
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.0087" iyz="0" izz="0.00449"/>
+    </inertial>
+  </link>
+
+  <!-- joint between link_5 and link_6 -->
+  <joint name="iiwa_joint_6" type="revolute">
+    <parent link="iiwa_link_5"/>
+    <child link="iiwa_link_6"/>
+    <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="iiwa_link_6">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0.0006 0.0004"/>
+      <mass value="1.8"/>
+      <!--1.8 kuka CAD value-->
+      <!--1.8 Original Drake URDF value-->
+      <inertia ixx="0.0049" ixy="0" ixz="0" iyy="0.0047" iyz="0" izz="0.0036"/>
+    </inertial>
+  </link>
+
+  <!-- joint between link_6 and link_7 -->
+  <joint name="iiwa_joint_7" type="revolute">
+    <parent link="iiwa_link_6"/>
+    <child link="iiwa_link_7"/>
+    <origin rpy="-1.570796326794897  3.141592653589793  0" xyz="0 0.081 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="iiwa_link_7">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.02"/>
+      <mass value="1.2"/>
+      <!--0.31 kuka CAD value-->
+      <!--0.3 Original Drake URDF value-->
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+</robot>

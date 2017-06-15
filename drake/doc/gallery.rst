@@ -28,7 +28,7 @@ The simplest and perhaps the most elegant example of the principles of passive d
 		<p>Rimless Wheel video</p>
 	</div>
 
-*Source Code:* `drake/examples/RimlessWheel <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/RimlessWheel>`_
+*Source Code:* `drake/examples/RimlessWheel <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/RimlessWheel>`_
 
 
 The Compass Gait
@@ -46,7 +46,7 @@ One of the simplest bipedal walking systems, it walks passively down a ramp or c
 		<p>Compass Gait video</p>
 	</div>
 
-*Source Code:* `drake/examples/CompassGait <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/CompassGait>`_
+*Source Code:* `drake/examples/CompassGait <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/CompassGait>`_
 
 
 The Planar Monopod Hopper
@@ -64,7 +64,7 @@ A simple model of the famous hopping robots from MIT's Leg Laboratory.
 		<p>Planar Monopod Hopper video</p>
 	</div>
 
-*Source Code:* `drake/examples/PlanarMonopodHopper <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/PlanarMonopodHopper>`_
+*Source Code:* `drake/examples/PlanarMonopodHopper <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/PlanarMonopodHopper>`_
 
 
 LittleDog Gait Optimization
@@ -86,7 +86,7 @@ A dynamical model of a robot inspired by Theo Jansen's `Strandbeest <http://www.
 
 	<iframe width="560" height="315" src="https://www.youtube.com/embed/H6fL-8ScUnU?rel=0" frameborder="0" allowfullscreen></iframe>
 
-*Source Code:* `drake/examples/Strandbeest <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Strandbeest>`_
+*Source Code:* `drake/examples/Strandbeest <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Strandbeest>`_
 
 
 Unmanned Aerial Vehicles
@@ -105,7 +105,7 @@ The Perching Glider
 		<p>Perching Glider video</p>
 	</div>
 
-*Source Code:* `drake/examples/Glider <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Glider>`_
+*Source Code:* `drake/examples/Glider <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Glider>`_
 
 
 Quadrotor Forest Trajectory Optimization
@@ -117,7 +117,7 @@ A simple demonstration of collision-free dynamic trajectory optimization.
 
 	<iframe width="560" height="315" src="https://www.youtube.com/embed/bNm-Eu3RlCM?rel=0" frameborder="0" allowfullscreen></iframe>
 
-*Source Code:* `drake/examples/Quadrotor/runDircolWObs.m <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/runDircolWObs.m>`_
+*Source Code:* `drake/examples/Quadrotor/runDircolWObs.m <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Quadrotor/runDircolWObs.m>`_
 
 
 Quadrotor Online Obstacle Avoidance
@@ -129,7 +129,7 @@ A demonstration of using funnel libraries to dynamically navigate a simulated fo
 
 	<iframe width="560" height="315" src="https://youtu.be/lnvR_tWXzi4" frameborder="0" allowfullscreen></iframe>
 
-*Source Code:* `drake/examples/Quadrotor/runOnlinePlanning.m <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/runOnlinePlanning.m>`_
+*Source Code:* `drake/examples/Quadrotor/runOnlinePlanning.m <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Quadrotor/runOnlinePlanning.m>`_
 
 
 Quadrotor Simulation with Onboard Lidar
@@ -141,7 +141,7 @@ A demonstration of using Drake to simulate a lidar sensor onboard a quadrotor in
 
 	<iframe width="560" height="315" src="https://www.youtube.com/watch?v=oB73wTbvnHI" frameborder="0" allowfullscreen></iframe>
 
-*Source Code:* `drake/examples/Quadrotor/runDynamics.cpp <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/runDynamics.cpp>`_
+*Source Code:* `drake/examples/Quadrotor/run_quadrotor_dynamics.cc <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/run_quadrotor_dynamics.cc>`_
 
 
 Robot Manipulation

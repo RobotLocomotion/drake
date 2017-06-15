@@ -53,36 +53,25 @@ class PositionKinematicsCache {
     return X_WB_pool_[body_node_index];
   }
 
-  /// Returns a mutable reference to the pose `X_WB` of the body B
-  /// (associated with node @p body_node_index) as measured and expressed in the
-  /// world frame W.
-  /// @param[in] body_node_index The unique index for the computational
-  ///                            BodyNode object associated with body B.
-  /// @returns `X_WB` the pose of the the body frame B measured and
-  ///                 expressed in the world frame W.
+  /// See documentation on the const version get_X_WB() for details.
   Isometry3<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
   }
 
-  /// Returns a mutable reference to the pose `X_PB` of the body frame B
-  /// as measured and expressed in its parent body frame P
-  /// @param[in] body_node_id The unique identifier for the computational
-  ///                         BodyNode object associated with body B.
-  /// @returns `X_PB` a mutable reference to the pose of the the body frame B
-  ///                 measured and expressed in the parent body frame P.
-  Isometry3<T>& get_mutable_X_PB(BodyNodeIndex body_node_id) {
-    DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
-    return X_PB_pool_[body_node_id];
-  }
-
   /// Returns a const reference to the pose `X_PB` of the body frame B
-  /// as measured and expressed in its parent body frame P
+  /// as measured and expressed in its parent body frame P.
   /// @param[in] body_node_id The unique identifier for the computational
   ///                         BodyNode object associated with body B.
   /// @returns `X_PB` a const reference to the pose of the the body frame B
   ///                 measured and expressed in the parent body frame P.
   const Isometry3<T>& get_X_PB(BodyNodeIndex body_node_id) const {
+    DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
+    return X_PB_pool_[body_node_id];
+  }
+
+  /// See documentation on the const version get_X_PB() for details.
+  Isometry3<T>& get_mutable_X_PB(BodyNodeIndex body_node_id) {
     DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
     return X_PB_pool_[body_node_id];
   }
@@ -102,16 +91,7 @@ class PositionKinematicsCache {
     return X_FM_pool_[body_node_index];
   }
 
-  /// For the mobilizer associated with the body node indexed by
-  /// `body_node_index`, this method returns a mutable reference to the pose
-  /// `X_FM` of the outboard frame M as measured and expressed in the inboard
-  /// frame F.
-  ///
-  /// @param[in] body_node_index The unique index for the computational
-  ///                            BodyNode object associated with the mobilizer
-  ///                            of interest.
-  /// @returns A mutable reference to the pose `X_FM` of the outboard frame M
-  ///          as measured and expressed in the inboard frame F.
+  /// See documentation on the const version get_X_FM() for details.
   Isometry3<T>& get_mutable_X_FM(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_FM_pool_[body_node_index];

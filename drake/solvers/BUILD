@@ -96,8 +96,6 @@ drake_cc_library(
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
     deps = [
-        "//drake/common",
-        "//drake/common:number_traits",
         "//drake/common:symbolic",
     ],
 )
@@ -417,6 +415,31 @@ drake_cc_library(
     }),
 )
 
+# This library is empty unless Gurobi is available.
+drake_cc_library(
+    name = "gurobi_qp",
+    srcs = select({
+        "//tools:with_gurobi": [
+            "qp.cc",
+        ],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//tools:with_gurobi": [
+            "fast_qp.h",
+            "gurobi_qp.h",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = select({
+        "//tools:with_gurobi": [
+            "@eigen",
+            "@gurobi",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
 # === test/ ===
 drake_cc_googletest(
     name = "binding_test",
@@ -482,7 +505,6 @@ drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
         ":mathematical_program",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic_test_util",
     ],
 )
@@ -626,7 +648,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rotation_constraint_test",
     size = "medium",
-    tags = gurobi_test_tags() + mosek_test_tags(),
+    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    tags = gurobi_test_tags() + mosek_test_tags() + ["no_tsan"],
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
@@ -650,7 +673,8 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "rotation_constraint_limit_test",
     size = "large",
-    tags = gurobi_test_tags(),
+    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
@@ -677,9 +701,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "system_identification_test",
     # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
-    # To avoid timeouts in dbg or valgrind, we need "moderate" here.
-    # TODO(bazelbuild/bazel#1748) This produces a spurious complaint.
-    timeout = "moderate",
+    # To avoid timeouts in dbg and valgrind, we need "large" here.
+    size = "large",
     deps = [
         ":system_identification",
         "//drake/common:eigen_matrix_compare",
@@ -698,16 +721,22 @@ drake_cc_binary(
 # The extra_srcs are required here because cpplint() doesn't understand how to
 # extract labels from select() functions yet.
 cpplint(extra_srcs = [
+    "fast_qp.h",
+    "gurobi_qp.h",
     "gurobi_solver.cc",
     "gurobi_solver.h",
-    "no_gurobi.cc",
-    "snopt_solver.cc",
-    "snopt_solver.h",
-    "no_snopt.cc",
     "ipopt_solver.cc",
     "ipopt_solver.h",
-    "no_ipopt.cc",
+    "mosek_solver.cc",
+    "mosek_solver.h",
     "nlopt_solver.cc",
     "nlopt_solver.h",
+    "no_gurobi.cc",
+    "no_ipopt.cc",
+    "no_mosek.cc",
     "no_nlopt.cc",
+    "no_snopt.cc",
+    "qp.cc",
+    "snopt_solver.cc",
+    "snopt_solver.h",
 ])

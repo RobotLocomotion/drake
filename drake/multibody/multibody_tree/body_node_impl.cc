@@ -4,6 +4,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 // Macro used to explicitly instantiate implementations on all sizes needed.
 #define EXPLICITLY_INSTANTIATE_IMPLS(T) \
@@ -19,5 +20,6 @@ template class BodyNodeImpl<T, 7, 6>;
 EXPLICITLY_INSTANTIATE_IMPLS(double);
 EXPLICITLY_INSTANTIATE_IMPLS(AutoDiffXd);
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -4,7 +4,7 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:install.bzl", "install")
+load("//tools:install.bzl", "install", "install_files")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -13,37 +13,70 @@ package(
 exports_files([
     "CPPLINT.cfg",
     ".clang-format",
+    ".drake-resource-sentinel",
 ])
 
 alias(
-    name="protoc",
-    actual="@protobuf//:protoc",
+    name = "protoc",
+    actual = "@protobuf//:protoc",
 )
 
 alias(
-    name="protobuf",
-    actual="@protobuf//:protobuf",
+    name = "protobuf",
+    actual = "@protobuf//:protobuf",
 )
 
 alias(
-    name="protobuf_python",
-    actual="@protobuf//:protobuf_python",
+    name = "protobuf_python",
+    actual = "@protobuf//:protobuf_python",
 )
 
-exports_files(["LICENSE.TXT"])
+# TODO(jwnimmer-tri) The install.bzl should do this automatically, based on the
+# runfiles of //drake/common/resource_tool.  For now, we'll backfill manually.
+install_files(
+    name = "install_resource_tool_data",
+    dest = "share/drake",
+    files = [".drake-resource-sentinel"],
+    visibility = ["//drake/common:__pkg__"],
+)
+
+install(
+    name = "install_net_sf_jchart2d_jchart2d",
+    doc_dest = "share/doc/jchart2d",
+    doc_strip_prefix = ["**/"],
+    license_docs = ["//tools:third_party/jchart2d/LICENSE"],
+    java_strip_prefix = ["**/"],
+    targets = ["@net_sf_jchart2d_jchart2d//jar"],
+    visibility = ["//visibility:private"],
+)
 
 install(
     name = "install",
+    doc_dest = "share/doc/drake",
+    license_docs = ["LICENSE.TXT"],
     deps = [
+        ":install_net_sf_jchart2d_jchart2d",
+        "//drake:install",
+        "//drake/common:install",
+        "//tools:install",
+        "//tools/install/gflags:install",
+        "@bot_core_lcmtypes//:install",
         "@bullet//:install",
+        "@ccd//:install",
         "@eigen//:install",
+        "@fcl//:install",
         "@fmt//:install",
+        "@ignition_math//:install",
+        "@ignition_rndf//:install",
         "@ipopt//:install",
         "@lcm//:install",
         "@nlopt//:install",
+        "@octomap//:install",
         "@pybind11//:install",
+        "@robotlocomotion_lcmtypes//:install",
+        "@sdformat//:install",
         "@spdlog//:install",
-        "//drake:install",
-        "//tools:install",
+        "@tinyobjloader//:install",
+        "@yaml_cpp//:install",
     ],
 )

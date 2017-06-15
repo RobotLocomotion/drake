@@ -6,7 +6,8 @@
 #include <vector>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/manipulator_plan_eval_system.h"
-#include "drake/systems/controllers/model_based_controller_base.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
+#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace examples {
@@ -31,7 +32,8 @@ namespace qp_inverse_dynamics {
  * implemented by different plan eval modules.
  */
 class ManipulatorInverseDynamicsController
-    : public systems::ModelBasedController<double> {
+    : public systems::StateFeedbackControllerInterface<double>,
+      public systems::Diagram<double> {
  public:
   /**
    * Constructs a inverse dynamics controller for a fixed base manipulator that
@@ -71,6 +73,24 @@ class ManipulatorInverseDynamicsController
   }
 
   /**
+   * Returns the input port for estimated state.
+   */
+  const systems::InputPortDescriptor<double>&
+  get_input_port_estimated_state() const final {
+    return systems::Diagram<double>::get_input_port(
+        input_port_index_estimated_state_);
+  }
+
+  /**
+   * Returns the input port for desired state.
+   */
+  const systems::InputPortDescriptor<double>&
+  get_input_port_desired_state() const final {
+    return systems::Diagram<double>::get_input_port(
+        input_port_index_desired_state_);
+  }
+
+  /**
    * Returns the input port for desired acceleration.
    */
   const systems::InputPortDescriptor<double>&
@@ -80,10 +100,19 @@ class ManipulatorInverseDynamicsController
   }
 
   /**
+   * Returns the output port for computed control.
+   */
+  const systems::OutputPort<double>&
+  get_output_port_control() const final {
+    return systems::Diagram<double>::get_output_port(
+        output_port_index_control_);
+  }
+
+  /**
    * Returns the output port for a lcm message that contains plan eval's
    * debug data.
    */
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_output_port_plan_eval_debug_info() const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_plan_eval_debug_);
@@ -93,7 +122,7 @@ class ManipulatorInverseDynamicsController
    * Returns the output port for a lcm message that contains qp inverse
    * dynamics' debug data.
    */
-  const systems::OutputPortDescriptor<double>&
+  const systems::OutputPort<double>&
   get_output_port_inverse_dynamics_debug_info() const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_inverse_dynamics_debug_);
@@ -102,7 +131,7 @@ class ManipulatorInverseDynamicsController
   /**
    * Returns the output port for QpInput from plan eval.
    */
-  const systems::OutputPortDescriptor<double>& get_output_port_qp_input()
+  const systems::OutputPort<double>& get_output_port_qp_input()
       const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_qp_input_);
@@ -111,15 +140,26 @@ class ManipulatorInverseDynamicsController
   /**
    * Returns the output port for QpOutput from inverse dynamics.
    */
-  const systems::OutputPortDescriptor<double>& get_output_port_qp_output()
+  const systems::OutputPort<double>& get_output_port_qp_output()
       const {
     return systems::Diagram<double>::get_output_port(
         output_port_index_qp_output_);
   }
 
+  /**
+   * Returns a constant reference to the RigidBodyTree used for control.
+   */
+  const RigidBodyTree<double>& get_robot_for_control() const {
+    return *robot_for_control_;
+  }
+
  private:
+  std::unique_ptr<RigidBodyTree<double>> robot_for_control_{nullptr};
   ManipulatorPlanEvalSystem* plan_eval_{nullptr};
+  int input_port_index_estimated_state_{};
+  int input_port_index_desired_state_{};
   int input_port_index_desired_acceleration_{};
+  int output_port_index_control_{};
   int output_port_index_plan_eval_debug_{};
   int output_port_index_qp_input_{};
   int output_port_index_inverse_dynamics_debug_{};

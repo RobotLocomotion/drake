@@ -43,10 +43,6 @@ class RobertsonSystem : public LeafSystem<T> {
     deriv->get_mutable_vector()->SetAtIndex(2, y3_prime);
   }
 
-  void DoCalcOutput(const Context<T>& context,
-                    SystemOutput<T>* output) const override {
-  }
-
   /// Gets the end time for integration.
   T get_end_time() const { return 1e11; }
 

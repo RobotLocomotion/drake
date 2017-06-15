@@ -40,7 +40,7 @@ class MultibodyTree {
   /// Creates a MultibodyTree containing only a **world** body.
   MultibodyTree();
 
-  /// @name Methods to add new multibody tree elements.
+  /// @name Methods to add new MultibodyTree elements.
   ///
   /// To create a %MultibodyTree users will add multibody elements like bodies,
   /// joints, force elements, constraints, etc, using one of these methods.
@@ -394,10 +394,11 @@ class MultibodyTree {
 
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
   /// That is, the number of bodies in the longest kinematic path between the
-  /// world and any other leaf body. Kinematic paths are created by Mobilizer
-  /// objects connecting a chain of frames. Therefore, this method does not
-  /// count kinematic cycles, which could only be considered in the model using
-  /// constraints.
+  /// world and any other leaf body. For a model that only contains the _world_
+  /// body, the height of the tree is one.
+  /// Kinematic paths are created by Mobilizer objects connecting a chain of
+  /// frames. Therefore, this method does not count kinematic cycles, which
+  /// could only be considered in the model using constraints.
   int get_tree_height() const {
     return topology_.get_tree_height();
   }
@@ -468,8 +469,25 @@ class MultibodyTree {
   //  - Create or request cache entries.
   std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
 
-  /// Sets default values in the context including pre-computed cache entries.
-  void SetDefaults(systems::Context<T>*) const {}
+  /// Sets default values in the context. For mobilizers, this method sets them
+  /// to their _zero_ configuration according to
+  /// Mobilizer::set_zero_configuration().
+  void SetDefaults(systems::Context<T>* context) const;
+
+  /// Computes into the position kinematics `pc` all the kinematic quantities
+  /// that depend on the generalized positions only. These include:
+  /// - For each body B, the pose `X_BF` of each of the frames F attached to
+  ///   body B.
+  /// - Pose `X_WB` of each body B in the model as measured and expressed in
+  ///   the world frame W.
+  /// - Across-mobilizer Jacobian matrices `H_FM` and `H_PB_W`.
+  /// - Body specific quantities such as `com_W` and `M_Bo_W`.
+  ///
+  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
+  /// @throws std::runtime_error if `pc` is the nullptr.
+  void CalcPositionKinematicsCache(
+      const systems::Context<T>& context,
+      PositionKinematicsCache<T>* pc) const;
 
   /// Computes into the position kinematics `pc` all the kinematic quantities
   /// that depend on the generalized positions only. These include:
@@ -501,7 +519,7 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
-  std::vector<std::unique_ptr<BodyNode<T>>> body_nodes_;
+  std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
 
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a

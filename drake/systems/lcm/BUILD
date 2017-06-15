@@ -71,6 +71,11 @@ drake_cc_googletest(
     name = "lcm_driven_loop_test",
     # TODO(jamiesnape, siyuanfeng-tri): Remove flaky flag, see #5936.
     flaky = 1,
+    tags = [
+        "no_asan",
+        "no_memcheck",
+        "no_tsan",
+    ],
     deps = [
         "//drake/common:eigen_matrix_compare",
         "//drake/lcm",

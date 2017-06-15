@@ -20,5 +20,8 @@ race:__kmp_launch_monitor
 # thread leak (libiomp5.*) in __kmp_create_worker
 thread:__kmp_create_worker
 
+# thread leak (libiomp5.*) in __kmp_create_monitor
+thread:__kmp_create_monitor
+
 # data race (libglib-2.0.*) in g_static_rec_mutex_lock
 race:g_static_rec_mutex_lock

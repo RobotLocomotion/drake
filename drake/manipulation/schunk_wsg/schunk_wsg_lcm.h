@@ -7,6 +7,7 @@
 
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/manipulation/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
+#include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -39,9 +40,9 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+ private:
+  void OutputTarget(const systems::Context<double>& context,
+                    systems::BasicVector<double>* output) const;
 
   /// Latches the input port into the discrete state.
   void DoCalcDiscreteVariableUpdates(
@@ -51,7 +52,6 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   std::unique_ptr<systems::DiscreteValues<double>> AllocateDiscreteState()
       const override;
 
- private:
   void UpdateTrajectory(double cur_position, double target_position) const;
 
   /// The minimum change between the last received command and the
@@ -76,13 +76,9 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
   SchunkWsgStatusSender(int input_size,
                         int position_index, int velocity_index);
 
- protected:
-  std::unique_ptr<systems::AbstractValue> AllocateOutputAbstract(
-      const systems::OutputPortDescriptor<double>& descriptor) const override;
-
  private:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+  void OutputStatus(const systems::Context<double>& context,
+                    lcmt_schunk_wsg_status* output) const;
 
   const int position_index_{};
   const int velocity_index_{};
