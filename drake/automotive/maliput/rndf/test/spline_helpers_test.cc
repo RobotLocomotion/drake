@@ -1,5 +1,3 @@
-#include "drake/automotive/maliput/rndf/spline_helpers.h"
-
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -9,6 +7,9 @@
 #include <gtest/gtest.h>
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
+
+#include "drake/automotive/maliput/rndf/spline_helpers.h"
+#include "drake/automotive/maliput/rndf/test/rndf_test_utils.h"
 
 namespace drake {
 namespace maliput {
@@ -20,16 +21,6 @@ const double kLinearTolerance = 1e-4;
 // We use this step to sample the spline at this rate, to get the closest path
 // length coordinate to a point in space.
 const double kLinearStep = 1e-2;
-
-#define EXPECT_IGN_VECTOR_NEAR(actual_arg, expected_arg, tolerance_arg) \
-  do {                                                                  \
-    const ignition::math::Vector3d actual(actual_arg);                  \
-    const ignition::math::Vector3d expected(expected_arg);              \
-    const double tolerance(tolerance_arg);                              \
-    EXPECT_NEAR(actual.X(), expected.X(), tolerance);                   \
-    EXPECT_NEAR(actual.Y(), expected.Y(), tolerance);                   \
-    EXPECT_NEAR(actual.Z(), expected.Z(), tolerance);                   \
-  } while (0)
 
 // This is a wrapper to easily create an ignition::math::Spline.
 // @param points a tuple consisting of two ignition::math::Vector3d. The
