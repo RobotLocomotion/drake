@@ -268,6 +268,23 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   virtual Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const = 0;
 
+  /// Computes the across-mobilizer spatial velocity `V_FM(q, v)` between the
+  /// inboard frame F and the outboard frame M.
+  /// This method can be thought of as the application of the operator `H_FM(q)`
+  /// to the input vector of generalized velocities `v`, i.e. the output of this
+  /// method is the application `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where
+  /// `nv` is the number of generalized velocities of this mobilizer (see
+  /// get_num_velocities()). Therefore we say this methods is the _operator
+  /// form_ of the Jacobian matrix `H_FM(q)`.
+  /// This method aborts in Debug builds if the dimension of the input vector of
+  /// generalized velocities has a size different from get_num_velocities().
+  ///
+  /// @param[in] context The context of the parernt tree that owns this
+  /// mobilizer. This mobilizer's generalized positions q are inferred from this
+  /// context.
+  /// @param[in] v A vector of generalized velocities. It must live in ℝⁿᵛ.
+  /// @retval `V_FM` The across-mobilizer spatial velocity of the outboard frame
+  /// M measured and expressed in the inboard frame F.
   virtual SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const = 0;
@@ -276,15 +293,6 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const Body<T>& body, const Mobilizer<T>* mobilizer) const = 0;
-
- protected:
-  /// Returns the first entry in the global array of generalized coordinates in
-  /// the MultibodyTree model.
-  int get_positions_start() const { return get_topology().positions_start; }
-
-  /// Returns the first entry in the global array of generalized velocities in
-  /// the MultibodyTree model.
-  int get_velocities_start() const { return get_topology().velocities_start; }
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().

@@ -91,17 +91,21 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angle(
       systems::Context<T>* context, const T& angle) const;
 
-  /// Gets the rotation angle of `this` mobilizer from `context`.
+  /// Gets the angular velocity of `this` mobilizer from `context`.
+  /// See class documentation for the angle sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
-  /// @returns The angle coordinate of `this` mobilizer in the `context`.
+  /// @returns The angular velocity of `this` mobilizer in the `context`.
   const T& get_angular_velocity(const systems::Context<T>& context) const;
 
-  /// Sets the `context` so that the generalized coordinate coresponding the
-  /// rotation angle of `this` mobilizer equals `angle`.
+  /// Sets the `context` so that the generalized velocity coresponding the
+  /// angular velocity of `this` mobilizer equals `w_FM`, i.e. the rate of
+  /// change of the rotation angle between the inboard frame F and the outboard
+  /// frame M.
+  /// See class documentation for the angle sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
-  /// @param[in] angle The desired angle in radians.
+  /// @param[in] w_FM The desired angular velocity in radians per second.
   /// @returns a constant reference to `this` mobilizer.
   const RevoluteMobilizer<T>& set_angular_velocity(
       systems::Context<T>* context, const T& w_FM) const;
@@ -112,6 +116,10 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const final;
 
+  /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
+  /// M measured and expressed in frame F as a function of the rotation angle
+  /// and input angular velocity `v` about this mobilizer's axis
+  /// (@see get_revolute_axis()).
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;

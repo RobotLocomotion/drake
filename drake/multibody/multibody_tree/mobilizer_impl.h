@@ -144,10 +144,18 @@ class MobilizerImpl : public Mobilizer<T> {
   }
 
  private:
-  // Returns the index to the first entry in the global array of generalized
-  // coordinates in the MultibodyTree model.
+  // Returns the index in the global array of generalized coordinates in the
+  // MultibodyTree model to the first component of the generalized coordinates
+  // vector that corresponds to this mobilizer.
   int get_positions_start() const {
     return this->get_topology().positions_start;
+  }
+
+  // Returns the index in the global array of generalized velocities in the
+  // MultibodyTree model to the first component of the generalized velocities
+  // vector that corresponds to this mobilizer.
+  int get_velocities_start() const {
+    return this->get_topology().velocities_start;
   }
 };
 
