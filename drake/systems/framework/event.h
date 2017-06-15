@@ -25,12 +25,10 @@ class LeafCompositeEventCollection;
 
 /**
  * Abstract base class that represents an event. The base event contains two
- * main pieces of information: a reason for the event occurring (i.e., a
- * "trigger") and additional data that can be passed from the System to its
- * event handler (to mitigate or eliminate recomputation). The reason consists
- * of a enum trigger type and an optional attribute of AbstractValue. Derived
- * classes should contain a function pointer to an optional callback function
- * for handling the event.
+ * main pieces of information: a enum trigger type and an optional attribute
+ * of AbstractValue that can be used to explain why the event is triggered.
+ * Derived classes should contain a function pointer to an optional callback
+ * function that handles the event.
  */
 template <typename T>
 class Event {
@@ -136,7 +134,7 @@ class Event {
   template <typename DataType>
   const DataType& get_attribute() const {
     if (attribute_ == nullptr) throw std::logic_error("Data is null.");
-    return attribute_->GetValue<DataType>();
+    return attribute_->GetValueOrThrow<DataType>();
   }
 
   /**
@@ -210,11 +208,6 @@ class PublishEvent : public Event<T> {
     events->add_publish_event(std::unique_ptr<PublishEvent<T>>(publish_clone));
   }
 
-  /**
-   * Optional callback function that handles this publish event.
-   */
-  PublishCallback callback_{nullptr};
-
  private:
   /**
    * Clones PublishEvent-specific data.
@@ -222,6 +215,9 @@ class PublishEvent : public Event<T> {
   PublishEvent<T>* DoClone() const override {
     return new PublishEvent(this->get_trigger_type(), callback_);
   }
+
+  // Optional callback function that handles this publish event.
+  PublishCallback callback_{nullptr};
 };
 
 /**
@@ -270,11 +266,6 @@ class DiscreteUpdateEvent : public Event<T> {
         std::unique_ptr<DiscreteUpdateEvent<T>>(du_clone));
   }
 
-  /**
-   * Optional callback function that handles this discrete update event.
-   */
-  DiscreteUpdateCallback callback_{nullptr};
-
  private:
   /**
    * Clones DiscreteUpdateEvent-specific data.
@@ -282,6 +273,9 @@ class DiscreteUpdateEvent : public Event<T> {
   DiscreteUpdateEvent<T>* DoClone() const override {
     return new DiscreteUpdateEvent(this->get_trigger_type(), callback_);
   }
+
+  // Optional callback function that handles this discrete update event.
+  DiscreteUpdateCallback callback_{nullptr};
 };
 
 /**
@@ -329,11 +323,6 @@ class UnrestrictedUpdateEvent : public Event<T> {
         std::unique_ptr<UnrestrictedUpdateEvent<T>>(uu_clone));
   }
 
-  /**
-   * Optional callback function that handles this unrestricted update event.
-   */
-  UnrestrictedUpdateCallback callback_{nullptr};
-
  private:
   /**
    * Clones event data specific to UnrestrictedUpdateEvent.
@@ -341,6 +330,9 @@ class UnrestrictedUpdateEvent : public Event<T> {
   UnrestrictedUpdateEvent<T>* DoClone() const override {
     return new UnrestrictedUpdateEvent(this->get_trigger_type(), callback_);
   }
+
+  // Optional callback function that handles this unrestricted update event.
+  UnrestrictedUpdateCallback callback_{nullptr};
 };
 
 }  // namespace systems
