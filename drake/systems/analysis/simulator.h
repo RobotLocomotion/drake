@@ -693,7 +693,7 @@ void Simulator<T>::IsolateWitnessTriggers(
     fwd_int(t_first_witness);
 
     // Evaluate the witness function.
-    T fb = witnesses[i]->Evaluate(*context);
+    T fb = get_system().EvaluateWitness(*context, *witnesses[i]);
 
     // See whether there has been a sign change; after shrinking the time
     // interval one or more times, there may no longer be one, in which case
@@ -712,7 +712,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       fwd_int(c);
 
       // Evaluate the witness function.
-      T fc = witnesses[i]->Evaluate(*context);
+      T fc = get_system().EvaluateWitness(*context, *witnesses[i]);
 
       // Bisect.
       if (witnesses[i]->should_trigger(fa, fc)) {
@@ -789,7 +789,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   // Evaluate the witness functions.
   w0_.resize(witness_functions.size());
   for (size_t i = 0; i < witness_functions.size(); ++i)
-      w0_[i] = witness_functions[i]->Evaluate(context);
+      w0_[i] = system.EvaluateWitness(context, *witness_functions[i]);
 
   // Attempt to integrate. Updates and boundary times are consciously
   // distinguished between. See internal documentation for
@@ -802,7 +802,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   // Evaluate the witness functions again.
   wf_.resize(witness_functions.size());
   for (size_t i =0; i < witness_functions.size(); ++i)
-    wf_[i] = witness_functions[i]->Evaluate(context);
+    wf_[i] = system.EvaluateWitness(context, *witness_functions[i]);
 
   // See whether a witness function triggered.
   triggered_witnesses_.clear();

@@ -701,6 +701,39 @@ class Diagram : public System<T>,
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
+  T DoEvaluateWitness(const Context<T>& context,
+                      const WitnessFunction<T>& witness_func) const final {
+    const System<T>& system = witness_func.get_system();
+    const Context<T>& subcontext = GetSubsystemContext(context, &system);
+    return witness_func.Evaluate(subcontext);
+  }
+
+  /// Provides witness functions of subsystems that are active at the beginning
+  /// of a continuous time interval. The vector of witness functions is not
+  /// ordered in a particular manner.
+  void DoGetWitnessFunctions(const Context<T>& context,
+                std::vector<const WitnessFunction<T>*>* witnesses) const final {
+    // A temporary vector is necessary since the vector of witnesses is
+    // declared to be empty on entry to DoGetWitnessFunctions().
+    std::vector<const WitnessFunction<T>*> temp_witnesses;
+
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    int index = 0;  // The subsystem index.
+
+    for (const System<T>* const system : sorted_systems_) {
+      DRAKE_ASSERT(index == GetSystemIndexOrAbort(system));
+      temp_witnesses.clear();
+      system->GetWitnessFunctions(*diagram_context->GetSubsystemContext(index),
+                                  &temp_witnesses);
+      witnesses->insert(witnesses->end(), temp_witnesses.begin(),
+                        temp_witnesses.end());
+      ++index;
+    }
+  }
+
+
   /// Returns a pointer to mutable context if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
   Context<T>* DoGetMutableTargetSystemContext(

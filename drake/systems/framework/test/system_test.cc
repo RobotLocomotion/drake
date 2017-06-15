@@ -86,6 +86,12 @@ class TestSystem : public System<double> {
     return updated_numbers_;
   }
 
+  double DoEvaluateWitness(const Context<double>&,
+                           const WitnessFunction<double>&) const override {
+    // This system uses no witness functions.
+    DRAKE_ABORT();
+  }
+
  protected:
   BasicVector<double>* DoAllocateInputVector(
       const InputPortDescriptor<double>& descriptor) const override {
@@ -343,6 +349,12 @@ class ValueIOTestSystem : public System<T> {
   }
 
   ~ValueIOTestSystem() override {}
+
+  T DoEvaluateWitness(const Context<T>&,
+                      const WitnessFunction<T>&) const override {
+    // This system uses no witness functions.
+    DRAKE_ABORT();
+  }
 
   AbstractValue* DoAllocateInputAbstract(
       const InputPortDescriptor<T>& descriptor) const override {
