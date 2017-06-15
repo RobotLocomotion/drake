@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
@@ -82,6 +83,7 @@ class RigidBody : public Body<T> {
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const {
+    unused(tree_clone);
     return std::make_unique<RigidBody<ToScalar>>(default_spatial_inertia_);
   }
 
