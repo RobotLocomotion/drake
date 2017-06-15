@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -419,6 +420,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                                const override;
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<T>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
       systems::DiscreteValues<T>* discrete_state) const override;
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;

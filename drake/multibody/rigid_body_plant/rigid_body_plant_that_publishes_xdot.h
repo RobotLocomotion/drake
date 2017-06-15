@@ -48,7 +48,9 @@ class RigidBodyPlantThatPublishesXdot : public RigidBodyPlant<T> {
   // state vector. This vector contains the derivatives of the RigidBodyTree's
   // joint's positions and velocities. Thus, the units are velocities and
   // accelerations.
-  void DoPublish(const Context<T>& context) const override;
+  void DoPublish(const Context<T>& context,
+                 const std::vector<const PublishEvent<double>*>&)
+                 const override;
 
   // A const pointer to an LCM subsystem. Note that while the pointer is const,
   // the LCM subsystem is not const.
