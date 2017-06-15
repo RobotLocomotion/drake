@@ -183,8 +183,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 /// The addition in the last expression is carried out by this operator.
 template <typename T>
 inline SpatialVelocity<T> operator+(
-    const SpatialVelocity<T>& V_EPBq, const SpatialVelocity<T>& V_PBq_E)
-{
+    const SpatialVelocity<T>& V_EPBq, const SpatialVelocity<T>& V_PBq_E) {
   return SpatialVelocity<T>(V_EPBq.get_coeffs() + V_PBq_E.get_coeffs());
 }
 

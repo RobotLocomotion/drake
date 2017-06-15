@@ -118,21 +118,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// Returns a constant reference to the mobilizer associated with this node.
-  /// This method aborts in Debug builds if called on the root node
-  /// corresponding to the _world_ body, for which there is no mobilizer.
+  /// @throws std::runtime_error if called on the root node corresponding to
+  /// the _world_ body, for which there is no mobilizer.
   const Mobilizer<T>& get_mobilizer() const {
     DRAKE_DEMAND(mobilizer_ != nullptr);
     return *mobilizer_;
-  }
-
-  /// Returns the inboard frame F of this node's mobilizer.
-  const Frame<T>& get_inboard_frame() const {
-    return get_mobilizer().get_inboard_frame();
-  }
-
-  /// Returns the outboard frame M of this node's mobilizer.
-  const Frame<T>& get_outboard_frame() const {
-    return get_mobilizer().get_outboard_frame();
   }
 
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
@@ -188,7 +178,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       VelocityKinematicsCache<T>* vc) const {
-
     // Body for this node.
     const Body<T>& BodyB = get_body();
 
@@ -239,7 +228,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         get_X_FM(pc).rotation() * X_MB.translation();
 
     // Perform V_PB = phiT_MB * V_FM in the F frame and re-express in the
-    // world frame W.
+    // world frame W, where phiT_MB is the rigid body shift operator between
+    // frames M and B.
     // In operator form:
     //   V_PB_W = R_WF * phiT_MB_F * V_FM
     //          = R_WF * phiT_MB_F * H_FM * vm
@@ -271,6 +261,21 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
+
+ protected:
+  /// Returns the inboard frame F of this node's mobilizer.
+  /// @throws std::runtime_error if called on the root node corresponding to
+  /// the _world_ body.
+  const Frame<T>& get_inboard_frame() const {
+    return get_mobilizer().get_inboard_frame();
+  }
+
+  /// Returns the outboard frame M of this node's mobilizer.
+  /// @throws std::runtime_error if called on the root node corresponding to
+  /// the _world_ body.
+  const Frame<T>& get_outboard_frame() const {
+    return get_mobilizer().get_outboard_frame();
+  }
 
  private:
   // Returns the index to the parent body of the body associated with this node.
