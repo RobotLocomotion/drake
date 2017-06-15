@@ -1,5 +1,10 @@
 # -*- python -*-
 
+load(
+    "@drake//tools:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
     lcm_package, and lcm_struct parameters as documented in lcm_cc_library
@@ -22,17 +27,26 @@ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
 
     # Assemble the expected output paths, inferring struct names from what we
     # got in lcm_srcs, if necessary.
-    struct_outs = [
-        dirname + lcm_package + "/" + lcm_struct + extension
-        for lcm_struct in (lcm_structs or lcm_basenames)]
+    if extension == ".h":
+        h_outs = [
+            dirname + lcm_package + "_" + lcm_struct + extension
+            for lcm_struct in (lcm_structs or lcm_basenames)]
+        c_outs = [
+            dirname + lcm_package + "_" + lcm_struct + ".c"
+            for lcm_struct in (lcm_structs or lcm_basenames)]
+        outs = struct(hdrs=h_outs, srcs=c_outs)
+
+    else:
+        outs = [
+            dirname + lcm_package + "/" + lcm_struct + extension
+            for lcm_struct in (lcm_structs or lcm_basenames)]
 
     # Some languages have extra metadata.
-    extra_outs = []
-    (extension in [".hpp", ".py", ".java"]) or fail(extension)
+    (extension in [".h", ".hpp", ".py", ".java"]) or fail(extension)
     if extension == ".py":
-        extra_outs.append(dirname + lcm_package + "/__init__.py")
+        outs.append(dirname + lcm_package + "/__init__.py")
 
-    return struct_outs + extra_outs
+    return outs
 
 def _lcmgen_impl(ctx):
     """The implementation actions to invoke lcm-gen.
@@ -41,15 +55,22 @@ def _lcmgen_impl(ctx):
     https://bazel.build/versions/master/docs/skylark/lib/ctx.html
     """
     # We are given ctx.outputs.outs, which is the full path and file name of
-    # the generated file we want to create.  However, the lcm-gen tool places
-    # its outputs into a subdirectory of the path we ask for, based on the LCM
-    # message's package name.  To set the correct path, we need to both remove
-    # the filename from outs (which we do via ".dirname"), as well as the
-    # package-name-derived directory name (which we do via slicing off striplen
-    # characters), including the '/' right before it (thus the "+ 1" below).
-    striplen = len(ctx.attr.lcm_package) + 1
-    outpath = ctx.outputs.outs[0].dirname[:-striplen]
-    if ctx.attr.language == "cc":
+    # the generated file we want to create.  However, except for the C
+    # language, the lcm-gen tool places its outputs into a subdirectory of the
+    # path we ask for, based on the LCM message's package name.  To set the
+    # correct path, we need to both remove the filename from outs (which we do
+    # via ".dirname"), as well as the package-name-derived directory name
+    # (which we do via slicing off striplen characters), including the '/'
+    # right before it (thus the "+ 1" below).
+    if ctx.attr.language == "c":
+        outpath = ctx.outputs.outs[0].dirname
+    else:
+        striplen = len(ctx.attr.lcm_package) + 1
+        outpath = ctx.outputs.outs[0].dirname[:-striplen]
+
+    if ctx.attr.language == "c":
+        arguments = ["--c", "--c-cpath=" + outpath, "--c-hpath=" + outpath]
+    elif ctx.attr.language == "cc":
         arguments = ["--cpp", "--cpp-std=c++11", "--cpp-hpath=" + outpath]
     elif ctx.attr.language == "py":
         arguments = ["--python", "--ppath=" + outpath]
@@ -130,6 +151,39 @@ def lcm_cc_library(
         deps=deps,
         includes=includes,
         linkstatic=linkstatic,
+        **kwargs)
+
+def lcm_c_library(
+        name,
+        lcm_srcs,
+        lcm_package,
+        lcm_structs=None,
+        **kwargs):
+    """Declares a cc_library on message C structs generated from `*.lcm` files.
+
+    The required lcm_srcs list parameter specifies the `*.lcm` source files.
+    All lcm_srcs must reside in the same subdirectory.
+
+    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
+    in lcm_cc_library.
+    """
+    outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
+
+    _lcm_library_gen(
+        name=name + "_lcm_library_gen",
+        language="c",
+        lcm_srcs=lcm_srcs,
+        lcm_package=lcm_package,
+        outs=outs.hdrs + outs.srcs)
+
+    deps = set(kwargs.pop('deps', [])) | ["@lcm"]
+    includes = set(kwargs.pop('includes', [])) | ["."]
+    native.cc_library(
+        name=name,
+        srcs=outs.srcs,
+        hdrs=outs.hdrs,
+        deps=deps,
+        includes=includes,
         **kwargs)
 
 def lcm_py_library(
