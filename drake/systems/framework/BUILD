@@ -134,7 +134,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "events",
+    name = "event_collection",
     srcs = [
         "event_collection.cc",
     ],
@@ -144,8 +144,8 @@ drake_cc_library(
     ],
     deps = [
         ":abstract_values",
-        ":value",
         ":context",
+        ":value",
         "//drake/common",
         "//drake/common:autodiff",
     ],
@@ -271,7 +271,7 @@ drake_cc_library(
     deps = [
         ":cache",
         ":context",
-        ":events",
+        ":event_collection",
         ":system_common",
         ":value",
         "//drake/common",

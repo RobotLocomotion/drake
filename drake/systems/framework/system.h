@@ -208,13 +208,10 @@ class System {
     DispatchPublishHandler(context, events);
   }
 
-  /// Forces a publish on the system. For a LeafSystem, this is equivalent
-  /// to calling DoPublish with @p context and a single publish event whose
-  /// trigger type is kForced, with no additional data, attribute or custom
-  /// callback.
-  /// For a Diagram, this is equivalent to forcing a publish for all its
-  /// constituent subsystems. The Simulator can be configured to call this
-  /// in Simulator::Initialize() and at the start of each continuous integration
+  /// Forces a publish on the system, given a @p context. The publish event will
+  /// have a trigger type of kForced, with no additional data, attribute or
+  /// custom callback. The Simulator can be configured to call this in
+  /// Simulator::Initialize() and at the start of each continuous integration
   /// step. See the Simulator API for more details.
   void Publish(const Context<T>& context) const {
     Publish(context, this->get_forced_publish_events());
@@ -441,12 +438,10 @@ class System {
     DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
   }
 
-  /// This method forces a discrete update. For a LeafSystem, this is equivalent
-  /// to calling DoCalcDiscreteVariableUpdates with @p context,
-  /// @p discrete_state and a single publish event whose trigger type is
-  /// kForced, with no additional data, attribute or custom callback.
-  /// For a Diagram, this is equivalent to forcing a discrete update event for
-  /// all its constituent subsystems.
+  /// This method forces a discrete update on the system given a @p context,
+  /// and the updated discrete state is stored in @p discrete_state. The
+  /// discrete update event will have a trigger type of kForced, with no
+  /// additional data, attribute or custom callback.
   void CalcDiscreteVariableUpdates(const Context<T>& context,
                                    DiscreteValues<T>* discrete_state) const {
     CalcDiscreteVariableUpdates(
@@ -485,12 +480,10 @@ class System {
           "in CalcUnrestrictedUpdate().");
   }
 
-  /// This method forces an unrestricted update. For a LeafSystem, this is
-  /// equivalent to calling DoCalcUnrestrictedUpdate with @p context, @p state
-  /// and a single publish event whose trigger type is kForced, with no
+  /// This method forces an unrestricted update on the system given a
+  /// @p context, and the updated state is stored in @p discrete_state. The
+  /// unrestricted update event will have a trigger type of kForced, with no
   /// additional data, attribute or custom callback.
-  /// For a Diagram, this is equivalent to forcing an unrestricted update
-  /// event for all its constituent subsystems.
   ///
   /// @sa CalcUnrestrictedUpdate(const Context<T>&, const
   /// EventCollection<UnrestrictedUpdateEvent<T>>*, State<T>* state)
