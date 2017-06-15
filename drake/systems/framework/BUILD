@@ -381,14 +381,6 @@ drake_cc_library(
     ],
 )
 
-#drake_cc_library(
-#    name = "witness",
-#    srcs = ["witness_function.cc"],
-#    hdrs = ["witness_function.h"],
-#    deps = [
-#        ":system",
-#    ],
-#)
 # === test/ ===
 
 drake_cc_googletest(
