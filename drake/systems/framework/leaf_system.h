@@ -965,9 +965,7 @@ class LeafSystem : public System<T> {
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const {
     for (const PublishEvent<T>* event : events) {
-      if (event->callback_ != nullptr) {
-        event->callback_(context, *event);
-      }
+      event->handle(context);
     }
   }
 
@@ -999,9 +997,7 @@ class LeafSystem : public System<T> {
       const std::vector<const DiscreteUpdateEvent<T>*>& events,
       DiscreteValues<T>* discrete_state) const {
     for (const DiscreteUpdateEvent<T>* event : events) {
-      if (event->callback_ != nullptr) {
-        event->callback_(context, *event, discrete_state);
-      }
+      event->handle(context, discrete_state);
     }
   }
 
@@ -1040,9 +1036,7 @@ class LeafSystem : public System<T> {
       const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
       State<T>* state) const {
     for (const UnrestrictedUpdateEvent<T>* event : events) {
-      if (event->callback_ != nullptr) {
-        event->callback_(context, *event, state);
-      }
+      event->handle(context, state);
     }
   }
 

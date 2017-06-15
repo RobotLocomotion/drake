@@ -1050,10 +1050,8 @@ class TestTriggerSystem : public LeafSystem<double> {
       if (event->get_trigger_type() == Event<double>::TriggerType::kForced)
         continue;
 
-      DRAKE_DEMAND(event->callback_ != nullptr);
-
       // Call custom callback handler.
-      event->callback_(context, *event);
+      event->handle(context);
     }
 
     publish_count_++;

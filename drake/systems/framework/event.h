@@ -208,6 +208,14 @@ class PublishEvent : public Event<T> {
     events->add_publish_event(std::unique_ptr<PublishEvent<T>>(publish_clone));
   }
 
+  /**
+   * Calls the optional callback function if one exist with @p context and this.
+   */
+  void handle(const Context<T>& context) const {
+    if (callback_ != nullptr)
+      callback_(context, *this);
+  }
+
  private:
   /**
    * Clones PublishEvent-specific data.
@@ -266,6 +274,16 @@ class DiscreteUpdateEvent : public Event<T> {
         std::unique_ptr<DiscreteUpdateEvent<T>>(du_clone));
   }
 
+  /**
+   * Calls the optional callback function if one exist with @p context, this and
+   * @p discrete_state.
+   */
+  void handle(const Context<T>& context,
+              DiscreteValues<T>* discrete_state) const {
+    if (callback_ != nullptr)
+      callback_(context, *this, discrete_state);
+  }
+
  private:
   /**
    * Clones DiscreteUpdateEvent-specific data.
@@ -321,6 +339,16 @@ class UnrestrictedUpdateEvent : public Event<T> {
         static_cast<UnrestrictedUpdateEvent<T>*>(clone);
     events->add_unrestricted_update_event(
         std::unique_ptr<UnrestrictedUpdateEvent<T>>(uu_clone));
+  }
+
+  /**
+   * Calls the optional callback function if one exist with @p context, this and
+   * @p discrete_state.
+   */
+  void handle(const Context<T>& context,
+              State<T>* state) const {
+    if (callback_ != nullptr)
+      callback_(context, *this, state);
   }
 
  private:
