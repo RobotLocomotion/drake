@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -25,14 +26,10 @@ class PoseBundleToDrawMessage : public LeafSystem<double> {
   PoseBundleToDrawMessage();
   ~PoseBundleToDrawMessage() override;
 
- protected:
-  /// Copies the input poses into the draw message.
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override;
-
-  /// Allocates a draw message.
-  std::unique_ptr<AbstractValue> AllocateOutputAbstract(
-      const OutputPortDescriptor<double>& descriptor) const override;
+ private:
+  // Copies the input poses into the draw message.
+  void CalcViewerDrawMessage(const Context<double>& context,
+                             lcmt_viewer_draw* output) const;
 };
 
 }  // namespace rendering

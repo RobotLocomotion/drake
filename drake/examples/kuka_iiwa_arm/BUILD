@@ -89,7 +89,7 @@ drake_cc_library(
     deps = [
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/controllers:state_feedback_controller_base",
+        "//drake/systems/controllers:state_feedback_controller_interface",
         "//drake/systems/framework",
     ],
 )

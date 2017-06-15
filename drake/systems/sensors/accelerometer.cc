@@ -28,13 +28,17 @@ Accelerometer::Accelerometer(const string& name,
       include_gravity_(include_gravity) {
   this->set_name(name_);
   plant_state_input_port_index_ =
-      DeclareInputPort(kVectorValued, tree_.get_num_positions() +
-                                      tree_.get_num_velocities()).get_index();
+      DeclareInputPort(kVectorValued,
+                       tree_.get_num_positions() + tree_.get_num_velocities())
+          .get_index();
   plant_state_derivative_input_port_index_ =
-      DeclareInputPort(kVectorValued, tree_.get_num_positions() +
-                                      tree_.get_num_velocities()).get_index();
-  output_port_index_ = DeclareVectorOutputPort(
-      AccelerometerOutput<double>()).get_index();
+      DeclareInputPort(kVectorValued,
+                       tree_.get_num_positions() + tree_.get_num_velocities())
+          .get_index();
+  output_port_index_ =
+      DeclareVectorOutputPort(AccelerometerOutput<double>(),
+                              &Accelerometer::CalcAccelerationOutput)
+          .get_index();
 }
 
 Accelerometer* Accelerometer::AttachAccelerometer(
@@ -73,12 +77,13 @@ Accelerometer* Accelerometer::AttachAccelerometer(
   return accelerometer;
 }
 
-void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
-                                 systems::SystemOutput<double>* output) const {
+void Accelerometer::CalcAccelerationOutput(
+    const Context<double>& context,
+    AccelerometerOutput<double>* output_vector) const {
   // Obtains the two input vectors, x and xdot. x is the state vector. xdot is
   // the time derivative of x.
-  const VectorXd x = this->EvalEigenVectorInput(
-    context, plant_state_input_port_index_);
+  const VectorXd x =
+      this->EvalEigenVectorInput(context, plant_state_input_port_index_);
   const VectorXd xdot = this->EvalEigenVectorInput(
       context, plant_state_derivative_input_port_index_);
 
@@ -97,8 +102,7 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
 
   // TODO(liang.fok): Obtain the KinematicsCache directly from the context
   // instead of recomputing it here.
-  const KinematicsCache<double> kinematics_cache =
-      tree_.doKinematics(q, v);
+  const KinematicsCache<double> kinematics_cache = tree_.doKinematics(q, v);
 
   const auto J_WF = tree_.CalcFrameSpatialVelocityJacobianInWorldFrame(
       kinematics_cache, frame_, false /* in_terms_of_qdot */);
@@ -115,8 +119,8 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   //
   const auto A_WF = Jdot_WF_times_v + J_WF * vdot;
 
-  drake::Isometry3<double> X_WF = tree_.CalcFramePoseInWorldFrame(
-      kinematics_cache, frame_);
+  drake::Isometry3<double> X_WF =
+      tree_.CalcFramePoseInWorldFrame(kinematics_cache, frame_);
 
   // Extracts inverse rotation matrix from transform, and translational
   // part of spatial acceleration.
@@ -130,9 +134,6 @@ void Accelerometer::DoCalcOutput(const systems::Context<double>& context,
   }
 
   // Saves the acceleration readings into the output port.
-  BasicVector<double>* output_vector =
-      output->GetMutableVectorData(output_port_index_);
-
   output_vector->SetFromVector(a_WF_F);
 }
 

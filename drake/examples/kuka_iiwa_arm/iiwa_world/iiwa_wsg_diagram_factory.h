@@ -66,24 +66,24 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
     return this->get_input_port(input_port_wsg_command_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_iiwa_state() const {
+  const systems::OutputPort<T>& get_output_port_iiwa_state() const {
     return this->get_output_port(output_port_iiwa_state_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_wsg_state() const {
+  const systems::OutputPort<T>& get_output_port_wsg_state() const {
     return this->get_output_port(output_port_wsg_state_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_plant_state() const {
+  const systems::OutputPort<T>& get_output_port_plant_state() const {
     return this->get_output_port(output_port_plant_state_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_iiwa_robot_state_msg()
+  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg()
       const {
     return this->get_output_port(output_port_iiwa_robot_state_t_);
   }
 
-  const systems::OutputPortDescriptor<T>& get_output_port_box_robot_state_msg()
+  const systems::OutputPort<T>& get_output_port_box_robot_state_msg()
       const {
     return this->get_output_port(output_port_box_robot_state_t_);
   }

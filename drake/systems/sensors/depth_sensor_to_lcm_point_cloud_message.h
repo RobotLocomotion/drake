@@ -1,8 +1,9 @@
 #pragma once
 
+#include "bot_core/pointcloud_t.hpp"
+
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
 
 namespace drake {
@@ -34,15 +35,15 @@ class DepthSensorToLcmPointCloudMessage : public systems::LeafSystem<double> {
   /// Returns a descriptor of the input port containing `X_WS`.
   const InputPortDescriptor<double>& pose_input_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that contains a
+  /// Returns the abstract valued output port that contains a
   /// `Value<bot_core::pointcloud_t>`.
-  const OutputPortDescriptor<double>& pointcloud_message_output_port() const;
-
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+  const OutputPort<double>& pointcloud_message_output_port() const;
 
  private:
+  // This is the calculator method for the output port.
+  void CalcPointCloudMessage(const systems::Context<double>& context,
+                             bot_core::pointcloud_t* output) const;
+
   const DepthSensorSpecification& spec_;
 
   // See class description for the semantics of the input and output ports.

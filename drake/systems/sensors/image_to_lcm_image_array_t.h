@@ -2,9 +2,10 @@
 
 #include <string>
 
+#include "robotlocomotion/image_array_t.hpp"
+
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
@@ -42,13 +43,12 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
 
   /// Returns a descriptor of the abstract valued output port that contains a
   /// `Value<robotlocomotion::image_array_t>`.
-  const OutputPortDescriptor<double>& image_array_t_msg_output_port() const;
-
- protected:
-  void DoCalcOutput(const systems::Context<double>& context,
-                    systems::SystemOutput<double>* output) const override;
+  const OutputPort<double>& image_array_t_msg_output_port() const;
 
  private:
+  void CalcImageArray(const systems::Context<double>& context,
+                      robotlocomotion::image_array_t* msg) const;
+
   int color_image_input_port_index_{};
   int depth_image_input_port_index_{};
   int label_image_input_port_index_{};

@@ -47,7 +47,8 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "dragway_test",
-    size = "small",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     srcs = ["test/dragway_test.cc"],
     deps = [
         ":dragway",

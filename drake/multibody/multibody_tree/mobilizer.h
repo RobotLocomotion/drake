@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -15,7 +16,9 @@ namespace multibody {
 
 // Forward declarations.
 template<typename T> class Body;
+namespace internal {
 template<typename T> class BodyNode;
+}
 
 /// %Mobilizer is a fundamental object within Drake's multibody engine used to
 /// specify the allowed motions between two Frame objects within a
@@ -71,7 +74,8 @@ template<typename T> class BodyNode;
 /// fully specified by, [Seth 2010]:
 /// - X_FM(q): The pose of the outboard frame M as measured and expressed in the
 ///            inboard frame F, as a function of the mobilizer's generalized
-///            positions.
+///            positions. This pose is computed by
+///            CalcAcrossMobilizerTransform().
 /// - H_FM(q): the Jacobian matrix describing the relationship between
 ///            generalized velocities v and the spatial velocity `V_FM` by
 ///            `V_FM(q, v) = H_FM(q) * v`. `H_FM` is a `6 x nv` matrix.
@@ -94,6 +98,44 @@ template<typename T> class BodyNode;
 /// position vector) and `nv = 6` (3 dofs for an angular velocity and 3 dofs for
 /// a linear velocity).
 ///
+/// The time derivative of the across-mobilizer transform `X_FM` is intimately
+/// related to the across-mobilizer spatial velocity `V_FM`. This relationship
+/// immediately implies a relationship between the analytical Jacobian
+/// `dX_FM/dq` and the geometric Jacobian matrix H_FM.
+/// The linear component of the spatial velocity V_FM relates to the time
+/// derivative of `X_FM` by: <pre>
+///   v_FM = V_FM.translational() = dp_FM/dt = Xdot_FM.translational()
+/// </pre>
+/// where `p_FM = X_FM.translational()` and `Xdot_FM = dX_FM/dt`. The time
+/// derivative of `p_FM` can be rewritten as: <pre>
+///   dp_FM/dt = dp_FM/dq * N(q) * v = Hv_FM * v
+/// </pre>
+/// where `Hv_FM` denotes the last three rows in `H_FM` related with the
+/// translational component of the Jacobian matrix
+/// Therefore: <pre>
+///   Hv_FM = dp_FM/dq(q) * N(q)
+/// </pre>
+///
+/// Similarly, for the rotational component: <pre>
+///  dR_FM/dt = Xdot_FM.linear() = [w_FM] * R_FM = [Hw_FM * v] * R_FM
+/// </pre>
+/// where `[w_FM]` is the cross product matrix of the across-mobilizer angular
+/// velocity `w_FM`, `R_FM` is the orientation of M in F, and `Hw_FM`
+/// corresponds to the first three rows in `H_FM` related to the angular
+/// component of the geometric Jacobian matrix.
+/// The time derivative of the orientation `R_FM` can be expressed in terms of
+/// the analytic Jacobian of `R_FM` as: <pre>
+///   dR_FM/dt = dR_FM/dq * N(q) * v
+/// </pre>
+/// These last two equations show that the angular components of the Jacobian
+/// matrix `Hw_FM` are directly related to the gradients of the rotation
+/// matrix `R_FM`. This relationhip is: <pre>
+///   [Hwi_FM(q)] * R_FM(q) = dR_FM/dqi(q) * N(q)
+/// </pre>
+/// corresponding to the i-th generalized position `qi` where `Hwi_FM(q)` is the
+/// i-th column of `Hw_FM(q)` and `dR_FM/dqi(q)` is the partial derivative of
+/// `R_FM` with respect to the i-th generalized coordinate for this mobilizer.
+///
 /// For a detailed discussion on the concept of a mobilizer please refer to
 /// [Seth 2010]. The Jacobian or "Hinge" matrix `H_FM(q)` is introduced in
 /// [Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
@@ -103,13 +145,17 @@ template<typename T> class BodyNode;
 ///
 /// %Mobilizer is an abstract base class defining the minimum functionality that
 /// derived %Mobilizer objects must implement in order to fully define the
-/// kinematic relationship between the two frames they connect.
+/// kinematic relationship between the two frames they connect. Geometric and
+/// analytical Jacobian matrices in the context of differential kinematics are
+/// described in [Sciavicco 2000].
 ///
 /// - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///               algorithms. Springer Science & Business Media.
 /// - [Seth 2010] Seth, A., Sherman, M., Eastman, P. and Delp, S., 2010.
 ///               Minimal formulation of joint motion for biomechanisms.
 ///               Nonlinear dynamics, 62(1), pp.291-303.
+/// - [Sciavicco 2000] Sciavicco, L. and Siciliano, B., 2000. Modelling and
+///               control of robot manipulators, 2nd Edn. Springer.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -182,6 +228,50 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// need to call this method since MobilizerTopology is an internal
   /// bookkeeping detail.
   const MobilizerTopology& get_topology() const { return topology_; }
+
+  /// @name Methods that define a %Mobilizer
+  /// @{
+
+  /// Sets what will be considered to be the _zero_ configuration for `this`
+  /// mobilizer. For most mobilizers the _zero_ configuration corresponds to the
+  /// value of generalized positions at which the inboard frame F and the
+  /// outboard frame coincide or, in other words, when `X_FM = Id` is the
+  /// identity pose. In the general case however, the zero configuration will
+  /// correspond to a value of the generalized positions for which
+  /// `X_FM = X_FM_ref` where `X_FM_ref` will generally be different from the
+  /// identity transformation.
+  /// In other words, `X_FM_ref = CalcAcrossMobilizerTransform(ref_context)`
+  /// where `ref_context` is a Context set to the zero configuration with
+  /// `set_zero_configuration(&ref_context)`.
+  ///
+  /// Most often the _zero_ configuration will correspond to setting
+  /// the vector of generalized positions related to this mobilizer to zero.
+  /// However, in the general case, setting all generalized coordinates to zero
+  /// does not correspond to the _zero_ configuration and it might even not
+  /// represent a mathematicaly valid one. Consider for instance a quaternion
+  /// mobilizer, for which its _zero_ configuration corresponds to the
+  /// quaternion [1, 0, 0, 0].
+  virtual void set_zero_configuration(systems::Context<T>* context) const = 0;
+
+  /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
+  /// frame F and the outboard frame M as a function of the vector of
+  /// generalized postions `q`.
+  /// %Mobilizer subclasses implementing this method can retrieve the fixed-size
+  /// vector of generalized positions for `this` mobilizer from `context` with:
+  ///
+  /// @code
+  /// auto q = this->get_positions(context);
+  /// @endcode
+  ///
+  /// Additionally, `context` can provide any other parameters the mobilizer
+  /// could depend on.
+  virtual Isometry3<T> CalcAcrossMobilizerTransform(
+      const MultibodyTreeContext<T>& context) const = 0;
+  /// @}
+
+  /// For MultibodyTree internal use only.
+  virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const Body<T>& body, const Mobilizer<T>* mobilizer) const = 0;
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().

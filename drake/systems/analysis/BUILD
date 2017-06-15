@@ -148,9 +148,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "empty_system",
+    name = "stateless_system",
     testonly = 1,
-    hdrs = ["test/empty_system.h"],
+    hdrs = ["test/stateless_system.h"],
     deps = [
         "//drake/systems/framework",
     ],
@@ -159,12 +159,14 @@ drake_cc_library(
 drake_cc_googletest(
     name = "simulator_test",
     deps = [
-        ":empty_system",
+        ":stateless_system",
         ":explicit_euler_integrator",
+        ":implicit_euler_integrator",
         ":logistic_system",
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
         ":simulator",
+        "//drake/common:is_dynamic_castable",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],
 )

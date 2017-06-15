@@ -10,11 +10,14 @@ set(sources
   diagram_context.cc
   diagram_continuous_state.cc
   discrete_values.cc
+  input_port_descriptor.cc
   input_port_evaluator_interface.cc
   input_port_value.cc
   leaf_context.cc
+  leaf_output_port.cc
   leaf_system.cc
   model_values.cc
+  output_port.cc
   output_port_listener_interface.cc
   output_port_value.cc
   parameters.cc
@@ -25,9 +28,9 @@ set(sources
   subvector.cc
   supervector.cc
   system.cc
-  system_port_descriptor.cc
   value.cc
   vector_base.cc
+  witness_function.cc
   )
 
 # Headers that should be installed with Drake so that they
@@ -51,11 +54,14 @@ set(installed_headers
   diagram_continuous_state.h
   discrete_event.h
   discrete_values.h
+  input_port_descriptor.h
   input_port_evaluator_interface.h
   input_port_value.h
   leaf_context.h
+  leaf_output_port.h
   leaf_system.h
   model_values.h
+  output_port.h
   output_port_listener_interface.h
   output_port_value.h
   parameters.h
@@ -66,7 +72,7 @@ set(installed_headers
   subvector.h
   supervector.h
   system.h
-  system_port_descriptor.h
+  system_common.h
   systems.h
   value.h
   value_checker.h

@@ -28,6 +28,9 @@ target_link_libraries(input_port_value_test drakeSystemFramework drakeSystemPrim
 drake_add_cc_test(output_port_value_test)
 target_link_libraries(output_port_value_test drakeSystemFramework drakeSystemPrimitives)
 
+drake_add_cc_test(output_port_test)
+target_link_libraries(output_port_test drakeSystemFramework drakeSystemPrimitives)
+
 drake_add_cc_test(leaf_context_test)
 target_link_libraries(leaf_context_test drakeSystemFramework drakeSystemPrimitives)
 

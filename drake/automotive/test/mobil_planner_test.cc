@@ -166,9 +166,9 @@ TEST_F(MobilPlannerTest, Topology) {
   EXPECT_EQ(systems::kAbstractValued, traffic_input_descriptor.get_data_type());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
-  const auto& lane_output_descriptor =
+  const auto& lane_output_port =
       dut_->get_output_port(lane_output_index_);
-  EXPECT_EQ(systems::kAbstractValued, lane_output_descriptor.get_data_type());
+  EXPECT_EQ(systems::kAbstractValued, lane_output_port.get_data_type());
 }
 
 // Tests the incentive of the ego car to change lanes when tailgating a car

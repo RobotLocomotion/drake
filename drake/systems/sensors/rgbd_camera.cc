@@ -52,10 +52,6 @@ namespace sensors {
 namespace {
 
 const int kPortStateInput = 0;
-const int kPortColorImage = 0;
-const int kPortDepthImage = 1;
-const int kPortLabelImage = 2;
-const int kPortCameraPose = 3;
 
 // TODO(kunimatsu-tri) Add support for the arbitrary clipping planes and
 // background color.
@@ -263,9 +259,6 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
 
   static float CheckRangeAndConvertToMeters(float z_buffer_value);
 
-  void DoCalcOutput(const BasicVector<double>& input_vector,
-                    systems::SystemOutput<double>* output) const;
-
   const Eigen::Isometry3d& color_camera_optical_pose() const {
     return X_BC_;
   }
@@ -282,6 +275,16 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
 
   const RigidBodyTree<double>& tree() const { return tree_; }
 
+  // These are the calculator method implementations for the four output ports.
+  void OutputColorImage(const BasicVector<double>& input_vector,
+                        ImageBgra8U* color_image) const;
+  void OutputDepthImage(const BasicVector<double>& input_vector,
+                        ImageDepth32F* depth_image) const;
+  void OutputLabelImage(const BasicVector<double>& input_vector,
+                        ImageLabel16I* label_image) const;
+  void OutputPoseVector(const BasicVector<double>& input_vector,
+                        rendering::PoseVector<double>* pose_vector) const;
+
  private:
   void CreateRenderingWorld();
 
@@ -289,6 +292,11 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
                         const Eigen::Isometry3d& X_CW) const;
 
   void UpdateRenderWindow() const;
+
+  // TODO(sherm1) This should be the calculator for a cache entry containing
+  // the VTK update that must be valid before outputting any image info. For
+  // now it has to be repeated before each image output port calculation.
+  void PerformVTKUpdate(const BasicVector<double>& input_vector) const;
 
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double>& frame_;
@@ -608,11 +616,95 @@ void RgbdCamera::Impl::UpdateRenderWindow() const {
   }
 }
 
-void RgbdCamera::Impl::DoCalcOutput(
+void RgbdCamera::Impl::OutputColorImage(const BasicVector<double>& input_vector,
+                                        ImageBgra8U* color_image) const {
+  // Outputs the image data.
+  sensors::ImageBgra8U& image = *color_image;
+
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(input_vector);
+
+  const int height = color_camera_info_.height();
+  const int width = color_camera_info_.width();
+  for (int v = 0; v < height; ++v) {
+    for (int u = 0; u < width; ++u) {
+      const int height_reversed = height - v - 1;  // Makes image upside down.
+
+      // We cast `void*` to `uint8_t*` for RGBA. This is because that is the
+      // type for color pixels internally used in `vtkWindowToImageFilter`
+      // class. For more detail, refer to:
+      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
+      // Converts RGBA to BGRA.
+      void* color_ptr = color_filter_->GetOutput()->GetScalarPointer(u, v, 0);
+      image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
+      image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
+      image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
+      image.at(u, height_reversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
+    }
+  }
+}
+
+void RgbdCamera::Impl::OutputDepthImage(const BasicVector<double>& input_vector,
+                                        ImageDepth32F* depth_image_out) const {
+  // Outputs the image depth data.
+  sensors::ImageDepth32F& depth_image = *depth_image_out;
+
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(input_vector);
+
+  const int height = color_camera_info_.height();
+  const int width = color_camera_info_.width();
+  for (int v = 0; v < height; ++v) {
+    for (int u = 0; u < width; ++u) {
+      const int height_reversed = height - v - 1;  // Makes image upside down.
+
+      // We cast `void*` to `float*` for ZBuffer. This is because this is the
+      // type for pixel depth internally used in `vtkWindowToImageFilter` class.
+      // For more detail, refer to:
+      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
+
+      // Updates the depth image.
+      const float z_buffer_value = *static_cast<float*>(
+          depth_filter_->GetOutput()->GetScalarPointer(u, v, 0));
+      depth_image.at(u, height_reversed)[0] =
+          CheckRangeAndConvertToMeters(z_buffer_value);
+    }
+  }
+}
+
+void RgbdCamera::Impl::OutputLabelImage(const BasicVector<double>& input_vector,
+                                        ImageLabel16I* label_image_out) const {
+  // Outputs the image label data.
+  sensors::ImageLabel16I& label_image = *label_image_out;
+
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(input_vector);
+
+  const int height = color_camera_info_.height();
+  const int width = color_camera_info_.width();
+  for (int v = 0; v < height; ++v) {
+    for (int u = 0; u < width; ++u) {
+      const int height_reversed = height - v - 1;  // Makes image upside down.
+
+      void* label_ptr = label_filter_->GetOutput()->GetScalarPointer(u, v, 0);
+      Color color{*(static_cast<uint8_t*>(label_ptr) + 0),  // R
+                  *(static_cast<uint8_t*>(label_ptr) + 1),  // G
+                  *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
+
+      label_image.at(u, height_reversed)[0] =
+          static_cast<int16_t>(color_palette_.LookUpId(color));
+    }
+  }
+}
+
+void RgbdCamera::Impl::OutputPoseVector(
     const BasicVector<double>& input_vector,
-    systems::SystemOutput<double>* output) const {
-  const Eigen::VectorXd q = input_vector.CopyToVector().head(
-      tree_.get_num_positions());
+    rendering::PoseVector<double>* camera_base_pose) const {
+  // TODO(sherm1) Computation of X_WB should be cached since it is needed by the
+  // VTK update cache entry.
+  const Eigen::VectorXd q =
+      input_vector.CopyToVector().head(tree_.get_num_positions());
+
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
   Eigen::Isometry3d X_WB;
@@ -623,66 +715,29 @@ void RgbdCamera::Impl::DoCalcOutput(
     X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
   }
 
-  rendering::PoseVector<double>* const camera_base_pose =
-      dynamic_cast<rendering::PoseVector<double>*>(
-          output->GetMutableVectorData(kPortCameraPose));
-
-  Eigen::Translation<double, 3> trans = Eigen::Translation<double, 3>(
-      X_WB.translation());
+  Eigen::Translation<double, 3> trans =
+      Eigen::Translation<double, 3>(X_WB.translation());
   camera_base_pose->set_translation(trans);
   Eigen::Quaterniond quat = Eigen::Quaterniond(X_WB.linear());
   camera_base_pose->set_rotation(quat);
+}
+
+void RgbdCamera::Impl::PerformVTKUpdate(
+    const BasicVector<double>& input_vector) const {
+  const Eigen::VectorXd q =
+      input_vector.CopyToVector().head(tree_.get_num_positions());
+  KinematicsCache<double> cache = tree_.doKinematics(q);
+
+  Eigen::Isometry3d X_WB;
+  if (kCameraFixed) {
+    X_WB = X_WB_initial_;
+  } else {
+    // Updates camera pose.
+    X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+  }
 
   UpdateModelPoses(cache, (X_WB * X_BC_).inverse());
-
   UpdateRenderWindow();
-
-  // Outputs the image data.
-  sensors::ImageBgra8U& image =
-      output->GetMutableData(kPortColorImage)->GetMutableValue<
-        sensors::ImageBgra8U>();
-
-  sensors::ImageDepth32F& depth_image =
-      output->GetMutableData(kPortDepthImage)->GetMutableValue<
-        sensors::ImageDepth32F>();
-
-  sensors::ImageLabel16I& label_image =
-      output->GetMutableData(kPortLabelImage)->GetMutableValue<
-        sensors::ImageLabel16I>();
-
-  const int height = color_camera_info_.height();
-  const int width = color_camera_info_.width();
-  for (int v = 0; v < height; ++v) {
-    for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down.
-
-      // We cast `void*` to `uint8_t*` for RGBA, and to `float*` for ZBuffer,
-      // respectively. This is because these are the types for pixels internally
-      // used in `vtkWindowToImageFiler` class. For more detail, refer to:
-      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
-      // Converts RGBA to BGRA.
-      void* color_ptr = color_filter_->GetOutput()->GetScalarPointer(u, v, 0);
-      image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
-      image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
-      image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
-      image.at(u, height_reversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
-
-      // Updates the depth image.
-      const float z_buffer_value = *static_cast<float*>(
-          depth_filter_->GetOutput()->GetScalarPointer(u, v, 0));
-      depth_image.at(u, height_reversed)[0] =
-          CheckRangeAndConvertToMeters(z_buffer_value);
-
-      // Updates the label image.
-      void* label_ptr = label_filter_->GetOutput()->GetScalarPointer(u, v, 0);
-      Color color{*(static_cast<uint8_t*>(label_ptr) + 0),  // R
-                  *(static_cast<uint8_t*>(label_ptr) + 1),  // G
-                  *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
-
-      label_image.at(u, height_reversed)[0] =
-          static_cast<int16_t>(color_palette_.LookUpId(color));
-    }
-  }
 }
 
 float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
@@ -735,18 +790,19 @@ void RgbdCamera::Init(const std::string& name) {
   this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
   ImageBgra8U color_image(kImageWidth, kImageHeight);
-  this->DeclareAbstractOutputPort(systems::Value<sensors::ImageBgra8U>(
-      color_image));
+  color_image_port_ = &this->DeclareAbstractOutputPort(
+      sensors::ImageBgra8U(color_image), &RgbdCamera::OutputColorImage);
 
   ImageDepth32F depth_image(kImageWidth, kImageHeight);
-  this->DeclareAbstractOutputPort(systems::Value<sensors::ImageDepth32F>(
-      depth_image));
+  depth_image_port_ = &this->DeclareAbstractOutputPort(
+      sensors::ImageDepth32F(depth_image), &RgbdCamera::OutputDepthImage);
 
   ImageLabel16I label_image(kImageWidth, kImageHeight);
-  this->DeclareAbstractOutputPort(systems::Value<sensors::ImageLabel16I>(
-      label_image));
+  label_image_port_ = &this->DeclareAbstractOutputPort(
+      sensors::ImageLabel16I(label_image), &RgbdCamera::OutputLabelImage);
 
-  this->DeclareVectorOutputPort(rendering::PoseVector<double>());
+  camera_base_pose_port_ = &this->DeclareVectorOutputPort(
+      rendering::PoseVector<double>(), &RgbdCamera::OutputPoseVector);
 }
 
 RgbdCamera::~RgbdCamera() {}
@@ -779,32 +835,57 @@ const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
   return System<double>::get_input_port(kPortStateInput);
 }
 
-const OutputPortDescriptor<double>&
-RgbdCamera::color_image_output_port() const {
-  return System<double>::get_output_port(kPortColorImage);
-}
-
-const OutputPortDescriptor<double>&
-RgbdCamera::depth_image_output_port() const {
-  return System<double>::get_output_port(kPortDepthImage);
-}
-
-const OutputPortDescriptor<double>&
-RgbdCamera::label_image_output_port() const {
-  return System<double>::get_output_port(kPortLabelImage);
-}
-
-const OutputPortDescriptor<double>&
+const OutputPort<double>&
 RgbdCamera::camera_base_pose_output_port() const {
-  return System<double>::get_output_port(kPortCameraPose);
+  return *camera_base_pose_port_;
 }
 
-void RgbdCamera::DoCalcOutput(const systems::Context<double>& context,
-                              systems::SystemOutput<double>* output) const {
+const OutputPort<double>&
+RgbdCamera::color_image_output_port() const {
+  return *color_image_port_;
+}
+
+const OutputPort<double>&
+RgbdCamera::depth_image_output_port() const {
+  return *depth_image_port_;
+}
+
+const OutputPort<double>&
+RgbdCamera::label_image_output_port() const {
+  return *label_image_port_;
+}
+
+void RgbdCamera::OutputPoseVector(
+    const Context<double>& context,
+    rendering::PoseVector<double>* pose_vector) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, kPortStateInput);
 
-  impl_->DoCalcOutput(*input_vector, output);
+  impl_->OutputPoseVector(*input_vector, pose_vector);
+}
+
+void RgbdCamera::OutputColorImage(const Context<double>& context,
+                                  ImageBgra8U* color_image) const {
+  const BasicVector<double>* input_vector =
+      this->EvalVectorInput(context, kPortStateInput);
+
+  impl_->OutputColorImage(*input_vector, color_image);
+}
+
+void RgbdCamera::OutputDepthImage(const Context<double>& context,
+                                  ImageDepth32F* depth_image) const {
+  const BasicVector<double>* input_vector =
+      this->EvalVectorInput(context, kPortStateInput);
+
+  impl_->OutputDepthImage(*input_vector, depth_image);
+}
+
+void RgbdCamera::OutputLabelImage(const Context<double>& context,
+                                  ImageLabel16I* label_image) const {
+  const BasicVector<double>* input_vector =
+      this->EvalVectorInput(context, kPortStateInput);
+
+  impl_->OutputLabelImage(*input_vector, label_image);
 }
 
 constexpr float RgbdCamera::InvalidDepth::kTooFar;

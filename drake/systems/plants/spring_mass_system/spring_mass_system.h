@@ -89,17 +89,13 @@ class SpringMassSystem : public LeafSystem<T> {
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  using MyContext = Context<T>;
-  using MyContinuousState = ContinuousState<T>;
-  using MyOutput = SystemOutput<T>;
-
   // Provide methods specific to this System.
 
   /// Returns the input port to the externally applied force.
   const InputPortDescriptor<T>& get_force_port() const;
 
   /// Returns the port to output state.
-  const OutputPortDescriptor<T>& get_output_port() const;
+  const OutputPort<T>& get_output_port() const;
 
   /// Returns the spring constant k that was provided at construction, in N/m.
   double get_spring_constant() const { return spring_constant_N_per_m_; }
@@ -108,17 +104,17 @@ class SpringMassSystem : public LeafSystem<T> {
   double get_mass() const { return mass_kg_; }
 
   /// Gets the current position of the mass in the given Context.
-  T get_position(const MyContext& context) const {
+  T get_position(const Context<T>& context) const {
     return get_state(context).get_position();
   }
 
   /// Gets the current velocity of the mass in the given Context.
-  T get_velocity(const MyContext& context) const {
+  T get_velocity(const Context<T>& context) const {
     return get_state(context).get_velocity();
   }
 
   /// @returns the external driving force to the system.
-  T get_input_force(const MyContext& context) const {
+  T get_input_force(const Context<T>& context) const {
     T external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
@@ -129,23 +125,23 @@ class SpringMassSystem : public LeafSystem<T> {
 
   /// Gets the current value of the conservative power integral in the given
   /// Context.
-  T get_conservative_work(const MyContext& context) const {
+  T get_conservative_work(const Context<T>& context) const {
     return get_state(context).get_conservative_work();
   }
 
   /// Sets the position of the mass in the given Context.
-  void set_position(MyContext* context, const T& position) const {
+  void set_position(Context<T>* context, const T& position) const {
     get_mutable_state(context)->set_position(position);
   }
 
   /// Sets the velocity of the mass in the given Context.
-  void set_velocity(MyContext* context, const T& velocity) const {
+  void set_velocity(Context<T>* context, const T& velocity) const {
     get_mutable_state(context)->set_velocity(velocity);
   }
 
   /// Sets the initial value of the conservative power integral in the given
   /// Context.
-  void set_conservative_work(MyContext* context, const T& energy) const {
+  void set_conservative_work(Context<T>* context, const T& energy) const {
     get_mutable_state(context)->set_conservative_work(energy);
   }
 
@@ -153,7 +149,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// Context. This force f is given by `f = -k (x-x0)`; the spring applies the
   /// opposite force -f to the world attachment point at the other end. The
   /// force is in newtons N (kg-m/s^2).
-  T EvalSpringForce(const MyContext& context) const;
+  T EvalSpringForce(const Context<T>& context) const;
 
   /// Returns the potential energy currently stored in the spring in the given
   /// Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring
@@ -165,7 +161,7 @@ class SpringMassSystem : public LeafSystem<T> {
   ///            = -f v.
   /// @endverbatim
   /// Energy is in joules J (N-m).
-  T DoCalcPotentialEnergy(const MyContext& context) const override;
+  T DoCalcPotentialEnergy(const Context<T>& context) const override;
 
   /// Returns the current kinetic energy of the moving mass in the given
   /// Context. This is `ke = m v^2 / 2` for this system. The rate of change of
@@ -179,7 +175,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @endverbatim
   /// (assuming the only force is due to the spring). Energy is in joules.
   /// @see EvalSpringForce(), EvalPotentialEnergy()
-  T DoCalcKineticEnergy(const MyContext& context) const override;
+  T DoCalcKineticEnergy(const Context<T>& context) const override;
 
   /// Returns the rate at which mechanical energy is being converted from
   /// potential energy in the spring to kinetic energy of the mass by this
@@ -191,7 +187,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @endverbatim
   /// This quantity is positive when the spring is accelerating the mass and
   /// negative when the spring is decelerating the mass.
-  T DoCalcConservativePower(const MyContext& context) const override;
+  T DoCalcConservativePower(const Context<T>& context) const override;
 
   // TODO(sherm1) Currently this is a conservative system so there is no power
   // generated or consumed. Add some kind of dissipation and/or actuation to
@@ -200,17 +196,10 @@ class SpringMassSystem : public LeafSystem<T> {
 
   /// Returns power that doesn't involve the conservative spring element. (There
   /// is none in this system.)
-  T DoCalcNonConservativePower(const MyContext& context) const override;
+  T DoCalcNonConservativePower(const Context<T>& context) const override;
 
-  // System<T> overrides.
-  /// Allocates an output vector of type SpringMassStateVector<T>.
-  std::unique_ptr<BasicVector<T>> AllocateOutputVector(
-      const OutputPortDescriptor<T>& descriptor) const override;
-
-  void DoCalcOutput(const MyContext& context, MyOutput* output) const override;
-
-  void DoCalcTimeDerivatives(const MyContext& context,
-                             MyContinuousState* derivatives) const override;
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
 
   /// Returns the closed-form position and velocity solution for this system
   /// from the given initial conditions.
@@ -254,44 +243,35 @@ class SpringMassSystem : public LeafSystem<T> {
                                             system_is_forced_);
   }
 
-  // LeafSystem<T> override.
-  std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
-
  private:
   /// This system is not direct feedthrough.
   bool DoHasDirectFeedthrough(const SparsityMatrix*, int, int) const override {
     return false;
   }
 
+  // This is the calculator method for the output port.
+  void SetOutputValues(const Context<T>& context,
+                       SpringMassStateVector<T>* output) const;
+
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
   // and static_cast in Release mode.
 
   static const SpringMassStateVector<T>& get_state(
-      const MyContinuousState& cstate) {
+      const ContinuousState<T>& cstate) {
     return dynamic_cast<const SpringMassStateVector<T>&>(cstate.get_vector());
   }
 
   static SpringMassStateVector<T>* get_mutable_state(
-      MyContinuousState* cstate) {
+      ContinuousState<T>* cstate) {
     return dynamic_cast<SpringMassStateVector<T>*>(
         cstate->get_mutable_vector());
   }
 
-  static const SpringMassStateVector<T>& get_output(const MyOutput& output) {
-    return dynamic_cast<const SpringMassStateVector<T>&>(
-        *output.get_vector_data(0));
-  }
-
-  static SpringMassStateVector<T>* get_mutable_output(MyOutput* output) {
-    return dynamic_cast<SpringMassStateVector<T>*>(
-        output->GetMutableVectorData(0));
-  }
-
-  static const SpringMassStateVector<T>& get_state(const MyContext& context) {
+  static const SpringMassStateVector<T>& get_state(const Context<T>& context) {
     return get_state(*context.get_continuous_state());
   }
 
-  static SpringMassStateVector<T>* get_mutable_state(MyContext* context) {
+  static SpringMassStateVector<T>* get_mutable_state(Context<T>* context) {
     return get_mutable_state(context->get_mutable_continuous_state());
   }
 

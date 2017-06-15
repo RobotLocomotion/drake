@@ -30,7 +30,7 @@ namespace automotive {
 ///   (InputPortDescriptor getter: ego_pose_input())
 ///
 /// Output Port 0: A BasicVector of size one with the commanded steering angle.
-///   (InputPortDescriptor getter: steering_command_output())
+///   (OutputPort getter: steering_command_output())
 ///
 /// @ingroup automotive_controllers
 template <typename T>
@@ -45,17 +45,17 @@ class PurePursuitController : public systems::LeafSystem<T> {
   /// Returns the port to the individual input/output ports.
   const systems::InputPortDescriptor<T>& lane_input() const;
   const systems::InputPortDescriptor<T>& ego_pose_input() const;
-  const systems::OutputPortDescriptor<T>& steering_command_output() const;
+  const systems::OutputPort<T>& steering_command_output() const;
 
  private:
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  void OutputSteeringCommand(const systems::Context<T>& context,
+                            systems::BasicVector<T>* output) const;
 
-  void ImplDoCalcOutput(const PurePursuitParams<T>& pp_params,
-                        const SimpleCarParams<T>& car_params,
-                        const LaneDirection& lane_direction,
-                        const systems::rendering::PoseVector<T>& ego_pose,
-                        systems::BasicVector<T>* command) const;
+  void CalcSteeringCommand(const PurePursuitParams<T>& pp_params,
+                           const SimpleCarParams<T>& car_params,
+                           const LaneDirection& lane_direction,
+                           const systems::rendering::PoseVector<T>& ego_pose,
+                           systems::BasicVector<T>* command) const;
 
   // Indices for the input / output ports.
   const int lane_index_{};

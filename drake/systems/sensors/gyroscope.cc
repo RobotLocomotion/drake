@@ -16,18 +16,19 @@ namespace sensors {
 Gyroscope::Gyroscope(const std::string& name,
                      const RigidBodyFrame<double>& frame,
                      const RigidBodyTree<double>& tree)
-    : name_(name),
-      frame_(frame),
-      tree_(tree) {
+    : name_(name), frame_(frame), tree_(tree) {
   input_port_index_ =
-      DeclareInputPort(kVectorValued, tree_.get_num_positions() +
-                                      tree_.get_num_velocities()).get_index();
-  output_port_index_ = DeclareVectorOutputPort(
-      GyroscopeOutput<double>()).get_index();
+      DeclareInputPort(kVectorValued,
+                       tree_.get_num_positions() + tree_.get_num_velocities())
+          .get_index();
+  output_port_index_ = DeclareVectorOutputPort(GyroscopeOutput<double>(),
+                                               &Gyroscope::CalcAngularVelocity)
+                           .get_index();
 }
 
-void Gyroscope::DoCalcOutput(const systems::Context<double>& context,
-                             systems::SystemOutput<double>* output) const {
+void Gyroscope::CalcAngularVelocity(
+    const Context<double>& context,
+    GyroscopeOutput<double>* output_vector) const {
   // Obtains x, the RigidBodyPlant's state.
   const VectorXd x = this->EvalEigenVectorInput(context, input_port_index_);
 
@@ -62,8 +63,6 @@ void Gyroscope::DoCalcOutput(const systems::Context<double>& context,
   const auto w_WG_G = R_GW * w_WG_W;
 
   // Saves the angular velocity values into the output port.
-  BasicVector<double>* const output_vector =
-      output->GetMutableVectorData(output_port_index_);
   output_vector->SetFromVector(w_WG_G);
 }
 

@@ -4,10 +4,34 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/discrete_event.h"
+#include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
+
+template <class T>
+class System;
+
+enum class WitnessFunctionDirection {
+  /// This witness function will never be triggered.
+  kNone,
+
+  /// Witness function triggers when the function crosses or touches zero
+  /// after an initial positive evaluation.
+  kPositiveThenNonPositive,
+
+  /// Witness function triggers when the function crosses or touches zero
+  /// after an initial negative evaluation.
+  kNegativeThenNonNegative,
+
+  /// Witness function triggers *any time* the function crosses/touches zero,
+  /// *except* when the witness function evaluates to zero at the beginning
+  /// of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
+  /// kNegativeThenNonNegative.
+  kCrossesZero,
+};
 
 /// Abstract class that describes a function that is able to help determine
 /// the time and state at which a simulation should be halted, which may be
@@ -64,31 +88,14 @@ namespace systems {
 template <class T>
 class WitnessFunction {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WitnessFunction)
+
   virtual ~WitnessFunction() {}
-
-  enum class DirectionType {
-    /// This witness function will never be triggered.
-    kNone,
-
-    /// Witness function triggers when the function crosses or touches zero
-    /// after an initial positive evaluation.
-    kPositiveThenNonPositive,
-
-    /// Witness function triggers when the function crosses or touches zero
-    /// after an initial negative evaluation.
-    kNegativeThenNonNegative,
-
-    /// Witness function triggers *any time* the function crosses/touches zero,
-    /// *except* when the witness function evaluates to zero at the beginning
-    /// of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
-    /// kNegativeThenNonNegative.
-    kCrossesZero,
-  };
 
   /// Constructs the witness function with the given direction type and action
   /// type.
   WitnessFunction(const System<T>& system,
-                  const DirectionType& dtype,
+                  const WitnessFunctionDirection& dtype,
                   const typename DiscreteEvent<T>::ActionType& atype) :
                   system_(system), dir_type_(dtype), action_type_(atype) {}
 
@@ -107,38 +114,40 @@ class WitnessFunction {
       return action_type_; }
 
   /// Gets the direction(s) under which this witness function triggers.
-  DirectionType get_dir_type() const { return dir_type_; }
+  WitnessFunctionDirection get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
-  T Evaluate(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(system_.CheckValidContext(context));
-    return DoEvaluate(context);
-  }
+  T Evaluate(const Context<T>& context) const;
+
+  /// Gets a reference to the System used by this witness function.
+  const System<T>& get_system() const { return system_; }
 
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
-  bool should_trigger(const T& w0, const T& wf) const {
-    DirectionType dtype = get_dir_type();
+  decltype(T() < T()) should_trigger(const T& w0, const T& wf) const {
+    WitnessFunctionDirection dtype = get_dir_type();
 
+    const T zero(0);
     switch (dtype) {
-      case DirectionType::kNone:
-        return false;
+      case WitnessFunctionDirection::kNone:
+        return (T(0) > T(0));
 
-      case DirectionType::kPositiveThenNonPositive:
-        return (w0 > 0 && wf <= 0);
+      case WitnessFunctionDirection::kPositiveThenNonPositive:
+        return (w0 > zero && wf <= zero);
 
-      case DirectionType::kNegativeThenNonNegative:
-        return (w0 < 0 && wf >= 0);
+      case WitnessFunctionDirection::kNegativeThenNonNegative:
+        return (w0 < zero && wf >= zero);
 
-      case DirectionType::kCrossesZero:
-        return ((w0 > 0 && wf <= 0) ||
-                (w0 < 0 && wf >= 0));
+      case WitnessFunctionDirection::kCrossesZero:
+        return ((w0 > zero && wf <= zero) ||
+                (w0 < zero && wf >= zero));
 
       default:
         DRAKE_ABORT();
     }
   }
+
 
  protected:
   /// Derived classes will implement this function to evaluate the witness
@@ -154,7 +163,7 @@ class WitnessFunction {
   const System<T>& system_;
 
   // Direction(s) under which this witness function triggers.
-  DirectionType dir_type_;
+  WitnessFunctionDirection dir_type_;
 
   // Action (event type) to be taken when this witness function triggers.
   typename DiscreteEvent<T>::ActionType action_type_;

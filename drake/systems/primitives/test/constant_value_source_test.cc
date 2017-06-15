@@ -22,26 +22,22 @@ class ConstantValueSourceTest : public ::testing::Test {
     std::unique_ptr<AbstractValue> value(new Value<std::string>("foo"));
     source_ = make_unique<ConstantValueSource<double>>(std::move(value));
     context_ = source_->CreateDefaultContext();
-    output_ = source_->AllocateOutput(*context_);
+    output_ = source_->get_output_port(0).Allocate(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<AbstractValue> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
 
 TEST_F(ConstantValueSourceTest, Output) {
   ASSERT_EQ(source_->get_num_input_ports(), context_->get_num_input_ports());
-  ASSERT_EQ(source_->get_num_output_ports(), output_->get_num_ports());
 
-  source_->CalcOutput(*context_, output_.get());
+  source_->get_output_port(0).Calc(*context_, output_.get());
 
-  EXPECT_EQ(
-      "foo",
-      output_->get_port_value(0).get_abstract_data()->GetValue<std::string>());
-  EXPECT_EQ("foo", output_->get_data(0)->GetValue<std::string>());
+  EXPECT_EQ("foo", output_->GetValue<std::string>());
 }
 
 // Tests that ConstantValueSource allocates no state variables in the context_.
