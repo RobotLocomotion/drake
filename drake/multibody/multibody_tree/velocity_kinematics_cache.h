@@ -10,10 +10,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
-
 namespace drake {
 namespace multibody {
 
@@ -29,29 +25,19 @@ class VelocityKinematicsCache {
     Allocate();
   }
 
-#if 0
-  /// @returns a constant reference to the spatial velocity of the body node's
-  /// body `B` measured in its parent body `P` and expressed in the world
-  /// frame `W`.
-  const GeneralSpatialVector<T>& get_V_PB_W(BodyNodeIndex body_id) const {
-    DRAKE_ASSERT(0 <= body_id && body_id < num_nodes_);
-    return V_PB_W_pool_[body_id];
-  }
-
-  /// @returns a mutable reference to the spatial velocity of the body node's
-  /// body `B` measured in its parent body `P` and expressed in the world
-  /// frame `W`.
-  GeneralSpatialVector<T>& get_mutable_V_PB_W(BodyNodeIndex body_id) {
-    DRAKE_ASSERT(0 <= body_id && body_id < num_nodes_);
-    return V_PB_W_pool_[body_id];
-  }
-#endif
-
+  /// Returns a constant reference to the spatial velocity `V_WB` of the body B
+  /// (associated with node @p body_node_index) as measured and expressed in the
+  /// world frame W.
+  /// @param[in] body_node_index The unique index for the computational
+  ///                            BodyNode object associated with body B.
+  /// @returns `X_WB` the pose of the the body frame B measured and
+  ///                 expressed in the world frame W.
   const SpatialVelocity<T>& get_V_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];
   }
 
+  /// Mutable version of get_V_WB().
   SpatialVelocity<T>& get_mutable_V_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];
@@ -62,7 +48,7 @@ class VelocityKinematicsCache {
   // Pools store entries in the same order multibody tree nodes are
   // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore
   // clients of this class will access entries by BodyNodeIndex, see
-  // `get_X_WB()` for instance.
+  // `get_V_WB()` for instance.
 
   // The type of the pools for storing spatial velocities.
   typedef std::vector<SpatialVelocity<T>> SpatialVelocity_PoolType;
