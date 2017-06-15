@@ -166,6 +166,7 @@ class TestVectorTranslator
   lcmt_drake_signal default_msg_;
 };
 
+// Makes a test message of size @p size.
 lcmt_drake_signal MakeTestMessage(int size) {
   lcmt_drake_signal msg;
   msg.dim = size;
@@ -178,6 +179,7 @@ lcmt_drake_signal MakeTestMessage(int size) {
   return msg;
 }
 
+// Checks that @p msg is encoded correctly.
 void CheckEncodedMessage(const lcmt_drake_signal& msg, int size, double time) {
   EXPECT_EQ(static_cast<int64_t>(time * 1e3), msg.timestamp);
   EXPECT_EQ(msg.dim, size);
@@ -283,6 +285,11 @@ GTEST_TEST(TranslatorTest, FromLcmMessageBasicVectorVersion) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Tests for encoding / decoding composite message.
+
+// TODO(siyuan) move these to somewhere more common.
+// A translator between Vector3<T> and robotlocomotion::point_t.
 template <typename T>
 class PointTranslator
     : public drake::lcm::TranslatorBase<Vector3<T>, robotlocomotion::point_t> {
@@ -316,6 +323,7 @@ class PointTranslator
   Vector3<T> default_data_{Vector3<T>::Zero()};
 };
 
+// A translator between Quaternion<T> and robotlocomotion::quaternion_t.
 template <typename T>
 class QuaternionTranslator
     : public drake::lcm::TranslatorBase<Quaternion<T>,
@@ -355,6 +363,7 @@ class QuaternionTranslator
   robotlocomotion::quaternion_t default_msg_;
 };
 
+// A translator between Isometry3<T> and robotlocomotion::pose_t.
 template <typename T>
 class PoseTranslator
     : public drake::lcm::TranslatorBase<Isometry3<T>, robotlocomotion::pose_t> {
@@ -399,7 +408,8 @@ class PoseTranslator
   const QuaternionTranslator<T> quaternion_translator_;
 };
 
-GTEST_TEST(TranslatorTest, PoseTranslator) {
+// Tests Isometry3<double> -> robotlocomotion::pose_t.
+GTEST_TEST(TranslatorTest, PoseTranslatorEncodeTest) {
   LcmEncoderSystem<Isometry3<double>, robotlocomotion::pose_t> dut(
       std::make_unique<PoseTranslator<double>>());
   auto context = dut.CreateDefaultContext();
@@ -407,7 +417,11 @@ GTEST_TEST(TranslatorTest, PoseTranslator) {
 
   Isometry3<double> data = Isometry3<double>::Identity();
   data.translation() << 1, 2, 3;
-  data.linear() = Quaternion<double>(0, 0, 0, 1).toRotationMatrix();
+  data.linear() =
+      AngleAxis<double>(0.3, Vector3<double>::UnitX()).toRotationMatrix() *
+      AngleAxis<double>(-1.0, Vector3<double>::UnitY()).toRotationMatrix() *
+      AngleAxis<double>(M_PI / 2., Vector3<double>::UnitZ()).toRotationMatrix();
+  Quaternion<double> expected_quat(data.linear());
 
   context->FixInputPort(0, AbstractValue::Make<Isometry3<double>>(data));
   dut.CalcOutput(*context, output.get());
@@ -418,10 +432,40 @@ GTEST_TEST(TranslatorTest, PoseTranslator) {
   EXPECT_EQ(msg.position.y, 2);
   EXPECT_EQ(msg.position.z, 3);
 
-  EXPECT_EQ(msg.orientation.w, 0);
-  EXPECT_EQ(msg.orientation.x, 0);
-  EXPECT_EQ(msg.orientation.y, 0);
-  EXPECT_EQ(msg.orientation.z, 1);
+  Quaternion<double> msg_quat(msg.orientation.w, msg.orientation.x,
+                              msg.orientation.y, msg.orientation.z);
+  EXPECT_NEAR(std::abs(msg_quat.dot(expected_quat)), 1., 1e-15);
+}
+
+// Tests robotlocomotion::pose_t -> Isometry3<double>.
+GTEST_TEST(TranslatorTest, PoseTranslatorDecodeTest) {
+  LcmDecoderSystem<Isometry3<double>, robotlocomotion::pose_t> dut(
+      std::make_unique<PoseTranslator<double>>());
+  auto context = dut.CreateDefaultContext();
+  auto output = dut.AllocateOutput(*context);
+
+  robotlocomotion::pose_t msg;
+  msg.position.x = 3;
+  msg.position.y = 2;
+  msg.position.z = 1;
+
+  Quaternion<double> expected_quat(1, 2, 3, 4);
+  expected_quat.normalize();
+  msg.orientation.w = expected_quat.w();
+  msg.orientation.x = expected_quat.x();
+  msg.orientation.y = expected_quat.y();
+  msg.orientation.z = expected_quat.z();
+
+  context->FixInputPort(0, AbstractValue::Make<robotlocomotion::pose_t>(msg));
+  dut.CalcOutput(*context, output.get());
+  const Isometry3<double>& data =
+      output->get_data(0)->GetValue<Isometry3<double>>();
+  EXPECT_EQ(data.translation()[0], 3);
+  EXPECT_EQ(data.translation()[1], 2);
+  EXPECT_EQ(data.translation()[2], 1);
+  Quaternion<double> quat(data.linear());
+
+  EXPECT_NEAR(std::abs(quat.dot(expected_quat)), 1., 1e-15);
 }
 
 }  // namespace
