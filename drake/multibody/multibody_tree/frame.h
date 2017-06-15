@@ -44,10 +44,10 @@ class Frame : public FrameBase<T> {
     return body_;
   }
 
-  /// Returns the pose `X_BF` of `this` frame F as measured and expressed in
+  /// Returns the pose `X_BF` of `this` frame F as measured and expressed in the
   /// frame B of the body associated with this frame.
-  /// In the particular case `F = B`, this method directly returns the identity
-  /// transformation.
+  /// In particular, if `this` **is**` the body frame B, this method directly
+  /// returns the identity transformation.
   /// @sa CalcBodyPoseInThisFrame() which returns the inverse
   /// transformation `X_FB`.
   virtual Isometry3<T> CalcPoseInBodyFrame(

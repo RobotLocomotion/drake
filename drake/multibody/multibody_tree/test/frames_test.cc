@@ -108,6 +108,13 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   EXPECT_TRUE(frameB_->CalcBodyPoseInThisFrame(*context_).
       isApprox(Isometry3d::Identity()));
 
+  // Verify this method computes the pose X_BF of this frame F in the body
+  // frame B to which this frame attaches to. Since in this case frame F IS the
+  // body frame B, X_BF = Id and this method should return the identity
+  // transformation.
+  EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).
+      isApprox(Isometry3d::Identity()));
+
   // Verify this method computes the pose of a frame G measured in this
   // frame F given the pose of frame G in this frame F as: X_BG = X_BF * X_FG.
   // Since in this case frame F IS the body frame B, X_BF = Id and this method
@@ -133,6 +140,9 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   // X_PB = X_BP.inverse()
   EXPECT_TRUE(
       frameP_->CalcBodyPoseInThisFrame(*context_).isApprox(X_BP_.inverse()));
+
+  // Verify this method returns the pose X_BP of frame P in body frame B.
+  EXPECT_TRUE(frameP_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_));
 
   // Verify this method computes the pose X_BQ of a third frame Q measured in
   // the body frame B given we know the pose X_PQ of frame G in our frame P as:
@@ -160,6 +170,10 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   // X_QB = X_QP * X_PB = X_PQ.inverse() * X_BP.inverse()
   EXPECT_TRUE(frameQ_->CalcBodyPoseInThisFrame(*context_).
       isApprox(X_PQ_.inverse() * X_BP_.inverse()));
+
+  // Verify this method computes the pose of frame Q in the body frame B as:
+  // X_BQ = X_BP * X_PQ
+  EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_ * X_PQ_));
 
   // Verify this method computes the pose X_BG of a fourth frame G measured in
   // the body frame B given we know the pose X_QG of frame G in our frame Q as:

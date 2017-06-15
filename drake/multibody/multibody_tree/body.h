@@ -56,18 +56,12 @@ class BodyFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
-  /// Since this **is** the %BodyFrame this method simply returns the identity
-  /// pose.
-  /// @sa CalcBodyPoseInThisFrame()
   Isometry3<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const final {
     unused(context);
     return Isometry3<T>::Identity();
   }
 
-  /// Since this **is** the %BodyFrame this method simply returns the identity
-  /// pose.
-  /// @sa CalcPoseInBodyFrame()
   Isometry3<T> CalcBodyPoseInThisFrame(
       const systems::Context<T>& context) const final {
     unused(context);
