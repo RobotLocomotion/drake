@@ -30,6 +30,7 @@ set(sources
   system.cc
   value.cc
   vector_base.cc
+  witness_function.cc
   )
 
 # Headers that should be installed with Drake so that they

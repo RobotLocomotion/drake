@@ -244,6 +244,7 @@ drake_cc_library(
     srcs = [
         "output_port.cc",
         "system.cc",
+        "witness_function.cc",
     ],
     hdrs = [
         "discrete_event.h",
@@ -442,6 +443,8 @@ drake_cc_googletest(
     deps = [
         ":diagram",
         "//drake/common",
+        "//drake/common:is_dynamic_castable",
+        "//drake/systems/analysis:stateless_system",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",

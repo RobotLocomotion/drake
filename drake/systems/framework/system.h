@@ -1033,6 +1033,13 @@ class System {
     DoGetWitnessFunctions(context, w);
   }
 
+  /// Evaluates a witness function at the given context.
+  T EvaluateWitness(const Context<T>& context,
+                    const WitnessFunction<T>& witness_func) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    return DoEvaluateWitness(context, witness_func);
+  }
+
   /// Returns a string suitable for identifying this particular %System in
   /// error messages, when it is a subsystem of a larger Diagram. This method
   /// captures human-readable subsystem identification best practice; the
@@ -1047,6 +1054,11 @@ class System {
   }
 
  protected:
+  /// Derived classes will implement this method to evaluate a witness function
+  /// at the given context.
+  virtual T DoEvaluateWitness(const Context<T>& context,
+                              const WitnessFunction<T>& witness_func) const = 0;
+
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default
   /// implementation does nothing. On entry to this function, the context will
