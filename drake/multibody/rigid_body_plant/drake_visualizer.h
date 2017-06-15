@@ -134,16 +134,20 @@ class DrakeVisualizer : public LeafSystem<double> {
   // shortly to perform the initialization. Otherwise, returns
   // LeafSystem<double>::DoCalcNextUpdateTime(context, events)
   void DoCalcNextUpdateTime(const Context<double>& context,
-                            UpdateActions<double>* events) const override;
+                            CompositeEventCollection<double>* events,
+                            double* time) const override;
 
   // Sets the initialization flag to true, and calls PublishLoadRobot().
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* discrete_state) const override;
 
   // Publishes a draw message if initialization is completed. Otherwise, it
   // emits a warning and return.
-  void DoPublish(const systems::Context<double>& context) const override;
+  void DoPublish(const systems::Context<double>& context,
+                 const std::vector<const PublishEvent<double>*>&)
+                 const override;
 
   // Publishes a lcmt_viewer_load_robot message containing a description
   // of what should be visualized. The message is intended to be received by the

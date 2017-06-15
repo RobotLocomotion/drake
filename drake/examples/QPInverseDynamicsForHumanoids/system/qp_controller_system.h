@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
@@ -28,7 +29,8 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   QpControllerSystem(const RigidBodyTree<double>& robot, double dt);
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
+     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& events,
+     systems::State<double>* state) const override;
 
   /**
    * Returns the input port for HumanoidStatus.

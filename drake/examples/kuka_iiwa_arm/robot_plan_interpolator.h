@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
@@ -66,7 +67,8 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
       const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
+            const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+            systems::State<double>* state) const override;
 
  private:
   struct PlanData;

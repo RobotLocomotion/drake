@@ -24,8 +24,7 @@ class ClockWitness : public systems::WitnessFunction<T> {
       const T& trigger_time,
       const System<T>& system,
       const systems::WitnessFunctionDirection& dir_type) :
-        systems::WitnessFunction<T>(system, dir_type,
-          systems::DiscreteEvent<T>::kPublishAction),
+        systems::WitnessFunction<T>(system, dir_type),
         trigger_time_(trigger_time) {
   }
 
@@ -36,6 +35,11 @@ class ClockWitness : public systems::WitnessFunction<T> {
   // The witness function is the time value itself plus the offset value.
   T DoEvaluate(const Context<T>& context) const override {
     return context.get_time() - trigger_time_;
+  }
+
+  void DoAddEvent(systems::CompositeEventCollection<T>* events) const override {
+    events->add_publish_event(std::make_unique<PublishEvent<T>>(
+        Event<T>::TriggerType::kWitness));
   }
 
  private:
@@ -76,7 +80,8 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
   void DoPublish(
-      const drake::systems::Context<T>& context) const override {
+      const systems::Context<T>& context,
+      const std::vector<const systems::PublishEvent<T>*>&) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
