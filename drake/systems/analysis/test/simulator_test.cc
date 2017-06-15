@@ -52,8 +52,13 @@ class StatelessDiagram : public Diagram<double> {
     // Add the empty system (and its witness function).
     stateless_ = builder.AddSystem<StatelessSystem>(offset,
         WitnessFunctionDirection::kCrossesZero);
-    stateless_->set_name("stateless_diag");
+    stateless_->set_name("stateless_diagram");
     builder.BuildInto(this);
+  }
+
+  void set_publish_callback(
+      std::function<void(const Context<double>&)> callback) {
+    stateless_->set_publish_callback(callback);
   }
 
  private:
@@ -70,23 +75,16 @@ class ExampleDiagram : public Diagram<double> {
 
     // Add the empty system (and its witness function).
     stateless_diag_ = builder.AddSystem<StatelessDiagram>(offset);
-    stateless_diag_->set_name("empty");
+    stateless_diag_->set_name("diagram_of_stateless_diagram");
     builder.BuildInto(this);
   }
 
   void set_publish_callback(
       std::function<void(const Context<double>&)> callback) {
-    publish_callback_ = callback;
-  }
-
- protected:
-  void DoPublish(
-      const drake::systems::Context<double>& context) const override {
-    if (publish_callback_ != nullptr) publish_callback_(context);
+    stateless_diag_->set_publish_callback(callback);
   }
 
  private:
-  std::function<void(const Context<double>&)> publish_callback_{nullptr};
   StatelessDiagram* stateless_diag_ = nullptr;
 };
 
@@ -139,7 +137,7 @@ class CompositeSystem : public LogisticSystem {
  protected:
   void DoGetWitnessFunctions(
       const Context<double>&,
-      std::vector<const systems::WitnessFunction<double>*>* w) const override {
+      std::vector<const WitnessFunction<double>*>* w) const override {
     w->push_back(clock_witness_.get());
     w->push_back(logistic_witness_.get());
   }
@@ -167,14 +165,14 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
 
  protected:
   void DoGetWitnessFunctions(
-      const systems::Context<double>&,
-      std::vector<const systems::WitnessFunction<double>*>* w) const override {
+      const Context<double>&,
+      std::vector<const WitnessFunction<double>*>* w) const override {
     w->push_back(witness1_.get());
     w->push_back(witness2_.get());
   }
 
   void DoPublish(
-      const drake::systems::Context<double>& context,
+      const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
@@ -302,7 +300,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   Context<double>* context = simulator.get_mutable_context();
 
   // Get the (one) witness function.
-  std::vector<const systems::WitnessFunction<double>*> witness;
+  std::vector<const WitnessFunction<double>*> witness;
   system.GetWitnessFunctions(*context, &witness);
   DRAKE_DEMAND(witness.size() == 1);
 
@@ -865,7 +863,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 
   ~UnrestrictedUpdater() override {}
 
-  void DoCalcNextUpdateTime(const systems::Context<double>& context,
+  void DoCalcNextUpdateTime(const Context<double>& context,
                             CompositeEventCollection<double>* event_info,
                             double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
@@ -876,9 +874,9 @@ class UnrestrictedUpdater : public LeafSystem<double> {
   }
 
   void DoCalcUnrestrictedUpdate(
-      const drake::systems::Context<double>& context,
+      const Context<double>& context,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-      drake::systems::State<double>* state) const override {
+      State<double>* state) const override {
     if (unrestricted_update_callback_ != nullptr)
       unrestricted_update_callback_(context, state);
   }
@@ -1048,14 +1046,14 @@ class DiscreteSystem : public LeafSystem<double> {
   ~DiscreteSystem() override {}
 
   void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<double>& context,
+      const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
-      drake::systems::DiscreteValues<double>* updates) const override {
+      DiscreteValues<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
   void DoPublish(
-      const drake::systems::Context<double>& context,
+      const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
@@ -1116,7 +1114,7 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
     num_publishes++;
   });
 
-  drake::systems::Simulator<double> simulator(system);
+  Simulator<double> simulator(system);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
   EXPECT_EQ(500, num_disc_updates);
@@ -1128,7 +1126,7 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
 // discrete state, then publish, then integrate.
 GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   DiscreteSystem system;
-  drake::systems::Simulator<double> simulator(system);
+  Simulator<double> simulator(system);
   enum EventType { kUpdate = 0, kPublish = 1, kIntegrate = 2 };
 
   // Write down the order in which the DiscreteSystem is asked to compute

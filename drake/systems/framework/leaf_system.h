@@ -263,6 +263,13 @@ class LeafSystem : public System<T> {
     return witness_func.Evaluate(context);
   }
 
+  void DoAddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<T>& witness_func,
+      CompositeEventCollection<T>* events) const final {
+    DRAKE_DEMAND(this == &witness_func.get_system());
+    witness_func.AddEvent(events);
+  }
+
   /// Computes the next update time based on the configured periodic events, for
   /// scalar types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic. Subclasses that require aperiodic events should override.

@@ -829,7 +829,8 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->get_name(), context.get_time());
-      fn->AddEvent(events);
+      system.AddTriggeredWitnessFunctionToCompositeEventCollection(
+          *fn, events);
     }
 
     // Indicate a "sample time was hit". In more understandable terms, this

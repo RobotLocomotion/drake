@@ -97,6 +97,13 @@ class TestSystem : public System<double> {
     DRAKE_ABORT();
   }
 
+  void DoAddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<double>&,
+      CompositeEventCollection<double>*) const override {
+    // This system uses no witness functions.
+    DRAKE_ABORT();
+  }
+
   // The default publish function.
   void MyPublish(const Context<double>& context,
                  const std::vector<const PublishEvent<double>*>& events) const {
@@ -359,6 +366,13 @@ class ValueIOTestSystem : public System<T> {
 
   T DoEvaluateWitness(const Context<T>&,
                       const WitnessFunction<T>&) const override {
+    // This system uses no witness functions.
+    DRAKE_ABORT();
+  }
+
+  void DoAddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<T>&,
+      CompositeEventCollection<T>*) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }

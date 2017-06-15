@@ -912,7 +912,7 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   // event index that is tied to the diagram topology, need to implement the
   // analogous method to get_subsystem_context for
   // get_subevent_collection(subsystem*).
-  auto& subevent_collection = info->get_subevent_collection(2);
+  auto& subevent_collection = *info->get_subevent_collection(2);
 
   EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
 }
@@ -932,12 +932,12 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   auto info = dynamic_cast<const DiagramCompositeEventCollection<double>*>(
       events.get());
   {
-    auto& subevent_collection = info->get_subevent_collection(1);
+    auto& subevent_collection = *info->get_subevent_collection(1);
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 
   {
-    auto& subevent_collection = info->get_subevent_collection(2);
+    auto& subevent_collection = *info->get_subevent_collection(2);
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 }
@@ -1091,7 +1091,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   // TODO(siyuan): don't have hard code event index, need to implement
   // get_subevent_collection.
   {
-    auto& subevent_collection = info->get_subevent_collection(1);
+    auto& subevent_collection = *info->get_subevent_collection(1);
     EXPECT_TRUE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
@@ -1115,7 +1115,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->set_time(time);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6);
   for (int i = 0; i < 2; i++) {
-    auto& subevent_collection = info->get_subevent_collection(i);
+    auto& subevent_collection = *info->get_subevent_collection(i);
     EXPECT_TRUE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
