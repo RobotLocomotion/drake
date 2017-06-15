@@ -7,6 +7,7 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/find_resource.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -154,8 +155,7 @@ int DoMain(void) {
 
   // Location for the extra table from the pick and place tests.
   Eigen::Vector3d table_position(0.9, -0.36, -0.07);  // position C
-
-  Eigen::Vector3d post_height_offset(0, 0, 0.27);
+  Eigen::Vector3d post_height_offset(0, 0, 0.26);
 
   // TODO(sam.creasey) select only one of these
   std::vector<Isometry3<double>> place_locations;
@@ -202,8 +202,10 @@ int DoMain(void) {
   systems::DiagramBuilder<double> builder;
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
+  const Eigen::Vector3d table_offset(0.30, 0, 0);
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant(post_locations, table_position, target.model_name,
+      BuildCombinedPlant(post_locations, table_position + table_offset,
+                         target.model_name,
                          box_origin, Vector3<double>(0, 0, FLAGS_orientation),
                          &iiwa_instance, &wsg_instance, &box_instance);
 
@@ -346,5 +348,6 @@ int DoMain(void) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   return drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
 }
