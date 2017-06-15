@@ -1,7 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <vector>
+
+#include "ignition/math/Vector3.hh"
 
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
@@ -30,12 +33,18 @@ class Segment : public api::Segment {
   /// Gives the segment a newly constructed SplineLane.
   ///
   /// @param id is the id of the lane.
+  /// @param control_points is a vector of tuples that hold the point (first
+  /// element) and the tangent (second element) at that point to construct the
+  /// spline based lane. The size should be at least two pairs.
   /// @param width is the width specified by the RNDF lane_width
   /// parameter, or the default assigned value by this code. Later, this value
   /// will be used to construct the api::Lane::lane_bounds() and the
   /// api::Lane::driveable_bounds() result.
   /// @return a pointer to a valid SplineLane.
-  SplineLane* NewSplineLane(const api::LaneId& id, double width);
+  SplineLane* NewSplineLane(const api::LaneId& id,
+      const std::vector<std::tuple<ignition::math::Vector3d,
+                                   ignition::math::Vector3d>>& control_points,
+      double width);
 
   ~Segment() override = default;
 
