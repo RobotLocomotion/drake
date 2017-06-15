@@ -82,4 +82,10 @@ class FindResourceResult {
 /// find the installed resource, but that feature is not yet implemented.
 FindResourceResult FindResource(std::string resource_path);
 
+/// The name of the environment variable that provides the first place where
+/// FindResource attempts to look.  The environment variable is allowed to be
+/// unset or empty; in that case, FindResource will attempt to use other
+/// locations without complaint.
+extern const char* const kDrakeResourceRootEnvironmentVariableName;
+
 }  // namespace drake

@@ -37,10 +37,25 @@ class TestResourceTool(unittest.TestCase):
         output = self._check_call([], expected_returncode=1)
         self.assertGreater(len(output), 1000)
 
+    def test_too_many_arguments(self):
+        self._check_call([
+            "--print_resource_root_environment_variable_name",
+            "--print_resource_path",
+            "drake/common/test/resource_tool_test_data.txt",
+            ], expected_returncode=1)
+
+    def test_resource_root_environment_variable_name(self):
+        output = self._check_call([
+            "--print_resource_root_environment_variable_name",
+            ], expected_returncode=0).strip()
+        self.assertGreater(len(output), 0)
+        # N.B. This test only confirms that the variable name is printed.  The
+        # resource_tool_installed_test.py covers actually setting the variable.
+
     def test_print_resource_path_found(self):
         output = self._check_call([
-             "--print_resource_path",
-             "drake/common/test/resource_tool_test_data.txt",
+            "--print_resource_path",
+            "drake/common/test/resource_tool_test_data.txt",
             ], expected_returncode=0)
         absolute_path = output.strip()
         with open(absolute_path, 'r') as data:
