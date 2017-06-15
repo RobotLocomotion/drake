@@ -31,6 +31,11 @@ pkg_config_package(
     modname = "glib-2.0",
 )
 
+pkg_config_package(
+    name = "gthread",
+    modname = "gthread-2.0",
+)
+
 load("//tools:python.bzl", "python_repository")
 python_repository(
     name = "python",
