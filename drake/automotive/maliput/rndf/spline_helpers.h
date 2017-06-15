@@ -141,6 +141,78 @@ class ArcLengthParameterizedSpline {
       F_ts_;  //< Inverse path length function t(s).
 };
 
+/// Provides the equivalent set of points in cubic Bezier base from a two pairs
+/// of point and tangents at the extents of a spline.
+/// @param p0 A vector that describes the starting position of the curve.
+/// @param t0 A vector that describes the tangent at @p p0.
+/// @param p1 A vector that describes the ending position of the curve.
+/// @param t1 A vector that describes the tangent at @p p1.
+/// @return A vector containing four Bezier control points. The first and last
+/// points are the extent points of the Bezier curve and the other two are the
+/// tangent controlling waypoints.
+std::vector<ignition::math::Vector3d> SplineToBezier(
+    const ignition::math::Vector3d& p0, const ignition::math::Vector3d& t0,
+    const ignition::math::Vector3d& p1, const ignition::math::Vector3d& t1);
+
+/// Provides the equivalent set of points in cubic spline base from four cubic
+/// Bezier control points.
+/// @param p0 A vector that describes the starting position of the curve.
+/// @param p1 A vector that describes the first control point of the curve.
+/// @param p2 A vector that describes the second control point of the curve.
+/// @param p3 A vector that describes the last control point of the curve.
+/// @return A vector containing four spline control points. The points are
+/// return in the following order:
+/// 1. index 0 --> curve position at the beginning.
+/// 2. index 1 --> curve tangent at the beginning.
+/// 3. index 2 --> curve position at the ending.
+/// 4. index 3 --> curve tangent at the ending.
+std::vector<ignition::math::Vector3d> BezierToSpline(
+    const ignition::math::Vector3d& p0, const ignition::math::Vector3d& p1,
+    const ignition::math::Vector3d& p2, const ignition::math::Vector3d& p3);
+
+/// Provides a conditionally convex and monotonic Bezier curve given a vector of
+/// control points @p control_points.
+/// First it computes the intersection of the lines represented by point and
+/// tangent at the beginning and at the end of the curve. From here we have a
+/// a first branch in the behavior, if there is no intersection, we assume that
+/// all these curves are 2-D curves over the z = 0.0 api::GeoPosition frame,
+/// that lines are parallel. Then, we create two intermediate control points for
+/// them that will provide a S shape to match the curve. The change in convexity
+/// is set to be in the mid point of the extents of the curve.
+/// In case there is an intersection in the curve, we find it and this will be
+/// the critical point. Then we determine if this critical point will generate a
+/// convex and monotonic cubic Bezier curve. When this happens we assign as
+/// control points the beginning of the curve, the beginning plus a difference
+/// vector scaled by @p scale, the ending point minus another difference vector
+/// scaled by @p scale and finally the ending point. These difference vectors
+/// are the critical point vector minus the beginning and minus the ending
+/// positions of the curve.
+/// @param control_points A vector containing four Bezier control points. The
+/// first and last points are the extent points of the Bezier curve and the
+/// other two are the tangent controlling waypoints.
+/// @param scale A scale factor with a range value between 0.0 and 1.0.
+/// @return A vector containing four Bezier control points. The first and last
+/// points are the extent points of the Bezier curve and the other two are the
+/// tangent controlling waypoints.
+/// @throws when the size of @p control_points is different from 4.
+/// @throws when @p scale is bigger than 1.0.
+/// @throws when @p scale is smaller than 0.0.
+std::vector<ignition::math::Vector3d> AdjustBezierGeometry(
+    const std::vector<ignition::math::Vector3d>& control_points, double scale);
+
+/// Creates a ignition::math::Spline from a set of @p positions. These positions
+/// are the control points where the curve must go through. The final curve is
+/// based from a PChip algorithm, which makes the interpolation safe in terms of
+/// piecewise convexity and monotonicity.
+/// @param positions A vector of position where the spline should go through. It
+/// should have more than two points. In addition, two consecutive points that
+/// have a length of zero will abort the execution since it's not yet supported.
+/// @return A ignition's Spline containing as knots the positions vector and as
+/// tangent's the PChip's interpolated value.
+/// @throws When positions' size is less than three.
+std::unique_ptr<ignition::math::Spline> CreatePChipBasedSpline(
+    const std::vector<ignition::math::Vector3d>& positions);
+
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake
