@@ -12,13 +12,13 @@ namespace lcm {
  * directly from the Context, so it is not uncommon to omit time from state
  * representations (DataType). Meanwhile, a well defined Lcm message (MsgType)
  * almost always contains an time stamp. Thus, during message encoding
- * (DataType -> MsgType), we provide an additional time information (often
+ * (DataType -> MsgType), we provide additional time information (often
  * extracted from some Context). During decoding (MsgType -> DataType), the
- * message's time stamp can be extracted and stored separated. This introduces
+ * message's time stamp can be extracted and stored separately. This introduces
  * an asymmetry of information flow, i.e.
  * <pre>
- *   (DataType, time) -> MsgType,
- *   MsgType -> (DataType, time)
+ *   DataType and time -> MsgType,
+ *   MsgType -> DataType and time
  * </pre>
  *
  * Note that MsgType is not required to be a Lcm message. In fact, it can be
@@ -43,20 +43,24 @@ class TranslatorBase {
   virtual const MsgType& get_default_msg() const = 0;
 
   /**
-   * Fills @p msg with contents from @p data and @p time. When @p data contains
-   * information about time, it is up to the implementation to pick one for
-   * encoding purposes.
+   * Encodes @p data into @p msg.
    */
   virtual void Encode(const DataType& data, MsgType* msg) const = 0;
 
   /**
-   * Fills @p data and @p time with contents from @p msg.
+   * Decodes @p msg into @p data.
    */
   virtual void Decode(const MsgType& msg, DataType* data) const = 0;
 
-  virtual void EncodeTime(double, MsgType*) const {}
+  /**
+   * Encodes @p time into @p msg. The default implementation does nothing.
+   */
+  virtual void EncodeTime(double time, MsgType* msg) const {}
 
-  virtual void DecodeTime(const MsgType&, double*) const {}
+  /**
+   * Decodes @p msg into @p time. The default implementation does nothing.
+   */
+  virtual void DecodeTime(const MsgType& msg, double* time) const {}
 };
 
 }  // namespace lcm

@@ -30,16 +30,6 @@ struct DataTypeTraits<DataType, true> {
     DRAKE_DEMAND(vector != nullptr);
     return *vector;
   }
-
-  // Returns a mutable reference of DataType that corresponds to the first
-  // output port in @p output. Assumes that the output port is vector valued,
-  // and is of type DataType.
-  static DataType& get_mutable_data(SystemOutput<double>* output) {
-    DataType* const vector =
-        dynamic_cast<DataType*>(output->GetMutableVectorData(0));
-    DRAKE_DEMAND(vector != nullptr);
-    return *vector;
-  }
 };
 
 // Convenience IO port getters for DataType not derived from
@@ -54,13 +44,6 @@ struct DataTypeTraits<DataType, false> {
     const AbstractValue* const value = sys.EvalAbstractInput(context, 0);
     DRAKE_DEMAND(value != nullptr);
     return value->GetValue<DataType>();
-  }
-
-  // Returns a mutable reference of DataType that corresponds to the first
-  // output port in @p output. Assumes that the output port is abstract valued,
-  // and is of type DataType.
-  static DataType& get_mutable_data(SystemOutput<double>* output) {
-    return output->GetMutableData(0)->GetMutableValue<DataType>();
   }
 };
 
@@ -88,7 +71,8 @@ class LcmEncoderSystem : public LeafSystem<double> {
    * model values for the input and output ports are set to @p translator
    * corresponding default values.
    *
-   * @param translator Translator, whose ownership is transferred to this.
+   * @param translator Translator, whose ownership is transferred to this
+   * instance.
    */
   template <typename DataType1 = DataType,
             typename = typename std::enable_if<std::is_base_of<
@@ -96,7 +80,8 @@ class LcmEncoderSystem : public LeafSystem<double> {
   explicit LcmEncoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
     DeclareVectorInputPort(translator_->get_default_data());
-    DeclareAbstractOutputPort(Value<MsgType>(translator_->get_default_msg()));
+    DeclareAbstractOutputPort(translator_->get_default_msg(),
+        &LcmEncoderSystem::EncodeMsg);
   }
 
   /**
@@ -113,8 +98,9 @@ class LcmEncoderSystem : public LeafSystem<double> {
             typename = void>
   explicit LcmEncoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
-    DeclareAbstractInputPort(Value<DataType>(translator_->get_default_data()));
-    DeclareAbstractOutputPort(Value<MsgType>(translator_->get_default_msg()));
+    DeclareAbstractInputPort(Value<DataType1>(translator_->get_default_data()));
+    DeclareAbstractOutputPort(translator_->get_default_msg(),
+        &LcmEncoderSystem::EncodeMsg);
   }
 
   /**
@@ -123,17 +109,12 @@ class LcmEncoderSystem : public LeafSystem<double> {
   const TranslatorType& get_translator() const { return *translator_; }
 
  private:
-  // static constexpr bool kIsVectorBase =
-  //    std::is_base_of<systems::VectorBase<double>, DataType>::value;
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {
+  void EncodeMsg(const Context<double>& context, MsgType* msg) const {
     const DataType& data = translator_system_detail::DataTypeTraits<
         DataType, std::is_base_of<VectorBase<double>,
                                   DataType>::value>::get_data(*this, context);
-    MsgType& msg = output->GetMutableData(0)->GetMutableValue<MsgType>();
-    translator_->Encode(data, &msg);
-    translator_->EncodeTime(context.get_time(), &msg);
+    translator_->Encode(data, msg);
+    translator_->EncodeTime(context.get_time(), msg);
   }
 
   std::unique_ptr<TranslatorType> translator_;
@@ -169,7 +150,9 @@ class LcmDecoderSystem : public LeafSystem<double> {
   explicit LcmDecoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
     DeclareAbstractInputPort(Value<MsgType>(translator_->get_default_msg()));
-    DeclareVectorOutputPort(translator_->get_default_data());
+    DeclareVectorOutputPort(
+        translator_->get_default_data(),
+        &LcmDecoderSystem::DecodeMsg);
   }
 
   /**
@@ -187,18 +170,16 @@ class LcmDecoderSystem : public LeafSystem<double> {
   explicit LcmDecoderSystem(std::unique_ptr<TranslatorType> translator)
       : translator_(std::move(translator)) {
     DeclareAbstractInputPort(Value<MsgType>(translator_->get_default_msg()));
-    DeclareAbstractOutputPort(Value<DataType>(translator_->get_default_data()));
+    DeclareAbstractOutputPort(
+        translator_->get_default_data(),
+        &LcmDecoderSystem::DecodeMsg);
   }
 
  private:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {
+  void DecodeMsg(const Context<double>& context, DataType* vector) const {
     const MsgType& msg =
         this->EvalAbstractInput(context, 0)->template GetValue<MsgType>();
-    DataType& data = translator_system_detail::DataTypeTraits<
-        DataType, std::is_base_of<VectorBase<double>,
-                                  DataType>::value>::get_mutable_data(output);
-    translator_->Decode(msg, &data);
+    translator_->Decode(msg, vector);
   }
 
   std::unique_ptr<TranslatorType> translator_;
