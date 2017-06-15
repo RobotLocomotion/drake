@@ -158,7 +158,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 /// Operator to perform the addition of two spatial velocities. This operator
 /// returns the spatial velocity that results from adding the operands as if
 /// they were 6-dimensional vectors. In other words, the resulting spatial
-/// velocity containes a rotational component which is the 3-dimensional
+/// velocity contains a rotational component which is the 3-dimensional
 /// addition of the operand's rotational components and a translational
 /// component which is the 3-dimensional addition of the operand's translational
 /// components.

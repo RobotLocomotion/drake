@@ -63,7 +63,9 @@ TYPED_TEST(SpatialQuantityTest, SizeAtCompileTime) {
   EXPECT_EQ(V.size(), 6);
 }
 
-// Construction from a Eigen expressions.
+// Tests:
+// - Construction from a Eigen expressions.
+// - SetZero() method.
 TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
@@ -83,6 +85,11 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
   SpatialQuantity V2(v.template segment<6>(0));
   EXPECT_EQ(V2.rotational(), v.template segment<3>(0));
   EXPECT_EQ(V2.translational(), v.template segment<3>(3));
+
+  // Unit tests SetZero().
+  V1.SetZero();
+  EXPECT_EQ(V1.rotational(), Vector3<T>::Zero());
+  EXPECT_EQ(V1.translational(), Vector3<T>::Zero());
 }
 
 // Construction from two three-dimensional vectors.
@@ -269,6 +276,19 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   // Verify the result.
   SpatialVelocity<T> expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
+}
+
+// Tests operator+().
+TYPED_TEST(SpatialVelocityTest, AdditionOperation) {
+  typedef typename TestFixture::ScalarType T;
+  const SpatialVelocity<T>& V_XY_A = this->V_XY_A_;
+  const Vector3<T>& w_XY_A = this->w_XY_A_;
+  const Vector3<T>& v_XY_A = this->v_XY_A_;
+
+  SpatialVelocity<T> V = V_XY_A + V_XY_A;
+
+  EXPECT_EQ(V.rotational(), w_XY_A + w_XY_A);
+  EXPECT_EQ(V.translational(), v_XY_A + v_XY_A);
 }
 
 // Tests that we can take the dot product of a SpatialVelocity with a

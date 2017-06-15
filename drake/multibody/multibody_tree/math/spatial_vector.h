@@ -171,17 +171,15 @@ class SpatialVector {
     return s * V;  // Multiplication by scalar is commutative.
   }
 
-  /// This operation re-expresses the spatial velocity `V_AB_E` between two
-  /// arbitrary frames A and B originally expressed in frame E, into `V_AB_F`,
-  /// the same spatial velocity expresed in another frame F.
-  /// The transormation requires the rotation matrix `R_FE` representing the
+  /// This operation re-expresses the spatial vector `V_E` originally expressed
+  /// in frame E, into `V_F`, the same spatial vector expresed in another frame
+  /// F. The transormation requires the rotation matrix `R_FE` representing the
   /// orientation of the original frame E with respect to frame F.
   /// The operation performed is: <pre>
-  ///   V_AB_F.rotational()    = R_FE * V_AB_E.rotational(),
-  ///   V_AB_F.translational() = R_FE * V_AB_E.translational()
+  ///   V_F.rotational()    = R_FE * V_E.rotational(),
+  ///   V_F.translational() = R_FE * V_E.translational()
   /// </pre>
-  /// @returns V_AB_F The spatial velocity of frame B in A re-expressed in F.
-  /// @relates SpatialVector.
+  /// @returns V_F The same spatial vector re-expressed in frame F.
   friend SpatialQuantity operator*(
       const Matrix3<T> R_FE, const SpatialQuantity& V_AB_E) {
     return SpatialQuantity(R_FE * V_AB_E.rotational(),
