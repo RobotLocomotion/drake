@@ -164,6 +164,372 @@ GTEST_TEST(RNDFSplineHelperTest, StraightSplineFindClosesPointTo) {
               20., kLinearTolerance);
 }
 
+// Checks the conversion from points and tangents of a Hermite Spline to a
+// Cubic Bezier curve.
+GTEST_TEST(RNDFSplineToBezierTest, ConversionTest) {
+  ignition::math::Vector3d p0, t0, p1, t1;
+  // First case where the points and tangents form a 90° shape. Tangents are
+  // set so both control points are at the critical point.
+  p0.Set(0.0, 10.0, 0.0);
+  t0.Set(0.0, -30.0, 0.0);
+  p1.Set(10.0, 0.0, 0.0);
+  t1.Set(30.0, 0.0, 0.0);
+  std::vector<ignition::math::Vector3d> bezier_points =
+      SplineToBezier(p0, t0, p1, t1);
+  EXPECT_EQ(bezier_points.size(), 4);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[1],
+                                            ignition::math::Vector3d::Zero,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[2],
+                                            ignition::math::Vector3d::Zero,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[3],
+                                            p1,
+                                            kLinearTolerance));
+
+  // Second case sets points under the critical curvature.
+  p0.Set(0.0, 10.0, 0.0);
+  t0.Set(0.0, -10.0, 0.0);
+  p1.Set(10.0, 0.0, 0.0);
+  t1.Set(10.0, 0.0, 0.0);
+  bezier_points = SplineToBezier(p0, t0, p1, t1);
+  EXPECT_EQ(bezier_points.size(), 4);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[1],
+                                            ignition::math::Vector3d(0.0,
+                                                2.0 * 10.0 / 3., 0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[2],
+                                            ignition::math::Vector3d(
+                                                2.0 * 10.0 / 3.,
+                                                0.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[3],
+                                            p1,
+                                            kLinearTolerance));
+
+  // Third case sets points above the critical curvature.
+  p0.Set(0.0, 10.0, 0.0);
+  t0.Set(0.0, -60.0, 0.0);
+  p1.Set(10.0, 0.0, 0.0);
+  t1.Set(60.0, 0.0, 0.0);
+  bezier_points = SplineToBezier(p0, t0, p1, t1);
+  EXPECT_EQ(bezier_points.size(), 4);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[1],
+                                            ignition::math::Vector3d(0.0,
+                                                -10.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[2],
+                                            ignition::math::Vector3d(-10.0,
+                                                0.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(bezier_points[3],
+                                            p1,
+                                            kLinearTolerance));
+}
+
+// Checks the conversion from control points of a Cubic Bezier curve to a
+// set of points and tangents in Hermite Spline base.
+GTEST_TEST(RNDFBezierToBezierTest, ConversionTest) {
+  ignition::math::Vector3d p0, p1, p2, p3;
+  // First case where the control points form a 90° shape. Control points are
+  // set to get critical tangents in Hermite base.
+  p0.Set(0.0, 10.0, 0.0);
+  p1.Set(0.0, 0.0, 0.0);
+  p2.Set(0.0, 0.0, 0.0);
+  p3.Set(10.0, 0.0, 0.0);
+  std::vector<ignition::math::Vector3d> hermite_points =
+      BezierToSpline(p0, p1, p2, p3);
+  EXPECT_EQ(hermite_points.size(), 4);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[1],
+                                            ignition::math::Vector3d(0.0,
+                                                -30.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[2],
+                                            p3,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[3],
+                                            ignition::math::Vector3d(30.0,
+                                                0.0,
+                                                0.0),
+                                            kLinearTolerance));
+
+  // Second case sets points under the critical curvature.
+  p0.Set(0.0, 10.0, 0.0);
+  p1.Set(0.0, 2.0 * 10.0 / 3., 0.0);
+  p2.Set(2.0 * 10.0 / 3., 0.0, 0.0);
+  p3.Set(10.0, 0.0, 0.0);
+  hermite_points = BezierToSpline(p0, p1, p2, p3);
+  EXPECT_EQ(hermite_points.size(), 4);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[1],
+                                            ignition::math::Vector3d(0.0,
+                                                -10.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[2],
+                                            p3,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[3],
+                                            ignition::math::Vector3d(10.0,
+                                                0.0,
+                                                0.0),
+                                            kLinearTolerance));
+
+  // Third case sets points above the critical curvature.
+  p0.Set(0.0, 10.0, 0.0);
+  p1.Set(0.0, -10.0, 0.0);
+  p2.Set(-10., 0.0, 0.0);
+  p3.Set(10.0, 0.0, 0.0);
+  hermite_points = BezierToSpline(p0, p1, p2, p3);
+  EXPECT_EQ(hermite_points.size(), 4);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[1],
+                                            ignition::math::Vector3d(0.0,
+                                                -60.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[2],
+                                            p3,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(hermite_points[3],
+                                            ignition::math::Vector3d(60.0,
+                                                0.0,
+                                                0.0),
+                                            kLinearTolerance));
+}
+
+// Checks that all the constraints throw when conditions are not satisfied.
+GTEST_TEST(RNDFMakeBezierCurveMonotonicTest, ExceptionCases) {
+  const ignition::math::Vector3d p0(0.0, 10.0, 0.0);
+  const ignition::math::Vector3d p1(0.0, 5.0, 0.0);
+  const ignition::math::Vector3d p2(5.0, 0.0, 0.0);
+  const ignition::math::Vector3d p3(10.0, 0.0, 0.0);
+  std::vector<ignition::math::Vector3d> input_bezier_points = {p0, p1, p2, p3};
+  EXPECT_THROW(MakeBezierCurveMonotonic({}, 1.0), std::runtime_error);
+  EXPECT_THROW(MakeBezierCurveMonotonic(input_bezier_points, -1.0),
+               std::runtime_error);
+  EXPECT_THROW(MakeBezierCurveMonotonic(input_bezier_points, 2.0),
+               std::runtime_error);
+}
+
+// Desired geometry from points and tangents in Hermite base.
+// XXX----------->
+//     XXXX
+//         XXX
+//            XXX
+//              XXXX
+//                 XX
+//                  XX
+//                   X
+//                   X
+//                   |
+//                   |
+//                   |
+//                   |
+//                   |
+//                   v
+GTEST_TEST(RNDFMakeBezierCurveMonotonicTest, Case90DegreeConnection) {
+  const ignition::math::Vector3d p0(0.0, 10.0, 0.0);
+  const ignition::math::Vector3d p1(0.0, 5.0, 0.0);
+  const ignition::math::Vector3d p2(5.0, 0.0, 0.0);
+  const ignition::math::Vector3d p3(10.0, 0.0, 0.0);
+  const std::vector<ignition::math::Vector3d> input_bezier_points = {p0, p1, p2,
+                                                                     p3};
+  const std::vector<ignition::math::Vector3d> output_bezier_points =
+      MakeBezierCurveMonotonic(input_bezier_points, 1.0);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[1],
+                                            ignition::math::Vector3d::Zero,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[2],
+                                            ignition::math::Vector3d::Zero,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[3],
+                                            p3,
+                                            kLinearTolerance));
+}
+
+// Desired geometry from points and tangents in Hermite base.
+//                 XXXXXXXXXXXX-------------------->
+//               XX
+//               X
+//             XXX
+//           XXX
+//      XXXXXX
+// XXXXXX-------------->
+GTEST_TEST(RNDFMakeBezierCurveMonotonicTest,
+    CaseParallelNonColinearConnection) {
+  const ignition::math::Vector3d p0(0.0, 0.0, 0.0);
+  const ignition::math::Vector3d p1(20.0, 0.0, 0.0);
+  const ignition::math::Vector3d p2(0.0, 10.0, 0.0);
+  const ignition::math::Vector3d p3(20.0, 10.0, 0.0);
+  const std::vector<ignition::math::Vector3d> input_bezier_points = {p0, p1, p2,
+                                                                     p3};
+  const std::vector<ignition::math::Vector3d> output_bezier_points =
+      MakeBezierCurveMonotonic(input_bezier_points, 1.0);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[1],
+                                            ignition::math::Vector3d(10.0,
+                                                0.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[2],
+                                            ignition::math::Vector3d(10.0,
+                                                10.0,
+                                                0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[3],
+                                            p3,
+                                            kLinearTolerance));
+}
+
+// Desired geometry from points and tangents in Hermite base.
+// +--------------->XXXXXXXX XXXXX+------------->
+GTEST_TEST(RNDFMakeBezierCurveMonotonicTest, CaseParallelColinearConnection) {
+  const ignition::math::Vector3d p0(0.0, 0.0, 0.0);
+  const ignition::math::Vector3d p1(20.0, 0.0, 0.0);
+  const ignition::math::Vector3d p2(0.0, 0.0, 0.0);
+  const ignition::math::Vector3d p3(20.0, 0.0, 0.0);
+  const std::vector<ignition::math::Vector3d> input_bezier_points = {p0, p1, p2,
+                                                                     p3};
+  const std::vector<ignition::math::Vector3d> output_bezier_points =
+      MakeBezierCurveMonotonic(input_bezier_points, 1.0);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[1],
+                                            ignition::math::Vector3d(10.0,
+                                              0.0,
+                                              0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[2],
+                                            ignition::math::Vector3d(10.0,
+                                              0.0,
+                                              0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[3],
+                                            p3,
+                                            kLinearTolerance));
+}
+
+// Desired geometry from points and tangents in Hermite base.
+// XXX------->
+//   XXXXXX
+//        XXX
+//           XXX
+//             XX
+//              X
+//               X
+//               \X
+//                \X
+//                 \X
+//                  >
+GTEST_TEST(RNDFMakeBezierCurveMonotonicTest, CaseObliqueConnection) {
+  const ignition::math::Vector3d p0(0.0, 10.0, 0.0);
+  const ignition::math::Vector3d p1(10.0, 10.0, 0.0);
+  const ignition::math::Vector3d p2(10.0, 5.0, 0.0);
+  const ignition::math::Vector3d p3(15.0, 0.0, 0.0);
+  const std::vector<ignition::math::Vector3d> input_bezier_points = {p0, p1, p2,
+                                                                     p3};
+  const std::vector<ignition::math::Vector3d> output_bezier_points =
+      MakeBezierCurveMonotonic(input_bezier_points, 1.0);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[2],
+                                            ignition::math::Vector3d(5.0,
+                                              10.0,
+                                              0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[3],
+                                            p3,
+                                            kLinearTolerance));
+}
+
+// Desired geometry from points and tangents in Hermite base.
+//     +
+//     XX\X
+//       X\X
+//         \XX
+//          >X
+//          XX
+//        XXX
+//    XXXX
+// XXXX
+// XX
+// X
+// XX
+// XXXXX+------>
+GTEST_TEST(RNDFMakeBezierCurveMonotonicTest, CaseObliqueNonConvexConnection) {
+  const ignition::math::Vector3d p0(0.0, 10.0, 0.0);
+  const ignition::math::Vector3d p1(5.0, 5.0, 0.0);
+  const ignition::math::Vector3d p2(-5.0, 0.0, 0.0);
+  const ignition::math::Vector3d p3(0.0, 0.0, 0.0);
+  const std::vector<ignition::math::Vector3d> input_bezier_points = {p0, p1, p2,
+                                                                     p3};
+  const std::vector<ignition::math::Vector3d> output_bezier_points =
+      MakeBezierCurveMonotonic(input_bezier_points, 0.5);
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[0],
+                                            p0,
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[1],
+                                            ignition::math::Vector3d(5.0,
+                                              5.0,
+                                              0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[2],
+                                            ignition::math::Vector3d(-5.0,
+                                              0.0,
+                                              0.0),
+                                            kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[3],
+                                            p3,
+                                            kLinearTolerance));
+}
+
+// Checks that all the constraints throw when conditions are not satisfied.
+GTEST_TEST(RNDFCreatePChipBasedSplineTest, CaseExceptions) {
+  ::testing::FLAGS_gtest_death_test_style = "fast";
+  // Checks that it throws when a bad vector is supplied.
+  EXPECT_THROW(CreatePChipBasedSpline({}), std::runtime_error);
+  // Check the nice case.
+  std::vector<ignition::math::Vector3d> points;
+  points.push_back(ignition::math::Vector3d(0.0, 0.0, 0.0));
+  points.push_back(ignition::math::Vector3d(10.0, 10.0, 0.0));
+  points.push_back(ignition::math::Vector3d(20.0, 0.0, 0.0));
+  EXPECT_NE(CreatePChipBasedSpline(points), nullptr);
+  // Checks that it throws when two consecutive points are the same.
+  points.push_back(ignition::math::Vector3d(20.0, 0.0, 0.0));
+  EXPECT_THROW(CreatePChipBasedSpline(points), std::runtime_error);
+}
+
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake
