@@ -1,4 +1,4 @@
-.. _docker:
+.. _docker_entry:
 
 Building Drake in a Docker Container
 ************************************
