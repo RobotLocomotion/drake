@@ -31,6 +31,16 @@ namespace {
                               MatrixCompareType::absolute));
 }
   
+GTEST_TEST(CARE, TestCare) {
+  // First test
+  // Example from mathworks; Continuous-time algebraic Riccati equation solution
+  MatrixXd A1(2,2), B1(2, 1), Q1(1,2), R1(1,1); // Dimensions of matrices
+  A1 << -3, 2, 1, 1;
+  B1 << 0, 1;
+  Q1 << -1, 1;
+  R1 << 3;
+  SolveDAREandVerify(A1, B1, Q1, R1);
+}
 
     }
   }
