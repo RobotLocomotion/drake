@@ -39,10 +39,10 @@ operating system. The typical steps are:
   #. Happy dockering!
 
 The Nvidia Dockerfile is based upon the nvidia docker plugin base image, which 
-also contains CUDA support, where the opensource Dockerfile is based on the 
+also contains CUDA support. The opensource Dockerfile is based on the 
 the vanilla Ubuntu 16.04 image and is intended to support opensource graphics
 card drivers such as nouveau and intel. Should you need to build inside of
-another base image, they are available `here
+another base image (FROM line in the Dockerfile), they are available `here
 <https://hub.docker.com/explore/>`_. 
 
 
@@ -51,10 +51,10 @@ another base image, they are available `here
 Building
 ========
 
-Clone Drake source code as described in :ref:`Getting Drake:<getting_drake>`. 
+Clone the Drake source code as described in :ref:`Getting Drake:<getting_drake>`. 
 
-The Dockerfile will copy the <drake-distro> directory into the Docker
-container.
+The the following build commands will copy the <drake-distro> directory into the
+Docker container where it may be built and run. (HERE)
 
 Nvidia
 ~~~~~~
