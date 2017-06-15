@@ -11,6 +11,12 @@
   },
   "Default-Components": [":lcmtypes_bot2-core-cpp"],
   "Components": {
+    "lcmtypes_bot2-core": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Location": "@prefix@/lib/libbot_core_lcmtypes_c.so",
+      "Requires": ["lcm:lcm-coretypes"]
+    },
     "lcmtypes_bot2-core-cpp": {
       "Type": "interface",
       "Includes": ["@prefix@/include/lcmtypes"],
@@ -18,7 +24,7 @@
     },
     "lcmtypes_bot2-core-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/lcmtypes_bot2-core-java.jar",
+      "Location": "@prefix@/share/java/libbot_core_lcmtypes_java.jar",
       "Requires": ["lcm:lcm-java"]
     }
   }
