@@ -237,19 +237,6 @@ If you're using ROS Catkin, simply execute::
 Test Your Installation
 ======================
 
-Start MATLAB, then at the MATLAB prompt do::
-
-    cd drake-distro/drake
-    addpath_drake
-
-Then ``cd`` into the examples directories and try some things out.  Here are a few
-fun ones to get you started:
-
-* ``runLQR`` in the ``examples/CartPole`` directory
-* ``runLQR`` in the ``examples/Quadrotor2D`` directory
-* ``RimlessWheelPlant.run()`` in the ``examples/RimlessWheel`` directory
-* ``StateMachineControl.run()`` in the ``examples/PlanarMonopodHopper`` directory
-
 To run some unit tests, execute the following::
 
     cd drake-distro/build/drake
@@ -263,6 +250,20 @@ there, or if you discover something missing from our installation instructions
 or lists of prerequisites, then please
 `file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label
 it as *installation*.
+
+Testing Your MATLAB Installation
+--------------------------------
+
+Start MATLAB, then at the MATLAB prompt do::
+
+    cd drake-distro/drake
+    addpath_drake
+    cd matlab/solvers/test
+    testMathematicalProgram
+
+You should not see any error messages.
+
+For more details, see :ref:`Using Drake from Matlab <matlab-bindings>`.
 
 Using SNOPT as an external
 ==========================
