@@ -37,7 +37,8 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(S[0, 1] >= 0)
 
         prog = mp.MathematicalProgram()
-        S = prog.NewSymmetricContinuousVariables(3, ["S1", "S2", "S3", "S4", "S5", "S6"])
+        S = prog.NewSymmetricContinuousVariables(
+            3, ["S1", "S2", "S3", "S4", "S5", "S6"])
         prog.AddLinearConstraint(S[0, 1] >= 1)
         prog.AddPositiveSemidefiniteConstraint(S)
         prog.AddLinearCost(np.trace(S))
