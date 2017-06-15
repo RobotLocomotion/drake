@@ -37,9 +37,9 @@ class InverseFunctionInterpolator {
   /// @throws when @p error_boundary is not positive.
   /// @throws when @p xmin is equal or greater than @p xmax.
   /// @throws when evaluating @p function throws.
-  explicit InverseFunctionInterpolator(
-      std::function<double(double)> function, double xmin, double xmax,
-      double error_boundary);
+  explicit InverseFunctionInterpolator(std::function<double(double)> function,
+                                       double xmin, double xmax,
+                                       double error_boundary);
 
   /// Interpolates @f$ x^{(derivative_order)}(y) @f$, that is, the inverse of
   /// the given function.

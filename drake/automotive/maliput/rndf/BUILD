@@ -57,11 +57,13 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "spline_helpers_test",
-    size = "small",
+drake_cc_library(
+    name = "rndf_test_utils",
+    testonly = 1,
+    hdrs = ["test/rndf_test_utils.h"],
     deps = [
-        ":lanes",
+        "//drake/automotive/maliput/api",
+        "@ignition_rndf",
     ],
 )
 
@@ -70,6 +72,24 @@ drake_cc_googletest(
     size = "small",
     deps = [
         ":lanes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spline_helpers_test",
+    size = "small",
+    deps = [
+        ":lanes",
+        ":rndf_test_utils",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spline_lane_test",
+    size = "small",
+    deps = [
+        ":lanes",
+        ":rndf_test_utils",
     ],
 )
 

@@ -13,14 +13,6 @@ if(ignition-rndf0_FOUND)
         drakeMaliputRndf
         "${IGNITION-RNDF_LIBRARIES}")
 
-    drake_add_cc_test(spline_helpers_test)
-    target_include_directories(spline_helpers_test PRIVATE
-        "${IGNITION-RNDF_INCLUDE_DIRS}"
-    )
-    target_link_libraries(spline_helpers_test
-        drakeMaliputRndf
-        "${IGNITION-RNDF_LIBRARIES}")
-
     drake_add_cc_test(road_geometry_test)
     target_include_directories(road_geometry_test PRIVATE
         "${IGNITION-RNDF_INCLUDE_DIRS}"
@@ -34,6 +26,22 @@ if(ignition-rndf0_FOUND)
         "${IGNITION-RNDF_INCLUDE_DIRS}"
     )
     target_link_libraries(segment_test
+        drakeMaliputRndf
+        "${IGNITION-RNDF_LIBRARIES}")
+
+    drake_add_cc_test(spline_helpers_test)
+    target_include_directories(spline_helpers_test PRIVATE
+        "${IGNITION-RNDF_INCLUDE_DIRS}"
+    )
+    target_link_libraries(spline_helpers_test
+        drakeMaliputRndf
+        "${IGNITION-RNDF_LIBRARIES}")
+
+    drake_add_cc_test(spline_lane_test)
+    target_include_directories(spline_lane_test PRIVATE
+        "${IGNITION-RNDF_INCLUDE_DIRS}"
+    )
+    target_link_libraries(spline_lane_test
         drakeMaliputRndf
         "${IGNITION-RNDF_LIBRARIES}")
 endif()
