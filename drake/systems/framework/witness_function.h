@@ -131,7 +131,7 @@ class WitnessFunction {
     const T zero(0);
     switch (dtype) {
       case WitnessFunctionDirection::kNone:
-        return (T() > T());
+        return (T(0) > T(0));
 
       case WitnessFunctionDirection::kPositiveThenNonPositive:
         return (w0 > zero && wf <= zero);
