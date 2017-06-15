@@ -1,10 +1,5 @@
 # -*- python -*-
 
-load(
-    "@drake//tools:generate_include_header.bzl",
-    "drake_generate_include_header",
-)
-
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
     lcm_package, and lcm_struct parameters as documented in lcm_cc_library
