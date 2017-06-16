@@ -13,9 +13,9 @@ drake_cc_binary(
         "pick_and_place_demo.cc",
     ],
     deps = [
-        "//drake/examples/kuka_iiwa_arm/pick_and_place",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place",
         "//drake/util:lcm_util",
     ],
 )
