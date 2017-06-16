@@ -19,7 +19,10 @@ namespace benchmarks {
 /// constant.  The damper force on Q is -b*ẋ*Nx where b is a damper constant
 /// and ẋ is the time-derivative of x.
 ///
-/// @note This class has instantiated templates for type double and AutoDiffXd.
+/// Instantiated templates for the following kinds of T's are provided and
+/// available to link against in the containing library:
+/// - double
+/// - AutoDiffXd
 ///
 /// @note All units must be self-consistent (e.g., standard SI with MKS units).
 ///       The solution provided herein is also applicable to a rotating system,
@@ -52,13 +55,13 @@ class MassDamperSpringAnalyticalSolution {
   Vector3<T> CalculateOutput(const T& t) const;
 
   /// Returns x (Nx measure of Q's position from No) at time t.
-  T get_x(const T& t)  { return CalculateOutput(t)(0); }
+  T get_x(const T& t) const  { return CalculateOutput(t)(0); }
 
   /// Returns ẋ (Nx measure of Q's velocity in N) at time t.
-  T get_xDt(const T& t)  { return CalculateOutput(t)(1); }
+  T get_xDt(const T& t) const  { return CalculateOutput(t)(1); }
 
   /// Returns ẍ (Nx measure of Q's acceleration in N) at time t.
-  T get_xDtDt(const T& t)  { return CalculateOutput(t)(2); }
+  T get_xDtDt(const T& t) const  { return CalculateOutput(t)(2); }
 
  private:
   // Class data.
