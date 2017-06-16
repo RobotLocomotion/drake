@@ -1,5 +1,6 @@
 # This file uses centimeters as units for non-parametric coordinates.
 
+mtllib pin.mtl
 v 0.058014 0.018850 0.016429
 v 0.049350 0.035855 0.016429
 v 0.035855 0.049350 0.016429
