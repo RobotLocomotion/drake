@@ -33,9 +33,10 @@ namespace systems {
  * If violated, the program will abort. It is discouraged to use this controller
  * for robots with closed kinematic loops.
  *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
- * - AutoDiffXd
  *
  * @ingroup control_systems
  */

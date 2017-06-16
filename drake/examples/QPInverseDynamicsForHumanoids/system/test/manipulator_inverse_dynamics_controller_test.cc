@@ -74,7 +74,7 @@ class ManipulatorInverseDynamicsControllerTest : public ::testing::Test {
     params_->LookupDesiredDofMotionGains(&kp, &kd);
     auto vanilla_id_controller =
         builder.AddSystem<systems::InverseDynamicsController>(
-            kModelPath, nullptr, kp, VectorX<double>::Zero(7), kd, true);
+            std::move(robot), kp, VectorX<double>::Zero(7), kd, true);
     vanilla_id_controller->set_name("vanilla_id_controller");
 
     // Estimated state source.

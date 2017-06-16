@@ -120,7 +120,8 @@ InverseDynamicsController<T>::InverseDynamicsController(
 }
 
 template class InverseDynamicsController<double>;
-template class InverseDynamicsController<AutoDiffXd>;
+// TODO(siyuan) template on autodiff.
+// template class InverseDynamicsController<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
