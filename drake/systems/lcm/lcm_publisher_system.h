@@ -17,6 +17,8 @@ namespace lcm {
 
 /**
  * Publishes an LCM message containing information from its input port.
+ *
+ * @ingroup message_passing
  */
 class LcmPublisherSystem : public LeafSystem<double> {
  public:

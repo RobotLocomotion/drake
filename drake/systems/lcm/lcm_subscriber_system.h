@@ -35,6 +35,8 @@ namespace lcm {
  * output type. When this system is evaluated by the Simulator, all these
  * operations are taken care of by the Simulator. On the other hand, the user
  * needs to manually replicate this process without the Simulator.
+ *
+ * @ingroup message_passing
  */
 class LcmSubscriberSystem : public LeafSystem<double>,
                             public drake::lcm::DrakeLcmMessageHandlerInterface {
