@@ -19,7 +19,8 @@ if(lcm_FOUND)
     lcm_translator_dictionary.h
     lcm_and_vector_base_translator.h
     lcmt_drake_signal_translator.h
-    serializer.h)
+    serializer.h
+    translator_system.h)
   drake_install_pkg_config_file(drake-lcm-system2
     TARGET drakeLcmSystem
     LIBS -ldrakeLcmSystem ${CMAKE_THREAD_LIBS_INIT}
