@@ -29,6 +29,59 @@
         "lcm:lcm"
       ]
     },
+    "lcmtypes_bot2-param": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Location": "@prefix@/lib/liblcmtypes_bot2_param_c.so",
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-param-cpp": {
+      "Type": "interface",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-param-java": {
+      "Type": "jar",
+      "Location": "@prefix@/share/java/liblcmtypes_bot2_param_java.jar",
+      "Requires": ["lcm:lcm-java"]
+    },
+    "bot2-param-client": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/libbot"],
+      "Location": "@prefix@/lib/libbot2_param_client.so",
+      "Requires": [
+        ":bot2-core",
+        ":lcmtypes_bot2-param",
+        "lcm:lcm"
+      ]
+    },
+    "lcmtypes_bot2-frames": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Location": "@prefix@/lib/liblcmtypes_bot2_frames_c.so",
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-frames-cpp": {
+      "Type": "interface",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-frames-java": {
+      "Type": "jar",
+      "Location": "@prefix@/share/java/liblcmtypes_bot2_frames_java.jar",
+      "Requires": ["lcm:lcm-java"]
+    },
+    "bot2-frames": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/libbot"],
+      "Location": "@prefix@/lib/libbot2_frames.so",
+      "Requires": [
+        ":bot2-core",
+        ":bot2-param-client",
+        ":lcmtypes_bot2-frames",
+        "lcm:lcm"
+      ]
+    },
     "bot-lcm-logfilter": {
       "Type": "exe",
       "Location": "@prefix@/bin/bot-lcm-logfilter"
@@ -44,6 +97,18 @@
     "bot-lcm-who": {
       "Type": "exe",
       "Location": "@prefix@/bin/bot-lcm-who"
+    },
+    "bot-param-dump": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/bot-param-dump"
+    },
+    "bot-param-server": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/bot-param-server"
+    },
+    "bot-param-tool": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/bot-param-tool"
     },
     "bot-spy": {
       "Type": "exe",
