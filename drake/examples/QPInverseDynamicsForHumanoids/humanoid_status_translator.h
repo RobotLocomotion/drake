@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/lcm/robot_state_translator_base.h"
+#include "drake/lcm/translator_base.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/systems/framework/basic_vector.h"
 

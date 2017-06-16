@@ -1,6 +1,6 @@
 #include "robotlocomotion/quaternion_t.hpp"
-#include "drake/lcm/translator_base.h"
 #include "drake/common/eigen_types.h"
+#include "drake/lcm/translator_base.h"
 
 namespace drake {
 namespace lcm {

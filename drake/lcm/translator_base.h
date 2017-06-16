@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace lcm {
@@ -55,12 +56,16 @@ class TranslatorBase {
   /**
    * Encodes @p time into @p msg. The default implementation does nothing.
    */
-  virtual void EncodeTime(double time, MsgType* msg) const {}
+  virtual void EncodeTime(double time, MsgType* msg) const {
+    unused(time, msg);
+  }
 
   /**
    * Decodes @p msg into @p time. The default implementation does nothing.
    */
-  virtual void DecodeTime(const MsgType& msg, double* time) const {}
+  virtual void DecodeTime(const MsgType& msg, double* time) const {
+    unused(msg, time);
+  }
 };
 
 }  // namespace lcm

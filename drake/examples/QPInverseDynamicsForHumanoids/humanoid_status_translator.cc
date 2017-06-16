@@ -26,8 +26,9 @@ void StateVectorAndHumanoidStatusTranslator::Decode(
 
 void HumanoidStatusAndRobotStateMsgTranslator::Encode(
     const HumanoidStatus& data, bot_core::robot_state_t* msg) const {
-  translator_.EncodeMessageKinematics(data.position(), data.velocity(), msg);
-  translator_.EncodeMessageTorque(data.joint_torque(), msg);
+  robot_state_translator_.EncodeMessageKinematics(data.position(),
+                                                  data.velocity(), msg);
+  robot_state_translator_.EncodeMessageTorque(data.joint_torque(), msg);
 
   // TODO(siyuan): move this to translator.
   const Vector6<double>& l_foot = data.foot_wrench_raw(Side::LEFT);
@@ -42,8 +43,9 @@ void HumanoidStatusAndRobotStateMsgTranslator::Encode(
 
 void HumanoidStatusAndRobotStateMsgTranslator::Decode(
     const bot_core::robot_state_t& msg, HumanoidStatus* data) const {
-  translator_.DecodeMessageKinematics(msg, tmp_position_, tmp_velocity_);
-  translator_.DecodeMessageTorque(msg, tmp_joint_torque_);
+  robot_state_translator_.DecodeMessageKinematics(msg, tmp_position_,
+                                                  tmp_velocity_);
+  robot_state_translator_.DecodeMessageTorque(msg, tmp_joint_torque_);
 
   // TODO(siyuan): move this to translator.
   Vector6<double> l_foot_wrench, r_foot_wrench;
