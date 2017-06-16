@@ -28,3 +28,7 @@ drake_install_pkg_config_file(robotlocomotion-translators
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
     LIBS -lrobotlocomotionTranslators ${lcm_dependent_libs}
     REQUIRES eigen3 ${lcm_dependent_requires})
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
