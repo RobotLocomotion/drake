@@ -30,11 +30,11 @@ install(
     doc_strip_prefix = ["**/"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/lcmtypes",
-    license_docs = ["@optitrack_driver//:LICENSE"],
     java_strip_prefix = ["**/"],
+    license_docs = ["@optitrack_driver//:LICENSE"],
     py_dest = "lib/python2.7/site-packages/optitrack",
     py_strip_prefix = ["**/"],
     targets = OPTITRACK_TARGETS,
-    deps = [":install_cmake_config"],
     visibility = ["//:__pkg__"],
+    deps = [":install_cmake_config"],
 )
