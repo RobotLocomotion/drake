@@ -189,8 +189,8 @@ class RgbdCamera : public LeafSystem<double> {
   /// the RigidBodyTree.
   const InputPortDescriptor<double>& state_input_port() const;
 
-  /// Returns the abstract valued output port that contains a BGRA image of the
-  /// type ImageBgra8U.
+  /// Returns the abstract valued output port that contains a RGBA image of the
+  /// type ImageRgba8U.
   const OutputPort<double>& color_image_output_port() const;
 
   /// Returns the abstract valued output port that contains an ImageDepth32F.
@@ -208,7 +208,7 @@ class RgbdCamera : public LeafSystem<double> {
 
   // These are the calculator methods for the four output ports.
   void OutputColorImage(const Context<double>& context,
-                        ImageBgra8U* color_image) const;
+                        ImageRgba8U* color_image) const;
   void OutputDepthImage(const Context<double>& context,
                         ImageDepth32F* depth_image) const;
   void OutputLabelImage(const Context<double>& context,

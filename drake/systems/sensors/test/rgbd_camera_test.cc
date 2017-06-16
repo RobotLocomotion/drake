@@ -156,7 +156,7 @@ class RenderingSim : public systems::Diagram<double> {
 
 // TODO(kunimatsu-tri) Remove this once the arbitrary terrain color support
 // is added.
-const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
+const std::array<uint8_t, 4> kTerrainColor{{255u, 229u, 204u, 255u}};
 
 const int kWidth = 640;
 const int kHeight = 480;
@@ -178,11 +178,11 @@ UV kCorners[4] = {
 class ImageTest : public ::testing::Test {
  public:
   typedef std::function<void(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image)> ImageVerifier;
 
   typedef std::function<void(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image,
       int horizon)> ImageHorizonVerifier;
 
@@ -193,7 +193,7 @@ class ImageTest : public ::testing::Test {
     diagram_->CalcOutput(*context_, output_.get());
 
     auto color_image = output_->GetMutableData(0)->GetMutableValue<
-      sensors::ImageBgra8U>();
+      sensors::ImageRgba8U>();
     auto depth_image = output_->GetMutableData(1)->GetMutableValue<
       sensors::ImageDepth32F>();
 
@@ -210,7 +210,7 @@ class ImageTest : public ::testing::Test {
 
   void VerifyPoseUpdate(ImageHorizonVerifier verifier) {
     auto& color_image = output_->GetMutableData(0)->GetMutableValue<
-      sensors::ImageBgra8U>();
+      sensors::ImageRgba8U>();
     auto& depth_image = output_->GetMutableData(1)->GetMutableValue<
       sensors::ImageDepth32F>();
     VectorBase<double>* cstate =
@@ -279,7 +279,7 @@ class ImageTest : public ::testing::Test {
   }
 
   static void VerifyUniformColorAndDepth(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image,
       const std::array<uint8_t, 4>& color, float depth) {
     // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
@@ -296,14 +296,14 @@ class ImageTest : public ::testing::Test {
     }
   }
 
-  static void VerifyTerrain(const sensors::ImageBgra8U& color_image,
+  static void VerifyTerrain(const sensors::ImageRgba8U& color_image,
                             const sensors::ImageDepth32F& depth_image) {
     VerifyUniformColorAndDepth(color_image, depth_image,
                                kTerrainColor, 4.999f);
   }
 
   static void VerifyBox(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image) {
     // This is given by the material diffuse element in `box.sdf`.
     const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
@@ -311,22 +311,22 @@ class ImageTest : public ::testing::Test {
   }
 
   static void VerifyCylinder(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image) {
     // This is given by the material diffuse element in `cylinder.sdf`.
     const std::array<uint8_t, 4> kPixelColor{{255u, 0u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
-  static void VerifyMeshBox(const sensors::ImageBgra8U& color_image,
+  static void VerifyMeshBox(const sensors::ImageRgba8U& color_image,
                             const sensors::ImageDepth32F& depth_image) {
     // This is given by `box.png` which is the texture file for `box.obj`.
-    const std::array<uint8_t, 4> kPixelColor{{33u, 241u, 4u, 255u}};
+    const std::array<uint8_t, 4> kPixelColor{{4u, 241u, 33u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
   // Verifies the color and depth of the image at the center and four corners.
-  static void VerifySphere(const sensors::ImageBgra8U& color_image,
+  static void VerifySphere(const sensors::ImageRgba8U& color_image,
                            const sensors::ImageDepth32F& depth_image) {
     // Verifies the four corner points.
 
@@ -357,7 +357,7 @@ class ImageTest : public ::testing::Test {
   }
 
   // Verifies the color and depth of the image at the two visuals (boxes).
-  static void VerifyMultipleVisuals(const sensors::ImageBgra8U& color_image,
+  static void VerifyMultipleVisuals(const sensors::ImageRgba8U& color_image,
                                     const sensors::ImageDepth32F& depth_image) {
     // Verifies the four corner points.
     for (const auto& corner : kCorners) {
@@ -384,7 +384,7 @@ class ImageTest : public ::testing::Test {
                 3.999f, kDepthTolerance);
   }
 
-  static void VerifyMovingCamera(const sensors::ImageBgra8U& color_image,
+  static void VerifyMovingCamera(const sensors::ImageRgba8U& color_image,
                                  const sensors::ImageDepth32F& depth_image,
                                  int expected_horizon) {
     // TODO(jamiesnape): Is depth_image actually needed?

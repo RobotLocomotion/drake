@@ -19,7 +19,7 @@ const int kImageWidth = 8;
 const int kImageHeight = 6;
 
 robotlocomotion::image_array_t SetUpInputAndOutput(
-    ImageToLcmImageArrayT* dut, const ImageBgra8U& color_image,
+    ImageToLcmImageArrayT* dut, const ImageRgba8U& color_image,
     const ImageDepth32F& depth_image, const ImageLabel16I& label_image) {
   const InputPortDescriptor<double>& color_image_input_port =
       dut->color_image_input_port();
@@ -28,7 +28,7 @@ robotlocomotion::image_array_t SetUpInputAndOutput(
   const InputPortDescriptor<double>& label_image_input_port =
       dut->label_image_input_port();
 
-  auto color_image_value = std::make_unique<Value<ImageBgra8U>>(color_image);
+  auto color_image_value = std::make_unique<Value<ImageRgba8U>>(color_image);
   auto depth_image_value = std::make_unique<Value<ImageDepth32F>>(depth_image);
   auto label_image_value = std::make_unique<Value<ImageLabel16I>>(label_image);
 
@@ -52,7 +52,7 @@ robotlocomotion::image_array_t SetUpInputAndOutput(
 
 
 GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
-  ImageBgra8U color_image(kImageWidth, kImageHeight);
+  ImageRgba8U color_image(kImageWidth, kImageHeight);
   ImageDepth32F depth_image(kImageWidth, kImageHeight);
   ImageLabel16I label_image(kImageWidth, kImageHeight);
 
@@ -93,7 +93,7 @@ GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
         frame_name = kColorFrameName;
         row_stride = color_image.width() * color_image.kNumChannels *
             sizeof(*color_image.at(0, 0));
-        pixel_format = robotlocomotion::image_t::PIXEL_FORMAT_BGRA;
+        pixel_format = robotlocomotion::image_t::PIXEL_FORMAT_RGBA;
         channel_type = robotlocomotion::image_t::CHANNEL_TYPE_UINT8;
         break;
       }
