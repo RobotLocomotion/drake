@@ -13,6 +13,7 @@
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
+#include <vtkImageExport.h>
 #include <vtkNew.h>
 #include <vtkOBJReader.h>
 #include <vtkPNGReader.h>
@@ -277,7 +278,7 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
 
   // These are the calculator method implementations for the four output ports.
   void OutputColorImage(const BasicVector<double>& input_vector,
-                        ImageBgra8U* color_image) const;
+                        ImageRgba8U* color_image) const;
   void OutputDepthImage(const BasicVector<double>& input_vector,
                         ImageDepth32F* depth_image) const;
   void OutputLabelImage(const BasicVector<double>& input_vector,
@@ -321,6 +322,7 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
   vtkNew<vtkWindowToImageFilter> color_filter_;
   vtkNew<vtkWindowToImageFilter> depth_filter_;
   vtkNew<vtkWindowToImageFilter> label_filter_;
+  vtkNew<vtkImageExport> color_exporter_;
 };
 
 
@@ -400,6 +402,13 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     filter->ReadFrontBufferOff();
     filter->Update();
   }
+
+#if VTK_MAJOR_VERSION <= 5
+  color_exporter_->SetInput(color_filter_->GetOutput());
+#else
+  color_exporter_->SetInputData(color_filter_->GetOutput());
+#endif
+  color_exporter_->ImageLowerLeftOff();
 }
 
 RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
@@ -617,31 +626,11 @@ void RgbdCamera::Impl::UpdateRenderWindow() const {
 }
 
 void RgbdCamera::Impl::OutputColorImage(const BasicVector<double>& input_vector,
-                                        ImageBgra8U* color_image) const {
-  // Outputs the image data.
-  sensors::ImageBgra8U& image = *color_image;
-
+                                        ImageRgba8U* color_image) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(input_vector);
-
-  const int height = color_camera_info_.height();
-  const int width = color_camera_info_.width();
-  for (int v = 0; v < height; ++v) {
-    for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down.
-
-      // We cast `void*` to `uint8_t*` for RGBA. This is because that is the
-      // type for color pixels internally used in `vtkWindowToImageFilter`
-      // class. For more detail, refer to:
-      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
-      // Converts RGBA to BGRA.
-      void* color_ptr = color_filter_->GetOutput()->GetScalarPointer(u, v, 0);
-      image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
-      image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
-      image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
-      image.at(u, height_reversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
-    }
-  }
+  color_exporter_->Update();
+  color_exporter_->Export(color_image->at(0, 0));
 }
 
 void RgbdCamera::Impl::OutputDepthImage(const BasicVector<double>& input_vector,
@@ -789,9 +778,9 @@ void RgbdCamera::Init(const std::string& name) {
       impl_->tree().get_num_positions() + impl_->tree().get_num_velocities();
   this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
-  ImageBgra8U color_image(kImageWidth, kImageHeight);
+  ImageRgba8U color_image(kImageWidth, kImageHeight);
   color_image_port_ = &this->DeclareAbstractOutputPort(
-      sensors::ImageBgra8U(color_image), &RgbdCamera::OutputColorImage);
+      sensors::ImageRgba8U(color_image), &RgbdCamera::OutputColorImage);
 
   ImageDepth32F depth_image(kImageWidth, kImageHeight);
   depth_image_port_ = &this->DeclareAbstractOutputPort(
@@ -865,7 +854,7 @@ void RgbdCamera::OutputPoseVector(
 }
 
 void RgbdCamera::OutputColorImage(const Context<double>& context,
-                                  ImageBgra8U* color_image) const {
+                                  ImageRgba8U* color_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, kPortStateInput);
 
