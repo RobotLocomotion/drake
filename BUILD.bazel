@@ -61,6 +61,7 @@ install(
         "//tools:install",
         "//tools/install/gflags:install",
         "//tools/install/optitrack_driver:install",
+        "//tools/install/protobuf:install",
         "@bot_core_lcmtypes//:install",
         "@bullet//:install",
         "@ccd//:install",

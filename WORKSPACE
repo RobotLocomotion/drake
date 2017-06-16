@@ -291,6 +291,8 @@ bind(
     actual = "@six_archive//:six",
 )
 
+# When updating the version of protobuf,
+# update tools/install/protobuf/protobuf.cps
 github_archive(
     name = "protobuf",
     repository = "google/protobuf",
