@@ -18,7 +18,9 @@ namespace systems {
  * network.
  *
  * For more information about ROS clock servers, see:
- * http://wiki.ros.org/Clock#Running_a_Clock_Server.
+ * http://wiki.ros.org/Clock#Running_a_Clock_Server
+ *
+ * @ingroup message_passing
  */
 class RosClockPublisher : public LeafSystem<double> {
  public:

@@ -73,7 +73,6 @@ set(installed_headers
   supervector.h
   system.h
   system_common.h
-  systems.h
   value.h
   value_checker.h
   vector_base.h

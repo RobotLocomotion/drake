@@ -22,6 +22,8 @@ namespace systems {
  * Publishes ROS TF messages for visualizing a RigidBodyTree. It is designed to
  * take as input a RigidBodyTree's generalized state, which is typically
  * ouputted by a RigidBodyPlant.
+ *
+ * @ingroup message_passing
  */
 class RosTfPublisher : public LeafSystem<double> {
  public:
