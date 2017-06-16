@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "bot_core/atlas_command_t.hpp"
+
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 

@@ -5,8 +5,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {

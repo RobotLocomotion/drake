@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+
 #include <Eigen/Core>
 
 #include "drake/common/symbolic_variable.h"

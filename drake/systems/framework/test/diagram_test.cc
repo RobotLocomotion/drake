@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test/is_dynamic_castable.h"
+#include "drake/systems/analysis/test/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -15,7 +16,6 @@
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/zero_order_hold.h"
-#include "drake/systems/analysis/test/stateless_system.h"
 
 namespace drake {
 namespace systems {
