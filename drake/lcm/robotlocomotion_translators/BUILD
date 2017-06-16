@@ -41,3 +41,12 @@ drake_cc_library(
     ],
 )
 
+# === test/ ===
+
+drake_cc_googletest(
+    name = "pose_t_translator_test",
+    local = 1,
+    deps = [
+        ":pose_t_translator",
+    ],
+)

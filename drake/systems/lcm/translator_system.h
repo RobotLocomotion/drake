@@ -175,6 +175,11 @@ class LcmDecoderSystem : public LeafSystem<double> {
         &LcmDecoderSystem::DecodeMsg);
   }
 
+  /**
+   * Returns a const reference to the translator.
+   */
+  const TranslatorType& get_translator() const { return *translator_; }
+
  private:
   void DecodeMsg(const Context<double>& context, DataType* vector) const {
     const MsgType& msg =

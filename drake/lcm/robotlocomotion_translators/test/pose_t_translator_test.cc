@@ -8,7 +8,7 @@ namespace {
 
 // Tests Isometry3<double> -> robotlocomotion::pose_t.
 GTEST_TEST(TranslatorTest, PoseTranslatorEncodeTest) {
-  PoseTranslator<double>> dut;
+  PoseTranslator<double> dut;
 
   Isometry3<double> data = Isometry3<double>::Identity();
   data.translation() << 1, 2, 3;
@@ -32,7 +32,7 @@ GTEST_TEST(TranslatorTest, PoseTranslatorEncodeTest) {
 
 // Tests robotlocomotion::pose_t -> Isometry3<double>.
 GTEST_TEST(TranslatorTest, PoseTranslatorDecodeTest) {
-  PoseTranslator<double>> dut;
+  PoseTranslator<double> dut;
 
   robotlocomotion::pose_t msg;
   msg.position.x = 3;

@@ -30,7 +30,6 @@ drake_cc_library(
         "//drake/lcm:translator_base",
         "//drake/common",
         "//drake/systems/framework",
-        "//drake/lcmtypes:drake_signal",
     ],
 )
 
