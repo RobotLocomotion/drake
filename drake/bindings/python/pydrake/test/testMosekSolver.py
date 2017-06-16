@@ -33,7 +33,7 @@ class TestMathematicalProgram(unittest.TestCase):
         result = solver.Solve(prog)
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         S = prog.GetSolution(S)
-        self.assertTrue(all([v >= 0 for v in np.linalg.eigvals(S)]))
+        self.assertTrue(all([v >= 1e-5 for v in np.linalg.eigvals(S)]))
         self.assertTrue(S[0, 1] >= 0)
 
         prog = mp.MathematicalProgram()
@@ -48,7 +48,7 @@ class TestMathematicalProgram(unittest.TestCase):
         result = solver.Solve(prog)
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         S = prog.GetSolution(S)
-        self.assertTrue(all([v >= 0 for v in np.linalg.eigvals(S)]))
+        self.assertTrue(all([v >= 1e-5 for v in np.linalg.eigvals(S)]))
         self.assertTrue(S[0, 1] >= 0)
 
 
