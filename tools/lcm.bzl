@@ -1,5 +1,10 @@
 # -*- python -*-
 
+load(
+    "@drake//tools:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
     lcm_package, and lcm_struct parameters as documented in lcm_cc_library
@@ -147,6 +152,7 @@ def lcm_c_library(
         lcm_srcs,
         lcm_package,
         lcm_structs=None,
+        aggregate_hdr=None,
         **kwargs):
     """Declares a cc_library on message C structs generated from `*.lcm` files.
 
@@ -165,12 +171,16 @@ def lcm_c_library(
         lcm_package=lcm_package,
         outs=outs.hdrs + outs.srcs)
 
+    hdrs = outs.hdrs
+    if aggregate_hdr:
+        hdrs += [aggregate_hdr]
+
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(kwargs.pop('includes', [])) | ["."]
     native.cc_library(
         name=name,
         srcs=outs.srcs,
-        hdrs=outs.hdrs,
+        hdrs=hdrs,
         deps=deps,
         includes=includes,
         **kwargs)
@@ -240,4 +250,27 @@ def lcm_java_library(
         name=name,
         srcs=outs,
         deps=deps,
+        **kwargs)
+
+# TODO(jamiesnape): Simplify this and possibly merge with lcm_c_library if
+# libbot is fixed to have canonical aggregate header names.
+def lcm_c_aggregate_header(
+        name,
+        out,
+        lcm_srcs,
+        lcm_package,
+        lcm_structs=None,
+        **kwargs):
+    """Generates a header that includes a set of C headers generated from
+    `*.lcm` files.
+
+    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
+    in lcm_cc_library.
+    """
+    hdrs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h").hdrs
+
+    drake_generate_include_header(
+        name = name,
+        hdrs = hdrs,
+        out = out,
         **kwargs)
