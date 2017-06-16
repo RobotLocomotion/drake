@@ -1,35 +1,35 @@
 # -*- python -*-
 
-load("@drake//tools:lcm.bzl", "lcm_java_library", "lcm_py_library")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-LCM_SRCS = glob(["bot2-core/lcmtypes/*.lcm"])
+BOT_CORE_PUBLIC_HDRS = glob(["bot2-core/src/bot_core/*.h"])
 
-LCM_STRUCTS = [
-    pathname[len("bot2-core/lcmtypes/bot_core_"):-len(".lcm")]
-    for pathname in LCM_SRCS
-]
-
-lcm_java_library(
-    name = "lcmtypes_bot2-core-java",
-    lcm_package = "bot_core",
-    lcm_srcs = LCM_SRCS,
-    lcm_structs = LCM_STRUCTS,
-)
-
-lcm_py_library(
-    name = "lcmtypes_bot2-core-py",
-    lcm_package = "bot_core",
-    lcm_srcs = LCM_SRCS,
-    lcm_structs = LCM_STRUCTS,
+cc_library(
+    name = "bot2_core",
+    srcs = glob(["bot2-core/src/bot_core/*.c"]),
+    hdrs = BOT_CORE_PUBLIC_HDRS,
+    copts = ["-std=gnu99"],
+    includes = ["bot2-core/src"],
+    deps = [
+        "@bot_core_lcmtypes//:bot_core_lcmtypes_c",
+        "@glib",
+        "@lcm",
+    ],
 )
 
 java_library(
     name = "lcmspy_plugins_bot2",
-    srcs = glob(["bot2-core/java/src/**/*.java"]),
+    srcs = glob(["bot2-core/java/src/bot2_spy/*.java"]),
+    visibility = ["//visibility:private"],
     deps = [
-        ":lcmtypes_bot2-core-java",
+        "@bot_core_lcmtypes//:bot_core_lcmtypes_java",
         "@lcm//:lcm-java",
     ],
 )
@@ -37,49 +37,35 @@ java_library(
 java_binary(
     name = "bot-spy",
     main_class = "lcm.spy.Spy",
-    runtime_deps = [
-        ":lcmspy_plugins_bot2",
-    ],
+    runtime_deps = [":lcmspy_plugins_bot2"],
 )
 
 cc_binary(
     name = "bot-lcm-logfilter",
     srcs = ["bot2-lcm-utils/src/logfilter/lcm-logfilter.c"],
     copts = ["-std=gnu99"],
-    deps = ["@lcm"],
+    deps = [
+        "@glib",
+        "@lcm",
+    ],
 )
 
 cc_binary(
     name = "bot-lcm-logsplice",
     srcs = ["bot2-lcm-utils/src/logsplice/lcm-logsplice.c"],
     copts = ["-std=gnu99"],
-    deps = ["@lcm"],
+    deps = [
+        "@glib",
+        "@lcm",
+    ],
 )
 
 cc_library(
     name = "ldpc",
-    srcs = [
-        "bot2-lcm-utils/src/tunnel/ldpc/getopt.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/getopt.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_create_pchk.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_create_pchk.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_fec.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_fec.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_fec_iterative_decoding.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_matrix_sparse.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_matrix_sparse.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_profile.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_rand.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_rand.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_scheme.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_scheme.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_types.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_wrapper.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/ldpc_wrapper.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/macros.h",
-        "bot2-lcm-utils/src/tunnel/ldpc/tools.cpp",
-        "bot2-lcm-utils/src/tunnel/ldpc/tools.h",
-    ],
+    srcs = glob([
+        "bot2-lcm-utils/src/tunnel/ldpc/*.cpp",
+        "bot2-lcm-utils/src/tunnel/ldpc/*.h",
+    ]),
     visibility = ["//visibility:private"],
 )
 
@@ -106,7 +92,11 @@ cc_library(
     ],
     copts = ["-std=gnu99"],
     visibility = ["//visibility:private"],
-    deps = ["@lcm"],
+    deps = [
+        "@glib",
+        "@gthread",
+        "@lcm",
+    ],
 )
 
 cc_binary(
@@ -122,4 +112,48 @@ cc_binary(
         ":tunnel_c99",
         "@lcm",
     ],
+)
+
+cc_binary(
+    name = "bot-lcm-who",
+    srcs = glob([
+        "bot2-lcm-utils/src/who/*.c",
+        "bot2-lcm-utils/src/who/*.h",
+    ]),
+    copts = ["-std=gnu99"],
+    deps = [
+        "@glib",
+        "@lcm",
+    ],
+)
+
+CMAKE_PACKAGE = "libbot"
+
+cmake_config(package = CMAKE_PACKAGE)
+
+install_cmake_config(
+    package = CMAKE_PACKAGE,
+    versioned = 0,
+)
+
+install(
+    name = "install",
+    hdrs = BOT_CORE_PUBLIC_HDRS,
+    doc_dest = "share/doc/" + CMAKE_PACKAGE,
+    hdr_dest = "include/" + CMAKE_PACKAGE,
+    hdr_strip_prefix = ["bot2-core/src"],
+    license_docs = [
+        "LICENSE",
+        "@drake//tools:third_party/libbot/LICENSE.ldpc",
+    ],
+    targets = [
+        ":bot-lcm-logfilter",
+        ":bot-lcm-logsplice",
+        ":bot-lcm-tunnel",
+        ":bot-lcm-who",
+        ":bot-spy",
+        ":bot2_core",
+        ":lcmspy_plugins_bot2",
+    ],
+    deps = [":install_cmake_config"],
 )

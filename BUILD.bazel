@@ -71,6 +71,7 @@ install(
         "@ignition_rndf//:install",
         "@ipopt//:install",
         "@lcm//:install",
+        "@libbot//:install",
         "@nlopt//:install",
         "@octomap//:install",
         "@pybind11//:install",

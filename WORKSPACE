@@ -31,6 +31,11 @@ pkg_config_package(
     modname = "glib-2.0",
 )
 
+pkg_config_package(
+    name = "gthread",
+    modname = "gthread-2.0",
+)
+
 load("//tools:python.bzl", "python_repository")
 python_repository(
     name = "python",
@@ -117,6 +122,8 @@ github_archive(
     sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
 )
 
+# In the unlikely event that you update the version here, verify that the
+# licenses in tools/third_party/libbot/ldpc LICENSE are still applicable.
 github_archive(
     name = "libbot",
     repository = "RobotLocomotion/libbot2",
