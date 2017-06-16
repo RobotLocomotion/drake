@@ -146,6 +146,7 @@ drake_cc_googletest(
     deps = [
         ":translator_system",
         "//drake/lcm:lcmt_drake_signal_utils",
+        "//drake/lcm/robotlocomotion_translators:pose_t_translator",
         "@robotlocomotion_lcmtypes",
     ],
 )

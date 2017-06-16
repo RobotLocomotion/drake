@@ -19,4 +19,7 @@ if(lcm_FOUND)
 
   drake_add_cc_test(serializer_test)
   target_link_libraries(serializer_test drakeLcmSystem)
+
+  drake_add_cc_test(translator_test)
+  target_link_libraries(translator_test drakeLcmSystem)
 endif()

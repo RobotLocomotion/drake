@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/lcm/translator_base.h"
+#include "drake/lcm/robot_state_translator_base.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -15,10 +15,12 @@ namespace qp_inverse_dynamics {
 /**
  * A Translator between raw state vector (systems::BasicVector<double>) and
  * HumanoidStatus. Note that since the raw state does not contain any time
- * information, I picked the DataType to be systems::BasicVector<double>, and
- * MsgType to be HumanoidStatus. This way, when combined with a
- * systems::lcm::LcmEncoderSystem for translation, I can pass context's time
- * by using the Encode method in this class.
+ * information, the template arguments for drake::lcm::TranslatorBase are
+ * chosen as DataType = systems::BasicVector<double>, and
+ * MsgType = HumanoidStatus. This way, when combined with a
+ * systems::lcm::LcmEncoderSystem for translation, context's time can be
+ * encoded properly. See documentation for drake::lcm::TranslatorBase for
+ * more details.
  */
 class StateVectorAndHumanoidStatusTranslator final
     : public drake::lcm::TranslatorBase<systems::BasicVector<double>,
@@ -90,14 +92,14 @@ class HumanoidStatusAndRobotStateMsgTranslator final
    */
   HumanoidStatusAndRobotStateMsgTranslator(const RigidBodyTree<double>& robot,
                                            const std::string& alias_group_path)
-      : translator_(robot),
+      : robot_state_translator_(robot),
         default_status_(robot, param_parsers::RigidBodyTreeAliasGroups<double>(
                                    robot, alias_group_path)) {
     tmp_position_.resize(robot.get_num_positions());
     tmp_velocity_.resize(robot.get_num_velocities());
     tmp_joint_torque_.resize(robot.get_num_actuators());
 
-    translator_.InitializeMessage(&default_msg_);
+    robot_state_translator_.InitializeMessage(&default_msg_);
   }
 
   const HumanoidStatus& get_default_data() const override {
@@ -130,7 +132,7 @@ class HumanoidStatusAndRobotStateMsgTranslator final
   }
 
  private:
-  const manipulation::RobotStateLcmMessageTranslator translator_;
+  const manipulation::RobotStateLcmMessageTranslator robot_state_translator_;
   const HumanoidStatus default_status_;
   bot_core::robot_state_t default_msg_;
 

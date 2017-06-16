@@ -69,7 +69,7 @@ ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
 
   // Exposes raw estimated state input.
   input_port_index_estimated_state_ =
-      builder.ExportInput(rs_wrapper->get_input_port_state());
+      builder.ExportInput(rs_wrapper->get_input_port(0));
 
   // Exposes desired q + vd input.
   input_port_index_desired_state_ =

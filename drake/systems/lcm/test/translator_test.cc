@@ -2,9 +2,8 @@
 
 #include "drake/lcmt_drake_signal.hpp"
 
+//#include "drake/lcm/robotlocomotion_translators/pose_t_translator.h"
 #include "drake/systems/lcm/translator_system.h"
-
-#include "robotlocomotion/pose_t.hpp"
 
 namespace drake {
 namespace systems {
@@ -285,133 +284,16 @@ GTEST_TEST(TranslatorTest, FromLcmMessageBasicVectorVersion) {
   }
 }
 
+/*
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for encoding / decoding composite message.
-
-// TODO(siyuan) move these to somewhere more common.
-// A translator between Vector3<T> and robotlocomotion::point_t.
-template <typename T>
-class PointTranslator
-    : public drake::lcm::TranslatorBase<Vector3<T>, robotlocomotion::point_t> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointTranslator)
-
-  PointTranslator() {}
-
-  const Vector3<T>& get_default_data() const override { return default_data_; }
-
-  const robotlocomotion::point_t& get_default_msg() const override {
-    return default_msg_;
-  }
-
-  void Decode(const robotlocomotion::point_t& msg,
-              Vector3<T>* data) const override {
-    (*data)(0) = static_cast<T>(msg.x);
-    (*data)(1) = static_cast<T>(msg.y);
-    (*data)(2) = static_cast<T>(msg.z);
-  }
-
-  void Encode(const Vector3<T>& data,
-              robotlocomotion::point_t* msg) const override {
-    msg->x = static_cast<double>(data[0]);
-    msg->y = static_cast<double>(data[1]);
-    msg->z = static_cast<double>(data[2]);
-  }
-
- private:
-  robotlocomotion::point_t default_msg_{};
-  Vector3<T> default_data_{Vector3<T>::Zero()};
-};
-
-// A translator between Quaternion<T> and robotlocomotion::quaternion_t.
-template <typename T>
-class QuaternionTranslator
-    : public drake::lcm::TranslatorBase<Quaternion<T>,
-                                        robotlocomotion::quaternion_t> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionTranslator)
-
-  QuaternionTranslator() {
-    default_msg_.w = 1;
-    default_msg_.x = default_msg_.y = default_msg_.z = 0;
-  }
-
-  const Quaternion<T>& get_default_data() const override {
-    return default_data_;
-  }
-
-  const robotlocomotion::quaternion_t& get_default_msg() const override {
-    return default_msg_;
-  }
-
-  void Decode(const robotlocomotion::quaternion_t& msg,
-              Quaternion<T>* data) const override {
-    *data = Quaternion<T>(msg.w, msg.x, msg.y, msg.z);
-    data->normalize();
-  }
-
-  void Encode(const Quaternion<T>& data,
-              robotlocomotion::quaternion_t* msg) const override {
-    msg->w = data.w();
-    msg->x = data.x();
-    msg->y = data.y();
-    msg->z = data.z();
-  }
-
- private:
-  Quaternion<T> default_data_{Quaternion<T>::Identity()};
-  robotlocomotion::quaternion_t default_msg_;
-};
-
-// A translator between Isometry3<T> and robotlocomotion::pose_t.
-template <typename T>
-class PoseTranslator
-    : public drake::lcm::TranslatorBase<Isometry3<T>, robotlocomotion::pose_t> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseTranslator)
-
-  PoseTranslator() {
-    default_msg_.position = point_translator_.get_default_msg();
-    default_msg_.orientation = quaternion_translator_.get_default_msg();
-  }
-
-  const Isometry3<T>& get_default_data() const override {
-    return default_data_;
-  }
-
-  const robotlocomotion::pose_t& get_default_msg() const override {
-    return default_msg_;
-  }
-
-  void Decode(const robotlocomotion::pose_t& msg,
-              Isometry3<T>* data) const override {
-    Quaternion<T> tmp_rot;
-    Vector3<T> tmp_vec;
-    point_translator_.Decode(msg.position, &tmp_vec);
-    quaternion_translator_.Decode(msg.orientation, &tmp_rot);
-    data->translation() = tmp_vec;
-    data->linear() = tmp_rot.toRotationMatrix();
-    data->makeAffine();
-  }
-
-  void Encode(const Isometry3<T>& data,
-              robotlocomotion::pose_t* msg) const override {
-    point_translator_.Encode(data.translation(), &(msg->position));
-    quaternion_translator_.Encode(Quaternion<T>(data.linear()),
-                                  &(msg->orientation));
-  }
-
- private:
-  Isometry3<T> default_data_{Isometry3<T>::Identity()};
-  robotlocomotion::pose_t default_msg_;
-  const PointTranslator<T> point_translator_;
-  const QuaternionTranslator<T> quaternion_translator_;
-};
 
 // Tests Isometry3<double> -> robotlocomotion::pose_t.
 GTEST_TEST(TranslatorTest, PoseTranslatorEncodeTest) {
   LcmEncoderSystem<Isometry3<double>, robotlocomotion::pose_t> dut(
-      std::make_unique<PoseTranslator<double>>());
+      std::make_unique<
+          drake::lcm::robotlocomotion_translators::PoseTranslator<double>>());
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
 
@@ -440,7 +322,8 @@ GTEST_TEST(TranslatorTest, PoseTranslatorEncodeTest) {
 // Tests robotlocomotion::pose_t -> Isometry3<double>.
 GTEST_TEST(TranslatorTest, PoseTranslatorDecodeTest) {
   LcmDecoderSystem<Isometry3<double>, robotlocomotion::pose_t> dut(
-      std::make_unique<PoseTranslator<double>>());
+      std::make_unique<
+          drake::lcm::robotlocomotion_translators::PoseTranslator<double>>());
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
 
@@ -467,6 +350,7 @@ GTEST_TEST(TranslatorTest, PoseTranslatorDecodeTest) {
 
   EXPECT_NEAR(std::abs(quat.dot(expected_quat)), 1., 1e-15);
 }
+*/
 
 }  // namespace
 }  // namespace lcm
