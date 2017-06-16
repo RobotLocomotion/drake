@@ -1,3 +1,0 @@
-drake_add_matlab_test(NAME examples/Airplane2D/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
-drake_add_matlab_test(NAME examples/Airplane2D/test/testObstacles COMMAND testObstacles)
-drake_add_matlab_test(NAME examples/Airplane2D/test/testVerticalAndHorizontalObstacles COMMAND testVerticalAndHorizontalObstacles)
