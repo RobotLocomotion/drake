@@ -11,19 +11,6 @@ load(
 load("//tools:gurobi.bzl", "gurobi_test_tags")
 
 drake_cc_library(
-    name = "humanoid_status_translator_system",
-    srcs = ["humanoid_status_translator_system.cc"],
-    hdrs = ["humanoid_status_translator_system.h"],
-    deps = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
-        "//drake/manipulation/util:robot_state_msg_translator",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
     name = "joint_level_controller_system",
     srcs = ["joint_level_controller_system.cc"],
     hdrs = ["joint_level_controller_system.h"],
@@ -94,13 +81,14 @@ drake_cc_library(
     srcs = ["manipulator_inverse_dynamics_controller.cc"],
     hdrs = ["manipulator_inverse_dynamics_controller.h"],
     deps = [
-        ":humanoid_status_translator_system",
         ":joint_level_controller_system",
         ":manipulator_plan_eval_system",
         ":qp_controller_system",
+        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status_translator",
         "//drake/multibody/parsers",
         "//drake/systems/controllers:state_feedback_controller_interface",
         "//drake/systems/framework",
+        "//drake/systems/lcm:translator_system",
     ],
 )
 
@@ -110,12 +98,13 @@ drake_cc_library(
     deps = [
         ":atlas_joint_level_controller_system",
         ":humanoid_plan_eval_system",
-        ":humanoid_status_translator_system",
         ":qp_controller_system",
+        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status_translator",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
         "//drake/systems/lcm",
+        "//drake/systems/lcm:translator_system",
         "@bot_core_lcmtypes",
     ],
 )

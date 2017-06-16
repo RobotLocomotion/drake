@@ -4,6 +4,7 @@ set(lcm_independent_header_files
     drake_lcm_interface.h
     drake_lcm_message_handler_interface.h
     drake_mock_lcm.h
+    translator_base.h
     )
 
 set(lcm_independent_source_files
@@ -59,6 +60,10 @@ drake_install_pkg_config_file(drake-lcm
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
     LIBS -ldrakeLcm ${lcm_dependent_libs}
     REQUIRES ${lcm_dependent_requires})
+
+if (lcm_FOUND)
+  add_subdirectory(robotlocomotion_translators)
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(test)

@@ -48,6 +48,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "humanoid_status_translator",
+    srcs = ["humanoid_status_translator.cc"],
+    hdrs = ["humanoid_status_translator.h"],
+    deps = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
+        "//drake/lcm:translator_base",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
     name = "qp_controller_common",
     srcs = ["qp_controller_common.cc"],
     hdrs = ["qp_controller_common.h"],

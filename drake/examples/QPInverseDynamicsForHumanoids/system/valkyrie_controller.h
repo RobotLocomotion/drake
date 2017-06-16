@@ -7,9 +7,9 @@
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status_translator.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_plan_eval_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -18,6 +18,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/lcm/translator_system.h"
 
 namespace drake {
 namespace examples {
@@ -38,9 +39,13 @@ class ValkyrieController : public systems::Diagram<double> {
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         model_path, multibody::joints::kRollPitchYaw, robot_.get());
-    RobotStateMsgToHumanoidStatusSystem* msg_to_humanoid_status =
-        builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(
-            *robot_, alias_group_path));
+
+    auto msg_to_humanoid_status =
+        builder.AddSystem<systems::lcm::LcmDecoderSystem<
+            HumanoidStatus, bot_core::robot_state_t>>(
+            std::make_unique<HumanoidStatusAndRobotStateMsgTranslator>(
+                *robot_, alias_group_path));
+
     msg_to_humanoid_status->set_name("msg_to_humanoid_status");
 
     const double kControlDt = 0.003;
@@ -68,12 +73,12 @@ class ValkyrieController : public systems::Diagram<double> {
 
     // lcm -> rs
     builder.Connect(robot_state_subscriber_->get_output_port(0),
-                    msg_to_humanoid_status->get_input_port_robot_state_msg());
+                    msg_to_humanoid_status->get_input_port(0));
     // rs -> qp_input
-    builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
+    builder.Connect(msg_to_humanoid_status->get_output_port(0),
                     plan_eval_->get_input_port_humanoid_status());
     // rs + qp_input -> qp_output
-    builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
+    builder.Connect(msg_to_humanoid_status->get_output_port(0),
                     qp_con->get_input_port_humanoid_status());
     builder.Connect(plan_eval_->get_output_port_qp_input(),
                     qp_con->get_input_port_qp_input());
