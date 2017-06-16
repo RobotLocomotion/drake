@@ -361,6 +361,7 @@ def _impl(repository_ctx):
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtkIOImage",
         hdrs = [
+            "vtkImageExport.h",
             "vtkImageReader2.h",
             "vtkIOImageModule.h",
             "vtkPNGReader.h",
