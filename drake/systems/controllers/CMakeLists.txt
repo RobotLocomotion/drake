@@ -89,7 +89,6 @@ add_library_with_exports(LIB_NAME drakeSystemControllers
     SOURCE_FILES ${system2_sources} ${system2_installed_headers})
 target_link_libraries(drakeSystemControllers
     drakeCommon
-    drakeMultibodyParsers
     drakeRBM
     drakeSystemFramework
     drakeSystemPrimitives)

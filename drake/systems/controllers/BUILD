@@ -34,7 +34,6 @@ drake_cc_library(
         ":pid_controller",
         ":state_feedback_controller_interface",
         "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
         "//drake/systems/framework",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
