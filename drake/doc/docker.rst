@@ -109,7 +109,7 @@ The simplest run command is
 
 ::
 
-  $ docker -it drake bash
+  $ docker run -it drake bash
 
 which will give you bash shell access to the Ubuntu 16.04 Docker container
 where you can run commands such as:
@@ -137,6 +137,18 @@ Nvidia drivers:
 The `nvidia-docker <https://github.com/NVIDIA/nvidia-docker/>`_ plugin is
 required in order to pass Xorg drawing commands to your host system when the
 proprietary Nvidia GPU drivers are installed.
+
+Note: on Ubuntu 16.04 use the following nvidia-docker build recipe
+
+::
+  git clone https://github.com/NVIDIA/nvidia-docker.git
+  cd nvidia-docker/
+  make
+  sudo PREFIX=/usr/local/bin make install
+  sudo nvidia-docker volume setup
+  nvidia-docker run --rm nvidia/cuda nvidia-smi
+
+because the .deb package methods assume a much more recent Docker.
 
 
 ::
