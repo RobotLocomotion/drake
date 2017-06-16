@@ -141,12 +141,13 @@ proprietary Nvidia GPU drivers are installed.
 Note: on Ubuntu 16.04 use the following nvidia-docker build recipe
 
 ::
-  git clone https://github.com/NVIDIA/nvidia-docker.git
-  cd nvidia-docker/
-  make
-  sudo PREFIX=/usr/local/bin make install
-  sudo nvidia-docker volume setup
-  nvidia-docker run --rm nvidia/cuda nvidia-smi
+
+  $ git clone https://github.com/NVIDIA/nvidia-docker.git
+  $ cd nvidia-docker/
+  $ make
+  $ sudo PREFIX=/usr/local/bin make install
+  $ sudo nvidia-docker volume setup
+  $ nvidia-docker run --rm nvidia/cuda nvidia-smi
 
 because the .deb package methods assume a much more recent Docker.
 
