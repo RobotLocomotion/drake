@@ -1,6 +1,11 @@
 # -*- python -*-
 
-load("//tools:install.bzl", "exports_create_cps_scripts", "install_files")
+load(
+    "//tools:install.bzl",
+    "cmake_config",
+    "exports_create_cps_scripts",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -141,19 +146,16 @@ alias(
     actual = "@com_github_bazelbuild_buildtools//buildifier",
 )
 
-genrule(
-    name = "cmake_exports",
-    srcs = ["drake.cps"],
-    outs = ["drake-config.cmake"],
-    cmd = "$(location @pycps//:cps2cmake_executable) $(location drake.cps) > \"$@\"",
-    tools = ["@pycps//:cps2cmake_executable"],
-    visibility = ["//visibility:private"],
+cmake_config(
+    cps_file_name = "drake.cps",
+    package = "drake",
 )
 
-install_files(
+install_cmake_config(
     name = "install",
-    dest = "lib/cmake/drake",
-    files = ["drake-config.cmake"],
+    package = "drake",
+    versioned = 0,
+    visibility = ["//visibility:public"],
 )
 
 # === CROSSTOOL rules ===
