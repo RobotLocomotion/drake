@@ -131,16 +131,21 @@ The Drake developers would like to acknowledge significant support from the `Toy
 Next steps
 ==========
 .. toctree::
-	 :maxdepth: 1
+   :maxdepth: 1
 
-	 installation
-	 developers
-	 Doxygen (C++) <doxygen_cxx/index.html#://>
-	 faq
-	 issues
-	 Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
-	 credits
-	 GitHub <https://github.com/RobotLocomotion/drake>
+   gallery
+   installation
+   Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>
+   design
+   developers
+   Doxygen (C++) <doxygen_cxx/index.html#://>
+   models
+   faq
+   issues
+   video_tutorials
+   Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
+   credits
+   GitHub <https://github.com/RobotLocomotion/drake>
 
 
 Using Drake from other Programming Languages
