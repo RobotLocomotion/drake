@@ -28,7 +28,7 @@ content = """
     },
     "lcm-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/lcm.jar"
+      "Location": "@prefix@/share/java/liblcm-java.jar"
     }
   },
   "X-CMake-Variables": {

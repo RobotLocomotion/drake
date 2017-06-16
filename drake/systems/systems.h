@@ -13,3 +13,11 @@
 /// drake::systems::Diagram class permits modeling complex systems from
 /// libraries of parts.
 /// @}
+
+/// @defgroup message_passing Message Passing
+///
+/// These systems enable network communication.
+///
+/// @{
+/// @ingroup systems
+/// @}

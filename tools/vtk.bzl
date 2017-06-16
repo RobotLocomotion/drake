@@ -480,10 +480,27 @@ cc_library(
     file_content += """
 filegroup(
     name = "vtk",
-    srcs = glob(["**/*"]),
+    srcs = glob(["**/*"], exclude=["BUILD", "WORKSPACE"]),
     visibility = ["//visibility:public"],
 )
 """
+
+    if repository_ctx.os.name == "mac os x":
+        # Use Homebrew VTK.
+        files_to_install = []
+    else:
+        # Install all files.
+        files_to_install = [":vtk"]
+
+    file_content += """
+load("@drake//tools:install.bzl", "install_files")
+install_files(
+    name = "install",
+    dest = ".",
+    files = {},
+    visibility = ["//visibility:public"],
+)
+""".format(files_to_install)
 
     repository_ctx.file("BUILD", content=file_content, executable=False)
 

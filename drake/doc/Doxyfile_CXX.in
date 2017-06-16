@@ -112,7 +112,8 @@ WARN_LOGFILE           = "@CMAKE_CURRENT_BINARY_DIR@/doxygen_cxx.log"
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@drake_SOURCE_DIR@"
+INPUT                  = "@drake_SOURCE_DIR@" \
+                         "@drake_SOURCE_DIR@/../ros"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c \
                          *.cc \

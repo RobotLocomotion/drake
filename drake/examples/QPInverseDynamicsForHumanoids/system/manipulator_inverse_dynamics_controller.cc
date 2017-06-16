@@ -8,8 +8,8 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
-#include "drake/systems/framework/diagram_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace examples {

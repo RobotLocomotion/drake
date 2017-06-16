@@ -44,8 +44,8 @@ install(
     name = "install_net_sf_jchart2d_jchart2d",
     doc_dest = "share/doc/jchart2d",
     doc_strip_prefix = ["**/"],
-    license_docs = ["//tools:third_party/jchart2d/LICENSE"],
     java_strip_prefix = ["**/"],
+    license_docs = ["//tools:third_party/jchart2d/LICENSE"],
     targets = ["@net_sf_jchart2d_jchart2d//jar"],
     visibility = ["//visibility:private"],
 )
@@ -60,6 +60,7 @@ install(
         "//drake/common:install",
         "//tools:install",
         "//tools/install/gflags:install",
+        "//tools/install/optitrack_driver:install",
         "@bot_core_lcmtypes//:install",
         "@bullet//:install",
         "@ccd//:install",
@@ -70,6 +71,7 @@ install(
         "@ignition_rndf//:install",
         "@ipopt//:install",
         "@lcm//:install",
+        "@libbot//:install",
         "@nlopt//:install",
         "@octomap//:install",
         "@pybind11//:install",
@@ -77,6 +79,7 @@ install(
         "@sdformat//:install",
         "@spdlog//:install",
         "@tinyobjloader//:install",
+        "@vtk//:install",
         "@yaml_cpp//:install",
     ],
 )

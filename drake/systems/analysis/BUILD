@@ -159,13 +159,13 @@ drake_cc_library(
 drake_cc_googletest(
     name = "simulator_test",
     deps = [
-        ":stateless_system",
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":logistic_system",
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
         ":simulator",
+        ":stateless_system",
         "//drake/common:is_dynamic_castable",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],

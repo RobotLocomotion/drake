@@ -252,7 +252,7 @@ install = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = "lib/python2.7/site_packages"),
+        "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
         "allowed_externals": attr.label_list(),
         "install_script_template": attr.label(
@@ -319,7 +319,7 @@ Args:
     java_dest: Destination for Java library targets (default = "share/java").
     java_strip_prefix: List of prefixes to remove from Java library paths.
     py_dest: Destination for Python targets
-        (default = "lib/python2.7/site_packages").
+        (default = "lib/python2.7/site-packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
     allowed_externals: List of external packages whose files may be installed.
 """

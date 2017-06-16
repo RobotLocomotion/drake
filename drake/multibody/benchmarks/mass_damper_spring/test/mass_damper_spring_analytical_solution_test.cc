@@ -1,6 +1,7 @@
 #include "drake/multibody/benchmarks/mass_damper_spring/mass_damper_spring_analytical_solution.h"
 
 #include <cmath>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
