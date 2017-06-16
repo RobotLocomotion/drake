@@ -1,3 +1,5 @@
+#include "drake/automotive/maliput/rndf/spline_helpers.h"
+
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -5,11 +7,8 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
-
-#include "drake/automotive/maliput/rndf/spline_helpers.h"
 
 namespace drake {
 namespace maliput {
