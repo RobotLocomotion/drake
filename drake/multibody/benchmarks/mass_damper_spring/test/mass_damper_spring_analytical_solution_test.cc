@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace multibody {
@@ -30,7 +31,7 @@ void CompareMassDamperSpringSolutionVsExpectedSolution(
   const double tolerance ) {
   // Construct object for calculating analytical solution, set its initial
   // values, and then calculate the analytical solution at time t.
-  MassDamperSpringAnalyticalSolution plant(m, b, k);
+  MassDamperSpringAnalyticalSolution<double> plant(m, b, k);
   plant.SetInitialValue(x0, xDt0);
   const Eigen::Vector3d x_xDt_xDtDt = plant.CalculateOutput(t);
 
@@ -136,6 +137,62 @@ GTEST_TEST(MassDamperSpringUndamped, CriticallyDampedAlmostE) {
     const double tolerance = std::max(min_tolerance, max_tolerance);
     CompareMassDamperSpringSolutionVsExpectedSolution(m, b, k, x0, xDt0, t,
                                                       x_xDt_xDtDt, tolerance);
+  }
+}
+
+// Test accuracy of calculations for undamped free vibration of a simple
+// mass-damper-spring system (damping ratio = 0).  Also test the partial
+// derivative of the output (x, ẋ, ẍ) with respect to mass m.
+GTEST_TEST(MassDamperSpringUndamped, UndampedVibrationWithAutoDiffF) {
+  AutoDiffXd m, b, k, x0, xDt0, t;
+  m.value() = 1;                m.derivatives() = Vector1d(1);
+  b.value() = 0;                b.derivatives() = Vector1d(0);
+  k.value() = 4 * M_PI * M_PI;  k.derivatives() = Vector1d(0);
+  x0.value() = 3;               x0.derivatives() = Vector1d(0);
+  xDt0.value() = 0;             xDt0.derivatives() = Vector1d(0);
+  t.value() = 4.25;             t.derivatives() = Vector1d(0);
+
+  // Expected special-case solution is x(t) = x0*cos(wn*t).
+  using std::sqrt;
+  const AutoDiffXd wn = sqrt(k / m);
+  Vector3<AutoDiffXd> x_xDt_xDtDt_expected;
+  x_xDt_xDtDt_expected << x0 * cos(wn * t),
+                         -x0 * sin(wn * t) * wn,
+                         -x0 * cos(wn * t) * wn * wn;
+
+  // Construct object for calculating analytical solution, set its initial
+  // values, and then calculate the analytical solution at time t.
+  MassDamperSpringAnalyticalSolution<AutoDiffXd> plant(m, b, k);
+  plant.SetInitialValue(x0, xDt0);
+  Vector3<AutoDiffXd> x_xDt_xDtDt = plant.CalculateOutput(t);
+
+  // Partial derivatives with respect to m from MotionGenesis.
+  Eigen::Vector3d partial_derivatives_with_respect_to_m;
+  partial_derivatives_with_respect_to_m << 40.05530633326987,
+                                            9.424777960768763,
+                                        -1581.320110695291;
+
+  // Compare the analytical solution with the expected results.
+  Eigen::Vector3d values_expected, derivatives_expected;
+  for (int i = 0; i < 3; i++) {
+    const double value_expected = x_xDt_xDtDt_expected(i).value();
+    const double value_plant = x_xDt_xDtDt(i).value();
+    const double value_difference = value_expected - value_plant;
+    const bool is_value_close = std::abs(value_difference) < 4 * epsilon;
+    EXPECT_TRUE(is_value_close);
+
+    // Compare partial derivatives with simple solution (expected values).
+    const double derivative_expected = x_xDt_xDtDt_expected(i).derivatives()(0);
+    const double derivative_plant = x_xDt_xDtDt(i).derivatives()(0);
+    double derivative_difference = derivative_expected - derivative_plant;
+    bool is_derivative_close = std::abs(derivative_difference) < 4 * epsilon;
+    EXPECT_TRUE(is_derivative_close);
+
+    // Compare partial derivatives with results from MotionGenesis (MG).
+    const double derivative_MG = partial_derivatives_with_respect_to_m(i);
+    derivative_difference = derivative_MG - derivative_plant;
+    is_derivative_close = std::abs(derivative_difference) < 5000 * epsilon;
+    EXPECT_TRUE(is_derivative_close);
   }
 }
 
