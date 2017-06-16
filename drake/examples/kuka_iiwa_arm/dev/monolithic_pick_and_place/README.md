@@ -11,34 +11,26 @@ and successful execution is not guaranteed.
 To run the demo, first you need to launch the drake visualizer and then
 execute the demo itself in the following manner.
 
-Prepare and launch the ``drake-visualizer``
+Build the ``drake-visualizer`` and the demo.
 ------------------------------------------
-
-The ``drake-visualizer`` is only available via a CMake build.  We recommend
-that you first run a CMake build before bazel per the Drake instructions,
-using the same source tree as this demo.  In that case, the
-``drake-visualizer`` will automatically be discovered by the bazel build
-system and can be launched by :
 
 ```
 $ cd drake-distro
-$ bazel-bin/external/drake_visualizer/drake-visualizer &
+$ bazel build //tools:drake_visualizer && bazel-build //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
 ```
 
-If the bazel build system is unable to find the ``drake-visualizer``, you will
-see a message like:
+
+Launching the ``drake-visualizer``
+----------------------------------
+Once built, the ``drake-visualizer`` can be launched by,
 
 ```
-soft_failure.bzl: @drake_visualizer//:drake-visualizer does not work because
-  drake-distro/build/install/bin/drake-visualizer was missing
+$ bazel-bin/tools/drake-visualizer&
 ```
-
-In this case you will have to manually generate some other build of the
-``drake-visualizer`` and launch the app externally.
 
 Launching the demo
 ------------------
-The demo can be launched by :
+The demo itself can then be launched by :
 
 ```
 $ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
