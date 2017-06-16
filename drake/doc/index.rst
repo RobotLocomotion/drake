@@ -118,7 +118,6 @@ Next steps
    Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>
    design
    developers
-   docker
    Doxygen (C++) <doxygen_cxx/index.html#://>
    models
    faq
