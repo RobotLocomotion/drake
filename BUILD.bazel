@@ -77,6 +77,7 @@ install(
         "@sdformat//:install",
         "@spdlog//:install",
         "@tinyobjloader//:install",
+        "@vtk//:install",
         "@yaml_cpp//:install",
     ],
 )
