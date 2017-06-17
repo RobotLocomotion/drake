@@ -648,9 +648,9 @@ void RgbdCamera::Impl::OutputDepthImage(const BasicVector<double>& input_vector,
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
+  // TODO(kunimatsu-tri) Calculate this in a vertex shader.
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      // Updates the depth image.
       depth_image_out->at(u, v)[0] =
           CheckRangeAndConvertToMeters(depth_image_out->at(u, v)[0]);
     }
@@ -730,7 +730,6 @@ float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
   if (z_buffer_value == 1.f) {
     checked_depth = std::numeric_limits<float>::quiet_NaN();
   } else {
-    // TODO(kunimatsu-tri) Calculate this in a vertex shader.
     float depth = static_cast<float>(kB / (z_buffer_value - kA));
 
     if (depth > kDepthRangeFar) {
