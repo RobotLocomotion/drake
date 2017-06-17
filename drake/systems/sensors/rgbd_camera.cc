@@ -323,6 +323,8 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
   vtkNew<vtkWindowToImageFilter> depth_filter_;
   vtkNew<vtkWindowToImageFilter> label_filter_;
   vtkNew<vtkImageExport> color_exporter_;
+  vtkNew<vtkImageExport> depth_exporter_;
+  vtkNew<vtkImageExport> label_exporter_;
 };
 
 
@@ -396,19 +398,23 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   label_filter_->SetInput(label_render_window_.GetPointer());
   label_filter_->SetInputBufferTypeToRGB();
 
-  for (auto& filter : MakeVtkInstanceArray<vtkWindowToImageFilter>(
-           color_filter_, depth_filter_, label_filter_)) {
-    filter->SetMagnification(1);
-    filter->ReadFrontBufferOff();
-    filter->Update();
-  }
+  auto exporters = MakeVtkInstanceArray<vtkImageExport>(
+      color_exporter_, depth_exporter_, label_exporter_);
 
+  auto filters = MakeVtkInstanceArray<vtkWindowToImageFilter>(
+      color_filter_, depth_filter_, label_filter_);
+
+  for (int i = 0; i < 3; ++i) {
+    filters[i]->SetMagnification(1);
+    filters[i]->ReadFrontBufferOff();
+    filters[i]->Update();
 #if VTK_MAJOR_VERSION <= 5
-  color_exporter_->SetInput(color_filter_->GetOutput());
+    exporters[i]->SetInput(filters[i]->GetOutput());
 #else
-  color_exporter_->SetInputData(color_filter_->GetOutput());
+    exporters[i]->SetInputData(filters[i]->GetOutput());
 #endif
-  color_exporter_->ImageLowerLeftOff();
+    exporters[i]->ImageLowerLeftOff();
+  }
 }
 
 RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
@@ -635,52 +641,40 @@ void RgbdCamera::Impl::OutputColorImage(const BasicVector<double>& input_vector,
 
 void RgbdCamera::Impl::OutputDepthImage(const BasicVector<double>& input_vector,
                                         ImageDepth32F* depth_image_out) const {
-  // Outputs the image depth data.
-  sensors::ImageDepth32F& depth_image = *depth_image_out;
-
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(input_vector);
+  depth_exporter_->Update();
+  depth_exporter_->Export(depth_image_out->at(0, 0));
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
+  // TODO(kunimatsu-tri) Calculate this in a vertex shader.
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down.
-
-      // We cast `void*` to `float*` for ZBuffer. This is because this is the
-      // type for pixel depth internally used in `vtkWindowToImageFilter` class.
-      // For more detail, refer to:
-      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
-
-      // Updates the depth image.
-      const float z_buffer_value = *static_cast<float*>(
-          depth_filter_->GetOutput()->GetScalarPointer(u, v, 0));
-      depth_image.at(u, height_reversed)[0] =
-          CheckRangeAndConvertToMeters(z_buffer_value);
+      depth_image_out->at(u, v)[0] =
+          CheckRangeAndConvertToMeters(depth_image_out->at(u, v)[0]);
     }
   }
 }
 
 void RgbdCamera::Impl::OutputLabelImage(const BasicVector<double>& input_vector,
                                         ImageLabel16I* label_image_out) const {
-  // Outputs the image label data.
-  sensors::ImageLabel16I& label_image = *label_image_out;
-
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(input_vector);
+  label_exporter_->Update();
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
+  ImageRgb8U image(width, height);
+  label_exporter_->Export(image.at(0, 0));
+
+  Color color;
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down.
-
-      void* label_ptr = label_filter_->GetOutput()->GetScalarPointer(u, v, 0);
-      Color color{*(static_cast<uint8_t*>(label_ptr) + 0),  // R
-                  *(static_cast<uint8_t*>(label_ptr) + 1),  // G
-                  *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
-
-      label_image.at(u, height_reversed)[0] =
+      color.r = image.at(u, v)[0];
+      color.g = image.at(u, v)[1];
+      color.b = image.at(u, v)[2];
+      label_image_out->at(u, v)[0] =
           static_cast<int16_t>(color_palette_.LookUpId(color));
     }
   }
@@ -736,7 +730,6 @@ float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
   if (z_buffer_value == 1.f) {
     checked_depth = std::numeric_limits<float>::quiet_NaN();
   } else {
-    // TODO(kunimatsu-tri) Calculate this in a vertex shader.
     float depth = static_cast<float>(kB / (z_buffer_value - kA));
 
     if (depth > kDepthRangeFar) {
