@@ -134,6 +134,14 @@ if(mosek_FOUND)
   target_link_libraries(drakeOptimization mosek)
 endif()
 
+add_library_with_exports(LIB_NAME drakeMixedIntegerOptimizationUtil SOURCE_FILES mixed_integer_optimization_util.cc)
+target_link_libraries(drakeMixedIntegerOptimizationUtil
+        drakeMath
+        drakeOptimization)
+drake_install_headers(
+        mixed_integer_optimization_util.h
+)
+
 add_library_with_exports(LIB_NAME drakeRotationConstraint SOURCE_FILES rotation_constraint.cc)
 target_link_libraries(drakeRotationConstraint
         drakeOptimization)

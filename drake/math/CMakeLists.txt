@@ -10,6 +10,7 @@ set(sources
   evenly_distributed_pts_on_sphere.cc
   expmap.cc
   gradient.cc
+  gray_code.cc
   jacobian.cc
   matrix_util.cc
   normalize_vector.cc
@@ -32,6 +33,7 @@ set(installed_headers
   expmap.h
   gradient.h
   gradient_util.h
+  gray_code.h
   jacobian.h
   matrix_util.h
   normalize_vector.h

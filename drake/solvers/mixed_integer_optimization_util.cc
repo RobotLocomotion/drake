@@ -1,5 +1,7 @@
 #include "drake/solvers/mixed_integer_optimization_util.h"
 
+#include "drake/math/gray_code.h"
+
 namespace drake {
 namespace solvers {
 namespace internal {
@@ -43,7 +45,7 @@ VectorXDecisionVariable AddLogarithmicSOS2Constraint(
   const int num_interval = num_lambda - 1;
   const int num_binary_vars = CeilLog2(num_interval);
   const auto gray_codes =
-      internal::CalculateReflectedGrayCodes(num_binary_vars);
+      math::CalculateReflectedGrayCodes(num_binary_vars);
   auto y = prog->NewBinaryVariables(num_binary_vars, binary_variable_name);
   for (int j = 0; j < num_binary_vars; ++j) {
     symbolic::Expression lambda_sum1 = gray_codes(0, j) == 1 ? lambda(0) : 0;

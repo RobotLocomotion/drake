@@ -6,14 +6,19 @@ namespace drake {
 namespace math {
 template<int NumDigits>
 struct GrayCodesMatrix {
-  typedef typename Eigen::Matrix<int, NumDigits <= 0 ? Eigen::Dynamic : 1 << NumDigits, NumDigits <= 0 ? Eigen::Dynamic : NumDigits> type;
+  typedef typename Eigen::Matrix<int, NumDigits == 0 ? 0 : 1 << NumDigits, NumDigits < 0 ? 0 : NumDigits> type;
 };
 
-template<int NumDigits = 0>
+template<>
+struct GrayCodesMatrix<Eigen::Dynamic> {
+  typedef typename Eigen::MatrixXi type;
+};
+
+template<int NumDigits = Eigen::Dynamic>
 typename GrayCodesMatrix<NumDigits>::type
 CalculateReflectedGrayCodes(int num_digits = NumDigits) {
-  typename GrayCodesMatrix<NumDigits>::type gray_codes(1 << num_digits, num_digits);
-  int num_codes = gray_codes.rows();
+  int num_codes = num_digits <= 0 ? 0 : 1 << num_digits;
+  typename GrayCodesMatrix<NumDigits>::type gray_codes(num_codes, num_digits);
   gray_codes.setZero();
   // TODO(hongkai.dai): implement this part more efficiently.
   for (int i = 0; i < num_codes; ++i) {

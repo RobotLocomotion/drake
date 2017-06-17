@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/gray_code.h"
 #include "drake/solvers/gurobi_solver.h"
 
 namespace drake {
@@ -17,47 +18,6 @@ GTEST_TEST(TestMixedIntegerUtil, TestCeilLog2) {
       EXPECT_EQ(i + 1, CeilLog2(j));
     }
   }
-}
-
-GTEST_TEST(TestGrayCode, TestCalculateGrayCodes) {
-  for (int i = 0; i < 4; i++) {
-    auto test_code = drake::solvers::internal::CalculateReflectedGrayCodes(i);
-    // Asking for codes for 0 bits should generate 0 for 0 bits.
-    // Asking for codes for i bits should generate 2^(i) codes for i bits.
-    EXPECT_EQ(test_code.cols(), i);
-    EXPECT_EQ(test_code.rows(), i == 0 ? 0 : 1 << i);
-    // Each code should differ by only one bit from the previous code.
-    for (int j = 1; j < test_code.rows(); j ++) {
-      EXPECT_EQ((test_code.row(j) - test_code.row(j - 1)).cwiseAbs().sum(), 1);
-    }
-  }
-}
-
-GTEST_TEST(TestGrayCode, TestGrayCodeToInteger) {
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(0, 0)),
-            0);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(0, 1)),
-            1);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(1, 1)),
-            2);
-  EXPECT_EQ(drake::solvers::internal::GrayCodeToInteger(Eigen::Vector2i(1, 0)),
-            3);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 0, 0)), 0);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 0, 1)), 1);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 1, 1)), 2);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(0, 1, 0)), 3);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 1, 0)), 4);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 1, 1)), 5);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 1)), 6);
-  EXPECT_EQ(
-      drake::solvers::internal::GrayCodeToInteger(Eigen::Vector3i(1, 0, 0)), 7);
 }
 
 void LogarithmicSOS2Test(int num_lambda) {
@@ -77,8 +37,7 @@ void LogarithmicSOS2Test(int num_lambda) {
   auto y_assignment = prog.AddBoundingBoxConstraint(0, 1, y);
 
   // We assign the binary variables y with value i, expressed in Gray code.
-  const auto gray_codes =
-      drake::solvers::internal::CalculateReflectedGrayCodes(num_binary_vars);
+  const auto gray_codes = math::CalculateReflectedGrayCodes(num_binary_vars);
   Eigen::VectorXd y_val(num_binary_vars);
   for (int i = 0; i < num_intervals; ++i) {
     y_val.setZero();
