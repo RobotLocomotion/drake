@@ -32,6 +32,13 @@ namespace systems {
  * and velocity have the same dimension, it does not have a floating base.
  * If violated, the program will abort. It is discouraged to use this controller
  * for robots with closed kinematic loops.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ *
+ * @ingroup control_systems
  */
 template <typename T>
 class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
