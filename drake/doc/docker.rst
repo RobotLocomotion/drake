@@ -45,12 +45,12 @@ operating system. The typical steps are:
   #. Log out and back in to update user groups
   #. Happy dockering!
 
-These steps on Ubuntu 16.04 are:
+These steps on Ubuntu 16.04 x86_64 are:
 
 ::
 
-  $ sudo apt-get update; sudo apt-get install docker.io
-  $ sudo systemctl enable docker
+  $ wget https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce_17.03.1~ce-0~ubuntu-xenial_amd64.deb
+  $ sudo dpkg -i docker-ce_17.03.1~ce-0~ubuntu-xenial_amd64.deb
   $ sudo systemctl start docker
   $ sudo usermod -aG docker <username>
 
@@ -64,7 +64,7 @@ Building
 Clone the Drake source code as described in :ref:`Getting Drake<getting_drake>`. 
 
 The the following build commands will copy the full <drake-distro> directory
-into the Docker container where it may be built and run.
+from your host machine into the Docker container where it may be built and run.
 
 Nvidia
 ~~~~~~
@@ -96,7 +96,7 @@ should show an image named drake and
 
   $ docker ps
 
-will show any running drake containers on your system.
+will show any running Docker containers on your system.
 
 .. _docker_running:
 
@@ -138,18 +138,13 @@ The `nvidia-docker <https://github.com/NVIDIA/nvidia-docker/>`_ plugin is
 required in order to pass Xorg drawing commands to your host system when the
 proprietary Nvidia GPU drivers are installed.
 
-Note: on Ubuntu 16.04 use the following nvidia-docker build recipe
+On Ubuntu 16.04 use the following nvidia-docker build recipe
 
 ::
 
-  $ git clone https://github.com/NVIDIA/nvidia-docker.git
-  $ cd nvidia-docker/
-  $ make
-  $ sudo PREFIX=/usr/local/bin make install
-  $ sudo nvidia-docker volume setup
+  $ wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
+  $ sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
   $ nvidia-docker run --rm nvidia/cuda nvidia-smi
-
-because the .deb package methods assume a much more recent Docker.
 
 
 ::
@@ -222,6 +217,19 @@ It is also possible to enter a bash shell for interactive development with:
   $ xhost +local:root; nvidia-docker run -i --rm -e DISPLAY \
   -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \
   --privileged -t drake bash; xhost -local:root
+
+where you may want to try various demonstrations, e.g.:
+
+::
+ 
+  $ cd /drake-distro
+  $ bazel run //drake/examples/contact_model:bowling_ball
+  $ bazel run //drake/examples/kuka_iiwa_arm:kuka_simulation
+  $ bazel run //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
+
+
+Note: these are currently not rendering properly due to VTK .obj/.mtl importing. A patch is expected any day.
+
 
 .. _docker_running_simulation_open:
 
