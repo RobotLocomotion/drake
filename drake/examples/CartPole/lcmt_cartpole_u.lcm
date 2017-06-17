@@ -1,7 +1,0 @@
-
-struct lcmt_cartpole_u
-{
-	int64_t timestamp;
-
-	double f;     // horizontal force - in Newtons
-}
