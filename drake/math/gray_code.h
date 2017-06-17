@@ -6,8 +6,9 @@ namespace drake {
 namespace math {
 template<int NumDigits>
 struct GrayCodesMatrix {
-  typedef typename Eigen::Matrix < int, NumDigits == 0 ? 0 : 1 << NumDigits,
-      NumDigits < 0 ? 0 : NumDigits> type;
+  typedef typename Eigen::Matrix<int, NumDigits == 0 ? 0 : 1 << NumDigits,
+                                 NumDigits>
+      type;
 };
 
 template<>
@@ -33,7 +34,7 @@ CalculateReflectedGrayCodes(int num_digits = NumDigits) {
 }
 
 /**
- * Converts the Gray code to an integer.
+ * Converts the Gray code to an integer. For example
  * (0, 0) -> 0
  * (0, 1) -> 1
  * (1, 1) -> 2
