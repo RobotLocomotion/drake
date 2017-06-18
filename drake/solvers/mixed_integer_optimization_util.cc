@@ -4,34 +4,6 @@
 
 namespace drake {
 namespace solvers {
-namespace internal {
-int GrayCodeToInteger(const Eigen::Ref<const Eigen::VectorXi>& gray_code) {
-  // This implementation is based on
-  // https://testbook.com/blog/conversion-from-gray-code-to-binary-code-and-vice-versa/
-  int digit = gray_code(0);
-  int ret = digit ? 1 << (gray_code.size() - 1) : 0;
-  for (int i = 0; i < gray_code.size() - 1; ++i) {
-    digit ^= gray_code(i + 1);
-    ret |= digit ? 1 << (gray_code.size() - i - 2) : 0;
-  }
-  return ret;
-}
-
-Eigen::MatrixXi CalculateReflectedGrayCodes(int k) {
-  int num_codes = k == 0 ? 0 : 1 << k;
-  Eigen::MatrixXi return_codes(num_codes, k);
-  return_codes.setZero();
-  // TODO(hongkai.dai): implement this part more efficiently.
-  for (int i = 0; i < num_codes; ++i) {
-    int gray_code = i ^ (i >> 1);
-    for (int j = 0; j < k; ++j) {
-      return_codes(i, j) = (gray_code & (1 << (k - j - 1))) >> (k - j - 1);
-    }
-  }
-  return return_codes;
-}
-}  // namespace internal
-
 VectorXDecisionVariable AddLogarithmicSOS2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,

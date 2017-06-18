@@ -16,29 +16,6 @@ constexpr int CeilLog2(int n) {
   return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2);
 }
 
-
-
-namespace internal {
-/**
- * Return the k-digit reflected Gray codes.
- * @param k The number of digits in the Gray code.
- * @retval m m is a matrix of size 2ᵏ x k. m.row(i) is the Gray code for integer
- * i.
- */
-Eigen::MatrixXi CalculateReflectedGrayCodes(int k);
-
-/**
- * Converts the Gray code to an integer.
- * (0, 0) -> 0
- * (0, 1) -> 1
- * (1, 1) -> 2
- * (1, 0) -> 3
- * @param gray_code The N-digit Gray code, where N is gray_code.rows()
- * @return The integer represented by the Gray code `gray_code`.
- */
-int GrayCodeToInteger(const Eigen::Ref<const Eigen::VectorXi>& gray_code);
-}  // namespace internal
-
 /**
  * Adds the special ordered set 2 (sos2) constraint, that at most two
  * entries in λ can be strictly positive, and these two entries have to be
