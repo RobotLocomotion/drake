@@ -80,22 +80,28 @@ class LinearSystem : public AffineSystem<T> {
 /// defined by the Context, and y0 as the value of the output at (x0,u0),
 /// then the created systems inputs are (u-u0), states are (x-x0), and
 /// outputs are (y-y0).
-
+///
+/// @ingroup primitive_systems
+///
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
     const double equilibrium_check_tolerance = 1e-6);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
+/// @ingroup control_systems
 Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys);
 
 /// Returns true iff the controllability matrix is full row rank.
+/// @ingroup control_systems
 bool IsControllable(const LinearSystem<double>& sys,
                     double threshold = Eigen::Default);
 
 /// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
+/// @ingroup estimator_systems
 Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys);
 
 /// Returns true iff the observability matrix is full column rank.
+/// @ingroup estimator_systems
 bool IsObservable(const LinearSystem<double>& sys,
                   double threshold = Eigen::Default);
 
