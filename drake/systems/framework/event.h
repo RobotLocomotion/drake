@@ -209,7 +209,8 @@ class PublishEvent : public Event<T> {
   }
 
   /**
-   * Calls the optional callback function if one exist with @p context and this.
+   * Calls the optional callback function if one exists with @p context and
+   * `this`.
    */
   void handle(const Context<T>& context) const {
     if (callback_ != nullptr)
@@ -275,8 +276,8 @@ class DiscreteUpdateEvent : public Event<T> {
   }
 
   /**
-   * Calls the optional callback function if one exist with @p context, this and
-   * @p discrete_state.
+   * Calls the optional callback function if one exists with @p context, `this`,
+   * and @p discrete_state.
    */
   void handle(const Context<T>& context,
               DiscreteValues<T>* discrete_state) const {
@@ -342,8 +343,8 @@ class UnrestrictedUpdateEvent : public Event<T> {
   }
 
   /**
-   * Calls the optional callback function if one exist with @p context, this and
-   * @p discrete_state.
+   * Calls the optional callback function if one exists with @p context, `this`,
+   * and @p discrete_state.
    */
   void handle(const Context<T>& context,
               State<T>* state) const {
