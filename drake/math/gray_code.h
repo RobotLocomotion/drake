@@ -16,6 +16,13 @@ struct GrayCodesMatrix<Eigen::Dynamic> {
   typedef typename Eigen::MatrixXi type;
 };
 
+/**
+ * Returns a matrix whose i'th row is the Gray code for integer i.
+ * @tparam NumDigits The number of digits in the Gray code.
+ * @param num_digits The number of digits in the Gray code.
+ * @return M. M is a matrix of size 2ᵏ x k, where `k` is `num_digits`.
+ * M.row(i) is the Gray code for integer i.
+ */
 template<int NumDigits = Eigen::Dynamic>
 typename GrayCodesMatrix<NumDigits>::type
 CalculateReflectedGrayCodes(int num_digits = NumDigits) {
