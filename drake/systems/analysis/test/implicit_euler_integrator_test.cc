@@ -60,7 +60,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   EXPECT_NEAR(state->GetAtIndex(2), sol(2), tol);
 }
 
-class ImplicitIntegratorTest : public ::testing::Test {
+class ImplicitIntegratorTest : public ::testing::TestWithParam<bool> {
  public:
   ImplicitIntegratorTest() {
     // Create the spring-mass systems.
@@ -150,9 +150,13 @@ TEST_F(ImplicitIntegratorTest, AutoDiff) {
   // integrator produces the expected result.
 }
 
-TEST_F(ImplicitIntegratorTest, MiscAPI) {
+TEST_P(ImplicitIntegratorTest, MiscAPI) {
   // Create the integrator for a System<double>.
   ImplicitEulerIntegrator<double> integrator(*spring_, context_.get());
+
+  // Verifies set_reuse(flag) == get_reuse() == flag
+  integrator.set_reuse(GetParam());
+  EXPECT_EQ(integrator.get_reuse(), GetParam());
 
   // Verifies that calling Initialize without setting step size target or
   // maximum step size throws exception.
@@ -257,7 +261,7 @@ void CheckGeneralStatsValidity(ImplicitEulerIntegrator<double>* integrator) {
 // is connected to "the world" using a spring with no damper. The solution of
 // this system should approximate the solution of an undamped spring
 // connected to a mass equal to the sum of both point masses.
-TEST_F(ImplicitIntegratorTest, DoubleSpringMassDamper) {
+TEST_P(ImplicitIntegratorTest, DoubleSpringMassDamper) {
   // Clone the spring mass system's state.
   std::unique_ptr<State<double>> state_copy = dspring_context_->CloneState();
 
@@ -270,6 +274,7 @@ TEST_F(ImplicitIntegratorTest, DoubleSpringMassDamper) {
   integrator.set_maximum_step_size(large_dt_);
   integrator.request_initial_step_size_target(large_dt_);
   integrator.set_target_accuracy(1e-5);
+  integrator.set_reuse(GetParam());
 
   // Get the solution at the target time.
   const double t_final = 1.0;
@@ -297,12 +302,13 @@ TEST_F(ImplicitIntegratorTest, DoubleSpringMassDamper) {
 
 // Integrate the mass-spring-damping system using huge stiffness and damping.
 // This equation should be stiff.
-TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
+TEST_P(ImplicitIntegratorTest, SpringMassDamperStiff) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*spring_damper_, context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_requested_minimum_step_size(small_dt_);
   integrator.set_throw_on_minimum_step_size_violation(false);
+  integrator.set_reuse(GetParam());
 
   // Set error controlled integration parameters.
   const double xtol = 1e-6;
@@ -394,7 +400,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassDamperStiff) {
 }
 
 // Integrate an undamped system and check its solution accuracy.
-TEST_F(ImplicitIntegratorTest, SpringMassStep) {
+TEST_P(ImplicitIntegratorTest, SpringMassStep) {
   const double spring_k = 300.0;  // N/m
 
   // Create a new spring-mass system.
@@ -407,6 +413,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
   integrator.request_initial_step_size_target(large_dt_);
   integrator.set_target_accuracy(5e-5);
   integrator.set_requested_minimum_step_size(1e-6);
+  integrator.set_reuse(GetParam());
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
@@ -495,7 +502,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStep) {
 // where omega = sqrt(k/m)
 // ẋ(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, ẋ(0) = c2*omega
-TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
+TEST_P(ImplicitIntegratorTest, ErrorEstimation) {
   const double spring_k = 300.0;  // N/m
 
   // Create a new spring-mass system.
@@ -505,6 +512,7 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
   ImplicitEulerIntegrator<double> integrator(spring_mass, context_.get());
   integrator.set_maximum_step_size(large_dt_);
   integrator.set_fixed_step_mode(true);
+  integrator.set_reuse(GetParam());
 
   // Use automatic differentiation because we can.
   integrator.set_jacobian_computation_scheme(
@@ -578,7 +586,7 @@ TEST_F(ImplicitIntegratorTest, ErrorEstimation) {
 
 // Integrate over a significant period of time to verify that global error
 // estimation acts as we expect.
-TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
+TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   const double spring_k = 300.0;  // N/m
 
   // Create a new spring-mass system.
@@ -590,6 +598,7 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   integrator.set_requested_minimum_step_size(small_dt_);
   integrator.set_throw_on_minimum_step_size_violation(false);
   integrator.set_target_accuracy(1e-4);
+  integrator.set_reuse(GetParam());
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
@@ -632,12 +641,13 @@ TEST_F(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
 
 // Integrate the modified mass-spring-damping system, which exhibits a
 // discontinuity in the velocity derivative at spring position x = 0.
-TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
+TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*mod_spring_damper_,
                                              context_.get());
   integrator.set_maximum_step_size(dt_);
   integrator.set_throw_on_minimum_step_size_violation(false);
+  integrator.set_reuse(GetParam());
 
   // Setting the minimum step size speeds the unit test without (in this case)
   // affecting solution accuracy.
@@ -715,12 +725,10 @@ TEST_F(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
   CheckGeneralStatsValidity(&integrator);
 }
 
+INSTANTIATE_TEST_CASE_P(test, ImplicitIntegratorTest,
+    ::testing::Values(true, false));
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
-
-int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
 
