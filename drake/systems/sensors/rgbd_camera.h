@@ -21,7 +21,7 @@ namespace sensors {
 /// visual elements of RigidBodyTree.
 /// RgbdCamera uses [VTK](https://github.com/Kitware/VTK) as the rendering
 /// backend.
-/// Its image resolution is fixed at VGA (640 x 480 pixels) for all the three
+/// Its image resolution is fixed at VGA (640 x 480 pixels) for all three
 /// images. The depth sensing range is 0.5 m to 5.0 m.
 ///
 /// Let `W` be the world coordinate system. In addition to `W`, there are three
