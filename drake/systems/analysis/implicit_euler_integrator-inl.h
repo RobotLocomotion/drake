@@ -305,7 +305,8 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
 }
 
 // Computes any necessary matrices for the Newton-Raphson iteration in
-// StepAbstract().
+// StepAbstract(). Parameters are identical to those for StepAbstract;
+// @see StepAbstract() for their documentation.
 // @returns `false` if the calling StepAbstract method should indicate failure;
 //          `true` otherwise.
 template <class T>
