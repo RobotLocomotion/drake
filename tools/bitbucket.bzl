@@ -30,21 +30,23 @@ def bitbucket_archive(
     """
     if repository == None:
         fail("Missing repository=")
-    if commit == None :
+    if commit == None:
         fail("Missing commit=")
     if sha256 == None:
         # This is mostly-required, but we fallback to a wrong-default value to
         # allow the first attempt to fail and print the correct sha256.
         sha256 = "0" * 64
-    if strip_prefix == None :
+    if strip_prefix == None:
         fail("Missing strip_prefix=")
 
-    # Packages are mirrored from Bitbucket to CloudFront backed by an S3 bucket.
-    urls = [
-        "https://bitbucket.org/%s/get/%s.tar.gz" % (repository, commit),
-        "https://d2tbce6hkathzp.cloudfront.net/bitbucket/%s/%s.tar.gz" % (repository, commit),
-        "https://s3.amazonaws.com/drake-mirror/bitbucket/%s/%s.tar.gz" % (repository, commit),
+    # Packages are mirrored from Bitbucket to CloudFront backed by an S3
+    # bucket.
+    mirrors = [
+        "https://bitbucket.org/%s/get/%s.tar.gz",
+        "https://d2tbce6hkathzp.cloudfront.net/bitbucket/%s/%s.tar.gz",
+        "https://s3.amazonaws.com/drake-mirror/bitbucket/%s/%s.tar.gz",
     ]
+    urls = [mirror % (repository, commit) for mirror in mirrors]
 
     repository_split = repository.split("/")
     if len(repository_split) != 2:
@@ -52,16 +54,16 @@ def bitbucket_archive(
 
     if build_file == None:
         native.http_archive(
-            name=name,
-            urls=urls,
-            sha256=sha256,
-            strip_prefix=strip_prefix,
+            name = name,
+            urls = urls,
+            sha256 = sha256,
+            strip_prefix = strip_prefix,
             **kwargs)
     else:
         native.new_http_archive(
-            name=name,
-            urls=urls,
-            sha256=sha256,
-            build_file=build_file,
-            strip_prefix=strip_prefix,
+            name = name,
+            urls = urls,
+            sha256 = sha256,
+            build_file = build_file,
+            strip_prefix = strip_prefix,
             **kwargs)

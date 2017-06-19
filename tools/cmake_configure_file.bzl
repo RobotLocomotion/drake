@@ -40,10 +40,10 @@ _cmake_configure_file_gen = rule(
 
 def cmake_configure_file(
         name,
-        src=None,
-        out=None,
-        defines=None,
-        cmakelists=None,
+        src = None,
+        out = None,
+        defines = None,
+        cmakelists = None,
         **kwargs):
     """Creates a rule to generate an out= file from a src= file, using CMake's
     configure_file substitution semantics.  This implementation is incomplete,
@@ -64,9 +64,9 @@ def cmake_configure_file(
 
     """
     _cmake_configure_file_gen(
-        name=name,
-        src=src,
-        out=out,
-        defines=defines,
-        cmakelists=cmakelists,
+        name = name,
+        src = src,
+        out = out,
+        defines = defines,
+        cmakelists = cmakelists,
         **kwargs)

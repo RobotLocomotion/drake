@@ -28,12 +28,13 @@ def _impl(repository_ctx):
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
-        sha256 = "26c5bc0be667c92d1a5f81d2a1f7694de1fb0a3e9e9064c17f98e425db0a3c64"
+        sha256 = "26c5bc0be667c92d1a5f81d2a1f7694de1fb0a3e9e9064c17f98e425db0a3c64"  # noqa
     elif repository_ctx.os.name == "linux":
         mosek_platform = "linux64x86"
-        sha256 = "9b2bfcba7bcdd24b7e87ecdcccc11222302ced7b3d2a2af7090bdf625ab7cfae"
+        sha256 = "9b2bfcba7bcdd24b7e87ecdcccc11222302ced7b3d2a2af7090bdf625ab7cfae"  # noqa
     else:
-        fail("Operating system is NOT supported", attr=repository_ctx.os.name)
+        fail("Operating system is NOT supported",
+             attr = repository_ctx.os.name)
 
     url = "http://download.mosek.com/stable/{}/mosektools{}.tar.bz2".format(
         mosek_major_version, mosek_platform)
@@ -42,7 +43,7 @@ def _impl(repository_ctx):
                                                        mosek_platform)
 
     repository_ctx.download_and_extract(
-        url, root_path, sha256=sha256, stripPrefix=strip_prefix)
+        url, root_path, sha256 = sha256, stripPrefix = strip_prefix)
 
     if repository_ctx.os.name == "mac os x":
         install_name_tool = repository_ctx.which("install_name_tool")
@@ -65,9 +66,9 @@ def _impl(repository_ctx):
 
             if result.return_code != 0:
                 fail("Could NOT change shared library identification name",
-                     attr=result.stderr)
+                     attr = result.stderr)
 
-        repository_ctx.file("empty.cc", executable=False)
+        repository_ctx.file("empty.cc", executable = False)
 
         srcs = ["empty.cc"]
 
@@ -98,11 +99,11 @@ cc_library(
 )
     """.format(srcs, linkopts)
 
-    repository_ctx.file("BUILD", content=file_content, executable=False)
+    repository_ctx.file("BUILD", content = file_content, executable = False)
 
 mosek_repository = repository_rule(implementation = _impl)
 
-def mosek_test_tags(mosek_required=True):
+def mosek_test_tags(mosek_required = True):
     """Returns the test tags necessary for properly running mosek tests.
 
     By default, sets mosek_required=True, which will require that the supplied
