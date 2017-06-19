@@ -217,7 +217,17 @@ def _install_impl(ctx):
             actions += _install_py_actions(ctx, t)
 
     # Generate code for install actions.
-    script_actions = [_install_code(a) for a in actions]
+    script_actions = []
+    installed_files = {}
+    for a in actions:
+        if a.dst not in installed_files:
+            script_actions.append(_install_code(a))
+            installed_files[a.dst] = a.src
+        elif a.src != installed_files[a.dst]:
+            fail("Install conflict detected:\n" +
+                 "\n  src1 = " + repr(installed_files[a.dst]) +
+                 "\n  src2 = " + repr(a.src) +
+                 "\n  dst = " + repr(a.dst))
 
     # Generate install script.
     # TODO(mwoehlke-kitware): Figure out a better way to generate this and run
