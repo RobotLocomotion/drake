@@ -44,7 +44,7 @@ Here is a quick summary of capabilities:
 		* `Rich library of kinematic and dynamic queries <http://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ (e.g. Centroidal dynamics, Center of Pressure, Kinematic Jacobians, ...)
 	* `Sensor models <http://drake.mit.edu/doxygen_cxx/group__sensor__systems.html>`_ (lidar, RGB-D camera, imu, contact force/torque)
 	* Hand-derived models for many canonical control dynamical systems
-	* Easily add your own models/components
+	* `Easily add your own models/components <https://github.com/RobotLocomotion/drake/blob/master/drake/examples/simple_continuous_time_system.cc>`_
 	* For nearly all of the above we aim to expose sparsity in the governing equations and provide analytical gradients / symbolic analysis
 	* **Coming soon**:
 		* API upgrade from `RigidBodyTree <http://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ to `MultiBodyTree <http://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_tree.html>`_
@@ -63,7 +63,7 @@ Here is a quick summary of capabilities:
 		* Region of attraction analysis using sums-of-squares optimization
 		* Finite-time verification (e.g. forward/backward reachability analysis)
 	* **Coming soon**:
-		* Uncertainty quantification (coming soon)
+		* Uncertainty quantification
 * Planning
 	* Optimization-based inverse kinematics (fast `SQP-based methods <http://drake.mit.edu/doxygen_cxx/rigid__body__ik_8h.html>`_ and `Global IK <http://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_global_inverse_kinematics.html>`_)
 	* `Trajectory optimization <http://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_direct_trajectory_optimization.html>`_ (`kinematic <http://drake.mit.edu/doxygen_cxx/rigid__body__ik_8h.html#a6a69c1ef8426e4729ea1c7d4c11e6021>`_ and dynamic)
