@@ -142,7 +142,7 @@ def _install_cc_actions(ctx, target):
             fail(msg_fmt % ctx.attr.guess_hdrs, ctx.attr.guess_hdrs)
         actions += _install_actions(
             ctx,
-            [struct(files=hdrs)],
+            [struct(files = hdrs)],
             ctx.attr.hdr_dest,
             ctx.attr.hdr_strip_prefix,
             ctx.attr.guess_hdrs_exclude
@@ -415,7 +415,7 @@ def cmake_config(
     version_file = None,
     cps_file_name = None,
     deps = []
-    ):
+):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -428,9 +428,8 @@ def cmake_config(
 
     if script and version_file:
         if cps_file_name:
-            fail("cps_file_name should not be set if"
-                + " script and version_file are set."
-            )
+            fail("cps_file_name should not be set if " +
+                 "script and version_file are set.")
         native.py_binary(
             name = "create-cps",
             srcs = [script],
@@ -453,12 +452,13 @@ def cmake_config(
         cps_file_name = "@drake//tools:{}.cps".format(package)
 
     config_file_name = "{}Config.cmake".format(package)
+    executable = "$(location @pycps//:cps2cmake_executable)"
 
     native.genrule(
         name = "cmake_exports",
         srcs = [cps_file_name],
         outs = [config_file_name],
-        cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+        cmd = executable + " \"$<\" > \"$@\"",
         tools = ["@pycps//:cps2cmake_executable"],
         visibility = ["//visibility:private"],
     )
@@ -469,7 +469,7 @@ def cmake_config(
         name = "cmake_package_version",
         srcs = [cps_file_name],
         outs = [config_version_file_name],
-        cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+        cmd = executable + " --version-check \"$<\" > \"$@\"",
         tools = ["@pycps//:cps2cmake_executable"],
         visibility = ["//visibility:private"],
     )
@@ -480,7 +480,7 @@ def install_cmake_config(
     versioned = True,
     name = "install_cmake_config",
     visibility = ["//visibility:private"]
-    ):
+):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 

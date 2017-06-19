@@ -34,7 +34,7 @@ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
         c_outs = [
             dirname + lcm_package + "_" + lcm_struct + ".c"
             for lcm_struct in (lcm_structs or lcm_basenames)]
-        outs = struct(hdrs=h_outs, srcs=c_outs)
+        outs = struct(hdrs = h_outs, srcs = c_outs)
 
     else:
         outs = [
@@ -107,9 +107,9 @@ _lcm_library_gen = rule(
 
 def lcm_cc_library(
         name,
-        lcm_srcs=None,
-        lcm_package=None,
-        lcm_structs=None,
+        lcm_srcs = None,
+        lcm_package = None,
+        lcm_structs = None,
         **kwargs):
     """Declares a cc_library on message classes generated from `*.lcm` files.
 
@@ -132,27 +132,27 @@ def lcm_cc_library(
 
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".hpp")
     _lcm_library_gen(
-        name=name + "_lcm_library_gen",
-        language="cc",
-        lcm_srcs=lcm_srcs,
-        lcm_package=lcm_package,
-        outs=outs)
+        name = name + "_lcm_library_gen",
+        language = "cc",
+        lcm_srcs = lcm_srcs,
+        lcm_package = lcm_package,
+        outs = outs)
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(kwargs.pop('includes', [])) | ["."]
     native.cc_library(
-        name=name,
-        hdrs=outs,
-        deps=deps,
-        includes=includes,
+        name = name,
+        hdrs = outs,
+        deps = deps,
+        includes = includes,
         **kwargs)
 
 def lcm_c_library(
         name,
         lcm_srcs,
         lcm_package,
-        lcm_structs=None,
-        aggregate_hdr=None,
+        lcm_structs = None,
+        aggregate_hdr = None,
         **kwargs):
     """Declares a cc_library on message C structs generated from `*.lcm` files.
 
@@ -165,11 +165,11 @@ def lcm_c_library(
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
 
     _lcm_library_gen(
-        name=name + "_lcm_library_gen",
-        language="c",
-        lcm_srcs=lcm_srcs,
-        lcm_package=lcm_package,
-        outs=outs.hdrs + outs.srcs)
+        name = name + "_lcm_library_gen",
+        language = "c",
+        lcm_srcs = lcm_srcs,
+        lcm_package = lcm_package,
+        outs = outs.hdrs + outs.srcs)
 
     hdrs = outs.hdrs
     if aggregate_hdr:
@@ -178,18 +178,18 @@ def lcm_c_library(
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(kwargs.pop('includes', [])) | ["."]
     native.cc_library(
-        name=name,
-        srcs=outs.srcs,
-        hdrs=hdrs,
-        deps=deps,
-        includes=includes,
+        name = name,
+        srcs = outs.srcs,
+        hdrs = hdrs,
+        deps = deps,
+        includes = includes,
         **kwargs)
 
 def lcm_py_library(
         name,
-        lcm_srcs=None,
-        lcm_package=None,
-        lcm_structs=None,
+        lcm_srcs = None,
+        lcm_package = None,
+        lcm_structs = None,
         **kwargs):
     """Declares a py_library on message classes generated from `*.lcm` files.
 
@@ -207,24 +207,24 @@ def lcm_py_library(
 
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".py")
     _lcm_library_gen(
-        name=name + "_lcm_library_gen",
-        language="py",
-        lcm_srcs=lcm_srcs,
-        lcm_package=lcm_package,
-        outs=outs)
+        name = name + "_lcm_library_gen",
+        language = "py",
+        lcm_srcs = lcm_srcs,
+        lcm_package = lcm_package,
+        outs = outs)
 
     imports = set(kwargs.pop('imports', [])) | ["."]
     native.py_library(
-        name=name,
-        srcs=outs,
-        imports=imports,
+        name = name,
+        srcs = outs,
+        imports = imports,
         **kwargs)
 
 def lcm_java_library(
         name,
-        lcm_srcs=None,
-        lcm_package=None,
-        lcm_structs=None,
+        lcm_srcs = None,
+        lcm_package = None,
+        lcm_structs = None,
         **kwargs):
     """Declares a java_library on message classes generated from `*.lcm` files.
 
@@ -239,17 +239,17 @@ def lcm_java_library(
 
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".java")
     _lcm_library_gen(
-        name=name + "_lcm_library_gen",
-        language="java",
-        lcm_srcs=lcm_srcs,
-        lcm_package=lcm_package,
-        outs=outs)
+        name = name + "_lcm_library_gen",
+        language = "java",
+        lcm_srcs = lcm_srcs,
+        lcm_package = lcm_package,
+        outs = outs)
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm//:lcm-java"]
     native.java_library(
-        name=name,
-        srcs=outs,
-        deps=deps,
+        name = name,
+        srcs = outs,
+        deps = deps,
         **kwargs)
 
 # TODO(jamiesnape): Simplify this and possibly merge with lcm_c_library if
@@ -259,7 +259,7 @@ def lcm_c_aggregate_header(
         out,
         lcm_srcs,
         lcm_package,
-        lcm_structs=None,
+        lcm_structs = None,
         **kwargs):
     """Generates a header that includes a set of C headers generated from
     `*.lcm` files.
