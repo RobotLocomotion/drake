@@ -97,17 +97,25 @@ exports_files(
     visibility = ["//:__pkg__"],
 )
 
+exports_files(
+    ["third_party/libbot/LICENSE.ldpc"],
+    visibility = ["@libbot//:__pkg__"],
+)
+
 exports_create_cps_scripts([
     "bullet",
     "ccd",
     "eigen",
     "fcl",
     "fmt",
+    "ignition_math",
+    "ignition_rndf",
     "ipopt",
     "lcm",
     "nlopt",
     "octomap",
     "pybind11",
+    "sdformat",
     "spdlog",
     "tinyobjloader",
     "yaml_cpp",
@@ -116,6 +124,11 @@ exports_create_cps_scripts([
 exports_files(
     ["bot2-core-lcmtypes.cps"],
     visibility = ["@bot_core_lcmtypes//:__pkg__"],
+)
+
+exports_files(
+    ["libbot.cps"],
+    visibility = ["@libbot//:__pkg__"],
 )
 
 exports_files(
@@ -141,21 +154,6 @@ install_files(
     name = "install",
     dest = "lib/cmake/drake",
     files = ["drake-config.cmake"],
-)
-
-# This pulls the otherwise-unused libbot targets into the "//..." label tree.
-genrule(
-    name = "force_libbot",
-    srcs = [
-        "@libbot//:bot-lcm-logfilter",
-        "@libbot//:bot-lcm-logsplice",
-        "@libbot//:bot-lcm-tunnel",
-        "@libbot//:bot-spy",
-        "@libbot//:lcmtypes_bot2-core-py",
-    ],
-    outs = ["force_libbot.touch"],
-    cmd = "touch $(@)",
-    visibility = ["//visibility:private"],
 )
 
 # === CROSSTOOL rules ===

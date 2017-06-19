@@ -1,121 +1,11 @@
 # -*- python -*-
 
+load("@drake//tools:pathutils.bzl", "output_path", "join_paths")
+
 InstallInfo = provider()
 
 #==============================================================================
 #BEGIN internal helpers
-
-#------------------------------------------------------------------------------
-def _join_paths(*args):
-    """Join paths without duplicating separators.
-
-    This is roughly equivalent to Python's `os.path.join`.
-
-    Args:
-        \*args (:obj:`list` of :obj:`str`): Path components to be joined.
-
-    Returns:
-        :obj:`str`: The concatenation of the input path components.
-    """
-    result = ""
-
-    for part in args:
-        if len(part) == 0:
-            continue
-
-        result += part
-        if result[-1] != "/":
-            result += "/"
-
-    return result[:-1]
-
-#------------------------------------------------------------------------------
-# Remove prefix from path.
-def ___remove_prefix(path, prefix):
-    # If the prefix has more parts than the path, failure is certain.
-    if len(prefix) > len(path):
-        return None
-
-    # Iterate over components to determine if a match exists.
-    for n in range(len(prefix)):
-        if prefix[n] == path[n]:
-            continue
-        elif prefix[n] == "*":
-            continue
-        else:
-            return None
-
-    return "/".join(path[len(prefix):])
-
-def __remove_prefix(path, prefix):
-    # Ignore trailing empty element (happens if prefix string ends with "/").
-    if len(prefix[-1]) == 0:
-        prefix = prefix[:-1]
-
-    # If the prefix has more parts than the path, failure is certain. (We also
-    # need at least one component of the path left over so the stripped path is
-    # not empty.)
-    if len(prefix) > (len(path) - 1):
-        return None
-
-    # Iterate over components to determine if a match exists.
-    for n in range(len(prefix)):
-        # Same path components match.
-        if prefix[n] == path[n]:
-            continue
-
-        # Single-glob matches any (one) path component.
-        elif prefix[n] == "*":
-            continue
-
-        # Mulit-glob matches one or more components.
-        elif prefix[n] == "**":
-            # If multi-glob is at the end of the prefix, return the last path
-            # component.
-            if n + 1 == len(prefix):
-                return path[-1]
-
-            # Otherwise, the most components the multi-glob can match is the
-            # remaining components (len(prefix) - n - 1; the 1 is the current
-            # prefix component) less one (since we need to keep at least one
-            # component of the path).
-            k = len(path) - (len(prefix) - n - 2)
-
-            # Try to complete the match, iterating (backwards) over the number
-            # of components that the multi-glob might match.
-            for t in reversed(range(n, k)):
-                x = ___remove_prefix(path[t:], prefix[n + 1:])
-                if x != None:
-                    return x
-
-            # Multi-glob failed to match.
-            return None
-
-        else:
-            # Components did not match.
-            return None
-
-    return "/".join(path[len(prefix):])
-
-def _remove_prefix(path, prefix):
-    """Remove prefix from path.
-
-    This attempts to remove the specified prefix from the specified path. The
-    prefix may contain the globs ``*`` or ``**``, which match one or many
-    path components, respectively. Matching is greedy. Globs may only be
-    matched against complete path components (e.g. ``a/*/`` is okay, but
-    ``a*/`` is not treated as a glob and will be matched literally). Due to
-    Skylark limitations, at most one ``**`` may be matched.
-
-    Args:
-        path (:obj:`str`) The path to modify.
-        prefix (:obj:`str`) The prefix to remove.
-
-    Returns:
-        :obj:`str`: The path with the prefix removed if successful, or None if
-        the prefix does not match the path.
-    """
-    return __remove_prefix(path.split("/"), prefix.split("/"))
 
 #------------------------------------------------------------------------------
 def _is_drake_label(x):
@@ -131,63 +21,40 @@ def _is_drake_label(x):
 def _output_path(ctx, input_file, strip_prefix):
     """Compute output path (without destination prefix) for install action.
 
-    This computes the adjusted output path for an input file. Specifically, it
-    a) determines the path relative to the invoking context (which is usually,
-    but not always, the same as the path as specified by the user when the file
-    was mentioned in a rule), without Bazel's various possible extras, and b)
-    to optionally removes prefixes from this path. When removing prefixes, the
-    first matching prefix is removed.
-
-    For example::
-
-        install_files(
-            dest = "docs",
-            files = ["foo/bar.txt"],
-            strip_prefix = ["foo/"],
-            ...)
-
-    The :obj:`File`'s path components will have various Bazel bits added. Our
-    first step is to recover the input path, ``foo/bar.txt``. Then we remove
-    the prefix ``foo``, giving a path of ``bar.txt``, which will become
-    ``docs/bar.txt`` when the install destination is added.
-
-    Args:
-        input_file (:obj:`File`): Artifact to be installed.
-        strip_prefix (:obj:`list` of :obj:`str`): List of prefixes to strip
-            from the input path before prepending the destination.
-
-    Returns:
-        :obj:`str`: The install destination path for the file.
+    This computes the adjusted output path for an input file. It is the same as
+    :func:`output_path`, but additionally handles files outside the current
+    package when :func:`install` or :func:`install_files` is invoked with
+    non-empty ``allowed_externals``.
     """
 
-    # Determine base path of invoking context.
-    package_root = _join_paths(ctx.label.workspace_root, ctx.label.package)
+    # Try the current package first
+    path = output_path(ctx, input_file, strip_prefix)
+    if path != None:
+        return path
 
-    # Determine effective path by removing path of invoking context and any
-    # Bazel output-files path.
-    input_path = input_file.path
-    if input_file.is_source:
-        input_path = _remove_prefix(input_path, package_root)
-    else:
-        out_root = _join_paths("bazel-out/*/*", package_root)
-        input_path = _remove_prefix(input_path, out_root)
+    # If we were unable to resolve a path, the file must be "foreign", so try
+    # to resolve against the list of allowed externals.
+    if path == None and hasattr(ctx.attr, "allowed_externals"):
+        for x in ctx.attr.allowed_externals:
+            package_root = join_paths(x.label.workspace_root, x.label.package)
+            path = output_path(ctx, input_file, strip_prefix, package_root)
+            if path != None:
+                return path
 
-    # Deal with possible case of file outside the package root.
-    if input_path == None:
-        print("%s installing file %s which is not in current package"
-              % (package_root, input_file.path))
-        return input_file.basename
-
-    # Possibly remove prefixes.
-    for p in strip_prefix:
-        output_path = _remove_prefix(input_path, p)
-        if output_path != None:
-            return output_path
-
-    return input_path
+    # If we get here, we were not able to resolve the path; give up, and print
+    # a warning about installing the "foreign" file.
+    print("%s installing file %s which is not in current package"
+          % (ctx.label, input_file.path))
+    return input_file.basename
 
 #------------------------------------------------------------------------------
-def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
+def _install_actions(
+    ctx,
+    file_labels,
+    dests,
+    strip_prefixes = [],
+    excluded_files = []
+    ):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
@@ -207,6 +74,8 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
             strip. The :obj:`dict` must have an entry with the key ``None``
             that is used as the default when there is no entry for the specific
             extension.
+        excluded_files (:obj:`list` of :obj:`str`): List of files to exclude
+            from installation.
 
     Returns:
         :obj:`list`: A list of install actions.
@@ -217,6 +86,9 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
     # attribute that is a list of File artifacts. Thus this two-level loop.
     for f in file_labels:
         for a in f.files:
+            if _output_path(ctx, a, []) in excluded_files:
+                continue
+
             if type(dests) == "dict":
                 dest = dests.get(a.extension, dests[None])
             else:
@@ -229,7 +101,7 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = []):
                 strip_prefix = strip_prefixes
 
             p = _output_path(ctx, a, strip_prefix)
-            actions.append(struct(src = a, dst = _join_paths(dest, p)))
+            actions.append(struct(src = a, dst = join_paths(dest, p)))
 
     return actions
 
@@ -268,10 +140,13 @@ def _install_cc_actions(ctx, target):
         else:
             msg_fmt = "'install' given unknown 'guess_hdrs' value '%s'"
             fail(msg_fmt % ctx.attr.guess_hdrs, ctx.attr.guess_hdrs)
-
-        actions += _install_actions(ctx, [struct(files=hdrs)],
-                                    ctx.attr.hdr_dest,
-                                    ctx.attr.hdr_strip_prefix)
+        actions += _install_actions(
+            ctx,
+            [struct(files=hdrs)],
+            ctx.attr.hdr_dest,
+            ctx.attr.hdr_strip_prefix,
+            ctx.attr.guess_hdrs_exclude
+        )
 
     # Return computed actions.
     return actions
@@ -367,6 +242,7 @@ install = rule(
         "hdr_dest": attr.string(default = "include"),
         "hdr_strip_prefix": attr.string_list(),
         "guess_hdrs": attr.string(default = "NONE"),
+        "guess_hdrs_exclude": attr.string_list(),
         "targets": attr.label_list(),
         "archive_dest": attr.string(default = "lib"),
         "archive_strip_prefix": attr.string_list(),
@@ -376,8 +252,9 @@ install = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = "lib/python2.7/site_packages"),
+        "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
+        "allowed_externals": attr.label_list(),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -395,6 +272,13 @@ This generates installation information for various artifacts, including
 documentation and header files, and targets (e.g. ``cc_binary``). By default,
 the path of any files is included in the install destination.
 See :rule:`install_files` for details.
+
+Normally, you should not install files or targets from a workspace other than
+the one invoking ``install``, and ``install`` will warn if asked to do so. In
+cases (e.g. adding install rules to a project that is natively built with
+bazel, but does not define an install) where this *is* the right thing to do,
+the ``allowed_externals`` argument may be used to specify a list of externals
+whose files it is okay to install, which will suppress the warning.
 
 Note:
     By default, headers to be installed must be explicitly listed. This is to
@@ -420,6 +304,8 @@ Args:
     doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
     guess_hdrs: See note.
+    guess_hdrs_exclude: List of headers found by ``guess_hdrs`` to exclude from
+        installation.
     hdrs: List of header files to install.
     hdr_dest: Destination for header files (default = "include").
     hdr_strip_prefix: List of prefixes to remove from header paths.
@@ -433,8 +319,9 @@ Args:
     java_dest: Destination for Java library targets (default = "share/java").
     java_strip_prefix: List of prefixes to remove from Java library paths.
     py_dest: Destination for Python targets
-        (default = "lib/python2.7/site_packages").
+        (default = "lib/python2.7/site-packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
+    allowed_externals: List of external packages whose files may be installed.
 """
 
 #------------------------------------------------------------------------------
@@ -455,6 +342,7 @@ install_files = rule(
         "dest": attr.string(mandatory = True),
         "files": attr.label_list(allow_files = True),
         "strip_prefix": attr.string_list(),
+        "allowed_externals": attr.string_list(),
     },
     implementation = _install_files_impl,
 )
@@ -482,10 +370,14 @@ complete path components (e.g. ``a/*/`` is okay, but ``a*/`` is not treated as
 a glob and will be matched literally). Due to Skylark limitations, at most one
 ``**`` may be matched.
 
+``install_files`` has the same caveats regarding external files as
+:func:`install`.
+
 Args:
     dest: Destination for files.
     files: List of files to install.
     strip_prefix: List of prefixes to remove from input paths.
+    allowed_externals: List of external packages whose files may be installed.
 """
 
 #END rules
@@ -507,7 +399,13 @@ def exports_create_cps_scripts(packages):
         )
 
 #------------------------------------------------------------------------------
-def cmake_config(package, script=None, version_file=None, deps=[]):
+def cmake_config(
+    package,
+    script = None,
+    version_file = None,
+    cps_file_name = None,
+    deps = []
+    ):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -519,6 +417,10 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
     """
 
     if script and version_file:
+        if cps_file_name:
+            fail("cps_file_name should not be set if"
+                + " script and version_file are set."
+            )
         native.py_binary(
             name = "create-cps",
             srcs = [script],
@@ -537,7 +439,7 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
             tools = [":create-cps"],
             visibility = ["//visibility:public"],
         )
-    else:
+    elif not cps_file_name:
         cps_file_name = "@drake//tools:{}.cps".format(package)
 
     config_file_name = "{}Config.cmake".format(package)
@@ -563,7 +465,11 @@ def cmake_config(package, script=None, version_file=None, deps=[]):
     )
 
 #------------------------------------------------------------------------------
-def install_cmake_config(package, versioned=True):
+def install_cmake_config(
+    package,
+    versioned = True,
+    name = "install_cmake_config"
+    ):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
@@ -578,7 +484,7 @@ def install_cmake_config(package, versioned=True):
         cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
 
     install_files(
-        name = "install_cmake_config",
+        name = name,
         dest = cmake_config_dest,
         files = cmake_config_files,
         visibility = ["//visibility:private"],

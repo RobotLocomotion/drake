@@ -17,6 +17,8 @@ namespace lcm {
 
 /**
  * Publishes an LCM message containing information from its input port.
+ *
+ * @ingroup message_passing
  */
 class LcmPublisherSystem : public LeafSystem<double> {
  public:
@@ -112,12 +114,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * it onto an LCM channel.
    */
   void DoPublish(const Context<double>& context) const override;
-
-  /**
-   * This System has no output ports so CalcOutput() does nothing.
-   */
-  void DoCalcOutput(const Context<double>&,
-                    SystemOutput<double>*) const override {}
 
   /**
    * Returns the translator used by this publisher. This can be used to convert

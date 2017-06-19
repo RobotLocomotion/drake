@@ -50,6 +50,10 @@ using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;
 template <typename Scalar>
 using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
 
+/// A matrix of 4 rows and 4 columns, templated on scalar type.
+template <typename Scalar>
+using Matrix4 = Eigen::Matrix<Scalar, 4, 4>;
+
 /// A matrix of 6 rows and 6 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix6 = Eigen::Matrix<Scalar, 6, 6>;

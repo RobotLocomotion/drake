@@ -6,7 +6,6 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {

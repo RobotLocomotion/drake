@@ -8,7 +8,6 @@
 #include "bot_core/pointcloud_t.hpp"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"

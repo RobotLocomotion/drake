@@ -82,10 +82,9 @@ set(system2_sources
 set(system2_installed_headers
   inverse_dynamics.h
   inverse_dynamics_controller.h
-  model_based_controller_base.h
   pid_controlled_system.h
   pid_controller.h
-  state_feedback_controller_base.h)
+  state_feedback_controller_interface.h)
 add_library_with_exports(LIB_NAME drakeSystemControllers
     SOURCE_FILES ${system2_sources} ${system2_installed_headers})
 target_link_libraries(drakeSystemControllers

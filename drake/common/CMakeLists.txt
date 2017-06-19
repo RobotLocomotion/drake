@@ -80,6 +80,7 @@ set(installed_headers
   text_logging.h
   text_logging_gflags.h
   trig_poly.h
+  type_safe_index.h
   unused.h
   )
 

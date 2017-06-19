@@ -28,7 +28,6 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/multiplexer.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
@@ -72,8 +71,6 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
 
     const Eigen::MatrixXd feedback_matrix =
         manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<T>();
-    std::unique_ptr<MatrixGain<T>> feedback_selector =
-        std::make_unique<MatrixGain<T>>(feedback_matrix);
 
     // TODO(sam.creasey) The choice of constants below is completely
     // arbitrary and may not match the performance of the actual
@@ -82,7 +79,7 @@ class PidControlledSchunkWsg : public systems::Diagram<T> {
     const T ki = 0.0;
     const T kd = 5.0;
     controller_ = builder.template AddSystem<PidControlledSystem<T>>(
-        std::move(plant), std::move(feedback_selector), kp, ki, kd);
+        std::move(plant), feedback_matrix, kp, ki, kd);
     controller_->set_name("controller");
 
     builder.Connect(zero_source->get_output_port(),

@@ -22,6 +22,8 @@ namespace systems {
  * Publishes ROS TF messages for visualizing a RigidBodyTree. It is designed to
  * take as input a RigidBodyTree's generalized state, which is typically
  * ouputted by a RigidBodyPlant.
+ *
+ * @ingroup message_passing
  */
 class RosTfPublisher : public LeafSystem<double> {
  public:
@@ -43,13 +45,6 @@ class RosTfPublisher : public LeafSystem<double> {
    */
   void DoPublish(const Context<double>& context) const
       override;
-
-  /**
-   * This System has no output ports. Thus, DoCalcOutput() does nothing.
-   */
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const
-      override {}
 
   // TODO(liang.fok) Remove this method once we have a proper mock-ROS-topic
   // framework in place.

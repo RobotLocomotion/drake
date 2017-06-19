@@ -1,6 +1,0 @@
-drake_add_matlab_test(NAME examples/SimpleDoublePendulum/DoublePendPlant.run COMMAND DoublePendPlant.run)
-drake_add_matlab_test(NAME examples/SimpleDoublePendulum/runEndPointJac OPTIONAL bullet lcm COMMAND runEndPointJac)
-drake_add_matlab_test(NAME examples/SimpleDoublePendulum/runPDtest OPTIONAL bullet COMMAND runPDtest)
-drake_add_matlab_test(NAME examples/SimpleDoublePendulum/runPassiveURDF OPTIONAL bullet COMMAND runPassiveURDF)
-drake_add_matlab_test(NAME examples/SimpleDoublePendulum/runSimplePend COMMAND runSimplePend)
-drake_add_matlab_test(NAME examples/SimpleDoublePendulum/runSimplePendInv COMMAND runSimplePendInv)

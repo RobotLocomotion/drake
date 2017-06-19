@@ -46,9 +46,12 @@ TEST_F(SingleOutputVectorSourceTest, OutputTest) {
   ASSERT_EQ(context_->get_num_input_ports(), 0);
   ASSERT_EQ(output_->get_num_ports(), 1);
 
-  source_->CalcOutput(*context_, output_.get());
+  std::unique_ptr<AbstractValue> output =
+      source_->get_output_port(0).Allocate(*context_);
+  source_->get_output_port(0).Calc(*context_, output.get());
 
-  EXPECT_EQ(output_->get_vector_data(0)->get_value(), Eigen::Vector3d::Ones());
+  const auto& output_vector = output->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(output_vector.get_value(), Eigen::Vector3d::Ones());
 }
 
 // Tests that the state is empty.

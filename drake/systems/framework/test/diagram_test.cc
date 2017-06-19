@@ -4,10 +4,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test/is_dynamic_castable.h"
+#include "drake/systems/analysis/test/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -25,6 +27,8 @@ namespace {
 /// adder2_: (A + B)             -> output 1
 /// integrator1_: A              -> C
 /// integrator2_: C              -> output 2
+/// It also uses an StatelessSystem to verify Diagram's ability to retrieve
+/// witness functions from its subsystems.
 class ExampleDiagram : public Diagram<double> {
  public:
   explicit ExampleDiagram(int size) {
@@ -36,6 +40,10 @@ class ExampleDiagram : public Diagram<double> {
     adder1_->set_name("adder1");
     adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
+    stateless_ = builder.AddSystem<analysis_test::StatelessSystem<double>>(
+        1.0 /* trigger time */,
+        WitnessFunctionDirection::kCrossesZero);
+    stateless_->set_name("stateless");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);
     integrator0_->set_name("integrator0");
@@ -66,11 +74,13 @@ class ExampleDiagram : public Diagram<double> {
   Adder<double>* adder2() { return adder2_; }
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
+  analysis_test::StatelessSystem<double>* stateless() { return stateless_; }
 
  private:
   Adder<double>* adder0_ = nullptr;
   Adder<double>* adder1_ = nullptr;
   Adder<double>* adder2_ = nullptr;
+  analysis_test::StatelessSystem<double>* stateless_ = nullptr;
 
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
@@ -167,6 +177,20 @@ class DiagramTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
+// Tests that the diagram returns the correct number of witness functions and
+// that the witness function can be called correctly.
+TEST_F(DiagramTest, Witness) {
+  std::vector<const WitnessFunction<double>*> wf;
+  diagram_->GetWitnessFunctions(*context_, &wf);
+
+  // Stateless function always returns the ClockWitness.
+  ASSERT_EQ(wf.size(), 1);
+  EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
+      wf.front()));
+
+  EXPECT_LT(diagram_->EvaluateWitness(*context_, *wf.front()), 0);
+}
+
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
   ASSERT_EQ(kSize, diagram_->get_num_input_ports());
@@ -179,10 +203,10 @@ TEST_F(DiagramTest, Topology) {
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
   for (int i = 0; i < kSize; ++i) {
-    const auto& descriptor = diagram_->get_output_port(i);
-    EXPECT_EQ(diagram_.get(), descriptor.get_system());
-    EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kSize, descriptor.size());
+    const auto& port = diagram_->get_output_port(i);
+    EXPECT_EQ(diagram_.get(), &port.get_system());
+    EXPECT_EQ(kVectorValued, port.get_data_type());
+    EXPECT_EQ(kSize, port.size());
   }
 
   // The diagram has direct feedthrough.
@@ -595,9 +619,6 @@ class PublishingSystem : public LeafSystem<double> {
   }
 
  protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   void DoPublish(const Context<double>& context) const override {
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
@@ -720,9 +741,6 @@ class SecondOrderStateSystem : public LeafSystem<double> {
   }
 
  protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   std::unique_ptr<ContinuousState<double>> AllocateContinuousState()
       const override {
     return std::make_unique<ContinuousState<double>>(
@@ -813,7 +831,8 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ((std::vector<const System<double>*>{
                 diagram->adder0(), diagram->adder1(), diagram->adder2(),
-                diagram->integrator0(), diagram->integrator1(),
+                diagram->stateless(),
+                diagram->integrator0(), diagram->integrator1()
             }),
             diagram->GetSystems());
 }
@@ -832,9 +851,6 @@ class TestPublishingSystem : public LeafSystem<double> {
   bool published() { return published_; }
 
  protected:
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
-
   void DoPublish(const Context<double>& context) const override {
     published_ = true;
   }
@@ -987,9 +1003,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
   }
 
   ~SystemWithAbstractState() override {}
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 
   std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
     std::vector<std::unique_ptr<AbstractValue>> values;
@@ -1336,9 +1349,6 @@ class PerStepActionTestSystem : public LeafSystem<double> {
     (*state->get_mutable_discrete_state())[0] = 0;
     state->get_mutable_abstract_state<std::string>(0) = "wow";
   }
-
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const override {}
 
   void DoCalcDiscreteVariableUpdates(const Context<double>& context,
       DiscreteValues<double>* discrete_state) const override {

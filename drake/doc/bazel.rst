@@ -14,9 +14,9 @@ For more information, see:
 Bazel Installation
 ==================
 
-The Ubuntu Xenial platform setup process installs Bazel for you. On other
-platforms, refer to the Bazel installation instructions. We use Bazel 0.4.5.
-https://bazel.build/versions/master/docs/install.html
+Follow Drake's
+:ref:`platform-specific setup instructions <platform_specific_setup>`
+to install Bazel.
 
 Drake clone and platform setup
 ==============================
@@ -31,6 +31,8 @@ The one-time platform setup is the same as for a CMake build:
 
 When using Bazel, be sure that **ccache is not on your default $PATH**, e.g.,
 ``env | grep ccache`` is empty.
+
+.. _using_bazel:
 
 Developing Drake using Bazel
 ============================

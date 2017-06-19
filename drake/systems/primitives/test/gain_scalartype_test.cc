@@ -30,11 +30,9 @@ namespace {
 // derivatives with respect to this input are zero.
 GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   // There are only two independent variables in this problem with respect to
-  // which we want to take derivatives. Therefore Vector2d_unaligned is the
+  // which we want to take derivatives. Therefore Vector2d is the
   // template argument of AutoDiffScalar.
-  // TODO(amcastro-tri): change to Vector2d once #3145 is fixed.
-  typedef Eigen::Matrix<double, 2, 1, Eigen::DontAlign> Vector2d_unaligned;
-  typedef AutoDiffScalar<Vector2d_unaligned> T;
+  typedef AutoDiffScalar<Vector2d> T;
 
   // Set a Gain system with input and output of size 3. Notice that this size
   // does not necessarily need to be the same as the size of the derivatives

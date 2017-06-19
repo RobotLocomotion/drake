@@ -57,8 +57,8 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
       systems::ContinuousState<T>* derivatives) const override;
 
   // Outputs the estimated state.
-  void DoCalcOutput(const systems::Context<T>& context,
-                    systems::SystemOutput<T>* output) const override;
+  void CalcEstimatedState(const systems::Context<T>& context,
+                          systems::BasicVector<T>* output) const;
 
   /// This system is not direct feedthrough.
   bool DoHasDirectFeedthrough(const SparsityMatrix*, int, int) const override {

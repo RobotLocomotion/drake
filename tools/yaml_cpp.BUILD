@@ -1,8 +1,17 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
+
+public_headers = glob([
+    "include/**/*.h",
+])
 
 cc_library(
     name = "yaml_cpp",
@@ -10,9 +19,7 @@ cc_library(
         "src/**/*.cpp",
         "src/**/*.h",
     ]),
-    hdrs = glob([
-        "include/**/*.h",
-    ]),
+    hdrs = public_headers,
     includes = ["include"],
 )
 
@@ -26,8 +33,8 @@ install_cmake_config(package = "yaml-cpp")  # Creates rule :install_cmake_config
 
 install(
     name = "install",
+    hdrs = public_headers,
     doc_dest = "share/doc/yaml-cpp",
-    guess_hdrs = "PACKAGE",
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
     license_docs = ["LICENSE"],

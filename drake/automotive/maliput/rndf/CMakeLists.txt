@@ -6,6 +6,7 @@ if(ignition-rndf0_FOUND)
         lane.cc
         road_geometry.cc
         segment.cc
+        spline_helpers.cc
         spline_lane.cc
     )
 
@@ -27,6 +28,7 @@ if(ignition-rndf0_FOUND)
         lane.h
         road_geometry.h
         segment.h
+        spline_helpers.h
         spline_lane.h
     )
 

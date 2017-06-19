@@ -92,7 +92,3 @@ endif()
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(joints)
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()

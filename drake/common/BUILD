@@ -2,7 +2,14 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools:python_lint.bzl", "python_lint")
+load("//tools:install.bzl", "install")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -340,6 +347,27 @@ drake_cc_library(
     deps = [
         "@protobuf",
     ],
+)
+
+drake_cc_binary(
+    name = "resource_tool",
+    srcs = ["resource_tool.cc"],
+    deps = [
+        ":common",
+        ":find_resource",
+        ":text_logging_gflags",
+    ],
+)
+
+install(
+    name = "install",
+    # TODO(jwnimmer-tri) The install rule should offer more specific options
+    # for putting programs into libexec and including the workspace and/or
+    # package name in the installed path.  For now, we'll just specify it
+    # manually.
+    runtime_dest = "libexec/drake/drake/common",
+    targets = [":resource_tool"],
+    deps = ["//:install_resource_tool_data"],
 )
 
 # === test/ ===
@@ -795,6 +823,24 @@ drake_cc_googletest(
     ],
 )
 
+py_test(
+    name = "resource_tool_test",
+    srcs = ["test/resource_tool_test.py"],
+    data = [
+        "test/resource_tool_test_data.txt",
+        ":resource_tool",
+        "//drake/examples/Pendulum:models",
+    ],
+)
+
+py_test(
+    name = "resource_tool_installed_test",
+    srcs = ["test/resource_tool_installed_test.py"],
+    data = [
+        ":install",
+    ],
+)
+
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
@@ -803,3 +849,5 @@ drake_cc_googletest(
 # - cpplint_wrapper_test.py
 
 cpplint()
+
+python_lint()

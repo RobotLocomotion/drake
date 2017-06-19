@@ -24,7 +24,7 @@ class LogisticWitness : public systems::WitnessFunction<T> {
   explicit LogisticWitness(const LogisticSystem<T>& system) :
     systems::WitnessFunction<T>(
         system,
-        systems::WitnessFunction<T>::DirectionType::kCrossesZero,
+        systems::WitnessFunctionDirection::kCrossesZero,
         systems::DiscreteEvent<T>::kPublishAction) {
   }
 
@@ -68,10 +68,6 @@ class LogisticSystem : public LeafSystem<T> {
 
     // Compute the derivative.
     (*continuous_state)[0] = alpha_ * (1 - pow(x/k_, nu_)) * t;
-  }
-
-  void DoCalcOutput(const Context<T>&,
-                    SystemOutput<T>*) const override {
   }
 
   void DoGetWitnessFunctions(

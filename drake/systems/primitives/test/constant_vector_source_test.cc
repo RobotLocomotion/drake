@@ -21,7 +21,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
   void SetUpEigenModel() {
     source_ = make_unique<ConstantVectorSource<double>>(kConstantVectorSource);
     context_ = source_->CreateDefaultContext();
-    output_ = source_->AllocateOutput(*context_);
+    output_ = source_->get_output_port(0).Allocate(*context_);
   }
 
   void SetUpBasicVectorModel() {
@@ -30,13 +30,13 @@ class ConstantVectorSourceTest : public ::testing::Test {
 
     source_ = make_unique<ConstantVectorSource<double>>(vec);
     context_ = source_->CreateDefaultContext();
-    output_ = source_->AllocateOutput(*context_);
+    output_ = source_->get_output_port(0).Allocate(*context_);
   }
 
   const Matrix<double, 2, 1, Eigen::DontAlign> kConstantVectorSource{2.0, 1.5};
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<AbstractValue> output_;
 };
 
 // Tests that the output of the ConstantVectorSource is correct with an Eigen
@@ -46,12 +46,11 @@ TEST_F(ConstantVectorSourceTest, EigenModel) {
   ASSERT_EQ(source_->get_num_input_ports(), 0);
   ASSERT_EQ(source_->get_num_output_ports(), 1);
 
-  source_->CalcOutput(*context_, output_.get());
+  source_->get_output_port(0).Calc(*context_, output_.get());
 
-  const BasicVector<double>* output_vector = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_vector);
+  const auto& output_basic = output_->GetValueOrThrow<BasicVector<double>>();
   EXPECT_TRUE(kConstantVectorSource.isApprox(
-      output_vector->get_value(), Eigen::NumTraits<double>::epsilon()));
+      output_basic.get_value(), Eigen::NumTraits<double>::epsilon()));
 }
 
 // Tests that the output of the ConstantVectorSource is correct with a
@@ -61,10 +60,11 @@ TEST_F(ConstantVectorSourceTest, BasicVectorModel) {
   ASSERT_EQ(source_->get_num_input_ports(), 0);
   ASSERT_EQ(source_->get_num_output_ports(), 1);
 
-  source_->CalcOutput(*context_, output_.get());
+  source_->get_output_port(0).Calc(*context_, output_.get());
+  const auto& output_basic = output_->GetValueOrThrow<BasicVector<double>>();
 
   auto output_vector =
-      dynamic_cast<const MyVector<3, double>*>(output_->get_vector_data(0));
+      dynamic_cast<const MyVector<3, double>*>(&output_basic);
   ASSERT_NE(nullptr, output_vector);
   EXPECT_EQ(43.0, output_vector->GetAtIndex(1));
 }

@@ -34,17 +34,6 @@ HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
       systems::AbstractValue::Make<SimpleStandingPlan>(SimpleStandingPlan()));
 }
 
-void HumanoidPlanEvalSystem::DoExtendedCalcOutput(
-    const systems::Context<double>&,
-    systems::SystemOutput<double>*) const {}
-
-std::unique_ptr<systems::AbstractValue>
-HumanoidPlanEvalSystem::ExtendedAllocateOutputAbstract(
-    const systems::OutputPortDescriptor<double>&) const {
-  DRAKE_ABORT_MSG(
-      "HumanoidPlanEvalSystem does not have additional abstract output ports.");
-}
-
 void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {

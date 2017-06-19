@@ -529,7 +529,7 @@ class RotationalInertia {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /// @name ShiftMethods
+  /// @name Shift methods
   ///  Each shift method shifts a body's rotational inertia from one about-point
   ///  to another about-point. The expressed-in frame is unchanged.
   ///

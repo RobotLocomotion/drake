@@ -31,6 +31,11 @@ pkg_config_package(
     modname = "glib-2.0",
 )
 
+pkg_config_package(
+    name = "gthread",
+    modname = "gthread-2.0",
+)
+
 load("//tools:python.bzl", "python_repository")
 python_repository(
     name = "python",
@@ -51,6 +56,7 @@ github_archive(
     build_file = "tools/gtest.BUILD",
 )
 
+# When updating the version of gflags, update tools/install/gflags/gflags.cps
 github_archive(
     name = "com_github_gflags_gflags",
     repository = "gflags/gflags",
@@ -116,6 +122,8 @@ github_archive(
     sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
 )
 
+# In the unlikely event that you update the version here, verify that the
+# licenses in tools/third_party/libbot/ldpc LICENSE are still applicable.
 github_archive(
     name = "libbot",
     repository = "RobotLocomotion/libbot2",
@@ -175,8 +183,8 @@ github_archive(
 github_archive(
     name = "optitrack_driver",
     repository = "RobotLocomotion/optitrack-driver",
-    commit = "3a5da8d7c66c95ca98cda4dc7ca604f681464168",
-    sha256 = "a4d4c61ed5af59f12a273629eb28fa95ac2349abffe8912468bc5cf6dff34d28",
+    commit = "b9a59b66cb0627f9f174e11f323fdcf6cb223bb6",
+    sha256 = "5c9d917fcb9d325ceba75484a2d3f31ea044a090a966ac1ee2c4afd91923039e",
 )
 
 github_archive(
@@ -283,6 +291,8 @@ bind(
     actual = "@six_archive//:six",
 )
 
+# When updating the version of protobuf,
+# update tools/install/protobuf/protobuf.cps
 github_archive(
     name = "protobuf",
     repository = "google/protobuf",
@@ -301,8 +311,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "d68a10ce1130f87d38a13ae42ddb263042e2352a",
-    sha256 = "4de60f6b260b286dc2e68e9cdc31decc8f9ef43f77894c3d33a6fd097549008b",
+    commit = "abed50cced91a4f8a37f0458564f4b91524d8fef",
+    sha256 = "da30d553cccba59a3332128c1291ece7e9f1db00423800161ee438832b298ed2",
     build_file = "tools/pycps.BUILD",
 )
 
@@ -315,6 +325,9 @@ new_local_repository(
                           "visibility = ['//visibility:public'])")
 )
 
+# If updating ignition_math version, do not forget to also update
+# tools/ignition_math.BUILD in which the version number is hard-coded
+# to configure config.hh with cmake_configure_file().
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",

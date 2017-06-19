@@ -18,7 +18,9 @@ namespace systems {
  * network.
  *
  * For more information about ROS clock servers, see:
- * http://wiki.ros.org/Clock#Running_a_Clock_Server.
+ * http://wiki.ros.org/Clock#Running_a_Clock_Server
+ *
+ * @ingroup message_passing
  */
 class RosClockPublisher : public LeafSystem<double> {
  public:
@@ -40,13 +42,6 @@ class RosClockPublisher : public LeafSystem<double> {
    */
   void DoPublish(const Context<double>& context) const
       override;
-
-  /**
-   * This System has no output ports. Thus, DoCalcOutput() does nothing.
-   */
-  void DoCalcOutput(const Context<double>& context,
-                    SystemOutput<double>* output) const
-      override {}
 
   /**
    * Returns the number of subscribers to this clock publisher.
