@@ -45,8 +45,8 @@ api::GeoPosition SplineLane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   const double s = drake::math::saturate(lane_pos.s(), 0., do_length());
   const api::RBounds driveable_bounds = do_driveable_bounds(s);
-  const double r = drake::math::saturate(lane_pos.r(), driveable_bounds.r_min,
-                                         driveable_bounds.r_max);
+  const double r = drake::math::saturate(lane_pos.r(), driveable_bounds.min(),
+                                         driveable_bounds.max());
   // Calculate x,y of (s,0,0).
   const Vector2<double> xy = xy_of_s(s);
   // Calculate orientation of (s,r,h) basis at (s,0,0).
@@ -136,10 +136,10 @@ api::RBounds SplineLane::do_driveable_bounds(double s) const {
       GetPositionToLane(s, segment()->num_lanes() - 1);
   const double r_min = -std::abs(
       (position_first_lane - spline_->InterpolateMthDerivative(0, s)).Length() +
-      segment()->lane(0)->lane_bounds(0.).r_max);
+      segment()->lane(0)->lane_bounds(0.).max());
   const double r_max = std::abs(
       (position_last_lane - spline_->InterpolateMthDerivative(0, s)).Length() +
-      segment()->lane(segment()->num_lanes() - 1)->lane_bounds(0.).r_max);
+      segment()->lane(segment()->num_lanes() - 1)->lane_bounds(0.).max());
   return api::RBounds(r_min, r_max);
 }
 
