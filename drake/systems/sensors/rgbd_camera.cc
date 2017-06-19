@@ -213,6 +213,16 @@ struct ModuleInitVtkRenderingOpenGL2 {
   }
 };
 
+void PerformVTKUpdate(
+    const vtkNew<vtkRenderWindow>& window,
+    const vtkNew<vtkWindowToImageFilter>& filter,
+    const vtkNew<vtkImageExport>& exporter) {
+  window->Render();
+  filter->Modified();
+  filter->Update();
+  exporter->Update();
+}
+
 }  // namespace
 
 void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
@@ -289,15 +299,10 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
  private:
   void CreateRenderingWorld();
 
-  void UpdateModelPoses(const KinematicsCache<double>& cache,
-                        const Eigen::Isometry3d& X_CW) const;
-
-  void UpdateRenderWindow() const;
-
   // TODO(sherm1) This should be the calculator for a cache entry containing
   // the VTK update that must be valid before outputting any image info. For
   // now it has to be repeated before each image output port calculation.
-  void PerformVTKUpdate(const BasicVector<double>& input_vector) const;
+  void UpdateModelPoses(const BasicVector<double>& input_vector) const;
 
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double>& frame_;
@@ -583,67 +588,19 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   }
 }
 
-void RgbdCamera::Impl::UpdateModelPoses(
-    const KinematicsCache<double>& cache,
-    const Eigen::Isometry3d& X_CW) const {
-  for (const auto& body : tree_.bodies) {
-    if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
-      continue;
-    }
-
-    for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
-      const auto& visual = body->get_visual_elements()[i];
-      const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
-          cache, *body) * visual.getLocalTransform();
-
-      vtkSmartPointer<vtkTransform> vtk_transform =
-          VtkUtil::ConvertToVtkTransform(X_CVisual);
-      // `id_object_maps_` is modified here. This is OK because 1) we are just
-      // copying data to the memory spaces allocated at the construction time
-      // and 2) we are not outputting these data to outside the class.
-      for (auto& id_object_map : id_object_maps_) {
-        auto& actor = id_object_map.at(body->get_body_index()).at(i);
-        actor->SetUserTransform(vtk_transform);
-      }
-    }
-  }
-
-  if (!kCameraFixed) {
-    // Updates terrain.
-    vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(X_CW);
-    // `terrain_actor_` is modified here, but this is OK.  For the detail, see
-    // the comment above for `id_object_maps_`.
-    terrain_actor_->SetUserTransform(vtk_transform);
-  }
-}
-
-void RgbdCamera::Impl::UpdateRenderWindow() const {
-  for (auto& window : MakeVtkInstanceArray<vtkRenderWindow>(
-           color_depth_render_window_, label_render_window_)) {
-    window->Render();
-  }
-
-  for (auto& filter : MakeVtkInstanceArray<vtkWindowToImageFilter>(
-           color_filter_, depth_filter_, label_filter_)) {
-    filter->Modified();
-    filter->Update();
-  }
-}
-
 void RgbdCamera::Impl::OutputColorImage(const BasicVector<double>& input_vector,
                                         ImageRgba8U* color_image) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(input_vector);
-  color_exporter_->Update();
+  UpdateModelPoses(input_vector);
+  PerformVTKUpdate(color_depth_render_window_, color_filter_, color_exporter_);
   color_exporter_->Export(color_image->at(0, 0));
 }
 
 void RgbdCamera::Impl::OutputDepthImage(const BasicVector<double>& input_vector,
                                         ImageDepth32F* depth_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(input_vector);
-  depth_exporter_->Update();
+  UpdateModelPoses(input_vector);
+  PerformVTKUpdate(color_depth_render_window_, depth_filter_, depth_exporter_);
   depth_exporter_->Export(depth_image_out->at(0, 0));
 
   const int height = color_camera_info_.height();
@@ -660,8 +617,8 @@ void RgbdCamera::Impl::OutputDepthImage(const BasicVector<double>& input_vector,
 void RgbdCamera::Impl::OutputLabelImage(const BasicVector<double>& input_vector,
                                         ImageLabel16I* label_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(input_vector);
-  label_exporter_->Update();
+  UpdateModelPoses(input_vector);
+  PerformVTKUpdate(label_render_window_, label_filter_, label_exporter_);
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
@@ -705,7 +662,7 @@ void RgbdCamera::Impl::OutputPoseVector(
   camera_base_pose->set_rotation(quat);
 }
 
-void RgbdCamera::Impl::PerformVTKUpdate(
+void RgbdCamera::Impl::UpdateModelPoses(
     const BasicVector<double>& input_vector) const {
   const Eigen::VectorXd q =
       input_vector.CopyToVector().head(tree_.get_num_positions());
@@ -719,8 +676,38 @@ void RgbdCamera::Impl::PerformVTKUpdate(
     X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
   }
 
-  UpdateModelPoses(cache, (X_WB * X_BC_).inverse());
-  UpdateRenderWindow();
+  auto const X_CW = (X_WB * X_BC_).inverse();
+
+  for (const auto& body : tree_.bodies) {
+    if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
+      continue;
+    }
+
+    for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
+      const auto& visual = body->get_visual_elements()[i];
+      const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
+          cache, *body) * visual.getLocalTransform();
+
+      vtkSmartPointer<vtkTransform> vtk_transform =
+          VtkUtil::ConvertToVtkTransform(X_CVisual);
+      // `id_object_maps_` is modified here. This is OK because 1) we are just
+      // copying data to the memory spaces allocated at the construction time
+      // and 2) we are not outputting these data to outside the class.
+      for (auto& id_object_map : id_object_maps_) {
+        auto& actor = id_object_map.at(body->get_body_index()).at(i);
+        actor->SetUserTransform(vtk_transform);
+      }
+    }
+  }
+
+  if (!kCameraFixed) {
+    // Updates terrain.
+    vtkSmartPointer<vtkTransform> vtk_transform =
+        VtkUtil::ConvertToVtkTransform(X_CW);
+    // `terrain_actor_` is modified here, but this is OK.  For the detail, see
+    // the comment above for `id_object_maps_`.
+    terrain_actor_->SetUserTransform(vtk_transform);
+  }
 }
 
 float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
