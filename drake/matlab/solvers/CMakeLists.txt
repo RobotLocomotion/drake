@@ -20,10 +20,5 @@ endif()
 
 add_subdirectory(qpSpline)
 
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()
-
 add_subdirectory(+drakeFunction)
 add_subdirectory(BMI)
-add_subdirectory(trajectoryOptimization)
