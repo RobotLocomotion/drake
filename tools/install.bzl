@@ -478,7 +478,8 @@ def cmake_config(
 def install_cmake_config(
     package,
     versioned = True,
-    name = "install_cmake_config"
+    name = "install_cmake_config",
+    visibility = ["//visibility:private"]
     ):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
@@ -497,7 +498,7 @@ def install_cmake_config(
         name = name,
         dest = cmake_config_dest,
         files = cmake_config_files,
-        visibility = ["//visibility:private"],
+        visibility = visibility,
     )
 
 #END macros
