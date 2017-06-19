@@ -1,4 +1,1 @@
 drake_add_matlab_test(NAME systems/robotInterfaces/test/octomapSimpleExample REQUIRES lcm libbot octomap COMMAND octomapSimpleExample)
-drake_add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolvers REQUIRES gurobi yalmip OPTIONAL bullet snopt COMMAND testFootstepSolvers)
-drake_add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolversNoRegions REQUIRES gurobi yalmip OPTIONAL bullet snopt COMMAND testFootstepSolversNoRegions)
-drake_add_matlab_test(NAME systems/robotInterfaces/test/testInfeasibleFootstepProblems REQUIRES gurobi yalmip OPTIONAL bullet snopt COMMAND testInfeasibleFootstepProblems)

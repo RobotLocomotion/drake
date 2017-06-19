@@ -22,8 +22,6 @@ if(Matlab_FOUND)
   endif()
 endif()
 
-add_subdirectory(calibration/test)
-
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
