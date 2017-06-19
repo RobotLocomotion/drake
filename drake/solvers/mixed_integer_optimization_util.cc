@@ -9,6 +9,18 @@ VectorXDecisionVariable AddLogarithmicSOS2Constraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const std::string& binary_variable_name) {
   const int num_lambda = lambda.rows();
+  const int num_interval = num_lambda - 1;
+  const int num_binary_vars = CeilLog2(num_interval);
+  auto y = prog->NewBinaryVariables(num_binary_vars, binary_variable_name);
+  AddLogarithmicSOS2Constraint(prog, lambda, y);
+  return y;
+}
+
+void AddLogarithmicSOS2Constraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorXDecisionVariable>& y) {
+  const int num_lambda = lambda.rows();
   for (int i = 0; i < num_lambda; ++i) {
     prog->AddLinearConstraint(lambda(i) >= 0);
     prog->AddLinearConstraint(lambda(i) <= 1);
@@ -18,7 +30,7 @@ VectorXDecisionVariable AddLogarithmicSOS2Constraint(
   const int num_binary_vars = CeilLog2(num_interval);
   const auto gray_codes =
       math::CalculateReflectedGrayCodes(num_binary_vars);
-  auto y = prog->NewBinaryVariables(num_binary_vars, binary_variable_name);
+  DRAKE_ASSERT(y.rows() == num_binary_vars);
   for (int j = 0; j < num_binary_vars; ++j) {
     symbolic::Expression lambda_sum1 = gray_codes(0, j) == 1 ? lambda(0) : 0;
     symbolic::Expression lambda_sum2 = gray_codes(0, j) == 0 ? lambda(0) : 0;
@@ -35,7 +47,6 @@ VectorXDecisionVariable AddLogarithmicSOS2Constraint(
     prog->AddLinearConstraint(lambda_sum1 <= y(j));
     prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
   }
-  return y;
 }
 }  // namespace solvers
 }  // namespace drake

@@ -40,5 +40,12 @@ VectorXDecisionVariable AddLogarithmicSOS2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const std::string& binary_variable_name = "y");
+
+/** Adds the special ordered set 2 (sos2) constraint, @see AddLogarithmicSOS2Constraint.
+ */
+void AddLogarithmicSOS2Constraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorXDecisionVariable>& y);
 }  // namespace solvers
 }  // namespace drake
