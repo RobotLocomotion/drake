@@ -157,6 +157,7 @@ To run a single unit test like ``ros_test.test`` within package
 To run Drake's non-ROS-based unit tests, execute::
 
     cd ~/dev/drake_catkin_workspace/build/drake/drake
+    export DRAKE_RESOURCE_ROOT=$HOME/dev/drake_catkin_workspace/src/drake
     ctest
 
 For more information about how to run Drake's non-ROS unit tests, see
