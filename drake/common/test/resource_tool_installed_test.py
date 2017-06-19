@@ -34,16 +34,25 @@ class TestResourceTool(unittest.TestCase):
         os.rmdir("drake")
         self.assertEqual(os.listdir("."), ["tmp"])
 
+        # Cross-check the resource root environment variable name.
+        env_name = "DRAKE_RESOURCE_ROOT"
+        resource_tool = "tmp/libexec/drake/drake/common/resource_tool"
+        output_name = subprocess.check_output(
+            [resource_tool,
+             "--print_resource_root_environment_variable_name",
+             ],
+            ).strip()
+        self.assertEqual(output_name, env_name)
+
         # Use the installed resource_tool to find a resource.
-        # TODO(jwnimmer-tri) Once resource_tool has more features, we should
-        # remove the tool_cwd= stuff and rely on its improved searching.
-        tool_cwd = "tmp/share/drake"
+        tool_env = dict(os.environ)
+        tool_env[env_name] = "tmp/share/drake"
         absolute_path = subprocess.check_output(
-            ["../../libexec/drake/drake/common/resource_tool",
-             "-print_resource_path",
+            [resource_tool,
+             "--print_resource_path",
              "drake/common/test/tmp_resource",
              ],
-            cwd=tool_cwd,
+            env=tool_env,
             ).strip()
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), "tmp_resource")
