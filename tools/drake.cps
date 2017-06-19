@@ -42,7 +42,7 @@
       "Requires": [
         "Eigen3:Eigen",
         "lcm:lcm",
-        "bot2-core-lcmtypes:bot2-core-lcmtypes-cpp",
+        "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog"
       ]

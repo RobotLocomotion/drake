@@ -19,6 +19,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/solvers:mathematical_program",
     "//drake/systems/framework",
     "//drake/systems/primitives",
+    "//drake/util:convex_hull",
 ]
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
