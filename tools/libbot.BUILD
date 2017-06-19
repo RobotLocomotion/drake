@@ -139,6 +139,19 @@ cc_binary(
     ],
 )
 
+py_library(
+    name = "bot_log2mat",
+    srcs = glob(["bot2-lcm-utils/python/src/bot_log2mat/*.py"]),
+    imports = ["bot2-lcm-utils/python/src"],
+    deps = ["@lcm//:lcm-python"],
+)
+
+py_binary(
+    name = "bot-log2mat",
+    srcs = [":bot_log2mat"],
+    main = "bot2-lcm-utils/python/src/bot_log2mat/log_to_mat.py",
+)
+
 # bot2-param
 
 BOT2_PARAM_LCM_SRCS = glob(["bot2-param/lcmtypes/*.lcm"])
@@ -333,6 +346,103 @@ cc_library(
     ],
 )
 
+# bot2-lcmgl
+
+BOT2_LCMGL_LCM_SRCS = glob(["bot2-lcmgl/lcmtypes/*.lcm"])
+
+BOT2_LCMGL_LCM_STRUCTS = [
+    f.replace("bot2-lcmgl/lcmtypes/bot_lcmgl_", "").replace(".lcm", "")
+    for f in BOT2_LCMGL_LCM_SRCS
+]
+
+lcm_c_aggregate_header(
+    name = "lcmtypes_bot2_lcmgl_c_aggregate_header",
+    out = "bot2-lcmgl/lcmtypes/bot2_lcmgl.h",
+    lcm_package = "bot_lcmgl",
+    lcm_srcs = BOT2_LCMGL_LCM_SRCS,
+    lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
+    visibility = ["//visibility:private"],
+)
+
+lcm_c_library(
+    name = "lcmtypes_bot2_lcmgl_c",
+    aggregate_hdr = ":lcmtypes_bot2_lcmgl_c_aggregate_header",
+    includes = ["bot2-lcmgl"],
+    lcm_package = "bot_lcmgl",
+    lcm_srcs = BOT2_LCMGL_LCM_SRCS,
+    lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
+)
+
+lcm_cc_library(
+    name = "lcmtypes_bot2_lcmgl",
+    includes = ["bot2-lcmgl"],
+    lcm_package = "bot_lcmgl",
+    lcm_srcs = BOT2_LCMGL_LCM_SRCS,
+    lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
+)
+
+lcm_java_library(
+    name = "lcmtypes_bot2_lcmgl_java",
+    lcm_package = "bot_lcmgl",
+    lcm_srcs = BOT2_LCMGL_LCM_SRCS,
+    lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
+)
+
+lcm_py_library(
+    name = "lcmtypes_bot2_lcmgl_py",
+    lcm_package = "bot_lcmgl",
+    lcm_srcs = BOT2_LCMGL_LCM_SRCS,
+    lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
+)
+
+BOT2_LCMGL_PUBLIC_HDRS = [
+    "bot2-lcmgl/src/bot_lcmgl_client/lcmgl.h",
+    "bot2-lcmgl/src/bot_lcmgl_render/lcmgl_decode.h",
+]
+
+cc_library(
+    name = "bot2_lcmgl_client",
+    srcs = ["bot2-lcmgl/src/bot_lcmgl_client/lcmgl.c"],
+    hdrs = ["bot2-lcmgl/src/bot_lcmgl_client/lcmgl.h"],
+    copts = ["-std=gnu99"],
+    includes = ["bot2-lcmgl/src"],
+    deps = [
+        ":lcmtypes_bot2_lcmgl_c",
+        "@glib",
+        "@lcm",
+        "@zlib",
+    ],
+)
+
+cc_library(
+    name = "bot2_lcmgl_render",
+    srcs = [
+        "bot2-lcmgl/src/bot_lcmgl_client/lcmgl.h",
+        "bot2-lcmgl/src/bot_lcmgl_render/lcmgl_decode.c",
+    ],
+    hdrs = ["bot2-lcmgl/src/bot_lcmgl_render/lcmgl_decode.h"],
+    copts = ["-std=gnu99"],
+    includes = ["bot2-lcmgl/src"],
+    deps = [
+        ":bot2_lcmgl_client",
+        ":lcmtypes_bot2_lcmgl_c",
+        "@zlib",
+    ],
+)
+
+java_library(
+    name = "bot2_lcmgl_java",
+    srcs = glob(["bot2-lcmgl/java/src/bot2_lcmgl/*.java"]),
+    runtime_deps = ["@lcm//:lcm-java"],
+)
+
+py_library(
+    name = "bot2_lcmgl_py",
+    srcs = glob(["bot2-lcmgl/python/src/bot2_lcmgl/*.py"]),
+    imports = ["bot2-lcmgl/python/src"],
+    deps = [":lcmtypes_bot2_lcmgl_py"],
+)
+
 # install
 
 CMAKE_PACKAGE = "libbot"
@@ -357,11 +467,13 @@ install(
     guess_hdrs = "PACKAGE",
     hdr_strip_prefix = [
         "bot2-frames",
+        "bot2-lcmgl",
         "bot2-param",
     ],
     license_docs = LICENSE_DOCS,
     py_strip_prefix = [
         "bot2-frames/lcmtypes",
+        "bot2-lcmgl/lcmtypes",
         "bot2-param/lcmtypes",
     ],
     targets = [
@@ -369,10 +481,14 @@ install(
         ":lcmtypes_bot2_frames_java",
         ":lcmtypes_bot2_frames_py",
         ":lcmtypes_bot2_frames",
+        ":lcmtypes_bot2_lcmgl_c",
+        ":lcmtypes_bot2_lcmgl_java",
+        ":lcmtypes_bot2_lcmgl_py",
+        ":lcmtypes_bot2_lcmgl",
         ":lcmtypes_bot2_param_c",
         ":lcmtypes_bot2_param_java",
         ":lcmtypes_bot2_param_py",
-        ":lcmtypes_bot2_param"
+        ":lcmtypes_bot2_param",
     ],
 )
 
@@ -396,7 +512,9 @@ install(
     name = "install_bot2_lcm_utils",
     doc_dest = DOC_DEST,
     license_docs = LICENSE_DOCS,
+    py_strip_prefix = ["bot2-lcm-utils/python/src"],
     targets = [
+        ":bot_log2mat",
         ":bot-lcm-logfilter",
         ":bot-lcm-logsplice",
         ":bot-lcm-tunnel",
@@ -406,10 +524,10 @@ install(
 
 install(
     name = "install_bot2_param",
-    doc_dest = DOC_DEST,
     hdrs = BOT2_PARAM_PUBLIC_HDRS,
+    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST + "/" + BOT2_PARAM_INCLUDE_PREFIX,
-    hdr_strip_prefix = ["bot2-param/src"],
+    hdr_strip_prefix = ["bot2-param/src/param_client"],
     license_docs = LICENSE_DOCS,
     targets = [
         ":bot-param-dump",
@@ -421,12 +539,27 @@ install(
 
 install(
     name = "install_bot2_frames",
-    doc_dest = DOC_DEST,
     hdrs = BOT2_FRAMES_PUBLIC_HDRS,
+    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST + "/" + BOT2_FRAMES_INCLUDE_PREFIX,
     hdr_strip_prefix = ["bot2-frames/src"],
     license_docs = LICENSE_DOCS,
     targets = [":bot2_frames"],
+)
+
+install(
+    name = "install_bot2_lcmgl",
+    hdrs = BOT2_LCMGL_PUBLIC_HDRS,
+    doc_dest = DOC_DEST,
+    hdr_dest = HDR_DEST,
+    hdr_strip_prefix = ["bot2-lcmgl/src"],
+    license_docs = LICENSE_DOCS,
+    targets = [
+        ":bot2_lcmgl_client",
+        ":bot2_lcmgl_java",
+        ":bot2_lcmgl_py",
+        ":bot2_lcmgl_render",
+    ],
 )
 
 install(
@@ -437,6 +570,7 @@ install(
         ":install_bot2_core",
         ":install_bot2_frames",
         ":install_bot2_lcm_utils",
+        ":install_bot2_lcmgl",
         ":install_bot2_param",
         ":install_cmake_config",
         ":install_lcmtypes",
