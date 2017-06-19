@@ -1,5 +1,7 @@
 #include "drake/common/find_resource.h"
 
+#include <cstdlib>
+#include <vector>
 #include <utility>
 
 #include <spruce.hh>
@@ -100,6 +102,14 @@ void Result::CheckInvariants() {
 
 namespace {
 
+optional<std::string> getenv_optional(const char* const name) {
+  const char* const value = std::getenv(name);
+  if (value) {
+    return string(value);
+  }
+  return nullopt;
+}
+
 bool is_relative_path(const string& path) {
   // TODO(jwnimmer-tri) Prevent .. escape?
   return !path.empty() && (path[0] != '/');
@@ -111,6 +121,17 @@ bool file_exists(const string& dirpath, const string& relpath) {
   if (!dir_query.isDir()) { return false; }
   const spruce::path file_query(dir_query.getStr() + '/' + relpath);
   return file_query.exists();
+}
+
+optional<string> check_candidate_dir(const spruce::path& candidate_dir) {
+  // If we found the sentinel, we win.
+  spruce::path candidate_file = candidate_dir;
+  candidate_file.append(".drake-resource-sentinel");
+  if (candidate_file.isFile()) {
+    return candidate_dir.getStr();
+  }
+
+  return nullopt;
 }
 
 optional<string> find_sentinel_dir() {
@@ -127,10 +148,9 @@ optional<string> find_sentinel_dir() {
     }
 
     // If we found the sentinel, we win.
-    spruce::path candidate_file = candidate_dir;
-    candidate_file.append(".drake-resource-sentinel");
-    if (candidate_file.isFile()) {
-      return candidate_dir.getStr();
+    optional<string> result = check_candidate_dir(candidate_dir);
+    if (result) {
+      return result;
     }
 
     // Move up one directory; with spruce, "root" means "parent".
@@ -140,6 +160,9 @@ optional<string> find_sentinel_dir() {
 
 }  // namespace
 
+const char* const kDrakeResourceRootEnvironmentVariableName =
+    "DRAKE_RESOURCE_ROOT";
+
 Result FindResource(string resource_path) {
   // Check if resource_path is well-formed.
   if (!is_relative_path(resource_path)) {
@@ -148,15 +171,27 @@ Result FindResource(string resource_path) {
         "resource_path is not a relative path");
   }
 
-  // Search in cwd (and its parent, grandparent, etc.) to find Drake's
-  // resource-root sentinel file, then look for the resource_path in there.
-  const optional<string> sentinel_dir = find_sentinel_dir();
-  if (sentinel_dir && file_exists(*sentinel_dir, resource_path)) {
-    return Result::make_success(std::move(resource_path), *sentinel_dir);
-  }
+  // Collect a list of (priority-ordered) directories to check.
+  std::vector<optional<string>> candidate_dirs;
+
+  // (1) Search the environment variable first; if it works, it should always
+  // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
+  candidate_dirs.emplace_back(getenv_optional(
+      kDrakeResourceRootEnvironmentVariableName));
+
+  // (2) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // resource-root sentinel file.
+  candidate_dirs.emplace_back(find_sentinel_dir());
 
   // TODO(jwnimmer-tri) Add more search heuristics for installed copies of
   // Drake resources.
+
+  // See which (if any) candidate contains the requested resource.
+  for (const auto& candidate_dir : candidate_dirs) {
+    if (candidate_dir && file_exists(*candidate_dir, resource_path)) {
+      return Result::make_success(std::move(resource_path), *candidate_dir);
+    }
+  }
 
   // Nothing found.
   return Result::make_error(
