@@ -71,6 +71,13 @@ py_binary(
     srcs = ["drakelint.py"],
 )
 
+py_binary(
+    name = "bzlcodestyle",
+    srcs = ["bzlcodestyle.py"],
+    main = "bzlcodestyle.py",
+    deps = ["@pycodestyle//:pycodestyle"],
+)
+
 py_library(
     name = "cpsutils",
     srcs = ["cpsutils.py"],
