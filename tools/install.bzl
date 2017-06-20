@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools:pathutils.bzl", "output_path", "join_paths")
+load("@drake//tools:pathutils.bzl", "dirname", "output_path", "join_paths")
 
 InstallInfo = provider()
 
@@ -66,13 +66,34 @@ def _guess_files(target, candidates, scope, attr_name):
         fail(msg_fmt % (attr_name, scope), scope)
 
 #------------------------------------------------------------------------------
-def _install_actions(
-    ctx,
-    file_labels,
-    dests,
-    strip_prefixes = [],
-    excluded_files = []
-    ):
+def _install_action(ctx, artifact, dests, strip_prefixes = [], rename = {}):
+    """Compute install action for a single file.
+
+    This takes a single file artifact and returns the appropriate install
+    action for the file. The parameters are the same as for
+    :func:`_install_action`.
+    """
+    if type(dests) == "dict":
+        dest = dests.get(artifact.extension, dests[None])
+    else:
+        dest = dests
+
+    if type(strip_prefixes) == "dict":
+        strip_prefix = strip_prefixes.get(artifact.extension,
+                                          strip_prefixes[None])
+    else:
+        strip_prefix = strip_prefixes
+
+    file_dest = join_paths(dest, _output_path(ctx, artifact, strip_prefix))
+    if file_dest in rename:
+        renamed = rename[file_dest]
+        file_dest = join_paths(dirname(file_dest), renamed)
+
+    return struct(src = artifact, dst = file_dest)
+
+#------------------------------------------------------------------------------
+def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
+                     excluded_files = [], rename = {}):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
@@ -104,22 +125,15 @@ def _install_actions(
     # attribute that is a list of file artifacts. Thus this two-level loop.
     for f in file_labels:
         for a in f.files:
+            # TODO(mwoehlke-kitware) refactor this to separate computing the
+            # original relative path and the path with prefix(es) stripped,
+            # then use the original relative path for both exclusions and
+            # renaming.
             if _output_path(ctx, a, []) in excluded_files:
                 continue
 
-            if type(dests) == "dict":
-                dest = dests.get(a.extension, dests[None])
-            else:
-                dest = dests
-
-            if type(strip_prefixes) == "dict":
-                strip_prefix = strip_prefixes.get(a.extension,
-                                                  strip_prefixes[None])
-            else:
-                strip_prefix = strip_prefixes
-
-            p = _output_path(ctx, a, strip_prefix)
-            actions.append(struct(src = a, dst = join_paths(dest, p)))
+            actions.append(
+                _install_action(ctx, a, dests, strip_prefixes, rename))
 
     return actions
 
@@ -137,7 +151,8 @@ def _install_cc_actions(ctx, target):
         "so": ctx.attr.library_strip_prefix,
         None: ctx.attr.runtime_strip_prefix,
     }
-    actions = _install_actions(ctx, [target], dests, strip_prefixes)
+    actions = _install_actions(ctx, [target], dests, strip_prefixes,
+                               rename = ctx.attr.rename)
 
     # Compute actions for guessed resource files.
     if ctx.attr.guess_data != "NONE":
@@ -146,7 +161,8 @@ def _install_cc_actions(ctx, target):
         actions += _install_actions(ctx, [struct(files = data)],
                                     ctx.attr.data_dest,
                                     ctx.attr.data_strip_prefix,
-                                    ctx.attr.guess_data_exclude)
+                                    ctx.attr.guess_data_exclude,
+                                    rename = ctx.attr.rename)
 
     # Compute actions for guessed headers.
     if ctx.attr.guess_hdrs != "NONE":
@@ -155,7 +171,8 @@ def _install_cc_actions(ctx, target):
         actions += _install_actions(ctx, [struct(files = hdrs)],
                                     ctx.attr.hdr_dest,
                                     ctx.attr.hdr_strip_prefix,
-                                    ctx.attr.guess_hdrs_exclude)
+                                    ctx.attr.guess_hdrs_exclude,
+                                    rename = ctx.attr.rename)
 
     # Return computed actions.
     return actions
@@ -172,14 +189,16 @@ def _install_java_actions(ctx, target):
         None: ctx.attr.runtime_strip_prefix,
     }
 
-    return _install_actions(ctx, [target], dests, strip_prefixes)
+    return _install_actions(ctx, [target], dests, strip_prefixes,
+                            rename = ctx.attr.rename)
 
 #------------------------------------------------------------------------------
 # Compute install actions for a py_library or py_binary.
 # TODO(jamiesnape): Install native shared libraries that the target may use.
 def _install_py_actions(ctx, target):
     return _install_actions(ctx, [target], ctx.attr.py_dest,
-                            ctx.attr.py_strip_prefix)
+                            ctx.attr.py_strip_prefix,
+                            rename = ctx.attr.rename)
 
 #------------------------------------------------------------------------------
 # Generate install code for an install action.
@@ -210,13 +229,17 @@ def _install_impl(ctx):
 
     # Generate actions for data, docs and includes.
     actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest,
-                                ctx.attr.doc_strip_prefix)
+                                strip_prefixes = ctx.attr.doc_strip_prefix,
+                                rename = ctx.attr.rename)
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
-                                ctx.attr.doc_strip_prefix)
+                                strip_prefixes = ctx.attr.doc_strip_prefix,
+                                rename = ctx.attr.rename)
     actions += _install_actions(ctx, ctx.attr.data, ctx.attr.data_dest,
-                                ctx.attr.data_strip_prefix)
+                                strip_prefixes = ctx.attr.data_strip_prefix,
+                                rename = ctx.attr.rename)
     actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
-                                ctx.attr.hdr_strip_prefix)
+                                strip_prefixes = ctx.attr.hdr_strip_prefix,
+                                rename = ctx.attr.rename)
 
     for t in ctx.attr.targets:
         # TODO(jwnimmer-tri): Raise an error if a target has testonly=1.
@@ -282,6 +305,7 @@ install = rule(
         "java_strip_prefix": attr.string_list(),
         "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
+        "rename": attr.string_dict(),
         "allowed_externals": attr.label_list(allow_files = True),
         "install_script_template": attr.label(
             allow_files = True,
@@ -364,6 +388,8 @@ Args:
     py_dest: Destination for Python targets
         (default = "lib/python2.7/site-packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
+    rename: Mapping of install paths to alternate file names, used to rename
+      files upon installation.
     allowed_externals: List of external packages whose files may be installed.
 """
 
@@ -375,7 +401,8 @@ def _install_files_impl(ctx):
     strip_prefix = ctx.attr.strip_prefix
 
     # Generate actions.
-    actions = _install_actions(ctx, ctx.attr.files, dest, strip_prefix)
+    actions = _install_actions(ctx, ctx.attr.files, dest, strip_prefix,
+                               rename = ctx.attr.rename)
 
     # Return computed actions.
     return InstallInfo(install_actions = actions)
@@ -384,6 +411,7 @@ install_files = rule(
     attrs = {
         "dest": attr.string(mandatory = True),
         "files": attr.label_list(allow_files = True),
+        "rename": attr.string_dict(),
         "strip_prefix": attr.string_list(),
         "allowed_externals": attr.string_list(),
     },
@@ -420,6 +448,8 @@ Args:
     dest: Destination for files.
     files: List of files to install.
     strip_prefix: List of prefixes to remove from input paths.
+    rename: Mapping of install paths to alternate file names, used to rename
+      files upon installation.
     allowed_externals: List of external packages whose files may be installed.
 """
 

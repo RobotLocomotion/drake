@@ -94,6 +94,19 @@ def _remove_prefix(path, prefix):
 #BEGIN macros
 
 #------------------------------------------------------------------------------
+def dirname(path):
+    """Return the directory portion of a file path."""
+    if path == "/":
+        return "/"
+
+    parts = path.split("/")
+
+    if len(parts) > 1:
+        return "/".join(parts[:-1])
+
+    return "."
+
+#------------------------------------------------------------------------------
 def join_paths(*args):
     """Join paths without duplicating separators.
 
@@ -108,12 +121,13 @@ def join_paths(*args):
     result = ""
 
     for part in args:
-        if len(part) == 0:
+        if part.endswith("/"):
+            part = part[-1]
+
+        if part == "" or part == ".":
             continue
 
-        result += part
-        if result[-1] != "/":
-            result += "/"
+        result += part + "/"
 
     return result[:-1]
 
