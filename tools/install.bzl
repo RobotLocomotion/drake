@@ -18,7 +18,7 @@ def _is_drake_label(x):
         return False
 
 #------------------------------------------------------------------------------
-def _output_path(ctx, input_file, strip_prefix):
+def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
     """Compute output path (without destination prefix) for install action.
 
     This computes the adjusted output path for an input file. It is the same as
@@ -43,8 +43,9 @@ def _output_path(ctx, input_file, strip_prefix):
 
     # If we get here, we were not able to resolve the path; give up, and print
     # a warning about installing the "foreign" file.
-    print("%s installing file %s which is not in current package"
-          % (ctx.label, input_file.path))
+    if warn_foreign:
+        print("%s installing file %s which is not in current package"
+              % (ctx.label, input_file.path))
     return input_file.basename
 
 #------------------------------------------------------------------------------
@@ -129,7 +130,7 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
             # original relative path and the path with prefix(es) stripped,
             # then use the original relative path for both exclusions and
             # renaming.
-            if _output_path(ctx, a, []) in excluded_files:
+            if _output_path(ctx, a, warn_foreign = False) in excluded_files:
                 continue
 
             actions.append(
