@@ -48,6 +48,24 @@ def _output_path(ctx, input_file, strip_prefix):
     return input_file.basename
 
 #------------------------------------------------------------------------------
+def _guess_files(target, candidates, scope, attr_name):
+    if scope == "EVERYTHING":
+        return candidates
+
+    elif scope == "WORKSPACE":
+        return [f for f in candidates if
+                target.label.workspace_root == f.owner.workspace_root]
+
+    elif scope == "PACKAGE":
+        return [f for f in candidates if
+                target.label.workspace_root == f.owner.workspace_root and
+                target.label.package == f.owner.package]
+
+    else:
+        msg_fmt = "'install' given unknown '%s' value '%s'"
+        fail(msg_fmt % (attr_name, scope), scope)
+
+#------------------------------------------------------------------------------
 def _install_actions(
     ctx,
     file_labels,
@@ -61,7 +79,7 @@ def _install_actions(
     actions for the files owned by each label.
 
     Args:
-        file_labels (:obj:`list` of :obj:`Label`): labels to install.
+        file_labels (:obj:`list` of :obj:`Label`): List of labels to install.
         dests (:obj:`str` or :obj:`dict` of :obj:`str` to :obj:`str`):
             Install destination. A :obj:`dict` may be given to supply a mapping
             of file extension to destination path. The :obj:`dict` must have an
@@ -83,7 +101,7 @@ def _install_actions(
     actions = []
 
     # Iterate over files. We expect a list of labels, which will have a 'files'
-    # attribute that is a list of File artifacts. Thus this two-level loop.
+    # attribute that is a list of file artifacts. Thus this two-level loop.
     for f in file_labels:
         for a in f.files:
             if _output_path(ctx, a, []) in excluded_files:
@@ -121,32 +139,23 @@ def _install_cc_actions(ctx, target):
     }
     actions = _install_actions(ctx, [target], dests, strip_prefixes)
 
+    # Compute actions for guessed resource files.
+    if ctx.attr.guess_data != "NONE":
+        data = [f for f in target.data_runfiles.files if f.is_source]
+        data = _guess_files(target, data, ctx.attr.guess_data, 'guess_data')
+        actions += _install_actions(ctx, [struct(files = data)],
+                                    ctx.attr.data_dest,
+                                    ctx.attr.data_strip_prefix,
+                                    ctx.attr.guess_data_exclude)
+
     # Compute actions for guessed headers.
     if ctx.attr.guess_hdrs != "NONE":
-        hdrs = []
-
-        if ctx.attr.guess_hdrs == "EVERYTHING":
-            hdrs = target.cc.transitive_headers
-
-        elif ctx.attr.guess_hdrs == "WORKSPACE":
-            hdrs = [h for h in target.cc.transitive_headers if
-                    target.label.workspace_root == h.owner.workspace_root]
-
-        elif ctx.attr.guess_hdrs == "PACKAGE":
-            hdrs = [h for h in target.cc.transitive_headers if
-                    target.label.workspace_root == h.owner.workspace_root and
-                    target.label.package == h.owner.package]
-
-        else:
-            msg_fmt = "'install' given unknown 'guess_hdrs' value '%s'"
-            fail(msg_fmt % ctx.attr.guess_hdrs, ctx.attr.guess_hdrs)
-        actions += _install_actions(
-            ctx,
-            [struct(files = hdrs)],
-            ctx.attr.hdr_dest,
-            ctx.attr.hdr_strip_prefix,
-            ctx.attr.guess_hdrs_exclude
-        )
+        hdrs = _guess_files(target, target.cc.transitive_headers,
+                            ctx.attr.guess_hdrs, 'guess_hdrs')
+        actions += _install_actions(ctx, [struct(files = hdrs)],
+                                    ctx.attr.hdr_dest,
+                                    ctx.attr.hdr_strip_prefix,
+                                    ctx.attr.guess_hdrs_exclude)
 
     # Return computed actions.
     return actions
@@ -199,11 +208,13 @@ def _install_impl(ctx):
     for d in ctx.attr.deps:
         actions += d.install_actions
 
-    # Generate actions for docs and includes.
+    # Generate actions for data, docs and includes.
     actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest,
                                 ctx.attr.doc_strip_prefix)
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
                                 ctx.attr.doc_strip_prefix)
+    actions += _install_actions(ctx, ctx.attr.data, ctx.attr.data_dest,
+                                ctx.attr.data_strip_prefix)
     actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
                                 ctx.attr.hdr_strip_prefix)
 
@@ -241,6 +252,8 @@ def _install_impl(ctx):
     files = ctx.runfiles(files = [a.src for a in actions])
     return InstallInfo(install_actions = actions, runfiles = files)
 
+# TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better
+# default destinations.
 install = rule(
     attrs = {
         "deps": attr.label_list(providers = ["install_actions"]),
@@ -248,6 +261,11 @@ install = rule(
         "doc_dest": attr.string(default = "share/doc"),
         "doc_strip_prefix": attr.string_list(),
         "license_docs": attr.label_list(allow_files = True),
+        "data": attr.label_list(allow_files = True),
+        "data_dest": attr.string(default = "share"),
+        "data_strip_prefix": attr.string_list(),
+        "guess_data": attr.string(default = "NONE"),
+        "guess_data_exclude": attr.string_list(),
         "hdrs": attr.label_list(allow_files = True),
         "hdr_dest": attr.string(default = "include"),
         "hdr_strip_prefix": attr.string_list(),
@@ -264,7 +282,7 @@ install = rule(
         "java_strip_prefix": attr.string_list(),
         "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
-        "allowed_externals": attr.label_list(),
+        "allowed_externals": attr.label_list(allow_files = True),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -291,21 +309,30 @@ the ``allowed_externals`` argument may be used to specify a list of externals
 whose files it is okay to install, which will suppress the warning.
 
 Note:
-    By default, headers to be installed must be explicitly listed. This is to
-    work around an issue where Bazel does not appear to provide any mechanism
-    to obtain the public headers of a target at rule instantiation. The
-    ``guess_hdrs`` parameter may be used to tell ``install`` to guess at what
-    headers will be installed. Possible values are:
+    By default, headers and resource files to be installed must be explicitly
+    listed. This is to work around an issue where Bazel does not appear to
+    provide any mechanism to obtain the public headers of a target, nor the
+    *direct* data files of a target, at rule instantiation. The ``guess_hdrs``
+    and ``guess_data`` parameters may be used to tell ``install`` to guess at
+    what headers and/or resource files will be installed. Possible values are:
 
-    * ``"NONE"``: Only install headers which are explicitly listed by ``hdrs``.
-    * ``PACKAGE``:  For each target, install those headers which are used by
-      the target and owned by a target in the same package.
-    * ``WORKSPACE``: For each target, install those headers which are used by
-      the target and owned by a target in the same workspace.
-    * ``EVERYTHING``: Install all headers used by the target.
+    * ``"NONE"``: Only install files which are explicitly listed (i.e. by
+      ``hdrs`` or ``data``).
+    * ``PACKAGE``:  For each target, install those files which are used by the
+      target and owned by a target in the same package.
+    * ``WORKSPACE``: For each target, install those files which are used by the
+      target and owned by a target in the same workspace.
+    * ``EVERYTHING``: Install all headers/resources used by the target.
 
-    The headers considered are *all* headers transitively used by the target.
-    Any option other than ``NONE`` is also likely to install private headers.
+    The headers and resource files considered are *all* headers or resource
+    files transitively used by the target. Any option other than ``NONE`` is
+    also likely to install private headers, and may install resource files used
+    by other targets. In either case, this may result in the same file being
+    considered for installation more than once.
+
+    Note also that, because Bazel includes *all* run-time dependencies —
+    including e.g. shared libraries — in a target's ``runfiles``, only *source*
+    artifacts are considered when guessing resource files.
 
 Args:
     deps: List of other install rules that this rule should include.
@@ -313,6 +340,12 @@ Args:
     doc_dest: Destination for documentation files (default = "share/doc").
     doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
+    guess_data: See note.
+    guess_data_exclude: List of resources found by ``guess_data`` to exclude
+        from installation.
+    data: List of (platform-independent) resource files to install.
+    data_dest: Destination for resource files (default = "share").
+    data_strip_prefix: List of prefixes to remove from resource paths.
     guess_hdrs: See note.
     guess_hdrs_exclude: List of headers found by ``guess_hdrs`` to exclude from
         installation.
