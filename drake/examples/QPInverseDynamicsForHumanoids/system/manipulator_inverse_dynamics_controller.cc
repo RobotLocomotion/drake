@@ -10,7 +10,6 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram_builder.h"
-
 #include "drake/systems/lcm/translator_system.h"
 
 namespace drake {

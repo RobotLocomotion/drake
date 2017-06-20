@@ -30,6 +30,11 @@ class PoseTranslator
     return default_msg_;
   }
 
+  /**
+   * Decodes @p msg into @p data. Note that the quaternion part in @p msg is
+   * normalized first.
+   * @p data cannot be nullptr.
+   */
   void Decode(const robotlocomotion::pose_t& msg,
               Isometry3<T>* data) const override {
     Quaternion<T> tmp_rot;
@@ -41,6 +46,9 @@ class PoseTranslator
     data->makeAffine();
   }
 
+  /**
+   * Encodes @p data into @p msg. @p msg cannot be nullptr.
+   */
   void Encode(const Isometry3<T>& data,
               robotlocomotion::pose_t* msg) const override {
     point_translator_.Encode(data.translation(), &(msg->position));

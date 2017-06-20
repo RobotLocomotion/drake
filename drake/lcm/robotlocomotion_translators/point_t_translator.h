@@ -23,6 +23,9 @@ class PointTranslator
     return default_msg_;
   }
 
+  /**
+   * Decodes @p msg into @p data. @p data cannot be nullptr.
+   */
   void Decode(const robotlocomotion::point_t& msg,
               Vector3<T>* data) const override {
     (*data)[0] = static_cast<T>(msg.x);
@@ -30,6 +33,9 @@ class PointTranslator
     (*data)[2] = static_cast<T>(msg.z);
   }
 
+  /**
+   * Encodes @p data into @p msg. @p msg cannot be nullptr.
+   */
   void Encode(const Vector3<T>& data,
               robotlocomotion::point_t* msg) const override {
     msg->x = static_cast<double>(data[0]);

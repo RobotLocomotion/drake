@@ -38,6 +38,9 @@ class QuaternionTranslator
     data->normalize();
   }
 
+  /**
+   * Encodes @p data into @p msg. @p msg cannot be nullptr.
+   */
   void Encode(const Quaternion<T>& data,
               robotlocomotion::quaternion_t* msg) const override {
     msg->w = data.w();
