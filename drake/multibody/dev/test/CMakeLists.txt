@@ -13,7 +13,7 @@ if(gurobi_FOUND)
     target_link_libraries(global_inverse_kinematics_test
             drakeGlobalInverseKinematicsTest)
 
-    drake_add_cc_test(NAME global_inverse_kinematics_reachable_test SIZE medium)
+    drake_add_cc_test(NAME global_inverse_kinematics_reachable_test SIZE large)
     target_link_libraries(global_inverse_kinematics_reachable_test
             drakeGlobalInverseKinematicsTest)
 
