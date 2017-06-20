@@ -1,22 +1,19 @@
-drake_add_matlab_test(NAME examples/PR2/drawPR2 OPTIONAL bullet COMMAND drawPR2)
-drake_add_matlab_test(NAME examples/PR2/runSaggitalPassive COMMAND runSaggitalPassive)  # FIXME: see #3313
+#drake_add_matlab_test(NAME examples/PR2/drawPR2 OPTIONAL bullet COMMAND drawPR2)
+#drake_add_matlab_test(NAME examples/PR2/runSaggitalPassive COMMAND runSaggitalPassive)  # FIXME: see #3313
 # Attempt to only add the test when not in the OPEN_SOURCE CI configuration
 # FIXME: see #3444
-if (WITH_IRIS OR WITH_SEDUMI)
-    drake_add_matlab_test(NAME examples/PR2/runPassive COMMAND runPassive SIZE large)
-endif ()
+#if (WITH_IRIS OR WITH_SEDUMI)
+    #drake_add_matlab_test(NAME examples/PR2/runPassive COMMAND runPassive SIZE large)
+#endif ()
 
 if (lcm_FOUND)
-    # Defines a shared library for use by KUKA iiwa world demos based on
-    # System 2.0.
     add_library_with_exports(LIB_NAME drakePR2 SOURCE_FILES
-            simulation_utils/world_sim_tree_builder.cc simulation_utils/sim_diagram_builder.cc)
+            lcm_utils/robot_state_lcm.cc simulation_utils/world_sim_tree_builder.cc simulation_utils/sim_diagram_builder.cc)
     target_link_libraries(drakePR2
             drakeLcmSystem
             drakeLCMUtil
             drakeMultibodyParsers
             drakeRigidBodyPlant
-            drakeSimDiagramBuilder
             drakeSystemAnalysis
             drakeSystemFramework
             drakeSystemPrimitives
@@ -25,7 +22,7 @@ if (lcm_FOUND)
             gflags
             spruce)
     drake_install_libraries(drakePR2)
-    drake_install_headers(
+    drake_install_headers(lcm_utils/robot_state_lcm.h
             simulation_utils/world_sim_tree_builder.h simulation_utils/sim_diagram_builder.h)
     drake_install_pkg_config_file(drake-pr2
             TARGET drakePR2
@@ -46,9 +43,7 @@ if (lcm_FOUND)
 
     add_executable(pr2_simulation pr2_simulation.cc)
     target_link_libraries(pr2_simulation
-            drakeKukaIiwaArmCommon
             drakePR2
-            drakeSimDiagramBuilder
             drakeLcmSystem
             drakeMultibodyParsers
             drakeRigidBodyPlant
@@ -60,8 +55,4 @@ if (lcm_FOUND)
             drakeIK
             gflags)
 
-    if (snopt_FOUND)
-        drake_add_test(NAME controlled_kuka_demo
-                COMMAND controlled_kuka_demo)
-    endif ()
 endif ()

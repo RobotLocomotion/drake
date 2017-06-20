@@ -22,6 +22,15 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
 
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_robot_state.hpp"
+#include "drake/examples/PR2/lcm_utils/robot_state_lcm.h"
+//#include "drake/lcmt_iiwa_command.hpp"
+//#include "drake/lcmt_iiwa_status.hpp"
+//#include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -40,26 +49,18 @@ namespace drake {
 /*
                 unique_ptr <PiecewisePolynomialTrajectory> MakePlan(std::unique_ptr <RigidBodyTree<double>> tree) {
 
-                    //auto tree = make_unique<RigidBodyTree<double>>();
-                    //parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-                    //GetDrakePath() + "/examples/PR2/pr2_drake_planning.urdf", multibody::joints::kFixed, tree.get());
-                    //kuka_iiwa_arm::CreateTreedFromFixedModelAtPose(kUrdfPath, tree.get());
-
-                    // Creates a basic pointwise IK trajectory for moving the iiwa arm.
-                    // It starts in the zero configuration (straight up).
-                    //std::unique_ptr<RigidBodyTree<double>> tree = make_unique<RigidBodyTree<double>>(plant->get_rigid_body_tree());
-
                     VectorXd zero_conf = tree->getZeroConfiguration();
                     VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
                     VectorXd joint_ub = zero_conf + VectorXd::Constant(7, 0.01);
 
                     // Defines an end effector constraint and makes it active for the time span
                     // from 1 to 3 seconds.
-                    Vector3d pos_end(0.6, 0, 0.325);
-                    Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
-                    Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
+
+                    Vector3d pos_end(0.5, 0.5, 0.9);
+                    Vector3d pos_lb = pos_end - Vector3d::Constant(0.05);
+                    Vector3d pos_ub = pos_end + Vector3d::Constant(0.05);
                     WorldPositionConstraint wpc1(tree.get(),
-                                                 tree->FindBodyIndex("iiwa_link_ee"), //"r_wrist_roll_link"),
+                                                 tree->FindBodyIndex("l_wrist_roll_link"),
                                                  Vector3d::Zero(), pos_lb, pos_ub,
                                                  Vector2d(1, 20));
 
@@ -112,9 +113,13 @@ namespace drake {
                     // Adds models to the simulation builder. Instances of these models can be
                     // subsequently added to the world.
                     tree_builder->StoreModel("pr2", kUrdfPath);
+                    //tree_builder->StoreModel("object",
+                                             //"/../../../../../../../../../../../home/tristanthrush/FakeDesktop/spartan/apps/bhpn_drake_interface/off_to_drake/soda.urdf");
                     pr2->clear();
-                    int id = tree_builder->AddFixedModelInstance("pr2", Vector3<double>(0, 0, 0));
-                    pr2->push_back(tree_builder->get_model_info_for_instance(id));
+                    int pr2_id = tree_builder->AddFixedModelInstance("pr2", Vector3<double>(0, 0, 0));
+                    //int object_id = tree_builder->AddFixedModelInstance("object", Vector3<double>(2, 0, 0));
+                    pr2->push_back(tree_builder->get_model_info_for_instance(pr2_id));
+                    //pr2->push_back(tree_builder->get_model_info_for_instance(object_id));
                     tree_builder->AddGround();
                     return tree_builder->Build();
                 }
@@ -123,34 +128,41 @@ namespace drake {
                 void main() {
 
                     //Initialize the robot in the world with the ground, and the visualizer
-                    std::string kUrdfPath = "/examples/PR2/pr2_drake_planning.urdf";//"/examples/Acrobot/Acrobot.urdf";//"/examples/Atlas/urdf/atlas_convex_hull.urdf";/*/"/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
+                    std::string kUrdfPath = /*"/../../../../../../../../../../../home/tristanthrush/FakeDesktop/spartan/apps/bhpn_drake_interface/off_to_drake/soda.urdf";*/"/examples/PR2/pr2_fixed.urdf";//"/examples/Acrobot/Acrobot.urdf";//"/examples/Atlas/urdf/atlas_convex_hull.urdf";//"/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
                     drake::lcm::DrakeLcm lcm;
                     std::vector <ModelInstanceInfo<double>> pr2_info;
                     SimDiagramBuilder<double> builder;
                     systems::DiagramBuilder<double> *diagram_builder = builder.get_mutable_builder();
                     systems::RigidBodyPlant<double> *plant = builder.AddPlant(build_pr2_tree(&pr2_info, kUrdfPath));
                     const int num_actuators = plant->actuator_command_input_port().size();
+                    const int num_joints = plant->get_rigid_body_tree().get_num_actuators();
                     builder.AddVisualizer(&lcm);
 
+                    std::cout << num_actuators << "\n";
+                    std::cout << num_joints << "\n";
+
                     //Uncontrolled
-                    /*
+/*
                     auto constant_zero_source = diagram_builder->template AddSystem<systems::ConstantVectorSource < double>>(VectorX<double>::Zero(num_actuators));
                     diagram_builder->Connect(constant_zero_source->get_output_port(), plant->actuator_command_input_port());
-                    */
 
+*/
                     //Controller
                     const VectorX<double> kp = VectorX<double>::Constant(num_actuators, 300.0);
                     const VectorX<double> ki = VectorX<double>::Constant(num_actuators, 0.0);
-                    const VectorX<double> kd = VectorX<double>::Constant(num_actuators, 5.0);
+                    const VectorX<double> kd = VectorX<double>::Constant(num_actuators, 0.0);
+                    std::unique_ptr<systems::PidController<double>> controller_ptr =
+                            std::make_unique<systems::PidController<double>>(plant->get_rigid_body_tree().B.inverse(),
+                                                                   MatrixX<double>::Identity(2 * kp.size(), 2 * kp.size()), kp, ki, kd);
                     auto controller =
-                            builder.AddController < systems::InverseDynamicsController < double >> (
-                                    pr2_info[0].instance_id, plant->get_rigid_body_tree(), kp, ki, kd,
-                                            false);
+                            builder.AddController < systems::PidController < double >> (
+                                    pr2_info[0].instance_id, std::move(controller_ptr));
 
                     //To give the controller zeros
+                    /*
                     auto constant_zero_source = diagram_builder->template AddSystem<systems::ConstantVectorSource < double>>(VectorX<double>::Zero(controller->get_input_port_desired_state().size()));
                     diagram_builder->Connect(constant_zero_source->get_output_port(), controller->get_input_port_desired_state());
-
+*/
                     //To give the controller the trajectory from the ik planner
                     /*
                     std::unique_ptr <PiecewisePolynomialTrajectory> traj = MakePlan(
@@ -163,13 +175,45 @@ namespace drake {
 
                     diagram_builder->Connect(traj_src->get_output_port(), controller->get_input_port_desired_state());
                     */
+                    auto command_sub = diagram_builder->AddSystem(
+                            systems::lcm::LcmSubscriberSystem::Make<lcmt_robot_state>(
+                                    "BHPN_ROBOT_STATE_COMMAND", &lcm));
+                    command_sub->set_name("command_subscriber");
+                    auto command_receiver =
+                            diagram_builder->AddSystem<RobotStateReceiver>(num_joints);
+                    command_receiver->set_name("command_receiver");
+                    auto status_pub = diagram_builder->AddSystem(
+                            systems::lcm::LcmPublisherSystem::Make<lcmt_robot_state>(
+                                    "DRAKE_ROBOT_STATE_MEASURED", &lcm));
+                    status_pub->set_name("status_publisher");
+                    status_pub->set_publish_period(lcmStatusPeriod);
+                    auto status_sender = diagram_builder->AddSystem<RobotStateSender>(num_joints);
+                    status_sender->set_name("status_sender");
+
+                    diagram_builder->Connect(command_sub->get_output_port(0),
+                                          command_receiver->get_input_port(0));
+                    diagram_builder->Connect(command_receiver->get_output_port(0),
+                                          controller->get_input_port_desired_state());
+                    diagram_builder->Connect(plant->get_output_port(0),
+                                          status_sender->get_state_input_port());
+                    diagram_builder->Connect(command_receiver->get_output_port(0),
+                                          status_sender->get_command_input_port());
+                    diagram_builder->Connect(status_sender->get_output_port(0),
+                                          status_pub->get_input_port(0));
 
                     // Simulates.
+                    lcm.StartReceiveThread();
                     std::unique_ptr <systems::Diagram<double>> diagram = builder.Build();
                     systems::Simulator<double> simulator(*diagram);
                     simulator.Initialize();
                     simulator.set_target_realtime_rate(1.0);
-                    simulator.StepTo(5);
+/*
+                    command_receiver->set_initial_position(
+                            diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
+                                                            command_receiver),
+                            VectorX<double>::Zero(num_actuators));
+*/
+                    simulator.StepTo(50000);
                 }
             }  // namespace
         }  // namespace pr2

@@ -195,7 +195,7 @@
     </controller:gazebo_ros_p3d>
     <canonicalBody>base_footprint</canonicalBody>
   </gazebo>
-  <joint name="torso_lift_joint" type="prismatic">
+  <joint name="torso_lift_joint" type="fixed"> <!--prismatic-->
     <axis xyz="0 0 1"/>
     <limit effort="10000" lower="0.0" upper="0.31" velocity="0.013"/>
     <!-- alpha tested velocity and effort limits -->
@@ -286,7 +286,7 @@
   </gazebo>
   <!-- The xacro preprocesser will replace the parameters below, such as ${cal_head_x}, with
        numerical values that were specified in common.xacro which was included above -->
-  <joint name="head_pan_joint" type="revolute">
+  <joint name="head_pan_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <limit effort="2.645" lower="-3.007" upper="3.007" velocity="6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -326,7 +326,7 @@
     <joint name="head_pan_joint"/>
     <mechanicalReduction>6.0</mechanicalReduction>
   </transmission>
-  <joint name="head_tilt_joint" type="revolute">
+  <joint name="head_tilt_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.471238" upper="1.39626" velocity="5"/>
     <!-- alpha tested velocity and effort limits -->
@@ -861,7 +861,7 @@
     <material value="Gazebo/White"/>
     <turnGravityOff value="true"/>
   </gazebo>
-  <joint name="laser_tilt_mount_joint" type="revolute">
+  <joint name="laser_tilt_mount_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <limit effort="0.65" lower="-0.7854" upper="1.48353" velocity="10.0"/>
     <!-- alpha tested velocity and effort limits -->
@@ -951,7 +951,7 @@
     <mechanicalReduction>-6.05</mechanicalReduction>
   </transmission>
   <!-- This is a common convention, to use a reflect parameter that equals +-1 to distinguish left from right -->
-  <joint name="r_shoulder_pan_joint" type="revolute">
+  <joint name="r_shoulder_pan_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.0 -0.188 0.0"/>
     <!-- transform from parent link to this joint frame -->
@@ -985,7 +985,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_shoulder_lift_joint" type="revolute">
+  <joint name="r_shoulder_lift_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Limits updated from Function's CAD values as of 2009_02_24 (link_data.xls) -->
     <limit effort="30" lower="-0.5236" upper="1.3963" velocity="2.082"/>
@@ -1018,7 +1018,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_upper_arm_roll_joint" type="revolute">
+  <joint name="r_upper_arm_roll_joint" type="fixed"> <!--revolute-->
     <axis xyz="1 0 0"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="r_shoulder_lift_link"/>
@@ -1151,7 +1151,7 @@
     </sensor:contact>
     <turnGravityOff>true</turnGravityOff>
   </gazebo>
-  <joint name="r_forearm_roll_joint" type="continuous">
+  <joint name="r_forearm_roll_joint" type="fixed"> <!--continuous-->
     <axis xyz="1 0 0"/>
     <limit effort="30" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1197,7 +1197,7 @@
     <joint name="r_forearm_roll_joint"/>
     <mechanicalReduction>-90.5142857143</mechanicalReduction>
   </transmission>
-  <joint name="r_elbow_flex_joint" type="revolute">
+  <joint name="r_elbow_flex_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Note: Overtravel limits are 140, -7 degrees instead of 133, 0 -->
     <limit effort="30" lower="-2.3213" upper="0.00" velocity="3.3"/>
@@ -1404,7 +1404,7 @@
     <rollJoint mechanicalReduction="1.0" name="r_wrist_roll_joint"/>
   </transmission>
   -->
-  <joint name="l_shoulder_pan_joint" type="revolute">
+  <joint name="l_shoulder_pan_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.0 0.188 0.0"/>
     <!-- transform from parent link to this joint frame -->
@@ -1438,7 +1438,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_shoulder_lift_joint" type="revolute">
+  <joint name="l_shoulder_lift_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Limits updated from Function's CAD values as of 2009_02_24 (link_data.xls) -->
     <limit effort="30" lower="-0.5236" upper="1.3963" velocity="2.082"/>
@@ -1471,7 +1471,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_upper_arm_roll_joint" type="revolute">
+  <joint name="l_upper_arm_roll_joint" type="revolute"> <!--revolute-->
     <axis xyz="1 0 0"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="l_shoulder_lift_link"/>
@@ -1604,7 +1604,7 @@
     </sensor:contact>
     <turnGravityOff>true</turnGravityOff>
   </gazebo>
-  <joint name="l_forearm_roll_joint" type="continuous">
+  <joint name="l_forearm_roll_joint" type="continuous"> <!--continuous-->
     <axis xyz="1 0 0"/>
     <limit effort="30" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1650,7 +1650,7 @@
     <joint name="l_forearm_roll_joint"/>
     <mechanicalReduction>-90.5142857143</mechanicalReduction>
   </transmission>
-  <joint name="l_elbow_flex_joint" type="revolute">
+  <joint name="l_elbow_flex_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Note: Overtravel limits are 140, -7 degrees instead of 133, 0 -->
     <limit effort="30" lower="-2.3213" upper="0.00" velocity="3.3"/>

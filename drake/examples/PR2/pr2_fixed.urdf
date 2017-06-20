@@ -179,7 +179,7 @@
       </controller:gazebo_ros_laser>
     </sensor:ray>
   </gazebo>
-  <joint name="fl_caster_rotation_joint" type="continuous">
+  <joint name="fl_caster_rotation_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
@@ -216,7 +216,7 @@
     <joint name="fl_caster_rotation_joint"/>
     <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="fl_caster_l_wheel_joint" type="continuous">
+  <joint name="fl_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -259,7 +259,7 @@
     <joint name="fl_caster_l_wheel_joint"/>
     <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="fl_caster_r_wheel_joint" type="continuous">
+  <joint name="fl_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -305,7 +305,7 @@
   <gazebo reference="fl_caster_rotation_link">
     <material value="PR2/caster_texture"/>
   </gazebo>
-  <joint name="fr_caster_rotation_joint" type="continuous">
+  <joint name="fr_caster_rotation_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
@@ -342,7 +342,7 @@
     <joint name="fr_caster_rotation_joint"/>
     <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="fr_caster_l_wheel_joint" type="continuous">
+  <joint name="fr_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -385,7 +385,7 @@
     <joint name="fr_caster_l_wheel_joint"/>
     <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="fr_caster_r_wheel_joint" type="continuous">
+  <joint name="fr_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -431,7 +431,7 @@
   <gazebo reference="fr_caster_rotation_link">
     <material value="PR2/caster_texture"/>
   </gazebo>
-  <joint name="bl_caster_rotation_joint" type="continuous">
+  <joint name="bl_caster_rotation_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
@@ -468,7 +468,7 @@
     <joint name="bl_caster_rotation_joint"/>
     <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="bl_caster_l_wheel_joint" type="continuous">
+  <joint name="bl_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -511,7 +511,7 @@
     <joint name="bl_caster_l_wheel_joint"/>
     <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="bl_caster_r_wheel_joint" type="continuous">
+  <joint name="bl_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -557,7 +557,7 @@
   <gazebo reference="bl_caster_rotation_link">
     <material value="PR2/caster_texture"/>
   </gazebo>
-  <joint name="br_caster_rotation_joint" type="continuous">
+  <joint name="br_caster_rotation_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested velocity and effort limits -->
@@ -594,7 +594,7 @@
     <joint name="br_caster_rotation_joint"/>
     <mechanicalReduction>-79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="br_caster_l_wheel_joint" type="continuous">
+  <joint name="br_caster_l_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -637,7 +637,7 @@
     <joint name="br_caster_l_wheel_joint"/>
     <mechanicalReduction>79.2380952381</mechanicalReduction>
   </transmission>
-  <joint name="br_caster_r_wheel_joint" type="continuous">
+  <joint name="br_caster_r_wheel_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
     <!-- alpha tested effort and velocity limits -->
@@ -712,7 +712,7 @@
     </controller:gazebo_ros_p3d>
     <canonicalBody>base_footprint</canonicalBody>
   </gazebo>
-  <joint name="torso_lift_joint" type="prismatic">
+  <joint name="torso_lift_joint" type="prismatic"> <!--prismatic-->
     <axis xyz="0 0 1"/>
     <limit effort="10000" lower="0.0" upper="0.31" velocity="0.013"/>
     <!-- alpha tested velocity and effort limits -->
@@ -803,7 +803,7 @@
   </gazebo>
   <!-- The xacro preprocesser will replace the parameters below, such as ${cal_head_x}, with
        numerical values that were specified in common.xacro which was included above -->
-  <joint name="head_pan_joint" type="revolute">
+  <joint name="head_pan_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <limit effort="2.645" lower="-3.007" upper="3.007" velocity="6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -843,7 +843,7 @@
     <joint name="head_pan_joint"/>
     <mechanicalReduction>6.0</mechanicalReduction>
   </transmission>
-  <joint name="head_tilt_joint" type="revolute">
+  <joint name="head_tilt_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.471238" upper="1.39626" velocity="5"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1378,7 +1378,7 @@
     <material value="Gazebo/White"/>
     <turnGravityOff value="true"/>
   </gazebo>
-  <joint name="laser_tilt_mount_joint" type="revolute">
+  <joint name="laser_tilt_mount_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <limit effort="0.65" lower="-0.7854" upper="1.48353" velocity="10.0"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1799,7 +1799,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_wrist_flex_joint" type="revolute">
+  <joint name="r_wrist_flex_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="10" lower="-2.094" upper="0.0" velocity="3.078"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1831,7 +1831,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_wrist_roll_joint" type="continuous">
+  <joint name="r_wrist_roll_joint" type="fixed">
     <axis xyz="1 0 0"/>
     <limit effort="10" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1984,7 +1984,7 @@
     <child link="r_gripper_tool_frame"/>
   </joint>
   <link name="r_gripper_tool_frame"/>
-  <joint name="r_gripper_l_finger_joint" type="revolute">
+  <joint name="r_gripper_l_finger_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.2"/>
@@ -2013,7 +2013,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="r_gripper_r_finger_joint" type="revolute">
+  <joint name="r_gripper_r_finger_joint" type="fixed">
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.07691 -0.01 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -2043,7 +2043,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="r_gripper_l_parallel_root_joint" type="revolute">
+  <joint name="r_gripper_l_parallel_root_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.05891 0.031 0"/>
     <dynamics damping="0.2"/>
@@ -2052,7 +2052,7 @@
     <child link="r_gripper_l_parallel_link"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
   </joint>
-  <joint name="r_gripper_r_parallel_root_joint" type="revolute">
+  <joint name="r_gripper_r_parallel_root_joint" type="fixed">
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.05891 -0.031 0"/>
     <dynamics damping="0.2"/>
@@ -2107,7 +2107,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="r_gripper_l_finger_tip_joint" type="revolute">
+  <joint name="r_gripper_l_finger_tip_joint" type="fixed">
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -2137,7 +2137,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="r_gripper_r_finger_tip_joint" type="revolute">
+  <joint name="r_gripper_r_finger_tip_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -2315,7 +2315,7 @@
     <turnGravityOff>true</turnGravityOff>
     <material value="PR2/Red"/>
   </gazebo>
-  <joint name="r_gripper_joint" type="prismatic">
+  <joint name="r_gripper_joint" type="fixed"> <!-- prismatic -->
     <parent link="r_gripper_r_finger_tip_link"/>
     <child link="r_gripper_l_finger_tip_frame"/>
     <axis xyz="0 1 0"/>
@@ -2351,12 +2351,11 @@
       <interface:position name="p3d_r_gripper_palm_position_iface"/>
     </controller:gazebo_ros_p3d>
   </gazebo>
-  <!--
-  <transmission name="r_gripper_trans" type="PR2GripperTransmission">
+  <transmission name="r_gripper_trans" type="GripperTransmission"> <!-- GripperTransmission -->
     <actuator name="r_gripper_motor"/>
     <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="r_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
     <!-- if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have
-           gripper transmission apply torque directly to prismatic joint -->
+           gripper transmission apply torque directly to fixed joint -->
     <use_simulated_gripper_joint/>
     <passive_joint name="r_gripper_l_finger_joint"/>
     <passive_joint name="r_gripper_r_finger_joint"/>
@@ -2364,8 +2363,8 @@
     <passive_joint name="r_gripper_l_finger_tip_joint"/>
     <passive_joint name="r_gripper_r_parallel_root_joint"/>
     <passive_joint name="r_gripper_l_parallel_root_joint"/>
+    <joint name="r_gripper_joint"/>
   </transmission>
-  -->
   <joint name="l_shoulder_pan_joint" type="revolute">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.0 0.188 0.0"/>
@@ -2697,7 +2696,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_wrist_flex_joint" type="revolute">
+  <joint name="l_wrist_flex_joint" type="fixed">
     <axis xyz="0 1 0"/>
     <limit effort="10" lower="-2.094" upper="0.0" velocity="3.078"/>
     <!-- alpha tested velocity and effort limits -->
@@ -2729,7 +2728,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_wrist_roll_joint" type="continuous">
+  <joint name="l_wrist_roll_joint" type="fixed">
     <axis xyz="1 0 0"/>
     <limit effort="10" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -2882,7 +2881,7 @@
     <child link="l_gripper_tool_frame"/>
   </joint>
   <link name="l_gripper_tool_frame"/>
-  <joint name="l_gripper_l_finger_joint" type="revolute">
+  <joint name="l_gripper_l_finger_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
     <dynamics damping="0.2"/>
@@ -2911,7 +2910,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="l_gripper_r_finger_joint" type="revolute">
+  <joint name="l_gripper_r_finger_joint" type="fixed">
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.07691 -0.01 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -2941,7 +2940,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="l_gripper_l_parallel_root_joint" type="revolute">
+  <joint name="l_gripper_l_parallel_root_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.05891 0.031 0"/>
     <dynamics damping="0.2"/>
@@ -2950,7 +2949,7 @@
     <child link="l_gripper_l_parallel_link"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
   </joint>
-  <joint name="l_gripper_r_parallel_root_joint" type="revolute">
+  <joint name="l_gripper_r_parallel_root_joint" type="fixed">
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.05891 -0.031 0"/>
     <dynamics damping="0.2"/>
@@ -3005,7 +3004,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="l_gripper_l_finger_tip_joint" type="revolute">
+  <joint name="l_gripper_l_finger_tip_joint" type="fixed">
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -3035,7 +3034,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="l_gripper_r_finger_tip_joint" type="revolute">
+  <joint name="l_gripper_r_finger_tip_joint" type="fixed">
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -3213,7 +3212,7 @@
     <turnGravityOff>true</turnGravityOff>
     <material value="PR2/Red"/>
   </gazebo>
-  <joint name="l_gripper_joint" type="prismatic">
+  <joint name="l_gripper_joint" type="fixed"> <!--prismatic-->
     <parent link="l_gripper_r_finger_tip_link"/>
     <child link="l_gripper_l_finger_tip_frame"/>
     <axis xyz="0 1 0"/>
@@ -3249,12 +3248,11 @@
       <interface:position name="p3d_l_gripper_palm_position_iface"/>
     </controller:gazebo_ros_p3d>
   </gazebo>
-  <--
-  <transmission name="l_gripper_trans" type="PR2GripperTransmission">
+  <transmission name="l_gripper_trans" type="SimpleTransmission"> <!-- GripperTransmission -->
     <actuator name="l_gripper_motor"/>
     <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="l_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
     <!-- if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have
-           gripper transmission apply torque directly to prismatic joint -->
+           gripper transmission apply torque directly to fixed joint -->
     <use_simulated_gripper_joint/>
     <passive_joint name="l_gripper_l_finger_joint"/>
     <passive_joint name="l_gripper_r_finger_joint"/>
@@ -3262,8 +3260,8 @@
     <passive_joint name="l_gripper_l_finger_tip_joint"/>
     <passive_joint name="l_gripper_r_parallel_root_joint"/>
     <passive_joint name="l_gripper_l_parallel_root_joint"/>
+    <joint name="l_gripper_joint"/>
   </transmission>
-  -->
   <!-- Forearm cam Position is a guess, based on full robot calibration -->
   <!-- Forearm cam Orientation is from Function -->
   <joint name="l_forearm_cam_frame_joint" type="fixed">

@@ -2107,7 +2107,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="r_gripper_l_finger_tip_joint" type="revolute">
+  <joint name="r_gripper_l_finger_tip_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -2137,7 +2137,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="r_gripper_r_finger_tip_joint" type="revolute">
+  <joint name="r_gripper_r_finger_tip_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -3004,7 +3004,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="l_gripper_l_finger_tip_joint" type="revolute">
+  <joint name="l_gripper_l_finger_tip_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 -1"/>
     <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
@@ -3034,7 +3034,7 @@
       <verbose value="Yes"/>
     </collision>
   </link>
-  <joint name="l_gripper_r_finger_tip_joint" type="revolute">
+  <joint name="l_gripper_r_finger_tip_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
     <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
