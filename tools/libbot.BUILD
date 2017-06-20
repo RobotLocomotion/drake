@@ -477,9 +477,9 @@ install(
         "bot2-param/lcmtypes",
     ],
     rename = {
-        "share/java/liblcmtypes_bot2_frames_java.jar": "lcmtypes_bot2_frames.jar",
-        "share/java/liblcmtypes_bot2_lcmgl_java.jar": "lcmtypes_bot2_lcmgl.jar",
-        "share/java/liblcmtypes_bot2_param_java.jar": "lcmtypes_bot2_param.jar",
+        "share/java/liblcmtypes_bot2_frames_java.jar": "lcmtypes_bot2_frames.jar",  # noqa
+        "share/java/liblcmtypes_bot2_lcmgl_java.jar": "lcmtypes_bot2_lcmgl.jar",  # noqa
+        "share/java/liblcmtypes_bot2_param_java.jar": "lcmtypes_bot2_param.jar",  # noqa
     },
     targets = [
         ":lcmtypes_bot2_frames_c",

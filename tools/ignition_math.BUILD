@@ -22,12 +22,12 @@ cmake_configure_file(
     out = "include/ignition/math/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
-        # It would be nice to get this information directly from CMakeLists.txt,
-        # but it ends up being too hard.  ignition-math sets a project name
-        # as "ignition-math<version>", and then uses CMake substring to pick
-        # that version out.  We'd have to extend the cmake_configure_file
-        # functionality to do the same, and I'm not sure it is worth it.  We
-        # just hard code the major version here.
+        # It would be nice to get this information directly from
+        # CMakeLists.txt, but it ends up being too hard.  ignition-math sets a
+        # project name as "ignition-math<version>", and then uses CMake
+        # substring to pick that version out.  We'd have to extend the
+        # cmake_configure_file functionality to do the same, and I'm not sure
+        # it is worth it.  We just hard code the major version here.
         "PROJECT_NAME_NO_VERSION=ignition-math",
         "PROJECT_MAJOR_VERSION=3",
         "PROJECT_VERSION_FULL=3.2.0",
@@ -133,7 +133,8 @@ cmake_config(
     version_file = ":config",
 )
 
-install_cmake_config(package = CMAKE_PACKAGE)  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",

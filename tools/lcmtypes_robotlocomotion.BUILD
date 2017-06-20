@@ -75,7 +75,7 @@ install(
     license_docs = ["LICENSE.txt"],
     py_strip_prefix = ["lcmtypes"],
     rename = {
-        "share/java/liblcmtypes_robotlocomotion_java.jar": "lcmtypes_robotlocomotion.jar",
+        "share/java/liblcmtypes_robotlocomotion_java.jar": "lcmtypes_robotlocomotion.jar",  # noqa
     },
     targets = [
         ":lcmtypes_robotlocomotion",

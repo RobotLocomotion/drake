@@ -1,6 +1,11 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(
@@ -17,7 +22,8 @@ cc_library(
     includes = ["include"],
     linkopts = select({
         "@drake//tools:linux": ["-pthread"],
-        "@//conditions:default": [],  # This is a bazel-default rule, and does not need @drake//
+        # This is a bazel-default rule, and does not need @drake//
+        "@//conditions:default": [],
     }),
     deps = ["@fmt"],
 )

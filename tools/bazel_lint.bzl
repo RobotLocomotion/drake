@@ -41,6 +41,6 @@ def bazel_lint(name = "bazel_codestyle", ignore = [265, 302, 305]):
 
     _bazel_lint(
         name = name,
-        files = native.glob(["*.bzl", "BUILD", "BUILD.bazel"]),
+        files = native.glob(["*.bzl", "BUILD", "BUILD.bazel", "*.BUILD"]),
         ignore = ignore,
     )
