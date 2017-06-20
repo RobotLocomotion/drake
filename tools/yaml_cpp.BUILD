@@ -29,7 +29,8 @@ cmake_config(
     version_file = "CMakeLists.txt",
 )
 
-install_cmake_config(package = "yaml-cpp")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = "yaml-cpp")
 
 install(
     name = "install",

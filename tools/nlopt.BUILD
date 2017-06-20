@@ -1,7 +1,12 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 load("@drake//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
@@ -55,8 +60,8 @@ genrule(
         "api/nlopt.h",
     ],
     outs = ["api/nlopt.hpp"],
-    cmd = "$(location @drake//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS) 2>&1 1>log" +
-          " || (cat log && false)",
+    cmd = "$(location @drake//tools:nlopt-gen-hpp.sh) $(SRCS) $(OUTS)" +
+          " 2>&1 1>log || (cat log && false)",
     tools = ["@drake//tools:nlopt-gen-hpp.sh"],
     visibility = ["//visibility:private"],
 )
@@ -66,28 +71,81 @@ cc_library(
     srcs = [
         # This comes from a genrule above.
         "nlopt_config.h",
-    ] + (
+    ] + [
         # This list exactly matches CMakeLists.txt NLOPT_SOURCES.
-        "direct/DIRect.c direct/direct_wrap.c direct/DIRserial.c direct/DIRsubrout.c direct/direct-internal.h direct/direct.h" +
-        " cdirect/cdirect.c cdirect/hybrid.c cdirect/cdirect.h" +
-        " praxis/praxis.c praxis/praxis.h" +
-        " luksan/plis.c luksan/plip.c luksan/pnet.c luksan/mssubs.c luksan/pssubs.c luksan/luksan.h" +
-        " crs/crs.c crs/crs.h" +
-        " mlsl/mlsl.c mlsl/mlsl.h" +
-        " mma/mma.c mma/mma.h mma/ccsa_quadratic.c" +
-        " cobyla/cobyla.c cobyla/cobyla.h" +
-        " newuoa/newuoa.c newuoa/newuoa.h" +
-        " neldermead/nldrmd.c neldermead/neldermead.h neldermead/sbplx.c" +
-        " auglag/auglag.c auglag/auglag.h" +
-        " bobyqa/bobyqa.c bobyqa/bobyqa.h" +
-        " isres/isres.c isres/isres.h" +
-        " slsqp/slsqp.c slsqp/slsqp.h" +
-        " esch/esch.c esch/esch.h" +
-        " api/general.c api/options.c api/optimize.c api/deprecated.c api/nlopt-internal.h api/nlopt.h api/f77api.c api/f77funcs.h api/f77funcs_.h" +
-        " util/mt19937ar.c util/sobolseq.c util/soboldata.h util/timer.c util/stop.c util/nlopt-util.h util/redblack.c util/redblack.h util/qsort_r.c util/rescale.c" +
+        "direct/DIRect.c",
+        "direct/direct_wrap.c",
+        "direct/DIRserial.c",
+        "direct/DIRsubrout.c",
+        "direct/direct-internal.h",
+        "direct/direct.h",
+        "cdirect/cdirect.c",
+        "cdirect/hybrid.c",
+        "cdirect/cdirect.h",
+        "praxis/praxis.c",
+        "praxis/praxis.h",
+        "luksan/plis.c",
+        "luksan/plip.c",
+        "luksan/pnet.c",
+        "luksan/mssubs.c",
+        "luksan/pssubs.c",
+        "luksan/luksan.h",
+        "crs/crs.c",
+        "crs/crs.h",
+        "mlsl/mlsl.c",
+        "mlsl/mlsl.h",
+        "mma/mma.c",
+        "mma/mma.h",
+        "mma/ccsa_quadratic.c",
+        "cobyla/cobyla.c",
+        "cobyla/cobyla.h",
+        "newuoa/newuoa.c",
+        "newuoa/newuoa.h",
+        "neldermead/nldrmd.c",
+        "neldermead/neldermead.h",
+        "neldermead/sbplx.c",
+        "auglag/auglag.c",
+        "auglag/auglag.h",
+        "bobyqa/bobyqa.c",
+        "bobyqa/bobyqa.h",
+        "isres/isres.c",
+        "isres/isres.h",
+        "slsqp/slsqp.c",
+        "slsqp/slsqp.h",
+        "esch/esch.c",
+        "esch/esch.h",
+        "api/general.c",
+        "api/options.c",
+        "api/optimize.c",
+        "api/deprecated.c",
+        "api/nlopt-internal.h",
+        "api/nlopt.h",
+        "api/f77api.c",
+        "api/f77funcs.h",
+        "api/f77funcs_.h",
+        "util/mt19937ar.c",
+        "util/sobolseq.c",
+        "util/soboldata.h",
+        "util/timer.c",
+        "util/stop.c",
+        "util/nlopt-util.h",
+        "util/redblack.c",
+        "util/redblack.h",
+        "util/qsort_r.c",
+        "util/rescale.c",
         # This list exactly matches CMakeLists.txt additions for WITH_CXX.
-        " stogo/global.cc stogo/linalg.cc stogo/local.cc stogo/stogo.cc stogo/tools.cc stogo/global.h stogo/linalg.h stogo/local.h stogo/stogo_config.h stogo/stogo.h stogo/tools.h"
-    ).split(" ", None),
+        "stogo/global.cc",
+        "stogo/linalg.cc",
+        "stogo/local.cc",
+        "stogo/stogo.cc",
+        "stogo/tools.cc",
+        "stogo/global.h",
+        "stogo/linalg.h",
+        "stogo/local.h",
+        "stogo/stogo_config.h",
+        "stogo/stogo.h",
+        "stogo/tools.h",
+    ],
     hdrs = [
         "api/nlopt.h",
         ":nlopt_hpp_genrule",
