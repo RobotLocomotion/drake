@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("//tools:bazel_lint.bzl", "bazel_lint")
 load(
     "//tools:install.bzl",
     "cmake_config",
@@ -74,6 +75,13 @@ py_binary(
 py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
+)
+
+py_binary(
+    name = "bzlcodestyle",
+    srcs = ["bzlcodestyle.py"],
+    main = "bzlcodestyle.py",
+    deps = ["@pycodestyle//:pycodestyle"],
 )
 
 py_library(
@@ -359,3 +367,5 @@ config_setting(
         "cpu": "darwin",
     },
 )
+
+bazel_lint()

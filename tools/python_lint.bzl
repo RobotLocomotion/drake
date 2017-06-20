@@ -1,46 +1,55 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
-"""
-Runs the pycodestyle PEP 8 code style checker on all Python source files
-declared in rules in a BUILD file.
+#------------------------------------------------------------------------------
+# Internal helper; set up test given name and list of files. Will do nothing
+# if no files given.
+def _python_lint(name, files, ignore):
+    if files:
+        if ignore:
+            ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
 
-Example:
-    BUILD:
-        load("//tools:python_lint.bzl", "python_lint")
-
-        py_library(
-            name = "foo",
-            srcs = ["foo.py"],
+        native.py_test(
+            name = name,
+            size = "small",
+            srcs = ["@pycodestyle//:pycodestyle"],
+            data = files,
+            args = ignore + ["$(location %s)" % f for f in files],
+            main = "@pycodestyle//:pycodestyle.py",
+            srcs_version = "PY2AND3",
+            tags = ["pycodestyle"],
         )
 
-        python_lint()
-"""
+#------------------------------------------------------------------------------
+def python_lint(ignore = []):
+    """
+    Runs the pycodestyle PEP 8 code style checker on all Python source files
+    declared in rules in a BUILD file.
 
-def python_lint():
+    Args:
+        ignore: List of errors (as integers, without the 'E') to ignore
+            (default = []).
+
+    Example:
+        BUILD:
+            load("//tools:python_lint.bzl", "python_lint")
+
+            py_library(
+                name = "foo",
+                srcs = ["foo.py"],
+            )
+
+            python_lint()
+    """
+
     for rule in native.existing_rules().values():
         srcs = rule.get("srcs", ())
 
         if type(srcs) == type(()):
             src_labels = list(srcs)
 
-            py_labels = [
-                src_label for src_label in src_labels
-                if src_label.endswith(".py")
-            ]
-
-            py_locations = [
-                "$(location {})".format(py_label) for py_label in py_labels
-            ]
-
-            if len(py_locations) > 0:
-                native.py_test(
-                    name = rule["name"] + "_pycodestyle",
-                    size = "small",
-                    srcs = ["@pycodestyle//:pycodestyle"],
-                    data = py_labels,
-                    args = py_locations,
-                    main = "@pycodestyle//:pycodestyle.py",
-                    srcs_version = "PY2AND3",
-                    tags = ["pycodestyle"],
-                )
+            _python_lint(
+                name = rule["name"] + "_pycodestyle",
+                files = [s for s in src_labels if s.endswith(".py")],
+                ignore = ignore,
+            )
