@@ -195,4 +195,14 @@
     fun:_Z22btAlignedAllocInternalmi
 }
 
+{
+    <gurobi-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:mkl_serv_thread_free_buffers
+    fun:PRIVATE*
+    ...
+    fun:GRBoptimize
+}
 
