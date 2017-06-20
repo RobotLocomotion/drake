@@ -307,6 +307,7 @@ build:memcheck_everything --copt -O1
 test:memcheck_everything --test_env=GRB_LICENSE_FILE
 test:memcheck_everything --test_env=HOME
 test:memcheck_everything --test_tag_filters=-no_memcheck
+test:memcheck_everything --test_size_filters=-large
 test:memcheck_everything --run_under=//tools:valgrind
 test:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
