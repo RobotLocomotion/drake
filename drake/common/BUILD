@@ -367,7 +367,9 @@ install(
     # manually.
     runtime_dest = "libexec/drake/drake/common",
     targets = [":resource_tool"],
-    deps = ["//:install_resource_tool_data"],
+    data_dest = "share/drake",
+    guess_data = "WORKSPACE",
+    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )
 
 # === test/ ===
