@@ -34,7 +34,8 @@ cc_library(
     ],
     linkopts = select({
         "@drake//tools:linux": ["-pthread"],
-        "@//conditions:default": [],  # This is a bazel-default rule, and does not need @drake//
+        # This is a bazel-default rule, and does not need @drake//
+        "@//conditions:default": [],
     }),
     linkstatic = 1,
     visibility = ["//visibility:public"],

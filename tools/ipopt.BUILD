@@ -1,15 +1,20 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 load("@drake//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
 
 # We build IPOPT by shelling out to autotools.
 
-# We run autotools in a genrule, and only files explicitly identified as outputs
-# of that genrule can be made available to other rules. Therefore, we need a
-# list of every file in the IPOPT install.
+# We run autotools in a genrule, and only files explicitly identified as
+# outputs of that genrule can be made available to other rules. Therefore, we
+# need a list of every file in the IPOPT install.
 # See https://github.com/bazelbuild/bazel/issues/281.
 
 # find include/coin -name "*.h" -o -name "*.hpp" -o -name "*.hdd" | sort |

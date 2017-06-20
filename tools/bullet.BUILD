@@ -1,7 +1,12 @@
 # -*- python -*-
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 load("@drake//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])

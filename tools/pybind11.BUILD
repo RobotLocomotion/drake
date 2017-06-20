@@ -1,6 +1,12 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config", "install_files")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+    "install_files",
+)
 load("@drake//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
@@ -40,7 +46,8 @@ cmake_config(
     version_file = "include/pybind11/common.h",
 )
 
-install_cmake_config(package = "pybind11")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = "pybind11")
 
 install_files(
     name = "install_extra_cmake",

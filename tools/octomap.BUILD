@@ -1,6 +1,11 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -53,7 +58,8 @@ cmake_config(
     version_file = ":cmakelists_with_version",
 )
 
-install_cmake_config(package = "octomap")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = "octomap")
 
 install(
     name = "install",
