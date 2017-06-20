@@ -129,6 +129,8 @@ class HumanoidStatus {
   void UpdateKinematics(double t, const Eigen::Ref<const VectorX<double>>& q,
                         const Eigen::Ref<const VectorX<double>>& v);
 
+  void UpdateTime(double t) { time_ = t; }
+
   // Getters
   inline const RigidBodyTree<double>& robot() const { return *robot_; }
   inline const KinematicsCache<double>& cache() const { return cache_; }
