@@ -31,15 +31,6 @@ alias(
     actual = "@protobuf//:protobuf_python",
 )
 
-# TODO(jwnimmer-tri) The install.bzl should do this automatically, based on the
-# runfiles of //drake/common/resource_tool.  For now, we'll backfill manually.
-install_files(
-    name = "install_resource_tool_data",
-    dest = "share/drake",
-    files = [".drake-resource-sentinel"],
-    visibility = ["//drake/common:__pkg__"],
-)
-
 install(
     name = "install_net_sf_jchart2d_jchart2d",
     doc_dest = "share/doc/jchart2d",
