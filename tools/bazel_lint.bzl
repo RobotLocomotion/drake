@@ -10,7 +10,7 @@ def _bazel_lint(name, files, ignore):
             ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
 
         native.py_test(
-            name = name,
+            name = name + "_codestyle",
             size = "small",
             srcs = ["@drake//tools:bzlcodestyle"],
             data = files,
@@ -20,15 +20,23 @@ def _bazel_lint(name, files, ignore):
             tags = ["bzlcodestyle"],
         )
 
+        native.sh_test(
+            name = name + "_buildifier",
+            size = "small",
+            srcs = ["@drake//tools:buildifier-test.sh"],
+            data = files + ["@drake//tools:buildifier"],
+            args = ["$(location %s)" % f for f in files],
+        )
+
 #------------------------------------------------------------------------------
-def bazel_lint(name = "bazel_codestyle", ignore = [265, 302, 305]):
+def bazel_lint(name = "bazel", ignore = [265, 302, 305]):
     """
     Runs the ``bzlcodestyle`` code style checker on all Bazel files in the
     current directory. The tool is based on the ``pycodestyle`` :pep:`8` code
     style checker, but always disables certain checks while adding others.
 
     Args:
-        name: Name of the test (default = "bazel_codestyle").
+        name: Name prefix of the test (default = "bazel").
         ignore: List of errors (as integers, without the 'E') to ignore
             (default = [265, 302, 305]).
 
@@ -41,6 +49,8 @@ def bazel_lint(name = "bazel_codestyle", ignore = [265, 302, 305]):
 
     _bazel_lint(
         name = name,
+        # TODO(jwnimmer-tri) Add WORKSPACE to the list of files to find and
+        # reformat, once buildifier rules stop murdering it.
         files = native.glob(["*.bzl", "BUILD", "BUILD.bazel", "*.BUILD"]),
         ignore = ignore,
     )
