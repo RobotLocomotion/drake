@@ -219,6 +219,7 @@ install_files(
 # TODO(jamiesnape): Find an alternative to the requirement that a license file
 # must be passed to every single use of the install rule.
 DOC_DEST = "share/doc/lcm"
+
 LICENSE_DOCS = ["COPYING"]
 
 install(
