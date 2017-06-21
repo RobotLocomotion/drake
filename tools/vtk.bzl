@@ -82,22 +82,28 @@ def _impl(repository_ctx):
         repository_ctx.file("empty.cc", executable = False)
 
     elif repository_ctx.os.name == "linux":
-        sed = repository_ctx.which("sed")
-        if sed == None:
-            fail("Could NOT determine Linux distribution information" +
-                 "('sed' is missing?!)", sed)
-        result = repository_ctx.execute([
-            sed,
-            "-n",
-            "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-            "/etc/os-release"])
+        if "DRAKE_OVERRIDE_DISTRO" in repository_ctx.os.environ:
+            distro = repository_ctx.os.environ["DRAKE_OVERRIDE_DISTRO"]
+            print("Overriding built-in distribution detection " +
+                  "and pretending you are %s instead" % distro)
 
-        if result.return_code != 0:
-            fail("Could NOT determine Linux distribution information",
-                 attr = result.stderr)
+        else:
+            sed = repository_ctx.which("sed")
+            if sed == None:
+                fail("Could NOT determine Linux distribution information" +
+                    "('sed' is missing?!)", sed)
+            result = repository_ctx.execute([
+                sed,
+                "-n",
+                "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
+                "/etc/os-release"])
 
-        distro = [l.strip() for l in result.stdout.strip().split("\n")]
-        distro = " ".join(distro)
+            if result.return_code != 0:
+                fail("Could NOT determine Linux distribution information",
+                    attr = result.stderr)
+
+            distro = [l.strip() for l in result.stdout.strip().split("\n")]
+            distro = " ".join(distro)
 
         if distro == "Ubuntu 14.04":
             archive = "vtk-v8.0.0.rc2-qt-4.8.6-trusty-x86_64.tar.gz"

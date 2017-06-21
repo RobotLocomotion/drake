@@ -6,24 +6,30 @@ def _impl(repository_ctx):
         archive = "dd-0.1.0-160-ga50a077-qt-5.8.0-Darwin.tar.gz"
         sha256 = "6873427eb417e03688e85ac59955777fda67f89781245f3146470c5156045691"  # noqa
     elif repository_ctx.os.name == "linux":
-        sed = repository_ctx.which("sed")
+        if "DRAKE_OVERRIDE_DISTRO" in repository_ctx.os.environ:
+            distro = repository_ctx.os.environ["DRAKE_OVERRIDE_DISTRO"]
+            print("Overriding built-in distribution detection " +
+                  "and pretending you are %s instead" % distro)
 
-        if not sed:
-            fail("Could NOT determine Linux distribution information because" +
-                 " sed is missing")
+        else:
+            sed = repository_ctx.which("sed")
 
-        result = repository_ctx.execute([
-            sed,
-            "-n",
-            "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-            "/etc/os-release"])
+            if not sed:
+                fail("Could NOT determine Linux distribution information because" +
+                    " sed is missing")
 
-        if result.return_code != 0:
-            fail("Could NOT determine Linux distribution information",
-                 attr = result.stderr)
+            result = repository_ctx.execute([
+                sed,
+                "-n",
+                "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
+                "/etc/os-release"])
 
-        distro = [l.strip() for l in result.stdout.strip().split("\n")]
-        distro = " ".join(distro)
+            if result.return_code != 0:
+                fail("Could NOT determine Linux distribution information",
+                    attr = result.stderr)
+
+            distro = [l.strip() for l in result.stdout.strip().split("\n")]
+            distro = " ".join(distro)
 
         if distro == "Ubuntu 14.04":
             archive = "dd-0.1.0-160-ga50a077-qt-4.8.6-trusty-x86_64.tar.gz"
