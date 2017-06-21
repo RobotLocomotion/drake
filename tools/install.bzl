@@ -515,7 +515,9 @@ def cmake_config(
     elif not cps_file_name:
         cps_file_name = "@drake//tools:{}.cps".format(package)
 
-    config_file_name = "{}Config.cmake".format(package)
+    package_lower = package.lower()
+
+    config_file_name = "{}-config.cmake".format(package_lower)
     executable = "$(location @pycps//:cps2cmake_executable)"
 
     native.genrule(
@@ -527,7 +529,7 @@ def cmake_config(
         visibility = ["//visibility:private"],
     )
 
-    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+    config_version_file_name = "{}-config-version.cmake".format(package_lower)
 
     native.genrule(
         name = "cmake_package_version",
@@ -552,11 +554,13 @@ def install_cmake_config(
         package (:obj:`str`): CMake package name.
         versioned (:obj:`bool`): True if a version file should be installed.
     """
-    cmake_config_dest = "lib/cmake/{}".format(package.lower())
-    cmake_config_files = ["{}Config.cmake".format(package)]
+    package_lower = package.lower()
+
+    cmake_config_dest = "lib/cmake/{}".format(package_lower)
+    cmake_config_files = ["{}-config.cmake".format(package_lower)]
 
     if versioned:
-        cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
+        cmake_config_files += ["{}-config-version.cmake".format(package_lower)]
 
     install_files(
         name = name,
