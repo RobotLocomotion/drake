@@ -20,7 +20,7 @@ load(
 LCM_SRCS = glob(["lcmtypes/*.lcm"])
 
 lcm_c_aggregate_header(
-    name = "robotlocomotion_lcmtypes_c_aggregate_header",
+    name = "lcmtypes_robotlocomotion_c_aggregate_header",
     out = "lcmtypes/robotlocomotion.h",
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
@@ -28,35 +28,35 @@ lcm_c_aggregate_header(
 )
 
 lcm_c_library(
-    name = "robotlocomotion_lcmtypes_c",
-    aggregate_hdr = ":robotlocomotion_lcmtypes_c_aggregate_header",
+    name = "lcmtypes_robotlocomotion_c",
+    aggregate_hdr = ":lcmtypes_robotlocomotion_c_aggregate_header",
     includes = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes//:bot_core_lcmtypes_c"],
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_c"],
 )
 
 lcm_cc_library(
-    name = "robotlocomotion_lcmtypes",
+    name = "lcmtypes_robotlocomotion",
     includes = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes"],
+    deps = ["@lcmtypes_bot2_core"],
 )
 
 lcm_java_library(
-    name = "robotlocomotion_lcmtypes_java",
+    name = "lcmtypes_robotlocomotion_java",
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes//:bot_core_lcmtypes_java"],
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 lcm_py_library(
-    name = "robotlocomotion_lcmtypes_py",
+    name = "lcmtypes_robotlocomotion_py",
     imports = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes//:bot_core_lcmtypes_py"],
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_py"],
 )
 
 CMAKE_PACKAGE = "robotlocomotion-lcmtypes"
@@ -74,11 +74,14 @@ install(
     guess_hdrs = "PACKAGE",
     license_docs = ["LICENSE.txt"],
     py_strip_prefix = ["lcmtypes"],
+    rename = {
+        "share/java/liblcmtypes_robotlocomotion_java.jar": "lcmtypes_robotlocomotion.jar",
+    },
     targets = [
-        ":robotlocomotion_lcmtypes",
-        ":robotlocomotion_lcmtypes_c",
-        ":robotlocomotion_lcmtypes_java",
-        ":robotlocomotion_lcmtypes_py",
+        ":lcmtypes_robotlocomotion",
+        ":lcmtypes_robotlocomotion_c",
+        ":lcmtypes_robotlocomotion_java",
+        ":lcmtypes_robotlocomotion_py",
     ],
     deps = [":install_cmake_config"],
 )
@@ -87,5 +90,5 @@ install(
 # https://github.com/openhumanoids/bot_core_lcmtypes/issues/33.
 exports_files(
     ["LICENSE.txt"],
-    visibility = ["@bot_core_lcmtypes//:__pkg__"],
+    visibility = ["@lcmtypes_bot2_core//:__pkg__"],
 )

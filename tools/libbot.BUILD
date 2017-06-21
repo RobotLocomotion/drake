@@ -28,9 +28,9 @@ cc_library(
     copts = ["-std=gnu99"],
     includes = ["bot2-core/src"],
     deps = [
-        "@bot_core_lcmtypes//:bot_core_lcmtypes_c",
         "@glib",
         "@lcm",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_c",
     ],
 )
 
@@ -39,8 +39,8 @@ java_library(
     srcs = glob(["bot2-core/java/src/bot2_spy/*.java"]),
     visibility = ["//visibility:private"],
     deps = [
-        "@bot_core_lcmtypes//:bot_core_lcmtypes_java",
         "@lcm//:lcm-java",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
     ],
 )
 
@@ -476,6 +476,11 @@ install(
         "bot2-lcmgl/lcmtypes",
         "bot2-param/lcmtypes",
     ],
+    rename = {
+        "share/java/liblcmtypes_bot2_frames_java.jar": "lcmtypes_bot2_frames.jar",
+        "share/java/liblcmtypes_bot2_lcmgl_java.jar": "lcmtypes_bot2_lcmgl.jar",
+        "share/java/liblcmtypes_bot2_param_java.jar": "lcmtypes_bot2_param.jar",
+    },
     targets = [
         ":lcmtypes_bot2_frames_c",
         ":lcmtypes_bot2_frames_java",
@@ -501,6 +506,9 @@ install(
     hdr_dest = HDR_DEST,
     hdr_strip_prefix = ["bot2-core/src"],
     license_docs = LICENSE_DOCS,
+    rename = {
+        "share/java/liblcmspy_plugins_bot2.jar": "lcmspy_plugins_bot2.jar",
+    },
     targets = [
         ":bot-spy",
         ":bot2_core",
@@ -554,6 +562,9 @@ install(
     hdr_dest = HDR_DEST,
     hdr_strip_prefix = ["bot2-lcmgl/src"],
     license_docs = LICENSE_DOCS,
+    rename = {
+        "share/java/libbot2_lcmgl_java.jar": "bot2_lcmgl.jar",
+    },
     targets = [
         ":bot2_lcmgl_client",
         ":bot2_lcmgl_java",

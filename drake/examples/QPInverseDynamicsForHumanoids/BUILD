@@ -71,7 +71,7 @@ drake_cc_library(
         "//drake/lcmtypes:qp_input",
         "//drake/lcmtypes:resolved_contact",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 

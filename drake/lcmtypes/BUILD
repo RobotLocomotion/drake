@@ -95,7 +95,7 @@ lcm_cc_library(
     lcm_package = "drake",
     lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
     deps = [
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -252,7 +252,7 @@ lcm_py_library(
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
     deps = [
-        "@bot_core_lcmtypes//:bot_core_lcmtypes_py",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
     ],
 )
 

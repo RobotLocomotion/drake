@@ -213,6 +213,7 @@ install_files(
 # TODO(jamiesnape): Find an alternative to the requirement that a license file
 # must be passed to every single use of the install rule.
 DOC_DEST = "share/doc/lcm"
+
 LICENSE_DOCS = ["COPYING"]
 
 install(
@@ -237,6 +238,9 @@ install(
     ],
     license_docs = LICENSE_DOCS,
     py_strip_prefix = ["lcm-python"],
+    rename = {
+        "share/java/liblcm-java.jar": "lcm.jar",
+    },
     targets = [
         ":lcm",
         ":lcm-gen",

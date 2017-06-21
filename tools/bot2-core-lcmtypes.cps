@@ -14,7 +14,7 @@
     "lcmtypes_bot2-core": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/lcmtypes"],
-      "Location": "@prefix@/lib/libbot_core_lcmtypes_c.so",
+      "Location": "@prefix@/lib/liblcmtypes_bot2_core_c.so",
       "Requires": ["lcm:lcm-coretypes"]
     },
     "lcmtypes_bot2-core-cpp": {
@@ -24,7 +24,7 @@
     },
     "lcmtypes_bot2-core-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/libbot_core_lcmtypes_java.jar",
+      "Location": "@prefix@/share/java/lcmtypes_bot2_core.jar",
       "Requires": ["lcm:lcm-java"]
     }
   }

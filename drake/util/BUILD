@@ -44,8 +44,8 @@ drake_cc_library(
         "//drake/lcmtypes:polynomial_matrix",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/math:geometric_transform",
-        "@bot_core_lcmtypes",
         "@eigen",
+        "@lcmtypes_bot2_core",
     ],
 )
 

@@ -67,8 +67,8 @@ drake_cc_test(
         "//drake/multibody/collision",
         "//drake/multibody/parsers",
         "//drake/solvers:mathematical_program",
-        "@bot_core_lcmtypes",
         "@lcm",
+        "@lcmtypes_bot2_core",
     ],
 )
 

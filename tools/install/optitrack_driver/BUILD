@@ -34,6 +34,9 @@ install(
     license_docs = ["@optitrack_driver//:LICENSE"],
     py_dest = "lib/python2.7/site-packages/optitrack",
     py_strip_prefix = ["**/"],
+    rename = {
+        "share/java/liblcmtypes_optitrack.jar": "lcmtypes_optitrack.jar",
+    },
     targets = OPTITRACK_TARGETS,
     visibility = ["//:__pkg__"],
     deps = [":install_cmake_config"],

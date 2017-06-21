@@ -18,7 +18,7 @@
     "robotlocomotion-lcmtypes": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/lcmtypes"],
-      "Location": "@prefix@/lib/librobotlocomotion_lcmtypes_c.so",
+      "Location": "@prefix@/lib/liblcmtypes_robotlocomotion_c.so",
       "Requires": [
         "bot2-core-lcmtypes:lcmtypes_bot2-core",
         "lcm:lcm-coretypes"
@@ -34,7 +34,7 @@
     },
     "robotlocomotion-lcmtypes-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/librobotlocomotion_lcmtypes_java.jar",
+      "Location": "@prefix@/share/java/lcmtypes_robotlocomotion.jar",
       "Requires": [
         "bot2-core-lcmtypes:lcmtypes_bot2-core-java",
         "lcm:lcm-java"
