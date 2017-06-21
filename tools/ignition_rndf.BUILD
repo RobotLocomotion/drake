@@ -69,7 +69,8 @@ cmake_config(
     deps = ["@ignition_math//:cps"],
 )
 
-install_cmake_config(package = CMAKE_PACKAGE)  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",

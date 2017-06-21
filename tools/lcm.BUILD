@@ -2,7 +2,13 @@
 
 load("@drake//tools:drake.bzl", "drake_generate_file")
 load("@drake//tools:generate_export_header.bzl", "generate_export_header")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config", "install_files")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+    "install_files",
+)
 load("@drake//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
