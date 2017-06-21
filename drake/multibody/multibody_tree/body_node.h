@@ -174,10 +174,30 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // body B and its parent body P expressed in the world frame W.
   }
 
+  /// This method is used by MultibodyTree within a base-to-tip loop to compute
+  /// this node's kinematics that depend on generalized velocities.
+  /// This method aborts in Debug builds when:
+  /// - Called on the _root_ node.
+  /// - `vc` is nullptr.
+  /// @param[in] context The context with the state of the MultibodyTree model.
+  /// @param[in] pc An already updated position kinematics cache in sync with
+  ///                `context`.
+  /// @param[out] vc A pointer to a valid, non nullptr, velocity kinematics
+  ///                cache.
+  /// @pre The position kinematics cache `pc` was already updated to be in sync
+  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  /// @pre CalcVelocityKinematicsCache_BaseToTip() must have already been called
+  /// for the parent node (and, by recursive precondition, all predecessor nodes
+  /// in the tree.)
   void CalcVelocityKinematicsCache_BaseToTip(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       VelocityKinematicsCache<T>* vc) const {
+    // This method must not be called for the "world" body node.
+    DRAKE_ASSERT(topology_.body != world_index());
+
+    DRAKE_ASSERT(vc != nullptr);
+
     // Body for this node.
     const Body<T>& BodyB = get_body();
 

@@ -156,6 +156,8 @@ template<typename T> class BodyNode;
 ///               Nonlinear dynamics, 62(1), pp.291-303.
 /// - [Sciavicco 2000] Sciavicco, L. and Siciliano, B., 2000. Modelling and
 ///               control of robot manipulators, 2nd Edn. Springer.
+/// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
+///                       algorithms. Springer.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -274,7 +276,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// to the input vector of generalized velocities `v`, i.e. the output of this
   /// method is the application `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where
   /// `nv` is the number of generalized velocities of this mobilizer (see
-  /// get_num_velocities()). Therefore we say this methods is the _operator
+  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors"
+  /// [Featherstone 2008, Ch. 2]. Therefore we say this methods is the _operator
   /// form_ of the Jacobian matrix `H_FM(q)`.
   /// This method aborts in Debug builds if the dimension of the input vector of
   /// generalized velocities has a size different from get_num_velocities().

@@ -216,7 +216,10 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   EXPECT_EQ(sxV.translational(), Vxs.translational());
 }
 
-// Re-express in another frame.
+// Re-express in another frame. Given a spatial vector V_F expressed in a frame
+// F, re-express this same spatial vector in another frame E as:
+//   V_E = R_EF * V_F
+// where R_EF is the rotation matrix from frame F into frame E.
 TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;

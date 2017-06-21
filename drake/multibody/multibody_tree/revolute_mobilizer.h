@@ -91,17 +91,16 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angle(
       systems::Context<T>* context, const T& angle) const;
 
-  /// Gets the angular velocity of `this` mobilizer from `context`.
-  /// See class documentation for the angle sign convention.
+  /// Gets the angular velocity, in radians per second, of `this` mobilizer from
+  /// `context`. See class documentation for the angle sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @returns The angular velocity of `this` mobilizer in the `context`.
   const T& get_angular_velocity(const systems::Context<T>& context) const;
 
-  /// Sets the `context` so that the generalized velocity coresponding the
-  /// angular velocity of `this` mobilizer equals `w_FM`, i.e. the rate of
-  /// change of the rotation angle between the inboard frame F and the outboard
-  /// frame M.
+  /// Sets the angular velocity for this `this` mobilizer to `w_FM`, i.e.
+  /// the rate of change of the rotation angle between the inboard frame F and
+  /// the outboard frame M. The new angular velocity is stored in `context`.
   /// See class documentation for the angle sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
@@ -113,6 +112,9 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
   /// about this mobilizer's axis (@see get_revolute_axis().)
+  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
+  /// stored in `context`.
+  /// This method aborts in Debug builds if `v.size()` is not one.
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const final;
 
@@ -120,6 +122,9 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// M measured and expressed in frame F as a function of the rotation angle
   /// and input angular velocity `v` about this mobilizer's axis
   /// (@see get_revolute_axis()).
+  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
+  /// stored in `context`.
+  /// This method aborts in Debug builds if `v.size()` is not one.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;

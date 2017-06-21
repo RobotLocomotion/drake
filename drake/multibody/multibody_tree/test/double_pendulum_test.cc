@@ -528,19 +528,24 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
     for (double ielbow = 0; ielbow < num_angles; ++ielbow) {
       const double elbow_angle = -M_PI + ielbow * kDeltaAngle;
 
-      const double w_WU = 1.0;
-      const double w_UL = -0.5;
-
       // Update position kinematics.
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
       model_->CalcPositionKinematicsCache(*mbt_context_, &pc);
 
-      // Update velocity kinematics.
-      shoulder_mobilizer_->set_angular_velocity(context_.get(), w_WU);
-      EXPECT_EQ(shoulder_mobilizer_->get_angular_velocity(*context_), w_WU);
-      elbow_mobilizer_->set_angular_velocity(context_.get(), w_UL);
-      EXPECT_EQ(elbow_mobilizer_->get_angular_velocity(*context_), w_UL);
+      // Set the shoulder's angular velocity.
+      const double shoulder_angular_velocity = 1.0;
+      shoulder_mobilizer_->set_angular_velocity(context_.get(),
+                                                shoulder_angular_velocity);
+      EXPECT_EQ(shoulder_mobilizer_->get_angular_velocity(*context_),
+                shoulder_angular_velocity);
+
+      // Set the elbow's angular velocity.
+      const double elbow_angular_velocity = -0.5;
+      elbow_mobilizer_->set_angular_velocity(context_.get(),
+                                             elbow_angular_velocity);
+      EXPECT_EQ(elbow_mobilizer_->get_angular_velocity(*context_),
+                elbow_angular_velocity);
       model_->CalcVelocityKinematicsCache(*mbt_context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
@@ -551,10 +556,11 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
 
       const SpatialVelocity<double> V_WU_expected(
           acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
-              shoulder_angle, w_WU));
+              shoulder_angle, shoulder_angular_velocity));
       const SpatialVelocity<double> V_WL_expected(
           acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
-              shoulder_angle, elbow_angle, w_WU, w_UL));
+              shoulder_angle, elbow_angle,
+              shoulder_angular_velocity, elbow_angular_velocity));
 
       EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kEpsilon));
       EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));

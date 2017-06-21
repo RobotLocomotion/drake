@@ -489,8 +489,9 @@ class MultibodyTree {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
-  /// Computes into the velocity kinematics `vc` all the kinematic quantities
-  /// that depend on the generalized velocities. These include:
+  /// Computes all the kinematic quantities that depend on the generalized
+  /// velocities and stores them in the velocity kinematics cache `vc`.
+  /// These include:
   /// - Spatial velocity `V_WB` for each body B in the model as measured and
   ///   expressed in the world frame W.
   /// - Spatial velocity `V_PB` for each body B in the model as measured and

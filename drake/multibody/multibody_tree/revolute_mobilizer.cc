@@ -33,7 +33,7 @@ const T& RevoluteMobilizer<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
-  auto v = this->get_velocities(mbt_context);
+  const auto& v = this->get_velocities(mbt_context);
   DRAKE_ASSERT(v.size() == nv);
   return v.coeffRef(0);
 }
@@ -53,6 +53,7 @@ template <typename T>
 Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   auto q = this->get_positions(context);
+  DRAKE_ASSERT(q.size() == 1);
   Isometry3<T> X_FM = Isometry3<T>::Identity();
   X_FM.linear() = Eigen::AngleAxis<T>(q[0], axis_F_).toRotationMatrix();
   return X_FM;

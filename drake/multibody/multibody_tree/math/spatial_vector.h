@@ -181,7 +181,7 @@ class SpatialVector {
   /// </pre>
   /// @returns V_F The same spatial vector re-expressed in frame F.
   friend SpatialQuantity operator*(
-      const Matrix3<T> R_FE, const SpatialQuantity& V_AB_E) {
+      const Matrix3<T>& R_FE, const SpatialQuantity& V_AB_E) {
     return SpatialQuantity(R_FE * V_AB_E.rotational(),
                            R_FE * V_AB_E.translational());
   }
