@@ -81,7 +81,7 @@ install(
     name = "install",
     doc_dest = "share/doc/" + CMAKE_PACKAGE,
     guess_hdrs = "PACKAGE",
-    license_docs = ["@robotlocomotion_lcmtypes//:LICENSE.txt"],
+    license_docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
     py_strip_prefix = ["lcmtypes"],
     targets = [
         ":bot_core_lcmtypes",

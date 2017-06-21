@@ -204,10 +204,10 @@ github_archive(
 )
 
 github_archive(
-    name = "robotlocomotion_lcmtypes",
+    name = "lcmtypes_robotlocomotion",
     repository = "RobotLocomotion/lcmtypes",
     commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
-    build_file = "tools/robotlocomotion_lcmtypes.BUILD",
+    build_file = "tools/lcmtypes_robotlocomotion.BUILD",
     sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",
 )
 

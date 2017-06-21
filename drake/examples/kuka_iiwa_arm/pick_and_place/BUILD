@@ -35,7 +35,7 @@ drake_cc_library(
         "//drake/multibody/parsers",
         "//drake/util:lcm_util",
         "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 

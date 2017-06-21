@@ -39,7 +39,7 @@ drake_cc_library(
         ":pose_vector",
         "//drake/common",
         "//drake/systems/lcm:translator",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 

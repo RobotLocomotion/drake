@@ -138,7 +138,7 @@ exports_files(
 
 exports_files(
     ["robotlocomotion-lcmtypes.cps"],
-    visibility = ["@robotlocomotion_lcmtypes//:__pkg__"],
+    visibility = ["@lcmtypes_robotlocomotion//:__pkg__"],
 )
 
 alias(

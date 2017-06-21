@@ -38,7 +38,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -78,7 +78,7 @@ drake_cc_library(
         "//drake/multibody/parsers",
         "//drake/systems/framework:leaf_system",
         "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -113,7 +113,7 @@ drake_cc_binary(
         "//drake/systems/primitives:demultiplexer",
         "@bot_core_lcmtypes",
         "@com_github_gflags_gflags//:gflags",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -181,7 +181,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 

@@ -62,7 +62,7 @@ drake_cc_library(
         ":image",
         "//drake/common",
         "//drake/systems/framework",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
         "@zlib",
     ],
 )
