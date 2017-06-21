@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
@@ -63,6 +64,7 @@ template <typename T>
 SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& v) const {
+  unused(context);
   DRAKE_ASSERT(v.size() == 1);
   return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
 }
