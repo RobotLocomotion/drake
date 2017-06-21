@@ -17,7 +17,7 @@
     },
     "lcmtypes_optitrack-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/liblcmtypes_optitrack.jar",
+      "Location": "@prefix@/share/java/lcmtypes_optitrack.jar",
       "Requires": ["lcm:lcm-java"]
     }
   }
