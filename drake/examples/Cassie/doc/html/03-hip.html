@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> hip </h1>
+      </header>
+      <img class='float' src='03-hip.png' alt='Hip'></td>
+<pre><code class='matlab'>
+% Body properties
+J = [ 842,  0.2, -0.6
+      0.2, 6076,    0
+     -0.6,    0, 6436 ]; % kg.mm^2
+m = 1.17;                    % kg, mass
+p = [-55.7, 0, 0]';          % mm, center of mass
+
+% ------------------------------------------------
+
+% Connects to --> <a href='04-thigh.html'>Thigh</a>
+H1_rot = eye(3); % identity
+H1_offset = [ 0, 0, 0 ]'; % mm
+R1_min =  -50; % deg
+R1_max =   80; % deg
+G      =   16; % speed reduction
+T_max  = 12.2; % N.m, max motor torque
+w_max  = 1300; % rpm, max motor speed
+J_hs   =  365; % kg.mm^2, high-speed shaft inertia
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

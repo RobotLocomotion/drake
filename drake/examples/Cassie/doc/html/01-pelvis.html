@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> pelvis </h1>
+      </header>
+      <img class='float' src='01-pelvis.png' alt='Pelvis'></td>
+
+<pre><code class='matlab'>
+% Body properties
+J = [ 94158,   169,  15026
+        169, 84066,    516
+      15026,   516, 112770 ]; % kg.mm^2, inertia
+m = 10.33;                    % kg, mass
+p = [ 50.7, 0, 28.4 ]';       % mm, center of mass
+
+% ------------------------------------------------
+
+% Coordinate frame --> Abduction gimbal
+H1_rot = [  0,  0,  1
+            0,  1,  0
+           -1,  0,  0 ];
+H1_offset = [ 21, 135, 0 ]'; % mm
+
+% Abduction gimbal --> <a href='02-yaw.html'>Yaw gimbal</a>
+H2_rot = [ 0,  0, -1
+           0,  1,  0
+           1,  0,  0 ];
+H2_offset = [ 0, 0, -70 ]'; % mm
+R1_min =  -15; % deg
+R1_max = 22.5; % deg
+G      =   25; % speed reduction
+T_max  =  4.5; % N.m, max motor torque
+w_max  = 2900; % rpm, max motor speed
+J_hs   =   61; % kg.mm^2, high-speed shaft inertia
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> thigh </h1>
+      </header>
+      <img class='float' src='04-thigh.png' alt='Thigh'></td>
+
+<pre><code class='matlab'>
+% Body properties
+J = [ 17969,   284, -11685
+        284, 56284,    -19
+     -11685,   -19,  49756 ]; % kg.mm^2
+m = 5.52;                     % kg, mass
+p = [ 59.5, 0.1, -35.8 ]';    % mm, center of mass
+
+% ------------------------------------------------
+
+% Connects to --> <a href='05-knee.html'>Knee</a>
+H1_rot = eye(3); % identity
+H1_offset = [ 120, 0, 4.5 ]'; % mm
+R1_min = -164; % deg
+R1_max =  -37; % deg
+G      =   16; % speed reduction
+T_max  = 12.2; % N.m, max motor torque
+w_max  = 1300; % rpm, max motor speed
+J_hs   =  365; % kg.mm^2, high-speed shaft inertia
+
+% Connects to --> <a href='12-achilles-rod.html'>Achilles rod end</a>
+% Spherical joint
+P1 = [ 0, 0, 45 ]'; % mm
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

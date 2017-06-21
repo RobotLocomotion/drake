@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> knee </h1>
+      </header>
+      <img class='float' src='05-knee.png' alt='Knee'></td>
+<pre><code class='matlab'>
+% Body properties
+J = [ 2159,  956,  2.8
+       956, 1438,  0.7
+       2.8,  0.7, 3344 ]; % kg.mm^2
+m = 0.758;                 % kg, mass
+p = [ 23.0, 32.1, -2.2 ]'; % mm, center of mass
+
+% ------------------------------------------------
+
+% Connects to --> <a href='07-shin.html'>Shin</a>
+H1_rot = eye(3); % identity
+H1_offset = [ 60.68, 47.41, 0 ]'; % mm
+
+% Connects to --> <a href='06-knee-spring.html'>Knee spring base</a>
+H2_rot = eye(3); % identity
+H2_offset = [ 60.68, 82.41, 0 ]'; % mm
+k = 2300; % N.m/rad, spring stiffness
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

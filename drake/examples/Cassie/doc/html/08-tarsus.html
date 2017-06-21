@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> tarsus </h1>
+      </header>
+      <img class='float' src='08-tarsus.png' alt='Tarsus'></td>
+
+<pre><code class='matlab'>
+% Body properties
+J = [ 1125, -2878,   -63
+     -2878, 23138,    36
+       -63,    36, 23947 ];  % kg.mm^2
+m = 0.782;                   % kg, mass
+p = [ 110.5, -30.6, -1.3 ]'; % mm, center of mass
+
+% ------------------------------------------------
+
+% Connects to --> <a href='09-toe-output-crank.html'>Toe crank</a>
+H1_rot = eye(3); % identity
+H1_offset = [ 58, -34, 22.75 ]'; % mm
+R1_min = -140; % deg
+R1_max =  -30; % deg
+G      =   50; % speed reduction
+T_max  =  0.9; % N.m, max motor torque
+w_max  = 5500; % rpm, max motor speed
+J_hs   =  4.9; % kg.mm^2, high-speed shaft inertia
+
+% Connects to --> <a href='13-heel-spring.html'>Heel spring base</a>
+H2_eul = [ 155.803, 0.315, 4.47 ]; % deg, ZYX euler angles
+H2_offset = [ -12.69, -30.59, 0.92 ]'; % mm
+k = 2000; % N.m/rad, spring stiffness
+
+% Connects to --> <a href='10-toe.html'>Toe</a>
+H3_rot = eye(3); % identity
+H3_offset = [ 408, -40, 0 ]'; % mm
+</code></pre>
+
+      <p> 13 degrees from parallel to the <a href='04-thigh.html'>thigh</a> for an undeflected heel spring. Spring deflection adds to this constant offset. </p>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

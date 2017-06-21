@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> shin </h1>
+      </header>
+      <img class='float' src='07-shin.png' alt='Shin'></td>
+<pre><code class='matlab'>
+% Body properties
+J = [ 360,   334,     0
+      334, 34132,     0
+        0,     0, 34111 ]; % kg.mm^2
+m = 0.577;                 % kg, mass
+p = [ 183.4, 1.2, 0.2 ]';  % mm, center of mass
+
+% --------------------------------------------
+
+% Connects to --> <a href='08-tarsus.html'>Ankle</a>
+H1_rot = eye(3); % identity
+H1_offset = [ 434.76, 20, 0 ]'; % mm
+
+% Connects to --> Spring link pivot
+offset = [ 132, -12, 0 ]'; % mm
+spring_link_length = 42; % mm
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> encoder locations </h1>
+      </header>
+      <img class='float' src='encoders.png' alt='Encoder locations'></td>
+<pre><code class='matlab'>
+% RMB20
+% Absolute angular encoder
+bits = 13; % resolution
+% Input-side encoders are unwrapped to give
+% output angles. Abduction, yaw, hip, and
+% knee joints must be homed on startup.
+% Homing is not calibration; it only zeros
+% the unwrapping function.
+
+% -----------------------------------------
+
+% iC-MU
+% Absolute angular encoder
+bits = 18; % resolution
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

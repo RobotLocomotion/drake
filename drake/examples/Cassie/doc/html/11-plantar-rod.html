@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> plantar rod </h1>
+      </header>
+      <img class='float' src='11-plantar-rod.png' alt='Plantar rod'></td>
+
+<pre><code class='matlab'>
+% Body properties
+J = [ 2.8,    0,    0
+        0, 5530,    0
+        0,    0, 5530 ]; % kg.mm^2
+m = 0.119;                 % kg, mass
+p = [177.9, 0, 0]';        % mm, center of mass
+
+% ------------------------------------------------
+
+L = 350.12; % mm, eye-to-eye length
+</code></pre>
+
+      <p> Connects the <a href='09-toe-output-crank.html'>toe output crank</a> to the <a href='10-toe.html'>toe</a>.<br>
+         Both ends are spherical joints.
+      </p>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

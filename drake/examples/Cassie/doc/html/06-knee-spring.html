@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> knee spring </h1>
+      </header>
+      <img class='float' src='06-knee-spring.png' alt='Knee spring'></td>
+<pre><code class='matlab'>
+% Body properties
+J = [ 54.3, 46.0, 0
+      46.0, 1712, 0
+         0,    0, 1669 ]; % kg.mm^2
+m = 0.186;                % kg, mass
+p = [ 83.6, 3.4, 0 ]';    % mm, center of mass
+
+% --------------------------------------
+
+% Connects to --> Knee spring link
+L1_offset = [ 132, -5, 0 ]; % mm
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

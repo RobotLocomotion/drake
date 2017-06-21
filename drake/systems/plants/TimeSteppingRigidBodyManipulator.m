@@ -285,10 +285,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function [obj,z,Mvn,wvn,dz,dMvn,dwvn] = solveLCP(obj,t,x,u)
-      if (nargout<5 && obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
-        [obj,z,Mvn,wvn] = solveMexLCP(obj,t,x,u);
-        return;
-      end
+      % if (nargout<5 && obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
+      %   [obj,z,Mvn,wvn] = solveMexLCP(obj,t,x,u);
+      %   return;
+      % end
       
 %       global active_set_fail_count
       % do LCP time-stepping
@@ -964,12 +964,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=collisionDetectTerrain(obj.manip,varargin{:});
     end
 
-    function [obj,id] = addStateConstraint(obj,con)
+    function [obj,manip_id] = addStateConstraint(obj,varargin)
       % keep two copies of the constraints around ... :(
       % todo: re-evaluate whether that is really necessary
-      [obj,id] = addStateConstraint@DrakeSystem(obj,con);
-      [obj.manip,manip_id] = obj.manip.addStateConstraint(obj,con);
-      assert(id==manip_id);
+      [obj,id] = addStateConstraint@DrakeSystem(obj,varargin{:});
+      [obj.manip,manip_id] = obj.manip.addStateConstraint(varargin{:});
+%       assert(id==manip_id);
     end
 
     function obj = updateStateConstraint(obj,id,con)
@@ -1037,6 +1037,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       varargout = cell(1,nargout);
       [varargout{:}] = centerOfMassJacobianDotTimesV(obj.manip,varargin{:});
     end
+    function varargout = forwardJacDotTimesV(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = forwardJacDotTimesV(obj.manip,varargin{:});
+    end
+    
 
     function varargout = centroidalMomentumMatrixDotTimesV(obj,varargin)
       varargout=cell(1,nargout);

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> toe output crank </h1>
+      </header>
+      <img class='float' src='09-toe-output-crank.png' alt='Toe output crank'></td>
+
+<pre><code class='matlab'>
+% Body properties
+J = [ 30.7,    0,  2.6
+         0, 57.1,    0
+       2.6,    0, 66.4 ]; % kg.mm^2
+m = 0.129;                   % kg, mass
+p = [ 4.8, 0, -2.9 ]';       % mm, center of mass
+
+% --------------------------------------------
+
+% Connects to --> <a href='11-plantar-rod.html'>Plantar rod end</a>
+% Spherical joint
+P1 = [ 55, 0, -7.91 ]'; % mm
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> heel spring </h1>
+      </header>
+      <img class='float' src='13-heel-spring.png' alt='Heel spring'></td>
+<pre><code class='matlab'>
+% Body properties
+J = [ 30.2, 15.3,  0.6
+      15.3, 1049, -0.1
+       0.6, -0.1, 1028 ]; % kg.mm^2
+m = 0.126;                  % kg, mass
+p = [ 81, 2.2, 0 ]';        % mm, center of mass
+
+% ----------------------------------------------
+
+% Connects to --> <a href='12-achilles-rod.html'>Achilles rod end</a>
+% Spherical Joint
+P1 = [ 118.77, -10, 0 ]'; % mm
+</code></pre>
+
+   </div>
+</body>
+<!-------------------------------->
+</html>

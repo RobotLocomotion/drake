@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<!-------------------------------->
+<head>
+   <link href='style.css' rel='stylesheet' type='text/css'>
+   <link href='matlab-highlight.css' rel='stylesheet' type='text/css'>
+   <script src='highlight.pack.js'></script>
+   <script type='text/javascript'>hljs.initHighlightingOnLoad();</script>
+</head>
+<!-------------------------------->
+<body>
+   <div id='page'>
+      <header>
+         <img id='logo' src='agility-logo.png' alt='Agility Robotics' height='100%'>
+         <h1 id='title'> toe </h1>
+      </header>
+      <img class='float' src='10-toe.png' alt='Toe'></td>
+<pre><code class='matlab'>
+% Body properties
+J = [  287, -98.6, -1.5
+     -98.6,   171,  0.2
+      -1.5,   0.2,  449 ]; % kg.mm^2
+m = 0.150;                  % kg, mass
+p = [ 4.7, 27.5, -0.1 ]';   % mm, center of mass
+
+% -----------------------------------------------
+
+% Coordinate frame --> Midfoot
+H1_eul = [ 0, -140, -90 ]; % deg, ZYX euler angles
+H1_offset = [ 17.62, 52.19, 0 ]'; % mm
+L = 180; % mm, end-to-end toe length
+
+% Connects to --> <a href='11-plantar-rod.html'>Plantar rod end</a>
+% Spherical joint
+P1 = [ 55, 0, 7.76 ]'; % mm
+</code></pre>
+      <p> Kinematically constrained to remain parallel to the <a href='09-toe-output-crank.html'>toe output crank</a>. </p>
+   </div>
+</body>
+<!-------------------------------->
+</html>
