@@ -422,9 +422,9 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
-  /// Returns a constant reference to the body with unique index `body_index`.
-  /// This method aborts in Debug builds when `body_index` does not correspond
-  /// to a body in this multibody tree.
+  /// Returns a constant reference to the frame with unique index `frame_index`.
+  /// This method aborts in Debug builds when `frame_index` does not correspond
+  /// to a frame in `this` multibody tree.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_ASSERT(frame_index < get_num_frames());
     return *frames_[frame_index];
@@ -509,28 +509,28 @@ class MultibodyTree {
 
   /// @name Methods to retrieve multibody element variants.
   ///
-  /// Given the user already has possession of a %MultibodyTree templated on a
-  /// scalar type T, a variant is a version of that %MultibodyTree templated on
-  /// a different scalar type `Tvariant`.
-  /// A typical use case is the call to ToAutoDiffXd() to obtain a
-  /// %MultibodyTree templated on AutoDiffXd from a %MultibodyTree templated on
-  /// `double`.
-  /// If a user has a given multibody tree, templated on a scalar type T,
-  /// and created a variant tree templated on another scalar
-  /// type `Tvariant`, the methods in this section provide a mechanism to
-  /// retrieve multibody elements from the variant tree that correspond to
-  /// elements in the original tree templated on T.
-  /// Considere the following code example:
+  /// Given two variants of the same %MultibodyTree, these methods map an
+  /// element in one variant, to its corresponding element in the other variant.
+  ///
+  /// A concrete case is the call to ToAutoDiffXd() to obtain a
+  /// %MultibodyTree variant templated on AutoDiffXd from a %MultibodyTree
+  /// templated on `double`. Typically, a user holding a `Body<double>` (or any
+  /// other multibody element in the original variant templated on `double`)
+  /// would like to retrieve the `Body<AutoDiffXd>` variant from the new
+  /// AutoDiffXd tree variant.
+  ///
+  /// Consider the following code example:
   /// @code
   ///   // The user creates a model.
-  ///   MultibodyTree<T> model;
+  ///   MultibodyTree<double> model;
   ///   // User adds a body and keeps a reference to it.
-  ///   const RigidBody<T>& body = model.AddBody<RigidBody>(...);
-  ///   // User creates a variant. ToAutoDiffXd() is available for
-  ///   // Tvariant = AutoDiffXd.
+  ///   const RigidBody<double>& body = model.AddBody<RigidBody>(...);
+  ///   // User creates an AutoDiffXd variant. Variants on other scalar types
+  ///   // can be created with a call to CloneToScalar().
   ///   std::unique_ptr<MultibodyTree<Tvariant>> variant_model =
-  ///       CloneToScalar<Tvariant>();
-  ///   // User retrieves the variant corresponding to the body added above.
+  ///       model.ToAutoDiffXd();
+  ///   // User retrieves the AutoDiffXd variant corresponding to the original
+  ///   // body added above.
   ///   const RigidBody<AutoDiffXd>&
   ///       variant_body = variant_model.retrieve_variant(body);
   /// @endcode
@@ -558,14 +558,13 @@ class MultibodyTree {
   }
   /// @}
 
-  /// Creates an exact clone of `this` %MultibodyTree templated on the same
+  /// Creates a deep copy of `this` %MultibodyTree templated on the same
   /// scalar type T as `this` tree.
   std::unique_ptr<MultibodyTree<T>> Clone() const {
     return CloneToScalar<T>();
   }
 
-  /// Creates a deep copy of `this` %MultibodyTree templated on the same
-  /// scalar type T as `this` tree.
+  /// Creates a deep copy of `this` %MultibodyTree templated on AutoDiffXd.
   std::unique_ptr<MultibodyTree<AutoDiffXd>> ToAutoDiffXd() const {
     return CloneToScalar<AutoDiffXd>();
   }
@@ -574,18 +573,36 @@ class MultibodyTree {
   /// `ToScalar`.
   /// The new deep copy is guaranteed to have exactly the same
   /// MultibodyTreeTopology as the original tree the method is called on.
+  /// This method ensures the following cloning order:
+  ///   - Body objects, and their corresponding BodyFrame objects.
+  ///   - Frame objects.
+  ///   - If a Frame is attached to another frame, its parent frame is
+  ///     guaranteed to be created first.
+  ///   - Mobilizer objects are created last and therefore clones of the
+  ///     original Frame objects are guaranteed to already be part of the cloned
+  ///     tree.
+  /// @pre Finalize() must have already been called on this %MultibodyTree.
   template <typename ToScalar>
   std::unique_ptr<MultibodyTree<ToScalar>> CloneToScalar() const {
+    if (!topology_is_valid()) {
+      throw std::logic_error(
+          "Attempting to clone a MultibodyTree with an invalid topology."
+          "MultibodyTree::Finalize() must be called before attempting to clone"
+          " a MultibodyTree.");
+    }
     auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
 
     tree_clone->frames_.resize(get_num_frames());
-    for (const auto& body : owned_bodies_) {
-      // Skip cloning the world since it is automatically created by
-      // MultibodyTree's constructor.
-      if (body->get_index() == world_index()) continue;
-      tree_clone->CloneBodyAndAdd(*body);
+    // Skipping the world body at body_index = 0.
+    for (BodyIndex body_index(1); body_index < get_num_bodies(); ++body_index) {
+      const Body<T>& body = get_body(body_index);
+      tree_clone->CloneBodyAndAdd(body);
     }
 
+    // Frames are cloned in the order they are indexed that is, in the exact
+    // same order they were added to the original tree. Since the Frame API
+    // enforces the creation of the parent frame first, this traversal
+    // guarantees that parent body frames are created before their child frames.
     for (const auto& frame : owned_frames_) {
       tree_clone->CloneFrameAndAdd(*frame);
     }
@@ -596,7 +613,11 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
+    // We can safely copy-assign here since the original multibody tree is
+    // required to be finalized.
     tree_clone->topology_ = this->topology_;
+    // All other internals templated on T are created with the following call to
+    // FinalizeInternals().
     tree_clone->FinalizeInternals();
     return tree_clone;
   }
@@ -612,6 +633,8 @@ class MultibodyTree {
   // At Finalize(), this method performs all other finalization that is not
   // topological (i.e. performed by FinalizeTopology()). This includes for
   // instance the creation of BodyNode objects.
+  // This method will throw a std::logic_error if FinalizeTopology() was not
+  // previously called on this tree.
   void FinalizeInternals();
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
@@ -625,12 +648,20 @@ class MultibodyTree {
     frame_clone->set_parent_tree(this, frame_index);
 
     Frame<T>* raw_frame_clone_ptr = frame_clone.get();
+    // The order in which frames are added into frames_ is important to keep the
+    // topology invariant. Therefore we index new clones according to the
+    // original frame_index.
     frames_[frame_index] = raw_frame_clone_ptr;
+    // The order within owned_frames_ does not matter.
     owned_frames_.push_back(std::move(frame_clone));
     return raw_frame_clone_ptr;
   }
 
   // Helper method to create a clone of `body` and add it to `this` tree.
+  // Because this method is only invoked in a controlled manner from within
+  // CloneToScalar(), it is guaranteed that the cloned body in this variant's
+  // `owned_bodies_` will occupy the same position as its corresponding Body
+  // in the source variant `body`.
   template <typename FromScalar>
   Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body) {
     BodyIndex body_index = body.get_index();
@@ -643,8 +674,16 @@ class MultibodyTree {
     Frame<T>* body_frame_clone =
         &internal::BodyAttorney<T>::get_mutable_body_frame(body_clone.get());
     body_frame_clone->set_parent_tree(this, body_frame_index);
+
+    // The order in which frames are added into frames_ is important to keep the
+    // topology invariant. Therefore we index new clones according to the
+    // original body_frame_index.
     frames_[body_frame_index] = body_frame_clone;
     Body<T>* raw_body_clone_ptr = body_clone.get();
+    // The order in which bodies are added into owned_bodies_ is important to
+    // keep the topology invariant. Therefore this method is called from
+    // MultibodyTree::CloneToScalar() within a loop by original body_index.
+    DRAKE_DEMAND(static_cast<int>(owned_bodies_.size()) == body_index);
     owned_bodies_.push_back(std::move(body_clone));
     return raw_body_clone_ptr;
   }

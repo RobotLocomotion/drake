@@ -29,8 +29,8 @@ void MultibodyTree<T>::FinalizeTopology() {
   // finalized. Re-compilation is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
-        "Attempting to call MultibodyTree::Finalize() on an already finalized "
-            "MultibodyTree.");
+        "Attempting to call MultibodyTree::FinalizeTopology() on an tree with"
+        " an already finalized topology.");
   }
 
   // Before performing any setup that depends on the scalar type <T>, compile
@@ -40,11 +40,10 @@ void MultibodyTree<T>::FinalizeTopology() {
 
 template <typename T>
 void MultibodyTree<T>::FinalizeInternals() {
-  // TODO(amcastro-tri): This is a brief list of operations to be added in
-  // subsequent PR's:
-  //   - Compute degrees of freedom, array sizes and any other information to
-  //     allocate a context and request the required cache entries.
-  //   - Setup computational structures (BodyNode based).
+  if (!topology_is_valid()) {
+    throw std::logic_error(
+        "MultibodyTree::FinalizeTopology() must be called before this method.");
+  }
 
   // Give bodies the chance to perform any finalize-time setup.
   for (const auto& body : owned_bodies_) {

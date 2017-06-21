@@ -533,21 +533,23 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   const double kEpsilon =
       kEpsilonFactor * std::numeric_limits<double>::epsilon();
 
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> model = model_->ToAutoDiffXd();
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
+      model_->ToAutoDiffXd();
 
-  const RevoluteMobilizer<AutoDiffXd>&
-      shoulder_mobilizer = model->retrieve_variant(*shoulder_mobilizer_);
-  const RevoluteMobilizer<AutoDiffXd>&
-      elbow_mobilizer = model->retrieve_variant(*elbow_mobilizer_);
+  const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
+      model_autodiff->retrieve_variant(*shoulder_mobilizer_);
+  const RevoluteMobilizer<AutoDiffXd>& elbow_mobilizer_autodiff =
+      model_autodiff->retrieve_variant(*elbow_mobilizer_);
 
-  const RigidBody<AutoDiffXd>&
-      upper_link = model->retrieve_variant(*upper_link_);
-  const RigidBody<AutoDiffXd>&
-      lower_link = model->retrieve_variant(*lower_link_);
+  const RigidBody<AutoDiffXd>& upper_link_autodiff =
+      model_autodiff->retrieve_variant(*upper_link_);
+  const RigidBody<AutoDiffXd>& lower_link_autodiff =
+      model_autodiff->retrieve_variant(*lower_link_);
 
-  std::unique_ptr<Context<AutoDiffXd>> context = model->CreateDefaultContext();
+  std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
+      model_autodiff->CreateDefaultContext();
 
-  PositionKinematicsCache<AutoDiffXd> pc(model->get_topology());
+  PositionKinematicsCache<AutoDiffXd> pc(model_autodiff->get_topology());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -578,15 +580,17 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
               Vector1<double>::Constant(w_UL) /* angular velocity */);
 
           // Update position kinematics.
-          shoulder_mobilizer.set_angle(context.get(), shoulder_angle);
-          elbow_mobilizer.set_angle(context.get(), elbow_angle);
-          model->CalcPositionKinematicsCache(*context, &pc);
+          shoulder_mobilizer_autodiff.set_angle(context_autodiff.get(),
+                                                shoulder_angle);
+          elbow_mobilizer_autodiff.set_angle(context_autodiff.get(),
+                                             elbow_angle);
+          model_autodiff->CalcPositionKinematicsCache(*context_autodiff, &pc);
 
           // Retrieve body poses from position kinematics cache.
           const Isometry3<AutoDiffXd>& X_WU =
-              get_body_pose_in_world(pc, upper_link);
+              get_body_pose_in_world(pc, upper_link_autodiff);
           const Isometry3<AutoDiffXd>& X_WL =
-              get_body_pose_in_world(pc, lower_link);
+              get_body_pose_in_world(pc, lower_link_autodiff);
 
           const Isometry3d X_WU_expected =
               acrobot_benchmark_.CalcLink1PoseInWorldFrame(

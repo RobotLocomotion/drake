@@ -103,15 +103,20 @@ class Frame : public FrameBase<T> {
   }
 
  protected:
-  // Only derived classes can use this constructor.
+  /// Only derived classes can use this constructor. It creates a %Frame
+  /// object attached to `body`.
   explicit Frame(const Body<T>& body) : body_(body) {}
 
   /// @name Methods to make a clone templated on different scalar types.
   ///
-  /// The only const argument to these methods is the new MultibodyTree clone
-  /// under construction. Specific %Frame subclasses might specify a number of
-  /// prerequisites on the cloned tree and therefore require it to be at a
-  /// given state of clonning.
+  /// These methods are meant to be called by MultibodyTree::CloneToScalar()
+  /// when making a clone of the entire tree or a new instance templated on a
+  /// different scalar type. The only const argument to these methods is the
+  /// new MultibodyTree clone under construction. Specific %Frame subclasses
+  /// might specify a number of prerequisites on the cloned tree and therefore
+  /// require it to be at a given state of cloning. See
+  /// MultibodyTree::CloneToScalar() for a list of prerequisites that are
+  /// guarenteed to be satisfied during the cloning process.
   /// @{
 
   /// Clones this %Frame (templated on T) to a frame templated on `double`.

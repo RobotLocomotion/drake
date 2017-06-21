@@ -185,14 +185,16 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
  protected:
   /// @name Methods to make a clone templated on different scalar types.
   ///
-  /// The only const argument to these methods is the new MultibodyTree clone
-  /// under construction. Specific %Body subclasses might specify a number of
-  /// prerequisites on the cloned tree and therefore require it to be at a
-  /// given state of clonning (for instance requiring that the cloned tree
-  /// already contains all the frames in the world as in the original tree.)
-  /// These clonning methods are mostly intended to be called from
-  /// MultibodyTree::CloneToScalar() which can safely ensure these prerequisites
-  /// are met.
+  /// These methods are meant to be called by MultibodyTree::CloneToScalar()
+  /// when making a clone of the entire tree or a new instance templated on a
+  /// different scalar type. The only const argument to these methods is the
+  /// new MultibodyTree clone under construction. Specific %Body subclasses
+  /// might specify a number of prerequisites on the cloned tree and therefore
+  /// require it to be at a given state of cloning (for instance requiring that
+  /// the cloned tree already contains all the frames in the world as in the
+  /// original tree.) See MultibodyTree::CloneToScalar() for a list of
+  /// prerequisites that are guarenteed to be satisfied during the cloning
+  /// process.
   ///
   /// @{
 
