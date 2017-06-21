@@ -127,9 +127,29 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   /// @see JacobianComputationScheme
   /// @{
 
+  /// Sets whether the integrator attempts to reuse Jacobian matrices and
+  /// iteration matrix factorizations (default is `true`). Forming Jacobian
+  /// matrices and factorizing iteration matrices are generally the two most
+  /// expensive operations performed by this integrator. For small systems
+  /// (those with on the order of ten state variables), the additional accuracy
+  /// that using fresh Jacobians and factorizations buys- which can permit
+  /// increased step sizes but should have no effect on solution accuracy- can
+  /// outweigh the small factorization cost.
+  /// @sa get_reuse
+  void set_reuse(bool reuse) { reuse_ = reuse; }
+
+  /// Gets whether the integrator attempts to reuse Jacobian matrices and
+  /// iteration matrix factorizations.
+  /// @sa set_reuse()
+  bool get_reuse() const { return reuse_; }
+
   /// Sets the Jacobian computation scheme. This function can be safely called
   /// at any time (i.e., the integrator need not be re-initialized afterward).
+  /// @note Discards any already-computed Jacobian matrices if the scheme
+  ///       changes.
   void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
+    if (jacobian_scheme_ != scheme)
+      J_.resize(0, 0);
     jacobian_scheme_ = scheme;
   }
 
@@ -230,13 +250,16 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
  private:
   void DoInitialize() override;
   void DoResetStatistics() override;
-  VectorX<T> FactorAndSolve(const MatrixX<T>& A, const VectorX<T>& b);
+  void Factor(const MatrixX<T>& A);
+  VectorX<T> Solve(const VectorX<T>& rhs) const;
   bool AttemptStepPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
   bool StepAbstract(const T& dt,
                     const std::function<VectorX<T>()>& g,
                     int scale,
-                    VectorX<T>* xtplus);
+                    VectorX<T>* xtplus, int trial = 1);
+  bool CalcMatrices(const T& tf, const T& dt, int scale,
+                    const VectorX<T>& xtplus, int trial);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   bool DoStep(const T& dt) override;
   bool StepImplicitEuler(const T& dt);
@@ -295,7 +318,14 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   // whether the implicit Euler or implicit trapezoid method was used. Keeping
   // this data in the class definition serves to minimize heap allocations
   // and deallocations.
-  MatrixX<T> iteration_matrix_;
+  MatrixX<T> neg_iteration_matrix_;
+
+  // Whether the last call to StepAbstract() was a failure.
+  bool last_call_failed_{false};
+
+  // If set to `false`, Jacobian matrices and iteration matrix factorizations
+  // will not be reused.
+  bool reuse_{true};
 
   // Various combined statistics.
   int64_t num_jacobian_evaluations_{0};

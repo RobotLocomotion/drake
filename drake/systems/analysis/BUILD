@@ -181,7 +181,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
-    # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
         ":discontinuous_spring_mass_damper_system",

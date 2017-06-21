@@ -372,6 +372,13 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
                                               simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(dt);
   simulator.get_mutable_integrator()->set_target_accuracy(0.1);
+  // TODO(sherm1) Workaround for issue #6396: witness isolation currently
+  // depends on bitwise repeatability of integration steps; that isn't
+  // guaranteed when Jacobian re-use is permitted. Remove this line when that
+  // issue is resolved.
+  dynamic_cast<ImplicitEulerIntegrator<double>*>(
+      simulator.get_mutable_integrator())
+      ->set_reuse(false);
 
   // Set initial time and state.
   Context<double>* context = simulator.get_mutable_context();

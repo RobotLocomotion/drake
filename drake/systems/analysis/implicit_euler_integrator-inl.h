@@ -59,6 +59,9 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   else if (working_accuracy > kLoosestAccuracy)
     working_accuracy = kLoosestAccuracy;
   this->set_accuracy_in_use(working_accuracy);
+
+  // Reset the Jacobian matrix (so that recomputation is forced).
+  J_.resize(0, 0);
 }
 
 // Computes the Jacobian of the ordinary differential equations taken with
@@ -264,29 +267,105 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
   return J;
 }
 
-// Factors and solves a linear system. This AutoDiff-specialized method is
-// necessary because Eigen's LU factorization, which should be faster than the
-// QR factorization used below, is not currently AutoDiff-able (while QR
-// factorization *is* AutoDiff-able).
+// Factors a dense matrix (the negated iteration matrix) using LU factorization,
+// which should be faster than the QR factorization used in the specialized
+// template method immediately below.
 template <class T>
-VectorX<T> ImplicitEulerIntegrator<T>::FactorAndSolve(const MatrixX<T>& A,
-                                             const VectorX<T>& b) {
+void ImplicitEulerIntegrator<T>::Factor(const MatrixX<T>& A) {
   num_iter_factorizations_++;
   LU_.compute(A);
+}
+
+// Factors a dense matrix (the negated iteration matrix). This
+// AutoDiff-specialized method is necessary because Eigen's LU factorization,
+// which should be faster than the QR factorization used here, is not currently
+// AutoDiff-able (while the QR factorization *is* AutoDiff-able).
+template <>
+void ImplicitEulerIntegrator<AutoDiffXd>::Factor(
+    const MatrixX<AutoDiffXd>& A) {
+  num_iter_factorizations_++;
+  QR_.compute(A);
+}
+
+// Solves a linear system Ax = b for x using a negated iteration matrix (A)
+// factored using LU decomposition.
+// @sa Factor()
+template <class T>
+VectorX<T> ImplicitEulerIntegrator<T>::Solve(const VectorX<T>& b) const {
   return LU_.solve(b);
 }
 
-// Factors and solves a linear system. This AutoDiff-specialized method is
-// necessary because Eigen's LU factorization, which should be faster than the
-// QR factorization used below, is not currently AutoDiff-able (while QR
-// factorization *is* AutoDiff-able).
+// Solves the linear system Ax = b for x using a negated iteration matrix (A)
+// factored using QR decomposition.
+// @sa Factor()
 template <>
-VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
-    const MatrixX<AutoDiffXd>& A,
-    const VectorX<AutoDiffXd>& b) {
-  num_iter_factorizations_++;
-  QR_.compute(A);
+VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
+    const VectorX<AutoDiffXd>& b) const {
   return QR_.solve(b);
+}
+
+// Computes any necessary matrices for the Newton-Raphson iteration in
+// StepAbstract(). Parameters are identical to those for StepAbstract;
+// @see StepAbstract() for their documentation.
+// @returns `false` if the calling StepAbstract method should indicate failure;
+//          `true` otherwise.
+template <class T>
+bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
+                                              int scale,
+                                              const VectorX<T>& xtplus,
+                                              int trial) {
+  // Compute the initial Jacobian and negated iteration matrices (see
+  // rationale for the negation below) and factor them, if necessary.
+  if (!reuse_ || J_.rows() == 0) {
+    J_ = CalcJacobian(tf, xtplus);
+    const int n = xtplus.size();
+    neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+    Factor(neg_iteration_matrix_);
+    return true;
+  }
+
+  switch (trial) {
+    case 1:
+      // For the first trial, we do nothing special.
+      return true;
+
+    case 2: {
+      // For the second trial, re-construct and factor the iteration matrix.
+      const int n = xtplus.size();
+      neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
+      Factor(neg_iteration_matrix_);
+      return true;
+    }
+
+    case 3: {
+      // If the last call to StepAbstract() ended in failure, we know that
+      // the Jacobian matrix is fresh and the iteration matrix has been newly
+      // formed and factored (on Trial #2), so there is nothing more to be
+      // done.
+      if (last_call_failed_) {
+        return false;
+      } else {
+        // Reform the Jacobian matrix and refactor the negation of
+        // the iteration matrix. The idea of using the negation of this matrix
+        // is that an O(n^2) subtraction is not necessary as would
+        // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
+        J_ = CalcJacobian(tf, xtplus);
+        const int n = xtplus.size();
+        neg_iteration_matrix_ = J_ * (dt / scale) -
+            MatrixX<T>::Identity(n, n);
+        Factor(neg_iteration_matrix_);
+      }
+      return true;
+
+      case 4: {
+        // Trial #4 indicates failure.
+        return false;
+      }
+
+      default:
+        DRAKE_ABORT_MSG("Unexpected trial number.");
+    }
+  }
 }
 
 // Performs the bulk of the stepping computation for both implicit Euler and
@@ -299,6 +378,8 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
 //        used by both implicit Euler and implicit trapezoid methods.
 // @param [in,out] the starting guess for x(t+dt); the value for x(t+h) on
 //        return (assuming that h > 0)
+// @param trial the attempt for this approach (1-4). StepAbstract() uses more
+//        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
 //           step of size @p dt (or `false` otherwise).
 // @pre The time and state of the system's context (stored by the integrator)
@@ -310,9 +391,12 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::FactorAndSolve(
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
                           const std::function<VectorX<T>()>& g,
-                          int scale, VectorX<T>* xtplus) {
+                          int scale, VectorX<T>* xtplus, int trial) {
   using std::max;
   using std::min;
+
+  // Verify the trial number is valid.
+  DRAKE_ASSERT(trial >= 1 && trial <= 4);
 
   // Verify the scale factor is correct.
   DRAKE_ASSERT(scale == 1 || scale == 2);
@@ -342,8 +426,11 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // Compute the initial Jacobian matrix.
-  J_ = CalcJacobian(tf, *xtplus);
+  // Calculate Jacobian and iteration matrices (and factorizations), as needed.
+  if (!CalcMatrices(tf, dt, scale, *xtplus, trial)) {
+    last_call_failed_ = true;
+    return false;
+  }
 
   // The maximum number of Newton-Raphson iterations to take before declaring
   // failure. [Hairer, 1996] states, "It is our experience that the code becomes
@@ -359,14 +446,11 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 
-    // Compute the state update by computing the negation of the iteration
-    // matrix, factorizing it, and solving it. The idea of using the negation
-    // of this matrix is that an O(n^2) subtraction is not necessary as would
-    // be the case with MatrixX<T>::Identity(n, n) - J * (dt / scale).
+    // Compute the state update using the equation A*x = -g(), where A is the
+    // iteration matrix. Using nA as the negation of the iteration matrix, we
+    // instead solve nA*x = g().
     // TODO(edrumwri): Allow caller to provide their own solver.
-    const int n = xtplus->size();
-    iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
-    VectorX<T> dx = FactorAndSolve(iteration_matrix_, goutput);
+    VectorX<T> dx = Solve(goutput);
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector()->SetFromVector(dx);
@@ -383,6 +467,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // convergence would never be identified.
     if (dx_norm < 10 * std::numeric_limits<double>::epsilon()) {
       context->get_mutable_continuous_state()->SetFromVector(*xtplus);
+      last_call_failed_ = false;
       return true;
     }
 
@@ -406,8 +491,10 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
+        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
+                     eta, dt);
         context->get_mutable_continuous_state()->SetFromVector(*xtplus);
+        last_call_failed_ = false;
         return true;
       }
     }
@@ -418,15 +505,20 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // Update the state in the context and compute g(xⁱ⁺¹).
     context->get_mutable_continuous_state()->SetFromVector(*xtplus);
     goutput = g();
-
-    // Recompute the Jacobian matrix.
-    J_ = CalcJacobian(tf, *xtplus);
   }
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() convergence failed");
 
-  // Failed because of divergence or after the maximum number of iterations.
-  return false;
+  // If Jacobian and iteration matrix factorizations are not reused, there
+  // is nothing else we can try.
+  if (!reuse_) {
+    last_call_failed_ = true;
+    return false;
+  }
+
+  // Try StepAbstract again, freshening Jacobians and iteration matrix
+  // factorizations as helpful.
+  return StepAbstract(dt, g, scale, xtplus, trial+1);
 }
 
 // Steps the system forward by a single step of at most dt using the implicit
@@ -582,6 +674,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
   // Reset the time and state.
   context->set_time(t_current);
   continuous_state->SetFromVector(x_current);
+
   return J;
 }
 
