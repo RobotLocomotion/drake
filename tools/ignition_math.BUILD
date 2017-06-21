@@ -143,12 +143,12 @@ install(
         ":mathhh_genrule",
     ],
     doc_dest = "share/doc/" + CMAKE_PACKAGE,
-    hdr_dest = "include",
-    hdr_strip_prefix = ["include"],
-    license_docs = [
+    docs = [
         "LICENSE",
         "COPYING",
     ],
+    hdr_dest = "include",
+    hdr_strip_prefix = ["include"],
     targets = [":ignition_math"],
     deps = [":install_cmake_config"],
 )

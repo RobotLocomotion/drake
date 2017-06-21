@@ -60,9 +60,9 @@ install(
     name = "install",
     hdrs = CCD_PUBLIC_HEADERS,
     doc_dest = "share/doc/ccd",
+    docs = ["BSD-LICENSE"],
     hdr_dest = "include/ccd",
     hdr_strip_prefix = ["**/"],
-    license_docs = ["BSD-LICENSE"],
     targets = [":ccd"],
     deps = [":install_cmake_config"],
 )

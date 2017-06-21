@@ -28,10 +28,10 @@ install(
     allowed_externals = OPTITRACK_TARGETS,
     doc_dest = "share/doc/" + CMAKE_PACKAGE,
     doc_strip_prefix = ["**/"],
+    docs = ["@optitrack_driver//:LICENSE"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/lcmtypes",
     java_strip_prefix = ["**/"],
-    license_docs = ["@optitrack_driver//:LICENSE"],
     py_dest = "lib/python2.7/site-packages/optitrack",
     py_strip_prefix = ["**/"],
     rename = {

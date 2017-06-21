@@ -54,11 +54,13 @@ install_cmake_config(package = "Bullet")  # Creates rule :install_cmake_config.
 install(
     name = "install",
     doc_dest = "share/doc/bullet",
-    docs = ["AUTHORS.txt"],
+    docs = [
+        "AUTHORS.txt",
+        "LICENSE.txt",
+    ],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/bullet",
     hdr_strip_prefix = ["src"],
-    license_docs = ["LICENSE.txt"],
     targets = [
         ":BulletCollision",
         ":LinearMath",
