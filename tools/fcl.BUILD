@@ -70,10 +70,10 @@ install_cmake_config(package = "fcl")  # Creates rule :install_cmake_config.
 install(
     name = "install",
     doc_dest = "share/doc/fcl",
+    docs = ["LICENSE"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/fcl",
     hdr_strip_prefix = ["include/fcl"],
-    license_docs = glob(["LICENSE"]),
     targets = [":fcl"],
     deps = [":install_cmake_config"],
 )

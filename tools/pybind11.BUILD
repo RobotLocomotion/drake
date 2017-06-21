@@ -63,9 +63,9 @@ install_files(
 install(
     name = "install",
     doc_dest = "share/doc/pybind11",
+    docs = ["LICENSE"],
     guess_hdrs = "PACKAGE",
     hdr_strip_prefix = ["include"],
-    license_docs = ["LICENSE"],
     targets = [":pybind11"],
     deps = [
         ":install_cmake_config",

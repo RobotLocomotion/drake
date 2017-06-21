@@ -147,12 +147,12 @@ install(
         ":config",
     ],
     doc_dest = "share/doc/sdformat",
-    hdr_dest = "include",
-    hdr_strip_prefix = ["include"],
-    license_docs = [
+    docs = [
         "LICENSE",
         "COPYING",
     ],
+    hdr_dest = "include",
+    hdr_strip_prefix = ["include"],
     targets = [":sdformat"],
     deps = [":install_cmake_config"],
 )
