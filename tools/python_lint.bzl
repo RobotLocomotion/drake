@@ -17,7 +17,7 @@ def _python_lint(name, files, ignore):
             args = ignore + ["$(location %s)" % f for f in files],
             main = "@pycodestyle//:pycodestyle.py",
             srcs_version = "PY2AND3",
-            tags = ["pycodestyle"],
+            tags = ["pycodestyle", "lint"],
         )
 
 #------------------------------------------------------------------------------

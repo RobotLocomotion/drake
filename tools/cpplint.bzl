@@ -48,7 +48,7 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     # Common attributes for all of our py_test invocations.
     data = (data or [])
     size = "small"
-    tags = ["cpplint"]
+    tags = ["cpplint", "lint"]
 
     # Google cpplint.
     cpplint_cfg = ["//:CPPLINT.cfg"] + native.glob(['CPPLINT.cfg'])

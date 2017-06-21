@@ -17,7 +17,7 @@ def _bazel_lint(name, files, ignore):
             args = ignore + ["$(location %s)" % f for f in files],
             main = "@drake//tools:bzlcodestyle.py",
             srcs_version = "PY2AND3",
-            tags = ["bzlcodestyle"],
+            tags = ["bzlcodestyle", "lint"],
         )
 
         native.sh_test(
@@ -26,6 +26,7 @@ def _bazel_lint(name, files, ignore):
             srcs = ["@drake//tools:buildifier-test.sh"],
             data = files + ["@drake//tools:buildifier"],
             args = ["$(location %s)" % f for f in files],
+            tags = ["buildifier", "lint"],
         )
 
 #------------------------------------------------------------------------------
