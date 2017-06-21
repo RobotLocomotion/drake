@@ -196,10 +196,10 @@ github_archive(
 )
 
 github_archive(
-    name = "bot_core_lcmtypes",
+    name = "lcmtypes_bot2_core",
     repository = "openhumanoids/bot_core_lcmtypes",
     commit = "99676541398749c2aab4b5b2c38be77d268085cc",
-    build_file = "tools/bot_core_lcmtypes.BUILD",
+    build_file = "tools/lcmtypes_bot2_core.BUILD",
     sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",
 )
 

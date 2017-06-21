@@ -28,9 +28,9 @@ cc_library(
     copts = ["-std=gnu99"],
     includes = ["bot2-core/src"],
     deps = [
-        "@bot_core_lcmtypes//:bot_core_lcmtypes_c",
         "@glib",
         "@lcm",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_c",
     ],
 )
 
@@ -39,8 +39,8 @@ java_library(
     srcs = glob(["bot2-core/java/src/bot2_spy/*.java"]),
     visibility = ["//visibility:private"],
     deps = [
-        "@bot_core_lcmtypes//:bot_core_lcmtypes_java",
         "@lcm//:lcm-java",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
     ],
 )
 

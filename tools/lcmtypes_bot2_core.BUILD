@@ -26,7 +26,7 @@ LCM_STRUCTS = [
 ]
 
 lcm_c_aggregate_header(
-    name = "bot_core_lcmtypes_c_aggregate_header",
+    name = "lcmtypes_bot2_core_c_aggregate_header",
     out = "lcmtypes/bot_core.h",
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
@@ -35,8 +35,8 @@ lcm_c_aggregate_header(
 )
 
 lcm_c_library(
-    name = "bot_core_lcmtypes_c",
-    aggregate_hdr = ":bot_core_lcmtypes_c_aggregate_header",
+    name = "lcmtypes_bot2_core_c",
+    aggregate_hdr = ":lcmtypes_bot2_core_c_aggregate_header",
     includes = ["lcmtypes"],
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
@@ -44,7 +44,7 @@ lcm_c_library(
 )
 
 lcm_cc_library(
-    name = "bot_core_lcmtypes",
+    name = "lcmtypes_bot2_core",
     includes = ["lcmtypes"],
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
@@ -52,14 +52,14 @@ lcm_cc_library(
 )
 
 lcm_java_library(
-    name = "bot_core_lcmtypes_java",
+    name = "lcmtypes_bot2_core_java",
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
     lcm_structs = LCM_STRUCTS,
 )
 
 lcm_py_library(
-    name = "bot_core_lcmtypes_py",
+    name = "lcmtypes_bot2_core_py",
     imports = ["lcmtypes"],
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
@@ -83,11 +83,14 @@ install(
     guess_hdrs = "PACKAGE",
     license_docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
     py_strip_prefix = ["lcmtypes"],
+    rename = {
+        "share/java/liblcmtypes_bot2_core_java.jar": "lcmtypes_bot2_core.jar",
+    },
     targets = [
-        ":bot_core_lcmtypes",
-        ":bot_core_lcmtypes_c",
-        ":bot_core_lcmtypes_java",
-        ":bot_core_lcmtypes_py",
+        ":lcmtypes_bot2_core",
+        ":lcmtypes_bot2_core_c",
+        ":lcmtypes_bot2_core_java",
+        ":lcmtypes_bot2_core_py",
     ],
     deps = [":install_cmake_config"],
 )

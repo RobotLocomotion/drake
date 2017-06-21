@@ -33,7 +33,7 @@ lcm_c_library(
     includes = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes//:bot_core_lcmtypes_c"],
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_c"],
 )
 
 lcm_cc_library(
@@ -41,14 +41,14 @@ lcm_cc_library(
     includes = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes"],
+    deps = ["@lcmtypes_bot2_core"],
 )
 
 lcm_java_library(
     name = "lcmtypes_robotlocomotion_java",
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes//:bot_core_lcmtypes_java"],
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 lcm_py_library(
@@ -56,7 +56,7 @@ lcm_py_library(
     imports = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@bot_core_lcmtypes//:bot_core_lcmtypes_py"],
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_py"],
 )
 
 CMAKE_PACKAGE = "robotlocomotion-lcmtypes"
@@ -90,5 +90,5 @@ install(
 # https://github.com/openhumanoids/bot_core_lcmtypes/issues/33.
 exports_files(
     ["LICENSE.txt"],
-    visibility = ["@bot_core_lcmtypes//:__pkg__"],
+    visibility = ["@lcmtypes_bot2_core//:__pkg__"],
 )

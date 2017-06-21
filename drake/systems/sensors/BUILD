@@ -125,7 +125,7 @@ drake_cc_library(
         ":depth_sensor",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/rendering:pose_vector",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 

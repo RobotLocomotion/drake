@@ -128,7 +128,7 @@ exports_create_cps_scripts([
 
 exports_files(
     ["bot2-core-lcmtypes.cps"],
-    visibility = ["@bot_core_lcmtypes//:__pkg__"],
+    visibility = ["@lcmtypes_bot2_core//:__pkg__"],
 )
 
 exports_files(

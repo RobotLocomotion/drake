@@ -18,7 +18,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/util",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 

@@ -37,7 +37,7 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
 )
@@ -64,7 +64,7 @@ drake_cc_library(
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/framework:leaf_system",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -77,7 +77,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework:leaf_system",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
 )
@@ -111,8 +111,8 @@ drake_cc_binary(
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
         "//drake/systems/primitives:demultiplexer",
-        "@bot_core_lcmtypes",
         "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
 )
@@ -180,7 +180,7 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
 )
