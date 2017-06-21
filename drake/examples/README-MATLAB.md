@@ -31,6 +31,7 @@ framework:
  - Strandbeest
  - TwoWheeledInvertedPendulum
  - Wingeron
+ - ZMP
  - grasping
  - mass_spring_damper
 

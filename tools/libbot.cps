@@ -82,6 +82,46 @@
         "lcm:lcm"
       ]
     },
+    "lcmtypes_bot2-lcmgl": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Location": "@prefix@/lib/liblcmtypes_bot2_lcmgl_c.so",
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-lcmgl-cpp": {
+      "Type": "interface",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-lcmgl-java": {
+      "Type": "jar",
+      "Location": "@prefix@/share/java/liblcmtypes_bot2_lcmgl_java.jar",
+      "Requires": ["lcm:lcm-java"]
+    },
+    "bot2-lcmgl-client": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/libbot"],
+      "Location": "@prefix@/lib/libbot2_lcmgl_client.so",
+      "Requires": [
+        ":lcmtypes_bot2-lcmgl",
+        "lcm:lcm"
+      ]
+    },
+    "bot2-lcmgl-render": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/libbot"],
+      "Location": "@prefix@/lib/libbot2_lcmgl_client.so",
+      "Requires": [
+        ":bot2-lcmgl-client",
+        ":lcmtypes_bot2-lcmgl",
+        "lcm:lcm"
+      ]
+    },
+    "bot2-lcmgl-java": {
+      "Type": "jar",
+      "Location": "@prefix@/share/java/liblcmtypes_bot2_lcmgl_java.jar",
+      "Requires": ["lcm:lcm-java"]
+    },
     "bot-lcm-logfilter": {
       "Type": "exe",
       "Location": "@prefix@/bin/bot-lcm-logfilter"

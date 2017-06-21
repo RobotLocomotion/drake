@@ -11,6 +11,10 @@ DEFINE_string(
     "`drake/examples/Pendulum/Pendulum.urdf`, "
     "find the resource and print its absolute path, e.g., "
     "`/home/user/tmp/drake/examples/Pendulum/Pendulum.urdf`");
+DEFINE_bool(
+    print_resource_root_environment_variable_name, false,
+    "Print the name of the environment variable that provides the "
+    "first place where this tool attempts to look.");
 
 namespace drake {
 namespace {
@@ -20,9 +24,17 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
 
-  if (FLAGS_print_resource_path.empty()) {
+  const int num_commands =
+      (FLAGS_print_resource_path.empty() ? 0 : 1) +
+      (FLAGS_print_resource_root_environment_variable_name ? 1 : 0);
+  if (num_commands != 1) {
     gflags::ShowUsageWithFlags(argv[0]);
     return 1;
+  }
+
+  if (FLAGS_print_resource_root_environment_variable_name) {
+    std::cout << drake::kDrakeResourceRootEnvironmentVariableName << "\n";
+    return 0;
   }
 
   const FindResourceResult& result = FindResource(FLAGS_print_resource_path);

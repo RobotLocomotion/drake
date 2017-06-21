@@ -36,11 +36,15 @@ def _impl(repository_ctx):
     result = repository_ctx.execute([
         python,
         "-c",
-        "from __future__ import print_function; import numpy; print(numpy.get_include());",
+        "; ".join([
+            "from __future__ import print_function",
+            "import numpy",
+            "print(numpy.get_include())",
+        ]),
     ])
 
     if result.return_code != 0:
-        fail("Could NOT determine NumPy include", attr=result.stderr)
+        fail("Could NOT determine NumPy include", attr = result.stderr)
 
     source = repository_ctx.path(result.stdout.strip())
     destination = repository_ctx.path("include")
@@ -55,7 +59,7 @@ cc_library(
 )
     """
 
-    repository_ctx.file("BUILD", content=file_content, executable=False)
+    repository_ctx.file("BUILD", content = file_content, executable = False)
 
 numpy_repository = repository_rule(
     _impl,

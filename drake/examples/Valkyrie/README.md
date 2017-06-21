@@ -30,3 +30,12 @@ For a bit more repeatability, start the controller first.
 The controlled simulation eventually fails when the robot falls down, because
 the simple controller does not account for sliding feet.
 
+# Historical note
+
+Prior to 2016, Drake was built around a substantial base of MATLAB software.
+Most of that was removed from the head of git master during 2017.
+
+To view or use the original MATLAB implementation of Valkyrie you may use this
+tag:
+
+https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Valkyrie

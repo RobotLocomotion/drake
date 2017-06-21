@@ -23,6 +23,3 @@ drake_install_pkg_config_file(drake-bouncing-ball
   REQUIRES
     drake-common
     drake-system-framework)
-
-drake_add_matlab_test(NAME examples/bouncing_ball/BallPlant2D.run
-  COMMAND BallPlant2D.run)
