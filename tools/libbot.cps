@@ -42,7 +42,7 @@
     },
     "lcmtypes_bot2-param-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/liblcmtypes_bot2_param_java.jar",
+      "Location": "@prefix@/share/java/lcmtypes_bot2_param.jar",
       "Requires": ["lcm:lcm-java"]
     },
     "bot2-param-client": {
@@ -68,7 +68,7 @@
     },
     "lcmtypes_bot2-frames-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/liblcmtypes_bot2_frames_java.jar",
+      "Location": "@prefix@/share/java/lcmtypes_bot2_frames.jar",
       "Requires": ["lcm:lcm-java"]
     },
     "bot2-frames": {
@@ -95,7 +95,7 @@
     },
     "lcmtypes_bot2-lcmgl-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/liblcmtypes_bot2_lcmgl_java.jar",
+      "Location": "@prefix@/share/java/lcmtypes_bot2_lcmgl.jar",
       "Requires": ["lcm:lcm-java"]
     },
     "bot2-lcmgl-client": {
@@ -119,7 +119,7 @@
     },
     "bot2-lcmgl-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/liblcmtypes_bot2_lcmgl_java.jar",
+      "Location": "@prefix@/share/java/bot2_lcmgl.jar",
       "Requires": ["lcm:lcm-java"]
     },
     "bot-lcm-logfilter": {
