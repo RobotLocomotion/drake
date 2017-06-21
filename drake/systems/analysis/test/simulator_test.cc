@@ -378,7 +378,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   // issue is resolved.
   dynamic_cast<ImplicitEulerIntegrator<double>*>(
       simulator.get_mutable_integrator())
-      ->set_reuse(true);
+      ->set_reuse(false);
 
   // Set initial time and state.
   Context<double>* context = simulator.get_mutable_context();
