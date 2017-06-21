@@ -76,3 +76,15 @@
     fun:MSK_conic_optimizer
     fun:MSKP_optimizeconic
 }
+
+# Started happening when Gurobi got updated to 7.0.2. PR 6332.
+{
+    <gurobi-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:mkl_serv_thread_free_buffers
+    fun:PRIVATE*
+    ...
+    fun:GRBoptimize
+}
