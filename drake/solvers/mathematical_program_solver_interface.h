@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/solvers/solver_type.h"
 
 namespace drake {
 namespace solvers {
@@ -17,18 +18,6 @@ enum SolutionResult {
   kUnknownError = -4,
   kInfeasible_Or_Unbounded = -5,
   kIterationLimit = -6,
-};
-
-enum class SolverType {
-  kDReal,
-  kEqualityConstrainedQP,
-  kGurobi,
-  kIpopt,
-  kLinearSystem,
-  kMobyLCP,
-  kMosek,
-  kNlopt,
-  kSnopt,
 };
 
 /// Interface used by implementations of individual solvers.

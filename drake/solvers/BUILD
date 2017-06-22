@@ -109,6 +109,11 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "solver_type",
+    hdrs = ["solver_type.h"],
+)
+
 # Supported solvers:
 # - equality_constrained_qp_solver
 # - linear_system_solver
@@ -153,6 +158,7 @@ drake_cc_library(
         ":mosek_solver",
         ":nlopt_solver",
         ":snopt_solver",
+        ":solver_type",
         ":symbolic_extraction",
         "//drake/common",
         "//drake/common:autodiff",
@@ -290,6 +296,7 @@ drake_cc_library(
         ":create_cost",
         ":decision_variable",
         ":function",
+        ":solver_type",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:number_traits",
