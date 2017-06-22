@@ -109,6 +109,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "solver_id",
+    srcs = ["solver_id.cc"],
+    hdrs = ["solver_id.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:reinit_after_move",
+    ],
+)
+
 # Supported solvers:
 # - equality_constrained_qp_solver
 # - linear_system_solver
@@ -695,6 +705,13 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solver_id_test",
+    deps = [
+        ":solver_id",
     ],
 )
 
