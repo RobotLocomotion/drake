@@ -6,16 +6,19 @@ if(Matlab_FOUND)
 endif()
 
 if(Bullet_FOUND AND Matlab_FOUND)
+  # TODO(jamiesnape): Create imported target for Bullet.
   if(BLAS_FOUND AND snopt_FOUND)
     drake_add_mex(replanFunnels_mex replanFunnels_mex.cpp)
     target_include_directories(replanFunnels_mex PRIVATE ${BULLET_INCLUDE_DIRS})
     target_link_libraries(replanFunnels_mex drakeMexUtil snopt_c
       ${BLAS_LIBRARIES} ${BULLET_LIBRARIES})
+    target_compile_definitions(replanFunnels_mex PRIVATE BT_USE_DOUBLE_PRECISION)
 
     drake_add_mex(shiftFunnel_snopt_mex shiftFunnel_snopt_mex.cpp)
     target_include_directories(shiftFunnel_snopt_mex PRIVATE ${BULLET_INCLUDE_DIRS})
     target_link_libraries(shiftFunnel_snopt_mex drakeMexUtil snopt_c
       ${BLAS_LIBRARIES} ${BULLET_LIBRARIES})
+    target_compile_definitions(shiftFunnel_snopt_mex PRIVATE BT_USE_DOUBLE_PRECISION)
 
     # Some platforms require extra link flags. On those that do not, the
     # BLAS_LINKER_FLAGS variable is undefined.
@@ -34,10 +37,12 @@ if(Bullet_FOUND AND Matlab_FOUND)
   drake_add_mex(isCollisionFree_mex isCollisionFree_mex.cpp)
   target_include_directories(isCollisionFree_mex PRIVATE ${BULLET_INCLUDE_DIRS})
   target_link_libraries(isCollisionFree_mex drakeMexUtil ${BULLET_LIBRARIES})
+  target_compile_definitions(isCollisionFree_mex PRIVATE BT_USE_DOUBLE_PRECISION)
 
   drake_add_mex(ptToPolyBullet_mex ptToPolyBullet_mex.cpp)
   target_include_directories(ptToPolyBullet_mex PRIVATE ${BULLET_INCLUDE_DIRS})
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil ${BULLET_LIBRARIES})
+  target_compile_definitions(ptToPolyBullet_mex PRIVATE BT_USE_DOUBLE_PRECISION)
 endif()
 
 if(BUILD_TESTING)

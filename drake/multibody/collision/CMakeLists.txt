@@ -20,7 +20,8 @@ add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_S
 
 set(bullet_dependent_requires)
 if(Bullet_FOUND)
-  target_compile_definitions(drakeCollision PUBLIC BULLET_COLLISION)
+  target_compile_definitions(drakeCollision PUBLIC
+    BT_USE_DOUBLE_PRECISION BULLET_COLLISION)
   target_include_directories(drakeCollision PUBLIC ${BULLET_INCLUDE_DIRS})
   target_link_libraries(drakeCollision ${BULLET_LIBRARIES})
   set(bullet_dependent_requires bullet)
