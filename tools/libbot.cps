@@ -23,6 +23,7 @@
     "bot2-core": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/libbot"],
+      "Link-Flags": ["-lglib-2.0"],
       "Location": "@prefix@/lib/libbot2_core.so",
       "Requires": [
         "bot2-core-lcmtypes:lcmtypes_bot2-core",
@@ -48,6 +49,7 @@
     "bot2-param-client": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/libbot"],
+      "Link-Flags": ["-lglib-2.0", "-lgthread-2.0"],
       "Location": "@prefix@/lib/libbot2_param_client.so",
       "Requires": [
         ":bot2-core",
@@ -74,6 +76,7 @@
     "bot2-frames": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/libbot"],
+      "Link-Flags": ["-lglib-2.0"],
       "Location": "@prefix@/lib/libbot2_frames.so",
       "Requires": [
         ":bot2-core",
@@ -101,6 +104,7 @@
     "bot2-lcmgl-client": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/libbot"],
+      "Link-Flags": ["-lglib-2.0"],
       "Location": "@prefix@/lib/libbot2_lcmgl_client.so",
       "Requires": [
         ":lcmtypes_bot2-lcmgl",
