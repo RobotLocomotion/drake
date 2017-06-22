@@ -46,7 +46,7 @@ void CreateTreeFromFixedModelAtPose(const std::string& model_file_name,
       nullptr, position, orientation);
 
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      model_file_name, drake::multibody::joints::kFixed,
+      model_file_name, drake::multibody::joints::kQuaternion,
       weld_to_frame, tree);
 }
 

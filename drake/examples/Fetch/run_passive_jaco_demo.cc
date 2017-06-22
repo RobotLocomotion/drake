@@ -80,7 +80,7 @@ int DoMain() {
   // Sets (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
   VectorBase<double>* x0 = jaco_context->get_mutable_continuous_state_vector();
-  x0->SetAtIndex(1, 0.5);  // shoulder fore/aft angle [rad]
+  x0->SetAtIndex(8, 0.5);  // shoulder fore/aft angle [rad]
 
   simulator.Initialize();
 
@@ -100,7 +100,7 @@ int DoMain() {
   // Ensures the sizes of the position and velocity vectors are correct.
   DRAKE_DEMAND(num_q == plant->get_num_positions());
   DRAKE_DEMAND(num_v == plant->get_num_velocities());
-  DRAKE_DEMAND(num_q == num_v);
+  DRAKE_DEMAND(num_q == num_v + 1);
 
   // Ensures the robot's joints are within their position limits.
   const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
