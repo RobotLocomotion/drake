@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace multibody {
