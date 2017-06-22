@@ -276,9 +276,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// to the input vector of generalized velocities `v`, i.e. the output of this
   /// method is the application `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where
   /// `nv` is the number of generalized velocities of this mobilizer (see
-  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors"
-  /// [Featherstone 2008, Ch. 2]. Therefore we say this methods is the _operator
-  /// form_ of the Jacobian matrix `H_FM(q)`.
+  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
+  /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
+  /// velocities in Drake are not Plücker vectors as in Featherstone's book).
+  /// Therefore we say this methods is the _operator form_ of the Jacobian
+  /// matrix `H_FM(q)`.
   /// This method aborts in Debug builds if the dimension of the input vector of
   /// generalized velocities has a size different from get_num_velocities().
   ///

@@ -175,7 +175,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
-  /// this node's kinematics that depend on generalized velocities.
+  /// this node's kinematics that depend on the generalized velocities.
   /// This method aborts in Debug builds when:
   /// - Called on the _root_ node.
   /// - `vc` is nullptr.

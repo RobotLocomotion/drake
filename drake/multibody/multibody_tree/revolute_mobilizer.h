@@ -98,9 +98,10 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// @returns The angular velocity of `this` mobilizer in the `context`.
   const T& get_angular_velocity(const systems::Context<T>& context) const;
 
-  /// Sets the angular velocity for this `this` mobilizer to `w_FM`, i.e.
-  /// the rate of change of the rotation angle between the inboard frame F and
-  /// the outboard frame M. The new angular velocity is stored in `context`.
+  /// Sets the angular velocity, in radians per second, for this `this`
+  /// mobilizer to `w_FM`, i.e. the rate of change of the rotation angle between
+  /// the inboard frame F and the outboard frame M. The new angular velocity is
+  /// stored in `context`.
   /// See class documentation for the angle sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.

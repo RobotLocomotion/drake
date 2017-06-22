@@ -44,8 +44,8 @@ class Frame : public FrameBase<T> {
     return body_;
   }
 
-  /// Returns the pose `X_BF` of `this` frame F in the frame B of the body
-  /// associated with this frame.
+  /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
+  /// with this frame.
   /// In particular, if `this` **is**` the body frame B, this method directly
   /// returns the identity transformation.
   /// @sa CalcBodyPoseInThisFrame() which returns the inverse
@@ -63,8 +63,8 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context) const = 0;
 
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
-  /// computes the pose `X_BQ` of frame Q in the frame B of the body to which
-  /// this frame is attached.
+  /// computes the pose `X_BQ` of frame Q in the body frame B to which this
+  /// frame is attached.
   /// In other words, if the pose of `this` frame F in the body frame B is
   /// `X_BF`, this method computes the pose `X_BQ` of frame Q in the body frame
   /// B as `X_BQ = X_BF * X_FQ`.
