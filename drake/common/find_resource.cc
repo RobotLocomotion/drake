@@ -1,8 +1,8 @@
 #include "drake/common/find_resource.h"
 
 #include <cstdlib>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <spruce.hh>
 

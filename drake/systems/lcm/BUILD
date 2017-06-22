@@ -24,11 +24,11 @@ drake_cc_library(
 drake_cc_library(
     name = "translator_system",
     hdrs = [
-        "translator_system.h"
+        "translator_system.h",
     ],
     deps = [
-        "//drake/lcm:translator_base",
         "//drake/common",
+        "//drake/lcm:translator_base",
         "//drake/systems/framework",
     ],
 )
