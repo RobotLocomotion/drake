@@ -17,11 +17,19 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
+    : PidController(MatrixX<double>::Identity(kp.size(), kp.size()), state_selector, kp,
+            ki, kd) {}
+
+    template <typename T>
+    PidController<T>::PidController(const MatrixX<double> &Binv, const MatrixX<double> &state_selector,
+                  const Eigen::VectorXd &kp, const Eigen::VectorXd &ki,
+                  const Eigen::VectorXd &kd)
     : kp_(kp),
       kd_(kd),
       ki_(ki),
       num_controlled_q_(kp.size()),
       num_full_state_(state_selector.cols()),
+      Binv_(Binv),
       state_selector_(state_selector) {
   DRAKE_DEMAND(kp_.size() == kd_.size());
   DRAKE_DEMAND(kd_.size() == ki_.size());
@@ -81,6 +89,9 @@ void PidController<T>::CalcControl(const Context<T>& context,
       (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
           .matrix() +
       (ki_.array() * state_block.array()).matrix());
+
+    auto value = control->get_mutable_value();
+    value = Binv_ * value;
 }
 
 template <typename T>

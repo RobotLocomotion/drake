@@ -74,6 +74,25 @@ class PidController : public StateFeedbackControllerInterface<T>,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
+    /**
+   * Constructs a PID controller where some of the input states may not be
+   * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
+   * estimated and desired state input's size and the control output's size need
+   * to match @p feedback_selector. Note that @p state_selector only affects
+   * the estimated state input but not the desired state.
+   * @param Binv the inverse of the B matrix from the RigidBodyTree
+   * (the matrix should only contain the actuators that are being controlled)
+   * @param feedback_selector, The selection matrix indicating controlled
+   * states, whose size should be 2 * @p kp's size by the size of the full
+   * state.
+   * @param kp P gain.
+   * @param ki I gain.
+   * @param kd D gain.
+   */
+    PidController(const MatrixX<double> &Binv, const MatrixX<double> &state_selector,
+                  const Eigen::VectorXd &kp, const Eigen::VectorXd &ki,
+                  const Eigen::VectorXd &kd);
+
   /**
    * Returns the proportional gain constant. This method should only be called
    * if the proportional gain can be represented as a scalar value, i.e., every
@@ -179,6 +198,7 @@ class PidController : public StateFeedbackControllerInterface<T>,
   const int num_controlled_q_{0};
   // Size of input actual state.
   const int num_full_state_{0};
+    const MatrixX<double> Binv_;
   // Projection matrix from full state to controlled state, whose size is
   // num_controlled_q_ * 2 X num_full_state_.
   const MatrixX<double> state_selector_;
