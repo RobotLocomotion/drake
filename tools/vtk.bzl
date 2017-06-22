@@ -1,6 +1,8 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load("@drake//tools:distro.bzl", "get_linux_distro")
+
 """
 Makes selected VTK headers and precompiled shared libraries available to be
 used as a C/C++ dependency. On Ubuntu Trusty and Xenial, a VTK archive is
@@ -82,22 +84,7 @@ def _impl(repository_ctx):
         repository_ctx.file("empty.cc", executable = False)
 
     elif repository_ctx.os.name == "linux":
-        sed = repository_ctx.which("sed")
-        if sed == None:
-            fail("Could NOT determine Linux distribution information" +
-                 "('sed' is missing?!)", sed)
-        result = repository_ctx.execute([
-            sed,
-            "-n",
-            "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-            "/etc/os-release"])
-
-        if result.return_code != 0:
-            fail("Could NOT determine Linux distribution information",
-                 attr = result.stderr)
-
-        distro = [l.strip() for l in result.stdout.strip().split("\n")]
-        distro = " ".join(distro)
+        distro = get_linux_distro(repository_ctx)
 
         if distro == "Ubuntu 14.04":
             archive = "vtk-v8.0.0.rc2-qt-4.8.6-trusty-x86_64.tar.gz"
