@@ -14,7 +14,10 @@ content = """
   "Description": "Real-time collision detection and multi-physics simulation",
   "License": "Zlib",
   "Version": "%s",
-  "Default-Components": [":BulletCollision"],
+  "Default-Components": [
+    ":BulletCollision",
+    ":BulletDynamics"
+  ],
   "Components": {
     "BulletCollision": {
       "Type": "dylib",
@@ -22,11 +25,30 @@ content = """
       "Includes": ["@prefix@/include/bullet"],
       "Requires": [":LinearMath"]
     },
+    "BulletDynamics": {
+      "Type": "dylib",
+      "Location": "@prefix@/lib/libBulletDynamics.so",
+      "Includes": ["@prefix@/include/bullet"],
+      "Requires": [
+        ":BulletCollision",
+        ":LinearMath"
+      ]
+    },
     "LinearMath": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libLinearMath.so",
       "Definitions": ["BT_USE_DOUBLE_PRECISION"],
       "Includes": ["@prefix@/include/bullet"]
+    },
+    "BulletSoftBody": {
+      "Type": "dylib",
+      "Location": "@prefix@/lib/libBulletSoftBody.so",
+      "Includes": ["@prefix@/include/bullet"],
+      "Requires": [
+        ":BulletCollision",
+        ":BulletDynamics",
+        ":LinearMath"
+      ]
     }
   }
 }
