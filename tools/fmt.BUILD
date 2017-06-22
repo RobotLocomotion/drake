@@ -30,10 +30,10 @@ install_cmake_config(package = "fmt")  # Creates rule :install_cmake_config.
 install(
     name = "install",
     doc_dest = "share/doc/fmt",
+    docs = ["LICENSE.rst"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/fmt",
     hdr_strip_prefix = ["fmt"],
-    license_docs = ["LICENSE.rst"],
     targets = [":fmt"],
     deps = [":install_cmake_config"],
 )

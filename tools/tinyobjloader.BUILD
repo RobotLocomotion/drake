@@ -36,9 +36,9 @@ install_cmake_config(package = "tinyobjloader")
 install(
     name = "install",
     doc_dest = "share/doc/tinyobjloader",
+    docs = ["LICENSE"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/tinyobjloader",
-    license_docs = ["LICENSE"],
     targets = [":tinyobjloader"],
     deps = [":install_cmake_config"],
 )
