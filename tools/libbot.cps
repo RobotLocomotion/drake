@@ -23,6 +23,7 @@
     "bot2-core": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/libbot"],
+      "Link-Flags": ["-lglib-2.0", "-lpthread"],
       "Location": "@prefix@/lib/libbot2_core.so",
       "Requires": [
         "bot2-core-lcmtypes:lcmtypes_bot2-core",
