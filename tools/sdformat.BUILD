@@ -146,7 +146,6 @@ install(
         ":sdfhh_genrule",
         ":config",
     ],
-    doc_dest = "share/doc/sdformat",
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
     license_docs = [

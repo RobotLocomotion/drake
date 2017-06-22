@@ -148,7 +148,6 @@ install_cmake_config(package = "IPOPT")  # Creates rule :install_cmake_config.
 # TODO(jamiesnape): At the moment libipopt.a has gone AWOL.
 install(
     name = "install",
-    doc_dest = "share/doc/ipopt",
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/ipopt",
     hdr_strip_prefix = ["include/coin"],

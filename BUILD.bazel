@@ -43,7 +43,6 @@ install(
 
 install(
     name = "install",
-    doc_dest = "share/doc/drake",
     license_docs = ["LICENSE.TXT"],
     deps = [
         ":install_net_sf_jchart2d_jchart2d",

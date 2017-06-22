@@ -35,10 +35,10 @@ install_cmake_config(package = "yaml-cpp")
 install(
     name = "install",
     hdrs = public_headers,
-    doc_dest = "share/doc/yaml-cpp",
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
     license_docs = ["LICENSE"],
     targets = [":yaml_cpp"],
+    workspace = "yaml-cpp",
     deps = [":install_cmake_config"],
 )
