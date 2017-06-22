@@ -21,6 +21,7 @@ using drake::solvers::Constraint;
 using drake::solvers::LinearConstraint;
 using drake::solvers::LinearEqualityConstraint;
 using drake::solvers::BoundingBoxConstraint;
+using drake::solvers::PositiveSemidefiniteConstraint;
 using drake::solvers::Cost;
 using drake::solvers::LinearCost;
 using drake::solvers::QuadraticCost;
@@ -122,6 +123,20 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          py::arg("rows"),
          py::arg("cols"),
          py::arg("name") = "b")
+    .def("NewSymmetricContinuousVariables", (MatrixXDecisionVariable
+         (MathematicalProgram::*)(
+          int,
+          const std::string&))
+         &MathematicalProgram::NewSymmetricContinuousVariables,
+         py::arg("rows"),
+         py::arg("name") = "Symmetric")
+    .def("NewSymmetricContinuousVariables", (MatrixXDecisionVariable
+         (MathematicalProgram::*)(
+          int,
+          const std::vector<std::string>&))
+         &MathematicalProgram::NewSymmetricContinuousVariables,
+         py::arg("rows"),
+         py::arg("names"))
     .def("AddLinearConstraint",
          (Binding<LinearConstraint>
           (MathematicalProgram::*)(
@@ -134,6 +149,11 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
           (MathematicalProgram::*)(
           const Formula&))
           &MathematicalProgram::AddLinearConstraint)
+    .def("AddPositiveSemidefiniteConstraint",
+         (Binding<PositiveSemidefiniteConstraint>
+          (MathematicalProgram::*)(
+          const Eigen::Ref<const MatrixXDecisionVariable>&))
+         &MathematicalProgram::AddPositiveSemidefiniteConstraint)
     .def("AddLinearCost",
          (Binding<LinearCost>
           (MathematicalProgram::*)(
@@ -215,11 +235,17 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
              std::shared_ptr<BoundingBoxConstraint>>(
     m, "BoundingBoxConstraint");
 
+  py::class_<PositiveSemidefiniteConstraint, Constraint,
+             std::shared_ptr<PositiveSemidefiniteConstraint>>(
+    m, "PositiveSemidefiniteConstraint");
+
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
   RegisterBinding<BoundingBoxConstraint>(&m, &prog_cls,
                                          "BoundingBoxConstraint");
+  RegisterBinding<PositiveSemidefiniteConstraint>(&m, &prog_cls,
+    "PositiveSemidefiniteConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, std::shared_ptr<Cost>> cost(
