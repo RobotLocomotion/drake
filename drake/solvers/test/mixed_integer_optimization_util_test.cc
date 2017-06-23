@@ -160,6 +160,21 @@ GTEST_TEST(TestLogarithmicSOS1, Test5Lambda) {
   auto codes = math::CalculateReflectedGrayCodes<3>();
   LogarithmicSOS1Test(5, codes.topRows<5>());
 }
+
+class BilinearProductMcCormickEnvelopeSOS2Test : public ::testing::TestWithParam<int> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSOS2Test)
+
+  BilinearProductMcCormickEnvelopeSOS2Test()
+      :
+ private:
+  MathematicalProgram prog_;
+  int num_interval_x_;
+  int num_interval_y_;
+  symbolic::Variable w_;
+  symbolic::Variable x_;
+  symbolic::Variable y_;
+};
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
