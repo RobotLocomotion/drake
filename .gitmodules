@@ -73,7 +73,7 @@
 	url = https://github.com/gflags/gflags.git
 [submodule "externals/bullet"]
 	path = externals/bullet
-	url = https://github.com/RobotLocomotion/bullet3.git
+	url = https://github.com/bulletphysics/bullet3.git
 [submodule "externals/ccd"]
 	path = externals/ccd
 	url = https://github.com/danfis/libccd.git

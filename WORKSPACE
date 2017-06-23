@@ -134,10 +134,10 @@ github_archive(
 
 github_archive(
     name = "bullet",
-    repository = "RobotLocomotion/bullet3",
-    commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
+    repository = "bulletphysics/bullet3",
+    commit = "2.85.1",
     build_file = "tools/bullet.BUILD",
-    sha256 = "2121dc8b0d33f50adbad8fc9ac5e007141df5cf5738fce72200c5bac4ffc589b",
+    sha256 = "6e157c0b50373bc0e860de27f06397827bb28a4205bc568ae79d76a0f919ed62",
 )
 
 github_archive(
