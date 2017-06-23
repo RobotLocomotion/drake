@@ -47,5 +47,36 @@ void AddLogarithmicSOS2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const Eigen::Ref<const VectorXDecisionVariable>& y);
+
+/**
+ * Constrain `w` to approximate the bilinear product x * y. We know
+ * that x is in one of the intervals [φx(i), φx(i+1)], y is in one of the
+ * intervals [φy(j), φy(j+1)]. The variable `w` is constrained to be in the
+ * convex hull of x * y for x in [φx(i), φx(i+1)], y in [φy(j), φy(j+1)], namely
+ * (x, y, w) is in the tetrahedron, with vertices [φx(i), φy(j), φx(i)*φy(j)],
+ * [φx(i+1), φy(j), φx(i+1)*φy(j)], [φx(i), φy(j+1), φx(i)*φy(j+1)] and
+ * [φx(i+1), φy(j+1), φx(i+1)*φy(j+1)]
+ * @param prog The program to which the bilinear product constraint is added
+ * @param x The decision variable.
+ * @param y The decision variable.
+ * @param w The expression to approximate x * y
+ * @param phi_x The end points of the intervals for `x`.
+ * @param phi_y The end points of the intervals for `y`.
+ * @param Bx The binary variable, to determine in which interval `x` stays.
+ * If Bx represents integer M in Gray code, then `x` is in the interval
+ * [φx(M), φx(M+1)].
+ * @param By The binary variable, to determine in which interval `y` stays.
+ * If Bx represents integer M in Gray code, then `y` is in the interval
+ * [φy(M), φy(M+1)].
+ */
+void AddBilinearProductMcCormickEnvelopeSOS2(
+    MathematicalProgram* prog,
+    const symbolic::Variable& x,
+    const symbolic::Variable& y,
+    const symbolic::Expression& w,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
+    const Eigen::Ref<const VectorXDecisionVariable>& Bx,
+    const Eigen::Ref<const VectorXDecisionVariable>& By);
 }  // namespace solvers
 }  // namespace drake

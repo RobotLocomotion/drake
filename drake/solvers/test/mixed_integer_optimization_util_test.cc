@@ -80,6 +80,21 @@ GTEST_TEST(TestLogarithmicSOS2, Test7Lambda) {
 GTEST_TEST(TestLogarithmicSOS2, Test8Lambda) {
   LogarithmicSOS2Test(8);
 }
+
+class BilinearProductMcCormickEnvelopeSOS2Test : public ::testing::TestWithParam<int> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSOS2Test)
+
+  BilinearProductMcCormickEnvelopeSOS2Test()
+      :
+ private:
+  MathematicalProgram prog_;
+  int num_interval_x_;
+  int num_interval_y_;
+  symbolic::Variable w_;
+  symbolic::Variable x_;
+  symbolic::Variable y_;
+};
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
