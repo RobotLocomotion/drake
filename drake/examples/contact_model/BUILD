@@ -85,6 +85,7 @@ filegroup(
     srcs = [
         "bowling_ball.urdf",
         "pin.obj",
+        "pin.mtl",
         "pin.urdf",
     ],
 )
