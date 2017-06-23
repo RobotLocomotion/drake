@@ -4,6 +4,7 @@ load(
     "@drake//tools:generate_include_header.bzl",
     "drake_generate_include_header",
 )
+load("@drake//tools:pathutils.bzl", "join_paths")
 
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
@@ -153,6 +154,7 @@ def lcm_c_library(
         lcm_package,
         lcm_structs = None,
         aggregate_hdr = None,
+        includes = [],
         **kwargs):
     """Declares a cc_library on message C structs generated from `*.lcm` files.
 
@@ -173,10 +175,20 @@ def lcm_c_library(
 
     hdrs = outs.hdrs
     if aggregate_hdr:
+        if aggregate_hdr == True:
+            aggregate_hdr = "%s.h" % lcm_package
+            if len(includes) == 1:
+                aggregate_hdr = join_paths(includes[0], aggregate_hdr)
+
+        drake_generate_include_header(
+            name = name + "_lcm_aggregate_header",
+            hdrs = outs.hdrs,
+            out = aggregate_hdr)
+
         hdrs += [aggregate_hdr]
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
-    includes = set(kwargs.pop('includes', [])) | ["."]
+    includes = set(includes) | ["."]
     native.cc_library(
         name = name,
         srcs = outs.srcs,
@@ -250,27 +262,4 @@ def lcm_java_library(
         name = name,
         srcs = outs,
         deps = deps,
-        **kwargs)
-
-# TODO(jamiesnape): Simplify this and possibly merge with lcm_c_library if
-# libbot is fixed to have canonical aggregate header names.
-def lcm_c_aggregate_header(
-        name,
-        out,
-        lcm_srcs,
-        lcm_package,
-        lcm_structs = None,
-        **kwargs):
-    """Generates a header that includes a set of C headers generated from
-    `*.lcm` files.
-
-    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
-    in lcm_cc_library.
-    """
-    hdrs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h").hdrs
-
-    drake_generate_include_header(
-        name = name,
-        hdrs = hdrs,
-        out = out,
         **kwargs)
