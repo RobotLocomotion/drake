@@ -136,9 +136,12 @@ Nvidia drivers:
 ---------------
 The `nvidia-docker <https://github.com/NVIDIA/nvidia-docker/>`_ plugin is
 required in order to pass Xorg drawing commands to your host system when the
-proprietary Nvidia GPU drivers are installed.
+proprietary Nvidia GPU drivers are installed. To install Nvidia GPU drivers with
+apt on Ubuntu 16.04::
 
-On Ubuntu 16.04 use the following nvidia-docker build recipe
+  $ sudo apt-get nvidia-361 nvidia-modprobe
+
+To install nvidia-docker on Ubuntu 16.04:
 
 ::
 
@@ -228,7 +231,7 @@ where you may want to try various demonstrations, e.g.:
   $ bazel run //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
 
 
-Note: these are currently not rendering properly due to VTK .obj/.mtl importing. A patch is expected any day.
+Note: these are currently not rendering properly due to VTK .obj/.mtl importing.
 
 
 .. _docker_running_simulation_open:
