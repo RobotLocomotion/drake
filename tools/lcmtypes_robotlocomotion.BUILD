@@ -60,7 +60,6 @@ install_cmake_config(
 
 install(
     name = "install",
-    doc_dest = "share/doc/" + CMAKE_PACKAGE,
     guess_hdrs = "PACKAGE",
     license_docs = ["LICENSE.txt"],
     py_strip_prefix = ["lcmtypes"],
@@ -73,6 +72,7 @@ install(
         ":lcmtypes_robotlocomotion_java",
         ":lcmtypes_robotlocomotion_py",
     ],
+    workspace = CMAKE_PACKAGE,
     deps = [":install_cmake_config"],
 )
 

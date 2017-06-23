@@ -426,8 +426,6 @@ install_cmake_config(
     versioned = 0,
 )
 
-DOC_DEST = "share/doc/" + CMAKE_PACKAGE
-
 LICENSE_DOCS = [
     "LICENSE",
     "@drake//tools:third_party/libbot/LICENSE.ldpc",
@@ -435,7 +433,6 @@ LICENSE_DOCS = [
 
 install(
     name = "install_lcmtypes",
-    doc_dest = DOC_DEST,
     guess_hdrs = "PACKAGE",
     hdr_strip_prefix = [
         "bot2-frames",
@@ -474,7 +471,6 @@ HDR_DEST = "include/" + CMAKE_PACKAGE
 install(
     name = "install_bot2_core",
     hdrs = BOT2_CORE_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST,
     hdr_strip_prefix = ["bot2-core/src"],
     license_docs = LICENSE_DOCS,
@@ -490,7 +486,6 @@ install(
 
 install(
     name = "install_bot2_lcm_utils",
-    doc_dest = DOC_DEST,
     license_docs = LICENSE_DOCS,
     py_strip_prefix = ["bot2-lcm-utils/python/src"],
     targets = [
@@ -505,7 +500,6 @@ install(
 install(
     name = "install_bot2_param",
     hdrs = BOT2_PARAM_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST + "/" + BOT2_PARAM_INCLUDE_PREFIX,
     hdr_strip_prefix = ["bot2-param/src/param_client"],
     license_docs = LICENSE_DOCS,
@@ -520,7 +514,6 @@ install(
 install(
     name = "install_bot2_frames",
     hdrs = BOT2_FRAMES_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST + "/" + BOT2_FRAMES_INCLUDE_PREFIX,
     hdr_strip_prefix = ["bot2-frames/src"],
     license_docs = LICENSE_DOCS,
@@ -530,7 +523,6 @@ install(
 install(
     name = "install_bot2_lcmgl",
     hdrs = BOT2_LCMGL_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST,
     hdr_strip_prefix = ["bot2-lcmgl/src"],
     license_docs = LICENSE_DOCS,
@@ -547,7 +539,6 @@ install(
 
 install(
     name = "install",
-    doc_dest = DOC_DEST,
     license_docs = LICENSE_DOCS,
     deps = [
         ":install_bot2_core",

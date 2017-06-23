@@ -29,7 +29,6 @@ install_cmake_config(package = "fmt")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    doc_dest = "share/doc/fmt",
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/fmt",
     hdr_strip_prefix = ["fmt"],

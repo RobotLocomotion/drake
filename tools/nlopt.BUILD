@@ -188,7 +188,6 @@ install_cmake_config(package = "NLopt")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    doc_dest = "share/doc/nlopt",
     docs = [
         "AUTHORS",
         "NEWS",
