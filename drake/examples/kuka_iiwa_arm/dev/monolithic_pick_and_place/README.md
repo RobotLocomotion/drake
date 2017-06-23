@@ -28,17 +28,12 @@ Once built, the ``drake-visualizer`` can be launched by,
 $ bazel-bin/tools/drake-visualizer&
 ```
 
+Note that this method of launching the visualizer may not function correctly
+on Mac OSX and a fix is expected shortly.
+
 Launching the demo
 ------------------
-The demo itself can then be launched by :
-
-```
-$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
-monolithic_pick_and_place_demo --box_choice=1
- --orientation=-0.0
-```
-
-or alternatively, you can use ``bazel run`` using the appropriate
+The demo can be built and launched by using ``bazel run`` with the appropriate
 full path/target specifier. For instance, from the
 ``drake-distro/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place``
 directory, you can execute the demo using :
@@ -46,6 +41,15 @@ directory, you can execute the demo using :
 ```
 bazel run :monolithic_pick_and_place_demo --config snopt -- --box_choice=1
 --orientation=-0.0
+```
+
+Alternately, if the ``monolithic_pick_and_place_demo`` has been built using
+``bazel build``, the demo itself can then be launched by :
+
+```
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
+monolithic_pick_and_place_demo --box_choice=1
+ --orientation=-0.0
 ```
 
 Command line arguments can be passed for : `box_choice` an integer between 1
