@@ -32,6 +32,18 @@ std::unique_ptr<Frame<ToScalar>> FixedOffsetFrame<T>::TemplatedDoCloneToScalar(
       parent_frame_clone, X_PF_);
 }
 
+template <typename T>
+std::unique_ptr<Frame<double>> FixedOffsetFrame<T>::DoCloneToScalar(
+    const MultibodyTree<double>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+std::unique_ptr<Frame<AutoDiffXd>> FixedOffsetFrame<T>::DoCloneToScalar(
+    const MultibodyTree<AutoDiffXd>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class FixedOffsetFrame<double>;
 template class FixedOffsetFrame<AutoDiffXd>;

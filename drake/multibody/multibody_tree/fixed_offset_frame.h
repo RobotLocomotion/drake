@@ -69,15 +69,11 @@ class FixedOffsetFrame : public Frame<T> {
 
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const final {
-    return TemplatedDoCloneToScalar(tree_clone);
-  }
+      const MultibodyTree<double>& tree_clone) const final;
 
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const final {
-    return TemplatedDoCloneToScalar(tree_clone);
-  }
+      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
   /// @}
 
  private:
