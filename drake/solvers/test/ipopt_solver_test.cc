@@ -42,10 +42,11 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
 
 class NoisyQuadraticCost {
  public:
-  NoisyQuadraticCost(const double max_noise) : max_noise_(max_noise){};
+  explicit NoisyQuadraticCost(const double max_noise) : max_noise_(max_noise) {}
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(detail::VecIn<ScalarType> const& x,
             detail::VecOut<ScalarType>& y) const {
     // Parabola with minimum at (-1, 1) with some noise applied to the input so
