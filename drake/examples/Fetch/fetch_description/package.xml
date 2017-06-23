@@ -1,0 +1,14 @@
+<package>
+  <name>fetch_description</name>
+  <version>0.7.10</version>
+  <description>
+    URDF for Fetch Robot.
+  </description>
+  <author>Michael Ferguson</author>
+  <author>Melonee Wise</author>
+  <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+  <license>CreativeCommons-Attribution-NonCommercial-NoDerivatives-4.0</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>urdf</run_depend>
+  <run_depend>xacro</run_depend>
+</package>
