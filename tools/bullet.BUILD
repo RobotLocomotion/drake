@@ -76,7 +76,6 @@ install_cmake_config(package = "Bullet")
 
 install(
     name = "install",
-    doc_dest = "share/doc/bullet",
     docs = ["AUTHORS.txt"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/bullet",

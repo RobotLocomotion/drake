@@ -18,6 +18,23 @@ def _is_drake_label(x):
         return False
 
 #------------------------------------------------------------------------------
+def _workspace(ctx):
+    """Compute name of current workspace."""
+
+    # Check for override
+    if hasattr(ctx.attr, "workspace"):
+        if len(ctx.attr.workspace):
+            return ctx.attr.workspace
+
+    # Check for meaningful workspace_root
+    workspace = ctx.label.workspace_root.split("/")[-1]
+    if len(workspace):
+        return workspace
+
+    # If workspace_root is empty, assume we are the root workspace
+    return ctx.workspace_name
+
+#------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
     """Compute output path (without destination prefix) for install action.
 
@@ -78,6 +95,9 @@ def _install_action(ctx, artifact, dests, strip_prefixes = [], rename = {}):
         dest = dests.get(artifact.extension, dests[None])
     else:
         dest = dests
+
+    if "@WORKSPACE@" in dest:
+        dest = dest.replace("@WORKSPACE@", _workspace(ctx))
 
     if type(strip_prefixes) == "dict":
         strip_prefix = strip_prefixes.get(artifact.extension,
@@ -282,11 +302,11 @@ install = rule(
     attrs = {
         "deps": attr.label_list(providers = ["install_actions"]),
         "docs": attr.label_list(allow_files = True),
-        "doc_dest": attr.string(default = "share/doc"),
+        "doc_dest": attr.string(default = "share/doc/@WORKSPACE@"),
         "doc_strip_prefix": attr.string_list(),
         "license_docs": attr.label_list(allow_files = True),
         "data": attr.label_list(allow_files = True),
-        "data_dest": attr.string(default = "share"),
+        "data_dest": attr.string(default = "share/@WORKSPACE@"),
         "data_strip_prefix": attr.string_list(),
         "guess_data": attr.string(default = "NONE"),
         "guess_data_exclude": attr.string_list(),
@@ -307,6 +327,7 @@ install = rule(
         "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
+        "workspace": attr.string(),
         "allowed_externals": attr.label_list(allow_files = True),
         "install_script_template": attr.label(
             allow_files = True,
@@ -332,6 +353,10 @@ cases (e.g. adding install rules to a project that is natively built with
 bazel, but does not define an install) where this *is* the right thing to do,
 the ``allowed_externals`` argument may be used to specify a list of externals
 whose files it is okay to install, which will suppress the warning.
+
+Destination paths may include the placeholder ``@WORKSPACE@``, which is
+replaced with ``workspace`` (if specified) or the name of the workspace which
+invokes ``install``.
 
 Note:
     By default, headers and resource files to be installed must be explicitly
@@ -362,14 +387,15 @@ Note:
 Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
-    doc_dest: Destination for documentation files (default = "share/doc").
+    doc_dest: Destination for documentation files
+        (default = "share/doc/@WORKSPACE@").
     doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
     guess_data: See note.
     guess_data_exclude: List of resources found by ``guess_data`` to exclude
         from installation.
     data: List of (platform-independent) resource files to install.
-    data_dest: Destination for resource files (default = "share").
+    data_dest: Destination for resource files (default = "share/@WORKSPACE@").
     data_strip_prefix: List of prefixes to remove from resource paths.
     guess_hdrs: See note.
     guess_hdrs_exclude: List of headers found by ``guess_hdrs`` to exclude from
@@ -391,6 +417,8 @@ Args:
     py_strip_prefix: List of prefixes to remove from Python paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.
+    workspace: Workspace name to use in default paths (overrides built-in
+        guess).
     allowed_externals: List of external packages whose files may be installed.
 """
 
@@ -414,6 +442,7 @@ install_files = rule(
         "files": attr.label_list(allow_files = True),
         "rename": attr.string_dict(),
         "strip_prefix": attr.string_list(),
+        "workspace": attr.string(),
         "allowed_externals": attr.string_list(),
     },
     implementation = _install_files_impl,
@@ -442,6 +471,10 @@ complete path components (e.g. ``a/*/`` is okay, but ``a*/`` is not treated as
 a glob and will be matched literally). Due to Skylark limitations, at most one
 ``**`` may be matched.
 
+Destination paths may include the placeholder ``@WORKSPACE``, which is replaced
+with ``workspace`` (if specified) or the name of the workspace which invokes
+``install``.
+
 ``install_files`` has the same caveats regarding external files as
 :func:`install`.
 
@@ -451,6 +484,8 @@ Args:
     strip_prefix: List of prefixes to remove from input paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.
+    workspace: Workspace name to use in default paths (overrides built-in
+        guess).
     allowed_externals: List of external packages whose files may be installed.
 """
 

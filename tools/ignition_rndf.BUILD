@@ -78,7 +78,6 @@ install(
         ":config",
         ":rndfhh_genrule",
     ],
-    doc_dest = "share/doc/" + CMAKE_PACKAGE,
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
     license_docs = [
@@ -86,5 +85,6 @@ install(
         "COPYING",
     ],
     targets = [":ignition_rndf"],
+    workspace = CMAKE_PACKAGE,
     deps = [":install_cmake_config"],
 )
