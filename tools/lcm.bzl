@@ -4,6 +4,7 @@ load(
     "@drake//tools:generate_include_header.bzl",
     "drake_generate_include_header",
 )
+load("@drake//tools:pathutils.bzl", "dirname", "join_paths")
 
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
@@ -152,15 +153,22 @@ def lcm_c_library(
         lcm_srcs,
         lcm_package,
         lcm_structs = None,
-        aggregate_hdr = None,
+        aggregate_hdr = "AUTO",
+        includes = [],
         **kwargs):
-    """Declares a cc_library on message C structs generated from `*.lcm` files.
+    """Declares a cc_library on message C structs generated from ``*.lcm``
+    files.
 
-    The required lcm_srcs list parameter specifies the `*.lcm` source files.
-    All lcm_srcs must reside in the same subdirectory.
+    The required ``lcm_srcs`` :obj:`list` parameter specifies the ``*.lcm``
+    source files. All ``lcm_srcs`` must reside in the same subdirectory.
 
-    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
-    in lcm_cc_library.
+    The standard parameters (``lcm_srcs``, ``lcm_package``, ``lcm_structs``)
+    are documented in :func:`lcm_cc_library`. The ``aggregate_hdr`` parameter
+    gives the name of the aggregate header to generate. The special value
+    ``"AUTO"`` (which is the default) will use the ``lcm_package`` name in the
+    same subdirectory as the other headers, in conformance with the behavior
+    of ``lcmUtilities.cmake``. The value ``None`` will disable generation of
+    the aggregate header.
     """
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
 
@@ -172,11 +180,20 @@ def lcm_c_library(
         outs = outs.hdrs + outs.srcs)
 
     hdrs = outs.hdrs
-    if aggregate_hdr:
+    if aggregate_hdr and len(outs.hdrs):
+        if aggregate_hdr == "AUTO":
+            aggregate_hdr = join_paths(dirname(outs.hdrs[0]),
+                                       "%s.h" % lcm_package)
+
+        drake_generate_include_header(
+            name = name + "_lcm_aggregate_header",
+            hdrs = outs.hdrs,
+            out = aggregate_hdr)
+
         hdrs += [aggregate_hdr]
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
-    includes = set(kwargs.pop('includes', [])) | ["."]
+    includes = set(includes) | ["."]
     native.cc_library(
         name = name,
         srcs = outs.srcs,
@@ -250,27 +267,4 @@ def lcm_java_library(
         name = name,
         srcs = outs,
         deps = deps,
-        **kwargs)
-
-# TODO(jamiesnape): Simplify this and possibly merge with lcm_c_library if
-# libbot is fixed to have canonical aggregate header names.
-def lcm_c_aggregate_header(
-        name,
-        out,
-        lcm_srcs,
-        lcm_package,
-        lcm_structs = None,
-        **kwargs):
-    """Generates a header that includes a set of C headers generated from
-    `*.lcm` files.
-
-    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
-    in lcm_cc_library.
-    """
-    hdrs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h").hdrs
-
-    drake_generate_include_header(
-        name = name,
-        hdrs = hdrs,
-        out = out,
         **kwargs)

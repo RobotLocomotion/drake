@@ -8,7 +8,6 @@ load(
 )
 load(
     "@drake//tools:lcm.bzl",
-    "lcm_c_aggregate_header",
     "lcm_c_library",
     "lcm_cc_library",
     "lcm_java_library",
@@ -161,18 +160,9 @@ BOT2_PARAM_LCM_STRUCTS = [
     for f in BOT2_PARAM_LCM_SRCS
 ]
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_bot2_param_c_aggregate_header",
-    out = "bot2-param/lcmtypes/bot2_param.h",
-    lcm_package = "bot_param",
-    lcm_srcs = BOT2_PARAM_LCM_SRCS,
-    lcm_structs = BOT2_PARAM_LCM_STRUCTS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_bot2_param_c",
-    aggregate_hdr = ":lcmtypes_bot2_param_c_aggregate_header",
+    aggregate_hdr = "bot2-param/lcmtypes/bot2_param.h",
     includes = ["bot2-param"],
     lcm_package = "bot_param",
     lcm_srcs = BOT2_PARAM_LCM_SRCS,
@@ -284,18 +274,9 @@ BOT2_FRAMES_LCM_STRUCTS = [
     for f in BOT2_FRAMES_LCM_SRCS
 ]
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_bot2_frames_c_aggregate_header",
-    out = "bot2-frames/lcmtypes/bot2_frames.h",
-    lcm_package = "bot_frames",
-    lcm_srcs = BOT2_FRAMES_LCM_SRCS,
-    lcm_structs = BOT2_FRAMES_LCM_STRUCTS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_bot2_frames_c",
-    aggregate_hdr = ":lcmtypes_bot2_frames_c_aggregate_header",
+    aggregate_hdr = "bot2-frames/lcmtypes/bot2_frames.h",
     includes = ["bot2-frames"],
     lcm_package = "bot_frames",
     lcm_srcs = BOT2_FRAMES_LCM_SRCS,
@@ -355,18 +336,9 @@ BOT2_LCMGL_LCM_STRUCTS = [
     for f in BOT2_LCMGL_LCM_SRCS
 ]
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_bot2_lcmgl_c_aggregate_header",
-    out = "bot2-lcmgl/lcmtypes/bot2_lcmgl.h",
-    lcm_package = "bot_lcmgl",
-    lcm_srcs = BOT2_LCMGL_LCM_SRCS,
-    lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_bot2_lcmgl_c",
-    aggregate_hdr = ":lcmtypes_bot2_lcmgl_c_aggregate_header",
+    aggregate_hdr = "bot2-lcmgl/lcmtypes/bot2_lcmgl.h",
     includes = ["bot2-lcmgl"],
     lcm_package = "bot_lcmgl",
     lcm_srcs = BOT2_LCMGL_LCM_SRCS,
