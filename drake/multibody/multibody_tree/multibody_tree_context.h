@@ -139,8 +139,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return xc.nestedExpression().template segment<count>(start);
   }
 
-  // Helper to return a const Eigen::VectorBlock referencing a segment in the
-  // state vector with its first element at `start` and of size `count`.
+  /// Returns a const fixed-size Eigen::VectorBlock of `count` elements
+  /// referencing a segment in the state vector with its first element
+  /// at `start`.
   Eigen::VectorBlock<const VectorX<T>> get_state_segment(
       int start, int count) const {
     // We know that MultibodyTreeContext is a LeafContext and therefore the
@@ -157,8 +158,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return xc.nestedExpression().segment(start, count);
   }
 
-  // Helper to return a mutable Eigen::VectorBlock referencing a segment in the
-  // state vector with its first element at `start` and of size `count`.
+  /// Returns a mutable fixed-size Eigen::VectorBlock of `count` elements
+  /// referencing a segment in the state vector with its first element
+  /// at `start`.
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
       int start, int count) {
     // We know that MultibodyTreeContext is a LeafContext and therefore the

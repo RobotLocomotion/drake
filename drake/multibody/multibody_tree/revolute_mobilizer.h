@@ -138,8 +138,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   // Operations with fixed-sized quantities can be optimized at compile time
   // and therefore they are highly preferred compared to the very slow dynamic
   // sized quantities.
-  using MobilizerBase::nq;
-  using MobilizerBase::nv;
+  using MobilizerBase::kNq;
+  using MobilizerBase::kNv;
 
   // Default joint axis expressed in the inboard frame F.
   Vector3<double> axis_F_;

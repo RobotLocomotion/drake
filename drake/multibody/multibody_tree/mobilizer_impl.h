@@ -46,10 +46,10 @@ class MobilizerImpl : public Mobilizer<T> {
       Mobilizer<T>(inboard_frame, outboard_frame) {}
 
   /// Returns the number of generalized coordinates granted by this mobilizer.
-  int get_num_positions() const final { return nq;}
+  int get_num_positions() const final { return kNq;}
 
   /// Returns the number of generalized velocities granted by this mobilizer.
-  int get_num_velocities() const final { return nv;}
+  int get_num_velocities() const final { return kNv;}
 
   /// Default implementation to Mobilizer::set_zero_configuration() that sets
   /// all generalized positions related to this mobilizer to zero.
@@ -70,39 +70,39 @@ class MobilizerImpl : public Mobilizer<T> {
   // Handy enum to grant specific implementations compile time sizes.
   // static constexpr int i = 42; discouraged.
   // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {nq = num_positions, nv = num_velocities};
+  enum : int {kNq = num_positions, kNv = num_velocities};
 
   /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
-  Eigen::VectorBlock<const VectorX<T>, nq> get_positions(
+  Eigen::VectorBlock<const VectorX<T>, kNq> get_positions(
       const MultibodyTreeContext<T>& context) const {
-    return context.template get_state_segment<nq>(
+    return context.template get_state_segment<kNq>(
         this->get_positions_start());
   }
 
   /// Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
-  Eigen::VectorBlock<VectorX<T>, nq> get_mutable_positions(
+  Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       MultibodyTreeContext<T>* context) const {
-    return context->template get_mutable_state_segment<nq>(
+    return context->template get_mutable_state_segment<kNq>(
         this->get_positions_start());
   }
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
-  Eigen::VectorBlock<const VectorX<T>, nv> get_velocities(
+  Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const MultibodyTreeContext<T>& context) const {
-    return context.template get_state_segment<nv>(
+    return context.template get_state_segment<kNv>(
         this->get_velocities_start());
   }
 
   /// Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
-  Eigen::VectorBlock<VectorX<T>, nv> get_mutable_velocities(
+  Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       MultibodyTreeContext<T>* context) const {
-    return context->template get_mutable_state_segment<nv>(
+    return context->template get_mutable_state_segment<kNv>(
         this->get_velocities_start());
   }
   /// @}

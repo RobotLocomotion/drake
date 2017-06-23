@@ -173,7 +173,7 @@ class SpatialVector {
 
   /// This operation re-expresses the spatial vector `V_E` originally expressed
   /// in frame E, into `V_F`, the same spatial vector expresed in another frame
-  /// F. The transormation requires the rotation matrix `R_FE` representing the
+  /// F. The transformation requires the rotation matrix `R_FE` representing the
   /// orientation of the original frame E with respect to frame F.
   /// The operation performed is: <pre>
   ///   V_F.rotational()    = R_FE * V_E.rotational(),
@@ -181,9 +181,8 @@ class SpatialVector {
   /// </pre>
   /// @returns V_F The same spatial vector re-expressed in frame F.
   friend SpatialQuantity operator*(
-      const Matrix3<T>& R_FE, const SpatialQuantity& V_AB_E) {
-    return SpatialQuantity(R_FE * V_AB_E.rotational(),
-                           R_FE * V_AB_E.translational());
+      const Matrix3<T>& R_FE, const SpatialQuantity& V_E) {
+    return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
   }
 
  private:

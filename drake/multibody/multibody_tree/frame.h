@@ -46,7 +46,7 @@ class Frame : public FrameBase<T> {
 
   /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
   /// with this frame.
-  /// In particular, if `this` **is**` the body frame B, this method directly
+  /// In particular, if `this` **is** the body frame B, this method directly
   /// returns the identity transformation.
   /// @sa CalcBodyPoseInThisFrame() which returns the inverse
   /// transformation `X_FB`.

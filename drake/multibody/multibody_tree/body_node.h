@@ -67,7 +67,7 @@ namespace internal {
 /// coordinates `qm_B` (where `m` refers to "mobilizer" and `_B` refers to the
 /// fact this is the unique inboard mobilizer of body B.)
 ///
-/// In addition, body B could be a flexible body, case in which the pose of each
+/// In addition, body B could be a flexible body, in which case the pose of each
 /// frame attached to B would in general be a function of the generalized
 /// positions `qb_B` for body B (where `b` refers to "body" and `_B` refers to
 /// body B in particular.) In particular, the pose `X_BM(qb_B)` of the outboard
@@ -118,8 +118,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// Returns a constant reference to the mobilizer associated with this node.
-  /// @throws std::runtime_error if called on the root node corresponding to
-  /// the _world_ body, for which there is no mobilizer.
+  /// Aborts if called on the root node corresponding to the _world_ body, for
+  /// which there is no mobilizer.
   const Mobilizer<T>& get_mobilizer() const {
     DRAKE_DEMAND(mobilizer_ != nullptr);
     return *mobilizer_;
@@ -181,7 +181,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// - `vc` is nullptr.
   /// @param[in] context The context with the state of the MultibodyTree model.
   /// @param[in] pc An already updated position kinematics cache in sync with
-  ///                `context`.
+  ///               `context`.
   /// @param[out] vc A pointer to a valid, non nullptr, velocity kinematics
   ///                cache.
   /// @pre The position kinematics cache `pc` was already updated to be in sync
@@ -198,15 +198,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     DRAKE_ASSERT(vc != nullptr);
 
-    // Body for this node.
+    // Body for this node. It's body frame is also referred to as B whenever no
+    // ambiguity can arise.
     const Body<T>& BodyB = get_body();
 
-    // Body for this node's parent, or the parent body P.
+    // Body for this node's parent, or the parent body P. It's body frame is
+    // also referred to as P whenever no ambiguity can arise.
     const Body<T>& BodyP = get_parent_body();
 
-    // Inboard/Outboard frames of this node's mobilizer.
+    // Inboard frame F of this node's mobilizer.
     const Frame<T>& FrameF = get_inboard_frame();
     DRAKE_ASSERT(FrameF.get_body().get_index() == BodyP.get_index());
+    // Outboard frame M of this node's mobilizer.
     const Frame<T>& FrameM = get_outboard_frame();
     DRAKE_ASSERT(FrameM.get_body().get_index() == BodyB.get_index());
 
@@ -217,9 +220,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     SpatialVelocity<T> V_FM =
         get_mobilizer().CalcAcrossMobilizerSpatialVelocity(context, vm);
 
-    // P: Parent body frame.
-    // F: Mobilizer inboard frame.
-    // M: Mobilizer outboard frame.
     const Isometry3<T> X_PF = FrameF.CalcPoseInBodyFrame(context);
     const Isometry3<T> X_MB = FrameM.CalcBodyPoseInThisFrame(context);
 

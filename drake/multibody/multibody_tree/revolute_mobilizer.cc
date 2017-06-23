@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
@@ -14,7 +13,7 @@ const T& RevoluteMobilizer<T>::get_angle(
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
   auto q = this->get_positions(mbt_context);
-  DRAKE_ASSERT(q.size() == nq);
+  DRAKE_ASSERT(q.size() == kNq);
   return q.coeffRef(0);
 }
 
@@ -24,7 +23,7 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angle(
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto q = this->get_mutable_positions(&mbt_context);
-  DRAKE_ASSERT(q.size() == nq);
+  DRAKE_ASSERT(q.size() == kNq);
   q[0] = angle;
   return *this;
 }
@@ -35,7 +34,7 @@ const T& RevoluteMobilizer<T>::get_angular_velocity(
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
   const auto& v = this->get_velocities(mbt_context);
-  DRAKE_ASSERT(v.size() == nv);
+  DRAKE_ASSERT(v.size() == kNv);
   return v.coeffRef(0);
 }
 
@@ -45,7 +44,7 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_velocity(
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto v = this->get_mutable_velocities(&mbt_context);
-  DRAKE_ASSERT(v.size() == nv);
+  DRAKE_ASSERT(v.size() == kNv);
   v[0] = w_FM;
   return *this;
 }
@@ -62,9 +61,8 @@ Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
-  unused(context);
   DRAKE_ASSERT(v.size() == 1);
   return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
 }

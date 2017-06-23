@@ -284,7 +284,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// This method aborts in Debug builds if the dimension of the input vector of
   /// generalized velocities has a size different from get_num_velocities().
   ///
-  /// @param[in] context The context of the parernt tree that owns this
+  /// @param[in] context The context of the parent tree that owns this
   /// mobilizer. This mobilizer's generalized positions q are inferred from this
   /// context.
   /// @param[in] v A vector of generalized velocities. It must live in ℝⁿᵛ.

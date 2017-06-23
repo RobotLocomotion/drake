@@ -13,6 +13,26 @@
 namespace drake {
 namespace multibody {
 
+/// This class is one of the cache entries in MultibodyTreeContext. It holds the
+/// kinematics results of computations that depend not only on the generalized
+/// positions of the system, but also on its generalized velocities.
+/// Velocity kinematics results include:
+/// - Spatial velocity `V_WB` for each body B in the model as measured and
+///   expressed in the world frame W.
+/// - Spatial velocity `V_PB` for each body B in the model as measured and
+///   expressed in the inboard (or parent) body frame P.
+/// - Spatial velocity `V_FMB_W` of the body frame B as if instantaneously
+///   moving with the outboard frame M, measured in the inboard frame F and
+///   expressed in the world frame W.
+///
+/// @tparam T The mathematical type of the context, which must be a valid Eigen
+///           scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
 template <typename T>
 class VelocityKinematicsCache {
  public:
@@ -20,9 +40,16 @@ class VelocityKinematicsCache {
 
   /// Constructs a velocity kinematics cache entry for the given
   /// MultibodyTreeTopology.
+  /// In Release builds specific entries are left uninitialized resulting in a
+  /// zero cost operation. However in Debug builds those entries are set to NaN
+  /// so that operations using this uninitialized cache entry fail fast, easing
+  /// bug detection.
   explicit VelocityKinematicsCache(const MultibodyTreeTopology& topology) :
       num_nodes_(topology.get_num_bodies()) {
     Allocate();
+    DRAKE_ASSERT_VOID(InitializeToNaN());
+    // Sets defaults.
+    V_WB_pool_[world_index()].SetZero();  // World's velocity is always zero.
   }
 
   /// Returns a constant reference to the spatial velocity `V_WB` of the body B
@@ -44,7 +71,6 @@ class VelocityKinematicsCache {
   }
 
  private:
-  // Pool types:
   // Pools store entries in the same order multibody tree nodes are
   // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore
   // clients of this class will access entries by BodyNodeIndex, see
@@ -56,7 +82,15 @@ class VelocityKinematicsCache {
   // Allocates resources for this position kinematics cache.
   void Allocate() {
     V_WB_pool_.resize(num_nodes_);
-    V_WB_pool_[world_index()].SetZero();  // World's velocity is always zero.
+  }
+
+  // Initializes all pools to have NaN values to ease bug detection when entries
+  // are accidentally left uninitialized.
+  void InitializeToNaN() {
+    for (BodyNodeIndex body_node_index(0); body_node_index < num_nodes_;
+         ++body_node_index) {
+      V_WB_pool_[body_node_index].SetNaN();
+    }
   }
 
   // Number of body nodes in the corresponding MultibodyTree.
