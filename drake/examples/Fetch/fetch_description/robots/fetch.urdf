@@ -454,61 +454,6 @@
     <child link="l_gripper_finger_link" />
     <axis xyz="0 -1 0" />
   <limit effort="60" lower="0.0" upper="0.05" velocity="0.05" /><dynamics damping="0" /></joint>
-  <link name="bellows_link">
-    <inertial>
-      <origin rpy="0 0 0" xyz="0.0191320000286228 -1.67219873481315E-16 -0.134861625443387" />
-      <mass value="0.169374038216602" />
-      <inertia ixx="0.00331159128762117" ixy="-8.9230964321455E-18" ixz="-5.38622201018293E-08" iyy="0.00174447292786627" iyz="-8.06964979976371E-17" izz="0.00169417568121457" />
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="../meshes/bellows_link.obj" />
-      </geometry>
-      <material name="">
-        <color rgba="0 0 0 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="../meshes/bellows_link_collision.obj" />
-      </geometry>
-    </collision>
-  </link>
-  <joint name="bellows_joint" type="prismatic">
-    <origin rpy="0 0 0" xyz="0 0 0" />
-    <parent link="torso_lift_link" />
-    <child link="bellows_link" />
-    <axis xyz="0 0 -1" />
-  <limit effort="5.0" lower="0" upper="0.4" velocity="0.1" /></joint>
-  <link name="bellows_link2">
-    <inertial>
-      <origin rpy="0 0 0" xyz="0.0191320000286228 -1.67219873481315E-16 -0.134861625443387" />
-      <mass value="0.169374038216602" />
-      <inertia ixx="0.00331159128762117" ixy="-8.9230964321455E-18" ixz="-5.38622201018293E-08" iyy="0.00174447292786627" iyz="-8.06964979976371E-17" izz="0.00169417568121457" />
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="../meshes/bellows_link.obj" />
-      </geometry>
-      <material name="">
-        <color rgba="0 0 0 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="../meshes/bellows_link_collision.obj" />
-      </geometry>
-    </collision>
-  </link>
-  <joint name="bellows_joint2" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0" />
-    <parent link="torso_lift_link" />
-    <child link="bellows_link2" />
-  </joint>
   <link name="estop_link">
     <inertial>
       <origin rpy="0 0 0" xyz="0.002434512737072 -0.00330608315239905 0.00665139196650039" />

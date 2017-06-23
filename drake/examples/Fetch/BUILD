@@ -26,12 +26,12 @@ package(
 )
 
 drake_cc_library(
-    name = "jaco_common",
+    name = "fetch_common",
     srcs = [
-        "jaco_common.cc",
+        "fetch_common.cc",
     ],
     hdrs = [
-        "jaco_common.h",
+        "fetch_common.h",
     ],
     deps = [
         "//drake/multibody:rigid_body_tree",
@@ -40,15 +40,15 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "run_passive_jaco_demo",
-    srcs = ["run_passive_jaco_demo.cc"],
+    name = "run_passive_fetch_demo",
+    srcs = ["run_passive_fetch_demo.cc"],
     add_test_rule = 1,
     data = [
         "//drake/examples/Fetch:models",
     ],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
-        ":jaco_common",
+        ":fetch_common",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
