@@ -10,7 +10,6 @@ load(
 )
 load(
     "@drake//tools:lcm.bzl",
-    "lcm_c_aggregate_header",
     "lcm_c_library",
     "lcm_cc_library",
     "lcm_java_library",
@@ -25,18 +24,8 @@ LCM_STRUCTS = [
     for f in LCM_SRCS
 ]
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_bot2_core_c_aggregate_header",
-    out = "lcmtypes/bot_core.h",
-    lcm_package = "bot_core",
-    lcm_srcs = LCM_SRCS,
-    lcm_structs = LCM_STRUCTS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_bot2_core_c",
-    aggregate_hdr = ":lcmtypes_bot2_core_c_aggregate_header",
     includes = ["lcmtypes"],
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
