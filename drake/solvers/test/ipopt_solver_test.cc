@@ -59,6 +59,7 @@ class NoisyQuadraticCost {
 };
 
 GTEST_TEST(IpoptSolverTest, AcceptableResult) {
+  std::srand(0);
   {
     // Set up a program and give it a relatively large amount of noise for the
     // specified tolerance.
