@@ -78,7 +78,7 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
   EXPECT_TRUE(CheckAlreadyExpanded(-2 * x_));
   EXPECT_TRUE(CheckAlreadyExpanded(3 * x_ * y_));               // 3xy
   EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(x_, 2) * y_));       // 3x^2y
-  EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(x_, 2) * y_ / 10));  // 3x^2y / 10
+  EXPECT_TRUE(CheckAlreadyExpanded(3 / 10 * pow(x_, 2) * y_));  // 3/10*x^2y
   EXPECT_TRUE(CheckAlreadyExpanded(-7 + x_ + y_));              // -7 + x + y
   EXPECT_TRUE(CheckAlreadyExpanded(1 + 3 * x_ - 4 * y_));       // 1 + 3x -4y
 }
@@ -232,6 +232,10 @@ TEST_F(SymbolicExpansionTest, UninterpretedFunction) {
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_PRED2(ExprEqual, uf1, uf1.Expand());
   EXPECT_PRED2(ExprEqual, uf2, uf2.Expand());
+}
+
+TEST_F(SymbolicExpansionTest, DivideByConstant) {
+  EXPECT_PRED2(ExprEqual, ((2 * x_) / 2).Expand(), x_);
 }
 
 }  // namespace

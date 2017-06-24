@@ -19,6 +19,7 @@
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_expression_visitor.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
@@ -959,8 +960,68 @@ Polynomial<double> ExpressionDiv::ToPolynomial() const {
          get_constant_value(get_second_argument());
 }
 
+namespace {
+// Helper class for ExpressionDiv::Expand.
+class DivExpandVisitor {
+ public:
+  // Simplifies `e / n` case to eliminate division if possible.
+  Expression Simplify(const Expression& e, const double n) const {
+    return VisitPolynomial<Expression>(this, e, n);
+  }
+
+ private:
+  Expression VisitVariable(const Expression& e, const double n) const {
+    return e / n;
+  }
+
+  Expression VisitConstant(const Expression& e, const double n) const {
+    return e / n;
+  }
+
+  Expression VisitAddition(const Expression& e, const double n) const {
+    //   (c₀ + ∑ᵢ cᵢ * eᵢ) / n
+    // = c₀/n + ∑ᵢ (cᵢ/n) * eᵢ
+    const double constant{get_constant_in_addition(e)};
+    ExpressionAddFactory factory(constant, {});
+    for (const pair<const Expression, double>& p :
+         get_expr_to_coeff_map_in_addition(e)) {
+      factory.AddExpression(p.first * p.second / n);
+    }
+    return factory.GetExpression();
+  }
+
+  Expression VisitMultiplication(const Expression& e, const double n) const {
+    //   (c₀ * ∏ᵢ bᵢ * eᵢ) / n
+    // = c₀/n * ∏ᵢ bᵢ * eᵢ
+    return ExpressionMulFactory{get_constant_in_multiplication(e) / n,
+                                get_base_to_exponent_map_in_multiplication(e)}
+        .GetExpression();
+  }
+
+  Expression VisitDivision(const Expression& e, const double n) const {
+    return e / n;
+  }
+
+  Expression VisitPow(const Expression& e, const double n) const {
+    return e / n;
+  }
+
+  // Makes VisitPolynomial a friend of this class so that VisitPolynomial can
+  // use its private methods.
+  friend Expression drake::symbolic::VisitPolynomial<Expression>(
+      const DivExpandVisitor*, const Expression&, const double&);
+};
+}  // namespace
+
 Expression ExpressionDiv::Expand() const {
-  return get_first_argument().Expand() / get_second_argument().Expand();
+  const Expression e1{get_first_argument().Expand()};
+  const Expression e2{get_second_argument().Expand()};
+  if (is_constant(e2)) {
+    // Simplifies the 'division by a constant' case, using DivExpandVisitor
+    // defined above.
+    return DivExpandVisitor{}.Simplify(e1, get_constant_value(e2));
+  }
+  return e1 / e2;
 }
 
 Expression ExpressionDiv::Substitute(const Substitution& s) const {
