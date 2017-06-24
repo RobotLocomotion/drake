@@ -202,6 +202,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "bilinear_product_util",
+    srcs = ["bilinear_product_util.cc"],
+    hdrs = ["bilinear_product_util.h"],
+    deps = [
+        ":decision_variable",
+        "//drake/common:symbolic",
+        "//drake/common:symbolic_polynomial",
+    ],
+)
+
+drake_cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
@@ -578,6 +589,14 @@ drake_cc_library(
 )
 
 # === test/ ===
+drake_cc_googletest(
+    name = "bilinear_product_util_test",
+    deps = [
+        ":bilinear_product_util",
+        "//drake/common:symbolic_test_util",
+    ],
+)
+
 drake_cc_googletest(
     name = "binding_test",
     srcs = [
