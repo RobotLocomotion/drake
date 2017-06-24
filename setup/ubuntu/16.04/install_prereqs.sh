@@ -99,6 +99,7 @@ libvtk5-qt4-dev
 libxmu-dev
 make
 ninja-build
+patchutils
 perl
 pkg-config
 python-bs4
