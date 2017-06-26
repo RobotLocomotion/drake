@@ -114,6 +114,24 @@ maven_jar(
     sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
+maven_jar(
+    name = "com_jidesoft_jide_oss",
+    artifact = "com.jidesoft:jide-oss:2.9.7",
+    sha1 = "a9bb0d8384012c25c1519f6dd9adc80dd720a050",
+)
+
+maven_jar(
+    name = "commons_io_commons_io",
+    artifact = "commons-io:commons-io:1.3.1",
+    sha1 = "b90b6ac57cf27a2858eaa490d02ba7945d18ca7b",
+)
+
+maven_jar(
+    name = "org_apache_xmlgraphics_xmlgraphics_commons",
+    artifact = "org.apache.xmlgraphics:xmlgraphics-commons:1.3.1",
+    sha1 = "f7d0fa54e2750acd82b1a241c043be6fce1bf0dc",
+)
+
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
