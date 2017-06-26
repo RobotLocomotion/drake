@@ -26,4 +26,5 @@ install(
     license_docs = ["@com_github_gflags_gflags//:COPYING.txt"],
     targets = ["@com_github_gflags_gflags//:gflags"],
     deps = [":install_cmake_config"],
+    visibility = ["//:__pkg__"],
 )
