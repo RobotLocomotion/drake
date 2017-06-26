@@ -141,7 +141,7 @@ drake_cc_library(
         ":control_util",
         ":qp_common",
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/lcmtypes:zmp_com_observer_state",
@@ -167,6 +167,7 @@ drake_cc_googletest(
         ":inverse_dynamics",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -179,6 +180,7 @@ drake_cc_googletest(
         ":inverse_dynamics_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
+        "//drake/common:find_resource",
     ],
 )
 
