@@ -131,30 +131,21 @@ drake_cc_library(
 drake_cc_library(
     name = "mathematical_program",
     srcs = [
-        "equality_constrained_qp_solver.cc",
-        "linear_system_solver.cc",
         "mathematical_program.cc",
-        "mathematical_program_solver_interface.cc",
-        "moby_lcp_solver.cc",
-        "no_dreal.cc",
     ],
-    hdrs = [
-        "dreal_solver.h",
-        "equality_constrained_qp_solver.h",
-        "linear_system_solver.h",
-        "mathematical_program.h",
-        "mathematical_program_solver_interface.h",
-        "moby_lcp_solver.h",
-        "mosek_solver.h",
-        "snopt_solver.h",
-    ],
+    hdrs = [],
     deps = [
         ":binding",
         ":create_constraint",
         ":create_cost",
         ":decision_variable",
+        ":dreal_solver",
+        ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
+        ":linear_system_solver",
+        ":mathematical_program_api",
+        ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
         ":snopt_solver",
@@ -285,7 +276,10 @@ drake_cc_library(
 # with MathematicalProgram itself, and then this target should be deleted.
 drake_cc_library(
     name = "mathematical_program_api",
-    srcs = [],
+    srcs = [
+        "mathematical_program_api.cc",
+        "mathematical_program_solver_interface.cc",
+    ],
     hdrs = [
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
@@ -301,6 +295,49 @@ drake_cc_library(
         "//drake/common:autodiff",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
+    ],
+)
+
+# Internal Solvers.
+
+drake_cc_library(
+    name = "equality_constrained_qp_solver",
+    srcs = ["equality_constrained_qp_solver.cc"],
+    hdrs = ["equality_constrained_qp_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_system_solver",
+    srcs = ["linear_system_solver.cc"],
+    hdrs = ["linear_system_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "moby_lcp_solver",
+    srcs = ["moby_lcp_solver.cc"],
+    hdrs = ["moby_lcp_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
+    ],
+)
+
+
+drake_cc_library(
+    name = "dreal_solver",
+    srcs = ["no_dreal.cc"],
+    hdrs = ["dreal_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
     ],
 )
 
