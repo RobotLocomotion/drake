@@ -31,7 +31,7 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
-  LeafSystem<double>::DeclarePublishPeriodSec(period);
+  LeafSystem<double>::DeclarePeriodicPublish(period);
 }
 
 void DrakeVisualizer::DoCalcNextUpdateTime(

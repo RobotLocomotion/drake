@@ -37,7 +37,7 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt)
 
     // Time stepping approach requires three position variables and
     // three velocity variables, all discrete, and periodic update.
-    this->DeclareDiscreteUpdatePeriodSec(dt);
+    this->DeclarePeriodicDiscreteUpdate(dt);
     this->DeclareDiscreteState(6);
   } else {
     if (dt != 0)

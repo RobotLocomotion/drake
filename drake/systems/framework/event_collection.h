@@ -12,6 +12,8 @@
 namespace drake {
 namespace systems {
 
+// TODO(siyuan): move these to a separate module doxygen file.
+
 /**
  * There are three concrete event types for any System: publish, discrete
  * state update, and unrestricted state update, listed in order of increasing
@@ -35,20 +37,20 @@ namespace systems {
  * both events, perform only one publish action, or perform both publish actions
  * in any arbitrary order. The System and Diagram API provide only dispatch
  * mechanisms that delegate actual event handling to the
- * constituent leaf systems. Note that for each type of event at any given time,
- * the public event handling method (e.g.
- * System::Publish(context, publish_events)) should be invoked exactly once.
+ * constituent leaf systems. The Simulator promises that for each type of
+ * simultaneous events at any given time, the public event handling method
+ * (e.g. System::Publish(context, publish_events)) will be invoked exactly once.
  *
- * The System API provides several functions for customizable event scheduling
- * and generation such as System::DoCalcNextUpdateTime() or
- * System::DoGetPerStepEvents(). These functions can return any number of
- * events of arbitrary types, and the resulting events are stored in separate
- * CompositeEventCollection instances. Before calling the event handlers, all
- * of these CompositeEventCollection objects must be merged to generate a
- * complete set of simultaneous events. Then, only events of the appropriate
- * type are passed to the event handlers. (e.g. sys.Publish(context,
- * combined_event_collection.get_publish_events())). For example, Simulator
- * executes this collation process when it is applied to simulate a system.
+ * The System API provides several functions for customizable event generation
+ * such as System::DoCalcNextUpdateTime() or System::DoGetPerStepEvents().
+ * These functions can return any number of events of arbitrary types, and the
+ * resulting events are stored in separate CompositeEventCollection instances.
+ * Before calling the event handlers, all of these CompositeEventCollection
+ * objects must be merged to generate a complete set of simultaneous events.
+ * Then, only events of the appropriate type are passed to the event handlers.
+ * e.g. sys.Publish(context, combined_event_collection.get_publish_events()).
+ * For example, the Simulator executes this collation process when it is
+ * applied to simulate a system.
  *
  * Here is a complete example. For some LeafSystem `sys` at time `t`, its
  * System::DoCalcNextUpdateTime() generates the following
@@ -183,10 +185,8 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 
   /**
    * Transfers @p subevent_collection ownership to `this` and associates it
-   * with the subsystem identified by @p index. Aborts if the 0-indexed
-   * @p index is greater than or equal to the number of subsystems specified
-   * in this object's construction (see DiagramEventCollection(int)); if
-   * @p index is negative; or if @p subevent_collection is null.
+   * with the subsystem identified by @p index. Aborts if @p index is not in
+   * the range [0, num_subsystems() - 1] or if @p subevent_collection is null.
    */
   void set_and_own_subevent_collection(
       int index,
@@ -200,10 +200,9 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   /**
    * Associate @p subevent_collection with subsystem identified by @p index.
    * Ownership of the object that @p subevent_collection is maintained
-   * elsewhere, and its life span must be longer than this. Aborts if the
-   * 0-indexed @p index is greater than or equal to the number of subsystems
-   * specified in this object's construction (see DiagramEventCollection(int));
-   * if @p index is negative, or if subevent_collection is null.
+   * elsewhere, and its life span must be longer than this. Aborts if
+   * @p index is not in the range [0, num_subsystems() - 1] or if
+   * @p subevent_collection is null.
    */
   void set_subevent_collection(
       int index, EventCollection<EventType>* subevent_collection) {
@@ -216,7 +215,8 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * Returns a const pointer to subsystem's EventCollection at @p index.
    * Aborts if the 0-indexed @p index is greater than or equal to the number of
    * subsystems specified in this object's construction (see
-   * DiagramEventCollection(int)) or if @p index is negative.
+   * DiagramEventCollection(int)) or if @p index is not in the range
+   * [0, num_subsystems() - 1].
    */
   const EventCollection<EventType>& get_subevent_collection(int index) const {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
@@ -241,7 +241,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   }
 
   /**
-   * Returns `true` if and only if none of the subevent collections have any
+   * Returns `true` if and only if any of the subevent collections have any
    * events.
    */
   bool HasEvents() const override {
@@ -256,7 +256,9 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * Goes through each subevent collection and merges in the corresponding one
    * in @p other_collection. Asserts that @p other_collection is an instance of
    * DiagramEventCollection. Aborts if `this` does not have the same number of
-   * subevent collections as @p other_collection.
+   * subevent collections as @p other_collection. In addition, this method
+   * assumes that `this` and @p other_collection has the exact same topology
+   * (i.e. both are created for the same Diagram.)
    * @throws std::bad_cast if @p other_collection is not an instance of
    * DiagramEventCollection.
    */

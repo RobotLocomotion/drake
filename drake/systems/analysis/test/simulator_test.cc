@@ -1038,7 +1038,7 @@ class DiscreteSystem : public LeafSystem<double> {
     // floating-point error with, the default max step size.
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
-    this->DeclarePublishPeriodSec(kPublishPeriod);
+    this->DeclarePeriodicPublish(kPublishPeriod);
 
     set_name("TestSystem");
   }

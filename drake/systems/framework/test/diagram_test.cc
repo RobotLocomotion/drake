@@ -840,7 +840,7 @@ const double kTestPublishPeriod = 19.0;
 
 class TestPublishingSystem : public LeafSystem<double> {
  public:
-  TestPublishingSystem() { this->DeclarePublishPeriodSec(kTestPublishPeriod); }
+  TestPublishingSystem() { this->DeclarePeriodicPublish(kTestPublishPeriod); }
 
   ~TestPublishingSystem() override {}
 
@@ -904,13 +904,9 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
   EXPECT_EQ(2.0, time);
-  auto info = dynamic_cast<const DiagramCompositeEventCollection<double>*>(
-      events.get());
-  // TODO(siyuan): don't pick subsystem's event collection based on hard coded
-  // event index that is tied to the diagram topology, need to implement the
-  // analogous method to get_subsystem_context for
-  // get_subevent_collection(subsystem*).
-  auto& subevent_collection = *info->get_subevent_collection(2);
+  const auto& subevent_collection =
+        diagram_.GetSubsystemCompositeEventCollection(
+            diagram_.hold1(), events.get());
 
   EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
 }
@@ -922,20 +918,17 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
   EXPECT_EQ(6.0, time);
-  // Both zoh should have an update event.
-  // TODO(siyuan): don't pick subsystem's event collection based on hard coded
-  // event index that is tied to the diagram topology, need to implement the
-  // analogous method to get_subsystem_context for
-  // get_subevent_collection(subsystem*).
-  auto info = dynamic_cast<const DiagramCompositeEventCollection<double>*>(
-      events.get());
   {
-    auto& subevent_collection = *info->get_subevent_collection(1);
+    const auto& subevent_collection =
+        diagram_.GetSubsystemCompositeEventCollection(
+            diagram_.hold2(), events.get());
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 
   {
-    auto& subevent_collection = *info->get_subevent_collection(2);
+    const auto& subevent_collection =
+        diagram_.GetSubsystemCompositeEventCollection(
+            diagram_.hold1(), events.get());
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 }
@@ -1090,13 +1083,18 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   // First action time should be 2 sec, and only sys0 will be updating.
   auto events = diagram_.AllocateCompositeEventCollection();
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 2.);
-  // TODO(siyuan): don't have hard code event index, need to implement
-  // get_subevent_collection.
+  {
+    const auto& subevent_collection =
+        diagram_.GetSubsystemCompositeEventCollection(
+            diagram_.get_sys(0), events.get());
+    EXPECT_TRUE(
+        subevent_collection.get_unrestricted_update_events().HasEvents());
+  }
   {
     const auto& subevent_collection =
         diagram_.GetSubsystemCompositeEventCollection(
             diagram_.get_sys(1), events.get());
-    EXPECT_TRUE(
+    EXPECT_FALSE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
 
@@ -1475,7 +1473,7 @@ class MyEventTestSystem : public LeafSystem<double> {
   // a per step publish event.
   MyEventTestSystem(const std::string& name, double p) {
     if (p > 0) {
-      DeclarePublishPeriodSec(p);
+      DeclarePeriodicPublish(p);
     } else {
       DeclarePerStepEvent<PublishEvent<double>>(
           PublishEvent<double>(Event<double>::TriggerType::kPerStep));

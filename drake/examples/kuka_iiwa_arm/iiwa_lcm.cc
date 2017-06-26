@@ -27,7 +27,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   this->DeclareAbstractInputPort();
   this->DeclareVectorOutputPort(systems::BasicVector<double>(num_joints_ * 2),
                                 &IiwaCommandReceiver::OutputCommand);
-  this->DeclareDiscreteUpdatePeriodSec(kIiwaLcmStatusPeriod);
+  this->DeclarePeriodicDiscreteUpdate(kIiwaLcmStatusPeriod);
   this->DeclareDiscreteState(num_joints_ * 2);
 }
 
@@ -129,7 +129,7 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
               .get_index()) {
   this->DeclareAbstractInputPort();
   this->DeclareDiscreteState(num_joints_ * 3);
-  this->DeclareDiscreteUpdatePeriodSec(kIiwaLcmStatusPeriod);
+  this->DeclarePeriodicDiscreteUpdate(kIiwaLcmStatusPeriod);
 }
 
 void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(

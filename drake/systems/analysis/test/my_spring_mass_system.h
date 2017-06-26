@@ -20,7 +20,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
     if (update_rate > 0.0) {
-      this->DeclareDiscreteUpdatePeriodSec(1.0 / update_rate);
+      this->DeclarePeriodicDiscreteUpdate(1.0 / update_rate);
     }
   }
 

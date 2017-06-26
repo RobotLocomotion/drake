@@ -48,7 +48,7 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePeriodicUnrestrictedUpdate(period, offset);
   }
 
-  void AddPublish(double period) { this->DeclarePublishPeriodSec(period); }
+  void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
 
   template <typename EventType>
   void AddPerStepEvent() {

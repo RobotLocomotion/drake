@@ -18,7 +18,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
  public:
   SimpleMixedContinuousTimeDiscreteTimeSystem() {
     const int kSize = 1;
-    this->DeclareDiscreteUpdatePeriodSec(1.0);
+    this->DeclarePeriodicDiscreteUpdate(1.0);
     this->DeclareVectorOutputPort(
         drake::systems::BasicVector<double>(2 * kSize),
         &SimpleMixedContinuousTimeDiscreteTimeSystem::CopyStateOut);

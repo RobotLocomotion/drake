@@ -79,7 +79,7 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
 }
 
 void LcmPublisherSystem::set_publish_period(double period) {
-  LeafSystem<double>::DeclarePublishPeriodSec(period);
+  LeafSystem<double>::DeclarePeriodicPublish(period);
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context,

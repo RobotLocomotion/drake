@@ -583,8 +583,8 @@ class LeafSystem : public System<T> {
   /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
   /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
   /// @p period_sec.
-  void DeclarePublishPeriodSec(double period_sec, double offset_sec = 0) {
-    DeclarePeriodicEvent<PublishEvent<T>>(period_sec, 0);
+  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0) {
+    DeclarePeriodicEvent<PublishEvent<T>>(period_sec, offset_sec);
   }
 
   /// Declares a per-step event using @p event, which is deep copied (the

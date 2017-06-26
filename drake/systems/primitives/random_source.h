@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <random>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
