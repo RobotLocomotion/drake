@@ -134,7 +134,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///   A and expressed in frame E.
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
-  ///      modifying the original obje  ct.
+  ///      modifying the original object.
   SpatialVelocity<T> Shift(const Vector3<T>& p_BpBq_E) const {
     return SpatialVelocity<T>(*this).ShiftInPlace(p_BpBq_E);
   }
