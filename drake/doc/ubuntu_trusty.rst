@@ -85,7 +85,8 @@ Other prerequisites may be installed as follows::
       autoconf automake bison doxygen freeglut3-dev git graphviz \
       libboost-dev libboost-system-dev libgtk2.0-dev libhtml-form-perl \
       libjpeg-dev libmpfr-dev libpng-dev libterm-readkey-perl libtinyxml-dev \
-      libtool libvtk5-dev libwww-perl make ninja-build perl pkg-config \
+      libtool libvtk5-dev libwww-perl make ninja-build \
+      patchutils perl pkg-config \
       python-bs4 python-dev python-gtk2 python-html5lib python-numpy \
       python-pip python-sphinx python-yaml unzip valgrind
 
