@@ -106,6 +106,43 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromTwo3DVectors) {
   EXPECT_TRUE(V_AB.rotational().isApprox(w_AB));
 }
 
+// Construction of spatial quantities using methods
+// SpatialVector::with_rotational() and SpatialVector::with_translational().
+TYPED_TEST(SpatialQuantityTest, WithRotationalAndOrWithTranslational) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+
+  // Rotational and translational components in ℝ³.
+  const Vector3<T> v(1, 2, 0);
+  const Vector3<T> w(0, 0, 3);
+
+  // A spatial quantity based off the above 3D vectors.
+  const SpatialQuantity V =
+      SpatialQuantity{}.with_rotational(w).with_translational(v);
+
+  EXPECT_EQ(V.rotational(), w);
+  EXPECT_EQ(V.translational(), v);
+
+  // Rotational and translational components in ℝ³ for new component values.
+  const Vector3<T> v2(-1, 2, 3);
+  const Vector3<T> w2(8, -7, 2);
+
+  // A spatial quantity with the given rotational component.
+  const SpatialQuantity V_with_rotational = V.with_rotational(w2);
+  EXPECT_EQ(V_with_rotational.rotational(), w2);
+  EXPECT_EQ(V_with_rotational.translational(), v);
+
+  // A spatial quantity with the given translational component.
+  const SpatialQuantity V_with_translational = V.with_translational(v2);
+  EXPECT_EQ(V_with_translational.rotational(), w);
+  EXPECT_EQ(V_with_translational.translational(), v2);
+
+  // A spatial quantity with the given rotational and translational components.
+  const SpatialQuantity V2 = V.with_rotational(w2).with_translational(v2);
+  EXPECT_EQ(V2.rotational(), w2);
+  EXPECT_EQ(V2.translational(), v2);
+}
+
 // Tests array accessors.
 TYPED_TEST(SpatialQuantityTest, SpatialVelocityArrayAccessor) {
   typedef TypeParam SpatialQuantity;
