@@ -25,14 +25,21 @@ class LeafCompositeEventCollection;
 
 /**
  * Abstract base class that represents an event. The base event contains two
- * main pieces of information: a enum trigger type and an optional attribute
+ * main pieces of information: an enum trigger type and an optional attribute
  * of AbstractValue that can be used to explain why the event is triggered.
  * Derived classes should contain a function pointer to an optional callback
- * function that handles the event.
+ * function that handles the event. No-op is the default handling behavior.
+ * Currently, the System framework only supports three concrete events:
+ * PublishEvent, DiscreteEvent and UnrestrictedUpdateEvent distinguished by
+ * their callback functions' access level to the context.
  */
 template <typename T>
 class Event {
  public:
+  void operator=(const Event&) = delete;
+  Event(Event&&) = delete;
+  void operator=(Event&&) = delete;
+
   /**
    * Predefined types of triggers. Used at run time to determine why the
    * associated event has occurred.
@@ -49,43 +56,48 @@ class Event {
 
     /**
      * This trigger indicates that an associated event is triggered by the
-     * system proceeding to a particular time.
+     * system proceeding to a single, arbitrary time. Timed events are commonly
+     * created in System::CalcNextUpdateTime().
      */
     kTimed,
 
     /**
-     * This trigger indicates that an associated event is triggered by the
-     * system proceeding to a time that recurs periodically.
+     * This type indicates that an associated event is triggered by the system
+     * proceeding to a time t ∈ {tᵢ = t₀ + p * i} for some period p, time
+     * offset t₀, and i > 0. @see PeriodicAttribute. Periodic events are
+     * commonly created in System::CalcNextUpdateTime().
      */
     kPeriodic,
 
     /**
      * This trigger indicates that an associated event is triggered whenever a
-     * "solver" takes a "step". A `solver` is an abstract construct that
-     * controls the time and state evolution of a System. Simulator is an
-     * "solver", and a "step" in the Simulator corresponds event handling
-     * and integration (over some finite time) of a system of ordinary
-     * differential equations. Per-step-events are most commonly created in
-     * System::GetPerStepEvents(). A very common use of such per-step-events is
-     * to update a discrete or abstract state variable that changes
-     * whenever the continuous state advances; examples are computing the "min"
-     * or "max" of some state variable, recording a signal in a delay buffer, or
-     * publishing. Per-step-events are also useful to implement feedback
-     * controllers interfaced with physical devices; the controller can be
-     * implemented in the event handler, and the "step" would correspond to
-     * receiving sensory data from the hardware.
+     * `solver` takes a `step`. A `solver` is an abstract construct that
+     * controls the time and state evolution of a System. For example, a
+     * simulator is a `solver`. Its `step` advances time a finite duration by
+     * integrating a system, modifying its state accordingly. Per-step events
+     * are most commonly created in System::GetPerStepEvents(). A very common
+     * use of such per-step events is to update a discrete or abstract state
+     * variable that changes whenever the continuous state advances; examples
+     * are computing the "min" or "max" of some state variable, recording a
+     * signal in a delay buffer, or publishing. Per-step events are also useful
+     * to implement feedback controllers interfaced with physical devices; the
+     * controller can be implemented in the event handler, and the "step" would
+     * correspond to receiving sensory data from the hardware.
      */
     kPerStep,
 
     /**
-     * This trigger indicates that an associated event is triggered by a witness
-     * function.
+     * This trigger indicates that an associated event is triggered by the zero
+     * crossing of a witness function. Witness events are commonly created by
+     * WitnessFunction::AddEvent().
      */
     kWitness,
   };
 
   /**
-   * A token describing an event that recurs on a fixed period.
+   * A token describing an event that recurs on a fixed period. The events are
+   * triggered at time = offset_sec + i * period_sec, where i is a positive
+   * integer.
    */
   struct PeriodicAttribute {
     /**
@@ -97,8 +109,6 @@ class Event {
      */
     double offset_sec{0.0};
   };
-
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Event)
 
   virtual ~Event() {}
 
@@ -116,6 +126,11 @@ class Event {
    * Returns the trigger type.
    */
   TriggerType get_trigger_type() const { return trigger_type_; }
+
+  /**
+   * Returns true if this event has an associated attribute.
+   */
+  bool has_attribute() const { return attribute_ != nullptr; }
 
   /**
    * Returns a const pointer to the AbstractValue attribute. The returned value
@@ -151,6 +166,11 @@ class Event {
   virtual void add_to_composite(CompositeEventCollection<T>* events) const = 0;
 
  protected:
+  Event(const Event& other) {
+    trigger_type_ = other.trigger_type_;
+    if (other.attribute_ != nullptr) set_attribute(other.attribute_->Clone());
+  }
+
   /**
    * Constructs an Event with the specified @p trigger.
    */
@@ -171,14 +191,18 @@ class Event {
 /**
  * This class represents a publish event. It has an optional callback function
  * to do custom handling of this event given const Context and const
- * PublishEvent object references.
+ * PublishEvent object references. @see System::Publish for more details.
  */
 template <typename T>
 class PublishEvent : public Event<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PublishEvent)
+  void operator=(const PublishEvent&) = delete;
+  PublishEvent(PublishEvent&&) = delete;
+  void operator=(PublishEvent&&) = delete;
 
-  // Callback function that process a publish event.
+  /**
+   * Callback function that processes a publish event.
+   */
   typedef std::function<void(const Context<T>&, const PublishEvent<T>&)>
       PublishCallback;
 
@@ -203,27 +227,24 @@ class PublishEvent : public Event<T> {
    * events.
    */
   void add_to_composite(CompositeEventCollection<T>* events) const override {
-    Event<T>* clone = this->Clone().release();
-    PublishEvent<T>* publish_clone = static_cast<PublishEvent<T>*>(clone);
-    events->add_publish_event(std::unique_ptr<PublishEvent<T>>(publish_clone));
+    DRAKE_DEMAND(events != nullptr);
+    events->add_publish_event(
+        std::unique_ptr<PublishEvent<T>>(this->DoClone()));
   }
 
   /**
-   * Calls the optional callback function if one exists with @p context and
+   * Calls the optional callback function, if one exists, with @p context and
    * `this`.
    */
   void handle(const Context<T>& context) const {
-    if (callback_ != nullptr)
-      callback_(context, *this);
+    if (callback_ != nullptr) callback_(context, *this);
   }
 
  private:
-  /**
-   * Clones PublishEvent-specific data.
-   */
-  PublishEvent<T>* DoClone() const override {
-    return new PublishEvent(this->get_trigger_type(), callback_);
-  }
+  PublishEvent(const PublishEvent&) = default;
+
+  // Clones PublishEvent-specific data.
+  PublishEvent<T>* DoClone() const override { return new PublishEvent(*this); }
 
   // Optional callback function that handles this publish event.
   PublishCallback callback_{nullptr};
@@ -238,9 +259,13 @@ class PublishEvent : public Event<T> {
 template <typename T>
 class DiscreteUpdateEvent : public Event<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteUpdateEvent)
+  void operator=(const DiscreteUpdateEvent&) = delete;
+  DiscreteUpdateEvent(DiscreteUpdateEvent&&) = delete;
+  void operator=(DiscreteUpdateEvent&&) = delete;
 
-  // Callback function that process a discrete update event.
+  /**
+   * Callback function that processes a discrete update event.
+   */
   typedef std::function<void(const Context<T>&, const DiscreteUpdateEvent<T>&,
                              DiscreteValues<T>*)>
       DiscreteUpdateCallback;
@@ -268,27 +293,24 @@ class DiscreteUpdateEvent : public Event<T> {
    * update events.
    */
   void add_to_composite(CompositeEventCollection<T>* events) const override {
-    Event<T>* clone = this->Clone().release();
-    DiscreteUpdateEvent<T>* du_clone =
-        static_cast<DiscreteUpdateEvent<T>*>(clone);
+    DRAKE_DEMAND(events != nullptr);
     events->add_discrete_update_event(
-        std::unique_ptr<DiscreteUpdateEvent<T>>(du_clone));
+        std::unique_ptr<DiscreteUpdateEvent<T>>(this->DoClone()));
   }
 
   /**
-   * Calls the optional callback function if one exists with @p context, `this`,
-   * and @p discrete_state.
+   * Calls the optional callback function, if one exists, with @p context,
+   * 'this' and @p discrete_state.
    */
   void handle(const Context<T>& context,
               DiscreteValues<T>* discrete_state) const {
-    if (callback_ != nullptr)
-      callback_(context, *this, discrete_state);
+    if (callback_ != nullptr) callback_(context, *this, discrete_state);
   }
 
  private:
-  /**
-   * Clones DiscreteUpdateEvent-specific data.
-   */
+  DiscreteUpdateEvent(const DiscreteUpdateEvent&) = default;
+
+  // Clones DiscreteUpdateEvent-specific data.
   DiscreteUpdateEvent<T>* DoClone() const override {
     return new DiscreteUpdateEvent(this->get_trigger_type(), callback_);
   }
@@ -306,9 +328,13 @@ class DiscreteUpdateEvent : public Event<T> {
 template <typename T>
 class UnrestrictedUpdateEvent : public Event<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdateEvent)
+  void operator=(const UnrestrictedUpdateEvent&) = delete;
+  UnrestrictedUpdateEvent(UnrestrictedUpdateEvent&&) = delete;
+  void operator=(UnrestrictedUpdateEvent&&) = delete;
 
-  // Callback function that process an unrestricted update event.
+  /**
+   * Callback function that processes an unrestricted update event.
+   */
   typedef std::function<void(const Context<T>&,
                              const UnrestrictedUpdateEvent<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
@@ -335,29 +361,25 @@ class UnrestrictedUpdateEvent : public Event<T> {
    * update events.
    */
   void add_to_composite(CompositeEventCollection<T>* events) const override {
-    Event<T>* clone = this->Clone().release();
-    UnrestrictedUpdateEvent<T>* uu_clone =
-        static_cast<UnrestrictedUpdateEvent<T>*>(clone);
+    DRAKE_DEMAND(events != nullptr);
     events->add_unrestricted_update_event(
-        std::unique_ptr<UnrestrictedUpdateEvent<T>>(uu_clone));
+        std::unique_ptr<UnrestrictedUpdateEvent<T>>(this->DoClone()));
   }
 
   /**
-   * Calls the optional callback function if one exists with @p context, `this`,
-   * and @p discrete_state.
+   * Calls the optional callback function, if one exists, with @p context,
+   * `this` and @p discrete_state.
    */
-  void handle(const Context<T>& context,
-              State<T>* state) const {
-    if (callback_ != nullptr)
-      callback_(context, *this, state);
+  void handle(const Context<T>& context, State<T>* state) const {
+    if (callback_ != nullptr) callback_(context, *this, state);
   }
 
  private:
-  /**
-   * Clones event data specific to UnrestrictedUpdateEvent.
-   */
+  UnrestrictedUpdateEvent(const UnrestrictedUpdateEvent&) = default;
+
+  // Clones event data specific to UnrestrictedUpdateEvent.
   UnrestrictedUpdateEvent<T>* DoClone() const override {
-    return new UnrestrictedUpdateEvent(this->get_trigger_type(), callback_);
+    return new UnrestrictedUpdateEvent(*this);
   }
 
   // Optional callback function that handles this unrestricted update event.

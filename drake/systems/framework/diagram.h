@@ -410,8 +410,8 @@ class Diagram : public System<T>,
   }
 
   /// @cond
-  // The three methods below are hidden, as described in documentation for their
-  // corresponding methods in System.
+  // The three methods below are hidden from doxygen, as described in
+  // documentation for their corresponding methods in System.
   std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const final {
     return AllocateForcedEventCollection<PublishEvent<T>>(
@@ -511,6 +511,9 @@ class Diagram : public System<T>,
     return ret;
   }
 
+  /// Returns the mutable subsystem composite event collection that corresponds
+  /// to @p subsystem. Aborts if @p subsystem is not a subsystem of this
+  /// diagram.
   CompositeEventCollection<T>* GetMutableSubsystemCompositeEventCollection(
       CompositeEventCollection<T>* events, const System<T>* subsystem) const {
     auto ret = DoGetMutableTargetSystemCompositeEventCollection(subsystem,
@@ -712,6 +715,10 @@ class Diagram : public System<T>,
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
+  /// For the subsystem associated with @p witness_func, gets its subcontext
+  /// from @p context, passes the subcontext to @p witness_func' Evaulate
+  /// method and returns the result. Aborts if the subsystem is not part of
+  /// this Diagram.
   T DoEvaluateWitness(const Context<T>& context,
                       const WitnessFunction<T>& witness_func) const final {
     const System<T>& subsystem = witness_func.get_system();
@@ -719,6 +726,10 @@ class Diagram : public System<T>,
     return witness_func.Evaluate(subcontext);
   }
 
+  /// For the subsystem associated with @p witness_func, gets its mutable
+  /// sub composite event collection from @p events, and passes it to
+  /// @p witness_func's AddEvent method. Aborts if the subsystem is not part of
+  /// this Diagram.
   void DoAddTriggeredWitnessFunctionToCompositeEventCollection(
       const WitnessFunction<T>& witness_func,
       CompositeEventCollection<T>* events) const final {
@@ -1255,6 +1266,7 @@ class Diagram : public System<T>,
 
     // Iterate over the subsystems in sorted order, and harvest the most
     // imminent updates.
+    std::set<int> next_update_indices;
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
       CompositeEventCollection<T1>* subinfo =
@@ -1262,16 +1274,21 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(subcontext != nullptr);
       const T1 sub_time =
           sorted_systems_[i]->CalcNextUpdateTime(*subcontext, subinfo);
+
       if (sub_time < *time) {
-        // i is the earliest, need to clear all the previous ones.
-        for (int j = 0; j < i; ++j) {
-          info->get_mutable_subevent_collection(j)->Clear();
-        }
+        next_update_indices.clear();
         *time = sub_time;
-      } else if (sub_time > *time) {
-        // i is too late, clear it.
-        subinfo->Clear();
+        next_update_indices.insert(i);
+      } else if (sub_time == *time) {
+        next_update_indices.insert(i);
       }
+    }
+
+    // For all the subsystems whose next update time is bigger than *time,
+    // clear their event collections.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      if (next_update_indices.find(i) == next_update_indices.end())
+        info->get_mutable_subevent_collection(i)->Clear();
     }
   }
 

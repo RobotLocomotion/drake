@@ -13,27 +13,30 @@ namespace drake {
 namespace systems {
 
 /**
+ * @ref event_concepts
+ *
  * There are three concrete event types for any System: publish, discrete
- * state update, and unrestricted state update, listed in increasing ordering
- * of degree of the state that can be changed (i.e., zero to all).
- * EventCollection is an abstract base class that
- * stores simultaneous events *of the same type* that occur **at a
- * particular time**.
+ * state update, and unrestricted state update, listed in order of increasing
+ * ability to change the state (i.e., zero to all). EventCollection is an
+ * abstract base class that stores simultaneous events *of the same type* that
+ * occur *at the same time* (i.e., simultaneous events).
  *
  * For each concrete event type, the LeafSystem API provides a unique
- * customizable function for handling all simultaneous events of that type, e.g.
+ * customizable function for processing all simultaneous events of that type,
+ * e.g.
  * LeafSystem::DoPublish(const Context&, const vector<const PublishEvent*>&)
  * for publish events, where the second argument represents all of the publish
- * events that occur simultaneously for a leaf system. The default
- * implementations process the events (i.e., call their callback functions)
+ * events that occur simultaneously for that leaf system. The default
+ * implementation processes the events (i.e., call their callback functions)
  * in the order in which they are stored in the second argument.
  * The developer of new classes derived from LeafSystem is responsible for
- * overriding such functions to handle events in the desired order. For example,
- * suppose two publish events are being handled, `events = {per step publish,
- * periodic publish}`. Depending on the desired behavior, the developer has the
- * freedom to ignore both events, perform only one publish action, or perform
- * both publish actions in arbitrary order. The System and Diagram APIs provide
- * only dispatch mechanisms that delegate actual event handling to the
+ * overriding such functions if the custom LeafSystem behavior depends on the
+ * order in which events are processed. For example, suppose two publish events
+ * are being processed, `events = {per-step publish, periodic publish}`.
+ * Depending on the desired behavior, the developer has the freedom to ignore
+ * both events, perform only one publish action, or perform both publish actions
+ * in any arbitrary order. The System and Diagram API provide only dispatch
+ * mechanisms that delegate actual event handling to the
  * constituent leaf systems. Note that for each type of event at any given time,
  * the public event handling method (e.g.
  * System::Publish(context, publish_events)) should be invoked exactly once.
@@ -126,8 +129,9 @@ class EventCollection {
   virtual bool HasEvents() const = 0;
 
   /**
-   * Derived classes must implement this method to add the specified event to
-   * the homogeneous event collection.
+   * Adds an event to this collection, or throws if the concrete collection
+   * does not permit adding new events. Derived classes must implement this
+   * method to add the specified event to the homogeneous event collection.
    */
   virtual void add_event(std::unique_ptr<EventType> event) = 0;
 

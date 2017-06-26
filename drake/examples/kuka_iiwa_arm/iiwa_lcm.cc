@@ -134,7 +134,7 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
 
 void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
+    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);

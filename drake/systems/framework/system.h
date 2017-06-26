@@ -424,10 +424,9 @@ class System {
   }
 
   /// This method is the public entry point for dispatching all discrete
-  /// variable
-  /// update event handlers. Using all the discrete update handlers in
-  ///  @p events, the method calculates the update `xd(n+1)` to discrete
-  ///  variables `xd(n)` in @p context and outputs the results to @p
+  /// variable update event handlers. Using all the discrete update handlers in
+  /// @p events, the method calculates the update `xd(n+1)` to discrete
+  /// variables `xd(n)` in @p context and outputs the results to @p
   /// discrete_state. See documentation for
   /// DispatchDiscreteVariableUpdateHandler() for more details.
   void CalcDiscreteVariableUpdates(
