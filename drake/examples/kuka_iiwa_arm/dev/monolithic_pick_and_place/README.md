@@ -11,8 +11,8 @@ and successful execution is not guaranteed.
 To run the demo, first you need to launch the drake visualizer and then
 execute the demo itself in the following manner.
 
-Build the ``drake-visualizer`` and the demo.
-------------------------------------------
+Build the ``drake-visualizer`` and the demo
+-------------------------------------------
 
 ```
 $ cd drake-distro
