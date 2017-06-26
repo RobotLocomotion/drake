@@ -385,6 +385,7 @@ class SpatialAccelerationTest : public ::testing::Test {
 TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
 
 // Unit test for the method SpatialAcceleration::Shift().
+// Case 1:
 // In this test, a frame P rotates with respect to a frame A with an angular
 // velocity w_AP and has zero acceleration in frame A, ie. A_AP = 0. We can
 // think of frames P and A having coincident origins.
@@ -414,6 +415,42 @@ TYPED_TEST(SpatialAccelerationTest, CentrifugalAccleration) {
   // in the direction opposite to p_PoQo.
   A_AQ_expected.translational() =
       -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized();
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+}
+
+// Unit test for the method SpatialAcceleration::Shift().
+// Case 2:
+// This unit test is similar to the previous Case 1 test but with the offset
+// vector p_PoQo aligned with w_AP. Therefore the centrifugal contribution is
+// zero. In this case the spatial acceleration A_AP has zero translational
+// component but non-zero rotational component alpha_AP.
+TYPED_TEST(SpatialAccelerationTest, NoCentrifugalAcceleration) {
+  typedef typename TestFixture::ScalarType T;
+
+  // Angular acceleration of frame P in A, expressed in E.
+  const Vector3<T> alpha_AP_E = 2.0 * Vector3<T>::UnitY();
+
+  // The spatial acceleration of frame P measure in A.
+  const SpatialAcceleration<T> A_AP(alpha_AP_E, Vector3<T>::Zero());
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP_E = 3.0 * Vector3<T>::UnitZ();
+
+  // Position of Q's origin measured in P and expressed in E. In this case
+  // p_PoQo is aligned with w_AP.
+  const Vector3<T> p_PoQo_E = Vector3<T>::UnitZ();
+
+  const SpatialAcceleration<T> A_AQ = A_AP.Shift(p_PoQo_E, w_AP_E);
+
+  SpatialAcceleration<T> A_AQ_expected;
+  // The rotational component does not change.
+  A_AQ_expected.rotational() = alpha_AP_E;
+
+  // In this case the only contribution to the translational acceleration comes
+  // from the angular acceleration of frame P in A.
+  A_AQ_expected.translational() =
+      alpha_AP_E.norm() * p_PoQo_E.norm() * Vector3<T>::UnitX();
 
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
