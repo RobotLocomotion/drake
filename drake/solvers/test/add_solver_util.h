@@ -5,16 +5,24 @@
 
 #include <list>
 #include <memory>
+#include <utility>
 
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
 namespace test {
+
+template <typename Solver>
 void AddSolverIfAvailable(
-    SolverType solver_type,
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
-    solver_list);
+    solver_list) {
+  auto solver = std::make_unique<Solver>();
+  if (solver->available()) {
+    solver_list->push_back(std::move(solver));
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
