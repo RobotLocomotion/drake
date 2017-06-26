@@ -147,6 +147,13 @@ class SpatialVector {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
+  /// Sets both rotational and translational components of `this`
+  /// %SpatialVector to zero.
+  SpatialQuantity& SetZero() {
+    V_.setZero();
+    return get_mutable_derived();
+  }
+
   /// Returns a reference to the underlying storage.
   CoeffsEigenType& get_coeffs() { return V_;}
 
@@ -165,7 +172,19 @@ class SpatialVector {
     return s * V;  // Multiplication by scalar is commutative.
   }
 
+  /// Factory to create a _zero_ %SpatialVector, i.e. rotational and
+  /// translational components are both zero.
+  static SpatialQuantity Zero() {
+    return SpatialQuantity{}.SetZero();
+  }
+
  private:
+  // Helper method to return a mutable reference to the derived spatial
+  // quantity.
+  SpatialQuantity& get_mutable_derived() {
+    // Static cast is safe since types are resolved at compile time by CRTP.
+    return *static_cast<SpatialQuantity*>(this);
+  }
   CoeffsEigenType V_;
 };
 

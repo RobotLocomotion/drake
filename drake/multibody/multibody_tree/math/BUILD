@@ -32,6 +32,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "spatial_acceleration",
+    srcs = [],
+    hdrs = ["spatial_acceleration.h"],
+    deps = [
+        ":spatial_vector",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "spatial_force",
     srcs = [],
     hdrs = ["spatial_force.h"],
@@ -46,6 +56,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["spatial_algebra.h"],
     deps = [
+        ":spatial_acceleration",
         ":spatial_force",
         ":spatial_vector",
         ":spatial_velocity",
