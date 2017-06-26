@@ -1,1 +1,0 @@
-drake_add_matlab_test(NAME systems/robotInterfaces/test/octomapSimpleExample REQUIRES lcm libbot octomap COMMAND octomapSimpleExample)

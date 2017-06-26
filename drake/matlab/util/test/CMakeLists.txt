@@ -70,7 +70,6 @@ drake_add_matlab_test(NAME util/test/testRotmat2rpy COMMAND testRotmat2rpy)
 drake_add_matlab_test(NAME util/test/testTransform COMMAND testTransform)
 drake_add_matlab_test(NAME util/test/testUnwrapExpmap COMMAND testUnwrapExpmap)
 drake_add_matlab_test(NAME util/test/test_datan2 COMMAND test_datan2)
-drake_add_matlab_test(NAME util/test/testqpSpline COMMAND testqpSpline)
 drake_add_matlab_test(NAME util/test/trigPolySinTest REQUIRES spotless COMMAND trigPolySinTest)
 drake_add_matlab_test(NAME util/test/tvsumtest COMMAND tvsumtest)
 
