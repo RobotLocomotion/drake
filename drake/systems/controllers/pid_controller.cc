@@ -17,13 +17,15 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-    : PidController(MatrixX<double>::Identity(kp.size(), kp.size()), state_selector, kp,
-            ki, kd) {}
+    : PidController(MatrixX<double>::Identity(kp.size(), kp.size()),
+                    state_selector, kp, ki, kd) {}
 
-    template <typename T>
-    PidController<T>::PidController(const MatrixX<double> &Binv, const MatrixX<double> &state_selector,
-                  const Eigen::VectorXd &kp, const Eigen::VectorXd &ki,
-                  const Eigen::VectorXd &kd)
+template <typename T>
+PidController<T>::PidController(const MatrixX<double>& Binv,
+                                const MatrixX<double>& state_selector,
+                                const Eigen::VectorXd& kp,
+                                const Eigen::VectorXd& ki,
+                                const Eigen::VectorXd& kd)
     : kp_(kp),
       kd_(kd),
       ki_(ki),
@@ -38,9 +40,9 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
   this->DeclareContinuousState(num_controlled_q_);
 
   output_index_control_ =
-      this->DeclareVectorOutputPort(
-          BasicVector<T>(num_controlled_q_),
-          &PidController<T>::CalcControl).get_index();
+      this->DeclareVectorOutputPort(BasicVector<T>(num_controlled_q_),
+                                    &PidController<T>::CalcControl)
+          .get_index();
 
   input_index_state_ =
       this->DeclareInputPort(kVectorValued, num_full_state_).get_index();
@@ -84,14 +86,12 @@ void PidController<T>::CalcControl(const Context<T>& context,
 
   // Sets output to the sum of all three terms.
   control->SetFromVector(
-      (kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
-          .matrix() +
-      (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
-          .matrix() +
-      (ki_.array() * state_block.array()).matrix());
-
-    auto value = control->get_mutable_value();
-    value = Binv_ * value;
+      Binv_ *
+      ((kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
+           .matrix() +
+       (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
+           .matrix() +
+       (ki_.array() * state_block.array()).matrix()));
 }
 
 template <typename T>
