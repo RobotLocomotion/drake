@@ -80,8 +80,8 @@ class PidController : public StateFeedbackControllerInterface<T>,
  * estimated and desired state input's size and the control output's size need
  * to match @p state_selector. Note that @p state_selector only affects
  * the estimated state input but not the desired state.
- * @param Binv. Under normal circumstances, Binv should be the identity matrix
- * with rows and columns @p kp's size.
+ * @param Binv a matrix with rows and columns @p kp's size. 
+ * Under normal circumstances, Binv should be the identity matrix.
  * If your robot has negative mechanical reductions specified in it's
  * description file, then Binv should be the
  * inverse of the B matrix from the part of the RigidBodyTree that you want to
@@ -93,13 +93,12 @@ class PidController : public StateFeedbackControllerInterface<T>,
  * submatrix as your B matrix
  * (in this case, kp will also have a length of 12).
  * The controller will multiply its final output by Binv, which will negate the
- * effects negative mechanical reductions, but will also change the
+ * effects of negative mechanical reductions, but will also change the
  * magnitue of the control (so the kp will have to be readjusted accordingly).
- * If the PID output was not multiplied by Binv, then the
+ * If the controller output was not multiplied by Binv, then the
  * controller would send the joints with negative mechanical reductions the
  * wrong way, and then respond with an even larger signal to move them the wrong
- * way,
- * and loose control very fast.
+ * way, and loose control very fast.
  * @param state_selector the selection matrix indicating controlled
  * states, whose size should be 2 * @p kp's size by the size of the full
  * state.
