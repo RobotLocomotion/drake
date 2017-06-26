@@ -68,7 +68,7 @@ class SpatialVector {
   explicit SpatialVector(const Eigen::MatrixBase<OtherDerived>& V) : V_(V) {}
 
   /// Creates a copy of `this` spatial vector with its rotational component set
-  /// to `v`.
+  /// to `rotational`.
   SpatialQuantity with_rotational(
       const Eigen::Ref<const Vector3<T>>& rotational) const {
     SpatialQuantity V_with_rotational(get_derived());
