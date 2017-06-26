@@ -676,6 +676,9 @@ void RgbdCamera::Impl::UpdateModelPoses(
     X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
   }
 
+  // TODO(kunimatsu-tri) Once VTK 5.8 support dropped, rewrite camera pose
+  // transformation using `vtkCamera`'s `SetModelTransformMatrix` method which
+  // is introduced since VTK 5.10.
   auto const X_CW = (X_WB * X_BC_).inverse();
 
   for (const auto& body : tree_.bodies) {
@@ -683,11 +686,11 @@ void RgbdCamera::Impl::UpdateModelPoses(
       continue;
     }
 
+    const auto X_CB = X_CW * tree_.CalcBodyPoseInWorldFrame(cache, *body);
+
     for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
       const auto& visual = body->get_visual_elements()[i];
-      const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
-          cache, *body) * visual.getLocalTransform();
-
+      const auto X_CVisual = X_CB * visual.getLocalTransform();
       vtkSmartPointer<vtkTransform> vtk_transform =
           VtkUtil::ConvertToVtkTransform(X_CVisual);
       // `id_object_maps_` is modified here. This is OK because 1) we are just
