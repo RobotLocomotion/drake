@@ -78,6 +78,9 @@ target_link_libraries(ipopt_solver_test drakeOptimizationTest)
 drake_add_cc_test(snopt_solver_test)
 target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
+drake_add_cc_test(solver_id_test)
+target_link_libraries(solver_id_test drakeOptimization)
+
 if (mosek_FOUND)
   drake_add_cc_test(NAME rotation_constraint_test rotation_constraint_test.cc
     SIZE large)
