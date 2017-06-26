@@ -268,3 +268,77 @@ def lcm_java_library(
         srcs = outs,
         deps = deps,
         **kwargs)
+
+def lcm_libraries(
+        name,
+        lcm_srcs = None,
+        lcm_package = None,
+        lcm_structs = None,
+        cc_deps = None,
+        java_deps = None,
+        **kwargs):
+    """Declares a cc_library and java_library on message classes generated
+    from `*.lcm` files.
+
+    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
+    in lcm_cc_library. The list of deps for the cc_library and java_library are
+    set by the parameters cc_deps and java_deps, respectively.
+    """
+    JAVA_ONLY_ARGS = [
+        "exported_plugins",
+        "exports",
+        "javacopts",
+        "neverlink",
+        "plugins",
+        "proguard_specs",
+        "resource_jars",
+        "resource_strip_prefix",
+        "resources",
+        "runtime_deps",
+    ]
+
+    cc_args = {}
+
+    for key, value in kwargs:
+        if key not in JAVA_ONLY_ARGS:
+            cc_args[key] = value
+
+    if cc_deps:
+        cc_args["deps"] = cc_deps
+
+    lcm_cc_library(
+        name,
+        lcm_srcs,
+        lcm_package,
+        lcm_structs,
+        **cc_args)
+
+    CC_ONLY_ARGS = [
+        "alwayslink",
+        "copts",
+        "defines",
+        "hdrs",
+        "include_prefix",
+        "includes",
+        "linkopts",
+        "linkstatic",
+        "nocopts",
+        "strip_include_prefix",
+        "textual_hdrs",
+    ]
+
+    java_args = {}
+
+    for key, value in kwargs:
+        if key not in CC_ONLY_ARGS:
+            java_args[key] = value
+
+    if java_deps:
+        java_args["deps"] = java_deps
+
+    lcm_java_library(
+        name + "_java",
+        lcm_srcs,
+        lcm_package,
+        lcm_structs,
+        **java_args)
