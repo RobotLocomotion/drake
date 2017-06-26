@@ -70,19 +70,19 @@ class SpatialVector {
   /// Creates a copy of `this` spatial vector with its rotational component set
   /// to `v`.
   SpatialQuantity with_rotational(
-      const Eigen::Ref<const Vector3<T>>& v) const {
-    SpatialQuantity V(get_derived());
-    V.rotational() = v;
-    return V;
+      const Eigen::Ref<const Vector3<T>>& rotational) const {
+    SpatialQuantity V_with_rotational(get_derived());
+    V_with_rotational.rotational() = rotational;
+    return V_with_rotational;
   }
 
   /// Creates a copy of `this` spatial vector with its translational component
-  /// set to `v`.
+  /// set to `translational`.
   SpatialQuantity with_translational(
-      const Eigen::Ref<const Vector3<T>>& v) const {
-    SpatialQuantity V(get_derived());
-    V.translational() = v;
-    return V;
+      const Eigen::Ref<const Vector3<T>>& translational) const {
+    SpatialQuantity V_with_translational(get_derived());
+    V_with_translational.translational() = translational;
+    return V_with_translational;
   }
 
   /// The total size of the concatenation of the angular and linear components.
