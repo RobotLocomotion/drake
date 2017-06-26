@@ -10,7 +10,6 @@ load(
 )
 load(
     "@drake//tools:lcm.bzl",
-    "lcm_c_aggregate_header",
     "lcm_c_library",
     "lcm_cc_library",
     "lcm_java_library",
@@ -19,17 +18,8 @@ load(
 
 LCM_SRCS = glob(["lcmtypes/*.lcm"])
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_robotlocomotion_c_aggregate_header",
-    out = "lcmtypes/robotlocomotion.h",
-    lcm_package = "robotlocomotion",
-    lcm_srcs = LCM_SRCS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_robotlocomotion_c",
-    aggregate_hdr = ":lcmtypes_robotlocomotion_c_aggregate_header",
     includes = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
@@ -70,7 +60,6 @@ install_cmake_config(
 
 install(
     name = "install",
-    doc_dest = "share/doc/" + CMAKE_PACKAGE,
     guess_hdrs = "PACKAGE",
     license_docs = ["LICENSE.txt"],
     py_strip_prefix = ["lcmtypes"],
@@ -83,6 +72,7 @@ install(
         ":lcmtypes_robotlocomotion_java",
         ":lcmtypes_robotlocomotion_py",
     ],
+    workspace = CMAKE_PACKAGE,
     deps = [":install_cmake_config"],
 )
 

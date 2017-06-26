@@ -4,6 +4,7 @@ load(
     "@drake//tools:generate_include_header.bzl",
     "drake_generate_include_header",
 )
+load("@drake//tools:pathutils.bzl", "dirname", "join_paths")
 
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
@@ -152,15 +153,22 @@ def lcm_c_library(
         lcm_srcs,
         lcm_package,
         lcm_structs = None,
-        aggregate_hdr = None,
+        aggregate_hdr = "AUTO",
+        includes = [],
         **kwargs):
-    """Declares a cc_library on message C structs generated from `*.lcm` files.
+    """Declares a cc_library on message C structs generated from ``*.lcm``
+    files.
 
-    The required lcm_srcs list parameter specifies the `*.lcm` source files.
-    All lcm_srcs must reside in the same subdirectory.
+    The required ``lcm_srcs`` :obj:`list` parameter specifies the ``*.lcm``
+    source files. All ``lcm_srcs`` must reside in the same subdirectory.
 
-    The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
-    in lcm_cc_library.
+    The standard parameters (``lcm_srcs``, ``lcm_package``, ``lcm_structs``)
+    are documented in :func:`lcm_cc_library`. The ``aggregate_hdr`` parameter
+    gives the name of the aggregate header to generate. The special value
+    ``"AUTO"`` (which is the default) will use the ``lcm_package`` name in the
+    same subdirectory as the other headers, in conformance with the behavior
+    of ``lcmUtilities.cmake``. The value ``None`` will disable generation of
+    the aggregate header.
     """
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
 
@@ -172,11 +180,20 @@ def lcm_c_library(
         outs = outs.hdrs + outs.srcs)
 
     hdrs = outs.hdrs
-    if aggregate_hdr:
+    if aggregate_hdr and len(outs.hdrs):
+        if aggregate_hdr == "AUTO":
+            aggregate_hdr = join_paths(dirname(outs.hdrs[0]),
+                                       "%s.h" % lcm_package)
+
+        drake_generate_include_header(
+            name = name + "_lcm_aggregate_header",
+            hdrs = outs.hdrs,
+            out = aggregate_hdr)
+
         hdrs += [aggregate_hdr]
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
-    includes = set(kwargs.pop('includes', [])) | ["."]
+    includes = set(includes) | ["."]
     native.cc_library(
         name = name,
         srcs = outs.srcs,
@@ -252,25 +269,76 @@ def lcm_java_library(
         deps = deps,
         **kwargs)
 
-# TODO(jamiesnape): Simplify this and possibly merge with lcm_c_library if
-# libbot is fixed to have canonical aggregate header names.
-def lcm_c_aggregate_header(
+def lcm_libraries(
         name,
-        out,
-        lcm_srcs,
-        lcm_package,
+        lcm_srcs = None,
+        lcm_package = None,
         lcm_structs = None,
+        cc_deps = None,
+        java_deps = None,
         **kwargs):
-    """Generates a header that includes a set of C headers generated from
-    `*.lcm` files.
+    """Declares a cc_library and java_library on message classes generated
+    from `*.lcm` files.
 
     The standard parameters (lcm_srcs, lcm_package, lcm_structs) are documented
-    in lcm_cc_library.
+    in lcm_cc_library. The list of deps for the cc_library and java_library are
+    set by the parameters cc_deps and java_deps, respectively.
     """
-    hdrs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h").hdrs
+    JAVA_ONLY_ARGS = [
+        "exported_plugins",
+        "exports",
+        "javacopts",
+        "neverlink",
+        "plugins",
+        "proguard_specs",
+        "resource_jars",
+        "resource_strip_prefix",
+        "resources",
+        "runtime_deps",
+    ]
 
-    drake_generate_include_header(
-        name = name,
-        hdrs = hdrs,
-        out = out,
-        **kwargs)
+    cc_args = {}
+
+    for key, value in kwargs:
+        if key not in JAVA_ONLY_ARGS:
+            cc_args[key] = value
+
+    if cc_deps:
+        cc_args["deps"] = cc_deps
+
+    lcm_cc_library(
+        name,
+        lcm_srcs,
+        lcm_package,
+        lcm_structs,
+        **cc_args)
+
+    CC_ONLY_ARGS = [
+        "alwayslink",
+        "copts",
+        "defines",
+        "hdrs",
+        "include_prefix",
+        "includes",
+        "linkopts",
+        "linkstatic",
+        "nocopts",
+        "strip_include_prefix",
+        "textual_hdrs",
+    ]
+
+    java_args = {}
+
+    for key, value in kwargs:
+        if key not in CC_ONLY_ARGS:
+            java_args[key] = value
+
+    if java_deps:
+        java_args["deps"] = java_deps
+
+    lcm_java_library(
+        name + "_java",
+        lcm_srcs,
+        lcm_package,
+        lcm_structs,
+        **java_args)

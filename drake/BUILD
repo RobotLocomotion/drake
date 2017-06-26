@@ -37,7 +37,6 @@ cc_binary(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
-    doc_dest = "share/doc/drake",
     guess_hdrs = "WORKSPACE",
     hdr_dest = "include/drake",
     targets = ["libdrake.so"],

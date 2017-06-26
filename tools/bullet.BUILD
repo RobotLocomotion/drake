@@ -13,15 +13,19 @@ package(default_visibility = ["//visibility:public"])
 
 # Note that this is only a portion of Bullet.
 
+BULLET_COPTS = ["-Wno-all"]
+
+BULLET_INCLUDES = ["src"]
+
 # Keep defines in sync with Components.LinearMath.Definitions in
 # bullet-create-cps.py.
 cc_library(
     name = "LinearMath",
     srcs = glob(["src/LinearMath/**/*.cpp"]),
     hdrs = glob(["src/LinearMath/**/*.h"]),
-    copts = ["-Wno-all"],
+    copts = BULLET_COPTS,
     defines = ["BT_USE_DOUBLE_PRECISION"],
-    includes = ["src"],
+    includes = BULLET_INCLUDES,
 )
 
 cc_library(
@@ -30,17 +34,36 @@ cc_library(
     hdrs = glob(["src/BulletCollision/**/*.h"]) + [
         "src/btBulletCollisionCommon.h",
     ],
-    copts = ["-Wno-all"],
-    includes = ["src"],
+    copts = BULLET_COPTS,
+    includes = BULLET_INCLUDES,
     deps = [":LinearMath"],
 )
 
-pkg_tar(
-    name = "license",
-    extension = "tar.gz",
-    files = ["LICENSE.txt"],
-    mode = "0644",
-    package_dir = "bullet",
+cc_library(
+    name = "BulletDynamics",
+    srcs = glob(["src/BulletDynamics/**/*.cpp"]),
+    hdrs = glob(["src/BulletDynamics/**/*.h"]) + [
+        "src/btBulletDynamicsCommon.h",
+    ],
+    copts = BULLET_COPTS,
+    includes = BULLET_INCLUDES,
+    deps = [
+        ":BulletCollision",
+        ":LinearMath",
+    ],
+)
+
+cc_library(
+    name = "BulletSoftBody",
+    srcs = glob(["src/BulletSoftBody/**/*.cpp"]),
+    hdrs = glob(["src/BulletSoftBody/**/*.h"]),
+    copts = BULLET_COPTS,
+    includes = BULLET_INCLUDES,
+    deps = [
+        ":BulletCollision",
+        ":BulletDynamics",
+        ":LinearMath",
+    ],
 )
 
 cmake_config(
@@ -49,18 +72,19 @@ cmake_config(
     version_file = "VERSION",
 )
 
-install_cmake_config(package = "Bullet")  # Creates rule :install_cmake_config.
+install_cmake_config(package = "Bullet")
 
 install(
     name = "install",
-    doc_dest = "share/doc/bullet",
     docs = ["AUTHORS.txt"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/bullet",
-    hdr_strip_prefix = ["src"],
+    hdr_strip_prefix = BULLET_INCLUDES,
     license_docs = ["LICENSE.txt"],
     targets = [
         ":BulletCollision",
+        ":BulletDynamics",
+        ":BulletSoftBody",
         ":LinearMath",
     ],
     deps = [":install_cmake_config"],

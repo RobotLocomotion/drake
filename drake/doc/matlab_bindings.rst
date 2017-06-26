@@ -11,6 +11,13 @@ In the meantime,
 :ref:`Using Drake from Python <python-bindings>`
 may also prove useful.
 
+See also
+========
+
+.. toctree::
+    :maxdepth: 1
+
+    matlab_faq
 
 Original MATLAB
 ===============

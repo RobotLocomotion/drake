@@ -17,9 +17,11 @@ framework:
  - CartPole
  - CompassGait
  - DubinsCar
+ - FurutaPendulum
  - Glider
  - HolonomicDrive
  - Hubo
+ - KneedCompassGait
  - Manipulator2D
  - PlanarMonopodHopper
  - PlanarNLink
@@ -30,6 +32,7 @@ framework:
  - SpringLoadedInvertedPendulum
  - Strandbeest
  - TwoWheeledInvertedPendulum
+ - UnderwaterAcrobot
  - Wingeron
  - ZMP
  - grasping

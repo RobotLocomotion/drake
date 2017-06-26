@@ -39,7 +39,6 @@ install_cmake_config(package = "spdlog")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    doc_dest = "share/doc/spdlog",
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/spdlog",
     hdr_strip_prefix = ["include/spdlog"],

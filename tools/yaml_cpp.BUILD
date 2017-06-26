@@ -23,22 +23,24 @@ cc_library(
     includes = ["include"],
 )
 
+CMAKE_PACKAGE = "yaml-cpp"
+
 cmake_config(
-    package = "yaml-cpp",
+    package = CMAKE_PACKAGE,
     script = "@drake//tools:yaml_cpp-create-cps.py",
     version_file = "CMakeLists.txt",
 )
 
 # Creates rule :install_cmake_config.
-install_cmake_config(package = "yaml-cpp")
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
     hdrs = public_headers,
-    doc_dest = "share/doc/yaml-cpp",
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
     license_docs = ["LICENSE"],
     targets = [":yaml_cpp"],
+    workspace = CMAKE_PACKAGE,
     deps = [":install_cmake_config"],
 )

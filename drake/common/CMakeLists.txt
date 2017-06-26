@@ -131,6 +131,9 @@ drake_install_pkg_config_file(drake-common
     eigen3
     ${drakeCommon_REQUIRES})
 
+add_executable(resource_tool resource_tool.cc)
+target_link_libraries(resource_tool drakeCommon)
+
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()

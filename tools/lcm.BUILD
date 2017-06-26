@@ -218,13 +218,10 @@ install_files(
 
 # TODO(jamiesnape): Find an alternative to the requirement that a license file
 # must be passed to every single use of the install rule.
-DOC_DEST = "share/doc/lcm"
-
 LICENSE_DOCS = ["COPYING"]
 
 install(
     name = "install_python",
-    doc_dest = DOC_DEST,
     library_dest = "lib/python2.7/site-packages/lcm",
     license_docs = LICENSE_DOCS,
     py_strip_prefix = ["lcm-python"],
@@ -237,7 +234,6 @@ install(
 install(
     name = "install",
     hdrs = LCM_PUBLIC_HEADERS,
-    doc_dest = DOC_DEST,
     docs = [
         "AUTHORS",
         "NEWS",

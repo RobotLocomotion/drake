@@ -8,7 +8,6 @@ load(
 )
 load(
     "@drake//tools:lcm.bzl",
-    "lcm_c_aggregate_header",
     "lcm_c_library",
     "lcm_cc_library",
     "lcm_java_library",
@@ -161,18 +160,9 @@ BOT2_PARAM_LCM_STRUCTS = [
     for f in BOT2_PARAM_LCM_SRCS
 ]
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_bot2_param_c_aggregate_header",
-    out = "bot2-param/lcmtypes/bot2_param.h",
-    lcm_package = "bot_param",
-    lcm_srcs = BOT2_PARAM_LCM_SRCS,
-    lcm_structs = BOT2_PARAM_LCM_STRUCTS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_bot2_param_c",
-    aggregate_hdr = ":lcmtypes_bot2_param_c_aggregate_header",
+    aggregate_hdr = "bot2-param/lcmtypes/bot2_param.h",
     includes = ["bot2-param"],
     lcm_package = "bot_param",
     lcm_srcs = BOT2_PARAM_LCM_SRCS,
@@ -284,18 +274,9 @@ BOT2_FRAMES_LCM_STRUCTS = [
     for f in BOT2_FRAMES_LCM_SRCS
 ]
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_bot2_frames_c_aggregate_header",
-    out = "bot2-frames/lcmtypes/bot2_frames.h",
-    lcm_package = "bot_frames",
-    lcm_srcs = BOT2_FRAMES_LCM_SRCS,
-    lcm_structs = BOT2_FRAMES_LCM_STRUCTS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_bot2_frames_c",
-    aggregate_hdr = ":lcmtypes_bot2_frames_c_aggregate_header",
+    aggregate_hdr = "bot2-frames/lcmtypes/bot2_frames.h",
     includes = ["bot2-frames"],
     lcm_package = "bot_frames",
     lcm_srcs = BOT2_FRAMES_LCM_SRCS,
@@ -355,18 +336,9 @@ BOT2_LCMGL_LCM_STRUCTS = [
     for f in BOT2_LCMGL_LCM_SRCS
 ]
 
-lcm_c_aggregate_header(
-    name = "lcmtypes_bot2_lcmgl_c_aggregate_header",
-    out = "bot2-lcmgl/lcmtypes/bot2_lcmgl.h",
-    lcm_package = "bot_lcmgl",
-    lcm_srcs = BOT2_LCMGL_LCM_SRCS,
-    lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
-    visibility = ["//visibility:private"],
-)
-
 lcm_c_library(
     name = "lcmtypes_bot2_lcmgl_c",
-    aggregate_hdr = ":lcmtypes_bot2_lcmgl_c_aggregate_header",
+    aggregate_hdr = "bot2-lcmgl/lcmtypes/bot2_lcmgl.h",
     includes = ["bot2-lcmgl"],
     lcm_package = "bot_lcmgl",
     lcm_srcs = BOT2_LCMGL_LCM_SRCS,
@@ -454,8 +426,6 @@ install_cmake_config(
     versioned = 0,
 )
 
-DOC_DEST = "share/doc/" + CMAKE_PACKAGE
-
 LICENSE_DOCS = [
     "LICENSE",
     "@drake//tools:third_party/libbot/LICENSE.ldpc",
@@ -463,7 +433,6 @@ LICENSE_DOCS = [
 
 install(
     name = "install_lcmtypes",
-    doc_dest = DOC_DEST,
     guess_hdrs = "PACKAGE",
     hdr_strip_prefix = [
         "bot2-frames",
@@ -502,7 +471,6 @@ HDR_DEST = "include/" + CMAKE_PACKAGE
 install(
     name = "install_bot2_core",
     hdrs = BOT2_CORE_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST,
     hdr_strip_prefix = ["bot2-core/src"],
     license_docs = LICENSE_DOCS,
@@ -518,7 +486,6 @@ install(
 
 install(
     name = "install_bot2_lcm_utils",
-    doc_dest = DOC_DEST,
     license_docs = LICENSE_DOCS,
     py_strip_prefix = ["bot2-lcm-utils/python/src"],
     targets = [
@@ -533,7 +500,6 @@ install(
 install(
     name = "install_bot2_param",
     hdrs = BOT2_PARAM_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST + "/" + BOT2_PARAM_INCLUDE_PREFIX,
     hdr_strip_prefix = ["bot2-param/src/param_client"],
     license_docs = LICENSE_DOCS,
@@ -548,7 +514,6 @@ install(
 install(
     name = "install_bot2_frames",
     hdrs = BOT2_FRAMES_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST + "/" + BOT2_FRAMES_INCLUDE_PREFIX,
     hdr_strip_prefix = ["bot2-frames/src"],
     license_docs = LICENSE_DOCS,
@@ -558,7 +523,6 @@ install(
 install(
     name = "install_bot2_lcmgl",
     hdrs = BOT2_LCMGL_PUBLIC_HDRS,
-    doc_dest = DOC_DEST,
     hdr_dest = HDR_DEST,
     hdr_strip_prefix = ["bot2-lcmgl/src"],
     license_docs = LICENSE_DOCS,
@@ -575,7 +539,6 @@ install(
 
 install(
     name = "install",
-    doc_dest = DOC_DEST,
     license_docs = LICENSE_DOCS,
     deps = [
         ":install_bot2_core",
