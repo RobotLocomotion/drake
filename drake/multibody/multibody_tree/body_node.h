@@ -189,6 +189,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @pre CalcVelocityKinematicsCache_BaseToTip() must have already been called
   /// for the parent node (and, by recursive precondition, all predecessor nodes
   /// in the tree.)
+  // Unit test coverage for this method is provided, among others, in
+  // double_pendulum_test.cc, and by any other unit tests making use of
+  // MultibodyTree::CalcVelocityKinematicsCache().
   void CalcVelocityKinematicsCache_BaseToTip(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
