@@ -17,7 +17,7 @@ ZeroOrderHold<T>::ZeroOrderHold(double period_sec, int size)
   // TODO(david-german-tri): remove the size parameter from the constructor
   // once #3109 supporting automatic sizes is resolved.
   this->DeclareDiscreteState(size);
-  this->DeclareDiscreteUpdatePeriodSec(period_sec);
+  this->DeclarePeriodicDiscreteUpdate(period_sec);
 }
 
 template <typename T>

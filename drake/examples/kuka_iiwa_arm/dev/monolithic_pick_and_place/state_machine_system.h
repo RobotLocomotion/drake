@@ -53,7 +53,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
                        systems::State<double>* state) const override;
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const override;
+            const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+            systems::State<double>* state) const override;
 
   /**
    * Getter for the input port corresponding to the abstract input with iiwa

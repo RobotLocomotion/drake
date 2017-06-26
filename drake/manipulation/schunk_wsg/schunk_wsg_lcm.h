@@ -4,6 +4,7 @@
 /// LCM messages related to the Schunk WSG gripper.
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/lcmt_schunk_wsg_status.hpp"
@@ -47,6 +48,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// Latches the input port into the discrete state.
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
       systems::DiscreteValues<double>* discrete_state) const override;
 
   std::unique_ptr<systems::DiscreteValues<double>> AllocateDiscreteState()

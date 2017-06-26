@@ -119,6 +119,10 @@ class Context {
     return get_state().get_discrete_state()->num_groups();
   }
 
+  const DiscreteValues<T>* get_discrete_state() const {
+    return get_state().get_discrete_state();
+  }
+
   /// Returns a mutable pointer to the discrete component of the state,
   /// which may be of size zero.
   DiscreteValues<T>* get_mutable_discrete_state() {

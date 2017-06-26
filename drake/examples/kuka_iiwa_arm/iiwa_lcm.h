@@ -4,6 +4,7 @@
 /// LCM messages related to the iiwa arm.
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -44,6 +45,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       systems::DiscreteValues<double>* discrete_state) const override;
 
  private:
@@ -122,6 +124,7 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       systems::DiscreteValues<double>* discrete_state) const override;
 
   const int num_joints_;
