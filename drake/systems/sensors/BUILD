@@ -140,6 +140,7 @@ drake_cc_library(
         "gyroscope_output.h",
     ],
     deps = [
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
     ],
@@ -223,6 +224,7 @@ drake_cc_library(
     deps = [
         ":accelerometer",
         "//drake/common",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
@@ -282,6 +284,7 @@ drake_cc_googletest(
     deps = [
         ":accelerometer_example_diagram",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/lcm:mock",
         "//drake/systems/analysis:simulator",
     ],
@@ -292,7 +295,6 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_test.cc"],
     deps = [
         ":depth_sensor",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -302,7 +304,6 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_to_lcm_point_cloud_message_test.cc"],
     deps = [
         ":depth_sensor_to_lcm_point_cloud_message",
-        "//drake/common:drake_path",
         "//drake/lcm:mock",
     ],
 )
@@ -316,6 +317,7 @@ drake_cc_googletest(
     deps = [
         ":gyroscope",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -337,8 +339,8 @@ drake_cc_googletest(
     tags = ["manual"],
     deps = [
         ":rgbd_camera",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",

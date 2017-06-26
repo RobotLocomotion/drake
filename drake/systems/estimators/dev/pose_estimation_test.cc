@@ -6,8 +6,8 @@
 // https://github.com/mwoehlke-kitware/bot_core_lcmtypes/pull/1#issuecomment-269343143
 #include <lcmtypes/bot_core/pointcloud_t.hpp>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
 
   RigidBodyTree<double> robot;
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() + "/multibody/models/box.urdf",
+      drake::FindResourceOrThrow("drake/multibody/models/box.urdf"),
       drake::multibody::joints::kQuaternion, &robot);
   Eigen::VectorXd q0(robot.get_num_positions());
   q0.setZero();

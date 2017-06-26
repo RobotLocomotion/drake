@@ -8,9 +8,9 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -40,8 +40,8 @@ VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
 GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   auto robot = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_primitive_collision.urdf",
+      drake::FindResourceOrThrow("drake/manipulation/models/"
+          "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       robot.get());
   const int dim = robot->get_num_positions();

@@ -50,6 +50,9 @@ GTEST_TEST(FindResourceTest, NotFound) {
   const optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
   EXPECT_EQ(*error_message, "could not find resource");
+
+  // Sugar works the same way.
+  EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
 }
 
 GTEST_TEST(FindResourceTest, FoundDeclaredData) {
@@ -76,6 +79,9 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   EXPECT_EQ(
       buffer.str(),
       "Test data for drake/common/test/find_resource_test.cc.\n");
+
+  // Sugar works the same way.
+  EXPECT_EQ(FindResourceOrThrow(relpath), absolute_path);
 }
 
 }  // namespace

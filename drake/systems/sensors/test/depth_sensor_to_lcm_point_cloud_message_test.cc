@@ -7,7 +7,6 @@
 #include <gtest/gtest.h>
 #include "bot_core/pointcloud_t.hpp"
 
-#include "drake/common/drake_path.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"

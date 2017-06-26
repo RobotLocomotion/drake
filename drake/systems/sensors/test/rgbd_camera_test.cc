@@ -11,8 +11,8 @@
 #include <vtkVersion.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -413,7 +413,8 @@ class ImageTest : public ::testing::Test {
   // For fixed camera base.
   void SetUp(const std::string& sdf, const Eigen::Vector3d& position,
              const Eigen::Vector3d& orientation) {
-    diagram_ = std::make_unique<RenderingSim>(GetDrakePath() + sdf);
+    diagram_ = std::make_unique<RenderingSim>(
+        FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
     diagram_->InitFixedCamera(position, orientation);
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
@@ -422,7 +423,8 @@ class ImageTest : public ::testing::Test {
   // For moving camera base.
   void SetUp(const std::string& sdf,
              const Eigen::Isometry3d& transformation) {
-    diagram_ = std::make_unique<RenderingSim>(GetDrakePath() + sdf);
+    diagram_ = std::make_unique<RenderingSim>(
+        FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
     diagram_->InitMovableCamera(transformation);
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
@@ -437,8 +439,7 @@ class ImageTest : public ::testing::Test {
 
 // Verifies the rendered terrain and the camera's pose.
 TEST_F(ImageTest, TerrainRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/nothing.sdf");
-  SetUp(sdf,
+  SetUp("nothing.sdf",
         Eigen::Vector3d(0., 0., 4.999),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyTerrain);
@@ -447,8 +448,7 @@ TEST_F(ImageTest, TerrainRenderingTest) {
 
 // Verifies the rendered box.
 TEST_F(ImageTest, BoxRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/box.sdf");
-  SetUp(sdf,
+  SetUp("box.sdf",
         Eigen::Vector3d(0., 0., 2.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyBox);
@@ -456,8 +456,7 @@ TEST_F(ImageTest, BoxRenderingTest) {
 
 // Verifies the rendered cylinder.
 TEST_F(ImageTest, CylinderRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/cylinder.sdf");
-  SetUp(sdf,
+  SetUp("cylinder.sdf",
         Eigen::Vector3d(0., 0., 2.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyCylinder);
@@ -467,8 +466,7 @@ TEST_F(ImageTest, CylinderRenderingTest) {
 #if VTK_MAJOR_VERSION <= 5
 // Verifies the rendered mesh box.
 TEST_F(ImageTest, MeshBoxRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/mesh_box.sdf");
-  SetUp(sdf,
+  SetUp("mesh_box.sdf",
         Eigen::Vector3d(0., 0., 3.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyMeshBox);
@@ -477,8 +475,7 @@ TEST_F(ImageTest, MeshBoxRenderingTest) {
 
 // Verifies the rendered sphere.
 TEST_F(ImageTest, SphereRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/sphere.sdf");
-  SetUp(sdf,
+  SetUp("sphere.sdf",
         Eigen::Vector3d(0., 0., 2.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifySphere);
@@ -490,21 +487,19 @@ TEST_F(ImageTest, SphereRenderingTest) {
 // verifies that the horizon's pixel location changes as the model's state
 // updated.
 TEST_F(ImageTest, CameraPoseUpdateTest) {
-  const std::string sdf("/systems/sensors/test/models/nothing.sdf");
   // Attaches the camera to a location that is 11 m above the model.
   Eigen::Isometry3d transformation((Eigen::Matrix4d() <<
                                     1., 0., 0., 0.,
                                     0., 1., 0., 0.,
                                     0., 0., 1., 11.,
                                     0., 0., 0., 1.).finished());
-  SetUp(sdf, transformation);
+  SetUp("nothing.sdf", transformation);
   VerifyPoseUpdate(ImageTest::VerifyMovingCamera);
 }
 
 // Verifies the number of ids in a label image.
 TEST_F(ImageTest, LabelRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/three_boxes.sdf");
-  SetUp(sdf,
+  SetUp("three_boxes.sdf",
         Eigen::Vector3d(-10., 0., 2.),
         Eigen::Vector3d(0., M_PI_4 * 0.2, 0.));
   VerifyLabelImage();
@@ -513,8 +508,7 @@ TEST_F(ImageTest, LabelRenderingTest) {
 // Verifies the case that a model has multiple visuals.
 TEST_F(ImageTest, MultipleVisualsTest) {
   // The following SDF includes a link that has more than two visuals.
-  const std::string sdf("/systems/sensors/test/models/multiple_visuals.sdf");
-  SetUp(sdf,
+  SetUp("multiple_visuals.sdf",
         Eigen::Vector3d(0., 0., 4.999),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyMultipleVisuals);

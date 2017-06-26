@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -32,7 +32,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
     ::drake::lcm::DrakeLcmInterface* lcm)
     : lcm_(lcm) {
   const std::string model_file_name =
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf";
+      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf");
   const std::string model_name = "Pendulum";
   const std::string xdot_channel_name = "xdot_channel";
 

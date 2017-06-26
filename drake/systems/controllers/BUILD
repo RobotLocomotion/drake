@@ -167,6 +167,7 @@ drake_cc_googletest(
         ":inverse_dynamics",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -179,6 +180,7 @@ drake_cc_googletest(
         ":inverse_dynamics_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
+        "//drake/common:find_resource",
     ],
 )
 

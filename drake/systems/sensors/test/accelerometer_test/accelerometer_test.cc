@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -44,7 +44,7 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
   // Adds a box to the RigidBodyTree and obtains its model instance ID.
   const parsers::ModelInstanceIdTable model_instance_id_table =
       AddModelInstanceFromUrdfFileToWorld(
-          GetDrakePath() + "/multibody/models/box.urdf",
+          FindResourceOrThrow("drake/multibody/models/box.urdf"),
           drake::multibody::joints::kQuaternion, tree.get());
 
   // Adds a frame to the RigidBodyTree called "accelerometer frame" that is

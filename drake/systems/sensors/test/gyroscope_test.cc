@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -36,7 +36,7 @@ class TestGyroscope : public ::testing::Test {
   void SetUp() override {
     // Adds a box to the RigidBodyTree.
     AddModelInstanceFromUrdfFileToWorld(
-        GetDrakePath() + "/multibody/models/box.urdf",
+        FindResourceOrThrow("drake/multibody/models/box.urdf"),
         drake::multibody::joints::kQuaternion, tree_.get());
 
     // Adds a frame to the RigidBodyTree called "box frame" that is coincident
