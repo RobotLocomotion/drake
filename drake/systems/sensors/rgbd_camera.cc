@@ -213,6 +213,9 @@ struct ModuleInitVtkRenderingOpenGL2 {
   }
 };
 
+// Updates VTK rendering related objects including vtkRenderWindow,
+// vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
+// vtkActors' pose update for rendering.
 void PerformVTKUpdate(
     const vtkNew<vtkRenderWindow>& window,
     const vtkNew<vtkWindowToImageFilter>& filter,
@@ -694,7 +697,7 @@ void RgbdCamera::Impl::UpdateModelPoses(
       vtkSmartPointer<vtkTransform> vtk_transform =
           VtkUtil::ConvertToVtkTransform(X_CVisual);
       // `id_object_maps_` is modified here. This is OK because 1) we are just
-      // copying data to the memory spaces allocated at the construction time
+      // copying data to the memory spaces allocated at construction time
       // and 2) we are not outputting these data to outside the class.
       for (auto& id_object_map : id_object_maps_) {
         auto& actor = id_object_map.at(body->get_body_index()).at(i);
