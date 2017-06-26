@@ -1,4 +1,0 @@
-drake_add_matlab_test(NAME systems/frames/test/basicMultiFrameTest COMMAND basicMultiFrameTest)
-drake_add_matlab_test(NAME systems/frames/test/deepMultiFrameTest COMMAND deepMultiFrameTest)
-drake_add_matlab_test(NAME systems/frames/test/multiFrameCombinationTest COMMAND multiFrameCombinationTest SIZE large)
-drake_add_matlab_test(NAME systems/frames/test/testLazyCoordinates COMMAND testLazyCoordinates)

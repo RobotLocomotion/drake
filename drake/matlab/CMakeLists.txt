@@ -43,15 +43,8 @@ if(lcm_FOUND)
 endif()
 
 add_subdirectory(util)
-add_subdirectory(solvers)
-add_subdirectory(systems)
 
 if(BUILD_TESTING)
-  drake_add_matlab_test(NAME "matlab/RigidBodyManipulatorMemoryTest"
-    OPTIONAL bullet
-    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Acrobot SIZE large)
-
   function(drake_add_matlab_addpath_test dependency)
     drake_add_matlab_test(NAME matlab/addpath_${dependency}_test
       REQUIRES ${dependency} COMMAND "addpath_${dependency}" SIZE small)
