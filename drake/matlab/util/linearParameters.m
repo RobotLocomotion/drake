@@ -5,16 +5,6 @@ function [lin_params,coeff_mat,offsets] = linearParameters(expr,params)
 %
 %   expr = coeffs*lin_params + offsets
 %
-if isa(expr,'TrigPoly')
-  q = getVar(expr);
-  s = getSin(expr);
-  c = getCos(expr);
-  qt = TrigPoly(q,s,c);
-  isTrigPoly = true;
-  expr = getmsspoly(expr);
-else
-  isTrigPoly = false;
-end
 non_params = decomp(expr,params);
 [a,b,coeff_mat]=decomp(expr,non_params);
 coeff = msspoly(ones(size(b,1),1));
@@ -37,9 +27,5 @@ if (deg_zero_ind>0)
 else
   offsets = zeros(size(expr,1));
   lin_params = coeff;
-end
-if isTrigPoly
-  coeff_mat = coeff_mat+0*qt(1); % There must be a better way to go from msspoly to TrigPoly . . .
-  offsets = offsets+0*qt(1); % There must be a better way to go from msspoly to TrigPoly . . .
 end
 end

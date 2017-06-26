@@ -3,29 +3,11 @@
 #include <mex.h>
 
 #include <vector>
+
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
-#include "drake/common/trig_poly.h"
-/*
- * NOTE: include AutoDiff AFTER trig_poly.h.
- * trig_poly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
- * polynomial.h
- * MSVC versions up to and including 2013 have trouble with the rankUpdate
- * method in LLDT.h
- * For some reason there is a bad interaction with AutoDiff, even though LLDT.h
- * still gets included if trig_poly.h is included before AutoDiff.
- * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
- */
-#include <unsupported/Eigen/AutoDiff>
 #include <Eigen/src/SparseCore/SparseMatrix.h>
-
-#include "drake/math/autodiff.h"
-#include "drake/math/autodiff_gradient.h"
-#include "drake/math/gradient_util.h"
-
-using drake::math::autoDiffToValueMatrix;
-using drake::math::autoDiffToGradientMatrix;
-using drake::math::Gradient;
+#include <unsupported/Eigen/AutoDiff>
 
 DLL_EXPORT_SYM bool isa(const mxArray* mxa, const char* class_str);
 DLL_EXPORT_SYM bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs,
@@ -193,153 +175,11 @@ DLL_EXPORT_SYM mwSize sub2ind(mwSize ndims, const mwSize* dims,
 template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in);
 
-DLL_EXPORT_SYM Eigen::Matrix<Polynomiald, Eigen::Dynamic, Eigen::Dynamic>
-msspolyToEigen(const mxArray* msspoly);
-
-template <int _Rows, int _Cols>
-mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald, _Rows, _Cols>& poly) {
-  size_t num_monomials = 0, max_terms = 0;
-  for (int i = 0; i < poly.size(); i++) {
-    auto monomials = poly(i).GetMonomials();
-    num_monomials += monomials.size();
-    for (std::vector<Polynomiald::Monomial>::const_iterator iter =
-             monomials.begin();
-         iter != monomials.end(); iter++) {
-      if (iter->terms.size() > max_terms) max_terms = iter->terms.size();
-    }
-  }
-
-  Eigen::Matrix<double, 1, 2> dim;
-  dim << static_cast<double>(poly.rows()), static_cast<double>(poly.cols());
-  Eigen::MatrixXd sub(num_monomials, 2);
-  Eigen::MatrixXd var = Eigen::MatrixXd::Zero(num_monomials, max_terms);
-  Eigen::MatrixXd pow = Eigen::MatrixXd::Zero(num_monomials, max_terms);
-  Eigen::VectorXd coeff(num_monomials);
-
-  int index = 0;
-  for (int i = 0; i < poly.rows(); i++) {
-    for (int j = 0; j < poly.cols(); j++) {
-      auto monomials = poly(i, j).GetMonomials();
-      for (std::vector<Polynomiald::Monomial>::const_iterator iter =
-               monomials.begin();
-           iter != monomials.end(); iter++) {
-        sub(index, 0) = i + 1;
-        sub(index, 1) = j + 1;
-        for (int k = 0; k < static_cast<int>(iter->terms.size()); k++) {
-          var(index, k) = (double)iter->terms[k].var;
-          pow(index, k) = (double)iter->terms[k].power;
-        }
-        coeff(index) = iter->coefficient;
-        index++;
-      }
-    }
-  }
-
-  mxArray* plhs[1];
-  mxArray* prhs[5];
-  prhs[0] = eigenToMatlab(dim);
-  prhs[1] = eigenToMatlab(sub);
-  prhs[2] = eigenToMatlab(var);
-  prhs[3] = eigenToMatlab(pow);
-  prhs[4] = eigenToMatlab(coeff);
-  mexCallMATLABsafe(1, plhs, 5, prhs, "msspoly");
-  return plhs[0];
-}
-
-DLL_EXPORT_SYM Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic>
-trigPolyToEigen(const mxArray* trigpoly);
-
-template <int _Rows, int _Cols>
-mxArray* eigenToTrigPoly(
-    const Eigen::Matrix<TrigPolyd, _Rows, _Cols>& trigpoly_mat) {
-  Eigen::Matrix<Polynomiald, Eigen::Dynamic, Eigen::Dynamic> poly_mat(
-      trigpoly_mat.rows(), trigpoly_mat.cols());
-  TrigPolyd::SinCosMap sin_cos_map;
-  for (int i = 0; i < trigpoly_mat.size(); i++) {
-    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).sin_cos_map();
-    sin_cos_map.insert(sc.begin(), sc.end());
-    poly_mat(i) = trigpoly_mat(i).poly();
-  }
-
-  if (sin_cos_map
-          .empty())  // then just return the msspoly.  what else can i do?
-    return eigenToMSSPoly<Eigen::Dynamic, Eigen::Dynamic>(poly_mat);
-
-  // construct the equivalent of the sin/cos map
-  // (do I need to worry about them possibly being out of order?)
-  Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> q(sin_cos_map.size()),
-      s(sin_cos_map.size()), c(sin_cos_map.size());
-  int i = 0;
-  for (TrigPolyd::SinCosMap::iterator iter = sin_cos_map.begin();
-       iter != sin_cos_map.end(); iter++) {
-    q(i) = Polynomiald(1.0, iter->first);
-    s(i) = Polynomiald(1.0, iter->second.s);
-    c(i) = Polynomiald(1.0, iter->second.c);
-    i++;
-  }
-
-  mxArray* plhs[1];
-  mxArray* prhs[3];
-  prhs[0] = eigenToMSSPoly<Eigen::Dynamic, 1>(q);
-  prhs[1] = eigenToMSSPoly<Eigen::Dynamic, 1>(s);
-  prhs[2] = eigenToMSSPoly<Eigen::Dynamic, 1>(c);
-  mexCallMATLABsafe(1, plhs, 3, prhs, "TrigPoly");
-
-  mxSetProperty(plhs[0], 0, "p",
-                eigenToMSSPoly<Eigen::Dynamic, Eigen::Dynamic>(poly_mat));
-
-  return plhs[0];
-}
-
-template <int Rows, int Cols>
-Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols>
-taylorVarToEigen(const mxArray* taylor_var) {
-  if (mxIsEmpty(taylor_var)) {
-    return Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols>(
-        mxGetM(taylor_var), mxGetN(taylor_var));
-  }
-  auto f = mxGetPropertySafe(taylor_var, "f");
-  auto df = mxGetPropertySafe(taylor_var, "df");
-  if (mxGetNumberOfElements(df) > 1)
-    throw std::runtime_error(
-        "TaylorVars of order higher than 1 currently not supported");
-  auto ret = matlabToEigenMap<Rows, Cols>(f)
-                 .template cast<Eigen::AutoDiffScalar<Eigen::VectorXd>>()
-                 .eval();
-  typedef Gradient<decltype(ret), Eigen::Dynamic> GradientType;
-  auto gradient_matrix =
-      matlabToEigenMap<GradientType::type::RowsAtCompileTime,
-                       GradientType::type::ColsAtCompileTime>(mxGetCell(df, 0));
-  drake::math::gradientMatrixToAutoDiff(gradient_matrix, ret);
-  return ret;
-}
-
-template <typename Derived>
-mxArray* eigenToTaylorVar(const Eigen::MatrixBase<Derived>& m,
-                          int num_variables = Eigen::Dynamic) {
-  const int nrhs = 2;
-  mxArray* prhs[nrhs];
-  prhs[0] = eigenToMatlab(autoDiffToValueMatrix(m));
-  mwSize dims[] = {1};
-  prhs[1] = mxCreateCellArray(1, dims);
-  mxArray* plhs[1];
-  mxSetCell(prhs[1], 0,
-            eigenToMatlab(autoDiffToGradientMatrix(m, num_variables)));
-  mexCallMATLABsafe(1, plhs, nrhs, prhs, "TaylorVar");
-  return plhs[0];
-}
-
 template <int RowsAtCompileTime, int ColsAtCompileTime, typename DerType>
 mxArray* eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<
     Eigen::AutoDiffScalar<DerType>, RowsAtCompileTime, ColsAtCompileTime>>&
                                   mat) {
   return eigenToTaylorVar(mat);
-}
-
-template <int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray* eigenToMatlabGeneral(const Eigen::MatrixBase<
-    Eigen::Matrix<TrigPolyd, RowsAtCompileTime, ColsAtCompileTime>>& mat) {
-  return eigenToTrigPoly<RowsAtCompileTime, ColsAtCompileTime>(mat);
 }
 
 template <int RowsAtCompileTime, int ColsAtCompileTime>
