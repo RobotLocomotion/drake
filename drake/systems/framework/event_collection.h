@@ -13,8 +13,6 @@ namespace drake {
 namespace systems {
 
 /**
- * @ref event_concepts
- *
  * There are three concrete event types for any System: publish, discrete
  * state update, and unrestricted state update, listed in order of increasing
  * ability to change the state (i.e., zero to all). EventCollection is an
