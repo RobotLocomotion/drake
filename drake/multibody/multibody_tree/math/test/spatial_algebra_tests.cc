@@ -411,6 +411,46 @@ TYPED_TEST(SpatialAccelerationTest, NoCentrifugalAcceleration) {
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
 
+// Unit test for the method SpatialAcceleration::Shift().
+// Case 3:
+// This test is a combination of Case 1 (with centrifugal acceleration), Case 2
+// (with angular acceleration) and a translational acceleration a_AP of frame P
+// in A.
+TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
+  typedef typename TestFixture::ScalarType T;
+  using std::sqrt;
+
+  // Angular acceleration of frame P in A, expressed in E.
+  const Vector3<T> alpha_AP_E = 2.0 * Vector3<T>::UnitY();
+
+  // The spatial acceleration of frame P measure in A.
+  const SpatialAcceleration<T> A_AP(alpha_AP_E, 1.5 * Vector3<T>::UnitY());
+
+  // Position of Q's origin measured in P and expressed in E.
+  const Vector3<T> p_PoQo_E = Vector3<T>::UnitX() + Vector3<T>::UnitY();
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP_E = 3.0 * Vector3<T>::UnitZ();
+
+  SpatialAcceleration<T> A_AQ_expected;
+  // The rotational component does not change.
+  A_AQ_expected.rotational() = alpha_AP_E;
+
+  A_AQ_expected.translational() =
+      /* Contribution due to the translational acceleration of frame P in A. */
+      A_AP.translational() +
+      /* Centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and points
+      in the direction opposite to p_PoQo. */
+      -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized() +
+      /* Contribution do to the angular acceleration of frame P in A.
+      The sqrt(2) factor comes from the angle between alpha_AP and p_PoQo. */
+      -alpha_AP_E.norm() * p_PoQo_E.norm() * Vector3<T>::UnitZ() / sqrt(2);
+
+  const SpatialAcceleration<T> A_AQ = A_AP.Shift(p_PoQo_E, w_AP_E);
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace multibody
