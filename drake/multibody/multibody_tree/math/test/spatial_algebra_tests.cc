@@ -32,6 +32,12 @@ struct spatial_vector_traits<SpatialForce<T>> {
   typedef T ScalarType;
 };
 
+// traits specialization for SpatialAcceleration.
+template <typename T>
+struct spatial_vector_traits<SpatialAcceleration<T>> {
+  typedef T ScalarType;
+};
+
 template <class SpatialQuantityUnderTest>
 class SpatialQuantityTest : public ::testing::Test {
  public:
@@ -53,8 +59,12 @@ class SpatialQuantityTest : public ::testing::Test {
 
 // Create a list of SpatialVector types to be tested.
 typedef ::testing::Types<
-    SpatialVelocity<double>, SpatialForce<double>,
-    SpatialVelocity<AutoDiffXd>, SpatialForce<AutoDiffXd>> SpatialQuantityTypes;
+    SpatialVelocity<double>,
+    SpatialForce<double>,
+    SpatialAcceleration<double>,
+    SpatialVelocity<AutoDiffXd>,
+    SpatialForce<AutoDiffXd>,
+    SpatialAcceleration<AutoDiffXd>> SpatialQuantityTypes;
 TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
@@ -63,8 +73,17 @@ TYPED_TEST(SpatialQuantityTest, SizeAtCompileTime) {
   EXPECT_EQ(V.size(), 6);
 }
 
+// Construction of a "zero" spatial vector.
+TYPED_TEST(SpatialQuantityTest, ZeroFactory) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  SpatialQuantity V = SpatialQuantity::Zero();
+  EXPECT_TRUE(V.rotational() == Vector3<T>::Zero());
+  EXPECT_TRUE(V.translational() == Vector3<T>::Zero());
+}
+
 // Tests:
-// - Construction from a Eigen expressions.
+// - Construction from Eigen expressions.
 // - SetZero() method.
 TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
@@ -354,6 +373,49 @@ TYPED_TEST(SpatialForceTest, ShiftOperation) {
   // Verify the result.
   SpatialForce<T> expected_F_Bo_E(Vector3<T>(2.0, -1.0, -3.0), f_Ao_E);
   EXPECT_TRUE(F_Bo_E.IsApprox(expected_F_Bo_E));
+}
+
+// SpatialAcceleration specific unit tests.
+template <typename T>
+class SpatialAccelerationTest : public ::testing::Test {
+ public:
+  // Useful typedefs when witting unit tests to access types.
+  typedef T ScalarType;
+};
+TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
+
+// Unit test for the method SpatialAcceleration::Shift().
+// In this test, a frame P rotates with respect to a frame A with an angular
+// velocity w_AP and has zero acceleration in frame A, ie. A_AP = 0. We can
+// think of frames P and A having coincident origins.
+// A third frame Q translated by a position p_PoQo moves rigidly with P.
+// The angular velocity w_AP_E is as a component out of plane in the z-axes
+// while the offset vector p_PoQo_E is in the x-y plane.
+// Therefore, the spatial acceleration of frame Q should correspond to that of
+// a centrifugal linear component pointing inwards in the opposite direction of
+// p_PoQo
+TYPED_TEST(SpatialAccelerationTest, CentrifugalAccleration) {
+  typedef typename TestFixture::ScalarType T;
+
+  // The spatial acceleration of frame P measure in A is zero.
+  const SpatialAcceleration<T> A_AP = SpatialAcceleration<T>::Zero();
+
+  // Position of Q's origin measured in P and expressed in E.
+  const Vector3<T> p_PoQo_E = Vector3<T>::UnitX() + Vector3<T>::UnitY();
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP_E = 3.0 * Vector3<T>::UnitZ();
+
+  const SpatialAcceleration<T> A_AQ = A_AP.Shift(p_PoQo_E, w_AP_E);
+
+  SpatialAcceleration<T> A_AQ_expected;
+  A_AQ_expected.rotational() = Vector3<T>::Zero();
+  // The centrifugal acceleration has magnitude w_AP^2 * ‖ p_PoQo ‖ and points
+  // in the direction opposite to p_PoQo.
+  A_AQ_expected.translational() =
+      -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized();
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
 
 }  // namespace
