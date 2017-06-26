@@ -111,8 +111,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
-  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BQ_E) {
-    this->translational() += this->rotational().cross(p_BQ_E);
+  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BpBq_E) {
+    this->translational() += this->rotational().cross(p_BpBq_E);
     return *this;
   }
 
@@ -135,8 +135,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
   ///      modifying the original object.
-  SpatialVelocity<T> Shift(const Vector3<T>& p_BQ_E) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(p_BQ_E);
+  SpatialVelocity<T> Shift(const Vector3<T>& p_BpBq_E) const {
+    return SpatialVelocity<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
   /// Given `this` spatial velocity `V_IBp_E` of point P of body B,
