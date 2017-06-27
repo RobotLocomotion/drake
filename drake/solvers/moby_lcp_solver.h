@@ -69,7 +69,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
     return M.rows() * M.template lpNorm<Eigen::Infinity>() *
-        std::numeric_limits<double>::epsilon();
+        (10 * std::numeric_limits<double>::epsilon());
   }
 
   /// Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where
