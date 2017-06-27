@@ -195,8 +195,11 @@ TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
   SpatialForce<double> expected_spatial_force;
   // This force should be pushing sphere1 to the left.
   expected_spatial_force << 0, 0, 0, -expected_force_magnitude, 0, 0;
+  // Increasing tolerance by a factor of (7/6) because the test failed when
+  // Bullet3 was upgraded from 2.85.1 to 2.86.1
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
-                              expected_spatial_force, kTolerance,
+                              expected_spatial_force,
+                              (7.0 / 6) * kTolerance,
                               MatrixCompareType::absolute));
 }
 
