@@ -534,18 +534,18 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
       model_->CalcPositionKinematicsCache(*mbt_context_, &pc);
 
       // Set the shoulder's angular velocity.
-      const double shoulder_angular_velocity = 1.0;
+      const double shoulder_angle_rate = 1.0;
       shoulder_mobilizer_->set_angular_rate(context_.get(),
-                                            shoulder_angular_velocity);
+                                            shoulder_angle_rate);
       EXPECT_EQ(shoulder_mobilizer_->get_angular_rate(*context_),
-                shoulder_angular_velocity);
+                shoulder_angle_rate);
 
       // Set the elbow's angular velocity.
-      const double elbow_angular_velocity = -0.5;
+      const double elbow_angle_rate = -0.5;
       elbow_mobilizer_->set_angular_rate(context_.get(),
-                                         elbow_angular_velocity);
+                                         elbow_angle_rate);
       EXPECT_EQ(elbow_mobilizer_->get_angular_rate(*context_),
-                elbow_angular_velocity);
+                elbow_angle_rate);
       model_->CalcVelocityKinematicsCache(*mbt_context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
@@ -556,11 +556,11 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
 
       const SpatialVelocity<double> V_WU_expected(
           acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
-              shoulder_angle, shoulder_angular_velocity));
+              shoulder_angle, shoulder_angle_rate));
       const SpatialVelocity<double> V_WL_expected(
           acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
               shoulder_angle, elbow_angle,
-              shoulder_angular_velocity, elbow_angular_velocity));
+              shoulder_angle_rate, elbow_angle_rate));
 
       EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kEpsilon));
       EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));
