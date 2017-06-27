@@ -108,17 +108,17 @@ class RigidContact2DSolverTest : public ::testing::Test {
     data->mu_sliding.setOnes(num_sliding) *= mu;
     data->mu_non_sliding.setOnes(num_non_sliding) *= mu;
 
-    // Set r.
+    // Set spanning friction cone directions (set to unity, because rod is 2D).
     data->r.resize(num_non_sliding);
     for (int i = 0; i < num_non_sliding; ++i)
       data->r[i] = 1;
 
-    // Form N.
+    // Form the normal contact Jacobian (N).
     data->N.resize(nc, ngc);
     for (int i = 0; i < nc; ++i)
       data->N.row(i) =  GetJacobianRow(points[i], contact_normal);
 
-    // Form Ndot and compute Ndot * v.
+    // Form Ndot (time derivative of N) and compute Ndot * v.
     MatrixX<double> Ndot(nc, ngc);
     for (int i = 0; i < nc; ++i)
       Ndot.row(i) =  GetJacobianDotRow(points[i], contact_normal);
@@ -127,7 +127,8 @@ class RigidContact2DSolverTest : public ::testing::Test {
     EXPECT_EQ(v.size(), ngc);
     data->Ndot_x_v = Ndot * v;
 
-    // Form F and Fdot and compute Fdot * v.
+    // Form the tangent directions contact Jacobian (F), its time derivative
+    // (Fdot), and compute Fdot * v.
     const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
     EXPECT_EQ(nr, num_non_sliding);
     data->F.resize(nr, ngc);
@@ -142,7 +143,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
     }
     data->Fdot_x_v = Fdot * v;
 
-    // Form N - mu*Q
+    // Form N - mu*Q (Q is sliding contact direction Jacobian).
     data->N_minus_mu_Q = data->N;
     VectorX<double> Qrow;
     for (int i = 0, j = 0; i < nc; ++i) {
@@ -158,7 +159,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
       ++j;
     }
 
-    // Set f.
+    // Set external force vector.
     data->f = GetRodGravitationalForce();
   }
 
@@ -182,6 +183,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
     Vector2<double> pa = rod_->CalcRodEndpoint(x, y, -1, cth, sth, half_len);
     Vector2<double> pb = rod_->CalcRodEndpoint(x, y, +1, cth, sth, half_len);
 
+    // If an endpoint touches the ground, add it as a contact point.
     if (pa[1] <= 0)
       points.push_back(pa);
     if (pb[1] <= 0)
@@ -210,7 +212,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
     return vels;
   }
 
-  // Gets the time derivative of a rotation matrix.
+  // Gets the time derivative of a 2D rotation matrix.
   Matrix2<double> GetRotationMatrixDerivative(double theta) const {
     const double cth = std::cos(theta), sth = std::sin(theta);
     Matrix2<double> Rdot;
