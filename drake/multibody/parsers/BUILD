@@ -100,6 +100,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":parsers",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -112,6 +113,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":parsers",
+        "//drake/common:find_resource",
     ],
 )
 

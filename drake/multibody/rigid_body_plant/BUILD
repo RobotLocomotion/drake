@@ -150,7 +150,7 @@ drake_cc_googletest(
     data = ["//drake/multibody/collision:test_models"],
     deps = [
         ":drake_visualizer",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm:mock",
         "//drake/systems/analysis",
     ],
@@ -176,8 +176,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_plant",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -189,7 +189,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_plant_that_publishes_xdot",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
         "//drake/multibody/parsers",
