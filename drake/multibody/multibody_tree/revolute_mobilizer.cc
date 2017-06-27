@@ -29,8 +29,8 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angle(
 }
 
 template <typename T>
-const T& RevoluteMobilizer<T>::get_angular_velocity(
-    const systems::Context<T>& context) const {
+const T& RevoluteMobilizer<T>::get_angular_rate(
+    const systems::Context<T> &context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
   const auto& v = this->get_velocities(mbt_context);
@@ -39,13 +39,13 @@ const T& RevoluteMobilizer<T>::get_angular_velocity(
 }
 
 template <typename T>
-const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_velocity(
-    systems::Context<T>* context, const T& w_FM) const {
+const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
+    systems::Context<T> *context, const T& theta_dot) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto v = this->get_mutable_velocities(&mbt_context);
   DRAKE_ASSERT(v.size() == kNv);
-  v[0] = w_FM;
+  v[0] = theta_dot;
   return *this;
 }
 

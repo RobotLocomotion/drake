@@ -272,8 +272,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   virtual Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const = 0;
 
-  /// Computes the across-mobilizer spatial velocity `V_FM(q, v)` between the
-  /// inboard frame F and the outboard frame M.
+  /// Computes the across-mobilizer spatial velocity `V_FM(q, v)` of the
+  /// outboard frame M in the inboard frame F.
   /// This method can be thought of as the application of the operator `H_FM(q)`
   /// to the input vector of generalized velocities `v`, i.e. the output of this
   /// method is the application `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where
@@ -281,7 +281,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
   /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
   /// velocities in Drake are not Plücker vectors as in Featherstone's book).
-  /// Therefore we say this methods is the _operator form_ of the Jacobian
+  /// Therefore we say this method is the _operator form_ of the Jacobian
   /// matrix `H_FM(q)`.
   /// This method aborts in Debug builds if the dimension of the input vector of
   /// generalized velocities has a size different from get_num_velocities().

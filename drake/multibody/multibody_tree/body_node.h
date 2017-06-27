@@ -245,11 +245,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // this restriction in preparation of the more general case considering
     // flexible bodies.
 
-    // Body for this node. It's body frame is also referred to as B whenever no
+    // Body for this node. Its body frame is also referred to as B whenever no
     // ambiguity can arise.
     const Body<T>& BodyB = get_body();
 
-    // Body for this node's parent, or the parent body P. It's body frame is
+    // Body for this node's parent, or the parent body P. Its body frame is
     // also referred to as P whenever no ambiguity can arise.
     const Body<T>& BodyP = get_parent_body();
 
