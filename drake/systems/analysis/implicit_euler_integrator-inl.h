@@ -491,7 +491,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
 
       // Look for divergence.
       if (theta > 1) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for h={}", dt);
+        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for "
+            "h={}", dt);
         break;
       }
 
