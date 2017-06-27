@@ -6,7 +6,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
@@ -43,11 +43,11 @@ class Quadrotor : public systems::Diagram<T> {
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
-        drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+        FindResourceOrThrow("drake/examples/Quadrotor/quadrotor.urdf"),
         kRollPitchYaw, tree.get());
     const int quadrotor_id = model_id_table.at("quadrotor");
     AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
+        FindResourceOrThrow("drake/examples/Quadrotor/warehouse.sdf"),
         kFixed, nullptr /* weld to frame */, tree.get());
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 

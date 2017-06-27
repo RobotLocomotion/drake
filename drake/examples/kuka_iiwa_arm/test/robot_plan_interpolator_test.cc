@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 namespace drake {
@@ -12,16 +12,16 @@ namespace {
 
 static const int kNumJoints = 7;
 const char* const kIiwaUrdf =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 const char* const kDualIiwaUrdf =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "dual_iiwa14_polytope_collision.urdf";
 
 GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
   // Test that the constructor works and that the expected ports are
   // present.
-  RobotPlanInterpolator dut(GetDrakePath() + kIiwaUrdf);
+  RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
   EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
   EXPECT_EQ(dut.get_state_input_port().get_data_type(),
@@ -38,7 +38,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
 GTEST_TEST(RobotPlanInterpolatorTest, DualInstanceTest) {
   // Check that the port sizes come out appropriately for a dual armed
   // model.
-  RobotPlanInterpolator dut(GetDrakePath() + kDualIiwaUrdf);
+  RobotPlanInterpolator dut(FindResourceOrThrow(kDualIiwaUrdf));
   EXPECT_EQ(dut.tree().get_num_positions(), kNumJoints * 2);
   EXPECT_EQ(dut.tree().get_num_velocities(), kNumJoints * 2);
 
@@ -69,7 +69,7 @@ struct TrajectoryTestCase {
 
 
 GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
-  RobotPlanInterpolator dut(GetDrakePath() + kIiwaUrdf);
+  RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
 
   std::vector<double> t{0, 1, 2, 3, 4};
   Eigen::MatrixXd q = Eigen::MatrixXd::Zero(kNumJoints, t.size());

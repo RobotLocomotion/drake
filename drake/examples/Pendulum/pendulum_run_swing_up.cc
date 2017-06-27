@@ -3,7 +3,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
@@ -90,7 +90,7 @@ int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf"),
       multibody::joints::kFixed, tree.get());
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);

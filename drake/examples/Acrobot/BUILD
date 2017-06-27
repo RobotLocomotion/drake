@@ -92,7 +92,7 @@ drake_cc_binary(
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_plant",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
@@ -112,7 +112,7 @@ drake_cc_binary(
     deps = [
         ":acrobot_plant",
         "//drake/common:call_matlab",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
@@ -136,7 +136,7 @@ drake_cc_binary(
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_plant",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
@@ -226,8 +226,8 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":acrobot_plant",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",

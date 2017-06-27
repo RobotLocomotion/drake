@@ -5,8 +5,8 @@
 #include <gtest/gtest.h>
 #include "bot_core/atlas_command_t.hpp"
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -24,9 +24,9 @@ class JointLevelControllerTest : public ::testing::Test {
     robot_ = std::make_unique<RigidBodyTree<double>>();
     // Use this model because the dof order and actuator order are different.
     parsers::urdf::AddModelInstanceFromUrdfFile(
-        GetDrakePath() +
-            "/examples/Valkyrie/urdf/urdf/"
-            "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
+        FindResourceOrThrow(
+            "drake/examples/Valkyrie/urdf/urdf/"
+            "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
         drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
         robot_.get());
 

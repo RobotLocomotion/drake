@@ -14,6 +14,7 @@ drake_cc_library(
     hdrs = ["world_sim_tree_builder.h"],
     visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
     deps = [
+        "//drake/common:find_resource",
         "//drake/common:unused",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",

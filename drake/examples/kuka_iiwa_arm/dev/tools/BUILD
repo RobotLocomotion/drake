@@ -37,6 +37,7 @@ drake_cc_binary(
     deps = [
         ":simple_tree_visualizer",
         "//drake/common",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
