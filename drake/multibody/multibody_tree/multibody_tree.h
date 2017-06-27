@@ -7,12 +7,15 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -506,6 +509,13 @@ class MultibodyTree {
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       VelocityKinematicsCache<T>* vc) const;
+
+  void CalcAccelerationKinematicsCache(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const VectorX<T>& mbt_vdot,
+      AccelerationKinematicsCache<T>* ac) const;
 
  private:
   void CreateBodyNode(BodyNodeIndex body_node_index);

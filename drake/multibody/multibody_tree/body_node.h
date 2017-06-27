@@ -5,11 +5,14 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 
 namespace drake {
 namespace multibody {
@@ -313,6 +316,145 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     get_mutable_V_WB(vc) = V_WP.Shift(p_PB_W) + V_PB_W;
   }
 
+  void CalcAccelerationKinematicsCache_BaseToTip(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const VectorX<T>& mbt_vdot,
+      AccelerationKinematicsCache<T>* ac) const {
+    // This method must not be called for the "world" body node.
+    DRAKE_ASSERT(topology_.body != world_index());
+
+    DRAKE_ASSERT(ac != nullptr);
+
+    // As a guideline for developers, a summary of the computations performed in
+    // this method is provided:
+    // Notation:
+    //  - B body frame associated with this node.
+    //  - P ("parent") body frame associated with this node's parent.
+    //  - F mobilizer inboard frame attached to body P.
+    //  - M mobilizer outboard frame attached to body B.
+    // The goal is computing the spatial acceleration A_WB of body B measured in the
+    // world frame W. The calculation is recursive and assumes the spatial
+    // acceleration A_WP of the inboard body P is already computed.
+    // The spatial velocities of P and B are related by the recursive relation
+    // (computation is performed by CalcVelocityKinematicsCache_BaseToTip():
+    //   V_WB = V_WPB + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)              (1)
+    // where V_WPB is the spatial velocity of frame B as if instantaneously
+    // moving with frame P, measured and expressed in the world frame W.
+    // The acceleration A_WB is defined as d_W(V_WB)/dt, where d_W()/dt denotes
+    // the time derivative in the world frame. Taking d_w()/dt in Eq. (1)
+    // results in a recursive relation for A_WB:
+    //   A_WB = d_W(V_WPB + V_PB_W)/dt = A_WPB + d_W(V_PB_W)/dt             (2)
+    // Therefore we need to develop expressions for the two terms on the right
+    // hand side of Eq. (2).
+    //
+    // Computation of d_W(V_WPB)/dt:
+    // This simply is the acceleration of frame B in the world frame W as if
+    // instantaneously moving with frame P. This is nothing but the shift
+    // operation of A_WP from Po to Bo and therefore:
+    //   A_WPB = d_W(V_WPB)/dt = A_WP.Shift(p_PoBo_W, w_WP)                 (3)
+    //
+    // Computation of d_W(V_PB_W)/dt:
+    // This can be computed by first shifting the time derivative to be computed
+    // in the P frame as:
+    //   d_W(V_PB_W)/dt = ShiftTimeDerivative(V_PB_W, A_PB_W, w_WP)         (4)
+    // with V_PB_W already available in the VelocityKinematicsCache. The
+    // acceleration of B in P is:
+    //   A_PB = d_P(V_PB)/dt = d_F(V_FMB)/dt = A_FM.Shift(p_MB, w_FM)       (5)
+    // which expressed in the world frame leads to:
+    //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (6)
+    // where A_FM in the inboard frame F is the direct result from
+    // Mobilizer::CalcAcrossMobilizerAcceleration().
+    //
+    // * Note:
+    //     The rigid body assumption is made in Eq. (5) in two places:
+    //       1. d_P()/dt = d_F()/dt since V_PF = 0.
+    //       2. V_PB = V_FMB since V_PB = V_PF + V_FMB + V_MB but since P is
+    //          assumed rigid V_PF = 0 and since B is assumed rigid V_MB = 0.
+
+    // Body for this node. It's body frame is also referred to as B whenever no
+    // ambiguity can arise.
+    const Body<T>& BodyB = get_body();
+
+    // Body for this node's parent, or the parent body P. It's body frame is
+    // also referred to as P whenever no ambiguity can arise.
+    const Body<T>& BodyP = get_parent_body();
+
+    // Inboard frame F of this node's mobilizer.
+    const Frame<T>& FrameF = get_inboard_frame();
+    DRAKE_ASSERT(FrameF.get_body().get_index() == BodyP.get_index());
+    // Outboard frame M of this node's mobilizer.
+    const Frame<T>& FrameM = get_outboard_frame();
+    DRAKE_ASSERT(FrameM.get_body().get_index() == BodyB.get_index());
+
+    // =========================================================================
+    // Computation of d_W(V_WPB)/dt in Eq. (3).
+
+    // Shift vector between the parent body P and this node's body B,
+    // expressed in the world frame W.
+    // TODO(amcastro-tri): consider computing p_PB_W in
+    // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
+    // position kinematics cache.
+    /* p_PB_W = R_WP * p_PB */
+    Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
+
+    const SpatialVelocity<T>& V_WP = get_V_WP(vc);
+
+    // Since we are in a base-to-tip recursion the parent body P's spatial
+    // acceleration is already available in the cache.
+    const SpatialAcceleration<T>& A_WP = get_A_WP(*ac);
+    const SpatialAcceleration<T> A_WPB = A_WP.Shift(p_PB_W, V_WP.rotational());
+
+    // =========================================================================
+    // Computation of d_W(V_PB_W)/dt in Eq. (4)
+
+    // Generalized velocities' time derivatives local to this node's mobilizer.
+    const auto& vmdot = this->get_mobilizer_velocities(mbt_vdot);
+
+    // Operator A_FM = H_FM * vmdot + Hdot_FM * vm
+    SpatialAcceleration<T> A_FM =
+        get_mobilizer().CalcAcrossMobilizerSpatialAcceleration(context, vmdot);
+
+    (void) A_FM;
+
+#if 0
+
+    // =========================================================================
+    // Computation of V_PB_W in Eq. (1). See summary at the top of this method.
+
+    const Isometry3<T> X_PF = FrameF.CalcPoseInBodyFrame(context);
+    const Isometry3<T> X_MB = FrameM.CalcBodyPoseInThisFrame(context);
+
+    // Pose of the parent body P in world frame W.
+    // Available since we are called within a base-to-tip recursion.
+    const Isometry3<T>& X_WP = get_X_WP(pc);
+
+    // Orientation (rotation) of frame F with respect to the world frame W.
+    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+
+    // Vector from Mo to Bo expressed in frame F as needed below:
+    const Vector3<T> p_MB_F =
+        /* p_MB_F = R_FM * p_MB_M */
+        get_X_FM(pc).rotation() * X_MB.translation();
+
+    // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
+    // In operator form:
+    //   V_PB_W = R_WF * phiT_MB_F * V_FM
+    //          = R_WF * phiT_MB_F * H_FM * vm
+    //          = H_PB_W * vm
+    // where H_PB_W = R_WF * phiT_MB_F * H_FM.
+    // TODO(amcastro-tri): consider storing V_PB_W into the velocity
+    // kinematics cache.
+    SpatialVelocity<T> V_PB_W = R_WF * V_FM.Shift(p_MB_F);
+#endif
+
+    // =========================================================================
+    // Update acceleration A_WB of this node's body B in the world frame using
+    // Eq. (2).
+    get_mutable_A_WB(ac) = A_WPB;
+  }
+
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
@@ -346,6 +488,17 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return context.get_state_segment(
         topology_.mobilizer_velocities_start,
         topology_.num_mobilizer_velocities);
+  }
+
+  // Helper to get an Eigen expression of the vector of generalized velocities
+  // from a vector of generalized velocities for the entire parent multibody
+  // tree. Useful for the implementation of operator forms where the generalized
+  // velocity (or time derivatives of the generalized velocities) is an argument
+  // to the operator.
+  Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
+      const VectorX<T>& v) const {
+    return v.segment(topology_.mobilizer_velocities_start,
+                     topology_.num_mobilizer_velocities);
   }
 
   // =========================================================================
@@ -404,6 +557,26 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   const SpatialVelocity<T>& get_V_WP(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.parent_body_node);
+  }
+
+  // =========================================================================
+  // AccelerationKinematicsCache Accessors and Mutators.
+
+  const SpatialAcceleration<T>& get_A_WB(
+      const AccelerationKinematicsCache<T>& ac) const {
+    return ac.get_A_WB(topology_.index);
+  }
+
+  SpatialAcceleration<T>& get_mutable_A_WB(
+      AccelerationKinematicsCache<T>* ac) const {
+    return ac->get_mutable_A_WB(topology_.index);
+  }
+
+  /// @returns the spatial velocity `V_WP` of the body P in the parent node as
+  /// measured and expressed in the world frame.
+  const SpatialAcceleration<T>& get_A_WP(
+      const AccelerationKinematicsCache<T>& ac) const {
+    return ac.get_A_WB(topology_.parent_body_node);
   }
 
   // Helper method to be called within a base-to-tip recursion that computes
