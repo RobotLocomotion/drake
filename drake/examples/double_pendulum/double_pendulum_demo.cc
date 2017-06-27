@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
   // Instantiate interface and start receiving.
   auto interface = std::make_unique<lcm::DrakeLcm>();
   interface->StartReceiveThread();
-  // Loading double pendulum sdf from file.
+  // Loading double pendulum SDF from file.
   sdf::SDFPtr parsed_sdf(new sdf::SDF());
   sdf::init(parsed_sdf);
   std::string sdf_path = GetDrakePath() + kDoublePendulumSdfPath;
