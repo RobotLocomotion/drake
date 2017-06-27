@@ -155,7 +155,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   T dot(const SpatialForce<T>& F_Q_E) const;
 };
 
-/// Operator to perform the addition of two spatial velocities. This operator
+/// Performs the addition of two spatial velocities. This operator
 /// returns the spatial velocity that results from adding the operands as if
 /// they were 6-dimensional vectors. In other words, the resulting spatial
 /// velocity contains a rotational component which is the 3-dimensional
@@ -163,28 +163,35 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 /// component which is the 3-dimensional addition of the operand's translational
 /// components.
 ///
-/// The addition of two spatial velocities has a clear physical meaning.
-/// Given the velocity V_EP of a frame P with respect to another frame E, and
-/// the velocity V_PBq_E of a point Q on a frame B measured in frame P (both
-/// expressed in frame E), the velocity of point Q on frame B measured and
-/// expressed in frame E is obtained as:
-/// <pre>
-///   V_EBq = V_EP.Shift(p_PoBq_E) + V_PBq_E
+/// The addition of two spatial velocities has a clear physical meaning but
+/// can only be performed if the operands meet strict conditions. In addition
+/// the the usual requirement of common expressed-in frames, both spatial
+/// velocities must be for frames with the same origin point. The general idea
+/// is that if frame A has a spatial velocity with respect to E, and frame B
+/// has a spatial velocity with respect to A, we want to "compose" them so that
+/// we get frame B's spatial velocity in E. But that can't be done directly
+/// since frames A and B don't have the same origin. So:
+///
+/// Given the velocity V_EA of a frame A with respect to another frame E, and
+/// the velocity V_AB_E of a frame B measured in frame A (both
+/// expressed in frame E), we can calculate V_EB as their sum after shifting
+/// A's velocity to point Bo: <pre>
+///   V_EB = V_EA.Shift(p_AB_E) + V_AB_E
+/// </pre>
+/// where `p_AB_E` is the position vector from A's origin to B's origin,
+/// expressed in E. This shift can also be thought of as yielding the spatial
+/// velocity of a new frame Ab, which is an offset frame rigidly aligned with A,
+/// but with its origin shifted to B's origin: <pre>
+///   V_EAb = V_EA.Shift(p_AB_E)
+///   V_EB = V_EAb + V_AB_E
 /// </pre>
 ///
-/// where `p_PoBq_E` is the position vector from P's origin to point Q. The
-/// first term corresponds to the velocity of point Q as if instantaneously
-/// (rigidly attached) moving with frame P. We denote this spatial velocity with
-/// `V_EPBq`. Therefore the above equation can be written more compactly as:
-/// <pre>
-///   V_EBq = V_EPBq + V_PBq_E
-/// </pre>
-///
-/// The addition in the last expression is carried out by this operator.
+/// The addition in the last expression is what is carried out by this operator;
+/// the caller must have already performed the necessary shift.
 template <typename T>
 inline SpatialVelocity<T> operator+(
-    const SpatialVelocity<T>& V_EPBq, const SpatialVelocity<T>& V_PBq_E) {
-  return SpatialVelocity<T>(V_EPBq.get_coeffs() + V_PBq_E.get_coeffs());
+    const SpatialVelocity<T>& V_EAb, const SpatialVelocity<T>& V_AB_E) {
+  return SpatialVelocity<T>(V_EAb.get_coeffs() + V_AB_E.get_coeffs());
 }
 
 }  // namespace multibody

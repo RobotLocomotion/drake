@@ -215,27 +215,31 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // world frame W. The calculation is recursive and assumes the spatial
     // velocity V_WP of the inboard body P is already computed. These spatial
     // velocities are related by the recursive relation:
-    //   V_WB = V_WPB + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)              (1)
-    // where V_WPB is the spatial velocity of frame B as if instantaneously
-    // moving with frame P, measured and expressed in the world frame W.
-    // Therefore we need to develop expressions for the two terms (V_WPB and
-    // V_PB_W) in Eq. (1).
+    //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)              (1)
+    // where Pb is a frame aligned with P but with its origin shifted from Po
+    // to B's origin Bo. Then V_WPb is the spatial velocity of frame Pb,
+    // measured and expressed in the world frame W. Then since V_PB's
+    // translational component is also for the point Bo, we can add these
+    // spatial velocities. Therefore we need to develop expressions for the two
+    // terms (V_WPb and V_PB_W) in Eq. (1).
     //
     // Computation of V_PB_W:
     // This can be split as:
-    //   V_PB_W = V_PF_W + V_FMB_W + V_MB_W                                 (2)
-    // Assuming body P a rigid body V_PF_W = 0 and assuming B a rigid body
-    // V_MB_W = 0.
-    // TODO(amcastro-tri): incorporate additional terms for flexible bodies.
-    // Therefore V_PB_W = V_FMB_W, which can be computed from the
-    // spatial velocity measured in frame F (as provided by mobilizer's methods)
-    //   V_FMB_W = R_WF * V_FMB = R_WF * V_FM.Shift(p_MoBo_F)               (3)
+    //   V_PB_W = V_PFb_W + V_FMb_W + V_MB_W                                (2)
+    // where Fb and Mb are frames aligned rigidly with F and M but with their
+    // origins at Bo. Assuming body P a rigid body V_PFb_W = 0 and assuming B
+    // a rigid body V_MB_W = 0, but that won't be true for flexible bodies.
+    // TODO(amcastro-tri): incorporate terms for flexible bodies below.
+    // Therefore for rigid bodies V_PB_W = V_FMb_W, which can be computed from
+    // the spatial velocity measured in frame F (as provided by mobilizer's
+    // methods)
+    //   V_FMb_W = R_WF * V_FMb = R_WF * V_FM.Shift(p_MoBo_F)               (3)
     // arriving to the desired result:
     //   V_PB_W = R_WF * V_FM.Shift(p_MoBo_F)                               (4)
     //
-    // Computation of V_WPB:
+    // Computation of V_WPb:
     // This can be computed by a simple shift operation from V_WP:
-    //   V_WPB = V_WP.Shift(p_PoBo_W)                                       (5)
+    //   V_WPb = V_WP.Shift(p_PoBo_W)                                       (5)
     //
     // Note:
     // It is very common to find treatments in which the body frame B is
@@ -286,7 +290,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         get_X_FM(pc).rotation() * X_MB.translation();
 
     // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
-    // In operator form:
+    // Side note to developers: in operator form for rigid bodies this would be
     //   V_PB_W = R_WF * phiT_MB_F * V_FM
     //          = R_WF * phiT_MB_F * H_FM * vm
     //          = H_PB_W * vm
@@ -296,7 +300,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     SpatialVelocity<T> V_PB_W = R_WF * V_FM.Shift(p_MB_F);
 
     // =========================================================================
-    // Computation of V_WPB in Eq. (1). See summary at the top of this method.
+    // Computation of V_WPb in Eq. (1). See summary at the top of this method.
 
     // Shift vector between the parent body P and this node's body B,
     // expressed in the world frame W.
