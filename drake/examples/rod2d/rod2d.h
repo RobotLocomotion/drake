@@ -406,6 +406,21 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
     return *pose_output_port_;
   }
 
+  // Utility method for determining the World frame location of one of three
+  // points on the rod whose origin is Ro. Let r be the half-length of the rod.
+  // Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
+  static Vector2<T> CalcRodEndpoint(const T& x, const T& y, const int k,
+                                    const T& ctheta, const T& stheta,
+                                    const double half_rod_len);
+
+  // Given a location p_WC of a point C in the World frame, define the point Rc
+  // of the rod that is coincident with C, and report Rc's World frame velocity
+  // v_WRc. We're given p_WRo=(x,y) and V_WRo=(v_WRo,w_WR)=(xdot,ydot,thetadot).
+  static Vector2<T> CalcCoincidentRodPointVelocity(
+      const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
+      const T& w_WR,  // aka thetadot
+      const Vector2<T>& p_WC);
+
  private:
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
@@ -460,21 +475,6 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                         systems::VectorBase<T>* const f) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
-
-  // Utility method for determining the World frame location of one of three
-  // points on the rod whose origin is Ro. Let r be the half-length of the rod.
-  // Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
-  static Vector2<T> CalcRodEndpoint(const T& x, const T& y, const int k,
-                                    const T& ctheta, const T& stheta,
-                                    const double half_rod_len);
-
-  // Given a location p_WC of a point C in the World frame, define the point Rc
-  // of the rod that is coincident with C, and report Rc's World frame velocity
-  // v_WRc. We're given p_WRo=(x,y) and V_WRo=(v_WRo,w_WR)=(xdot,ydot,thetadot).
-  static Vector2<T> CalcCoincidentRodPointVelocity(
-      const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
-      const T& w_WR,  // aka thetadot
-      const Vector2<T>& p_WC);
 
   // 2D cross product returns a scalar. This is the z component of the 3D
   // cross product [ax ay 0] × [bx by 0]; the x,y components are zero.
