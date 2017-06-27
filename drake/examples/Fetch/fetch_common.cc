@@ -49,11 +49,10 @@ void VerifyFetchTree(const RigidBodyTree<double>& tree) {
 
 void CreateTreeFromFloatingModelAtPose(const std::string& model_file_name,
                                        RigidBodyTreed* tree,
-                                       const Vector3d& position,
-                                       const Vector3d& orientation) {
+                                       const Eigen::Isometry3d& orientation) {
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
-      position, orientation);
+      orientation);
 
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       model_file_name, drake::multibody::joints::kQuaternion, weld_to_frame,

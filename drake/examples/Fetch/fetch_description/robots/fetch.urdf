@@ -568,4 +568,130 @@
     <parent link="head_camera_depth_frame" />
     <child link="head_camera_depth_optical_frame" />
   </joint>
+
+  <transmission name="r_wheel_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="r_wheel_joint">
+    </joint>
+    <actuator name="r_wheel_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="l_wheel_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="l_wheel_joint">
+    </joint>
+    <actuator name="l_wheel_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="torso_lift_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="torso_lift_joint">
+    </joint>
+    <actuator name="torso_lift_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="head_pan_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="head_pan_joint">
+    </joint>
+    <actuator name="head_pan_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="head_tilt_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="head_tilt_joint">
+    </joint>
+    <actuator name="head_tilt_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="shoulder_pan_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="shoulder_pan_joint">
+    </joint>
+    <actuator name="shoulder_pan_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="shoulder_lift_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="shoulder_lift_joint">
+    </joint>
+    <actuator name="shoulder_lift_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="upperarm_roll_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="upperarm_roll_joint">
+    </joint>
+    <actuator name="upperarm_roll_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="elbow_flex_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="elbow_flex_joint">
+    </joint>
+    <actuator name="elbow_flex_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="forearm_roll_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="forearm_roll_joint">
+    </joint>
+    <actuator name="forearm_roll_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="wrist_flex_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wrist_flex_joint">
+    </joint>
+    <actuator name="wrist_flex_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="wrist_roll_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wrist_roll_joint">
+    </joint>
+    <actuator name="wrist_roll_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="r_gripper_finger_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="r_gripper_finger_joint">
+    </joint>
+    <actuator name="r_gripper_finger_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="l_gripper_finger_joint">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="l_gripper_finger_joint">
+    </joint>
+    <actuator name="l_gripper_finger_joint">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
 </robot>

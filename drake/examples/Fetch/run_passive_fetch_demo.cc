@@ -15,6 +15,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
 
@@ -47,8 +48,7 @@ int DoMain() {
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreeFromFloatingModelAtPose(kModelPath, tree.get(),
-                                      Vector3<double>(0, 0, 0));
+    CreateTreeFromFloatingModelAtPose(kModelPath, tree.get());
 
     plant = builder.AddSystem<RigidBodyPlant<double>>(std::move(tree));
     plant->set_name("plant");
@@ -63,6 +63,13 @@ int DoMain() {
   // Creates and adds LCM publisher for visualization.
   auto visualizer = builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
 
+  // Feeds in constant command inputs of zero.
+  VectorX<double> zero_values = VectorX<double>::Zero(plant->get_input_size());
+  auto zero_source =
+      builder.AddSystem<systems::ConstantVectorSource<double>>(zero_values);
+  zero_source->set_name("zero_source");
+  builder.Connect(zero_source->get_output_port(), plant->get_input_port(0));
+
   // Connects the visualizer and builds the diagram.
   builder.Connect(plant->get_output_port(0), visualizer->get_input_port(0));
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
@@ -74,12 +81,12 @@ int DoMain() {
   // Sets torso lift initial conditions.
   // See the @file docblock in fetch_common.h for joint index descriptions.
   VectorBase<double>* x0 = fetch_context->get_mutable_continuous_state_vector();
-  x0->SetAtIndex(9, 0.1);  // torso lift joint [m]
+  x0->SetAtIndex(kTorsoLiftJointIdx, 0.1);
 
   simulator.Initialize();
 
   // Simulate for the desired duration.
-  simulator.set_target_realtime_rate(0.2);
+  simulator.set_target_realtime_rate(1);
   simulator.StepTo(FLAGS_simulation_sec);
 
   // Ensures the simulation was successful.
