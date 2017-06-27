@@ -638,7 +638,8 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 //                function triggered.
 // @pre The context and state are at tf and x(tf), respectively.
 // @post The context will be isolated to the first witness function trigger(s),
-//       to within the requisite interval length.
+//       to within the requisite interval length. It is guaranteed that all
+//       triggered witness functions change sign over [t0, tw].
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -676,94 +677,38 @@ void Simulator<T>::IsolateWitnessTriggers(
     }
   };
 
-  // Set the first witness function trigger and the witness function that
-  // makes that trigger.
-  T t_first_witness = tf;
+  // Loop until the isolation window is sufficiently small.
+  VectorX<T> wc(witnesses.size());
+  T a = t0;
+  T b = tf;
+  do {
+    // Compute the midpoint and evaluate the witness functions at it.
+    T c = (a + b) / 2;
+    fwd_int(c);
 
-  // Loop over all witness functions.
-  for (size_t i = 0; i < witnesses.size(); ++i) {
-    // Set interval endpoints (in time).
-    T a = t0;
-    T b = t_first_witness;
-
-    // Set the witness function values.
-    T fa = w0[i];
-
-    // Integrate to b.
-    fwd_int(t_first_witness);
-
-    // Evaluate the witness function.
-    T fb = get_system().EvaluateWitness(*context, *witnesses[i]);
-
-    // See whether there has been a sign change; after shrinking the time
-    // interval one or more times, there may no longer be one, in which case
-    // we can skip the bisection for this interval.
-    if (!witnesses[i]->should_trigger(fa, fb))
-      continue;
-
-    // Since the witness function is triggering, fa should not be exactly zero.
-    DRAKE_DEMAND(fa != 0);
-
-    while (true) {
-      // Determine the midpoint.
-      T c = (a + b) / 2;
-
-      // Restore the state and time to t0, then integrate to c.
-      fwd_int(c);
-
-      // Evaluate the witness function.
-      T fc = get_system().EvaluateWitness(*context, *witnesses[i]);
-
-      // Bisect.
-      if (witnesses[i]->should_trigger(fa, fc)) {
-        b = c;
-        fb = fc;
-      } else {
-        DRAKE_DEMAND(witnesses[i]->should_trigger(fc, fb));
-        a = c;
-        fa = fc;
-      }
-
-      // If the time is sufficiently isolated- to an absolute tolerance if t0
-      // is small, to a relative tolerance if t0 is large- then quit.
-      // NOTE: we have already validated that witness_iso_len contains a value.
-      // The hack below prevents OS X from throwing a vtable exception during
-      // build.
-      if (b - a < witness_iso_len.value_or(999)) {
-        // The trigger time is always at the right endpoint of the interval,
-        // thereby ensuring that the witness will not trigger immediately when
-        // the continuous state integration process continues (after the
-        // requisite handler is called).
-        const T t_trigger = b;
-
-        // TODO(edrumwri): Move this to the end of the function (and
-        // only call this once) when we are confident that the witness function
-        // changes sign at the end of the interval (i.e., the following
-        // assertion).
-        // Integrate to the trigger time.
-        fwd_int(t_trigger);
-
-        // TODO(edrumwri): This check is expensive. Remove it once we are
-        // confident.
-        // Verify that the witness function changed sign.
-        const T f_trigger = witnesses[i]->Evaluate(*context);
-        DRAKE_DEMAND(f_trigger * fa <= 0);
-
-        // Only clear the list of witnesses if t_trigger strictly less than
-        // t_first_witness.
-        DRAKE_DEMAND(t_first_witness >= t_trigger);
-        if (t_trigger < t_first_witness)
-          triggered_witnesses->clear();
-
-        // Set the first trigger time and add the witness index.
-        triggered_witnesses->push_back(witnesses[i]);
-        t_first_witness = t_trigger;
-        break;
-      }
+    // See whether any witness functions trigger.
+    bool trigger = false;
+    for (size_t i = 0; i < witnesses.size(); ++i) {
+      wc[i] = get_system().EvaluateWitness(*context, *witnesses[i]);
+      if (witnesses[i]->should_trigger(w0[i], wc[i]))
+        trigger = true;
     }
-  }
 
-  DRAKE_DEMAND(t_first_witness <= tf);
+    // If no witness function triggered, we can continue integrating forward.
+    if (!trigger) {
+      a = c;
+    } else {
+      b = c;
+    } 
+  }
+  while (b - a > witness_iso_len.value());
+
+  // Determine the set of triggered witnesses.
+  triggered_witnesses->clear();
+  for (size_t i = 0; i < witnesses.size(); ++i) {
+    if (witnesses[i]->should_trigger(w0[i], wc[i]))
+      triggered_witnesses->push_back(witnesses[i]);
+  }
 }
 
 // Integrates the continuous state forward in time while attempting to locate

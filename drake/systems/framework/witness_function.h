@@ -71,7 +71,8 @@ enum class WitnessFunctionDirection {
 /// when crossing from positive values to negative values, or vice versa.
 ///
 /// A good witness function should not cross zero repeatedly over a small
-/// interval of time or over small changes in state; when a witness function has
+/// interval of time (relative to the maximum designated integration step size)
+/// or over small changes in state; when a witness function has
 /// been "bracketed" over an interval of time (i.e., it changes sign), that
 /// witness function will ideally cross zero only once in that interval.
 ///
