@@ -124,6 +124,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "indeterminate",
+    srcs = ["indeterminate.cc"],
+    hdrs = ["indeterminate.h"],
+    deps = [
+        "//drake/common:symbolic",
+        "//drake/solvers:decision_variable",
+    ],
+)
+
 # Supported solvers:
 # - equality_constrained_qp_solver
 # - linear_system_solver
@@ -152,6 +162,7 @@ drake_cc_library(
         ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
+        ":indeterminate",
         ":ipopt_solver",
         ":linear_system_solver",
         ":mathematical_program_api",
@@ -233,6 +244,14 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "indeterminate_test",
+    deps = [
+        ":indeterminate",
+        "//drake/common:symbolic_test_util",
+    ],
+)
+
 drake_cc_library(
     name = "mathematical_program_test_util",
     testonly = 1,
@@ -300,6 +319,7 @@ drake_cc_library(
         ":create_cost",
         ":decision_variable",
         ":function",
+        ":indeterminate",
         ":solver_type",
         "//drake/common",
         "//drake/common:autodiff",
@@ -339,7 +359,6 @@ drake_cc_library(
         "//drake/common",
     ],
 )
-
 
 drake_cc_library(
     name = "dreal_solver",
