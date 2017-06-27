@@ -199,7 +199,7 @@ TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
   // Bullet3 was upgraded from 2.85.1 to 2.86.1
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
                               expected_spatial_force,
-                              (7.0/6)*kTolerance,
+                              (7.0 / 6) * kTolerance,
                               MatrixCompareType::absolute));
 }
 
