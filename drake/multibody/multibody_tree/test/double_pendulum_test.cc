@@ -535,16 +535,16 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
 
       // Set the shoulder's angular velocity.
       const double shoulder_angular_velocity = 1.0;
-      shoulder_mobilizer_->set_angular_velocity(context_.get(),
-                                                shoulder_angular_velocity);
-      EXPECT_EQ(shoulder_mobilizer_->get_angular_velocity(*context_),
+      shoulder_mobilizer_->set_angular_rate(context_.get(),
+                                            shoulder_angular_velocity);
+      EXPECT_EQ(shoulder_mobilizer_->get_angular_rate(*context_),
                 shoulder_angular_velocity);
 
       // Set the elbow's angular velocity.
       const double elbow_angular_velocity = -0.5;
-      elbow_mobilizer_->set_angular_velocity(context_.get(),
-                                             elbow_angular_velocity);
-      EXPECT_EQ(elbow_mobilizer_->get_angular_velocity(*context_),
+      elbow_mobilizer_->set_angular_rate(context_.get(),
+                                         elbow_angular_velocity);
+      EXPECT_EQ(elbow_mobilizer_->get_angular_rate(*context_),
                 elbow_angular_velocity);
       model_->CalcVelocityKinematicsCache(*mbt_context_, pc, &vc);
 

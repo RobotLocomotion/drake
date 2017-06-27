@@ -91,24 +91,25 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angle(
       systems::Context<T>* context, const T& angle) const;
 
-  /// Gets the angular velocity, in radians per second, of `this` mobilizer from
-  /// `context`. See class documentation for the angle sign convention.
+  /// Gets the rate of change, in radians per second, of `this` mobilizer's
+  /// angle (see get_angle()) from `context`. See class documentation for the
+  /// angle sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
-  /// @returns The angular velocity of `this` mobilizer in the `context`.
-  const T& get_angular_velocity(const systems::Context<T>& context) const;
+  /// @returns The rate of change of `this` mobilizer's angle in the `context`.
+  const T& get_angular_rate(const systems::Context<T> &context) const;
 
-  /// Sets the angular velocity, in radians per second, for this `this`
-  /// mobilizer to `w_FM`, i.e. the rate of change of the rotation angle between
-  /// the inboard frame F and the outboard frame M. The new angular velocity is
-  /// stored in `context`.
+  /// Sets the rate of change, in radians per second, of this `this` mobilizer's
+  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
+  /// `context`.
   /// See class documentation for the angle sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
-  /// @param[in] w_FM The desired angular velocity in radians per second.
+  /// @param[in] theta_dot The desired rate of change of `this` mobilizer's
+  /// angle in radians per second.
   /// @returns a constant reference to `this` mobilizer.
-  const RevoluteMobilizer<T>& set_angular_velocity(
-      systems::Context<T>* context, const T& w_FM) const;
+  const RevoluteMobilizer<T>& set_angular_rate(
+      systems::Context<T> *context, const T& theta_dot) const;
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
