@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <numeric>
 #include <utility>
+#include <vector>
 
 #include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
@@ -12,19 +14,36 @@ namespace multibody {
 namespace rigid_contact {
 
 /**
- * Solves rigid contact problems for contact forces.
+ * Solves rigid contact problems for contact forces. Specifically, given
+ * problem data corresponding to one or more rigid or multi-rigid bodies
+ * constrained unilaterally and acted upon by Coulomb friction, this class
+ * computes the contact forces.
  */
 template <typename T>
 class RigidContactSolver {
  public:
+
+  /// Solves the appropriate contact problem at the acceleration level.
+  /// @param cfm The regularization factor to apply to the contact problem,
+  ///            also known as the "constraint force mixing" parameter.
+  /// @param problem_data The data used to compute the contact forces.
+  /// @param cf The computed contact forces, on return, in a packed storage
+  ///           format. The first `nc` elements of @p cf correspond to the
+  ///           magnitudes of the contact forces applied along the normals of
+  ///           the `nc` contact points. The remaining elements of @p cf
+  ///           correspond to the frictional forces along the `r` spanning
+  ///           directions at each non-sliding point of contact. The first `r`
+  ///           values (after the initial `nc` elements) correspond to the first
+  ///           non-sliding contact, the next `r` values correspond to the
+  ///           second non-sliding contct, etc.
+  /// @pre Contact data has been computed.
+  /// @throws a std::runtime_error if the contact forces cannot be computed
+  ///         (due to, e.g., an inconsistent configuration).
   void SolveContactProblem(double cfm,
       const RigidContactAccelProblemData<T>& problem_data,
       VectorX<T>* cf) const;
 
  private:
-  void FormSustainedContactLinearSystem(
-      const RigidContactAccelProblemData<T>& problem_data,
-      MatrixX<T>* MM, VectorX<T>* qq) const;
   void FormSustainedContactLCP(
       const RigidContactAccelProblemData<T>& problem_data,
       MatrixX<T>* MM, Eigen::Matrix<T, Eigen::Dynamic, 1>* qq) const;
@@ -32,21 +51,6 @@ class RigidContactSolver {
   drake::solvers::MobyLCPSolver<T> lcp_;
 };
 
-/// Solves the appropriate contact problem at the acceleration level.
-/// @param cfm The regularization factor to apply to the contact problem,
-///            also known as the "constraint force mixing" parameter.
-/// @param problem_data The data used to compute the contact forces.
-/// @param cf The computed contact forces, on return, in a packed storage
-///           format. The first `nc` elements of @p cf correspond to the
-///           magnitudes of the contact forces applied along the normals of the
-///           `nc` contact points. The remaining elements of @p cf correspond
-///           to the frictional forces along the `r` spanning directions at each
-///           non-sliding point of contact. The first `r` values correspond to
-///           the first non-sliding contact, the next `r` values correspond to
-///           the second non-sliding contct, etc.
-/// @pre Contact data has been computed.
-/// @throws a std::runtime_error if the contact forces cannot be computed
-///         (due to, e.g., an inconsistent configuration).
 template <typename T>
 void RigidContactSolver<T>::SolveContactProblem(double cfm,
     const RigidContactAccelProblemData<T>& problem_data,
@@ -72,7 +76,7 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
     cf->resize(0);
     return;
   }
-    
+
   // Initialize contact force vector.
   cf->resize(nc + nr);
 

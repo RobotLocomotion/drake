@@ -7,16 +7,9 @@
 
 #include "drake/common/drake_assert.h"
 
-using drake::systems::VectorBase;
-using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
 using drake::systems::Context;
 using drake::examples::rod2d::Rod2D;
-
-using Eigen::Vector2d;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using Vector6d = Eigen::Matrix<double, 6, 1>;
 
 namespace drake {
 namespace multibody {
@@ -29,6 +22,16 @@ class RigidContact2DSolverTest : public ::testing::Test {
     rod_ = std::make_unique<Rod2D<double>>(
         Rod2D<double>::SimulationType::kPiecewiseDAE, 0);
     context_ = rod_->CreateDefaultContext();
+  }
+
+  Vector3<double> get_rod_config() const {
+    return context_->get_state().
+        get_continuous_state()->get_generalized_position().CopyToVector();
+  }
+
+  Vector3<double> get_rod_velocity() const {
+    return context_->get_state().
+        get_continuous_state()->get_generalized_velocity().CopyToVector();
   }
 
   // Construct the inertia solve function.
@@ -62,7 +65,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
   MatrixX<double> GetRodGravitationalForce() const {
     const double mg = rod_->get_rod_mass() *
         rod_->get_gravitational_acceleration();
-    MatrixX<double> f(3,1);
+    MatrixX<double> f(3, 1);
     f << 0, mg, 0;
     return f;
   }
@@ -115,18 +118,16 @@ class RigidContact2DSolverTest : public ::testing::Test {
     for (int i = 0; i < nc; ++i)
       data->N.row(i) =  GetJacobianRow(points[i], contact_normal);
 
-    // Form Ndot.
+    // Form Ndot and compute Ndot * v.
     MatrixX<double> Ndot(nc, ngc);
     for (int i = 0; i < nc; ++i)
       Ndot.row(i) =  GetJacobianDotRow(points[i], contact_normal);
-
-    // Compute Ndot * v;
     const VectorX<double> v = context_->get_state().get_continuous_state()->
         get_generalized_velocity().CopyToVector();
     EXPECT_EQ(v.size(), ngc);
     data->Ndot_x_v = Ndot * v;
 
-    // Form F and Fdot.
+    // Form F and Fdot and compute Fdot * v.
     const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
     EXPECT_EQ(nr, num_non_sliding);
     data->F.resize(nr, ngc);
@@ -139,8 +140,6 @@ class RigidContact2DSolverTest : public ::testing::Test {
       Fdot.row(j) = GetJacobianDotRow(points[i], contact_tan);
       ++j;
     }
-
-    // Compute Fdot * v.
     data->Fdot_x_v = Fdot * v;
 
     // Form N - mu*Q
@@ -167,6 +166,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
   RigidContactSolver<double> solver_;
   std::unique_ptr<Rod2D<double>> rod_;
   std::unique_ptr<Context<double>> context_;
+  RigidContactAccelProblemData<double> data_;
 
  private:
   // Gets the point(s) of contact for the 2D rod.
@@ -174,8 +174,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
     std::vector<Vector2<double>> points;
 
     // Get the rod configuration.
-    const VectorX<double> q = context_->get_state().get_continuous_state()->
-        get_generalized_position().CopyToVector();
+    const Vector3<double> q = get_rod_config();
     const double x = q[0], y = q[1], cth = std::cos(q[2]), sth = std::sin(q[2]);
 
     // Get the two rod endpoint locations.
@@ -194,10 +193,8 @@ class RigidContact2DSolverTest : public ::testing::Test {
   // Gets the tangent velocities for all contact points.
   std::vector<double> GetContactPointsTangentVelocities(
       const std::vector<Vector2<double>>& points) {
-    const VectorX<double> q = context_->get_state().get_continuous_state()->
-        get_generalized_position().CopyToVector();
-    const VectorX<double> v = context_->get_state().get_continuous_state()->
-        get_generalized_velocity().CopyToVector();
+    const Vector3<double> q = get_rod_config();
+    const Vector3<double> v = get_rod_velocity();
 
     // Get necessary quantities.
     const Vector2<double> p_WRo = q.segment(0, 2);
@@ -226,8 +223,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
   Vector3<double> GetJacobianRow(const Vector2<double>& p,
                                  const Vector2<double>& dir) const {
     // Get rod configuration variables.
-    const VectorX<double> q = context_->get_state().get_continuous_state()->
-        get_generalized_position().CopyToVector();
+    const Vector3<double> q = get_rod_config();
 
     // Compute cross product of the moment arm (expressed in the world frame)
     // and the direction.
@@ -242,10 +238,8 @@ class RigidContact2DSolverTest : public ::testing::Test {
   Vector3<double> GetJacobianDotRow(const Vector2<double>& p,
                                     const Vector2<double>& dir) const {
     // Get rod state variables.
-    const VectorX<double> q = context_->get_state().get_continuous_state()->
-        get_generalized_position().CopyToVector();
-    const VectorX<double> v = context_->get_state().get_continuous_state()->
-        get_generalized_velocity().CopyToVector();
+    const Vector3<double> q = get_rod_config();
+    const Vector3<double> v = get_rod_velocity();
 
     // Get the transformation of vectors from the rod frame to the
     // world frame and its time derivative.
@@ -254,11 +248,11 @@ class RigidContact2DSolverTest : public ::testing::Test {
 
     // Get the vector from the rod center-of-mass to the contact point,
     // expressed in the rod frame.
-    const Vector2<double> x = q.segment(0,2);
+    const Vector2<double> x = q.segment(0, 2);
     const Vector2<double> u = R.inverse() * (p - x);
 
     // Compute the translational velocity of the contact point.
-    const Vector2<double> xdot = v.segment(0,2);
+    const Vector2<double> xdot = v.segment(0, 2);
     const Matrix2<double> Rdot = GetRotationMatrixDerivative(theta);
     const double& thetadot = v[2];
     const Vector2<double> pdot = xdot + Rdot * u * thetadot;
@@ -283,16 +277,15 @@ TEST_F(RigidContact2DSolverTest, NonContacting) {
   xc[1] = 1.0;
 
   // Compute the rigid contact data.
-  RigidContactAccelProblemData<double> data;
-  SetProblemData(&data, 1.0 /* Coulomb friction coefficient */);
+  SetProblemData(&data_, 1.0 /* Coulomb friction coefficient */);
 
   // Verify there are no contacts.
-  EXPECT_TRUE(data.sliding_contacts.empty());
-  EXPECT_TRUE(data.non_sliding_contacts.empty());
+  EXPECT_TRUE(data_.sliding_contacts.empty());
+  EXPECT_TRUE(data_.non_sliding_contacts.empty());
 
   // Compute the contact forces.
   VectorX<double> cf;
-  solver_.SolveContactProblem(cfm_, data, &cf);
+  solver_.SolveContactProblem(cfm_, data_, &cf);
 
   // Verify that the contact forces are zero.
   EXPECT_LT(cf.norm(), cfm_);
@@ -304,22 +297,21 @@ TEST_F(RigidContact2DSolverTest, TwoPointNonSliding) {
   SetRestingHorizontal();
 
   // Compute the rigid contact data.
-  RigidContactAccelProblemData<double> data;
-  SetProblemData(&data, 1.0 /* Coulomb friction coefficient */);
+  SetProblemData(&data_, 1.0 /* Coulomb friction coefficient */);
 
   // Compute the contact forces.
   VectorX<double> cf;
-  solver_.SolveContactProblem(cfm_, data, &cf);
+  solver_.SolveContactProblem(cfm_, data_, &cf);
 
   // Verify that there are no frictional forces.
-  EXPECT_TRUE(data.sliding_contacts.empty());
-  const int nc = data.non_sliding_contacts.size();
+  EXPECT_TRUE(data_.sliding_contacts.empty());
+  const int nc = data_.non_sliding_contacts.size();
   EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), 10 * cfm_);
 
   // Verify that the normal contact forces exactly oppose gravity (there should
   // be no frictional forces).
   const double mg = GetRodGravitationalForce().norm();
-  EXPECT_NEAR(cf.segment(0,nc).lpNorm<1>(), mg, 10 * cfm_);
+  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, 10 * cfm_);
 }
 
 // Tests the rod in a two-point sliding configuration.
@@ -331,22 +323,21 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
   xc[3] = 1.0;
 
   // Compute the rigid contact data.
-  RigidContactAccelProblemData<double> data;
-  SetProblemData(&data, 0.0 /* frictionless contact */);
+  SetProblemData(&data_, 0.0 /* frictionless contact */);
 
   // Compute the contact forces.
   VectorX<double> cf;
-  solver_.SolveContactProblem(cfm_, data, &cf);
+  solver_.SolveContactProblem(cfm_, data_, &cf);
 
   // Verify that there are no frictional forces.
-  EXPECT_TRUE(data.non_sliding_contacts.empty());
-  const int nc = data.sliding_contacts.size();
+  EXPECT_TRUE(data_.non_sliding_contacts.empty());
+  const int nc = data_.sliding_contacts.size();
   EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), 10 * cfm_);
 
   // Verify that the normal contact forces exactly oppose gravity (there should
   // be no frictional forces).
   const double mg = GetRodGravitationalForce().norm();
-  EXPECT_NEAR(cf.segment(0,nc).lpNorm<1>(), mg, 10 * cfm_);
+  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, 10 * cfm_);
 }
 
 }  // namespace

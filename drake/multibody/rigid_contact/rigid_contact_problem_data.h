@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <Eigen/Core>
 
 #include "drake/common/eigen_types.h"
@@ -14,12 +16,12 @@ template <class T>
 struct RigidContactAccelProblemData {
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
-  /// point of contact), taken from the indices of all contacts.
+  /// point of contact), out of the set of all contact indices (0...n-1).
   std::vector<int> sliding_contacts;
 
   /// The indices of the non-sliding contacts (those contacts at which there
   /// is zero relative velocity between bodies in the plane tangent to the
-  /// point of contact), taken from the indices of all contacts.
+  /// point of contact), out of the set of all contact indices (0...n-1).
   std::vector<int> non_sliding_contacts;
 
   /// The number of spanning vectors in the contact tangents (used to linearize
@@ -30,10 +32,12 @@ struct RigidContactAccelProblemData {
   /// to k/2 in [Anitescu 2003].
   std::vector<int> r;
 
-  /// Coefficients of friction for the sliding contacts.
+  /// Coefficients of friction for the sliding contacts. The size of this vector
+  /// should be equal to `sliding_contacts.size()`.
   VectorX<T> mu_sliding;
 
-  /// Coefficients of friction for the non-sliding contacts.
+  /// Coefficients of friction for the non-sliding contacts. The size of this
+  /// vector should be equal to `non_sliding_contacts.size()`.
   VectorX<T> mu_non_sliding;
 
   /// The ℝⁿˣᵐ Jacobian matrix that transforms generalized velocities (m is the
@@ -41,9 +45,9 @@ struct RigidContactAccelProblemData {
   /// contact normals at the n contact points.
   MatrixX<T> N;
 
-  /// The time derivative of the matrix N (defined above) times the generalized
-  /// velocity of the rigid body system.
-  MatrixX<T> Ndot_x_v;
+  /// This ℝⁿ vector is the time derivative of the matrix N (defined above)
+  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system.
+  VectorX<T> Ndot_x_v;
 
   /// The ℝⁿʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
   /// dimension of generalized velocity) into velocities projected along the
@@ -55,8 +59,8 @@ struct RigidContactAccelProblemData {
   /// such requirement.
   MatrixX<T> F;
 
-  /// The time derivative of the matrix F (defined above) times the generalized
-  /// velocity of the rigid body system.
+  /// This ℝⁿʳ vector is the time derivative of the matrix F (defined above)
+  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system.
   VectorX<T> Fdot_x_v;
 
   /// The ℝⁿˣᵐ matrix (N - μQ) that transforms generalized velocities (m is the
@@ -80,6 +84,6 @@ struct RigidContactAccelProblemData {
 };
 
 
-}  // namespace rod2d
-}  // namespace examples
+}  // namespace rigid_contact
+}  // namespace multibody
 }  // namespace drake
