@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
@@ -142,8 +142,8 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
     geometry_data.color[1] = 0.7;
     geometry_data.color[2] = 0.3;
     geometry_data.color[3] = 1.0;
-    geometry_data.string_data = drake::GetDrakePath() +
-        "/multibody/collision/test/spherical_cap.obj";
+    geometry_data.string_data = FindResourceOrThrow(
+        "drake/multibody/collision/test/spherical_cap.obj");
     geometry_data.num_float_data = 3;
     geometry_data.float_data.push_back(1);
     geometry_data.float_data.push_back(1);
@@ -394,9 +394,8 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    const Mesh shape("spherical_cap.obj",
-        drake::GetDrakePath() +
-        "/multibody/collision/test/spherical_cap.obj");
+    const Mesh shape("spherical_cap.obj", FindResourceOrThrow(
+        "drake/multibody/collision/test/spherical_cap.obj"));
     const Eigen::Vector4d material(0.2, 0.7, 0.3, 1.0);
 
     const DrakeShapes::VisualElement visual_element(

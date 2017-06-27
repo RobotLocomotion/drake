@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include "spruce.hh"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -40,9 +40,8 @@ class DoublePendulumFramesTest : public ::testing::Test {
   }
 
   void LoadAndRunTests(const string& file_name) {
-    const string full_name = GetDrakePath() +
-                             "/multibody/parsers/test/parsers_frames_test/" +
-                             file_name;
+    const string full_name = FindResourceOrThrow(
+        "drake/multibody/parsers/test/parsers_frames_test/" + file_name);
 
     tree_ = make_unique<RigidBodyTree<double>>();
 

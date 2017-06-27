@@ -5,8 +5,6 @@
 #include <gtest/gtest.h>
 #include "spruce.hh"
 
-#include "drake/common/drake_path.h"
-
 using std::string;
 
 namespace drake {

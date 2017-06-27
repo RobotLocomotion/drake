@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 // This is a port of a matlab tests.  It constructs a state where two
@@ -38,12 +38,14 @@ using Eigen::VectorXd;
 GTEST_TEST(PointCollisionDetection, PointsWithMultiBodies) {
   RigidBodyTree<double> tree;
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/FallingBrick.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/"
+          "FallingBrick.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/FallingBrickContactPoints.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/"
+          "FallingBrickContactPoints.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
 
   Eigen::Matrix<double, 24, 1> state;

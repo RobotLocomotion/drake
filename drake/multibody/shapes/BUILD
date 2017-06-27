@@ -50,7 +50,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":shapes",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -62,7 +62,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":shapes",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -74,7 +74,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":shapes",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
     ],
 )
 

@@ -4,7 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
+
+using drake::FindResourceOrThrow;
 
 namespace DrakeShapes {
 namespace {
@@ -194,8 +196,8 @@ GTEST_TEST(FaceQueryTests, FaceQueryFromBox) {
 //     so that we can recover normal direction from the faces.
 //   - The box is convex and centered on the origin.
 GTEST_TEST(FaceQueryTests, FaceQueryFromMesh) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/tri_cube.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/tri_cube.obj");
   Mesh mesh(kUri, kFileName);
 
   // Do vertex extraction.

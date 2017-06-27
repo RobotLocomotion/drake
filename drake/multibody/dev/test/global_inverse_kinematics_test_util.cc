@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
@@ -20,9 +20,9 @@ namespace multibody {
 std::unique_ptr<RigidBodyTree<double>> ConstructKuka() {
   std::unique_ptr<RigidBodyTree<double>> rigid_body_tree =
       std::make_unique<RigidBodyTree<double>>();
-  const std::string model_path = drake::GetDrakePath() +
-      "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_polytope_collision.urdf";
+  const std::string model_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
 
   parsers::urdf::AddModelInstanceFromUrdfFile(
       model_path,

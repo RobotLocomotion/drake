@@ -6,9 +6,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -21,8 +21,8 @@ namespace {
 class KinematicsResultsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::string file_name =
-        GetDrakePath() + "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+    const std::string file_name = FindResourceOrThrow(
+        "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         file_name, multibody::joints::kRollPitchYaw, robot_.get());

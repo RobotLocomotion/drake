@@ -3,7 +3,7 @@
 #include <limits>
 #include <memory>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -18,7 +18,8 @@ using namespace Eigen;  // NOLINT(build/namespaces)
 int main() {
   auto model = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      drake::FindResourceOrThrow(
+          "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, model.get());
 
   Vector2d tspan;

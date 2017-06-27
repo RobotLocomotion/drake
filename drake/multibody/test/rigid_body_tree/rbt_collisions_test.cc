@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -49,8 +49,9 @@ class RBTCollisionTest: public ::testing::Test {
  protected:
   void SetUp() override {
     parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-        GetDrakePath() +
-            "/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf",
+        FindResourceOrThrow(
+            "drake/multibody/test/rigid_body_tree/"
+            "small_sphere_on_large_box.sdf"),
         multibody::joints::kQuaternion, &tree_);
 
     small_sphere_ = tree_.FindBody("small_sphere");
@@ -141,8 +142,9 @@ class RBTCollisionCliqueTest: public ::testing::Test {
  protected:
   void SetUp() override {
     parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-        drake::GetDrakePath() +
-            "/multibody/test/rigid_body_tree/linked_spheres_on_large_box.sdf",
+        FindResourceOrThrow(
+            "drake/multibody/test/rigid_body_tree/"
+            "linked_spheres_on_large_box.sdf"),
         multibody::joints::kQuaternion, &tree_);
 
     small_sphere_1_ = tree_.FindBody("small_sphere_1");

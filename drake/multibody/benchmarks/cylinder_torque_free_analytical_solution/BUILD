@@ -24,8 +24,8 @@ drake_cc_googletest(
     size = "medium",
     data = [":models"],
     deps = [
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/math:autodiff",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",

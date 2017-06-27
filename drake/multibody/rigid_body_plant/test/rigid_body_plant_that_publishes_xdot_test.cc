@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -34,7 +34,7 @@ namespace {
 GTEST_TEST(RigidBodyPlantThatPublishesXdotTest, TestPublishLcmMessage) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/multibody/models/box.urdf",
+      FindResourceOrThrow("drake/multibody/models/box.urdf"),
       kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
   string kChannelName = "XDOT_CHANNEL_NAME";
   DrakeMockLcm lcm;

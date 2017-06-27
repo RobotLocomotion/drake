@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 
@@ -28,9 +28,9 @@ namespace {
 GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
   RigidBodyTree<double> tree;
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-        GetDrakePath() +
-            "/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf",
-        multibody::joints::kQuaternion, &tree);
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf"),
+      multibody::joints::kQuaternion, &tree);
 
   // Here, we iterate over the RigidBody elements of the tree to find
   // the collision element indices that compose the collision model,

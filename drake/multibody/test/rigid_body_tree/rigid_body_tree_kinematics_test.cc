@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
@@ -23,9 +23,8 @@ class RigidBodyTreeKinematicsTests : public ::testing::Test {
 // Tests that RigidBodyTree::doKinematics() will not throw an exception if
 // provided a valid KinematicsCache.
 TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithValidCache) {
-  const std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename,
                                                                  tree_.get());
   KinematicsCache<double> cache = tree_->CreateKinematicsCache();
@@ -39,9 +38,8 @@ TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithValidCache) {
 // number of KinematicCacheElement objects within it does not equal the number
 // of RigidBody objects within the RigidBodyTree.
 TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithBadCache1) {
-  const std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename,
                                                                  tree_.get());
   const std::vector<int> num_joint_positions;
@@ -59,9 +57,8 @@ TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithBadCache1) {
 // number of joint DOFs within the KinematicCacheElement objects are incorrect.
 // They do not match the number of joint DOFs within the RigidBodyTree.
 TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithBadCache2) {
-  const std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename,
                                                                  tree_.get());
   std::vector<int> num_joint_positions;
@@ -81,9 +78,8 @@ TEST_F(RigidBodyTreeKinematicsTests, TestDoKinematicWithBadCache2) {
 class AcrobotTests : public ::testing::Test {
  protected:
   void SetUp() {
-    std::string file_name =
-        drake::GetDrakePath() +
-        "/multibody/benchmarks/acrobot/double_pendulum.urdf";
+    const std::string file_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         file_name, multibody::joints::kFixed, robot_.get());
@@ -236,8 +232,8 @@ TEST_F(AcrobotTests, SpatialVelocityTests) {
 class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
  protected:
   void SetUpWithType(drake::multibody::joints::FloatingBaseType type) {
-    std::string file_name =
-        GetDrakePath() + "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+    const std::string file_name = FindResourceOrThrow(
+        "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(file_name, type,
                                                        robot_.get());
