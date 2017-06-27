@@ -156,7 +156,6 @@ macro(drake_find_packages)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN optional packages
 
-  drake_find_package(avl CONFIG)
   drake_find_package(bot2-core CONFIG)
   drake_find_package(bot2-lcmgl-client PKG_CONFIG)
   drake_find_package(Bullet MODULE)
@@ -167,7 +166,6 @@ macro(drake_find_packages)
   drake_find_package(ignition-rndf0 CONFIG)
   drake_find_package(ipopt PKG_CONFIG)
   drake_find_package(lcm CONFIG)
-  drake_find_package(meshconverters CONFIG)
   drake_find_package(mosek CONFIG)
   drake_find_package(NLopt CONFIG)
   drake_find_package(octomap CONFIG)
@@ -176,7 +174,6 @@ macro(drake_find_packages)
   drake_find_package(snopt CONFIG)
   drake_find_package(spdlog CONFIG)
   drake_find_package(VTK CONFIG)
-  drake_find_package(xfoil CONFIG)
   drake_find_package(yaml-cpp CONFIG)
 
   # END optional packages

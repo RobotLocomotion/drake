@@ -25,21 +25,6 @@ if verLessThan('matlab','7.6')
 end
 
 % add package directories to the matlab path
-addpath(fullfile(root,'matlab','systems'));
-addpath(fullfile(root,'matlab','systems','plants'));
-addpath(fullfile(root,'matlab','systems','plants','collision'));
-addpath(fullfile(root,'matlab','systems','plants','constraint'));
-addpath(fullfile(root,'matlab','systems','controllers'));
-addpath(fullfile(root,'matlab','systems','observers'));
-addpath(fullfile(root,'matlab','systems','trajectories'));
-addpath(fullfile(root,'matlab','systems','trajectories','TrajectoryLibraries'));
-addpath(fullfile(root,'matlab','systems','trajectories','FunnelLibraries'));
-addpath(fullfile(root,'matlab','systems','frames'));
-addpath(fullfile(root,'matlab','systems','visualizers'));
-addpath(fullfile(root,'matlab','systems','robotInterfaces'));
-addpath(fullfile(root,'matlab','systems','robotInterfaces','calibration'));
-addpath(fullfile(root,'matlab','solvers'));
-addpath(fullfile(root,'matlab','solvers','trajectoryOptimization'));
 addpath(fullfile(root,'thirdParty'));
 addpath(fullfile(root,'thirdParty','bsd'));
 addpath(fullfile(root,'thirdParty','bsd','arrow3d'));

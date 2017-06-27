@@ -54,19 +54,6 @@ else % then try to evaluate the dependency now...
         matlabpool;
       end
 
-    case 'spotless'
-      conf.spotless_enabled = logical(exist('msspoly','class'));
-      if ~conf.spotless_enabled
-        if ~pod_pkg_config('spotless') && nargout<1
-          disp(' ');
-          disp(' SPOTLESS not found.  spotless support will be disabled.');
-          disp(' To re-enable, install spotless using drake''s cmake option WITH_SPOTLESS=ON');
-          disp(' Or install it directly from https://github.com/spot-toolbox/spotless and add it to your path');
-          disp(' ');
-        end
-        conf.spotless_enabled = logical(exist('msspoly','class'));
-      end
-
     case 'lcm'
       conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       if (~conf.lcm_enabled)
@@ -188,28 +175,6 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
-    case 'sedumi'
-      conf.sedumi_enabled = logical(exist('sedumi','file'));
-      if (~conf.sedumi_enabled)
-        conf.sedumi_enabled = pod_pkg_config('sedumi') && logical(exist('sedumi','file'));
-      end
-
-      if (conf.sedumi_enabled)
-        %  sedumiA=[10,2,3,4;5,7,6,4];
-        %  sedumib=[4;6];
-        %  sedumic=[0;1;0;1];
-        %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
-        %  if(~sedumiT)
-        %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
-        %  end
-      elseif nargout<1
-        disp(' ');
-        disp(' SeDuMi not found.  SeDuMi support will be disabled.');
-        disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
-        disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
-        disp(' ');
-      end
-
     case 'mosek'
       conf.mosek_enabled = logical(exist('mosekopt','file'));
       if (~conf.mosek_enabled)
@@ -294,17 +259,6 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
-    case 'yalmip'
-      conf.yalmip_enabled = logical(exist('sdpvar','file'));
-      if (~conf.yalmip_enabled)
-        conf.yalmip_enabled = pod_pkg_config('yalmip') && logical(exist('sdpvar','file'));
-      end
-      if ~conf.yalmip_enabled && nargout<1
-        disp(' ');
-        disp(' YALMIP not found.  To enable, install YALMIP (e.g. by cloning https://github.com/RobotLocomotion/yalmip into drake-distro and running make).');
-        disp(' ');
-      end
-
     case 'rigidbodyconstraint_mex'
       conf.rigidbodyconstraint_mex_enabled = (exist('constructPtrRigidBodyConstraintmex','file')==3);
       if ~conf.rigidbodyconstraint_mex_enabled && nargout<1
@@ -320,54 +274,6 @@ else % then try to evaluate the dependency now...
         disp(' Bullet not found.  To resolve this you will have to rerun make (from the shell)');
         disp(' ');
       end
-
-    case 'avl'
-      if ~isfield(conf,'avl') || isempty(conf.avl)
-        path_to_avl = getCMakeParam('AVL_EXECUTABLE');
-        if isempty(path_to_avl) || strcmp(path_to_avl,'AVL_EXECUTABLE-NOTFOUND')
-          if nargout<1
-            disp(' ');
-            disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
-            disp(' ');
-          end
-          conf.avl = '';
-        else
-          conf.avl = path_to_avl;
-        end
-      end
-      conf.avl_enabled = ~isempty(conf.avl);
-
-    case 'ffmpeg'
-      if ~isfield(conf,'ffmpeg') || isempty(conf.ffmpeg)
-        path_to_ffmpeg = getCMakeParam('FFMPEG_EXECUTABLE');
-        if isempty(path_to_ffmpeg) || strcmp(path_to_ffmpeg,'FFMPEG_EXECUTABLE-NOTFOUND')
-          if nargout<1
-            disp(' ');
-            disp(' FFmpeg support is disabled.  To enable it, install FFmpeg or Libav, then re-run CMake.');
-            disp(' ');
-          end
-          conf.ffmpeg = '';
-        else
-          conf.ffmpeg = path_to_ffmpeg;
-        end
-      end
-      conf.ffmpeg_enabled = ~isempty(conf.ffmpeg);
-
-    case 'xfoil'
-      if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-        path_to_xfoil = getCMakeParam('XFOIL_EXECUTABLE');
-        if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'XFOIL_EXECUTABLE-NOTFOUND')
-          if nargout<1
-            disp(' ');
-            disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
-            disp(' ');
-          end
-          conf.xfoil = '';
-        else
-          conf.xfoil = path_to_xfoil;
-        end
-      end
-      conf.xfoil_enabled = ~isempty(conf.xfoil);
 
     case 'fmincon'
       conf.fmincon_enabled = logical(exist('fmincon.m','file'));
@@ -407,14 +313,6 @@ else % then try to evaluate the dependency now...
           disp(' NonlinearProgramSnoptmex is disabled. To enable it, compile NonlinearProgramSnoptmex.cpp with snopt');
           disp(' ');
         end
-      end
-
-    case 'iris'
-      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file'));
-      if ~conf.iris_enabled && nargout<1
-        disp(' ');
-        disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');
-        disp(' ');
       end
 
     case 'cpp_bindings'
