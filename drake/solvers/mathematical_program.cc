@@ -209,6 +209,40 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
   return NewVariables(VarType::BINARY, rows, names);
 }
 
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const vector<string>& names) {
+  MatrixXIndeterminate indeterminates_matrix(rows, cols);
+  NewIndeterminates_impl(names, indeterminates_matrix);
+  return indeterminates_matrix;
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, const std::vector<std::string>& names) {
+  return NewIndeterminates(rows, 1, names);
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, const string& name) {
+  vector<string> names(rows);
+  for (int i = 0; i < static_cast<int>(rows); ++i) {
+    names[i] = name + "(" + to_string(i) + ")";
+  }
+  return NewIndeterminates(rows, names);
+}
+
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const string& name) {
+  vector<string> names(rows * cols);
+  int count = 0;
+  for (int j = 0; j < static_cast<int>(cols); ++j) {
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
+      ++count;
+    }
+  }
+  return NewIndeterminates(rows, cols, names);
+}
+
 namespace {
 
 template <typename To, typename From>
@@ -593,6 +627,9 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 }
 
 // Note that FindDecisionVariableIndex is implemented in
+// mathematical_program_api.cc instead of this file.
+
+// Note that FindIndeterminateIndex is implemented in
 // mathematical_program_api.cc instead of this file.
 
 double MathematicalProgram::GetSolution(const Variable& var) const {
