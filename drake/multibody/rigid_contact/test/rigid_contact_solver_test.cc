@@ -163,13 +163,12 @@ class RigidContact2DSolverTest : public ::testing::Test {
     data->f = GetRodGravitationalForce();
   }
 
-  double cfm_{1e-8};
+  double cfm_{1e-8};   // Regularization parameter.
   RigidContactSolver<double> solver_;
   std::unique_ptr<Rod2D<double>> rod_;
   std::unique_ptr<Context<double>> context_;
 
  private:
-
   // Gets the point(s) of contact for the 2D rod.
   std::vector<Vector2<double>> GetContacts() {
     std::vector<Vector2<double>> points;
@@ -177,10 +176,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
     // Get the rod configuration.
     const VectorX<double> q = context_->get_state().get_continuous_state()->
         get_generalized_position().CopyToVector();
-    const double x = q[0];
-    const double y = q[1];
-    const double cth = std::cos(q[2]);
-    const double sth = std::sin(q[2]);
+    const double x = q[0], y = q[1], cth = std::cos(q[2]), sth = std::sin(q[2]);
 
     // Get the two rod endpoint locations.
     const double half_len = rod_->get_rod_half_length();
@@ -217,27 +213,32 @@ class RigidContact2DSolverTest : public ::testing::Test {
     return vels;
   }
 
+  // Gets the time derivative of a rotation matrix.
   Matrix2<double> GetRotationMatrixDerivative(double theta) const {
-    const double cth = std::cos(theta);
-    const double sth = std::sin(theta);
+    const double cth = std::cos(theta), sth = std::sin(theta);
     Matrix2<double> Rdot;
     Rdot << -sth, -cth, cth, -sth;
     return Rdot;
   }
 
+  // Gets the row of a contact Jacobian matrix, given a point of contact, @p p,
+  // and projection direction, @p dir.
   Vector3<double> GetJacobianRow(const Vector2<double>& p,
                                  const Vector2<double>& dir) const {
     // Get rod configuration variables.
     const VectorX<double> q = context_->get_state().get_continuous_state()->
         get_generalized_position().CopyToVector();
 
-    // Compute cross product of the point and the direction.
+    // Compute cross product of the moment arm (expressed in the world frame)
+    // and the direction.
     const Vector3<double> p3(p[0] - q[0], p[1] - q[1], 0);
     const Vector3<double> dir3(dir[0], dir[1], 0);
     const Vector3<double> result = p3.cross(dir3);
     return Vector3<double>(dir[0], dir[1], result[2]);
   }
 
+  // Gets the time derivative of a row of a contact Jacobian matrix, given a
+  // point of contact, @p p, and projection direction, @p dir.
   Vector3<double> GetJacobianDotRow(const Vector2<double>& p,
                                     const Vector2<double>& dir) const {
     // Get rod state variables.
@@ -262,7 +263,8 @@ class RigidContact2DSolverTest : public ::testing::Test {
     const double& thetadot = v[2];
     const Vector2<double> pdot = xdot + Rdot * u * thetadot;
 
-    // Compute cross product of the point and the direction.
+    // Compute cross product of the time derivative of the moment arm (expressed
+    // in the world frame) and the direction.
     const Vector3<double> p3dot(pdot[0] - v[0], pdot[1] - v[1], 0);
     const Vector3<double> dir3(dir[0], dir[1], 0);
     const Vector3<double> result = p3dot.cross(dir3);
