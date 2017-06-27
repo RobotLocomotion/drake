@@ -636,7 +636,8 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 //                [t0, tf]; on exit, the set of witness functions that triggered
 //                over [t0, tw], where tw is the first time that any witness
 //                function triggered.
-// @pre The context and state are at tf and x(tf), respectively.
+// @pre The context and state are at tf and x(tf), respectively, and at least
+//      one witness function has triggered over [t0, tf].
 // @post The context will be isolated to the first witness function trigger(s),
 //       to within the requisite interval length. It is guaranteed that all
 //       triggered witness functions change sign over [t0, tw].
@@ -699,9 +700,8 @@ void Simulator<T>::IsolateWitnessTriggers(
       a = c;
     } else {
       b = c;
-    } 
-  }
-  while (b - a > witness_iso_len.value());
+    }
+  } while (b - a > witness_iso_len.value());
 
   // Determine the set of triggered witnesses.
   triggered_witnesses->clear();
