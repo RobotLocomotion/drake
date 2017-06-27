@@ -443,7 +443,8 @@ void RgbdCamera::Impl::SetModelTransformMatrixToVtkCamera(
   // needed here.
   camera->SetPosition(0., 0., 0.);
   camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
-  camera->SetViewUp(0., -1, 0.);  // Sets y-down.
+  camera->SetViewUp(0., -1, 0.);  // Sets y-down. For the detail, please refere
+  // to CameraInfo's document.
   camera->ApplyTransform(X_WC);
 }
 
@@ -703,15 +704,15 @@ void RgbdCamera::Impl::UpdateModelPoses(
 
     for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
       const auto& visual = body->get_visual_elements()[i];
-      const auto X_WVisual = X_WBody * visual.getLocalTransform();
-      vtkSmartPointer<vtkTransform> vtk_X_WVisual =
-          VtkUtil::ConvertToVtkTransform(X_WVisual);
+      const auto X_WV = X_WBody * visual.getLocalTransform();
+      vtkSmartPointer<vtkTransform> vtk_X_WV =
+          VtkUtil::ConvertToVtkTransform(X_WV);
       // `id_object_maps_` is modified here. This is OK because 1) we are just
       // copying data to the memory spaces allocated at construction time
       // and 2) we are not outputting these data to outside the class.
       for (auto& id_object_map : id_object_maps_) {
         auto& actor = id_object_map.at(body->get_body_index()).at(i);
-        actor->SetUserTransform(vtk_X_WVisual);
+        actor->SetUserTransform(vtk_X_WV);
       }
     }
   }
