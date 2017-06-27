@@ -174,7 +174,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 ///
 /// where `p_PoBq_E` is the position vector from P's origin to point Q. The
 /// first term corresponds to the velocity of point Q as if instantaneously
-/// (rigidly attached) moving with frame P. We deonte this spatial velocity with
+/// (rigidly attached) moving with frame P. We denote this spatial velocity with
 /// `V_EPBq`. Therefore the above equation can be written more compactly as:
 /// <pre>
 ///   V_EBq = V_EPBq + V_PBq_E
