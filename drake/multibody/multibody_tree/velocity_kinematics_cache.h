@@ -21,9 +21,9 @@ namespace multibody {
 ///   expressed in the world frame W.
 /// - Spatial velocity `V_PB` for each body B in the model as measured and
 ///   expressed in the inboard (or parent) body frame P.
-/// - Spatial velocity `V_FMB_W` of the body frame B as if instantaneously
-///   moving with the outboard frame M, measured in the inboard frame F and
-///   expressed in the world frame W.
+/// - Spatial velocity `V_FMb_W` of frame Mb measured in the inboard frame F and
+///   expressed in W. Mb is an "offset" frame rigidly fixed to M, whose axes are
+///   parallel to M but whose origin is at Bo rather than Mo.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
