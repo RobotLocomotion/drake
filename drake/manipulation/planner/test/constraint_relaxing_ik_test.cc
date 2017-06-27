@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
@@ -24,9 +24,9 @@ inline double get_orientation_difference(const Matrix3<double>& rot0,
 // an IK solution can be computed, and that the resulting pose lies
 // within the given tolerance from the forward kinematics poses.
 GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
-  const std::string kModelPath =
-      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_polytope_collision.urdf";
+  const std::string kModelPath = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
   std::unique_ptr<RigidBodyTree<double>> iiwa =
       std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
