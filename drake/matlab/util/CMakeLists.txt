@@ -20,7 +20,7 @@ if(Matlab_FOUND)
   endif()
 
   drake_add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
-  target_link_libraries(drakeMexUtil drakeCommon)
+  target_link_libraries(drakeMexUtil Eigen3::Eigen)
 
   drake_install_headers(drakeMexUtil.h MexWrapper.h)
   drake_install_libraries(drakeMexUtil)
@@ -30,36 +30,6 @@ if(Matlab_FOUND)
     REQUIRES drake-common)
 
   drake_add_mex(barycentricInterpolation barycentricInterpolation.cpp)
-
-  drake_add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp
-    cylindrical.cc)
-  target_link_libraries(cylindrical2cartesianmex drakeMath)
-  drake_add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp
-    cylindrical.cc)
-  target_link_libraries(cartesian2cylindricalmex drakeMath)
-
-  drake_add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil)
-
-  drake_add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
-  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGeometryUtil)
-
-  drake_add_mex(flipExpmapmex flipExpmapmex.cpp)
-  target_link_libraries(flipExpmapmex drakeMexUtil drakeGeometryUtil)
-
-  drake_add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
-  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGeometryUtil)
-
-  drake_add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
-  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil)
-
-  drake_add_mex(closestExpmapmex closestExpmapmex.cpp)
-  target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
-
-  drake_add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp $<TARGET_OBJECTS:drakeUtil>)
-  target_link_libraries(resolveCenterOfPressuremex
-    drakeMexUtil
-    Eigen3::Eigen)
 
   if(Matlab_SIMULINK_FOUND)
     drake_add_mex(realtime realtime.cpp)

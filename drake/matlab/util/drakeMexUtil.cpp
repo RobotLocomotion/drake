@@ -1,6 +1,6 @@
+#include <cassert>
 #include <stdexcept>
 
-#include "drake/common/drake_assert.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
@@ -328,68 +328,6 @@ DLL_EXPORT_SYM const std::vector<double> matlabToStdVector<double>(
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
 
-DLL_EXPORT_SYM Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(
-    const mxArray* msspoly) {
-  auto dim = matlabToEigenMap<1, 2>(mxGetPropertySafe(msspoly, 0, "dim"));
-  auto sub = matlabToEigenMap<Dynamic, 2>(mxGetPropertySafe(msspoly, 0, "sub"));
-  auto var =
-      matlabToEigenMap<Dynamic, Dynamic>(mxGetPropertySafe(msspoly, 0, "var"));
-  auto pow =
-      matlabToEigenMap<Dynamic, Dynamic>(mxGetPropertySafe(msspoly, 0, "pow"));
-  auto coeff =
-      matlabToEigenMap<Dynamic, 1>(mxGetPropertySafe(msspoly, 0, "coeff"));
-
-  DRAKE_ASSERT(sub.rows() == var.rows());
-  DRAKE_ASSERT(sub.rows() == pow.rows());
-  DRAKE_ASSERT(sub.rows() == coeff.rows());
-  DRAKE_ASSERT(var.cols() == pow.cols());
-
-  Matrix<Polynomiald, Dynamic, Dynamic> poly((int)dim(0), (int)dim(1));
-  for (int i = 0; i < sub.rows(); i++) {
-    vector<Polynomiald::Term> terms;
-    int j = 0;
-    while (j < var.cols() && var(i, j) > 0) {
-      Polynomiald::Term t;
-      t.var = (Polynomiald::VarType)var(i, j);
-      t.power = (Polynomiald::PowerType)pow(i, j);
-      terms.push_back(t);
-      j++;
-    }
-    Polynomiald p(coeff(i), terms);
-    poly((Eigen::Index)sub(i, 0) - 1, (Eigen::Index)sub(i, 1) - 1) += p;
-  }
-
-  //  cout << poly << endl;
-
-  return poly;
-}
-
-DLL_EXPORT_SYM Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic>
-trigPolyToEigen(const mxArray* trigpoly) {
-  auto q = msspolyToEigen(mxGetPropertySafe(trigpoly, 0, "q"));
-  auto s = msspolyToEigen(mxGetPropertySafe(trigpoly, 0, "s"));
-  auto c = msspolyToEigen(mxGetPropertySafe(trigpoly, 0, "c"));
-  auto p = msspolyToEigen(mxGetPropertySafe(trigpoly, 0, "p"));
-
-  TrigPolyd::SinCosMap m;
-  for (int i = 0; i < q.size(); i++) {
-    TrigPolyd::SinCosVars sc;
-    sc.s = s(i).GetSimpleVariable();
-    sc.c = c(i).GetSimpleVariable();
-    m[q(i).GetSimpleVariable()] = sc;
-  }
-
-  // todo: feels very inefficient (one copy of the sincosmap for every element
-  // of the matrix).
-  // consider using shared_ptrs for the sincosmap instead.
-  Matrix<TrigPolyd, Dynamic, Dynamic> tp(p.rows(), p.cols());
-  for (int i = 0; i < p.size(); i++) {
-    tp(i) = TrigPolyd(p(i), m);
-  }
-
-  return tp;
-}
-
 mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
   mwSize stride = 1;
   mwSize ret = 0;
@@ -465,5 +403,3 @@ template DLL_EXPORT_SYM const std::vector<Eigen::Index>
 matlabToStdVector<Eigen::Index>(const mxArray* in);
 template DLL_EXPORT_SYM const std::vector<bool> matlabToStdVector<bool>(
     const mxArray* in);
-// template DLL_EXPORT_SYM mxArray* eigenToMSSPoly(const
-// Matrix<Polynomiald, Dynamic, Dynamic> & poly);

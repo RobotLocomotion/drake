@@ -33,31 +33,6 @@ elseif isa(W,'msspoly')
   data = rand(length(vars),r);
   W_data = reshape(msubs(W',vars,data),m,r*r_orig)';
   [beta, independent_idx] = baseParameters(W_data);
-elseif isa(W,'TrigPoly')
-  q = getVar(W);
-  s = getSin(W);
-  c = getCos(W);
-  nq = length(q);
-  vars = [];
-  for i = 1:size(W,1)
-    fprintf('i = %d\n',i);
-    vars = mss_unique([vars;decomp(getmsspoly(W(i,:)),[q;s;c])]);
-  end
-  if r ~= 1
-    W = reshape(W',[],1)';
-  end
-  r = 10*m; 
-  q_data = rand(nq,r); s_data = sin(q_data); c_data = cos(q_data);
-
-%   vars = decomp(getmsspoly(W),[q;s;c]);
-  data = [q_data;s_data;c_data;rand(length(vars),r)];
-  W_data = zeros(size(W,2),r); % [r x r_orig*m_orig]
-  for i=1:size(W,2)
-    fprintf('i = %d\n',i);
-    W_data(i,:) = msubs(getmsspoly(W(i)),[q;s;c;vars],data); % [r x 1]
-  end
-  W_data = reshape(W_data,m,r*r_orig)'; % [m x r*r_orig]
-  [beta, independent_idx] = baseParameters(W_data);
 else
   error('baseParameters:invalidInput', ...
     'Objects of class %s are not valid inputs for getBaseParameters.',class(W));
