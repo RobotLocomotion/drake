@@ -57,7 +57,7 @@ int DoMain() {
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
   auto control_sys =
       std::make_unique<systems::InverseDynamicsController<double>>(
-          kUrdfPath, nullptr, jaco_kp, jaco_ki, jaco_kd,
+          plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
           false /* no feedforward acceleration */);
   auto controller =
       builder.AddSystem<systems::InverseDynamicsController<double>>(

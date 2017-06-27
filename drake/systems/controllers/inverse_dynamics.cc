@@ -71,7 +71,7 @@ void InverseDynamics<T>::CalcOutputTorque(const Context<T>& context,
 }
 
 template class InverseDynamics<double>;
-// TODO(siyuan): some linking issue on mac.
+// TODO(siyuan) template on autodiff.
 // template class InverseDynamics<AutoDiffXd>;
 
 }  // namespace systems

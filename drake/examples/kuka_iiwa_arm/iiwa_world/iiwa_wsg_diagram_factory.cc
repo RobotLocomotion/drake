@@ -59,9 +59,14 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
 
   // Exposing feedforward acceleration. Should help with more dynamic
   // motions.
+  auto single_arm = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      iiwa_info.model_path, multibody::joints::kFixed, iiwa_info.world_offset,
+      single_arm.get());
+
   iiwa_controller_ =
       builder.template AddController<systems::InverseDynamicsController<T>>(
-          iiwa_info.instance_id, iiwa_info.model_path, iiwa_info.world_offset,
+          iiwa_info.instance_id, std::move(single_arm),
           iiwa_kp, iiwa_ki, iiwa_kd, true /* with feedforward acceleration */);
   iiwa_controller_->set_name("IIWAInverseDynamicsController");
 
