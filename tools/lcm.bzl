@@ -6,6 +6,32 @@ load(
 )
 load("@drake//tools:pathutils.bzl", "dirname", "join_paths")
 
+def _lcm_aggregate_hdr(
+        lcm_package,
+        name,
+        aggregate_hdr,
+        hdrs,
+        suffix,
+        strip_prefix):
+    """Create a header file aggregating all the given header files, and
+    return the aggregate header file name (or an empty list if no file
+    is generated).
+
+    """
+    if aggregate_hdr and len(hdrs):
+        if aggregate_hdr == "AUTO":
+            aggregate_hdr = join_paths(dirname(hdrs[0]),
+                                       "%s.%s" % (lcm_package, suffix))
+        drake_generate_include_header(
+            name = name + "_lcm_aggregate_header",
+            hdrs = hdrs,
+            out = aggregate_hdr,
+            strip_prefix = strip_prefix)
+
+        return [aggregate_hdr]
+
+    return []
+
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
     lcm_package, and lcm_struct parameters as documented in lcm_cc_library
@@ -111,6 +137,8 @@ def lcm_cc_library(
         lcm_srcs = None,
         lcm_package = None,
         lcm_structs = None,
+        aggregate_hdr = None,
+        aggregate_hdr_strip_prefix = ["**/include/"],
         **kwargs):
     """Declares a cc_library on message classes generated from `*.lcm` files.
 
@@ -124,7 +152,16 @@ def lcm_cc_library(
     basenames of the files given in lcm_srcs.  If the struct names within the
     lcm_srcs do not match the basenames, or if the lcm_srcs declare multiple
     structs per file, then the parameter is required and must list every
-    `struct ...;` declared by lcm_srcs.
+    `struct ...;` declared by lcm_srcs. The ``aggregate_hdr`` parameter gives
+    the name of the aggregate header to generate (default is ``None`` which
+    disables the generation of the aggregate header). The special value
+    ``"AUTO"`` will use the ``lcm_package`` name in the same subdirectory as
+    the other headers, in conformance with the behavior of
+    ``lcmUtilities.cmake``. ``aggregate_hdr_strip_prefix`` may be used to
+    specify a list of prefixes which are removed from the names of the
+    generated headers when forming the ``#include`` statements in the generated
+    aggregate header. (See also the ``strip_prefix`` option of
+    :func:`generate_include_header`.)
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -138,6 +175,15 @@ def lcm_cc_library(
         lcm_srcs = lcm_srcs,
         lcm_package = lcm_package,
         outs = outs)
+
+    if aggregate_hdr:
+        outs += _lcm_aggregate_hdr(
+            lcm_package,
+            name,
+            aggregate_hdr,
+            outs,
+            "hpp",
+            aggregate_hdr_strip_prefix)
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(kwargs.pop('includes', [])) | ["."]
@@ -154,6 +200,7 @@ def lcm_c_library(
         lcm_package,
         lcm_structs = None,
         aggregate_hdr = "AUTO",
+        aggregate_hdr_strip_prefix = ["**/include/"],
         includes = [],
         **kwargs):
     """Declares a cc_library on message C structs generated from ``*.lcm``
@@ -162,13 +209,9 @@ def lcm_c_library(
     The required ``lcm_srcs`` :obj:`list` parameter specifies the ``*.lcm``
     source files. All ``lcm_srcs`` must reside in the same subdirectory.
 
-    The standard parameters (``lcm_srcs``, ``lcm_package``, ``lcm_structs``)
-    are documented in :func:`lcm_cc_library`. The ``aggregate_hdr`` parameter
-    gives the name of the aggregate header to generate. The special value
-    ``"AUTO"`` (which is the default) will use the ``lcm_package`` name in the
-    same subdirectory as the other headers, in conformance with the behavior
-    of ``lcmUtilities.cmake``. The value ``None`` will disable generation of
-    the aggregate header.
+    The standard parameters (``lcm_srcs``, ``lcm_package``, ``lcm_structs``,
+    ``aggregate_hdr_strip_prefix``) are documented in :func:`lcm_cc_library`.
+    The ``aggregate_hdr`` parameter default value is ``AUTO``.
     """
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
 
@@ -180,17 +223,14 @@ def lcm_c_library(
         outs = outs.hdrs + outs.srcs)
 
     hdrs = outs.hdrs
-    if aggregate_hdr and len(outs.hdrs):
-        if aggregate_hdr == "AUTO":
-            aggregate_hdr = join_paths(dirname(outs.hdrs[0]),
-                                       "%s.h" % lcm_package)
-
-        drake_generate_include_header(
-            name = name + "_lcm_aggregate_header",
-            hdrs = outs.hdrs,
-            out = aggregate_hdr)
-
-        hdrs += [aggregate_hdr]
+    if aggregate_hdr:
+        hdrs += _lcm_aggregate_hdr(
+            lcm_package,
+            name,
+            aggregate_hdr,
+            outs.hdrs,
+            "h",
+            aggregate_hdr_strip_prefix)
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(includes) | ["."]
