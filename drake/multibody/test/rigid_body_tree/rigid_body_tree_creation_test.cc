@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
@@ -197,9 +197,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 // with vector block input parameters. For more information, see:
 // https://github.com/RobotLocomotion/drake/issues/2634.
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
-  std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
   VectorX<double> q;
@@ -221,9 +220,8 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 // model in the table. Furthermore, it should be called "two_dof_robot" and
 // the model instance ID should be 1 (zero was assigned to the world model).
 TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
-  std::string filename =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
 
   ModelInstanceIdTable model_instance_id_table =
       AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
@@ -253,17 +251,14 @@ void VerifyBodyListIsCorrect(std::vector<const RigidBody<double>*> body_list,
 
 // Tests the correct functionality of RigidBodyTree::FindModelInstanceBodies().
 TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
-  std::string filename_2dof_robot =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename_2dof_robot = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
 
-  std::string filename_3dof_robot =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/three_dof_robot.urdf";
+  const std::string filename_3dof_robot = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/three_dof_robot.urdf");
 
-  std::string filename_4dof_robot =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/four_dof_robot.urdf";
+  const std::string filename_4dof_robot = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/four_dof_robot.urdf");
 
   ModelInstanceIdTable model_instance_id_table_1 =
       AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_2dof_robot,
@@ -337,9 +332,8 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Stores the model instance IDs in model_instance_id_list.
   const int kNumModelInstances = 10;
 
-  std::string file_name =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string file_name = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
 
   std::vector<int> model_instance_id_list;
 
@@ -411,25 +405,22 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
 // Tests the correct functionality of RigidBodyTree::get_num_actuators().
 TEST_F(RigidBodyTreeTest, TestGetNumActuators) {
-  std::string filename_2dof_robot =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename_2dof_robot = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_2dof_robot,
                                                   tree_.get());
   EXPECT_EQ(tree_->get_num_actuators(), 2);
 
   tree_.reset(new RigidBodyTree<double>());
-  std::string filename_3dof_robot =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/three_dof_robot.urdf";
+  const std::string filename_3dof_robot = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/three_dof_robot.urdf");
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_3dof_robot,
                                                   tree_.get());
   EXPECT_EQ(tree_->get_num_actuators(), 3);
 
   tree_.reset(new RigidBodyTree<double>());
-  std::string filename_4dof_robot =
-      drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/four_dof_robot.urdf";
+  const std::string filename_4dof_robot = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/four_dof_robot.urdf");
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_4dof_robot,
                                                     tree_.get());
   EXPECT_EQ(tree_->get_num_actuators(), 4);

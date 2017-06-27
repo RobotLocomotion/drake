@@ -6,9 +6,9 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
@@ -42,7 +42,7 @@ namespace {
 GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/multibody/rigid_body_plant/test/world.urdf",
+      FindResourceOrThrow("drake/multibody/rigid_body_plant/test/world.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree_ptr.get());
 
@@ -189,8 +189,8 @@ class KukaArmTest : public ::testing::Test {
   void SetUp() override {
     auto tree = make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-            "iiwa14_primitive_collision.urdf",
+        FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
+                     "iiwa14_primitive_collision.urdf"),
         drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree.get());
 
@@ -396,8 +396,8 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Build two links connected by a limited prismatic joint.
   auto tree = std::make_unique<RigidBodyTree<double>>();
   AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() +
-          "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
+      FindResourceOrThrow(
+          "drake/multibody/rigid_body_plant/test/limited_prismatic.sdf"),
       kFixed, nullptr /* weld to frame */, tree.get());
   RigidBodyPlant<double> plant(move(tree));
 
@@ -492,16 +492,16 @@ GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
 GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/three_dof_robot.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/three_dof_robot.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree_ptr.get());
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
       Vector3d(1., 1., 0));
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/four_dof_robot.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/four_dof_robot.urdf"),
       drake::multibody::joints::kFixed, weld_to_frame, tree_ptr.get());
 
   RigidBodyPlant<double> plant(move(tree_ptr));
@@ -535,7 +535,7 @@ GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
 GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/multibody/models/box.urdf",
+      FindResourceOrThrow("drake/multibody/models/box.urdf"),
       drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
       tree_ptr.get());
 

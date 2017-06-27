@@ -4,7 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
+
+using drake::FindResourceOrThrow;
 
 namespace DrakeShapes {
 namespace {
@@ -14,8 +16,8 @@ const char kUri[] = "";  // No specific URI is required for these tests.
 // Confirms that attempts to load non-triangle meshes by default throws an
 // exception.
 GTEST_TEST(MeshShapeTests, ParseQuadMeshFail) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/quad_cube.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/quad_cube.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -34,8 +36,8 @@ GTEST_TEST(MeshShapeTests, ParseQuadMeshFail) {
 // Confirms that the quad mesh is triangulated into a viable alternative
 // triangle mesh upon request.
 GTEST_TEST(MeshShapeTests, TriangulateQuadMesh) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/quad_cube.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/quad_cube.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -52,8 +54,8 @@ GTEST_TEST(MeshShapeTests, TriangulateQuadMesh) {
 
 // Confirms that triangle meshes are successfully loaded.
 GTEST_TEST(MeshShapeTests, ParseTriMesh) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/tri_cube.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/tri_cube.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -70,8 +72,8 @@ GTEST_TEST(MeshShapeTests, ParseTriMesh) {
 // Confirms that triangle meshes are unchanged, even when triangulation is
 // explicitly called for.
 GTEST_TEST(MeshShapeTests, TriangulateTriMesh) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/tri_cube.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/tri_cube.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -88,8 +90,8 @@ GTEST_TEST(MeshShapeTests, TriangulateTriMesh) {
 // Tests the triangulation code's ability to detect when triangulation leads
 // to overlapping triangles.  Confirms that an exception is thrown.
 GTEST_TEST(MeshShapeTests, DetectBadTriangulation) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/concave_face_bad.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/concave_face_bad.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -110,8 +112,8 @@ GTEST_TEST(MeshShapeTests, DetectBadTriangulation) {
 // Tests the triangulation code's ability to detect when a face is non-planar
 // beyond the allowable threshold.
 GTEST_TEST(MeshShapeTests, DetectNonPlanarTriangulation) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/non_planar.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/non_planar.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -131,8 +133,8 @@ GTEST_TEST(MeshShapeTests, DetectNonPlanarTriangulation) {
 // Tests the triangulation code's ability to triangulate concave
 // faces successfully.
 GTEST_TEST(MeshShapeTests, TriangulateConcaveFaceSuccess) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/concave_face_good.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/concave_face_good.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -151,8 +153,8 @@ GTEST_TEST(MeshShapeTests, TriangulateConcaveFaceSuccess) {
 // not yet written in the file. A simple parser may be thrown by this, but
 // a good parser should handle it (e.g. tinyobjloader does).
 GTEST_TEST(MeshShapeTests, DetectTriangulateParseOrderError) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/out_of_order_vertex.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/out_of_order_vertex.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -169,8 +171,8 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateParseOrderError) {
 // respond with an exception.
 GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
   // Tests for collinear vertices.
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/colinear_vertex.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/colinear_vertex.obj");
   Mesh mesh(kUri, kFileName);
   PointsVector vertices;
   TrianglesVector triangles;
@@ -188,8 +190,8 @@ GTEST_TEST(MeshShapeTests, DetectTriangulateDegenerateTriangle) {
   }
 
   // Tests for "tiny" triangles.
-  const std::string kFileName2 = drake::GetDrakePath() +
-      "/multibody/shapes/test/tiny_triangle.obj";
+  const std::string kFileName2 = FindResourceOrThrow(
+      "drake/multibody/shapes/test/tiny_triangle.obj");
   Mesh mesh2(kUri, kFileName2);
 
   try {
