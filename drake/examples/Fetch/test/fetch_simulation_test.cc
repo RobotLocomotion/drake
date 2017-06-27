@@ -1,9 +1,9 @@
 /// @file
 ///
-/// This demo sets up a simple passive dynamics simulation of the Fetch mobile
+/// This test sets up a simple passive dynamics simulation of the Fetch mobile
 /// robot, i.e., all joint torques are set to zero.
 
-#include <gflags/gflags.h>
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
@@ -26,22 +26,13 @@ using systems::VectorBase;
 
 namespace examples {
 namespace Fetch {
-namespace {
 
-DEFINE_double(simulation_sec, 2, "Number of seconds to simulate");
-DEFINE_double(contact_stiff, 20000, "Contact Stiffness");
-DEFINE_double(contact_diss, 2, "Contact dissipation");
-
-int DoMain() {
-  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
-  DRAKE_DEMAND(FLAGS_contact_stiff > 0);
-  DRAKE_DEMAND(FLAGS_contact_diss > 0);
-
+GTEST_TEST(FetchSimTest, PassiveTest) {
   drake::lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
   // Adds a plant.
-  RigidBodyPlant<double>* plant = nullptr;
+  RigidBodyPlant<double> *plant = nullptr;
   const std::string kModelPath =
       drake::GetDrakePath() +
       "/examples/Fetch/fetch_description/robots/fetch.urdf";
@@ -50,14 +41,17 @@ int DoMain() {
     drake::multibody::AddFlatTerrainToWorld(tree.get());
     CreateTreeFromFloatingModelAtPose(kModelPath, tree.get());
 
+    const double contact_stiffness = 2000;
+    const double contact_dissipation = 2;
+
     plant = builder.AddSystem<RigidBodyPlant<double>>(std::move(tree));
     plant->set_name("plant");
-    plant->set_normal_contact_parameters(FLAGS_contact_stiff,
-                                         FLAGS_contact_diss);
+    plant->set_normal_contact_parameters(contact_stiffness,
+                                         contact_dissipation);
   }
 
   // Verifies the tree.
-  const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
+  const RigidBodyTree<double> &tree = plant->get_rigid_body_tree();
   VerifyFetchTree(tree);
 
   // Creates and adds LCM publisher for visualization.
@@ -75,43 +69,40 @@ int DoMain() {
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
-  Context<double>* fetch_context = diagram->GetMutableSubsystemContext(
+  Context<double> *fetch_context = diagram->GetMutableSubsystemContext(
       simulator.get_mutable_context(), plant);
 
   // Sets torso lift initial conditions.
   // See the @file docblock in fetch_common.h for joint index descriptions.
-  VectorBase<double>* x0 = fetch_context->get_mutable_continuous_state_vector();
+  VectorBase<double> *x0 = fetch_context->get_mutable_continuous_state_vector();
   x0->SetAtIndex(kTorsoLiftJointIdx, 0.1);
 
   simulator.Initialize();
 
   // Simulate for the desired duration.
   simulator.set_target_realtime_rate(1);
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.StepTo(0.1);
 
   // Ensures the simulation was successful.
-  const Context<double>& context = simulator.get_context();
-  const ContinuousState<double>* state = context.get_continuous_state();
-  const VectorBase<double>& position_vector = state->get_generalized_position();
-  const VectorBase<double>& velocity_vector = state->get_generalized_velocity();
+  const Context<double> &context = simulator.get_context();
+  const ContinuousState<double> *state = context.get_continuous_state();
+  const VectorBase<double> &position_vector = state->get_generalized_position();
+  const VectorBase<double> &velocity_vector = state->get_generalized_velocity();
 
   const int num_q = position_vector.size();
   const int num_v = velocity_vector.size();
 
   // Ensures the sizes of the position and velocity vectors are correct.
-  DRAKE_DEMAND(num_q == plant->get_num_positions());
-  DRAKE_DEMAND(num_v == plant->get_num_velocities());
-  DRAKE_DEMAND(num_q == num_v + 1);
+  EXPECT_EQ(num_q, plant->get_num_positions());
+  EXPECT_EQ(num_v, plant->get_num_velocities());
+  EXPECT_EQ(num_q, num_v + 1);
 
-  return 0;
+  for (int i = 0; i < kNumDofs; i++) {
+    EXPECT_FALSE(std::isnan(position_vector.GetAtIndex(i)));
+    EXPECT_FALSE(std::isinf(position_vector.GetAtIndex(i)));
+  }
 }
 
-}  // namespace
 }  // namespace Fetch
 }  // namespace examples
 }  // namespace drake
-
-int main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::Fetch::DoMain();
-}
