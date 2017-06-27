@@ -22,7 +22,6 @@ namespace rigid_contact {
 template <typename T>
 class RigidContactSolver {
  public:
-
   /// Solves the appropriate contact problem at the acceleration level.
   /// @param cfm The regularization factor to apply to the contact problem,
   ///            also known as the "constraint force mixing" parameter.
