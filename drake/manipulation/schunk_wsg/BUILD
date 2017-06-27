@@ -53,8 +53,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":schunk_wsg_constants",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],
