@@ -167,14 +167,17 @@ lcm_c_library(
     lcm_package = "bot_param",
     lcm_srcs = BOT2_PARAM_LCM_SRCS,
     lcm_structs = BOT2_PARAM_LCM_STRUCTS,
+    aggregate_hdr_strip_prefix = ["bot2-param"],
 )
 
 lcm_cc_library(
     name = "lcmtypes_bot2_param",
+    aggregate_hdr = "lcmtypes/bot2_param.hpp",
     includes = ["bot2-param"],
     lcm_package = "bot_param",
     lcm_srcs = BOT2_PARAM_LCM_SRCS,
     lcm_structs = BOT2_PARAM_LCM_STRUCTS,
+    aggregate_hdr_strip_prefix = ["bot2-param"],
 )
 
 lcm_java_library(
@@ -281,14 +284,17 @@ lcm_c_library(
     lcm_package = "bot_frames",
     lcm_srcs = BOT2_FRAMES_LCM_SRCS,
     lcm_structs = BOT2_FRAMES_LCM_STRUCTS,
+    aggregate_hdr_strip_prefix = ["bot2-frames"],
 )
 
 lcm_cc_library(
     name = "lcmtypes_bot2_frames",
+    aggregate_hdr = "lcmtypes/bot2_frames.hpp",
     includes = ["bot2-frames"],
     lcm_package = "bot_frames",
     lcm_srcs = BOT2_FRAMES_LCM_SRCS,
     lcm_structs = BOT2_FRAMES_LCM_STRUCTS,
+    aggregate_hdr_strip_prefix = ["bot2-frames"],
 )
 
 lcm_java_library(
@@ -343,14 +349,17 @@ lcm_c_library(
     lcm_package = "bot_lcmgl",
     lcm_srcs = BOT2_LCMGL_LCM_SRCS,
     lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
+    aggregate_hdr_strip_prefix = ["bot2-lcmgl"],
 )
 
 lcm_cc_library(
     name = "lcmtypes_bot2_lcmgl",
+    aggregate_hdr = "lcmtypes/bot2_lcmgl.hpp",
     includes = ["bot2-lcmgl"],
     lcm_package = "bot_lcmgl",
     lcm_srcs = BOT2_LCMGL_LCM_SRCS,
     lcm_structs = BOT2_LCMGL_LCM_STRUCTS,
+    aggregate_hdr_strip_prefix = ["bot2-lcmgl"],
 )
 
 lcm_java_library(
