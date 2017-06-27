@@ -14,7 +14,7 @@ drake_cc_library(
     srcs = ["simulated_schunk_wsg_system.cc"],
     hdrs = ["simulated_schunk_wsg_system.h"],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
     ],
@@ -61,7 +61,7 @@ drake_cc_googletest(
     disable_in_compilation_mode_dbg = True,
     deps = [
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/common/trajectories:trajectory",
         "//drake/lcm",

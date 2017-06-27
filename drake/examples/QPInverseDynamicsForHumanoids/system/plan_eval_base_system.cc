@@ -4,7 +4,6 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 

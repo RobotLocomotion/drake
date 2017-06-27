@@ -7,7 +7,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -32,14 +32,14 @@ int DoMain() {
   systems::DiagramBuilder<double> builder;
 
   systems::RigidBodyPlant<double>* plant = nullptr;
-  const std::string kUrdfPath = drake::GetDrakePath() +
-                                "/manipulation/models/jaco_description/urdf/"
-                                "j2n6s300.urdf";
 
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreeFromFixedModelAtPose(kUrdfPath, tree.get());
+    CreateTreeFromFixedModelAtPose(
+        FindResourceOrThrow(
+            "drake/manipulation/models/jaco_description/urdf/j2n6s300.urdf"),
+        tree.get());
 
     auto tree_sys =
         std::make_unique<systems::RigidBodyPlant<double>>(std::move(tree));

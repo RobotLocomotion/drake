@@ -6,8 +6,6 @@
 #include "bot_core/robot_state_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_path.h"
-
 using bot_core::robot_state_t;
 
 namespace drake {

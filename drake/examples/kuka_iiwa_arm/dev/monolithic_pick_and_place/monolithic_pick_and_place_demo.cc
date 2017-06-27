@@ -6,7 +6,7 @@
 #include "bot_core/robot_state_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -43,7 +43,7 @@ namespace monolithic_pick_and_place {
 namespace {
 
 const char kIiwaUrdf[] =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 const char kIiwaEndEffectorName[] = "iiwa_link_ee";
 
@@ -92,18 +92,18 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel("iiwa", kIiwaUrdf);
+  tree_builder->StoreModel("iiwa", FindResourceOrThrow(kIiwaUrdf));
   tree_builder->StoreModel("table",
-                           "/examples/kuka_iiwa_arm/models/table/"
+                           "drake/examples/kuka_iiwa_arm/models/table/"
                            "extra_heavy_duty_table_surface_only_collision.sdf");
   tree_builder->StoreModel(
-      "target", "/examples/kuka_iiwa_arm/models/objects/" + target_model);
+      "target", "drake/examples/kuka_iiwa_arm/models/objects/" + target_model);
   tree_builder->StoreModel("yellow_post",
-                           "/examples/kuka_iiwa_arm/models/objects/"
+                           "drake/examples/kuka_iiwa_arm/models/objects/"
                            "yellow_post.urdf");
   tree_builder->StoreModel(
       "wsg",
-      "/manipulation/models/wsg_50_description"
+      "drake/manipulation/models/wsg_50_description"
       "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   // The main table which the arm sits on.
@@ -217,7 +217,7 @@ int DoMain(void) {
                   drake_visualizer->get_input_port(0));
 
   auto iiwa_trajectory_generator = builder.AddSystem<RobotPlanInterpolator>(
-      drake::GetDrakePath() + kIiwaUrdf);
+      FindResourceOrThrow(kIiwaUrdf));
   builder.Connect(plant->get_output_port_iiwa_state(),
                   iiwa_trajectory_generator->get_state_input_port());
   builder.Connect(
@@ -255,7 +255,7 @@ int DoMain(void) {
 
   auto state_machine =
       builder.template AddSystem<PickAndPlaceStateMachineSystem>(
-          drake::GetDrakePath() + kIiwaUrdf, kIiwaEndEffectorName,
+          FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
           iiwa_base, place_locations);
 
   builder.Connect(plant->get_output_port_box_robot_state_msg(),

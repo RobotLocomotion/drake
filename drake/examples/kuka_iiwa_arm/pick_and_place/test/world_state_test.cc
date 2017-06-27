@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 namespace drake {
@@ -13,11 +13,11 @@ namespace pick_and_place {
 namespace {
 
 const char* const kIiwaUrdf =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 GTEST_TEST(PickAndPlaceWorldStateTest, EndEffectorTest) {
-  WorldState dut(GetDrakePath() + kIiwaUrdf, "iiwa_link_ee");
+  WorldState dut(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
 
   bot_core::robot_state_t iiwa_msg{};
   iiwa_msg.utime = 1000;
@@ -64,7 +64,7 @@ GTEST_TEST(PickAndPlaceWorldStateTest, EndEffectorTest) {
 
   // Create another world state and move the base.  We expect that the
   // end effector pose will move by a comparable amount.
-  WorldState dut2(GetDrakePath() + kIiwaUrdf, "iiwa_link_ee");
+  WorldState dut2(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
   iiwa_msg.pose.translation.x += 1;
   expected_pos(0) += 1;
 

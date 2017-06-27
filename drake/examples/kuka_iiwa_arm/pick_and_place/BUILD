@@ -46,6 +46,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":pick_and_place",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -57,6 +58,7 @@ drake_cc_googletest(
     deps = [
         ":pick_and_place",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
     ],
 )
 

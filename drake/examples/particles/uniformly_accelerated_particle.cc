@@ -6,7 +6,7 @@
 #include <limits>
 #include <memory>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/particles/particle.h"
 #include "drake/examples/particles/utilities.h"
@@ -36,7 +36,7 @@ namespace {
 
 /// Fixed path to particle SDF model (for visualization purposes only).
 static const char* const kParticleSdfPath =
-  "/examples/particles/models/particle.sdf";
+  "drake/examples/particles/models/particle.sdf";
 
 /// A sample diagram for visualizing a 1DOF particle to which a
 /// a constant acceleration is applied.
@@ -78,7 +78,7 @@ UniformlyAcceleratedParticle<T>::UniformlyAcceleratedParticle(
     const T& acceleration, lcm::DrakeLcmInterface* lcm) {
   // Parse particle sdf into rigid body tree.
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-      GetDrakePath() + kParticleSdfPath,
+      FindResourceOrThrow(kParticleSdfPath),
       multibody::joints::kRollPitchYaw,
       tree_.get());
   // Compile tree one more time just to be sure.

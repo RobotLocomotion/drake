@@ -15,7 +15,7 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
@@ -166,8 +166,8 @@ class RobotPlanRunner {
 int do_main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_primitive_collision.urdf",
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
+                          "iiwa14_primitive_collision.urdf"),
       multibody::joints::kFixed, tree.get());
 
   RobotPlanRunner runner(*tree);

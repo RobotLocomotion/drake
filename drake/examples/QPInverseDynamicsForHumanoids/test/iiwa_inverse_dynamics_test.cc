@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
@@ -19,15 +19,15 @@ namespace qp_inverse_dynamics {
 // dynamics should return a generalized acceleration very close to the desired
 // one.
 GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
-  std::string urdf = drake::GetDrakePath() +
-                     "/manipulation/models/iiwa_description/urdf/"
-                     "iiwa14_polytope_collision.urdf";
-  std::string alias_groups_config = drake::GetDrakePath() +
-                                    "/examples/QPInverseDynamicsForHumanoids/"
-                                    "config/iiwa.alias_groups";
-  std::string controller_config = drake::GetDrakePath() +
-                                  "/examples/QPInverseDynamicsForHumanoids/"
-                                  "config/iiwa.id_controller_config";
+  std::string urdf = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
+  std::string alias_groups_config = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/iiwa.alias_groups");
+  std::string controller_config = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/iiwa.id_controller_config");
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

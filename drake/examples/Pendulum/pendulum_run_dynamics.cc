@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -21,7 +21,7 @@ int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf"),
       multibody::joints::kFixed, tree.get());
 
   Eigen::VectorXd tau = Eigen::VectorXd::Zero(1);

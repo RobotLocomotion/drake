@@ -6,7 +6,7 @@
 
 #include "spruce.hh"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -88,18 +88,18 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
   DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
   if (extension == ".urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
+        FindResourceOrThrow(model_map_[model_name]), floating_base_type,
         weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == ".sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + model_map_[model_name], floating_base_type,
+        FindResourceOrThrow(model_map_[model_name]), floating_base_type,
         weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
 
   ModelInstanceInfo<T> info;
-  info.model_path = drake::GetDrakePath() + model_map_[model_name];
+  info.model_path = FindResourceOrThrow(model_map_[model_name]);
   info.instance_id = model_instance_id;
   info.world_offset = weld_to_frame;
   instance_id_to_model_info_[model_instance_id] = info;

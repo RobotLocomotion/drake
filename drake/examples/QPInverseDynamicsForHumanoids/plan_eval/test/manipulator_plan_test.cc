@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/manipulator_move_end_effector_plan.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/test/test_common.h"
 #include "drake/lcmt_manipulator_plan_move_end_effector.hpp"
@@ -39,19 +39,17 @@ lcmt_manipulator_plan_move_end_effector make_move_end_effector_message(
 class ManipPlanTest : public GenericPlanTest {
  protected:
   void SetUp() override {
-    const std::string kModelPath = drake::GetDrakePath() +
-                                   "/manipulation/models/iiwa_description/urdf/"
-                                   "iiwa14_polytope_collision.urdf";
+    const std::string kModelPath = FindResourceOrThrow(
+        "drake/manipulation/models/iiwa_description/urdf/"
+        "iiwa14_polytope_collision.urdf");
 
-    const std::string kAliasGroupsPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/iiwa.alias_groups";
+    const std::string kAliasGroupsPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/iiwa.alias_groups");
 
-    const std::string kControlConfigPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/iiwa.id_controller_config";
+    const std::string kControlConfigPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/iiwa.id_controller_config");
 
     std::default_random_engine generator(123);
     AllocateResources(kModelPath, kAliasGroupsPath, kControlConfigPath);

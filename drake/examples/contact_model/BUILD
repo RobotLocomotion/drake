@@ -19,7 +19,7 @@ drake_cc_binary(
         " --playback=false",
     ],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -44,7 +44,7 @@ drake_cc_binary(
         " --playback=false",
     ],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -68,7 +68,7 @@ drake_cc_binary(
         " --playback=false",
     ],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",

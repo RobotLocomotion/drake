@@ -49,7 +49,6 @@ drake_cc_library(
     srcs = ["plan_eval_base_system.cc"],
     hdrs = ["plan_eval_base_system.h"],
     deps = [
-        "//drake/common:drake_path",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
@@ -133,6 +132,7 @@ drake_cc_binary(
     tags = gurobi_test_tags(),
     deps = [
         ":valkyrie_controller",
+        "//drake/common:find_resource",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/systems/lcm:lcm_driven_loop",
     ],
@@ -151,6 +151,7 @@ drake_cc_googletest(
         ":humanoid_plan_eval_system",
         ":qp_controller_system",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
@@ -174,6 +175,7 @@ drake_cc_googletest(
     deps = [
         ":manipulator_inverse_dynamics_controller",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
@@ -194,6 +196,7 @@ drake_cc_googletest(
     deps = [
         ":qp_controller_system",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/multibody/parsers",
@@ -212,6 +215,7 @@ drake_cc_googletest(
     deps = [
         ":atlas_joint_level_controller_system",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
     ],

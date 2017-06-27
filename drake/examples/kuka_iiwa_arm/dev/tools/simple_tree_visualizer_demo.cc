@@ -8,8 +8,8 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -28,7 +28,7 @@ int DoMain() {
 
   // Adds a demo tree.
   const std::string kModelPath =
-      "/manipulation/models/iiwa_description/urdf/"
+      "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf";
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -39,7 +39,7 @@ int DoMain() {
       Eigen::Vector3d::Zero() /* base orientation */);
 
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + kModelPath, drake::multibody::joints::kFixed,
+      FindResourceOrThrow(kModelPath), drake::multibody::joints::kFixed,
       weld_to_frame, tree.get());
 
   SimpleTreeVisualizer simple_tree_visualizer(*tree.get(), &lcm);

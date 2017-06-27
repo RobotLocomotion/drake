@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/package_map.h"
 
 namespace drake {
@@ -19,9 +19,9 @@ namespace examples {
  * should be added. This must not be nullptr.
  */
 inline void AddExamplePackages(parsers::PackageMap* package_map) {
-  package_map->Add("Atlas", GetDrakePath() + "/examples/Atlas/");
-  package_map->Add("IRB140", GetDrakePath() + "/examples/IRB140/");
-  package_map->Add("Valkyrie", GetDrakePath() + "/examples/Valkyrie");
+  package_map->Add("Atlas", FindResourceOrThrow("drake/examples/Atlas/"));
+  package_map->Add("IRB140", FindResourceOrThrow("drake/examples/IRB140/"));
+  package_map->Add("Valkyrie", FindResourceOrThrow("drake/examples/Valkyrie"));
 }
 
 }  // namespace examples

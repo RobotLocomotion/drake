@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -17,7 +17,7 @@ namespace {
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf"),
       multibody::joints::kFixed, tree.get());
 
   systems::RigidBodyPlant<double> rbp(std::move(tree));

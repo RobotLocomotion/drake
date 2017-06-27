@@ -98,6 +98,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_utils",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -124,6 +125,7 @@ drake_cc_googletest(
         ":control_utils",
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/examples/Valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
@@ -143,6 +145,7 @@ drake_cc_googletest(
         ":control_utils",
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/multibody/parsers",
     ],

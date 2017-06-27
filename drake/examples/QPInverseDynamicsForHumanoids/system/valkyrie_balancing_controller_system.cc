@@ -1,4 +1,4 @@
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_controller.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/systems/lcm/lcm_driven_loop.h"
@@ -13,17 +13,15 @@ namespace qp_inverse_dynamics {
 // The overall input and output is a LCM message of type
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
-  const std::string kModelFileName =
-      drake::GetDrakePath() +
-      "/examples/Valkyrie/urdf/urdf/"
-      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
-  const std::string kAliasGroupPath = drake::GetDrakePath() +
-                                      "/examples/QPInverseDynamicsForHumanoids/"
-                                      "config/valkyrie.alias_groups";
-  const std::string kControlConfigPath =
-      drake::GetDrakePath() +
-      "/examples/QPInverseDynamicsForHumanoids/"
-      "config/valkyrie.id_controller_config";
+  const std::string kModelFileName = FindResourceOrThrow(
+      "drake/examples/Valkyrie/urdf/urdf/"
+      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+  const std::string kAliasGroupPath = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/valkyrie.alias_groups");
+  const std::string kControlConfigPath = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/valkyrie.id_controller_config");
 
   drake::lcm::DrakeLcm lcm;
   ValkyrieController valkyrie_controller(kModelFileName, kControlConfigPath,

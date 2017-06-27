@@ -20,7 +20,7 @@ during stiction).
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -63,7 +63,7 @@ std::unique_ptr<RigidBodyTreed> BuildTestTree() {
       &tree->world(), Eigen::Vector3d(0, -0.065, 0.05),
       Eigen::Vector3d::Zero());
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      GetDrakePath() + "/examples/contact_model/rigid_gripper.urdf",
+      FindResourceOrThrow("drake/examples/contact_model/rigid_gripper.urdf"),
       multibody::joints::kFixed, gripper_frame, tree.get());
 
   // Add a box to grip.  Position it such that if there *were* a plane at z = 0,
@@ -73,7 +73,7 @@ std::unique_ptr<RigidBodyTreed> BuildTestTree() {
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "box_offset",
       &tree->world(), Eigen::Vector3d(0, 0, 0.075), Eigen::Vector3d::Zero());
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      GetDrakePath() + "/multibody/models/box_small.urdf",
+      FindResourceOrThrow("drake/multibody/models/box_small.urdf"),
       multibody::joints::kQuaternion, box_frame, tree.get());
 
   return tree;

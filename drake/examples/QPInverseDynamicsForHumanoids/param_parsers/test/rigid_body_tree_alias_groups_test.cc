@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
@@ -11,7 +11,7 @@ namespace qp_inverse_dynamics {
 namespace param_parsers {
 
 const char* const kTestDir =
-    "/examples/QPInverseDynamicsForHumanoids/param_parsers/test/";
+    "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/test/";
 
 // The test YAML config looks like this:
 //
@@ -37,9 +37,10 @@ const char* const kTestDir =
 //
 // Please refer to the full config file for more details.
 void TestFullConfig(multibody::joints::FloatingBaseType type) {
-  std::string urdf = drake::GetDrakePath()
-      + "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
-  std::string config = drake::GetDrakePath() + kTestDir + "test.alias_groups";
+  std::string urdf = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
+  std::string config = FindResourceOrThrow(
+      std::string(kTestDir) + "test.alias_groups");
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());

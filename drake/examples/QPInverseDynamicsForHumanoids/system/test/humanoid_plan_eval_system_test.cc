@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
@@ -31,20 +31,17 @@ namespace {
 class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    const std::string kModelPath =
-        drake::GetDrakePath() +
-        "/examples/Valkyrie/urdf/urdf/"
-        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
+    const std::string kModelPath = FindResourceOrThrow(
+        "drake/examples/Valkyrie/urdf/urdf/"
+        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
 
-    const std::string kAliasGroupsPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/valkyrie.alias_groups";
+    const std::string kAliasGroupsPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/valkyrie.alias_groups");
 
-    const std::string kControlConfigPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/valkyrie.id_controller_config";
+    const std::string kControlConfigPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/valkyrie.id_controller_config");
 
     auto robot = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

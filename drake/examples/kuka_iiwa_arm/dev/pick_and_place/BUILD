@@ -13,6 +13,7 @@ drake_cc_binary(
         "pick_and_place_demo.cc",
     ],
     deps = [
+        "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/pick_and_place",

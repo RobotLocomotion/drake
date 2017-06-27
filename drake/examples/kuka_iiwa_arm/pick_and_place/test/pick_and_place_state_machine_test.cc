@@ -4,7 +4,7 @@
 #include "bot_core/robot_state_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
@@ -16,7 +16,7 @@ namespace pick_and_place {
 namespace {
 
 const char* const kIiwaUrdf =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 struct TestStep {
@@ -40,7 +40,7 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
   PickAndPlaceStateMachine dut(place_locations, false);
 
   // Create world state and initialize with a trivial configuration.
-  WorldState world_state(GetDrakePath() + kIiwaUrdf, "iiwa_link_ee");
+  WorldState world_state(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
 
   bot_core::robot_state_t iiwa_msg{};
   iiwa_msg.utime = 1000;
@@ -100,7 +100,7 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
   };
 
   manipulation::planner::ConstraintRelaxingIk planner(
-      GetDrakePath() + kIiwaUrdf, "iiwa_link_ee",
+      FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee",
       Isometry3<double>::Identity());
 
   dut.Update(world_state, iiwa_callback, wsg_callback, &planner);
