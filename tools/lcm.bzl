@@ -6,6 +6,30 @@ load(
 )
 load("@drake//tools:pathutils.bzl", "dirname", "join_paths")
 
+def _aggregate_hdr(lcm_package,
+        name,
+        aggregate_hdr,
+        hdrs,
+        suffix,
+        strip_prefix):
+    """Create a header file aggregating all the given header files, and
+    return the input list of header files appended with the new header.
+
+    """
+    if aggregate_hdr and len(hdrs):
+        if aggregate_hdr == "AUTO":
+            aggregate_hdr = join_paths(dirname(hdrs[0]),
+                                       "%s.%s" % (lcm_package, suffix))
+        drake_generate_include_header(
+            name = name + "_lcm_aggregate_header",
+            hdrs = hdrs,
+            out = aggregate_hdr,
+            strip_prefix = strip_prefix)
+
+        hdrs += [aggregate_hdr]
+
+    return hdrs
+
 def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """Return the list of lcm-gen output filenames (derived from the lcm_srcs,
     lcm_package, and lcm_struct parameters as documented in lcm_cc_library
@@ -111,6 +135,8 @@ def lcm_cc_library(
         lcm_srcs = None,
         lcm_package = None,
         lcm_structs = None,
+        aggregate_hdr = None,
+        hdr_strip_prefix = ["**/include/"],
         **kwargs):
     """Declares a cc_library on message classes generated from `*.lcm` files.
 
@@ -124,7 +150,10 @@ def lcm_cc_library(
     basenames of the files given in lcm_srcs.  If the struct names within the
     lcm_srcs do not match the basenames, or if the lcm_srcs declare multiple
     structs per file, then the parameter is required and must list every
-    `struct ...;` declared by lcm_srcs.
+    `struct ...;` declared by lcm_srcs. The ``aggregate_hdr`` parameter
+    gives the name of the aggregate header to generate (default is ``None``).
+    See lcm_c_library for more information. ``hdr_strip_prefix`` is used when
+    creating an aggregate header to strip the headers prefix.
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -139,11 +168,18 @@ def lcm_cc_library(
         lcm_package = lcm_package,
         outs = outs)
 
+    hdrs = _aggregate_hdr(lcm_package,
+                name,
+                aggregate_hdr,
+                outs,
+                "hpp",
+                hdr_strip_prefix)
+
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(kwargs.pop('includes', [])) | ["."]
     native.cc_library(
         name = name,
-        hdrs = outs,
+        hdrs = hdrs,
         deps = deps,
         includes = includes,
         **kwargs)
@@ -155,6 +191,7 @@ def lcm_c_library(
         lcm_structs = None,
         aggregate_hdr = "AUTO",
         includes = [],
+        hdr_strip_prefix = ["**/include/"],
         **kwargs):
     """Declares a cc_library on message C structs generated from ``*.lcm``
     files.
@@ -168,7 +205,8 @@ def lcm_c_library(
     ``"AUTO"`` (which is the default) will use the ``lcm_package`` name in the
     same subdirectory as the other headers, in conformance with the behavior
     of ``lcmUtilities.cmake``. The value ``None`` will disable generation of
-    the aggregate header.
+    the aggregate header. ``hdr_strip_prefix`` is used when
+    creating an aggregate header to strip the headers prefix.
     """
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
 
@@ -179,18 +217,12 @@ def lcm_c_library(
         lcm_package = lcm_package,
         outs = outs.hdrs + outs.srcs)
 
-    hdrs = outs.hdrs
-    if aggregate_hdr and len(outs.hdrs):
-        if aggregate_hdr == "AUTO":
-            aggregate_hdr = join_paths(dirname(outs.hdrs[0]),
-                                       "%s.h" % lcm_package)
-
-        drake_generate_include_header(
-            name = name + "_lcm_aggregate_header",
-            hdrs = outs.hdrs,
-            out = aggregate_hdr)
-
-        hdrs += [aggregate_hdr]
+    hdrs = _aggregate_hdr(lcm_package,
+                name,
+                aggregate_hdr,
+                outs.hdrs,
+                "h",
+                hdr_strip_prefix)
 
     deps = set(kwargs.pop('deps', [])) | ["@lcm"]
     includes = set(includes) | ["."]

@@ -34,6 +34,7 @@ lcm_c_library(
 
 lcm_cc_library(
     name = "lcmtypes_bot2_core",
+    aggregate_hdr = "lcmtypes/bot_core.hpp",
     includes = ["lcmtypes"],
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
