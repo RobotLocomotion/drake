@@ -14,12 +14,12 @@ using Eigen::Vector3d;
 
 // Given an angular velocity w_AB of a frame B in A, verifies that the time
 // derivative of this angular velocity is the same in both frames. That is:
-//   d_A(w_AB)/dt = d_B(w_AB)/dt
+//   ᴬd/dt(w_AB) = ᴮd/dt(w_AB)
 // Input parameters:
 //   w_AB: angular velocity of B in A.
 //   DtB_w_AB: Time derivative of w_AB in the B frame.
-void ShiftTimeDerivativeOfAngularVelocity(
-    const Vector3d& w_AB, const Vector3d& DtB_w_AB) {
+void ConvertTimeDerivativeOfAngularVelocity(
+    const Vector3d &w_AB, const Vector3d &DtB_w_AB) {
   const double kAbsoluteTolerance = 2 * std::numeric_limits<double>::epsilon();
   Vector3d DtA_w_AB = ConvertTimeDerivativeToOtherFrame(w_AB, DtB_w_AB, w_AB);
   EXPECT_TRUE(CompareMatrices(DtA_w_AB, DtB_w_AB, kAbsoluteTolerance,
@@ -28,9 +28,9 @@ void ShiftTimeDerivativeOfAngularVelocity(
 
 GTEST_TEST(ConvertTimeDerivativeToOtherFrame, OnAngularVelocity) {
   // Make a number of random tests.
-  ShiftTimeDerivativeOfAngularVelocity(
+  ConvertTimeDerivativeOfAngularVelocity(
       Vector3d(0.0, 0.0, 0.0), Vector3d(0.0, 1.0, 0.0));
-  ShiftTimeDerivativeOfAngularVelocity(
+  ConvertTimeDerivativeOfAngularVelocity(
       Vector3d(-1.0, 0.0, 2.0), Vector3d(3.0, 1.0, 4.0));
 }
 
@@ -44,7 +44,7 @@ GTEST_TEST(ConvertTimeDerivativeToOtherFrame, OnAngularVelocity) {
 // that is v_CHo = DtC_p_CoHo = swing_up_speed * zhat, with swing_up_speed the
 // (signed) magnitude of v_CHo and zhat the z-axis versor.
 // This unit test verifies we can compute the velocity v_WHo in the world frame
-// by shifting the time derivative as:
+// as:
 //   v_WHo = DtW_p_CoHo = DtC_p_CoHo + w_WC x p_CoHo
 //
 // Input parameters:
@@ -62,7 +62,7 @@ void HorseOnCarousel(double horse_radius,
   const Vector3d w_WC = theta_dot * Vector3d::UnitZ();
   const Matrix3d R_WC = AngleAxisd(theta, Vector3d::UnitZ()).matrix();
   // Horse position in the carousel frame.
-  const Vector3d& p_CoHo_C = horse_radius * Vector3d::UnitX();
+  const Vector3d p_CoHo_C = horse_radius * Vector3d::UnitX();
 
   // Re-express horse position in the world frame.
   const Vector3d p_CoHo_W = R_WC * p_CoHo_C;
