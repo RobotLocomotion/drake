@@ -248,18 +248,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Body for this node. Its body frame is also referred to as B whenever no
     // ambiguity can arise.
-    const Body<T>& BodyB = get_body();
+    const Body<T>& body_B = get_body();
 
     // Body for this node's parent, or the parent body P. Its body frame is
     // also referred to as P whenever no ambiguity can arise.
-    const Body<T>& BodyP = get_parent_body();
+    const Body<T>& body_P = get_parent_body();
 
     // Inboard frame F of this node's mobilizer.
-    const Frame<T>& FrameF = get_inboard_frame();
-    DRAKE_ASSERT(FrameF.get_body().get_index() == BodyP.get_index());
+    const Frame<T>& frame_F = get_inboard_frame();
+    DRAKE_ASSERT(frame_F.get_body().get_index() == body_P.get_index());
     // Outboard frame M of this node's mobilizer.
-    const Frame<T>& FrameM = get_outboard_frame();
-    DRAKE_ASSERT(FrameM.get_body().get_index() == BodyB.get_index());
+    const Frame<T>& frame_M = get_outboard_frame();
+    DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
 
     // Generalized velocities local to this node's mobilizer.
     const auto& vm = this->get_mobilizer_velocities(context);
@@ -271,8 +271,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     SpatialVelocity<T> V_FM =
         get_mobilizer().CalcAcrossMobilizerSpatialVelocity(context, vm);
 
-    const Isometry3<T> X_PF = FrameF.CalcPoseInBodyFrame(context);
-    const Isometry3<T> X_MB = FrameM.CalcBodyPoseInThisFrame(context);
+    const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
+    const Isometry3<T> X_MB = frame_M.CalcBodyPoseInThisFrame(context);
 
     // Pose of the parent body P in world frame W.
     // Available since we are called within a base-to-tip recursion.
@@ -428,16 +428,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const {
     // Body for this node.
-    const Body<T>& BodyB = get_body();
+    const Body<T>& body_B = get_body();
 
     // Body for this node's parent, or the parent body P.
-    const Body<T>& BodyP = get_parent_body();
+    const Body<T>& body_P = get_parent_body();
 
     // Inboard/Outboard frames of this node's mobilizer.
-    const Frame<T>& FrameF = get_mobilizer().get_inboard_frame();
-    DRAKE_ASSERT(FrameF.get_body().get_index() == BodyP.get_index());
-    const Frame<T>& FrameM = get_mobilizer().get_outboard_frame();
-    DRAKE_ASSERT(FrameM.get_body().get_index() == BodyB.get_index());
+    const Frame<T>& frame_F = get_mobilizer().get_inboard_frame();
+    DRAKE_ASSERT(frame_F.get_body().get_index() == body_P.get_index());
+    const Frame<T>& frame_M = get_mobilizer().get_outboard_frame();
+    DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
 
     // Input (const):
     // - X_PF(qb_P)
@@ -445,15 +445,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - X_FM(qm_B)
     // - X_WP(q(W:B)), where q(W:B) includes all positions in the kinematics
     //                 path from body B to the world W.
-    const Isometry3<T> X_MB = FrameM.CalcBodyPoseInThisFrame(context);
+    const Isometry3<T> X_MB = frame_M.CalcBodyPoseInThisFrame(context);
     const Isometry3<T>& X_FM = get_X_FM(*pc);  // mobilizer.Eval_X_FM(ctx)
-    const Isometry3<T>& X_WP = get_X_WP(*pc);  // BodyP.EvalPoseInWorld(ctx)
+    const Isometry3<T>& X_WP = get_X_WP(*pc);  // body_P.EvalPoseInWorld(ctx)
 
     // Output (updating a cache entry):
     // - X_PB(qf_P, qr_B, qf_B)
     // - X_WB(q(W:P), qf_P, qr_B, qf_B)
     Isometry3<T>& X_PB = get_mutable_X_PB(pc);
-    Isometry3<T>& X_WB = get_mutable_X_WB(pc);  // BodyB.EvalPoseInWorld(ctx)
+    Isometry3<T>& X_WB = get_mutable_X_WB(pc);  // body_B.EvalPoseInWorld(ctx)
 
     // TODO(amcastro-tri): Consider logic for the common case B = M.
     // In that case X_FB = X_FM as suggested by setting X_MB = Id.
@@ -465,7 +465,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // In the particular case F = B, this method directly returns X_FB.
     // For flexible bodies this gives the chance to frame F to pull its pose
     // from the context.
-    X_PB = FrameF.CalcOffsetPoseInBody(context, X_FB);
+    X_PB = frame_F.CalcOffsetPoseInBody(context, X_FB);
 
     X_WB = X_WP * X_PB;
   }
