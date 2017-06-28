@@ -14,6 +14,8 @@ namespace multibody {
 namespace math {
 namespace {
 
+using Eigen::AngleAxis;
+
 // Generic declaration of a traits class to figure out at compile time the
 // scalar type a spatial quantity is instantiated with.
 template <class SpatialQuantity> struct spatial_vector_traits {};
@@ -61,7 +63,9 @@ TYPED_TEST(SpatialQuantityTest, SizeAtCompileTime) {
   EXPECT_EQ(V.size(), 6);
 }
 
-// Construction from a Eigen expressions.
+// Tests:
+// - Construction from a Eigen expressions.
+// - SetZero() method.
 TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
@@ -81,6 +85,11 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
   SpatialQuantity V2(v.template segment<6>(0));
   EXPECT_EQ(V2.rotational(), v.template segment<3>(0));
   EXPECT_EQ(V2.translational(), v.template segment<3>(3));
+
+  // Unit tests SetZero().
+  V1.SetZero();
+  EXPECT_EQ(V1.rotational(), Vector3<T>::Zero());
+  EXPECT_EQ(V1.translational(), Vector3<T>::Zero());
 }
 
 // Construction from two three-dimensional vectors.
@@ -207,6 +216,28 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   EXPECT_EQ(sxV.translational(), Vxs.translational());
 }
 
+// Re-express in another frame. Given a spatial vector V_F expressed in a frame
+// F, re-express this same spatial vector in another frame E as:
+//   V_E = R_EF * V_F
+// where R_EF is the rotation matrix from frame F into frame E.
+TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& V_AB_F = this->V_;
+
+  // Some arbitrary rotation between frames E and F.
+  const Matrix3<T> R_EF =
+      (AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitY()) *
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ())).matrix();
+
+  SpatialQuantity V_AB_E = R_EF * V_AB_F;
+
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V_AB_E.rotational(), R_EF * V_AB_F.rotational());
+  EXPECT_EQ(V_AB_E.translational(), R_EF * V_AB_F.translational());
+}
+
 // Create a list of scalar types for the unit tests that follow below.
 typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
 
@@ -248,6 +279,19 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   // Verify the result.
   SpatialVelocity<T> expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
+}
+
+// Tests operator+().
+TYPED_TEST(SpatialVelocityTest, AdditionOperation) {
+  typedef typename TestFixture::ScalarType T;
+  const SpatialVelocity<T>& V_XY_A = this->V_XY_A_;
+  const Vector3<T>& w_XY_A = this->w_XY_A_;
+  const Vector3<T>& v_XY_A = this->v_XY_A_;
+
+  SpatialVelocity<T> V = V_XY_A + V_XY_A;
+
+  EXPECT_EQ(V.rotational(), w_XY_A + w_XY_A);
+  EXPECT_EQ(V.translational(), v_XY_A + v_XY_A);
 }
 
 // Tests that we can take the dot product of a SpatialVelocity with a
