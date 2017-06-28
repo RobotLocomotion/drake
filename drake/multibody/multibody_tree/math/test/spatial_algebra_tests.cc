@@ -30,7 +30,7 @@ struct spatial_vector_traits<SpatialForce<T>> {
   typedef T ScalarType;
 };
 
-// traits specialization for SpatialForce.
+// traits specialization for SpatialAcceleration.
 template <typename T>
 struct spatial_vector_traits<SpatialAcceleration<T>> {
   typedef T ScalarType;
@@ -346,7 +346,7 @@ TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
 // velocity w_AP and has zero acceleration in frame A, ie. A_AP = 0. We can
 // think of frames P and A having coincident origins.
 // A third frame Q translated by a position p_PoQo moves rigidly with P.
-// The angular velocity w_AP_E is as a component out of plane in the z-axes
+// The angular velocity w_AP_E has its component out of plane in the z-axes
 // while the offset vector p_PoQo_E is in the x-y plane.
 // Therefore, the spatial acceleration of frame Q should correspond to that of
 // a centrifugal linear component pointing inwards in the opposite direction of
@@ -354,7 +354,7 @@ TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
 TYPED_TEST(SpatialAccelerationTest, CentrifugalAcceleration) {
   typedef typename TestFixture::ScalarType T;
 
-  // The spatial acceleration of frame P measure in A is zero.
+  // The spatial acceleration of frame P measured in A is zero.
   const SpatialAcceleration<T> A_AP = SpatialAcceleration<T>::Zero();
 
   // Position of Q's origin measured in P and expressed in E.
@@ -414,7 +414,6 @@ TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
       SpatialAcceleration<T>::ShiftTimeDerivative(V_PQ, A_PQ, w_AP);
 
   SpatialAcceleration<T> A_AQ_expected;
-  //const Vector3<T> phat = p_PoQo.normalized();
   A_AQ_expected.rotational() = Vector3<T>::Zero();
   A_AQ_expected.translational() =
       /* The centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and
