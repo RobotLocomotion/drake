@@ -6,6 +6,29 @@
 
 namespace drake {
 namespace math {
+
+/// Given the time derivative d_B(v)/dt of an arbitrary 3D vector v in a frame B
+/// moving with angular velocity w_AB with respect to another frame A, this
+/// method computes (shifts) the time derivative d_A(v)/dt of the same vector v
+/// in frame A.
+/// Mathematically: <pre>
+///   d_A(v)/dt = d_B(v)/dt + w_AB x v
+/// </pre>
+///
+/// In source code and comments we use the monogram notation
+/// `DA_v_E = [d_A(v)/dt]_E` to denote the time derivative of the vector
+/// quantity v in a frame A with the resulting new vector quantity expressed in
+/// a frame E.
+/// To perform this operation numerically all quantities must be expressed in
+/// the same frame E. Using the monogram notation: <pre>
+///   DA_v_E = DB_v_E + w_AB_E x v_E
+/// </pre>
+///
+/// This operation is commonly known as the "Transport Theorem" while
+/// [Mitiguy 2016, §7.3] refers to it as to the "Golden Rule for Vector
+/// Differentiation".
+///
+/// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
 template <typename v_Type, typename DB_v_Type, typename w_AB_Type>
 Vector3<typename v_Type::Scalar> ShiftTimeDerivative(
     const Eigen::MatrixBase<v_Type>& v_E,
