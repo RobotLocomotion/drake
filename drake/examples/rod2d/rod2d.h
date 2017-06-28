@@ -1,7 +1,9 @@
 #pragma once
 
+#include "gtest/gtest_prod.h"
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
@@ -440,7 +442,31 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
       const T& w_WR,  // aka thetadot
       const Vector2<T>& p_WC);
 
+  /// Gets the point(s) of contact for the 2D rod.
+  /// @p context The context storing the current configuration and velocity of
+  ///            the rod.
+  /// @p points Contains the contact points (those rod endpoints touching or
+  ///           lying within the ground halfspace) on return. This function
+  ///           aborts if @p points is null or @p points is non-empty.
+  void GetContactPoints(const systems::Context<T>& context,
+                        std::vector<Vector2<T>>* points) const;
+
+  /// Gets the tangent velocities for all contact points.
+  /// @p context The context storing the current configuration and velocity of
+  ///            the rod.
+  /// @p points The set of context points.
+  /// @p vels Contains the velocities (measured along the x-axis) on return.
+  ///         This function aborts if @p vels is null. @p vels will be resized
+  ///         appropriately (to the same number of elements as @p points) on
+  ///         return.
+  void GetContactPointsTangentVelocities(
+      const systems::Context<T>& context,
+      const std::vector<Vector2<T>>& points, std::vector<T>* vels) const;
+
  private:
+  friend class Rod2DDAETest;
+  FRIEND_TEST(Rod2DDAETest, RigidContactProblemDataBallistic);
+
   Vector3<T> GetJacobianRow(const systems::Context<T>& context,
                             const Vector2<T>& p,
                             const Vector2<T>& dir) const;
@@ -450,9 +476,9 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   Matrix2<T> GetRotationMatrixDerivative(T theta) const;
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
-  void SetRigidContactProblemData(const systems::Context<T>& context,
-                                  const std::vector<Vector2<T>>& p,
-                                  const std::vector<T>& tangent_vels,
+  void CalcRigidContactProblemData(const systems::Context<T>& context,
+                                   const std::vector<Vector2<T>>& p,
+                                   const std::vector<T>& tangent_vels,
     multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()

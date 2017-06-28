@@ -13,10 +13,8 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
     name = "rigid_contact",
-    srcs = ["rigid_contact_solver.cc"],
     hdrs = [
         "rigid_contact_problem_data.h",
-        "rigid_contact_solver.h",
     ],
     deps = [
         "//drake/common",

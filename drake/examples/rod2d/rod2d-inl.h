@@ -353,6 +353,52 @@ Matrix2<T> Rod2D<T>::GetRotationMatrixDerivative(T theta) const {
   return Rdot;
 }
 
+template <class T>
+void Rod2D<T>::GetContactPoints(const systems::Context<T>& context,
+                                std::vector<Vector2<T>>* points) const {
+  using std::cos;
+  using std::sin;
+
+  DRAKE_DEMAND(points);
+  DRAKE_DEMAND(points->empty());
+
+  const Vector3<T> q = GetRodConfig(context);
+  const T& x = q[0];
+  const T& y = q[1];
+  T cth = cos(q[2]), sth = sin(q[2]);
+
+  // Get the two rod endpoint locations.
+  const T half_len = get_rod_half_length();
+  const Vector2<T> pa = CalcRodEndpoint(x, y, -1, cth, sth, half_len);
+  const Vector2<T> pb = CalcRodEndpoint(x, y, +1, cth, sth, half_len);
+
+  // If an endpoint touches the ground, add it as a contact point.
+  if (pa[1] <= 0)
+    points->push_back(pa);
+  if (pb[1] <= 0)
+    points->push_back(pb);
+}
+
+template <class T>
+void Rod2D<T>::GetContactPointsTangentVelocities(
+    const systems::Context<T>& context,
+    const std::vector<Vector2<T>>& points, std::vector<T>* vels) const {
+  DRAKE_DEMAND(vels);
+  const Vector3<T> q = GetRodConfig(context);
+  const Vector3<T> v = GetRodVelocity(context);
+
+  // Get necessary quantities.
+  const Vector2<T> p_WRo = q.segment(0, 2);
+  const Vector2<T> v_WRo = v.segment(0, 2);
+  const T& w_WR = v[2];
+
+  vels->resize(points.size());
+  for (size_t i = 0; i < points.size(); ++i) {
+    (*vels)[i] = CalcCoincidentRodPointVelocity(p_WRo, v_WRo, w_WR,
+                                                points[i])[0];
+  }
+}
+
 // Gets the row of a contact Jacobian matrix, given a point of contact, @p p,
 // and projection direction, @p dir.
 template <class T>
@@ -404,16 +450,21 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
   return Vector3<T>(0, 0, result[2]);
 }
 
-/// Initializes the contact data for the rod, given a set of contact points.
-/// @param p a vector of contact points, expressed in the world frame.
-/// @param data the rigid contact problem data.
+// Initializes the contact data for the rod, given a set of contact points.
+// Aborts if data is null or if `points.size() != tangent_vels.size()`.
+// @param points a vector of contact points, expressed in the world frame.
+// @param tangent_vels a vector of tangent velocities at the contact points,
+//        measured along the positive x-axis.
+// @param data the rigid contact problem data.
 template <class T>
-void Rod2D<T>::SetRigidContactProblemData(
+void Rod2D<T>::CalcRigidContactProblemData(
     const systems::Context<T>& context,
     const std::vector<Vector2<T>>& points,
     const std::vector<T>& tangent_vels,
     multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const {
   using std::abs;
+  DRAKE_DEMAND(data);
+  DRAKE_DEMAND(points.size() == tangent_vels.size());
 
   // Set the inertia solver.
   data->solve_inertia = std::bind(&Rod2D<T>::solve_inertia, this,
