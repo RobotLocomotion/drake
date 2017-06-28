@@ -37,23 +37,24 @@ GTEST_TEST(ShiftTimeDerivative, OnAngularVelocity) {
 // Consider a carousel rotating with angular velocity w_WC, where W is the
 // (inertial) world frame and C is the (non-inertial) carousel frame with its
 // origin Co at the center of the carousel.
-// Now consider a stationary wooden horse at location p_CoHo from the center of
-// the carousel frame Co. Since the horse is stationary in C we know
-// that its velocity in frame C is zero, that is v_CHo = DC_p_CoHo = 0.
+// The carousel is on the x-y plane with an angular velocity around the z-axis.
+// Now consider a wooden horse moving up and down (along the z-axis) at location
+// p_CoHo from the center of the carousel frame Co. Since the horse moves up and
+// down in C we know that its velocity in frame C is along the vertical z-axis,
+// that is v_CHo = DC_p_CoHo = swing_up_speed * zhat, with swing_up_speed the
+// (signed) magnitude of v_CHo and zhat the z-axis versor.
 // This unit test verifies we can compute the velocity v_WHo in the world frame
 // by shifting the time derivative as:
 //   v_WHo = DW_p_CoHo = DC_p_CoHo + w_WC x p_CoHo
-//
-// Note: The carousel is on the x-y plane with an angular velocity around the
-//       z-axis.
 //
 // Input parameters:
 //   horse_radius: the radial position of the horse in the carousel.
 //   theta: the rotation angle of the carousel. for theta = 0 C coincides with W
 //          and C rotates according to the right-hand-rule around the z-axis.
 //   theta_dot: the rate of change of theta.
+//   swing_up_speed: the (signed) magnitude of the horse's up and down motion.
 void HorseOnCarousel(double horse_radius,
-                     double theta, double theta_dot) {
+                     double theta, double theta_dot, double swing_up_speed) {
   using std::cos;
   using std::sin;
   const double kAbsoluteTolerance = 2 * std::numeric_limits<double>::epsilon();
@@ -64,14 +65,18 @@ void HorseOnCarousel(double horse_radius,
   const Vector3d& p_CoHo_C = horse_radius * Vector3d::UnitX();
 
   // Re-express horse position in the world frame.
-  Vector3d p_CoHo_W = R_WC * p_CoHo_C;
+  const Vector3d p_CoHo_W = R_WC * p_CoHo_C;
 
-  Vector3d v_WHo = ShiftTimeDerivative(
-      p_CoHo_W, Vector3d::Zero() /* DC_p_CoHo */, w_WC);
+  // Horse velocity in the C frame.
+  const Vector3d v_CHo = swing_up_speed * Vector3d::UnitZ();
 
-  // Compute the expected value.
-  Vector3d v_WHo_expected =
-      horse_radius * theta_dot * Vector3d(-sin(theta), cos(theta), 0);
+  const Vector3d v_WHo = ShiftTimeDerivative(
+      p_CoHo_W, v_CHo /* DC_p_CoHo */, w_WC);
+
+  // Compute the expected value. Note that since rotation is only along the
+  // z-axis, v_WHo = v_CHo
+  const Vector3d v_WHo_expected =
+      horse_radius * theta_dot * Vector3d(-sin(theta), cos(theta), 0) + v_CHo;
 
   EXPECT_TRUE(CompareMatrices(v_WHo, v_WHo_expected, kAbsoluteTolerance,
                               MatrixCompareType::absolute));
@@ -79,9 +84,9 @@ void HorseOnCarousel(double horse_radius,
 
 GTEST_TEST(ShiftTimeDerivative, HorseOnCarousel) {
   // Make a number of random tests.
-  HorseOnCarousel(1.5, 0.0, 3.0);
-  HorseOnCarousel(1.5, M_PI / 3.0, 3.0);
-  HorseOnCarousel(3.0, 7.0 * M_PI / 8.0, -1.0);
+  HorseOnCarousel(1.5, 0.0, 3.0, -1.0);
+  HorseOnCarousel(1.5, M_PI / 3.0, 3.0, 3.5);
+  HorseOnCarousel(3.0, 7.0 * M_PI / 8.0, -1.0, 2.0);
 }
 
 }  // namespace
