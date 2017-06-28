@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
+#include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -454,11 +455,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     (void) A_PB_W;
     (void) A_WPb;
 
-#if 0
     // From Eq. (4) the term for d_W(V_PB_W)/dt is computed as:
     SpatialAcceleration<T> DW_V_PB_W =
         ShiftTimeDerivative(V_PB_W, A_PB_W, V_WP.rotational());
-
+#if 0
     // =========================================================================
     // Update acceleration A_WB of this node's body B in the world frame using
     // the recursive relation in Eq. (2):

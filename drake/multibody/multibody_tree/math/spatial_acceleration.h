@@ -168,6 +168,12 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
                                const Vector3<T>& w_AP_E) const {
     return SpatialAcceleration<T>(*this).ShiftInPlace(p_PoQo_E, w_AP_E);
   }
+
+  static SpatialAcceleration<T> ShiftTimeDerivative(SpatialVelocity<T> V_PB_W,
+                                             SpatialAcceleration<T> A_PB_W,
+                                             Vector3<T> w_WP) {
+
+  }
 };
 
 }  // namespace multibody
