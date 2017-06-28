@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/shift_time_derivative.h"
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
+#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 
 namespace drake {
 namespace multibody {
@@ -127,13 +128,13 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// @see Shift() to compute the shifted spatial acceleration without modifying
   ///      this original object.
   SpatialAcceleration<T>& ShiftInPlace(const Vector3<T>& p_PoQo_E,
-                                       const Vector3<T>& w_AP_E) {
+                                       const Vector3<T>& w_FP_E) {
     // Angular acceleration of this frame P measured in A.
     const Vector3<T>& alpha_AP_E = this->rotational();
     // Linear acceleration of point Qo measured in A.
     Vector3<T>& a_AQo_E = this->translational();
     a_AQo_E += (alpha_AP_E.cross(p_PoQo_E) +
-        w_AP_E.cross(w_AP_E.cross(p_PoQo_E)));
+        w_FP_E.cross(w_FP_E.cross(p_PoQo_E)));
     return *this;
   }
 
@@ -213,6 +214,56 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
             V_E.translational(), DtB_V_E.translational(), w_AB));
   }
 };
+
+/// Performs the addition of two spatial accelerations. This operator
+/// returns the spatial acceleration that results from adding the operands as if
+/// they were 6-dimensional vectors. In other words, the resulting spatial
+/// acceleration contains a rotational component which is the 3-dimensional
+/// addition of the operand's rotational components and a translational
+/// component which is the 3-dimensional addition of the operand's translational
+/// components.
+///
+/// The addition of two spatial accelerations can only be performed if the
+/// operands meet strict conditions, in addition the the usual requirement of
+/// common expressed-in frames.
+///
+/// Adding two spatial velocities has the effect of composing them like so (in
+/// coordinate-free form, with no expressed-in frame implied):
+/// <pre>
+///   V_EB = V_EAb + V_AB = V_EA.Shift(p_AB) + V_AB
+/// </pre>
+/// where `p_AB` is the position vector from A's origin to B's origin. This
+/// shift can also be thought of as yielding the spatial velocity of a new frame
+/// Ab, which is an offset frame rigidly aligned with A, but with its origin
+/// shifted to B's origin.
+/// By definition, the spatial acceleration of frame B in E is
+/// `A_EB = DtE(V_EB)`. Now, applying this derivative (the DtE() operator) to
+/// the spatial velocity composition above yields: <pre>
+///   A_EB = DtE(V_EB) = DtE(V_EAb + V_AB) = DtE(V_EAb) + DtE(V_AB)
+/// </pre>
+/// The first term is obtained by shifting the spatial acceleration `A_EA` to B
+/// as: <pre>
+///   DtE(V_EAb) = A_EAb = A_EA.Shift(p_AB, w_EA)
+/// </pre>
+/// while the second therm can be obtained by shifting the time derivative from
+/// DtA() to DtE() with SpatialAcceleration::ShiftTimeDerivative() as: <pre>
+///   DtE(V_AB) = ShiftTimeDerivative(V_AB, A_AB, w_EA)
+/// </pre>
+///
+/// In summary, this operator carries out the addition: <pre>
+///   A_EB_E = A_EAb_E + DtE_V_AB_E
+/// </pre>
+/// the caller must have already performed the necessary shifts (by calling
+/// both SpatialAcceleration::Shift() and
+/// SpatialAcceleration::ShiftTimeDerivative().) Notice that not only all
+/// quantities are expressed in the same frame but also all time derivatives are
+/// taken in the same frame.
+template <typename T>
+inline SpatialAcceleration<T> operator+(
+    const SpatialAcceleration<T>& A_EAb,
+    const SpatialAcceleration<T>& DtE_V_AB_E) {
+  return SpatialAcceleration<T>(A_EAb.get_coeffs() + DtE_V_AB_E.get_coeffs());
+}
 
 }  // namespace multibody
 }  // namespace drake

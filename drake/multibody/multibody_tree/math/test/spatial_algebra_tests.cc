@@ -351,7 +351,7 @@ TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
 // Therefore, the spatial acceleration of frame Q should correspond to that of
 // a centrifugal linear component pointing inwards in the opposite direction of
 // p_PoQo
-TYPED_TEST(SpatialAccelerationTest, CentrifugalAccleration) {
+TYPED_TEST(SpatialAccelerationTest, CentrifugalAcceleration) {
   typedef typename TestFixture::ScalarType T;
 
   // The spatial acceleration of frame P measure in A is zero.
@@ -371,6 +371,58 @@ TYPED_TEST(SpatialAccelerationTest, CentrifugalAccleration) {
   // in the direction opposite to p_PoQo.
   A_AQ_expected.translational() =
       -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized();
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+}
+
+// Unit test for the method SpatialAcceleration::ShiftTimeDerivative().
+// Case 1b:
+// This unit test expands Case 1 by allowing point Q to move in frame P. This
+// motion causes, in addition to the centrifugal acceleration of Case 1, a
+// Coriolis acceleration due to the translational motion of point Q in the
+// rotating frame P.
+// Point Q has a spatial velocity V_PQ with a rotational component w_PQ along
+// the z-axis and a translational component v_PQ in the x-y plane, pointing in
+// the minus x direction in the P frame.
+// The translational velocity v_PQ is responsible for a Coriolis acceleration as
+// the result of the cross product w_AP with v_PQ, which then points radially
+// outwards counteracting the centrifugal contribution.
+TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
+  typedef typename TestFixture::ScalarType T;
+
+  // The spatial acceleration of frame P measure in A is zero.
+  const SpatialAcceleration<T> A_AP = SpatialAcceleration<T>::Zero();
+
+  // Position of Q's origin measured in P and expressed in E.
+  const Vector3<T> p_PoQo = Vector3<T>::UnitX() + Vector3<T>::UnitY();
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP = 3.0 * Vector3<T>::UnitZ();
+
+  // Spatial velocity of Q in P.
+  const SpatialVelocity<T> V_PQ(
+      1.5 * Vector3<T>::UnitZ() /* w_PQ */,
+      2.0 * Vector3<T>::UnitX() /* v_PQ */);
+
+  // Spatial acceleration of Q in P.
+  const SpatialAcceleration<T> A_PQ = SpatialAcceleration<T>::Zero();
+
+  // In this test, at this instantaneous moment, R_AP is the identity matrix and
+  // therefore p_PoQo_A = p_PoQo_P. Similarly for V_PQ, A_PQ and w_AP.
+  const SpatialAcceleration<T> A_AQ =
+      A_AP.Shift(p_PoQo, w_AP) +
+      SpatialAcceleration<T>::ShiftTimeDerivative(V_PQ, A_PQ, w_AP);
+
+  SpatialAcceleration<T> A_AQ_expected;
+  //const Vector3<T> phat = p_PoQo.normalized();
+  A_AQ_expected.rotational() = Vector3<T>::Zero();
+  A_AQ_expected.translational() =
+      /* The centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and
+      points in the direction opposite to p_PoQo.*/
+      -w_AP.norm() * w_AP.norm() * p_PoQo.norm() * p_PoQo.normalized() +
+      /* Coriolis contribution. Since v_PQ points in the x direction and w_AP in
+      the z direction, this contribution points in the positive y direction.*/
+      w_AP.norm() * V_PQ.translational().norm() * Vector3<T>::UnitY();
 
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
