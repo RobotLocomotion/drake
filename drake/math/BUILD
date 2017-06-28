@@ -129,7 +129,10 @@ drake_cc_library(
     name = "gray_code",
     srcs = ["gray_code.cc"],
     hdrs = ["gray_code.h"],
-    deps = ["@eigen"],
+    deps = [
+        "@eigen",
+        "//drake/common",
+    ],
 )
 
 drake_cc_library(

@@ -13,6 +13,7 @@ namespace solvers {
  * @return The minimal integer no smaller than log₂(n).
  */
 constexpr int CeilLog2(int n) {
+  DRAKE_ASSERT(n > 0);
   return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2);
 }
 
@@ -31,7 +32,7 @@ constexpr int CeilLog2(int n) {
  * two entries have to be adjacent. All other entries are zero.
  * @return y The newly added binary variables. The assignment of the binary
  * variable y implies which two λ can be strictly positive.
- * With an binary assignment on y, and suppose the integer M corresponds to
+ * With a binary assignment on y, and suppose the integer M corresponds to
  * (y(0), y(1), ..., y(⌈log₂(n - 1)⌉)) in Gray code, then only λ(M) and λ(M + 1)
  * can be non-zero. For example, if the assignment of y = (1, 1), in Gray code,
  * (1, 1) represents integer 2, so only λ(2) and λ(3) can be strictly positive.
