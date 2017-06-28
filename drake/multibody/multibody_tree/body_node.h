@@ -347,27 +347,27 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // where V_WPb is the spatial velocity of a frame Pb which results from
     // shifting frame P from Po to Bo, measured and expressed in the world
     // frame W.
-    // The acceleration A_WB is defined as d_W(V_WB)/dt, where d_W()/dt denotes
-    // the time derivative in the world frame. Taking d_W()/dt in Eq. (1)
+    // The acceleration A_WB is defined as DtW(V_WB), where DtW() denotes
+    // the time derivative in the world frame. Taking DtW() in Eq. (1)
     // results in a recursive relation for A_WB:
-    //   A_WB = d_W(V_WPb + V_PB_W)/dt = A_WPb + d_W(V_PB_W)/dt             (2)
+    //   A_WB = DtW(V_WPb + V_PB_W) = A_WPb + DtW(V_PB_W)             (2)
     // where A_WPb is the spatial acceleration of frame Pb. We need to develop
     // expressions for the two terms on the right hand side of Eq. (2).
     //
-    // Computation of A_WPb = d_W(V_WPb)/dt:
+    // Computation of A_WPb = DtW(V_WPb):
     // This simply is the acceleration of frame Pb in the world frame W or, in
     // other words, the spatial acceleration of frame B as if instantaneously
     // moving with frame P. This is nothing but the shift
     // operation of A_WP from Po to Bo and therefore:
-    //   A_WPb = d_W(V_WPb)/dt = A_WP.Shift(p_PoBo_W, w_WP)                 (3)
+    //   A_WPb = DtW(V_WPb) = A_WP.Shift(p_PoBo_W, w_WP)                 (3)
     //
-    // Computation of d_W(V_PB_W)/dt:
+    // Computation of DtW(V_PB_W):
     // This can be computed by first shifting the time derivative to be computed
     // in the P frame as:
-    //   d_W(V_PB_W)/dt = ShiftTimeDerivative(V_PB_W, A_PB_W, w_WP)         (4)
+    //   DtW(V_PB_W) = ShiftTimeDerivative(V_PB_W, A_PB_W, w_WP)         (4)
     // with V_PB_W already available in the VelocityKinematicsCache. The
     // acceleration of B in P is:
-    //   A_PB = d_P(V_PB)/dt = d_F(V_FMb)/dt = A_FM.Shift(p_MB, w_FM)       (5)
+    //   A_PB = DtP(V_PB) = DtF(V_FMb) = A_FM.Shift(p_MB, w_FM)       (5)
     // which expressed in the world frame leads to:
     //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (6)
     // where A_FM in the inboard frame F is the direct result from
@@ -375,7 +375,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //
     // * Note:
     //     The rigid body assumption is made in Eq. (5) in two places:
-    //       1. d_P()/dt = d_F()/dt since V_PF = 0.
+    //       1. DtP() = DtF() since V_PF = 0.
     //       2. V_PB = V_FMb since V_PB = V_PFb + V_FMb + V_MB but since P is
     //          assumed rigid V_PF = 0 and since B is assumed rigid V_MB = 0.
 
@@ -395,7 +395,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
 
     // =========================================================================
-    // Computation of A_WPb = d_W(V_WPb)/dt in Eq. (3).
+    // Computation of A_WPb = DtW(V_WPb) in Eq. (3).
 
     // Shift vector between the parent body P and this node's body B,
     // expressed in the world frame W.
@@ -413,7 +413,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const SpatialAcceleration<T> A_WPb = A_WP.Shift(p_PB_W, V_WP.rotational());
 
     // =========================================================================
-    // Computation of d_W(V_PB_W)/dt in Eq. (4)
+    // Computation of DtW(V_PB_W) in Eq. (4)
 
     // TODO(amcastro-tri): consider caching these. Especially true if bodies are
     // flexible. Also used in velocity kinematics.
@@ -455,9 +455,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     (void) A_PB_W;
     (void) A_WPb;
 
-    // From Eq. (4) the term for d_W(V_PB_W)/dt is computed as:
-    SpatialAcceleration<T> DW_V_PB_W =
-        ShiftTimeDerivative(V_PB_W, A_PB_W, V_WP.rotational());
+    // From Eq. (4) the term for DtW(V_PB_W) is computed as:
+    SpatialAcceleration<T> DtW_V_PB_W =
+      SpatialAcceleration<T>::ShiftTimeDerivative(
+          V_PB_W, A_PB_W, V_WP.rotational());
+
+    (void) DtW_V_PB_W;
 #if 0
     // =========================================================================
     // Update acceleration A_WB of this node's body B in the world frame using
