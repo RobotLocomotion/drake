@@ -1,8 +1,3 @@
-# tk 20141113 debugMexTest causes compilation errors on Ubuntu 32 bit
-# See https://github.com/RobotLocomotion/drake/issues/553
-# debugMexTester.m and debugMexTest.cpp were moved to dev
-# drake_add_mex(debugMexTest debugMexTest.cpp)
-
 drake_add_matlab_test(NAME util/test/PassByValueMapTest COMMAND PassByValueMapTest)
 drake_add_matlab_test(NAME util/test/angleDiffTest COMMAND angleDiffTest)
 drake_add_matlab_test(NAME util/test/asintest REQUIRES spotless COMMAND asintest)
@@ -46,4 +41,3 @@ drake_add_matlab_test(NAME util/test/testRotmat2rpy COMMAND testRotmat2rpy)
 drake_add_matlab_test(NAME util/test/testTransform COMMAND testTransform)
 drake_add_matlab_test(NAME util/test/test_datan2 COMMAND test_datan2)
 drake_add_matlab_test(NAME util/test/tvsumtest COMMAND tvsumtest)
-
