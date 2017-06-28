@@ -48,18 +48,7 @@ class Frame : public FrameBase<T> {
   /// with this frame.
   /// In particular, if `this` **is** the body frame B, this method directly
   /// returns the identity transformation.
-  /// @sa CalcBodyPoseInThisFrame() which returns the inverse
-  /// transformation `X_FB`.
   virtual Isometry3<T> CalcPoseInBodyFrame(
-      const systems::Context<T>& context) const = 0;
-
-  /// Computes the pose `X_FB` of the body B associated with `this` frame F,
-  /// in frame F.
-  /// In particular, if `this` **is**` the body frame B, i.e. `X_BF` is the
-  /// identity transformation, this method directly returns the identity
-  /// transformation.
-  /// @sa CalcBodyPoseInOtherFrame()
-  virtual Isometry3<T> CalcBodyPoseInThisFrame(
       const systems::Context<T>& context) const = 0;
 
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
@@ -75,24 +64,7 @@ class Frame : public FrameBase<T> {
   virtual Isometry3<T> CalcOffsetPoseInBody(
       const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const {
-    return CalcBodyPoseInThisFrame(context).inverse() * X_FQ;
-  }
-
-  /// Computes the pose `X_QB` of the body B associated with `this` frame F
-  /// in a frame Q, given the pose `X_QF` of `this` frame F measured in Q.
-  /// In other words, if `X_FB` is the pose of body frame B in `this` frame F,
-  /// this method computes the pose `X_QB` of body frame B in frame Q as
-  /// `X_QB = X_QF * X_FB`.
-  /// In particular, if `this` **is**` the body frame B, i.e. `X_FB` is the
-  /// identity transformation, this method directly returns `X_QF`.
-  /// @sa CalcBodyPoseInThisFrame() to compute the pose of the body associated
-  /// with this frame as measured in this frame.
-  /// Specific frame subclasses can override this method to provide faster
-  /// implementations if needed.
-  virtual Isometry3<T> CalcBodyPoseInOtherFrame(
-      const systems::Context<T>& context,
-      const Isometry3<T>& X_QF) const {
-    return X_QF * CalcBodyPoseInThisFrame(context);
+    return CalcPoseInBodyFrame(context) * X_FQ;
   }
 
  protected:

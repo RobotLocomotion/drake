@@ -275,7 +275,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         get_mobilizer().CalcAcrossMobilizerSpatialVelocity(context, vm);
 
     const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
-    const Isometry3<T> X_MB = frame_M.CalcBodyPoseInThisFrame(context);
+    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
 
     // Pose of the parent body P in world frame W.
     // Available since we are called within a base-to-tip recursion.
@@ -618,7 +618,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // - X_FM(qm_B)
     // - X_WP(q(W:B)), where q(W:B) includes all positions in the kinematics
     //                 path from body B to the world W.
-    const Isometry3<T> X_MB = frame_M.CalcBodyPoseInThisFrame(context);
+    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
     const Isometry3<T>& X_FM = get_X_FM(*pc);  // mobilizer.Eval_X_FM(ctx)
     const Isometry3<T>& X_WP = get_X_WP(*pc);  // body_P.EvalPoseInWorld(ctx)
 

@@ -51,13 +51,7 @@ class FixedOffsetFrame : public Frame<T> {
   Isometry3<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const final {
     // X_BF = X_BP * X_PF
-    return parent_frame_.CalcPoseInBodyFrame(context) * X_PF_;
-  }
-
-  Isometry3<T> CalcBodyPoseInThisFrame(
-      const systems::Context<T>& context) const final {
-    // X_FB = X_FP * X_PB = X_PF.inverse() * X_PB
-    return X_PF_.inverse() * parent_frame_.CalcBodyPoseInThisFrame(context);
+    return parent_frame_.CalcOffsetPoseInBody(context, X_PF_);
   }
 
  private:
