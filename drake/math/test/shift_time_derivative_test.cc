@@ -17,12 +17,12 @@ using Eigen::Vector3d;
 //   d_A(w_AB)/dt = d_B(w_AB)/dt
 // Input parameters:
 //   w_AB: angular velocity of B in A.
-//   DB_w_AB: Time derivative of w_AB in the B frame.
+//   DtB_w_AB: Time derivative of w_AB in the B frame.
 void ShiftTimeDerivativeOfAngularVelocity(
-    const Vector3d& w_AB, const Vector3d& DB_w_AB) {
+    const Vector3d& w_AB, const Vector3d& DtB_w_AB) {
   const double kAbsoluteTolerance = 2 * std::numeric_limits<double>::epsilon();
-  Vector3d DA_w_AB = ShiftTimeDerivative(w_AB, DB_w_AB, w_AB);
-  EXPECT_TRUE(CompareMatrices(DA_w_AB, DB_w_AB, kAbsoluteTolerance,
+  Vector3d DtA_w_AB = ShiftTimeDerivative(w_AB, DtB_w_AB, w_AB);
+  EXPECT_TRUE(CompareMatrices(DtA_w_AB, DtB_w_AB, kAbsoluteTolerance,
                               MatrixCompareType::absolute));
 }
 
@@ -41,11 +41,11 @@ GTEST_TEST(ShiftTimeDerivative, OnAngularVelocity) {
 // Now consider a wooden horse moving up and down (along the z-axis) at location
 // p_CoHo from the center of the carousel frame Co. Since the horse moves up and
 // down in C we know that its velocity in frame C is along the vertical z-axis,
-// that is v_CHo = DC_p_CoHo = swing_up_speed * zhat, with swing_up_speed the
+// that is v_CHo = DtC_p_CoHo = swing_up_speed * zhat, with swing_up_speed the
 // (signed) magnitude of v_CHo and zhat the z-axis versor.
 // This unit test verifies we can compute the velocity v_WHo in the world frame
 // by shifting the time derivative as:
-//   v_WHo = DW_p_CoHo = DC_p_CoHo + w_WC x p_CoHo
+//   v_WHo = DtW_p_CoHo = DtC_p_CoHo + w_WC x p_CoHo
 //
 // Input parameters:
 //   horse_radius: the radial position of the horse in the carousel.
@@ -71,7 +71,7 @@ void HorseOnCarousel(double horse_radius,
   const Vector3d v_CHo = swing_up_speed * Vector3d::UnitZ();
 
   const Vector3d v_WHo = ShiftTimeDerivative(
-      p_CoHo_W, v_CHo /* DC_p_CoHo */, w_WC);
+      p_CoHo_W, v_CHo /* DtC_p_CoHo */, w_WC);
 
   // Compute the expected value. Note that since rotation is only along the
   // z-axis, v_WHo = v_CHo
