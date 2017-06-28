@@ -71,7 +71,8 @@ int main() {
       builder.template AddSystem<RgbdCamera>(
           "rgbd_camera", plant->get_rigid_body_tree(),
           Eigen::Vector3d(-1., 0., 1.),
-          Eigen::Vector3d(0., M_PI_4, 0.), M_PI_4, true);
+          Eigen::Vector3d(0., M_PI_4, 0.), M_PI_4,
+          kImageArrayPublishPeriod, true);
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<ImageToLcmImageArrayT>(
