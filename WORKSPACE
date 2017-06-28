@@ -153,9 +153,9 @@ github_archive(
 github_archive(
     name = "bullet",
     repository = "bulletphysics/bullet3",
-    commit = "2.85.1",
+    commit = "2.86.1",
     build_file = "tools/bullet.BUILD",
-    sha256 = "6e157c0b50373bc0e860de27f06397827bb28a4205bc568ae79d76a0f919ed62",
+    sha256 = "c058b2e4321ba6adaa656976c1a138c07b18fc03b29f5b82880d5d8228fbf059",
 )
 
 github_archive(
