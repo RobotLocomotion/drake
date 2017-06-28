@@ -24,12 +24,4 @@ drake_cc_library(
 
 # === test/ ===
 
-drake_cc_googletest(
-    name = "rigid_contact_solver_test",
-    deps = [
-        ":rigid_contact",
-        "//drake/examples/rod2d",
-    ],
-)
-
 cpplint()
