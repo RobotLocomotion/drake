@@ -410,10 +410,8 @@ Vector3<T> Rod2D<T>::GetJacobianRow(const systems::Context<T>& context,
 
   // Compute cross product of the moment arm (expressed in the world frame)
   // and the direction.
-  const Vector3<T> p3(p[0] - q[0], p[1] - q[1], 0);
-  const Vector3<T> dir3(dir[0], dir[1], 0);
-  const Vector3<T> result = p3.cross(dir3);
-  return Vector3<T>(dir[0], dir[1], result[2]);
+  const Vector2<T> r(p[0] - q[0], p[1] - q[1]);
+  return Vector3<T>(dir[0], dir[1], cross2(r, dir));
 }
 
 // Gets the time derivative of a row of a contact Jacobian matrix, given a
@@ -444,10 +442,8 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 
   // Compute cross product of the time derivative of the moment arm (expressed
   // in the world frame) and the direction.
-  const Vector3<T> p3dot(pdot[0] - v[0], pdot[1] - v[1], 0);
-  const Vector3<T> dir3(dir[0], dir[1], 0);
-  const Vector3<T> result = p3dot.cross(dir3);
-  return Vector3<T>(0, 0, result[2]);
+  const Vector2<T> rdot(pdot[0] - v[0], pdot[1] - v[1]);
+  return Vector3<T>(0, 0, cross2(rdot, dir));
 }
 
 // Initializes the contact data for the rod, given a set of contact points.
