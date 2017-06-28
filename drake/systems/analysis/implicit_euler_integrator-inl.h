@@ -308,8 +308,6 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
 // refactorized.
 template <class T>
 bool ImplicitEulerIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
-  using std::isnan;
-
   return !J.allFinite();
 }
 
