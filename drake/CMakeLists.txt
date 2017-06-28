@@ -8,10 +8,8 @@ include(../cmake/config.cmake)
 include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
-include(../cmake/tools.cmake)
 
 drake_setup_platform()
-drake_setup_tools()
 drake_find_packages()
 
 # Create a cache variable that contains the

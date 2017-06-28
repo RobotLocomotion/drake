@@ -298,7 +298,6 @@ macro(drake_setup_options)
     "Classes and functions for parsing RNDF road networks")
 
   drake_optional_external(LIBBOT ON
-    DEPENDS "NOT USE_SANITIZER"
     "libbot2 robotics suite\;"
     "used for its simple open-gl visualizer + lcmgl for director")
 

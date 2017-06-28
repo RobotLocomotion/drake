@@ -6,14 +6,9 @@ include(CTest)
 include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/options.cmake)
-include(cmake/package.cmake)
-include(cmake/tools.cmake)
-include(cmake/git/hooks.cmake)
 
 drake_setup_superbuild()
 drake_setup_platform()
-drake_setup_tools_superbuild()
-drake_setup_git_hooks()
 drake_setup_options()
 
 ###############################################################################
@@ -288,11 +283,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
     -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
-    -DUSE_CLANG_TIDY:BOOL=${USE_CLANG_TIDY}
-    -DUSE_INCLUDE_WHAT_YOU_USE:BOOL=${USE_INCLUDE_WHAT_YOU_USE}
-    -DUSE_LINK_WHAT_YOU_USE:BOOL=${USE_LINK_WHAT_YOU_USE}
-    -DUSE_SANITIZER:STRING=${USE_SANITIZER}
-    -DUSE_VALGRIND:STRING=${USE_VALGRIND}
   DEPENDS
     bot_core_lcmtypes
     bullet
@@ -344,9 +334,3 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
 
 # END external projects
 ###############################################################################
-# BEGIN ros packages
-
-# END ros packages
-###############################################################################
-
-drake_setup_cpack()
