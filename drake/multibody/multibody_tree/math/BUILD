@@ -38,6 +38,7 @@ drake_cc_library(
     deps = [
         ":spatial_vector",
         "//drake/common",
+        "//drake/math:vector3_util",
     ],
 )
 
