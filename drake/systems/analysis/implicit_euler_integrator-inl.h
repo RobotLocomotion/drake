@@ -310,7 +310,7 @@ template <class T>
 bool ImplicitEulerIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
   using std::isnan;
 
-  return (isnan(J.norm()));
+  return !J.allFinite();
 }
 
 // Computes any necessary matrices for the Newton-Raphson iteration in
