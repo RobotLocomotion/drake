@@ -68,8 +68,8 @@ drake_cc_library(
     name = "vector3_util",
     srcs = ["cross_product.cc"],
     hdrs = [
+        "convert_time_derivative.h",
         "cross_product.h",
-        "shift_time_derivative.h",
     ],
     deps = [
         "//drake/common",

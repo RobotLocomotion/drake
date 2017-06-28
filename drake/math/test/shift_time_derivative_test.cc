@@ -1,4 +1,4 @@
-#include "drake/math/shift_time_derivative.h"
+#include "drake/math/convert_time_derivative.h"
 
 #include <gtest/gtest.h>
 
@@ -21,12 +21,12 @@ using Eigen::Vector3d;
 void ShiftTimeDerivativeOfAngularVelocity(
     const Vector3d& w_AB, const Vector3d& DtB_w_AB) {
   const double kAbsoluteTolerance = 2 * std::numeric_limits<double>::epsilon();
-  Vector3d DtA_w_AB = ShiftTimeDerivative(w_AB, DtB_w_AB, w_AB);
+  Vector3d DtA_w_AB = ConvertTimeDerivativeToOtherFrame(w_AB, DtB_w_AB, w_AB);
   EXPECT_TRUE(CompareMatrices(DtA_w_AB, DtB_w_AB, kAbsoluteTolerance,
                               MatrixCompareType::absolute));
 }
 
-GTEST_TEST(ShiftTimeDerivative, OnAngularVelocity) {
+GTEST_TEST(ConvertTimeDerivativeToOtherFrame, OnAngularVelocity) {
   // Make a number of random tests.
   ShiftTimeDerivativeOfAngularVelocity(
       Vector3d(0.0, 0.0, 0.0), Vector3d(0.0, 1.0, 0.0));
@@ -70,7 +70,7 @@ void HorseOnCarousel(double horse_radius,
   // Horse velocity in the C frame.
   const Vector3d v_CHo = swing_up_speed * Vector3d::UnitZ();
 
-  const Vector3d v_WHo = ShiftTimeDerivative(
+  const Vector3d v_WHo = ConvertTimeDerivativeToOtherFrame(
       p_CoHo_W, v_CHo /* DtC_p_CoHo */, w_WC);
 
   // Compute the expected value. Note that since rotation is only along the
@@ -82,7 +82,7 @@ void HorseOnCarousel(double horse_radius,
                               MatrixCompareType::absolute));
 }
 
-GTEST_TEST(ShiftTimeDerivative, HorseOnCarousel) {
+GTEST_TEST(ConvertTimeDerivativeToOtherFrame, HorseOnCarousel) {
   // Make a number of random tests.
   HorseOnCarousel(1.5, 0.0, 3.0, -1.0);
   HorseOnCarousel(1.5, M_PI / 3.0, 3.0, 3.5);
