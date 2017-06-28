@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -23,9 +23,12 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
     return SolverType::kEqualityConstrainedQP;
   }
 
-  std::string SolverName() const override {
-    return "Equality constrained QP";
-  }
+  std::string SolverName() const override { return id().name(); }
+
+  SolverId solver_id() const override;
+
+  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  static SolverId id();
 };
 
 }  // namespace solvers

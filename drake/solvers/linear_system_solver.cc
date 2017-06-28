@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -50,6 +52,15 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
 
   prog.SetSolverResult(solver_type(), 0);
   return SolutionResult::kSolutionFound;
+}
+
+SolverId LinearSystemSolver::solver_id() const {
+  return id();
+}
+
+SolverId LinearSystemSolver::id() {
+  static const never_destroyed<SolverId> singleton{"Linear system"};
+  return singleton.access();
 }
 
 }  // namespace solvers

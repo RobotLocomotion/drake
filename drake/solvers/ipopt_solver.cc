@@ -13,8 +13,10 @@
 #undef HAVE_CSTDDEF
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
+#include "drake/solvers/mathematical_program.h"
 
 using Ipopt::Index;
 using Ipopt::IpoptCalculatedQuantities;

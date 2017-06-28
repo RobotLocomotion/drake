@@ -15,6 +15,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 
 namespace drake {
 namespace solvers {
@@ -1397,6 +1398,16 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
 
   // still here?  failure...
   return false;
+}
+
+template <typename T>
+SolverId MobyLCPSolver<T>::solver_id() const {
+  return MobyLcpSolverId::id();
+}
+
+SolverId MobyLcpSolverId::id() {
+  static const never_destroyed<SolverId> singleton{"Moby LCP"};
+  return singleton.access();
 }
 
 // Instantiate templates.

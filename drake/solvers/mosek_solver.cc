@@ -12,6 +12,7 @@
 #include <mosek.h>
 
 #include "drake/common/scoped_singleton.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {

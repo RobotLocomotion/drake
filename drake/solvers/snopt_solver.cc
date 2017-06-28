@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/math/autodiff.h"
+#include "drake/solvers/mathematical_program.h"
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push

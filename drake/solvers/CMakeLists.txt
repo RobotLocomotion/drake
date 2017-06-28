@@ -34,14 +34,20 @@ list(APPEND optimization_files
   create_constraint.cc
   create_cost.cc
   decision_variable.cc
-  indeterminate.cc
+  dreal_solver_common.cc
   equality_constrained_qp_solver.cc
+  gurobi_solver_common.cc
+  indeterminate.cc
+  ipopt_solver_common.cc
   linear_system_solver.cc
   mathematical_program.cc
   mathematical_program_api.cc
   mathematical_program_solver_interface.cc
   moby_lcp_solver.cc
+  mosek_solver_common.cc
+  nlopt_solver_common.cc
   no_dreal.cc
+  snopt_solver_common.cc
   solver_id.cc
   symbolic_extraction.cc
   system_identification.cc
