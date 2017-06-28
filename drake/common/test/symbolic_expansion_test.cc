@@ -78,7 +78,7 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
   EXPECT_TRUE(CheckAlreadyExpanded(-2 * x_));
   EXPECT_TRUE(CheckAlreadyExpanded(3 * x_ * y_));               // 3xy
   EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(x_, 2) * y_));       // 3x^2y
-  EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(x_, 2) * y_ / 10));  // 3x^2y / 10
+  EXPECT_TRUE(CheckAlreadyExpanded(3 / 10 * pow(x_, 2) * y_));  // 3/10*x^2y
   EXPECT_TRUE(CheckAlreadyExpanded(-7 + x_ + y_));              // -7 + x + y
   EXPECT_TRUE(CheckAlreadyExpanded(1 + 3 * x_ - 4 * y_));       // 1 + 3x -4y
 }
@@ -232,6 +232,48 @@ TEST_F(SymbolicExpansionTest, UninterpretedFunction) {
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_PRED2(ExprEqual, uf1, uf1.Expand());
   EXPECT_PRED2(ExprEqual, uf2, uf2.Expand());
+}
+
+TEST_F(SymbolicExpansionTest, DivideByConstant) {
+  // (x) / 2 => x / 2  (no simplification)
+  EXPECT_PRED2(ExprEqual, (x_ / 2).Expand(), x_ / 2);
+
+  // 3 / 2 => 3 / 2  (no simplification)
+  EXPECT_PRED2(ExprEqual, (Expression(3.0) / 2).Expand(), 3.0 / 2);
+
+  // pow(x, y) / 2 => pow(x, y) / 2  (no simplification)
+  EXPECT_PRED2(ExprEqual, (pow(x_, y_) / 2).Expand(), pow(x_, y_) / 2);
+
+  // (2x) / 2 => x
+  EXPECT_PRED2(ExprEqual, ((2 * x_) / 2).Expand(), x_);
+
+  // (10x / 5) / 2 => x
+  EXPECT_PRED2(ExprEqual, (10 * x_ / 5 / 2).Expand(), x_);
+
+  // (10x²y³z⁴) / -5 => -2x²y³z⁴
+  EXPECT_PRED2(ExprEqual,
+               (10 * pow(x_, 2) * pow(y_, 3) * pow(z_, 4) / -5).Expand(),
+               -2 * pow(x_, 2) * pow(y_, 3) * pow(z_, 4));
+
+  // (36xy / 4 / -3) => -3xy
+  EXPECT_PRED2(ExprEqual, (36 * x_ * y_ / 4 / -3).Expand(), -3 * x_ * y_);
+
+  std::cerr << (x_ / 2).is_polynomial() << std::endl;
+
+  // (2x + 4xy + 6) / 2 => x + 2xy + 3
+  EXPECT_PRED2(ExprEqual, ((2 * x_ + 4 * x_ * y_ + 6) / 2).Expand(),
+               x_ + 2 * x_ * y_ + 3);
+
+  // (4x / 3) * (6y / 2) => 4xy
+  EXPECT_PRED2(ExprEqual, ((4 * x_ / 3) * (6 * y_ / 2)).Expand(), 4 * x_ * y_);
+
+  // (6xy / z / 3) => 2xy / z
+  EXPECT_PRED2(ExprEqual, (6 * x_ * y_ / z_ / 3).Expand(), 2 * x_ * y_ / z_);
+
+  // (36xy / x / -3) => -12xy / x
+  // Note that we do not cancel x out since it can be zero.
+  EXPECT_PRED2(ExprEqual, (36 * x_ * y_ / x_ / -3).Expand(),
+               -12 * x_ * y_ / x_);
 }
 
 }  // namespace
