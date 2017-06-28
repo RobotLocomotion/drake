@@ -1,2 +1,0 @@
-drake_add_cc_test(maliput_test)
-target_link_libraries(maliput_test drakeAutomotive)
