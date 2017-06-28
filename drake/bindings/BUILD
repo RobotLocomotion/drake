@@ -128,6 +128,17 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
+    name = "python/pydrake/solvers/ipopt.so",
+    srcs = ["pybind11/pydrake_ipopt.cc"],
+    linkshared = 1,
+    linkstatic = 1,
+    deps = [
+        "//drake/solvers:ipopt_solver",
+        "@pybind11",
+    ],
+)
+
+drake_cc_binary(
     name = "python/pydrake/solvers/mosek.so",
     srcs = ["pybind11/pydrake_mosek.cc"],
     linkshared = 1,
@@ -187,6 +198,7 @@ py_library(
         ":python/pydrake/solvers/_pydrake_ik.so",
         ":python/pydrake/solvers/_pydrake_mathematicalprogram.so",
         ":python/pydrake/solvers/gurobi.so",
+        ":python/pydrake/solvers/ipopt.so",
         ":python/pydrake/solvers/mosek.so",
     ],
     imports = ["python"],
@@ -208,6 +220,7 @@ install(
         ":python/pydrake/solvers/_pydrake_ik.so",
         ":python/pydrake/solvers/_pydrake_mathematicalprogram.so",
         ":python/pydrake/solvers/gurobi.so",
+        ":python/pydrake/solvers/ipopt.so",
         ":python/pydrake/solvers/mosek.so",
     ],
     visibility = ["//visibility:public"],
@@ -244,6 +257,14 @@ py_test(
     srcs = ["python/pydrake/test/testGurobiSolver.py"],
     main = "python/pydrake/test/testGurobiSolver.py",
     tags = gurobi_test_tags(),
+    deps = [":pydrake"],
+)
+
+py_test(
+    name = "pydrake_mathematical_program_ipopt_solver_test",
+    size = "small",
+    srcs = ["python/pydrake/test/test_ipopt_solver.py"],
+    main = "python/pydrake/test/test_ipopt_solver.py",
     deps = [":pydrake"],
 )
 

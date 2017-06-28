@@ -33,6 +33,8 @@ if(BUILD_TESTING)
     drake_add_python_test(pydrake.test.testGurobiSolver)
   endif()
 
+  drake_add_python_test(pydrake.test.testIpoptSolver)
+
   if(mosek_FOUND)
     drake_add_python_test(pydrake.test.testMosekSolver)
   endif()
