@@ -6,27 +6,30 @@
 /// descriptions specified below.
 /// Note: The four element base quaternion vector specifies the rotation of the
 /// base and must be set accordingly. The individual quaternion vector elements
-/// do not correspond to individual joints.
-/// 0: base x-translation
-/// 1: base y-translation
-/// 2: base z-translation
-/// 3: base quaternion element w
-/// 4: base quaternion element x
-/// 5: base quaternion element y
-/// 6: base quaternion element z
-/// 7: r_wheel_joint
-/// 8: l_wheel_joint
-/// 9: torso_lift_joint
-/// 10: head_pan_joint
-/// 11: head_tilt_joint
-/// 12: shoulder_pan_joint
-/// 13: shoulder_lift_joint
-/// 14: upperarm_roll_joint
-/// 15: elbow_flex_joint
-/// 16: forearm_roll_joint
-/// 17: wrist_flex_joint
-/// 18: wrist_roll_joint
-/// 19: r_gripper_finger_joint
+/// do not correspond to individual joints. Also, since a quaternion vector
+/// contains one more element than the angular velocity vector, the numbering of
+/// the position and velocity indices differ.
+/// ---- Position indexing ---          ---- Velocity Indexing ----
+/// 0: base x-translation               0: base x-translation
+/// 1: base y-translation               1: base y-translation
+/// 2: base z-translation               2: base z-translation
+/// 3: base quaternion element w        3: base omega_x
+/// 4: base quaternion element x        4: base omega_y
+/// 5: base quaternion element y        5: base omega_z
+/// 6: base quaternion element z        6: r_wheel_joint
+/// 7: r_wheel_joint                    7: l_wheel_joint
+/// 8: l_wheel_joint                    8: torso_lift_joint
+/// 9: torso_lift_joint                 9: head_pan_joint
+/// 10: head_pan_joint                  10: head_tilt_joint
+/// 11: head_tilt_joint                 11: shoulder_pan_joint
+/// 12: shoulder_pan_joint              12: shoulder_lift_joint
+/// 13: shoulder_lift_joint             13: upperarm_roll_joint
+/// 14: upperarm_roll_joint             14: elbow_flex_joint
+/// 15: elbow_flex_joint                15: forearm_roll_joint
+/// 16: forearm_roll_joint              16: wrist_flex_joint
+/// 17: wrist_flex_joint                17: wrist_roll_joint
+/// 18: wrist_roll_joint                18: r_gripper_finger_joint
+/// 19: r_gripper_finger_joint          19: l_gripper_finger_joint
 /// 20: l_gripper_finger_joint
 ///
 /// Rotational position/velocity units are in rad and rad/s, respectively.
@@ -40,30 +43,8 @@ namespace drake {
 namespace examples {
 namespace Fetch {
 
-constexpr int kNumDofs = 21;  // DOFs available for the Fetch robot
-
-constexpr int kBasexTranslationIdx = 0;
-constexpr int kBaseyTranslationIdx = 1;
-constexpr int kBasezTranslationIdx = 2;
-constexpr int kQuatwElementIdx = 3;
-constexpr int kQuatxElementIdx = 4;
-constexpr int kQuatyElementIdx = 5;
-constexpr int kQuatzElementIdx = 6;
-constexpr int kRWheelJointIdx = 7;
-constexpr int kLWheelJointIdx = 8;
-constexpr int kTorsoLiftJointIdx = 9;
-constexpr int kHeadPanJointIdx = 10;
-constexpr int kHeadTiltJointIdx = 11;
-constexpr int kShoulderPanJointIdx = 12;
-constexpr int kShoulderLiftJointIdx = 13;
-constexpr int kUpperarmRollJointIdx = 14;
-constexpr int kElbowFlexJointIdx = 15;
-constexpr int kForearmRollJointIdx = 16;
-constexpr int kWristFlexJointIdx = 17;
-constexpr int kWristRollJointIdx = 18;
-constexpr int kRGripperFingerJointIdx = 19;
-constexpr int kLGripperFingerJointx = 20;
-
+constexpr int kNumPosIndices = 21;  // Position indices for the Fetch robot
+constexpr int kNumVelIndices = 20;  // Velocity indices for the Fetch robot
 
 /// Verifies that @p tree matches assumptions about joint indices.
 /// Aborts if the tree isn't as expected.

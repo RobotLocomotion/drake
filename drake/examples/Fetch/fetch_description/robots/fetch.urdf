@@ -92,12 +92,6 @@
         <color rgba="1 1 1 1" />
       </material>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="../meshes/torso_lift_link_collision.obj" />
-      </geometry>
-    </collision>
   </link>
   <joint name="torso_lift_joint" type="prismatic">
     <origin rpy="-6.123E-17 0 0" xyz="-0.086875 0 0.37743" />

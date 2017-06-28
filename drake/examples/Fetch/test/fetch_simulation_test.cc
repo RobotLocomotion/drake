@@ -74,6 +74,7 @@ GTEST_TEST(FetchSimTest, PassiveTest) {
 
   // Sets torso lift initial conditions.
   // See the @file docblock in fetch_common.h for joint index descriptions.
+  const int kTorsoLiftJointIdx = 9;
   VectorBase<double> *x0 = fetch_context->get_mutable_continuous_state_vector();
   x0->SetAtIndex(kTorsoLiftJointIdx, 0.1);
 
@@ -97,7 +98,7 @@ GTEST_TEST(FetchSimTest, PassiveTest) {
   EXPECT_EQ(num_v, plant->get_num_velocities());
   EXPECT_EQ(num_q, num_v + 1);
 
-  for (int i = 0; i < kNumDofs; i++) {
+  for (int i = 0; i < kNumPosIndices; i++) {
     EXPECT_FALSE(std::isnan(position_vector.GetAtIndex(i)));
     EXPECT_FALSE(std::isinf(position_vector.GetAtIndex(i)));
   }

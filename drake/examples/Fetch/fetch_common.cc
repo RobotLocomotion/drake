@@ -16,7 +16,7 @@ void VerifyFetchTree(const RigidBodyTree<double>& tree) {
   std::map<std::string, int> name_to_idx = tree.computePositionNameToIndexMap();
 
   int joint_idx = 7;  // joints 0-6 are the floating base
-  DRAKE_DEMAND(name_to_idx.size() == kNumDofs);
+  DRAKE_DEMAND(name_to_idx.size() == kNumPosIndices);
   DRAKE_DEMAND(name_to_idx.count("r_wheel_joint"));
   DRAKE_DEMAND(name_to_idx["r_wheel_joint"] == joint_idx++);
   DRAKE_DEMAND(name_to_idx.count("l_wheel_joint"));
