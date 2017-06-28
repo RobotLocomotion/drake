@@ -319,6 +319,189 @@ Vector2<T> Rod2D<T>::CalcCoincidentRodPointVelocity(
   return v_WRc;
 }
 
+/// Solves MX = B for X, where M is the generalized inertia matrix of the rod
+/// and is defined in the following manner:<pre>
+/// M = | m 0 0 |
+///     | 0 m 0 |
+///     | 0 0 J | </pre>
+/// where `m` is the mass of the rod and `J` is its moment of inertia.
+template <class T>
+MatrixX<T> Rod2D<T>::solve_inertia(const MatrixX<T>& B) const {
+  const T inv_mass = 1.0 / get_rod_mass();
+  const T inv_J = 1.0 / get_rod_moment_of_inertia();
+  Matrix3<T> iM;
+  iM << inv_mass, 0,        0,
+      0,       inv_mass, 0,
+      0,       0,        inv_J;
+  return iM * B;
+}
+
+/// The velocity tolerance for sliding.
+template <class T>
+T Rod2D<T>::GetSlidingVelocityTolerance() const {
+  return 100 * std::numeric_limits<double>::epsilon();
+}
+
+// Gets the time derivative of a 2D rotation matrix.
+template <class T>
+Matrix2<T> Rod2D<T>::GetRotationMatrixDerivative(T theta) const {
+  using std::cos;
+  using std::sin;
+  const T cth = cos(theta), sth = sin(theta);
+  Matrix2<T> Rdot;
+  Rdot << -sth, -cth, cth, -sth;
+  return Rdot;
+}
+
+// Gets the row of a contact Jacobian matrix, given a point of contact, @p p,
+// and projection direction, @p dir.
+template <class T>
+Vector3<T> Rod2D<T>::GetJacobianRow(const systems::Context<T>& context,
+                                    const Vector2<T>& p,
+                                    const Vector2<T>& dir) const {
+  // Get rod configuration variables.
+  const Vector3<T> q = GetRodConfig(context);
+
+  // Compute cross product of the moment arm (expressed in the world frame)
+  // and the direction.
+  const Vector3<T> p3(p[0] - q[0], p[1] - q[1], 0);
+  const Vector3<T> dir3(dir[0], dir[1], 0);
+  const Vector3<T> result = p3.cross(dir3);
+  return Vector3<T>(dir[0], dir[1], result[2]);
+}
+
+// Gets the time derivative of a row of a contact Jacobian matrix, given a
+// point of contact, @p p, and projection direction, @p dir.
+template <class T>
+Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
+                                       const Vector2<T>& p,
+                                       const Vector2<T>& dir) const {
+  // Get rod state variables.
+  const Vector3<T> q = GetRodConfig(context);
+  const Vector3<T> v = GetRodVelocity(context);
+
+  // Get the transformation of vectors from the rod frame to the
+  // world frame and its time derivative.
+  const T& theta = q[2];
+  Eigen::Rotation2D<T> R(theta);
+
+  // Get the vector from the rod center-of-mass to the contact point,
+  // expressed in the rod frame.
+  const Vector2<T> x = q.segment(0, 2);
+  const Vector2<T> u = R.inverse() * (p - x);
+
+  // Compute the translational velocity of the contact point.
+  const Vector2<T> xdot = v.segment(0, 2);
+  const Matrix2<T> Rdot = GetRotationMatrixDerivative(theta);
+  const T& thetadot = v[2];
+  const Vector2<T> pdot = xdot + Rdot * u * thetadot;
+
+  // Compute cross product of the time derivative of the moment arm (expressed
+  // in the world frame) and the direction.
+  const Vector3<T> p3dot(pdot[0] - v[0], pdot[1] - v[1], 0);
+  const Vector3<T> dir3(dir[0], dir[1], 0);
+  const Vector3<T> result = p3dot.cross(dir3);
+  return Vector3<T>(0, 0, result[2]);
+}
+
+/// Initializes the contact data for the rod, given a set of contact points.
+/// @param p a vector of contact points, expressed in the world frame.
+/// @param data the rigid contact problem data.
+template <class T>
+void Rod2D<T>::SetRigidContactProblemData(
+    const systems::Context<T>& context,
+    const std::vector<Vector2<T>>& points,
+    const std::vector<T>& tangent_vels,
+    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const {
+  using std::abs;
+
+  // Set the inertia solver.
+  data->solve_inertia = std::bind(&Rod2D<T>::solve_inertia, this,
+                                  std::placeholders::_1);
+
+  // The normal and tangent spanning direction are unique.
+  const Vector2<T> contact_normal(0, 1);
+  const Vector2<T> contact_tan(1, 0);
+
+  // Get the set of contact points.
+  const int nc = points.size();
+
+  // Get the set of tangent velocities.
+  const T sliding_vel_tol = GetSlidingVelocityTolerance();
+
+  // Set sliding and non-sliding contacts.
+  data->non_sliding_contacts.clear();
+  data->sliding_contacts.clear();
+  for (int i = 0; i < nc; ++i) {
+    if (abs(tangent_vels[i]) < sliding_vel_tol) {
+      data->non_sliding_contacts.push_back(i);
+    } else {
+      data->sliding_contacts.push_back(i);
+    }
+  }
+
+  // Designate sliding and non-sliding contacts.
+  const int num_sliding = data->sliding_contacts.size();
+  const int num_non_sliding = data->non_sliding_contacts.size();
+
+  // Set sliding and non-sliding friction coefficients.
+  data->mu_sliding.setOnes(num_sliding) *= get_mu_coulomb();
+  data->mu_non_sliding.setOnes(num_non_sliding) *= get_mu_static();
+
+  // Set spanning friction cone directions (set to unity, because rod is 2D).
+  data->r.resize(num_non_sliding);
+  for (int i = 0; i < num_non_sliding; ++i)
+    data->r[i] = 1;
+
+  // Form the normal contact Jacobian (N).
+  const int ngc = 3;        // Number of generalized coordinates / velocities.
+  data->N.resize(nc, ngc);
+  for (int i = 0; i < nc; ++i)
+    data->N.row(i) = GetJacobianRow(context, points[i], contact_normal);
+
+  // Form Ndot (time derivative of N) and compute Ndot * v.
+  MatrixX<T> Ndot(nc, ngc);
+  for (int i = 0; i < nc; ++i)
+    Ndot.row(i) =  GetJacobianDotRow(context, points[i], contact_normal);
+  const Vector3<T> v = GetRodVelocity(context);
+  data->Ndot_x_v = Ndot * v;
+
+  // Form the tangent directions contact Jacobian (F), its time derivative
+  // (Fdot), and compute Fdot * v.
+  const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
+  data->F.resize(nr, ngc);
+  MatrixX<T> Fdot(nr, ngc);
+  for (int i = 0, j = 0; i < nc; ++i) {
+    if (std::binary_search(data->sliding_contacts.begin(),
+                           data->sliding_contacts.end(), i))
+      continue;
+    data->F.row(j) = GetJacobianRow(context, points[i], contact_tan);
+    Fdot.row(j) = GetJacobianDotRow(context, points[i], contact_tan);
+    ++j;
+  }
+  data->Fdot_x_v = Fdot * v;
+
+  // Form N - mu*Q (Q is sliding contact direction Jacobian).
+  data->N_minus_mu_Q = data->N;
+  VectorX<T> Qrow;
+  for (int i = 0, j = 0; i < nc; ++i) {
+    if (std::binary_search(data->non_sliding_contacts.begin(),
+                           data->non_sliding_contacts.end(), i))
+      continue;
+    if (tangent_vels[i] > 0) {
+      Qrow = GetJacobianRow(context, points[i], contact_tan);
+    } else {
+      Qrow = GetJacobianRow(context, points[i], -contact_tan);
+    }
+    data->N.row(i) -= data->mu_sliding[j] * Qrow;
+    ++j;
+  }
+
+  // Set external force vector.
+  data->f = ComputeExternalForces(context);
+}
+
+
 template <typename T>
 void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
                             systems::BasicVector<T>* state_port_value) const {

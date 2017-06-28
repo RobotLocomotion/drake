@@ -866,6 +866,24 @@ TEST_F(Rod2DDAETest, StickingSlidingWitness) {
   EXPECT_LT(dut_->CalcStickingFrictionForceSlack(*context_), 0);
 }
 
+// Verifies that the rigid contact problem data has reasonable values when the
+// rod is in a ballistic state.
+TEST_F(Rod2DDAETest, RigidContactProblemDataBallistic) {
+
+}
+
+// Verifies that the rigid contact problem data has reasonable values when the
+// rod is in a two-contact, at-rest configuration.
+
+// Verifies that the rigid contact problem data has reasonable values when the
+// rod is in a two-contact, sliding configuration.
+
+// Verifies that the rigid contact problem data has reasonable values when the
+// rod is in a single-contact, at-rest configuration.
+
+// Verifies that the rigid contact problem data has reasonable values when the
+// rod is in a two-contact, sliding configuration.
+
 /// Class for testing the Rod 2D example using a first order time
 /// stepping approach.
 class Rod2DTimeSteppingTest : public ::testing::Test {

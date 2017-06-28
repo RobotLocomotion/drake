@@ -41,18 +41,6 @@ class RigidContact2DSolverTest : public ::testing::Test {
     };
   }
 
-  // Solves MX = B for X, where M is the generalized inertia matrix.
-  MatrixX<double> solve_inertia(const Rod2D<double>& rod,
-                                const MatrixX<double>& B) {
-    const double inv_mass = 1.0 / rod.get_rod_mass();
-    const double inv_J = 1.0 / rod.get_rod_moment_of_inertia();
-    Matrix3<double> iM;
-    iM << inv_mass, 0,        0,
-           0,       inv_mass, 0,
-           0,       0,        inv_J;
-    return iM * B;
-  }
-
   // Sets the rod to a horizontal, resting configuration.
   void SetRestingHorizontal() {
     ContinuousState<double>& xc = *context_->
@@ -212,60 +200,6 @@ class RigidContact2DSolverTest : public ::testing::Test {
     return vels;
   }
 
-  // Gets the time derivative of a 2D rotation matrix.
-  Matrix2<double> GetRotationMatrixDerivative(double theta) const {
-    const double cth = std::cos(theta), sth = std::sin(theta);
-    Matrix2<double> Rdot;
-    Rdot << -sth, -cth, cth, -sth;
-    return Rdot;
-  }
-
-  // Gets the row of a contact Jacobian matrix, given a point of contact, @p p,
-  // and projection direction, @p dir.
-  Vector3<double> GetJacobianRow(const Vector2<double>& p,
-                                 const Vector2<double>& dir) const {
-    // Get rod configuration variables.
-    const Vector3<double> q = get_rod_config();
-
-    // Compute cross product of the moment arm (expressed in the world frame)
-    // and the direction.
-    const Vector3<double> p3(p[0] - q[0], p[1] - q[1], 0);
-    const Vector3<double> dir3(dir[0], dir[1], 0);
-    const Vector3<double> result = p3.cross(dir3);
-    return Vector3<double>(dir[0], dir[1], result[2]);
-  }
-
-  // Gets the time derivative of a row of a contact Jacobian matrix, given a
-  // point of contact, @p p, and projection direction, @p dir.
-  Vector3<double> GetJacobianDotRow(const Vector2<double>& p,
-                                    const Vector2<double>& dir) const {
-    // Get rod state variables.
-    const Vector3<double> q = get_rod_config();
-    const Vector3<double> v = get_rod_velocity();
-
-    // Get the transformation of vectors from the rod frame to the
-    // world frame and its time derivative.
-    const double& theta = q[2];
-    Eigen::Rotation2D<double> R(theta);
-
-    // Get the vector from the rod center-of-mass to the contact point,
-    // expressed in the rod frame.
-    const Vector2<double> x = q.segment(0, 2);
-    const Vector2<double> u = R.inverse() * (p - x);
-
-    // Compute the translational velocity of the contact point.
-    const Vector2<double> xdot = v.segment(0, 2);
-    const Matrix2<double> Rdot = GetRotationMatrixDerivative(theta);
-    const double& thetadot = v[2];
-    const Vector2<double> pdot = xdot + Rdot * u * thetadot;
-
-    // Compute cross product of the time derivative of the moment arm (expressed
-    // in the world frame) and the direction.
-    const Vector3<double> p3dot(pdot[0] - v[0], pdot[1] - v[1], 0);
-    const Vector3<double> dir3(dir[0], dir[1], 0);
-    const Vector3<double> result = p3dot.cross(dir3);
-    return Vector3<double>(0, 0, result[2]);
-  }
 };
 
 // Tests the rod in a ballistic configuration (non-contacting) configuration.

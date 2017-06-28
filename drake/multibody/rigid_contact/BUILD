@@ -12,7 +12,7 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "rigid-contact",
+    name = "rigid_contact",
     srcs = ["rigid_contact_solver.cc"],
     hdrs = [
         "rigid_contact_problem_data.h",
@@ -29,7 +29,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "rigid_contact_solver_test",
     deps = [
-        ":rigid-contact",
+        ":rigid_contact",
         "//drake/examples/rod2d",
     ],
 )
