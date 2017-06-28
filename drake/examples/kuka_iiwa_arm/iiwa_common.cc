@@ -101,7 +101,7 @@ void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
 
   // TODO(naveenoid) : consider implementing SDF version of this method.
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow(model_file_name), drake::multibody::joints::kFixed,
+      model_file_name, drake::multibody::joints::kFixed,
       weld_to_frame, tree);
 }
 
