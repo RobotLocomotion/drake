@@ -60,21 +60,10 @@ class BodyFrame : public Frame<T> {
     return Isometry3<T>::Identity();
   }
 
-  Isometry3<T> CalcBodyPoseInThisFrame(
-      const systems::Context<T>&) const final {
-    return Isometry3<T>::Identity();
-  }
-
   Isometry3<T> CalcOffsetPoseInBody(
       const systems::Context<T>&,
       const Isometry3<T>& X_FQ) const final {
     return X_FQ;
-  }
-
-  Isometry3<T> CalcBodyPoseInOtherFrame(
-      const systems::Context<T>&,
-      const Isometry3<T>& X_QF) const final {
-    return X_QF;
   }
 
  private:
