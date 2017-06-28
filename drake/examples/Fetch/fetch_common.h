@@ -1,16 +1,19 @@
 #pragma once
 /// @file
 ///
-/// This file assumes a 21-degree of freedom Fetch mobile robot. Joints are
-/// numbered sequentially starting from the base with the following joint
-/// index descriptions:
+/// This file assumes a 20-degree of freedom Fetch mobile robot. Joints are
+/// numbered sequentially starting from the base with the joint index
+/// descriptions specified below.
+/// Note: The four element base quaternion vector specifies the rotation of the
+/// base and must be set accordingly. The individual quaternion vector elements
+/// do not correspond to individual joints.
 /// 0: base x-translation
 /// 1: base y-translation
 /// 2: base z-translation
-/// 3: quaternion element w
-/// 4: quaternion element x
-/// 5: quaternion element y
-/// 6: quaternion element z
+/// 3: base quaternion element w
+/// 4: base quaternion element x
+/// 5: base quaternion element y
+/// 6: base quaternion element z
 /// 7: r_wheel_joint
 /// 8: l_wheel_joint
 /// 9: torso_lift_joint
@@ -72,7 +75,7 @@ void VerifyFetchTree(const RigidBodyTree<double>& tree);
 /// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
 void CreateTreeFromFloatingModelAtPose(
     const std::string& model_file_name, RigidBodyTreed* tree,
-    const Eigen::Isometry3d& orientation = Eigen::Isometry3d::Identity());
+    const Eigen::Isometry3d& pose = Eigen::Isometry3d::Identity());
 
 }  // namespace Fetch
 }  // namespace examples
