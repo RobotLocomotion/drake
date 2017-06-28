@@ -13,7 +13,6 @@ namespace solvers {
  * @return The minimal integer no smaller than log₂(n).
  */
 constexpr int CeilLog2(int n) {
-  DRAKE_ASSERT(n > 0);
   return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2);
 }
 
