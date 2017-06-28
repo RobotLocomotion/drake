@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/shift_time_derivative.h"
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 
 namespace drake {
@@ -167,6 +168,49 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   SpatialAcceleration<T> Shift(const Vector3<T>& p_PoQo_E,
                                const Vector3<T>& w_AP_E) const {
     return SpatialAcceleration<T>(*this).ShiftInPlace(p_PoQo_E, w_AP_E);
+  }
+
+  /// Given the time derivative `ᴮd/dt(V)` of an arbitrary SpatialVelocity V in
+  /// a frame B moving with angular velocity `w_AB` with respect to another
+  /// frame A, this method computes (shifts) the time derivative `ᴬd/dt(V)` of
+  /// the same SpatialVelocity V in frame A.
+  /// Mathematically, this corresponds to performing the shift operation on the
+  /// rotational and translational components (which are 3D vectors) of V
+  /// separately. The operation on each 3D vector component is performed by
+  /// drake::math::ShiftTimeDerivative() as: <pre>
+  ///   ᴬd/dt(Vw) = ᴮd/dt(Vw) + w_AB x Vw
+  ///   ᴬd/dt(Vv) = ᴮd/dt(Vv) + w_AB x Vv
+  /// </pre>
+  /// where `Vw` and `Vv` denote the rotational() and the translational()
+  /// components of V respectively.
+  ///
+  /// The spatial velocity V can be arbitrary, between two arbitrary frames P
+  /// and Q, i.e. `V_PQ`.
+  ///
+  /// In source code and comments we use the monogram notation
+  /// `DtA_V_E = [ᴬd/dt(V)]_E` to denote the time derivative of the spatial
+  /// velocity V in a frame A with the result returned as a %SpatialAcceleration
+  /// expressed in a frame E.
+  /// To perform this operation numerically all quantities must be expressed in
+  /// the same frame E. Using the monogram notation: <pre>
+  ///   DtA_Vw_E = DtB_Vw_E + w_AB_E x Vw_E
+  ///   DtA_Vv_E = DtB_Vv_E + w_AB_E x Vv_E
+  /// </pre>
+  ///
+  /// This operation is commonly known as the "Transport Theorem" while
+  /// [Mitiguy 2016, §7.3] refers to it as to the "Golden Rule for Vector
+  /// Differentiation".
+  ///
+  /// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
+  static SpatialAcceleration<T> ShiftTimeDerivative(
+      const SpatialVelocity<T>& V_E,
+      const SpatialAcceleration<T>& DtB_V_E,
+      const Vector3<T>& w_AB) {
+    return SpatialAcceleration(
+        drake::math::ShiftTimeDerivative(
+            V_E.rotational(), DtB_V_E.rotational(), w_AB),
+        drake::math::ShiftTimeDerivative(
+            V_E.translational(), DtB_V_E.translational(), w_AB));
   }
 };
 
