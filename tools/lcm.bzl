@@ -4,7 +4,7 @@ load(
     "@drake//tools:generate_include_header.bzl",
     "drake_generate_include_header",
 )
-load("@drake//tools:pathutils.bzl", "dirname", "join_paths")
+load("@drake//tools:pathutils.bzl", "basename", "dirname", "join_paths")
 
 def _lcm_aggregate_hdr(
         lcm_package,
@@ -40,38 +40,36 @@ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     """
     # Find and remove the dirname and extension shared by all lcm_srcs.
     # For srcs in the current directory, the dirname will be empty.
-    basename_start_index = lcm_srcs[0].rfind("/") + 1
-    dirname = lcm_srcs[0][:basename_start_index]
-    lcm_basenames = []
+    subdir = dirname(lcm_srcs[0])
+    lcm_names = []
     for item in lcm_srcs:
-        if not item[:item.rfind("/") + 1] == dirname:
-            fail(item + " doesn't share a dirname with " + lcm_srcs[0])
-        basename_with_ext = item[basename_start_index:]
-        if not basename_with_ext.endswith(".lcm"):
+        if dirname(item) != subdir:
+            fail("%s subdirectory doesn't match %s" % (item, lcm_srcs[0]))
+        if not item.endswith(".lcm"):
             fail(item + " doesn't end with .lcm")
-        basename = basename_with_ext[:-len(".lcm")]
-        lcm_basenames.append(basename)
+        itemname = basename(item)[:-len(".lcm")]
+        lcm_names.append(itemname)
 
     # Assemble the expected output paths, inferring struct names from what we
     # got in lcm_srcs, if necessary.
     if extension == ".h":
         h_outs = [
-            dirname + lcm_package + "_" + lcm_struct + extension
-            for lcm_struct in (lcm_structs or lcm_basenames)]
+            join_paths(subdir, lcm_package + "_" + lcm_struct + extension)
+            for lcm_struct in (lcm_structs or lcm_names)]
         c_outs = [
-            dirname + lcm_package + "_" + lcm_struct + ".c"
-            for lcm_struct in (lcm_structs or lcm_basenames)]
+            join_paths(subdir, lcm_package + "_" + lcm_struct + ".c")
+            for lcm_struct in (lcm_structs or lcm_names)]
         outs = struct(hdrs = h_outs, srcs = c_outs)
 
     else:
         outs = [
-            dirname + lcm_package + "/" + lcm_struct + extension
-            for lcm_struct in (lcm_structs or lcm_basenames)]
+            join_paths(subdir, lcm_package, lcm_struct + extension)
+            for lcm_struct in (lcm_structs or lcm_names)]
 
     # Some languages have extra metadata.
     (extension in [".h", ".hpp", ".py", ".java"]) or fail(extension)
     if extension == ".py":
-        outs.append(dirname + lcm_package + "/__init__.py")
+        outs.append(join_paths(subdir, lcm_package, "__init__.py"))
 
     return outs
 
