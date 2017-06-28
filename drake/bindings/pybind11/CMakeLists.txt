@@ -47,6 +47,12 @@ if(gurobi_FOUND)
   install(TARGETS _pydrake_gurobi DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
 endif()
 
+pybind11_add_module(_pydrake_ipopt pydrake_ipopt.cc)
+target_link_libraries(_pydrake_ipopt PRIVATE drakeOptimization)
+set_target_properties(_pydrake_ipopt PROPERTIES OUTPUT_NAME "ipopt")
+target_compile_options(_pydrake_ipopt PRIVATE "-fvisibility=default")
+install(TARGETS _pydrake_ipopt DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
+
 if(mosek_FOUND)
   pybind11_add_module(_pydrake_mosek pydrake_mosek.cc)
   target_link_libraries(_pydrake_mosek PRIVATE drakeOptimization)
