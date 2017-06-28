@@ -10,4 +10,6 @@ valgrind \
     --trace-children=yes \
     --track-origins=yes \
     --show-leak-kinds=definite,possible \
+    --gen-suppressions=all \
+    --num-callers=20 \
     "$@"
