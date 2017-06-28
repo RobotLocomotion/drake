@@ -4,6 +4,7 @@
 #pragma once
 
 #include <fstream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -63,6 +64,14 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   ~MobyLCPSolver() override = default;
 
   void SetLoggingEnabled(bool enabled);
+
+  /// Calculates the zero tolerance that the solver would compute if the user
+  /// does not specify a tolerance.
+  template <class U>
+  static U ComputeZeroTolerance(const MatrixX<U>& M) {
+    return M.rows() * M.template lpNorm<Eigen::Infinity>() *
+        (10 * std::numeric_limits<double>::epsilon());
+  }
 
   /// Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where
   /// b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is positive definite). Therefore,
