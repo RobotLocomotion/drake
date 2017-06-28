@@ -513,6 +513,16 @@ drake_cc_library(
     }),
 )
 
+drake_cc_library(
+    name = "mixed_integer_optimization_util",
+    srcs = ["mixed_integer_optimization_util.cc"],
+    hdrs = ["mixed_integer_optimization_util.h"],
+    deps = [
+        ":mathematical_program",
+        "//drake/math:gray_code",
+    ],
+)
+
 # === test/ ===
 drake_cc_googletest(
     name = "binding_test",
@@ -795,6 +805,16 @@ drake_cc_binary(
     srcs = ["test/plot_rotation_mccormick_envelope.cc"],
     deps = [
         ":rotation_constraint_visualization",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mixed_integer_optimization_util_test",
+    tags = gurobi_test_tags(gurobi_required = False),
+    deps = [
+        ":gurobi_solver",
+        ":mixed_integer_optimization_util",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 

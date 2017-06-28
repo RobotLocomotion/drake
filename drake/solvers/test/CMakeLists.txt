@@ -72,6 +72,9 @@ target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
 drake_add_cc_test(mosek_solver_test)
 target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
 
+drake_add_cc_test(mixed_integer_optimization_util_test)
+target_link_libraries(mixed_integer_optimization_util_test drakeCommon drakeMixedIntegerOptimizationUtil)
+
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
 
