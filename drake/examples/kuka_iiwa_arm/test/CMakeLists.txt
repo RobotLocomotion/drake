@@ -7,15 +7,4 @@ if(lcm_FOUND)
 
   drake_add_cc_test(robot_plan_interpolator_test)
   target_link_libraries(robot_plan_interpolator_test drakeKukaIiwaArmCommon)
-
-  drake_add_cc_test(sim_diagram_builder_test)
-  target_link_libraries(sim_diagram_builder_test
-      drakeKukaIiwaArmCommon
-      drakeKukaIiwaWorld
-      drakeSimDiagramBuilder
-      drakeLcmSystem
-      drakeMultibodyParsers
-      drakeRigidBodyPlant
-      drakeSystemAnalysis
-      drakeSystemControllers)
 endif()
