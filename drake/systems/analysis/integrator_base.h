@@ -1099,7 +1099,8 @@ class IntegratorBase {
    * to function well in most circumstances.
    * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
-   *               requirements.
+   *               requirements or to respect the integrator's maximum step
+   *               size.
    * @throws std::logic_error if integrator does not support error
    *                          estimation.
    * @note This function will shrink the integration step as necessary whenever
@@ -1328,6 +1329,7 @@ class IntegratorBase {
 template <class T>
 bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
   using std::isnan;
+  using std::min;
 
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation()) {
@@ -1371,6 +1373,9 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       if (dt_max < near_enough_larger * current_step_size)
         current_step_size = dt_max;  // dt_max is roughly current step.
     }
+
+    // Limit the current step size.
+    current_step_size = min(current_step_size, get_maximum_step_size());
 
     // Keep adjusting the integration step size until any integrator
     // convergence failures disappear.
