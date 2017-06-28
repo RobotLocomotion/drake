@@ -1,9 +1,0 @@
-if(lcm_FOUND)
-  drake_add_cc_test(quadrotor_dynamics_test)
-  target_link_libraries(quadrotor_dynamics_test
-      drakeMultibodyParsers
-      drakeQuadrotorCommon
-      drakeRigidBodyPlant
-      drakeSystemAnalysis
-      drakeSystemPrimitives)
-endif()

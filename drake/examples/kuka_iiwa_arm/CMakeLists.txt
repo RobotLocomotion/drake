@@ -101,7 +101,6 @@ if(lcm_FOUND)
 endif()
 
 add_subdirectory(controlled_kuka)
-add_subdirectory(dev)
 add_subdirectory(iiwa_world)
 add_subdirectory(pick_and_place)
 
