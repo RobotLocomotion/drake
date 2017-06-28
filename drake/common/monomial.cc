@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <map>
-#include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -25,7 +25,6 @@ using std::ostringstream;
 using std::out_of_range;
 using std::pair;
 using std::runtime_error;
-using std::shared_ptr;
 using std::unordered_map;
 
 namespace {
@@ -86,6 +85,8 @@ map<Variable, int> ToMonomialPower(const Expression& e) {
 }
 }  // namespace
 
+Monomial::Monomial(const Variable& var) : total_degree_{1}, powers_{{var, 1}} {}
+
 Monomial::Monomial(const Variable& var, const int exponent)
     : total_degree_{exponent} {
   DRAKE_DEMAND(exponent >= 0);
@@ -116,6 +117,14 @@ size_t Monomial::GetHash() const {
   // data-member of Monomial class while another data-member, total_degree_ is
   // determined by a given powers_.
   return hash_value<map<Variable, int>>{}(powers_);
+}
+
+Variables Monomial::GetVariables() const {
+  Variables vars{};
+  for (const pair<Variable, int> p : powers_) {
+    vars += p.first;
+  }
+  return vars;
 }
 
 bool Monomial::operator==(const Monomial& m) const {
@@ -238,12 +247,23 @@ Monomial& Monomial::pow_in_place(const int p) {
   return *this;
 }
 
-std::ostream& operator<<(std::ostream& out, const Monomial& m) {
-  out << "{";
-  for (const auto& power : m.powers_) {
-    out << "(" << power.first << ", " << power.second << ") ";
+ostream& operator<<(ostream& out, const Monomial& m) {
+  if (m.powers_.empty()) {
+    return out << 1;
   }
-  return out << "}";
+  auto it = m.powers_.begin();
+  out << it->first;
+  if (it->second > 1) {
+    out << "^" << it->second;
+  }
+  for (++it; it != m.powers_.end(); ++it) {
+    out << " * ";
+    out << it->first;
+    if (it->second > 1) {
+      out << "^" << it->second;
+    }
+  }
+  return out;
 }
 
 Monomial operator*(Monomial m1, const Monomial& m2) {
@@ -538,65 +558,6 @@ MonomialToCoefficientMap DecomposePolynomialIntoMonomial(
   return map;
 }
 
-class DegreeVisitor {
- public:
-  int Visit(const Expression& e, const Variables& vars) const {
-    return VisitPolynomial<int>(this, e, vars);
-  }
-
- private:
-  int VisitVariable(const Expression& e, const Variables& vars) const {
-    return vars.include(get_variable(e)) ? 1 : 0;
-  }
-
-  int VisitConstant(const Expression&, const Variables&) const { return 0; }
-
-  int VisitAddition(const Expression& e, const Variables& vars) const {
-    int degree = 0;
-    for (const auto& p : get_expr_to_coeff_map_in_addition(e)) {
-      degree = std::max(degree, Visit(p.first, vars));
-    }
-    return degree;
-  }
-
-  int VisitMultiplication(const Expression& e, const Variables& vars) const {
-    const auto& base_to_exponent_map =
-        get_base_to_exponent_map_in_multiplication(e);
-    return accumulate(
-        base_to_exponent_map.begin(), base_to_exponent_map.end(), 0,
-        [this, &vars](const int& degree,
-                      const pair<Expression, Expression>& p) {
-          const Expression& base{p.first};
-          const Expression& exponent{p.second};
-          return degree + Visit(base, vars) *
-                              static_cast<int>(get_constant_value(exponent));
-        });
-  }
-
-  int VisitDivision(const Expression& e, const Variables& vars) const {
-    return Visit(get_first_argument(e), vars) -
-           Visit(get_second_argument(e), vars);
-  }
-
-  int VisitPow(const Expression& e, const Variables& vars) const {
-    const int exponent{
-        static_cast<int>(get_constant_value(get_second_argument(e)))};
-    return Visit(get_first_argument(e), vars) * exponent;
-  }
-
-  // Makes VisitPolynomial a friend of this class so that it can use private
-  // methods.
-  friend int drake::symbolic::VisitPolynomial<int>(const DegreeVisitor*,
-                                                   const Expression&,
-                                                   const Variables&);
-};
-
-int Degree(const Expression& e, const Variables& vars) {
-  return DegreeVisitor().Visit(e, vars);
-}
-
-int Degree(const Expression& e) { return Degree(e, e.GetVariables()); }
-
 Expression GetMonomial(const unordered_map<Variable, int, hash_value<Variable>>&
                            map_var_to_exponent) {
   map<Expression, Expression> base_to_exponent_map;
@@ -605,11 +566,6 @@ Expression GetMonomial(const unordered_map<Variable, int, hash_value<Variable>>&
     base_to_exponent_map.emplace(Expression{p.first}, p.second);
   }
   return ExpressionMulFactory{1.0, base_to_exponent_map}.GetExpression();
-}
-
-Eigen::Matrix<Expression, Eigen::Dynamic, 1> MonomialBasis(
-    const Variables& vars, const int degree) {
-  return ComputeMonomialBasis<Eigen::Dynamic>(vars, degree);
 }
 
 MonomialAsExpressionToCoefficientMap DecomposePolynomialIntoExpression(
