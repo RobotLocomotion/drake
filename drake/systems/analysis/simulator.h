@@ -641,6 +641,8 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 // @post The context will be isolated to the first witness function trigger(s),
 //       to within the requisite interval length. It is guaranteed that all
 //       triggered witness functions change sign over [t0, tw].
+// @note We assume that, if a witness function triggers over an interval
+//       [a, b], it also triggers over any larger interval [a, d], for d > b.
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -661,13 +663,14 @@ void Simulator<T>::IsolateWitnessTriggers(
   // Get the witness isolation interval length.
   const optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
 
-  // Check whether the witness function is to be isolated.
+  // Check whether witness functions *are* to be isolated. If not, the witnesses
+  // that were triggered on entry will be the set that is returned.
   if (!witness_iso_len)
     return;
 
   // Mini function for integrating the system forward in time.
   std::function<void(const T&)> fwd_int =
-      [t0, x0, context, this](const T& t_des) {
+      [&t0, &x0, context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
     context->set_time(t0);
     context->get_mutable_continuous_state()->SetFromVector(x0);
