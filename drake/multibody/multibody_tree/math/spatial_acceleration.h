@@ -143,7 +143,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// with `a_WPo = DtW(v_WPo)` and `alpha_WP = DtW(w_WP)` by definition.
   /// The last term in Eq. (2) is obtained by converting the vector time
   /// derivative from `DtW()` to `DtP()`,
-  /// see drake::math::ShiftTimeDerivative(): <pre>
+  /// see drake::math::ConvertTimeDerivativeToOtherFrame(): <pre>
   ///   DtW(p_PoBo) = DtP(p_PoBo) + w_WP x p_PoBo
   ///               = w_WP x p_PoBo                                         (3)
   /// </pre>
@@ -260,7 +260,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// with `a_WPo = DtW(v_WPo)` and `alpha_WP = DtW(w_WP)` by definition.
   /// The term DtW(p_PoBo) in Eq. (3) is obtained by converting the vector time
   /// derivative from `DtW()` to `DtP()`,
-  /// see drake::math::ShiftTimeDerivative(): <pre>
+  /// see drake::math::ConvertTimeDerivativeToOtherFrame(): <pre>
   ///   DtW(p_PoBo) = DtP(p_PoBo) + w_WP x p_PoBo
   ///               = v_PBo + w_WP x p_PoBo                                 (4)
   /// </pre>
