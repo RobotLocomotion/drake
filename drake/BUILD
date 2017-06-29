@@ -297,7 +297,6 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/thirdParty:stx",
     "//drake/thirdParty:tinydir",
     "//drake/thirdParty:tinyxml2",
-    "//drake/util:app_util",
     "//drake/util:convex_hull",
     "//drake/util:lcm_util",
     "//drake/util:util",
