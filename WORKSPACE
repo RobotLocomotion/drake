@@ -261,8 +261,8 @@ new_go_repository(
 github_archive(
     name = "com_github_bazelbuild_buildtools",
     repository = "bazelbuild/buildtools",
-    commit = "0.4.5",
-    sha256 = "7a732ea12d88ddbf9adc99ff5b5c39bfda53b6286ecc79c3bc082d5f53f46f44",
+    commit = "7ce605fb1585076ed681e37d82d0ef529244b23a",
+    sha256 = "c6210992d328212a7752a2c888a15f5c597dbf31f03ac0d59457ceff2928a30b",
 )
 
 github_archive(
