@@ -34,12 +34,12 @@ class InverseFunctionInterpolator {
   /// @param[in] xmax @p function 's domain interval upper bound.
   /// @param[in] error_boundary a positive constraint on the maximum error
   /// allowed when approximating the inverse function.
-  /// @throws when @p error_boundary is not positive.
-  /// @throws when @p xmin is equal or greater than @p xmax.
-  /// @throws when evaluating @p function throws.
-  explicit InverseFunctionInterpolator(
-      std::function<double(double)> function, double xmin, double xmax,
-      double error_boundary);
+  /// @throws std::runtime_error When @p error_boundary is not positive.
+  /// @throws std::runtime_error When @p xmin is equal or greater than @p xmax.
+  /// @throws std::runtime_error When evaluating @p function throws.
+  explicit InverseFunctionInterpolator(std::function<double(double)> function,
+                                       double xmin, double xmax,
+                                       double error_boundary);
 
   /// Interpolates @f$ x^{(derivative_order)}(y) @f$, that is, the inverse of
   /// the given function.
@@ -54,8 +54,8 @@ class InverseFunctionInterpolator {
   /// @throws when @p derivative_order is a negative integer.
   /// @throws when @p y is larger than the maximum range of the function's
   /// codomain as described in the constructor's documentation.
-  /// @throws when @p y is smaller than the minimum range of the function's
-  /// codomain as described in the constructor's documentation.
+  /// @throws std::runtime_error When @p y is smaller than the minimum range of
+  /// the function's codomain as described in the constructor's documentation.
   double InterpolateMthDerivative(int derivative_order, double y);
 
  private:
@@ -96,8 +96,9 @@ class ArcLengthParameterizedSpline {
   /// @param[in] error_boundary a positive constraint on the
   /// maximum error allowed when approximating the path length
   /// parameterization.
-  /// @throws when @p spline is nullptr.
-  /// @throws when @p error_boundary is not a positive number.
+  /// @throws std::runtime_error When @p spline is nullptr.
+  /// @throws std::runtime_error When @p error_boundary is not a positive
+  /// number.
   explicit ArcLengthParameterizedSpline(
       std::unique_ptr<ignition::math::Spline> spline, double error_boundary);
 
@@ -109,7 +110,7 @@ class ArcLengthParameterizedSpline {
   /// @param[in] s path length to interpolate at, constrained
   /// by the curve dimensions [0, path_length].
   /// @return the @p derivative_order derivative @f$ Q^{(derivative_order)}(s) .
-  /// @throws if @p derivative_order is a negative integer.
+  /// @throws std::runtime_error If @p derivative_order is a negative integer.
   ignition::math::Vector3d InterpolateMthDerivative(int derivative_order,
                                                     double s);
 
