@@ -700,7 +700,16 @@ void Simulator<T>::IsolateWitnessTriggers(
 
     // If no witness function triggered, we can continue integrating forward.
     if (!trigger) {
-      a = c;
+      // NOTE: Since we're always checking that the sign changes over [t0,c],
+      // it's also feasible to replace the two lines below with "a = c" without
+      // violating Simulator's contract to only integrate once over the interval
+      // [a, c], for some c <= b before per-step events are handled (i.e., it's
+      // unacceptable to take two steps of (c - a)/2 without processing per-step
+      // events first). That change would avoid handling unnecessary per-step
+      // events- we know no other events are to be handled between t0 and tf-
+      // but the current logic appears easier to follow.
+      triggered_witnesses->clear();
+      return;
     } else {
       b = c;
     }
@@ -779,9 +788,10 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
       event.triggered_witness_function = fn;
     }
 
-    // Indicate a "sample time was hit". In more understandable terms, this
-    // means that an event should be handled on the next simulation loop.
-    return true;
+    // Indicate a "sample time was hit" if at least one witness function
+    // triggered (meaning that an event should be handled on the next simulation
+    // loop).
+    return !triggered_witnesses_.empty();
   }
 
   // No witness function triggered; handle integration as usual.
