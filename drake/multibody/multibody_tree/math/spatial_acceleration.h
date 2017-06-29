@@ -76,10 +76,10 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// Under the hood, spatial accelerations are 6-element quantities that are
   /// pairs of ordinary 3-vectors. Elements 0-2 constitute the angular
   /// acceleration component while elements 3-5 constitute the translational
-  /// acceleration. The argument @p A in this constructor is the concatenation
-  /// of the translational 3D component followed by the translational 3D
+  /// acceleration. The argument `A` in this constructor is the concatenation
+  /// of the rotational 3D component followed by the translational 3D
   /// component.
-  /// This constructor will assert the size of A is six (6) at compile-time
+  /// This constructor will assert the size of `A` is six (6) at compile-time
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
   template <typename Derived>
@@ -183,7 +183,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   A_WPb.rotational() = alpha_WPb = alpha_WP
   ///   A_WPb.translational() = a_WBo
   ///                         = a_WPo + alpha_WP x p_PoBo + w_WP x w_WP x p_PoBo
-  /// <pre>
+  /// </pre>
   /// with `alpha_WP = A_WP.rotational()` and `a_WPo = A_WP.translational()`.
   /// As usual, for computation, all quantities above must be expressed in a
   /// common frame E; we add an `_E` suffix to each symbol to indicate that.
@@ -329,7 +329,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   A_WB.translational() = a_WBo
   ///                      = {a_WPo + alpha_WP x p_PoBo + w_WP x w_WP x p_PoBo}
   ///                      + 2 * w_WP x v_PBo + a_PBo
-  /// <pre>
+  /// </pre>
   /// where we have placed within curly brackets `{}` all the terms that also
   /// appear in the Shift() operation, which is equivalent to this method when
   /// `V_PB` and `A_PB` are both zero.
