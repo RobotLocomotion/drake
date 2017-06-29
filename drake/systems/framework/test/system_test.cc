@@ -21,13 +21,17 @@ namespace systems {
 namespace {
 
 const int kSize = 3;
-const int kNumberToPublish = 1776;
-const int kNumberToUpdate = 2001;
 
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
   TestSystem() {
+    this->set_forced_publish_events(
+        this->AllocateForcedPublishEventCollection());
+    this->set_forced_discrete_update_events(
+        this->AllocateForcedDiscreteUpdateEventCollection());
+    this->set_forced_unrestricted_update_events(
+        this->AllocateForcedUnrestrictedUpdateEventCollection());
     this->set_name("TestSystem");
   }
   ~TestSystem() override {}
@@ -39,6 +43,11 @@ class TestSystem : public System<double> {
 
   std::unique_ptr<Context<double>> AllocateContext() const override {
     return nullptr;
+  }
+
+  std::unique_ptr<CompositeEventCollection<double>>
+  AllocateCompositeEventCollection() const override {
+    return std::make_unique<LeafCompositeEventCollection<double>>();
   }
 
   void SetDefaultState(const Context<double>& context,
@@ -65,13 +74,9 @@ class TestSystem : public System<double> {
     return *port_ptr;
   }
 
-  bool HasAnyDirectFeedthrough() const override {
-    return true;
-  }
+  bool HasAnyDirectFeedthrough() const override { return true; }
 
-  bool HasDirectFeedthrough(int output_port) const override {
-    return true;
-  }
+  bool HasDirectFeedthrough(int output_port) const override { return true; }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -92,6 +97,19 @@ class TestSystem : public System<double> {
     DRAKE_ABORT();
   }
 
+  void AddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<double>&,
+      CompositeEventCollection<double>*) const override {
+    // This system uses no witness functions.
+    DRAKE_ABORT();
+  }
+
+  // The default publish function.
+  void MyPublish(const Context<double>& context,
+                 const std::vector<const PublishEvent<double>*>& events) const {
+    ++publish_count_;
+  }
+
  protected:
   BasicVector<double>* DoAllocateInputVector(
       const InputPortDescriptor<double>& descriptor) const override {
@@ -107,59 +125,76 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 
-  // Sets up an arbitrary mapping from the current time to the next discrete
-  // action, to exercise several different forms of discrete action.
-  void DoCalcNextUpdateTime(const Context<double>& context,
-                            UpdateActions<double>* actions) const override {
-    actions->time = context.get_time() + 1;
-    actions->events.emplace_back();
-    DiscreteEvent<double>& event = actions->events.back();
-    if (context.get_time() < 10.0) {
-      // Use the default publish action.
-      event.action = DiscreteEvent<double>::kPublishAction;
-    } else if (context.get_time() < 20.0) {
-      // Use the default update action.
-      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-    } else if (context.get_time() < 30.0) {
-      // Use a custom publish action.
-      event.action = DiscreteEvent<double>::kPublishAction;
-      event.do_publish = std::bind(&TestSystem::DoPublishNumber, this,
-                                   std::placeholders::_1 /* context */);
-    } else {
-      // Use a custom update action.
-      event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-      event.do_calc_discrete_variable_update = std::bind(
-                                  &TestSystem::DoCalcDiscreteUpdatesNumber,
-                                  this, std::placeholders::_1 /* context */,
-                                  std::placeholders::_2 /* discrete state */,
-                                  kNumberToUpdate);
+  void DispatchPublishHandler(
+      const Context<double>& context,
+      const EventCollection<PublishEvent<double>>& events) const final {
+    const LeafEventCollection<PublishEvent<double>>& leaf_events =
+       dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
+    if (leaf_events.HasEvents()) {
+      this->MyPublish(context, leaf_events.get_events());
     }
   }
 
-  // The default publish function.
-  void DoPublish(const Context<double>& context) const override {
-    ++publish_count_;
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<double>& context,
+      const EventCollection<DiscreteUpdateEvent<double>>& events,
+      DiscreteValues<double>* discrete_state) const final {
+    const LeafEventCollection<DiscreteUpdateEvent<double>>& leaf_events =
+        dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<double>>&>(
+            events);
+    if (leaf_events.HasEvents()) {
+      this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
+          discrete_state);
+    }
+  }
+
+  void DispatchUnrestrictedUpdateHandler(
+      const Context<double>&,
+      const EventCollection<UnrestrictedUpdateEvent<double>>&,
+      State<double>*) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+
+  // Sets up an arbitrary mapping from the current time to the next discrete
+  // action, to exercise several different forms of discrete action.
+  void DoCalcNextUpdateTime(const Context<double>& context,
+                            CompositeEventCollection<double>* event_info,
+                            double* time) const override {
+    *time = context.get_time() + 1;
+
+    if (context.get_time() < 10.0) {
+      PublishEvent<double> event(Event<double>::TriggerType::kPeriodic);
+      event.add_to_composite(event_info);
+    } else {
+      DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic);
+      event.add_to_composite(event_info);
+    }
   }
 
   // The default update function.
-  void DoCalcDiscreteVariableUpdates(
+  void MyCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      DiscreteValues<double>* discrete_state) const override {
+      const std::vector<const DiscreteUpdateEvent<double>*>& events,
+      DiscreteValues<double>* discrete_state) const {
     ++update_count_;
   }
 
- private:
-  // A custom publish function with no additional arguments.
-  void DoPublishNumber(const Context<double>& context) const {
-    published_numbers_.push_back(kNumberToPublish);
+  std::unique_ptr<EventCollection<PublishEvent<double>>>
+  AllocateForcedPublishEventCollection() const override {
+    return LeafEventCollection<
+        PublishEvent<double>>::MakeForcedEventCollection();
   }
 
-  // A custom update function with additional argument @p num, which may be
-  // bound in DoCalcNextUpdateTime.
-  void DoCalcDiscreteUpdatesNumber(const Context<double>& context,
-                                   DiscreteValues<double>* discrete_state,
-                                   int num) const {
-    updated_numbers_.push_back(num);
+  std::unique_ptr<EventCollection<DiscreteUpdateEvent<double>>>
+  AllocateForcedDiscreteUpdateEventCollection() const override {
+    return LeafEventCollection<
+        DiscreteUpdateEvent<double>>::MakeForcedEventCollection();
+  }
+
+  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<double>>>
+  AllocateForcedUnrestrictedUpdateEventCollection() const override {
+    return LeafEventCollection<
+        UnrestrictedUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
  private:
@@ -227,12 +262,16 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscretePublish) {
   context_.set_time(5.0);
-  UpdateActions<double> actions;
+  auto event_info = system_.AllocateCompositeEventCollection();
+  system_.CalcNextUpdateTime(context_, event_info.get());
+  const auto& events =
+      dynamic_cast<const LeafCompositeEventCollection<double>*>(
+          event_info.get())->get_publish_events().get_events();
+  EXPECT_EQ(events.size(), 1);
+  EXPECT_EQ(events.front()->get_trigger_type(),
+            Event<double>::TriggerType::kPeriodic);
 
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
-
-  system_.Publish(context_, actions.events[0]);
+  system_.Publish(context_, event_info->get_publish_events());
   EXPECT_EQ(1, system_.get_publish_count());
 }
 
@@ -241,47 +280,15 @@ TEST_F(SystemTest, DiscretePublish) {
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
   context_.set_time(15.0);
-  UpdateActions<double> actions;
 
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
+  auto event_info = system_.AllocateCompositeEventCollection();
+  system_.CalcNextUpdateTime(context_, event_info.get());
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
-                                      update.get());
+  system_.CalcDiscreteVariableUpdates(
+      context_, event_info->get_discrete_update_events(), update.get());
   EXPECT_EQ(1, system_.get_update_count());
-}
-
-// Tests that custom do_publish handlers registered in DoCalcNextUpdateTime
-// are invoked.
-TEST_F(SystemTest, CustomDiscretePublish) {
-  context_.set_time(25.0);
-  UpdateActions<double> actions;
-
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
-
-  system_.Publish(context_, actions.events[0]);
-  ASSERT_EQ(1u, system_.get_published_numbers().size());
-  EXPECT_EQ(kNumberToPublish, system_.get_published_numbers()[0]);
-}
-
-// Tests that custom do_update handlers registered in DoCalcNextUpdateTime
-// are invoked.
-TEST_F(SystemTest, CustomDiscreteUpdate) {
-  context_.set_time(35.0);
-  UpdateActions<double> actions;
-
-  system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1u, actions.events.size());
-
-  std::unique_ptr<DiscreteValues<double>> update =
-      system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdates(context_, actions.events[0],
-                                      update.get());
-  ASSERT_EQ(1u, system_.get_updated_numbers().size());
-  EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
 }
 
 // Tests that descriptor references remain valid even if lots of other
@@ -328,6 +335,13 @@ class ValueIOTestSystem : public System<T> {
   // std::string.
   // The second input / output pair are vector type with length 1.
   ValueIOTestSystem() {
+    this->set_forced_publish_events(
+        this->AllocateForcedPublishEventCollection());
+    this->set_forced_discrete_update_events(
+        this->AllocateForcedDiscreteUpdateEventCollection());
+    this->set_forced_unrestricted_update_events(
+        this->AllocateForcedUnrestrictedUpdateEventCollection());
+
     this->DeclareAbstractInputPort();
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
         [](const Context<T>&) { return AbstractValue::Make(std::string()); },
@@ -356,6 +370,13 @@ class ValueIOTestSystem : public System<T> {
     DRAKE_ABORT();
   }
 
+  void AddTriggeredWitnessFunctionToCompositeEventCollection(
+      const WitnessFunction<T>&,
+      CompositeEventCollection<T>*) const override {
+    // This system uses no witness functions.
+    DRAKE_ABORT();
+  }
+
   AbstractValue* DoAllocateInputAbstract(
       const InputPortDescriptor<T>& descriptor) const override {
     // Should only get called for the first input.
@@ -370,8 +391,7 @@ class ValueIOTestSystem : public System<T> {
     return new TestTypedVector<T>();
   }
 
-  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives()
-      const override {
+  std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return nullptr;
   }
 
@@ -381,18 +401,19 @@ class ValueIOTestSystem : public System<T> {
     return std::move(context);
   }
 
+  std::unique_ptr<CompositeEventCollection<T>>
+  AllocateCompositeEventCollection() const override {
+    return std::make_unique<LeafCompositeEventCollection<T>>();
+  }
+
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {}
 
   void SetDefaults(Context<T>* context) const override {}
 
-  bool HasAnyDirectFeedthrough() const override {
-    return true;
-  }
+  bool HasAnyDirectFeedthrough() const override { return true; }
 
-  bool HasDirectFeedthrough(int output_port) const override {
-    return true;
-  }
+  bool HasDirectFeedthrough(int output_port) const override { return true; }
 
   bool HasDirectFeedthrough(int input_port, int output_port) const override {
     return true;
@@ -422,6 +443,43 @@ class ValueIOTestSystem : public System<T> {
     output->add_port(this->get_output_port(0).Allocate(context));
     output->add_port(this->get_output_port(1).Allocate(context));
     return std::move(output);
+  }
+
+  void DispatchPublishHandler(
+      const Context<T>& context,
+      const EventCollection<PublishEvent<T>>& event_info) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<T>& context,
+      const EventCollection<DiscreteUpdateEvent<T>>& event_info,
+      DiscreteValues<T>* discrete_state) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+
+  void DispatchUnrestrictedUpdateHandler(
+      const Context<T>& context,
+      const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
+      State<T>* state) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+  AllocateForcedPublishEventCollection() const override {
+    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
+  AllocateForcedDiscreteUpdateEventCollection() const override {
+    return LeafEventCollection<
+        DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
+  AllocateForcedUnrestrictedUpdateEventCollection() const override {
+    return LeafEventCollection<
+        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   }
 };
 

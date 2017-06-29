@@ -68,7 +68,7 @@ GTEST_TEST(RosClockPublisherTest, TestRosClockPublisher) {
   context.set_time(1.5);
 
   RosClockPublisher dut;
-  dut.DoPublish(context);
+  dut.DoPublish(context, {});
 
   // Verifies that the clock message was transmitted.
   const rosgraph_msgs::Clock& sent_message = dut.get_clock_message();
@@ -86,7 +86,7 @@ GTEST_TEST(RosClockPublisherTest, TestRosClockPublisher) {
   cycle_count = 0;
   while (!message_receiver.MessageReceived() &&
          cycle_count++ < kMaxCycleCount) {
-    dut.DoPublish(context);
+    dut.DoPublish(context, {});
     ros::Duration(0.1).sleep();  // Sleeps for 0.1 seconds.
   }
   ASSERT_TRUE(message_receiver.MessageReceived());

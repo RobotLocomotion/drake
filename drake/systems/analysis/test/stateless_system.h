@@ -18,14 +18,13 @@ class StatelessSystem;
 /// Witness function for determining when the time of the empty system
 /// crosses zero. The witness function is just the time in the context.
 template <class T>
-class ClockWitness : public systems::WitnessFunction<T> {
+class ClockWitness : public WitnessFunction<T> {
  public:
   explicit ClockWitness(
       const T& trigger_time,
       const System<T>& system,
-      const systems::WitnessFunctionDirection& dir_type) :
-        systems::WitnessFunction<T>(system, dir_type,
-          systems::DiscreteEvent<T>::kPublishAction),
+      const WitnessFunctionDirection& dir_type) :
+        WitnessFunction<T>(system, dir_type),
         trigger_time_(trigger_time) {
   }
 
@@ -36,6 +35,11 @@ class ClockWitness : public systems::WitnessFunction<T> {
   // The witness function is the time value itself plus the offset value.
   T DoEvaluate(const Context<T>& context) const override {
     return context.get_time() - trigger_time_;
+  }
+
+  void DoAddEvent(CompositeEventCollection<T>* events) const override {
+    events->add_publish_event(std::make_unique<PublishEvent<T>>(
+        Event<T>::TriggerType::kWitness));
   }
 
  private:
@@ -50,7 +54,7 @@ class StatelessSystem : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
 
   explicit StatelessSystem(const T& offset,
-      const systems::WitnessFunctionDirection& dir_type) {
+      const WitnessFunctionDirection& dir_type) {
     witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
 
@@ -70,13 +74,14 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
   void DoGetWitnessFunctions(
-      const systems::Context<T>&,
-      std::vector<const systems::WitnessFunction<T>*>* w) const override {
+      const Context<T>&,
+      std::vector<const WitnessFunction<T>*>* w) const override {
     w->push_back(witness_.get());
   }
 
   void DoPublish(
-      const drake::systems::Context<T>& context) const override {
+      const Context<T>& context,
+      const std::vector<const PublishEvent<T>*>&) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
