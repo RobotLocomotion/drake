@@ -332,14 +332,14 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
 
     // Compute all the terms within curly brackets in the derivation above which
     // correspond to the Shift() operation:
-    SpatialAcceleration<T> A_WB = this->Shift(p_PoBo_E, w_WP_E);
+    SpatialAcceleration<T> A_WB_E = this->Shift(p_PoBo_E, w_WP_E);
     // Adds non-linear coupling of angular velocities:
-    A_WB.rotational() += (A_PB_E.rotational() + w_WP_E.cross(w_PB_E));
+    A_WB_E.rotational() += (A_PB_E.rotational() + w_WP_E.cross(w_PB_E));
 
     // Adds Coriolis and translational acceleration of Bo in P.
-    A_WB.translational() +=
+    A_WB_E.translational() +=
         (A_PB_E.translational() + 2.0 * w_WP_E.cross(v_PBo_E));
-    return A_WB;
+    return A_WB_E;
   }
 };
 
