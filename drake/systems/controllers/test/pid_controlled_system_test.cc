@@ -136,16 +136,13 @@ class PidControlledSystemTest : public ::testing::Test {
     auto context = diagram_->CreateDefaultContext();
     auto output = diagram_->AllocateOutput(*context);
 
-    systems::Context<double>* controller_context =
-        diagram_->GetMutableSubsystemContext(*controller, context.get());
-    systems::Context<double>* plant_context =
-        controller->GetMutableSubsystemContext(*controller->plant(),
-                                               controller_context);
+    const systems::Context<double>& plant_context =
+        controller->GetSubsystemContext(*controller, *context);
 
     diagram_->CalcOutput(*context, output.get());
     const BasicVector<double>* output_vec = output->get_vector_data(0);
     const double pid_input = dynamic_cast<TestPlant*>(controller->plant())
-                                 ->GetInputValue(*plant_context);
+                                 ->GetInputValue(plant_context);
     EXPECT_EQ(pid_input, input[0] +
                              (state[0] - output_vec->get_value()[0]) * Kp_(0) +
                              (state[1] - output_vec->get_value()[1]) * Kd_(0));
@@ -243,13 +240,13 @@ class ConnectControllerTest : public ::testing::Test {
     auto context = standard_diagram->CreateDefaultContext();
     auto output = standard_diagram->AllocateOutput(*context);
 
-    auto plant_context =
-        standard_diagram->GetMutableSubsystemContext(*plant_, context.get());
+    auto& plant_context =
+        standard_diagram->GetSubsystemContext(*plant_, *context);
 
-    plant_->CalcOutput(*plant_context, output.get());
+    plant_->CalcOutput(plant_context, output.get());
     const BasicVector<double>* output_vec = output->get_vector_data(0);
     const double pid_input =
-        dynamic_cast<TestPlant*>(plant_)->GetInputValue(*plant_context);
+        dynamic_cast<TestPlant*>(plant_)->GetInputValue(plant_context);
 
     output_position_ = output_vec->get_value()[0];
     output_velocity_ = output_vec->get_value()[1];

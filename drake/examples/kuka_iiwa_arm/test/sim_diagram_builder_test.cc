@@ -115,15 +115,15 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   // Simulates.
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>* context = simulator.get_mutable_context();
-  systems::Context<double>* plant_context =
-      diagram->GetMutableSubsystemContext(context, plant);
+  systems::Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(*plant, context);
   VectorX<double> state0(2 * kNumPos * iiwa_info.size());
   for (size_t i = 0; i < iiwa_info.size(); ++i) {
     state0.segment<kNumPos>(i * kNumPos) = state_d.head<kNumPos>();
     state0.segment<kNumPos>(i * kNumPos + kNumPos * iiwa_info.size()) =
         state_d.tail<kNumPos>();
   }
-  plant->set_state_vector(plant_context, state0);
+  plant->set_state_vector(&plant_context, state0);
 
   simulator.Initialize();
   simulator.StepTo(0.02);

@@ -133,7 +133,7 @@ class DiagramOutputPort : public OutputPort<T> {
     const DiagramContext<T>* diagram_context =
         dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
-    return *diagram_context->GetSubsystemContext(subsystem_index_);
+    return diagram_context->GetSubsystemContext(subsystem_index_);
   }
 
   const OutputPort<T>* const source_output_port_;
@@ -396,11 +396,9 @@ class Diagram : public System<T>,
 
     // Set default state of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
-      auto subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      auto substate = diagram_state->get_mutable_substate(i);
-      DRAKE_DEMAND(substate != nullptr);
-      sorted_systems_[i]->SetDefaultState(*subcontext, substate);
+      auto& subcontext = diagram_context->GetSubsystemContext(i);
+      auto& substate = diagram_state->get_mutable_substate(i);
+      sorted_systems_[i]->SetDefaultState(subcontext, &substate);
     }
   }
 
@@ -410,8 +408,8 @@ class Diagram : public System<T>,
 
     // Set defaults of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
-      auto subcontext = diagram_context->GetMutableSubsystemContext(i);
-      sorted_systems_[i]->SetDefaults(subcontext);
+      auto& subcontext = diagram_context->GetMutableSubsystemContext(i);
+      sorted_systems_[i]->SetDefaults(&subcontext);
     }
   }
 
@@ -464,10 +462,10 @@ class Diagram : public System<T>,
 
     // Evaluate the derivatives of each constituent system.
     for (int i = 0; i < n; ++i) {
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
       ContinuousState<T>* subderivatives =
           diagram_derivatives->get_mutable_substate(i);
-      sorted_systems_[i]->CalcTimeDerivatives(*subcontext, subderivatives);
+      sorted_systems_[i]->CalcTimeDerivatives(subcontext, subderivatives);
     }
   }
 
@@ -501,11 +499,11 @@ class Diagram : public System<T>,
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
-  Context<T>* GetMutableSubsystemContext(const System<T>& subsystem,
+  Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
                                          Context<T>* context) const {
     auto ret = DoGetMutableTargetSystemContext(subsystem, context);
     DRAKE_DEMAND(ret != nullptr);
-    return ret;
+    return *ret;
   }
 
   /// Retrieves the state for a particular subsystem from the context for the
@@ -515,20 +513,20 @@ class Diagram : public System<T>,
   ///
   /// TODO(david-german-tri): Provide finer-grained accessors for finer-grained
   /// invalidation.
-  State<T>* GetMutableSubsystemState(const System<T>& subsystem,
+  State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      Context<T>* context) const {
-    Context<T>* subcontext = GetMutableSubsystemContext(subsystem, context);
-    return subcontext->get_mutable_state();
+    Context<T>& subcontext = GetMutableSubsystemContext(subsystem, context);
+    return *subcontext.get_mutable_state();
   }
 
   /// Retrieves the state for a particular subsystem from the @p state for the
   /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
   /// diagram.
-  State<T>* GetMutableSubsystemState(const System<T>& subsystem,
+  State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      State<T>* state) const {
     auto ret = DoGetMutableTargetSystemState(subsystem, state);
     DRAKE_DEMAND(ret != nullptr);
-    return ret;
+    return *ret;
   }
 
   /// Retrieves the state for a particular subsystem from the @p state for the
@@ -725,7 +723,7 @@ class Diagram : public System<T>,
     for (const System<T>* const system : sorted_systems_) {
       DRAKE_ASSERT(index == GetSystemIndexOrAbort(system));
       temp_witnesses.clear();
-      system->GetWitnessFunctions(*diagram_context->GetSubsystemContext(index),
+      system->GetWitnessFunctions(diagram_context->GetSubsystemContext(index),
                                   &temp_witnesses);
       witnesses->insert(witnesses->end(), temp_witnesses.begin(),
                         temp_witnesses.end());
@@ -740,7 +738,7 @@ class Diagram : public System<T>,
     if (&target_system == this)
       return context;
 
-    return GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
+    return GetSubsystemStuff<Context<T>, DiagramContext<T>>(
         target_system, context,
         &System<T>::DoGetMutableTargetSystemContext,
         &DiagramContext<T>::GetMutableSubsystemContext);
@@ -753,7 +751,7 @@ class Diagram : public System<T>,
     if (&target_system == this)
       return context;
 
-    return GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
+    return GetSubsystemStuff<const Context<T>, const DiagramContext<T>>(
         target_system, context,
         &System<T>::DoGetTargetSystemContext,
         &DiagramContext<T>::GetSubsystemContext);
@@ -766,7 +764,7 @@ class Diagram : public System<T>,
     if (&target_system == this)
       return state;
 
-    return GetSubsystemStuff<State<T>*, DiagramState<T>*>(
+    return GetSubsystemStuff<State<T>, DiagramState<T>>(
         target_system, state,
         &System<T>::DoGetMutableTargetSystemState,
         &DiagramState<T>::get_mutable_substate);
@@ -779,7 +777,7 @@ class Diagram : public System<T>,
     if (&target_system == this)
       return state;
 
-    return GetSubsystemStuff<const State<T>*, const DiagramState<T>*>(
+    return GetSubsystemStuff<const State<T>, const DiagramState<T>>(
         target_system, state,
         &System<T>::DoGetTargetSystemState,
         &DiagramState<T>::get_substate);
@@ -791,7 +789,7 @@ class Diagram : public System<T>,
 
     for (const System<T>* const system : sorted_systems_) {
       const int i = GetSystemIndexOrAbort(system);
-      system->Publish(*diagram_context->GetSubsystemContext(i));
+      system->Publish(diagram_context->GetSubsystemContext(i));
     }
   }
 
@@ -823,9 +821,8 @@ class Diagram : public System<T>,
     int q_index = 0;  // The next index to write in qdot.
     for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      const ContinuousState<T>* sub_xc = subcontext->get_continuous_state();
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      const ContinuousState<T>* sub_xc = subcontext.get_continuous_state();
       // If subsystem i is stateless, skip it.
       if (sub_xc == nullptr) continue;
 
@@ -839,7 +836,7 @@ class Diagram : public System<T>,
       Subvector<T> dq_slice(qdot, q_index, num_q);
 
       // Delegate the actual mapping to subsystem i itself.
-      sorted_systems_[i]->MapVelocityToQDot(*subcontext, v_slice, &dq_slice);
+      sorted_systems_[i]->MapVelocityToQDot(subcontext, v_slice, &dq_slice);
 
       // Advance the indices.
       v_index += num_v;
@@ -875,9 +872,8 @@ class Diagram : public System<T>,
     int v_index = 0;  // The next index to write in generalized_velocity.
     for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      const ContinuousState<T>* sub_xc = subcontext->get_continuous_state();
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      const ContinuousState<T>* sub_xc = subcontext.get_continuous_state();
       // If subsystem i is stateless, skip it.
       if (sub_xc == nullptr) continue;
 
@@ -891,7 +887,7 @@ class Diagram : public System<T>,
       Subvector<T> v_slice(generalized_velocity, v_index, num_v);
 
       // Delegate the actual mapping to subsystem i itself.
-      sorted_systems_[i]->MapQDotToVelocity(*subcontext, dq_slice, &v_slice);
+      sorted_systems_[i]->MapQDotToVelocity(subcontext, dq_slice, &v_slice);
 
       // Advance the indices.
       v_index += num_v;
@@ -920,9 +916,8 @@ class Diagram : public System<T>,
 
     bool no_events = true;
     for (int i = 0; i < num_subsystems(); ++i) {
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
-      sorted_systems_[i]->GetPerStepEvents(*subcontext, &sub_events[i]);
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      sorted_systems_[i]->GetPerStepEvents(subcontext, &sub_events[i]);
       no_events = no_events && sub_events[i].empty();
     }
 
@@ -1003,44 +998,52 @@ class Diagram : public System<T>,
   }
 
  private:
-  /// Tries to recursively find @p target_system's BaseStuffPtr
+  /// Tries to recursively find @p target_system's BaseStuff
   /// (context / state / etc). nullptr is returned if @p target_system is not
   /// a sub system of this diagram. This template function should only be used
   /// to reduce code repetition for DoGetMutableTargetSystemContext(),
   /// DoGetTargetSystemContext(), DoGetMutableTargetSystemState(), and
   /// DoGetTargetSystemState().
   /// @param target_system The sub system of interest.
-  /// @param my_stuff BaseStuffPtr that's associated with this diagram.
+  /// @param my_stuff BaseStuff that's associated with this diagram.
   /// @param recursive_getter A member function of System that returns sub
   /// context or state. Should be one of the four functions listed above.
   /// @param get_child_stuff A member function of DiagramContext or DiagramState
   /// that returns context or state given the index of the sub system.
   ///
-  /// @tparam BaseStuffPtr Can be Context<T>*, const Context<T>*, State<T>* and
-  /// const State<T>*.
-  /// @tparam DerivedStuffPtr Can be DiagramContext<T>*,
-  /// const DiagramContext<T>*, DiagramState<T>* and const DiagramState<T>*.
+  /// @tparam BaseStuff Can be Context<T>, const Context<T>, State<T> and
+  /// const State<T>.
+  /// @tparam DerivedStuff Can be DiagramContext<T>,
+  /// const DiagramContext<T>, DiagramState<T> and const DiagramState<T>.
   ///
   /// @pre @p target_system cannot be `this`. The caller should check for this
   /// edge case.
-  template <typename BaseStuffPtr, typename DerivedStuffPtr>
-  BaseStuffPtr GetSubsystemStuff(
-      const System<T>& target_system, BaseStuffPtr my_stuff,
-      std::function<BaseStuffPtr(const System<T>*, const System<T>&,
-                                 BaseStuffPtr)>
+  template <typename BaseStuff, typename DerivedStuff>
+  BaseStuff* GetSubsystemStuff(
+      const System<T>& target_system, BaseStuff* my_stuff,
+      std::function<BaseStuff* (const System<T>*, const System<T>&, BaseStuff*)>
           recursive_getter,
-      std::function<BaseStuffPtr(DerivedStuffPtr, int)> get_child_stuff) const {
-    DerivedStuffPtr const my_stuff_as_derived =
-        dynamic_cast<DerivedStuffPtr>(my_stuff);
-    DRAKE_DEMAND(my_stuff_as_derived != nullptr);
+      std::function<BaseStuff& (DerivedStuff*, int)> get_child_stuff) const {
+    static_assert(
+        std::is_same<BaseStuff,
+                     typename std::remove_pointer<BaseStuff>::type>::value,
+        "BaseStuff cannot be a pointer");
+    static_assert(
+        std::is_same<DerivedStuff,
+                     typename std::remove_pointer<DerivedStuff>::type>::value,
+        "DerivedStuff cannot be a pointer");
+
+    DRAKE_DEMAND(my_stuff != nullptr);
     DRAKE_DEMAND(&target_system != this);
+    DerivedStuff& my_stuff_as_derived = dynamic_cast<DerivedStuff&>(*my_stuff);
 
     int index = 0;
     for (const System<T>* child : sorted_systems_) {
-      BaseStuffPtr const child_stuff =
-          get_child_stuff(my_stuff_as_derived, index);
-      BaseStuffPtr const target_stuff =
-          recursive_getter(child, target_system, child_stuff);
+      BaseStuff& child_stuff =
+          get_child_stuff(&my_stuff_as_derived, index);
+
+      BaseStuff* const target_stuff =
+          recursive_getter(child, target_system, &child_stuff);
 
       if (target_stuff != nullptr) {
         return target_stuff;
@@ -1213,10 +1216,9 @@ class Diagram : public System<T>,
     // imminent updates.
     std::vector<UpdateActions<T1>> sub_actions(num_subsystems());
     for (int i = 0; i < num_subsystems(); ++i) {
-      const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
-      DRAKE_DEMAND(subcontext != nullptr);
+      const Context<T1>& subcontext = diagram_context->GetSubsystemContext(i);
       const T1 time =
-          sorted_systems_[i]->CalcNextUpdateTime(*subcontext, &sub_actions[i]);
+          sorted_systems_[i]->CalcNextUpdateTime(subcontext, &sub_actions[i]);
       if (time < actions->time) {
         actions->time = time;
       }
@@ -1370,10 +1372,10 @@ class Diagram : public System<T>,
     const int i = GetSystemIndexOrAbort(system);
     SPDLOG_TRACE(log(), "Evaluating output for subsystem {}, port {}",
                  system->GetPath(), port_index);
-    const Context<T>* subsystem_context = context.GetSubsystemContext(i);
+    const Context<T>& subsystem_context = context.GetSubsystemContext(i);
     SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
     AbstractValue* port_output = subsystem_output->GetMutableData(port_index);
-    port.Calc(*subsystem_context, port_output);
+    port.Calc(subsystem_context, port_output);
   }
 
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.
@@ -1482,12 +1484,11 @@ class Diagram : public System<T>,
       const DiscreteEvent<T>& event = action.second;
       DRAKE_DEMAND(index >= 0 && index < num_subsystems());
 
-      const Context<T>* subcontext =
+      const Context<T>& subcontext =
           diagram_context->GetSubsystemContext(index);
-      DRAKE_DEMAND(subcontext != nullptr);
 
       DRAKE_ASSERT(event.action == DiscreteEvent<T>::kPublishAction);
-      sorted_systems_[index]->Publish(*subcontext, event);
+      sorted_systems_[index]->Publish(subcontext, event);
     }
   }
 
@@ -1517,16 +1518,15 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(index >= 0 && index < num_subsystems());
 
       // Get the context and the difference state for the specified system.
-      const Context<T>* subcontext =
+      const Context<T>& subcontext =
           diagram_context->GetSubsystemContext(index);
-      DRAKE_DEMAND(subcontext != nullptr);
       DiscreteValues<T>* subdifference =
           diagram_differences->get_mutable_subdifference(index);
       DRAKE_DEMAND(subdifference != nullptr);
 
       // Do that system's update actions.
       DRAKE_ASSERT(event.action == DiscreteEvent<T>::kDiscreteUpdateAction);
-      sorted_systems_[index]->CalcDiscreteVariableUpdates(*subcontext,
+      sorted_systems_[index]->CalcDiscreteVariableUpdates(subcontext,
                                                           event,
                                                           subdifference);
     }
@@ -1552,17 +1552,15 @@ class Diagram : public System<T>,
       DRAKE_DEMAND(index >= 0 && index < num_subsystems());
 
       // Get the context and the state for the specified system.
-      const Context<T>* subcontext =
+      const Context<T>& subcontext =
           diagram_context->GetSubsystemContext(index);
-      DRAKE_DEMAND(subcontext != nullptr);
-      State<T>* substate = diagram_state->get_mutable_substate(index);
-      DRAKE_DEMAND(substate != nullptr);
+      State<T>& substate = diagram_state->get_mutable_substate(index);
 
       // Do that system's update actions.
       DRAKE_ASSERT(event.action == DiscreteEvent<T>::kUnrestrictedUpdateAction);
-      sorted_systems_[index]->CalcUnrestrictedUpdate(*subcontext,
+      sorted_systems_[index]->CalcUnrestrictedUpdate(subcontext,
                                                      event,
-                                                     substate);
+                                                     &substate);
     }
   }
 

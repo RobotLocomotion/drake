@@ -117,7 +117,7 @@ class DiagramTest : public ::testing::Test {
   ContinuousState<double>* GetMutableContinuousState(
       const System<double>* system) {
     return diagram_->GetMutableSubsystemState(*system, context_.get())
-        ->get_mutable_continuous_state();
+        .get_mutable_continuous_state();
   }
 
   // Asserts that output_ is what it should be for the default values
@@ -263,16 +263,14 @@ TEST_F(DiagramTest, Graphviz) {
 // Tests that both variants of GetMutableSubsystemState do what they say on
 // the tin.
 TEST_F(DiagramTest, GetMutableSubsystemState) {
-  State<double>* state_from_context = diagram_->GetMutableSubsystemState(
+  State<double>& state_from_context = diagram_->GetMutableSubsystemState(
       *diagram_->integrator0(), context_.get());
-  ASSERT_NE(nullptr, state_from_context);
-  State<double>* state_from_state = diagram_->GetMutableSubsystemState(
+  State<double>& state_from_state = diagram_->GetMutableSubsystemState(
       *diagram_->integrator0(), context_->get_mutable_state());
-  ASSERT_NE(nullptr, state_from_state);
 
-  EXPECT_EQ(state_from_context, state_from_state);
+  EXPECT_EQ(&state_from_context, &state_from_state);
   const ContinuousState<double>& xc =
-      *state_from_context->get_continuous_state();
+      *state_from_context.get_continuous_state();
   EXPECT_EQ(3, xc[0]);
   EXPECT_EQ(9, xc[1]);
   EXPECT_EQ(27, xc[2]);
@@ -483,29 +481,29 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_->FixInputPort(2, std::move(input2_));
 
     // Initialize the integrator states.
-    Context<double>* d0_context =
+    Context<double>& d0_context =
         diagram_->GetMutableSubsystemContext(*subdiagram0_, context_.get());
-    Context<double>* d1_context =
+    Context<double>& d1_context =
         diagram_->GetMutableSubsystemContext(*subdiagram1_, context_.get());
 
-    State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
-        *subdiagram0_->integrator0(), d0_context);
-    integrator0_x->get_mutable_continuous_state()
+    State<double>& integrator0_x = subdiagram0_->GetMutableSubsystemState(
+        *subdiagram0_->integrator0(), &d0_context);
+    integrator0_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 3);
 
-    State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
-        *subdiagram0_->integrator1(), d0_context);
-    integrator1_x->get_mutable_continuous_state()
+    State<double>& integrator1_x = subdiagram0_->GetMutableSubsystemState(
+        *subdiagram0_->integrator1(), &d0_context);
+    integrator1_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 9);
 
-    State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
-        *subdiagram1_->integrator0(), d1_context);
-    integrator2_x->get_mutable_continuous_state()
+    State<double>& integrator2_x = subdiagram1_->GetMutableSubsystemState(
+        *subdiagram1_->integrator0(), &d1_context);
+    integrator2_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 27);
 
-    State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
-        *subdiagram1_->integrator1(), d1_context);
-    integrator3_x->get_mutable_continuous_state()
+    State<double>& integrator3_x = subdiagram1_->GetMutableSubsystemState(
+        *subdiagram1_->integrator1(), &d1_context);
+    integrator3_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 81);
   }
 
@@ -787,9 +785,9 @@ class SecondOrderStateDiagram : public Diagram<double> {
   // Returns the state of the given subsystem.
   SecondOrderStateVector* x(Context<double>* context,
                             const SecondOrderStateSystem* subsystem) {
-    Context<double>* subsystem_context =
+    Context<double>& subsystem_context =
         GetMutableSubsystemContext(*subsystem, context);
-    return subsystem->x(subsystem_context);
+    return subsystem->x(&subsystem_context);
   }
 
  private:
@@ -929,12 +927,12 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
 // the 12-second tick, both hold1 and hold2 latch their inputs.
 TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Initialize the zero-order holds to different values than their input ports.
-  Context<double>* ctx1 =
+  Context<double>& ctx1 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold1(), context_.get());
-  ctx1->get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
-  Context<double>* ctx2 =
+  ctx1.get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
+  Context<double>& ctx2 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold2(), context_.get());
-  ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
 
   // Allocate the discrete variables.
   std::unique_ptr<DiscreteValues<double>> updates =
@@ -955,11 +953,11 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
                                        actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(1001.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
 
   // Restore hold2 to its original value.
-  ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
   // Set the time to 11.5, so both hold1 and hold2 update.
   context_->set_time(11.5);
   diagram_.CalcNextUpdateTime(*context_, &actions);
@@ -974,8 +972,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
                                        actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(17.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(17.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
 }
 
 // Tests that a publish action is taken at 19 sec.
@@ -1198,16 +1196,16 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
   big_diagram_->GetMutableSubsystemContext(*integrator0_, big_context_.get())
-      ->get_mutable_continuous_state_vector()
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 1);
   big_diagram_->GetMutableSubsystemContext(*integrator1_, big_context_.get())
-      ->get_mutable_continuous_state_vector()
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 2);
   big_diagram_->GetMutableSubsystemContext(*integrator2_, big_context_.get())
-      ->get_mutable_continuous_state_vector()
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 3);
   big_diagram_->GetMutableSubsystemContext(*integrator3_, big_context_.get())
-      ->get_mutable_continuous_state_vector()
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 4);
 
   // Checks states.
@@ -1250,22 +1248,22 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   State<double>* big_state = big_context_->get_mutable_state();
   big_diagram_
       ->GetMutableSubsystemState(*integrator0_, big_state)
-      ->get_mutable_continuous_state()
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 1);
   big_diagram_
       ->GetMutableSubsystemState(*integrator1_, big_state)
-      ->get_mutable_continuous_state()
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 2);
   big_diagram_
       ->GetMutableSubsystemState(*integrator2_, big_state)
-      ->get_mutable_continuous_state()
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 3);
   big_diagram_
       ->GetMutableSubsystemState(*integrator3_, big_state)
-      ->get_mutable_continuous_state()
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 4);
 

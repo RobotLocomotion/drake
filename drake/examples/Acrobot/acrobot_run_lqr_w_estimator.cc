@@ -118,10 +118,10 @@ int do_main(int argc, char* argv[]) {
   // Set an initial condition near the upright fixed point.
   auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
       dynamic_cast<systems::DiagramContext<double>*>(
-          diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                              acrobot_w_encoder))
+          &diagram->GetMutableSubsystemContext(*acrobot_w_encoder,
+                                              simulator.get_mutable_context()))
           ->GetMutableSubsystemContext(0)
-          ->get_mutable_continuous_state_vector());
+          .get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(M_PI + 0.1);
   x0->set_theta2(-.1);
@@ -130,9 +130,9 @@ int do_main(int argc, char* argv[]) {
 
   // Set the initial conditions of the observer.
   auto xhat0 = diagram
-                   ->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                                observer)
-                   ->get_mutable_continuous_state_vector();
+                   ->GetMutableSubsystemContext(*observer,
+                                                simulator.get_mutable_context())
+                   .get_mutable_continuous_state_vector();
   DRAKE_DEMAND(xhat0 != nullptr);
   xhat0->SetAtIndex(0, M_PI);
   xhat0->SetAtIndex(1, 0.0);

@@ -100,17 +100,17 @@ T PidControlledSpringMassSystem<T>::get_conservative_work(
 template <typename T>
 void PidControlledSpringMassSystem<T>::set_position(
     Context<T>* context, const T& position) const {
-  Context<T>* plant_context =
+  Context<T>& plant_context =
       Diagram<T>::GetMutableSubsystemContext(*plant_, context);
-  plant_->set_position(plant_context, position);
+  plant_->set_position(&plant_context, position);
 }
 
 template <typename T>
 void PidControlledSpringMassSystem<T>::set_velocity(
     Context<T>* context, const T& velocity) const {
-  Context<T>* plant_context =
+  Context<T>& plant_context =
       Diagram<T>::GetMutableSubsystemContext(*plant_, context);
-  plant_->set_velocity(plant_context, velocity);
+  plant_->set_velocity(&plant_context, velocity);
 }
 
 template <typename T>

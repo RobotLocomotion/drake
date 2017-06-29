@@ -32,7 +32,7 @@ class SpringMassSystemTest : public ::testing::Test {
 
     // Gets the plant subcontext.
     plant_context_ =
-        model_->GetMutableSubsystemContext(
+        &model_->GetMutableSubsystemContext(
             model_->get_plant(), model_context_.get());
   }
 

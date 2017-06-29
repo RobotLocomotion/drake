@@ -105,17 +105,14 @@ int do_main() {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>* controller_context =
-      diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                          controller);
-
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(pp_xtraj.get_end_time());
 
-  systems::Context<double>* pendulum_context =
-      controller->GetMutableSubsystemContext(controller_context, pendulum);
-  auto state_vec = pendulum_context->get_continuous_state()->CopyToVector();
+  systems::Context<double>& pendulum_context =
+      controller->GetMutableSubsystemContext(
+          *pendulum, simulator.get_mutable_context());
+  auto state_vec = pendulum_context.get_continuous_state()->CopyToVector();
   if (!is_approx_equal_abstol(state_vec, xG, 1e-3)) {
     throw std::runtime_error("Did not reach trajectory target.");
   }
