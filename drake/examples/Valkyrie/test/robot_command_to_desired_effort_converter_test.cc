@@ -18,6 +18,9 @@ using std::move;
 
 using multibody::joints::FloatingBaseType;
 
+const char* kValkyrieUrdf = "drake/examples/Valkyrie/urdf/urdf/"
+    "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
+
 void TestCommandToDesiredEffortConverter(
     const RigidBodyTree<double>& tree, const bot_core::atlas_command_t& message,
     const std::map<const RigidBodyActuator*, double>& expected_efforts) {
@@ -65,9 +68,7 @@ GTEST_TEST(EffortToInputConverterTest, TestEmptyMessage) {
 
   RigidBodyTree<double> tree;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow(
-          "drake/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
+      FindResourceOrThrow(kValkyrieUrdf),
       FloatingBaseType::kRollPitchYaw, nullptr /* weld to frame */, &tree);
 
   std::map<const RigidBodyActuator*, double> expected_efforts;
@@ -83,9 +84,7 @@ GTEST_TEST(EffortToInputConverterTest, TestNonEmptyMessage) {
 
   RigidBodyTree<double> tree;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow(
-          "drake/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
+      FindResourceOrThrow(kValkyrieUrdf),
       FloatingBaseType::kRollPitchYaw, nullptr /* weld to frame */, &tree);
 
   std::map<const RigidBodyActuator*, double> expected_efforts;

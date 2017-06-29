@@ -47,6 +47,11 @@ DEFINE_double(sim_duration, 3, "The simulation duration");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
 
+namespace {
+const char* kSlidingBrickUrdf =
+    "drake/examples/contact_model/sliding_brick.urdf";
+}  // namespace
+
 // Simple scenario of two blocks being pushed across a plane.  The first block
 // has zero initial velocity.  The second has a small initial velocity in the
 // pushing direction.
@@ -66,10 +71,10 @@ int main() {
   // Create RigidBodyTree.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow("drake/examples/contact_model/sliding_brick.urdf"),
+      FindResourceOrThrow(kSlidingBrickUrdf),
       kFixed, nullptr /* weld to frame */, tree_ptr.get());
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow("drake/examples/contact_model/sliding_brick.urdf"),
+      FindResourceOrThrow(kSlidingBrickUrdf),
       kFixed, nullptr /* weld to frame */, tree_ptr.get());
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
