@@ -52,7 +52,7 @@ monolithic_pick_and_place_demo --target=1
  --orientation=-0.0
 ```
 
-Command line arguments can be passed for : `box_choice` an integer between 1
+Command line arguments can be passed for : `target` an integer between 1
 and 3 (corresponding to small, medium and large boxes as manipulation
 targets),and for `orientation` - a decimal value for the yaw orientation on
 the table in radians.
