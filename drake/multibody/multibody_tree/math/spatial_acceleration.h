@@ -248,7 +248,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   The spatial acceleration of a third frame B in motion with respect to P,
   ///   expressed in the same frame E as `this` spatial acceleration.
   ///
-  /// @retval `A_WB` The spatial acceleration of frame B in W, expressed in
+  /// @retval A_WB_E The spatial acceleration of frame B in W, expressed in
   ///                frame E.
   ///
   /// <h3> Derivation </h3>
@@ -256,7 +256,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// with `V_PB`: <pre>
   ///   V_WB = V_WPb + V_PB = V_WP.Shift(p_PoBo) + V_PB                     (1)
   /// </pre>
-  /// operation which can be performed with the SpatialVelocity method
+  /// This operation can be performed with the SpatialVelocity method
   /// ComposeWithMovingFrameVelocity().
   ///
   /// <h4> Translational acceleration component </h4>
@@ -266,7 +266,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   v_WBo = v_WPo + w_WP x p_PoBo + v_PBo                               (2)
   /// </pre>
   /// Therefore, for the translational acceleration we have: <pre>
-  ///   a_WBo = DtW(v_WBo) = DtW(v_WPo + w_WP x p_PoBo + v_PBo)
+  ///   a_WBo = DtW(v_WBo)
+  ///         = DtW(v_WPo + w_WP x p_PoBo + v_PBo)
   ///         = DtW(v_WPo) + DtW(w_WP x p_PoBo) + DtW(v_PBo)
   ///         = a_WPo + DtW(w_WP) x p_PoBo + w_WP x DtW(p_PoBo) + DtW(v_PBo)
   ///         = a_WPo + alpha_WP x p_PoBo + w_WP x DtW(p_PoBo) + DtW(v_PBo) (3)
