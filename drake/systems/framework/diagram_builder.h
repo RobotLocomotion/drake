@@ -209,94 +209,99 @@ class DiagramBuilder {
     DRAKE_THROW_UNLESS(systems_.find(system) != systems_.end());
   }
 
-  // Runs Kahn's algorithm to compute the topological sort order of the
-  // Systems in the graph. If EvalOutput is called on each System in
-  // the order that is returned, each System's inputs will be valid by
-  // the time its EvalOutput is called.
-  //
-  // TODO(david-german-tri): Update this sort to operate on individual
-  // output ports once #2890 is resolved.
-  //
-  // TODO(david-german-tri, bradking): Consider using functional form to
-  // produce a separate execution order for each output of the Diagram.
-  std::vector<const System<T>*> SortSystems() const {
-    std::vector<const System<T>*> sorted_systems;
+  // Helper method to do the algebraic loop test. It recursively performs the
+  // depth-first search on the graph to find cycles. The "stack" is really just
+  // a set because we need to do relatively "cheap" lookups for membership in
+  // the stack. The stack-like propery of the set is maintained by this method.
+  bool HasCycleRecurse(
+      const PortIdentifier& n,
+      const std::map<PortIdentifier, std::set<PortIdentifier>>& edges,
+      std::set<PortIdentifier>* visited,
+      std::set<PortIdentifier>* stack) const {
+    visited->insert(n);
+    stack->insert(n);
 
-    // Build two maps:
-    // A map from each system, to every system that depends on it.
-    std::map<const System<T>*, std::set<const System<T>*>> dependents;
-    // A map from each system, to every system on which it depends.
-    std::map<const System<T>*, std::set<const System<T>*>> dependencies;
+    auto edge_itr = edges.find(n);
+    if (edge_itr != edges.end()) {
+      for (const auto& target : edge_itr->second) {
+        if (visited->find(target) == visited->end() &&
+            HasCycleRecurse(target, edges, visited, stack)) {
+          return true;
+        } else if (stack->find(target) != stack->end()) {
+          return true;
+        }
+      }
+    }
+    stack->erase(n);
+    return false;
+  }
 
+  // Evaluates the graph of port dependencies -- including *connections* between
+  // output ports and input ports and direct feedthrough connections between
+  // input ports and output ports. If an algebraic loop is detected, throws
+  // a std::logic_error.
+  void ThrowIfAlgebraicLoopsExist() const {
+    // Each port in the diagram is a node in a graph.
+    // An edge exists between nodes u and v if:
+    //  1. u is connected to v (via Connect(u, v) method), or
+    //  2. there is direct feedthrough from u to v (based on symbolic analysis).
+    // A depth-first search of the graph should produce a forest of valid trees
+    // if there are no algebraic loops. Otherwise, at least one link moving
+    // *up* the tree will exist.
+
+    // Build the graph
+    // The nodes in the graph are *only* those ports included in a
+    // connection.  Unconnected ports, by definition, cannot contribute to an
+    // algebraic loop.
+    std::set<PortIdentifier> nodes;
+    // A map from node u, to the set of edges { (u, v_i) }.
+    std::map<PortIdentifier, std::set<PortIdentifier>> edges;
+
+    // In order to store PortIdentifiers for both input and output ports in the
+    // same set, I need to encode the ports. The identifier for the first input
+    // port and output port look identical (same system pointer, same port
+    // id 0). So, to distinguish them, I'll modify the output ports to use the
+    // negative half of the int space. The function below provides a utility for
+    // encoding an output port id.
+    auto output_to_key = [](int port_id) { return -(port_id + 1); };
+
+    // Populate the node set from the connections (and define the edges implied
+    // by those connections).
     for (const auto& connection : dependency_graph_) {
-      const System<T>* src = connection.second.first;
-      const System<T>* dest = connection.first.first;
-      // TODO(david-german-tri): Make direct-feedthrough resolution more
-      // fine-grained once #2890 is resolved. Until then, avoiding false
-      // positives in algebraic loop detection here would simply lead to
-      // spurious infinite loops at diagram execution time.
-      //
-      // To understand this, consider the following diagram:
-      //
-      //  input A0--[A]-----output A0--input B0-X---[B]--output B0-|
-      //     ^          |-X-output A1--input B1---|                |
-      //     |-----------------------------------------------------|
-      //
-      // Suppose there is direct feedthrough from input A0 to output A0, but not
-      // output A1.  Similarly, suppose there is direct feedthrough from input
-      // B1 to output B0, but not from input B0 to output B0. (The X character
-      // above indicates absence of direct-feedthrough.) There is no algebraic
-      // loop in this diagram, and we could detect that there is no algebraic
-      // loop at diagram build time. To detect it, we would construct a graph
-      // where the vertices are input and output ports, and the edges are
-      // direct-feedthrough connections (input to output) and Diagram edges
-      // (output to input). Observing that this graph contains no cycles is
-      // equivalent to observing that there is no algebraic loop.
-      //
-      // However, this observation does us no good without per-port evaluation
-      // from #2890, because #3455 made the execution order implicit instead of
-      // explicit. When we need to compute input A0, we will pull on output B0,
-      // which will pull on both outputs of A. Pulling on output A0 in
-      // particular will spuriously pull on input A0, yielding an infinite loop.
-      //
-      // Consequently, this function remains for now a topological sort of
-      // Systems, not of ports, and we must restrict ourselves to considering
-      // an entire System direct-feedthrough if it has direct feedthrough from
-      // any input to any output.
-      if (dest->HasAnyDirectFeedthrough()) {
-        dependents[src].insert(dest);
-        dependencies[dest].insert(src);
-      }
+      // Dependency graph is a mapping from the destination of the connection
+      // to what it *depends on* (the source).
+      const auto& src = connection.second;
+      const auto& dest = connection.first;
+      PortIdentifier encoded_src{src.first, output_to_key(src.second)};
+      nodes.insert(encoded_src);
+      nodes.insert(dest);
+      edges[encoded_src].insert(dest);
     }
 
-    // Find the systems that have no direct-feedthrough inputs.
-    std::vector<const System<T>*> nodes_with_in_degree_zero;
+    // Populate more edges based on direct feedthrough.
     for (const auto& system : registered_systems_) {
-      if (dependencies.find(system.get()) == dependencies.end()) {
-        nodes_with_in_degree_zero.push_back(system.get());
-      }
-    }
-
-    while (!nodes_with_in_degree_zero.empty()) {
-      // Pop a node with in-degree zero.
-      const System<T>* node = nodes_with_in_degree_zero.back();
-      nodes_with_in_degree_zero.pop_back();
-
-      // Push the node onto the sorted output.
-      sorted_systems.push_back(node);
-
-      for (const System<T>* dependent : dependents[node]) {
-        dependencies[dependent].erase(node);
-        if (dependencies[dependent].empty()) {
-          nodes_with_in_degree_zero.push_back(dependent);
+      for (const auto& pair : system->GetDirectFeedthroughs()) {
+        PortIdentifier src_port{system.get(), pair.first};
+        PortIdentifier dest_port{system.get(), output_to_key(pair.second)};
+        if (nodes.find(src_port) != nodes.end() ||
+            nodes.find(dest_port) != nodes.end()) {
+          // Direct feedthrough on ports that aren't connected to other systems
+          // don't matter to this analysis.
+          edges[src_port].insert(dest_port);
         }
       }
     }
 
-    if (sorted_systems.size() != systems_.size()) {
-      throw std::logic_error("Algebraic loop detected in DiagramBuilder.");
+    // Evaluate the graph for cycles.
+    std::set<PortIdentifier> visited;
+    std::set<PortIdentifier> stack;
+    for (const auto& node : nodes) {
+      if (visited.find(node) == visited.end()) {
+        if (HasCycleRecurse(node, edges, &visited, &stack)) {
+          throw std::logic_error("Algebraic loop detected in DiagramBuilder.");
+        }
+      }
     }
-    return sorted_systems;
   }
 
   /// Produces the Blueprint that has been described by the calls to
@@ -306,11 +311,14 @@ class DiagramBuilder {
     if (registered_systems_.size() == 0) {
       throw std::logic_error("Cannot Compile an empty DiagramBuilder.");
     }
+    ThrowIfAlgebraicLoopsExist();
     typename Diagram<T>::Blueprint blueprint;
     blueprint.input_port_ids = input_port_ids_;
     blueprint.output_port_ids = output_port_ids_;
     blueprint.dependency_graph = dependency_graph_;
-    blueprint.sorted_systems = SortSystems();
+    for (const auto& system : registered_systems_) {
+      blueprint.sorted_systems.push_back(system.get());
+    }
     return blueprint;
   }
 

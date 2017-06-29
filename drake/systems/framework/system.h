@@ -157,6 +157,13 @@ class System {
     }
   }
 
+  /// Reports all direct feedthroughs from input ports to output ports. For
+  /// a system with m input ports, i₀, i₁, ..., iₘ₋₁, and n input ports,
+  /// o₀, o₁, ..., oₙ₋₁, the output will contain all pairs (u, v) such that
+  /// 0 ≤ u < m, 0 ≤ v < n, and there is a direct feedthrough from input iᵤ
+  /// to output oᵥ.
+  virtual std::vector<std::pair<int, int>> GetDirectFeedthroughs() const = 0;
+
   /// Returns `true` if any of the inputs to the system might be directly
   /// fed through to any of its outputs and `false` otherwise.
   ///

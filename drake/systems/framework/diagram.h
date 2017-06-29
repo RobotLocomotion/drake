@@ -245,6 +245,23 @@ class Diagram : public System<T>,
     return result;
   }
 
+  /// Reports all direct feedthroughs from input ports to output ports. For
+  /// a system with m input ports, i₀, i₁, ..., iₘ₋₁, and n input ports,
+  /// o₀, o₁, ..., oₙ₋₁, the output will contain all pairs (u, v) such that
+  /// 0 ≤ u < m, 0 ≤ v < n, and there is a direct feedthrough from input iᵤ
+  /// to output oᵥ.
+  std::vector<std::pair<int, int>> GetDirectFeedthroughs() const final {
+    std::vector<std::pair<int, int>> pairs;
+    for (int u = 0; u < this->get_num_input_ports(); ++u) {
+      for (int v = 0; v < this->get_num_output_ports(); ++v) {
+        if (this->HasDirectFeedthrough(u, v)) {
+          pairs.emplace_back(std::make_pair(u, v));
+        }
+      }
+    }
+    return pairs;
+  };
+
   /// Returns true if any output of the Diagram might have direct-feedthrough
   /// from any input of the Diagram. The implementation is quite conservative:
   /// it will return true if there is any path on the directed acyclic graph
@@ -1370,8 +1387,6 @@ class Diagram : public System<T>,
     DRAKE_DEMAND(sorted_systems_.size() == sorted_systems_map_.size());
     // Every port named in the dependency_graph_ must actually exist.
     DRAKE_ASSERT(PortsAreValid());
-    // The sort order must square with the dependency_graph_.
-    DRAKE_ASSERT(SortOrderIsCorrect());
     // Every subsystem must have a unique name.
     DRAKE_THROW_UNLESS(NamesAreUniqueAndNonEmpty());
 
@@ -1505,25 +1520,6 @@ class Diagram : public System<T>,
         return false;
       }
       if (src.second < 0 || src.second >= src.first->get_num_output_ports()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // Returns true if every System precedes all its dependents in
-  // sorted_systems_.
-  bool SortOrderIsCorrect() const {
-    for (const auto& entry : dependency_graph_) {
-      const System<T>* const dest = entry.first.first;
-      const System<T>* const src = entry.second.first;
-      // If the destination system has no direct feedthrough, it does not
-      // matter whether it is sorted before or after the systems on which
-      // it depends.
-      if (!dest->HasAnyDirectFeedthrough()) {
-        continue;
-      }
-      if (GetSystemIndexOrAbort(dest) <= GetSystemIndexOrAbort(src)) {
         return false;
       }
     }

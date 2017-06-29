@@ -74,6 +74,13 @@ class TestSystem : public System<double> {
     return *port_ptr;
   }
 
+  std::vector<std::pair<int, int>> GetDirectFeedthroughs() const override {
+    std::vector<std::pair<int, int>> pairs;
+    // Single input port feeds through to first output port.
+    pairs.emplace_back(0, 0);
+    return pairs;
+  }
+
   bool HasAnyDirectFeedthrough() const override { return true; }
 
   bool HasDirectFeedthrough(int output_port) const override { return true; }
@@ -410,6 +417,13 @@ class ValueIOTestSystem : public System<T> {
                        State<T>* state) const override {}
 
   void SetDefaults(Context<T>* context) const override {}
+
+  std::vector<std::pair<int, int>> GetDirectFeedthroughs() const override {
+    std::vector<std::pair<int, int>> pairs;
+    // Single input port feeds through to second output port.
+    pairs.emplace_back(0, 1);
+    return pairs;
+  }
 
   bool HasAnyDirectFeedthrough() const override { return true; }
 

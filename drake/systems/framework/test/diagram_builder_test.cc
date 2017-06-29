@@ -98,7 +98,7 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoLoopPortLevel) {
   auto echo = builder.AddSystem<ConstAndEcho>();
   echo->set_name("echo");
   builder.Connect(echo->get_const_output_port(), echo->get_vec_input_port());
-  EXPECT_THROW(builder.Build(), std::logic_error);
+  EXPECT_NO_THROW(builder.Build());
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
