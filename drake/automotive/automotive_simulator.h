@@ -257,6 +257,11 @@ class AutomotiveSimulator {
   /// @pre Start() has been called.
   systems::rendering::PoseBundle<T> GetCurrentPoses() const;
 
+  /// Returns a string representation of the current context.
+  ///
+  /// @pre Start() has been called.
+  std::string GetContextString(const std::string& prefix = "") const;
+
  private:
   int allocate_vehicle_number();
 

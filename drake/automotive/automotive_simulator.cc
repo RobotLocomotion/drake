@@ -596,6 +596,99 @@ void AutomotiveSimulator<T>::StepBy(const T& time_step) {
 }
 
 template <typename T>
+std::string AutomotiveSimulator<T>::GetContextString(const std::string& prefix)
+    const {
+  if (!has_started()) {
+    throw std::runtime_error("AutomotiveSimulator::GetContextString(): ERROR: "
+        "Start() must be called before this method can be called.");
+  }
+
+  const systems::Context<T>& diagram_context = simulator_->get_context();
+  std::stringstream result;
+  result << prefix << "AutomotiveSimulator Context:\n";
+  result << prefix << "  - Time: " << diagram_context.get_time() << "\n";
+
+  const int num_simple_cars = simple_car_initial_states_.size();
+  result << prefix << "  - Number of SimpleCars: " << num_simple_cars << "\n";
+  for (const auto& entry : simple_car_initial_states_) {
+    const SimpleCar<T>* simple_car = entry.first;
+    DRAKE_DEMAND(simple_car != nullptr);
+    const systems::Context<T>& context =
+        diagram_->GetSubsystemContext(diagram_context, simple_car);
+    result << prefix << "    - SimpleCar:\n";
+    result << prefix << "      - Name: " << simple_car->get_name() << "\n";
+
+    const SimpleCarParams<T>* params =
+        dynamic_cast<const SimpleCarParams<T>*>(
+            context.get_parameters().get_numeric_parameter(0));
+    DRAKE_DEMAND(params != nullptr);
+    result << prefix << "      - Parameters:\n";
+    const std::vector<std::string>& param_coordinate_names =
+        params->GetCoordinateNames();
+    for (int i = 0; i < params->size(); ++i) {
+      result << prefix << "        - " << param_coordinate_names.at(i)
+          << ": " << params->GetAtIndex(i) << "\n";
+    }
+
+    const SimpleCarState<T>* state =
+        dynamic_cast<const SimpleCarState<T>*>(
+            &context.get_state().get_continuous_state()->get_vector());
+    DRAKE_DEMAND(state != nullptr);
+    result << prefix << "      - State:\n";
+    const std::vector<std::string>& coordinate_names =
+        state->GetCoordinateNames();
+    for (int i = 0; i < state->size(); ++i) {
+      result << prefix << "        - " << coordinate_names.at(i)
+          << ": " << state->GetAtIndex(i) << "\n";
+    }
+  }
+
+  const int num_railcars = railcar_configs_.size();
+  result << prefix << "  - Number of Maliput Railcars: " << num_railcars
+      << "\n";
+  for (const auto& entry : railcar_configs_) {
+    const MaliputRailcar<T>* railcar = entry.first;
+    DRAKE_DEMAND(railcar != nullptr);
+    const systems::Context<T>& context =
+        diagram_->GetSubsystemContext(diagram_context, railcar);
+
+    result << prefix << "    - MaliputRailcar:\n";
+    result << prefix << "      - Name: " << railcar->get_name() << "\n";
+
+    const MaliputRailcarParams<T>* params =
+        dynamic_cast<const MaliputRailcarParams<T>*>(
+            context.get_parameters().get_numeric_parameter(0));
+    DRAKE_DEMAND(params != nullptr);
+    result << prefix << "      - Parameters:\n";
+    const std::vector<std::string>& param_coordinate_names =
+        params->GetCoordinateNames();
+    for (int i = 0; i < params->size(); ++i) {
+      result << prefix << "        - " << param_coordinate_names.at(i)
+          << ": " << params->GetAtIndex(i) << "\n";
+    }
+
+    const MaliputRailcarState<T>* state =
+        dynamic_cast<const MaliputRailcarState<T>*>(
+            &context.get_state().get_continuous_state()->get_vector());
+    DRAKE_DEMAND(state != nullptr);
+    result << prefix << "      - State:\n";
+    const std::vector<std::string>& state_coordinate_names =
+        state->GetCoordinateNames();
+    for (int i = 0; i < state->size(); ++i) {
+      result << prefix << "        - " << state_coordinate_names.at(i)
+          << ": " << state->GetAtIndex(i) << "\n";
+    }
+  }
+
+  // TODO(liang.fok) Add all other information contained in the Context to the
+  // result string. This includes all states and parameters, and optionally
+  // includes inputs. Inputs are optional since they should be derivable from
+  // the state and parameters.
+
+  return result.str();
+}
+
+template <typename T>
 int AutomotiveSimulator<T>::allocate_vehicle_number() {
   DRAKE_DEMAND(!has_started());
   return next_vehicle_number_++;
