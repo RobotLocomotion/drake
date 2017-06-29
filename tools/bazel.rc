@@ -1,4 +1,3 @@
-
 # Default to an optimized build.
 build -c opt
 
@@ -24,7 +23,7 @@ test --test_env=DISPLAY
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GUROBI_PATH environment variable must be the
-# -- linux64 directory in the Gurobi 6.0.5 release.
+# -- linux64 directory in the Gurobi 7.0.2 release.
 #
 # -- To run tests where Gurobi is used, ensure that you include
 # -- "gurobi_test_tags()" from //tools:gurobi.bzl. If Gurobi is optional, set
