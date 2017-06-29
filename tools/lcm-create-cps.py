@@ -11,6 +11,12 @@ content = """
   "Description": "Lightweight Communications and Marshaling library",
   "License": "LGPL-2.1+",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
+  "Requires": {
+    "jchart2d": {
+      "Hints": ["@prefix@/lib/cmake/jchart2d"],
+      "X-CMake-Find-Args": [ "CONFIG" ]
+    }
+  },
   "Default-Components": [ ":lcm" ],
   "Components": {
     "lcm-coretypes": {
@@ -29,7 +35,8 @@ content = """
     },
     "lcm-java": {
       "Type": "jar",
-      "Location": "@prefix@/share/java/lcm.jar"
+      "Location": "@prefix@/share/java/lcm.jar",
+      "Requires": [ "jchart2d:jchart2d" ]
     }
   },
   "X-CMake-Variables": {

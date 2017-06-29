@@ -131,8 +131,8 @@ int DoMain() {
   simulator.Initialize();
 
   command_receiver->set_initial_position(
-      sys->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                      command_receiver),
+      &sys->GetMutableSubsystemContext(*command_receiver,
+                                       simulator.get_mutable_context()),
       VectorX<double>::Zero(tree.get_num_positions()));
 
 

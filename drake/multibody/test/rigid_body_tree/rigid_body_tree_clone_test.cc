@@ -120,11 +120,10 @@ class TestRbtCloneDiagram : public Diagram<double> {
   /// @param[in] q The initial position of the pendulum's pivot joint.
   /// @param[in] v The initial velocity of the pendulum's pivot joint.
   void SetInitialState(Context<double>* context, double q, double v) {
-    Context<double>* plant_context =
-        GetMutableSubsystemContext(context, plant_);
-    DRAKE_DEMAND(plant_context != nullptr);
+    Context<double>& plant_context =
+        GetMutableSubsystemContext(*plant_, context);
     ContinuousState<double>* plant_state =
-        plant_context->get_mutable_continuous_state();
+        plant_context.get_mutable_continuous_state();
     DRAKE_DEMAND(plant_state != nullptr);
     DRAKE_DEMAND(plant_state->size() == 2);
     (*plant_state)[0] = q;

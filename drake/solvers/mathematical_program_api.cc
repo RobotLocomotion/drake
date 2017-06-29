@@ -18,8 +18,21 @@ int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
     ostringstream oss;
-    oss << var << " is not a decision variable in the mathematical program, "
-                  "when calling GetSolution.\n";
+    oss << var
+        << " is not a decision variable in the mathematical program, "
+           "when calling GetSolution.\n";
+    throw runtime_error(oss.str());
+  }
+  return it->second;
+}
+
+size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
+  auto it = indeterminates_index_.find(var.get_id());
+  if (it == indeterminates_index_.end()) {
+    ostringstream oss;
+    oss << var
+        << " is not an indeterminate in the mathematical program, "
+           "when calling GetSolution.\n";
     throw runtime_error(oss.str());
   }
   return it->second;

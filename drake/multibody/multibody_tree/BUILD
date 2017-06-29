@@ -37,14 +37,17 @@ drake_cc_library(
     srcs = [
         "multibody_tree_context.cc",
         "position_kinematics_cache.cc",
+        "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "multibody_tree_context.h",
         "position_kinematics_cache.h",
+        "velocity_kinematics_cache.h",
     ],
     deps = [
         ":multibody_tree_topology",
         "//drake/common:autodiff",
+        "//drake/multibody/multibody_tree/math:spatial_velocity",
         "//drake/systems/framework:leaf_context",
     ],
 )

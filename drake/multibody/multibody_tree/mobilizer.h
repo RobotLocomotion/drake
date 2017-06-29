@@ -156,6 +156,8 @@ template<typename T> class BodyNode;
 ///               Nonlinear dynamics, 62(1), pp.291-303.
 /// - [Sciavicco 2000] Sciavicco, L. and Siciliano, B., 2000. Modelling and
 ///               control of robot manipulators, 2nd Edn. Springer.
+/// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
+///                       algorithms. Springer.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -267,6 +269,30 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// could depend on.
   virtual Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const = 0;
+
+  /// Computes the across-mobilizer spatial velocity `V_FM(q, v)` of the
+  /// outboard frame M in the inboard frame F.
+  /// This method can be thought of as the application of the operator `H_FM(q)`
+  /// to the input vector of generalized velocities `v`, i.e. the output of this
+  /// method is the application `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where
+  /// `nv` is the number of generalized velocities of this mobilizer (see
+  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
+  /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
+  /// velocities in Drake are not Plücker vectors as in Featherstone's book).
+  /// Therefore we say this method is the _operator form_ of the Jacobian
+  /// matrix `H_FM(q)`.
+  /// This method aborts in Debug builds if the dimension of the input vector of
+  /// generalized velocities has a size different from get_num_velocities().
+  ///
+  /// @param[in] context The context of the parent tree that owns this
+  /// mobilizer. This mobilizer's generalized positions q are inferred from this
+  /// context.
+  /// @param[in] v A vector of generalized velocities. It must live in ℝⁿᵛ.
+  /// @retval `V_FM` The across-mobilizer spatial velocity of the outboard frame
+  /// M measured and expressed in the inboard frame F.
+  virtual SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v) const = 0;
   /// @}
 
   /// For MultibodyTree internal use only.

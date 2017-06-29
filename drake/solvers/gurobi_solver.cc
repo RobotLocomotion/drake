@@ -18,6 +18,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/math/eigen_sparse_triplet.h"
+#include "drake/solvers/mathematical_program.h"
 
 // TODO(hongkai.dai): GurobiSolver class should store data member such as
 // GRB_model, GRB_env, is_new_variables, etc.
@@ -657,7 +658,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(solver_type(), error);
+  prog.SetSolverResult(SolverType::kGurobi, error);
 
   GRBfreemodel(model);
   GRBfreeenv(env);

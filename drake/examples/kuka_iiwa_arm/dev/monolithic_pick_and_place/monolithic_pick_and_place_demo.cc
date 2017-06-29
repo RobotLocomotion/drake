@@ -273,12 +273,12 @@ int DoMain(void) {
   Simulator<double> simulator(*sys);
   simulator.Initialize();
 
-  auto plan_source_context = sys->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), iiwa_trajectory_generator);
+  auto& plan_source_context = sys->GetMutableSubsystemContext(
+      *iiwa_trajectory_generator, simulator.get_mutable_context());
   iiwa_trajectory_generator->Initialize(
-      plan_source_context->get_time(),
+      plan_source_context.get_time(),
       Eigen::VectorXd::Zero(7),
-      plan_source_context->get_mutable_state());
+      plan_source_context.get_mutable_state());
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the

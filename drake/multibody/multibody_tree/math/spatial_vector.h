@@ -147,6 +147,12 @@ class SpatialVector {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
+  /// Sets both rotational and translational components of `this`
+  /// %SpatialVector to zero.
+  void SetZero() {
+    V_.setZero();
+  }
+
   /// Returns a reference to the underlying storage.
   CoeffsEigenType& get_coeffs() { return V_;}
 
@@ -163,6 +169,20 @@ class SpatialVector {
   /// @relates SpatialVector.
   friend SpatialQuantity operator*(const SpatialQuantity& V, const T& s) {
     return s * V;  // Multiplication by scalar is commutative.
+  }
+
+  /// This operation re-expresses the spatial vector `V_E` originally expressed
+  /// in frame E, into `V_F`, the same spatial vector expresed in another frame
+  /// F. The transformation requires the rotation matrix `R_FE` representing the
+  /// orientation of the original frame E with respect to frame F.
+  /// The operation performed is: <pre>
+  ///   V_F.rotational()    = R_FE * V_E.rotational(),
+  ///   V_F.translational() = R_FE * V_E.translational()
+  /// </pre>
+  /// @returns V_F The same spatial vector re-expressed in frame F.
+  friend SpatialQuantity operator*(
+      const Matrix3<T>& R_FE, const SpatialQuantity& V_E) {
+    return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
   }
 
  private:

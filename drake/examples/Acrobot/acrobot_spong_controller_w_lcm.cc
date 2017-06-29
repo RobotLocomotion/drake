@@ -61,7 +61,7 @@ int DoMain() {
 
   while (true) {
     const systems::Context<double>& pub_context =
-        diagram->GetSubsystemContext(*context.get(), command_pub);
+        diagram->GetSubsystemContext(*command_pub, *context);
     command_pub->Publish(pub_context);
   }
 }

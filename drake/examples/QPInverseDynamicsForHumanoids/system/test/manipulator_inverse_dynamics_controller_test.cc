@@ -125,7 +125,8 @@ class ManipulatorInverseDynamicsControllerTest : public ::testing::Test {
 
     // Initializes.
     qp_id_controller->Initialize(
-        diagram_->GetMutableSubsystemContext(context_.get(), qp_id_controller));
+        &diagram_->GetMutableSubsystemContext(
+            *qp_id_controller, context_.get()));
 
     // Computes results.
     systems::UpdateActions<double> actions;

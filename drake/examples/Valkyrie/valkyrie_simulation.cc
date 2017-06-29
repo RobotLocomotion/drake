@@ -30,11 +30,11 @@ int main() {
 
   // Set initial state.
   auto plant = diagram.get_mutable_plant();
-  auto plant_context = diagram.GetMutableSubsystemContext(context, plant);
+  auto& plant_context = diagram.GetMutableSubsystemContext(*plant, context);
 
   // TODO(tkoolen): make it easy to specify a different initial configuration.
   VectorX<double> initial_state = RPYValkyrieFixedPointState();
-  plant->set_state_vector(plant_context, initial_state);
+  plant->set_state_vector(&plant_context, initial_state);
   lcm.StartReceiveThread();
 
   simulator.StepTo(std::numeric_limits<double>::infinity());

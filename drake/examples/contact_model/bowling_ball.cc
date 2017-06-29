@@ -128,7 +128,7 @@ int main() {
                                                              FLAGS_timestep,
                                                              context);
   // Set initial state.
-  auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
+  auto& plant_context = diagram->GetMutableSubsystemContext(plant, context);
 
   // 1 floating quat joint = |xyz|, |q|, |w|, |xyzdot| = 3 + 4 + 3 + 3.
   const int kStateSize = 13 * (1 + FLAGS_pin_count);
@@ -177,7 +177,7 @@ int main() {
   // to the linear velocity.  Angular speed is provided from input parameter: w.
   initial_state.segment<6>(idx) << -FLAGS_w, 0, 0, FLAGS_v, 0, 0;
 
-  plant.set_state_vector(plant_context, initial_state);
+  plant.set_state_vector(&plant_context, initial_state);
 
   simulator->StepTo(FLAGS_sim_duration);
 

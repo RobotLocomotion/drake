@@ -11,7 +11,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/math/autodiff.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -397,7 +399,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   prog.SetDecisionVariableValues(sol);
   prog.SetOptimalCost(minf);
-  prog.SetSolverResult(solver_type(), nlopt_result);
+  prog.SetSolverResult(SolverType::kNlopt, nlopt_result);
   return result;
 }
 

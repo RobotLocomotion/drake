@@ -16,6 +16,8 @@ install_cmake_config(
     versioned = 0,
 )
 
+OPTITRACK_LICENSE_DOCS = ["@optitrack_driver//:LICENSE"]
+
 OPTITRACK_TARGETS = [
     "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
@@ -25,13 +27,13 @@ OPTITRACK_TARGETS = [
 
 install(
     name = "install",
-    allowed_externals = OPTITRACK_TARGETS,
+    allowed_externals = OPTITRACK_LICENSE_DOCS + OPTITRACK_TARGETS,
     doc_dest = "share/doc/" + CMAKE_PACKAGE,
     doc_strip_prefix = ["**/"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/lcmtypes",
     java_strip_prefix = ["**/"],
-    license_docs = ["@optitrack_driver//:LICENSE"],
+    license_docs = OPTITRACK_LICENSE_DOCS,
     py_dest = "lib/python2.7/site-packages/optitrack",
     py_strip_prefix = ["**/"],
     rename = {
