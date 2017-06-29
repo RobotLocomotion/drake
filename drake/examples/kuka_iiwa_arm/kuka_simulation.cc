@@ -92,7 +92,7 @@ int DoMain() {
   auto controller =
       builder.AddController<systems::InverseDynamicsController<double>>(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-          urdf, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          tree.Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
           false /* without feedforward acceleration */);
 
   // Create the command subscriber and status publisher.

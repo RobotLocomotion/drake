@@ -114,6 +114,26 @@ drake_cc_library(
     hdrs = ["solver_type.h"],
 )
 
+drake_cc_library(
+    name = "solver_id",
+    srcs = ["solver_id.cc"],
+    hdrs = ["solver_id.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:reinit_after_move",
+    ],
+)
+
+drake_cc_library(
+    name = "indeterminate",
+    srcs = ["indeterminate.cc"],
+    hdrs = ["indeterminate.h"],
+    deps = [
+        "//drake/common:symbolic",
+        "//drake/solvers:decision_variable",
+    ],
+)
+
 # Supported solvers:
 # - equality_constrained_qp_solver
 # - linear_system_solver
@@ -131,33 +151,26 @@ drake_cc_library(
 drake_cc_library(
     name = "mathematical_program",
     srcs = [
-        "equality_constrained_qp_solver.cc",
-        "linear_system_solver.cc",
         "mathematical_program.cc",
-        "mathematical_program_solver_interface.cc",
-        "moby_lcp_solver.cc",
-        "no_dreal.cc",
     ],
-    hdrs = [
-        "dreal_solver.h",
-        "equality_constrained_qp_solver.h",
-        "linear_system_solver.h",
-        "mathematical_program.h",
-        "mathematical_program_solver_interface.h",
-        "moby_lcp_solver.h",
-        "mosek_solver.h",
-        "snopt_solver.h",
-    ],
+    hdrs = [],
     deps = [
         ":binding",
         ":create_constraint",
         ":create_cost",
         ":decision_variable",
+        ":dreal_solver",
+        ":equality_constrained_qp_solver",
         ":gurobi_solver",
+        ":indeterminate",
         ":ipopt_solver",
+        ":linear_system_solver",
+        ":mathematical_program_api",
+        ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
         ":snopt_solver",
+        ":solver_id",
         ":solver_type",
         ":symbolic_extraction",
         "//drake/common",
@@ -232,6 +245,14 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "indeterminate_test",
+    deps = [
+        ":indeterminate",
+        "//drake/common:symbolic_test_util",
+    ],
+)
+
 drake_cc_library(
     name = "mathematical_program_test_util",
     testonly = 1,
@@ -285,7 +306,10 @@ drake_cc_library(
 # with MathematicalProgram itself, and then this target should be deleted.
 drake_cc_library(
     name = "mathematical_program_api",
-    srcs = [],
+    srcs = [
+        "mathematical_program_api.cc",
+        "mathematical_program_solver_interface.cc",
+    ],
     hdrs = [
         "mathematical_program.h",
         "mathematical_program_solver_interface.h",
@@ -296,11 +320,58 @@ drake_cc_library(
         ":create_cost",
         ":decision_variable",
         ":function",
+        ":indeterminate",
+        ":solver_id",
         ":solver_type",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
+    ],
+)
+
+# Internal Solvers.
+
+drake_cc_library(
+    name = "equality_constrained_qp_solver",
+    srcs = ["equality_constrained_qp_solver.cc"],
+    hdrs = ["equality_constrained_qp_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_system_solver",
+    srcs = ["linear_system_solver.cc"],
+    hdrs = ["linear_system_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "moby_lcp_solver",
+    srcs = ["moby_lcp_solver.cc"],
+    hdrs = ["moby_lcp_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "dreal_solver",
+    srcs = [
+        "dreal_solver_common.cc",
+        "no_dreal.cc",
+    ],
+    hdrs = ["dreal_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common",
     ],
 )
 
@@ -312,8 +383,14 @@ drake_cc_library(
 drake_cc_library(
     name = "gurobi_solver",
     srcs = select({
-        "//tools:with_gurobi": ["gurobi_solver.cc"],
-        "//conditions:default": ["no_gurobi.cc"],
+        "//tools:with_gurobi": [
+            "gurobi_solver.cc",
+            "gurobi_solver_common.cc",
+        ],
+        "//conditions:default": [
+            "gurobi_solver_common.cc",
+            "no_gurobi.cc",
+        ],
     }),
     hdrs = ["gurobi_solver.h"],
     deps = select({
@@ -334,8 +411,14 @@ drake_cc_library(
 drake_cc_library(
     name = "mosek_solver",
     srcs = select({
-        "//tools:with_mosek": ["mosek_solver.cc"],
-        "//conditions:default": ["no_mosek.cc"],
+        "//tools:with_mosek": [
+            "mosek_solver.cc",
+            "mosek_solver_common.cc",
+        ],
+        "//conditions:default": [
+            "mosek_solver_common.cc",
+            "no_mosek.cc",
+        ],
     }),
     hdrs = ["mosek_solver.h"],
     deps = select({
@@ -356,8 +439,14 @@ drake_cc_library(
 drake_cc_library(
     name = "snopt_solver",
     srcs = select({
-        "//tools:with_snopt": ["snopt_solver.cc"],
-        "//conditions:default": ["no_snopt.cc"],
+        "//tools:with_snopt": [
+            "snopt_solver.cc",
+            "snopt_solver_common.cc",
+        ],
+        "//conditions:default": [
+            "no_snopt.cc",
+            "snopt_solver_common.cc",
+        ],
     }),
     hdrs = ["snopt_solver.h"],
     # Some versions of SNOPT's API require passing a `std::string::c_str()`
@@ -386,8 +475,14 @@ drake_cc_library(
 drake_cc_library(
     name = "ipopt_solver",
     srcs = select({
-        "//tools:no_ipopt": ["no_ipopt.cc"],
-        "//conditions:default": ["ipopt_solver.cc"],
+        "//tools:no_ipopt": [
+            "ipopt_solver_common.cc",
+            "no_ipopt.cc",
+        ],
+        "//conditions:default": [
+            "ipopt_solver.cc",
+            "ipopt_solver_common.cc",
+        ],
     }),
     hdrs = ["ipopt_solver.h"],
     deps = select({
@@ -406,8 +501,14 @@ drake_cc_library(
 drake_cc_library(
     name = "nlopt_solver",
     srcs = select({
-        "//tools:no_nlopt": ["no_nlopt.cc"],
-        "//conditions:default": ["nlopt_solver.cc"],
+        "//tools:no_nlopt": [
+            "nlopt_solver_common.cc",
+            "no_nlopt.cc",
+        ],
+        "//conditions:default": [
+            "nlopt_solver.cc",
+            "nlopt_solver_common.cc",
+        ],
     }),
     hdrs = ["nlopt_solver.h"],
     deps = select({
@@ -445,6 +546,16 @@ drake_cc_library(
         ],
         "//conditions:default": [],
     }),
+)
+
+drake_cc_library(
+    name = "mixed_integer_optimization_util",
+    srcs = ["mixed_integer_optimization_util.cc"],
+    hdrs = ["mixed_integer_optimization_util.h"],
+    deps = [
+        ":mathematical_program",
+        "//drake/math:gray_code",
+    ],
 )
 
 # === test/ ===
@@ -706,6 +817,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "solver_id_test",
+    deps = [
+        ":solver_id",
+    ],
+)
+
+drake_cc_googletest(
     name = "system_identification_test",
     # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
     # To avoid timeouts in dbg and valgrind, we need "large" here.
@@ -725,6 +843,16 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_googletest(
+    name = "mixed_integer_optimization_util_test",
+    tags = gurobi_test_tags(gurobi_required = False),
+    deps = [
+        ":gurobi_solver",
+        ":mixed_integer_optimization_util",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
 # The extra_srcs are required here because cpplint() doesn't understand how to
 # extract labels from select() functions yet.
 cpplint(extra_srcs = [
@@ -732,12 +860,16 @@ cpplint(extra_srcs = [
     "gurobi_qp.h",
     "gurobi_solver.cc",
     "gurobi_solver.h",
+    "gurobi_solver_common.cc",
     "ipopt_solver.cc",
     "ipopt_solver.h",
+    "ipopt_solver_common.cc",
     "mosek_solver.cc",
     "mosek_solver.h",
+    "mosek_solver_common.cc",
     "nlopt_solver.cc",
     "nlopt_solver.h",
+    "nlopt_solver_common.cc",
     "no_gurobi.cc",
     "no_ipopt.cc",
     "no_mosek.cc",
@@ -746,4 +878,5 @@ cpplint(extra_srcs = [
     "qp.cc",
     "snopt_solver.cc",
     "snopt_solver.h",
+    "snopt_solver_common.cc",
 ])

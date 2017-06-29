@@ -183,9 +183,12 @@ java_library(
         # Suppressed until lcm-proj/lcm#159 is fixed.
         "-extra_checks:off",
     ],
-    deps = [
-        "@net_sf_jchart2d_jchart2d//jar",
+    runtime_deps = [
+        "@com_jidesoft_jide_oss//jar",
+        "@commons_io_commons_io//jar",
+        "@org_apache_xmlgraphics_xmlgraphics_commons//jar",
     ],
+    deps = ["@net_sf_jchart2d_jchart2d//jar"],
 )
 
 java_binary(

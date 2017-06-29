@@ -27,6 +27,9 @@
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/symbolic_extraction.h"
 
+// Note that the file mathematical_program_api.cc also contains some of the
+// implementation of mathematical_program.h
+
 namespace drake {
 namespace solvers {
 
@@ -204,6 +207,40 @@ VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
     names[i] = name + "(" + to_string(i) + ")";
   }
   return NewVariables(VarType::BINARY, rows, names);
+}
+
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const vector<string>& names) {
+  MatrixXIndeterminate indeterminates_matrix(rows, cols);
+  NewIndeterminates_impl(names, indeterminates_matrix);
+  return indeterminates_matrix;
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, const std::vector<std::string>& names) {
+  return NewIndeterminates(rows, 1, names);
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, const string& name) {
+  vector<string> names(rows);
+  for (int i = 0; i < static_cast<int>(rows); ++i) {
+    names[i] = name + "(" + to_string(i) + ")";
+  }
+  return NewIndeterminates(rows, names);
+}
+
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const string& name) {
+  vector<string> names(rows * cols);
+  int count = 0;
+  for (int j = 0; j < static_cast<int>(cols); ++j) {
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
+      ++count;
+    }
+  }
+  return NewIndeterminates(rows, cols, names);
 }
 
 namespace {
@@ -589,39 +626,18 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
-int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
-  auto it = decision_variable_index_.find(var.get_id());
-  if (it == decision_variable_index_.end()) {
-    ostringstream oss;
-    oss << var << " is not a decision variable in the mathematical program, "
-                  "when calling GetSolution.\n";
-    throw runtime_error(oss.str());
-  }
-  return it->second;
-}
+// Note that FindDecisionVariableIndex is implemented in
+// mathematical_program_api.cc instead of this file.
+
+// Note that FindIndeterminateIndex is implemented in
+// mathematical_program_api.cc instead of this file.
 
 double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
-void MathematicalProgram::SetDecisionVariableValues(
-    const Eigen::Ref<const Eigen::VectorXd>& values) {
-  SetDecisionVariableValues(decision_variables_, values);
-}
-
-void MathematicalProgram::SetDecisionVariableValues(
-    const Eigen::Ref<const VectorXDecisionVariable>& variables,
-    const Eigen::Ref<const Eigen::VectorXd>& values) {
-  DRAKE_ASSERT(values.rows() == variables.rows());
-  for (int i = 0; i < values.rows(); ++i) {
-    x_values_[FindDecisionVariableIndex(variables(i))] = values(i);
-  }
-}
-
-void MathematicalProgram::SetDecisionVariableValue(const Variable& var,
-                                                   double value) {
-  x_values_[FindDecisionVariableIndex(var)] = value;
-}
+// Note that SetDecisionVariableValue and SetDecisionVariableValues are
+// implemented in mathematical_program_api.cc instead of this file.
 
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will

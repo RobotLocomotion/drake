@@ -62,7 +62,7 @@ drake_cc_test(
     tags = mosek_test_tags(),
     deps = [
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/collision",
         "//drake/multibody/parsers",

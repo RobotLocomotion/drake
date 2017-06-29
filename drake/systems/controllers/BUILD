@@ -34,7 +34,6 @@ drake_cc_library(
         ":pid_controller",
         ":state_feedback_controller_interface",
         "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
         "//drake/systems/framework",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
@@ -141,7 +140,7 @@ drake_cc_library(
         ":control_util",
         ":qp_common",
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/lcmtypes:zmp_com_observer_state",
@@ -167,6 +166,7 @@ drake_cc_googletest(
         ":inverse_dynamics",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -179,6 +179,7 @@ drake_cc_googletest(
         ":inverse_dynamics_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/parsers",
+        "//drake/common:find_resource",
     ],
 )
 

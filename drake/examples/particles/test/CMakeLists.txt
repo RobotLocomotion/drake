@@ -1,5 +1,0 @@
-drake_add_cc_test(particle_test)
-target_link_libraries(particle_test drakeParticles)
-
-drake_add_cc_test(utilities_test)
-target_link_libraries(utilities_test drakeParticles)

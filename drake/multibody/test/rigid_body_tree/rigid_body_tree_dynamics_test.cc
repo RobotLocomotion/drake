@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/jacobian.h"
@@ -38,8 +38,8 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
   virtual void SetUp() {
     trees_.clear();
 
-    const std::string kAtlasUrdf =
-        drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf";
+    const std::string kAtlasUrdf = FindResourceOrThrow(
+        "drake/examples/Atlas/urdf/atlas_convex_hull.urdf");
     tree_rpy_ = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         kAtlasUrdf, kRollPitchYaw, tree_rpy_.get());

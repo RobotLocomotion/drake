@@ -19,6 +19,7 @@
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_expression_visitor.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
@@ -959,8 +960,150 @@ Polynomial<double> ExpressionDiv::ToPolynomial() const {
          get_constant_value(get_second_argument());
 }
 
+namespace {
+// Helper class to implement ExpressionDiv::Expand. Given a symbolic expression
+// `e` and a constant `n`, it pushes the division in `e / n` inside for the
+// following cases:
+//
+// Case Addition      : e =  (c₀ + ∑ᵢ (cᵢ * eᵢ)) / n
+//                        => c₀/n + ∑ᵢ (cᵢ / n * eᵢ)
+//
+// Case Multiplication: e =  (c₀ * ∏ᵢ (bᵢ * eᵢ)) / n
+//                        => c₀ / n * ∏ᵢ (bᵢ * eᵢ)
+//
+// Case Division      : e =  (e₁ / m) / n
+//                        => Recursively simplify e₁ / (n * m)
+//
+//                      e =  (e₁ / e₂) / n
+//                        =  (e₁ / n) / e₂
+//                        => Recursively simplify (e₁ / n) and divide it by e₂
+//
+// For other cases, it does not perform any simplifications.
+//
+// Note that we use VisitExpression instead of VisitPolynomial because we want
+// to handle cases such as `(6xy / z) / 3` where (6xy / z) is not a polynomial
+// but it's desirable to simplify the expression into `2xy / z`.
+class DivExpandVisitor {
+ public:
+  Expression Simplify(const Expression& e, const double n) const {
+    return VisitExpression<Expression>(this, e, n);
+  }
+
+ private:
+  Expression VisitAddition(const Expression& e, const double n) const {
+    // e =  (c₀ + ∑ᵢ (cᵢ * eᵢ)) / n
+    //   => c₀/n + ∑ᵢ (cᵢ / n * eᵢ)
+    const double constant{get_constant_in_addition(e)};
+    ExpressionAddFactory factory(constant / n, {});
+    for (const pair<const Expression, double>& p :
+         get_expr_to_coeff_map_in_addition(e)) {
+      factory.AddExpression(p.second / n * p.first);
+    }
+    return factory.GetExpression();
+  }
+  Expression VisitMultiplication(const Expression& e, const double n) const {
+    // e =  (c₀ * ∏ᵢ (bᵢ * eᵢ)) / n
+    //   => c₀ / n * ∏ᵢ (bᵢ * eᵢ)
+    return ExpressionMulFactory{get_constant_in_multiplication(e) / n,
+                                get_base_to_exponent_map_in_multiplication(e)}
+        .GetExpression();
+  }
+  Expression VisitDivision(const Expression& e, const double n) const {
+    const Expression& e1{get_first_argument(e)};
+    const Expression& e2{get_second_argument(e)};
+    if (is_constant(e2)) {
+      // e =  (e₁ / m) / n
+      //   => Simplify `e₁ / (n * m)`
+      const double m{get_constant_value(e2)};
+      return Simplify(e1, m * n);
+    } else {
+      // e =  (e₁ / e₂) / n
+      //   => (e₁ / n) / e₂
+      return Simplify(e1, n) / e2;
+    }
+  }
+  Expression VisitVariable(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitConstant(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitLog(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitPow(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitAbs(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitExp(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitSqrt(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitSin(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitCos(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitTan(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitAsin(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitAcos(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitAtan(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitAtan2(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitSinh(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitCosh(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitTanh(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitMin(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitMax(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitIfThenElse(const Expression& e, const double n) const {
+    return e / n;
+  }
+  Expression VisitUninterpretedFunction(const Expression& e,
+                                        const double n) const {
+    return e / n;
+  }
+
+  // Makes VisitExpression a friend of this class so that VisitExpression can
+  // use its private methods.
+  friend Expression drake::symbolic::VisitExpression<Expression>(
+      const DivExpandVisitor*, const Expression&, const double&);
+};
+}  // namespace
+
 Expression ExpressionDiv::Expand() const {
-  return get_first_argument().Expand() / get_second_argument().Expand();
+  const Expression e1{get_first_argument().Expand()};
+  const Expression e2{get_second_argument().Expand()};
+  if (is_constant(e2)) {
+    // Simplifies the 'division by a constant' case, using DivExpandVisitor
+    // defined above.
+    return DivExpandVisitor{}.Simplify(e1, get_constant_value(e2));
+  } else {
+    return e1 / e2;
+  }
 }
 
 Expression ExpressionDiv::Substitute(const Substitution& s) const {

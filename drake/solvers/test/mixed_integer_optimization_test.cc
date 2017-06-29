@@ -13,8 +13,8 @@ namespace test {
 namespace {
 void GetMixedIntegerLinearProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable(SolverType::kGurobi, solvers);
-  AddSolverIfAvailable(SolverType::kMosek, solvers);
+  AddSolverIfAvailable<GurobiSolver>(solvers);
+  AddSolverIfAvailable<MosekSolver>(solvers);
 }
 }  // namespace
 

@@ -114,6 +114,24 @@ maven_jar(
     sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
+maven_jar(
+    name = "com_jidesoft_jide_oss",
+    artifact = "com.jidesoft:jide-oss:2.9.7",
+    sha1 = "a9bb0d8384012c25c1519f6dd9adc80dd720a050",
+)
+
+maven_jar(
+    name = "commons_io_commons_io",
+    artifact = "commons-io:commons-io:1.3.1",
+    sha1 = "b90b6ac57cf27a2858eaa490d02ba7945d18ca7b",
+)
+
+maven_jar(
+    name = "org_apache_xmlgraphics_xmlgraphics_commons",
+    artifact = "org.apache.xmlgraphics:xmlgraphics-commons:1.3.1",
+    sha1 = "f7d0fa54e2750acd82b1a241c043be6fce1bf0dc",
+)
+
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
@@ -135,9 +153,9 @@ github_archive(
 github_archive(
     name = "bullet",
     repository = "bulletphysics/bullet3",
-    commit = "2.85.1",
+    commit = "2.86.1",
     build_file = "tools/bullet.BUILD",
-    sha256 = "6e157c0b50373bc0e860de27f06397827bb28a4205bc568ae79d76a0f919ed62",
+    sha256 = "c058b2e4321ba6adaa656976c1a138c07b18fc03b29f5b82880d5d8228fbf059",
 )
 
 github_archive(
@@ -311,8 +329,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "abed50cced91a4f8a37f0458564f4b91524d8fef",
-    sha256 = "da30d553cccba59a3332128c1291ece7e9f1db00423800161ee438832b298ed2",
+    commit = "adff2def458928902ad482337330676beeeedb93",
+    sha256 = "61fd6f1810724c50784da97ef666c4b5b9110a8ce57f79b4c5510d6f8bb7c75e",
     build_file = "tools/pycps.BUILD",
 )
 

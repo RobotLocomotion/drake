@@ -24,6 +24,11 @@ namespace systems {
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute torque. This class should be used
  * directly if desired acceleration is computed differently.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
  */
 template <typename T>
 class InverseDynamics : public LeafSystem<T> {

@@ -298,7 +298,6 @@ macro(drake_setup_options)
     "Classes and functions for parsing RNDF road networks")
 
   drake_optional_external(LIBBOT ON
-    DEPENDS "NOT USE_SANITIZER"
     "libbot2 robotics suite\;"
     "used for its simple open-gl visualizer + lcmgl for director")
 
@@ -317,48 +316,13 @@ macro(drake_setup_options)
 
   # END external projects that are ON by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN external projects that are only needed when MATLAB is in use
-
-  # The following projects are default ON when MATLAB is present and enabled.
-  # Otherwise, they are hidden and default OFF.
-  drake_optional_external(SEDUMI ON
-    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
-    "semi-definite programming solver")
-
-  drake_optional_external(SPOTLESS ON
-    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
-    "polynomial optimization front-end for MATLAB")
-
-  # The following projects are default OFF when MATLAB is present and enabled.
-  # Otherwise, they are hidden and default OFF. Some of them may also be hidden
-  # on Windows regardless of the status of MATLAB.
-  drake_optional_external(YALMIP OFF
-    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
-    "free optimization front-end for MATLAB")
-
-  # END external projects that are only needed when MATLAB is in use
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are OFF by default
-
-  drake_optional_external(AVL OFF
-    DEPENDS "NOT DISABLE_FORTRAN"
-    "use w/ AVL to compute aerodynamic coefficients for airfoils")
 
   drake_optional_external(GUROBI OFF
     "Convex/integer optimization solver\; free for academics")
 
-  drake_optional_external(IRIS OFF
-    DEPENDS "WITH_MOSEK"
-    "fast approximate convex segmentation")
-
-  drake_optional_external(MESHCONVERTERS OFF
-    "uses vcglib to convert a few standard filetypes")
-
   drake_optional_external(MOSEK OFF
     "Convex optimization solver\; free for academics")
-
-  drake_optional_external(SIGNALSCOPE OFF
-    "Live plotting tool for LCM messages")
 
   drake_optional_external(SNOPT OFF
     "Sparse Non-linear Optimizer\;"
@@ -366,10 +330,6 @@ macro(drake_setup_options)
 
   drake_optional_external(TEXTBOOK OFF
     "The Underactuated Robotics textbook and its examples")
-
-  drake_optional_external(XFOIL OFF
-    DEPENDS "NOT DISABLE_FORTRAN"
-    "use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 
   # END external projects that are OFF by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

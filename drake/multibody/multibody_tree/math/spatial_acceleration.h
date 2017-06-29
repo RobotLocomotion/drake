@@ -5,7 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/shift_time_derivative.h"
+#include "drake/math/convert_time_derivative.h"
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 
@@ -272,9 +272,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
       const SpatialAcceleration<T>& DtB_V_E,
       const Vector3<T>& w_AB) {
     return SpatialAcceleration(
-        drake::math::ShiftTimeDerivative(
+        drake::math::ConvertTimeDerivativeToOtherFrame(
             V_E.rotational(), DtB_V_E.rotational(), w_AB),
-        drake::math::ShiftTimeDerivative(
+        drake::math::ConvertTimeDerivativeToOtherFrame(
             V_E.translational(), DtB_V_E.translational(), w_AB));
   }
 };
