@@ -37,11 +37,11 @@ install_cmake_config(package = "Eigen3")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    doc_dest = "share/doc/eigen3",
-    docs = glob(["COPYING.*"]),
-    guess_hdrs = "PACKAGE",
-    hdr_dest = "include/eigen3",
     targets = [":eigen"],
+    hdr_dest = "include/eigen3",
+    guess_hdrs = "PACKAGE",
+    docs = glob(["COPYING.*"]),
+    doc_dest = "share/doc/eigen3",
     deps = [":install_cmake_config"],
 )
 

@@ -220,26 +220,16 @@ install_files(
 
 install(
     name = "install_python",
-    library_dest = "lib/python2.7/site-packages/lcm",
-    py_strip_prefix = ["lcm-python"],
     targets = [
         ":_lcm.so",
         ":lcm-python-upstream",
     ],
+    library_dest = "lib/python2.7/site-packages/lcm",
+    py_strip_prefix = ["lcm-python"],
 )
 
 install(
     name = "install",
-    hdrs = LCM_PUBLIC_HEADERS,
-    docs = [
-        "AUTHORS",
-        "COPYING",
-        "NEWS",
-    ],
-    py_strip_prefix = ["lcm-python"],
-    rename = {
-        "share/java/liblcm-java.jar": "lcm.jar",
-    },
     targets = [
         ":lcm",
         ":lcm-gen",
@@ -248,6 +238,16 @@ install(
         ":lcm-logplayer",
         ":lcm-spy",
     ],
+    py_strip_prefix = ["lcm-python"],
+    hdrs = LCM_PUBLIC_HEADERS,
+    docs = [
+        "AUTHORS",
+        "COPYING",
+        "NEWS",
+    ],
+    rename = {
+        "share/java/liblcm-java.jar": "lcm.jar",
+    },
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",

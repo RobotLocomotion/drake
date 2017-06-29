@@ -437,22 +437,6 @@ install_cmake_config(
 
 install(
     name = "install_lcmtypes",
-    guess_hdrs = "PACKAGE",
-    hdr_strip_prefix = [
-        "bot2-frames",
-        "bot2-lcmgl",
-        "bot2-param",
-    ],
-    py_strip_prefix = [
-        "bot2-frames/lcmtypes",
-        "bot2-lcmgl/lcmtypes",
-        "bot2-param/lcmtypes",
-    ],
-    rename = {
-        "share/java/liblcmtypes_bot2_frames_java.jar": "lcmtypes_bot2_frames.jar",  # noqa
-        "share/java/liblcmtypes_bot2_lcmgl_java.jar": "lcmtypes_bot2_lcmgl.jar",  # noqa
-        "share/java/liblcmtypes_bot2_param_java.jar": "lcmtypes_bot2_param.jar",  # noqa
-    },
     targets = [
         ":lcmtypes_bot2_frames_c",
         ":lcmtypes_bot2_frames_java",
@@ -467,28 +451,43 @@ install(
         ":lcmtypes_bot2_param_py",
         ":lcmtypes_bot2_param",
     ],
+    py_strip_prefix = [
+        "bot2-frames/lcmtypes",
+        "bot2-lcmgl/lcmtypes",
+        "bot2-param/lcmtypes",
+    ],
+    hdr_strip_prefix = [
+        "bot2-frames",
+        "bot2-lcmgl",
+        "bot2-param",
+    ],
+    guess_hdrs = "PACKAGE",
+    rename = {
+        "share/java/liblcmtypes_bot2_frames_java.jar": "lcmtypes_bot2_frames.jar",  # noqa
+        "share/java/liblcmtypes_bot2_lcmgl_java.jar": "lcmtypes_bot2_lcmgl.jar",  # noqa
+        "share/java/liblcmtypes_bot2_param_java.jar": "lcmtypes_bot2_param.jar",  # noqa
+    },
 )
 
 HDR_DEST = "include/" + CMAKE_PACKAGE
 
 install(
     name = "install_bot2_core",
+    targets = [
+        ":bot-spy",
+        ":bot2_core",
+        ":lcmspy_plugins_bot2",
+    ],
     hdrs = BOT2_CORE_PUBLIC_HDRS,
     hdr_dest = HDR_DEST,
     hdr_strip_prefix = ["bot2-core/src"],
     rename = {
         "share/java/liblcmspy_plugins_bot2.jar": "lcmspy_plugins_bot2.jar",
     },
-    targets = [
-        ":bot-spy",
-        ":bot2_core",
-        ":lcmspy_plugins_bot2",
-    ],
 )
 
 install(
     name = "install_bot2_lcm_utils",
-    py_strip_prefix = ["bot2-lcm-utils/python/src"],
     targets = [
         ":bot_log2mat",
         ":bot-lcm-logfilter",
@@ -496,43 +495,44 @@ install(
         ":bot-lcm-tunnel",
         ":bot-lcm-who",
     ],
+    py_strip_prefix = ["bot2-lcm-utils/python/src"],
 )
 
 install(
     name = "install_bot2_param",
-    hdrs = BOT2_PARAM_PUBLIC_HDRS,
-    hdr_dest = HDR_DEST + "/" + BOT2_PARAM_INCLUDE_PREFIX,
-    hdr_strip_prefix = ["bot2-param/src/param_client"],
     targets = [
         ":bot-param-dump",
         ":bot-param-server",
         ":bot-param-tool",
         ":bot2_param_client",
     ],
+    hdrs = BOT2_PARAM_PUBLIC_HDRS,
+    hdr_dest = HDR_DEST + "/" + BOT2_PARAM_INCLUDE_PREFIX,
+    hdr_strip_prefix = ["bot2-param/src/param_client"],
 )
 
 install(
     name = "install_bot2_frames",
+    targets = [":bot2_frames"],
     hdrs = BOT2_FRAMES_PUBLIC_HDRS,
     hdr_dest = HDR_DEST + "/" + BOT2_FRAMES_INCLUDE_PREFIX,
     hdr_strip_prefix = ["bot2-frames/src"],
-    targets = [":bot2_frames"],
 )
 
 install(
     name = "install_bot2_lcmgl",
-    hdrs = BOT2_LCMGL_PUBLIC_HDRS,
-    hdr_dest = HDR_DEST,
-    hdr_strip_prefix = ["bot2-lcmgl/src"],
-    rename = {
-        "share/java/libbot2_lcmgl_java.jar": "bot2_lcmgl.jar",
-    },
     targets = [
         ":bot2_lcmgl_client",
         ":bot2_lcmgl_java",
         ":bot2_lcmgl_py",
         ":bot2_lcmgl_render",
     ],
+    hdrs = BOT2_LCMGL_PUBLIC_HDRS,
+    hdr_dest = HDR_DEST,
+    hdr_strip_prefix = ["bot2-lcmgl/src"],
+    rename = {
+        "share/java/libbot2_lcmgl_java.jar": "bot2_lcmgl.jar",
+    },
 )
 
 install(
