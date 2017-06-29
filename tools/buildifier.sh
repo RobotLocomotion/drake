@@ -75,6 +75,7 @@ fi
 echo "Refreshing buildifier binary ..."
 bazel build --show_result=0 //tools:buildifier
 buildifier="$workspace"/bazel-bin/external/com_github_bazelbuild_buildtools/buildifier/buildifier
+tables="$workspace"/tools/buildifier-tables.json
 if [[ ! -x $buildifier ]]; then
   echo "Failed to build buildifier at $buildifier"
   exit 1
@@ -92,7 +93,7 @@ else
           -name BUILD.bazel -o \
           -name '*.BUILD' -o \
           -name '*.bzl' \) -print |
-      xargs -t "$buildifier" -mode=fix
+      xargs -t "$buildifier" -mode=fix -add_tables="$tables"
 fi
 
 echo "... done"
