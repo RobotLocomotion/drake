@@ -16,7 +16,7 @@ Build the ``drake-visualizer`` and the demo
 
 ```
 $ cd drake-distro
-$ bazel build //tools:drake_visualizer && bazel build //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
+$ bazel build //tools:drake_visualizer //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
 ```
 
 
