@@ -65,17 +65,27 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "vector3_util",
+    srcs = ["cross_product.cc"],
+    hdrs = [
+        "convert_time_derivative.h",
+        "cross_product.h",
+    ],
+    deps = [
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "gradient",
     srcs = [
         "autodiff_gradient.cc",
-        "cross_product.cc",
         "gradient.cc",
         "normalize_vector.cc",
         "rotation_conversion_gradient.cc",
     ],
     hdrs = [
         "autodiff_gradient.h",
-        "cross_product.h",
         "gradient.h",
         "gradient_util.h",
         "normalize_vector.h",
@@ -83,6 +93,7 @@ drake_cc_library(
     ],
     deps = [
         ":autodiff",
+        ":vector3_util",
         "//drake/common",
     ],
 )
@@ -170,7 +181,15 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cross_product_test",
     deps = [
-        ":gradient",
+        ":vector3_util",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "convert_time_derivative_test",
+    deps = [
+        ":vector3_util",
         "//drake/common:eigen_matrix_compare",
     ],
 )
