@@ -193,6 +193,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/solvers:snopt_solver",
     "//drake/solvers:solver_id",
     "//drake/solvers:solver_type",
+    "//drake/solvers:solver_type_converter",
     "//drake/solvers:symbolic_extraction",
     "//drake/solvers:system_identification",
     "//drake/systems/analysis:analysis",
