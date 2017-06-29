@@ -137,7 +137,8 @@ class PidControlledSystemTest : public ::testing::Test {
     auto output = diagram_->AllocateOutput(*context);
 
     const systems::Context<double>& plant_context =
-        controller->GetSubsystemContext(*controller, *context);
+        diagram_->GetSubsystemContext(*controller->plant(),
+                                      *context);
 
     diagram_->CalcOutput(*context, output.get());
     const BasicVector<double>* output_vec = output->get_vector_data(0);

@@ -110,7 +110,7 @@ int do_main() {
   simulator.StepTo(pp_xtraj.get_end_time());
 
   systems::Context<double>& pendulum_context =
-      controller->GetMutableSubsystemContext(
+      diagram->GetMutableSubsystemContext(
           *pendulum, simulator.get_mutable_context());
   auto state_vec = pendulum_context.get_continuous_state()->CopyToVector();
   if (!is_approx_equal_abstol(state_vec, xG, 1e-3)) {
