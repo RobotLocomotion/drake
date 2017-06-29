@@ -149,7 +149,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   v_WPb = v_WPo + w_WP x p_PoBo                                       (1)
   /// </pre>
   /// Therefore, for the translational acceleration we have: <pre>
-  ///   a_WBo = DtW(v_WPb) = DtW(v_WPo + w_WP x p_PoBo)
+  ///   a_WBo = DtW(v_WPb)
+  ///         = DtW(v_WPo + w_WP x p_PoBo)
   ///         = DtW(v_WPo) + DtW(w_WP x p_PoBo)
   ///         = a_WPo + DtW(w_WP) x p_PoBo + w_WP x DtW(p_PoBo)
   ///         = a_WPo + alpha_WP x p_PoBo + w_WP x DtW(p_PoBo)              (2)
