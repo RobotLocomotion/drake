@@ -198,36 +198,39 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   }
 
 
-  /// Given `this` spatial acceleration `A_WP` of a frame P in a frame F,
-  /// computes the spatial acceleration of a frame Q with origin `Qo` at
-  /// `p_PoBo` given that we know the spatial velocity `V_PB` and spatial
-  /// acceleration `A_PB` of frame Q in P.
+  /// This method composes `this` spatial acceleration `A_WP` of a frame P
+  /// measured in a frame W, with that of a third frame B moving in P with
+  /// spatial acceleration `A_PB`. The result is the spatial acceleration
+  /// `A_WB` of frame B measured in W. At the instant in which the accelerations
+  /// are composed, frame B is located with its origin `Bo` at `p_PoBo` from P's
+  /// origin Po.
+  ///
+  /// @see SpatialVelocity::ComposeWithMovingFrameVelocity() for the composition
+  /// of SpatialVelocity quantities.
   ///
   /// @note This method is the extension to the Shift() operator, which computes
-  /// the spatial acceleration frame P shifted to `Qo` as if Q moved rigidly
-  /// with P, that is, for when `V_PB` and `A_PB` are both zero.
+  /// the spatial acceleration frame P shifted to `Bo` as if frame B moved
+  /// rigidly with P, that is, for when `V_PB` and `A_PB` are both zero.
   /// In other words the results from Shift() equal the results from
   /// this method when `V_PB` and `A_PB` are both zero.
   ///
   /// @param[in] p_PoBo_E
-  ///   Shift vector from the origin `Po` of frame P to point Q, expressed in
-  ///   frame E. The "from" frame P must be the frame whose acceleration is
-  ///   currently represented in `this` spatial acceleration, and E must be the
-  ///   same expressed-in frame as for this spatial acceleration.
+  ///   Shift vector from P's origin to B's origin, expressed in frame E.
+  ///   The "from" point `Po` must be the point whose acceleration is currently
+  ///   represented in `this` spatial acceleration, and E must be the same
+  ///   expressed-in frame as for `this` spatial acceleration.
   /// @param[in] w_WP_E
   ///   Angular velocity of frame P measured in frame A and expressed in frame
   ///   E.
+  /// @param[in] V_PB_E
+  ///   The spatial velocity of a third frame B in motion with respect to P,
+  ///   expressed in the same frame E as `this` spatial acceleration.
+  /// @param[in] A_PB_E
+  ///   The spatial acceleration of a third frame B in motion with respect to P,
+  ///   expressed in the same frame E as `this` spatial acceleration.
   ///
-  /// @note For both input parameters, `p_PoQ_E` and `w_WP_E`, frame P must be
-  ///   the frame whose acceleration is currently represented in `this` spatial
-  ///   acceleration `A_WP_E`, and E must be the same expressed-in frame as for
-  ///   this spatial acceleration.
-  ///
-  /// @retval `A_WB` The spatial acceleration of frame Q in F, expressed in
+  /// @retval `A_WB` The spatial acceleration of frame B in W, expressed in
   ///                frame E.
-  ///
-  /// @see Shift() which peforms a rigid shift, i.e. when `V_PB` and `A_PB` are
-  /// both zero.
   ///
   /// <h3> Derivation </h3>
   /// The spatial velocity of frame B in W can be obtained by composing `V_WP`
