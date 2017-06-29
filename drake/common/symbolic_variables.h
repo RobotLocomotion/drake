@@ -120,7 +120,12 @@ class Variables {
 
   friend std::ostream& operator<<(std::ostream&, const Variables& vars);
 
+  friend Variables intersect(const Variables& vars1, const Variables& vars2);
+
  private:
+  /* Constructs from std::set<Variable>. */
+  explicit Variables(set vars);
+
   set vars_;
 };
 
@@ -147,6 +152,13 @@ Variables operator-=(Variables& vars, const Variable& var);
 Variables operator-(Variables vars1, const Variables& vars2);
 /** Returns set-minus(@p vars, { @p var }). */
 Variables operator-(Variables vars, const Variable& var);
+
+/** Returns the intersection of @p vars1 and @p vars2.
+ *
+ * This function has a time complexity of `O(N₁ + N₂)` where `N₁` and `N₂` are
+ * the size of @p vars1 and @p vars2 respectively.
+ */
+Variables intersect(const Variables& vars1, const Variables& vars2);
 
 }  // namespace symbolic
 
