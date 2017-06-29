@@ -1,19 +1,25 @@
 #include "drake/common/symbolic_variables.h"
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <numeric>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "drake/common/hash.h"
 
 using std::accumulate;
 using std::includes;
+using std::inserter;
+using std::less;
+using std::move;
 using std::ostream;
 using std::ostream_iterator;
 using std::ostringstream;
+using std::set_intersection;
 using std::string;
 
 namespace drake {
@@ -119,6 +125,17 @@ Variables operator-(Variables vars1, const Variables& vars2) {
 Variables operator-(Variables vars, const Variable& var) {
   vars -= var;
   return vars;
+}
+
+Variables::Variables(set vars) : vars_{move(vars)} {}
+
+Variables intersect(const Variables& vars1, const Variables& vars2) {
+  Variables::set intersection;
+  set_intersection(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
+                   vars2.vars_.end(),
+                   inserter(intersection, intersection.begin()),
+                   less<Variable>{});
+  return Variables{move(intersection)};
 }
 
 ostream& operator<<(ostream& os, const Variables& vars) {
