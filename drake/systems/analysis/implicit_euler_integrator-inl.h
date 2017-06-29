@@ -324,6 +324,14 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
   // Compute the initial Jacobian and negated iteration matrices (see
   // rationale for the negation below) and factor them, if necessary.
   if (!reuse_ || J_.rows() == 0 || IsBadJacobian(J_)) {
+    // Note that the Jacobian can become bad through a divergent Newton-Raphson
+    // iteration, which causes the state to overflow, which then causes the
+    // Jacobian to overflow. If the state overflows, recomputing the Jacobian
+    // using this bad state will result in another bad Jacobian, eventually
+    // causing DoStep() to return indicating failure (but not before resetting
+    // the continuous state to its previous, good value). DoStep() will then
+    // be called again with a smaller step size and the good state; the
+    // bad Jacobian will then be corrected.
     J_ = CalcJacobian(tf, xtplus);
     const int n = xtplus.size();
     neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
