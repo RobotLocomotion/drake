@@ -428,7 +428,8 @@ TYPED_TEST(SpatialAccelerationTest, CentrifugalAcceleration) {
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_moving));
 }
 
-// Unit test for the method SpatialAcceleration::ShiftTimeDerivative().
+// Unit test for the method
+// SpatialAcceleration::ComposeWithMovingFrameAcceleration().
 // Case 1b:
 // This unit test expands Case 1 by allowing point Q to move in frame P. This
 // motion causes, in addition to the centrifugal acceleration of Case 1, a
@@ -463,8 +464,7 @@ TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
   // In this test, at this instantaneous moment, R_AP is the identity matrix and
   // therefore p_PoQo_A = p_PoQo_P. Similarly for V_PQ, A_PQ and w_AP.
   const SpatialAcceleration<T> A_AQ =
-      A_AP.Shift(p_PoQo, w_AP) +
-      SpatialAcceleration<T>::ShiftTimeDerivative(V_PQ, A_PQ, w_AP);
+      A_AP.ComposeWithMovingFrameAcceleration(p_PoQo, w_AP, V_PQ, A_PQ);
 
   SpatialAcceleration<T> A_AQ_expected;
   A_AQ_expected.rotational() = Vector3<T>::Zero();
@@ -474,7 +474,7 @@ TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
       -w_AP.norm() * w_AP.norm() * p_PoQo.norm() * p_PoQo.normalized() +
       /* Coriolis contribution. Since v_PQ points in the x direction and w_AP in
       the z direction, this contribution points in the positive y direction.*/
-      w_AP.norm() * V_PQ.translational().norm() * Vector3<T>::UnitY();
+      2.0 * w_AP.norm() * V_PQ.translational().norm() * Vector3<T>::UnitY();
 
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
