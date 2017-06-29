@@ -100,11 +100,11 @@ def _impl(repository_ctx):
         distro = " ".join(distro)
 
         if distro == "Ubuntu 14.04":
-            archive = "vtk-v8.0.0.rc2-qt-4.8.6-trusty-x86_64.tar.gz"
-            sha256 = "78880d8b951355a6ad5a6bfc42275ae42f31e2e05f1b52e3a9883226556b1685"  # noqa
+            archive = "vtk-v8.0.0-qt-4.8.6-trusty-x86_64.tar.gz"
+            sha256 = "e5240b6fab2f5d7675d11b77d2014987c5337bb6276e38ab8299a1ab1fee5167"  # noqa
         elif distro == "Ubuntu 16.04":
-            archive = "vtk-v8.0.0.rc2-qt-5.5.1-xenial-x86_64.tar.gz "
-            sha256 = "963f81abd90da4470df1fb20aee8b4ead815f543f3ae9fa00ef2ea6be5cc2c0c"  # noqa
+            archive = "vtk-v8.0.0-qt-5.5.1-xenial-x86_64.tar.gz"
+            sha256 = "455edf52f5d7c8d2e8ff6b1e909b6e7c44c61da7922bf8cbe7301a42e9539a3f"  # noqa
         else:
             fail("Linux distribution is NOT supported", attr = distro)
 
