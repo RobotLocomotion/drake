@@ -2,169 +2,85 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_binary")
 load("//tools:gurobi.bzl", "gurobi_test_tags")
 load("//tools:install.bzl", "install")
 load("//tools:mosek.bzl", "mosek_test_tags")
 load("//tools:python_lint.bzl", "python_lint")
+load(":pybind.bzl", "drake_pybind_cc_binary")
 
 package(default_visibility = ["//visibility:private"])
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/_pydrake_common.so",
     srcs = [
         "pybind11/pydrake_common.cc",
     ],
-    copts = [
-        "-Wno-#warnings",
-        "-Wno-cpp",
-        "-Wno-unknown-warning-option",
-    ],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/common",
-        "@pybind11",
-    ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/_pydrake_autodiffutils.so",
     srcs = [
         "pybind11/pydrake_autodiff_types.h",
         "pybind11/pydrake_autodiffutils.cc",
     ],
-    copts = [
-        "-Wno-#warnings",
-        "-Wno-cpp",
-        "-Wno-unknown-warning-option",
-    ],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "@eigen",
-        "@pybind11",
-    ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/_pydrake_rbtree.so",
     srcs = [
         "pybind11/pydrake_autodiff_types.h",
         "pybind11/pydrake_rbtree.cc",
     ],
-    copts = [
-        "-Wno-#warnings",
-        "-Wno-cpp",
-        "-Wno-unknown-warning-option",
-    ],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "@eigen",
-        "@pybind11",
-    ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/parsers.so",
-    srcs = ["pybind11/pydrake_parsers.cc"],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/multibody/parsers",
-        "@pybind11",
+    srcs = [
+        "pybind11/pydrake_parsers.cc",
     ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/solvers/_pydrake_ik.so",
-    srcs = ["pybind11/pydrake_ik.cc"],
-    copts = [
-        "-Wno-#warnings",
-        "-Wno-cpp",
-        "-Wno-unknown-warning-option",
-    ],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
-        "@pybind11",
+    srcs = [
+        "pybind11/pydrake_ik.cc",
     ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/solvers/_pydrake_mathematicalprogram.so",
     srcs = [
         "pybind11/pydrake_mathematicalprogram.cc",
         "pybind11/pydrake_symbolic_types.h",
     ],
-    copts = [
-        "-Wno-#warnings",
-        "-Wno-cpp",
-        "-Wno-unknown-warning-option",
-    ],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/common:symbolic",
-        "//drake/solvers:mathematical_program",
-        "@pybind11",
-    ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/solvers/gurobi.so",
-    srcs = ["pybind11/pydrake_gurobi.cc"],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/solvers:mathematical_program",
-        "@pybind11",
+    srcs = [
+        "pybind11/pydrake_gurobi.cc",
     ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/solvers/ipopt.so",
-    srcs = ["pybind11/pydrake_ipopt.cc"],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/solvers:ipopt_solver",
-        "@pybind11",
+    srcs = [
+        "pybind11/pydrake_ipopt.cc",
     ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/solvers/mosek.so",
-    srcs = ["pybind11/pydrake_mosek.cc"],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/solvers:mathematical_program",
-        "@pybind11",
+    srcs = [
+        "pybind11/pydrake_mosek.cc",
     ],
 )
 
-drake_cc_binary(
+drake_pybind_cc_binary(
     name = "python/pydrake/_pydrake_symbolic.so",
     srcs = [
         "pybind11/pydrake_symbolic.cc",
         "pybind11/pydrake_symbolic_types.h",
-    ],
-    copts = [
-        "-Wno-#warnings",
-        "-Wno-cpp",
-        "-Wno-unknown-warning-option",
-    ],
-    linkshared = 1,
-    linkstatic = 1,
-    deps = [
-        "//drake/common:symbolic",
-        "@pybind11",
     ],
 )
 
