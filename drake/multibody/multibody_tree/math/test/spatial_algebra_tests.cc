@@ -575,6 +575,9 @@ TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
 
+// TODO(sherm1,mitiguy) Add independently-developed unit tests here by Mitiguy
+// for the scary Shift() and Compose() methods, just to double check!
+
 }  // namespace
 }  // namespace math
 }  // namespace multibody
