@@ -46,12 +46,12 @@ void controller_loop() {
   loop.get_mutable_context()->set_time(msg_time);
 
   // Sets plan eval's desired to the nominal state.
-  systems::Context<double>* plan_eval_context =
-      valkyrie_controller.GetMutableSubsystemContext(loop.get_mutable_context(),
-                                                     plan_eval);
+  systems::Context<double>& plan_eval_context =
+      valkyrie_controller.GetMutableSubsystemContext(*plan_eval,
+          loop.get_mutable_context());
   VectorX<double> desired_q =
       valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
-  plan_eval->Initialize(desired_q, plan_eval_context->get_mutable_state());
+  plan_eval->Initialize(desired_q, plan_eval_context.get_mutable_state());
 
   // Starts the loop.
   loop.RunToSecondsAssumingInitialized();

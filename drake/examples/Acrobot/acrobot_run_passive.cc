@@ -43,17 +43,17 @@ int do_main(int argc, char* argv[]) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>* acrobot_context =
-      diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                          acrobot);
+  systems::Context<double>& acrobot_context =
+      diagram->GetMutableSubsystemContext(*acrobot,
+                                          simulator.get_mutable_context());
 
   double tau = 0;
-  acrobot_context->FixInputPort(0, Eigen::Matrix<double, 1, 1>::Constant(tau));
+  acrobot_context.FixInputPort(0, Eigen::Matrix<double, 1, 1>::Constant(tau));
 
   // Set an initial condition that is sufficiently far from the downright fixed
   // point.
   AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
-      acrobot_context->get_mutable_continuous_state_vector());
+      acrobot_context.get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(1.0);
   x0->set_theta2(1.0);

@@ -56,9 +56,9 @@ class GenericQuadrotor: public systems::Diagram<T> {
   }
 
   void SetState(systems::Context<T> *context, VectorX<T> x) const {
-    systems::Context<T> *plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
-    plant_->set_state(plant_context, x);
+    systems::Context<T>& plant_context =
+        this->GetMutableSubsystemContext(*plant_, context);
+    plant_->set_state(&plant_context, x);
   }
 
  private:
@@ -89,9 +89,9 @@ class RigidBodyQuadrotor: public systems::Diagram<T> {
   }
 
   void SetState(systems::Context<T> *context, VectorX<T> x) const {
-    systems::Context<T> *plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
-    plant_->set_state_vector(plant_context, x);
+    systems::Context<T>& plant_context =
+        this->GetMutableSubsystemContext(*plant_, context);
+    plant_->set_state_vector(&plant_context, x);
   }
 
  private:

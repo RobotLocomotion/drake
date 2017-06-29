@@ -116,8 +116,8 @@ class DiagramTest : public ::testing::Test {
   // Returns the continuous state of the given @p system.
   ContinuousState<double>* GetMutableContinuousState(
       const System<double>* system) {
-    return diagram_->GetMutableSubsystemState(context_.get(), system)
-        ->get_mutable_continuous_state();
+    return diagram_->GetMutableSubsystemState(*system, context_.get())
+        .get_mutable_continuous_state();
   }
 
   // Asserts that output_ is what it should be for the default values
@@ -263,16 +263,14 @@ TEST_F(DiagramTest, Graphviz) {
 // Tests that both variants of GetMutableSubsystemState do what they say on
 // the tin.
 TEST_F(DiagramTest, GetMutableSubsystemState) {
-  State<double>* state_from_context = diagram_->GetMutableSubsystemState(
-      context_.get(), diagram_->integrator0());
-  ASSERT_NE(nullptr, state_from_context);
-  State<double>* state_from_state = diagram_->GetMutableSubsystemState(
-      context_->get_mutable_state(), diagram_->integrator0());
-  ASSERT_NE(nullptr, state_from_state);
+  State<double>& state_from_context = diagram_->GetMutableSubsystemState(
+      *diagram_->integrator0(), context_.get());
+  State<double>& state_from_state = diagram_->GetMutableSubsystemState(
+      *diagram_->integrator0(), context_->get_mutable_state());
 
-  EXPECT_EQ(state_from_context, state_from_state);
+  EXPECT_EQ(&state_from_context, &state_from_state);
   const ContinuousState<double>& xc =
-      *state_from_context->get_continuous_state();
+      *state_from_context.get_continuous_state();
   EXPECT_EQ(3, xc[0]);
   EXPECT_EQ(9, xc[1]);
   EXPECT_EQ(27, xc[2]);
@@ -483,29 +481,29 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_->FixInputPort(2, std::move(input2_));
 
     // Initialize the integrator states.
-    Context<double>* d0_context =
-        diagram_->GetMutableSubsystemContext(context_.get(), subdiagram0_);
-    Context<double>* d1_context =
-        diagram_->GetMutableSubsystemContext(context_.get(), subdiagram1_);
+    Context<double>& d0_context =
+        diagram_->GetMutableSubsystemContext(*subdiagram0_, context_.get());
+    Context<double>& d1_context =
+        diagram_->GetMutableSubsystemContext(*subdiagram1_, context_.get());
 
-    State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
-        d0_context, subdiagram0_->integrator0());
-    integrator0_x->get_mutable_continuous_state()
+    State<double>& integrator0_x = subdiagram0_->GetMutableSubsystemState(
+        *subdiagram0_->integrator0(), &d0_context);
+    integrator0_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 3);
 
-    State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
-        d0_context, subdiagram0_->integrator1());
-    integrator1_x->get_mutable_continuous_state()
+    State<double>& integrator1_x = subdiagram0_->GetMutableSubsystemState(
+        *subdiagram0_->integrator1(), &d0_context);
+    integrator1_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 9);
 
-    State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
-        d1_context, subdiagram1_->integrator0());
-    integrator2_x->get_mutable_continuous_state()
+    State<double>& integrator2_x = subdiagram1_->GetMutableSubsystemState(
+        *subdiagram1_->integrator0(), &d1_context);
+    integrator2_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 27);
 
-    State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
-        d1_context, subdiagram1_->integrator1());
-    integrator3_x->get_mutable_continuous_state()
+    State<double>& integrator3_x = subdiagram1_->GetMutableSubsystemState(
+        *subdiagram1_->integrator1(), &d1_context);
+    integrator3_x.get_mutable_continuous_state()
         ->get_mutable_vector()->SetAtIndex(0, 81);
   }
 
@@ -787,9 +785,9 @@ class SecondOrderStateDiagram : public Diagram<double> {
   // Returns the state of the given subsystem.
   SecondOrderStateVector* x(Context<double>* context,
                             const SecondOrderStateSystem* subsystem) {
-    Context<double>* subsystem_context =
-        GetMutableSubsystemContext(context, subsystem);
-    return subsystem->x(subsystem_context);
+    Context<double>& subsystem_context =
+        GetMutableSubsystemContext(*subsystem, context);
+    return subsystem->x(&subsystem_context);
   }
 
  private:
@@ -929,12 +927,12 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
 // the 12-second tick, both hold1 and hold2 latch their inputs.
 TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Initialize the zero-order holds to different values than their input ports.
-  Context<double>* ctx1 =
-      diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold1());
-  ctx1->get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
-  Context<double>* ctx2 =
-      diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold2());
-  ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  Context<double>& ctx1 =
+      diagram_.GetMutableSubsystemContext(*diagram_.hold1(), context_.get());
+  ctx1.get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
+  Context<double>& ctx2 =
+      diagram_.GetMutableSubsystemContext(*diagram_.hold2(), context_.get());
+  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
 
   // Allocate the discrete variables.
   std::unique_ptr<DiscreteValues<double>> updates =
@@ -955,11 +953,11 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
                                        actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(1001.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
 
   // Restore hold2 to its original value.
-  ctx2->get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
   // Set the time to 11.5, so both hold1 and hold2 update.
   context_->set_time(11.5);
   diagram_.CalcNextUpdateTime(*context_, &actions);
@@ -974,8 +972,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
                                        actions.events[0],
                                        updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(17.0, ctx1->get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2->get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(17.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
 }
 
 // Tests that a publish action is taken at 19 sec.
@@ -1052,13 +1050,13 @@ class AbstractStateDiagramTest : public ::testing::Test {
 
   double get_sys0_abstract_data_as_double() {
     const Context<double>& sys_context =
-        diagram_.GetSubsystemContext(*context_, diagram_.get_mutable_sys0());
+        diagram_.GetSubsystemContext(*diagram_.get_mutable_sys0(), *context_);
     return sys_context.get_abstract_state<double>(0);
   }
 
   double get_sys1_abstract_data_as_double() {
     const Context<double>& sys_context =
-        diagram_.GetSubsystemContext(*context_, diagram_.get_mutable_sys1());
+        diagram_.GetSubsystemContext(*diagram_.get_mutable_sys1(), *context_);
     return sys_context.get_abstract_state<double>(0);
   }
 
@@ -1197,33 +1195,33 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
-  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator0_)
-      ->get_mutable_continuous_state_vector()
+  big_diagram_->GetMutableSubsystemContext(*integrator0_, big_context_.get())
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 1);
-  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator1_)
-      ->get_mutable_continuous_state_vector()
+  big_diagram_->GetMutableSubsystemContext(*integrator1_, big_context_.get())
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 2);
-  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator2_)
-      ->get_mutable_continuous_state_vector()
+  big_diagram_->GetMutableSubsystemContext(*integrator2_, big_context_.get())
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 3);
-  big_diagram_->GetMutableSubsystemContext(big_context_.get(), integrator3_)
-      ->get_mutable_continuous_state_vector()
+  big_diagram_->GetMutableSubsystemContext(*integrator3_, big_context_.get())
+      .get_mutable_continuous_state_vector()
       ->SetAtIndex(0, 4);
 
   // Checks states.
-  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator0_)
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator0_, *big_context_)
                 .get_continuous_state_vector()
                 .GetAtIndex(0),
             1);
-  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator1_)
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator1_, *big_context_)
                 .get_continuous_state_vector()
                 .GetAtIndex(0),
             2);
-  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator2_)
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator2_, *big_context_)
                 .get_continuous_state_vector()
                 .GetAtIndex(0),
             3);
-  EXPECT_EQ(big_diagram_->GetSubsystemContext(*big_context_, integrator3_)
+  EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator3_, *big_context_)
                 .get_continuous_state_vector()
                 .GetAtIndex(0),
             4);
@@ -1249,37 +1247,37 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
 
   State<double>* big_state = big_context_->get_mutable_state();
   big_diagram_
-      ->GetMutableSubsystemState(big_state, integrator0_)
-      ->get_mutable_continuous_state()
+      ->GetMutableSubsystemState(*integrator0_, big_state)
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 1);
   big_diagram_
-      ->GetMutableSubsystemState(big_state, integrator1_)
-      ->get_mutable_continuous_state()
+      ->GetMutableSubsystemState(*integrator1_, big_state)
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 2);
   big_diagram_
-      ->GetMutableSubsystemState(big_state, integrator2_)
-      ->get_mutable_continuous_state()
+      ->GetMutableSubsystemState(*integrator2_, big_state)
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 3);
   big_diagram_
-      ->GetMutableSubsystemState(big_state, integrator3_)
-      ->get_mutable_continuous_state()
+      ->GetMutableSubsystemState(*integrator3_, big_state)
+      .get_mutable_continuous_state()
       ->get_mutable_vector()
       ->SetAtIndex(0, 4);
 
   // Checks state.
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator0_)
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, *big_state)
                 .get_continuous_state()->get_vector()[0],
             1);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator1_)
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator1_, *big_state)
                 .get_continuous_state()->get_vector()[0],
             2);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator2_)
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator2_, *big_state)
                 .get_continuous_state()->get_vector()[0],
             3);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*big_state, integrator3_)
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator3_, *big_state)
                 .get_continuous_state()->get_vector()[0],
             4);
 
@@ -1450,17 +1448,17 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   EXPECT_EQ(sys2->get_publish_ctr(), 1);
 
   // sys0 doesn't have any updates.
-  auto& sys0_context = diagram->GetSubsystemContext(*context, sys0);
+  auto& sys0_context = diagram->GetSubsystemContext(*sys0, *context);
   EXPECT_EQ(sys0_context.get_discrete_state(0)->GetAtIndex(0), 0);
   EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
 
   // sys1 should have an unrestricted update then a discrete update.
-  auto& sys1_context = diagram->GetSubsystemContext(*context, sys1);
+  auto& sys1_context = diagram->GetSubsystemContext(*sys1, *context);
   EXPECT_EQ(sys1_context.get_discrete_state(0)->GetAtIndex(0), 1);
   EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
 
   // sys2 should have a unrestricted update then a publish.
-  auto& sys2_context = diagram->GetSubsystemContext(*context, sys2);
+  auto& sys2_context = diagram->GetSubsystemContext(*sys2, *context);
   EXPECT_EQ(sys2_context.get_discrete_state(0)->GetAtIndex(0), 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }

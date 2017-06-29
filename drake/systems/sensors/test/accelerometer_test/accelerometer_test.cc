@@ -165,7 +165,7 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
 
   const Context<double>& simulator_context = simulator.get_context();
   const Context<double>& logger_context =
-      diagram.GetSubsystemContext(simulator_context, &logger);
+      diagram.GetSubsystemContext(logger, simulator_context);
 
   const auto latest_measurement = logger.get_acceleration(logger_context);
   const Eigen::VectorXd x = logger.get_plant_state(logger_context);

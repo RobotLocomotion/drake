@@ -197,7 +197,7 @@ void run_valkyrie_pd_ff_controller() {
   // Call controller.
   while (true) {
     const systems::Context<double>& pub_context =
-        diagram->GetSubsystemContext(*context.get(), &atlas_command_publisher);
+        diagram->GetSubsystemContext(atlas_command_publisher, *context);
     atlas_command_publisher.Publish(pub_context);
   }
 }

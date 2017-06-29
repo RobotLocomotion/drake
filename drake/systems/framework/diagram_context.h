@@ -50,15 +50,15 @@ class DiagramState : public State<T> {
   }
 
   /// Returns the substate at @p index.
-  const State<T>* get_substate(int index) const {
+  const State<T>& get_substate(int index) const {
     DRAKE_DEMAND(index >= 0 && index < num_substates());
-    return substates_[index];
+    return *substates_[index];
   }
 
   /// Returns the substate at @p index.
-  State<T>* get_mutable_substate(int index) {
+  State<T>& get_mutable_substate(int index) {
     DRAKE_DEMAND(index >= 0 && index < num_substates());
-    return substates_[index];
+    return *substates_[index];
   }
 
   /// Finalizes this state as a span of all the constituent substates.
@@ -174,14 +174,14 @@ class DiagramContext : public Context<T> {
     // Identify and validate the destination port.
     SystemIndex dest_system_index = dest.first;
     PortIndex dest_port_index = dest.second;
-    Context<T>* dest_context = GetMutableSubsystemContext(dest_system_index);
+    Context<T>& dest_context = GetMutableSubsystemContext(dest_system_index);
     DRAKE_DEMAND(dest_port_index >= 0);
-    DRAKE_DEMAND(dest_port_index < dest_context->get_num_input_ports());
+    DRAKE_DEMAND(dest_port_index < dest_context.get_num_input_ports());
 
     // Construct and install the destination port.
     auto input_port =
         std::make_unique<DependentInputPortValue>(output_port_value);
-    dest_context->SetInputPortValue(dest_port_index, std::move(input_port));
+    dest_context.SetInputPortValue(dest_port_index, std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
     dependency_graph_[dest] = src;
@@ -242,20 +242,20 @@ class DiagramContext : public Context<T> {
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
   /// TODO(david-german-tri): Rename to get_subsystem_context.
-  const Context<T>* GetSubsystemContext(SystemIndex index) const {
+  const Context<T>& GetSubsystemContext(SystemIndex index) const {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     DRAKE_DEMAND(contexts_[index] != nullptr);
-    return contexts_[index].get();
+    return *contexts_[index].get();
   }
 
   /// Returns the context structure for a given subsystem @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
   /// TODO(david-german-tri): Rename to get_mutable_subsystem_context.
-  Context<T>* GetMutableSubsystemContext(SystemIndex index) {
+  Context<T>& GetMutableSubsystemContext(SystemIndex index) {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     DRAKE_DEMAND(contexts_[index] != nullptr);
-    return contexts_[index].get();
+    return *contexts_[index].get();
   }
 
   /// Recursively sets the time on this context and all subcontexts.
@@ -279,7 +279,7 @@ class DiagramContext : public Context<T> {
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
     GetMutableSubsystemContext(system_index)
-        ->SetInputPortValue(port_index, std::move(port));
+        .SetInputPortValue(port_index, std::move(port));
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 
@@ -357,7 +357,7 @@ class DiagramContext : public Context<T> {
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    return Context<T>::GetInputPortValue(*GetSubsystemContext(system_index),
+    return Context<T>::GetInputPortValue(GetSubsystemContext(system_index),
                                          port_index);
   }
 
