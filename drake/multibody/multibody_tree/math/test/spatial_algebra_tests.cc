@@ -566,7 +566,7 @@ TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
       /* Centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and points
       in the direction opposite to p_PoQo. */
       -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized() +
-      /* Contribution do to the angular acceleration of frame P in A.
+      /* Contribution due to the angular acceleration of frame P in A.
       The sqrt(2) factor comes from the angle between alpha_AP and p_PoQo. */
       -alpha_AP_E.norm() * p_PoQo_E.norm() * Vector3<T>::UnitZ() / sqrt(2);
 
