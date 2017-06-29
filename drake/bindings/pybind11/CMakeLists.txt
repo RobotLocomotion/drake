@@ -39,27 +39,11 @@ target_link_libraries(_pydrake_mathematicalprogram PRIVATE drakeOptimization Eig
 target_compile_options(_pydrake_mathematicalprogram PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_mathematicalprogram DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
 
-if(gurobi_FOUND)
-  pybind11_add_module(_pydrake_gurobi pydrake_gurobi.cc)
-  target_link_libraries(_pydrake_gurobi PRIVATE drakeOptimization)
-  set_target_properties(_pydrake_gurobi PROPERTIES OUTPUT_NAME "gurobi")
-  target_compile_options(_pydrake_gurobi PRIVATE "-fvisibility=default")
-  install(TARGETS _pydrake_gurobi DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
-endif()
-
 pybind11_add_module(_pydrake_ipopt pydrake_ipopt.cc)
 target_link_libraries(_pydrake_ipopt PRIVATE drakeOptimization)
 set_target_properties(_pydrake_ipopt PROPERTIES OUTPUT_NAME "ipopt")
 target_compile_options(_pydrake_ipopt PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_ipopt DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
-
-if(mosek_FOUND)
-  pybind11_add_module(_pydrake_mosek pydrake_mosek.cc)
-  target_link_libraries(_pydrake_mosek PRIVATE drakeOptimization)
-  set_target_properties(_pydrake_mosek PROPERTIES OUTPUT_NAME "mosek")
-  target_compile_options(_pydrake_mosek PRIVATE "-fvisibility=default")
-  install(TARGETS _pydrake_mosek DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
-endif()
 
 pybind11_add_module(_pydrake_parsers pydrake_parsers.cc)
 target_link_libraries(_pydrake_parsers PRIVATE drakeMultibodyParsers)

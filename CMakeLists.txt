@@ -75,14 +75,6 @@ drake_add_external(googletest PUBLIC CMAKE
 drake_add_external(google_styleguide PUBLIC PYTHON
   BUILD_COMMAND :)
 
-# gurobi
-drake_add_external(gurobi CMAKE MATLAB
-  CMAKE_ARGS
-    -DBUILD_TESTING=OFF
-    -DWITH_CPP=ON
-    -DWITH_MATLAB=${Matlab_FOUND}
-    -DWITH_PYTHON=OFF)
-
 # ipopt
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
@@ -103,13 +95,6 @@ drake_add_external(ipopt PUBLIC AUTOTOOLS FORTRAN
     --with-blas=BUILD
     --with-lapack=BUILD
     --with-pic)
-
-# mosek
-drake_add_external(mosek PUBLIC CMAKE MATLAB
-  CMAKE_ARGS
-    -DBUILD_TESTING=OFF
-    -DWITH_MATLAB=${Matlab_FOUND}
-    -DWITH_PYTHON=OFF)
 
 # nlopt
 drake_add_external(nlopt PUBLIC CMAKE
@@ -143,15 +128,6 @@ drake_add_external(pythonqt CMAKE PYTHON QT
     -DPythonQt_Wrap_Qtgui:BOOL=ON
     -DPythonQt_Wrap_Qtuitools:BOOL=ON
 )
-
-# snopt
-drake_add_external(snopt CMAKE MATLAB
-  CMAKE_ARGS
-    -DBUILD_SNOPT_CPP=OFF
-    -DBUILD_SHARED_LIBS=OFF  # For licensing reasons
-    -DBUILD_TESTING=OFF
-    -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
@@ -266,19 +242,16 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
-    -DWITH_GUROBI:BOOL=${WITH_GUROBI}
     -DWITH_IGNITION_MATH3:BOOL=${WITH_IGNITION_MATH}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_IGNITION_RNDF0:BOOL=${WITH_IGNITION_RNDF}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_LCM:BOOL=${WITH_LCM}
     -DWITH_LIBBOT:BOOL=${WITH_LIBBOT}
-    -DWITH_MOSEK:BOOL=${WITH_MOSEK}
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PROTOBUF:BOOL=${WITH_PROTOBUF}
     -DWITH_PYBIND11:BOOL=${WITH_PYBIND11}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
-    -DWITH_SNOPT:BOOL=${WITH_SNOPT}
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
     -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
@@ -293,19 +266,16 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     gflags
     google_styleguide
     googletest
-    gurobi
     ignition-math
     ignition-rndf
     ipopt
     lcm
     libbot
-    mosek
     nlopt
     octomap
     protobuf
     pybind11
     robotlocomotion_lcmtypes
-    snopt
     spdlog
     textbook
     tinyobjloader

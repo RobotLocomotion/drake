@@ -1,4 +1,4 @@
-if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
+if(ipopt_FOUND OR NLopt_FOUND)
   drake_add_cc_test(NAME trajectory_optimization_test SIZE medium)
   target_link_libraries(trajectory_optimization_test drakeTrajectoryOptimization drakeSystemPrimitives)
 endif()
