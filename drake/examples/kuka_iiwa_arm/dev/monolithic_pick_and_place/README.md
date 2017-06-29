@@ -11,7 +11,7 @@ and successful execution is not guaranteed.
 To run the demo, first you need to launch the drake visualizer and then
 execute the demo itself in the following manner.
 
-Build the ``drake-visualizer`` and the demo
+Build the ``drake_visualizer`` and the demo
 -------------------------------------------
 
 ```
@@ -20,12 +20,12 @@ $ bazel build //tools:drake_visualizer //drake/examples/kuka_iiwa_arm/dev/monoli
 ```
 
 
-Launching the ``drake-visualizer``
+Launching the ``drake_visualizer``
 ----------------------------------
-Once built, the ``drake-visualizer`` can be launched by,
+Once built, the ``drake_visualizer`` can be launched by,
 
 ```
-$ bazel-bin/tools/drake-visualizer&
+$ bazel-bin/tools/drake_visualizer&
 ```
 
 Note that this method of launching the visualizer may not function correctly
