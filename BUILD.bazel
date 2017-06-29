@@ -37,6 +37,7 @@ install(
     deps = [
         "//drake:install",
         "//drake/common:install",
+        "//drake/lcmtypes:install",
         "//tools:install",
         "//tools/install/gflags:install",
         "//tools/install/jchart2d:install",
