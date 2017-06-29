@@ -10,7 +10,6 @@ load(
     "install_files",
 )
 load("@drake//tools:python_lint.bzl", "python_lint")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -219,14 +218,9 @@ install_files(
     strip_prefix = ["**/"],
 )
 
-# TODO(jamiesnape): Find an alternative to the requirement that a license file
-# must be passed to every single use of the install rule.
-LICENSE_DOCS = ["COPYING"]
-
 install(
     name = "install_python",
     library_dest = "lib/python2.7/site-packages/lcm",
-    license_docs = LICENSE_DOCS,
     py_strip_prefix = ["lcm-python"],
     targets = [
         ":_lcm.so",
@@ -239,9 +233,9 @@ install(
     hdrs = LCM_PUBLIC_HEADERS,
     docs = [
         "AUTHORS",
+        "COPYING",
         "NEWS",
     ],
-    license_docs = LICENSE_DOCS,
     py_strip_prefix = ["lcm-python"],
     rename = {
         "share/java/liblcm-java.jar": "lcm.jar",

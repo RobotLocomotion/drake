@@ -8,16 +8,6 @@ InstallInfo = provider()
 #BEGIN internal helpers
 
 #------------------------------------------------------------------------------
-def _is_drake_label(x):
-    root = x.workspace_root
-    if root == "":
-        x.package.startswith("drake") or fail("Unknown '%s'" % x.package)
-        return True
-    else:
-        root.startswith("external") or fail("Unknown '%s'" % root)
-        return False
-
-#------------------------------------------------------------------------------
 def _workspace(ctx):
     """Compute name of current workspace."""
 
@@ -236,22 +226,11 @@ def _install_code(action):
 def _install_impl(ctx):
     actions = []
 
-    # Check for missing license files.
-    non_drake_labels = [
-        x.label for x in ctx.attr.targets + ctx.attr.hdrs
-        if not _is_drake_label(x.label)]
-    if non_drake_labels and not ctx.attr.license_docs:
-        fail("%s is missing required license_docs= attribute for %s" % (
-            ctx.label, non_drake_labels))
-
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d.install_actions
 
     # Generate actions for data, docs and includes.
-    actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest,
-                                strip_prefixes = ctx.attr.doc_strip_prefix,
-                                rename = ctx.attr.rename)
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
                                 strip_prefixes = ctx.attr.doc_strip_prefix,
                                 rename = ctx.attr.rename)
@@ -304,7 +283,6 @@ install = rule(
         "docs": attr.label_list(allow_files = True),
         "doc_dest": attr.string(default = "share/doc/@WORKSPACE@"),
         "doc_strip_prefix": attr.string_list(),
-        "license_docs": attr.label_list(allow_files = True),
         "data": attr.label_list(allow_files = True),
         "data_dest": attr.string(default = "share/@WORKSPACE@"),
         "data_strip_prefix": attr.string_list(),
@@ -390,7 +368,6 @@ Args:
     doc_dest: Destination for documentation files
         (default = "share/doc/@WORKSPACE@").
     doc_strip_prefix: List of prefixes to remove from documentation paths.
-    license_docs: List of license files to install (uses doc_dest).
     guess_data: See note.
     guess_data_exclude: List of resources found by ``guess_data`` to exclude
         from installation.

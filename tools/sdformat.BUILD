@@ -146,12 +146,11 @@ install(
         ":sdfhh_genrule",
         ":config",
     ],
-    hdr_dest = "include",
-    hdr_strip_prefix = ["include"],
-    license_docs = [
+    docs = [
         "LICENSE",
         "COPYING",
     ],
+    hdr_strip_prefix = ["include"],
     targets = [":sdformat"],
     deps = [":install_cmake_config"],
 )

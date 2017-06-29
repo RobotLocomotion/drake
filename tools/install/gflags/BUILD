@@ -15,6 +15,7 @@ install(
     name = "install",
     allowed_externals = ["@com_github_gflags_gflags//:gflags"],
     doc_dest = "share/doc/gflags",
+    docs = ["@com_github_gflags_gflags//:COPYING.txt"],
     guess_hdrs = "PACKAGE",
     guess_hdrs_exclude = [
         "config.h",
@@ -23,8 +24,7 @@ install(
     ],
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = ["@com_github_gflags_gflags//:COPYING.txt"],
     targets = ["@com_github_gflags_gflags//:gflags"],
-    deps = [":install_cmake_config"],
     visibility = ["//:__pkg__"],
+    deps = [":install_cmake_config"],
 )

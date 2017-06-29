@@ -28,12 +28,11 @@ OPTITRACK_TARGETS = [
 install(
     name = "install",
     allowed_externals = OPTITRACK_LICENSE_DOCS + OPTITRACK_TARGETS,
-    doc_dest = "share/doc/" + CMAKE_PACKAGE,
     doc_strip_prefix = ["**/"],
+    docs = OPTITRACK_LICENSE_DOCS,
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/lcmtypes",
     java_strip_prefix = ["**/"],
-    license_docs = OPTITRACK_LICENSE_DOCS,
     py_dest = "lib/python2.7/site-packages/optitrack",
     py_strip_prefix = ["**/"],
     rename = {
@@ -41,5 +40,6 @@ install(
     },
     targets = OPTITRACK_TARGETS,
     visibility = ["//:__pkg__"],
+    workspace = CMAKE_PACKAGE,
     deps = [":install_cmake_config"],
 )

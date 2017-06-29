@@ -1,6 +1,5 @@
 # -*- python -*-
 
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load(
     "@drake//tools:install.bzl",
     "cmake_config",
@@ -76,11 +75,13 @@ install_cmake_config(package = "Bullet")
 
 install(
     name = "install",
-    docs = ["AUTHORS.txt"],
+    docs = [
+        "AUTHORS.txt",
+        "LICENSE.txt",
+    ],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/bullet",
     hdr_strip_prefix = BULLET_INCLUDES,
-    license_docs = ["LICENSE.txt"],
     targets = [
         ":BulletCollision",
         ":BulletDynamics",
