@@ -18,7 +18,7 @@ namespace multibody {
 /// While a SpatialVelocity `V_XY` represents the motion of a "moving frame"
 /// Y measured with respect to a "measured-in" frame X, the %SpatialAcceleration
 /// `A_XY` represents the rate of change of this spatial velocity `V_XY` in
-/// frame X. That is @f$^XA^Y = \frac{^Xd ^XV^Y}{dt} @f$ where
+/// frame X. That is @f$^XA^Y = \frac{^Xd}{dt}\,{^XV^Y} @f$ where
 /// @f$\frac{^Xd}{dt} @f$ denotes the time derivative taken in frame X. That is,
 /// to compute an acceleration we need to specify in what frame the time
 /// derivative is taken, see [Mitiguy 2016, §6.1] for a more in depth discussion
