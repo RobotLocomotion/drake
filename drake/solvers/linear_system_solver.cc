@@ -50,7 +50,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
   prog.SetOptimalCost(0.);
 
-  prog.SetSolverResult(solver_type(), 0);
+  prog.SetSolverResult(SolverType::kLinearSystem, 0);
   return SolutionResult::kSolutionFound;
 }
 

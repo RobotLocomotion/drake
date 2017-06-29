@@ -75,12 +75,12 @@ int DoMain() {
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
-  Context<double>* jaco_context = diagram->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), plant);
+  Context<double>& jaco_context = diagram->GetMutableSubsystemContext(
+      *plant, simulator.get_mutable_context());
 
   // Sets (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
-  VectorBase<double>* x0 = jaco_context->get_mutable_continuous_state_vector();
+  VectorBase<double>* x0 = jaco_context.get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, 0.5);  // shoulder fore/aft angle [rad]
 
   simulator.Initialize();

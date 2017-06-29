@@ -308,7 +308,7 @@ Using Gurobi as an external
 ===========================
 
 Before building Drake with Gurobi, create an account and obtain a license on
-`Gurobi's website <http://www.gurobi.com/>`_. Download Gurobi 6.0.5, and set
+`Gurobi's website <http://www.gurobi.com/>`_. Download Gurobi 7.0.2, and set
 the ``GUROBI_DISTRO`` environment variable to the absolute path to the
 downloaded file. Consult Gurobi's documentation to activate your license;
 exact procedures depend on license type. Once activated, place your Gurobi

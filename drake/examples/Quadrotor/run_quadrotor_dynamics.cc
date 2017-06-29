@@ -77,8 +77,8 @@ class Quadrotor : public systems::Diagram<T> {
                        systems::State<T>* state) const override {
     DRAKE_DEMAND(state != nullptr);
     systems::Diagram<T>::SetDefaultState(context, state);
-    systems::State<T>* plant_state =
-        this->GetMutableSubsystemState(state, plant_);
+    systems::State<T>& plant_state =
+        this->GetMutableSubsystemState(*plant_, state);
     VectorX<T> x0(plant_->get_num_states());
     x0.setZero();
     /* x0 is the initial state where
@@ -87,7 +87,7 @@ class Quadrotor : public systems::Diagram<T> {
      */
     x0(2) = 0.2;  // Sets arbitrary z-position. This is the initial height of
                   // the quadrotor in the world frame.
-    plant_->set_state_vector(plant_state, x0);
+    plant_->set_state_vector(&plant_state, x0);
   }
 
  private:

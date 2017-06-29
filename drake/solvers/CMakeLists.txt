@@ -24,6 +24,7 @@ set(solver_headers
   nlopt_solver.h
   snopt_solver.h
   solver_id.h
+  solver_type_converter.h
   )
 set(optimization_files)
 set(optimization_requires)
@@ -49,6 +50,7 @@ list(APPEND optimization_files
   no_dreal.cc
   snopt_solver_common.cc
   solver_id.cc
+  solver_type_converter.cc
   symbolic_extraction.cc
   system_identification.cc
   )

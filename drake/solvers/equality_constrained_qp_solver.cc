@@ -115,7 +115,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     prog.SetDecisionVariableValues(x);
     const double optimal_cost = 0.5 * x.dot(G * x + c);
     prog.SetOptimalCost(optimal_cost);
-    prog.SetSolverResult(solver_type(), 0);
+    prog.SetSolverResult(SolverType::kEqualityConstrainedQP, 0);
     return SolutionResult::kSolutionFound;
   }
 
@@ -149,7 +149,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   const double optimal_cost = 0.5 * x.dot(G * x + c);
   prog.SetOptimalCost(optimal_cost);
 
-  prog.SetSolverResult(solver_type(), 0);
+  prog.SetSolverResult(SolverType::kEqualityConstrainedQP, 0);
   return SolutionResult::kSolutionFound;
 }
 

@@ -60,11 +60,11 @@ int do_main() {
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>* sim_pendulum_context =
-      diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                          pendulum);
-  pendulum->set_theta(sim_pendulum_context, M_PI + 0.1);
-  pendulum->set_thetadot(sim_pendulum_context, 0.2);
+  systems::Context<double>& sim_pendulum_context =
+      diagram->GetMutableSubsystemContext(*pendulum,
+                                          simulator.get_mutable_context());
+  pendulum->set_theta(&sim_pendulum_context, M_PI + 0.1);
+  pendulum->set_thetadot(&sim_pendulum_context, 0.2);
 
   simulator.Initialize();
   simulator.StepTo(10);

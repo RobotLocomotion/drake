@@ -93,13 +93,13 @@ int DoMain() {
 
   systems::Simulator<double> simulator(*diagram);
 
-  systems::Context<double>* jaco_context = diagram->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), plant);
+  systems::Context<double>& jaco_context = diagram->GetMutableSubsystemContext(
+      *plant, simulator.get_mutable_context());
 
   // Sets some (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
   systems::VectorBase<double>* x0 =
-      jaco_context->get_mutable_continuous_state_vector();
+      jaco_context.get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, -1.57);  // shoulder fore/aft
   x0->SetAtIndex(2, -1.57);  // elbow fore/aft
 

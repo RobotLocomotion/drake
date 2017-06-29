@@ -279,8 +279,11 @@ class SpatialVelocityTest : public ::testing::Test {
 };
 TYPED_TEST_CASE(SpatialVelocityTest, ScalarTypes);
 
-// Tests the shifting of a spatial velocity between two moving frames rigidly
-// attached to each other.
+// Unit tests for the composition of spatial velocities:
+// - Shift(): shift of a spatial velocity between two moving frames rigidly
+//            attached to each other.
+// - ComposeWithMovingFrameVelocity(): compose the velocity V_XY of a frame Y
+//   in X with that of a third frame Z moving in Y with velocity V_YZ.
 TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   typedef typename TestFixture::ScalarType T;
   const SpatialVelocity<T>& V_XY_A = this->V_XY_A_;
@@ -293,10 +296,25 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   // Consider now shifting the spatial velocity of a frame Y measured in frame
   // X to the spatial velocity of frame Z measured in frame X knowing that
   // frames Y and Z are rigidly attached to each other.
-  SpatialVelocity<T> V_XZ_A = V_XY_A.Shift(p_YZ_A);
+  SpatialVelocity<T> V_XYz_A = V_XY_A.Shift(p_YZ_A);
 
   // Verify the result.
-  SpatialVelocity<T> expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
+  SpatialVelocity<T> expected_V_XYz_A(w_XY_A, Vector3<T>(7, 8, 0));
+  EXPECT_TRUE(V_XYz_A.IsApprox(expected_V_XYz_A));
+
+  // ComposeWithMovingFrameVelocity() should yield the same result.
+  EXPECT_TRUE(V_XY_A.ComposeWithMovingFrameVelocity(
+      p_YZ_A, SpatialVelocity<T>::Zero()).IsApprox(V_XYz_A));
+
+  // Unit test with the composition of the spatial velocity of a moving frame Z
+  // in frame Y.
+  const SpatialVelocity<T> V_YZ_A(Vector3<T>(1.0, 2.0, 3.0),
+                                  Vector3<T>(4.0, 5.0, 6.0));
+  const SpatialVelocity<T> V_XZ_A =
+      V_XY_A.ComposeWithMovingFrameVelocity(p_YZ_A, V_YZ_A);
+
+  // Verify the result: V_XZ = V_XYz + V_YZ = V_XY.Shift(p_YZ) + V_YZ
+  SpatialVelocity<T> expected_V_XZ_A = expected_V_XYz_A + V_YZ_A;
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
