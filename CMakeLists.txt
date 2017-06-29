@@ -158,19 +158,6 @@ drake_add_external(octomap PUBLIC CMAKE
   CMAKE_ARGS -DBUILD_TESTING=OFF
   SOURCE_SUBDIR octomap)
 
-# vtk
-drake_add_external(vtk PUBLIC CMAKE PYTHON QT
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=ON
-    -DBUILD_TESTING=OFF
-    -DBUILD_EXAMPLES=OFF
-    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -DGLX_GLXEXT_LEGACY=1"
-    -DVTK_USE_GUISUPPORT=ON
-    -DVTK_USE_QT=ON
-    -DVTK_WRAP_PYTHON=ON
-    -DVTK_WRAP_TCL=OFF
-    -DVTK_USE_TK=OFF)
-
 # fcl
 drake_add_external(fcl PUBLIC CMAKE
   CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
@@ -309,18 +296,17 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     spdlog
     textbook
     tinyobjloader
-    vtk
     yaml_cpp
 )
 
 # director
 drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
   CMAKE_ARGS
+    -DENABLE_TESTING=ON
     -DUSE_DRAKE=ON
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
     -DUSE_LIBBOT=OFF
-    -DENABLE_TESTING=ON
   DEPENDS
     bot_core_lcmtypes
     ctk_python_console
@@ -329,7 +315,6 @@ drake_add_external(director PUBLIC CMAKE TEST PYTHON QT VTK
     libbot
     pythonqt
     qt_property_browser
-    vtk
 )
 
 # END external projects
