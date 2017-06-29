@@ -13,6 +13,57 @@
 namespace drake {
 namespace systems {
 namespace {
+
+// A special class to distinguish between cycles and algebraic loops. The system
+// has one input and two outputs. One output simply "echoes" the input (direct
+// feedthrough. The other output merely outputs a const value. That means, the
+// system *has* feedthrough, but a cycle in the diagram graph does not imply
+// an algebraic loop.
+template <typename T>
+class ConstAndEcho : public LeafSystem<T> {
+ public:
+  ConstAndEcho() {
+    this->DeclareInputPort(kVectorValued, 1);
+    echo_port_ = this->DeclareVectorOutputPort(BasicVector<T>(1),
+                                               &ConstAndEcho::CalcEcho)
+                     .get_index();
+    const_port_ = this->DeclareVectorOutputPort(BasicVector<T>(1),
+                                                &ConstAndEcho::CalcConstant)
+        .get_index();
+  }
+
+  const systems::InputPortDescriptor<T>& get_vec_input_port() {
+    return this->get_input_port(0);
+  }
+
+  const systems::OutputPort<T>& get_const_output_port() const {
+    return systems::System<T>::get_output_port(const_port_);
+  }
+
+  const systems::OutputPort<T>& get_echo_output_port() const {
+    return systems::System<T>::get_output_port(echo_port_);
+  }
+
+ protected:
+  void CalcConstant(const Context<T>& context,
+                    BasicVector<T>* const_value) const {
+    const_value->get_mutable_value() << 17;
+  }
+
+  void CalcEcho(const Context<T>& context, BasicVector<T>* echo) const {
+    const BasicVector<T>* input_vector = this->EvalVectorInput(context, 0);
+    echo->get_mutable_value() = input_vector->get_value();
+  }
+
+  ConstAndEcho<symbolic::Expression>* DoToSymbolic() const override {
+    return new ConstAndEcho<symbolic::Expression>();
+  }
+
+ private:
+  int const_port_;
+  int echo_port_;
+};
+
 // Tests that an exception is thrown if the diagram contains an algebraic loop.
 GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   DiagramBuilder<double> builder;
@@ -23,9 +74,37 @@ GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   EXPECT_THROW(builder.Build(), std::logic_error);
 }
 
-// Tests that a cycle which is not an algebraic loop, because one of the
-// components is not direct-feedthrough, can be resolved.
-GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoop) {
+// Tests that a cycle which is not an algebraic loop is recognized as valid.
+// Both systems have direct feedthrough; but they are not actually wired into an
+// algebraic loop at the port level.
+GTEST_TEST(DiagramBuilderTest, CycleButNoLoopPortLevel) {
+  DiagramBuilder<double> builder;
+
+  //    +----------+
+  //    |---+  +---|
+  // +->| I |->| E |
+  // |  |---+  +---|
+  // |  |      +---|
+  // |  |      | C |--+
+  // |  |      +---|  |
+  // |  |__________|  |
+  // |                |
+  // +----------------+
+  //
+  // The input feeds through to the echo output, but it is the constant output
+  // that is connected to input. So, the system has direct feeedthrough, the
+  // diagram has a cycle at the *system* level, but there is no algebraic loop.
+
+  auto echo = builder.AddSystem<ConstAndEcho>();
+  echo->set_name("echo");
+  builder.Connect(echo->get_const_output_port(), echo->get_vec_input_port());
+  EXPECT_THROW(builder.Build(), std::logic_error);
+}
+
+// Tests that a cycle which is not an algebraic loop is recognized as valid.
+// The cycle contains a system with no direct feedthrough; so the apparent loop
+// is broken at the *system* level.
+GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoopSystemLevel) {
   DiagramBuilder<double> builder;
 
   // Create the following diagram:
