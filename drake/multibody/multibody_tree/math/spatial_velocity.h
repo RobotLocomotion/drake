@@ -139,6 +139,48 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return SpatialVelocity<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
+  /// This method composes `this` spatial velocity `V_WP` of a frame P measured
+  /// in a frame W, with that of a third frame B moving in P with spatial
+  /// velocity `V_PB`. The result is the spatial velocity `V_WB` of frame B
+  /// measured in W. At the instant in which the velocities are composed, frame
+  /// B is located with its origin `Bo` at `p_PoBo` from P's origin Po.
+  ///
+  /// The composition cannot be performed directly since frames P and B do not
+  /// have the same origins. To perform the composition `V_WB`, the velocity of
+  /// P needs to be shifted to point `Bo`: <pre>
+  ///   V_WB_E = V_WPb_E + V_PB_E = V_WP_E.Shift(p_PoBo_E) + V_PB_E
+  /// </pre>
+  /// where p_PoBo is the position vector from P's origin to B's origin and
+  /// `V_WPb` is the spatial velocity of a new frame `Pb` which is an offset
+  /// frame rigidly aligned with P, but with its origin shifted to B's origin.
+  /// The key is that in the expression above, the two spatial velocities being
+  /// added must be for frames with the same origin point, in this case Bo.
+  ///
+  /// For computation, all quantities above must be expressed in a common
+  /// frame E; we add an `_E` suffix to each symbol to indicate that.
+  ///
+  /// @note If frame B moves rigidly together with frame P, as in a rigid body,
+  /// `V_PB = 0` and the result of this method equals that of the Shift()
+  /// operation.
+  ///
+  /// @param[in] p_PoBo_E
+  ///   Shift vector from P's origin to B's origin, expressed in frame E.
+  ///   The "from" point `Po` must be the point whose velocity is currently
+  ///   represented in `this` spatial velocity, and E must be the same
+  ///   expressed-in frame as for `this` spatial velocity.
+  /// @param[in] V_PB_E
+  ///   The spatial velocity of a third frame B in motion with respect to P,
+  ///   expressed in the same frame E as `this` spatial velocity.
+  /// @retval V_WB_E
+  ///   The spatial velocity of frame B in W resulting from the composition of
+  ///   `this` spatial velocity `V_WP` and B's velocity in P, `V_PB`. The result
+  ///   is expressed in the same frame E as `this` spatial velocity.
+  SpatialVelocity<T> ComposeWithMovingFrameVelocity(
+      const Vector3<T>& p_PoBo_E, const SpatialVelocity<T>& V_PB_E) const {
+    // V_WB_E = V_WPb_E + V_PB_E = V_WP_E.Shift(p_PoBo_E) + V_PB_E
+    return this->Shift(p_PoBo_E) + V_PB_E;
+  }
+
   /// Given `this` spatial velocity `V_IBp_E` of point P of body B,
   /// measured in an inertial frame I and expressed in a frame E,
   /// this method computes the 6-dimensional dot product with the spatial
