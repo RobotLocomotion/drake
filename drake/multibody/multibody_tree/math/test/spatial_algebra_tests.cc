@@ -417,6 +417,15 @@ TYPED_TEST(SpatialAccelerationTest, CentrifugalAcceleration) {
       -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized();
 
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+
+  // The result from ComposeWithMovingFrameAcceleration() should be the same
+  // when velocity V_PQ and acceleration A_PQ are both zero:
+  const SpatialAcceleration<T> A_AQ_moving =
+      A_AP.ComposeWithMovingFrameAcceleration(
+          p_PoQo_E, w_AP_E, /* Same arguments as in the Shift() operator */
+          SpatialVelocity<T>::Zero() /* V_PQ */,
+          SpatialAcceleration<T>::Zero() /* A_PQ */);
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_moving));
 }
 
 // Unit test for the method SpatialAcceleration::ShiftTimeDerivative().
