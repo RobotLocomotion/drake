@@ -134,6 +134,26 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "solver_type_converter",
+    srcs = ["solver_type_converter.cc"],
+    hdrs = ["solver_type_converter.h"],
+    deps = [
+        ":dreal_solver",
+        ":equality_constrained_qp_solver",
+        ":gurobi_solver",
+        ":ipopt_solver",
+        ":linear_system_solver",
+        ":moby_lcp_solver",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":snopt_solver",
+        ":solver_id",
+        ":solver_type",
+        "//drake/common",
+    ],
+)
+
 # Supported solvers:
 # - equality_constrained_qp_solver
 # - linear_system_solver
@@ -272,6 +292,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":solver_type_converter",
         "//drake/common:eigen_matrix_compare",
         "@gtest//:main",
     ],
@@ -820,6 +841,13 @@ drake_cc_googletest(
     name = "solver_id_test",
     deps = [
         ":solver_id",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solver_type_converter_test",
+    deps = [
+        ":solver_type_converter",
     ],
 )
 
