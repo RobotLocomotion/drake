@@ -19,7 +19,7 @@ using Eigen::Vector3d;
 //   w_AB: angular velocity of B in A.
 //   DtB_w_AB: Time derivative of w_AB in the B frame.
 void ConvertTimeDerivativeOfAngularVelocity(
-    const Vector3d &w_AB, const Vector3d &DtB_w_AB) {
+    const Vector3d& w_AB, const Vector3d& DtB_w_AB) {
   const double kAbsoluteTolerance = 2 * std::numeric_limits<double>::epsilon();
   Vector3d DtA_w_AB = ConvertTimeDerivativeToOtherFrame(w_AB, DtB_w_AB, w_AB);
   EXPECT_TRUE(CompareMatrices(DtA_w_AB, DtB_w_AB, kAbsoluteTolerance,
@@ -74,7 +74,7 @@ void HorseOnCarousel(double horse_radius,
       p_CoHo_W, v_CHo /* DtC_p_CoHo */, w_WC);
 
   // Compute the expected value. Note that since rotation is only along the
-  // z-axis, v_WHo = v_CHo
+  // z-axis we can directly add the contribution v_CHo_z.
   const Vector3d v_WHo_expected =
       horse_radius * theta_dot * Vector3d(-sin(theta), cos(theta), 0) + v_CHo;
 

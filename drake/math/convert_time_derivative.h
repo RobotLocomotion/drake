@@ -32,9 +32,9 @@ namespace math {
 /// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
 template <typename v_Type, typename DtB_v_Type, typename w_AB_Type>
 Vector3<typename v_Type::Scalar> ConvertTimeDerivativeToOtherFrame(
-    const Eigen::MatrixBase<v_Type> &v_E,
-    const Eigen::MatrixBase<DtB_v_Type> &DtB_v_E,
-    const Eigen::MatrixBase<w_AB_Type> &w_AB_E) {
+    const Eigen::MatrixBase<v_Type>& v_E,
+    const Eigen::MatrixBase<DtB_v_Type>& DtB_v_E,
+    const Eigen::MatrixBase<w_AB_Type>& w_AB_E) {
   // All input vectors must be three dimensional vectors.
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<v_Type>, 3);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DtB_v_Type>, 3);

@@ -177,7 +177,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "shift_time_derivative_test",
+    name = "convert_time_derivative_test",
     deps = [
         ":vector3_util",
         "//drake/common:eigen_matrix_compare",
