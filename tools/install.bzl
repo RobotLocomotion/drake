@@ -604,4 +604,68 @@ def install_cmake_config(
         visibility = visibility,
     )
 
+#------------------------------------------------------------------------------
+def rename_jars(
+    jars,
+    dest = "share/java",
+    prefix = "lcmtypes_",
+    suffix = "_java",
+):
+    """Create a dictionary based on the list of files and targets
+
+    The created dictionary is expected to be given to the :func:`install`
+    rule. The keys are the input files. Each element of ``jars`` contains
+    either a target name (starts with ":") or a file name.
+
+    If the element is a target name, the corresponding file name is computed
+    using ``dest`` (which should match the installation folder given to
+    :func:`install`) to which is added the harcoded prefix "lib" and the
+    extension "jar". The new name is computed by adding ``prefix`` to the left
+    of the target name and stripping ``suffix`` to its right.
+
+    If the element is a file name, the new file name is computed by replacing
+    ``dest`` and "lib" with ``prefix`` on the left of the file name and
+    removing ``suffix`` from the right.
+
+    Args:
+        jars (:obj:`list`): List of files and targets
+        dest (:obj:`str`): Installation folder of files and targets
+        prefix (:obj:`str`) Prefix added to new file name
+        suffix (:obj:`str`): Suffix removed from file and target names
+    """
+    lib_prefix = "lib"
+    out = {}
+    for j in jars:
+        if j[0] == ":":  # Target name given
+            if not j.endswith(suffix):
+                fail("{} does not end with {}".format(
+                    j,
+                    suffix)
+                )
+            stripped_name = j[1:-len(suffix)]
+            ext = "jar"
+            filename = join_paths(
+                dest,
+                lib_prefix + stripped_name + suffix + "." + ext
+            )
+        else:  # File name given
+            if not j.startswith(dest):
+                fail("{} folder is not {}".format(j, dest))
+            basename = j.rsplit("/", 1)[1]
+            # File must have an extension. It fails as
+            # expected if it doesn't
+            basename_noext, ext = basename.rsplit(".", 1)
+            if (not basename_noext.startswith(lib_prefix) or
+                    not basename_noext.endswith(suffix)):
+                fail("{} does not start with {} and end with {}".format(
+                    basename_noext,
+                    lib_prefix,
+                    suffix)
+                )
+            stripped_name = basename_noext[len(lib_prefix):-len(suffix)]
+            filename = j
+        jar_name = prefix + stripped_name + "." + ext
+        out[filename] = jar_name
+    return out
+
 #END macros
