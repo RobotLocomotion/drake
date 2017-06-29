@@ -46,13 +46,6 @@ drake_add_external(bullet PUBLIC CMAKE
     -DPKGCONFIG_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
     -DUSE_DOUBLE_PRECISION=ON)
 
-# ccd
-drake_add_external(ccd PUBLIC CMAKE
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=ON
-    -DBUILD_TESTING=OFF
-    -DENABLE_DOUBLE_PRECISION=ON)
-
 # fmt
 drake_add_external(fmt PUBLIC CMAKE ALWAYS
   CMAKE_ARGS
@@ -153,11 +146,6 @@ drake_add_external(snopt CMAKE MATLAB
     -DBUILD_SNOPT_C_MEX=${Matlab_FOUND}
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
 
-# octomap
-drake_add_external(octomap PUBLIC CMAKE
-  CMAKE_ARGS -DBUILD_TESTING=OFF
-  SOURCE_SUBDIR octomap)
-
 # vtk
 drake_add_external(vtk PUBLIC CMAKE PYTHON QT
   CMAKE_ARGS
@@ -170,11 +158,6 @@ drake_add_external(vtk PUBLIC CMAKE PYTHON QT
     -DVTK_WRAP_PYTHON=ON
     -DVTK_WRAP_TCL=OFF
     -DVTK_USE_TK=OFF)
-
-# fcl
-drake_add_external(fcl PUBLIC CMAKE
-  CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
-  DEPENDS ccd eigen octomap)
 
 # textbook
 drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
@@ -198,25 +181,6 @@ drake_add_external(yaml_cpp PUBLIC CMAKE
 # ctk_python_console
 drake_add_external(ctk_python_console CMAKE PYTHON QT
   DEPENDS pythonqt)
-
-# ignition_math
-drake_add_external(ignition_math PUBLIC CMAKE
-  URL https://bitbucket.org/ignitionrobotics/ign-math/get/ignition-math3_3.2.0.tar.gz
-  URL_HASH SHA256=1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309
-  CMAKE_ARGS
-    -DENABLE_TESTS_COMPILATION=OFF
-    -DUSE_HOST_CFLAGS=OFF
-    -DUSE_UPSTREAM_CFLAGS=OFF)
-
-# ignition_rndf
-drake_add_external(ignition_rndf PUBLIC CMAKE
-  URL https://bitbucket.org/ignitionrobotics/ign-rndf/get/ignition-rndf_0.1.5.tar.gz
-  URL_HASH SHA256=fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf
-  CMAKE_ARGS
-    -DENABLE_TESTS_COMPILATION=OFF
-    -DUSE_HOST_CFLAGS=OFF
-    -DUSE_UPSTREAM_CFLAGS=OFF
-  DEPENDS ignition_math)
 
 # lcm
 drake_add_external(lcm PUBLIC CMAKE PYTHON
@@ -260,21 +224,16 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DDISABLE_FORTRAN:BOOL=${DISABLE_FORTRAN}
     -DWITH_BOT_CORE_LCMTYPES:BOOL=${WITH_BOT_CORE_LCMTYPES}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
-    -DWITH_CCD:BOOL=${WITH_CCD}
     -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
-    -DWITH_FCL:BOOL=${WITH_FCL}
     -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
-    -DWITH_IGNITION_MATH3:BOOL=${WITH_IGNITION_MATH}  # TODO(jamiesnape): Fix naming inconsistency
-    -DWITH_IGNITION_RNDF0:BOOL=${WITH_IGNITION_RNDF}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_LCM:BOOL=${WITH_LCM}
     -DWITH_LIBBOT:BOOL=${WITH_LIBBOT}
     -DWITH_MOSEK:BOOL=${WITH_MOSEK}
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
-    -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PROTOBUF:BOOL=${WITH_PROTOBUF}
     -DWITH_PYBIND11:BOOL=${WITH_PYBIND11}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
@@ -286,22 +245,17 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
   DEPENDS
     bot_core_lcmtypes
     bullet
-    ccd
     eigen
-    fcl
     fmt
     gflags
     google_styleguide
     googletest
     gurobi
-    ignition-math
-    ignition-rndf
     ipopt
     lcm
     libbot
     mosek
     nlopt
-    octomap
     protobuf
     pybind11
     robotlocomotion_lcmtypes

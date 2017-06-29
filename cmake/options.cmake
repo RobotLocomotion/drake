@@ -273,12 +273,11 @@ macro(drake_setup_options)
 
   drake_optional_external(BULLET ON "Bullet library for collision detection")
 
-  drake_optional_external(CCD ON "Convex shape Collision Detection library")
-
   drake_optional_external(DIRECTOR ON
     DEPENDS "HAVE_VTK\;HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
     "VTK-based visualization tool and robot user interface")
 
+  # STRONGLY DEPRECATED.
   drake_optional_external(GOOGLE_STYLEGUIDE ON
     DEPENDS "NOT DISABLE_PYTHON"
     "Google code style tools for cpplint.py style checking" ON)
@@ -290,26 +289,11 @@ macro(drake_setup_options)
     DEPENDS "NOT APPLE OR NOT Matlab_FOUND\;NOT DISABLE_FORTRAN"
     "Interior Point Optimizer, for solving non-linear optimizations")
 
-  drake_optional_external(IGNITION_MATH ON
-    "Math classes and functions for robot applications")
-
-  drake_optional_external(IGNITION_RNDF ON
-    DEPENDS "WITH_IGNITION_MATH"
-    "Classes and functions for parsing RNDF road networks")
-
   drake_optional_external(LIBBOT ON
     "libbot2 robotics suite\;"
     "used for its simple open-gl visualizer + lcmgl for director")
 
   drake_optional_external(NLOPT ON "Non-linear optimization solver")
-
-  drake_optional_external(OCTOMAP ON
-    "3D occupancy mapping library\; provides oct-tree data structures")
-
-  # Needs to be below ccd and octomap.
-  drake_optional_external(FCL ON
-    DEPENDS "WITH_CCD\;WITH_OCTOMAP"
-    "Flexible collision detection library")
 
   drake_optional_external(SPDLOG ON
     "Fast C++ text logging facility\; disabling will turn off text logging")

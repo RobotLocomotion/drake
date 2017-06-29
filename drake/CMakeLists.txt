@@ -87,13 +87,6 @@ else()
 endif()
 set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
 set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
-if(CMAKE_GENERATOR STREQUAL "Xcode")
-  # TODO(jamiesnape): Remove when the Xcode CMake generator supports
-  # include_directories(SYSTEM) or when the warnings are fixed in Eigen, FCL,
-  # and OctoMap.
-  set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor -Wno-shadow")
-endif()
 
 # set up matlab build
 include(../cmake/mex.cmake)
