@@ -198,41 +198,140 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   }
 
 
-  /// Given `this` spatial acceleration `A_FP` of a frame P in a frame F,
+  /// Given `this` spatial acceleration `A_WP` of a frame P in a frame F,
   /// computes the spatial acceleration of a frame Q with origin `Qo` at
-  /// `p_PoQo` given that we know the spatial velocity `V_PQ` and spatial
-  /// acceleration `A_PQ` of frame Q in P.
+  /// `p_PoBo` given that we know the spatial velocity `V_PB` and spatial
+  /// acceleration `A_PB` of frame Q in P.
   ///
   /// @note This method is the extension to the Shift() operator, which computes
   /// the spatial acceleration frame P shifted to `Qo` as if Q moved rigidly
-  /// with P, that is, for when `V_PQ` and `A_PQ` are both zero.
+  /// with P, that is, for when `V_PB` and `A_PB` are both zero.
   /// In other words the results from Shift() equal the results from
-  /// this method when `V_PQ` and `A_PQ` are both zero.
+  /// this method when `V_PB` and `A_PB` are both zero.
   ///
-  /// @param[in] p_PoQo_E
+  /// @param[in] p_PoBo_E
   ///   Shift vector from the origin `Po` of frame P to point Q, expressed in
   ///   frame E. The "from" frame P must be the frame whose acceleration is
   ///   currently represented in `this` spatial acceleration, and E must be the
   ///   same expressed-in frame as for this spatial acceleration.
-  /// @param[in] w_FP_E
+  /// @param[in] w_WP_E
   ///   Angular velocity of frame P measured in frame A and expressed in frame
   ///   E.
   ///
-  /// @note For both input parameters, `p_PoQ_E` and `w_FP_E`, frame P must be
+  /// @note For both input parameters, `p_PoQ_E` and `w_WP_E`, frame P must be
   ///   the frame whose acceleration is currently represented in `this` spatial
-  ///   acceleration `A_FP_E`, and E must be the same expressed-in frame as for
+  ///   acceleration `A_WP_E`, and E must be the same expressed-in frame as for
   ///   this spatial acceleration.
   ///
-  /// @retval `A_FQ` The spatial acceleration of frame Q in F, expressed in
+  /// @retval `A_WB` The spatial acceleration of frame Q in F, expressed in
   ///                frame E.
   ///
-  /// @see Shift() which peforms a rigid shift, i.e. when `V_PQ` and `A_PQ` are
+  /// @see Shift() which peforms a rigid shift, i.e. when `V_PB` and `A_PB` are
   /// both zero.
-  SpatialAcceleration<T> ShiftToMovingFrame(
-      const Vector3<T>& p_PoQo_E, const Vector3<T>& w_FP_E,
-      const SpatialVelocity<T>& V_PQ_E,
-      const SpatialAcceleration<T>& A_PQ_E) const {
+  ///
+  /// <h3> Derivation </h3>
+  /// The spatial velocity of frame B in W can be obtained by composing `V_WP`
+  /// with `V_PB`: <pre>
+  ///   V_WB = V_WPb + V_PB = V_WP.Shift(p_PoBo) + V_PB                     (1)   
+  /// </pre>
+  /// operation which can be performed with the SpatialVelocity method
+  /// ComposeWithMovingFrameVelocity().
+  ///
+  /// <h4> Translational acceleration component </h4>
+  ///
+  /// The translational velocity `v_WBo` of point Bo in W corresponds to the
+  /// translational component in Eq. (1): <pre>
+  ///   v_WBo = v_WPo + w_WP x p_PoBo + v_PBo                               (2)
+  /// </pre>
+  /// Therefore, for the translational acceleration we have: <pre>
+  ///   a_WBo = DtW(v_WBo) = DtW(v_WPo + w_WP x p_PoBo + v_PBo)
+  ///         = DtW(v_WPo) + DtW(w_WP x p_PoBo) + DtW(v_PBo)
+  ///         = a_WPo + DtW(w_WP) x p_PoBo + w_WP x DtW(p_PoBo) + DtW(v_PBo)
+  ///         = a_WPo + alpha_WP x p_PoBo + w_WP x DtW(p_PoBo) + DtW(v_PBo) (3)
+  /// </pre>
+  /// with `a_WPo = DtW(v_WPo)` and `alpha_WP = DtW(w_WP)` by definition.
+  /// The term DtW(p_PoBo) in Eq. (3) is obtained by converting the vector time
+  /// derivative from `DtW()` to `DtP()`,
+  /// see drake::math::ShiftTimeDerivative(): <pre>
+  ///   DtW(p_PoBo) = DtP(p_PoBo) + w_WP x p_PoBo
+  ///               = v_PBo + w_WP x p_PoBo                                 (4)
+  /// </pre>
+  /// since `v_PBo = DtP(p_PoBo)` by definition.
+  /// Similarly, the term `DtW(v_PBo)` in Eq. (3) is also obtained by converting
+  /// the time derivative from `DtW()` to `DtP()`: <pre>
+  ///   DtW(v_PBo) = DtP(v_PBo) + w_WP x v_PBo
+  ///              = a_PBo + w_WP x v_PBo                                   (5)
+  /// </pre>
+  /// with `a_PBo = DtP(v_PBo)` by definition.
+  /// Using Eqs. (4) and (5) in Eq. (3) yields for the translational
+  /// acceleration: <pre>
+  ///   a_WBo = a_WPo + alpha_WP x p_PoBo
+  ///         + w_WP x (v_PBo + w_WP x p_PoBo) + a_PBo + w_WP x v_PBo
+  /// </pre>
+  /// and finally, by grouping terms together: <pre>
+  ///   a_WBo = a_WPo + alpha_WP x p_PoBo
+  ///         + w_WP x w_WP x p_PoBo + 2 * w_WP x v_PBo + a_PBo             (6)
+  /// </pre>
+  /// which includes the effect of angular acceleration of P in W
+  /// `alpha_WP x p_PoBo`, the centrifugual acceleration `w_WP x w_WP x p_PoBo`,
+  /// the Coriolis acceleration `2 * w_WP x v_PBo` due to the motion of `Bo` in
+  /// P and, the additional acceleration of `Bo` in P `a_PBo`.
+  ///
+  /// <h4> Rotational acceleration component </h4>
+  ///
+  /// The rotational velocity `w_WB` of frame B in W corresponds to the
+  /// rotational component in Eq. (1): <pre>
+  ///   w_WB = w_WP + w_PB                                                  (7)
+  /// </pre>
+  /// Therefore, the rotational acceleration of B in W corresponds to: <pre>
+  ///   alpha_WB = DtW(w_WB) = DtW(w_WP) + DtW(w_PB)
+  ///            = alpha_WP + DtW(w_PB)                                     (8)
+  /// </pre>
+  /// where the last term in Eq. (8) can be converted to a time derivative in P
+  /// as: <pre>
+  ///   DtW(w_PB) = DtP(w_PB) + w_WP x w_PB = alpha_PB + w_WP x w_PB        (9)
+  /// </pre>
+  /// where `alpha_PB = DtP(w_PB)` by definition.
+  /// Thus, the final expression for `alpha_WB` is obtained by using Eq. (9)
+  /// into Eq. (8): <pre>
+  ///   alpha_WB = alpha_WP + alpha_PB + w_WP x w_PB                       (10)
+  /// </pre>
+  /// Equation (10) shows that angular accelerations cannot be simply added as
+  /// angular velocities can but there exists an additional term `w_WP x w_PB`.
+  ///
+  /// <h4> The spatial acceleration </h4>
+  ///
+  /// The rotational and translational components of the spatial acceleration
+  /// are given by Eqs. (10) and (6) respectively: <pre>
+  ///   A_WB.rotational() = alpha_WB = {alpha_WP} + alpha_PB + w_WP x w_PB
+  ///   A_WB.translational() = a_WBo
+  ///                      = {a_WPo + alpha_WP x p_PoBo + w_WP x w_WP x p_PoBo}
+  ///                      + 2 * w_WP x v_PBo + a_PBo
+  /// <pre>
+  /// where we have placed within curly brackets `{}` all the terms that also
+  /// appear in the Shift() operation, which is equivalent to this method when
+  /// `V_PB` and `A_PB` are both zero.
+  /// In the equations above `alpha_WP = A_WP.rotational()` and
+  /// `a_WPo = A_WP.translational()`.
+  /// As usual, for computation, all quantities above must be expressed in a
+  /// common frame E; we add an `_E` suffix to each symbol to indicate that.
+  SpatialAcceleration<T> ComposeWithMovingFrameAcceleration(
+      const Vector3<T>& p_PoBo_E, const Vector3<T>& w_WP_E,
+      const SpatialVelocity<T>& V_PB_E,
+      const SpatialAcceleration<T>& A_PB_E) const {
+    const Vector3<T>& w_PB_E = V_PB_E.rotational();
+    const Vector3<T>& v_PBo_E = V_PB_E.translational();
 
+    // Compute all the terms within curly brackets in the derivation above which
+    // correspond to the Shift() operation:
+    SpatialAcceleration<T> A_WB = this->Shift(p_PoBo_E, w_WP_E);
+    // Adds non-linear coupling of angular velocities:
+    A_WB.rotational() += (A_PB_E.rotational() + w_WP_E.cross(w_PB_E));
+
+    // Adds Coriolis and translational acceleration of Bo in P.
+    A_WB.translational() +=
+        (A_PB_E.translational() + 2.0 * w_WP_E.cross(v_PBo_E));
+    return A_WB;
   }
 
   /// Given the time derivative `ᴮd/dt(V)` of an arbitrary SpatialVelocity V in
