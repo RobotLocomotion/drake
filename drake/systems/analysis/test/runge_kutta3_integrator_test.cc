@@ -344,7 +344,8 @@ TEST_F(RK3IntegratorTest, MaxStepSizeRespected) {
   } while (t_remaining > 0.0);
 
   // Verify the statistics.
-  EXPECT_LE(integrator_->get_largest_step_size_taken(), max_step_size);
+  EXPECT_LE(integrator_->get_largest_step_size_taken(),
+            max_step_size * integrator_->get_stretch_factor());
 }
 
 // Verify that attempting to take a step for a very large initial time throws

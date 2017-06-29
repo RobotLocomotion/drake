@@ -552,6 +552,13 @@ class IntegratorBase {
   StepResult IntegrateAtMost(const T& publish_dt, const T& update_dt,
                              const T& boundary_dt);
 
+  /// Gets the stretch factor (> 1), which is multiplied by the maximum
+  /// (typically user-designated) integration step size to obtain the amount
+  /// that the integrator is able to stretch the maximum time step toward
+  /// hitting an upcoming publish or update event in IntegrateAtMost().
+  /// @sa IntegrateAtMost()
+  double get_stretch_factor() const { return 1.01; }
+
   /// Stepping function for integrators operating outside of Simulator that
   /// advances the continuous state exactly by @p dt. This method is designed
   /// for integrator users that do not wish to consider publishing or
@@ -1644,10 +1651,9 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   // publish or an update.
   const bool reached_boundary =
       (candidate_result == IntegratorBase<T>::kReachedBoundaryTime);
-  static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
   const T& max_dt = IntegratorBase<T>::get_maximum_step_size();
   if ((reached_boundary && max_dt < dt) ||
-      (!reached_boundary && max_dt * kMaxStretch < dt)) {
+      (!reached_boundary && max_dt * get_stretch_factor() < dt)) {
     candidate_result = IntegratorBase<T>::kTimeHasAdvanced;
     dt = max_dt;
   }
