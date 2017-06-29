@@ -278,6 +278,7 @@ def _install_impl(ctx):
 # TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better
 # default destinations.
 install = rule(
+    # Update buildifier-tables.json when this changes.
     attrs = {
         "deps": attr.label_list(providers = ["install_actions"]),
         "docs": attr.label_list(allow_files = True),
@@ -414,6 +415,7 @@ def _install_files_impl(ctx):
     return InstallInfo(install_actions = actions)
 
 install_files = rule(
+    # Update buildifier-tables.json when this changes.
     attrs = {
         "dest": attr.string(mandatory = True),
         "files": attr.label_list(allow_files = True),

@@ -24,7 +24,10 @@ def _bazel_lint(name, files, ignore):
             name = name + "_buildifier",
             size = "small",
             srcs = ["@drake//tools:buildifier-test.sh"],
-            data = files + ["@drake//tools:buildifier"],
+            data = files + [
+                "@drake//tools:buildifier",
+                "@drake//tools:buildifier-tables.json",
+            ],
             args = ["$(location %s)" % f for f in files],
             tags = ["buildifier", "lint"],
         )
