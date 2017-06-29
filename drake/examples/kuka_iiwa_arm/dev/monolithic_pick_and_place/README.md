@@ -39,7 +39,7 @@ full path/target specifier. For instance, from the
 directory, you can execute the demo using :
 
 ```
-bazel run :monolithic_pick_and_place_demo --config snopt -- --box_choice=1
+bazel run :monolithic_pick_and_place_demo --config snopt -- --target=1
 --orientation=-0.0
 ```
 
@@ -48,7 +48,7 @@ Alternately, if the ``monolithic_pick_and_place_demo`` has been built using
 
 ```
 $ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
-monolithic_pick_and_place_demo --box_choice=1
+monolithic_pick_and_place_demo --target=1
  --orientation=-0.0
 ```
 
