@@ -74,16 +74,16 @@ install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
+    workspace = CMAKE_PACKAGE,
+    targets = [":ignition_rndf"],
     hdrs = public_headers + [
         ":config",
         ":rndfhh_genrule",
     ],
-    docs = [
-        "LICENSE",
-        "COPYING",
-    ],
     hdr_strip_prefix = ["include"],
-    targets = [":ignition_rndf"],
-    workspace = CMAKE_PACKAGE,
+    docs = [
+        "COPYING",
+        "LICENSE",
+    ],
     deps = [":install_cmake_config"],
 )

@@ -75,18 +75,18 @@ install_cmake_config(package = "Bullet")
 
 install(
     name = "install",
-    docs = [
-        "AUTHORS.txt",
-        "LICENSE.txt",
-    ],
-    guess_hdrs = "PACKAGE",
-    hdr_dest = "include/bullet",
-    hdr_strip_prefix = BULLET_INCLUDES,
     targets = [
         ":BulletCollision",
         ":BulletDynamics",
         ":BulletSoftBody",
         ":LinearMath",
+    ],
+    hdr_dest = "include/bullet",
+    hdr_strip_prefix = BULLET_INCLUDES,
+    guess_hdrs = "PACKAGE",
+    docs = [
+        "AUTHORS.txt",
+        "LICENSE.txt",
     ],
     deps = [":install_cmake_config"],
 )
