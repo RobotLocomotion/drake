@@ -11,7 +11,7 @@ bool IpoptSolver::available() const {
   return false;
 }
 
-SolutionResult IpoptSolver::Solve(MathematicalProgram &prog) const {
+SolutionResult IpoptSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(
       "The IPOPT bindings were not compiled.  You'll need to use a different "
       "solver.");
