@@ -16,8 +16,10 @@ namespace {
 
 using Eigen::AngleAxis;
 
-// Generic declaration of a traits class to figure out at compile time the
-// scalar type a spatial quantity is instantiated with.
+// Generic declaration boilerplate of a traits class for spatial vectors.
+// This is used by the (templated on SpatialQuantityUnderTest)
+// SpatialQuantityTest unit test class below to infer on what scalar type the
+// SpatialQuantityUnderTest is templated on.
 template <class SpatialQuantity> struct spatial_vector_traits {};
 
 // traits specialization for SpatialVelocity.
@@ -29,6 +31,12 @@ struct spatial_vector_traits<SpatialVelocity<T>> {
 // traits specialization for SpatialForce.
 template <typename T>
 struct spatial_vector_traits<SpatialForce<T>> {
+  typedef T ScalarType;
+};
+
+// traits specialization for SpatialAcceleration.
+template <typename T>
+struct spatial_vector_traits<SpatialAcceleration<T>> {
   typedef T ScalarType;
 };
 
@@ -53,8 +61,12 @@ class SpatialQuantityTest : public ::testing::Test {
 
 // Create a list of SpatialVector types to be tested.
 typedef ::testing::Types<
-    SpatialVelocity<double>, SpatialForce<double>,
-    SpatialVelocity<AutoDiffXd>, SpatialForce<AutoDiffXd>> SpatialQuantityTypes;
+    SpatialVelocity<double>,
+    SpatialForce<double>,
+    SpatialAcceleration<double>,
+    SpatialVelocity<AutoDiffXd>,
+    SpatialForce<AutoDiffXd>,
+    SpatialAcceleration<AutoDiffXd>> SpatialQuantityTypes;
 TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
@@ -382,6 +394,189 @@ TYPED_TEST(SpatialForceTest, ShiftOperation) {
   SpatialForce<T> expected_F_Bo_E(Vector3<T>(2.0, -1.0, -3.0), f_Ao_E);
   EXPECT_TRUE(F_Bo_E.IsApprox(expected_F_Bo_E));
 }
+
+// SpatialAcceleration specific unit tests.
+template <typename T>
+class SpatialAccelerationTest : public ::testing::Test {
+ public:
+  // Useful typedefs when witting unit tests to access types.
+  typedef T ScalarType;
+};
+TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
+
+// Unit test for the method SpatialAcceleration::Shift().
+// Case 1:
+// In this test, a frame P rotates with respect to a frame A with an angular
+// velocity w_AP and has zero acceleration in frame A, ie. A_AP = 0. We can
+// think of frames P and A having coincident origins.
+// A third frame Q translated by a position p_PoQo moves rigidly with P.
+// The angular velocity vector w_AP_E is orthogonal to the x-y plane while the
+// offset vector p_PoQo_E is in the x-y plane.
+// Therefore, the spatial acceleration of frame Q should correspond to that of
+// a centrifugal linear component pointing inwards in the opposite direction of
+// p_PoQo
+TYPED_TEST(SpatialAccelerationTest, CentrifugalAcceleration) {
+  typedef typename TestFixture::ScalarType T;
+
+  // The spatial acceleration of frame P measured in A is zero.
+  const SpatialAcceleration<T> A_AP = SpatialAcceleration<T>::Zero();
+
+  // Position of Q's origin measured in P and expressed in E.
+  const Vector3<T> p_PoQo_E = Vector3<T>::UnitX() + Vector3<T>::UnitY();
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP_E = 3.0 * Vector3<T>::UnitZ();
+
+  const SpatialAcceleration<T> A_AQ = A_AP.Shift(p_PoQo_E, w_AP_E);
+
+  SpatialAcceleration<T> A_AQ_expected;
+  A_AQ_expected.rotational() = Vector3<T>::Zero();
+  // The centrifugal acceleration has magnitude w_AP^2 * ‖ p_PoQo ‖ and points
+  // in the direction opposite to p_PoQo.
+  A_AQ_expected.translational() =
+      -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized();
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+
+  // The result from ComposeWithMovingFrameAcceleration() should be the same
+  // when velocity V_PQ and acceleration A_PQ are both zero:
+  const SpatialAcceleration<T> A_AQ_moving =
+      A_AP.ComposeWithMovingFrameAcceleration(
+          p_PoQo_E, w_AP_E, /* Same arguments as in the Shift() operator */
+          SpatialVelocity<T>::Zero() /* V_PQ */,
+          SpatialAcceleration<T>::Zero() /* A_PQ */);
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_moving));
+}
+
+// Unit test for the method
+// SpatialAcceleration::ComposeWithMovingFrameAcceleration().
+// Case 1b:
+// This unit test expands Case 1 by allowing point Q to move in frame P. This
+// motion causes, in addition to the centrifugal acceleration of Case 1, a
+// Coriolis acceleration due to the translational motion of point Q in the
+// rotating frame P.
+// Point Q has a spatial velocity V_PQ with a rotational component w_PQ along
+// the z-axis and a translational component v_PQ in the x-y plane, pointing in
+// the minus x direction in the P frame.
+// The translational velocity v_PQ is responsible for a Coriolis acceleration as
+// the result of the cross product w_AP with v_PQ, which then points radially
+// outwards counteracting the centrifugal contribution.
+TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
+  typedef typename TestFixture::ScalarType T;
+
+  // The spatial acceleration of frame P measure in A is zero.
+  const SpatialAcceleration<T> A_AP = SpatialAcceleration<T>::Zero();
+
+  // Position of Q's origin measured in P and expressed in E.
+  const Vector3<T> p_PoQo = Vector3<T>::UnitX() + Vector3<T>::UnitY();
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP = 3.0 * Vector3<T>::UnitZ();
+
+  // Spatial velocity of Q in P.
+  const SpatialVelocity<T> V_PQ(
+      1.5 * Vector3<T>::UnitZ() /* w_PQ */,
+      2.0 * Vector3<T>::UnitX() /* v_PQ */);
+
+  // Spatial acceleration of Q in P.
+  const SpatialAcceleration<T> A_PQ = SpatialAcceleration<T>::Zero();
+
+  // In this test, at this instantaneous moment, R_AP is the identity matrix and
+  // therefore p_PoQo_A = p_PoQo_P. Similarly for V_PQ, A_PQ and w_AP.
+  const SpatialAcceleration<T> A_AQ =
+      A_AP.ComposeWithMovingFrameAcceleration(p_PoQo, w_AP, V_PQ, A_PQ);
+
+  SpatialAcceleration<T> A_AQ_expected;
+  A_AQ_expected.rotational() = Vector3<T>::Zero();
+  A_AQ_expected.translational() =
+      /* The centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and
+      points in the direction opposite to p_PoQo.*/
+      -w_AP.norm() * w_AP.norm() * p_PoQo.norm() * p_PoQo.normalized() +
+      /* Coriolis contribution. Since v_PQ points in the x direction and w_AP in
+      the z direction, this contribution points in the positive y direction.*/
+      2.0 * w_AP.norm() * V_PQ.translational().norm() * Vector3<T>::UnitY();
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+}
+
+// Unit test for the method SpatialAcceleration::Shift().
+// Case 2:
+// This unit test is similar to the previous Case 1 test but with the offset
+// vector p_PoQo aligned with w_AP. Therefore the centrifugal contribution is
+// zero. In this case the spatial acceleration A_AP has zero translational
+// component but non-zero rotational component alpha_AP.
+TYPED_TEST(SpatialAccelerationTest, NoCentrifugalAcceleration) {
+  typedef typename TestFixture::ScalarType T;
+
+  // Angular acceleration of frame P in A, expressed in E.
+  const Vector3<T> alpha_AP_E = 2.0 * Vector3<T>::UnitY();
+
+  // The spatial acceleration of frame P measure in A.
+  const SpatialAcceleration<T> A_AP(alpha_AP_E, Vector3<T>::Zero());
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP_E = 3.0 * Vector3<T>::UnitZ();
+
+  // Position of Q's origin measured in P and expressed in E. In this case
+  // p_PoQo is aligned with w_AP.
+  const Vector3<T> p_PoQo_E = Vector3<T>::UnitZ();
+
+  const SpatialAcceleration<T> A_AQ = A_AP.Shift(p_PoQo_E, w_AP_E);
+
+  SpatialAcceleration<T> A_AQ_expected;
+  // The rotational component does not change.
+  A_AQ_expected.rotational() = alpha_AP_E;
+
+  // In this case the only contribution to the translational acceleration comes
+  // from the angular acceleration of frame P in A.
+  A_AQ_expected.translational() =
+      alpha_AP_E.norm() * p_PoQo_E.norm() * Vector3<T>::UnitX();
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+}
+
+// Unit test for the method SpatialAcceleration::Shift().
+// Case 3:
+// This test is a combination of Case 1 (with centrifugal acceleration), Case 2
+// (with angular acceleration) and a translational acceleration a_AP of frame P
+// in A.
+TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
+  typedef typename TestFixture::ScalarType T;
+  using std::sqrt;
+
+  // Angular acceleration of frame P in A, expressed in E.
+  const Vector3<T> alpha_AP_E = 2.0 * Vector3<T>::UnitY();
+
+  // The spatial acceleration of frame P measure in A.
+  const SpatialAcceleration<T> A_AP(alpha_AP_E, 1.5 * Vector3<T>::UnitY());
+
+  // Position of Q's origin measured in P and expressed in E.
+  const Vector3<T> p_PoQo_E = Vector3<T>::UnitX() + Vector3<T>::UnitY();
+
+  // Angular velocity of frame P measured in frame A.
+  const Vector3<T> w_AP_E = 3.0 * Vector3<T>::UnitZ();
+
+  SpatialAcceleration<T> A_AQ_expected;
+  // The rotational component does not change.
+  A_AQ_expected.rotational() = alpha_AP_E;
+
+  A_AQ_expected.translational() =
+      /* Contribution due to the translational acceleration of frame P in A. */
+      A_AP.translational() +
+      /* Centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and points
+      in the direction opposite to p_PoQo. */
+      -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized() +
+      /* Contribution due to the angular acceleration of frame P in A.
+      The sqrt(2) factor comes from the angle between alpha_AP and p_PoQo. */
+      -alpha_AP_E.norm() * p_PoQo_E.norm() * Vector3<T>::UnitZ() / sqrt(2);
+
+  const SpatialAcceleration<T> A_AQ = A_AP.Shift(p_PoQo_E, w_AP_E);
+
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+}
+
+// TODO(sherm1,mitiguy) Add independently-developed unit tests here by Mitiguy
+// for the scary Shift() and Compose() methods, just to double check!
 
 }  // namespace
 }  // namespace math
