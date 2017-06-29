@@ -113,7 +113,7 @@ void AccelerometerExampleDiagram::Initialize(
 void AccelerometerExampleDiagram::SetInitialState(Context<double>* context,
     double q, double v) {
   Context<double>* plant_context =
-      GetMutableSubsystemContext(context, plant_);
+      GetMutableSubsystemContext(*plant_, context);
   DRAKE_DEMAND(plant_context != nullptr);
   ContinuousState<double>* plant_state =
       plant_context->get_mutable_continuous_state();

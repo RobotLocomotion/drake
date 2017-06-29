@@ -490,8 +490,8 @@ class Diagram : public System<T>,
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
-  const Context<T>& GetSubsystemContext(const Context<T>& context,
-                                        const System<T>* subsystem) const {
+  const Context<T>& GetSubsystemContext(const System<T>& subsystem,
+                                        const Context<T>& context) const {
     auto ret = DoGetTargetSystemContext(subsystem, &context);
     DRAKE_DEMAND(ret != nullptr);
     return *ret;
@@ -501,8 +501,8 @@ class Diagram : public System<T>,
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
-  Context<T>* GetMutableSubsystemContext(Context<T>* context,
-                                         const System<T>* subsystem) const {
+  Context<T>* GetMutableSubsystemContext(const System<T>& subsystem,
+                                         Context<T>* context) const {
     auto ret = DoGetMutableTargetSystemContext(subsystem, context);
     DRAKE_DEMAND(ret != nullptr);
     return ret;
@@ -515,17 +515,17 @@ class Diagram : public System<T>,
   ///
   /// TODO(david-german-tri): Provide finer-grained accessors for finer-grained
   /// invalidation.
-  State<T>* GetMutableSubsystemState(Context<T>* context,
-                                     const System<T>* subsystem) const {
-    Context<T>* subcontext = GetMutableSubsystemContext(context, subsystem);
+  State<T>* GetMutableSubsystemState(const System<T>& subsystem,
+                                     Context<T>* context) const {
+    Context<T>* subcontext = GetMutableSubsystemContext(subsystem, context);
     return subcontext->get_mutable_state();
   }
 
   /// Retrieves the state for a particular subsystem from the @p state for the
   /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
   /// diagram.
-  State<T>* GetMutableSubsystemState(State<T>* state,
-                                     const System<T>* subsystem) const {
+  State<T>* GetMutableSubsystemState(const System<T>& subsystem,
+                                     State<T>* state) const {
     auto ret = DoGetMutableTargetSystemState(subsystem, state);
     DRAKE_DEMAND(ret != nullptr);
     return ret;
@@ -534,8 +534,8 @@ class Diagram : public System<T>,
   /// Retrieves the state for a particular subsystem from the @p state for the
   /// entire diagram. Aborts if @p subsystem is not actually a subsystem of this
   /// diagram.
-  const State<T>& GetSubsystemState(
-      const State<T>& state, const System<T>* subsystem) const {
+  const State<T>& GetSubsystemState(const System<T>& subsystem,
+                                    const State<T>& state) const {
     auto ret = DoGetTargetSystemState(subsystem, &state);
     DRAKE_DEMAND(ret != nullptr);
     return *ret;
@@ -704,7 +704,7 @@ class Diagram : public System<T>,
   T DoEvaluateWitness(const Context<T>& context,
                       const WitnessFunction<T>& witness_func) const final {
     const System<T>& system = witness_func.get_system();
-    const Context<T>& subcontext = GetSubsystemContext(context, &system);
+    const Context<T>& subcontext = GetSubsystemContext(system, context);
     return witness_func.Evaluate(subcontext);
   }
 
@@ -733,12 +733,11 @@ class Diagram : public System<T>,
     }
   }
 
-
   /// Returns a pointer to mutable context if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
   Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>* target_system, Context<T>* context) const final {
-    if (target_system == this)
+      const System<T>& target_system, Context<T>* context) const final {
+    if (&target_system == this)
       return context;
 
     return GetSubsystemStuff<Context<T>*, DiagramContext<T>*>(
@@ -750,8 +749,8 @@ class Diagram : public System<T>,
   /// Returns a pointer to const context if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
   const Context<T>* DoGetTargetSystemContext(
-      const System<T>* target_system, const Context<T>* context) const final {
-    if (target_system == this)
+      const System<T>& target_system, const Context<T>* context) const final {
+    if (&target_system == this)
       return context;
 
     return GetSubsystemStuff<const Context<T>*, const DiagramContext<T>*>(
@@ -763,8 +762,8 @@ class Diagram : public System<T>,
   /// Returns a pointer to mutable state if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
   State<T>* DoGetMutableTargetSystemState(
-      const System<T>* target_system, State<T>* state) const final {
-    if (target_system == this)
+      const System<T>& target_system, State<T>* state) const final {
+    if (&target_system == this)
       return state;
 
     return GetSubsystemStuff<State<T>*, DiagramState<T>*>(
@@ -776,8 +775,8 @@ class Diagram : public System<T>,
   /// Returns a pointer to const state if @p target_system is a sub system
   /// of this, nullptr is returned otherwise.
   const State<T>* DoGetTargetSystemState(
-      const System<T>* target_system, const State<T>* state) const final {
-    if (target_system == this)
+      const System<T>& target_system, const State<T>* state) const final {
+    if (&target_system == this)
       return state;
 
     return GetSubsystemStuff<const State<T>*, const DiagramState<T>*>(
@@ -1026,16 +1025,15 @@ class Diagram : public System<T>,
   /// edge case.
   template <typename BaseStuffPtr, typename DerivedStuffPtr>
   BaseStuffPtr GetSubsystemStuff(
-      const System<T>* target_system, BaseStuffPtr my_stuff,
-      std::function<BaseStuffPtr(const System<T>*, const System<T>*,
+      const System<T>& target_system, BaseStuffPtr my_stuff,
+      std::function<BaseStuffPtr(const System<T>*, const System<T>&,
                                  BaseStuffPtr)>
           recursive_getter,
       std::function<BaseStuffPtr(DerivedStuffPtr, int)> get_child_stuff) const {
     DerivedStuffPtr const my_stuff_as_derived =
         dynamic_cast<DerivedStuffPtr>(my_stuff);
     DRAKE_DEMAND(my_stuff_as_derived != nullptr);
-    DRAKE_DEMAND(target_system != nullptr);
-    DRAKE_DEMAND(target_system != this);
+    DRAKE_DEMAND(&target_system != this);
 
     int index = 0;
     for (const System<T>* child : sorted_systems_) {

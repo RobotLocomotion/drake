@@ -648,32 +648,32 @@ class System {
   /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
   /// Should not be directly called.
   virtual Context<T>* DoGetMutableTargetSystemContext(
-      const System<T>* target_system, Context<T>* context) const {
-    if (target_system == this) return context;
+      const System<T>& target_system, Context<T>* context) const {
+    if (&target_system == this) return context;
     return nullptr;
   }
 
   /// Returns @p context if @p target_system equals `this`, nullptr otherwise.
   /// Should not be directly called.
   virtual const Context<T>* DoGetTargetSystemContext(
-      const System<T>* target_system, const Context<T>* context) const {
-    if (target_system == this) return context;
+      const System<T>& target_system, const Context<T>* context) const {
+    if (&target_system == this) return context;
     return nullptr;
   }
 
   /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
   /// Should not be directly called.
   virtual State<T>* DoGetMutableTargetSystemState(
-      const System<T>* target_system, State<T>* state) const {
-    if (target_system == this) return state;
+      const System<T>& target_system, State<T>* state) const {
+    if (&target_system == this) return state;
     return nullptr;
   }
 
   /// Returns @p state if @p target_system equals `this`, nullptr otherwise.
   /// Should not be directly called.
-  virtual const State<T>* DoGetTargetSystemState(const System<T>* target_system,
+  virtual const State<T>* DoGetTargetSystemState(const System<T>& target_system,
                                                  const State<T>* state) const {
-    if (target_system == this) return state;
+    if (&target_system == this) return state;
     return nullptr;
   }
 

@@ -137,10 +137,10 @@ class PidControlledSystemTest : public ::testing::Test {
     auto output = diagram_->AllocateOutput(*context);
 
     systems::Context<double>* controller_context =
-        diagram_->GetMutableSubsystemContext(context.get(), controller);
+        diagram_->GetMutableSubsystemContext(*controller, context.get());
     systems::Context<double>* plant_context =
-        controller->GetMutableSubsystemContext(controller_context,
-                                               controller->plant());
+        controller->GetMutableSubsystemContext(*controller->plant(),
+                                               controller_context);
 
     diagram_->CalcOutput(*context, output.get());
     const BasicVector<double>* output_vec = output->get_vector_data(0);
@@ -244,7 +244,7 @@ class ConnectControllerTest : public ::testing::Test {
     auto output = standard_diagram->AllocateOutput(*context);
 
     auto plant_context =
-        standard_diagram->GetMutableSubsystemContext(context.get(), plant_);
+        standard_diagram->GetMutableSubsystemContext(*plant_, context.get());
 
     plant_->CalcOutput(*plant_context, output.get());
     const BasicVector<double>* output_vec = output->get_vector_data(0);

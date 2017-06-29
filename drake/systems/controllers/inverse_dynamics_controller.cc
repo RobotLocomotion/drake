@@ -105,7 +105,7 @@ template <typename T>
 void InverseDynamicsController<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   Context<T>* pid_context =
-      Diagram<T>::GetMutableSubsystemContext(context, pid_);
+      Diagram<T>::GetMutableSubsystemContext(*pid_, context);
   pid_->set_integral_value(pid_context, value);
 }
 
