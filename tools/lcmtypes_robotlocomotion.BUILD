@@ -60,19 +60,19 @@ install_cmake_config(
 
 install(
     name = "install",
-    docs = ["LICENSE.txt"],
-    guess_hdrs = "PACKAGE",
-    py_strip_prefix = ["lcmtypes"],
-    rename = {
-        "share/java/liblcmtypes_robotlocomotion_java.jar": "lcmtypes_robotlocomotion.jar",  # noqa
-    },
+    workspace = CMAKE_PACKAGE,
     targets = [
         ":lcmtypes_robotlocomotion",
         ":lcmtypes_robotlocomotion_c",
         ":lcmtypes_robotlocomotion_java",
         ":lcmtypes_robotlocomotion_py",
     ],
-    workspace = CMAKE_PACKAGE,
+    py_strip_prefix = ["lcmtypes"],
+    guess_hdrs = "PACKAGE",
+    docs = ["LICENSE.txt"],
+    rename = {
+        "share/java/liblcmtypes_robotlocomotion_java.jar": "lcmtypes_robotlocomotion.jar",  # noqa
+    },
     deps = [":install_cmake_config"],
 )
 

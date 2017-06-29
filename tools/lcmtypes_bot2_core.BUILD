@@ -69,18 +69,18 @@ install_cmake_config(
 # and https://github.com/openhumanoids/bot_core_lcmtypes/issues/33.
 install(
     name = "install",
-    docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
-    guess_hdrs = "PACKAGE",
-    py_strip_prefix = ["lcmtypes"],
-    rename = {
-        "share/java/liblcmtypes_bot2_core_java.jar": "lcmtypes_bot2_core.jar",
-    },
+    workspace = CMAKE_PACKAGE,
     targets = [
         ":lcmtypes_bot2_core",
         ":lcmtypes_bot2_core_c",
         ":lcmtypes_bot2_core_java",
         ":lcmtypes_bot2_core_py",
     ],
-    workspace = CMAKE_PACKAGE,
+    py_strip_prefix = ["lcmtypes"],
+    guess_hdrs = "PACKAGE",
+    docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
+    rename = {
+        "share/java/liblcmtypes_bot2_core_java.jar": "lcmtypes_bot2_core.jar",
+    },
     deps = [":install_cmake_config"],
 )

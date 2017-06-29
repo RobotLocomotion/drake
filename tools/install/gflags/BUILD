@@ -13,18 +13,18 @@ install_cmake_config(package = "gflags")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    allowed_externals = ["@com_github_gflags_gflags//:gflags"],
-    doc_dest = "share/doc/gflags",
-    docs = ["@com_github_gflags_gflags//:COPYING.txt"],
+    targets = ["@com_github_gflags_gflags//:gflags"],
+    hdr_dest = "include",
+    hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
     guess_hdrs_exclude = [
         "config.h",
         "src/mutex.h",
         "src/util.h",
     ],
-    hdr_dest = "include",
-    hdr_strip_prefix = ["include"],
-    targets = ["@com_github_gflags_gflags//:gflags"],
+    docs = ["@com_github_gflags_gflags//:COPYING.txt"],
+    doc_dest = "share/doc/gflags",
+    allowed_externals = ["@com_github_gflags_gflags//:gflags"],
     visibility = ["//:__pkg__"],
     deps = [":install_cmake_config"],
 )

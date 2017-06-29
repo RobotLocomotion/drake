@@ -63,14 +63,14 @@ install_cmake_config(package = "octomap")
 
 install(
     name = "install",
-    doc_dest = "share/doc",
-    docs = ["octomap/LICENSE.txt"],
-    guess_hdrs = "PACKAGE",
-    hdr_dest = "include",
-    hdr_strip_prefix = ["octomap/include"],
     targets = [
         ":octomap",
         ":octomath",
     ],
+    hdr_dest = "include",
+    hdr_strip_prefix = ["octomap/include"],
+    guess_hdrs = "PACKAGE",
+    docs = ["octomap/LICENSE.txt"],
+    doc_dest = "share/doc",
     deps = [":install_cmake_config"],
 )
