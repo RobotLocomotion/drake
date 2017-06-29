@@ -67,6 +67,24 @@ class SpatialVector {
   template <typename OtherDerived>
   explicit SpatialVector(const Eigen::MatrixBase<OtherDerived>& V) : V_(V) {}
 
+  /// Creates a copy of `this` spatial vector with its rotational component set
+  /// to `rotational`.
+  SpatialQuantity with_rotational(
+      const Eigen::Ref<const Vector3<T>>& rotational) const {
+    SpatialQuantity V_with_rotational(get_derived());
+    V_with_rotational.rotational() = rotational;
+    return V_with_rotational;
+  }
+
+  /// Creates a copy of `this` spatial vector with its translational component
+  /// set to `translational`.
+  SpatialQuantity with_translational(
+      const Eigen::Ref<const Vector3<T>>& translational) const {
+    SpatialQuantity V_with_translational(get_derived());
+    V_with_translational.translational() = translational;
+    return V_with_translational;
+  }
+
   /// The total size of the concatenation of the angular and linear components.
   /// In three dimensions this is six (6) and it is known at compile time.
   int size() const { return kSpatialVectorSize; }
@@ -186,6 +204,12 @@ class SpatialVector {
   }
 
  private:
+  // Helper method to return a const reference to the derived spatial quantity.
+  const SpatialQuantity& get_derived() const {
+    // Static cast is safe since types are resolved at compile time by CRTP.
+    return *static_cast<const SpatialQuantity*>(this);
+  }
+
   CoeffsEigenType V_;
 };
 
