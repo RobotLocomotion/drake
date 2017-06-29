@@ -4,6 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools:install.bzl", "install")
+load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 # Should include everything any consumer of Drake would ever need.
@@ -322,4 +323,10 @@ install(
     hdr_dest = "include/drake",
     targets = ["libdrake.so"],
     deps = ["//drake/bindings:install"],
+)
+
+transitive_hdrs_library(
+    name = "libdrake_headers",
+    deps = _LIBDRAKE_COMPONENTS,
+    visibility = ["//drake/bindings:__pkg__"],
 )
