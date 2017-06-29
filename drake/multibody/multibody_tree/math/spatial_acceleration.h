@@ -183,7 +183,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     return *this;
   }
 
-  /// In-place shift of this spatial acceleration `A_FP` of a frame P into the
+  /// Shift of this spatial acceleration `A_FP` of a frame P into the
   /// spatial acceleration `A_FPq` of a frame Pq which is an offset frame
   /// rigidly aligned with P, but with its origin shifted to a pint Q by an
   /// offset p_PoQ. Frame Pq is instantaneously moving together with frame P as
@@ -193,8 +193,46 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// See ShiftInPlace() for more information and a description of the
   /// arguments.
   SpatialAcceleration<T> Shift(const Vector3<T>& p_PoQ_E,
-                               const Vector3<T>& w_AP_E) const {
-    return SpatialAcceleration<T>(*this).ShiftInPlace(p_PoQ_E, w_AP_E);
+                               const Vector3<T>& w_FP_E) const {
+    return SpatialAcceleration<T>(*this).ShiftInPlace(p_PoQ_E, w_FP_E);
+  }
+
+
+  /// Given `this` spatial acceleration `A_FP` of a frame P in a frame F,
+  /// computes the spatial acceleration of a frame Q with origin `Qo` at
+  /// `p_PoQo` given that we know the spatial velocity `V_PQ` and spatial
+  /// acceleration `A_PQ` of frame Q in P.
+  ///
+  /// @note This method is the extension to the Shift() operator, which computes
+  /// the spatial acceleration frame P shifted to `Qo` as if Q moved rigidly
+  /// with P, that is, for when `V_PQ` and `A_PQ` are both zero.
+  /// In other words the results from Shift() equal the results from
+  /// this method when `V_PQ` and `A_PQ` are both zero.
+  ///
+  /// @param[in] p_PoQo_E
+  ///   Shift vector from the origin `Po` of frame P to point Q, expressed in
+  ///   frame E. The "from" frame P must be the frame whose acceleration is
+  ///   currently represented in `this` spatial acceleration, and E must be the
+  ///   same expressed-in frame as for this spatial acceleration.
+  /// @param[in] w_FP_E
+  ///   Angular velocity of frame P measured in frame A and expressed in frame
+  ///   E.
+  ///
+  /// @note For both input parameters, `p_PoQ_E` and `w_FP_E`, frame P must be
+  ///   the frame whose acceleration is currently represented in `this` spatial
+  ///   acceleration `A_FP_E`, and E must be the same expressed-in frame as for
+  ///   this spatial acceleration.
+  ///
+  /// @retval `A_FQ` The spatial acceleration of frame Q in F, expressed in
+  ///                frame E.
+  ///
+  /// @see Shift() which peforms a rigid shift, i.e. when `V_PQ` and `A_PQ` are
+  /// both zero.
+  SpatialAcceleration<T> ShiftToMovingFrame(
+      const Vector3<T>& p_PoQo_E, const Vector3<T>& w_FP_E,
+      const SpatialVelocity<T>& V_PQ_E,
+      const SpatialAcceleration<T>& A_PQ_E) const {
+
   }
 
   /// Given the time derivative `ᴮd/dt(V)` of an arbitrary SpatialVelocity V in
