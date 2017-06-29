@@ -399,7 +399,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   prog.SetDecisionVariableValues(sol);
   prog.SetOptimalCost(minf);
-  prog.SetSolverResult(solver_type(), nlopt_result);
+  prog.SetSolverResult(SolverType::kNlopt, nlopt_result);
   return result;
 }
 

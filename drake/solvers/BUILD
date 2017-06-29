@@ -292,6 +292,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":solver_type_converter",
         "//drake/common:eigen_matrix_compare",
         "@gtest//:main",
     ],
