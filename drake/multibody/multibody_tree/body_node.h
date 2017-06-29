@@ -314,7 +314,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // =========================================================================
     // Update velocity V_WB of this node's body B in the world frame. Using the
     // recursive Eq. (1). See summary at the top of this method.
-    get_mutable_V_WB(vc) = V_WP.Shift(p_PB_W) + V_PB_W;
+    get_mutable_V_WB(vc) = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
   }
 
   /// Returns the topology information for this body node.
