@@ -300,11 +300,9 @@ TEST_F(SisoVectorSystemTest, DiscreteVariableUpdates) {
   TestSisoSystem dut;
   auto context = dut.CreateDefaultContext();
   auto discrete_updates = dut.AllocateDiscreteVariables();
-  DiscreteEvent<double> event;
-  event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
 
   // There's no state declared yet, so the Siso base shouldn't call our DUT.
-  dut.CalcDiscreteVariableUpdates(*context, event, discrete_updates.get());
+  dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
 
   // Now we have state, so the Siso base should call our DUT.
@@ -314,7 +312,7 @@ TEST_F(SisoVectorSystemTest, DiscreteVariableUpdates) {
   context->get_mutable_discrete_state(0)->SetFromVector(
       Eigen::Vector2d::Ones());
   discrete_updates = dut.AllocateDiscreteVariables();
-  dut.CalcDiscreteVariableUpdates(*context, event, discrete_updates.get());
+  dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 1);
   EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 2.0);

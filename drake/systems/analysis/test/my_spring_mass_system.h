@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
@@ -19,7 +20,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
     if (update_rate > 0.0) {
-      this->DeclareDiscreteUpdatePeriodSec(1.0 / update_rate);
+      this->DeclarePeriodicDiscreteUpdate(1.0 / update_rate);
     }
   }
 
@@ -39,15 +40,18 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
  private:
   // Publish t q u to standard output.
-  void DoPublish(const Context<T>& context) const override {
+  void DoPublish(const Context<T>&,
+                 const std::vector<const systems::PublishEvent<T>*>&)
+      const override {
     ++publish_count_;
   }
 
   // The discrete equation update here is for the special case of zero
   // discrete variables- in other words, this is just a counter.
   void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      DiscreteValues<T>* discrete_state) const override {
+      const Context<T>&,
+      const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
+      DiscreteValues<T>*) const override {
     ++update_count_;
   }
 
@@ -58,4 +62,3 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 }  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
-

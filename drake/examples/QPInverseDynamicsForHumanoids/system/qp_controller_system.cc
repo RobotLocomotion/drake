@@ -63,6 +63,7 @@ void QpControllerSystem::CopyOutDebugInfo(
 
 void QpControllerSystem::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   // Inputs:
   const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(

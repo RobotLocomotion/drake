@@ -37,7 +37,7 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt)
 
     // Time stepping approach requires three position variables and
     // three velocity variables, all discrete, and periodic update.
-    this->DeclareDiscreteUpdatePeriodSec(dt);
+    this->DeclarePeriodicDiscreteUpdate(dt);
     this->DeclareDiscreteState(6);
   } else {
     if (dt != 0)
@@ -344,6 +344,7 @@ void Rod2D<T>::CopyPoseOut(
 template <class T>
 void Rod2D<T>::DoCalcDiscreteVariableUpdates(
     const systems::Context<T>& context,
+    const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
     systems::DiscreteValues<T>* discrete_state) const {
   // Set ERP (error reduction parameter) and CFM (constraint force mixing)
   // to make this problem "mostly rigid" and with rapid stabilization. These
