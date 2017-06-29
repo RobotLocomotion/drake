@@ -53,7 +53,7 @@ int DoMain() {
 
   // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
-  const std::string kModelPath = "drake/manipulation/models/iiwa_description/"
+  const char* kModelPath = "drake/manipulation/models/iiwa_description/"
       "urdf/iiwa14_polytope_collision.urdf";
   const std::string urdf = (!FLAGS_urdf.empty() ? FLAGS_urdf :
                             FindResourceOrThrow(kModelPath));

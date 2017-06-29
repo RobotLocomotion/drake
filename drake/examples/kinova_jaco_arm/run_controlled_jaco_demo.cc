@@ -39,7 +39,7 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
-const char kRelUrdfPath[] =
+const char* kRelUrdfPath =
     "drake/manipulation/models/jaco_description/urdf/j2n6s300.urdf";
 
 std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
