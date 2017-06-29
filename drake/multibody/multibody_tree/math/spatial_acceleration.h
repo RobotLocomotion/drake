@@ -14,26 +14,29 @@ namespace multibody {
 
 /// This class is used to represent a _spatial acceleration_ that combines
 /// rotational (angular acceleration) and translational (linear acceleration)
-/// components. Spatial accelerations are 6-element quantities that are pairs of
-/// ordinary 3-vectors. Elements 0-2 constitute the angular acceleration
-/// component while elements 3-5 constitute the translational acceleration.
+/// components.
 /// While a SpatialVelocity `V_XY` represents the motion of a "moving frame"
 /// Y measured with respect to a "measured-in" frame X, the %SpatialAcceleration
 /// `A_XY` represents the rate of change of this spatial velocity `V_XY` in
 /// frame X. That is @f$^XA^Y = \frac{^Xd ^XV^Y}{dt} @f$ where
-/// @f$\frac{^Xd}{dt} @f$ denotes the time derivative taken in frame X. In
-/// source code comments we write the previous expression as `A_XY = d/dt V_XY`.
-/// It is important to note that the frame in which the time derivative is taken
-/// matters, generally leading to different values in different frames. By
-/// convention, and unless otherwise stated, we assume that the frame in which
-/// the time derivative is taken is the "measured-in" frame.
-/// As with SpatialVelocity, the two contained vectors must be expressed in the
-/// same "expressed-in" frame E, which may be distinct from either X or Y.
-/// Finally, while angular acceleration is identical for any frame fixed to a
-/// rigid body, translational acceleration refers to a particular point. Only
-/// the vector values are stored in a %SpatialAcceleration object; the frames
-/// must be understood from context and it is the responsibility of the user to
-/// keep track of them. That is best accomplished through disciplined notation.
+/// @f$\frac{^Xd}{dt} @f$ denotes the time derivative taken in frame X. That is,
+/// to compute an acceleration we need to specify in what frame the time
+/// derivative is taken, see [Mitiguy 2016, §6.1] for a more in depth discussion
+/// on this. Time derivatives can be taken in different frames, and they
+/// transform according to the "Transport Theorem", which is in Drake is
+/// implemented in drake::math::ConvertTimeDerivativeToOtherFrame().
+/// In source code comments we write `A_XY = DtX(V_XY)`, where `DtX()` is the
+/// operator that takes the time derivative in the X frame.
+/// By convention, and unless otherwise stated, we assume that the frame in
+/// which the time derivative is taken is the "measured-in" frame, i.e. the time
+/// derivative used in `A_XY` is in frame X by default (i.e. DtX()).
+/// To perform numerical computations, we need to specify an "expressed-in"
+/// frame E (which may be distinct from either X or Y), so that components can
+/// be expressed as real numbers.
+/// Only the vector values are stored in a %SpatialAcceleration object; the
+/// frames must be understood from context and it is the responsibility of the
+/// user to keep track of them. That is best accomplished through disciplined
+/// notation.
 /// In source code we use monogram notation where capital A is used to designate
 /// a spatial acceleration quantity. The same monogram notation rules for
 /// SpatialVelocity are also used for %SpatialAcceleration. That is, the spatial
@@ -41,6 +44,8 @@ namespace multibody {
 /// `A_XY_E`.
 /// For a more detailed introduction on spatial vectors and the monogram
 /// notation please refer to section @ref multibody_spatial_vectors.
+///
+/// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -68,6 +73,12 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
 
   /// SpatialAcceleration constructor from an Eigen expression that represents a
   /// six-dimensional vector.
+  /// Under the hood, spatial accelerations are 6-element quantities that are
+  /// pairs of ordinary 3-vectors. Elements 0-2 constitute the angular
+  /// acceleration component while elements 3-5 constitute the translational
+  /// acceleration. The argument @p A in this constructor is the concatenation
+  /// of the translational 3D component followed by the translational 3D
+  /// component.
   /// This constructor will assert the size of A is six (6) at compile-time
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
@@ -130,12 +141,15 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///
   /// <h4> Translational acceleration component </h4>
   ///
-  /// The translational velocity `v_WBo` of point `Bo` in W can be obtained by
-  /// the shift operation as: <pre>
-  ///   v_WBo = v_WPo + w_WP x p_PoBo                                       (1)
+  /// Recall that frame `Pb` is an offset frame rigidly aligned with P, but with
+  /// its origin shifted to a point `Bo` by an offset `p_PoBo`. Frame `Pb` is
+  /// instantaneously moving together with frame P as if rigidly attached to it.
+  /// The translational velocity `v_WPb` of frame `Pb`'s origin, point `Bo`, in
+  /// W can be obtained by the shift operation as: <pre>
+  ///   v_WPb = v_WPo + w_WP x p_PoBo                                       (1)
   /// </pre>
   /// Therefore, for the translational acceleration we have: <pre>
-  ///   a_WBo = DtW(v_WBo) = DtW(v_WPo + w_WP x p_PoBo)
+  ///   a_WBo = DtW(v_WPb) = DtW(v_WPo + w_WP x p_PoBo)
   ///         = DtW(v_WPo) + DtW(w_WP x p_PoBo)
   ///         = a_WPo + DtW(w_WP) x p_PoBo + w_WP x DtW(p_PoBo)
   ///         = a_WPo + alpha_WP x p_PoBo + w_WP x DtW(p_PoBo)              (2)

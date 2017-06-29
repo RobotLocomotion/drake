@@ -16,8 +16,10 @@ namespace {
 
 using Eigen::AngleAxis;
 
-// Generic declaration of a traits class to figure out at compile time the
-// scalar type a spatial quantity is instantiated with.
+// Generic declaration boilerplate of a traits class for spatial vectors.
+// This is used by the (templated on SpatialQuantityUnderTest)
+// SpatialQuantityTest unit test class below to infer on what scalar type the
+// SpatialQuantityUnderTest is templated on.
 template <class SpatialQuantity> struct spatial_vector_traits {};
 
 // traits specialization for SpatialVelocity.
@@ -408,8 +410,8 @@ TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
 // velocity w_AP and has zero acceleration in frame A, ie. A_AP = 0. We can
 // think of frames P and A having coincident origins.
 // A third frame Q translated by a position p_PoQo moves rigidly with P.
-// The angular velocity w_AP_E has its component out of plane in the z-axes
-// while the offset vector p_PoQo_E is in the x-y plane.
+// The angular velocity vector w_AP_E is orthogonal to the x-y plane while the
+// offset vector p_PoQo_E is in the x-y plane.
 // Therefore, the spatial acceleration of frame Q should correspond to that of
 // a centrifugal linear component pointing inwards in the opposite direction of
 // p_PoQo
