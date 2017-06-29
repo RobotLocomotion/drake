@@ -132,14 +132,22 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
   ///
+  /// @param period_sec Update interval of the RgbdCamera in seconds.
+  ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
+  ///
+  /// @param auto_init Automatically initialize the camera scene by evaluating
+  /// the upstream block's output such that the camera has a valid frame at
+  /// t = 0.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
              const Eigen::Vector3d& orientation,
              double fov_y,
-             bool show_window);
+             double period_sec,
+             bool show_window,
+             bool auto_init = false);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
@@ -158,13 +166,21 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
   ///
+  /// @param period_sec Update interval of the RgbdCamera in seconds.
+  ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
+  ///
+  /// @param auto_init Automatically initialize the camera scene by evaluating
+  /// the upstream block's output such that the camera has a valid frame at
+  /// t = 0.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
              double fov_y,
-             bool show_window);
+             double period_sec,
+             bool show_window,
+             bool auto_init = false);
 
   ~RgbdCamera();
 
@@ -217,6 +233,15 @@ class RgbdCamera : public LeafSystem<double> {
                         ImageLabel16I* label_image) const;
   void OutputPoseVector(const Context<double>& context,
                         rendering::PoseVector<double>* pose_vector) const;
+
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+                                State<double>* state) const override;
+
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override;
+
+  std::unique_ptr<DiscreteValues<double>>
+  AllocateDiscreteState() const override;
 
   const OutputPort<double>* color_image_port_{};
   const OutputPort<double>* depth_image_port_{};
