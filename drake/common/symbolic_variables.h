@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/symbolic_variable.h"
 
 namespace drake {
@@ -39,6 +40,9 @@ class Variables {
 
   /** List constructor. */
   Variables(std::initializer_list<value_type> init);
+
+  /** Constructs from an Eigen vector of variables. */
+  explicit Variables(const Eigen::Ref<const VectorX<Variable>>& init);
 
   /** Returns hash value. */
   size_t get_hash() const;
