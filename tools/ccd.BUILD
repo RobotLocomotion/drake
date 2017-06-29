@@ -59,9 +59,9 @@ install_cmake_config(package = "ccd")  # Creates rule :install_cmake_config.
 install(
     name = "install",
     hdrs = CCD_PUBLIC_HEADERS,
+    docs = ["BSD-LICENSE"],
     hdr_dest = "include/ccd",
     hdr_strip_prefix = ["**/"],
-    license_docs = ["BSD-LICENSE"],
     targets = [":ccd"],
     deps = [":install_cmake_config"],
 )

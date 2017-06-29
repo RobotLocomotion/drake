@@ -6,7 +6,6 @@ load(
     "install",
     "install_cmake_config",
 )
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -39,18 +38,10 @@ install_cmake_config(package = "spdlog")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
+    docs = ["LICENSE"],
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/spdlog",
     hdr_strip_prefix = ["include/spdlog"],
-    license_docs = ["LICENSE"],
     targets = [":spdlog"],
     deps = [":install_cmake_config"],
-)
-
-pkg_tar(
-    name = "license",
-    extension = "tar.gz",
-    files = ["LICENSE"],
-    mode = "0644",
-    package_dir = "spdlog",
 )

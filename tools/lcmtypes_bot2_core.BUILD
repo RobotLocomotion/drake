@@ -65,12 +65,12 @@ install_cmake_config(
     versioned = 0,
 )
 
-# For license_docs, see  https://github.com/RobotLocomotion/lcmtypes/issues/2
+# For docs, see  https://github.com/RobotLocomotion/lcmtypes/issues/2
 # and https://github.com/openhumanoids/bot_core_lcmtypes/issues/33.
 install(
     name = "install",
+    docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
     guess_hdrs = "PACKAGE",
-    license_docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
     py_strip_prefix = ["lcmtypes"],
     rename = {
         "share/java/liblcmtypes_bot2_core_java.jar": "lcmtypes_bot2_core.jar",

@@ -191,13 +191,12 @@ install(
     docs = [
         "AUTHORS",
         "NEWS",
-    ],
-    guess_hdrs = "PACKAGE",
-    hdr_dest = "include/nlopt",
-    license_docs = glob([
+    ] + glob([
         "**/COPYING",
         "**/COPYRIGHT",
     ]),
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/nlopt",
     targets = [":nlopt"],
     deps = [":install_cmake_config"],
 )

@@ -4,7 +4,6 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools:install.bzl", "install")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 # Should include everything any consumer of Drake would ever need.
 # When adding new components to the package, please also add the licenses for

@@ -25,11 +25,11 @@ JCHART_TARGETS = [
 install(
     name = "install",
     allowed_externals = JCHART_LICENSE_DOCS + JCHART_TARGETS,
-    doc_dest = "share/doc/" + CMAKE_PACKAGE,
     doc_strip_prefix = ["**/"],
-    license_docs = JCHART_LICENSE_DOCS,
+    docs = JCHART_LICENSE_DOCS,
     java_strip_prefix = ["**/"],
     targets = JCHART_TARGETS,
-    deps = [":install_cmake_config"],
     visibility = ["//:__pkg__"],
+    workspace = CMAKE_PACKAGE,
+    deps = [":install_cmake_config"],
 )

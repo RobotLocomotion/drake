@@ -158,10 +158,10 @@ install(
     hdrs = ["@protobuf//:well_known_protos"],
     allowed_externals = ["@protobuf//:protobuf"],
     doc_dest = "share/doc/protobuf",
+    docs = ["@protobuf//:LICENSE"],
     guess_hdrs = "PACKAGE",
     guess_hdrs_exclude = excluded_headers,
     hdr_strip_prefix = ["src"],
-    license_docs = ["@protobuf//:LICENSE"],
     targets = [
         "@protobuf//:protobuf",
         "@protobuf//:protobuf_lite",
