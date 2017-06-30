@@ -16,9 +16,6 @@
 [submodule "externals/director"]
 	path = externals/director
 	url = https://github.com/RobotLocomotion/director.git
-[submodule "externals/octomap"]
-	path = externals/octomap
-	url = https://github.com/OctoMap/octomap.git
 [submodule "externals/snopt"]
 	path = externals/snopt
 	url = git@github.com:RobotLocomotion/snopt.git
@@ -50,15 +47,9 @@
 [submodule "externals/bullet"]
 	path = externals/bullet
 	url = https://github.com/bulletphysics/bullet3.git
-[submodule "externals/ccd"]
-	path = externals/ccd
-	url = https://github.com/danfis/libccd.git
 [submodule "externals/robotlocomotion_lcmtypes"]
 	path = externals/robotlocomotion_lcmtypes
 	url = https://github.com/RobotLocomotion/lcmtypes.git
-[submodule "externals/fcl"]
-	path = externals/fcl
-	url = https://github.com/flexible-collision-library/fcl.git
 [submodule "externals/pythonqt"]
 	path = externals/pythonqt
 	url = https://github.com/commontk/PythonQt.git
