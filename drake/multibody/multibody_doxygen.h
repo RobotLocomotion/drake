@@ -341,16 +341,16 @@ Next topic: @ref Dt_multibody_quantities
 /** @defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
 @ingroup multibody_notation
 
-Given a physical quantity, say spatial velocity of frame B in frame A, we can
-create another physical quantity by differentiating that quantity in time. In
-some contexts, we will need a notation for representing the differentiated
-quantity. Since many quantities of interest are vectors, or contain vectors,
-we must specify in which frame the derivative is being taken, as well as the
-usual differential variable dt. In our mathematical notation, a vector
-derivative operator with respect to time @f$ t @f$, taken in frame @f$ G @f$,
-and applied to some vector-containing multibody quantity @f$ Q @f$, is written
-@f$ \frac{^Gd}{dt}\,Q @f$. Our monogram notation for this is `DtG_Q`. When
-computing with these derived quantities (which are themselves
+(Advanced topic) Given a physical quantity, say spatial velocity of frame B in
+frame A, we can create another physical quantity by differentiating that
+quantity in time. In some contexts, we will need a notation for representing the
+differentiated quantity. Since many quantities of interest are vectors, or
+contain vectors, we must specify in which frame the derivative is being taken,
+as well as the usual differential variable dt. In our mathematical notation, a
+vector derivative operator with respect to time @f$ t @f$, taken in frame
+@f$ G @f$, and applied to some vector-containing multibody quantity @f$ Q @f$,
+is written @f$ \frac{^Gd}{dt}\,Q @f$. Our monogram notation for this is `DtG_Q`.
+When computing with these derived quantities (which are themselves
 vector-containing), we need to specify an expressed-in frame E. In mathematical
 notation we would write @f$ [\frac{^Gd}{dt}\,Q]_E @f$. In monogram notation,
 `DtG_Q_E`. In comments, where we have more flexibility but would like the
