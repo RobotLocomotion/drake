@@ -23,9 +23,6 @@ template<typename T> class MultibodyTree;
 
 namespace internal {
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 /// For internal use only of the MultibodyTree implementation.
 /// This is a base class representing a **node** in the tree structure of a
 /// MultibodyTree. %BodyNode provides implementations for convenience methods to
@@ -323,6 +320,36 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     get_mutable_V_WB(vc) = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
   }
 
+  /// This method is used by MultibodyTree within a base-to-tip loop to compute
+  /// this node's kinematics that depend on the generalized accelerations, i.e.
+  /// the generalized velocities' time derivatives.
+  /// This method aborts in Debug builds when:
+  /// - Called on the _root_ node.
+  /// - `ac` is nullptr.
+  /// @param[in] context The context with the state of the MultibodyTree model.
+  /// @param[in] pc
+  ///   An already updated position kinematics cache in sync with `context`.
+  /// @param[in] vc
+  ///   An already updated velocity kinematics cache in sync with `context`.
+  /// @param[in] mbt_vdot
+  ///   The entire vector of generalized accelerations for the full
+  ///   MultibodyTree model. It must have a size equal to the number of
+  ///   generalized velocities in the model. This method assumes the caller,
+  ///   MultibodyTree<T>::CalcAccelerationKinematicsCache(), provides a vector
+  ///   of the right size.
+  /// @param[out] ac
+  ///   A pointer to a valid, non nullptr, acceleration kinematics cache.
+  ///
+  /// @pre The position kinematics cache `pc` was already updated to be in sync
+  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics cache `vc` was already updated to be in sync
+  /// with `context` by MultibodyTree::CalcVelocityKinematicsCache().
+  /// @pre CalcAccelerationKinematicsCache_BaseToTip() must have already been
+  /// called for the parent node (and, by recursive precondition, all
+  /// predecessor nodes in the tree.)
+  // Unit test coverage for this method is provided, among others, in
+  // double_pendulum_test.cc, and by any other unit tests making use of
+  // MultibodyTree::CalcAccelerationKinematicsCache().
   void CalcAccelerationKinematicsCache_BaseToTip(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -346,38 +373,33 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // acceleration A_WP of the inboard body P is already computed.
     // The spatial velocities of P and B are related by the recursive relation
     // (computation is performed by CalcVelocityKinematicsCache_BaseToTip():
-    //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)              (1)
-    // where V_WPb is the spatial velocity of a frame Pb which results from
-    // shifting frame P from Po to Bo, measured and expressed in the world
-    // frame W.
-    // The acceleration A_WB is defined as DtW(V_WB), where DtW() denotes
-    // the time derivative in the world frame. Taking DtW() in Eq. (1)
-    // results in a recursive relation for A_WB:
-    //   A_WB = DtW(V_WPb + V_PB_W) = A_WPb + DtW(V_PB_W)             (2)
-    // where A_WPb is the spatial acceleration of frame Pb. We need to develop
-    // expressions for the two terms on the right hand side of Eq. (2).
+    //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)
+    //        = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W)         (1)
+    // In the same way the parent body P velocity V_WP can be composed with body
+    // B's velocity V_PB in P, the acceleration A_WB can be obtained by
+    // composing A_WP with A_PB:
+    //  A_WB = A_WP.ComposeWithMovingFrameAcceleration(
+    //      p_PB_W, w_WP, V_PB_W, A_PB_W);                                  (2)
+    // which includes both centrifugal and coriolis terms. For details on this
+    // operation refer to the documentation for
+    // SpatialAcceleration::ComposeWithMovingFrameAcceleration().
     //
-    // Computation of A_WPb = DtW(V_WPb):
-    // This simply is the acceleration of frame Pb in the world frame W or, in
-    // other words, the spatial acceleration of frame B as if instantaneously
-    // moving with frame P. This is nothing but the shift
-    // operation of A_WP from Po to Bo and therefore:
-    //   A_WPb = DtW(V_WPb) = A_WP.Shift(p_PoBo_W, w_WP)                 (3)
+    // By recursive precondition, this method was already called on all
+    // predecessor nodes in the tree and therefore the acceleration A_WP is
+    // already available.
+    // V_WP (i.e w_WP) and V_PB_W were computed in the velocity kinematics pass
+    // and are therefore available in the VelocityKinematicsCache vc.
     //
-    // Computation of DtW(V_PB_W):
-    // This can be computed by first shifting the time derivative to be computed
-    // in the P frame as:
-    //   DtW(V_PB_W) = ShiftTimeDerivative(V_PB_W, A_PB_W, w_WP)         (4)
-    // with V_PB_W already available in the VelocityKinematicsCache. The
-    // acceleration of B in P is:
-    //   A_PB = DtP(V_PB) = DtF(V_FMb) = A_FM.Shift(p_MB, w_FM)       (5)
+    // Therefore, all that is left is computing A_PB_W = DtP(V_PB)_W.
+    // The acceleration of B in P is:
+    //   A_PB = DtP(V_PB) = DtF(V_FMb) = A_FM.Shift(p_MB, w_FM)             (3)
     // which expressed in the world frame leads to:
-    //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (6)
+    //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (4)
     // where A_FM in the inboard frame F is the direct result from
     // Mobilizer::CalcAcrossMobilizerAcceleration().
     //
     // * Note:
-    //     The rigid body assumption is made in Eq. (5) in two places:
+    //     The rigid body assumption is made in Eq. (3) in two places:
     //       1. DtP() = DtF() since V_PF = 0.
     //       2. V_PB = V_FMb since V_PB = V_PFb + V_FMb + V_MB but since P is
     //          assumed rigid V_PF = 0 and since B is assumed rigid V_MB = 0.
@@ -398,7 +420,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
 
     // =========================================================================
-    // Computation of A_PB = DtP(V_PB)
+    // Computation of A_PB = DtP(V_PB), Eq. (4).
 
     // TODO(amcastro-tri): consider caching these. Especially true if bodies are
     // flexible. Also used in velocity kinematics.
@@ -432,10 +454,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         get_mobilizer().CalcAcrossMobilizerSpatialAcceleration(context, vmdot);
 
     SpatialAcceleration<T> A_PB_W =
-        R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (xxx)
+        R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (4)
 
     // =========================================================================
-    // Compose acceleration A_WP of P in W with acceleration A_PB of B in P.
+    // Compose acceleration A_WP of P in W with acceleration A_PB of B in P,
+    // Eq. (2)
 
     // Since we are in a base-to-tip recursion the parent body P's spatial
     // velocity and acceleration are already available in the cache.
@@ -454,14 +477,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     /* p_PB_W = R_WP * p_PB */
     Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
 
-#if 0
-    PRINT_VAR(get_body().get_index());
-    PRINT_VAR(V_WP);
-    PRINT_VAR(A_WP);
-    PRINT_VAR(p_PB_W.transpose());
-    PRINT_VAR(V_PB_W);
-    PRINT_VAR(A_PB_W);
-#endif
     get_mutable_A_WB(ac) =
         A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
                                                 V_PB_W, A_PB_W);

@@ -547,7 +547,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // Update position kinematics.
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
-      model_->CalcPositionKinematicsCache(*mbt_context_, &pc);
+      model_->CalcPositionKinematicsCache(*context_, &pc);
 
       // Set the shoulder's angular velocity.
       const double shoulder_angle_rate = 1.0;
@@ -562,7 +562,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
                                          elbow_angle_rate);
       EXPECT_EQ(elbow_mobilizer_->get_angular_rate(*context_),
                 elbow_angle_rate);
-      model_->CalcVelocityKinematicsCache(*mbt_context_, pc, &vc);
+      model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
       const SpatialVelocity<double>& V_WU =
