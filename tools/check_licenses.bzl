@@ -30,22 +30,32 @@ def _is_license_file(filename):
 
 #------------------------------------------------------------------------------
 def _check_licenses_for_label(label):
+    # Don't check empty installs (can happen if an install is a dummy due to
+    # some platforms relying on a package already being installed).
+    if not label.install_actions:
+        return []
+
+    # Look for file(s) that appear to be license(s) in the install actions.
     has_license = False
     for a in label.install_actions:
         if _is_license_file(a.src.basename):
             has_license = True
 
+    # If no license found, return the failing label.
     if not has_license:
         return [label.label]
 
+    # Otherwise return nothing; caller collects failing labels to report.
     return []
 
 #------------------------------------------------------------------------------
 def _check_licenses_impl(ctx):
+    # Iterate over labels, collecting ones that are missing licenses.
     labels_missing_licenses = []
     for l in ctx.attr.install_labels:
         labels_missing_licenses += _check_licenses_for_label(l)
 
+    # Report collected failures.
     if labels_missing_licenses:
         fail("Missing license files for install label(s) %s" %
              labels_missing_licenses)
