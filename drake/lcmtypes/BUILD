@@ -3,6 +3,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("//tools:install.bzl", "install", "rename_files")
 load("//tools:lcm.bzl", "lcm_libraries", "lcm_py_library")
 
 lcm_libraries(
@@ -271,48 +272,68 @@ lcm_py_library(
     ],
 )
 
+drake_lcmtypes = [
+    ":acrobot",
+    ":automotive",
+    ":body_acceleration",
+    ":body_motion_data",
+    ":body_wrench_data",
+    ":constrained_values",
+    ":contact_info_for_viz",
+    ":contact_information",
+    ":contact_results_for_viz",
+    ":desired_body_motion",
+    ":desired_centroidal_momentum_dot",
+    ":desired_dof_motions",
+    ":drake_signal",
+    ":iiwa",
+    ":inverse_dynamics_debug_info",
+    ":joint_pd_override",
+    ":manipulator_plan_move_end_effector",
+    ":piecewise_polynomial",
+    ":plan_eval_debug_info",
+    ":polynomial",
+    ":polynomial_matrix",
+    ":qp_controller_input",
+    ":qp_input",
+    ":resolved_contact",
+    ":schunk",
+    ":support_data",
+    ":viewer",
+    ":whole_body_data",
+    ":zmp_data",
+    ":zmp_com_observer_state",
+]
+
+drake_java_lcmtypes = [t + "_java" for t in drake_lcmtypes]
+
+drake_java_lcmtypes_renamed = rename_files(
+    files = ["share/java/lib%s.jar" % j[1:] for j in drake_java_lcmtypes],
+    pattern = "lcmtypes_{}.jar",
+    strip_prefix = ["lib"],
+    strip_suffix = ["_java.jar"],
+)
+
 # This rule should list every LCM type that is known to Drake or its external
 # dependencies.
 java_binary(
     name = "drake-lcm-spy",
     main_class = "lcm.spy.Spy",
-    runtime_deps = [
-        ":acrobot_java",
-        ":automotive_java",
-        ":body_acceleration_java",
-        ":body_motion_data_java",
-        ":body_wrench_data_java",
-        ":constrained_values_java",
-        ":contact_info_for_viz_java",
-        ":contact_information_java",
-        ":contact_results_for_viz_java",
-        ":desired_body_motion_java",
-        ":desired_centroidal_momentum_dot_java",
-        ":desired_dof_motions_java",
-        ":drake_signal_java",
-        ":iiwa_java",
-        ":inverse_dynamics_debug_info_java",
-        ":joint_pd_override_java",
-        ":manipulator_plan_move_end_effector_java",
-        ":piecewise_polynomial_java",
-        ":plan_eval_debug_info_java",
-        ":polynomial_java",
-        ":polynomial_matrix_java",
-        ":qp_controller_input_java",
-        ":qp_input_java",
-        ":resolved_contact_java",
-        ":schunk_java",
-        ":support_data_java",
-        ":viewer_java",
-        ":whole_body_data_java",
-        ":zmp_com_observer_state_java",
-        ":zmp_data_java",
+    runtime_deps = drake_java_lcmtypes + [
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
         "@libbot//:lcmtypes_bot2_frames_java",
         "@libbot//:lcmtypes_bot2_lcmgl_java",
         "@libbot//:lcmtypes_bot2_param_java",
     ],
+)
+
+install(
+    name = "install",
+    guess_hdrs = "PACKAGE",
+    hdr_dest = "include/lcmtypes",
+    rename = drake_java_lcmtypes_renamed,
+    targets = drake_lcmtypes + drake_java_lcmtypes,
 )
 
 # === test/ ===
