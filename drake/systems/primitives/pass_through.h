@@ -44,6 +44,9 @@ class PassThrough : public SisoVectorSystem<T> {
   /// @param size number of elements in the signal to be processed.
   explicit PassThrough(int size);
 
+  // TODO(eric.cousineau): Ensure that this system can also handle
+  // AbstractValue's akin to ZeroOrderHold (#6491).
+
  protected:
   /// Sets the output port to equal the input port.
   void DoCalcVectorOutput(
