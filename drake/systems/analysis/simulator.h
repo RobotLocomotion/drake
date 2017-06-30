@@ -671,8 +671,8 @@ void Simulator<T>::IsolateWitnessTriggers(
   if (!witness_iso_len)
     return;
 
-  // Mini function for integrating the system forward in time.
-  std::function<void(const T&)> fwd_int =
+  // Mini function for integrating the system forward in time from t0.
+  std::function<void(const T&)> integrate_forward =
       [&t0, &x0, context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
     context->set_time(t0);
@@ -691,7 +691,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   do {
     // Compute the midpoint and evaluate the witness functions at it.
     T c = (a + b) / 2;
-    fwd_int(c);
+    integrate_forward(c);
 
     // See whether any witness functions trigger.
     bool trigger = false;
