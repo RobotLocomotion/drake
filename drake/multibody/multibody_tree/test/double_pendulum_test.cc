@@ -528,8 +528,9 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
 
 TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
   // This is the minimum factor of the machine precision within which these
-  // tests pass.
-  const int kEpsilonFactor = 5;
+  // tests pass. There is an additional factor of two (2) to be on the safe side
+  // on other architectures (particularly in Macs).
+  const int kEpsilonFactor = 20;
   const double kEpsilon =
       kEpsilonFactor * std::numeric_limits<double>::epsilon();
 
@@ -582,22 +583,46 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));
 
       // Test a number of acceleration configurations.
+      // For zero vdot:
       VectorX<double> vdot(2);  // Vector of generalized accelerations.
       vdot = VectorX<double>::Zero(2);
 
       model_->CalcAccelerationKinematicsCache(*mbt_context_, pc, vc, vdot, &ac);
 
       // Retrieve body spatial accelerations from acceleration kinematics cache.
-      const SpatialAcceleration<double>& A_WU =
+      SpatialAcceleration<double> A_WU =
           get_body_spatial_acceleration_in_world(ac, *upper_link_);
-      const SpatialAcceleration<double>& A_WL =
+      SpatialAcceleration<double> A_WL =
           get_body_spatial_acceleration_in_world(ac, *lower_link_);
 
-      const SpatialAcceleration<double> A_WU_expected(
+      SpatialAcceleration<double> A_WU_expected(
           acrobot_benchmark_.CalcLink1SpatialAccelerationInWorldFrame(
               shoulder_angle, shoulder_angle_rate, vdot(0)));
 
-      const SpatialAcceleration<double> A_WL_expected(
+      SpatialAcceleration<double> A_WL_expected(
+          acrobot_benchmark_.CalcLink2SpatialAccelerationInWorldFrame(
+              shoulder_angle, elbow_angle,
+              shoulder_angle_rate, elbow_angle_rate,
+              vdot(0), vdot(1)));
+
+      EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kEpsilon));
+      EXPECT_TRUE(A_WL.IsApprox(A_WL_expected, kEpsilon));
+
+      // For a non-zero vdot:
+      vdot(0) = -1.0;  // Shoulder: rad/sec^2
+      vdot(1) =  2.0;  // Elbow: rad/sec^2
+
+      model_->CalcAccelerationKinematicsCache(*mbt_context_, pc, vc, vdot, &ac);
+
+      // Retrieve body spatial accelerations from acceleration kinematics cache.
+      A_WU = get_body_spatial_acceleration_in_world(ac, *upper_link_);
+      A_WL = get_body_spatial_acceleration_in_world(ac, *lower_link_);
+
+      A_WU_expected = SpatialAcceleration<double>(
+          acrobot_benchmark_.CalcLink1SpatialAccelerationInWorldFrame(
+              shoulder_angle, shoulder_angle_rate, vdot(0)));
+
+      A_WL_expected = SpatialAcceleration<double>(
           acrobot_benchmark_.CalcLink2SpatialAccelerationInWorldFrame(
               shoulder_angle, elbow_angle,
               shoulder_angle_rate, elbow_angle_rate,
