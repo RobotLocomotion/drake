@@ -390,13 +390,11 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
 
   RunSolver(&prog, solver);
 
-  SolverType solver_type;
-  int solver_result;
-  prog.GetSolverResult(&solver_type, &solver_result);
+  const optional<SolverId> solver_id = prog.GetSolverId();
+  ASSERT_TRUE(solver_id);
   double precision = 1e-3;
-  // The precision of Gurobi solver is not as good as Mosek, in
-  // this problem.
-  if (solver_type == SolverType::kGurobi) {
+  // The precision of Gurobi solver is not as good as Mosek, in this problem.
+  if (*solver_id == GurobiSolver::id()) {
     precision = 2e-2;
   }
   for (int i = 0; i < num_nodes - 1; ++i) {

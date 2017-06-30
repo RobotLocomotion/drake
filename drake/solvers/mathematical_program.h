@@ -19,6 +19,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
@@ -2017,15 +2019,9 @@ class MathematicalProgram {
     return solver_options_str_[solver_type];
   }
 
-  /**
-   * Get the name and result code of the particular solver which was
-   * used to solve this MathematicalProgram.  The solver names and
-   * results are not documented here as this function is only intended
-   * for debugging, testing, and support of certain legacy
-   * APIs.
-   */
+  DRAKE_DEPRECATED("Use GetSolverId() instead")
   void GetSolverResult(SolverType* solver_type, int* solver_result) const {
-    *solver_type = solver_type_;
+    *solver_type = *solver_type_;
     *solver_result = solver_result_;
   }
 
@@ -2033,6 +2029,12 @@ class MathematicalProgram {
     solver_type_ = solver_type;
     solver_result_ = solver_result;
   }
+
+  /**
+   * Returns the ID of the solver that was used to solve this program.
+   * Returns empty if Solve() has not been called.
+   */
+  optional<SolverId> GetSolverId() const;
 
   /**
    * Getter for optimal cost at the solution. Will return NaN if there has
@@ -2302,9 +2304,9 @@ class MathematicalProgram {
   Eigen::VectorXd x_initial_guess_;
   std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
-  SolverType solver_type_;
-  int solver_result_;
-  double optimal_cost_;
+  optional<SolverType> solver_type_;
+  int solver_result_{};
+  double optimal_cost_{};
   std::map<SolverType, std::map<std::string, double>> solver_options_double_;
   std::map<SolverType, std::map<std::string, int>> solver_options_int_;
   std::map<SolverType, std::map<std::string, std::string>> solver_options_str_;

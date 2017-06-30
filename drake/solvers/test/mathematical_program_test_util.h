@@ -9,8 +9,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
-void CheckSolver(const MathematicalProgram& prog,
-                 SolverType desired_solver_type);
+void CheckSolver(const MathematicalProgram& prog, SolverId desired_solver_id);
 
 void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver);
