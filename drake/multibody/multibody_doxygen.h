@@ -255,7 +255,11 @@ Next topic: @ref multibody_quantities
 
 Quantities of interest in multibody dynamics have distinct types,
 which we denote with a single letter. For example, a rotation matrix is
-denoted with `R` and a position vector with `p`. Most quantities have a
+denoted with `R` and a position vector with `p`. We can also create a new
+quantity by applying a differentiation operator to an existing quantity (see
+@ref deriv_multibody_quantities).
+
+Most quantities have a
 _reference_ and _target_, either of which may be a frame, basis, or point, that
 specify how the quantity is to be defined. In addition, for purposes of
 computation, vector quantities
@@ -303,9 +307,57 @@ Transform      |  X   |@f$^AX^B@f$|`X_AB`|Frame B's pose in A
 
 <!-- TODO(sherm1,mitiguy) fill out above table? -->
 
-Next topic: @ref multibody_spatial_algebra
+Next topic: @ref deriv_multibody_quantities
 **/
 
+//------------------------------------------------------------------------------
+/** @defgroup deriv_multibody_quantities Derivatives of Multibody Quantities
+@ingroup multibody_notation
+
+Given a physical quantity, say spatial velocity of frame B in frame A, we can
+create another physical quantity by differentiating that quantity. In some
+contexts, we will need a notation for representing the differentiated quantity.
+Since many quantities of interest are vectors, we must specify in which frame
+the derivative is being taken, as well as the usual differential variable. In
+our mathematical notation, a vector derivative operator with respect to time
+@f$ t @f$, taken in frame @f$ F @f$, and applied to some vector quantity
+@f$ Q @f$, is written @f$ \frac{^Fd}{dt}\,Q @f$. Our monogram notation for this
+is `DtF_Q`. When computing with these derived quantities (which are themselves
+vectors), we need to specify an expressed-in frame E. In mathematical notation
+we would write @f$ [\frac{^Fd}{dt}\,Q]_E @f$. In monogram notation, `DtF_Q_E`.
+
+It is important to note that the derivative operator applies to a physical
+quantity, _not_ the computational representation of that quantity. Thus it is
+not correct to include an expressed-in frame for the physical quantity Q in
+the symbol name; the expressed-in frame applies only to the final derived
+quantity. For example, say you have `V_PB`, the spatial velocity of frame B in
+frame P. In your code, you may choose to express that in frame E, and write
+`V_PB_E`. If you want to differentiate that to find the acceleration A_PB, the
+derivative must be taken in P, and then expressed in whatever frame you like,
+lets say the world frame W here. It does not matter what expressed-in frame you
+were using for `V_PB`. So the symbol for the derivative would be `DtP_V_PB_W`
+which should be interpreted @f$ [\frac{^Pd}{dt}\,^PV^B]_W @f$; the `_W` goes
+with the result, not the quantity being differentiated. Of course in that case
+a better notation is `A_PB`! But that is only because we took the derivative
+in frame P. We could instead have taken the derivative in W (or any other frame)
+in which case there is no conventional name for the result `DtW_V_PB`; it
+is just the time derivative of spatial quantity V_PB taken in frame W, with no
+expressed-in frame specified.
+
+If you use this derivative notation for variables in your code, you should
+_always_ specify the expressed-in frame at the end of the symbol, and _never_
+specify the expressed-in frame for the quantity being differentiated.
+
+When writing comments that contain derivations involving vector derivatives,
+you can use Unicode to approximate mathematical notation like `ᴬd/dt Q` or use
+`DtA(Q)` as you prefer. Either way is readable in the header file, but the
+former may be easier for the Doxygen reader to understand. One drawback of
+Unicode is that while _most_ uppercase letters are available as superscripts, a
+few of them are not. So on occasion you may have to choose your frame names to
+accommodate this very strange quirk of Unicode.
+
+Next topic: @ref multibody_spatial_algebra
+**/
 
 //------------------------------------------------------------------------------
 /** @defgroup multibody_spatial_algebra Spatial Algebra
