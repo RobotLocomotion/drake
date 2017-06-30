@@ -1,7 +1,4 @@
-if(ipopt_FOUND OR NLopt_FOUND)
-  drake_add_cc_test(NAME trajectory_optimization_test SIZE medium)
-  target_link_libraries(trajectory_optimization_test drakeTrajectoryOptimization drakeSystemPrimitives)
-endif()
+# trajectory_optimization_test deliberately not tested for cmake builds.
 
 drake_add_cc_test(direct_collocation_constraint_test)
 target_link_libraries(direct_collocation_constraint_test drakeTrajectoryOptimization)
