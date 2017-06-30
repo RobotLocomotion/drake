@@ -16,26 +16,11 @@ if(BUILD_TESTING)
     set_tests_properties(test_python_${module_name} PROPERTIES ENVIRONMENT "PYTHONPATH=$PYTHONPATH:${DRAKE_INSTALL_PYTHON_DIR}")
   endfunction()
 
-  if(snopt_FOUND)
-    drake_add_python_test(pydrake.test.testRBTIK)
-    drake_add_python_test(pydrake.test.testPR2IK)
-  endif()
-
   drake_add_python_test(pydrake.test.testCommon)
   drake_add_python_test(pydrake.test.test_urdf_parser)
   drake_add_python_test(pydrake.test.testRBTTransformPoints)
   drake_add_python_test(pydrake.test.testRBTCoM)
   drake_add_python_test(pydrake.test.testForwardDiff)
   drake_add_python_test(pydrake.test.testSymbolic)
-
-  if(gurobi_FOUND)
-    drake_add_python_test(pydrake.test.testMathematicalProgram)
-    drake_add_python_test(pydrake.test.testGurobiSolver)
-  endif()
-
   drake_add_python_test(pydrake.test.test_ipopt_solver)
-
-  if(mosek_FOUND)
-    drake_add_python_test(pydrake.test.testMosekSolver)
-  endif()
 endif()
