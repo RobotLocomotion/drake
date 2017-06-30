@@ -79,26 +79,6 @@ std::string RemoveFileExtension(const std::string& filepath) {
   return filepath.substr(0, last_dot);
 }
 
-template <typename T>
-const std::array<vtkSmartPointer<T>, 3>
-MakeVtkInstanceArray(const vtkNew<T>& element1,
-                     const vtkNew<T>& element2,
-                     const vtkNew<T>& element3) {
-  return  std::array<vtkSmartPointer<T>, 3>{{
-      vtkSmartPointer<T>(element1.GetPointer()),
-      vtkSmartPointer<T>(element2.GetPointer()),
-      vtkSmartPointer<T>(element3.GetPointer())}};
-}
-
-template <typename T>
-const std::array<vtkSmartPointer<T>, 2>
-MakeVtkInstanceArray(const vtkNew<T>& element1,
-                     const vtkNew<T>& element2) {
-  return  std::array<vtkSmartPointer<T>, 2>{{
-      vtkSmartPointer<T>(element1.GetPointer()),
-      vtkSmartPointer<T>(element2.GetPointer())}};
-}
-
 // Defines a color based on its three primary additive colors: red, green, and
 // blue. Each of these primary additive colors are in the range of [0, 255].
 struct Color {
@@ -365,15 +345,15 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
           Eigen::Isometry3d(math::rpy2rotmat(orientation))),
       kCameraFixed(fix_camera), color_palette_(tree.bodies.size()) {
   if (!show_window) {
-    for (auto& window : MakeVtkInstanceArray(color_depth_render_window_,
-                                             label_render_window_)) {
+    for (auto& window : VtkUtil::MakeVtkPointerArray(color_depth_render_window_,
+                                                     label_render_window_)) {
       window->SetOffScreenRendering(1);
     }
   }
 
   const auto sky_color = color_palette_.get_normalized_sky_color();
-  const auto renderers = MakeVtkInstanceArray<vtkRenderer>(
-      color_depth_renderer_, label_renderer_);
+  const auto renderers = VtkUtil::MakeVtkPointerArray(color_depth_renderer_,
+                                                      label_renderer_);
   const vtkSmartPointer<vtkTransform> vtk_X_WC =
       VtkUtil::ConvertToVtkTransform(X_WB_initial_ * X_BC_);
 
@@ -393,7 +373,7 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   color_depth_renderer_->UseFXAAOn();
 #endif
 
-  const auto windows = MakeVtkInstanceArray<vtkRenderWindow>(
+  const auto windows = VtkUtil::MakeVtkPointerArray(
       color_depth_render_window_, label_render_window_);
   for (size_t i = 0; i < windows.size(); ++i) {
     windows[i]->SetSize(color_camera_info_.width(),
@@ -409,10 +389,10 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   label_filter_->SetInput(label_render_window_.GetPointer());
   label_filter_->SetInputBufferTypeToRGB();
 
-  auto exporters = MakeVtkInstanceArray<vtkImageExport>(
+  auto exporters = VtkUtil::MakeVtkPointerArray(
       color_exporter_, depth_exporter_, label_exporter_);
 
-  auto filters = MakeVtkInstanceArray<vtkWindowToImageFilter>(
+  auto filters = VtkUtil::MakeVtkPointerArray(
       color_filter_, depth_filter_, label_filter_);
 
   for (int i = 0; i < 3; ++i) {
@@ -569,9 +549,9 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         vtkSmartPointer<vtkTransform> vtk_transform =
             VtkUtil::ConvertToVtkTransform(visual.getWorldTransform());
 
-        auto renderers = MakeVtkInstanceArray<vtkRenderer>(
-            color_depth_renderer_, label_renderer_);
-        auto actors = MakeVtkInstanceArray<vtkActor>(actor, actor_for_label);
+        auto renderers = VtkUtil::MakeVtkPointerArray(color_depth_renderer_,
+                                                      label_renderer_);
+        auto actors = VtkUtil::MakeVtkPointerArray(actor, actor_for_label);
         for (size_t i = 0; i < actors.size(); ++i) {
           actors[i]->SetMapper(mapper.GetPointer());
           actors[i]->SetUserTransform(vtk_transform);
@@ -592,8 +572,8 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   auto color = color_palette_.get_normalized_terrain_color();
   terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
   terrain_actor_->GetProperty()->LightingOff();
-  for (auto& renderer : MakeVtkInstanceArray<vtkRenderer>(color_depth_renderer_,
-                                                          label_renderer_)) {
+  for (auto& renderer : VtkUtil::MakeVtkPointerArray(color_depth_renderer_,
+                                                     label_renderer_)) {
     renderer->AddActor(terrain_actor_.GetPointer());
   }
 }
@@ -684,8 +664,8 @@ void RgbdCamera::Impl::UpdateModelPoses(
     vtkSmartPointer<vtkTransform> vtk_X_WC =
         VtkUtil::ConvertToVtkTransform(X_WB * X_BC_);
 
-    for (auto& renderer : MakeVtkInstanceArray<vtkRenderer>(
-             color_depth_renderer_, label_renderer_)) {
+    for (auto& renderer : VtkUtil::MakeVtkPointerArray(color_depth_renderer_,
+                                                       label_renderer_)) {
       auto camera = renderer->GetActiveCamera();
       // TODO(kunimatsu-tri) Once VTK 5.8 support dropped, rewrite this
       // using `vtkCamera`'s `SetModelTransformMatrix` method which is

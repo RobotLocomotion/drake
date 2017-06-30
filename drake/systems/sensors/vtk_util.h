@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <vtkNew.h>
 #include <vtkPlaneSource.h>
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
@@ -10,6 +11,14 @@
 namespace drake {
 namespace systems {
 namespace sensors {
+
+
+/// An array type for vtkSmartPointer.
+///
+/// @tparam T The VTK class type stored in vtkSmartPointer.
+/// @tparam N The size of array.
+template <typename T, size_t N>
+using vtkPointerArray = std::array<vtkSmartPointer<T>, N>;
 
 /// Utility class for the VTK library.
 class VtkUtil {
@@ -31,6 +40,18 @@ class VtkUtil {
   /// @param transform The transform to convert into a `vtkTransform`.
   static vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
       const Eigen::Isometry3d& transform);
+
+  /// Makes vtkPointerArray from one or multiple pointer(s) for VTK objects
+  /// wrapped by vtkNew.
+  ///
+  /// @tparam transform The transform to convert into a `vtkTransform`.
+  template <typename T, typename... Ts, size_t N = 1 + sizeof...(Ts)>
+  static const vtkPointerArray<T, N> MakeVtkPointerArray(
+      const vtkNew<T>& element, const vtkNew<Ts>&... elements) {
+    return vtkPointerArray<T, N>{{
+        vtkSmartPointer<T>(element.GetPointer()),
+        vtkSmartPointer<Ts>(elements.GetPointer())...}};
+  }
 };
 
 }  // namespace sensors
