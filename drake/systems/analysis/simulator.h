@@ -641,9 +641,16 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 //                [t0, tf]; on exit, the set of witness functions that triggered
 //                over [t0, tw], where tw is the first time that any witness
 //                function triggered.
-// @pre The context and state are at tf and x(tf), respectively.
+// @pre The context and state are at tf and x(tf), respectively, and at least
+//      one witness function has triggered over [t0, tf].
 // @post The context will be isolated to the first witness function trigger(s),
-//       to within the requisite interval length.
+//       to within the requisite interval length. It is guaranteed that all
+//       triggered witness functions change sign over [t0, tw].
+// @note We assume that, if a witness function triggers over an interval
+//       [a, b], it also triggers over any larger interval [a, d], for d > b
+//       and d ≤ the maximum integrator step size (per WitnessFunction
+//       documentation, we assume that a witness function crosses zero at most
+//       once over an interval of size [t0, tf]).
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -664,13 +671,14 @@ void Simulator<T>::IsolateWitnessTriggers(
   // Get the witness isolation interval length.
   const optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
 
-  // Check whether the witness function is to be isolated.
+  // Check whether witness functions *are* to be isolated. If not, the witnesses
+  // that were triggered on entry will be the set that is returned.
   if (!witness_iso_len)
     return;
 
-  // Mini function for integrating the system forward in time.
-  std::function<void(const T&)> fwd_int =
-      [t0, x0, context, this](const T& t_des) {
+  // Mini function for integrating the system forward in time from t0.
+  std::function<void(const T&)> integrate_forward =
+      [&t0, &x0, context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
     context->set_time(t0);
     context->get_mutable_continuous_state()->SetFromVector(x0);
@@ -681,94 +689,46 @@ void Simulator<T>::IsolateWitnessTriggers(
     }
   };
 
-  // Set the first witness function trigger and the witness function that
-  // makes that trigger.
-  T t_first_witness = tf;
+  // Loop until the isolation window is sufficiently small.
+  VectorX<T> wc(witnesses.size());
+  T a = t0;
+  T b = tf;
+  do {
+    // Compute the midpoint and evaluate the witness functions at it.
+    T c = (a + b) / 2;
+    integrate_forward(c);
 
-  // Loop over all witness functions.
-  for (size_t i = 0; i < witnesses.size(); ++i) {
-    // Set interval endpoints (in time).
-    T a = t0;
-    T b = t_first_witness;
-
-    // Set the witness function values.
-    T fa = w0[i];
-
-    // Integrate to b.
-    fwd_int(t_first_witness);
-
-    // Evaluate the witness function.
-    T fb = get_system().EvaluateWitness(*context, *witnesses[i]);
-
-    // See whether there has been a sign change; after shrinking the time
-    // interval one or more times, there may no longer be one, in which case
-    // we can skip the bisection for this interval.
-    if (!witnesses[i]->should_trigger(fa, fb))
-      continue;
-
-    // Since the witness function is triggering, fa should not be exactly zero.
-    DRAKE_DEMAND(fa != 0);
-
-    while (true) {
-      // Determine the midpoint.
-      T c = (a + b) / 2;
-
-      // Restore the state and time to t0, then integrate to c.
-      fwd_int(c);
-
-      // Evaluate the witness function.
-      T fc = get_system().EvaluateWitness(*context, *witnesses[i]);
-
-      // Bisect.
-      if (witnesses[i]->should_trigger(fa, fc)) {
-        b = c;
-        fb = fc;
-      } else {
-        DRAKE_DEMAND(witnesses[i]->should_trigger(fc, fb));
-        a = c;
-        fa = fc;
-      }
-
-      // If the time is sufficiently isolated- to an absolute tolerance if t0
-      // is small, to a relative tolerance if t0 is large- then quit.
-      // NOTE: we have already validated that witness_iso_len contains a value.
-      // The hack below prevents OS X from throwing a vtable exception during
-      // build.
-      if (b - a < witness_iso_len.value_or(999)) {
-        // The trigger time is always at the right endpoint of the interval,
-        // thereby ensuring that the witness will not trigger immediately when
-        // the continuous state integration process continues (after the
-        // requisite handler is called).
-        const T t_trigger = b;
-
-        // TODO(edrumwri): Move this to the end of the function (and
-        // only call this once) when we are confident that the witness function
-        // changes sign at the end of the interval (i.e., the following
-        // assertion).
-        // Integrate to the trigger time.
-        fwd_int(t_trigger);
-
-        // TODO(edrumwri): This check is expensive. Remove it once we are
-        // confident.
-        // Verify that the witness function changed sign.
-        const T f_trigger = witnesses[i]->Evaluate(*context);
-        DRAKE_DEMAND(f_trigger * fa <= 0);
-
-        // Only clear the list of witnesses if t_trigger strictly less than
-        // t_first_witness.
-        DRAKE_DEMAND(t_first_witness >= t_trigger);
-        if (t_trigger < t_first_witness)
-          triggered_witnesses->clear();
-
-        // Set the first trigger time and add the witness index.
-        triggered_witnesses->push_back(witnesses[i]);
-        t_first_witness = t_trigger;
-        break;
-      }
+    // See whether any witness functions trigger.
+    bool trigger = false;
+    for (size_t i = 0; i < witnesses.size(); ++i) {
+      wc[i] = get_system().EvaluateWitness(*context, *witnesses[i]);
+      if (witnesses[i]->should_trigger(w0[i], wc[i]))
+        trigger = true;
     }
-  }
 
-  DRAKE_DEMAND(t_first_witness <= tf);
+    // If no witness function triggered, we can continue integrating forward.
+    if (!trigger) {
+      // NOTE: Since we're always checking that the sign changes over [t0,c],
+      // it's also feasible to replace the two lines below with "a = c" without
+      // violating Simulator's contract to only integrate once over the interval
+      // [a, c], for some c <= b before per-step events are handled (i.e., it's
+      // unacceptable to take two steps of (c - a)/2 without processing per-step
+      // events first). That change would avoid handling unnecessary per-step
+      // events- we know no other events are to be handled between t0 and tf-
+      // but the current logic appears easier to follow.
+      triggered_witnesses->clear();
+      return;
+    } else {
+      b = c;
+    }
+  } while (b - a > witness_iso_len.value());
+
+  // Determine the set of triggered witnesses.
+  triggered_witnesses->clear();
+  for (size_t i = 0; i < witnesses.size(); ++i) {
+    if (witnesses[i]->should_trigger(w0[i], wc[i]))
+      triggered_witnesses->push_back(witnesses[i]);
+  }
 }
 
 // Integrates the continuous state forward in time while attempting to locate
@@ -825,7 +785,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
                              &triggered_witnesses_);
 
-    // TODO(edrumwri): Store witness function(s) that triggered.
+    // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->get_name(), context.get_time());
@@ -833,9 +793,10 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
           *fn, events);
     }
 
-    // Indicate a "sample time was hit". In more understandable terms, this
-    // means that an event should be handled on the next simulation loop.
-    return true;
+    // Indicate a "sample time was hit" if at least one witness function
+    // triggered (meaning that an event should be handled on the next simulation
+    // loop).
+    return !triggered_witnesses_.empty();
   }
 
   // No witness function triggered; handle integration as usual.
