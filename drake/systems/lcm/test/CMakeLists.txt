@@ -12,11 +12,6 @@ if(lcm_FOUND)
   target_link_libraries(lcm_translator_dictionary_test
       drakeLcmSystem)
 
-  drake_add_cc_test(lcm_driven_loop_test)
-  target_link_libraries(lcm_driven_loop_test
-      drakeLcmDrivenLoop
-      drakeSystemPrimitives)
-
   drake_add_cc_test(serializer_test)
   target_link_libraries(serializer_test drakeLcmSystem)
 
