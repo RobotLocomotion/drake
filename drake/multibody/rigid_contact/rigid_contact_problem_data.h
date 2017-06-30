@@ -32,12 +32,14 @@ struct RigidContactAccelProblemData {
   /// to k/2 in [Anitescu 2003].
   std::vector<int> r;
 
-  /// Coefficients of friction for the sliding contacts. The size of this vector
-  /// should be equal to `sliding_contacts.size()`.
+  /// Coefficients of friction for the s = n - y sliding contacts (where `y` is
+  /// the number of non-sliding contacts). The size of this vector should be
+  /// equal to `sliding_contacts.size()`.
   VectorX<T> mu_sliding;
 
-  /// Coefficients of friction for the non-sliding contacts. The size of this
-  /// vector should be equal to `non_sliding_contacts.size()`.
+  /// Coefficients of friction for the y = n - s non-sliding contacts (where `s`
+  /// is the number of sliding contacts). The size of this vector should be
+  /// equal to `non_sliding_contacts.size()`.
   VectorX<T> mu_non_sliding;
 
   /// The ℝⁿˣᵐ Jacobian matrix that transforms generalized velocities (m is the
@@ -49,18 +51,19 @@ struct RigidContactAccelProblemData {
   /// times the generalized velocity (∈ ℝᵐ) of the rigid body system.
   VectorX<T> Ndot_x_v;
 
-  /// The ℝⁿʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
+  /// The ℝʸʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
   /// dimension of generalized velocity) into velocities projected along the
   /// k vector that span the contact tangents (used to linearize the friction
   /// cone) at the n *non-sliding* contact points. For contact problems in two
   /// dimensions, r will be one. For a friction pyramid in three dimensions, r
   /// would be two. While the definition of the dimension of the Jacobian matrix
-  /// above indicates that every contact uses the same "r", the code imposes no
-  /// such requirement.
+  /// above indicates that every one of the y non-sliding contacts uses the
+  /// same "r", the code imposes no such requirement.
   MatrixX<T> F;
 
-  /// This ℝⁿʳ vector is the time derivative of the matrix F (defined above)
-  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system.
+  /// This ℝʸʳ vector is the time derivative of the matrix F (defined above)
+  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system. As above,
+  /// m is the dimension of the system generalized velocity.
   VectorX<T> Fdot_x_v;
 
   /// The ℝⁿˣᵐ matrix (N - μQ) that transforms generalized velocities (m is the
@@ -68,13 +71,16 @@ struct RigidContactAccelProblemData {
   /// contact normals at the n contact points, where Q ∈ ℝⁿˣᵐ is the Jacobian
   /// matrix that transforms generalized velocities (m is the dimension of
   /// generalized velocity) into velocities projected along the directions of
-  /// sliding at the n *sliding* contact points. The μQ factor indicates that
+  /// sliding at the s *sliding* contact points (rows of Q that correspond to
+  /// non-sliding contacts are set to zero). The μQ factor indicates that
   /// any normal forces applied using this Jacobian will yield frictional
   /// effects for sliding contacts.
   MatrixX<T> N_minus_mu_Q;
 
   /// The ℝᵐ vector f, the generalized external force vector that
-  /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces.
+  /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces. m
+  /// is the dimension of the generalized force, which is also equal to the
+  /// domension of the generalized velocity.
   VectorX<T> f;
 
   /// A function for solving the equation MX = B for matrix X, given input

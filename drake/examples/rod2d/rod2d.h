@@ -1,6 +1,5 @@
 #pragma once
 
-#include "gtest/gtest_prod.h"
 #include <memory>
 #include <utility>
 #include <vector>
@@ -430,9 +429,9 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   // Utility method for determining the World frame location of one of three
   // points on the rod whose origin is Ro. Let r be the half-length of the rod.
   // Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
-  static Vector2<T> CalcRodEndpoint(const T& x, const T& y, const int k,
+  static Vector2<T> CalcRodEndpoint(const T& x, const T& y, int k,
                                     const T& ctheta, const T& stheta,
-                                    const double half_rod_len);
+                                    double half_rod_len);
 
   // Given a location p_WC of a point C in the World frame, define the point Rc
   // of the rod that is coincident with C, and report Rc's World frame velocity
@@ -465,7 +464,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
 
  private:
   friend class Rod2DDAETest;
-  FRIEND_TEST(Rod2DDAETest, RigidContactProblemDataBallistic);
+  friend class Rod2DDAETest_RigidContactProblemDataBallistic_Test;
 
   Vector3<T> GetJacobianRow(const systems::Context<T>& context,
                             const Vector2<T>& p,
@@ -473,7 +472,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   Vector3<T> GetJacobianDotRow(const systems::Context<T>& context,
                                const Vector2<T>& p,
                                const Vector2<T>& dir) const;
-  Matrix2<T> GetRotationMatrixDerivative(T theta) const;
+  Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot) const;
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
   void CalcRigidContactProblemData(const systems::Context<T>& context,

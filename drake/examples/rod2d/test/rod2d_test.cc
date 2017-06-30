@@ -191,14 +191,16 @@ class Rod2DDAETest : public ::testing::Test {
         data.non_sliding_contacts.size());
     EXPECT_EQ(data.N_minus_mu_Q.rows(), num_contacts);
     EXPECT_EQ(data.N.rows(), num_contacts);
-    EXPECT_EQ(data.F.rows(), data.non_sliding_contacts.size());
-    EXPECT_GT(data.f.size(), 0);
+    EXPECT_EQ(data.f.size(), data.N.cols());
     EXPECT_EQ(data.Fdot_x_v.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.Ndot_x_v.size(), num_contacts);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
     EXPECT_TRUE(data.solve_inertia);
+
+    // Only true because this problem is 2D.
+    EXPECT_EQ(data.F.rows(), data.non_sliding_contacts.size());
   }
 
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
@@ -945,7 +947,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalSliding) {
   SetRestingHorizontalConfig();
   ContinuousState<double>& xc =
       *context_->get_mutable_continuous_state();
-  xc[3] = 1.0;
+  xc[3] = 1.0;  // horizontal velocity of the rod center-of-mass.
 
   // Compute the problem data.
   RigidContactAccelProblemData<double> data;

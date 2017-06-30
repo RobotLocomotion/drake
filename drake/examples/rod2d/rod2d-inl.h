@@ -301,9 +301,9 @@ int Rod2D<T>::get_k(const systems::Context<T>& context) const {
 }
 
 template <class T>
-Vector2<T> Rod2D<T>::CalcRodEndpoint(const T& x, const T& y, const int k,
+Vector2<T> Rod2D<T>::CalcRodEndpoint(const T& x, const T& y, int k,
                                      const T& ctheta, const T& stheta,
-                                     const double half_rod_len) {
+                                     double half_rod_len) {
   const T cx = x + k * ctheta * half_rod_len;
   const T cy = y + k * stheta * half_rod_len;
   return Vector2<T>(cx, cy);
@@ -344,13 +344,13 @@ T Rod2D<T>::GetSlidingVelocityTolerance() const {
 
 // Gets the time derivative of a 2D rotation matrix.
 template <class T>
-Matrix2<T> Rod2D<T>::GetRotationMatrixDerivative(T theta) const {
+Matrix2<T> Rod2D<T>::GetRotationMatrixDerivative(T theta, T thetadot) const {
   using std::cos;
   using std::sin;
   const T cth = cos(theta), sth = sin(theta);
   Matrix2<T> Rdot;
   Rdot << -sth, -cth, cth, -sth;
-  return Rdot;
+  return Rdot * thetadot;
 }
 
 template <class T>
@@ -436,9 +436,9 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 
   // Compute the translational velocity of the contact point.
   const Vector2<T> xdot = v.segment(0, 2);
-  const Matrix2<T> Rdot = GetRotationMatrixDerivative(theta);
   const T& thetadot = v[2];
-  const Vector2<T> pdot = xdot + Rdot * u * thetadot;
+  const Matrix2<T> Rdot = GetRotationMatrixDerivative(theta, thetadot);
+  const Vector2<T> pdot = xdot + Rdot * u;
 
   // Compute cross product of the time derivative of the moment arm (expressed
   // in the world frame) and the direction.
@@ -530,7 +530,7 @@ void Rod2D<T>::CalcRigidContactProblemData(
 
   // Form N - mu*Q (Q is sliding contact direction Jacobian).
   data->N_minus_mu_Q = data->N;
-  VectorX<T> Qrow;
+  Vector3<T> Qrow;
   for (int i = 0, j = 0; i < nc; ++i) {
     if (std::binary_search(data->non_sliding_contacts.begin(),
                            data->non_sliding_contacts.end(), i))
@@ -540,7 +540,7 @@ void Rod2D<T>::CalcRigidContactProblemData(
     } else {
       Qrow = GetJacobianRow(context, points[i], -contact_tan);
     }
-    data->N.row(i) -= data->mu_sliding[j] * Qrow;
+    data->N_minus_mu_Q.row(i) -= data->mu_sliding[j] * Qrow;
     ++j;
   }
 
