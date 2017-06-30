@@ -16,14 +16,10 @@ namespace multibody {
 
 /// This class is one of the cache entries in MultibodyTreeContext. It holds the
 /// kinematics results of computations that depend not only on the generalized
-/// positions of the system, but also on its generalized velocities.
-/// Velocity kinematics results include:
-/// - Spatial velocity `V_WB` for each body B in the model as measured and
-///   expressed in the world frame W.
-/// - Spatial velocity `V_PB` for each body B in the model as measured and
-///   expressed in the inboard (or parent) body frame P.
-/// - Spatial velocity `V_FMB_W` of the body frame B as if instantaneously
-///   moving with the outboard frame M, measured in the inboard frame F and
+/// positions and generalized velocities, but also on the time derivatives of
+/// the generalized coordinates.
+/// Accleration kinematics results include:
+/// - Spatial acceleration `A_WB` for each body B in the model as measured and
 ///   expressed in the world frame W.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
@@ -39,7 +35,7 @@ class AccelerationKinematicsCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
 
-  /// Constructs a velocity kinematics cache entry for the given
+  /// Constructs an acceleration kinematics cache entry for the given
   /// MultibodyTreeTopology.
   /// In Release builds specific entries are left uninitialized resulting in a
   /// zero cost operation. However in Debug builds those entries are set to NaN
@@ -50,15 +46,16 @@ class AccelerationKinematicsCache {
     Allocate();
     DRAKE_ASSERT_VOID(InitializeToNaN());
     // Sets defaults.
-    A_WB_pool_[world_index()].SetZero();  // World's velocity is always zero.
+    // World's acceleration is always zero.
+    A_WB_pool_[world_index()].SetZero();
   }
 
-  /// Returns a constant reference to the spatial velocity `V_WB` of the body B
-  /// (associated with node @p body_node_index) as measured and expressed in the
-  /// world frame W.
+  /// Returns a constant reference to the spatial acceleration `A_WB` of the
+  /// body B (associated with node @p body_node_index) as measured and expressed
+  /// in the world frame W.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
-  /// @returns `V_WB` the spatial velocity of the body frame B measured and
+  /// @returns `A_WB` the spatial acceleration of the body frame B measured and
   ///                 expressed in the world frame W.
   const SpatialAcceleration<T>& get_A_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
@@ -75,12 +72,12 @@ class AccelerationKinematicsCache {
   // Pools store entries in the same order multibody tree nodes are
   // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore
   // clients of this class will access entries by BodyNodeIndex, see
-  // `get_V_WB()` for instance.
+  // `get_A_WB()` for instance.
 
-  // The type of the pools for storing spatial velocities.
+  // The type of the pools for storing spatial accelerations.
   typedef std::vector<SpatialAcceleration<T>> SpatialAcceleration_PoolType;
 
-  // Allocates resources for this position kinematics cache.
+  // Allocates resources for this acceleration kinematics cache.
   void Allocate() {
     A_WB_pool_.resize(num_nodes_);
   }

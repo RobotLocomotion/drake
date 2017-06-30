@@ -570,11 +570,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // =========================================================================
   // VelocityKinematicsCache Accessors and Mutators.
 
+  // Returns a const reference to the spatial velocity of the body B associated
+  // with this node as measured and expressed in the world frame W.
   const SpatialVelocity<T>& get_V_WB(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.index);
   }
 
+  /// Mutable version of get_V_WB().
   SpatialVelocity<T>& get_mutable_V_WB(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_WB(topology_.index);
   }
@@ -615,11 +618,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // =========================================================================
   // AccelerationKinematicsCache Accessors and Mutators.
 
+  // Returns a const reference to the spatial acceleration of the body B
+  // associated with this node as measured and expressed in the world frame W.
   const SpatialAcceleration<T>& get_A_WB(
       const AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(topology_.index);
   }
 
+  /// Mutable version of get_A_WB().
   SpatialAcceleration<T>& get_mutable_A_WB(
       AccelerationKinematicsCache<T>* ac) const {
     return ac->get_mutable_A_WB(topology_.index);
