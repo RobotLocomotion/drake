@@ -141,8 +141,8 @@ drake_cc_library(
     srcs = ["gray_code.cc"],
     hdrs = ["gray_code.h"],
     deps = [
-        "@eigen",
         "//drake/common",
+        "@eigen",
     ],
 )
 

@@ -327,33 +327,34 @@ install(
 # Gather all of libdrake.so's dependent headers.
 transitive_hdrs_library(
     name = "libdrake_headers",
-    deps = _LIBDRAKE_COMPONENTS,
     visibility = [],
+    deps = _LIBDRAKE_COMPONENTS,
 )
 
 # Depend on Gurobi's shared library iff Gurobi is enabled.
 cc_library(
     name = "gurobi_deps",
+    visibility = [],
     deps = select({
         "//tools:with_gurobi": ["@gurobi"],
         "//conditions:default": [],
     }),
-    visibility = [],
 )
 
 # Depend on Mosek's shared library iff Mosek is enabled.
 cc_library(
     name = "mosek_deps",
+    visibility = [],
     deps = select({
         "//tools:with_mosek": ["@mosek"],
         "//conditions:default": [],
     }),
-    visibility = [],
 )
 
 # Depend on the subset of VTK's shared libraries that Drake uses.
 cc_library(
     name = "vtk_deps",
+    visibility = [],
     deps = [
         # TODO(jwnimmer-tri) This duplicates the list of VTK libraries needed
         # by //drake/sensors.  We should find a way for ":drake_shared_library"
@@ -368,7 +369,6 @@ cc_library(
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
     ],
-    visibility = [],
 )
 
 # Provide a cc_library target that provides libdrake.so, its headers, and its
@@ -379,11 +379,11 @@ cc_library(
 # here which dependencies are coming from the WORKSPACE in the form of *.so.
 cc_library(
     name = "drake_shared_library",
+    visibility = ["//drake/bindings:__pkg__"],
     deps = [
         ":gurobi_deps",
         ":libdrake_headers",
         ":mosek_deps",
         ":vtk_deps",
     ],
-    visibility = ["//drake/bindings:__pkg__"],
 )

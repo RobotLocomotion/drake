@@ -165,8 +165,8 @@ drake_cc_googletest(
     deps = [
         ":inverse_dynamics",
         "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/parsers",
         "//drake/common:find_resource",
+        "//drake/multibody/parsers",
     ],
 )
 
@@ -178,8 +178,8 @@ drake_cc_googletest(
     deps = [
         ":inverse_dynamics_controller",
         "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/parsers",
         "//drake/common:find_resource",
+        "//drake/multibody/parsers",
     ],
 )
 
