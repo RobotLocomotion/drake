@@ -299,7 +299,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Computes the across-mobilizer spatial accelerations `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
   /// This method can be thought of as the application of the operation
-  /// `̇̇v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`, where
+  /// `v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`, where
   /// `nv` is the number of generalized velocities of this mobilizer (see
   /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
   /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial

@@ -636,8 +636,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return ac->get_mutable_A_WB(topology_.index);
   }
 
-  /// Returns a const reference to the spatial velocity `V_WP` of the body P in
-  /// the parent node as measured and expressed in the world frame.
+  /// Returns a const reference to the spatial acceleration `A_WP` of the body
+  /// frame P in the parent node as measured and expressed in the world frame.
   const SpatialAcceleration<T>& get_A_WP(
       const AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(topology_.parent_body_node);
