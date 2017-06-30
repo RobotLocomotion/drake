@@ -400,11 +400,14 @@ void Rod2D<T>::GetContactPointsTangentVelocities(
 }
 
 // Gets the row of a contact Jacobian matrix, given a point of contact, @p p,
-// and projection direction, @p dir.
+// and projection direction (unit vector), @p dir. Aborts if @p dir is not a
+// unit vector.
 template <class T>
 Vector3<T> Rod2D<T>::GetJacobianRow(const systems::Context<T>& context,
                                     const Vector2<T>& p,
                                     const Vector2<T>& dir) const {
+  DRAKE_DEMAND(dir.norm() < 10 * std::numeric_limits<double>::epsilon());
+
   // Get rod configuration variables.
   const Vector3<T> q = GetRodConfig(context);
 
@@ -415,11 +418,14 @@ Vector3<T> Rod2D<T>::GetJacobianRow(const systems::Context<T>& context,
 }
 
 // Gets the time derivative of a row of a contact Jacobian matrix, given a
-// point of contact, @p p, and projection direction, @p dir.
+// point of contact, @p p, and projection direction (unit vector), @p dir.
+// Aborts if @p dir is not a unit vector.
 template <class T>
 Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
                                        const Vector2<T>& p,
                                        const Vector2<T>& dir) const {
+  DRAKE_DEMAND(dir.norm() < 10 * std::numeric_limits<double>::epsilon());
+
   // Get rod state variables.
   const Vector3<T> q = GetRodConfig(context);
   const Vector3<T> v = GetRodVelocity(context);
