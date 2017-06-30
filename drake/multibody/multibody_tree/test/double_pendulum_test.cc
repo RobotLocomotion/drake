@@ -177,6 +177,19 @@ class PendulumTests : public ::testing::Test {
     return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
   }
 
+  // Helper method to extract spatial velocity from the position kinematics.
+  // TODO(amcastro-tri):
+  // Replace this by a method
+  // Body<T>::get_spatial_velocity_in_world(const Context<T>&)
+  // when we can place cache entries in the context.
+  const SpatialVelocity<double>& get_body_spatial_velocity_in_world(
+      const VelocityKinematicsCache<double>& vc,
+      const Body<double>& body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
+  }
+
  protected:
   // For testing only so that we can retrieve/set (future to be) cache entries,
   // this method initializes the poses of each link in the position kinematics
@@ -494,6 +507,63 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity(), kEpsilon));
       EXPECT_TRUE(X_WU.matrix().isApprox(X_WU_expected.matrix(), kEpsilon));
       EXPECT_TRUE(X_WL.matrix().isApprox(X_WL_expected.matrix(), kEpsilon));
+    }
+  }
+}
+
+TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
+  // This is the minimum factor of the machine precision within which these
+  // tests pass.
+  const int kEpsilonFactor = 5;
+  const double kEpsilon =
+      kEpsilonFactor * std::numeric_limits<double>::epsilon();
+
+  PositionKinematicsCache<double> pc(model_->get_topology());
+  VelocityKinematicsCache<double> vc(model_->get_topology());
+
+  const int num_angles = 50;
+  const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
+  for (double ishoulder = 0; ishoulder < num_angles; ++ishoulder) {
+    const double shoulder_angle = -M_PI + ishoulder * kDeltaAngle;
+    for (double ielbow = 0; ielbow < num_angles; ++ielbow) {
+      const double elbow_angle = -M_PI + ielbow * kDeltaAngle;
+
+      // Update position kinematics.
+      shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+      model_->CalcPositionKinematicsCache(*mbt_context_, &pc);
+
+      // Set the shoulder's angular velocity.
+      const double shoulder_angle_rate = 1.0;
+      shoulder_mobilizer_->set_angular_rate(context_.get(),
+                                            shoulder_angle_rate);
+      EXPECT_EQ(shoulder_mobilizer_->get_angular_rate(*context_),
+                shoulder_angle_rate);
+
+      // Set the elbow's angular velocity.
+      const double elbow_angle_rate = -0.5;
+      elbow_mobilizer_->set_angular_rate(context_.get(),
+                                         elbow_angle_rate);
+      EXPECT_EQ(elbow_mobilizer_->get_angular_rate(*context_),
+                elbow_angle_rate);
+      model_->CalcVelocityKinematicsCache(*mbt_context_, pc, &vc);
+
+      // Retrieve body spatial velocities from velocity kinematics cache.
+      const SpatialVelocity<double>& V_WU =
+          get_body_spatial_velocity_in_world(vc, *upper_link_);
+      const SpatialVelocity<double>& V_WL =
+          get_body_spatial_velocity_in_world(vc, *lower_link_);
+
+      const SpatialVelocity<double> V_WU_expected(
+          acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
+              shoulder_angle, shoulder_angle_rate));
+      const SpatialVelocity<double> V_WL_expected(
+          acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
+              shoulder_angle, elbow_angle,
+              shoulder_angle_rate, elbow_angle_rate));
+
+      EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kEpsilon));
+      EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));
     }
   }
 }

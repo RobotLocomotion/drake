@@ -1,6 +1,9 @@
 drake_add_cc_test(decision_variable_test)
 target_link_libraries(decision_variable_test drakeOptimization)
 
+drake_add_cc_test(indeterminate_test)
+target_link_libraries(indeterminate_test drakeOptimization)
+
 drake_add_cc_test(binding_test)
 target_link_libraries(binding_test drakeOptimization)
 
@@ -69,6 +72,9 @@ target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
 drake_add_cc_test(mosek_solver_test)
 target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
 
+drake_add_cc_test(mixed_integer_optimization_util_test)
+target_link_libraries(mixed_integer_optimization_util_test drakeCommon drakeMixedIntegerOptimizationUtil)
+
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
 
@@ -81,18 +87,8 @@ target_link_libraries(snopt_solver_test drakeOptimizationTest)
 drake_add_cc_test(solver_id_test)
 target_link_libraries(solver_id_test drakeOptimization)
 
-if (mosek_FOUND)
-  drake_add_cc_test(NAME rotation_constraint_test rotation_constraint_test.cc
-    SIZE large)
-  target_link_libraries(rotation_constraint_test drakeRotationConstraint)
-endif()
-
-if (gurobi_FOUND)
-  if(NOT APPLE)
-	  drake_add_cc_test(NAME rotation_constraint_limit_test SIZE large)
-	  target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
-  endif()
-endif()
+drake_add_cc_test(solver_type_converter_test)
+target_link_libraries(solver_type_converter_test drakeOptimization)
 
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)

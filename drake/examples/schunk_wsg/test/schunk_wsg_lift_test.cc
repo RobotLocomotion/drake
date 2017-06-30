@@ -17,8 +17,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
@@ -61,7 +61,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   // Add a joint to the world which can lift the gripper.
   const auto lifter_id_table =
       parsers::sdf::AddModelInstancesFromSdfFile(
-      GetDrakePath() + "/examples/schunk_wsg/test/test_lifter.sdf",
+      FindResourceOrThrow("drake/examples/schunk_wsg/test/test_lifter.sdf"),
       multibody::joints::kFixed, nullptr, tree.get());
   EXPECT_EQ(lifter_id_table.size(), 1);
   *lifter_instance_id = lifter_id_table.begin()->second;
@@ -73,9 +73,9 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
       tree->FindBody("lifted_link"), Eigen::Vector3d(0, -0.05, 0.05),
       Eigen::Vector3d::Zero());
   const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
-      GetDrakePath() +
-      "/manipulation/models/wsg_50_description/sdf/"
-      "schunk_wsg_50_ball_contact.sdf",
+      FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf/"
+          "schunk_wsg_50_ball_contact.sdf"),
       multibody::joints::kFixed, gripper_frame, tree.get());
   EXPECT_EQ(gripper_id_table.size(), 1);
   *gripper_instance_id = gripper_id_table.begin()->second;
@@ -86,7 +86,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
       nullptr,
       Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d::Zero());
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      GetDrakePath() + "/multibody/models/box_small.urdf",
+      FindResourceOrThrow("drake/multibody/models/box_small.urdf"),
       multibody::joints::kQuaternion, box_frame, tree.get());
 
   tree->compile();
@@ -217,9 +217,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Open the gripper.  Due to the number of links involved, this is
   // surprisingly complicated.
-  systems::Context<double>* plant_context =
+  systems::Context<double>& plant_context =
       model->GetMutableSubsystemContext(
-          simulator.get_mutable_context(), plant);
+          *plant, simulator.get_mutable_context());
   Eigen::VectorXd plant_initial_state =
       Eigen::VectorXd::Zero(plant->get_num_states());
   plant_initial_state.head(plant->get_num_positions())
@@ -239,7 +239,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   plant_initial_state(3) = 1.27982;
   plant_initial_state(4) = 0.0550667;
   plant_initial_state(5) = 0.009759;
-  plant->set_state_vector(plant_context, plant_initial_state);
+  plant->set_state_vector(&plant_context, plant_initial_state);
 
   auto context = simulator.get_mutable_context();
 

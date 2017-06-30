@@ -36,11 +36,11 @@ install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
+    workspace = CMAKE_PACKAGE,
+    targets = [":yaml_cpp"],
     hdrs = public_headers,
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = ["LICENSE"],
-    targets = [":yaml_cpp"],
-    workspace = CMAKE_PACKAGE,
+    docs = ["LICENSE"],
     deps = [":install_cmake_config"],
 )

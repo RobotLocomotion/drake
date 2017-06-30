@@ -155,18 +155,18 @@ excluded_headers = [
 
 install(
     name = "install",
-    hdrs = ["@protobuf//:well_known_protos"],
-    allowed_externals = ["@protobuf//:protobuf"],
-    doc_dest = "share/doc/protobuf",
-    guess_hdrs = "PACKAGE",
-    guess_hdrs_exclude = excluded_headers,
-    hdr_strip_prefix = ["src"],
-    license_docs = ["@protobuf//:LICENSE"],
     targets = [
         "@protobuf//:protobuf",
         "@protobuf//:protobuf_lite",
         "@protobuf//:protoc_lib",
         "@protobuf//:protoc",
     ],
+    hdrs = ["@protobuf//:well_known_protos"],
+    hdr_strip_prefix = ["src"],
+    guess_hdrs = "PACKAGE",
+    guess_hdrs_exclude = excluded_headers,
+    docs = ["@protobuf//:LICENSE"],
+    doc_dest = "share/doc/protobuf",
+    allowed_externals = ["@protobuf//:protobuf"],
     deps = [":install_cmake_config"],
 )

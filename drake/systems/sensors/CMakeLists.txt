@@ -24,14 +24,10 @@ set(drakeSensors_HEADERS
 
 set(drakeSensors_TARGET_LINK_LIBRARIES
     drakeRBM
+    drakeRendering
     drakeRigidBodyPlant
     drakeSystemFramework
 )
-
-if(VTK_FOUND)
-  list(APPEND drakeSensors_SRC_FILES rgbd_camera.cc vtk_util.cc)
-  list(APPEND drakeSensors_HEADERS rgbd_camera.h vtk_util.h)
-endif()
 
 if(lcm_FOUND AND Bullet_FOUND)
   list(APPEND drakeSensors_SRC_FILES depth_sensor_to_lcm_point_cloud_message.cc)
@@ -50,36 +46,6 @@ add_library_with_exports(LIB_NAME drakeSensors SOURCE_FILES
 
 target_link_libraries(drakeSensors
     ${drakeSensors_TARGET_LINK_LIBRARIES})
-
-if(VTK_FOUND)
-  target_link_libraries(drakeSensors drakeRendering)
-  if(VTK_MAJOR_VERSION GREATER 5)
-    target_link_libraries(drakeSensors
-      vtkCommonCore
-      vtkCommonDataModel
-      vtkCommonTransforms
-      vtkFiltersGeneral
-      vtkFiltersSources
-      vtkIOGeometry
-      vtkIOImage
-      vtkRenderingCore
-      vtkRenderingOpenGL2)
-  else()
-    target_link_libraries(drakeSensors vtkIO vtkRendering)
-  endif()
-  target_include_directories(drakeSensors PUBLIC ${VTK_INCLUDE_DIRS})
-
-  if(lcm_FOUND AND robotlocomotion-lcmtypes_FOUND)
-    add_executable(rgbd_camera_publish_lcm_example rgbd_camera_publish_lcm_example.cc)
-    target_link_libraries(rgbd_camera_publish_lcm_example
-      drakeCommon
-      drakeSensors
-      drakeSystemAnalysis
-      drakeLcmSystem
-      drakeMultibodyParsers
-      gflags)
-  endif()
-endif()
 
 drake_install_libraries(drakeSensors)
 drake_install_headers(${drakeSensors_HEADERS})

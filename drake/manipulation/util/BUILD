@@ -49,8 +49,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":robot_state_msg_translator",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",

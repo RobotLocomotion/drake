@@ -12,7 +12,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_state_machine.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -92,9 +92,9 @@ using manipulation::planner::ConstraintRelaxingIk;
 void RunPickAndPlaceDemo() {
   lcm::LCM lcm;
 
-  const std::string iiwa_path = GetDrakePath() +
-      "/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_primitive_collision.urdf";
+  const std::string iiwa_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_primitive_collision.urdf");
   const std::string iiwa_end_effector_name = "iiwa_link_ee";
 
   // Makes a WorldState, and sets up LCM subscriptions.

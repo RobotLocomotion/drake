@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <random>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -74,7 +75,8 @@ class RandomSource : public LeafSystem<double> {
  private:
   // Computes a random number and stores it in the discrete state.
   void DoCalcUnrestrictedUpdate(const Context<double>& context,
-                                State<double>* state) const override {
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>* state) const override {
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
     auto* updates = state->get_mutable_discrete_state();

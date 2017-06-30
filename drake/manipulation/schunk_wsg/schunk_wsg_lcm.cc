@@ -27,7 +27,7 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
                                 &SchunkWsgTrajectoryGenerator::OutputTarget);
   // The update period below matches the polling rate from
   // drake-schunk-driver.
-  this->DeclareDiscreteUpdatePeriodSec(0.05);
+  this->DeclarePeriodicDiscreteUpdate(0.05);
 }
 
 void SchunkWsgTrajectoryGenerator::OutputTarget(
@@ -49,6 +49,7 @@ void SchunkWsgTrajectoryGenerator::OutputTarget(
 
 void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
+    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);

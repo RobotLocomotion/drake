@@ -35,6 +35,7 @@ drake_cc_binary(
     ],
     deps = [
         ":kuka_pick_and_place_monolithic",
+        "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",

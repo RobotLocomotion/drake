@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/Quadrotor/quadrotor_plant.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -56,9 +56,9 @@ class GenericQuadrotor: public systems::Diagram<T> {
   }
 
   void SetState(systems::Context<T> *context, VectorX<T> x) const {
-    systems::Context<T> *plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
-    plant_->set_state(plant_context, x);
+    systems::Context<T>& plant_context =
+        this->GetMutableSubsystemContext(*plant_, context);
+    plant_->set_state(&plant_context, x);
   }
 
  private:
@@ -76,7 +76,7 @@ class RigidBodyQuadrotor: public systems::Diagram<T> {
     auto tree = std::make_unique<RigidBodyTree<T>>();
 
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+        FindResourceOrThrow("drake/examples/Quadrotor/quadrotor.urdf"),
         multibody::joints::kRollPitchYaw, nullptr, tree.get());
 
     systems::DiagramBuilder<T> builder;
@@ -89,9 +89,9 @@ class RigidBodyQuadrotor: public systems::Diagram<T> {
   }
 
   void SetState(systems::Context<T> *context, VectorX<T> x) const {
-    systems::Context<T> *plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
-    plant_->set_state_vector(plant_context, x);
+    systems::Context<T>& plant_context =
+        this->GetMutableSubsystemContext(*plant_, context);
+    plant_->set_state_vector(&plant_context, x);
   }
 
  private:

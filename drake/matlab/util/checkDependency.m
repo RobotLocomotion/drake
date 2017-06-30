@@ -54,19 +54,6 @@ else % then try to evaluate the dependency now...
         matlabpool;
       end
 
-    case 'spotless'
-      conf.spotless_enabled = logical(exist('msspoly','class'));
-      if ~conf.spotless_enabled
-        if ~pod_pkg_config('spotless') && nargout<1
-          disp(' ');
-          disp(' SPOTLESS not found.  spotless support will be disabled.');
-          disp(' To re-enable, install spotless using drake''s cmake option WITH_SPOTLESS=ON');
-          disp(' Or install it directly from https://github.com/spot-toolbox/spotless and add it to your path');
-          disp(' ');
-        end
-        conf.spotless_enabled = logical(exist('msspoly','class'));
-      end
-
     case 'lcm'
       conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       if (~conf.lcm_enabled)
@@ -136,23 +123,6 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
-    case {'snopt','studentsnopt'}
-      [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
-      if (~conf.snopt_enabled && ~conf.studentsnopt_enabled)
-        % Capture the output to prevent a spurious or duplicate console warning.
-        snopt_enabled = pod_pkg_config('snopt');
-        [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
-      end
-
-      if ~conf.snopt_enabled && ~conf.studentsnopt_enabled && nargout<1
-        disp(' ');
-        disp(' SNOPT not found.  SNOPT support will be disabled.');
-        disp(' To re-enable, add the SNOPT matlab folder to your path and rerun addpath_drake.');
-        disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
-        disp(' studentSNOPT can be obtained from <a href="http://www.cam.ucsd.edu/~peg/Software.html">http://www.cam.ucsd.edu/~peg/Software.html</a> .');
-        disp(' ');
-      end
-
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
 
@@ -188,96 +158,6 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
-    case 'sedumi'
-      conf.sedumi_enabled = logical(exist('sedumi','file'));
-      if (~conf.sedumi_enabled)
-        conf.sedumi_enabled = pod_pkg_config('sedumi') && logical(exist('sedumi','file'));
-      end
-
-      if (conf.sedumi_enabled)
-        %  sedumiA=[10,2,3,4;5,7,6,4];
-        %  sedumib=[4;6];
-        %  sedumic=[0;1;0;1];
-        %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
-        %  if(~sedumiT)
-        %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
-        %  end
-      elseif nargout<1
-        disp(' ');
-        disp(' SeDuMi not found.  SeDuMi support will be disabled.');
-        disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
-        disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
-        disp(' ');
-      end
-
-    case 'mosek'
-      conf.mosek_enabled = logical(exist('mosekopt','file'));
-      if (~conf.mosek_enabled)
-        conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
-      end
-
-      if (conf.mosek_enabled)
-        % Check for license issues
-        try
-          mosekopt();
-        catch ex;
-          conf.mosek_enabled = false;
-          disp(getReport(ex,'extended'));
-        end
-      end
-
-      if ~conf.mosek_enabled && nargout<1
-        disp(' ');
-        disp(' Mosek not found or not working. Mosek support will be disabled.');
-        disp(' Note that Mosek does provide free academic licenses')
-        disp('    To enable, install Mosek and a license from');
-        disp('    <a href="http://mosek.com/">http://mosek.com/</a> .');
-        disp(' ');
-      end
-
-    case 'gurobi'
-      conf.gurobi_enabled = logical(exist('gurobi','file')); %&& ~isempty(getenv('GUROBI_HOME')));
-      if (~conf.gurobi_enabled)
-        conf.gurobi_enabled = pod_pkg_config('gurobi'); %&& ~isempty(getenv('GUROBI_HOME'));
-      end
-
-      if (conf.gurobi_enabled)
-        % gurobi.mex* is loaded, now test for license issues
-        model.obj = 1;
-        model.A  = sparse(1,1);
-        model.rhs = 0;
-        model.sense = '=';
-        params.outputflag = false;
-        try
-          result = gurobi(model, params);
-        catch ex;
-          conf.gurobi_enabled = false;
-          disp(getReport(ex,'extended'));
-        end
-      end
-
-      if ~conf.gurobi_enabled && nargout<1
-        disp(' ');
-        disp(' GUROBI not found or not working. GUROBI support will be disabled.');
-        disp(' Note that GUROBI does provide free academic licenses')
-        disp('    To enable, install GUROBI and a license from');
-        disp('    <a href="http://www.gurobi.com/download/licenses/free-academic">http://www.gurobi.com/download/licenses/free-academic</a> .');
-        disp(' Then, you will need to set several environment variables.');
-        disp(' Please see <a href="http://drake.mit.edu/quickstart">http://drake.mit.edu/quickstart</a> for more info.');
-        disp(' ');
-      end
-
-    case 'gurobi_mex'
-      conf.gurobi_mex_enabled = logical(exist('gurobiQPmex'));
-
-
-      if ~conf.gurobi_mex_enabled && nargout<1
-        disp(' ');
-        disp(' GUROBI MEX not found.  GUROBI MEX support will be disabled.');
-        disp('    To enable, install the GUROBI pod in your pod collection, and rerun make config; make in drake');
-        disp(' ');
-      end
-
     case 'fastqp'
       conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
 
@@ -291,17 +171,6 @@ else % then try to evaluate the dependency now...
       if ~conf.cplex_enabled && nargout<1
         disp(' ');
         disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun addpath_drake');
-        disp(' ');
-      end
-
-    case 'yalmip'
-      conf.yalmip_enabled = logical(exist('sdpvar','file'));
-      if (~conf.yalmip_enabled)
-        conf.yalmip_enabled = pod_pkg_config('yalmip') && logical(exist('sdpvar','file'));
-      end
-      if ~conf.yalmip_enabled && nargout<1
-        disp(' ');
-        disp(' YALMIP not found.  To enable, install YALMIP (e.g. by cloning https://github.com/RobotLocomotion/yalmip into drake-distro and running make).');
         disp(' ');
       end
 
@@ -320,54 +189,6 @@ else % then try to evaluate the dependency now...
         disp(' Bullet not found.  To resolve this you will have to rerun make (from the shell)');
         disp(' ');
       end
-
-    case 'avl'
-      if ~isfield(conf,'avl') || isempty(conf.avl)
-        path_to_avl = getCMakeParam('AVL_EXECUTABLE');
-        if isempty(path_to_avl) || strcmp(path_to_avl,'AVL_EXECUTABLE-NOTFOUND')
-          if nargout<1
-            disp(' ');
-            disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
-            disp(' ');
-          end
-          conf.avl = '';
-        else
-          conf.avl = path_to_avl;
-        end
-      end
-      conf.avl_enabled = ~isempty(conf.avl);
-
-    case 'ffmpeg'
-      if ~isfield(conf,'ffmpeg') || isempty(conf.ffmpeg)
-        path_to_ffmpeg = getCMakeParam('FFMPEG_EXECUTABLE');
-        if isempty(path_to_ffmpeg) || strcmp(path_to_ffmpeg,'FFMPEG_EXECUTABLE-NOTFOUND')
-          if nargout<1
-            disp(' ');
-            disp(' FFmpeg support is disabled.  To enable it, install FFmpeg or Libav, then re-run CMake.');
-            disp(' ');
-          end
-          conf.ffmpeg = '';
-        else
-          conf.ffmpeg = path_to_ffmpeg;
-        end
-      end
-      conf.ffmpeg_enabled = ~isempty(conf.ffmpeg);
-
-    case 'xfoil'
-      if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-        path_to_xfoil = getCMakeParam('XFOIL_EXECUTABLE');
-        if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'XFOIL_EXECUTABLE-NOTFOUND')
-          if nargout<1
-            disp(' ');
-            disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
-            disp(' ');
-          end
-          conf.xfoil = '';
-        else
-          conf.xfoil = path_to_xfoil;
-        end
-      end
-      conf.xfoil_enabled = ~isempty(conf.xfoil);
 
     case 'fmincon'
       conf.fmincon_enabled = logical(exist('fmincon.m','file'));
@@ -399,24 +220,6 @@ else % then try to evaluate the dependency now...
         end
       end
 
-    case 'nonlinearprogramsnoptmex'
-      conf.nonlinearprogramsnoptmex_enabled = logical(exist('NonlinearProgramSnoptmex','file')==3);
-      if(~conf.nonlinearprogramsnoptmex_enabled)
-        if(nargout<1)
-          disp(' ');
-          disp(' NonlinearProgramSnoptmex is disabled. To enable it, compile NonlinearProgramSnoptmex.cpp with snopt');
-          disp(' ');
-        end
-      end
-
-    case 'iris'
-      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file'));
-      if ~conf.iris_enabled && nargout<1
-        disp(' ');
-        disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');
-        disp(' ');
-      end
-
     case 'cpp_bindings'
       conf.cpp_bindings_enabled = logical(exist('+rbtree/RigidBodyTree.m','file'));
       if ~conf.cpp_bindings_enabled && nargout < 1
@@ -440,59 +243,4 @@ if (nargout<1 && ~ok)
   error(['Drake:MissingDependency:',dep],['Cannot find required dependency: ',dep]);
 end
 
-end
-
-function success=pod_pkg_config(podname)
-  success=false;
-  cmd = ['addpath_',podname];
-  if exist(cmd,'file')
-    disp([' Calling ',cmd]);
-    try
-      eval(cmd);
-      success=true;
-    catch ex
-      disp(getReport(ex,'extended'))
-    end
-  end
-
-  if ~success && nargout<1
-    disp(['Cannot find required pod ',podname]);
-  end
-end
-
-function tf = verStringLessThan(a,b)
-  % checks if the version string a is less than the version string b
-
-  pa = getParts(a); pb = getParts(b);
-  tf = pa(1)<pb(1) || pa(2)<pb(2) || pa(3)<pb(3);
-
-  function parts = getParts(V)
-    parts = sscanf(V, '%d.%d.%d')';
-    if length(parts) < 3
-      parts(3) = 0; % zero-fills to 3 elements
-    end
-  end
-end
-
-function [snopt_enabled,studentsnopt_enabled] = snoptEnabled()
-% check if snopt exists, if it does, check if it is student version
-snopt_val = logical(exist('snopt.m','file'));
-if(snopt_val)
-  snopt_path = which('snopt.m');
-  snopt_readme=fileread([snopt_path(1:end-7),'README']);
-  if(isempty(regexp(snopt_readme,'studentVersions','match')))
-    snopt_val = 1;
-  else
-    snopt_val = 2;
-  end
-else
-  snopt_val = 0;
-end
-if(snopt_val == 0)
-  snopt_enabled = false;
-  studentsnopt_enabled = false;
-else
-  snopt_enabled = snopt_val == 1;
-  studentsnopt_enabled = snopt_val == 2;
-end
 end

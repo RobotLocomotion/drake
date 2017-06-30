@@ -107,7 +107,7 @@ exports_files(
 
 exports_files(
     ["third_party/jchart2d/LICENSE"],
-    visibility = ["//:__pkg__"],
+    visibility = ["//tools/install/jchart2d:__pkg__"],
 )
 
 exports_files(

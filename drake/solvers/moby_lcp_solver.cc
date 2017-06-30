@@ -15,6 +15,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 
 namespace drake {
 namespace solvers {
@@ -178,7 +179,7 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverResult(solver_type(), 0);
+  prog.SetSolverResult(SolverType::kMobyLCP, 0);
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
@@ -1397,6 +1398,16 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
 
   // still here?  failure...
   return false;
+}
+
+template <typename T>
+SolverId MobyLCPSolver<T>::solver_id() const {
+  return MobyLcpSolverId::id();
+}
+
+SolverId MobyLcpSolverId::id() {
+  static const never_destroyed<SolverId> singleton{"Moby LCP"};
+  return singleton.access();
 }
 
 // Instantiate templates.

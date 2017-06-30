@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -167,12 +167,12 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
 // x {zero base offset, non zero base offset}.
 TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
   std::vector<std::string> models = {
-      drake::GetDrakePath() +
-          "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_polytope_collision.urdf",
-      drake::GetDrakePath() +
-          "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"};
+      FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_polytope_collision.urdf"),
+      FindResourceOrThrow(
+          "drake/examples/Valkyrie/urdf/urdf/"
+          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf")};
 
   std::vector<multibody::joints::FloatingBaseType> floating_types = {
     multibody::joints::FloatingBaseType::kFixed,
@@ -196,9 +196,8 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
 
 // Tests an underactuated robot.
 TEST_F(RobotStateLcmMessageTranslatorTest, TestUnderActuated) {
-  std::string model =
-      GetDrakePath() +
-      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+  std::string model = FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
   std::vector<multibody::joints::FloatingBaseType> types = {
       multibody::joints::FloatingBaseType::kFixed,
       multibody::joints::FloatingBaseType::kQuaternion,
@@ -212,9 +211,9 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestUnderActuated) {
 
 // Tests RobotStateLcmMessageTranslator::CheckMessageVectorSize()
 TEST_F(RobotStateLcmMessageTranslatorTest, TestSizeCheck) {
-  std::string model = GetDrakePath() +
-                      "/manipulation/models/iiwa_description/urdf/"
-                      "iiwa14_polytope_collision.urdf";
+  std::string model = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
   Initialize(model, true, nullptr,
       multibody::joints::FloatingBaseType::kFixed);
 
@@ -244,9 +243,9 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestSizeCheck) {
 }
 
 TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeExtraJointNames) {
-  std::string model = GetDrakePath() +
-                      "/manipulation/models/iiwa_description/urdf/"
-                      "iiwa14_polytope_collision.urdf";
+  std::string model = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
   // Since this test only affects the non floating base joints, so fixed base
   // is sufficient.
   Initialize(model, true, nullptr,
@@ -308,9 +307,9 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeExtraJointNames) {
 }
 
 TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeLessJointNames) {
-  std::string model = GetDrakePath() +
-                      "/manipulation/models/iiwa_description/urdf/"
-                      "iiwa14_polytope_collision.urdf";
+  std::string model = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
   // Since this test only affects the non floating base joints, so fixed base
   // is sufficient.
   Initialize(model, true, nullptr,

@@ -307,6 +307,10 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
   // now it has to be repeated before each image output port calculation.
   void UpdateModelPoses(const BasicVector<double>& input_vector) const;
 
+  // Initializes camera pose first and sets camera pose in the world frame X_WC.
+  void SetModelTransformMatrixToVtkCamera(
+      vtkCamera* camera, const vtkSmartPointer<vtkTransform>& X_WC) const;
+
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double>& frame_;
   const CameraInfo color_camera_info_;
@@ -367,22 +371,21 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     }
   }
 
-  CreateRenderingWorld();
-
-  vtkNew<vtkCamera> camera;
-  camera->SetPosition(0., 0., 0.);
-  camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
-  camera->SetViewUp(0., -1, 0.);  // Sets y-down.
-  camera->SetViewAngle(fov_y * 180. / M_PI);
-  camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
-
   const auto sky_color = color_palette_.get_normalized_sky_color();
   const auto renderers = MakeVtkInstanceArray<vtkRenderer>(
       color_depth_renderer_, label_renderer_);
+  const vtkSmartPointer<vtkTransform> vtk_X_WC =
+      VtkUtil::ConvertToVtkTransform(X_WB_initial_ * X_BC_);
+
   for (auto& renderer : renderers) {
-    renderer->SetActiveCamera(camera.GetPointer());
     renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
+    auto camera = renderer->GetActiveCamera();
+    camera->SetViewAngle(fov_y * 180. / M_PI);
+    camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
+    SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
   }
+
+  CreateRenderingWorld();
 
 #if ((VTK_MAJOR_VERSION == 7) && (VTK_MINOR_VERSION >= 1)) || \
     (VTK_MAJOR_VERSION >= 8)
@@ -432,8 +435,21 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
                  Eigen::Vector3d(0., 0., 0.), fov_y, show_window, fix_camera) {}
 
 
+void RgbdCamera::Impl::SetModelTransformMatrixToVtkCamera(
+    vtkCamera* camera, const vtkSmartPointer<vtkTransform>& X_WC) const {
+  // vtkCamera contains a transformation as the internal state and
+  // ApplyTransform multiplies a given transformation on top of the internal
+  // transformation. Thus, resetting 'Set{Position, FocalPoint, ViewUp}' is
+  // needed here.
+  camera->SetPosition(0., 0., 0.);
+  camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
+  camera->SetViewUp(0., -1, 0.);  // Sets y-down. For the detail, please refere
+  // to CameraInfo's document.
+  camera->ApplyTransform(X_WC);
+}
+
+
 void RgbdCamera::Impl::CreateRenderingWorld() {
-  auto X_CW = (X_WB_initial_ * X_BC_).inverse();
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
@@ -550,11 +566,8 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         // color.
         actor_for_label->GetProperty()->LightingOff();
 
-        // Converts visual's pose in the world to the one in the camera
-        // coordinate system.
-        const auto X_CVisual = X_CW * visual.getWorldTransform();
         vtkSmartPointer<vtkTransform> vtk_transform =
-            VtkUtil::ConvertToVtkTransform(X_CVisual);
+            VtkUtil::ConvertToVtkTransform(visual.getWorldTransform());
 
         auto renderers = MakeVtkInstanceArray<vtkRenderer>(
             color_depth_renderer_, label_renderer_);
@@ -571,20 +584,14 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   }
 
   // Adds a flat terrain.
-  vtkSmartPointer<vtkPlaneSource> plane = VtkUtil::CreateSquarePlane(
-      kTerrainSize);
-  vtkSmartPointer<vtkTransform> transform =
-      VtkUtil::ConvertToVtkTransform(X_CW);
-
+  vtkSmartPointer<vtkPlaneSource> plane =
+      VtkUtil::CreateSquarePlane(kTerrainSize);
   vtkNew<vtkPolyDataMapper> mapper;
   mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
   auto color = color_palette_.get_normalized_terrain_color();
-  terrain_actor_->GetProperty()->SetColor(color.r,
-                                          color.g,
-                                          color.b);
+  terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
   terrain_actor_->GetProperty()->LightingOff();
-  terrain_actor_->SetUserTransform(transform);
   for (auto& renderer : MakeVtkInstanceArray<vtkRenderer>(color_depth_renderer_,
                                                           label_renderer_)) {
     renderer->AddActor(terrain_actor_.GetPointer());
@@ -671,48 +678,43 @@ void RgbdCamera::Impl::UpdateModelPoses(
       input_vector.CopyToVector().head(tree_.get_num_positions());
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
-  Eigen::Isometry3d X_WB;
-  if (kCameraFixed) {
-    X_WB = X_WB_initial_;
-  } else {
-    // Updates camera pose.
-    X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+  // Updates camera poses.
+  if (!kCameraFixed) {
+    Eigen::Isometry3d X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+    vtkSmartPointer<vtkTransform> vtk_X_WC =
+        VtkUtil::ConvertToVtkTransform(X_WB * X_BC_);
+
+    for (auto& renderer : MakeVtkInstanceArray<vtkRenderer>(
+             color_depth_renderer_, label_renderer_)) {
+      auto camera = renderer->GetActiveCamera();
+      // TODO(kunimatsu-tri) Once VTK 5.8 support dropped, rewrite this
+      // using `vtkCamera`'s `SetModelTransformMatrix` method which is
+      // introduced since VTK 5.10.
+      SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
+    }
   }
 
-  // TODO(kunimatsu-tri) Once VTK 5.8 support dropped, rewrite camera pose
-  // transformation using `vtkCamera`'s `SetModelTransformMatrix` method which
-  // is introduced since VTK 5.10.
-  auto const X_CW = (X_WB * X_BC_).inverse();
-
+  // Updates body poses.
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
 
-    const auto X_CB = X_CW * tree_.CalcBodyPoseInWorldFrame(cache, *body);
+    const auto X_WBody = tree_.CalcBodyPoseInWorldFrame(cache, *body);
 
     for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
       const auto& visual = body->get_visual_elements()[i];
-      const auto X_CVisual = X_CB * visual.getLocalTransform();
-      vtkSmartPointer<vtkTransform> vtk_transform =
-          VtkUtil::ConvertToVtkTransform(X_CVisual);
+      const auto X_WV = X_WBody * visual.getLocalTransform();
+      vtkSmartPointer<vtkTransform> vtk_X_WV =
+          VtkUtil::ConvertToVtkTransform(X_WV);
       // `id_object_maps_` is modified here. This is OK because 1) we are just
       // copying data to the memory spaces allocated at construction time
       // and 2) we are not outputting these data to outside the class.
       for (auto& id_object_map : id_object_maps_) {
         auto& actor = id_object_map.at(body->get_body_index()).at(i);
-        actor->SetUserTransform(vtk_transform);
+        actor->SetUserTransform(vtk_X_WV);
       }
     }
-  }
-
-  if (!kCameraFixed) {
-    // Updates terrain.
-    vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(X_CW);
-    // `terrain_actor_` is modified here, but this is OK.  For the detail, see
-    // the comment above for `id_object_maps_`.
-    terrain_actor_->SetUserTransform(vtk_transform);
   }
 }
 

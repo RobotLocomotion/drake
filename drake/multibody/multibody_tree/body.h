@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/unused.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -56,24 +55,15 @@ class BodyFrame : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
-  Isometry3<T> CalcBodyPoseInThisFrame(
-      const systems::Context<T>& context) const final {
-    unused(context);
+  Isometry3<T> CalcPoseInBodyFrame(
+      const systems::Context<T>&) const final {
     return Isometry3<T>::Identity();
   }
 
   Isometry3<T> CalcOffsetPoseInBody(
-      const systems::Context<T>& context,
+      const systems::Context<T>&,
       const Isometry3<T>& X_FQ) const final {
-    unused(context);
     return X_FQ;
-  }
-
-  Isometry3<T> CalcBodyPoseInOtherFrame(
-      const systems::Context<T>& context,
-      const Isometry3<T>& X_QF) const final {
-    unused(context);
-    return X_QF;
   }
 
  private:

@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/math/autodiff.h"
+#include "drake/solvers/mathematical_program.h"
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
@@ -549,7 +550,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   }
   prog.SetDecisionVariableValues(sol);
   prog.SetOptimalCost(*F);
-  prog.SetSolverResult(solver_type(), info);
+  prog.SetSolverResult(SolverType::kSnopt, info);
 
   // todo: extract the other useful quantities, too.
 

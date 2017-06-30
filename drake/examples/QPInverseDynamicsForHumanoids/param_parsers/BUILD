@@ -64,6 +64,7 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_tree_alias_groups",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -80,6 +81,7 @@ drake_cc_googletest(
         ":param_parser",
         ":rigid_body_tree_alias_groups",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )

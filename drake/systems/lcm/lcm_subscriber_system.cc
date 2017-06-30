@@ -123,12 +123,13 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
         received_message_.data(), received_message_.size(),
         &abstract_state->get_mutable_value(kStateIndexMessage));
   }
-  abstract_state->get_mutable_value(kStateIndexMessageCount).
-      GetMutableValue<int>() = received_message_count_;
+  abstract_state->get_mutable_value(kStateIndexMessageCount)
+      .GetMutableValue<int>() = received_message_count_;
 }
 
 void LcmSubscriberSystem::DoCalcNextUpdateTime(
-    const Context<double>& context, UpdateActions<double>* events) const {
+    const Context<double>& context,
+    systems::CompositeEventCollection<double>* events, double* time) const {
   // Gets the last message count from either abstract state or discrete state.
   int last_message_count;
   if (translator_ == nullptr) {
@@ -145,18 +146,23 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   // Has a new message. Schedule an update event.
   if (last_message_count != received_message_count_) {
     // TODO(siyuan): should be context.get_time() once #5725 is resolved.
-    events->time = context.get_time() + 0.0001;
-    DiscreteEvent<double> event;
+    *time = context.get_time() + 0.0001;
     if (translator_ == nullptr) {
-      event.action =
-          DiscreteEvent<double>::ActionType::kUnrestrictedUpdateAction;
+      EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
+          events->get_mutable_unrestricted_update_events();
+      uu_events.add_event(
+          std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
+              Event<double>::TriggerType::kTimed));
     } else {
-      event.action = DiscreteEvent<double>::ActionType::kDiscreteUpdateAction;
+      EventCollection<DiscreteUpdateEvent<double>>& du_events =
+          events->get_mutable_discrete_update_events();
+      du_events.add_event(
+          std::make_unique<systems::DiscreteUpdateEvent<double>>(
+              Event<double>::TriggerType::kTimed));
     }
-    events->events.push_back(event);
   } else {
     // Use base class' implementation.
-    LeafSystem<double>::DoCalcNextUpdateTime(context, events);
+    LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   }
 }
 

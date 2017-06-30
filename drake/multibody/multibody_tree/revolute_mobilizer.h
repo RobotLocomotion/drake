@@ -88,11 +88,45 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angle(
       systems::Context<T>* context, const T& angle) const;
 
+  /// Gets the rate of change, in radians per second, of `this` mobilizer's
+  /// angle (see get_angle()) from `context`. See class documentation for the
+  /// angle sign convention.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @returns The rate of change of `this` mobilizer's angle in the `context`.
+  const T& get_angular_rate(const systems::Context<T> &context) const;
+
+  /// Sets the rate of change, in radians per second, of this `this` mobilizer's
+  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
+  /// `context`.
+  /// See class documentation for the angle sign convention.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @param[in] theta_dot The desired rate of change of `this` mobilizer's
+  /// angle in radians per second.
+  /// @returns a constant reference to `this` mobilizer.
+  const RevoluteMobilizer<T>& set_angular_rate(
+      systems::Context<T> *context, const T& theta_dot) const;
+
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
   /// about this mobilizer's axis (@see get_revolute_axis().)
+  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
+  /// stored in `context`.
+  /// This method aborts in Debug builds if `v.size()` is not one.
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const final;
+
+  /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
+  /// M measured and expressed in frame F as a function of the rotation angle
+  /// and input angular velocity `v` about this mobilizer's axis
+  /// (@see get_revolute_axis()).
+  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
+  /// stored in `context`.
+  /// This method aborts in Debug builds if `v.size()` is not one.
+  SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v) const final;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;
@@ -102,8 +136,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   // Operations with fixed-sized quantities can be optimized at compile time
   // and therefore they are highly preferred compared to the very slow dynamic
   // sized quantities.
-  using MobilizerBase::nq;
-  using MobilizerBase::nv;
+  using MobilizerBase::kNq;
+  using MobilizerBase::kNv;
 
   // Default joint axis expressed in the inboard frame F.
   Vector3<double> axis_F_;

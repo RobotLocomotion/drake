@@ -83,10 +83,6 @@ function(drake_add_test)
     set_tests_properties(${_NAME} PROPERTIES
       LABELS ${_size}
       TIMEOUT ${_timeout})
-    if(TESTS_ENVIRONMENT)
-      set_tests_properties(${_NAME} PROPERTIES
-        ENVIRONMENT "${TESTS_ENVIRONMENT}")
-    endif()
   else()
     message(STATUS
       "Not running ${_NAME} because ${_size} tests are not enabled")

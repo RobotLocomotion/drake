@@ -23,11 +23,11 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
   // subsequently added to the world.
   tree_builder->StoreModel(
       "iiwa",
-      "/manipulation/models/iiwa_description/urdf/"
+      "drake/manipulation/models/iiwa_description/urdf/"
           "iiwa14_polytope_collision.urdf");
   tree_builder->StoreModel(
       "wsg",
-      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
   iiwa->clear();
   wsg->clear();
@@ -99,10 +99,16 @@ void main() {
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
   int ctr = 0;
   for (const auto& info : iiwa_info) {
+    auto single_arm = std::make_unique<RigidBodyTree<double>>();
+    parsers::urdf::AddModelInstanceFromUrdfFile(
+        info.model_path, multibody::joints::kFixed, info.world_offset,
+        single_arm.get());
+
     auto controller =
         builder.AddController<systems::InverseDynamicsController<double>>(
-            info.instance_id, info.model_path, info.world_offset, iiwa_kp,
+            info.instance_id, std::move(single_arm), iiwa_kp,
             iiwa_ki, iiwa_kd, false /* no feedforward acceleration */);
+    controller->set_name("controller" + std::to_string(info.instance_id));
 
     // Updates the controller's model's end effector's inertia to include
     // the added gripper.

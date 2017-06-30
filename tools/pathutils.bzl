@@ -94,6 +94,11 @@ def _remove_prefix(path, prefix):
 #BEGIN macros
 
 #------------------------------------------------------------------------------
+def basename(path):
+    """Return the file name portion of a file path."""
+    return path.split("/")[-1]
+
+#------------------------------------------------------------------------------
 def dirname(path):
     """Return the directory portion of a file path."""
     if path == "/":

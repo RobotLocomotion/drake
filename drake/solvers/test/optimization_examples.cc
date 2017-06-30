@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/solvers/solver_type_converter.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Vector4d;
@@ -61,7 +62,10 @@ void OptimizationProgram::RunProblem(
     MathematicalProgramSolverInterface* solver) {
   if (solver->available()) {
     RunSolver(prog_.get(), *solver);
-    CheckSolution(solver->solver_type());
+    const optional<SolverType> solver_type =
+        SolverTypeConverter::IdToType(solver->solver_id());
+    ASSERT_TRUE(solver_type != nullopt);
+    CheckSolution(*solver_type);
   }
 }
 

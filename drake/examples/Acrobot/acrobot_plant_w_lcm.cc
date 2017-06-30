@@ -15,7 +15,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/Acrobot/acrobot_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_acrobot_u.hpp"
@@ -52,7 +52,7 @@ int DoMain() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
+      FindResourceOrThrow("drake/examples/Acrobot/Acrobot.urdf"),
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   auto acrobot = builder.AddSystem<AcrobotPlant>();
@@ -82,11 +82,11 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
 
   // Sets an initial condition near the stable fixed point.
-  systems::Context<double>* acrobot_context =
-      diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                          acrobot);
+  systems::Context<double>& acrobot_context =
+      diagram->GetMutableSubsystemContext(*acrobot,
+                                          simulator.get_mutable_context());
   AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
-      acrobot_context->get_mutable_continuous_state_vector());
+      acrobot_context.get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(0.1);
   x0->set_theta2(0.1);

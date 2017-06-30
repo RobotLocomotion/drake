@@ -4,7 +4,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/call_matlab.h"
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
@@ -49,7 +49,7 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
+      FindResourceOrThrow("drake/examples/Acrobot/Acrobot.urdf"),
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
@@ -118,10 +118,10 @@ int do_main(int argc, char* argv[]) {
   // Set an initial condition near the upright fixed point.
   auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
       dynamic_cast<systems::DiagramContext<double>*>(
-          diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                              acrobot_w_encoder))
+          &diagram->GetMutableSubsystemContext(*acrobot_w_encoder,
+                                              simulator.get_mutable_context()))
           ->GetMutableSubsystemContext(0)
-          ->get_mutable_continuous_state_vector());
+          .get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(M_PI + 0.1);
   x0->set_theta2(-.1);
@@ -130,9 +130,9 @@ int do_main(int argc, char* argv[]) {
 
   // Set the initial conditions of the observer.
   auto xhat0 = diagram
-                   ->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                                observer)
-                   ->get_mutable_continuous_state_vector();
+                   ->GetMutableSubsystemContext(*observer,
+                                                simulator.get_mutable_context())
+                   .get_mutable_continuous_state_vector();
   DRAKE_DEMAND(xhat0 != nullptr);
   xhat0->SetAtIndex(0, M_PI);
   xhat0->SetAtIndex(1, 0.0);
