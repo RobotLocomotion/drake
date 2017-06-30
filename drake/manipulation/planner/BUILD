@@ -39,8 +39,8 @@ drake_cc_googletest(
     # should enable this test.
     tags = ["snopt"],
     deps = [
-        "//drake/common:find_resource",
         ":constraint_relaxing_ik",
+        "//drake/common:find_resource",
     ],
 )
 
