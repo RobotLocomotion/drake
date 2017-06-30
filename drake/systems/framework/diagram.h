@@ -731,8 +731,8 @@ class Diagram : public System<T>,
   /// Returns the index of the given @p sys in the sorted order of this diagram,
   /// or aborts if @p sys is not a member of the diagram.
   int GetSystemIndexOrAbort(const System<T>* sys) const {
-    auto it = sorted_systems_map_.find(sys);
-    DRAKE_DEMAND(it != sorted_systems_map_.end());
+    auto it = system_index_map_.find(sys);
+    DRAKE_DEMAND(it != system_index_map_.end());
     return it->second;
   }
 
@@ -1251,7 +1251,7 @@ class Diagram : public System<T>,
     }
     // Preserve the sort order.
     for (const System<T1>* system : sorted_systems_) {
-      blueprint.sorted_systems.push_back(old_to_new_map[system]);
+      blueprint.systems.push_back(old_to_new_map[system]);
     }
 
     // Construct a new Diagram of type NewType from the blueprint.
@@ -1354,11 +1354,8 @@ class Diagram : public System<T>,
     // on which they depend. This graph is possibly cyclic, but must not
     // contain an algebraic loop.
     std::map<PortIdentifier, PortIdentifier> dependency_graph;
-    // A list of the systems in the dependency graph in a valid, sorted
-    // execution order, such that if EvalOutput is called on each system in
-    // succession, every system will have valid inputs by the time its turn
-    // comes.
-    std::vector<const System<T>*> sorted_systems;
+    // A list of the systems in the dependency graph.
+    std::vector<const System<T>*> systems;
   };
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
@@ -1370,21 +1367,21 @@ class Diagram : public System<T>,
     // The Diagram must not already be initialized.
     DRAKE_DEMAND(sorted_systems_.empty());
     // The initialization must be nontrivial.
-    DRAKE_DEMAND(!blueprint.sorted_systems.empty());
+    DRAKE_DEMAND(!blueprint.systems.empty());
 
     // Copy the data from the blueprint into private member variables.
     dependency_graph_ = blueprint.dependency_graph;
-    sorted_systems_ = blueprint.sorted_systems;
+    sorted_systems_ = blueprint.systems;
     input_port_ids_ = blueprint.input_port_ids;
     output_port_ids_ = blueprint.output_port_ids;
 
     // Generate a map from the System pointer to its index in the sort order.
     for (int i = 0; i < num_subsystems(); ++i) {
-      sorted_systems_map_[sorted_systems_[i]] = i;
+      system_index_map_[sorted_systems_[i]] = i;
     }
 
     // Every system must appear in the sort order exactly once.
-    DRAKE_DEMAND(sorted_systems_.size() == sorted_systems_map_.size());
+    DRAKE_DEMAND(sorted_systems_.size() == system_index_map_.size());
     // Every port named in the dependency_graph_ must actually exist.
     DRAKE_ASSERT(PortsAreValid());
     // Every subsystem must have a unique name.
@@ -1419,8 +1416,8 @@ class Diagram : public System<T>,
     // subsystems for which we have an execution order.
     DRAKE_DEMAND(registered_systems.size() == sorted_systems_.size());
     for (const auto& system : registered_systems) {
-      const auto it = sorted_systems_map_.find(system.get());
-      DRAKE_DEMAND(it != sorted_systems_map_.end());
+      const auto it = system_index_map_.find(system.get());
+      DRAKE_DEMAND(it != system_index_map_.end());
     }
     // All of those checks having passed, take ownership of the subsystems.
     registered_systems_ = std::move(registered_systems);
@@ -1565,9 +1562,8 @@ class Diagram : public System<T>,
   // they were registered.
   std::vector<std::unique_ptr<System<T>>> registered_systems_;
 
-  // For fast conversion queries: what is the index of this System in the
-  // sorted order?
-  std::map<const System<T>*, int> sorted_systems_map_;
+  // Map to quickly satisify "What is the subsytem index of the child system?"
+  std::map<const System<T>*, int> system_index_map_;
 
   // The ordered inputs and outputs of this Diagram.
   std::vector<PortIdentifier> input_port_ids_;

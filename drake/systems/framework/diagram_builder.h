@@ -317,7 +317,7 @@ class DiagramBuilder {
     blueprint.output_port_ids = output_port_ids_;
     blueprint.dependency_graph = dependency_graph_;
     for (const auto& system : registered_systems_) {
-      blueprint.sorted_systems.push_back(system.get());
+      blueprint.systems.push_back(system.get());
     }
     return blueprint;
   }
