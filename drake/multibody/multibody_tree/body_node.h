@@ -395,25 +395,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
 
     // =========================================================================
-    // Computation of A_WPb = DtW(V_WPb) in Eq. (3).
-
-    // Shift vector between the parent body P and this node's body B,
-    // expressed in the world frame W.
-    // TODO(amcastro-tri): consider computing p_PB_W in
-    // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
-    // position kinematics cache.
-    /* p_PB_W = R_WP * p_PB */
-    Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
-
-    const SpatialVelocity<T>& V_WP = get_V_WP(vc);
-
-    // Since we are in a base-to-tip recursion the parent body P's spatial
-    // acceleration is already available in the cache.
-    const SpatialAcceleration<T>& A_WP = get_A_WP(*ac);
-    const SpatialAcceleration<T> A_WPb = A_WP.Shift(p_PB_W, V_WP.rotational());
-
-    // =========================================================================
-    // Computation of DtW(V_PB_W) in Eq. (4)
+    // Computation of A_PB = DtP(V_PB)
 
     // TODO(amcastro-tri): consider caching these. Especially true if bodies are
     // flexible. Also used in velocity kinematics.
@@ -447,26 +429,31 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         get_mobilizer().CalcAcrossMobilizerSpatialAcceleration(context, vmdot);
 
     SpatialAcceleration<T> A_PB_W =
-        R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (6)
+        R_WF * A_FM.Shift(p_MB_F, V_FM.rotational());  // Eq. (xxx)
 
+    // =========================================================================
+    // Compose acceleration A_WP of P in W with acceleration A_PB of B in P.
+
+    // Since we are in a base-to-tip recursion the parent body P's spatial
+    // velocity and acceleration are already available in the cache.
+    const SpatialVelocity<T>& V_WP = get_V_WP(vc);
+    const SpatialAcceleration<T>& A_WP = get_A_WP(*ac);
+
+    // For body B, only the spatial velocity V_PB_W is already available in the
+    // cache. The acceleration A_PB_W was computed above.
     const SpatialVelocity<T>& V_PB_W = get_V_PB_W(vc);
 
-    (void) V_PB_W;
-    (void) A_PB_W;
-    (void) A_WPb;
+    // Shift vector between the parent body P and this node's body B,
+    // expressed in the world frame W.
+    // TODO(amcastro-tri): consider computing p_PB_W in
+    // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
+    // position kinematics cache.
+    /* p_PB_W = R_WP * p_PB */
+    Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
 
-    // From Eq. (4) the term for DtW(V_PB_W) is computed as:
-    SpatialAcceleration<T> DtW_V_PB_W =
-      SpatialAcceleration<T>::ShiftTimeDerivative(
-          V_PB_W, A_PB_W, V_WP.rotational());
-
-    (void) DtW_V_PB_W;
-#if 0
-    // =========================================================================
-    // Update acceleration A_WB of this node's body B in the world frame using
-    // the recursive relation in Eq. (2):
-    get_mutable_A_WB(ac) = A_WPb + DW_V_PB_W;
-#endif
+    get_mutable_A_WB(ac) =
+        A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
+                                                V_PB_W, A_PB_W);
   }
 
   /// Returns the topology information for this body node.
