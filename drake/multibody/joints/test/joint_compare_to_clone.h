@@ -5,6 +5,7 @@
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/helical_joint.h"
 #include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/quaternion_ball_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
@@ -85,6 +86,10 @@ bool CompareHelicalJointToClone(
 bool ComparePrismaticJointToClone(
     const PrismaticJoint& original,
     const PrismaticJoint& clone);
+
+bool CompareQuaternionBallJointToClone(
+    const QuaternionBallJoint& original,
+    const QuaternionBallJoint& clone);
 
 bool CompareQuaternionFloatingJointToClone(
     const QuaternionFloatingJoint& original,
