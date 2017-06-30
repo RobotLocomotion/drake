@@ -9,7 +9,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "compliant_contact_model",
     srcs = [
-        "compliant_ contact_model.cc",
+        "compliant_contact_model.cc",
         "contact_detail.cc",
         "contact_force.cc",
         "contact_info.cc",

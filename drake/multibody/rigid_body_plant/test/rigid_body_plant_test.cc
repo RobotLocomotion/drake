@@ -438,23 +438,6 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
   EXPECT_LT(GetPrismaticJointLimitAccel(1.05, 0.), 0.);
 }
 
-// Tests that the given 3x3 matrix is orthonormal.
-void ExpectOrthonormal(const Matrix3<double>& R) {
-  const double kEpsilon = Eigen::NumTraits<double>::dummy_precision();
-  // Confirms normal length.
-  EXPECT_NEAR(1.0, R.col(0).norm(), kEpsilon);
-  EXPECT_NEAR(1.0, R.col(1).norm(), kEpsilon);
-  EXPECT_NEAR(1.0, R.col(2).norm(), kEpsilon);
-  // Confirms orthogonality.
-  EXPECT_NEAR(0.0, R.col(0).dot(R.col(1)), kEpsilon);
-  EXPECT_NEAR(0.0, R.col(0).dot(R.col(2)), kEpsilon);
-  EXPECT_NEAR(0.0, R.col(1).dot(R.col(2)), kEpsilon);
-  // Test right-handedness.
-  EXPECT_TRUE(R.col(0).isApprox(R.col(1).cross(R.col(2))));
-  EXPECT_TRUE(R.col(1).isApprox(R.col(2).cross(R.col(0))));
-  EXPECT_TRUE(R.col(2).isApprox(R.col(0).cross(R.col(1))));
-}
-
 // Verifies that various model-instance-specific accessor methods work.
 GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();

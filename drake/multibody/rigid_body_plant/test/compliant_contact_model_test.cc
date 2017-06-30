@@ -9,8 +9,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/test/contact_result_test_common.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 // The CompliantContactModel is a class that wraps the algorithms
 // The ContactResult class is largely a container for the data that is computed
@@ -44,18 +44,16 @@ namespace {
 // output port for collision response data.
 class CompliantContactModelTest : public ContactResultTestCommon {
  protected:
-
   // Instances owned by the test class.
   unique_ptr<CompliantContactModel<double>> compliant_contact_model_{};
   // Holds the unique pointer to the tree.
   unique_ptr<RigidBodyTree<double>> unique_tree_{};
 
   const ContactResults<double>& RunTest(double distance) override {
-
     unique_tree_ = GenerateTestTree(distance);
     // Populate the CompliantContactModel.
-    compliant_contact_model_ = make_unique<CompliantContactModel<double>>(
-        *tree_);
+    compliant_contact_model_ =
+        make_unique<CompliantContactModel<double>>(*tree_);
     compliant_contact_model_->set_normal_contact_parameters(kStiffness,
                                                             kDissipation);
     compliant_contact_model_->set_friction_contact_parameters(
@@ -65,7 +63,7 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     // and default configuration positions of the tree)
 
     VectorX<double> x0 = VectorX<double>::Zero(tree_->get_num_positions() +
-        tree_->get_num_velocities());
+                                               tree_->get_num_velocities());
 
     VectorXd v0 = VectorXd::Zero(tree_->get_num_velocities());
 
@@ -151,8 +149,8 @@ TEST_F(CompliantContactModelTest, ModelSingleCollision) {
                               expected_spatial_force));
   Vector3<double> expected_point;
   expected_point << x_anchor_, 0, 0;
-  ASSERT_TRUE(CompareMatrices(detail_force.get_application_point(),
-                              expected_point));
+  ASSERT_TRUE(
+      CompareMatrices(detail_force.get_application_point(), expected_point));
 }
 }  // namespace
 }  // namespace test
