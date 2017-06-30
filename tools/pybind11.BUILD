@@ -62,10 +62,10 @@ install_files(
 
 install(
     name = "install",
-    docs = ["LICENSE"],
-    guess_hdrs = "PACKAGE",
-    hdr_strip_prefix = ["include"],
     targets = [":pybind11"],
+    hdr_strip_prefix = ["include"],
+    guess_hdrs = "PACKAGE",
+    docs = ["LICENSE"],
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",

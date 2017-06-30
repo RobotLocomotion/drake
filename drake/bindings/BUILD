@@ -125,12 +125,12 @@ py_library(
 
 install(
     name = "install",
-    library_dest = "lib/python2.7/site-packages",
-    library_strip_prefix = ["python"],
-    py_strip_prefix = ["python"],
     targets = [
         ":pydrake",
     ] + PYDRAKE_SO_DATA,
+    library_dest = "lib/python2.7/site-packages",
+    library_strip_prefix = ["python"],
+    py_strip_prefix = ["python"],
     visibility = ["//visibility:public"],
 )
 
