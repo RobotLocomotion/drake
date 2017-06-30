@@ -7,21 +7,17 @@
 namespace drake {
 namespace systems {
 
-//contact_model_doxygen.h
+/// This class encapsulates the compliant contact model force computations as
+/// described in detail in @ref drake_contacts.
 template <typename T>
 class CompliantContactModel {
  public :
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactModel)
 
-  /// Computes the generalized forces on all bodies due to contact.
-  ///
-  /// @param kinsol         The kinematics of the rigid body system at the time
-  ///                       of contact evaluation.
-  /// @param[out] contacts  The optional contact results.  If non-null, stores
-  ///                       the contact information for consuming on the output
-  ///                       port.
-  /// @returns              The generalized forces across all the bodies due to
-  ///                       contact response.
+  /// Instantiates a %CompliantContactModel from a Multi-Body Dynamics (MBD)
+  /// model of the world in `tree`.  `tree` must not be `nullptr`.
+  /// \param tree tree the kinematic / dynamic model for which the compliant
+  /// contact forces are to be computed.
   CompliantContactModel(const RigidBodyTree<T>& tree);
 
   /// Computes the generalized forces on all bodies due to contact.

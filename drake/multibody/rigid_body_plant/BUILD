@@ -117,14 +117,6 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "compute_contact_result_test",
-    deps = [
-        ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
     name = "contact_detail_test",
     deps = [
         ":rigid_body_plant",
@@ -157,8 +149,35 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "contact_resultant_force_test",
     deps = [
+        ":contact_result_test_common",
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_result_test_common",
+    testonly = 1,
+    hdrs = ["test/contact_result_test_common.h"],
+)
+
+drake_cc_googletest(
+    name = "compute_contact_result_test",
+    deps = [
+        ":contact_result_test_common",
+        ":rigid_body_plant",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_model_test",
+    deps = [
+        ":compliant_contact_model",
+        ":contact_result_test_common",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
     ],
 )
 

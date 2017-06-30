@@ -455,39 +455,6 @@ void ExpectOrthonormal(const Matrix3<double>& R) {
   EXPECT_TRUE(R.col(2).isApprox(R.col(0).cross(R.col(1))));
 }
 
-// Tests the contact frame to confirm that a robust, right-handed orthonormal
-// frame is generated.
-GTEST_TEST(rigid_body_plant_test, TestContactFrameCreation) {
-  Vector3<double> z;
-
-  // Case 1: z-axis is simply world aligned.
-  z << 1, 0, 0;
-  Matrix3<double> R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
-  ExpectOrthonormal(R_WL);
-  EXPECT_EQ(z, R_WL.col(2));
-
-  // Case 2: z-axis is *slightly* off of z-axis.
-  z << 1, 0.01, 0.01;
-  z = z.normalized();
-  R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
-  ExpectOrthonormal(R_WL);
-  EXPECT_EQ(z, R_WL.col(2));
-
-  // Case 3: z-axis points into the "middle" of the "first" quadrant.
-  z << 1, 1, 1;
-  z = z.normalized();
-  R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
-  ExpectOrthonormal(R_WL);
-  EXPECT_EQ(z, R_WL.col(2));
-
-  // Case 4: z-axis points in direction with negative components.
-  z << -1, -1, 1;
-  z = z.normalized();
-  R_WL = RigidBodyPlant<double>::ComputeBasisFromZ(z);
-  ExpectOrthonormal(R_WL);
-  EXPECT_EQ(z, R_WL.col(2));
-}
-
 // Verifies that various model-instance-specific accessor methods work.
 GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
