@@ -319,6 +319,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "ball_joint_test",
+    srcs = ["test/rigid_body_tree/ball_joint_test.cc"],
+    data = glob(["test/rigid_body_tree/two_link_ball_joint_robot.urdf"]),
+    deps = [
+        ":rigid_body_tree",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_points_generation_test",
     srcs = ["test/rigid_body_tree/contact_points_generation_test.cc"],
     data = [":test_models"],

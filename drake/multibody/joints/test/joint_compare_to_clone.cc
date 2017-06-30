@@ -149,6 +149,12 @@ bool ComparePrismaticJointToClone(const PrismaticJoint& original,
   return true;
 }
 
+bool CompareQuaternionBallJointToClone(
+    const QuaternionBallJoint& original,
+    const QuaternionBallJoint& clone) {
+  return CompareDrakeJointToClone(original, clone);
+}
+
 bool CompareQuaternionFloatingJointToClone(
     const QuaternionFloatingJoint& original,
     const QuaternionFloatingJoint& clone) {

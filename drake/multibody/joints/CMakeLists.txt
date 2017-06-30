@@ -3,6 +3,7 @@ add_library_with_exports(LIB_NAME drakeJoints SOURCE_FILES
         fixed_joint.cc
         helical_joint.cc
         prismatic_joint.cc
+        quaternion_ball_joint.cc
         quaternion_floating_joint.cc
         revolute_joint.cc
         roll_pitch_yaw_floating_joint.cc)
@@ -19,6 +20,7 @@ drake_install_headers(
         fixed_joint.h
         helical_joint.h
         prismatic_joint.h
+        quaternion_ball_joint.h
         quaternion_floating_joint.h
         revolute_joint.h
         roll_pitch_yaw_floating_joint.h
