@@ -28,15 +28,6 @@ endif()
 add_subdirectory(util)
 
 if(BUILD_TESTING)
-  function(drake_add_matlab_addpath_test dependency)
-    drake_add_matlab_test(NAME matlab/addpath_${dependency}_test
-      REQUIRES ${dependency} COMMAND "addpath_${dependency}" SIZE small)
-  endfunction()
-
-  drake_add_matlab_addpath_test(gurobi)
-  drake_add_matlab_addpath_test(mosek)
-  drake_add_matlab_addpath_test(snopt)
-
   function(drake_add_matlab_check_dependency_test dependency)
     drake_add_matlab_test(NAME matlab/check_dependency_${dependency}
       REQUIRES ${dependency} COMMAND "checkDependency('${dependency}')"
@@ -44,10 +35,7 @@ if(BUILD_TESTING)
   endfunction()
 
   drake_add_matlab_check_dependency_test(bullet)
-  drake_add_matlab_check_dependency_test(gurobi)
   drake_add_matlab_check_dependency_test(lcm)
-  drake_add_matlab_check_dependency_test(mosek)
-  drake_add_matlab_check_dependency_test(snopt)
 
   # Unknown dependency.
   drake_add_matlab_test(NAME matlab/check_dependency_unknown
@@ -66,10 +54,7 @@ if(BUILD_TESTING)
 
   # TODO(jamiesnape): These would still pass if MATLAB fails for a reason
   # other than a missing dependency.
-  drake_add_matlab_check_dependency_test_no(gurobi)
   drake_add_matlab_check_dependency_test_no(lcm)
-  drake_add_matlab_check_dependency_test_no(mosek)
-  drake_add_matlab_check_dependency_test_no(snopt)
 
   if(NOT Bullet_FOUND)
     drake_add_matlab_test(NAME matlab/check_dependency_no_bullet

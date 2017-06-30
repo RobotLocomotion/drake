@@ -16,15 +16,6 @@
 [submodule "externals/director"]
 	path = externals/director
 	url = https://github.com/RobotLocomotion/director.git
-[submodule "externals/snopt"]
-	path = externals/snopt
-	url = git@github.com:RobotLocomotion/snopt.git
-[submodule "externals/gurobi"]
-	path = externals/gurobi
-	url = https://github.com/RobotLocomotion/gurobi.git
-[submodule "externals/mosek"]
-	path = externals/mosek
-	url = https://github.com/RobotLocomotion/mosek.git
 [submodule "externals/yaml_cpp"]
 	path = externals/yaml_cpp
 	url = https://github.com/jbeder/yaml-cpp.git

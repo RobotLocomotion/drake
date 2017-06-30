@@ -302,16 +302,6 @@ macro(drake_setup_options)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are OFF by default
 
-  drake_optional_external(GUROBI OFF
-    "Convex/integer optimization solver\; free for academics")
-
-  drake_optional_external(MOSEK OFF
-    "Convex optimization solver\; free for academics")
-
-  drake_optional_external(SNOPT OFF
-    "Sparse Non-linear Optimizer\;"
-    "requires access to RobotLocomotion/snopt-pod")
-
   drake_optional_external(TEXTBOOK OFF
     "The Underactuated Robotics textbook and its examples")
 
