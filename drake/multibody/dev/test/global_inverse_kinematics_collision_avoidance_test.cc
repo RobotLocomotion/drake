@@ -108,7 +108,7 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
 
   // First run the global IK without collision avoidance.
   solvers::GurobiSolver gurobi_solver;
-  global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+  global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
   SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
   EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
   const auto& q_without_collision_avoidance =

@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "drake/common/symbolic_expression.h"
+#include "drake/solvers/ipopt_solver.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -180,7 +181,7 @@ solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
 
   // If we're using IPOPT, it can't quite solve trajectories to the
   // default precision level.
-  SetSolverOption(drake::solvers::SolverType::kIpopt, "tol", 1e-7);
+  SetSolverOption(drake::solvers::IpoptSolver::id(), "tol", 1e-7);
 
   solvers::SolutionResult result = Solve();
   return result;

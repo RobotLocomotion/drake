@@ -512,15 +512,15 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   // useful for debugging.
   app->Options()->SetIntegerValue("print_level", 2);
 
-  for (const auto& it : prog.GetSolverOptionsDouble(SolverType::kIpopt)) {
+  for (const auto& it : prog.GetSolverOptionsDouble(id())) {
     app->Options()->SetNumericValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsInt(SolverType::kIpopt)) {
+  for (const auto& it : prog.GetSolverOptionsInt(id())) {
     app->Options()->SetIntegerValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsStr(SolverType::kIpopt)) {
+  for (const auto& it : prog.GetSolverOptionsStr(id())) {
     app->Options()->SetStringValue(it.first, it.second);
   }
 

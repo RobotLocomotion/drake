@@ -8,6 +8,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
+#include "drake/solvers/solver_type_converter.h"
 
 namespace py = pybind11;
 using std::string;
@@ -27,6 +28,7 @@ using drake::solvers::QuadraticCost;
 using drake::solvers::SolutionResult;
 using drake::solvers::SolverId;
 using drake::solvers::SolverType;
+using drake::solvers::SolverTypeConverter;
 using drake::solvers::VectorXDecisionVariable;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
@@ -38,6 +40,14 @@ namespace {
 template <typename T>
 std::unique_ptr<T> deref_optional(const drake::optional<T>& value) {
   return value ? std::make_unique<T>(*value) : nullptr;
+}
+
+/// Helper to adapt SolverType to SolverId.
+template <typename Value>
+void SetSolverOptionBySolverType(
+    MathematicalProgram* self,
+    SolverType solver_type, const std::string& key, const Value& value) {
+  self->SetSolverOption(SolverTypeConverter::TypeToId(solver_type), key, value);
 }
 
 /*
@@ -191,15 +201,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
             const MatrixXDecisionVariable& var) {
       return prog.GetSolution(var);
     })
-    .def("SetSolverOption", (void(MathematicalProgram::*)(
-         SolverType, const std::string&, double))
-         &MathematicalProgram::SetSolverOption)
-    .def("SetSolverOption", (void(MathematicalProgram::*)(
-         SolverType, const std::string&, int))
-         &MathematicalProgram::SetSolverOption)
-    .def("SetSolverOption", (void(MathematicalProgram::*)(
-         SolverType, const std::string&, const std::string&))
-         &MathematicalProgram::SetSolverOption);
+    .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
+    .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
+    .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
 
   py::enum_<SolutionResult>(m, "SolutionResult")
     .value("kSolutionFound", SolutionResult::kSolutionFound)

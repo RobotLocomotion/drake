@@ -28,11 +28,11 @@ TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
   if (solver.available()) {
     // With dual reductions, gurobi may not be able to differentiate between
     // infeasible and unbounded.
-    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 1);
+    prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
     SolutionResult result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kInfeasible_Or_Unbounded);
     EXPECT_TRUE(std::isnan(prog_->GetOptimalCost()));
-    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 0);
+    prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
     result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
     EXPECT_TRUE(std::isnan(prog_->GetOptimalCost()));
@@ -44,10 +44,10 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
   if (solver.available()) {
     // With dual reductions, gurobi may not be able to differentiate between
     // infeasible and unbounded.
-    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 1);
+    prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
     SolutionResult result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kInfeasible_Or_Unbounded);
-    prog_->SetSolverOption(SolverType::kGurobi, "DualReductions", 0);
+    prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
     result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kUnbounded);
   }
@@ -85,8 +85,8 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
     // Presolve and Heuristics would each independently solve
     // this problem inside of the Gurobi solver, but without
     // consulting the initial guess.
-    prog.SetSolverOption(SolverType::kGurobi, "Presolve", 0);
-    prog.SetSolverOption(SolverType::kGurobi, "Heuristics", 0.0);
+    prog.SetSolverOption(GurobiSolver::id(), "Presolve", 0);
+    prog.SetSolverOption(GurobiSolver::id(), "Heuristics", 0.0);
 
     double x_expected0_to_test[] = {0.0, 1.0};
     for (int i = 0; i < 2; i++) {

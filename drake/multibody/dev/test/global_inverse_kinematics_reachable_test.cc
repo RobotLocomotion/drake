@@ -25,7 +25,7 @@ TEST_F(KukaTest, ReachableTest) {
 
   solvers::GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
-    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+    global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
 
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 

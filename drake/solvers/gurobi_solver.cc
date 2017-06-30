@@ -576,12 +576,12 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // can be overridden by parameters set in the MathematicalProgram).
   GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
 
-  for (const auto it : prog.GetSolverOptionsDouble(SolverType::kGurobi)) {
+  for (const auto it : prog.GetSolverOptionsDouble(id())) {
     error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
     DRAKE_DEMAND(!error);
   }
 
-  for (const auto it : prog.GetSolverOptionsInt(SolverType::kGurobi)) {
+  for (const auto it : prog.GetSolverOptionsInt(id())) {
     error = GRBsetintparam(model_env, it.first.c_str(), it.second);
     DRAKE_DEMAND(!error);
   }
