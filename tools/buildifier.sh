@@ -2,9 +2,6 @@
 #
 # With arguments, fixes the given bazel file(s).  Without arguments, fixes
 # every BUILD, .BUILD, and *.bzl file except third_party.
-#
-# TODO(jwnimmer-tri) Add WORKSPACE to the list of files to find and reformat,
-# once buildifier rules stop murdering it.
 
 set -e
 
@@ -89,7 +86,8 @@ else
   echo "Applying buildifier to everything! This may take a moment..."
   find "$workspace" \
        -name third_party -prune -o \
-       \( -name BUILD -o \
+       \( -name WORKSPACE -o \
+          -name BUILD -o \
           -name BUILD.bazel -o \
           -name '*.BUILD' -o \
           -name '*.bzl' \) -print |
