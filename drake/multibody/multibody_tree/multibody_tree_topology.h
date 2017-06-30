@@ -237,6 +237,8 @@ struct BodyNodeTopology {
   int mobilizer_velocities_start{0};
 
   // Start index in a vector containing only generalized velocities.
+  // It is also a valid index into a vector of generalized accelerations (which
+  // are the time derivatives of the generalized velocities).
   int mobilizer_velocities_start_in_v{0};
 
   /// Start and number of dofs for this node's body (flexible dofs).

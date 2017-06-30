@@ -55,7 +55,7 @@ class VelocityKinematicsCache {
   }
 
   /// Returns a constant reference to the spatial velocity `V_WB` of the body B
-  /// (associated with node @p body_node_index) as measured and expressed in the
+  /// (associated with node `body_node_index`) as measured and expressed in the
   /// world frame W.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
@@ -72,8 +72,8 @@ class VelocityKinematicsCache {
     return V_WB_pool_[body_node_index];
   }
 
-  /// @returns a const reference to the across-mobilizer (associated with node
-  /// @p body_node_index) spatial velocity `V_FM` of the outboard frame M in the
+  /// Returns a const reference to the across-mobilizer (associated with node
+  /// `body_node_index`) spatial velocity `V_FM` of the outboard frame M in the
   /// inboard frame F.
   const SpatialVelocity<T>& get_V_FM(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
@@ -86,9 +86,9 @@ class VelocityKinematicsCache {
     return V_FM_pool_[body_node_index];
   }
 
-  /// @returns a const reference to the spatial velocity `V_PB_W` of the
-  /// body B associated with node `body_node_index` in the parent node's body P,
-  /// expressed in the world frame W.
+  /// Returns a const reference to the spatial velocity `V_PB_W` of the
+  /// body B associated with node `body_node_index` in the parent node's body
+  /// frame P, expressed in the world frame W.
   const SpatialVelocity<T>& get_V_PB_W(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_PB_W_pool_[body_node_index];

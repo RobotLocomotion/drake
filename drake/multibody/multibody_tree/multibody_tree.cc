@@ -195,7 +195,7 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
   // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
   // corresponding to flexible bodies.
 
-  // Performs a base-to-tip recursion computing body velocities.
+  // Performs a base-to-tip recursion computing body accelerations.
   // This skips the world, depth = 0.
   for (int depth = 1; depth < get_tree_height(); ++depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {

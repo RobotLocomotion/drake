@@ -131,9 +131,9 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
   /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
-  /// The acceleration `A_FM` will be a function of the rotation angle q and
-  /// angular velocity v for the current state in `context` and of the input
-  /// angular acceleartion `v̇ = dv/dt`.
+  /// The acceleration `A_FM` will be a function of the rotation angle q, its
+  /// rate of change v for the current state in `context` and of the input
+  /// generalized acceleration `v̇ = dv/dt`, the rate of change of v.
   /// See class documentation for the angle sign convention.
   /// This method aborts in Debug builds if `vdot.size()` is not one.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(

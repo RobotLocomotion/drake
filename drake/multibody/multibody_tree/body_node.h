@@ -238,6 +238,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // arriving to the desired result:
     //   V_PB_W = R_WF * V_FM.Shift(p_MoBo_F)                               (4)
     //
+    // V_FM is immediately available from this node's mobilizer with the method
+    // CalcAcrossMobilizerSpatialVelocity() which computes the velocity of M in
+    // F as the application V_FM = H_FM * vm, where H_FM is the mobilizer's
+    // Jacobian matrix.
+    //
     // Computation of V_WPb:
     // This can be computed by a simple shift operation from V_WP:
     //   V_WPb = V_WP.Shift(p_PoBo_W)                                       (5)
@@ -387,13 +392,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // By recursive precondition, this method was already called on all
     // predecessor nodes in the tree and therefore the acceleration A_WP is
     // already available.
-    // V_WP (i.e w_WP) and V_PB_W were computed in the velocity kinematics pass
+    // V_WP (i.e. w_WP) and V_PB_W were computed in the velocity kinematics pass
     // and are therefore available in the VelocityKinematicsCache vc.
     //
     // Therefore, all that is left is computing A_PB_W = DtP(V_PB)_W.
     // The acceleration of B in P is:
     //   A_PB = DtP(V_PB) = DtF(V_FMb) = A_FM.Shift(p_MB, w_FM)             (3)
-    // which expressed in the world frame leads to:
+    // which expressed in the world frame leads to (see note below):
     //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (4)
     // where A_FM in the inboard frame F is the direct result from
     // Mobilizer::CalcAcrossMobilizerAcceleration().
@@ -404,11 +409,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //       2. V_PB = V_FMb since V_PB = V_PFb + V_FMb + V_MB but since P is
     //          assumed rigid V_PF = 0 and since B is assumed rigid V_MB = 0.
 
-    // Body for this node. It's body frame is also referred to as B whenever no
+    // Body for this node. Its body frame is also referred to as B whenever no
     // ambiguity can arise.
     const Body<T>& body_B = get_body();
 
-    // Body for this node's parent, or the parent body P. It's body frame is
+    // Body for this node's parent, or the parent body P. Its body frame is
     // also referred to as P whenever no ambiguity can arise.
     const Body<T>& body_P = get_parent_body();
 
@@ -582,14 +587,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return vc->get_mutable_V_WB(topology_.index);
   }
 
-  /// @returns the spatial velocity `V_WP` of the body P in the parent node as
+  /// Returns the spatial velocity `V_WP` of the body P in the parent node as
   /// measured and expressed in the world frame.
   const SpatialVelocity<T>& get_V_WP(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.parent_body_node);
   }
 
-  /// @returns a const reference to the across-mobilizer spatial velocity `V_FM`
+  /// Returns a const reference to the across-mobilizer spatial velocity `V_FM`
   /// of the outboard frame M in the inboard frame F.
   const SpatialVelocity<T>& get_V_FM(
       const VelocityKinematicsCache<T>& vc) const {
@@ -602,7 +607,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return vc->get_mutable_V_FM(topology_.index);
   }
 
-  /// @returns a const reference to the spatial velocity `V_PB_W` of the this
+  /// Returns a const reference to the spatial velocity `V_PB_W` of `this`
   /// node's body B in the parent node's body P, expressed in the world frame W.
   const SpatialVelocity<T>& get_V_PB_W(
       const VelocityKinematicsCache<T>& vc) const {
@@ -631,8 +636,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return ac->get_mutable_A_WB(topology_.index);
   }
 
-  /// @returns the spatial velocity `V_WP` of the body P in the parent node as
-  /// measured and expressed in the world frame.
+  /// Returns a const reference to the spatial velocity `V_WP` of the body P in
+  /// the parent node as measured and expressed in the world frame.
   const SpatialAcceleration<T>& get_A_WP(
       const AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(topology_.parent_body_node);

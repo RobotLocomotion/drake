@@ -85,7 +85,7 @@ class Acrobot {
   ///   The shoulder angular velocity in radians per second.
   /// @param theta1dotdot
   ///   The elbow angular acceleration in radians per second squared.
-  /// @returns A_WL1_W
+  /// @retval A_WL1_W
   ///   the spatial acceleration of the center of mass of link 1 with respect to
   ///   the world and expressed in the world frame.
   Vector6<T> CalcLink1SpatialAccelerationInWorldFrame(
@@ -105,7 +105,7 @@ class Acrobot {
   ///   The shoulder angular acceleration in radians per second squared.
   /// @param theta2dotdot
   ///   The elbow angular acceleration in radians per second squared.
-  /// @returns A_WL2_W
+  /// @retval A_WL2_W
   ///   the spatial acceleration of the center of mass of link 2 with respect to
   ///   the world and expressed in the world frame.
   Vector6<T> CalcLink2SpatialAccelerationInWorldFrame(

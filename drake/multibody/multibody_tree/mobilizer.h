@@ -296,27 +296,27 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const = 0;
 
-  /// Computes the across-mobilizer spatial velocity `A_FM(q, v, v̇)` of the
+  /// Computes the across-mobilizer spatial accelerations `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
   /// This method can be thought of as the application of the operation
   /// `̇̇v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`, where
   /// `nv` is the number of generalized velocities of this mobilizer (see
   /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
   /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
-  /// velocities in Drake are not Plücker vectors as in Featherstone's book).
-  /// Therefore we say this method is in its _operator form_, the Jacobian
+  /// vectors in Drake are not Plücker vectors as in Featherstone's book).
+  /// Therefore, we say this method is in its _operator form_; the Jacobian
   /// matrix `H_FM(q)` is not explicitly formed.
   /// This method aborts in Debug builds if the dimension of the input vector of
-  /// generalized velocities has a size different from get_num_velocities().
+  /// generalized accelerations has a size different from get_num_velocities().
   ///
   /// @param[in] context
   ///   The context of the parent tree that owns this mobilizer. This
   ///   mobilizer's generalized positions q and generalized velocities v are
-  ///   inferred from this context.
+  ///   taken from this context.
   /// @param[in] vdot
   ///   The vector of generalized velocities' time derivatives v̇. It must live
   ///   in ℝⁿᵛ.
-  /// @retval `A_FM`
+  /// @retval A_FM
   ///   The across-mobilizer spatial acceleration of the outboard frame M
   ///   measured and expressed in the inboard frame F.
   virtual SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
