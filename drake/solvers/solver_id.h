@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <ostream>
+#include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/reinit_after_move.h"

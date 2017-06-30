@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
