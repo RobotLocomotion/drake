@@ -59,9 +59,7 @@ class Acrobot {
   /// Computes the spatial velocity of the center of mass of link 1 expressed
   /// in the world frame.
   /// @param theta1 The shoulder angle in radians.
-  /// @param theta2 The elbow angle in radians.
   /// @param theta1dot The shoulder angular velocity in radians per second.
-  /// @param theta2dot The elbow angular velocity in radians per second.
   /// @returns V_WL1_W the spatial velocity of the center of mass of link 1 with
   /// respect to the world and expressed in the world frame.
   Vector6<T> CalcLink1SpatialVelocityInWorldFrame(
@@ -78,6 +76,42 @@ class Acrobot {
   Vector6<T> CalcLink2SpatialVelocityInWorldFrame(
       const T& theta1, const T& theta2,
       const T& theta1dot, const T& theta2dot) const;
+
+  /// Computes the spatial acceleration of the center of mass of link 1
+  /// expressed in the world frame.
+  /// @param theta1
+  ///   The shoulder angle in radians.
+  /// @param theta1dot
+  ///   The shoulder angular velocity in radians per second.
+  /// @param theta1dotdot
+  ///   The elbow angular acceleration in radians per second squared.
+  /// @returns A_WL1_W
+  ///   the spatial acceleration of the center of mass of link 1 with respect to
+  ///   the world and expressed in the world frame.
+  Vector6<T> CalcLink1SpatialAccelerationInWorldFrame(
+      const T& theta1, const T& theta1dot, const T& theta1dotdot) const;
+
+  /// Computes the spatial acceleration of the center of mass of link 2
+  /// expressed in the world frame.
+  /// @param theta1
+  ///   The shoulder angle in radians.
+  /// @param theta2
+  ///   The elbow angle in radians.
+  /// @param theta1dot
+  ///   The shoulder angular velocity in radians per second.
+  /// @param theta2dot
+  ///   The elbow angular velocity in radians per second.
+  /// @param theta1dotdot
+  ///   The shoulder angular acceleration in radians per second squared.
+  /// @param theta2dotdot
+  ///   The elbow angular acceleration in radians per second squared.
+  /// @returns A_WL2_W
+  ///   the spatial acceleration of the center of mass of link 2 with respect to
+  ///   the world and expressed in the world frame.
+  Vector6<T> CalcLink2SpatialAccelerationInWorldFrame(
+      const T& theta1, const T& theta2,
+      const T& theta1dot, const T& theta2dot,
+      const T& theta1dotdot, const T& theta2dotdot) const;
 
  private:
   const T

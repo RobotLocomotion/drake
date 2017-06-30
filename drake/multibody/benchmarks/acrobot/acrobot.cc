@@ -118,13 +118,9 @@ Vector6<T> Acrobot<T>::CalcLink2SpatialVelocityInWorldFrame(
 
   // Linear velocity of link2's center of mass expressed in model frame D.
   Vector3<T> vcm2_D =
-      // dx/dtheta1 * theta1dot.
-      lc2 * Vector3<T>(
-          cos(theta1 + theta2), sin(theta1 + theta2), 0.0) * theta1dot +
-      l1 * Vector3<T>(cos(theta1), sin(theta1), 0.0) * theta1dot +
-      // dx/dtheta2 * theta2dot.
-      lc2 * Vector3<T>(
-          cos(theta1 + theta2), sin(theta1 + theta2), 0.0) * theta2dot;
+      lc2 * Vector3<T>(cos(theta1 + theta2), sin(theta1 + theta2), 0.0) *
+          (theta1dot + theta2dot) +
+      l1 * Vector3<T>(cos(theta1), sin(theta1), 0.0) * theta1dot;
 
   // Angular velocity of link2 expressed in model frame D.
   Vector3<T> wcm2_D = Vector3<T>::UnitZ() * (theta1dot + theta2dot);
@@ -135,6 +131,55 @@ Vector6<T> Acrobot<T>::CalcLink2SpatialVelocityInWorldFrame(
   V_WL2.template bottomRows<3>() = X_WD_.linear() * vcm2_D;
 
   return V_WL2;
+}
+
+template <typename T>
+Vector6<T> Acrobot<T>::CalcLink1SpatialAccelerationInWorldFrame(
+    const T& theta1, const T& theta1dot, const T& theta1dotdot) const {
+  using std::sin;
+  using std::cos;
+
+  // Linear acceleration of link1's center of mass expressed in model frame D.
+  Vector3<T> acm1_D =
+      lc1 * Vector3<T>(-sin(theta1), cos(theta1), 0.0) * theta1dot * theta1dot +
+      lc1 * Vector3<T>(cos(theta1), sin(theta1), 0.0) * theta1dotdot;
+
+  // Angular acceleration of link1 expressed in model frame D.
+  Vector3<T> alphacm1_D = Vector3<T>::UnitZ() * theta1dotdot;
+
+  // Spatial acceleration expressed in the world frame.
+  Vector6<T> A_WL1;
+  A_WL1.template topRows<3>() = X_WD_.linear() * alphacm1_D;
+  A_WL1.template bottomRows<3>() = X_WD_.linear() * acm1_D;
+
+  return A_WL1;
+}
+
+template <typename T>
+Vector6<T> Acrobot<T>::CalcLink2SpatialAccelerationInWorldFrame(
+    const T& theta1, const T& theta2,
+    const T& theta1dot, const T& theta2dot,
+    const T& theta1dotdot, const T& theta2dotdot) const {
+  using std::sin;
+  using std::cos;
+
+  // Linear acceleration of link2's center of mass expressed in model frame D.
+  Vector3<T> acm2_D =
+      lc2 * Vector3<T>(-sin(theta1 + theta2), cos(theta1 + theta2), 0.0) *
+          (theta1dot + theta2dot) * (theta1dot + theta2dot) +
+      lc2 * Vector3<T>(cos(theta1 + theta2), sin(theta1 + theta2), 0.0) *
+          (theta1dotdot + theta2dotdot) +
+      l1 * Vector3<T>(-sin(theta1), cos(theta1), 0.0) * theta1dot * theta1dot +
+      l1 * Vector3<T>(cos(theta1), sin(theta1), 0.0) * theta1dotdot;
+
+  // Angular acceleration of link2 expressed in model frame D.
+  Vector3<T> alphacm2_D = Vector3<T>::UnitZ() * (theta1dotdot + theta2dotdot);
+
+  // Spatial acceleration expressed in the world frame.
+  Vector6<T> A_WL2;
+  A_WL2.template topRows<3>() = X_WD_.linear() * alphacm2_D;
+  A_WL2.template bottomRows<3>() = X_WD_.linear() * acm2_D;
+  return A_WL2;
 }
 
 template class Acrobot<double>;
