@@ -45,8 +45,10 @@ class TestMathematicalProgram(unittest.TestCase):
         a = np.array([1.0, 2.0, 3.0])
         prog.AddLinearConstraint(a.dot(x) <= 4)
         prog.AddLinearConstraint(x[0] + x[1], 1, np.inf)
+        self.assertIsNone(prog.GetSolverId())
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        self.assertIsNotNone(prog.GetSolverId().name())
 
         # Test that we got the right solution for all x
         x_expected = np.array([1.0, 0.0, 1.0])

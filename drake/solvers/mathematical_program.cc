@@ -25,6 +25,7 @@
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solver_type_converter.h"
 #include "drake/solvers/symbolic_extraction.h"
 
 // Note that the file mathematical_program_api.cc also contains some of the
@@ -680,6 +681,14 @@ SolutionResult MathematicalProgram::Solve() {
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
   }
+}
+
+optional<SolverId> MathematicalProgram::GetSolverId() const {
+  if (!solver_type_) {
+    return nullopt;
+  }
+  // TODO(jwnimmer-tri) We should eventually store SolverId directly.
+  return SolverTypeConverter::TypeToId(*solver_type_);
 }
 
 }  // namespace solvers

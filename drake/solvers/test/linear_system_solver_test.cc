@@ -13,7 +13,7 @@ namespace test {
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
   example->prog()->Solve();
-  CheckSolver(*(example->prog()), SolverType::kLinearSystem);
+  CheckSolver(*(example->prog()), LinearSystemSolver::id());
   example->CheckSolution();
 }
 }  // namespace
@@ -32,7 +32,7 @@ GTEST_TEST(testLinearSystemSolver, trivialExample) {
 GTEST_TEST(testLinearSystemSolver, linearMatrixEqualityExample) {
   LinearMatrixEqualityExample example{};
   example.prog()->Solve();
-  CheckSolver(*(example.prog()), SolverType::kLinearSystem);
+  CheckSolver(*(example.prog()), LinearSystemSolver::id());
   example.CheckSolution();
 }
 }  // namespace test

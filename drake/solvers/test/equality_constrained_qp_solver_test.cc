@@ -43,9 +43,9 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
                               MatrixCompareType::absolute));
   EXPECT_NEAR(0.0, prog.GetOptimalCost(), 1e-10);
 
-// There are no inequality constraints, and only quadratic costs,
-// so this should hold:
-  CheckSolver(prog, SolverType::kEqualityConstrainedQP);
+  // There are no inequality constraints, and only quadratic costs,
+  // so this should hold:
+  CheckSolver(prog, EqualityConstrainedQPSolver::id());
 
   // Add one more variable and constrain a view into them.
   auto y = prog.NewContinuousVariables<1>("y");
@@ -71,7 +71,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   EXPECT_NEAR(0.0, prog.GetOptimalCost(), 1e-10);
 
   // Problem still has only quadratic costs, so solver should be the same.
-  CheckSolver(prog, SolverType::kEqualityConstrainedQP);
+  CheckSolver(prog, EqualityConstrainedQPSolver::id());
 }
 
 // Test how an equality-constrained QP is dispatched
@@ -109,8 +109,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
 
   // This problem is now an Equality Constrained QP and should
   // use this solver:
-  CheckSolver(
-      prog, SolverType::kEqualityConstrainedQP);
+  CheckSolver(prog, EqualityConstrainedQPSolver::id());
 
   // Add one more variable and constrain it in a different way
   auto y = prog.NewContinuousVariables(1);
