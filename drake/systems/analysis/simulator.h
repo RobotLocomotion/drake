@@ -642,7 +642,10 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 //       to within the requisite interval length. It is guaranteed that all
 //       triggered witness functions change sign over [t0, tw].
 // @note We assume that, if a witness function triggers over an interval
-//       [a, b], it also triggers over any larger interval [a, d], for d > b.
+//       [a, b], it also triggers over any larger interval [a, d], for d > b
+//       and d ≤ the maximum integrator step size (per WitnessFunction
+//       documentation, we assume that a witness function crosses zero at most
+//       once over an interval of size [t0, tf]).
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
