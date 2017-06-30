@@ -31,7 +31,7 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -116,7 +116,7 @@ drake_cc_library(
         "//drake/multibody/parsers",
         "//drake/systems/framework",
         "//drake/systems/lcm",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 

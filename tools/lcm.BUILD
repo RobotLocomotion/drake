@@ -2,7 +2,13 @@
 
 load("@drake//tools:drake.bzl", "drake_generate_file")
 load("@drake//tools:generate_export_header.bzl", "generate_export_header")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config", "install_files")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+    "install_files",
+)
 load("@drake//tools:python_lint.bzl", "python_lint")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
@@ -177,9 +183,12 @@ java_library(
         # Suppressed until lcm-proj/lcm#159 is fixed.
         "-extra_checks:off",
     ],
-    deps = [
-        "@net_sf_jchart2d_jchart2d//jar",
+    runtime_deps = [
+        "@com_jidesoft_jide_oss//jar",
+        "@commons_io_commons_io//jar",
+        "@org_apache_xmlgraphics_xmlgraphics_commons//jar",
     ],
+    deps = ["@net_sf_jchart2d_jchart2d//jar"],
 )
 
 java_binary(
@@ -212,13 +221,11 @@ install_files(
 
 # TODO(jamiesnape): Find an alternative to the requirement that a license file
 # must be passed to every single use of the install rule.
-DOC_DEST = "share/doc/lcm"
 LICENSE_DOCS = ["COPYING"]
 
 install(
     name = "install_python",
-    doc_dest = DOC_DEST,
-    library_dest = "lib/python2.7/site_packages/lcm",
+    library_dest = "lib/python2.7/site-packages/lcm",
     license_docs = LICENSE_DOCS,
     py_strip_prefix = ["lcm-python"],
     targets = [
@@ -230,13 +237,15 @@ install(
 install(
     name = "install",
     hdrs = LCM_PUBLIC_HEADERS,
-    doc_dest = DOC_DEST,
     docs = [
         "AUTHORS",
         "NEWS",
     ],
     license_docs = LICENSE_DOCS,
     py_strip_prefix = ["lcm-python"],
+    rename = {
+        "share/java/liblcm-java.jar": "lcm.jar",
+    },
     targets = [
         ":lcm",
         ":lcm-gen",

@@ -42,6 +42,8 @@ the ``upstream`` remote. This can be done by executing the following commands::
     git remote add upstream git@github.com:RobotLocomotion/drake.git
     git remote set-url --push upstream no_push
 
+.. _platform_specific_setup:
+
 Mandatory platform specific instructions
 ========================================
 
@@ -63,17 +65,42 @@ All else being equal, we would recommend developers use Ubuntu Xenial.
 
 Build the collection
 ====================
-There are three ways to build Drake:
+There are four ways to build Drake:
 
-1. :ref:`Using Make <build_with_make>`
-2. :ref:`Using Ninja <build_with_ninja>`
-3. :ref:`Using ROS Catkin <build_with_ros_catkin>`
+1. :ref:`Using Bazel <build_with_bazel>`
+2. :ref:`Using Make <build_with_make>`
+3. :ref:`Using Ninja <build_with_ninja>`
+4. :ref:`Using ROS Catkin <build_with_ros_catkin>`
 
 For instructions on how to switch build systems, see
 :ref:`this subsection <identifying_build_system_used>`.
 
-Make support is more mature, but Ninja is faster, more modern, and will
-receive more investment from the Drake development team going forward.
+Bazel is the build system used by most Drake Developers.  It should be your
+first choice if you intend to stay up-to-date with the latest changes,
+contribute new features, or experiment directly with Drake.  It is also the
+least complex choice to get started.
+
+Alternatively, if you want to use Drake as a toolbox within another project,
+you might instead use
+:ref:`make <build_with_make>`,
+:ref:`ninja <build_with_ninja>`, or
+:ref:`catkin <build_with_ros_catkin>`
+as detailed below.
+
+.. _build_with_bazel:
+
+Build with Bazel
+----------------
+
+For instructions, jump to :ref:`Using Bazel <using_bazel>`, or check out the
+full details at:
+
+.. toctree::
+    :maxdepth: 1
+
+    bazel
+
+The rest of this page is irrelevant if you are using Bazel.
 
 .. _build_with_make:
 
@@ -281,7 +308,7 @@ Using Gurobi as an external
 ===========================
 
 Before building Drake with Gurobi, create an account and obtain a license on
-`Gurobi's website <http://www.gurobi.com/>`_. Download Gurobi 6.0.5, and set
+`Gurobi's website <http://www.gurobi.com/>`_. Download Gurobi 7.0.2, and set
 the ``GUROBI_DISTRO`` environment variable to the absolute path to the
 downloaded file. Consult Gurobi's documentation to activate your license;
 exact procedures depend on license type. Once activated, place your Gurobi
@@ -305,17 +332,6 @@ To work on the bleeding edge, do::
 This is especially useful if you are ready to contribute your work back to the
 main repository with a
 `pull request <https://help.github.com/articles/using-pull-requests/>`_.
-
-Bazel support
-=============
-
-Drake is adding support for the Bazel build system.
-
-.. toctree::
-    :maxdepth: 1
-
-    bazel
-
 
 Troubleshooting
 ===============

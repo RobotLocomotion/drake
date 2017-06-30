@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -18,9 +18,9 @@ bool ends_with(const std::string& s, const std::string& suffix) {
 // Tests that wsg_50_mesh_collision.urdf can be loaded into a RigidBodyTree.
 // This unit test also verifies that the URDF can be parsed by the URDF parser.
 GTEST_TEST(Wsg50DescriptionTest, TestMeshCollisionModelLoadTree) {
-  const std::string kPath(GetDrakePath() +
-      "/manipulation/models/wsg_50_description/urdf/"
-      "wsg_50_mesh_collision.urdf");
+  const std::string kPath(FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/urdf/"
+      "wsg_50_mesh_collision.urdf"));
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

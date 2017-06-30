@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -114,7 +115,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     prog.SetDecisionVariableValues(x);
     const double optimal_cost = 0.5 * x.dot(G * x + c);
     prog.SetOptimalCost(optimal_cost);
-    prog.SetSolverResult(solver_type(), 0);
+    prog.SetSolverResult(SolverType::kEqualityConstrainedQP, 0);
     return SolutionResult::kSolutionFound;
   }
 
@@ -148,8 +149,17 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   const double optimal_cost = 0.5 * x.dot(G * x + c);
   prog.SetOptimalCost(optimal_cost);
 
-  prog.SetSolverResult(solver_type(), 0);
+  prog.SetSolverResult(SolverType::kEqualityConstrainedQP, 0);
   return SolutionResult::kSolutionFound;
+}
+
+SolverId EqualityConstrainedQPSolver::solver_id() const {
+  return id();
+}
+
+SolverId EqualityConstrainedQPSolver::id() {
+  static const never_destroyed<SolverId> singleton{"Equality constrained QP"};
+  return singleton.access();
 }
 
 }  // namespace solvers

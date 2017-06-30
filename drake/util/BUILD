@@ -44,8 +44,8 @@ drake_cc_library(
         "//drake/lcmtypes:polynomial_matrix",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/math:geometric_transform",
-        "@bot_core_lcmtypes",
         "@eigen",
+        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -58,12 +58,6 @@ drake_cc_library(
         "//drake/systems/controllers:qp_common",
         "@yaml_cpp",
     ],
-)
-
-drake_cc_library(
-    name = "app_util",
-    hdrs = ["drakeAppUtil.h"],
-    deprecation = "Please use gflags instead of drakeAppUtil.h.",
 )
 
 # === test/ ===

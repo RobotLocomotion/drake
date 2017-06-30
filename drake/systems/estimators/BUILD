@@ -62,13 +62,13 @@ drake_cc_test(
     tags = mosek_test_tags(),
     deps = [
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/collision",
         "//drake/multibody/parsers",
         "//drake/solvers:mathematical_program",
-        "@bot_core_lcmtypes",
         "@lcm",
+        "@lcmtypes_bot2_core",
     ],
 )
 

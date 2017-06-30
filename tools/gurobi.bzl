@@ -2,21 +2,21 @@
 # This is a Bazel repository_rule for the Gurobi solver.  See
 # https://www.bazel.io/versions/master/docs/skylark/repository_rules.html
 
-# Ubuntu only: GUROBI_PATH should be the linux64 directory in the Gurobi 6.05
+# Ubuntu only: GUROBI_PATH should be the linux64 directory in the Gurobi 7.0.2
 # release.
 def _gurobi_impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
-        gurobi_path = "/Library/gurobi605/mac64"
+        gurobi_path = "/Library/gurobi702/mac64"
         repository_ctx.symlink(gurobi_path, "gurobi-distro")
-        warning = "Gurobi 6.05 is not installed."
+        warning = "Gurobi 7.0.2 is not installed."
 
-        repository_ctx.file("empty.cc", executable=False)
+        repository_ctx.file("empty.cc", executable = False)
         srcs = ["empty.cc"]
 
         lib_path = repository_ctx.path("gurobi-distro/lib")
         linkopts = [
             "-L{}".format(lib_path),
-            "-lgurobi60",
+            "-lgurobi70",
         ]
     else:
         gurobi_path = repository_ctx.os.environ.get("GUROBI_PATH", "")
@@ -32,13 +32,13 @@ def _gurobi_impl(repository_ctx):
             "gurobi.bzl: The saved value of " + warning_detail + "; " +
             "export GUROBI_PATH to the correct value.")
 
-        # In the Gurobi package, libgurobi60.so is just a symlink to
-        # libgurobi.so.6.0.5. However, if you use libgurobi.so.6.0.5 in srcs,
-        # executables that link this library will be unable to find it at runtime
-        # in the Bazel sandbox, because the NEEDED statements in the executable
-        # will not square with the RPATH statements. I don't really know why this
-        # happens, but I suspect it might be a Bazel bug.
-        srcs = ["gurobi-distro/lib/libgurobi60.so"]
+        # In the Gurobi package, libgurobi70.so is just a symlink to
+        # libgurobi.so.7.0.2. However, if you use libgurobi.so.7.0.2 in srcs,
+        # executables that link this library will be unable to find it at
+        # runtime in the Bazel sandbox, because the NEEDED statements in the
+        # executable will not square with the RPATH statements. I don't really
+        # know why this happens, but I suspect it might be a Bazel bug.
+        srcs = ["gurobi-distro/lib/libgurobi70.so"]
 
         linkopts = ["-pthread"]
 
@@ -55,9 +55,9 @@ def _gurobi_impl(repository_ctx):
         linkopts = {linkopts},
         visibility = ["//visibility:public"],
     )
-    """.format(warning=warning, srcs=srcs, linkopts=linkopts)
+    """.format(warning = warning, srcs = srcs, linkopts = linkopts)
     BUILD = BUILD.replace("\n    ", "\n")  # Strip leading indent from lines.
-    repository_ctx.file("BUILD", content=BUILD, executable=False)
+    repository_ctx.file("BUILD", content = BUILD, executable = False)
 
 gurobi_repository = repository_rule(
     environ = ["GUROBI_PATH"],
@@ -65,7 +65,7 @@ gurobi_repository = repository_rule(
     implementation = _gurobi_impl,
 )
 
-def gurobi_test_tags(gurobi_required=True):
+def gurobi_test_tags(gurobi_required = True):
     """Returns the test tags necessary for properly running Gurobi tests.
 
     By default, sets gurobi_required=True, which will require that the supplied

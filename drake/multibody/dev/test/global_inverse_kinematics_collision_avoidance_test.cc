@@ -121,7 +121,7 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
           cache, rigid_body_tree_->get_body(ee_idx_));
   EXPECT_LE(
       (ee_pose_ik_without_collision_avoidance.translation() - ee_pos).norm(),
-      0.06);
+      0.11);
 
   int link6_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_6");
   int link5_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_5");

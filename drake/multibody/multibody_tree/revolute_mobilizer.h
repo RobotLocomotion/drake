@@ -9,9 +9,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
-// Forward declarations.
-template <typename T> class MultibodyTree;
-
 namespace drake {
 namespace multibody {
 

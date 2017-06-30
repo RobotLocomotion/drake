@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -93,11 +93,13 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 }
 
 GTEST_TEST(URDFParserTest, TestParseMaterial) {
-  const string root = GetDrakePath() +
-                      "/multibody/parsers/test/urdf_parser_test/";
-  const string file_no_conflict_1 = root + "non_conflicting_materials_1.urdf";
-  const string file_no_conflict_2 = root + "non_conflicting_materials_2.urdf";
-  const string file_no_conflict_3 = root + "non_conflicting_materials_3.urdf";
+  const string resource_dir{"drake/multibody/parsers/test/urdf_parser_test/"};
+  const string file_no_conflict_1 = FindResourceOrThrow(
+      resource_dir + "non_conflicting_materials_1.urdf");
+  const string file_no_conflict_2 = FindResourceOrThrow(
+      resource_dir + "non_conflicting_materials_2.urdf");
+  const string file_no_conflict_3 = FindResourceOrThrow(
+      resource_dir + "non_conflicting_materials_3.urdf");
 
   auto tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
@@ -112,8 +114,8 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
       file_no_conflict_3, tree.get()));
 
   // This URDF defines the same color multiple times in different links.
-  const string file_same_color_diff_links = root +
-      "/duplicate_but_same_materials.urdf";
+  const string file_same_color_diff_links = FindResourceOrThrow(
+      resource_dir + "duplicate_but_same_materials.urdf");
   tree = make_unique<RigidBodyTree<double>>();
   EXPECT_NO_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
       file_same_color_diff_links, tree.get()));
@@ -121,9 +123,9 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
 
 
 GTEST_TEST(URDFParserTest, TestDuplicateMaterials) {
-  const string root = GetDrakePath() +
-       "/multibody/parsers/test/urdf_parser_test/";
-  const string file_duplicate = root + "duplicate_materials.urdf";
+  const string resource_dir{"drake/multibody/parsers/test/urdf_parser_test/"};
+  const string file_duplicate = FindResourceOrThrow(
+      resource_dir + "duplicate_materials.urdf");
 
   auto tree = make_unique<RigidBodyTree<double>>();
   EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
@@ -131,9 +133,9 @@ GTEST_TEST(URDFParserTest, TestDuplicateMaterials) {
 }
 
 GTEST_TEST(URDFParserTest, TestConflictingMaterials) {
-  const string root = GetDrakePath() +
-       "/multibody/parsers/test/urdf_parser_test/";
-  const string file_conflict = root + "conflicting_materials.urdf";
+  const string resource_dir{"drake/multibody/parsers/test/urdf_parser_test/"};
+  const string file_conflict = FindResourceOrThrow(
+      resource_dir + "conflicting_materials.urdf");
 
   auto tree = make_unique<RigidBodyTree<double>>();
   EXPECT_THROW(AddModelInstanceFromUrdfFileWithRpyJointToWorld(
@@ -156,8 +158,9 @@ string ReadTextFile(const string& file) {
 // Tests that a URDF string can be loaded using a quaternion floating joint.
 // This was added as a result of #4248.
 GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
-  const string model_file = GetDrakePath() +
-      "/multibody/parsers/test/urdf_parser_test/zero_dof_robot.urdf";
+  const string resource_dir{"drake/multibody/parsers/test/urdf_parser_test/"};
+  const string model_file = FindResourceOrThrow(
+      resource_dir + "zero_dof_robot.urdf");
   const string model_string = ReadTextFile(model_file);
 
   auto tree = make_unique<RigidBodyTree<double>>();
@@ -171,8 +174,8 @@ GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
 
 // Tests that AddModelInstanceFromUrdfFile works.
 GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfFile) {
-  const string model_file = GetDrakePath() +
-      "/examples/Atlas/urdf/atlas_minimal_contact.urdf";
+  const string model_file = FindResourceOrThrow(
+      "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   auto tree = make_unique<RigidBodyTree<double>>();
   ASSERT_NO_THROW(AddModelInstanceFromUrdfFile(
@@ -185,11 +188,11 @@ GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfFile) {
 // Tests that AddModelInstanceFromUrdfFileSearchingInRosPackages works.
 GTEST_TEST(URDFParserTest,
     TestAddModelInstanceFromUrdfFileSearchingInRosPackages) {
-  const string model_file = GetDrakePath() +
-      "/examples/Atlas/urdf/atlas_minimal_contact.urdf";
+  const string model_file = FindResourceOrThrow(
+      "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   PackageMap package_map;
-  package_map.Add("Atlas", GetDrakePath() + "/examples/Atlas");
+  package_map.Add("Atlas", FindResourceOrThrow("drake/examples/Atlas"));
 
   auto tree = make_unique<RigidBodyTree<double>>();
   ASSERT_NO_THROW(AddModelInstanceFromUrdfFileSearchingInRosPackages(
@@ -203,8 +206,9 @@ GTEST_TEST(URDFParserTest,
 // Tests that AddModelInstanceFromUrdfString()'s weld_to_frame parameter works.
 // This prevents a regression of #5928.
 GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfStringWeldToFrame) {
-  const string model_file = GetDrakePath() + "/multibody/parsers/test/"
-      "urdf_parser_test/non_conflicting_materials_1.urdf";
+  const string resource_dir{"drake/multibody/parsers/test/urdf_parser_test/"};
+  const string model_file = FindResourceOrThrow(
+      resource_dir + "non_conflicting_materials_1.urdf");
   const string model_string = ReadTextFile(model_file);
   const string kModelName = "non_conflicting_materials_1";
 

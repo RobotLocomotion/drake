@@ -5,8 +5,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
@@ -32,45 +32,19 @@ namespace systems {
  * and velocity have the same dimension, it does not have a floating base.
  * If violated, the program will abort. It is discouraged to use this controller
  * for robots with closed kinematic loops.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ *
+ * @ingroup control_systems
  */
 template <typename T>
 class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
                                   public Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
-
-  /**
-   * Constructs the controller that instantiates a RigidBodyTree directly
-   * from a model file. Assumes the model is connected to the world with a
-   * multibody::joints::kFixed joint.
-   * @param model_path Path to the model file.
-   * @param world_offset X_WB, where B is the base frame of the model.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
-   * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
-   * input port is declared.
-   */
-  InverseDynamicsController(
-      const std::string& model_path,
-      std::shared_ptr<RigidBodyFrame<double>> world_offset,
-      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd,
-      bool has_reference_acceleration);
-
-  /**
-   * Constructs the controller that clones a given RigidBodyTree.
-   * @param robot Reference to the RigidBodyTree to be cloned.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
-   * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
-   * input port is declared.
-   */
-  InverseDynamicsController(const RigidBodyTree<T>& robot, const VectorX<T>& kp,
-                            const VectorX<T>& ki, const VectorX<T>& kd,
-                            bool has_reference_acceleration);
 
   /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
@@ -85,8 +59,9 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
    * input port is declared.
    */
   InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>> robot,
-                            const VectorX<T>& kp, const VectorX<T>& ki,
-                            const VectorX<T>& kd,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
                             bool has_reference_acceleration);
 
   /**
@@ -134,7 +109,8 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   }
 
  private:
-  void SetUp(const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
+  void SetUp(const VectorX<double>& kp,
+      const VectorX<double>& ki, const VectorX<double>& kd);
 
   std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
   PidController<T>* pid_{nullptr};

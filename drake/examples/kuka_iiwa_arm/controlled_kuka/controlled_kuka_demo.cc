@@ -149,16 +149,17 @@ int DoMain() {
   drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
   // Adds a plant
-  builder.AddPlant(std::move(tree));
+  auto plant = builder.AddPlant(std::move(tree));
   builder.AddVisualizer(&lcm);
 
   // Adds a iiwa controller
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+
   auto controller =
       builder.AddController<systems::InverseDynamicsController<double>>(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-          GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          plant->get_rigid_body_tree().Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
           false /* no feedforward acceleration */);
 
   // Adds a trajectory source for desired state.

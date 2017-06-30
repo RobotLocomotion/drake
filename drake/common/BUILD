@@ -256,8 +256,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "monomial",
-    srcs = ["monomial.cc"],
-    hdrs = ["monomial.h"],
+    srcs = [
+        "monomial.cc",
+        "monomial_util.cc",
+    ],
+    hdrs = [
+        "monomial.h",
+        "monomial_util.h",
+    ],
     deps = [
         ":common",
         ":symbolic",
@@ -361,13 +367,15 @@ drake_cc_binary(
 
 install(
     name = "install",
-    targets = [":resource_tool"],
-    deps = ["//:install_resource_tool_data"],
+    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
+    data_dest = "share/drake",
+    guess_data = "WORKSPACE",
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for putting programs into libexec and including the workspace and/or
     # package name in the installed path.  For now, we'll just specify it
     # manually.
     runtime_dest = "libexec/drake/drake/common",
+    targets = [":resource_tool"],
 )
 
 # === test/ ===
@@ -849,4 +857,5 @@ py_test(
 # - cpplint_wrapper_test.py
 
 cpplint()
+
 python_lint()

@@ -10,8 +10,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/action.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
+#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 
 namespace drake {
 namespace examples {

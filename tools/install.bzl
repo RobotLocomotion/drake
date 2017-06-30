@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools:pathutils.bzl", "output_path", "join_paths")
+load("@drake//tools:pathutils.bzl", "dirname", "output_path", "join_paths")
 
 InstallInfo = provider()
 
@@ -18,7 +18,24 @@ def _is_drake_label(x):
         return False
 
 #------------------------------------------------------------------------------
-def _output_path(ctx, input_file, strip_prefix):
+def _workspace(ctx):
+    """Compute name of current workspace."""
+
+    # Check for override
+    if hasattr(ctx.attr, "workspace"):
+        if len(ctx.attr.workspace):
+            return ctx.attr.workspace
+
+    # Check for meaningful workspace_root
+    workspace = ctx.label.workspace_root.split("/")[-1]
+    if len(workspace):
+        return workspace
+
+    # If workspace_root is empty, assume we are the root workspace
+    return ctx.workspace_name
+
+#------------------------------------------------------------------------------
+def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
     """Compute output path (without destination prefix) for install action.
 
     This computes the adjusted output path for an input file. It is the same as
@@ -43,25 +60,68 @@ def _output_path(ctx, input_file, strip_prefix):
 
     # If we get here, we were not able to resolve the path; give up, and print
     # a warning about installing the "foreign" file.
-    print("%s installing file %s which is not in current package"
-          % (ctx.label, input_file.path))
+    if warn_foreign:
+        print("%s installing file %s which is not in current package"
+              % (ctx.label, input_file.path))
     return input_file.basename
 
 #------------------------------------------------------------------------------
-def _install_actions(
-    ctx,
-    file_labels,
-    dests,
-    strip_prefixes = [],
-    excluded_files = []
-    ):
+def _guess_files(target, candidates, scope, attr_name):
+    if scope == "EVERYTHING":
+        return candidates
+
+    elif scope == "WORKSPACE":
+        return [f for f in candidates if
+                target.label.workspace_root == f.owner.workspace_root]
+
+    elif scope == "PACKAGE":
+        return [f for f in candidates if
+                target.label.workspace_root == f.owner.workspace_root and
+                target.label.package == f.owner.package]
+
+    else:
+        msg_fmt = "'install' given unknown '%s' value '%s'"
+        fail(msg_fmt % (attr_name, scope), scope)
+
+#------------------------------------------------------------------------------
+def _install_action(ctx, artifact, dests, strip_prefixes = [], rename = {}):
+    """Compute install action for a single file.
+
+    This takes a single file artifact and returns the appropriate install
+    action for the file. The parameters are the same as for
+    :func:`_install_action`.
+    """
+    if type(dests) == "dict":
+        dest = dests.get(artifact.extension, dests[None])
+    else:
+        dest = dests
+
+    if "@WORKSPACE@" in dest:
+        dest = dest.replace("@WORKSPACE@", _workspace(ctx))
+
+    if type(strip_prefixes) == "dict":
+        strip_prefix = strip_prefixes.get(artifact.extension,
+                                          strip_prefixes[None])
+    else:
+        strip_prefix = strip_prefixes
+
+    file_dest = join_paths(dest, _output_path(ctx, artifact, strip_prefix))
+    if file_dest in rename:
+        renamed = rename[file_dest]
+        file_dest = join_paths(dirname(file_dest), renamed)
+
+    return struct(src = artifact, dst = file_dest)
+
+#------------------------------------------------------------------------------
+def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
+                     excluded_files = [], rename = {}):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
     actions for the files owned by each label.
 
     Args:
-        file_labels (:obj:`list` of :obj:`Label`): labels to install.
+        file_labels (:obj:`list` of :obj:`Label`): List of labels to install.
         dests (:obj:`str` or :obj:`dict` of :obj:`str` to :obj:`str`):
             Install destination. A :obj:`dict` may be given to supply a mapping
             of file extension to destination path. The :obj:`dict` must have an
@@ -83,25 +143,18 @@ def _install_actions(
     actions = []
 
     # Iterate over files. We expect a list of labels, which will have a 'files'
-    # attribute that is a list of File artifacts. Thus this two-level loop.
+    # attribute that is a list of file artifacts. Thus this two-level loop.
     for f in file_labels:
         for a in f.files:
-            if _output_path(ctx, a, []) in excluded_files:
+            # TODO(mwoehlke-kitware) refactor this to separate computing the
+            # original relative path and the path with prefix(es) stripped,
+            # then use the original relative path for both exclusions and
+            # renaming.
+            if _output_path(ctx, a, warn_foreign = False) in excluded_files:
                 continue
 
-            if type(dests) == "dict":
-                dest = dests.get(a.extension, dests[None])
-            else:
-                dest = dests
-
-            if type(strip_prefixes) == "dict":
-                strip_prefix = strip_prefixes.get(a.extension,
-                                                  strip_prefixes[None])
-            else:
-                strip_prefix = strip_prefixes
-
-            p = _output_path(ctx, a, strip_prefix)
-            actions.append(struct(src = a, dst = join_paths(dest, p)))
+            actions.append(
+                _install_action(ctx, a, dests, strip_prefixes, rename))
 
     return actions
 
@@ -119,34 +172,28 @@ def _install_cc_actions(ctx, target):
         "so": ctx.attr.library_strip_prefix,
         None: ctx.attr.runtime_strip_prefix,
     }
-    actions = _install_actions(ctx, [target], dests, strip_prefixes)
+    actions = _install_actions(ctx, [target], dests, strip_prefixes,
+                               rename = ctx.attr.rename)
+
+    # Compute actions for guessed resource files.
+    if ctx.attr.guess_data != "NONE":
+        data = [f for f in target.data_runfiles.files if f.is_source]
+        data = _guess_files(target, data, ctx.attr.guess_data, 'guess_data')
+        actions += _install_actions(ctx, [struct(files = data)],
+                                    ctx.attr.data_dest,
+                                    ctx.attr.data_strip_prefix,
+                                    ctx.attr.guess_data_exclude,
+                                    rename = ctx.attr.rename)
 
     # Compute actions for guessed headers.
     if ctx.attr.guess_hdrs != "NONE":
-        hdrs = []
-
-        if ctx.attr.guess_hdrs == "EVERYTHING":
-            hdrs = target.cc.transitive_headers
-
-        elif ctx.attr.guess_hdrs == "WORKSPACE":
-            hdrs = [h for h in target.cc.transitive_headers if
-                    target.label.workspace_root == h.owner.workspace_root]
-
-        elif ctx.attr.guess_hdrs == "PACKAGE":
-            hdrs = [h for h in target.cc.transitive_headers if
-                    target.label.workspace_root == h.owner.workspace_root and
-                    target.label.package == h.owner.package]
-
-        else:
-            msg_fmt = "'install' given unknown 'guess_hdrs' value '%s'"
-            fail(msg_fmt % ctx.attr.guess_hdrs, ctx.attr.guess_hdrs)
-        actions += _install_actions(
-            ctx,
-            [struct(files=hdrs)],
-            ctx.attr.hdr_dest,
-            ctx.attr.hdr_strip_prefix,
-            ctx.attr.guess_hdrs_exclude
-        )
+        hdrs = _guess_files(target, target.cc.transitive_headers,
+                            ctx.attr.guess_hdrs, 'guess_hdrs')
+        actions += _install_actions(ctx, [struct(files = hdrs)],
+                                    ctx.attr.hdr_dest,
+                                    ctx.attr.hdr_strip_prefix,
+                                    ctx.attr.guess_hdrs_exclude,
+                                    rename = ctx.attr.rename)
 
     # Return computed actions.
     return actions
@@ -163,14 +210,16 @@ def _install_java_actions(ctx, target):
         None: ctx.attr.runtime_strip_prefix,
     }
 
-    return _install_actions(ctx, [target], dests, strip_prefixes)
+    return _install_actions(ctx, [target], dests, strip_prefixes,
+                            rename = ctx.attr.rename)
 
 #------------------------------------------------------------------------------
 # Compute install actions for a py_library or py_binary.
 # TODO(jamiesnape): Install native shared libraries that the target may use.
 def _install_py_actions(ctx, target):
     return _install_actions(ctx, [target], ctx.attr.py_dest,
-                            ctx.attr.py_strip_prefix)
+                            ctx.attr.py_strip_prefix,
+                            rename = ctx.attr.rename)
 
 #------------------------------------------------------------------------------
 # Generate install code for an install action.
@@ -199,13 +248,19 @@ def _install_impl(ctx):
     for d in ctx.attr.deps:
         actions += d.install_actions
 
-    # Generate actions for docs and includes.
+    # Generate actions for data, docs and includes.
     actions += _install_actions(ctx, ctx.attr.license_docs, ctx.attr.doc_dest,
-                                ctx.attr.doc_strip_prefix)
+                                strip_prefixes = ctx.attr.doc_strip_prefix,
+                                rename = ctx.attr.rename)
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
-                                ctx.attr.doc_strip_prefix)
+                                strip_prefixes = ctx.attr.doc_strip_prefix,
+                                rename = ctx.attr.rename)
+    actions += _install_actions(ctx, ctx.attr.data, ctx.attr.data_dest,
+                                strip_prefixes = ctx.attr.data_strip_prefix,
+                                rename = ctx.attr.rename)
     actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
-                                ctx.attr.hdr_strip_prefix)
+                                strip_prefixes = ctx.attr.hdr_strip_prefix,
+                                rename = ctx.attr.rename)
 
     for t in ctx.attr.targets:
         # TODO(jwnimmer-tri): Raise an error if a target has testonly=1.
@@ -217,7 +272,17 @@ def _install_impl(ctx):
             actions += _install_py_actions(ctx, t)
 
     # Generate code for install actions.
-    script_actions = [_install_code(a) for a in actions]
+    script_actions = []
+    installed_files = {}
+    for a in actions:
+        if a.dst not in installed_files:
+            script_actions.append(_install_code(a))
+            installed_files[a.dst] = a.src
+        elif a.src != installed_files[a.dst]:
+            fail("Install conflict detected:\n" +
+                 "\n  src1 = " + repr(installed_files[a.dst]) +
+                 "\n  src2 = " + repr(a.src) +
+                 "\n  dst = " + repr(a.dst))
 
     # Generate install script.
     # TODO(mwoehlke-kitware): Figure out a better way to generate this and run
@@ -231,13 +296,20 @@ def _install_impl(ctx):
     files = ctx.runfiles(files = [a.src for a in actions])
     return InstallInfo(install_actions = actions, runfiles = files)
 
+# TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better
+# default destinations.
 install = rule(
     attrs = {
         "deps": attr.label_list(providers = ["install_actions"]),
         "docs": attr.label_list(allow_files = True),
-        "doc_dest": attr.string(default = "share/doc"),
+        "doc_dest": attr.string(default = "share/doc/@WORKSPACE@"),
         "doc_strip_prefix": attr.string_list(),
         "license_docs": attr.label_list(allow_files = True),
+        "data": attr.label_list(allow_files = True),
+        "data_dest": attr.string(default = "share/@WORKSPACE@"),
+        "data_strip_prefix": attr.string_list(),
+        "guess_data": attr.string(default = "NONE"),
+        "guess_data_exclude": attr.string_list(),
         "hdrs": attr.label_list(allow_files = True),
         "hdr_dest": attr.string(default = "include"),
         "hdr_strip_prefix": attr.string_list(),
@@ -252,9 +324,11 @@ install = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = "lib/python2.7/site_packages"),
+        "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
-        "allowed_externals": attr.label_list(),
+        "rename": attr.string_dict(),
+        "workspace": attr.string(),
+        "allowed_externals": attr.label_list(allow_files = True),
         "install_script_template": attr.label(
             allow_files = True,
             executable = True,
@@ -280,29 +354,49 @@ bazel, but does not define an install) where this *is* the right thing to do,
 the ``allowed_externals`` argument may be used to specify a list of externals
 whose files it is okay to install, which will suppress the warning.
 
+Destination paths may include the placeholder ``@WORKSPACE@``, which is
+replaced with ``workspace`` (if specified) or the name of the workspace which
+invokes ``install``.
+
 Note:
-    By default, headers to be installed must be explicitly listed. This is to
-    work around an issue where Bazel does not appear to provide any mechanism
-    to obtain the public headers of a target at rule instantiation. The
-    ``guess_hdrs`` parameter may be used to tell ``install`` to guess at what
-    headers will be installed. Possible values are:
+    By default, headers and resource files to be installed must be explicitly
+    listed. This is to work around an issue where Bazel does not appear to
+    provide any mechanism to obtain the public headers of a target, nor the
+    *direct* data files of a target, at rule instantiation. The ``guess_hdrs``
+    and ``guess_data`` parameters may be used to tell ``install`` to guess at
+    what headers and/or resource files will be installed. Possible values are:
 
-    * ``"NONE"``: Only install headers which are explicitly listed by ``hdrs``.
-    * ``PACKAGE``:  For each target, install those headers which are used by
-      the target and owned by a target in the same package.
-    * ``WORKSPACE``: For each target, install those headers which are used by
-      the target and owned by a target in the same workspace.
-    * ``EVERYTHING``: Install all headers used by the target.
+    * ``"NONE"``: Only install files which are explicitly listed (i.e. by
+      ``hdrs`` or ``data``).
+    * ``PACKAGE``:  For each target, install those files which are used by the
+      target and owned by a target in the same package.
+    * ``WORKSPACE``: For each target, install those files which are used by the
+      target and owned by a target in the same workspace.
+    * ``EVERYTHING``: Install all headers/resources used by the target.
 
-    The headers considered are *all* headers transitively used by the target.
-    Any option other than ``NONE`` is also likely to install private headers.
+    The headers and resource files considered are *all* headers or resource
+    files transitively used by the target. Any option other than ``NONE`` is
+    also likely to install private headers, and may install resource files used
+    by other targets. In either case, this may result in the same file being
+    considered for installation more than once.
+
+    Note also that, because Bazel includes *all* run-time dependencies —
+    including e.g. shared libraries — in a target's ``runfiles``, only *source*
+    artifacts are considered when guessing resource files.
 
 Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
-    doc_dest: Destination for documentation files (default = "share/doc").
+    doc_dest: Destination for documentation files
+        (default = "share/doc/@WORKSPACE@").
     doc_strip_prefix: List of prefixes to remove from documentation paths.
     license_docs: List of license files to install (uses doc_dest).
+    guess_data: See note.
+    guess_data_exclude: List of resources found by ``guess_data`` to exclude
+        from installation.
+    data: List of (platform-independent) resource files to install.
+    data_dest: Destination for resource files (default = "share/@WORKSPACE@").
+    data_strip_prefix: List of prefixes to remove from resource paths.
     guess_hdrs: See note.
     guess_hdrs_exclude: List of headers found by ``guess_hdrs`` to exclude from
         installation.
@@ -319,8 +413,12 @@ Args:
     java_dest: Destination for Java library targets (default = "share/java").
     java_strip_prefix: List of prefixes to remove from Java library paths.
     py_dest: Destination for Python targets
-        (default = "lib/python2.7/site_packages").
+        (default = "lib/python2.7/site-packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
+    rename: Mapping of install paths to alternate file names, used to rename
+      files upon installation.
+    workspace: Workspace name to use in default paths (overrides built-in
+        guess).
     allowed_externals: List of external packages whose files may be installed.
 """
 
@@ -332,7 +430,8 @@ def _install_files_impl(ctx):
     strip_prefix = ctx.attr.strip_prefix
 
     # Generate actions.
-    actions = _install_actions(ctx, ctx.attr.files, dest, strip_prefix)
+    actions = _install_actions(ctx, ctx.attr.files, dest, strip_prefix,
+                               rename = ctx.attr.rename)
 
     # Return computed actions.
     return InstallInfo(install_actions = actions)
@@ -341,7 +440,9 @@ install_files = rule(
     attrs = {
         "dest": attr.string(mandatory = True),
         "files": attr.label_list(allow_files = True),
+        "rename": attr.string_dict(),
         "strip_prefix": attr.string_list(),
+        "workspace": attr.string(),
         "allowed_externals": attr.string_list(),
     },
     implementation = _install_files_impl,
@@ -370,6 +471,10 @@ complete path components (e.g. ``a/*/`` is okay, but ``a*/`` is not treated as
 a glob and will be matched literally). Due to Skylark limitations, at most one
 ``**`` may be matched.
 
+Destination paths may include the placeholder ``@WORKSPACE``, which is replaced
+with ``workspace`` (if specified) or the name of the workspace which invokes
+``install``.
+
 ``install_files`` has the same caveats regarding external files as
 :func:`install`.
 
@@ -377,6 +482,10 @@ Args:
     dest: Destination for files.
     files: List of files to install.
     strip_prefix: List of prefixes to remove from input paths.
+    rename: Mapping of install paths to alternate file names, used to rename
+      files upon installation.
+    workspace: Workspace name to use in default paths (overrides built-in
+        guess).
     allowed_externals: List of external packages whose files may be installed.
 """
 
@@ -405,7 +514,7 @@ def cmake_config(
     version_file = None,
     cps_file_name = None,
     deps = []
-    ):
+):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -418,9 +527,8 @@ def cmake_config(
 
     if script and version_file:
         if cps_file_name:
-            fail("cps_file_name should not be set if"
-                + " script and version_file are set."
-            )
+            fail("cps_file_name should not be set if " +
+                 "script and version_file are set.")
         native.py_binary(
             name = "create-cps",
             srcs = [script],
@@ -442,24 +550,27 @@ def cmake_config(
     elif not cps_file_name:
         cps_file_name = "@drake//tools:{}.cps".format(package)
 
-    config_file_name = "{}Config.cmake".format(package)
+    package_lower = package.lower()
+
+    config_file_name = "{}-config.cmake".format(package_lower)
+    executable = "$(location @pycps//:cps2cmake_executable)"
 
     native.genrule(
         name = "cmake_exports",
         srcs = [cps_file_name],
         outs = [config_file_name],
-        cmd = "$(location @pycps//:cps2cmake_executable) \"$<\" > \"$@\"",
+        cmd = executable + " \"$<\" > \"$@\"",
         tools = ["@pycps//:cps2cmake_executable"],
         visibility = ["//visibility:private"],
     )
 
-    config_version_file_name = "{}ConfigVersion.cmake".format(package)
+    config_version_file_name = "{}-config-version.cmake".format(package_lower)
 
     native.genrule(
         name = "cmake_package_version",
         srcs = [cps_file_name],
         outs = [config_version_file_name],
-        cmd = "$(location @pycps//:cps2cmake_executable) --version-check \"$<\" > \"$@\"",
+        cmd = executable + " --version-check \"$<\" > \"$@\"",
         tools = ["@pycps//:cps2cmake_executable"],
         visibility = ["//visibility:private"],
     )
@@ -468,8 +579,9 @@ def cmake_config(
 def install_cmake_config(
     package,
     versioned = True,
-    name = "install_cmake_config"
-    ):
+    name = "install_cmake_config",
+    visibility = ["//visibility:private"]
+):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
@@ -477,17 +589,19 @@ def install_cmake_config(
         package (:obj:`str`): CMake package name.
         versioned (:obj:`bool`): True if a version file should be installed.
     """
-    cmake_config_dest = "lib/cmake/{}".format(package.lower())
-    cmake_config_files = ["{}Config.cmake".format(package)]
+    package_lower = package.lower()
+
+    cmake_config_dest = "lib/cmake/{}".format(package_lower)
+    cmake_config_files = ["{}-config.cmake".format(package_lower)]
 
     if versioned:
-        cmake_config_files += ["{}ConfigVersion.cmake".format(package)]
+        cmake_config_files += ["{}-config-version.cmake".format(package_lower)]
 
     install_files(
         name = name,
         dest = cmake_config_dest,
         files = cmake_config_files,
-        visibility = ["//visibility:private"],
+        visibility = visibility,
     )
 
 #END macros

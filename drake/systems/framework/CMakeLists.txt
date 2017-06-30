@@ -10,6 +10,7 @@ set(sources
   diagram_context.cc
   diagram_continuous_state.cc
   discrete_values.cc
+  event_collection.cc
   input_port_descriptor.cc
   input_port_evaluator_interface.cc
   input_port_value.cc
@@ -52,8 +53,9 @@ set(installed_headers
   diagram_builder.h
   diagram_context.h
   diagram_continuous_state.h
-  discrete_event.h
   discrete_values.h
+  event.h
+  event_collection.h
   input_port_descriptor.h
   input_port_evaluator_interface.h
   input_port_value.h
@@ -73,7 +75,6 @@ set(installed_headers
   supervector.h
   system.h
   system_common.h
-  systems.h
   value.h
   value_checker.h
   vector_base.h

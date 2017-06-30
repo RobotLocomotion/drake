@@ -30,6 +30,15 @@ namespace systems {
  * Note that this class assumes |q| = |v|, and |q_d| = |v_d|. Also |q| >= |q_d|.
  * The user can specify a selection matrix that picks the *controlled* states
  * from (q, v) for feedback. See constructor documentations for more details.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ * - AutoDiffXd
+ * - symbolic::Expression
+ *
+ * @ingroup control_systems
  */
 template <typename T>
 class PidController : public StateFeedbackControllerInterface<T>,

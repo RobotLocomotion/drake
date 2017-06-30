@@ -4,6 +4,8 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/solvers/solver_id.h"
+#include "drake/solvers/solver_type.h"
 
 namespace drake {
 namespace solvers {
@@ -17,18 +19,6 @@ enum SolutionResult {
   kUnknownError = -4,
   kInfeasible_Or_Unbounded = -5,
   kIterationLimit = -6,
-};
-
-enum class SolverType {
-  kDReal,
-  kEqualityConstrainedQP,
-  kGurobi,
-  kIpopt,
-  kLinearSystem,
-  kMobyLCP,
-  kMosek,
-  kNlopt,
-  kSnopt,
 };
 
 /// Interface used by implementations of individual solvers.
@@ -50,10 +40,15 @@ class MathematicalProgramSolverInterface {
   virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
 
   /// Returns the type of the solver.
+  // TODO(jwnimmer-tri) This is redundant with solver_id(); remove it.
   virtual SolverType solver_type() const = 0;
 
   /// Returns the name of the solver.
+  // TODO(jwnimmer-tri) This is redundant with solver_id(); remove it.
   virtual std::string SolverName() const = 0;
+
+  /// Returns the identifier of this solver.
+  virtual SolverId solver_id() const = 0;
 };
 
 }  // namespace solvers

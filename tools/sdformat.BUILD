@@ -137,7 +137,8 @@ cmake_config(
     deps = ["@ignition_math//:cps"],
 )
 
-install_cmake_config(package = "SDFormat")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = "SDFormat")
 
 install(
     name = "install",
@@ -145,7 +146,6 @@ install(
         ":sdfhh_genrule",
         ":config",
     ],
-    doc_dest = "share/doc/sdformat",
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
     license_docs = [

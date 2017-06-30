@@ -24,6 +24,11 @@
     "robotlocomotion-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "spdlog": {
+      "Version": "1.0.0",
+      "Hints": ["@prefix@/lib/cmake/spdlog"],
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
   "Components": {
@@ -37,8 +42,9 @@
       "Requires": [
         "Eigen3:Eigen",
         "lcm:lcm",
-        "bot2-core-lcmtypes:bot2-core-lcmtypes-cpp",
-        "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp"
+        "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
+        "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
+        "spdlog:spdlog"
       ]
     }
   }

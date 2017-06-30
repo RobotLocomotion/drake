@@ -3,7 +3,6 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-
 #include "bot_core/robot_state_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
@@ -17,8 +16,8 @@
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -274,12 +273,12 @@ int DoMain(void) {
   Simulator<double> simulator(*sys);
   simulator.Initialize();
 
-  auto plan_source_context = sys->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), iiwa_trajectory_generator);
+  auto& plan_source_context = sys->GetMutableSubsystemContext(
+      *iiwa_trajectory_generator, simulator.get_mutable_context());
   iiwa_trajectory_generator->Initialize(
-      plan_source_context->get_time(),
+      plan_source_context.get_time(),
       Eigen::VectorXd::Zero(7),
-      plan_source_context->get_mutable_state());
+      plan_source_context.get_mutable_state());
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the

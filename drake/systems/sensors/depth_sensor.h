@@ -26,7 +26,8 @@ namespace sensors {
 /// measurements and all pitch / yaw combinations in a single resulting depth
 /// image are obtained at a single effective point in time. Thus, this sensor
 /// does *not* model aliasing effects due to the time spent scanning vertically
-/// and horizontally.
+/// and horizontally. For the ray casting, DepthSensor uses collision models of
+/// RigidBodyTree.
 ///
 /// There are two frames associated with this sensor: its base frame and its
 /// optical frame. This sensor's specification and configuration are defined in

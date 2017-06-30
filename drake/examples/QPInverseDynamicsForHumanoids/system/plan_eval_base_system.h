@@ -42,7 +42,8 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
    * Calls DoExtendedCalcUnrestrictedUpdate().
    */
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-                                systems::State<double>* state) const final {
+            const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+            systems::State<double>* state) const final {
     DoExtendedCalcUnrestrictedUpdate(context, state);
   }
 

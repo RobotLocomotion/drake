@@ -20,13 +20,13 @@ def _generate_export_header_impl(ctx):
         "#ifdef %s" % ctx.attr.static_define,
         "#  define %s" % ctx.attr.export_macro_name,
         "#else",
-        "#  define %s __attribute__((visibility(\"default\")))" % ctx.attr.export_macro_name,
+        "#  define %s __attribute__((visibility(\"default\")))" % ctx.attr.export_macro_name,  # noqa
         "#endif",
         "",
         "#endif",
     ]
 
-    ctx.file_action(output=output, content="\n".join(content)+"\n")
+    ctx.file_action(output = output, content = "\n".join(content) + "\n")
 
 # Defines the rule to generate_export_header.
 _generate_export_header_gen = rule(
@@ -40,11 +40,11 @@ _generate_export_header_gen = rule(
 )
 
 def generate_export_header(
-        lib=None,
-        name=None,
-        out=None,
-        export_macro_name=None,
-        static_define=None,
+        lib = None,
+        name = None,
+        out = None,
+        export_macro_name = None,
+        static_define = None,
         **kwargs):
     """Creates a rule to generate an export header for a named library.  This
     is an incomplete implementation of CMake's generate_export_header. (In
@@ -68,8 +68,8 @@ def generate_export_header(
         export_macro_name = "%s_EXPORT" % lib.upper()
 
     _generate_export_header_gen(
-        name=name,
-        out=out,
-        export_macro_name=export_macro_name,
-        static_define=static_define,
+        name = name,
+        out = out,
+        export_macro_name = export_macro_name,
+        static_define = static_define,
         **kwargs)

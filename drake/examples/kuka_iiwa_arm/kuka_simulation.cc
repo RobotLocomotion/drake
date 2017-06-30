@@ -92,7 +92,7 @@ int DoMain() {
   auto controller =
       builder.AddController<systems::InverseDynamicsController<double>>(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-          urdf, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          tree.Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
           false /* without feedforward acceleration */);
 
   // Create the command subscriber and status publisher.
@@ -131,8 +131,8 @@ int DoMain() {
   simulator.Initialize();
 
   command_receiver->set_initial_position(
-      sys->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                      command_receiver),
+      &sys->GetMutableSubsystemContext(*command_receiver,
+                                       simulator.get_mutable_context()),
       VectorX<double>::Zero(tree.get_num_positions()));
 
 

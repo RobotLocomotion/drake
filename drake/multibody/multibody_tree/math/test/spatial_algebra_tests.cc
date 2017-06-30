@@ -16,8 +16,10 @@ namespace {
 
 using Eigen::AngleAxis;
 
-// Generic declaration of a traits class to figure out at compile time the
-// scalar type a spatial quantity is instantiated with.
+// Generic declaration boilerplate of a traits class for spatial vectors.
+// This is used by the (templated on SpatialQuantityUnderTest)
+// SpatialQuantityTest unit test class below to infer on what scalar type the
+// SpatialQuantityUnderTest is templated on.
 template <class SpatialQuantity> struct spatial_vector_traits {};
 
 // traits specialization for SpatialVelocity.
@@ -83,7 +85,7 @@ TYPED_TEST(SpatialQuantityTest, ZeroFactory) {
 }
 
 // Tests:
-// - Construction from Eigen expressions.
+// - Construction from a Eigen expressions.
 // - SetZero() method.
 TYPED_TEST(SpatialQuantityTest, ConstructionFromAnEigenExpression) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
@@ -279,8 +281,11 @@ class SpatialVelocityTest : public ::testing::Test {
 };
 TYPED_TEST_CASE(SpatialVelocityTest, ScalarTypes);
 
-// Tests the shifting of a spatial velocity between two moving frames rigidly
-// attached to each other.
+// Unit tests for the composition of spatial velocities:
+// - Shift(): shift of a spatial velocity between two moving frames rigidly
+//            attached to each other.
+// - ComposeWithMovingFrameVelocity(): compose the velocity V_XY of a frame Y
+//   in X with that of a third frame Z moving in Y with velocity V_YZ.
 TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   typedef typename TestFixture::ScalarType T;
   const SpatialVelocity<T>& V_XY_A = this->V_XY_A_;
@@ -293,10 +298,25 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   // Consider now shifting the spatial velocity of a frame Y measured in frame
   // X to the spatial velocity of frame Z measured in frame X knowing that
   // frames Y and Z are rigidly attached to each other.
-  SpatialVelocity<T> V_XZ_A = V_XY_A.Shift(p_YZ_A);
+  SpatialVelocity<T> V_XYz_A = V_XY_A.Shift(p_YZ_A);
 
   // Verify the result.
-  SpatialVelocity<T> expected_V_XZ_A(w_XY_A, Vector3<T>(7, 8, 0));
+  SpatialVelocity<T> expected_V_XYz_A(w_XY_A, Vector3<T>(7, 8, 0));
+  EXPECT_TRUE(V_XYz_A.IsApprox(expected_V_XYz_A));
+
+  // ComposeWithMovingFrameVelocity() should yield the same result.
+  EXPECT_TRUE(V_XY_A.ComposeWithMovingFrameVelocity(
+      p_YZ_A, SpatialVelocity<T>::Zero()).IsApprox(V_XYz_A));
+
+  // Unit test with the composition of the spatial velocity of a moving frame Z
+  // in frame Y.
+  const SpatialVelocity<T> V_YZ_A(Vector3<T>(1.0, 2.0, 3.0),
+                                  Vector3<T>(4.0, 5.0, 6.0));
+  const SpatialVelocity<T> V_XZ_A =
+      V_XY_A.ComposeWithMovingFrameVelocity(p_YZ_A, V_YZ_A);
+
+  // Verify the result: V_XZ = V_XYz + V_YZ = V_XY.Shift(p_YZ) + V_YZ
+  SpatialVelocity<T> expected_V_XZ_A = expected_V_XYz_A + V_YZ_A;
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
@@ -390,15 +410,15 @@ TYPED_TEST_CASE(SpatialAccelerationTest, ScalarTypes);
 // velocity w_AP and has zero acceleration in frame A, ie. A_AP = 0. We can
 // think of frames P and A having coincident origins.
 // A third frame Q translated by a position p_PoQo moves rigidly with P.
-// The angular velocity w_AP_E is as a component out of plane in the z-axes
-// while the offset vector p_PoQo_E is in the x-y plane.
+// The angular velocity vector w_AP_E is orthogonal to the x-y plane while the
+// offset vector p_PoQo_E is in the x-y plane.
 // Therefore, the spatial acceleration of frame Q should correspond to that of
 // a centrifugal linear component pointing inwards in the opposite direction of
 // p_PoQo
 TYPED_TEST(SpatialAccelerationTest, CentrifugalAcceleration) {
   typedef typename TestFixture::ScalarType T;
 
-  // The spatial acceleration of frame P measure in A is zero.
+  // The spatial acceleration of frame P measured in A is zero.
   const SpatialAcceleration<T> A_AP = SpatialAcceleration<T>::Zero();
 
   // Position of Q's origin measured in P and expressed in E.
@@ -417,9 +437,19 @@ TYPED_TEST(SpatialAccelerationTest, CentrifugalAcceleration) {
       -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized();
 
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+
+  // The result from ComposeWithMovingFrameAcceleration() should be the same
+  // when velocity V_PQ and acceleration A_PQ are both zero:
+  const SpatialAcceleration<T> A_AQ_moving =
+      A_AP.ComposeWithMovingFrameAcceleration(
+          p_PoQo_E, w_AP_E, /* Same arguments as in the Shift() operator */
+          SpatialVelocity<T>::Zero() /* V_PQ */,
+          SpatialAcceleration<T>::Zero() /* A_PQ */);
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_moving));
 }
 
-// Unit test for the method SpatialAcceleration::ShiftTimeDerivative().
+// Unit test for the method
+// SpatialAcceleration::ComposeWithMovingFrameAcceleration().
 // Case 1b:
 // This unit test expands Case 1 by allowing point Q to move in frame P. This
 // motion causes, in addition to the centrifugal acceleration of Case 1, a
@@ -454,11 +484,9 @@ TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
   // In this test, at this instantaneous moment, R_AP is the identity matrix and
   // therefore p_PoQo_A = p_PoQo_P. Similarly for V_PQ, A_PQ and w_AP.
   const SpatialAcceleration<T> A_AQ =
-      A_AP.Shift(p_PoQo, w_AP) +
-      SpatialAcceleration<T>::ShiftTimeDerivative(V_PQ, A_PQ, w_AP);
+      A_AP.ComposeWithMovingFrameAcceleration(p_PoQo, w_AP, V_PQ, A_PQ);
 
   SpatialAcceleration<T> A_AQ_expected;
-  //const Vector3<T> phat = p_PoQo.normalized();
   A_AQ_expected.rotational() = Vector3<T>::Zero();
   A_AQ_expected.translational() =
       /* The centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and
@@ -466,7 +494,7 @@ TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
       -w_AP.norm() * w_AP.norm() * p_PoQo.norm() * p_PoQo.normalized() +
       /* Coriolis contribution. Since v_PQ points in the x direction and w_AP in
       the z direction, this contribution points in the positive y direction.*/
-      w_AP.norm() * V_PQ.translational().norm() * Vector3<T>::UnitY();
+      2.0 * w_AP.norm() * V_PQ.translational().norm() * Vector3<T>::UnitY();
 
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
@@ -538,7 +566,7 @@ TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
       /* Centrifugal contribution has magnitude w_AP^2 * ‖ p_PoQo ‖ and points
       in the direction opposite to p_PoQo. */
       -w_AP_E.norm() * w_AP_E.norm() * p_PoQo_E.norm() * p_PoQo_E.normalized() +
-      /* Contribution do to the angular acceleration of frame P in A.
+      /* Contribution due to the angular acceleration of frame P in A.
       The sqrt(2) factor comes from the angle between alpha_AP and p_PoQo. */
       -alpha_AP_E.norm() * p_PoQo_E.norm() * Vector3<T>::UnitZ() / sqrt(2);
 
@@ -546,6 +574,9 @@ TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
 
   EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
 }
+
+// TODO(sherm1,mitiguy) Add independently-developed unit tests here by Mitiguy
+// for the scary Shift() and Compose() methods, just to double check!
 
 }  // namespace
 }  // namespace math

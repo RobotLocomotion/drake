@@ -1,6 +1,12 @@
 # -*- python -*-
 
-load("//tools:install.bzl", "exports_create_cps_scripts", "install_files")
+load("//tools:bazel_lint.bzl", "bazel_lint")
+load(
+    "//tools:install.bzl",
+    "cmake_config",
+    "exports_create_cps_scripts",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -71,6 +77,13 @@ py_binary(
     srcs = ["drakelint.py"],
 )
 
+py_binary(
+    name = "bzlcodestyle",
+    srcs = ["bzlcodestyle.py"],
+    main = "bzlcodestyle.py",
+    deps = ["@pycodestyle//:pycodestyle"],
+)
+
 py_library(
     name = "cpsutils",
     srcs = ["cpsutils.py"],
@@ -94,7 +107,12 @@ exports_files(
 
 exports_files(
     ["third_party/jchart2d/LICENSE"],
-    visibility = ["//:__pkg__"],
+    visibility = ["//tools/install/jchart2d:__pkg__"],
+)
+
+exports_files(
+    ["third_party/libbot/LICENSE.ldpc"],
+    visibility = ["@libbot//:__pkg__"],
 )
 
 exports_create_cps_scripts([
@@ -118,12 +136,17 @@ exports_create_cps_scripts([
 
 exports_files(
     ["bot2-core-lcmtypes.cps"],
-    visibility = ["@bot_core_lcmtypes//:__pkg__"],
+    visibility = ["@lcmtypes_bot2_core//:__pkg__"],
+)
+
+exports_files(
+    ["libbot.cps"],
+    visibility = ["@libbot//:__pkg__"],
 )
 
 exports_files(
     ["robotlocomotion-lcmtypes.cps"],
-    visibility = ["@robotlocomotion_lcmtypes//:__pkg__"],
+    visibility = ["@lcmtypes_robotlocomotion//:__pkg__"],
 )
 
 alias(
@@ -131,34 +154,16 @@ alias(
     actual = "@com_github_bazelbuild_buildtools//buildifier",
 )
 
-genrule(
-    name = "cmake_exports",
-    srcs = ["drake.cps"],
-    outs = ["drake-config.cmake"],
-    cmd = "$(location @pycps//:cps2cmake_executable) $(location drake.cps) > \"$@\"",
-    tools = ["@pycps//:cps2cmake_executable"],
-    visibility = ["//visibility:private"],
+cmake_config(
+    cps_file_name = "drake.cps",
+    package = "drake",
 )
 
-install_files(
+install_cmake_config(
     name = "install",
-    dest = "lib/cmake/drake",
-    files = ["drake-config.cmake"],
-)
-
-# This pulls the otherwise-unused libbot targets into the "//..." label tree.
-genrule(
-    name = "force_libbot",
-    srcs = [
-        "@libbot//:bot-lcm-logfilter",
-        "@libbot//:bot-lcm-logsplice",
-        "@libbot//:bot-lcm-tunnel",
-        "@libbot//:bot-spy",
-        "@libbot//:lcmtypes_bot2-core-py",
-    ],
-    outs = ["force_libbot.touch"],
-    cmd = "touch $(@)",
-    visibility = ["//visibility:private"],
+    package = "drake",
+    versioned = 0,
+    visibility = ["//visibility:public"],
 )
 
 # === CROSSTOOL rules ===
@@ -294,20 +299,20 @@ config_setting(
     values = {"define": "WITH_SNOPT=ON"},
 )
 
-# IPOPT is an open-source solver, and is included in the Drake build by default.
-# The IPOPT build is fragile, so we provide a hidden switch to shut it off for
-# developers who don't actually need it.  This is not a supported configuration.
-# Use at your own risk: --define=NO_IPOPT=ON
+# IPOPT is an open-source solver, and is included in the Drake build by
+# default. The IPOPT build is fragile, so we provide a hidden switch to shut it
+# off for developers who don't actually need it.  This is not a supported
+# configuration. Use at your own risk: --define=NO_IPOPT=ON
 config_setting(
     name = "no_ipopt",
     values = {"define": "NO_IPOPT=ON"},
 )
 
-# NLOPT is an open-source solver, and is included in the Drake build by default.
-# The NLOPT solver is irrelvant to some users of MathematicalProgram,
-# so we provide a hidden switch to shut it off for
-# developers who don't actually need it.  This is not a supported configuration.
-# Use at your own risk: --define=NO_NLOPT=ON
+# NLOPT is an open-source solver, and is included in the Drake build by
+# default. The NLOPT solver is irrelvant to some users of MathematicalProgram,
+# so we provide a hidden switch to shut it off for developers who don't
+# actually need it.  This is not a supported configuration. Use at your own
+# risk: --define=NO_NLOPT=ON
 config_setting(
     name = "no_nlopt",
     values = {"define": "NO_NLOPT=ON"},
@@ -362,3 +367,5 @@ config_setting(
         "cpu": "darwin",
     },
 )
+
+bazel_lint()

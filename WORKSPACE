@@ -31,6 +31,11 @@ pkg_config_package(
     modname = "glib-2.0",
 )
 
+pkg_config_package(
+    name = "gthread",
+    modname = "gthread-2.0",
+)
+
 load("//tools:python.bzl", "python_repository")
 python_repository(
     name = "python",
@@ -109,6 +114,24 @@ maven_jar(
     sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
+maven_jar(
+    name = "com_jidesoft_jide_oss",
+    artifact = "com.jidesoft:jide-oss:2.9.7",
+    sha1 = "a9bb0d8384012c25c1519f6dd9adc80dd720a050",
+)
+
+maven_jar(
+    name = "commons_io_commons_io",
+    artifact = "commons-io:commons-io:1.3.1",
+    sha1 = "b90b6ac57cf27a2858eaa490d02ba7945d18ca7b",
+)
+
+maven_jar(
+    name = "org_apache_xmlgraphics_xmlgraphics_commons",
+    artifact = "org.apache.xmlgraphics:xmlgraphics-commons:1.3.1",
+    sha1 = "f7d0fa54e2750acd82b1a241c043be6fce1bf0dc",
+)
+
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
@@ -117,6 +140,8 @@ github_archive(
     sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
 )
 
+# In the unlikely event that you update the version here, verify that the
+# licenses in tools/third_party/libbot/ldpc LICENSE are still applicable.
 github_archive(
     name = "libbot",
     repository = "RobotLocomotion/libbot2",
@@ -127,10 +152,10 @@ github_archive(
 
 github_archive(
     name = "bullet",
-    repository = "RobotLocomotion/bullet3",
-    commit = "ae2c4ca0618d55c6a29900aed75b958604149fdb",
+    repository = "bulletphysics/bullet3",
+    commit = "2.86.1",
     build_file = "tools/bullet.BUILD",
-    sha256 = "2121dc8b0d33f50adbad8fc9ac5e007141df5cf5738fce72200c5bac4ffc589b",
+    sha256 = "c058b2e4321ba6adaa656976c1a138c07b18fc03b29f5b82880d5d8228fbf059",
 )
 
 github_archive(
@@ -176,8 +201,8 @@ github_archive(
 github_archive(
     name = "optitrack_driver",
     repository = "RobotLocomotion/optitrack-driver",
-    commit = "3a5da8d7c66c95ca98cda4dc7ca604f681464168",
-    sha256 = "a4d4c61ed5af59f12a273629eb28fa95ac2349abffe8912468bc5cf6dff34d28",
+    commit = "b9a59b66cb0627f9f174e11f323fdcf6cb223bb6",
+    sha256 = "5c9d917fcb9d325ceba75484a2d3f31ea044a090a966ac1ee2c4afd91923039e",
 )
 
 github_archive(
@@ -189,18 +214,18 @@ github_archive(
 )
 
 github_archive(
-    name = "bot_core_lcmtypes",
+    name = "lcmtypes_bot2_core",
     repository = "openhumanoids/bot_core_lcmtypes",
     commit = "99676541398749c2aab4b5b2c38be77d268085cc",
-    build_file = "tools/bot_core_lcmtypes.BUILD",
+    build_file = "tools/lcmtypes_bot2_core.BUILD",
     sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",
 )
 
 github_archive(
-    name = "robotlocomotion_lcmtypes",
+    name = "lcmtypes_robotlocomotion",
     repository = "RobotLocomotion/lcmtypes",
     commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
-    build_file = "tools/robotlocomotion_lcmtypes.BUILD",
+    build_file = "tools/lcmtypes_robotlocomotion.BUILD",
     sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",
 )
 
@@ -284,6 +309,8 @@ bind(
     actual = "@six_archive//:six",
 )
 
+# When updating the version of protobuf,
+# update tools/install/protobuf/protobuf.cps
 github_archive(
     name = "protobuf",
     repository = "google/protobuf",
@@ -302,8 +329,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "d68a10ce1130f87d38a13ae42ddb263042e2352a",
-    sha256 = "4de60f6b260b286dc2e68e9cdc31decc8f9ef43f77894c3d33a6fd097549008b",
+    commit = "adff2def458928902ad482337330676beeeedb93",
+    sha256 = "61fd6f1810724c50784da97ef666c4b5b9110a8ce57f79b4c5510d6f8bb7c75e",
     build_file = "tools/pycps.BUILD",
 )
 

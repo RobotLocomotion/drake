@@ -7,8 +7,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/collision/drake_collision.h"
 
 using Eigen::AngleAxisd;
@@ -832,8 +832,8 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   DrakeShapes::Sphere sphere_shape(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
-  std::string file_name = drake::GetDrakePath() +
-      "/multibody/collision/test/ripple_cap.obj";
+  std::string file_name = drake::FindResourceOrThrow(
+      "drake/multibody/collision/test/ripple_cap.obj");
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // Creates collision elements.
@@ -892,8 +892,8 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
 // This test confirms that point queries against non-convex objects (e.g.,
 // a static mesh) will *not* produce distance values.
 GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
-  std::string file_name = drake::GetDrakePath() +
-      "/multibody/collision/test/ripple_cap.obj";
+  std::string file_name = drake::FindResourceOrThrow(
+      "drake/multibody/collision/test/ripple_cap.obj");
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // NOTE: The elements are being instantiated here so that the anchored state
@@ -968,8 +968,8 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
   DrakeShapes::Sphere sphere_shape(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
-  std::string file_name = drake::GetDrakePath() +
-      "/multibody/collision/test/ripple_cap.obj";
+  std::string file_name = drake::FindResourceOrThrow(
+      "drake/multibody/collision/test/ripple_cap.obj");
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // Creates collision elements.

@@ -57,7 +57,7 @@ int DoMain() {
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
   auto control_sys =
       std::make_unique<systems::InverseDynamicsController<double>>(
-          kUrdfPath, nullptr, jaco_kp, jaco_ki, jaco_kd,
+          plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
           false /* no feedforward acceleration */);
   auto controller =
       builder.AddSystem<systems::InverseDynamicsController<double>>(
@@ -93,13 +93,13 @@ int DoMain() {
 
   systems::Simulator<double> simulator(*diagram);
 
-  systems::Context<double>* jaco_context = diagram->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), plant);
+  systems::Context<double>& jaco_context = diagram->GetMutableSubsystemContext(
+      *plant, simulator.get_mutable_context());
 
   // Sets some (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
   systems::VectorBase<double>* x0 =
-      jaco_context->get_mutable_continuous_state_vector();
+      jaco_context.get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, -1.57);  // shoulder fore/aft
   x0->SetAtIndex(2, -1.57);  // elbow fore/aft
 

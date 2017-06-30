@@ -313,7 +313,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -324,7 +324,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -335,8 +335,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -379,8 +379,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/benchmarks/acrobot",
         "//drake/multibody/parsers",
     ],
@@ -445,7 +445,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -533,7 +533,7 @@ drake_cc_test(
     deps = select({
         "//tools:with_gurobi": [
             ":inverse_kinematics",
-            "//drake/common:drake_path",
+            "//drake/common:find_resource",
             "//drake/multibody/parsers",
         ],
         "//conditions:default": [

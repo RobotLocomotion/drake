@@ -14,9 +14,9 @@ For more information, see:
 Bazel Installation
 ==================
 
-The Ubuntu Xenial platform setup process installs Bazel for you. On other
-platforms, refer to the Bazel installation instructions. We use Bazel 0.4.5.
-https://bazel.build/versions/master/docs/install.html
+Follow Drake's
+:ref:`platform-specific setup instructions <platform_specific_setup>`
+to install Bazel.
 
 Drake clone and platform setup
 ==============================
@@ -31,6 +31,8 @@ The one-time platform setup is the same as for a CMake build:
 
 When using Bazel, be sure that **ccache is not on your default $PATH**, e.g.,
 ``env | grep ccache`` is empty.
+
+.. _using_bazel:
 
 Developing Drake using Bazel
 ============================
@@ -143,15 +145,15 @@ Install on Ubuntu
 ~~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. Download ``gurobi6.0.5_linux64.tar.gz``.
+3. Download ``gurobi7.0.2_linux64.tar.gz``.
 4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
-5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi605/linux64``
+5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi702/linux64``
 
 Install on OSX
 ~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. Download and install ``gurobi6.05_mac64.pkg``.
+3. Download and install ``gurobi7.0.2_mac64.pkg``.
 
 
 To confirm that your setup was successful, run the tests that require Gurobi.

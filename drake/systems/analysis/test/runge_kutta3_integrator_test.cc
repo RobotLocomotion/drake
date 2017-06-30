@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/prismatic_joint.h"
@@ -306,6 +305,47 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Verify that less computation was performed compared to the fixed step
   // integrator.
   EXPECT_LT(integrator_->get_num_steps_taken(), fixed_steps);
+}
+
+// Verifies that the maximum step size taken is smaller than the integrator
+// max.
+TEST_F(RK3IntegratorTest, MaxStepSizeRespected) {
+  // Set the initial position and initial velocity such that any step is
+  // viable.
+  const double initial_position = 0;
+  const double initial_velocity = 0;
+  spring_mass_->set_position(integrator_->get_mutable_context(),
+                             initial_position);
+  spring_mass_->set_velocity(integrator_->get_mutable_context(),
+                             initial_velocity);
+
+  // Set reasonable parameters for integration with error control.
+  const double max_step_size = 1e-2;
+  integrator_->Reset();
+  integrator_->set_maximum_step_size(max_step_size);
+  integrator_->set_requested_minimum_step_size(1e-6);
+
+  // Initialize the integrator.
+  integrator_->Initialize();
+
+  // Step for 1/10 second.
+  const double inf = std::numeric_limits<double>::infinity();
+  const double eps = std::numeric_limits<double>::epsilon();
+  const double t_final = 0.1;
+  double t_remaining = t_final - context_->get_time();
+  do {
+    // NOTE: this perfect storm of conditions (error controlled integration
+    // can take the maximum step size, publish time larger than update time,
+    // update time larger than directed step, directed step larger than maximum
+    // step size) causes IntegratorBase::StepOnceErrorControlledAtMost() to
+    // to hang *if* that method does not account for the maximum step size.
+    integrator_->IntegrateAtMost(inf, max_step_size + eps, t_remaining);
+    t_remaining = t_final - context_->get_time();
+  } while (t_remaining > 0.0);
+
+  // Verify the statistics.
+  EXPECT_LE(integrator_->get_largest_step_size_taken(),
+            max_step_size * integrator_->get_stretch_factor());
 }
 
 // Verify that attempting to take a step for a very large initial time throws

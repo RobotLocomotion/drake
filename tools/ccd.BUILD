@@ -1,7 +1,12 @@
 # -*- python -*-
 
 load("@drake//tools:cmake_configure_file.bzl", "cmake_configure_file")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(
     default_visibility = ["//visibility:public"],
@@ -54,7 +59,6 @@ install_cmake_config(package = "ccd")  # Creates rule :install_cmake_config.
 install(
     name = "install",
     hdrs = CCD_PUBLIC_HEADERS,
-    doc_dest = "share/doc/ccd",
     hdr_dest = "include/ccd",
     hdr_strip_prefix = ["**/"],
     license_docs = ["BSD-LICENSE"],

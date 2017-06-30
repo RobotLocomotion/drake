@@ -89,7 +89,7 @@ def pypi_archive(
 
     # Packages are mirrored from PyPI to CloudFront backed by an S3 bucket.
     urls = [
-        "https://files.pythonhosted.org/packages/source/{0}/{1}/{1}-{2}.tar.gz".format(
+        "https://files.pythonhosted.org/packages/source/{0}/{1}/{1}-{2}.tar.gz".format(  # noqa
             package[:1], package, version),
         "https://d2tbce6hkathzp.cloudfront.net/pypi/{0}/{0}-{1}.tar.gz".format(
             package, version),
@@ -98,9 +98,9 @@ def pypi_archive(
     ]
 
     native.new_http_archive(
-        name=name,
-        build_file=build_file,
-        sha256=sha256,
-        strip_prefix=strip_prefix,
-        urls=urls,
+        name = name,
+        build_file = build_file,
+        sha256 = sha256,
+        strip_prefix = strip_prefix,
+        urls = urls,
         **kwargs)

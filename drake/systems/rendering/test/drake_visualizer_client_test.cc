@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcmt_viewer_geometry_data.hpp"
 #include "drake/multibody/shapes/visual_element.h"
 
@@ -101,7 +101,7 @@ TEST_F(MakeGeometryDataTest, Capsule) {
 
 TEST_F(MakeGeometryDataTest, Mesh) {
   const std::string kFileName =
-      drake::GetDrakePath() + "/multibody/shapes/test/quad_cube.obj";
+      drake::FindResourceOrThrow("drake/multibody/shapes/test/quad_cube.obj");
   const DrakeShapes::VisualElement mesh(
       DrakeShapes::Mesh("arbitrary_identifier", kFileName), transform_, color_);
 

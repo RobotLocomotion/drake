@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <vector>
 
 #include "ros/ros.h"
 #include "rosgraph_msgs/Clock.h"
@@ -18,7 +19,9 @@ namespace systems {
  * network.
  *
  * For more information about ROS clock servers, see:
- * http://wiki.ros.org/Clock#Running_a_Clock_Server.
+ * http://wiki.ros.org/Clock#Running_a_Clock_Server
+ *
+ * @ingroup message_passing
  */
 class RosClockPublisher : public LeafSystem<double> {
  public:
@@ -38,8 +41,8 @@ class RosClockPublisher : public LeafSystem<double> {
   /**
    * Takes the current simulation time and publishes it on ROS topic `/clock`.
    */
-  void DoPublish(const Context<double>& context) const
-      override;
+  void DoPublish(const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>&) const override;
 
   /**
    * Returns the number of subscribers to this clock publisher.

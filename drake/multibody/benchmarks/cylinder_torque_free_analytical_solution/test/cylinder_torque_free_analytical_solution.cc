@@ -9,9 +9,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -458,9 +458,10 @@ void  TestDrakeSolutionForVariousInitialValues(
 GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Create path to .urdf file containing mass/inertia and geometry properties.
   const std::string urdf_name = "uniform_solid_cylinder.urdf";
-  const std::string urdf_dir = "/multibody/benchmarks/"
+  const std::string urdf_dir = "drake/multibody/benchmarks/"
       "cylinder_torque_free_analytical_solution/";
-  const std::string urdf_dir_file_name = GetDrakePath() + urdf_dir + urdf_name;
+  const std::string urdf_dir_file_name = FindResourceOrThrow(
+      urdf_dir + urdf_name);
 
   // Construct an empty RigidBodyTree.
   std::unique_ptr<RigidBodyTree<double>> tree =

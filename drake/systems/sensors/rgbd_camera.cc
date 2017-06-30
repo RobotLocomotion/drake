@@ -13,6 +13,7 @@
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
+#include <vtkImageExport.h>
 #include <vtkNew.h>
 #include <vtkOBJReader.h>
 #include <vtkPNGReader.h>
@@ -212,6 +213,19 @@ struct ModuleInitVtkRenderingOpenGL2 {
   }
 };
 
+// Updates VTK rendering related objects including vtkRenderWindow,
+// vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
+// vtkActors' pose update for rendering.
+void PerformVTKUpdate(
+    const vtkNew<vtkRenderWindow>& window,
+    const vtkNew<vtkWindowToImageFilter>& filter,
+    const vtkNew<vtkImageExport>& exporter) {
+  window->Render();
+  filter->Modified();
+  filter->Update();
+  exporter->Update();
+}
+
 }  // namespace
 
 void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
@@ -277,7 +291,7 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
 
   // These are the calculator method implementations for the four output ports.
   void OutputColorImage(const BasicVector<double>& input_vector,
-                        ImageBgra8U* color_image) const;
+                        ImageRgba8U* color_image) const;
   void OutputDepthImage(const BasicVector<double>& input_vector,
                         ImageDepth32F* depth_image) const;
   void OutputLabelImage(const BasicVector<double>& input_vector,
@@ -288,15 +302,14 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
  private:
   void CreateRenderingWorld();
 
-  void UpdateModelPoses(const KinematicsCache<double>& cache,
-                        const Eigen::Isometry3d& X_CW) const;
-
-  void UpdateRenderWindow() const;
-
   // TODO(sherm1) This should be the calculator for a cache entry containing
   // the VTK update that must be valid before outputting any image info. For
   // now it has to be repeated before each image output port calculation.
-  void PerformVTKUpdate(const BasicVector<double>& input_vector) const;
+  void UpdateModelPoses(const BasicVector<double>& input_vector) const;
+
+  // Initializes camera pose first and sets camera pose in the world frame X_WC.
+  void SetModelTransformMatrixToVtkCamera(
+      vtkCamera* camera, const vtkSmartPointer<vtkTransform>& X_WC) const;
 
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double>& frame_;
@@ -321,6 +334,9 @@ class RgbdCamera::Impl : private ModuleInitVtkRenderingOpenGL2 {
   vtkNew<vtkWindowToImageFilter> color_filter_;
   vtkNew<vtkWindowToImageFilter> depth_filter_;
   vtkNew<vtkWindowToImageFilter> label_filter_;
+  vtkNew<vtkImageExport> color_exporter_;
+  vtkNew<vtkImageExport> depth_exporter_;
+  vtkNew<vtkImageExport> label_exporter_;
 };
 
 
@@ -355,22 +371,21 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
     }
   }
 
-  CreateRenderingWorld();
-
-  vtkNew<vtkCamera> camera;
-  camera->SetPosition(0., 0., 0.);
-  camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
-  camera->SetViewUp(0., -1, 0.);  // Sets y-down.
-  camera->SetViewAngle(fov_y * 180. / M_PI);
-  camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
-
   const auto sky_color = color_palette_.get_normalized_sky_color();
   const auto renderers = MakeVtkInstanceArray<vtkRenderer>(
       color_depth_renderer_, label_renderer_);
+  const vtkSmartPointer<vtkTransform> vtk_X_WC =
+      VtkUtil::ConvertToVtkTransform(X_WB_initial_ * X_BC_);
+
   for (auto& renderer : renderers) {
-    renderer->SetActiveCamera(camera.GetPointer());
     renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
+    auto camera = renderer->GetActiveCamera();
+    camera->SetViewAngle(fov_y * 180. / M_PI);
+    camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
+    SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
   }
+
+  CreateRenderingWorld();
 
 #if ((VTK_MAJOR_VERSION == 7) && (VTK_MINOR_VERSION >= 1)) || \
     (VTK_MAJOR_VERSION >= 8)
@@ -394,11 +409,22 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
   label_filter_->SetInput(label_render_window_.GetPointer());
   label_filter_->SetInputBufferTypeToRGB();
 
-  for (auto& filter : MakeVtkInstanceArray<vtkWindowToImageFilter>(
-           color_filter_, depth_filter_, label_filter_)) {
-    filter->SetMagnification(1);
-    filter->ReadFrontBufferOff();
-    filter->Update();
+  auto exporters = MakeVtkInstanceArray<vtkImageExport>(
+      color_exporter_, depth_exporter_, label_exporter_);
+
+  auto filters = MakeVtkInstanceArray<vtkWindowToImageFilter>(
+      color_filter_, depth_filter_, label_filter_);
+
+  for (int i = 0; i < 3; ++i) {
+    filters[i]->SetMagnification(1);
+    filters[i]->ReadFrontBufferOff();
+    filters[i]->Update();
+#if VTK_MAJOR_VERSION <= 5
+    exporters[i]->SetInput(filters[i]->GetOutput());
+#else
+    exporters[i]->SetInputData(filters[i]->GetOutput());
+#endif
+    exporters[i]->ImageLowerLeftOff();
   }
 }
 
@@ -409,8 +435,21 @@ RgbdCamera::Impl::Impl(const RigidBodyTree<double>& tree,
                  Eigen::Vector3d(0., 0., 0.), fov_y, show_window, fix_camera) {}
 
 
+void RgbdCamera::Impl::SetModelTransformMatrixToVtkCamera(
+    vtkCamera* camera, const vtkSmartPointer<vtkTransform>& X_WC) const {
+  // vtkCamera contains a transformation as the internal state and
+  // ApplyTransform multiplies a given transformation on top of the internal
+  // transformation. Thus, resetting 'Set{Position, FocalPoint, ViewUp}' is
+  // needed here.
+  camera->SetPosition(0., 0., 0.);
+  camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
+  camera->SetViewUp(0., -1, 0.);  // Sets y-down. For the detail, please refere
+  // to CameraInfo's document.
+  camera->ApplyTransform(X_WC);
+}
+
+
 void RgbdCamera::Impl::CreateRenderingWorld() {
-  auto X_CW = (X_WB_initial_ * X_BC_).inverse();
   for (const auto& body : tree_.bodies) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
@@ -527,11 +566,8 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
         // color.
         actor_for_label->GetProperty()->LightingOff();
 
-        // Converts visual's pose in the world to the one in the camera
-        // coordinate system.
-        const auto X_CVisual = X_CW * visual.getWorldTransform();
         vtkSmartPointer<vtkTransform> vtk_transform =
-            VtkUtil::ConvertToVtkTransform(X_CVisual);
+            VtkUtil::ConvertToVtkTransform(visual.getWorldTransform());
 
         auto renderers = MakeVtkInstanceArray<vtkRenderer>(
             color_depth_renderer_, label_renderer_);
@@ -548,150 +584,64 @@ void RgbdCamera::Impl::CreateRenderingWorld() {
   }
 
   // Adds a flat terrain.
-  vtkSmartPointer<vtkPlaneSource> plane = VtkUtil::CreateSquarePlane(
-      kTerrainSize);
-  vtkSmartPointer<vtkTransform> transform =
-      VtkUtil::ConvertToVtkTransform(X_CW);
-
+  vtkSmartPointer<vtkPlaneSource> plane =
+      VtkUtil::CreateSquarePlane(kTerrainSize);
   vtkNew<vtkPolyDataMapper> mapper;
   mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
   auto color = color_palette_.get_normalized_terrain_color();
-  terrain_actor_->GetProperty()->SetColor(color.r,
-                                          color.g,
-                                          color.b);
+  terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
   terrain_actor_->GetProperty()->LightingOff();
-  terrain_actor_->SetUserTransform(transform);
   for (auto& renderer : MakeVtkInstanceArray<vtkRenderer>(color_depth_renderer_,
                                                           label_renderer_)) {
     renderer->AddActor(terrain_actor_.GetPointer());
   }
 }
 
-void RgbdCamera::Impl::UpdateModelPoses(
-    const KinematicsCache<double>& cache,
-    const Eigen::Isometry3d& X_CW) const {
-  for (const auto& body : tree_.bodies) {
-    if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
-      continue;
-    }
-
-    for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
-      const auto& visual = body->get_visual_elements()[i];
-      const auto X_CVisual = X_CW * tree_.CalcBodyPoseInWorldFrame(
-          cache, *body) * visual.getLocalTransform();
-
-      vtkSmartPointer<vtkTransform> vtk_transform =
-          VtkUtil::ConvertToVtkTransform(X_CVisual);
-      // `id_object_maps_` is modified here. This is OK because 1) we are just
-      // copying data to the memory spaces allocated at the construction time
-      // and 2) we are not outputting these data to outside the class.
-      for (auto& id_object_map : id_object_maps_) {
-        auto& actor = id_object_map.at(body->get_body_index()).at(i);
-        actor->SetUserTransform(vtk_transform);
-      }
-    }
-  }
-
-  if (!kCameraFixed) {
-    // Updates terrain.
-    vtkSmartPointer<vtkTransform> vtk_transform =
-        VtkUtil::ConvertToVtkTransform(X_CW);
-    // `terrain_actor_` is modified here, but this is OK.  For the detail, see
-    // the comment above for `id_object_maps_`.
-    terrain_actor_->SetUserTransform(vtk_transform);
-  }
-}
-
-void RgbdCamera::Impl::UpdateRenderWindow() const {
-  for (auto& window : MakeVtkInstanceArray<vtkRenderWindow>(
-           color_depth_render_window_, label_render_window_)) {
-    window->Render();
-  }
-
-  for (auto& filter : MakeVtkInstanceArray<vtkWindowToImageFilter>(
-           color_filter_, depth_filter_, label_filter_)) {
-    filter->Modified();
-    filter->Update();
-  }
-}
-
 void RgbdCamera::Impl::OutputColorImage(const BasicVector<double>& input_vector,
-                                        ImageBgra8U* color_image) const {
-  // Outputs the image data.
-  sensors::ImageBgra8U& image = *color_image;
-
+                                        ImageRgba8U* color_image) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(input_vector);
-
-  const int height = color_camera_info_.height();
-  const int width = color_camera_info_.width();
-  for (int v = 0; v < height; ++v) {
-    for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down.
-
-      // We cast `void*` to `uint8_t*` for RGBA. This is because that is the
-      // type for color pixels internally used in `vtkWindowToImageFilter`
-      // class. For more detail, refer to:
-      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
-      // Converts RGBA to BGRA.
-      void* color_ptr = color_filter_->GetOutput()->GetScalarPointer(u, v, 0);
-      image.at(u, height_reversed)[0] = *(static_cast<uint8_t*>(color_ptr) + 2);
-      image.at(u, height_reversed)[1] = *(static_cast<uint8_t*>(color_ptr) + 1);
-      image.at(u, height_reversed)[2] = *(static_cast<uint8_t*>(color_ptr) + 0);
-      image.at(u, height_reversed)[3] = *(static_cast<uint8_t*>(color_ptr) + 3);
-    }
-  }
+  UpdateModelPoses(input_vector);
+  PerformVTKUpdate(color_depth_render_window_, color_filter_, color_exporter_);
+  color_exporter_->Export(color_image->at(0, 0));
 }
 
 void RgbdCamera::Impl::OutputDepthImage(const BasicVector<double>& input_vector,
                                         ImageDepth32F* depth_image_out) const {
-  // Outputs the image depth data.
-  sensors::ImageDepth32F& depth_image = *depth_image_out;
-
   // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(input_vector);
+  UpdateModelPoses(input_vector);
+  PerformVTKUpdate(color_depth_render_window_, depth_filter_, depth_exporter_);
+  depth_exporter_->Export(depth_image_out->at(0, 0));
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
+  // TODO(kunimatsu-tri) Calculate this in a vertex shader.
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down.
-
-      // We cast `void*` to `float*` for ZBuffer. This is because this is the
-      // type for pixel depth internally used in `vtkWindowToImageFilter` class.
-      // For more detail, refer to:
-      // http://www.vtk.org/doc/release/5.8/html/a02326.html.
-
-      // Updates the depth image.
-      const float z_buffer_value = *static_cast<float*>(
-          depth_filter_->GetOutput()->GetScalarPointer(u, v, 0));
-      depth_image.at(u, height_reversed)[0] =
-          CheckRangeAndConvertToMeters(z_buffer_value);
+      depth_image_out->at(u, v)[0] =
+          CheckRangeAndConvertToMeters(depth_image_out->at(u, v)[0]);
     }
   }
 }
 
 void RgbdCamera::Impl::OutputLabelImage(const BasicVector<double>& input_vector,
                                         ImageLabel16I* label_image_out) const {
-  // Outputs the image label data.
-  sensors::ImageLabel16I& label_image = *label_image_out;
-
   // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(input_vector);
+  UpdateModelPoses(input_vector);
+  PerformVTKUpdate(label_render_window_, label_filter_, label_exporter_);
 
   const int height = color_camera_info_.height();
   const int width = color_camera_info_.width();
+  ImageRgb8U image(width, height);
+  label_exporter_->Export(image.at(0, 0));
+
+  Color color;
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      const int height_reversed = height - v - 1;  // Makes image upside down.
-
-      void* label_ptr = label_filter_->GetOutput()->GetScalarPointer(u, v, 0);
-      Color color{*(static_cast<uint8_t*>(label_ptr) + 0),  // R
-                  *(static_cast<uint8_t*>(label_ptr) + 1),  // G
-                  *(static_cast<uint8_t*>(label_ptr) + 2)};  // B
-
-      label_image.at(u, height_reversed)[0] =
+      color.r = image.at(u, v)[0];
+      color.g = image.at(u, v)[1];
+      color.b = image.at(u, v)[2];
+      label_image_out->at(u, v)[0] =
           static_cast<int16_t>(color_palette_.LookUpId(color));
     }
   }
@@ -722,22 +672,50 @@ void RgbdCamera::Impl::OutputPoseVector(
   camera_base_pose->set_rotation(quat);
 }
 
-void RgbdCamera::Impl::PerformVTKUpdate(
+void RgbdCamera::Impl::UpdateModelPoses(
     const BasicVector<double>& input_vector) const {
   const Eigen::VectorXd q =
       input_vector.CopyToVector().head(tree_.get_num_positions());
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
-  Eigen::Isometry3d X_WB;
-  if (kCameraFixed) {
-    X_WB = X_WB_initial_;
-  } else {
-    // Updates camera pose.
-    X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+  // Updates camera poses.
+  if (!kCameraFixed) {
+    Eigen::Isometry3d X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+    vtkSmartPointer<vtkTransform> vtk_X_WC =
+        VtkUtil::ConvertToVtkTransform(X_WB * X_BC_);
+
+    for (auto& renderer : MakeVtkInstanceArray<vtkRenderer>(
+             color_depth_renderer_, label_renderer_)) {
+      auto camera = renderer->GetActiveCamera();
+      // TODO(kunimatsu-tri) Once VTK 5.8 support dropped, rewrite this
+      // using `vtkCamera`'s `SetModelTransformMatrix` method which is
+      // introduced since VTK 5.10.
+      SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
+    }
   }
 
-  UpdateModelPoses(cache, (X_WB * X_BC_).inverse());
-  UpdateRenderWindow();
+  // Updates body poses.
+  for (const auto& body : tree_.bodies) {
+    if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
+      continue;
+    }
+
+    const auto X_WBody = tree_.CalcBodyPoseInWorldFrame(cache, *body);
+
+    for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
+      const auto& visual = body->get_visual_elements()[i];
+      const auto X_WV = X_WBody * visual.getLocalTransform();
+      vtkSmartPointer<vtkTransform> vtk_X_WV =
+          VtkUtil::ConvertToVtkTransform(X_WV);
+      // `id_object_maps_` is modified here. This is OK because 1) we are just
+      // copying data to the memory spaces allocated at construction time
+      // and 2) we are not outputting these data to outside the class.
+      for (auto& id_object_map : id_object_maps_) {
+        auto& actor = id_object_map.at(body->get_body_index()).at(i);
+        actor->SetUserTransform(vtk_X_WV);
+      }
+    }
+  }
 }
 
 float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
@@ -747,7 +725,6 @@ float RgbdCamera::Impl::CheckRangeAndConvertToMeters(float z_buffer_value) {
   if (z_buffer_value == 1.f) {
     checked_depth = std::numeric_limits<float>::quiet_NaN();
   } else {
-    // TODO(kunimatsu-tri) Calculate this in a vertex shader.
     float depth = static_cast<float>(kB / (z_buffer_value - kA));
 
     if (depth > kDepthRangeFar) {
@@ -789,9 +766,9 @@ void RgbdCamera::Init(const std::string& name) {
       impl_->tree().get_num_positions() + impl_->tree().get_num_velocities();
   this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
-  ImageBgra8U color_image(kImageWidth, kImageHeight);
+  ImageRgba8U color_image(kImageWidth, kImageHeight);
   color_image_port_ = &this->DeclareAbstractOutputPort(
-      sensors::ImageBgra8U(color_image), &RgbdCamera::OutputColorImage);
+      sensors::ImageRgba8U(color_image), &RgbdCamera::OutputColorImage);
 
   ImageDepth32F depth_image(kImageWidth, kImageHeight);
   depth_image_port_ = &this->DeclareAbstractOutputPort(
@@ -865,7 +842,7 @@ void RgbdCamera::OutputPoseVector(
 }
 
 void RgbdCamera::OutputColorImage(const Context<double>& context,
-                                  ImageBgra8U* color_image) const {
+                                  ImageRgba8U* color_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, kPortStateInput);
 

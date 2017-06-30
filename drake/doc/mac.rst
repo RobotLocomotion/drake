@@ -19,7 +19,8 @@ Install the prerequisites::
     brew update
     brew upgrade
     brew install autoconf automake bazel boost clang-format cmake doxygen gcc \
-      glib graphviz gtk+ jpeg libpng libtool libyaml mpfr ninja numpy python \
+      glib graphviz gtk+ jpeg libpng libtool libyaml mpfr ninja numpy \
+      patchutils python \
       qt qt@4 qwt-qt4 scipy tinyxml vtk5 vtk@8.0 wget
     pip install -U beautifulsoup4 html5lib lxml PyYAML Sphinx
 

@@ -30,6 +30,7 @@ drake_cc_googletest(
     data = [":models"],
     local = 1,
     deps = [
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )

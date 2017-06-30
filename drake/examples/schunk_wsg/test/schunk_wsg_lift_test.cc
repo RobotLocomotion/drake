@@ -217,9 +217,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Open the gripper.  Due to the number of links involved, this is
   // surprisingly complicated.
-  systems::Context<double>* plant_context =
+  systems::Context<double>& plant_context =
       model->GetMutableSubsystemContext(
-          simulator.get_mutable_context(), plant);
+          *plant, simulator.get_mutable_context());
   Eigen::VectorXd plant_initial_state =
       Eigen::VectorXd::Zero(plant->get_num_states());
   plant_initial_state.head(plant->get_num_positions())
@@ -239,7 +239,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   plant_initial_state(3) = 1.27982;
   plant_initial_state(4) = 0.0550667;
   plant_initial_state(5) = 0.009759;
-  plant->set_state_vector(plant_context, plant_initial_state);
+  plant->set_state_vector(&plant_context, plant_initial_state);
 
   auto context = simulator.get_mutable_context();
 

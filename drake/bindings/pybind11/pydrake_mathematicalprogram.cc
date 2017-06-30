@@ -11,24 +11,24 @@
 namespace py = pybind11;
 using std::string;
 
-using drake::symbolic::Variable;
+using drake::solvers::Binding;
+using drake::solvers::BoundingBoxConstraint;
+using drake::solvers::Constraint;
+using drake::solvers::Cost;
+using drake::solvers::EvaluatorBase;
+using drake::solvers::LinearConstraint;
+using drake::solvers::LinearCost;
+using drake::solvers::LinearEqualityConstraint;
+using drake::solvers::MathematicalProgram;
+using drake::solvers::MathematicalProgramSolverInterface;
+using drake::solvers::MatrixXDecisionVariable;
+using drake::solvers::QuadraticCost;
+using drake::solvers::SolutionResult;
+using drake::solvers::SolverType;
+using drake::solvers::VectorXDecisionVariable;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
-using drake::solvers::Binding;
-using drake::solvers::MathematicalProgram;
-using drake::solvers::EvaluatorBase;
-using drake::solvers::Constraint;
-using drake::solvers::LinearConstraint;
-using drake::solvers::LinearEqualityConstraint;
-using drake::solvers::BoundingBoxConstraint;
-using drake::solvers::Cost;
-using drake::solvers::LinearCost;
-using drake::solvers::QuadraticCost;
-using drake::solvers::VectorXDecisionVariable;
-using drake::solvers::MatrixXDecisionVariable;
-using drake::solvers::SolutionResult;
-using drake::solvers::MathematicalProgramSolverInterface;
-using drake::solvers::SolverType;
+using drake::symbolic::Variable;
 
 /*
  * Register a Binding template, and add the corresponding overloads to the

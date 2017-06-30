@@ -39,7 +39,7 @@ drake_cc_library(
         ":pose_vector",
         "//drake/common",
         "//drake/systems/lcm:translator",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -134,7 +134,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":drake_visualizer_client",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcmtypes:viewer",
     ],
 )

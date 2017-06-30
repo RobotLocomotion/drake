@@ -19,9 +19,15 @@ namespace benchmarks {
 /// constant.  The damper force on Q is -b*ẋ*Nx where b is a damper constant
 /// and ẋ is the time-derivative of x.
 ///
+/// Instantiated templates for the following kinds of T's are provided and
+/// available to link against in the containing library:
+/// - double
+/// - AutoDiffXd
+///
 /// @note All units must be self-consistent (e.g., standard SI with MKS units).
 ///       The solution provided herein is also applicable to a rotating system,
 ///       e.g., having rigid-body inertia, rotational damper, rotational spring.
+template <typename T>
 class MassDamperSpringAnalyticalSolution {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MassDamperSpringAnalyticalSolution);
@@ -31,14 +37,14 @@ class MassDamperSpringAnalyticalSolution {
   /// @param[in] mass Mass of system (particle Q).
   /// @param[in] b Linear damping constant.
   /// @param[in] k Linear spring constant.
-  MassDamperSpringAnalyticalSolution(double mass, double b, double k) :
+  MassDamperSpringAnalyticalSolution(const T& mass, const T& b, const T& k) :
                                      m_(mass), b_(b), k_(k) {}
 
   /// Sets the initial values of x and ẋ for `this` system.
   ///
   /// @param[in] x0 Initial value of x (value of x at time t = 0).
   /// @param[in] xDt0 Initial value of ẋ (value of ẋ at time t = 0).
-  void SetInitialValue(double x0, double xDt0)  { x0_ = x0;  xDt0_ = xDt0; }
+  void SetInitialValue(const T& x0, const T& xDt0)  { x0_ = x0;  xDt0_ = xDt0; }
 
   /// For `this` mass-damper-spring system, and with the given initial
   /// values, this method calculates the values of x, ẋ, ẍ at time t.
@@ -46,16 +52,16 @@ class MassDamperSpringAnalyticalSolution {
   /// @param[in] t The value of time at which output is requested.
   ///
   /// @returns Three-element matrix consisting of x, ẋ, ẍ, respectively.
-  Eigen::Vector3d CalculateOutput(double t) const;
+  Vector3<T> CalculateOutput(const T& t) const;
 
   /// Returns x (Nx measure of Q's position from No) at time t.
-  double get_x (double t)  { return CalculateOutput(t)(0); }
+  T get_x(const T& t) const  { return CalculateOutput(t)(0); }
 
   /// Returns ẋ (Nx measure of Q's velocity in N) at time t.
-  double get_xDt(double t)  { return CalculateOutput(t)(1); }
+  T get_xDt(const T& t) const  { return CalculateOutput(t)(1); }
 
   /// Returns ẍ (Nx measure of Q's acceleration in N) at time t.
-  double get_xDtDt(double t)  { return CalculateOutput(t)(2); }
+  T get_xDtDt(const T& t) const  { return CalculateOutput(t)(2); }
 
  private:
   // Class data.
@@ -64,13 +70,19 @@ class MassDamperSpringAnalyticalSolution {
   // k_     |  Linear spring constant.
   // x0_    |  Initial value of x (at time t = 0).
   // xDt0_  |  Initial value of ẋ (at time t = 0).
-  double m_, b_, k_, x0_, xDt0_;
+  T m_, b_, k_, x0_, xDt0_;
 
   // Calculate `this` mass-damper-spring system's natural frequency (wn).
-  double CalculateNaturalFrequency() const  { return std::sqrt(k_ / m_); }
+  T CalculateNaturalFrequency() const  {
+    using std::sqrt;
+    return sqrt(k_ / m_);
+  }
 
   // Calculate `this` mass-damper-spring system's damping ratio (zeta).
-  double CalculateDampingRatio() const  { return b_ / (2 * std::sqrt(m_ * k_));}
+  T CalculateDampingRatio() const  {
+    using std::sqrt;
+    return b_ / (2 * sqrt(m_ * k_));
+  }
 
   // Calculates the values of x, ẋ, ẍ at time t associated with the ODE
   // ẍ  +  2 ζ ωₙ ẋ  +  ωₙ²  =  0  and the given initial values.
@@ -87,8 +99,8 @@ class MassDamperSpringAnalyticalSolution {
   //              The units of t are typically in seconds.
   //
   // @returns Three-element matrix consisting of x, ẋ, ẍ, respectively.
-  static Eigen::Vector3d CalculateOutputImpl(double zeta, double wn,
-                                             double x0, double xDt0, double t);
+  static Vector3<T> CalculateOutputImpl(const T& zeta, const T& wn,
+                                        const T& x0, const T& xDt0, const T& t);
 };
 
 

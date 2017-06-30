@@ -1,7 +1,12 @@
 # -*- python -*-
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(
     default_visibility = ["//visibility:public"],
@@ -24,7 +29,6 @@ install_cmake_config(package = "fmt")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    doc_dest = "share/doc/fmt",
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/fmt",
     hdr_strip_prefix = ["fmt"],

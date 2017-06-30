@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -17,6 +18,8 @@ namespace lcm {
 
 /**
  * Publishes an LCM message containing information from its input port.
+ *
+ * @ingroup message_passing
  */
 class LcmPublisherSystem : public LeafSystem<double> {
  public:
@@ -111,7 +114,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * Takes the VectorBase from the input port of the context and publishes
    * it onto an LCM channel.
    */
-  void DoPublish(const Context<double>& context) const override;
+  void DoPublish(
+      const Context<double>& context,
+      const std::vector<const systems::PublishEvent<double>*>&) const override;
 
   /**
    * Returns the translator used by this publisher. This can be used to convert

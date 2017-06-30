@@ -13,15 +13,9 @@
 [submodule "externals/libbot"]
 	path = externals/libbot
 	url = https://github.com/RobotLocomotion/libbot2.git
-[submodule "externals/spotless"]
-	path = externals/spotless
-	url = https://github.com/RobotLocomotion/spotless-pod.git
 [submodule "externals/director"]
 	path = externals/director
 	url = https://github.com/RobotLocomotion/director.git
-[submodule "externals/signalscope"]
-	path = externals/signalscope
-	url = https://github.com/mitdrc/signal-scope.git
 [submodule "externals/octomap"]
 	path = externals/octomap
 	url = https://github.com/OctoMap/octomap.git
@@ -34,24 +28,6 @@
 [submodule "externals/mosek"]
 	path = externals/mosek
 	url = https://github.com/RobotLocomotion/mosek.git
-[submodule "externals/iris"]
-	path = externals/iris
-	url = https://github.com/rdeits/iris-distro.git
-[submodule "externals/yalmip"]
-	path = externals/yalmip
-	url = https://github.com/RobotLocomotion/yalmip.git
-[submodule "externals/sedumi"]
-	path = externals/sedumi
-	url = https://github.com/RobotLocomotion/sedumi.git
-[submodule "externals/avl"]
-	path = externals/avl
-	url = https://github.com/RobotLocomotion/avl.git
-[submodule "externals/xfoil"]
-	path = externals/xfoil
-	url = https://github.com/RobotLocomotion/xfoil.git
-[submodule "externals/meshconverters"]
-	path = externals/meshconverters
-	url = https://github.com/RobotLocomotion/meshConverters.git
 [submodule "externals/yaml_cpp"]
 	path = externals/yaml_cpp
 	url = https://github.com/jbeder/yaml-cpp.git
@@ -73,7 +49,7 @@
 	url = https://github.com/gflags/gflags.git
 [submodule "externals/bullet"]
 	path = externals/bullet
-	url = https://github.com/RobotLocomotion/bullet3.git
+	url = https://github.com/bulletphysics/bullet3.git
 [submodule "externals/ccd"]
 	path = externals/ccd
 	url = https://github.com/danfis/libccd.git

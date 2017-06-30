@@ -65,8 +65,8 @@ drake_cc_binary(
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/primitives:trajectory_source",
-        "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 

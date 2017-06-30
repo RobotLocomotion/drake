@@ -20,6 +20,7 @@ set(sources
   find_resource.cc
   functional_form.cc
   monomial.cc
+  monomial_util.cc
   nice_type_name.cc
   polynomial.cc
   symbolic_environment.cc
@@ -64,6 +65,7 @@ set(installed_headers
   is_approx_equal_abstol.h
   is_cloneable.h
   monomial.h
+  monomial_util.h
   never_destroyed.h
   nice_type_name.h
   number_traits.h
@@ -130,6 +132,9 @@ drake_install_pkg_config_file(drake-common
   REQUIRES
     eigen3
     ${drakeCommon_REQUIRES})
+
+add_executable(resource_tool resource_tool.cc)
+target_link_libraries(resource_tool drakeCommon)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

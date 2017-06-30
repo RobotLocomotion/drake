@@ -6,6 +6,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -89,10 +90,15 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
 
   for (const auto& info : iiwa_info) {
+    auto single_arm = std::make_unique<RigidBodyTree<double>>();
+    parsers::urdf::AddModelInstanceFromUrdfFile(
+        info.model_path, multibody::joints::kFixed, info.world_offset,
+        single_arm.get());
+
     auto controller =
         builder
             .template AddController<systems::InverseDynamicsController<double>>(
-                info.instance_id, info.model_path, info.world_offset, iiwa_kp,
+                info.instance_id, std::move(single_arm), iiwa_kp,
                 iiwa_ki, iiwa_kd, false /* no feedforward acceleration */);
     controller->set_name("controller_" + std::to_string(info.instance_id));
 
@@ -109,15 +115,15 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   // Simulates.
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>* context = simulator.get_mutable_context();
-  systems::Context<double>* plant_context =
-      diagram->GetMutableSubsystemContext(context, plant);
+  systems::Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(*plant, context);
   VectorX<double> state0(2 * kNumPos * iiwa_info.size());
   for (size_t i = 0; i < iiwa_info.size(); ++i) {
     state0.segment<kNumPos>(i * kNumPos) = state_d.head<kNumPos>();
     state0.segment<kNumPos>(i * kNumPos + kNumPos * iiwa_info.size()) =
         state_d.tail<kNumPos>();
   }
-  plant->set_state_vector(plant_context, state0);
+  plant->set_state_vector(&plant_context, state0);
 
   simulator.Initialize();
   simulator.StepTo(0.02);

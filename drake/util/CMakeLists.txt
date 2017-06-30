@@ -3,8 +3,6 @@ target_include_directories(drakeUtil PRIVATE ${EIGEN3_INCLUDE_DIRS})
 
 drake_install_headers(drakeUtil.h)
 
-drake_install_headers(drakeAppUtil.h)
-
 if(lcm_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header

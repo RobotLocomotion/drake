@@ -37,15 +37,15 @@ drake_cc_binary(
         ":kuka_pick_and_place_monolithic",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
-        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
         "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
         "//drake/systems/analysis:simulator",
-        "@bot_core_lcmtypes",
         "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
     ],
 )
 

@@ -1,3 +1,0 @@
-drake_add_matlab_test(NAME examples/grasping/forceClosure/test/testFixedContactsSearchQ1 REQUIRES lcm libbot mosek spotless COMMAND testFixedContactsSearchQ1)
-drake_add_matlab_test(NAME examples/grasping/forceClosure/test/testForceClosureContactsFixedFaces REQUIRES lcm libbot mosek spotless COMMAND testForceClosureContactsFixedFaces)
-drake_add_matlab_test(NAME examples/grasping/forceClosure/test/testSynthesizeGrasp REQUIRES lcm libbot mosek spotless COMMAND testSynthesizeGrasp)

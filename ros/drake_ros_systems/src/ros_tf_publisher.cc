@@ -92,7 +92,8 @@ void RosTfPublisher::Init() {
   }
 }
 
-void RosTfPublisher::DoPublish(const Context<double>& context) const {
+void RosTfPublisher::DoPublish(const Context<double>& context,
+        const std::vector<const PublishEvent<double>*>&) const {
   if (!enable_tf_publisher_) return;
 
   // Aborts if less than kMinTransmitPeriod_ has elapsed since the last

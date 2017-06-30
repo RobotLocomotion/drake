@@ -1,6 +1,11 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(
@@ -25,11 +30,11 @@ cmake_config(
     version_file = "CMakeLists.txt",
 )
 
-install_cmake_config(package = "tinyobjloader")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = "tinyobjloader")
 
 install(
     name = "install",
-    doc_dest = "share/doc/tinyobjloader",
     guess_hdrs = "PACKAGE",
     hdr_dest = "include/tinyobjloader",
     license_docs = ["LICENSE"],

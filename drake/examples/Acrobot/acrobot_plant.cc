@@ -183,8 +183,8 @@ template <typename T>
 AcrobotStateVector<T>* AcrobotWEncoder<T>::get_mutable_acrobot_state(
     systems::Context<T>* context) const {
   AcrobotStateVector<T>* x = dynamic_cast<AcrobotStateVector<T>*>(
-      this->GetMutableSubsystemContext(context, acrobot_plant_)
-          ->get_mutable_continuous_state_vector());
+      this->GetMutableSubsystemContext(*acrobot_plant_, context)
+          .get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x != nullptr);
   return x;
 }

@@ -118,17 +118,17 @@ int main() {
                                                              FLAGS_timestep,
                                                              context);
   // Set initial state.
-  auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
+  auto& plant_context = diagram->GetMutableSubsystemContext(plant, context);
   // 6 1-dof joints * 2 = 6 * (x, ẋ) * 2
   const int kStateSize = 24;
-  DRAKE_DEMAND(plant_context->get_continuous_state_vector().size() ==
+  DRAKE_DEMAND(plant_context.get_continuous_state_vector().size() ==
                kStateSize);
   VectorX<double> initial_state(kStateSize);
   initial_state << 0, -0.5, 0, 0, 0, 0,  // brick 1 position
                    0, 0.5, 0, 0, 0, 0,   // brick 2 position
                    0, 0, 0, 0, 0, 0,     // brick 1 velocity
                    FLAGS_v, 0, 0, 0, 0, 0;     // brick 2 velocity
-  plant.set_state_vector(plant_context, initial_state);
+  plant.set_state_vector(&plant_context, initial_state);
 
   simulator->StepTo(FLAGS_sim_duration);
 

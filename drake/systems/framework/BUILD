@@ -9,7 +9,6 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "framework",
     srcs = [],
-    hdrs = ["systems.h"],
     deps = [
         ":cache",
         ":context",
@@ -135,6 +134,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "event_collection",
+    srcs = [
+        "event_collection.cc",
+    ],
+    hdrs = [
+        "event.h",
+        "event_collection.h",
+    ],
+    deps = [
+        ":abstract_values",
+        ":context",
+        ":value",
+        "//drake/common",
+        "//drake/common:autodiff",
+    ],
+)
+
+drake_cc_library(
     name = "parameters",
     srcs = ["parameters.cc"],
     hdrs = ["parameters.h"],
@@ -247,7 +264,6 @@ drake_cc_library(
         "witness_function.cc",
     ],
     hdrs = [
-        "discrete_event.h",
         "output_port.h",
         "system.h",
         "witness_function.h",
@@ -255,6 +271,7 @@ drake_cc_library(
     deps = [
         ":cache",
         ":context",
+        ":event_collection",
         ":system_common",
         ":value",
         "//drake/common",

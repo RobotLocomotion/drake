@@ -68,8 +68,8 @@ drake_cc_library(
     name = "vector3_util",
     srcs = ["cross_product.cc"],
     hdrs = [
+        "convert_time_derivative.h",
         "cross_product.h",
-        "shift_time_derivative.h",
     ],
     deps = [
         "//drake/common",
@@ -137,6 +137,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "gray_code",
+    srcs = ["gray_code.cc"],
+    hdrs = ["gray_code.h"],
+    deps = [
+        "@eigen",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "jacobian",
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
@@ -177,7 +187,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "shift_time_derivative_test",
+    name = "convert_time_derivative_test",
     deps = [
         ":vector3_util",
         "//drake/common:eigen_matrix_compare",
@@ -229,6 +239,14 @@ drake_cc_googletest(
     name = "gradient_util_test",
     deps = [
         ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gray_code_test",
+    deps = [
+        ":gray_code",
         "//drake/common:eigen_matrix_compare",
     ],
 )
