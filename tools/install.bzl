@@ -1,6 +1,12 @@
 # -*- python -*-
 
-load("@drake//tools:pathutils.bzl", "dirname", "output_path", "join_paths")
+load(
+    "@drake//tools:pathutils.bzl",
+    "basename",
+    "dirname",
+    "join_paths",
+    "output_path",
+)
 
 InstallInfo = provider()
 
@@ -580,5 +586,51 @@ def install_cmake_config(
         files = cmake_config_files,
         visibility = visibility,
     )
+
+#------------------------------------------------------------------------------
+def rename_files(
+    files,
+    strip_prefix = [],
+    strip_suffix = [],
+    pattern = "{}",
+):
+    """Create an install rename mapping for a set of files.
+
+    This takes a list of install paths and generates a rename mapping for the
+    paths by performing simple manipulations of the file name. The resulting
+    map is expected to be given to the ``rename`` parameter of an
+    :func:`install` or :func:`install_files` rule.
+
+    For each path, the first matching prefix and suffix are removed from the
+    name. The resulting name is then used as the parameter to :func:`format` to
+    produce the final name. Note that the file extension must be included in
+    the suffix(es) to strip.
+
+    Args:
+        files (:obj:`list` of :obj:`str`): List of install paths to be renamed.
+        strip_prefix (:obj:`list` of :obj:`str`): List of possible prefixes to
+            remove from the file name.
+        strip_suffix (:obj:`list` of :obj:`str`): List of possible suffixes to
+            remove from the file name.
+        pattern (:obj:`str`): Format pattern for the renamed name.
+    """
+    result = {}
+
+    for f in files:
+        name = basename(f)
+        for prefix in strip_prefix:
+            if name.startswith(prefix):
+                name = name[len(prefix):]
+                break
+
+        for suffix in strip_suffix:
+            if name.endswith(suffix):
+                name = name[:-len(suffix)]
+                break
+
+        name = pattern.format(name)
+        result[f] = name
+
+    return result
 
 #END macros
