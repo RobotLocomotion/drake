@@ -380,6 +380,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // (computation is performed by CalcVelocityKinematicsCache_BaseToTip():
     //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)
     //        = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W)         (1)
+    // where Pb is a frame aligned with P but with its origin shifted from Po
+    // to B's origin Bo. Then V_WPb is the spatial velocity of frame Pb,
+    // measured and expressed in the world frame W.
+    //
     // In the same way the parent body P velocity V_WP can be composed with body
     // B's velocity V_PB in P, the acceleration A_WB can be obtained by
     // composing A_WP with A_PB:
@@ -400,7 +404,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //   A_PB = DtP(V_PB) = DtF(V_FMb) = A_FM.Shift(p_MB, w_FM)             (3)
     // which expressed in the world frame leads to (see note below):
     //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (4)
-    // where A_FM in the inboard frame F is the direct result from
+    // where R_WF is the rotation matrix from F to W and A_FM expressed in the
+    // inboard frame F is the direct result from
     // Mobilizer::CalcAcrossMobilizerAcceleration().
     //
     // * Note:

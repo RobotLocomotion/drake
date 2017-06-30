@@ -44,7 +44,8 @@ class AccelerationKinematicsCache {
   explicit AccelerationKinematicsCache(const MultibodyTreeTopology& topology) {
     Allocate(topology);
     DRAKE_ASSERT_VOID(InitializeToNaN());
-    // Sets defaults.
+    // Sets defaults: drake::multibody::world_index() defines the unique index
+    // to the world body and is defined in multibody_tree_indexes.h.
     // World's acceleration is always zero.
     A_WB_pool_[world_index()].SetZero();
   }
