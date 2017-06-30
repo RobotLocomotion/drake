@@ -11,52 +11,48 @@ and successful execution is not guaranteed.
 To run the demo, first you need to launch the drake visualizer and then
 execute the demo itself in the following manner.
 
-Prepare and launch the ``drake-visualizer``
-------------------------------------------
-
-The ``drake-visualizer`` is only available via a CMake build.  We recommend
-that you first run a CMake build before bazel per the Drake instructions,
-using the same source tree as this demo.  In that case, the
-``drake-visualizer`` will automatically be discovered by the bazel build
-system and can be launched by :
+Build the ``drake_visualizer`` and the demo
+-------------------------------------------
 
 ```
 $ cd drake-distro
-$ bazel-bin/external/drake_visualizer/drake-visualizer &
+$ bazel build //tools:drake_visualizer //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
 ```
 
-If the bazel build system is unable to find the ``drake-visualizer``, you will
-see a message like:
+
+Launching the ``drake_visualizer``
+----------------------------------
+Once built, the ``drake_visualizer`` can be launched by,
 
 ```
-soft_failure.bzl: @drake_visualizer//:drake-visualizer does not work because
-  drake-distro/build/install/bin/drake-visualizer was missing
+$ bazel-bin/tools/drake_visualizer&
 ```
 
-In this case you will have to manually generate some other build of the
-``drake-visualizer`` and launch the app externally.
+Note that this method of launching the visualizer may not function correctly
+on Mac OSX and a fix is expected shortly.
 
 Launching the demo
 ------------------
-The demo can be launched by :
-
-```
-$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
-monolithic_pick_and_place_demo --box_choice=1
- --orientation=-0.0
-```
-
-or alternatively, you can use ``bazel run`` using the appropriate
+The demo can be built and launched by using ``bazel run`` with the appropriate
 full path/target specifier. For instance, from the
 ``drake-distro/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place``
 directory, you can execute the demo using :
 
 ```
-bazel run :monolithic_pick_and_place_demo --config snopt -- --box_choice=1
+bazel run :monolithic_pick_and_place_demo --config snopt -- --target=1
 --orientation=-0.0
 ```
 
-Command line arguments can be passed for : `box_choice` an integer between 1
+Alternately, if the ``monolithic_pick_and_place_demo`` has been built using
+``bazel build``, the demo itself can then be launched by :
+
+```
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
+monolithic_pick_and_place_demo --target=1
+ --orientation=-0.0
+```
+
+Command line arguments can be passed for : `target` an integer between 1
 and 3 (corresponding to small, medium and large boxes as manipulation
 targets),and for `orientation` - a decimal value for the yaw orientation on
 the table in radians.
