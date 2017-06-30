@@ -10,8 +10,8 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/rigid_body.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/test/contact_result_test_common.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 // The ContactResult class is largely a container for the data that is computed
 // by the RigidBodyPlant while determining contact forces.  This test confirms
@@ -43,7 +43,6 @@ namespace {
 // output port for collision response data.
 class ContactResultTest : public ContactResultTestCommon {
  protected:
-
   // instances owned by the test class
   unique_ptr<RigidBodyPlant<double>> plant_{};
   unique_ptr<Context<double>> context_{};
@@ -51,7 +50,6 @@ class ContactResultTest : public ContactResultTestCommon {
 
   // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
-
     // Populate the plant.
     plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance));
     plant_->set_normal_contact_parameters(kStiffness, kDissipation);
@@ -126,8 +124,8 @@ TEST_F(ContactResultTest, SingleCollision) {
                               expected_spatial_force));
   Vector3<double> expected_point;
   expected_point << x_anchor_, 0, 0;
-  ASSERT_TRUE(CompareMatrices(detail_force.get_application_point(),
-                              expected_point));
+  ASSERT_TRUE(
+      CompareMatrices(detail_force.get_application_point(), expected_point));
 }
 }  // namespace
 }  // namespace test

@@ -32,8 +32,8 @@ class ContactResultTestCommon : public ::testing::Test {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultTestCommon)
 
   // Default constructor.
-  ContactResultTestCommon() {
-  }
+  ContactResultTestCommon() {}
+
  protected:
   // These pointers are merely reference pointers; the underlying instances
   //  are owned by objects which, ultimately, are owned by the test class.
@@ -73,10 +73,10 @@ class ContactResultTestCommon : public ::testing::Test {
     return unique_tree;
   }
 
-
   // Add a sphere with default radius, placed at the given position.
   //  Returns a raw pointer so that tests can use it for result validation.
-  RigidBody<double>* AddSphere(const Eigen::Vector3d& pos, const std::string& name) {
+  RigidBody<double>* AddSphere(const Eigen::Vector3d& pos,
+                               const std::string& name) {
     RigidBody<double>* body;
     tree_->add_rigid_body(
         std::unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
@@ -95,7 +95,6 @@ class ContactResultTestCommon : public ::testing::Test {
   }
 
   virtual const ContactResults<double>& RunTest(double distance) = 0;
-
 };
 
 }  // namespace test
