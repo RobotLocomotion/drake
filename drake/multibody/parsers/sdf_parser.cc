@@ -504,7 +504,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model,
   Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
-      type.compare("floating") != 0) {
+      type.compare("floating") != 0 && type.compare("ball") != 0) {
     parseVectorValue(axis_node, "xyz", axis);
     if (axis.norm() < 1e-8) {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
@@ -647,6 +647,8 @@ void ParseSdfJoint(RigidBodyTree<double>* model,
       }
     } else if (type.compare("floating") == 0) {
       joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+    } else if (type.compare("ball") == 0) {
+      joint = new QuaternionBallJoint(name, transform_to_parent_body);
     } else {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
                           ": ERROR: Unrecognized joint type: " + type + ".");

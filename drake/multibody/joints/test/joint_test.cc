@@ -6,6 +6,7 @@
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/helical_joint.h"
 #include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/quaternion_ball_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
@@ -18,6 +19,7 @@ using multibody::CompareFixedJointToClone;
 using multibody::CompareHelicalJointToClone;
 using multibody::ComparePrismaticJointToClone;
 using multibody::CompareRevoluteJointToClone;
+using multibody::CompareQuaternionBallJointToClone;
 using multibody::CompareQuaternionFloatingJointToClone;
 
 namespace systems {
@@ -45,6 +47,8 @@ class DrakeJointTests : public ::testing::Test {
         make_unique<HelicalJoint>(name, transform_to_parent_body, axis, pitch);
     prismatic_joint_ =
         make_unique<PrismaticJoint>(name, transform_to_parent_body, axis);
+    quaternion_ball_joint_ =
+        make_unique<QuaternionBallJoint>(name, transform_to_parent_body);
     quaternion_floating_joint_ =
         make_unique<QuaternionFloatingJoint>(name, transform_to_parent_body);
     revolute_joint_ =
@@ -57,6 +61,7 @@ class DrakeJointTests : public ::testing::Test {
   unique_ptr<FixedJoint> fixed_joint_;
   unique_ptr<HelicalJoint> helical_joint_;
   unique_ptr<PrismaticJoint> prismatic_joint_;
+  unique_ptr<QuaternionBallJoint> quaternion_ball_joint_;
   unique_ptr<QuaternionFloatingJoint> quaternion_floating_joint_;
   unique_ptr<RevoluteJoint> revolute_joint_;
   unique_ptr<RollPitchYawFloatingJoint> roll_pitch_yaw_joint_;
@@ -66,6 +71,7 @@ TEST_F(DrakeJointTests, TestIfJointIsFixed) {
   EXPECT_TRUE(fixed_joint_->is_fixed());
   EXPECT_FALSE(helical_joint_->is_fixed());
   EXPECT_FALSE(prismatic_joint_->is_fixed());
+  EXPECT_FALSE(quaternion_ball_joint_->is_fixed());
   EXPECT_FALSE(quaternion_floating_joint_->is_fixed());
   EXPECT_FALSE(revolute_joint_->is_fixed());
   EXPECT_FALSE(roll_pitch_yaw_joint_->is_fixed());
@@ -82,6 +88,10 @@ TEST_F(DrakeJointTests, TestCloneAndCompare) {
   EXPECT_TRUE(ComparePrismaticJointToClone(
       *prismatic_joint_,
       *dynamic_cast<PrismaticJoint*>(prismatic_joint_->Clone().get())));
+  EXPECT_TRUE(CompareQuaternionBallJointToClone(
+      *quaternion_ball_joint_,
+      *dynamic_cast<QuaternionBallJoint*>(
+          quaternion_ball_joint_->Clone().get())));
   EXPECT_TRUE(CompareQuaternionFloatingJointToClone(
       *quaternion_floating_joint_,
       *dynamic_cast<QuaternionFloatingJoint*>(
@@ -98,6 +108,7 @@ TEST_F(DrakeJointTests, TestCloneAndCompare) {
       fixed_joint_.get(),
       helical_joint_.get(),
       prismatic_joint_.get(),
+      quaternion_ball_joint_.get(),
       quaternion_floating_joint_.get(),
       revolute_joint_.get()};
 

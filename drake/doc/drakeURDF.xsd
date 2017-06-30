@@ -589,6 +589,7 @@ e.g. terminator - pulley - pulley - crossover - pulley - terminator
             <xs:enumeration value="fixed"/>
             <xs:enumeration value="floating"/>
             <xs:enumeration value="planar"/>
+            <xs:enumeration value="ball"/>
         </xs:restriction>
     </xs:simpleType>
 
@@ -870,7 +871,8 @@ f_friction = min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction' + m.dampi
     prismatic - a sliding joint that slides along the axis, and has a limited range specified by the upper and lower limits.
     fixed - This is not really a joint because it cannot move. All degrees of freedom are locked. This type of joint does not require the axis, calibration, dynamics, limits or safety_controller.
     floating - This joint allows motion for all 6 degrees of freedom.
-    planar - This joint allows motion in a plane perpendicular to the axis. </xs:documentation>
+    planar - This joint allows motion in a plane perpendicular to the axis.
+    ball - This joint allows free rotation in all directions with no upper or lower limits. </xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute default="1" name="has_position_sensor" type="xs:boolean" use="optional"/>
