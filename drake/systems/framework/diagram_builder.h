@@ -180,7 +180,6 @@ class DiagramBuilder {
   /// not buildable.
   std::unique_ptr<Diagram<T>> Build() {
     std::unique_ptr<Diagram<T>> diagram(new Diagram<T>(Compile()));
-    diagram->Own(std::move(registered_systems_));
     return std::move(diagram);
   }
 
@@ -192,7 +191,6 @@ class DiagramBuilder {
   /// already be initialized.
   void BuildInto(Diagram<T>* target) {
     target->Initialize(Compile());
-    target->Own(std::move(registered_systems_));
   }
 
  private:
@@ -306,19 +304,21 @@ class DiagramBuilder {
 
   /// Produces the Blueprint that has been described by the calls to
   /// Connect, ExportInput, and ExportOutput. Throws std::logic_error if the
-  /// graph is not buildable.
-  typename Diagram<T>::Blueprint Compile() const {
+  /// graph is not buildable or algebraic loops exist.
+  /// The DiagramBuilder passes ownership of the registered systems to the
+  /// blueprint.
+  typename Diagram<T>::Blueprint Compile() {
     if (registered_systems_.size() == 0) {
       throw std::logic_error("Cannot Compile an empty DiagramBuilder.");
     }
     ThrowIfAlgebraicLoopsExist();
+
     typename Diagram<T>::Blueprint blueprint;
     blueprint.input_port_ids = input_port_ids_;
     blueprint.output_port_ids = output_port_ids_;
     blueprint.dependency_graph = dependency_graph_;
-    for (const auto& system : registered_systems_) {
-      blueprint.systems.push_back(system.get());
-    }
+    blueprint.systems = std::move(registered_systems_);
+
     return blueprint;
   }
 

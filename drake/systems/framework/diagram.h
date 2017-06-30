@@ -346,7 +346,7 @@ class Diagram : public System<T>,
     std::vector<std::unique_ptr<CompositeEventCollection<T>>> subevents(
         num_systems);
     for (int i = 0; i < num_systems; ++i) {
-      subevents[i] = sorted_systems_[i]->AllocateCompositeEventCollection();
+      subevents[i] = registered_systems_[i]->AllocateCompositeEventCollection();
     }
 
     return std::make_unique<DiagramCompositeEventCollection<T>>(
@@ -360,7 +360,7 @@ class Diagram : public System<T>,
 
     // Add each constituent system to the Context.
     for (int i = 0; i < num_systems; ++i) {
-      const System<T>* const sys = sorted_systems_[i];
+      const System<T>* const sys = registered_systems_[i].get();
       auto subcontext = sys->AllocateContext();
       auto suboutput = sys->AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
@@ -396,7 +396,7 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_subsystems(); ++i) {
       auto& subcontext = diagram_context->GetSubsystemContext(i);
       auto& substate = diagram_state->get_mutable_substate(i);
-      sorted_systems_[i]->SetDefaultState(subcontext, &substate);
+      registered_systems_[i]->SetDefaultState(subcontext, &substate);
     }
   }
 
@@ -407,7 +407,7 @@ class Diagram : public System<T>,
     // Set defaults of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
       auto& subcontext = diagram_context->GetMutableSubsystemContext(i);
-      sorted_systems_[i]->SetDefaults(&subcontext);
+      registered_systems_[i]->SetDefaults(&subcontext);
     }
   }
 
@@ -450,7 +450,7 @@ class Diagram : public System<T>,
   /// DiagramTimeDerivatives.
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     std::vector<std::unique_ptr<ContinuousState<T>>> sub_derivatives;
-    for (const System<T>* const system : sorted_systems_) {
+    for (const auto& system : registered_systems_) {
       sub_derivatives.push_back(system->AllocateTimeDerivatives());
     }
     return std::unique_ptr<ContinuousState<T>>(
@@ -462,7 +462,7 @@ class Diagram : public System<T>,
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
       const override {
     std::vector<std::unique_ptr<DiscreteValues<T>>> sub_differences;
-    for (const System<T>* const system : sorted_systems_) {
+    for (const auto& system : registered_systems_) {
       sub_differences.push_back(system->AllocateDiscreteVariables());
     }
     return std::unique_ptr<DiscreteValues<T>>(
@@ -485,7 +485,7 @@ class Diagram : public System<T>,
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
       ContinuousState<T>* subderivatives =
           diagram_derivatives->get_mutable_substate(i);
-      sorted_systems_[i]->CalcTimeDerivatives(subcontext, subderivatives);
+      registered_systems_[i]->CalcTimeDerivatives(subcontext, subderivatives);
     }
   }
 
@@ -633,7 +633,7 @@ class Diagram : public System<T>,
     *dot << "color=white" << std::endl;
     *dot << "label=\"\"" << std::endl;
     // -- Add the subsystems themselves.
-    for (const auto& subsystem : sorted_systems_) {
+    for (const auto& subsystem : registered_systems_) {
       subsystem->GetGraphvizFragment(dot);
     }
     // -- Add the connections as edges.
@@ -780,8 +780,8 @@ class Diagram : public System<T>,
 
     int index = 0;  // The subsystem index.
 
-    for (const System<T>* const system : sorted_systems_) {
-      DRAKE_ASSERT(index == GetSystemIndexOrAbort(system));
+    for (const auto& system : registered_systems_) {
+      DRAKE_ASSERT(index == GetSystemIndexOrAbort(system.get()));
       temp_witnesses.clear();
       system->GetWitnessFunctions(diagram_context->GetSubsystemContext(index),
                                   &temp_witnesses);
@@ -916,7 +916,7 @@ class Diagram : public System<T>,
       Subvector<T> dq_slice(qdot, q_index, num_q);
 
       // Delegate the actual mapping to subsystem i itself.
-      sorted_systems_[i]->MapVelocityToQDot(subcontext, v_slice, &dq_slice);
+      registered_systems_[i]->MapVelocityToQDot(subcontext, v_slice, &dq_slice);
 
       // Advance the indices.
       v_index += num_v;
@@ -966,7 +966,7 @@ class Diagram : public System<T>,
       Subvector<T> v_slice(generalized_velocity, v_index, num_v);
 
       // Delegate the actual mapping to subsystem i itself.
-      sorted_systems_[i]->MapQDotToVelocity(subcontext, dq_slice, &v_slice);
+      registered_systems_[i]->MapQDotToVelocity(subcontext, dq_slice, &v_slice);
 
       // Advance the indices.
       v_index += num_v;
@@ -1040,7 +1040,7 @@ class Diagram : public System<T>,
     auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
     for (int i = 0; i < num_systems; ++i) {
       std::unique_ptr<EventCollection<EventType>> subevent_collection =
-          allocater_func(sorted_systems_[i]);
+          allocater_func(registered_systems_[i].get());
       ret->set_and_own_subevent_collection(i, std::move(subevent_collection));
     }
     return std::move(ret);
@@ -1064,7 +1064,7 @@ class Diagram : public System<T>,
 
       if (subinfo.HasEvents()) {
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        sorted_systems_[i]->Publish(subcontext, subinfo);
+        registered_systems_[i]->Publish(subcontext, subinfo);
       }
     }
   }
@@ -1105,7 +1105,7 @@ class Diagram : public System<T>,
             diagram_differences->get_mutable_subdifference(i);
         DRAKE_DEMAND(subdifference != nullptr);
 
-        sorted_systems_[i]->CalcDiscreteVariableUpdates(subcontext, subinfo,
+        registered_systems_[i]->CalcDiscreteVariableUpdates(subcontext, subinfo,
             subdifference);
       }
     }
@@ -1138,7 +1138,7 @@ class Diagram : public System<T>,
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
         State<T>& substate = diagram_state->get_mutable_substate(i);
 
-        sorted_systems_[i]->CalcUnrestrictedUpdate(subcontext, subinfo,
+        registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subinfo,
             &substate);
       }
     }
@@ -1184,12 +1184,12 @@ class Diagram : public System<T>,
     DerivedStuff& my_stuff_as_derived = dynamic_cast<DerivedStuff&>(*my_stuff);
 
     int index = 0;
-    for (const System<T>* child : sorted_systems_) {
+    for (const auto& child : registered_systems_) {
       BaseStuff& child_stuff =
           get_child_stuff(&my_stuff_as_derived, index);
 
       BaseStuff* const target_stuff =
-          recursive_getter(child, target_system, &child_stuff);
+          recursive_getter(child.get(), target_system, &child_stuff);
 
       if (target_stuff != nullptr) {
         return target_stuff;
@@ -1249,15 +1249,12 @@ class Diagram : public System<T>,
 
       blueprint.dependency_graph[new_dest] = new_src;
     }
-    // Preserve the sort order.
-    for (const System<T1>* system : sorted_systems_) {
-      blueprint.systems.push_back(old_to_new_map[system]);
-    }
+    // Move the new systems into the blueprint.
+    blueprint.systems = std::move(new_systems);
 
     // Construct a new Diagram of type NewType from the blueprint.
     std::unique_ptr<Diagram<NewType>> new_diagram(
-        new Diagram<NewType>(blueprint));
-    new_diagram->Own(std::move(new_systems));
+        new Diagram<NewType>(std::move(blueprint)));
     return std::move(new_diagram);
   }
 
@@ -1311,7 +1308,7 @@ class Diagram : public System<T>,
       CompositeEventCollection<T1>& subinfo =
           info->get_mutable_subevent_collection(i);
       const T1 sub_time =
-          sorted_systems_[i]->CalcNextUpdateTime(subcontext, &subinfo);
+          registered_systems_[i]->CalcNextUpdateTime(subcontext, &subinfo);
       times[i] = sub_time;
 
       if (sub_time < *time) {
@@ -1340,7 +1337,7 @@ class Diagram : public System<T>,
       CompositeEventCollection<T>& subinfo =
           info->get_mutable_subevent_collection(i);
 
-      sorted_systems_[i]->GetPerStepEvents(subcontext, &subinfo);
+      registered_systems_[i]->GetPerStepEvents(subcontext, &subinfo);
     }
   }
 
@@ -1354,34 +1351,36 @@ class Diagram : public System<T>,
     // on which they depend. This graph is possibly cyclic, but must not
     // contain an algebraic loop.
     std::map<PortIdentifier, PortIdentifier> dependency_graph;
-    // A list of the systems in the dependency graph.
-    std::vector<const System<T>*> systems;
+    // The systems in the dependency graph.
+    std::vector<std::unique_ptr<System<T>>> systems;
   };
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
-  // This constructor is private because only DiagramBuilder calls it.
-  explicit Diagram(const Blueprint& blueprint) { Initialize(blueprint); }
+  // This constructor is private because only DiagramBuilder calls it. The
+  // constructor takes the systems from the blueprint.
+  explicit Diagram(Blueprint&& blueprint) { Initialize(std::move(blueprint)); }
 
   // Validates the given @p blueprint and sets up the Diagram accordingly.
-  void Initialize(const Blueprint& blueprint) {
-    // The Diagram must not already be initialized.
-    DRAKE_DEMAND(sorted_systems_.empty());
-    // The initialization must be nontrivial.
+  void Initialize(Blueprint&& blueprint) {
+    // We must be given something to own.
     DRAKE_DEMAND(!blueprint.systems.empty());
+    // We must not already own any subsystems.
+    DRAKE_DEMAND(registered_systems_.empty());
 
     // Copy the data from the blueprint into private member variables.
     dependency_graph_ = blueprint.dependency_graph;
-    sorted_systems_ = blueprint.systems;
     input_port_ids_ = blueprint.input_port_ids;
     output_port_ids_ = blueprint.output_port_ids;
+    registered_systems_ = std::move(blueprint.systems);
 
     // Generate a map from the System pointer to its index in the sort order.
     for (int i = 0; i < num_subsystems(); ++i) {
-      system_index_map_[sorted_systems_[i]] = i;
+      system_index_map_[registered_systems_[i].get()] = i;
+      registered_systems_[i]->set_parent(this);
     }
 
     // Every system must appear in the sort order exactly once.
-    DRAKE_DEMAND(sorted_systems_.size() == system_index_map_.size());
+    DRAKE_DEMAND(registered_systems_.size() == system_index_map_.size());
     // Every port named in the dependency_graph_ must actually exist.
     DRAKE_ASSERT(PortsAreValid());
     // Every subsystem must have a unique name.
@@ -1404,27 +1403,6 @@ class Diagram : public System<T>,
     this->set_forced_unrestricted_update_events(
         AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
             &System<T>::AllocateForcedUnrestrictedUpdateEventCollection));
-  }
-
-  // Takes ownership of the @p registered_systems from DiagramBuilder.
-  void Own(std::vector<std::unique_ptr<System<T>>> registered_systems) {
-    // We must be given something to own.
-    DRAKE_DEMAND(!registered_systems.empty());
-    // We must not already own any subsystems.
-    DRAKE_DEMAND(registered_systems_.empty());
-    // The subsystems we are being given to own must be exactly the set of
-    // subsystems for which we have an execution order.
-    DRAKE_DEMAND(registered_systems.size() == sorted_systems_.size());
-    for (const auto& system : registered_systems) {
-      const auto it = system_index_map_.find(system.get());
-      DRAKE_DEMAND(it != system_index_map_.end());
-    }
-    // All of those checks having passed, take ownership of the subsystems.
-    registered_systems_ = std::move(registered_systems);
-    // Inform the constituent system it's bound to this Diagram.
-    for (auto& system : registered_systems_) {
-      system->set_parent(this);
-    }
   }
 
   // Exposes the given port as an input of the Diagram.
@@ -1527,7 +1505,7 @@ class Diagram : public System<T>,
   // O(N * log(N)) in the number of subsystems.
   bool NamesAreUniqueAndNonEmpty() const {
     std::set<std::string> names;
-    for (const auto& system : sorted_systems_) {
+    for (const auto& system : registered_systems_) {
       const std::string& name = system->get_name();
       if (name.empty()) {
         // This can only happen if someone blanks out the name *after* adding
@@ -1544,19 +1522,16 @@ class Diagram : public System<T>,
       }
       names.insert(name);
     }
-    return names.size() == sorted_systems_.size();
+    return names.size() == registered_systems_.size();
   }
 
   int num_subsystems() const {
-    return static_cast<int>(sorted_systems_.size());
+    return static_cast<int>(registered_systems_.size());
   }
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.
   std::map<PortIdentifier, PortIdentifier> dependency_graph_;
-
-  // The topologically sorted list of Systems in this Diagram.
-  std::vector<const System<T>*> sorted_systems_;
 
   // The Systems in this Diagram, which are owned by this Diagram, in the order
   // they were registered.
