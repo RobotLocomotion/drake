@@ -53,9 +53,6 @@
 [submodule "externals/tinyobjloader"]
 	path = externals/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader
-[submodule "externals/vtk"]
-	path = externals/vtk
-	url = git://vtk.org/VTK.git
 [submodule "externals/pybind11"]
 	path = externals/pybind11
 	url = https://github.com/RobotLocomotion/pybind11

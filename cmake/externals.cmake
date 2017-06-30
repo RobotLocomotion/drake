@@ -210,10 +210,6 @@ macro(drake_add_cmake_external PROJECT)
     list(APPEND _ext_PROPAGATE_CACHE_VARS QT_QMAKE_EXECUTABLE)
   endif()
 
-  if(_ext_VTK AND USE_SYSTEM_VTK)
-    list(APPEND _ext_PROPAGATE_CACHE_VARS VTK_DIR)
-  endif()
-
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
     ${_ext_PROPAGATE_CACHE_VARS})
 
@@ -363,7 +359,6 @@ endmacro()
 #   MATLAB    - External uses MATLAB
 #   PYTHON    - External uses Python
 #   QT        - External uses Qt
-#   VTK       - External uses VTK
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -422,8 +417,7 @@ function(drake_add_external PROJECT)
     FORTRAN
     MATLAB
     PYTHON
-    QT
-    VTK)
+    QT)
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR
