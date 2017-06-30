@@ -1,4 +1,4 @@
-rereset(source_files
+set(source_files
     contact_detail.cc
     contact_force.cc
     contact_info.cc
@@ -6,7 +6,8 @@ rereset(source_files
     contact_results.cc
     kinematics_results.cc
     point_contact_detail.cc
-    rigid_body_plant.cc)
+    rigid_body_plant.cc
+    compliant_contact_model.cc)
 
 # The following variables are necessary to conditionally include
 # DrakeVisualizer and ViewerDrawTranslator in libdrakeRigidBodyPlant.so if LCM
@@ -40,40 +41,6 @@ if (lcm_FOUND)
     drakeRenderingLcm)
   set(lcm_dependent_requires drake-lcm-system2 drake-rendering-lcm)
 endif ()
-#
-#add_library_with_exports(LIB_NAME drakeRigidBodyPlant SOURCE_FILES
-#        ${lcm_dependent_source_files}
-#        ${source_files})
-#target_link_libraries(drakeRigidBodyPlant
-#        drakeCommon
-#        drakeOptimization
-#        drakeRBM
-#        drakeSystemFramework
-#        Eigen3::Eigen
-#        ${lcm_dependent_link_libraries})
-#
-#drake_install_headers(
-#        ${lcm_dependent_header_files}
-#        contact_detail.h
-#        contact_force.h
-#        contact_info.h
-#        contact_results.h
-#        kinematics_results.h
-#        rigid_body_plant.h)
-#
-#drake_install_libraries(drakeRigidBodyPlant)
-#drake_install_pkg_config_file(drake-rigid-body-plant
-#        TARGET drakeRigidBodyPlant
-#        CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-#        LIBS -ldrakeRigidBodyPlant
-#        REQUIRES
-#        ${lcm_dependent_requires}
-#        drake-common
-#        drake-optimization
-#        drake-rbm
-#        drake-system-framework
-#        eigen3)
-
 
 add_library_with_exports(LIB_NAME drakeRigidBodyPlant SOURCE_FILES
   ${lcm_dependent_source_files}
@@ -93,7 +60,8 @@ drake_install_headers(
     contact_info.h
     contact_results.h
     kinematics_results.h
-    rigid_body_plant.h)
+    rigid_body_plant.h
+    compliant_contact_model.h)
 
 drake_install_libraries(drakeRigidBodyPlant)
 drake_install_pkg_config_file(drake-rigid-body-plant
