@@ -171,6 +171,6 @@
           <effort>0.0</effort>
         </limit>
       </axis>
-    </joint>    
+    </joint>
   </model>
 </sdf>

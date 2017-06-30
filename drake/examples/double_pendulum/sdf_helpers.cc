@@ -5,11 +5,12 @@
 #include <string>
 #include <utility>
 
-#include "Eigen/Geometry"
 #include "sdf/sdf.hh"
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/double_pendulum/pose_tree.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/rigid_body.h"
@@ -20,6 +21,8 @@ namespace drake {
 namespace examples {
 namespace double_pendulum {
 
+// RigidBodyTree model instance descriptor. Helpful
+// to carry model name and instance id around.
 struct ModelInstance {
   ModelInstance(const std::string& name, const int& id)
       : name(name), id(id) {}
@@ -27,58 +30,17 @@ struct ModelInstance {
   int id;
 };
 
-template<typename T>
-class PoseTree {
- public:
-  explicit PoseTree(const std::string& root_frame) {
-    // Root frame transform to itself is the identity.
-    rooted_map_[root_frame] = Isometry3<T>::Identity();
-  }
-
-  void Update(const std::string& target_frame,
-              const std::string& source_frame,
-              const Isometry3<T> transform) {
-    // Make sure target (origin) frame exists.
-    DRAKE_THROW_UNLESS(
-        rooted_map_.find(target_frame)
-        != rooted_map_.end());
-    // Update source (point) frame.
-    rooted_map_[source_frame] = (
-        rooted_map_.at(target_frame) * transform);
-  }
-
-  Isometry3<T> Transform(const std::string& target_frame,
-                         const std::string& source_frame,
-                         const Isometry3<T> transform =
-                         Isometry3<T>::Identity()) const {
-    // Make sure both target (origin) and source (point)
-    // frame exist.
-    DRAKE_THROW_UNLESS(
-        rooted_map_.find(target_frame)
-        != rooted_map_.end());
-    DRAKE_THROW_UNLESS(
-        rooted_map_.find(source_frame)
-        != rooted_map_.end());
-    // Return transform of source relative to target,
-    // and apply additional transform if any.
-    return (rooted_map_.at(target_frame).inverse()
-            * rooted_map_.at(source_frame)
-            * transform);
-  }
-
- private:
-  // All frames are kept relative to the root frame.
-  std::map<std::string, Isometry3<T>> rooted_map_;
-};
-
-Isometry3<double> ParsePose(const sdf::ElementPtr& pose_element) {
-  auto pose = pose_element->Get<ignition::math::Pose3d>();
+Isometry3<double> ParsePose(const sdf::ElementPtr& pose) {
+  auto native_pose = pose->Get<ignition::math::Pose3d>();
   Isometry3<double>::TranslationType translation(
-      pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z());
-  Quaternion<double> rotation(pose.Rot().W(),
-                              pose.Rot().X(),
-                              pose.Rot().Y(),
-                              pose.Rot().Z());
+      native_pose.Pos().X(),
+      native_pose.Pos().Y(),
+      native_pose.Pos().Z());
+  Quaternion<double> rotation(
+      native_pose.Rot().W(),
+      native_pose.Rot().X(),
+      native_pose.Rot().Y(),
+      native_pose.Rot().Z());
   return translation * rotation;
 }
 
@@ -110,7 +72,6 @@ void ParseVisual(const sdf::ElementPtr& visual,
                  PoseTree<double>* pose_tree) {
   auto visual_name =
       visual->Get<std::string>("name");
-  // Get visual frame local to its link's frame.
   auto body_to_element_transform =
       Isometry3<double>::Identity();
   if (visual->HasElement("pose")) {
@@ -121,7 +82,6 @@ void ParseVisual(const sdf::ElementPtr& visual,
   pose_tree->Update(body->get_name(), visual_name,
                     body_to_element_transform);
 
-  // Visual element pose is always local to the link's frame.
   DrakeShapes::VisualElement element(
       body_to_element_transform);
   sdf::ElementPtr geometry = visual->GetElement("geometry");
@@ -134,7 +94,6 @@ void ParseCollision(const sdf::ElementPtr& collision,
                     RigidBody<double>* body,
                     RigidBodyTree<double>* tree,
                     PoseTree<double>* pose_tree) {
-  // Get collision frame local to its link's frame.
   auto body_to_element_transform =
       Isometry3<double>::Identity();
   if (collision->HasElement("pose")) {
@@ -146,8 +105,6 @@ void ParseCollision(const sdf::ElementPtr& collision,
       collision->Get<std::string>("name");
   pose_tree->Update(body->get_name(), collision_name,
                     body_to_element_transform);
-  // Collision element pose is always local to the
-  // link's frame.
   DrakeCollision::Element element(
       body_to_element_transform, body);
   sdf::ElementPtr geometry =
@@ -160,7 +117,6 @@ void ParseCollision(const sdf::ElementPtr& collision,
 
 void ParseInertial(const sdf::ElementPtr& inertia,
                    RigidBody<double>* body) {
-  // Get inertial frame local to the link's frame.
   auto body_to_inertia_transform =
       Isometry3<double>::Identity();
   if (inertia->HasElement("pose")) {
@@ -174,13 +130,12 @@ void ParseInertial(const sdf::ElementPtr& inertia,
       body_to_inertia_transform.translation());
 
   if (inertia->HasElement("mass")) {
-    // Get link mass.
     sdf::ElementPtr mass = inertia->GetElement("mass");
     body->set_mass(mass->Get<double>());
   }
 
   // Define inertia tensor using the link mass on the link's frame,
-  // and then transform it to the link's inertial frame.
+  // and then transform it to the specified link's inertial frame.
   SquareTwistMatrix<double> itensor = SquareTwistMatrix<double>::Zero();
   itensor.block(3, 3, 3, 3) << body->get_mass() * Matrix3<double>::Identity();
   body->set_spatial_inertia(
@@ -191,15 +146,12 @@ void ParseLink(const sdf::ElementPtr& link,
                const ModelInstance& instance,
                RigidBodyTree<double>* tree,
                PoseTree<double>* pose_tree) {
-  // Create link's body and associate it with
-  // the model instance (through id and name).
   auto body = std::make_unique<RigidBody<double>>();
   auto link_name = link->Get<std::string>("name");
   body->set_name(link_name);
   body->set_model_name(instance.name);
   body->set_model_instance_id(instance.id);
 
-  // Get link's frame local to the model's frame.
   auto model_to_body_transform =
       Isometry3<double>::Identity();
   if (link->HasElement("pose")) {
@@ -211,14 +163,12 @@ void ParseLink(const sdf::ElementPtr& link,
                     model_to_body_transform);
 
   if (link->HasElement("inertial")) {
-    // Parse inertial data into the link's body.
     sdf::ElementPtr inertia =
         link->GetElement("inertial");
     ParseInertial(inertia, body.get());
   }
 
   if (link->HasElement("visual")) {
-    // Parse all visual elements into the link's body.
     sdf::ElementPtr visual =
         link->GetElement("visual");
     while (visual != nullptr) {
@@ -228,14 +178,12 @@ void ParseLink(const sdf::ElementPtr& link,
   }
 
   if (link->HasElement("collision")) {
-    // Parse all collision elements into the link's body.
     sdf::ElementPtr collision = link->GetElement("collision");
     while (collision != nullptr) {
       ParseCollision(collision, instance, body.get(), tree, pose_tree);
       collision = collision->GetNextElement("collision");
     }
   }
-  // Add link's body to the tree.
   tree->add_rigid_body(std::move(body));
 }
 
@@ -248,7 +196,6 @@ ParseJointType(const sdf::ElementPtr& joint,
   auto joint_name = joint->Get<std::string>("name");
   auto joint_type = joint->Get<std::string>("type");
   if (joint_type == "revolute") {
-    // Get axis of rotation.
     sdf::ElementPtr axis = joint->GetElement("axis");
     sdf::ElementPtr xyz = axis->GetElement("xyz");
     auto native_axis_vector =
@@ -289,20 +236,18 @@ void ParseJoint(const sdf::ElementPtr& joint,
                 PoseTree<double>* pose_tree) {
   auto joint_name = joint->Get<std::string>("name");
 
-  // Get parent link's body.
   sdf::ElementPtr parent_link = joint->GetElement("parent");
   auto parent_link_name = parent_link->Get<std::string>();
   RigidBody<double>* parent_body = tree->FindBody(
       parent_link_name, instance.name, instance.id);
 
-  // Get child link's body.
   sdf::ElementPtr child_link = joint->GetElement("child");
   auto child_link_name = child_link->Get<std::string>();
   RigidBody<double>* child_body = tree->FindBody(
       child_link_name, instance.name, instance.id);
 
-  // Get joint's frame local to the
-  // child link's frame.
+  // Joint frame transforms specified in SDF are,
+  // by default, relative to the child link's frame.
   auto child_body_to_joint_transform =
       Isometry3<double>::Identity();
   if (joint->HasElement("pose")) {
@@ -328,22 +273,21 @@ void ParseJoint(const sdf::ElementPtr& joint,
 
 void FixDanglingLinks(const ModelInstance& instance,
                       RigidBodyTree<double>* tree) {
-  // Get world link's body.
   const int& world_index = RigidBodyTreeConstants::kWorldBodyIndex;
   const std::string world_name = RigidBodyTreeConstants::kWorldName;
   RigidBody<double>* world = tree->bodies[world_index].get();
 
   for (auto& body : tree->bodies) {
     // Filter out by model instance id but also make
-    // sure the world body does not get fixed to itself.
+    // sure we're not dealing with the world body.
     if (body->get_model_instance_id() == instance.id &&
         !body->has_joint() && body->get_name() != world_name) {
-        auto fixed_joint = std::make_unique<FixedJoint>(
-            body->get_name() + "_to_world_joint",
-            Isometry3<double>::Identity());
-        // Fix dangling link body to the world.
-        body->setJoint(std::move(fixed_joint));
-        body->set_parent(world);
+      // Fix dangling link body to the world body.
+      auto fixed_joint = std::make_unique<FixedJoint>(
+          body->get_name() + "_to_world_joint",
+          Isometry3<double>::Identity());
+      body->setJoint(std::move(fixed_joint));
+      body->set_parent(world);
     }
   }
 }
@@ -361,7 +305,6 @@ void ParseModel(const sdf::ElementPtr& model,
   PoseTree<double> pose_tree(model_name);
 
   if (model->HasElement("link")) {
-    // Parse all model links into the tree.
     sdf::ElementPtr link = model->GetElement("link");
     while (link != nullptr) {
       ParseLink(link, instance, tree, &pose_tree);
@@ -370,7 +313,6 @@ void ParseModel(const sdf::ElementPtr& model,
   }
 
   if (model->HasElement("joint")) {
-    // Parse all model joints into the tree.
     sdf::ElementPtr joint = model->GetElement("joint");
     while (joint != nullptr) {
       ParseJoint(joint, instance, tree, &pose_tree);
@@ -378,9 +320,18 @@ void ParseModel(const sdf::ElementPtr& model,
     }
   }
 
-  // Fix any dangling (lacking a parent) link
-  // to the world.
   FixDanglingLinks(instance, tree);
+}
+
+void ParseModelFromFile(const std::string& sdf_path,
+                        RigidBodyTree<double>* tree) {
+  sdf::SDFPtr parsed_sdf(new sdf::SDF());
+  sdf::init(parsed_sdf);
+  sdf::readFile(sdf_path, parsed_sdf);
+  sdf::ElementPtr sdf_element = parsed_sdf->Root();
+  sdf::ElementPtr model_element =
+      sdf_element->GetElement("model");
+  ParseModel(model_element, tree);
 }
 
 }  // namespace double_pendulum

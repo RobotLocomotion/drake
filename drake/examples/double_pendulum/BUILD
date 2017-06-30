@@ -3,6 +3,7 @@
 load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary"
 )
@@ -17,10 +18,12 @@ filegroup(
 drake_cc_library(
     name = "sdf_helpers",
     srcs = [
-        "sdf_helpers.cc"
+        "sdf_helpers.cc",
+        "pose_tree.cc"
     ],
     hdrs = [
-        "sdf_helpers.h"
+        "sdf_helpers.h",
+        "pose_tree.h"
     ],
     deps = [
         "//drake/common",
@@ -51,6 +54,28 @@ drake_cc_binary(
         "//drake/systems/framework",
         "@sdformat"
     ]
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "pose_tree_test",
+    deps = [
+        ":sdf_helpers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sdf_helpers_test",
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":sdf_helpers",
+        "//drake/common:drake_path",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/joints"
+    ],
 )
 
 cpplint()

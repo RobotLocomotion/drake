@@ -43,16 +43,10 @@ int main(int argc, char* argv[]) {
   // Instantiate interface and start receiving.
   auto interface = std::make_unique<lcm::DrakeLcm>();
   interface->StartReceiveThread();
-  // Loading double pendulum SDF from file.
-  sdf::SDFPtr parsed_sdf(new sdf::SDF());
-  sdf::init(parsed_sdf);
+  // Load and parse double pendulum SDF from file into a tree.
   std::string sdf_path = GetDrakePath() + kDoublePendulumSdfPath;
-  sdf::readFile(sdf_path, parsed_sdf);
-  sdf::ElementPtr sdf_element = parsed_sdf->Root();
-  // Parsing double pendulum model into tree.
-  sdf::ElementPtr model_element = sdf_element->GetElement("model");
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  ParseModel(model_element, tree.get());
+  ParseModelFromFile(sdf_path, tree.get());
   tree->compile();
   // Instantiate builder.
   systems::DiagramBuilder<double> builder;
