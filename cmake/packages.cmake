@@ -165,7 +165,6 @@ macro(drake_find_packages)
   drake_find_package(pybind11 CONFIG COMPONENTS NumPy)
   drake_find_package(robotlocomotion-lcmtypes CONFIG)
   drake_find_package(spdlog CONFIG)
-  drake_find_package(VTK CONFIG)
   drake_find_package(yaml-cpp CONFIG)
 
   # END optional packages
