@@ -35,11 +35,13 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree_context",
     srcs = [
+        "acceleration_kinematics_cache.cc",
         "multibody_tree_context.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
+        "acceleration_kinematics_cache.h",
         "multibody_tree_context.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
@@ -47,6 +49,7 @@ drake_cc_library(
     deps = [
         ":multibody_tree_topology",
         "//drake/common:autodiff",
+        "//drake/multibody/multibody_tree/math:spatial_acceleration",
         "//drake/multibody/multibody_tree/math:spatial_velocity",
         "//drake/systems/framework:leaf_context",
     ],

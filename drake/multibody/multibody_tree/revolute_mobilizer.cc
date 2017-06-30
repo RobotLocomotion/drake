@@ -52,7 +52,7 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
 template <typename T>
 Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
-  auto q = this->get_positions(context);
+  const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == 1);
   Isometry3<T> X_FM = Isometry3<T>::Identity();
   X_FM.linear() = Eigen::AngleAxis<T>(q[0], axis_F_).toRotationMatrix();
@@ -63,8 +63,17 @@ template <typename T>
 SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == 1);
+  DRAKE_ASSERT(v.size() == kNv);
   return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
+}
+
+template <typename T>
+SpatialAcceleration<T>
+RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
+    const MultibodyTreeContext<T>&,
+    const Eigen::Ref<const VectorX<T>>& vdot) const {
+  DRAKE_ASSERT(vdot.size() == kNv);
+  return SpatialAcceleration<T>(vdot[0] * axis_F_, Vector3<T>::Zero());
 }
 
 // Explicitly instantiates on the most common scalar types.
