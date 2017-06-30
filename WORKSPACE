@@ -11,7 +11,7 @@
 #     local_repository_override = "/path/to/local/foo/bar",
 #     repository = "foo/bar",
 #     commit = "0123456789abcdef0123456789abcdef01234567",
-#     sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+#     sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",  # noqa
 # )
 
 workspace(name = "drake")
@@ -55,7 +55,7 @@ github_archive(
     name = "gtest",
     repository = "google/googletest",
     commit = "release-1.8.0",
-    sha256 = "58a6f4277ca2bc8565222b3bbd58a177609e9c488e8a72649359ba51450db7d8",
+    sha256 = "58a6f4277ca2bc8565222b3bbd58a177609e9c488e8a72649359ba51450db7d8",  # noqa
     build_file = "tools/gtest.BUILD",
 )
 
@@ -64,14 +64,14 @@ github_archive(
     name = "com_github_gflags_gflags",
     repository = "gflags/gflags",
     commit = "95ffb27c9c7496ede1409e042571054c70cb9519",
-    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",
+    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",  # noqa
 )
 
 github_archive(
     name = "google_styleguide",
     repository = "google/styleguide",
     commit = "159b4c81bbca97a9ca00f1195a37174388398a67",
-    sha256 = "3ed86946e6e637f0fe21749c0323b086e62c4b8b93694d6cedad615cdc584512",
+    sha256 = "3ed86946e6e637f0fe21749c0323b086e62c4b8b93694d6cedad615cdc584512",  # noqa
     build_file = "tools/google_styleguide.BUILD",
 )
 
@@ -79,7 +79,7 @@ github_archive(
     name = "pycodestyle",
     repository = "PyCQA/pycodestyle",
     commit = "2.3.1",
-    sha256 = "e9fc1ca3fd85648f45c0d2e33591b608a17d8b9b78e22c5f898e831351bacb03",
+    sha256 = "e9fc1ca3fd85648f45c0d2e33591b608a17d8b9b78e22c5f898e831351bacb03",  # noqa
     build_file = "tools/pycodestyle.BUILD",
 )
 
@@ -88,7 +88,7 @@ bitbucket_archive(
     repository = "eigen/eigen",
     # N.B. See #5785; do your best not to have to bump this to a newer commit.
     commit = "3.3.3",
-    sha256 = "94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f",
+    sha256 = "94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f",  # noqa
     strip_prefix = "eigen-eigen-67e894c6cd8f",
     build_file = "tools/eigen.BUILD",
 )
@@ -97,7 +97,7 @@ github_archive(
     name = "spdlog",
     repository = "gabime/spdlog",
     commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
-    sha256 = "5166c036eacd625b86f725bfba356547e0bc497232649662c61cde7b1b423292",
+    sha256 = "5166c036eacd625b86f725bfba356547e0bc497232649662c61cde7b1b423292",  # noqa
     build_file = "tools/spdlog.BUILD",
 )
 
@@ -105,7 +105,7 @@ github_archive(
     name = "fmt",
     repository = "fmtlib/fmt",
     commit = "3.0.1",
-    sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",
+    sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",  # noqa
     build_file = "tools/fmt.BUILD",
 )
 
@@ -139,7 +139,7 @@ github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
     commit = "c0a0093a950fc83e12e8d5918a0319b590356e7e",
-    sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",
+    sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",  # noqa
     build_file = "tools/lcm.BUILD",
 )
 
@@ -149,7 +149,7 @@ github_archive(
     name = "libbot",
     repository = "RobotLocomotion/libbot2",
     commit = "495ae366d5e380b58254368217fc5c798e72aadd",
-    sha256 = "c463460a4dd6133d6d21e6ab6e493fdcdca442d2df86bcb56749f6740bc61db5",
+    sha256 = "c463460a4dd6133d6d21e6ab6e493fdcdca442d2df86bcb56749f6740bc61db5",  # noqa
     build_file = "tools/libbot.BUILD",
 )
 
@@ -157,7 +157,7 @@ github_archive(
     name = "bullet",
     repository = "bulletphysics/bullet3",
     commit = "2.86.1",
-    sha256 = "c058b2e4321ba6adaa656976c1a138c07b18fc03b29f5b82880d5d8228fbf059",
+    sha256 = "c058b2e4321ba6adaa656976c1a138c07b18fc03b29f5b82880d5d8228fbf059",  # noqa
     build_file = "tools/bullet.BUILD",
 )
 
@@ -165,7 +165,7 @@ github_archive(
     name = "ccd",
     repository = "danfis/libccd",
     commit = "16b9379fb6e8610566fe5e1396166daf7106f165",
-    sha256 = "fc583888c731d91c9ef287ca9ba443426ecfce75056d6c468b063b383bd8efa1",
+    sha256 = "fc583888c731d91c9ef287ca9ba443426ecfce75056d6c468b063b383bd8efa1",  # noqa
     build_file = "tools/ccd.BUILD",
 )
 
@@ -173,7 +173,7 @@ github_archive(
     name = "octomap",
     repository = "OctoMap/octomap",
     commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
-    sha256 = "023ddd5b1e8ed1a70374c352cbd5b02bd5a26707f61a13cfb087766d5ca466e3",
+    sha256 = "023ddd5b1e8ed1a70374c352cbd5b02bd5a26707f61a13cfb087766d5ca466e3",  # noqa
     build_file = "tools/octomap.BUILD",
 )
 
@@ -181,7 +181,7 @@ github_archive(
     name = "fcl",
     repository = "flexible-collision-library/fcl",
     commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
-    sha256 = "0a5652cac609cca58f85d68c08298e177867188ad730e78c8c9ac97eea8d32b4",
+    sha256 = "0a5652cac609cca58f85d68c08298e177867188ad730e78c8c9ac97eea8d32b4",  # noqa
     build_file = "tools/fcl.BUILD",
 )
 
@@ -189,7 +189,7 @@ github_archive(
     name = "ipopt",
     repository = "RobotLocomotion/ipopt-mirror",
     commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
-    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",
+    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",  # noqa
     build_file = "tools/ipopt.BUILD",
 )
 
@@ -197,7 +197,7 @@ github_archive(
     name = "nlopt",
     repository = "stevengj/nlopt",
     commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
-    sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",
+    sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",  # noqa
     build_file = "tools/nlopt.BUILD",
 )
 
@@ -205,14 +205,14 @@ github_archive(
     name = "optitrack_driver",
     repository = "RobotLocomotion/optitrack-driver",
     commit = "b9a59b66cb0627f9f174e11f323fdcf6cb223bb6",
-    sha256 = "5c9d917fcb9d325ceba75484a2d3f31ea044a090a966ac1ee2c4afd91923039e",
+    sha256 = "5c9d917fcb9d325ceba75484a2d3f31ea044a090a966ac1ee2c4afd91923039e",  # noqa
 )
 
 github_archive(
     name = "pybind11",
     repository = "RobotLocomotion/pybind11",
     commit = "6d72785766558047ee2e2075198c07d8c25eb631",
-    sha256 = "08b4813b3b17f607efc4e8ba8b73bf55759ba744cab125e9fc666b5161cb1d0a",
+    sha256 = "08b4813b3b17f607efc4e8ba8b73bf55759ba744cab125e9fc666b5161cb1d0a",  # noqa
     build_file = "tools/pybind11.BUILD",
 )
 
@@ -220,7 +220,7 @@ github_archive(
     name = "lcmtypes_bot2_core",
     repository = "openhumanoids/bot_core_lcmtypes",
     commit = "99676541398749c2aab4b5b2c38be77d268085cc",
-    sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",
+    sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",  # noqa
     build_file = "tools/lcmtypes_bot2_core.BUILD",
 )
 
@@ -228,7 +228,7 @@ github_archive(
     name = "lcmtypes_robotlocomotion",
     repository = "RobotLocomotion/lcmtypes",
     commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
-    sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",
+    sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",  # noqa
     build_file = "tools/lcmtypes_robotlocomotion.BUILD",
 )
 
@@ -236,7 +236,7 @@ github_archive(
     name = "tinyobjloader",
     repository = "syoyo/tinyobjloader",
     commit = "9d9e987c4776d9df54e0ab65639e1befddb1d5ae",
-    sha256 = "e5c7ce01a153a3d9101f6c197e10145490ecd84ba7d0b6463708a60bc2845d4b",
+    sha256 = "e5c7ce01a153a3d9101f6c197e10145490ecd84ba7d0b6463708a60bc2845d4b",  # noqa
     build_file = "tools/tinyobjloader.BUILD",
 )
 
@@ -245,7 +245,7 @@ github_archive(
     name = "io_bazel_rules_go",
     repository = "bazelbuild/rules_go",
     commit = "0.4.4",
-    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",
+    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",  # noqa
 )
 
 # Necessary for buildifier.
@@ -267,14 +267,14 @@ github_archive(
     # TODO(mwoehlke-kitware): Bump this commit to a release tag once it is
     # incorporated in a released version.
     commit = "7ce605fb1585076ed681e37d82d0ef529244b23a",
-    sha256 = "c6210992d328212a7752a2c888a15f5c597dbf31f03ac0d59457ceff2928a30b",
+    sha256 = "c6210992d328212a7752a2c888a15f5c597dbf31f03ac0d59457ceff2928a30b",  # noqa
 )
 
 github_archive(
     name = "yaml_cpp",
     repository = "jbeder/yaml-cpp",
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
-    sha256 = "d94cdb84f346ce4d9f1f891505ed257796103f70ce56590bdd02e025c8503b16",
+    sha256 = "d94cdb84f346ce4d9f1f891505ed257796103f70ce56590bdd02e025c8503b16",  # noqa
     build_file = "tools/yaml_cpp.BUILD",
 )
 
@@ -309,7 +309,7 @@ pypi_archive(
     name = "six_archive",
     package = "six",
     version = "1.10.0",
-    sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
+    sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",  # noqa
     build_file = "tools/six.BUILD",
 )
 
@@ -324,13 +324,13 @@ github_archive(
     name = "protobuf",
     repository = "google/protobuf",
     commit = "v3.1.0",
-    sha256 = "0a0ae63cbffc274efb573bdde9a253e3f32e458c41261df51c5dbc5ad541e8f7",
+    sha256 = "0a0ae63cbffc274efb573bdde9a253e3f32e458c41261df51c5dbc5ad541e8f7",  # noqa
 )
 
 pypi_archive(
     name = "semantic_version",
     version = "2.6.0",
-    sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",
+    sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",  # noqa
     strip_prefix = "semantic_version",
     build_file = "tools/semantic_version.BUILD",
 )
@@ -339,7 +339,7 @@ github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
     commit = "adff2def458928902ad482337330676beeeedb93",
-    sha256 = "61fd6f1810724c50784da97ef666c4b5b9110a8ce57f79b4c5510d6f8bb7c75e",
+    sha256 = "61fd6f1810724c50784da97ef666c4b5b9110a8ce57f79b4c5510d6f8bb7c75e",  # noqa
     build_file = "tools/pycps.BUILD",
 )
 
@@ -359,7 +359,7 @@ bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
     commit = "ignition-math3_3.2.0",
-    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",
+    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",  # noqa
     strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4",
     build_file = "tools/ignition_math.BUILD",
 )
@@ -368,7 +368,7 @@ bitbucket_archive(
     name = "ignition_rndf",
     repository = "ignitionrobotics/ign-rndf",
     commit = "ignition-rndf_0.1.5",
-    sha256 = "fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf",
+    sha256 = "fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf",  # noqa
     strip_prefix = "ignitionrobotics-ign-rndf-214a333fbdcb",
     build_file = "tools/ignition_rndf.BUILD",
 )
@@ -377,7 +377,7 @@ bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
     commit = "deca28cd6cd5",
-    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",
+    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",  # noqa
     strip_prefix = "osrf-sdformat-deca28cd6cd5",
     build_file = "tools/sdformat.BUILD",
 )
