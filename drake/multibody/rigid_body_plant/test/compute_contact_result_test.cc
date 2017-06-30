@@ -11,6 +11,7 @@
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_plant/test/contact_result_test_common.h"
 
 // The ContactResult class is largely a container for the data that is computed
 // by the RigidBodyPlant while determining contact forces.  This test confirms
@@ -38,60 +39,21 @@ namespace rigid_body_plant {
 namespace test {
 namespace {
 
-// Utility function to facilitate comparing matrices for equivalency.
-template <typename DerivedA, typename DerivedB>
-bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
-                     const Eigen::MatrixBase<DerivedB>& m2) {
-  return CompareMatrices(m1, m2, Eigen::NumTraits<double>::dummy_precision(),
-                         MatrixCompareType::absolute);
-}
-
 // Base class for testing the RigidBodyPlant's logic for populating its
 // output port for collision response data.
-class ContactResultTest : public ::testing::Test {
+class ContactResultTest : public ContactResultTestCommon {
  protected:
-  // These pointers are merely reference pointers; the underlying instances
-  //  are owned by objects which, ultimately, are owned by the test class.
-  RigidBody<double>* body1_{};
-  RigidBody<double>* body2_{};
-  RigidBodyTree<double>* tree_{};
-
-  // The point around which the test is run. Each sphere is offset along the
-  //  x-axis from this point.
-  double x_anchor_{};
 
   // instances owned by the test class
   unique_ptr<RigidBodyPlant<double>> plant_{};
   unique_ptr<Context<double>> context_{};
   unique_ptr<SystemOutput<double>> output_{};
-  const double kRadius = 1.0;
 
-  // Contact parameters
-  const double kStiffness = 150;
-  const double kDissipation = 2.0;
-  const double kStaticFriction = 0.9;
-  const double kDynamicFriction = 0.5;
-  const double kVStictionTolerance = 0.01;
-
-  // Places two spheres are on the x-y plane mirrored across the origin from
-  //  each other such there is 2 * `distance` units gap between them.  Negative
-  //  numbers imply collision.
+  // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
-    auto unique_tree = make_unique<RigidBodyTree<double>>();
-    tree_ = unique_tree.get();
-
-    x_anchor_ = 1.5;
-    Vector3d pos(x_anchor_ - (kRadius + distance), 0, 0);
-    body1_ = AddSphere(pos, "sphere1");
-    pos << x_anchor_ + (kRadius + distance), 0, 0;
-    body2_ = AddSphere(pos, "sphere2");
-
-    tree_->compile();
 
     // Populate the plant.
-    // Note: This is done here instead of the SetUp method because it appears
-    //  the plant requires a *compiled* tree at constructor time.
-    plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
+    plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance));
     plant_->set_normal_contact_parameters(kStiffness, kDissipation);
     plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                             kVStictionTolerance);
@@ -100,27 +62,9 @@ class ContactResultTest : public ::testing::Test {
     plant_->CalcOutput(*context_.get(), output_.get());
 
     const int port_index = plant_->contact_results_output_port().get_index();
-    return output_->get_data(port_index)->GetValue<ContactResults<double>>();
-  }
-
-  // Add a sphere with default radius, placed at the given position.
-  //  Returns a raw pointer so that tests can use it for result validation.
-  RigidBody<double>* AddSphere(const Vector3d& pos, const std::string& name) {
-    RigidBody<double>* body;
-    tree_->add_rigid_body(
-        unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
-    body->set_name(name);
-    body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
-    Isometry3d pose = Isometry3d::Identity();
-    pose.translate(pos);
-    body->add_joint(&tree_->world(),
-                    make_unique<QuaternionFloatingJoint>("base", pose));
-    DrakeShapes::Sphere sphere(kRadius);
-    DrakeCollision::Element collision_element(sphere);
-    collision_element.set_body(body);
-    tree_->addCollisionElement(collision_element, *body, "group1");
-    return body;
+    contact_results_ =
+        output_->get_data(port_index)->GetValue<ContactResults<double>>();
+    return contact_results_;
   }
 };
 
