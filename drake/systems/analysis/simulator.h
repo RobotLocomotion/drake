@@ -785,7 +785,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
                              &triggered_witnesses_);
 
-    // TODO(edrumwri): Store witness function(s) that triggered.
+    // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->get_name(), context.get_time());
