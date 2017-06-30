@@ -236,6 +236,9 @@ struct BodyNodeTopology {
   int num_mobilizer_velocities{0};
   int mobilizer_velocities_start{0};
 
+  // Start index in a vector containing only generalized velocities.
+  int mobilizer_velocities_start_in_v{0};
+
   /// Start and number of dofs for this node's body (flexible dofs).
   int num_flexible_positions{0};
   int flexible_positions_start{0};
@@ -560,6 +563,12 @@ class MultibodyTreeTopology {
       node.num_mobilizer_positions = mobilizer.num_positions;
       node.mobilizer_velocities_start = mobilizer.velocities_start;
       node.num_mobilizer_velocities = mobilizer.num_velocities;
+
+      // Start index in a vector containing only generalized velocities.
+      node.mobilizer_velocities_start_in_v =
+          mobilizer.velocities_start - num_positions_;
+      DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v);
+      DRAKE_DEMAND(node.mobilizer_velocities_start_in_v < num_velocities_);
     }
     DRAKE_DEMAND(position_index == num_positions_);
     DRAKE_DEMAND(velocity_index == num_states_);

@@ -23,6 +23,9 @@ template<typename T> class MultibodyTree;
 
 namespace internal {
 
+#include <iostream>
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 /// For internal use only of the MultibodyTree implementation.
 /// This is a base class representing a **node** in the tree structure of a
 /// MultibodyTree. %BodyNode provides implementations for convenience methods to
@@ -296,7 +299,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //          = R_WF * phiT_MB_F * H_FM * vm
     //          = H_PB_W * vm
     // where H_PB_W = R_WF * phiT_MB_F * H_FM.
-    SpatialVelocity<T> V_PB_W = get_mutable_V_PB_W(vc);
+    SpatialVelocity<T>& V_PB_W = get_mutable_V_PB_W(vc);
     V_PB_W = R_WF * V_FM.Shift(p_MB_F);
 
     // =========================================================================
@@ -451,6 +454,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     /* p_PB_W = R_WP * p_PB */
     Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
 
+#if 0
+    PRINT_VAR(get_body().get_index());
+    PRINT_VAR(V_WP);
+    PRINT_VAR(A_WP);
+    PRINT_VAR(p_PB_W.transpose());
+    PRINT_VAR(V_PB_W);
+    PRINT_VAR(A_PB_W);
+#endif
     get_mutable_A_WB(ac) =
         A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
                                                 V_PB_W, A_PB_W);
@@ -498,7 +509,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // to the operator.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const VectorX<T>& v) const {
-    return v.segment(topology_.mobilizer_velocities_start,
+    return v.segment(topology_.mobilizer_velocities_start_in_v,
                      topology_.num_mobilizer_velocities);
   }
 
@@ -564,26 +575,26 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// of the outboard frame M in the inboard frame F.
   const SpatialVelocity<T>& get_V_FM(
       const VelocityKinematicsCache<T>& vc) const {
-    return vc.get_V_FM(topology_.parent_body_node);
+    return vc.get_V_FM(topology_.index);
   }
 
   /// Mutable version of get_V_FM().
   SpatialVelocity<T>& get_mutable_V_FM(
       VelocityKinematicsCache<T>* vc) const {
-    return vc->get_mutable_V_FM(topology_.parent_body_node);
+    return vc->get_mutable_V_FM(topology_.index);
   }
 
   /// @returns a const reference to the spatial velocity `V_PB_W` of the this
   /// node's body B in the parent node's body P, expressed in the world frame W.
   const SpatialVelocity<T>& get_V_PB_W(
       const VelocityKinematicsCache<T>& vc) const {
-    return vc.get_V_PB_W(topology_.parent_body_node);
+    return vc.get_V_PB_W(topology_.index);
   }
 
   /// Mutable version of get_V_PB_W().
   SpatialVelocity<T>& get_mutable_V_PB_W(
       VelocityKinematicsCache<T>* vc) const {
-    return vc->get_mutable_V_PB_W(topology_.parent_body_node);
+    return vc->get_mutable_V_PB_W(topology_.index);
   }
 
   // =========================================================================

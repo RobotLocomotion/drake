@@ -177,7 +177,8 @@ class PendulumTests : public ::testing::Test {
     return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
   }
 
-  // Helper method to extract spatial velocity from the position kinematics.
+  // Helper method to extract spatial velocity from the velocity kinematics
+  // cache.
   // TODO(amcastro-tri):
   // Replace this by a method
   // Body<T>::get_spatial_velocity_in_world(const Context<T>&)
@@ -188,6 +189,20 @@ class PendulumTests : public ::testing::Test {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
     return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
+  }
+
+  // Helper method to extract spatial acceleration from the acceleration
+  // kinematics cache.
+  // TODO(amcastro-tri):
+  // Replace this by a method
+  // Body<T>::get_spatial_acceleration_in_world(const Context<T>&)
+  // when we can place cache entries in the context.
+  const SpatialAcceleration<double>& get_body_spatial_acceleration_in_world(
+      const AccelerationKinematicsCache<double>& ac,
+      const Body<double>& body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    return ac.get_A_WB(topology.get_body(body.get_index()).body_node);
   }
 
  protected:
@@ -511,7 +526,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   }
 }
 
-TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
+TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
   const int kEpsilonFactor = 5;
@@ -520,6 +535,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
 
   PositionKinematicsCache<double> pc(model_->get_topology());
   VelocityKinematicsCache<double> vc(model_->get_topology());
+  AccelerationKinematicsCache<double> ac(model_->get_topology());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -564,6 +580,31 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematics) {
 
       EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kEpsilon));
       EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));
+
+      // Test a number of acceleration configurations.
+      VectorX<double> vdot(2);  // Vector of generalized accelerations.
+      vdot = VectorX<double>::Zero(2);
+
+      model_->CalcAccelerationKinematicsCache(*mbt_context_, pc, vc, vdot, &ac);
+
+      // Retrieve body spatial accelerations from acceleration kinematics cache.
+      const SpatialAcceleration<double>& A_WU =
+          get_body_spatial_acceleration_in_world(ac, *upper_link_);
+      const SpatialAcceleration<double>& A_WL =
+          get_body_spatial_acceleration_in_world(ac, *lower_link_);
+
+      const SpatialAcceleration<double> A_WU_expected(
+          acrobot_benchmark_.CalcLink1SpatialAccelerationInWorldFrame(
+              shoulder_angle, shoulder_angle_rate, vdot(0)));
+
+      const SpatialAcceleration<double> A_WL_expected(
+          acrobot_benchmark_.CalcLink2SpatialAccelerationInWorldFrame(
+              shoulder_angle, elbow_angle,
+              shoulder_angle_rate, elbow_angle_rate,
+              vdot(0), vdot(1)));
+
+      EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kEpsilon));
+      EXPECT_TRUE(A_WL.IsApprox(A_WL_expected, kEpsilon));
     }
   }
 }

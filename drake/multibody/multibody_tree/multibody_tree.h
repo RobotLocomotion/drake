@@ -516,6 +516,7 @@ class MultibodyTree {
       const VelocityKinematicsCache<T>& vc,
       const VectorX<T>& mbt_vdot,
       AccelerationKinematicsCache<T>* ac) const;
+
  private:
   void CreateBodyNode(BodyNodeIndex body_node_index);
 
