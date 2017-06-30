@@ -115,6 +115,9 @@ class RobotPlanRunner {
       std::cout << "Discarding plan, no status message received yet"
                 << std::endl;
       return;
+    } else if (plan->num_states < 2) {
+      std::cout << "Discarding plan, Not enough knot points." << std::endl;
+      return;
     }
 
     std::vector<Eigen::MatrixXd> knots(plan->num_states,
