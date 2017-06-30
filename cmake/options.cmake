@@ -256,11 +256,6 @@ macro(drake_setup_options)
     "robotlocomotion LCM types")
 
   drake_system_dependency(
-    VTK OPTIONAL PREFER_SYSTEM_VERSION REQUIRES VTK VERSION 5.10
-    ADDITIONAL_VERSIONS 5.8 7.1 8.0 --
-    "Visualization ToolKit")
-
-  drake_system_dependency(
     TINYOBJLOADER REQUIRES tinyobjloader
     "library for reading wavefront mesh files")
 
@@ -274,7 +269,7 @@ macro(drake_setup_options)
   drake_optional_external(BULLET ON "Bullet library for collision detection")
 
   drake_optional_external(DIRECTOR ON
-    DEPENDS "HAVE_VTK\;HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
+    DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
     "VTK-based visualization tool and robot user interface")
 
   # STRONGLY DEPRECATED.
