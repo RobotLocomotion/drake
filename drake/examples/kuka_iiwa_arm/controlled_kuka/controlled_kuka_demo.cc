@@ -12,7 +12,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
@@ -43,13 +43,13 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-const char kUrdfPath[] = "/manipulation/models/iiwa_description/urdf/"
+const char kUrdfPath[] = "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + kUrdfPath, multibody::joints::kFixed, tree.get());
+      FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
 
   // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).
@@ -142,7 +142,7 @@ int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  CreateTreedFromFixedModelAtPose(kUrdfPath, tree.get());
+  CreateTreedFromFixedModelAtPose(FindResourceOrThrow(kUrdfPath), tree.get());
 
   std::unique_ptr<PiecewisePolynomialTrajectory> traj = MakePlan();
 

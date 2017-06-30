@@ -19,6 +19,7 @@ drake_cc_binary(
     ],
     tags = ["snopt"],
     deps = [
+        "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
         "//drake/lcm",

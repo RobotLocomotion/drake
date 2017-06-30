@@ -8,7 +8,7 @@
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/Valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
 #include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
@@ -42,9 +42,9 @@ class ValkyrieSimulationDiagram : public systems::Diagram<double> {
     // Create RigidBodyTree.
     auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() +
-            "/examples/Valkyrie/urdf/urdf/"
-            "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
+        FindResourceOrThrow(
+            "drake/examples/Valkyrie/urdf/urdf/"
+            "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
         multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
         tree_ptr.get());
     multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
