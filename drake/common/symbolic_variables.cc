@@ -13,24 +13,28 @@
 
 using std::accumulate;
 using std::includes;
+using std::initializer_list;
 using std::inserter;
 using std::less;
 using std::move;
 using std::ostream;
 using std::ostream_iterator;
 using std::ostringstream;
+using std::set;
 using std::set_intersection;
 using std::string;
 
 namespace drake {
 namespace symbolic {
 
-Variables::Variables(std::initializer_list<value_type> init) : vars_(init) {}
+Variables::Variables(initializer_list<Variable> init) : vars_(init) {}
 
 Variables::Variables(const Eigen::Ref<const VectorX<Variable>>& init)
     : vars_{init.data(), init.data() + init.size()} {}
 
-size_t Variables::get_hash() const { return hash_value<set>{}(vars_); }
+size_t Variables::get_hash() const {
+  return hash_value<set<Variable>>{}(vars_);
+}
 
 string Variables::to_string() const {
   ostringstream oss;
@@ -127,10 +131,10 @@ Variables operator-(Variables vars, const Variable& var) {
   return vars;
 }
 
-Variables::Variables(set vars) : vars_{move(vars)} {}
+Variables::Variables(set<Variable> vars) : vars_{move(vars)} {}
 
 Variables intersect(const Variables& vars1, const Variables& vars2) {
-  Variables::set intersection;
+  set<Variable> intersection;
   set_intersection(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
                    vars2.vars_.end(),
                    inserter(intersection, intersection.begin()),

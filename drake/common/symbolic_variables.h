@@ -26,20 +26,18 @@ class Variables {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variables)
 
-  typedef typename drake::symbolic::Variable key_type;
-  typedef typename drake::symbolic::Variable value_type;
-  typedef typename std::set<key_type> set;
-  typedef typename set::size_type size_type;
-  typedef typename set::iterator iterator;
-  typedef typename set::const_iterator const_iterator;
-  typedef typename set::reverse_iterator reverse_iterator;
-  typedef typename set::const_reverse_iterator const_reverse_iterator;
+  typedef typename std::set<Variable>::size_type size_type;
+  typedef typename std::set<Variable>::iterator iterator;
+  typedef typename std::set<Variable>::const_iterator const_iterator;
+  typedef typename std::set<Variable>::reverse_iterator reverse_iterator;
+  typedef typename std::set<Variable>::const_reverse_iterator
+      const_reverse_iterator;
 
   /** Default constructor. */
   Variables() = default;
 
   /** List constructor. */
-  Variables(std::initializer_list<value_type> init);
+  Variables(std::initializer_list<Variable> init);
 
   /** Constructs from an Eigen vector of variables. */
   explicit Variables(const Eigen::Ref<const VectorX<Variable>>& init);
@@ -82,7 +80,7 @@ class Variables {
   const_reverse_iterator crend() const { return vars_.crend(); }
 
   /** Inserts a variable @p var into a set. */
-  void insert(const value_type& var) { vars_.insert(var); }
+  void insert(const Variable& var) { vars_.insert(var); }
   /** Inserts variables in [@p first, @p last) into a set. */
   template <class InputIt>
   void insert(InputIt first, InputIt last) {
@@ -92,18 +90,18 @@ class Variables {
   void insert(const Variables& vars) { vars_.insert(vars.begin(), vars.end()); }
 
   /** Erases @p key from a set. Return number of erased elements (0 or 1). */
-  size_type erase(const key_type& key) { return vars_.erase(key); }
+  size_type erase(const Variable& key) { return vars_.erase(key); }
 
   /** Erases variables in @p vars from a set. Return number of erased
       elements ([0, vars.size()]). */
   size_type erase(const Variables& vars);
 
   /** Finds element with specific key. */
-  iterator find(const key_type& key) { return vars_.find(key); }
-  const_iterator find(const key_type& key) const { return vars_.find(key); }
+  iterator find(const Variable& key) { return vars_.find(key); }
+  const_iterator find(const Variable& key) const { return vars_.find(key); }
 
   /** Return true if @p key is included in the Variables. */
-  bool include(const key_type& key) const { return find(key) != end(); }
+  bool include(const Variable& key) const { return find(key) != end(); }
 
   /** Return true if @p vars is a subset of the Variables. */
   bool IsSubsetOf(const Variables& vars) const;
@@ -124,9 +122,9 @@ class Variables {
 
  private:
   /* Constructs from std::set<Variable>. */
-  explicit Variables(set vars);
+  explicit Variables(std::set<Variable> vars);
 
-  set vars_;
+  std::set<Variable> vars_;
 };
 
 /** Updates @p var1 with the result of set-union(@p var1, @p var2). */

@@ -21,7 +21,7 @@ class VariablesTest : public ::testing::Test {
 
 TEST_F(VariablesTest, ConstructFromVariableVector) {
   const Eigen::Matrix<symbolic::Variable, 3, 1> v1(x_, y_, z_);
-  const Variables vars1(v1);  // vars1 = {x, y_, z}
+  const Variables vars1(v1);  // vars1 = {x, y, z}
   EXPECT_EQ(vars1.size(), 3u);
   EXPECT_TRUE(vars1.include(x_));
   EXPECT_TRUE(vars1.include(y_));
