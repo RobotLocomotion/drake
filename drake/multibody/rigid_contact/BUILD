@@ -13,8 +13,10 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
     name = "rigid_contact",
+    srcs = ["rigid_contact_solver.cc"],
     hdrs = [
         "rigid_contact_problem_data.h",
+        "rigid_contact_solver.h",
     ],
     deps = [
         "//drake/common",
@@ -23,5 +25,13 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "rigid_contact_solver_test",
+    deps = [
+        ":rigid-contact",
+        "//drake/examples/rod2d",
+    ],
+)
 
 cpplint()
