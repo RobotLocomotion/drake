@@ -9,8 +9,9 @@
 namespace drake {
 namespace systems {
 namespace sensors {
+namespace vtk_util {
 
-vtkSmartPointer<vtkPlaneSource> VtkUtil::CreateSquarePlane(double size) {
+vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size) {
   vtkSmartPointer<vtkPlaneSource> plane =
       vtkSmartPointer<vtkPlaneSource>::New();
   const double half_size = size * 0.5;
@@ -22,7 +23,7 @@ vtkSmartPointer<vtkPlaneSource> VtkUtil::CreateSquarePlane(double size) {
   return plane;
 }
 
-vtkSmartPointer<vtkTransform> VtkUtil::ConvertToVtkTransform(
+vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
     const Eigen::Isometry3d& transform) {
   vtkNew<vtkMatrix4x4> vtk_mat;
   for (int i = 0; i < 4; ++i) {
@@ -38,6 +39,7 @@ vtkSmartPointer<vtkTransform> VtkUtil::ConvertToVtkTransform(
   return vtk_transform;
 }
 
+}  // namespace vtk_util
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake

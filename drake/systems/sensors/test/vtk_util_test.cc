@@ -13,6 +13,7 @@
 namespace drake {
 namespace systems {
 namespace sensors {
+namespace vtk_util {
 namespace {
 
 const double kTolerance = std::numeric_limits<double>::epsilon();
@@ -35,7 +36,7 @@ const Point kExpectedPointSet[kNumPoints] = {
 
 GTEST_TEST(PointsCorrespondenceTest, PlaneCreationTest) {
   vtkSmartPointer<vtkPlaneSource> dut =
-      VtkUtil::CreateSquarePlane(kSize);
+      CreateSquarePlane(kSize);
 
   EXPECT_EQ(kNumPoints, dut->GetOutput()->GetPoints()->GetNumberOfPoints());
   for (int i = 0; i < kNumPoints; ++i) {
@@ -56,7 +57,7 @@ GTEST_TEST(ConvertToVtkTransformTest, ConversionTest) {
                                              1. / std::sqrt(3.),
                                              1. / std::sqrt(3.)))));
 
-  auto dut = VtkUtil::ConvertToVtkTransform(expected);
+  auto dut = ConvertToVtkTransform(expected);
 
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
@@ -72,16 +73,16 @@ GTEST_TEST(MakeVtkPointerArrayTest, ValidTest) {
   vtkNew<vtkCellData> data1;
   vtkNew<vtkCellData> data2;
 
-  const auto dut1 = VtkUtil::MakeVtkPointerArray(data0);
+  const auto dut1 = MakeVtkPointerArray(data0);
   EXPECT_EQ(dut1.size(), 1);
   EXPECT_EQ(dut1[0], data0.GetPointer());
 
-  const auto dut2 = VtkUtil::MakeVtkPointerArray(data0, data1);
+  const auto dut2 = MakeVtkPointerArray(data0, data1);
   EXPECT_EQ(dut2.size(), 2);
   EXPECT_EQ(dut2[0], data0.GetPointer());
   EXPECT_EQ(dut2[1], data1.GetPointer());
 
-  const auto dut3 = VtkUtil::MakeVtkPointerArray(data0, data1, data2);
+  const auto dut3 = MakeVtkPointerArray(data0, data1, data2);
   EXPECT_EQ(dut3.size(), 3);
   EXPECT_EQ(dut3[0], data0.GetPointer());
   EXPECT_EQ(dut3[1], data1.GetPointer());
@@ -89,6 +90,7 @@ GTEST_TEST(MakeVtkPointerArrayTest, ValidTest) {
 }
 
 }  // namespace
+}  // namespace vtk_util
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
