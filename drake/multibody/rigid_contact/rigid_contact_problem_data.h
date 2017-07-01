@@ -28,7 +28,7 @@ struct RigidContactAccelProblemData {
   /// the friction cone) at the n *non-sliding* contact points. For contact
   /// problems in two dimensions, each element of r will be one. For contact
   /// problems in three dimensions, a friction pyramid (for example), for a
-  /// contact point i will have rᵢ = 2. [Anitescu 2003] define k such vectors
+  /// contact point i will have rᵢ = 2. [Anitescu 1997] define k such vectors
   /// and require that, for each vector w in the spanning set, -w also exists
   /// in the spanning set. The RigidContactAccelProblemData structure expects
   /// that the contact solving mechanism negates the spanning vectors so `r` =
