@@ -406,7 +406,9 @@ template <class T>
 Vector3<T> Rod2D<T>::GetJacobianRow(const systems::Context<T>& context,
                                     const Vector2<T>& p,
                                     const Vector2<T>& dir) const {
-  DRAKE_DEMAND(dir.norm() < 10 * std::numeric_limits<double>::epsilon());
+  using std::abs;
+  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  DRAKE_DEMAND(abs(dir.norm() - 1) < 10 * eps);
 
   // Get rod configuration variables.
   const Vector3<T> q = GetRodConfig(context);
@@ -424,7 +426,9 @@ template <class T>
 Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
                                        const Vector2<T>& p,
                                        const Vector2<T>& dir) const {
-  DRAKE_DEMAND(dir.norm() < 10 * std::numeric_limits<double>::epsilon());
+  using std::abs;
+  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  DRAKE_DEMAND(abs(dir.norm() - 1) < 10 * eps);
 
   // Get rod state variables.
   const Vector3<T> q = GetRodConfig(context);
