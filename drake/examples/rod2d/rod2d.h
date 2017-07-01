@@ -434,7 +434,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                                     double half_rod_len);
 
   // Given a location p_WC of a point C in the World frame, define the point Rc
-  // of the rod that is coincident with C, and report Rc's World frame velocity
+  // on the rod that is coincident with C, and report Rc's World frame velocity
   // v_WRc. We're given p_WRo=(x,y) and V_WRo=(v_WRo,w_WR)=(xdot,ydot,thetadot).
   static Vector2<T> CalcCoincidentRodPointVelocity(
       const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,

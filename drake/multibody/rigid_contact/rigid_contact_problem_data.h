@@ -28,8 +28,12 @@ struct RigidContactAccelProblemData {
   /// the friction cone) at the n *non-sliding* contact points. For contact
   /// problems in two dimensions, each element of r will be one. For contact
   /// problems in three dimensions, a friction pyramid (for example), for a
-  /// contact point i will have rᵢ = 2. The definition of r here corresponds
-  /// to k/2 in [Anitescu 2003].
+  /// contact point i will have rᵢ = 2. [Anitescu 2003] define k such vectors
+  /// and require that, for each vector w in the spanning set, -w also exists
+  /// in the spanning set. The RigidContactAccelProblemData structure expects
+  /// that the contact solving mechanism negates the spanning vectors so `r` =
+  /// k/2 spanning vectors will correspond to a k-edge polygon friction cone
+  /// approximation.
   std::vector<int> r;
 
   /// Coefficients of friction for the s = n - y sliding contacts (where `y` is
@@ -52,8 +56,8 @@ struct RigidContactAccelProblemData {
   VectorX<T> Ndot_x_v;
 
   /// The ℝʸʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
-  /// dimension of generalized velocity) into velocities projected along the
-  /// k vector that span the contact tangents (used to linearize the friction
+  /// dimension of generalized velocity) into velocities projected along
+  /// k vectors that span the contact tangents (used to linearize the friction
   /// cone) at the n *non-sliding* contact points. For contact problems in two
   /// dimensions, r will be one. For a friction pyramid in three dimensions, r
   /// would be two. While the definition of the dimension of the Jacobian matrix

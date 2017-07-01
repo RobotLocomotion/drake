@@ -974,6 +974,8 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalResting) {
   // Verify that contact is not sliding.
   EXPECT_EQ(data.non_sliding_contacts.size(), num_contacts);
 
+  // TODO(edrumwri): Most tests are necessary to better stress the validity of
+  // N, N - μQ, F, dN/dt⋅v, and dF/dt⋅v.
   // Verify that N has no angular component.
   const double eps = 100 * std::numeric_limits<double>::epsilon();
   EXPECT_LT(std::fabs(data.N(0, 2)), eps);
