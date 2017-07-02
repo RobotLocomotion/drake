@@ -19,12 +19,12 @@ drake_cc_library(
         ":leaf_system",
         ":parameters",
         ":single_output_vector_source",
-        ":siso_vector_system",
         ":sparsity_matrix",
         ":state",
         ":system",
         ":value",
         ":vector",
+        ":vector_system",
     ],
 )
 
@@ -389,9 +389,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "siso_vector_system",
-    srcs = ["siso_vector_system.cc"],
-    hdrs = ["siso_vector_system.h"],
+    name = "vector_system",
+    srcs = ["vector_system.cc"],
+    hdrs = ["vector_system.h"],
     deps = [
         ":leaf_system",
         "//drake/common:unused",
@@ -614,9 +614,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "siso_vector_system_test",
+    name = "vector_system_test",
     deps = [
-        ":siso_vector_system",
+        ":vector_system",
     ],
 )
 
