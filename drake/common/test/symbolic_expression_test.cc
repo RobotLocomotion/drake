@@ -1759,6 +1759,23 @@ TEST_F(SymbolicExpressionTest, ToString) {
   EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
 }
 
+TEST_F(SymbolicExpressionTest, EvaluatePartial) {
+  // e = xy - 5yz + 10xz.
+  const Expression e{x_ * y_ - 5 * y_ * z_ + 10 * x_ * z_};
+
+  // e1 = e[x ↦ 3] = 3y - 5yz + 30z
+  const Expression e1{e.EvaluatePartial({{var_x_, 3}})};
+  EXPECT_PRED2(ExprEqual, e1, 3 * y_ - 5 * y_ * z_ + 30 * z_);
+
+  // e2 = e1[y ↦ 5] = 15 - 25z + 30z = 15 + 5z
+  const Expression e2{e1.EvaluatePartial({{var_y_, 5}})};
+  EXPECT_PRED2(ExprEqual, e2, 15 + 5 * z_);
+
+  // e3 = e1[z ↦ -2] = 15 + (-10) = 5
+  const Expression e3{e2.EvaluatePartial({{var_z_, -2}})};
+  EXPECT_PRED2(ExprEqual, e3, 5);
+}
+
 // Checks for compatibility with a memcpy primitive move operation.
 // See https://github.com/RobotLocomotion/drake/issues/5974.
 TEST_F(SymbolicExpressionTest, MemcpyKeepsExpressionIntact) {
