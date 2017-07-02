@@ -56,6 +56,14 @@ void Environment::insert(const key_type& key, const mapped_type& elem) {
   map_.emplace(key, elem);
 }
 
+Variables Environment::domain() const {
+  Variables dom;
+  for (const auto& p : map_) {
+    dom += p.first;
+  }
+  return dom;
+}
+
 string Environment::to_string() const {
   ostringstream oss;
   oss << *this;

@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
@@ -97,6 +98,9 @@ class Environment {
   iterator find(const key_type& key) { return map_.find(key); }
   /** Finds element with specific key. */
   const_iterator find(const key_type& key) const { return map_.find(key); }
+
+  /** Returns the domain of this environment. */
+  Variables domain() const;
 
   /** Returns string representation. */
   std::string to_string() const;
