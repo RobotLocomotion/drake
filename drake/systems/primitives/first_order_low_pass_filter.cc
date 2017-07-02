@@ -18,7 +18,7 @@ FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
 template <typename T>
 FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
     const VectorX<double>& time_constants)
-    : SisoVectorSystem<T>(time_constants.size(), time_constants.size()),
+    : VectorSystem<T>(time_constants.size(), time_constants.size()),
       time_constants_(time_constants) {
   DRAKE_ASSERT(time_constants.size() > 0);
   DRAKE_ASSERT((time_constants.array() > 0).all());

@@ -14,7 +14,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Integrator<T>::Integrator(int size) : SisoVectorSystem<T>(size, size) {
+Integrator<T>::Integrator(int size) : VectorSystem<T>(size, size) {
   this->DeclareContinuousState(size);
 }
 
