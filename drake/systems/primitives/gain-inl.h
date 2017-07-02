@@ -22,7 +22,7 @@ Gain<T>::Gain(double k, int size) : Gain(Eigen::VectorXd::Ones(size) * k) {}
 
 template <typename T>
 Gain<T>::Gain(const Eigen::VectorXd& k)
-    : SisoVectorSystem<T>(k.size(), k.size()), k_(k) {}
+    : VectorSystem<T>(k.size(), k.size()), k_(k) {}
 
 template <typename T>
 double Gain<T>::get_gain() const {

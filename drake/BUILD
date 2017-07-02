@@ -237,7 +237,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/systems/framework:output_port_value",
     "//drake/systems/framework:parameters",
     "//drake/systems/framework:single_output_vector_source",
-    "//drake/systems/framework:siso_vector_system",
+    "//drake/systems/framework:vector_system",
     "//drake/systems/framework:sparsity_matrix",
     "//drake/systems/framework:state",
     "//drake/systems/framework:system",
@@ -318,9 +318,9 @@ cc_binary(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
-    targets = ["libdrake.so"],
-    hdr_dest = "include/drake",
     guess_hdrs = "WORKSPACE",
+    hdr_dest = "include/drake",
+    targets = ["libdrake.so"],
     deps = ["//drake/bindings:install"],
 )
 

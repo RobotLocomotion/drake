@@ -17,8 +17,7 @@ namespace drake {
 namespace systems {
 
 /// A base class that specializes LeafSystem for use with only a single vector
-/// input port, and only a single vector output port. ("SISO" is an abbreviation
-/// for "single input single output".)
+/// input port, and only a single vector output port.
 ///
 /// By default, this base class does not declare any state; subclasses may
 /// optionally declare continuous or discrete state, but not both; subclasses
@@ -26,11 +25,11 @@ namespace systems {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class SisoVectorSystem : public LeafSystem<T> {
+class VectorSystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SisoVectorSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorSystem)
 
-  ~SisoVectorSystem() override = default;
+  ~VectorSystem() override = default;
 
   /// Returns the sole input port.
   const InputPortDescriptor<T>& get_input_port() const {
@@ -77,12 +76,12 @@ class SisoVectorSystem : public LeafSystem<T> {
   /// Creates a system with one input port and one output port of the given
   /// sizes.  Does not declare any state -- subclasses may optionally declare
   /// continuous or discrete state, but not both.
-  SisoVectorSystem(int input_size, int output_size) {
+  VectorSystem(int input_size, int output_size) {
     DRAKE_THROW_UNLESS(input_size > 0);
     DRAKE_THROW_UNLESS(output_size > 0);
     this->DeclareInputPort(kVectorValued, input_size);
     this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                  &SisoVectorSystem::CalcVectorOutput);
+                                  &VectorSystem::CalcVectorOutput);
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to

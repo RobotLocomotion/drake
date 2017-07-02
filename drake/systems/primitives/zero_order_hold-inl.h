@@ -13,7 +13,7 @@ namespace systems {
 
 template <typename T>
 ZeroOrderHold<T>::ZeroOrderHold(double period_sec, int size)
-    : SisoVectorSystem<T>(size, size), period_sec_(period_sec) {
+    : VectorSystem<T>(size, size), period_sec_(period_sec) {
   // TODO(david-german-tri): remove the size parameter from the constructor
   // once #3109 supporting automatic sizes is resolved.
   this->DeclareDiscreteState(size);

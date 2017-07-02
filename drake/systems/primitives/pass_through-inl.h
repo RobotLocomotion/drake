@@ -14,7 +14,7 @@ namespace systems {
 // TODO(amcastro-tri): remove the size parameter from the constructor once
 // #3109 supporting automatic sizes is resolved.
 template <typename T>
-PassThrough<T>::PassThrough(int size) : SisoVectorSystem<T>(size, size) { }
+PassThrough<T>::PassThrough(int size) : VectorSystem<T>(size, size) { }
 
 template <typename T>
 void PassThrough<T>::DoCalcVectorOutput(

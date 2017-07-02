@@ -1,4 +1,4 @@
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/systems/framework/vector_system.h"
 
 #include <stdexcept>
 #include <vector>
@@ -18,17 +18,17 @@ using Eigen::VectorXd;
 // Systems, this System allows test code to configure its ports and state even
 // beyond what the constructor does by default.  For all of the Siso overrides,
 // a call count is retained for tests to examine.
-class TestSisoSystem : public SisoVectorSystem<double> {
+class TestSisoSystem : public VectorSystem<double> {
  public:
   static constexpr int kSize = 2;
 
-  TestSisoSystem() : SisoVectorSystem<double>(kSize, kSize) {}
+  TestSisoSystem() : VectorSystem<double>(kSize, kSize) {}
 
   // Let test code abuse these by making them public.
-  using SisoVectorSystem<double>::DeclareContinuousState;
-  using SisoVectorSystem<double>::DeclareDiscreteState;
-  using SisoVectorSystem<double>::DeclareAbstractInputPort;
-  using SisoVectorSystem<double>::DeclareAbstractOutputPort;
+  using VectorSystem<double>::DeclareContinuousState;
+  using VectorSystem<double>::DeclareDiscreteState;
+  using VectorSystem<double>::DeclareAbstractInputPort;
+  using VectorSystem<double>::DeclareAbstractOutputPort;
 
   // Siso override.
   // N.B. This method signature might be used by many downstream projects.

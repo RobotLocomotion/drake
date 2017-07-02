@@ -6,7 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/systems/framework/vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -15,7 +15,7 @@ namespace systems {
 /// and discrete output `y`, where the y is sampled from u with a fixed period.
 /// @ingroup primitive_systems
 template <typename T>
-class ZeroOrderHold : public SisoVectorSystem<T> {
+class ZeroOrderHold : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
