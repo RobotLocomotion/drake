@@ -6,37 +6,36 @@
 // simulates it from a given initial condition, and plots the result.
 
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/vector_system.h"
 
 // Simple Discrete Time System
 //   x[n+1] = x[n]^3
 //   y = x
-class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
+class SimpleDiscreteTimeSystem : public drake::systems::VectorSystem<double> {
  public:
-  SimpleDiscreteTimeSystem() {
-    const int kSize = 1;  // The dimension of both output (y) and state (x).
+  SimpleDiscreteTimeSystem()
+      : drake::systems::VectorSystem<double>(0, 1) {  // Zero inputs, 1 output.
     this->DeclarePeriodicDiscreteUpdate(1.0);
-    this->DeclareVectorOutputPort(drake::systems::BasicVector<double>(kSize),
-                                  &SimpleDiscreteTimeSystem::CopyStateOut);
-    this->DeclareDiscreteState(kSize);
+    this->DeclareDiscreteState(1);  // One state variable.
   }
 
  private:
   // x[n+1] = x[n]^3
-  void DoCalcDiscreteVariableUpdates(
+  virtual void DoCalcVectorDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
-      drake::systems::DiscreteValues<double>* updates) const override {
-    double x = context.get_discrete_state(0)->GetAtIndex(0);
-    double xn = std::pow(x, 3.0);
-    (*updates)[0] = xn;
+      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
+      Eigen::VectorBlock<Eigen::VectorXd>* xn) const {
+    (*xn)[0] = std::pow(x[0], 3.0);
   }
 
   // y = x
-  void CopyStateOut(const drake::systems::Context<double>& context,
-                    drake::systems::BasicVector<double>* output) const {
-    output->SetFromVector(
-        context.get_discrete_state(0)->CopyToVector());
+  virtual void DoCalcVectorOutput(
+      const drake::systems::Context<double>& context,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
+      Eigen::VectorBlock<Eigen::VectorXd>* y) const {
+    *y = x;
   }
 };
 
