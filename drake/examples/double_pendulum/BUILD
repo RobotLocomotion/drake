@@ -5,7 +5,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary"
+    "drake_cc_binary",
 )
 
 filegroup(
@@ -18,19 +18,19 @@ filegroup(
 drake_cc_library(
     name = "sdf_helpers",
     srcs = [
+        "frame_cache.cc",
         "sdf_helpers.cc",
-        "pose_tree.cc"
     ],
     hdrs = [
+        "frame_cache.h",
         "sdf_helpers.h",
-        "pose_tree.h"
     ],
     deps = [
         "//drake/common",
         "//drake/multibody:rigid_body_tree",
         "@eigen",
-        "@sdformat"
-    ]
+        "@sdformat",
+    ],
 )
 
 drake_cc_binary(
@@ -38,9 +38,12 @@ drake_cc_binary(
     srcs = [
         "double_pendulum_demo.cc",
     ],
+    add_test_rule = 1,
     data = [
         ":models",
+        "//tools:drake_visualizer",
     ],
+    test_rule_args = [" --simulation_time=0.01"],
     deps = [
         ":sdf_helpers",
         "//drake/common",
@@ -52,14 +55,14 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis",
         "//drake/systems/framework",
-        "@sdformat"
-    ]
+        "@sdformat",
+    ],
 )
 
 # === test/ ===
 
 drake_cc_googletest(
-    name = "pose_tree_test",
+    name = "frame_cache_test",
     deps = [
         ":sdf_helpers",
     ],
@@ -74,7 +77,7 @@ drake_cc_googletest(
         ":sdf_helpers",
         "//drake/common:drake_path",
         "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints"
+        "//drake/multibody/joints",
     ],
 )
 

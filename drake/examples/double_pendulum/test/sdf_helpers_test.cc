@@ -15,7 +15,7 @@ static const char* const kTestSdfPath =
     "/examples/double_pendulum/models/test.sdf";
 
 GTEST_TEST(SDFHelpersTest, ParsingTest) {
-  std::string sdf_path = GetDrakePath() + kTestSdfPath;
+  const std::string sdf_path = GetDrakePath() + kTestSdfPath;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   ParseModelFromFile(sdf_path, tree.get());
   tree->compile();

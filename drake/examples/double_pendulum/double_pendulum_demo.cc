@@ -21,7 +21,7 @@
 DEFINE_double(realtime_rate, 1.0,
               "Rate at which to run the simulation, relative to realtime");
 DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
-              "How long to simulate the particle");
+              "How long to simulate the pendulum");
 
 namespace drake {
 namespace examples {
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   auto interface = std::make_unique<lcm::DrakeLcm>();
   interface->StartReceiveThread();
   // Load and parse double pendulum SDF from file into a tree.
-  std::string sdf_path = GetDrakePath() + kDoublePendulumSdfPath;
+  const std::string sdf_path = GetDrakePath() + kDoublePendulumSdfPath;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   ParseModelFromFile(sdf_path, tree.get());
   tree->compile();
