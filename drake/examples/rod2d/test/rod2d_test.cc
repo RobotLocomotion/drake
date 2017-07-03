@@ -979,6 +979,9 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalResting) {
   // Verify that N has no angular component.
   const double eps = 100 * std::numeric_limits<double>::epsilon();
   EXPECT_LT(std::fabs(data.N(0, 2)), eps);
+
+  // Verify that N - μQ is equivalent to N, at least in this particular case.
+  EXPECT_LT((data.N - data.N_minus_mu_Q).norm(), eps);
 }
 
 // Verifies that the rigid contact problem data has reasonable values when the
