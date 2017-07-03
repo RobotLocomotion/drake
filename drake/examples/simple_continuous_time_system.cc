@@ -6,39 +6,38 @@
 // simulates it from a given initial condition, and plots the result.
 
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/vector_system.h"
 
 // Simple Continuous Time System
 //   xdot = -x + x^3
 //   y = x
-class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
+class SimpleContinuousTimeSystem : public drake::systems::VectorSystem<double> {
  public:
-  SimpleContinuousTimeSystem() {
-    const int kSize = 1;  // The dimension of both output (y) and state (x).
-    this->DeclareVectorOutputPort(drake::systems::BasicVector<double>(kSize),
-                                  &SimpleContinuousTimeSystem::CopyStateOut);
-    this->DeclareContinuousState(kSize);
+  SimpleContinuousTimeSystem()
+      : drake::systems::VectorSystem<double>(0,
+                                             1) {  // Zero inputs, one output.
+    this->DeclareContinuousState(1);               // One state variable.
   }
 
  private:
   // xdot = -x + x^3
-  void DoCalcTimeDerivatives(
+  virtual void DoCalcVectorTimeDerivatives(
       const drake::systems::Context<double>& context,
-      drake::systems::ContinuousState<double>* derivatives) const override {
-    double x = context.get_continuous_state_vector().GetAtIndex(0);
-    double xdot = -x + std::pow(x, 3.0);
-    derivatives->get_mutable_vector()->SetAtIndex(0, xdot);
+      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
+      Eigen::VectorBlock<Eigen::VectorXd>* xdot) const {
+    (*xdot)(0) = -x(0) + std::pow(x(0), 3.0);
   }
 
   // y = x
-  void CopyStateOut(
+  virtual void DoCalcVectorOutput(
       const drake::systems::Context<double>& context,
-      drake::systems::BasicVector<double>* output) const  {
-    double x = context.get_continuous_state_vector().GetAtIndex(0);
-    output->SetAtIndex(0, x);
+      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
+      Eigen::VectorBlock<Eigen::VectorXd>* y) const {
+    *y = x;
   }
 };
-
 
 int main() {
   // Create the simple system.
