@@ -462,6 +462,17 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
       const systems::Context<T>& context,
       const std::vector<Vector2<T>>& points, std::vector<T>* vels) const;
 
+  /// Initializes the contact data for the rod, given a set of contact points.
+  /// Aborts if data is null or if `points.size() != tangent_vels.size()`.
+  /// @param points a vector of contact points, expressed in the world frame.
+  /// @param tangent_vels a vector of tangent velocities at the contact points,
+  ///        measured along the positive x-axis.
+  /// @param data the rigid contact problem data.
+  void CalcRigidContactProblemData(const systems::Context<T>& context,
+                                   const std::vector<Vector2<T>>& p,
+                                   const std::vector<T>& tangent_vels,
+    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
+
  private:
   friend class Rod2DDAETest;
   friend class Rod2DDAETest_RigidContactProblemDataBallistic_Test;
@@ -475,10 +486,6 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot) const;
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
-  void CalcRigidContactProblemData(const systems::Context<T>& context,
-                                   const std::vector<Vector2<T>>& p,
-                                   const std::vector<T>& tangent_vels,
-    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;

@@ -456,12 +456,6 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
   return Vector3<T>(0, 0, cross2(rdot, dir));
 }
 
-// Initializes the contact data for the rod, given a set of contact points.
-// Aborts if data is null or if `points.size() != tangent_vels.size()`.
-// @param points a vector of contact points, expressed in the world frame.
-// @param tangent_vels a vector of tangent velocities at the contact points,
-//        measured along the positive x-axis.
-// @param data the rigid contact problem data.
 template <class T>
 void Rod2D<T>::CalcRigidContactProblemData(
     const systems::Context<T>& context,

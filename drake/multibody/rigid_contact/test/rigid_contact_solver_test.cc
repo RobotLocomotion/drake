@@ -10,6 +10,8 @@
 using drake::systems::ContinuousState;
 using drake::systems::Context;
 using drake::examples::rod2d::Rod2D;
+using drake::systems::BasicVector;
+using Vector2d = Eigen::Vector2d;
 
 namespace drake {
 namespace multibody {
@@ -22,47 +24,119 @@ class RigidContact2DSolverTest : public ::testing::Test {
     rod_ = std::make_unique<Rod2D<double>>(
         Rod2D<double>::SimulationType::kPiecewiseDAE, 0);
     context_ = rod_->CreateDefaultContext();
+
+    // Use a non-unit mass.
+    rod_->set_rod_mass(2.0);
+
+    // Set a zero input force (this is the default).
+    std::unique_ptr<BasicVector<double>> ext_input =
+        std::make_unique<BasicVector<double>>(3);
+    ext_input->SetAtIndex(0, 0.0);
+    ext_input->SetAtIndex(1, 0.0);
+    ext_input->SetAtIndex(2, 0.0);
+    context_->FixInputPort(0, std::move(ext_input));
+
+    // Set epsilon.
+    eps_ = 100 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
   }
 
-  double cfm_{1e-8};   // Regularization parameter.
+  double cfm_{0};    // Regularization parameter.
+  double eps_{-1};   // Zero tolerance (< 0 indicates not set).
   RigidContactSolver<double> solver_;
   std::unique_ptr<Rod2D<double>> rod_;
   std::unique_ptr<Context<double>> context_;
   RigidContactAccelProblemData<double> data_;
-}
 
-// Tests the rod in a ballistic configuration (non-contacting) configuration.
-TEST_F(RigidContact2DSolverTest, NonContacting) {
-  // Set the state of the rod to reseting on its side with no velocity.
-  SetRestingHorizontal();
+  // Sets the rod to a resting horizontal configuration without modifying the
+  // mode variables.
+  void SetRodToRestingHorizontalConfig() {
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    // Configuration has the rod on its side.
+    xc[0] = 0.0;     // com horizontal position
+    xc[1] = 0.0;     // com vertical position
+    xc[2] = 0.0;     // rod rotation
+    xc[3] = xc[4] = xc[5] = 0.0;   // velocity variables
+  }
 
-  // Set the vertical position to strictly positive.
-  ContinuousState<double>& xc = *context_->
-      get_mutable_continuous_state();
-  xc[1] = 1.0;
+  // Sets the rod to a resting vertical configuration without modifying the
+  // mode variables.
+  void SetRodToRestingVerticalConfig() {
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    xc[0] = 0.0;                             // com horizontal position
+    xc[1] = rod_->get_rod_half_length();     // com vertical position
+    xc[2] = M_PI_2;                          // rod rotation
+    xc[3] = xc[4] = xc[5] = 0.0;             // velocity variables
+  }
 
-  // Compute the rigid contact data.
-  SetProblemData(&data_, 1.0 /* Coulomb friction coefficient */);
+  // Computes rigid contact data.
+  void CalcRigidContactAccelProblemData(
+      RigidContactAccelProblemData<double>* data) {
+    // Get the points of contact and contact tangent velocities.
+    std::vector<Vector2d> contacts;
+    std::vector<double> tangent_vels;
+    rod_->GetContactPoints(*context_, &contacts);
+    rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
-  // Verify there are no contacts.
-  EXPECT_TRUE(data_.sliding_contacts.empty());
-  EXPECT_TRUE(data_.non_sliding_contacts.empty());
+    // Compute the problem data.
+    rod_->CalcRigidContactProblemData(*context_, contacts, tangent_vels, data);
+  }
+};
+
+// Tests the rod in a two-point configuration, in a situation where a force
+// pulls the rod upward (and no contact forces should be applied).
+TEST_F(RigidContact2DSolverTest, TwoPointPulledUpward) {
+  // Set the state of the rod to resting on its side with no velocity.
+  SetRodToRestingHorizontalConfig();
+
+  // Compute the problem data.
+  CalcRigidContactAccelProblemData(&data_);
+
+  // Add a force pulling the rod upward.
+  data_.f[1] += 100.0;
 
   // Compute the contact forces.
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
   // Verify that the contact forces are zero.
-  EXPECT_LT(cf.norm(), cfm_);
+  EXPECT_LT(cf.norm(), eps_);
 }
 
-// Tests the rod in a two-point non-sliding configuration.
-TEST_F(RigidContact2DSolverTest, TwoPointNonSliding) {
-  // Set the state of the rod to reseting on its side with no velocity.
-  SetRestingHorizontal();
+// Tests the rod in a two-point sticking configuration.
+TEST_F(RigidContact2DSolverTest, TwoPointSticking) {
+  // Set the state of the rod to resting on its side with no velocity.
+  SetRodToRestingHorizontalConfig();
 
-  // Compute the rigid contact data.
-  SetProblemData(&data_, 1.0 /* Coulomb friction coefficient */);
+  // Set the rod to infinite friction.
+  const double inf = std::numeric_limits<double>::infinity();
+  rod_->set_mu_coulomb(inf);
+
+  // Compute the problem data.
+  CalcRigidContactAccelProblemData(&data_);
+
+  // Add a force pulling the rod horizontally.
+  const double horz_f = 100.0;
+  data_.f[0] += horz_f;
+
+  // Compute the contact forces.
+  VectorX<double> cf;
+  solver_.SolveContactProblem(cfm_, data_, &cf);
+
+  // Verify that the frictional forces equal the horizontal forces.
+  EXPECT_TRUE(data_.sliding_contacts.empty());
+  const int nc = data_.non_sliding_contacts.size();
+  EXPECT_NEAR(cf.segment(nc, cf.size() - nc).norm(), horz_f, eps_);
+}
+
+// Tests the rod in a two-point sticking configuration.
+TEST_F(RigidContact2DSolverTest, TwoPointNonSliding) {
+  // Set the state of the rod to resting on its side with no velocity.
+  SetRodToRestingHorizontalConfig();
+
+  // Compute the problem data.
+  CalcRigidContactAccelProblemData(&data_);
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -71,24 +145,25 @@ TEST_F(RigidContact2DSolverTest, TwoPointNonSliding) {
   // Verify that there are no frictional forces.
   EXPECT_TRUE(data_.sliding_contacts.empty());
   const int nc = data_.non_sliding_contacts.size();
-  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), 10 * cfm_);
+  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), eps_);
 
   // Verify that the normal contact forces exactly oppose gravity (there should
   // be no frictional forces).
-  const double mg = GetRodGravitationalForce().norm();
-  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, 10 * cfm_);
+  const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
+      rod_->get_rod_mass();
+  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, eps_);
 }
 
 // Tests the rod in a two-point sliding configuration.
 TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
-  // Set the state of the rod to reseting on its side with horizontal velocity.
-  SetRestingHorizontal();
+  // Set the state of the rod to resting on its side with horizontal velocity.
+  SetRodToRestingHorizontalConfig();
   ContinuousState<double>& xc = *context_->
       get_mutable_continuous_state();
   xc[3] = 1.0;
 
-  // Compute the rigid contact data.
-  SetProblemData(&data_, 0.0 /* frictionless contact */);
+  // Compute the problem data.
+  CalcRigidContactAccelProblemData(&data_);
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -97,12 +172,40 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
   // Verify that there are no frictional forces.
   EXPECT_TRUE(data_.non_sliding_contacts.empty());
   const int nc = data_.sliding_contacts.size();
-  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), 10 * cfm_);
+  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), eps_);
 
   // Verify that the normal contact forces exactly oppose gravity (there should
   // be no frictional forces).
-  const double mg = GetRodGravitationalForce().norm();
-  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, 10 * cfm_);
+  const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
+      rod_->get_rod_mass();
+  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, eps_);
+}
+
+// Tests the rod in a single point sliding configuration.
+TEST_F(RigidContact2DSolverTest, SinglePointSliding) {
+  // Set the state of the rod to resting on its side with horizontal velocity.
+  SetRodToRestingHorizontalConfig();
+  ContinuousState<double>& xc = *context_->
+      get_mutable_continuous_state();
+  xc[3] = 1.0;
+
+  // Compute the problem data.
+  CalcRigidContactAccelProblemData(&data_);
+
+  // Compute the contact forces.
+  VectorX<double> cf;
+  solver_.SolveContactProblem(cfm_, data_, &cf);
+
+  // Verify that there are no frictional forces.
+  EXPECT_TRUE(data_.non_sliding_contacts.empty());
+  const int nc = data_.sliding_contacts.size();
+  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), eps_);
+
+  // Verify that the normal contact forces exactly oppose gravity (there should
+  // be no frictional forces).
+  const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
+      rod_->get_rod_mass();
+  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, eps_);
 }
 
 }  // namespace

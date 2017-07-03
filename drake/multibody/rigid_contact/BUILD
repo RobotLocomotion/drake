@@ -29,7 +29,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "rigid_contact_solver_test",
     deps = [
-        ":rigid-contact",
+        ":rigid_contact",
         "//drake/examples/rod2d",
     ],
 )
