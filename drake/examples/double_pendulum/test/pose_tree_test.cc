@@ -9,39 +9,36 @@ namespace examples {
 namespace double_pendulum {
 namespace {
 
-/// Makes sure that PoseTree correctly keeps
-/// frames and the transforms that relate them.
+/// Makes sure that PoseTree correctly keeps frames and the transforms that
+/// relate them.
 GTEST_TEST(PoseTreeTest, TransformTest) {
   PoseTree<double> pose_tree("world");
-  // Define a world->body transform.
-  typename Isometry3<double>::TranslationType
-      world_to_body_translation(1.0, -2.0, 0);
-  AngleAxis<double>
-      world_to_body_rotation(M_PI, Vector3<double>::UnitZ());
-  Isometry3<double> world_to_body_transform =
-      world_to_body_rotation * world_to_body_translation;
+  // Define body frame's (B) translation in world frame (W).
+  const typename Isometry3<double>::TranslationType T_WB(1.0, -2.0, 0);
+  // Define body frame's (B) rotation in world frame (W).
+  const AngleAxis<double> R_WB(M_PI, Vector3<double>::UnitZ());
+  // Compose body frame's (B) pose in world frame (W) from translation
+  // and rotation matrices.
+  const Isometry3<double> X_WB = R_WB * T_WB;
+  // Update tree with body frame's (B) pose in world frame (W).
+  pose_tree.Update("world", "body", X_WB);
 
-  pose_tree.Update(
-      "world", "body", world_to_body_transform);
-  // Define a body->arm transform.
-  typename Isometry3<double>::TranslationType
-      body_to_arm_translation(0.5, 0.0, 1.8);
-  AngleAxis<double>
-      body_to_arm_rotation(0.1*M_PI, Vector3<double>::UnitY());
-  Isometry3<double> body_to_arm_transform =
-      body_to_arm_rotation * body_to_arm_translation;
+  // Define arm frame's (A) translation in body frame (B).
+  const typename Isometry3<double>::TranslationType T_BA(0.5, 0.0, 1.8);
+  // Define arm frame's (A) rotation in body frame (B).
+  const AngleAxis<double> R_BA(0.1 * M_PI, Vector3<double>::UnitY());
+  // Compose arm frame's (A) pose in body frame (B) from translation
+  // and rotation matrices.
+  const Isometry3<double> X_BA = R_BA * T_BA;
+  // Update tree with arm frame's (A) pose in body frame (B).
+  pose_tree.Update("body", "arm", X_BA);
 
-  pose_tree.Update(
-      "body", "arm", body_to_arm_transform);
-
-  // Check for proper transforms.
-  EXPECT_TRUE(pose_tree.Transform("world", "arm").isApprox(
-      world_to_body_transform * body_to_arm_transform));
+  // Check that pose resolution works as intended.
+  EXPECT_TRUE(pose_tree.Transform("world", "arm").isApprox(X_WB * X_BA));
 }
 
-/// Makes sure that a PoseTree throws when trying
-/// to update using a non existant target frame
-/// or trying to transform using non existant frames.
+/// Makes sure that a PoseTree throws when trying to update using a non existent
+/// target frame or trying to transform using non existent frames.
 GTEST_TEST(PoseTreeTest, NonExistantFramesTest) {
   PoseTree<double> pose_tree("root");
   ASSERT_THROW({

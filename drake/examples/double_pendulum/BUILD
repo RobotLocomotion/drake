@@ -40,6 +40,7 @@ drake_cc_binary(
     ],
     data = [
         ":models",
+        "//tools:drake_visualizer"
     ],
     deps = [
         ":sdf_helpers",
