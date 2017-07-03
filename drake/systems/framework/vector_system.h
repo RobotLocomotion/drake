@@ -16,8 +16,8 @@
 namespace drake {
 namespace systems {
 
-/// A base class that specializes LeafSystem for use with only a single vector
-/// input port, and only a single vector output port.
+/// A base class that specializes LeafSystem for use with only zero or one
+/// vector input ports, and only zero or one vector output ports.
 ///
 /// By default, this base class does not declare any state; subclasses may
 /// optionally declare continuous or discrete state, but not both; subclasses
@@ -33,6 +33,7 @@ class VectorSystem : public LeafSystem<T> {
 
   /// Returns the sole input port.
   const InputPortDescriptor<T>& get_input_port() const {
+    DRAKE_DEMAND(this->get_num_input_ports() == 1);
     return LeafSystem<T>::get_input_port(0);
   }
 
@@ -41,6 +42,7 @@ class VectorSystem : public LeafSystem<T> {
 
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {
+    DRAKE_DEMAND(this->get_num_output_ports() == 1);
     return LeafSystem<T>::get_output_port(0);
   }
 
@@ -56,9 +58,9 @@ class VectorSystem : public LeafSystem<T> {
     // should be invariants guaranteed by the framework, so are asserted.
 
     // Exactly one input and output.
-    DRAKE_THROW_UNLESS(this->get_num_input_ports() == 1);
-    DRAKE_THROW_UNLESS(this->get_num_output_ports() == 1);
-    DRAKE_DEMAND(result->get_num_input_ports() == 1);
+    DRAKE_THROW_UNLESS(this->get_num_input_ports() <= 1);
+    DRAKE_THROW_UNLESS(this->get_num_output_ports() <= 1);
+    DRAKE_DEMAND(result->get_num_input_ports() <= 1);
 
     // At most one of either continuous xor discrete state.
     DRAKE_THROW_UNLESS(result->get_num_abstract_state_groups() == 0);
@@ -77,11 +79,13 @@ class VectorSystem : public LeafSystem<T> {
   /// sizes.  Does not declare any state -- subclasses may optionally declare
   /// continuous or discrete state, but not both.
   VectorSystem(int input_size, int output_size) {
-    DRAKE_THROW_UNLESS(input_size > 0);
-    DRAKE_THROW_UNLESS(output_size > 0);
-    this->DeclareInputPort(kVectorValued, input_size);
-    this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                  &VectorSystem::CalcVectorOutput);
+    if (input_size > 0) {
+      this->DeclareInputPort(kVectorValued, input_size);
+    }
+    if (output_size > 0) {
+      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                    &VectorSystem::CalcVectorOutput);
+    }
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -93,9 +97,11 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    // Obtain the block form of u.
+    // Obtain the block form of u (or the empty vector).
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        this->EvalEigenVectorInput(context, 0);
+        (this->get_num_input_ports() > 0)
+            ? this->EvalEigenVectorInput(context, 0)
+            : Eigen::VectorBlock<const VectorX<T>>(VectorX<T>(0), 0, 0);
 
     // Obtain the block form of xc.
     DRAKE_ASSERT(context.has_only_continuous_state());
@@ -125,9 +131,11 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    // Obtain the block form of u.
+    // Obtain the block form of u (or the empty vector).
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        this->EvalEigenVectorInput(context, 0);
+        (this->get_num_input_ports() > 0)
+            ? this->EvalEigenVectorInput(context, 0)
+            : Eigen::VectorBlock<const VectorX<T>>(VectorX<T>(0), 0, 0);
 
     // Obtain the block form of xd before the update (i.e., the prior state).
     DRAKE_ASSERT(context.has_only_discrete_state());
@@ -153,9 +161,16 @@ class VectorSystem : public LeafSystem<T> {
   /// DoCalcVectorOutput().
   void CalcVectorOutput(const Context<T>& context,
                         BasicVector<T>* output) const {
-    // Obtain the block form of u.
+    // Short-circuit when there's no work to do.
+    if (output->size() == 0) {
+      return;
+    }
+
+    // Obtain the block form of u (or the empty vector).
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        this->EvalEigenVectorInput(context, 0);
+        (this->get_num_input_ports() > 0)
+            ? this->EvalEigenVectorInput(context, 0)
+            : Eigen::VectorBlock<const VectorX<T>>(VectorX<T>(0), 0, 0);
 
     // Obtain the block form of xc or xd[n].
     DRAKE_ASSERT(context.get_num_abstract_state_groups() == 0);
@@ -181,17 +196,23 @@ class VectorSystem : public LeafSystem<T> {
   /// Provides a convenience method for %SisoVectorSystem subclasses.  This
   /// method performs the same logical operation as System::DoCalcOutput but
   /// provides VectorBlocks to represent the input, state, and output.
-  /// Subclasses should override this method, and not the base class method
-  /// (which is `final`).
+  /// Subclasses with outputs should override this method, and not the base
+  /// class method (which is `final`).
   ///
   /// The @p state will be either empty, the continuous state, or the discrete
   /// state, depending on which (or none) was declared at context-creation
   /// time.
+  ///
+  /// By default, this function does nothing if the @p derivatives are empty,
+  /// and throws an exception otherwise.
   virtual void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const = 0;
+      Eigen::VectorBlock<VectorX<T>>* output) const {
+    unused(context, input, state);
+    DRAKE_THROW_UNLESS(output->size() == 0);
+  }
 
   /// Provides a convenience method for %SisoVectorSystem subclasses.  This
   /// method performs the same logical operation as

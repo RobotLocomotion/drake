@@ -323,6 +323,82 @@ TEST_F(SisoVectorSystemTest, DiscreteVariableUpdates) {
   EXPECT_EQ(dut.get_output_count(), 0);
 }
 
+class NoInputContinuousTimeSystem : public VectorSystem<double> {
+ public:
+  NoInputContinuousTimeSystem()
+      : VectorSystem<double>(0, 1) {  // Zero inputs, one output.
+    this->DeclareContinuousState(1);  // One state variable.
+  }
+
+ private:
+  virtual void DoCalcVectorTimeDerivatives(
+      const drake::systems::Context<double>& context,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
+      Eigen::VectorBlock<Eigen::VectorXd>* xdot) const {
+    *xdot = -x;
+  }
+
+  virtual void DoCalcVectorOutput(
+      const drake::systems::Context<double>& context,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
+      Eigen::VectorBlock<Eigen::VectorXd>* y) const {
+    *y = x;
+  }
+};
+
+// Derivatives and Output methods still work when input size is zero.
+TEST_F(SisoVectorSystemTest, NoInputSystemTest) {
+  NoInputContinuousTimeSystem dut;
+  auto context = dut.CreateDefaultContext();
+  context->get_mutable_continuous_state()->SetFromVector(Vector1d::Ones());
+
+  // Ensure that time derivatives get calculated correctly.
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      dut.AllocateTimeDerivatives();
+  dut.CalcTimeDerivatives(*context, derivatives.get());
+  EXPECT_EQ(derivatives->get_vector().GetAtIndex(0), -1.0);
+
+  auto output = dut.get_output_port().Allocate(*context);
+  dut.get_output_port().Calc(*context, output.get());
+  EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 1.0);
+}
+
+class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
+ public:
+  NoInputNoOutputDiscreteTimeSystem()
+      : VectorSystem<double>(0, 0) {  // Zero inputs, one output.
+    this->DeclarePeriodicDiscreteUpdate(1.0);
+    this->DeclareDiscreteState(1);  // One state variable.
+  }
+
+ private:
+  // x[n+1] = x[n]^3
+  virtual void DoCalcVectorDiscreteVariableUpdates(
+      const drake::systems::Context<double>& context,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
+      Eigen::VectorBlock<Eigen::VectorXd>* xn) const {
+    (*xn)[0] = std::pow(x[0], 3.0);
+  }
+};
+
+// Discrete updates still work when input size is zero.
+// No output ports are created when the output size is zero.
+TEST_F(SisoVectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
+  NoInputNoOutputDiscreteTimeSystem dut;
+  auto context = dut.CreateDefaultContext();
+  context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(
+      Vector1d::Constant(2.0));
+
+  auto discrete_updates = dut.AllocateDiscreteVariables();
+  dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
+  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 8.0);
+
+  EXPECT_EQ(dut.get_num_output_ports(), 0);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
