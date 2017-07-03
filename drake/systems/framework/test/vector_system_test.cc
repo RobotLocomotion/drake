@@ -18,11 +18,11 @@ using Eigen::VectorXd;
 // Systems, this System allows test code to configure its ports and state even
 // beyond what the constructor does by default.  For all of the Siso overrides,
 // a call count is retained for tests to examine.
-class TestSisoSystem : public VectorSystem<double> {
+class TestVectorSystem : public VectorSystem<double> {
  public:
   static constexpr int kSize = 2;
 
-  TestSisoSystem() : VectorSystem<double>(kSize, kSize) {}
+  TestVectorSystem() : VectorSystem<double>(kSize, kSize) {}
 
   // Let test code abuse these by making them public.
   using VectorSystem<double>::DeclareContinuousState;
@@ -30,14 +30,13 @@ class TestSisoSystem : public VectorSystem<double> {
   using VectorSystem<double>::DeclareAbstractInputPort;
   using VectorSystem<double>::DeclareAbstractOutputPort;
 
-  // Siso override.
+  // VectorSystem override.
   // N.B. This method signature might be used by many downstream projects.
   // Change it only with good reason and with a deprecation period first.
-  void DoCalcVectorOutput(
-      const Context<double>& context,
-      const Eigen::VectorBlock<const VectorXd>& input,
-      const Eigen::VectorBlock<const VectorXd>& state,
-      Eigen::VectorBlock<VectorXd>* output) const override {
+  void DoCalcVectorOutput(const Context<double>& context,
+                          const Eigen::VectorBlock<const VectorXd>& input,
+                          const Eigen::VectorBlock<const VectorXd>& state,
+                          Eigen::VectorBlock<VectorXd>* output) const override {
     ++output_count_;
     last_context_ = &context;
     if (state.size() == 0) {
@@ -47,7 +46,7 @@ class TestSisoSystem : public VectorSystem<double> {
     }
   }
 
-  // Siso override.
+  // VectorSystem override.
   // N.B. This method signature might be used by many downstream projects.
   // Change it only with good reason and with a deprecation period first.
   void DoCalcVectorTimeDerivatives(
@@ -64,20 +63,20 @@ class TestSisoSystem : public VectorSystem<double> {
     }
   }
 
-  // Siso override.
+  // VectorSystem override.
   // N.B. This method signature might be used by many downstream projects.
   // Change it only with good reason and with a deprecation period first.
   void DoCalcVectorDiscreteVariableUpdates(
       const Context<double>& context,
       const Eigen::VectorBlock<const VectorXd>& input,
       const Eigen::VectorBlock<const VectorXd>& state,
-      Eigen::VectorBlock<VectorXd>* discrete_updates) const override {
+      Eigen::VectorBlock<VectorXd>* next_state) const override {
     ++discrete_variable_updates_count_;
     last_context_ = &context;
     if (state.size() == 0) {
-      *discrete_updates = input;
+      *next_state = input;
     } else {
-      *discrete_updates = input + state;
+      *next_state = input + state;
     }
   }
 
@@ -131,28 +130,28 @@ class TestSisoSystem : public VectorSystem<double> {
   mutable int time_derivatives_count_{0};
   mutable int discrete_variable_updates_count_{0};
 };
-constexpr int TestSisoSystem::kSize;
+constexpr int TestVectorSystem::kSize;
 
-class SisoVectorSystemTest : public ::testing::Test {
+class VectorSystemTest : public ::testing::Test {
   // Not yet needed, but placeholder for future common code.
 };
 
 // The system has an appropriate topology.
-TEST_F(SisoVectorSystemTest, Topology) {
+TEST_F(VectorSystemTest, Topology) {
   // The device-under-test ("dut").
-  TestSisoSystem dut;
+  TestVectorSystem dut;
 
   // One input port.
   ASSERT_EQ(dut.get_num_input_ports(), 1);
   const InputPortDescriptor<double>& descriptor_in = dut.get_input_port();
   EXPECT_EQ(descriptor_in.get_data_type(), kVectorValued);
-  EXPECT_EQ(descriptor_in.size(), TestSisoSystem::kSize);
+  EXPECT_EQ(descriptor_in.size(), TestVectorSystem::kSize);
 
   // One output port.
   ASSERT_EQ(dut.get_num_output_ports(), 1);
   const OutputPort<double>& output_port = dut.get_output_port();
   EXPECT_EQ(output_port.get_data_type(), kVectorValued);
-  EXPECT_EQ(output_port.size(), TestSisoSystem::kSize);
+  EXPECT_EQ(output_port.size(), TestVectorSystem::kSize);
 
   // No state by default ...
   auto context = dut.CreateDefaultContext();
@@ -160,50 +159,51 @@ TEST_F(SisoVectorSystemTest, Topology) {
   EXPECT_TRUE(context->is_stateless());
 
   // ... but subclasses may declare it.
-  dut.DeclareContinuousState(TestSisoSystem::kSize);
+  dut.DeclareContinuousState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
   EXPECT_FALSE(context->is_stateless());
 }
 
-// Subclasses that violate the SISO premise fail-fast.
-TEST_F(SisoVectorSystemTest, TopologyFailFast) {
-  { // A second input.
-    TestSisoSystem dut;
+// Subclasses that violate the VectorSystem premise fail-fast.
+TEST_F(VectorSystemTest, TopologyFailFast) {
+  {  // A second input.
+    TestVectorSystem dut;
     EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.DeclareAbstractInputPort();
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
-  { // A second output.
-    TestSisoSystem dut;
+  {  // A second output.
+    TestVectorSystem dut;
     EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.DeclareAbstractOutputPort(nullptr, nullptr);  // No alloc or calc.
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
-  { // Abstract state.
+  {  // Abstract state.
     // TODO(jwnimmer-tri) Conceptually, allowing abstract state could be
-    // consistent with the SISO contract.  However, if we widened the SISO
-    // contract to support that, then we would have add code to fail-fast if
-    // the subclass neglected to override the unrestricted updates API.  That
-    // doesn't seem worth it yet, but if we ever want abstract state in SISO,
-    // then it would be okay to write the code and tests to support it.
-    TestSisoSystem dut;
+    // consistent with the VectorSystem contract.  However, if we widened the
+    // VectorSystem contract to support that, then we would have add code to
+    // fail-fast if the subclass neglected to override the unrestricted
+    // updates API.  That doesn't seem worth it yet, but if we ever want
+    // abstract state in VectorSystem, then it would be okay to write the
+    // code and tests to support it.
+    TestVectorSystem dut;
     EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.set_prototype_abstract_state<double>(1.0);
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
-  { // More than one discrete state group.
-    TestSisoSystem dut;
+  {  // More than one discrete state group.
+    TestVectorSystem dut;
     dut.set_prototype_discrete_state_count(1);
     EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.set_prototype_discrete_state_count(2);
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
-  { // Both continuous and discrete state.
-    TestSisoSystem dut;
+  {  // Both continuous and discrete state.
+    TestVectorSystem dut;
     dut.DeclareContinuousState(1);
     EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.set_prototype_discrete_state_count(1);
@@ -212,8 +212,8 @@ TEST_F(SisoVectorSystemTest, TopologyFailFast) {
 }
 
 // Forwarding of CalcOutput with no state.
-TEST_F(SisoVectorSystemTest, OutputStateless) {
-  TestSisoSystem dut;
+TEST_F(VectorSystemTest, OutputStateless) {
+  TestVectorSystem dut;
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
@@ -227,9 +227,9 @@ TEST_F(SisoVectorSystemTest, OutputStateless) {
 }
 
 // Forwarding of CalcOutput with continuous state.
-TEST_F(SisoVectorSystemTest, OutputContinuous) {
-  TestSisoSystem dut;
-  dut.DeclareContinuousState(TestSisoSystem::kSize);
+TEST_F(VectorSystemTest, OutputContinuous) {
+  TestVectorSystem dut;
+  dut.DeclareContinuousState(TestVectorSystem::kSize);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
@@ -245,12 +245,12 @@ TEST_F(SisoVectorSystemTest, OutputContinuous) {
 }
 
 // Forwarding of CalcOutput with discrete state.
-TEST_F(SisoVectorSystemTest, OutputDiscrete) {
-  TestSisoSystem dut;
+TEST_F(VectorSystemTest, OutputDiscrete) {
+  TestVectorSystem dut;
   dut.set_prototype_discrete_state_count(1);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<AbstractValue>  output = output_port.Allocate(*context);
+  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_discrete_state(0)->SetFromVector(
       Eigen::Vector2d::Ones());
@@ -267,18 +267,19 @@ TEST_F(SisoVectorSystemTest, OutputDiscrete) {
 }
 
 // Forwarding of CalcTimeDerivatives works.
-TEST_F(SisoVectorSystemTest, TimeDerivatives) {
-  TestSisoSystem dut;
+TEST_F(VectorSystemTest, TimeDerivatives) {
+  TestVectorSystem dut;
   auto context = dut.CreateDefaultContext();
   std::unique_ptr<ContinuousState<double>> derivatives =
       dut.AllocateTimeDerivatives();
 
-  // There's no state declared yet, so the Siso base shouldn't call our DUT.
+  // There's no state declared yet, so the VectorSystem base shouldn't call our
+  // DUT.
   dut.CalcTimeDerivatives(*context, derivatives.get());
   EXPECT_EQ(dut.get_time_derivatives_count(), 0);
 
-  // Now we have state, so the Siso base should call our DUT.
-  dut.DeclareContinuousState(TestSisoSystem::kSize);
+  // Now we have state, so the VectorSystem base should call our DUT.
+  dut.DeclareContinuousState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_continuous_state_vector()->SetFromVector(
@@ -296,16 +297,17 @@ TEST_F(SisoVectorSystemTest, TimeDerivatives) {
 }
 
 // Forwarding of CalcDiscreteVariableUpdates works.
-TEST_F(SisoVectorSystemTest, DiscreteVariableUpdates) {
-  TestSisoSystem dut;
+TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
+  TestVectorSystem dut;
   auto context = dut.CreateDefaultContext();
   auto discrete_updates = dut.AllocateDiscreteVariables();
 
-  // There's no state declared yet, so the Siso base shouldn't call our DUT.
+  // There's no state declared yet, so the VectorSystem base shouldn't call our
+  // DUT.
   dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
 
-  // Now we have state, so the Siso base should call our DUT.
+  // Now we have state, so the VectorSystem base should call our DUT.
   dut.set_prototype_discrete_state_count(1);
   context = dut.CreateDefaultContext();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
@@ -325,31 +327,30 @@ TEST_F(SisoVectorSystemTest, DiscreteVariableUpdates) {
 
 class NoInputContinuousTimeSystem : public VectorSystem<double> {
  public:
-  NoInputContinuousTimeSystem()
-      : VectorSystem<double>(0, 1) {  // Zero inputs, one output.
-    this->DeclareContinuousState(1);  // One state variable.
+  NoInputContinuousTimeSystem() : VectorSystem<double>(0, 1) {
+    this->DeclareContinuousState(1);
   }
 
  private:
   virtual void DoCalcVectorTimeDerivatives(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
-      Eigen::VectorBlock<Eigen::VectorXd>* xdot) const {
-    *xdot = -x;
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* derivatives) const {
+    *derivatives = -state;
   }
 
   virtual void DoCalcVectorOutput(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
-      Eigen::VectorBlock<Eigen::VectorXd>* y) const {
-    *y = x;
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* output) const {
+    *output = state;
   }
 };
 
 // Derivatives and Output methods still work when input size is zero.
-TEST_F(SisoVectorSystemTest, NoInputSystemTest) {
+TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   NoInputContinuousTimeSystem dut;
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state()->SetFromVector(Vector1d::Ones());
@@ -367,26 +368,25 @@ TEST_F(SisoVectorSystemTest, NoInputSystemTest) {
 
 class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
  public:
-  NoInputNoOutputDiscreteTimeSystem()
-      : VectorSystem<double>(0, 0) {  // Zero inputs, one output.
+  NoInputNoOutputDiscreteTimeSystem() : VectorSystem<double>(0, 0) {
     this->DeclarePeriodicDiscreteUpdate(1.0);
-    this->DeclareDiscreteState(1);  // One state variable.
+    this->DeclareDiscreteState(1);
   }
 
  private:
   // x[n+1] = x[n]^3
   virtual void DoCalcVectorDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
-      Eigen::VectorBlock<Eigen::VectorXd>* xn) const {
-    (*xn)[0] = std::pow(x[0], 3.0);
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* next_state) const {
+    (*next_state)[0] = std::pow(state[0], 3.0);
   }
 };
 
 // Discrete updates still work when input size is zero.
 // No output ports are created when the output size is zero.
-TEST_F(SisoVectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
+TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
   NoInputNoOutputDiscreteTimeSystem dut;
   auto context = dut.CreateDefaultContext();
   context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(
@@ -397,6 +397,55 @@ TEST_F(SisoVectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
   EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 8.0);
 
   EXPECT_EQ(dut.get_num_output_ports(), 0);
+}
+
+// This system declares an output and continuous state, but does not define
+// the required methods.
+class MissingMethodsContinuousTimeSystem : public VectorSystem<double> {
+ public:
+  MissingMethodsContinuousTimeSystem() : VectorSystem<double>(0, 1) {
+    this->DeclareContinuousState(1);
+  }
+};
+
+TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
+  MissingMethodsContinuousTimeSystem dut;
+  auto context = dut.CreateDefaultContext();
+
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      dut.AllocateTimeDerivatives();
+  EXPECT_THROW(dut.CalcTimeDerivatives(*context, derivatives.get()),
+               std::exception);
+
+  auto output = dut.get_output_port().Allocate(*context);
+  EXPECT_THROW(dut.get_output_port().Calc(*context, output.get()),
+               std::exception);
+}
+
+// This system declares an output and discrete state, but does not define
+// the required methods.
+class MissingMethodsDiscreteTimeSystem : public VectorSystem<double> {
+ public:
+  MissingMethodsDiscreteTimeSystem() : VectorSystem<double>(0, 1) {
+    this->DeclarePeriodicDiscreteUpdate(1.0);
+    this->DeclareDiscreteState(1);
+  }
+};
+
+TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
+  MissingMethodsDiscreteTimeSystem dut;
+  auto context = dut.CreateDefaultContext();
+
+  context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(
+      Vector1d::Constant(2.0));
+  auto discrete_updates = dut.AllocateDiscreteVariables();
+  EXPECT_THROW(
+      dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get()),
+      std::exception);
+
+  auto output = dut.get_output_port().Allocate(*context);
+  EXPECT_THROW(dut.get_output_port().Calc(*context, output.get()),
+               std::exception);
 }
 
 }  // namespace

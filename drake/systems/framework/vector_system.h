@@ -49,7 +49,7 @@ class VectorSystem : public LeafSystem<T> {
   // Don't use the indexed get_output_port when calling this system directly.
   void get_output_port(int) = delete;
 
-  // Confirms the SISO invariants when allocating the context.
+  // Confirms the VectorSystem invariants when allocating the context.
   std::unique_ptr<Context<T>> AllocateContext() const final {
     auto result = LeafSystem<T>::AllocateContext();
 
@@ -98,10 +98,11 @@ class VectorSystem : public LeafSystem<T> {
     }
 
     // Obtain the block form of u (or the empty vector).
+    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
         (this->get_num_input_ports() > 0)
             ? this->EvalEigenVectorInput(context, 0)
-            : Eigen::VectorBlock<const VectorX<T>>(VectorX<T>(0), 0, 0);
+            : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
 
     // Obtain the block form of xc.
     DRAKE_ASSERT(context.has_only_continuous_state());
@@ -132,10 +133,11 @@ class VectorSystem : public LeafSystem<T> {
     }
 
     // Obtain the block form of u (or the empty vector).
+    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
         (this->get_num_input_ports() > 0)
-            ? this->EvalEigenVectorInput(context, 0)
-            : Eigen::VectorBlock<const VectorX<T>>(VectorX<T>(0), 0, 0);
+        ? this->EvalEigenVectorInput(context, 0)
+        : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
 
     // Obtain the block form of xd before the update (i.e., the prior state).
     DRAKE_ASSERT(context.has_only_discrete_state());
@@ -161,16 +163,15 @@ class VectorSystem : public LeafSystem<T> {
   /// DoCalcVectorOutput().
   void CalcVectorOutput(const Context<T>& context,
                         BasicVector<T>* output) const {
-    // Short-circuit when there's no work to do.
-    if (output->size() == 0) {
-      return;
-    }
+    // Should only get here if we've declared an output.
+    DRAKE_ASSERT(this->get_num_output_ports() > 0);
 
     // Obtain the block form of u (or the empty vector).
+    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
         (this->get_num_input_ports() > 0)
-            ? this->EvalEigenVectorInput(context, 0)
-            : Eigen::VectorBlock<const VectorX<T>>(VectorX<T>(0), 0, 0);
+        ? this->EvalEigenVectorInput(context, 0)
+        : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
 
     // Obtain the block form of xc or xd[n].
     DRAKE_ASSERT(context.get_num_abstract_state_groups() == 0);
@@ -193,7 +194,7 @@ class VectorSystem : public LeafSystem<T> {
     DoCalcVectorOutput(context, input_block, state_block, &output_block);
   }
 
-  /// Provides a convenience method for %SisoVectorSystem subclasses.  This
+  /// Provides a convenience method for %VectorSystem subclasses.  This
   /// method performs the same logical operation as System::DoCalcOutput but
   /// provides VectorBlocks to represent the input, state, and output.
   /// Subclasses with outputs should override this method, and not the base
@@ -203,7 +204,7 @@ class VectorSystem : public LeafSystem<T> {
   /// state, depending on which (or none) was declared at context-creation
   /// time.
   ///
-  /// By default, this function does nothing if the @p derivatives are empty,
+  /// By default, this function does nothing if the @p output is empty,
   /// and throws an exception otherwise.
   virtual void DoCalcVectorOutput(
       const Context<T>& context,
@@ -214,7 +215,7 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(output->size() == 0);
   }
 
-  /// Provides a convenience method for %SisoVectorSystem subclasses.  This
+  /// Provides a convenience method for %VectorSystem subclasses.  This
   /// method performs the same logical operation as
   /// System::DoCalcTimeDerivatives but provides VectorBlocks to represent the
   /// input, continuous state, and derivatives.  Subclasses should override
@@ -234,7 +235,7 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(derivatives->size() == 0);
   }
 
-  /// Provides a convenience method for %SisoVectorSystem subclasses.  This
+  /// Provides a convenience method for %VectorSystem subclasses.  This
   /// method performs the same logical operation as
   /// System::DoCalcDiscreteVariableUpdates but provides VectorBlocks to
   /// represent the input, discrete state, and discrete updates.  Subclasses
@@ -244,15 +245,15 @@ class VectorSystem : public LeafSystem<T> {
   /// The @p state will be either empty or the discrete state, depending on
   /// whether discrete state was declared at context-creation time.
   ///
-  /// By default, this function does nothing if the @p discrete_updates are
+  /// By default, this function does nothing if the @p next_state is
   /// empty, and throws an exception otherwise.
   virtual void DoCalcVectorDiscreteVariableUpdates(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* discrete_updates) const {
+      Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
-    DRAKE_THROW_UNLESS(discrete_updates->size() == 0);
+    DRAKE_THROW_UNLESS(next_state->size() == 0);
   }
 };
 

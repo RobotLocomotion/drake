@@ -14,7 +14,7 @@ drake_cc_binary(
     add_test_rule = 1,
     deps = [
         "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:leaf_system",
+        "//drake/systems/framework:vector_system",
     ],
 )
 
@@ -24,7 +24,7 @@ drake_cc_binary(
     add_test_rule = 1,
     deps = [
         "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:leaf_system",
+        "//drake/systems/framework:vector_system",
     ],
 )
 
