@@ -32,14 +32,10 @@ class Lane : public api::Lane {
   /// @param id is the ID of the api::Lane.
   /// @param segment is a pointer that refers to its parent, which must remain
   /// valid for the lifetime of this class.
-  /// @param width is the value of the width of the lane based on the RNDF
-  /// lane_width parameter. It will be used to set a constant lane_bound
-  /// value along the road.
   /// @param index is the index that can be used to reference this Lane from
   /// api::Segment::lane() call.
-  Lane(const api::LaneId& id, const api::Segment* segment, double width,
-       int index)
-      : id_(id), segment_(segment), width_(width), index_(index) {}
+  Lane(const api::LaneId& id, const api::Segment* segment, int index)
+      : id_(id), segment_(segment), index_(index) {}
 
   /// Sets the pointer of the BranchPoint that contains a
   /// api::LaneEnd::Which::kStart value attached to this lane pointer.
@@ -61,7 +57,7 @@ class Lane : public api::Lane {
 
   ~Lane() override = default;
 
- protected:
+ private:
   const api::LaneId do_id() const override { return id_; }
 
   const api::Segment* do_segment() const override;
@@ -98,7 +94,6 @@ class Lane : public api::Lane {
   const api::Segment* segment_{};
   BranchPoint* start_bp_{};
   BranchPoint* end_bp_{};
-  const double width_{};
   const int index_{};
 };
 
