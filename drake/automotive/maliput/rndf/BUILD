@@ -82,6 +82,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "spline_lane_test",
+    deps = [
+        ":lanes",
+        "//drake/automotive/maliput/api:maliput_types_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "spline_helpers_test",
     deps = [
         ":lanes",
