@@ -1,7 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <vector>
+
+#include "ignition/math/Vector3.hh"
 
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
@@ -22,20 +25,28 @@ class Segment : public api::Segment {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
 
   /// Constructs a new Segment.
-  /// @param id to name this segment
-  /// @param junction must remain valid for the lifetime of this class.
+  /// @param id This segment's ID.
+  /// @param junction The api::Junction that contains this Segment. It must
+  /// remain valid for the lifetime of this object.
   Segment(const api::SegmentId& id, api::Junction* junction)
       : id_(id), junction_(junction) {}
 
   /// Gives the segment a newly constructed SplineLane.
   ///
-  /// @param id is the id of the lane.
-  /// @param width is the width specified by the RNDF lane_width
-  /// parameter, or the default assigned value by this code. Later, this value
-  /// will be used to construct the api::Lane::lane_bounds() and the
-  /// api::Lane::driveable_bounds() result.
-  /// @return a pointer to a valid SplineLane.
-  SplineLane* NewSplineLane(const api::LaneId& id, double width);
+  /// @param id The lane's ID.
+  /// @param control_points A vector of tuples that hold the point (first
+  /// element) and the tangent (second element) at that point to construct the
+  /// spline based lane. The size should be at least two pairs.
+  /// @param width The width specified by the RNDF lane_width
+  /// parameter. Later, this value will be used to construct the
+  /// api::Lane::lane_bounds() and the api::Lane::driveable_bounds() result.
+  /// @return a pointer to a valid SplineLane that was added to this Segment.
+  /// @throws std::runtime_error When @p control_points' size is less than 2.
+  SplineLane* NewSplineLane(
+      const api::LaneId& id,
+      const std::vector<std::tuple<ignition::math::Vector3d,
+                                   ignition::math::Vector3d>>& control_points,
+      double width);
 
   ~Segment() override = default;
 

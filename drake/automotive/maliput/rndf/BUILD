@@ -69,6 +69,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "road_geometry_test",
+    size = "small",
     deps = [
         ":lanes",
     ],
@@ -78,6 +79,14 @@ drake_cc_googletest(
     name = "segment_test",
     deps = [
         ":lanes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spline_lane_test",
+    deps = [
+        ":lanes",
+        "//drake/automotive/maliput/api:maliput_types_compare",
     ],
 )
 

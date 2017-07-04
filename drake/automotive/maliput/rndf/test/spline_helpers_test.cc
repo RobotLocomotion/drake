@@ -46,11 +46,11 @@ GTEST_TEST(RNDFSplineHelperTest, ExceptionsInInverseFunctionInterpolator) {
   EXPECT_THROW(
       InverseFunctionInterpolator([](double t) { return t; }, 0., 1., -1.),
       std::runtime_error);
-  // xmin is equal to xmax
+  // xmin is equal to xmax.
   EXPECT_THROW(
       InverseFunctionInterpolator([](double t) { return t; }, 0., 0., -1.),
       std::runtime_error);
-  // xmin is greater than xmax
+  // xmin is greater than xmax.
   EXPECT_THROW(
       InverseFunctionInterpolator([](double t) { return t; }, 1., 0., -1.),
       std::runtime_error);
@@ -71,7 +71,7 @@ GTEST_TEST(RNDFSplineHelperTest, ExceptionsInInverseFunctionInterpolator) {
 // Tests the ArcLengthParameterizedSpline exceptions.
 GTEST_TEST(RNDFSplineHelperTest, ExceptionsInArcLengthParameterizedSpline) {
   std::unique_ptr<ignition::math::Spline> spline;
-  // Spline pointer set to nullptr
+  // Spline pointer set to nullptr.
   EXPECT_THROW(
       ArcLengthParameterizedSpline(std::move(spline), kLinearTolerance),
       std::runtime_error);
@@ -135,7 +135,7 @@ GTEST_TEST(RNDFSplineHelperTest, StraightSplineFindClosesPointTo) {
   std::unique_ptr<ignition::math::Spline> spline = CreateSpline(control_points);
   auto arc_length_param_spline = std::make_unique<ArcLengthParameterizedSpline>(
       std::move(spline), kLinearTolerance);
-  // Border checks
+  // Border checks.
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(0.0, 5.0, 0.0), kLinearStep),
               0., kLinearTolerance);
@@ -148,14 +148,14 @@ GTEST_TEST(RNDFSplineHelperTest, StraightSplineFindClosesPointTo) {
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(20.0, -5.0, 0.0), kLinearStep),
               20., kLinearTolerance);
-  // Middle checks
+  // Middle checks.
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(10.0, 5.0, 0.0), kLinearStep),
               10., kLinearTolerance);
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(10.0, -5.0, 0.0), kLinearStep),
               10., kLinearTolerance);
-  // Before and after checks
+  // Before and after checks.
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(-5, -5.0, 0.0), kLinearStep),
               0., kLinearTolerance);
