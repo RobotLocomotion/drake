@@ -151,7 +151,17 @@ class Formula {
    * std::map<symbolic::Formula> and std::set<symbolic::Formula> via
    * std::less<symbolic::Formula>. */
   bool Less(const Formula& f) const;
-  /** Evaluates under a given environment (by default, an empty environment)*/
+
+  /** Evaluates under a given environment (by default, an empty environment).
+   *
+   * @throws runtime_error if a variable `v` is needed for an evaluation but not
+   * provided by @p env.
+   *
+   * Note that for an equality e₁ = e₂ and an inequality e₁ ≠ e₂, this method
+   * partially evaluates e₁ and e₂ and checks the structural equality of the two
+   * results if @p env does not provide complete information to call Evaluate on
+   * e₁ and e₂.
+   */
   bool Evaluate(const Environment& env = Environment{}) const;
 
   /** Returns a copy of this formula replacing all occurrences of @p var
