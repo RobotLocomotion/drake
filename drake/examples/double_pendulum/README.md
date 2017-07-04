@@ -42,8 +42,7 @@ To run this demo, from Drake's repository root first run:
 ./bazel-bin/tools/drake_visualizer
 ```
 
-This will open up the visualization tool. Then, go ahead and and run the demo
-with:
+This will open up the visualization tool. Then run the demo with:
 
 ```
 bazel run drake/examples/double_pendulum:double_pendulum_demo -- [-simulation_time +inf] [-realtime_rate 1.0]

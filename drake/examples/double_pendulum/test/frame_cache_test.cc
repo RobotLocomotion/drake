@@ -1,4 +1,4 @@
-#include "drake/examples/double_pendulum/pose_tree.h"
+#include "drake/examples/double_pendulum/frame_cache.h"
 
 #include <gtest/gtest.h>
 
@@ -9,10 +9,10 @@ namespace examples {
 namespace double_pendulum {
 namespace {
 
-/// Makes sure that PoseTree correctly keeps frames and the transforms that
-/// relate them.
-GTEST_TEST(PoseTreeTest, TransformTest) {
-  PoseTree<double> pose_tree("world");
+// Makes sure that FrameCache correctly keeps frames and the transforms that
+// relate them.
+GTEST_TEST(FrameCacheTest, TransformTest) {
+  FrameCache<double> frame_cache("world");
   // Define body frame's (B) translation in world frame (W).
   const typename Isometry3<double>::TranslationType T_WB(1.0, -2.0, 0);
   // Define body frame's (B) rotation in world frame (W).
@@ -21,7 +21,7 @@ GTEST_TEST(PoseTreeTest, TransformTest) {
   // and rotation matrices.
   const Isometry3<double> X_WB = R_WB * T_WB;
   // Update tree with body frame's (B) pose in world frame (W).
-  pose_tree.Update("world", "body", X_WB);
+  frame_cache.Update("world", "body", X_WB);
 
   // Define arm frame's (A) translation in body frame (B).
   const typename Isometry3<double>::TranslationType T_BA(0.5, 0.0, 1.8);
@@ -31,27 +31,27 @@ GTEST_TEST(PoseTreeTest, TransformTest) {
   // and rotation matrices.
   const Isometry3<double> X_BA = R_BA * T_BA;
   // Update tree with arm frame's (A) pose in body frame (B).
-  pose_tree.Update("body", "arm", X_BA);
+  frame_cache.Update("body", "arm", X_BA);
 
   // Check that pose resolution works as intended.
-  EXPECT_TRUE(pose_tree.Transform("world", "arm").isApprox(X_WB * X_BA));
+  EXPECT_TRUE(frame_cache.Transform("world", "arm").isApprox(X_WB * X_BA));
 }
 
-/// Makes sure that a PoseTree throws when trying to update using a non existent
-/// target frame or trying to transform using non existent frames.
-GTEST_TEST(PoseTreeTest, NonExistantFramesTest) {
-  PoseTree<double> pose_tree("root");
+// Makes sure that a FrameCache throws when trying to update using a non
+// existent target frame or trying to transform using non existent frames.
+GTEST_TEST(FrameCacheTest, NonExistantFramesTest) {
+  FrameCache<double> frame_cache("root");
   ASSERT_THROW({
-      pose_tree.Update(
+      frame_cache.Update(
           "not-a-frame", "neither-a-frame",
           Isometry3<double>::Identity());
     }, std::runtime_error);
   ASSERT_THROW({
-      pose_tree.Transform(
+      frame_cache.Transform(
           "root", "not-a-frame");
     }, std::runtime_error);
   ASSERT_THROW({
-      pose_tree.Transform(
+      frame_cache.Transform(
           "neither-a-frame", "root");
     }, std::runtime_error);
 }

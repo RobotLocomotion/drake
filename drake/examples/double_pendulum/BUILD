@@ -19,11 +19,11 @@ drake_cc_library(
     name = "sdf_helpers",
     srcs = [
         "sdf_helpers.cc",
-        "pose_tree.cc"
+        "frame_cache.cc"
     ],
     hdrs = [
         "sdf_helpers.h",
-        "pose_tree.h"
+        "frame_cache.h"
     ],
     deps = [
         "//drake/common",
@@ -60,7 +60,7 @@ drake_cc_binary(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "pose_tree_test",
+    name = "frame_cache_test",
     deps = [
         ":sdf_helpers",
     ],
