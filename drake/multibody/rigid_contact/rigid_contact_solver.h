@@ -21,8 +21,10 @@ template <typename T>
 class RigidContactSolver {
  public:
   /// Solves the appropriate contact problem at the acceleration level.
-  /// @param cfm The regularization factor to apply to the contact problem,
-  ///            also known as the "constraint force mixing" parameter.
+  /// @param cfm The non-negative regularization factor to apply to the contact
+  ///            problem (i.e., the underlying complementarity problem), also
+  ///            known as the "constraint force mixing" parameter. Aborts if
+  ///            @p cfm is negative.
   /// @param problem_data The data used to compute the contact forces.
   /// @param cf The computed contact forces, on return, in a packed storage
   ///           format. The first `nc` elements of @p cf correspond to the
@@ -35,7 +37,7 @@ class RigidContactSolver {
   ///           second non-sliding contct, etc.
   /// @pre Contact data has been computed.
   /// @throws a std::runtime_error if the contact forces cannot be computed
-  ///         (due to, e.g., an inconsistent configuration).
+  ///         (due to, e.g., an "inconsistent" rigid contact configuration).
   void SolveContactProblem(double cfm,
       const RigidContactAccelProblemData<T>& problem_data,
       VectorX<T>* cf) const;
@@ -55,6 +57,7 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
   using std::max;
   using std::abs;
   DRAKE_DEMAND(cf);
+  DRAKE_DEMAND(cfm >= 0.0);
 
   // Alias problem data.
   const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
@@ -96,8 +99,8 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
 
   // NOTE: This LCP might not be solvable due to inconsistent configurations.
   // Check the answer and throw a runtime error if it's no good.
-  if (!success || (zz.size() > 0 && (zz.minCoeff() < -10*zero_tol ||
-      ww.minCoeff() < -10*zero_tol ||
+  if (!success || (zz.size() > 0 && (zz.minCoeff() < -10 * zero_tol ||
+      ww.minCoeff() < -10 * zero_tol ||
       abs(zz.dot(ww)) > nvars * 100 * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
@@ -114,8 +117,6 @@ template <class T>
 void RigidContactSolver<T>::FormSustainedContactLCP(
     const RigidContactAccelProblemData<T>& problem_data,
     MatrixX<T>* MM, Eigen::Matrix<T, Eigen::Dynamic, 1>* qq) const {
-  using std::fabs;
-
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
 
