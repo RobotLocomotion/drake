@@ -99,23 +99,23 @@ GTEST_TEST(RNDFSplineHelperTest, StraightLine) {
   ignition::math::Vector3d p(kStartPoint);
   for (double l = 0.0; l < length; l += (length / 10.)) {
     p.X() = l;
-    EXPECT_TRUE(CompareIgnitionVector3d(
+    EXPECT_TRUE(test::IsIgnitionVector3dClose(
         arc_length_param_spline->InterpolateMthDerivative(0, l), p,
         kLinearTolerance));
-    EXPECT_TRUE(CompareIgnitionVector3d(
+    EXPECT_TRUE(test::IsIgnitionVector3dClose(
         arc_length_param_spline->InterpolateMthDerivative(1, l),
         kFirstDerivativeInterpolation, kLinearTolerance));
-    EXPECT_TRUE(CompareIgnitionVector3d(
+    EXPECT_TRUE(test::IsIgnitionVector3dClose(
         arc_length_param_spline->InterpolateMthDerivative(2, l),
         kSecondDerivativeInterpolation, kLinearTolerance));
   }
-  EXPECT_TRUE(CompareIgnitionVector3d(
-      arc_length_param_spline->InterpolateMthDerivative(0, length), kEndPoint,
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(
+     arc_length_param_spline->InterpolateMthDerivative(0, length), kEndPoint,
       kLinearTolerance));
-  EXPECT_TRUE(CompareIgnitionVector3d(
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(
       arc_length_param_spline->InterpolateMthDerivative(1, length),
       kFirstDerivativeInterpolation, kLinearTolerance));
-  EXPECT_TRUE(CompareIgnitionVector3d(
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(
       arc_length_param_spline->InterpolateMthDerivative(2, length),
       kSecondDerivativeInterpolation, kLinearTolerance));
 }
