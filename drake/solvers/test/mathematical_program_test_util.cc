@@ -5,12 +5,12 @@
 namespace drake {
 namespace solvers {
 namespace test {
-void CheckSolver(const MathematicalProgram& prog,
-                 SolverType desired_solver_type) {
-  SolverType solver_type;
-  int solver_result;
-  prog.GetSolverResult(&solver_type, &solver_result);
-  EXPECT_EQ(solver_type, desired_solver_type);
+void CheckSolver(const MathematicalProgram& prog, SolverId desired_solver_id) {
+  const optional<SolverId> solver_id = prog.GetSolverId();
+  EXPECT_TRUE(solver_id);
+  if (!solver_id) { return; }
+
+  EXPECT_EQ(*solver_id, desired_solver_id);
 }
 
 void RunSolver(MathematicalProgram* prog,
