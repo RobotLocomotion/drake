@@ -108,6 +108,7 @@ drake_cc_googletest(
     deps = [
         ":builder",
         ":monolane_test_utils",
+        "//drake/automotive/maliput/api:maliput_types_compare"
     ],
 )
 
