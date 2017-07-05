@@ -201,6 +201,29 @@ class MathematicalProgram {
   virtual ~MathematicalProgram() {}
 
   /**
+   * The type of the names for the newly added variables.
+   * @tparam Size If Size is a fixed non-negative integer, then the type of the
+   * name is std::array<std::string, Size>. Otherwise the type is
+   * std::vector<std::string>.
+   */
+  template <int Size>
+  struct NewVariableNameType {
+    typedef std::array<std::string, Size> type;
+  };
+
+  template <>
+  struct NewVariableNameType<Eigen::Dynamic> {
+    typedef std::vector<std::string> type;
+  };
+
+  constexpr int VariableSize(int rows, int cols) {
+    if (rows == Eigen::Dynamic || cols == Eigen::Dynamic) {
+      return Eigen::Dynamic;
+    }
+    return rows * cols;
+  }
+
+  /**
    * Adds new variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
    * The initial guess values for the new variables are set to NaN, to
@@ -209,8 +232,8 @@ class MathematicalProgram {
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
-   * @tparam rows Number of rows in the variables.
-   * @tparam cols Number of cols in the variables.
+   * @tparam Rows Number of rows in the variables.
+   * @tparam Cols Number of cols in the variables.
    * @param name An array containing the name of each variable.
    * @return The MatrixDecisionVariable<rows, cols> containing rows * cols new
    * variables (not
@@ -228,10 +251,11 @@ class MathematicalProgram {
    * The name of the variable is only used for the user in order to ease
    * readability.
    */
-  template <int rows, int cols>
-  MatrixDecisionVariable<rows, cols> NewVariables(
-      VarType type, const std::array<std::string, rows * cols>& names) {
-    MatrixDecisionVariable<rows, cols> decision_variable_matrix;
+  template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
+  MatrixDecisionVariable<Rows, Cols> NewVariables(
+      VarType type, const NewVariableNameType<VariableSize(Rows, Cols)>::type& names, int rows = Rows, int cols = Cols) {
+    
+    MatrixDecisionVariable<Rows, Cols> decision_variable_matrix(rows, cols);
     NewVariables_impl(type, names, false, decision_variable_matrix);
     return decision_variable_matrix;
   }
@@ -274,8 +298,18 @@ class MathematicalProgram {
    * @see NewContinuousVariables(int rows, int cols, const
    * std::vector<std::string>& names);
    */
-  VectorXDecisionVariable NewContinuousVariables(int rows,
-                                                 const std::string& name = "x");
+  template<int Rows = Eigen::Dynamic>
+  std::enable_if<Rows == Eigen::Dynamic || Rows >= 0, VectorDecisionVariable<Rows>>::type
+  NewContinuousVariables<Rows>(int rows = Rows, const std::string& name = "x") {
+    typename NewVariableNameType<Rows>::type names;
+    if (std::is_same<decltype(names), std::vector<std::string>>::value) {
+      names.resize(rows);
+    }
+    for (int i = 0; i < rows; ++i) {
+      names[i] = name + "(" + std::to_string(i) + ")";
+    }
+    return NewContinuousVariables<Rows>(rows, names);
+  };
 
   /**
    * Adds continuous variables, appending them to an internal vector of any
