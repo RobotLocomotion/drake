@@ -331,20 +331,24 @@ MatrixX<T> Rod2D<T>::solve_inertia(const MatrixX<T>& B) const {
   const T inv_J = 1.0 / get_rod_moment_of_inertia();
   Matrix3<T> iM;
   iM << inv_mass, 0,        0,
-      0,       inv_mass, 0,
-      0,       0,        inv_J;
+        0,       inv_mass, 0,
+        0,       0,        inv_J;
   return iM * B;
 }
 
 /// The velocity tolerance for sliding.
 template <class T>
 T Rod2D<T>::GetSlidingVelocityTolerance() const {
+  // TODO(edrumwri): Change this coarse tolerance, which is only guaranteed to
+  // be reasonable for rod locations near the world origin and rod velocities
+  // of unit magnitude, to a computed tolerance that can account for these
+  // assumptions being violated.
   return 100 * std::numeric_limits<double>::epsilon();
 }
 
 // Gets the time derivative of a 2D rotation matrix.
 template <class T>
-Matrix2<T> Rod2D<T>::GetRotationMatrixDerivative(T theta, T thetadot) const {
+Matrix2<T> Rod2D<T>::GetRotationMatrixDerivative(T theta, T thetadot) {
   using std::cos;
   using std::sin;
   const T cth = cos(theta), sth = sin(theta);
@@ -408,7 +412,7 @@ Vector3<T> Rod2D<T>::GetJacobianRow(const systems::Context<T>& context,
                                     const Vector2<T>& dir) const {
   using std::abs;
   const double eps = 10 * std::numeric_limits<double>::epsilon();
-  DRAKE_DEMAND(abs(dir.norm() - 1) < 10 * eps);
+  DRAKE_DEMAND(abs(dir.norm() - 1) < eps);
 
   // Get rod configuration variables.
   const Vector3<T> q = GetRodConfig(context);
@@ -428,7 +432,7 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
                                        const Vector2<T>& dir) const {
   using std::abs;
   const double eps = 10 * std::numeric_limits<double>::epsilon();
-  DRAKE_DEMAND(abs(dir.norm() - 1) < 10 * eps);
+  DRAKE_DEMAND(abs(dir.norm() - 1) < eps);
 
   // Get rod state variables.
   const Vector3<T> q = GetRodConfig(context);
@@ -461,7 +465,7 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 // @param points a vector of contact points, expressed in the world frame.
 // @param tangent_vels a vector of tangent velocities at the contact points,
 //        measured along the positive x-axis.
-// @param data the rigid contact problem data.
+// @param[out] data the rigid contact problem data (on return).
 template <class T>
 void Rod2D<T>::CalcRigidContactProblemData(
     const systems::Context<T>& context,

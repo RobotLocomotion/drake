@@ -426,16 +426,38 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
     return *pose_output_port_;
   }
 
-  // Utility method for determining the World frame location of one of three
-  // points on the rod whose origin is Ro. Let r be the half-length of the rod.
-  // Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
+  /// Utility method for determining the World frame location of one of three
+  /// points on the rod whose origin is Ro. Let r be the half-length of the rod.
+  /// Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
+  /// @param x The horizontal location of the rod center of mass (expressed in
+  ///        the world frame).
+  /// @param y The vertical location of the rod center of mass (expressed in
+  ///        the world frame).
+  /// @param k The rod endpoint (k=+1 indicates the rod "right" endpoint,
+  ///          k=-1 indicates the rod "left" endpoint, and k=0 indicates the
+  ///          rod origin; each of these are described in the primary class
+  ///          documentation.
+  /// @param ctheta cos(theta), where θ is the orientation of the rod (as
+  ///        described in the primary class documentation).
+  /// @param stheta sin(theta), where θ is the orientation of the rod (as
+  ///        described in the class documentation).
+  /// @param half_rod_len Half the length of the rod.
+  /// @returns p_WP, the designated point on the rod, expressed in the world
+  ///          frame.
   static Vector2<T> CalcRodEndpoint(const T& x, const T& y, int k,
                                     const T& ctheta, const T& stheta,
                                     double half_rod_len);
 
-  // Given a location p_WC of a point C in the World frame, define the point Rc
-  // on the rod that is coincident with C, and report Rc's World frame velocity
-  // v_WRc. We're given p_WRo=(x,y) and V_WRo=(v_WRo,w_WR)=(xdot,ydot,thetadot).
+  /// Given a location p_WC of a point C in the World frame, define the point Rc
+  /// on the rod that is coincident with C, and report Rc's World frame velocity
+  /// v_WRc. We're given p_WRo=(x,y) and V_WRo = (v_WRo,w_WR) =
+  /// (xdot,ydot,thetadot).
+  /// @param p_WRo The center-of-mass of the rod, expressed in the world frame.
+  /// @param v_WRo The translational velocity of the rod, expressed in the
+  ///              world frame.
+  /// @param w_WR The angular velocity of the rod.
+  /// @param p_WC The location of a point on the rod.
+  /// @returns The translational velocity of p_WC, expressed in the world frame.
   static Vector2<T> CalcCoincidentRodPointVelocity(
       const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
       const T& w_WR,  // aka thetadot
@@ -472,7 +494,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   Vector3<T> GetJacobianDotRow(const systems::Context<T>& context,
                                const Vector2<T>& p,
                                const Vector2<T>& dir) const;
-  Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot) const;
+  static Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot);
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
   void CalcRigidContactProblemData(const systems::Context<T>& context,
