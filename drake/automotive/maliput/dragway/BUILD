@@ -52,6 +52,7 @@ drake_cc_googletest(
     srcs = ["test/dragway_test.cc"],
     deps = [
         ":dragway",
+        "//drake/automotive/maliput/api:maliput_types_compare",
     ],
 )
 
