@@ -235,8 +235,8 @@ github_archive(
 github_archive(
     name = "tinyobjloader",
     repository = "syoyo/tinyobjloader",
-    commit = "9d9e987c4776d9df54e0ab65639e1befddb1d5ae",
-    sha256 = "e5c7ce01a153a3d9101f6c197e10145490ecd84ba7d0b6463708a60bc2845d4b",  # noqa
+    commit = "v1.0.6",
+    sha256 = "19ee82cd201761954dd833de551edb570e33b320d6027e0d91455faf7cd4c341",  # noqa
     build_file = "tools/tinyobjloader.BUILD",
 )
 
