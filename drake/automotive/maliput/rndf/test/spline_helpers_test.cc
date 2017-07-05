@@ -10,6 +10,8 @@
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
 
+#include "drake/automotive/maliput/rndf/test/ignition_types_compare.h"
+
 namespace drake {
 namespace maliput {
 namespace rndf {
@@ -20,16 +22,6 @@ const double kLinearTolerance = 1e-4;
 // We use this step to sample the spline at this rate, to get the closest path
 // length coordinate to a point in space.
 const double kLinearStep = 1e-2;
-
-#define EXPECT_IGN_VECTOR_NEAR(actual_arg, expected_arg, tolerance_arg) \
-  do {                                                                  \
-    const ignition::math::Vector3d actual(actual_arg);                  \
-    const ignition::math::Vector3d expected(expected_arg);              \
-    const double tolerance(tolerance_arg);                              \
-    EXPECT_NEAR(actual.X(), expected.X(), tolerance);                   \
-    EXPECT_NEAR(actual.Y(), expected.Y(), tolerance);                   \
-    EXPECT_NEAR(actual.Z(), expected.Z(), tolerance);                   \
-  } while (0)
 
 // This is a wrapper to easily create an ignition::math::Spline.
 // @param points a tuple consisting of two ignition::math::Vector3d. The
@@ -107,25 +99,25 @@ GTEST_TEST(RNDFSplineHelperTest, StraightLine) {
   ignition::math::Vector3d p(kStartPoint);
   for (double l = 0.0; l < length; l += (length / 10.)) {
     p.X() = l;
-    EXPECT_IGN_VECTOR_NEAR(
+    EXPECT_TRUE(CompareIgnitionVector3d(
         arc_length_param_spline->InterpolateMthDerivative(0, l), p,
-        kLinearTolerance);
-    EXPECT_IGN_VECTOR_NEAR(
+        kLinearTolerance));
+    EXPECT_TRUE(CompareIgnitionVector3d(
         arc_length_param_spline->InterpolateMthDerivative(1, l),
-        kFirstDerivativeInterpolation, kLinearTolerance);
-    EXPECT_IGN_VECTOR_NEAR(
+        kFirstDerivativeInterpolation, kLinearTolerance));
+    EXPECT_TRUE(CompareIgnitionVector3d(
         arc_length_param_spline->InterpolateMthDerivative(2, l),
-        kSecondDerivativeInterpolation, kLinearTolerance);
+        kSecondDerivativeInterpolation, kLinearTolerance));
   }
-  EXPECT_IGN_VECTOR_NEAR(
+  EXPECT_TRUE(CompareIgnitionVector3d(
       arc_length_param_spline->InterpolateMthDerivative(0, length), kEndPoint,
-      kLinearTolerance);
-  EXPECT_IGN_VECTOR_NEAR(
+      kLinearTolerance));
+  EXPECT_TRUE(CompareIgnitionVector3d(
       arc_length_param_spline->InterpolateMthDerivative(1, length),
-      kFirstDerivativeInterpolation, kLinearTolerance);
-  EXPECT_IGN_VECTOR_NEAR(
+      kFirstDerivativeInterpolation, kLinearTolerance));
+  EXPECT_TRUE(CompareIgnitionVector3d(
       arc_length_param_spline->InterpolateMthDerivative(2, length),
-      kSecondDerivativeInterpolation, kLinearTolerance);
+      kSecondDerivativeInterpolation, kLinearTolerance));
 }
 
 // Tests a set of points and the result of the path length distance that returns
