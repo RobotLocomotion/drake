@@ -172,8 +172,8 @@ github_archive(
 github_archive(
     name = "octomap",
     repository = "OctoMap/octomap",
-    commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
-    sha256 = "023ddd5b1e8ed1a70374c352cbd5b02bd5a26707f61a13cfb087766d5ca466e3",  # noqa
+    commit = "v1.7.2",
+    sha256 = "fe55efbb9ebf2b3388860e54b1c8a53d23e5a05de5956c043278013e01066c34",  # noqa
     build_file = "tools/octomap.BUILD",
 )
 
