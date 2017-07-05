@@ -72,10 +72,6 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
       prog.SolveTraj(initial_duration, PiecewisePolynomial<double>(),
                      initial_state_trajectory);
 
-  solvers::SolverType solver;
-  int solver_result;
-  prog.GetSolverResult(&solver, &solver_result);
-
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
   // Plot the solution.
