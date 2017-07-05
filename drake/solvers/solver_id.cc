@@ -10,16 +10,13 @@ namespace solvers {
 namespace {
 
 int get_next_id() {
-  // Note that id 0 is reserved for the SolverId that is created by the default
-  // constructor. As a result, we have an invariant "get_next_id() > 0".
+  // Note that id 0 is reserved for the moved-from SolverId.  As a result, we
+  // have an invariant "get_next_id() > 0".
   static never_destroyed<std::atomic<int>> next_id{1};
   return next_id.access()++;
 }
 
 }  // namespace
-
-SolverId::SolverId()
-    : id_{0}, name_{"unknown"} {}
 
 SolverId::SolverId(std::string name)
     : id_{get_next_id()}, name_{std::move(name)} {}

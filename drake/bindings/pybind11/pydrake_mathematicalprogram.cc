@@ -2,6 +2,7 @@
 #include "drake/solvers/mathematical_program.h"
 
 #include <cstddef>
+#include <memory>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
@@ -24,11 +25,21 @@ using drake::solvers::MathematicalProgramSolverInterface;
 using drake::solvers::MatrixXDecisionVariable;
 using drake::solvers::QuadraticCost;
 using drake::solvers::SolutionResult;
+using drake::solvers::SolverId;
 using drake::solvers::SolverType;
 using drake::solvers::VectorXDecisionVariable;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
 using drake::symbolic::Variable;
+
+namespace {
+// Unwrap an optional<T> for more idiomatic use in Python.  A nullopt in C++
+// becomes None in Python, and non-nullopt in C++ becomes T directly in Python.
+template <typename T>
+std::unique_ptr<T> deref_optional(const drake::optional<T>& value) {
+  return value ? std::make_unique<T>(*value) : nullptr;
+}
+}  // namespace
 
 /*
  * Register a Binding template, and add the corresponding overloads to the
@@ -75,6 +86,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .def("Solve", &MathematicalProgramSolverInterface::Solve)
     .def("solver_type", &MathematicalProgramSolverInterface::solver_type)
     .def("SolverName", &MathematicalProgramSolverInterface::SolverName);
+
+  py::class_<SolverId>(m, "SolverId")
+    .def("name", &SolverId::name);
 
   py::enum_<SolverType>(m, "SolverType")
     .value("kDReal", SolverType::kDReal)
@@ -149,6 +163,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
          (MathematicalProgram::*)(const Expression&))
          &MathematicalProgram::AddQuadraticCost)
     .def("Solve", &MathematicalProgram::Solve)
+    .def("GetSolverId", [](const MathematicalProgram& prog) {
+        return deref_optional(prog.GetSolverId());
+    })
     .def("linear_constraints", &MathematicalProgram::linear_constraints)
     .def("linear_equality_constraints",
          &MathematicalProgram::linear_equality_constraints)

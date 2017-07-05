@@ -61,6 +61,7 @@ OptimizationProgram::OptimizationProgram(CostForm cost_form,
 void OptimizationProgram::RunProblem(
     MathematicalProgramSolverInterface* solver) {
   if (solver->available()) {
+    EXPECT_FALSE(prog_->GetSolverId());
     RunSolver(prog_.get(), *solver);
     const optional<SolverType> solver_type =
         SolverTypeConverter::IdToType(solver->solver_id());
