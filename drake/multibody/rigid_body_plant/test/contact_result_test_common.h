@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>

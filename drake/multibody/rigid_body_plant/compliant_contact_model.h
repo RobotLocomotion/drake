@@ -11,14 +11,14 @@ namespace systems {
 /// described in detail in @ref drake_contacts.
 template <typename T>
 class CompliantContactModel {
- public :
+ public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactModel)
 
   /// Instantiates a %CompliantContactModel from a Multi-Body Dynamics (MBD)
   /// model of the world in `tree`.  `tree` must not be `nullptr`.
   /// \param tree tree the kinematic / dynamic model for which the compliant
   /// contact forces are to be computed.
-  CompliantContactModel(const RigidBodyTree<T>& tree);
+  explicit CompliantContactModel(const RigidBodyTree<T>& tree);
 
   /// Computes the generalized forces on all bodies due to contact.
   ///
@@ -44,6 +44,7 @@ class CompliantContactModel {
   void set_friction_contact_parameters(double static_friction_coef,
                                        double dynamic_friction_coef,
                                        double v_stiction_tolerance);
+
  private:
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
@@ -81,5 +82,5 @@ class CompliantContactModel {
   const RigidBodyTree<T>* tree_{nullptr};
 };
 
-} // namespace systems
-} // namespace drake
+}  // namespace systems
+}  // namespace drake

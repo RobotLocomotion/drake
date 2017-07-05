@@ -1,19 +1,20 @@
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 
 #include <memory>
+#include <utility>
+#include <vector>
 
-#include "drake/multibody/rigid_body_plant/contact_results.h"
-#include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/collision/element.h"
+#include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
+#include "drake/multibody/rigid_body_plant/contact_results.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {
 
 template <typename T>
-CompliantContactModel<T>::CompliantContactModel(const RigidBodyTree<T>& tree) :
-    tree_(&tree) {
-}
+CompliantContactModel<T>::CompliantContactModel(const RigidBodyTree<T>& tree)
+    : tree_(&tree) {}
 
 template <typename T>
 void CompliantContactModel<T>::set_normal_contact_parameters(
@@ -31,9 +32,9 @@ void CompliantContactModel<T>::set_friction_contact_parameters(
   inv_v_stiction_tolerance_ = 1.0 / v_stiction_tolerance;
 }
 
-
 template <typename T>
-Matrix3<T> CompliantContactModel<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_W) {
+Matrix3<T> CompliantContactModel<T>::ComputeBasisFromZ(
+    const Vector3<T>& z_axis_W) {
   // Projects the z-axis into the first quadrant in order to identify the
   // *smallest* component of the normal.
   const Vector3<T> u(z_axis_W.cwiseAbs());
@@ -55,7 +56,6 @@ Matrix3<T> CompliantContactModel<T>::ComputeBasisFromZ(const Vector3<T>& z_axis_
   return R_WL;
 }
 
-
 template <typename T>
 VectorX<T> CompliantContactModel<T>::ComputeContactForce(
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
@@ -65,8 +65,8 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
   std::vector<DrakeCollision::PointPair> pairs =
-      const_cast<RigidBodyTree<T>*>(tree_)
-          ->ComputeMaximumDepthCollisionPoints(kinsol, true);
+      const_cast<RigidBodyTree<T>*>(tree_)->ComputeMaximumDepthCollisionPoints(
+          kinsol, true);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
@@ -95,17 +95,17 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
 
       // The contact point in A's frame.
       const auto X_AW = kinsol.get_element(body_a_index)
-          .transform_to_world.inverse(Eigen::Isometry);
+                            .transform_to_world.inverse(Eigen::Isometry);
       const Vector3<T> p_AAc = X_AW * p_WC;
       // The contact point in B's frame.
       const auto X_BW = kinsol.get_element(body_b_index)
-          .transform_to_world.inverse(Eigen::Isometry);
+                            .transform_to_world.inverse(Eigen::Isometry);
       const Vector3<T> p_BBc = X_BW * p_WC;
 
-      const auto JA = tree_->transformPointsJacobian(kinsol, p_AAc,
-                                                     body_a_index, 0, false);
-      const auto JB = tree_->transformPointsJacobian(kinsol, p_BBc,
-                                                     body_b_index, 0, false);
+      const auto JA =
+          tree_->transformPointsJacobian(kinsol, p_AAc, body_a_index, 0, false);
+      const auto JB =
+          tree_->transformPointsJacobian(kinsol, p_BBc, body_b_index, 0, false);
       // This normal points *from* element B *to* element A.
       const Vector3<T> this_normal = pair.normal;
 
@@ -153,8 +153,7 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
         const T slip_speed = sqrt(slip_speed_squared);
         const T friction_coefficient = ComputeFrictionCoefficient(slip_speed);
         const T fF = friction_coefficient * fN;
-        fA.template head<2>() = -(fF / slip_speed) *
-            slip_vector;
+        fA.template head<2>() = -(fF / slip_speed) * slip_vector;
       } else {
         fA.template head<2>() << 0, 0;
       }
@@ -205,8 +204,8 @@ T CompliantContactModel<T>::ComputeFrictionCoefficient(T v_tangent_BAc) const {
     return dynamic_friction_coef_;
   } else if (v >= 1) {
     return static_friction_coef_ -
-        (static_friction_coef_ - dynamic_friction_coef_) *
-            step5((v - 1) / 2);
+           (static_friction_coef_ - dynamic_friction_coef_) *
+               step5((v - 1) / 2);
   } else {
     return static_friction_coef_ * step5(v);
   }
@@ -222,5 +221,5 @@ T CompliantContactModel<T>::step5(T x) {
 // Explicit instantiates on the most common scalar types
 template class CompliantContactModel<double>;
 
-} // namespace systems
-} // namespace drake
+}  // namespace systems
+}  // namespace drake
