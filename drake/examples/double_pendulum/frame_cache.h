@@ -24,7 +24,7 @@ class FrameCache {
   explicit FrameCache(const std::string& root_frame);
 
   /// Returns the name of the root frame.
-  inline std::string RootFrame() const { return root_frame_; }
+  inline const std::string& RootFrame() const { return root_frame_; }
 
   /// Adds or updates the given @p source_frame within the cache.
   /// @param[in] target_frame the name of the target frame `T`. This
@@ -47,7 +47,7 @@ class FrameCache {
  private:
   // Name of the root frame of this cache.
   const std::string root_frame_;
-  // Map to keep all known frames transforms relative to the root frame.
+  // Map to keep all known frames' transforms relative to the root frame.
   std::map<std::string, Isometry3<T>> rooted_map_;
 };
 

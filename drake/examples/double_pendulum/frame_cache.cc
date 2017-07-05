@@ -20,7 +20,7 @@ void FrameCache<T>::Update(
   DRAKE_THROW_UNLESS(rooted_map_.find(target_frame) != rooted_map_.end());
   // Update map with source frame's (S) pose in the
   // the root frame (R). That is X_RS = X_RT * X_TS.
-  rooted_map_[source_frame] = (rooted_map_.at(target_frame) * X_TS);
+  rooted_map_[source_frame] = rooted_map_.at(target_frame) * X_TS;
 }
 
 template<typename T>
