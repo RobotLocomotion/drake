@@ -11,16 +11,12 @@ namespace solvers {
 
 /// Identifies a MathematicalProgramSolverInterface implementation.
 ///
-/// A moved-from instance is guaranteed to be identical to a
-/// default-constructed instance.
+/// A moved-from instance is guaranteed to be empty and will not compare equal
+/// to any non-empty ID.
 class SolverId {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverId)
   ~SolverId() = default;
-
-  /// Constructs a default "unknown" solver type.  All unknown instances are
-  /// considered equal.
-  SolverId();
 
   /// Constructs a specific, known solver type.  Internally, a hidden
   /// identifier is allocated and assigned to this instance; all instances that

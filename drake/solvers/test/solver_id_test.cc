@@ -7,10 +7,11 @@ namespace solvers {
 namespace {
 
 GTEST_TEST(SolverId, Equality) {
-  // Default-constructed objects are always equal.
+  // An ID is equal to itself.
   // Use the EQ/NE form here to make sure gtest error reporting compiles okay.
-  EXPECT_EQ(SolverId{}, SolverId{});
-  EXPECT_NE(SolverId{}, SolverId{""});
+  SolverId foo{"foo"};
+  EXPECT_EQ(foo, foo);
+  EXPECT_NE(foo, SolverId{"bar"});
 
   // Named objects are equal per their assigned IDs; same name is not enough.
   // Use the op==/op!= form here to be clear which operators are being tested.
@@ -36,8 +37,7 @@ GTEST_TEST(SolverId, Move) {
   SolverId new_bar{std::move(old_bar)};
   EXPECT_EQ(old_bar.name(), "");
   EXPECT_EQ(new_bar.name(), "bar");
-  EXPECT_TRUE(old_bar == SolverId{});
-  EXPECT_FALSE(old_bar != SolverId{});
+  EXPECT_NE(new_bar, old_bar);
 }
 
 }  // namespace
