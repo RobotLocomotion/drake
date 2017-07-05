@@ -96,8 +96,8 @@ bitbucket_archive(
 github_archive(
     name = "spdlog",
     repository = "gabime/spdlog",
-    commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
-    sha256 = "5166c036eacd625b86f725bfba356547e0bc497232649662c61cde7b1b423292",  # noqa
+    commit = "v0.13.0",
+    sha256 = "d798a6ca19165f0a18a43938859359269f5a07fd8e0eb83ab8674739c9e8f361",  # noqa
     build_file = "tools/spdlog.BUILD",
 )
 
