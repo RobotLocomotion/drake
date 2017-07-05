@@ -8,6 +8,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
+#include "drake/solvers/solver_type_converter.h"
 
 namespace py = pybind11;
 using std::string;
@@ -27,6 +28,7 @@ using drake::solvers::QuadraticCost;
 using drake::solvers::SolutionResult;
 using drake::solvers::SolverId;
 using drake::solvers::SolverType;
+using drake::solvers::SolverTypeConverter;
 using drake::solvers::VectorXDecisionVariable;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
@@ -83,9 +85,14 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   py::class_<MathematicalProgramSolverInterface>(
     m, "MathematicalProgramSolverInterface")
     .def("available", &MathematicalProgramSolverInterface::available)
+    .def("solver_id", &MathematicalProgramSolverInterface::solver_id)
     .def("Solve", &MathematicalProgramSolverInterface::Solve)
-    .def("solver_type", &MathematicalProgramSolverInterface::solver_type)
-    .def("SolverName", &MathematicalProgramSolverInterface::SolverName);
+    .def("solver_type", [](const MathematicalProgramSolverInterface& self) {
+        return deref_optional(SolverTypeConverter::IdToType(self.solver_id()));
+    })
+    .def("SolverName", [](const MathematicalProgramSolverInterface& self) {
+        return self.solver_id().name();
+    });
 
   py::class_<SolverId>(m, "SolverId")
     .def("name", &SolverId::name);

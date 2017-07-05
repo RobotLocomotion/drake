@@ -36,6 +36,7 @@
 #include "drake/solvers/function.h"
 #include "drake/solvers/indeterminate.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_type.h"
 
 namespace drake {
 namespace solvers {

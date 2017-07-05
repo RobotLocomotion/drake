@@ -15,6 +15,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = IpoptSolver()
         self.assertTrue(solver.available())
+        self.assertEqual(solver.solver_id().name(), "IPOPT")
         self.assertEqual(solver.SolverName(), "IPOPT")
         self.assertEqual(solver.solver_type(), mp.SolverType.kIpopt)
         result = solver.Solve(prog)
