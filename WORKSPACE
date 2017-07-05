@@ -164,8 +164,8 @@ github_archive(
 github_archive(
     name = "ccd",
     repository = "danfis/libccd",
-    commit = "16b9379fb6e8610566fe5e1396166daf7106f165",
-    sha256 = "fc583888c731d91c9ef287ca9ba443426ecfce75056d6c468b063b383bd8efa1",  # noqa
+    commit = "v2.0",
+    sha256 = "1b4997e361c79262cf1fe5e1a3bf0789c9447d60b8ae2c1f945693ad574f9471",  # noqa
     build_file = "tools/ccd.BUILD",
 )
 
