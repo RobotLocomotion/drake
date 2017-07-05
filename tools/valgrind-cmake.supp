@@ -203,7 +203,5 @@
     fun:malloc
     fun:mkl_serv_thread_free_buffers
     fun:PRIVATE*
-    ...
-    fun:GRBoptimize
 }
 
