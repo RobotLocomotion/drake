@@ -116,8 +116,11 @@ void AddBilinearProductMcCormickEnvelopeSOS2(
   prog->AddLinearConstraint(y == y_convex_combination);
   prog->AddLinearConstraint(w == w_convex_combination);
 
-  AddLogarithmicSOS2Constraint(prog, lambda.cast<symbolic::Expression>().rowwise().sum(), Bx);
-  AddLogarithmicSOS2Constraint(prog, lambda.cast<symbolic::Expression>().colwise().sum().transpose(), By);
+  AddLogarithmicSOS2Constraint(
+      prog, lambda.cast<symbolic::Expression>().rowwise().sum(), Bx);
+  AddLogarithmicSOS2Constraint(
+      prog, lambda.cast<symbolic::Expression>().colwise().sum().transpose(),
+      By);
 }
 }  // namespace solvers
 }  // namespace drake
