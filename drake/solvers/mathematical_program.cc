@@ -133,38 +133,6 @@ VectorXDecisionVariable MathematicalProgram::NewVariables(
   return NewVariables(type, rows, 1, false, names);
 }
 
-VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, const vector<string>& names) {
-  return NewVariables(VarType::CONTINUOUS, rows, names);
-}
-
-MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, int cols, const vector<string>& names) {
-  return NewVariables(VarType::CONTINUOUS, rows, cols, false, names);
-}
-
-VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, const string& name) {
-  vector<string> names(rows);
-  for (int i = 0; i < static_cast<int>(rows); ++i) {
-    names[i] = name + "(" + to_string(i) + ")";
-  }
-  return NewContinuousVariables(rows, names);
-}
-
-MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, int cols, const string& name) {
-  vector<string> names(rows * cols);
-  int count = 0;
-  for (int j = 0; j < static_cast<int>(cols); ++j) {
-    for (int i = 0; i < static_cast<int>(rows); ++i) {
-      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
-      ++count;
-    }
-  }
-  return NewContinuousVariables(rows, cols, names);
-}
-
 MatrixXDecisionVariable MathematicalProgram::NewBinaryVariables(
     int rows, int cols, const vector<string>& names) {
   return NewVariables(VarType::BINARY, rows, cols, false, names);
