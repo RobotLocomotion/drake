@@ -13,12 +13,10 @@ namespace drake {
 namespace multibody {
 namespace rigid_contact {
 
-/**
- * Solves rigid contact problems for contact forces. Specifically, given
- * problem data corresponding to one or more rigid or multi-rigid bodies
- * constrained unilaterally and acted upon by Coulomb friction, this class
- * computes the contact forces.
- */
+/// Solves rigid contact problems for contact forces. Specifically, given
+/// problem data corresponding to one or more rigid or multi-rigid bodies
+/// constrained unilaterally and acted upon by Coulomb friction, this class
+/// computes the contact forces.
 template <typename T>
 class RigidContactSolver {
  public:
