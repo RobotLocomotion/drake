@@ -157,9 +157,14 @@ int DoMain(void) {
   post_locations.push_back(Eigen::Vector3d(-0.1, -1.0, 0));  // position E
   post_locations.push_back(Eigen::Vector3d(-0.47, -0.8, 0));  // position F
 
-  // Position of the pick and place location on the table, relative
-  // to the base of the arm.
-  Eigen::Vector3d table_position(0.9, -0.36, -0.07);  // position C
+  // Position of the pick and place location on the table, relative to
+  // the base of the arm.  In the original test, the position was
+  // specified as 0.90m forward of the arm.  We change that to 0.86
+  // here as the previous test grasped the target with the tip of the
+  // fingers in the middle while this test places the fingertip
+  // further forward.  The position is right at the edge of what we
+  // can plan to, so this 4cm change does matter.
+  Eigen::Vector3d table_position(0.86, -0.36, -0.07);  // position C
 
   // The offset from the top of the table to the top of the post, used for
   // calculating the place locations in iiwa relative coordinates.
