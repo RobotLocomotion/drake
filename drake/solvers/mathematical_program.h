@@ -2019,22 +2019,20 @@ class MathematicalProgram {
     return solver_options_str_[solver_type];
   }
 
-  DRAKE_DEPRECATED("Use GetSolverId() instead")
-  void GetSolverResult(SolverType* solver_type, int* solver_result) const {
-    *solver_type = *solver_type_;
-    *solver_result = solver_result_;
-  }
-
-  void SetSolverResult(SolverType solver_type, int solver_result) {
-    solver_type_ = solver_type;
-    solver_result_ = solver_result;
+  /**
+   * Sets the ID of the solver that was used to solve this program.
+   */
+  void SetSolverId(SolverId solver_id) {
+    solver_id_ = solver_id;
   }
 
   /**
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
-  optional<SolverId> GetSolverId() const;
+  optional<SolverId> GetSolverId() const {
+    return solver_id_;
+  }
 
   /**
    * Getter for optimal cost at the solution. Will return NaN if there has
@@ -2304,8 +2302,7 @@ class MathematicalProgram {
   Eigen::VectorXd x_initial_guess_;
   std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
-  optional<SolverType> solver_type_;
-  int solver_result_{};
+  optional<SolverId> solver_id_;
   double optimal_cost_{};
   std::map<SolverType, std::map<std::string, double>> solver_options_double_;
   std::map<SolverType, std::map<std::string, int>> solver_options_int_;

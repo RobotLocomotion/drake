@@ -25,7 +25,6 @@
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/solvers/solver_type_converter.h"
 #include "drake/solvers/symbolic_extraction.h"
 
 // Note that the file mathematical_program_api.cc also contains some of the
@@ -108,7 +107,6 @@ enum {
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
-      solver_result_(0),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
       required_capabilities_(kNoCapabilities),
       ipopt_solver_(new IpoptSolver()),
@@ -681,14 +679,6 @@ SolutionResult MathematicalProgram::Solve() {
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
   }
-}
-
-optional<SolverId> MathematicalProgram::GetSolverId() const {
-  if (!solver_type_) {
-    return nullopt;
-  }
-  // TODO(jwnimmer-tri) We should eventually store SolverId directly.
-  return SolverTypeConverter::TypeToId(*solver_type_);
 }
 
 }  // namespace solvers

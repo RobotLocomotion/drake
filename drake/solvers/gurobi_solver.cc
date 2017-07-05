@@ -658,7 +658,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(SolverType::kGurobi, error);
+  prog.SetSolverId(id());
 
   GRBfreemodel(model);
   GRBfreeenv(env);

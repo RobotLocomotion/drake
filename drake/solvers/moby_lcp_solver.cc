@@ -179,7 +179,7 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverResult(SolverType::kMobyLCP, 0);
+  prog.SetSolverId(MobyLcpSolverId::id());
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
