@@ -75,8 +75,8 @@ GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
-// Both systems have direct feedthrough; but they are not actually wired into an
-// algebraic loop at the port level.
+// The system has direct feedthrough; but, at the port level, it is wired
+// without an algebraic loop at the port level.
 GTEST_TEST(DiagramBuilderTest, CycleButNoLoopPortLevel) {
   DiagramBuilder<double> builder;
 

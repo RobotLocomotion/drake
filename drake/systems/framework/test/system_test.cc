@@ -76,8 +76,13 @@ class TestSystem : public System<double> {
 
   std::vector<std::pair<int, int>> GetDirectFeedthroughs() const override {
     std::vector<std::pair<int, int>> pairs;
-    // Single input port feeds through to first output port.
-    pairs.emplace_back(0, 0);
+    // Support `HasDirectFeedthrough(int, int)`'s behavior: returns true for all
+    // ports.
+    for (int i = 0; i < get_num_input_ports(); ++i) {
+      for (int o = 0; o < get_num_output_ports(); ++o) {
+        pairs.emplace_back(i, o);
+      }
+    }
     return pairs;
   }
 
@@ -420,8 +425,13 @@ class ValueIOTestSystem : public System<T> {
 
   std::vector<std::pair<int, int>> GetDirectFeedthroughs() const override {
     std::vector<std::pair<int, int>> pairs;
-    // Single input port feeds through to second output port.
-    pairs.emplace_back(0, 1);
+    // Support `HasDirectFeedthrough(int, int)`'s behavior: returns true for all
+    // ports.
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      for (int o = 0; o < this->get_num_output_ports(); ++o) {
+        pairs.emplace_back(i, o);
+      }
+    }
     return pairs;
   }
 

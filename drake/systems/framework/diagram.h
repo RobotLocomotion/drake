@@ -245,11 +245,6 @@ class Diagram : public System<T>,
     return result;
   }
 
-  /// Reports all direct feedthroughs from input ports to output ports. For
-  /// a system with m input ports, i₀, i₁, ..., iₘ₋₁, and n input ports,
-  /// o₀, o₁, ..., oₙ₋₁, the output will contain all pairs (u, v) such that
-  /// 0 ≤ u < m, 0 ≤ v < n, and there is a direct feedthrough from input iᵤ
-  /// to output oᵥ.
   std::vector<std::pair<int, int>> GetDirectFeedthroughs() const final {
     std::vector<std::pair<int, int>> pairs;
     for (int u = 0; u < this->get_num_input_ports(); ++u) {
@@ -1221,17 +1216,17 @@ class Diagram : public System<T>,
     }
 
     // Set up the blueprint.
-    typename Diagram<NewType>::Blueprint blueprint;
+    auto blueprint = std::make_unique<typename Diagram<NewType>::Blueprint>();
     // Make all the inputs and outputs.
     for (const PortIdentifier& id : input_port_ids_) {
       const System<NewType>* new_system = old_to_new_map[id.first];
       const int port = id.second;
-      blueprint.input_port_ids.emplace_back(new_system, port);
+      blueprint->input_port_ids.emplace_back(new_system, port);
     }
     for (const PortIdentifier& id : output_port_ids_) {
       const System<NewType>* new_system = old_to_new_map[id.first];
       const int port = id.second;
-      blueprint.output_port_ids.emplace_back(new_system, port);
+      blueprint->output_port_ids.emplace_back(new_system, port);
     }
     // Make all the connections.
     for (const auto& edge : dependency_graph_) {
@@ -1247,10 +1242,10 @@ class Diagram : public System<T>,
       const typename Diagram<NewType>::PortIdentifier new_src{src_system,
                                                               src_port};
 
-      blueprint.dependency_graph[new_dest] = new_src;
+      blueprint->dependency_graph[new_dest] = new_src;
     }
     // Move the new systems into the blueprint.
-    blueprint.systems = std::move(new_systems);
+    blueprint->systems = std::move(new_systems);
 
     // Construct a new Diagram of type NewType from the blueprint.
     std::unique_ptr<Diagram<NewType>> new_diagram(
@@ -1351,27 +1346,29 @@ class Diagram : public System<T>,
     // on which they depend. This graph is possibly cyclic, but must not
     // contain an algebraic loop.
     std::map<PortIdentifier, PortIdentifier> dependency_graph;
-    // The systems in the dependency graph.
+    // All of the systems to be included in the diagram.
     std::vector<std::unique_ptr<System<T>>> systems;
   };
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
   // This constructor is private because only DiagramBuilder calls it. The
   // constructor takes the systems from the blueprint.
-  explicit Diagram(Blueprint&& blueprint) { Initialize(std::move(blueprint)); }
+  explicit Diagram(std::unique_ptr<Blueprint> blueprint) {
+    Initialize(std::move(blueprint));
+  }
 
   // Validates the given @p blueprint and sets up the Diagram accordingly.
-  void Initialize(Blueprint&& blueprint) {
+  void Initialize(std::unique_ptr<Blueprint> blueprint) {
     // We must be given something to own.
-    DRAKE_DEMAND(!blueprint.systems.empty());
+    DRAKE_DEMAND(!blueprint->systems.empty());
     // We must not already own any subsystems.
     DRAKE_DEMAND(registered_systems_.empty());
 
     // Copy the data from the blueprint into private member variables.
-    dependency_graph_ = blueprint.dependency_graph;
-    input_port_ids_ = blueprint.input_port_ids;
-    output_port_ids_ = blueprint.output_port_ids;
-    registered_systems_ = std::move(blueprint.systems);
+    dependency_graph_ = std::move(blueprint->dependency_graph);
+    input_port_ids_ = std::move(blueprint->input_port_ids);
+    output_port_ids_ = std::move(blueprint->output_port_ids);
+    registered_systems_ = std::move(blueprint->systems);
 
     // Generate a map from the System pointer to its index in the sort order.
     for (int i = 0; i < num_subsystems(); ++i) {

@@ -196,11 +196,6 @@ class LeafSystem : public System<T> {
     return AllocateDiscreteState();
   }
 
-  /// Reports all direct feedthroughs from input ports to output ports. For
-  /// a system with m input ports, i₀, i₁, ..., iₘ₋₁, and n input ports,
-  /// o₀, o₁, ..., oₙ₋₁, the output will contain all pairs (u, v) such that
-  /// 0 ≤ u < m, 0 ≤ v < n, and there is a direct feedthrough from input iᵤ
-  /// to output oᵥ.
   std::vector<std::pair<int, int>> GetDirectFeedthroughs() const final {
     std::vector<std::pair<int, int>> pairs;
     auto sparsity = MakeSparsityMatrix();

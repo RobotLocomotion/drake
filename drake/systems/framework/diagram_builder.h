@@ -210,27 +210,28 @@ class DiagramBuilder {
   // Helper method to do the algebraic loop test. It recursively performs the
   // depth-first search on the graph to find cycles. The "stack" is really just
   // a set because we need to do relatively "cheap" lookups for membership in
-  // the stack. The stack-like propery of the set is maintained by this method.
-  bool HasCycleRecurse(
+  // the stack. The stack-like property of the set is maintained by this method.
+  static bool HasCycleRecurse(
       const PortIdentifier& n,
       const std::map<PortIdentifier, std::set<PortIdentifier>>& edges,
-      std::set<PortIdentifier>* visited,
-      std::set<PortIdentifier>* stack) const {
+      std::set<PortIdentifier>* visited, std::set<PortIdentifier>* stack) {
+    DRAKE_ASSERT(visited->count(n) == 0);
     visited->insert(n);
-    stack->insert(n);
 
-    auto edge_itr = edges.find(n);
-    if (edge_itr != edges.end()) {
-      for (const auto& target : edge_itr->second) {
-        if (visited->find(target) == visited->end() &&
+    auto edge_iter = edges.find(n);
+    if (edge_iter != edges.end()) {
+      DRAKE_ASSERT(stack->count(n) == 0);
+      stack->insert(n);  // Push onto the stack.
+      for (const auto& target : edge_iter->second) {
+        if (visited->count(target) == 0 &&
             HasCycleRecurse(target, edges, visited, stack)) {
           return true;
-        } else if (stack->find(target) != stack->end()) {
+        } else if (stack->count(target) > 0) {
           return true;
         }
       }
+      stack->erase(n);  // Pop from the stack.
     }
-    stack->erase(n);
     return false;
   }
 
@@ -240,19 +241,26 @@ class DiagramBuilder {
   // a std::logic_error.
   void ThrowIfAlgebraicLoopsExist() const {
     // Each port in the diagram is a node in a graph.
-    // An edge exists between nodes u and v if:
-    //  1. u is connected to v (via Connect(u, v) method), or
-    //  2. there is direct feedthrough from u to v (based on symbolic analysis).
+    // An edge exists from node u to node v if:
+    //  1. output u is connected to input v (via Connect(u, v) method), or
+    //  2. a direct feedthrough from input u to output v is reported.
     // A depth-first search of the graph should produce a forest of valid trees
     // if there are no algebraic loops. Otherwise, at least one link moving
     // *up* the tree will exist.
 
-    // Build the graph
-    // The nodes in the graph are *only* those ports included in a
-    // connection.  Unconnected ports, by definition, cannot contribute to an
-    // algebraic loop.
+    // Build the graph.
+    // Generally, the nodes of the graph would be the set of all defined ports
+    // (input and output) of each subsystem. However, we only need to
+    // consider the input/output ports that have a diagram level output-to-input
+    // connection (ports that are not connected in this manner cannot contribute
+    // to an algebraic loop).
+
+    // Track *all* of the nodes involved in a diagram-level connection as
+    // described above.
     std::set<PortIdentifier> nodes;
-    // A map from node u, to the set of edges { (u, v_i) }.
+    // A map from node u, to the set of edges { (u, v_i) }. In normal cases,
+    // not every node in `nodes` will serve as a key in `edges` (as that is a
+    // necessary condition for there to be no algebraic loop).
     std::map<PortIdentifier, std::set<PortIdentifier>> edges;
 
     // In order to store PortIdentifiers for both input and output ports in the
@@ -268,8 +276,8 @@ class DiagramBuilder {
     for (const auto& connection : dependency_graph_) {
       // Dependency graph is a mapping from the destination of the connection
       // to what it *depends on* (the source).
-      const auto& src = connection.second;
-      const auto& dest = connection.first;
+      const PortIdentifier& src = connection.second;
+      const PortIdentifier& dest = connection.first;
       PortIdentifier encoded_src{src.first, output_to_key(src.second)};
       nodes.insert(encoded_src);
       nodes.insert(dest);
@@ -281,10 +289,9 @@ class DiagramBuilder {
       for (const auto& pair : system->GetDirectFeedthroughs()) {
         PortIdentifier src_port{system.get(), pair.first};
         PortIdentifier dest_port{system.get(), output_to_key(pair.second)};
-        if (nodes.find(src_port) != nodes.end() ||
-            nodes.find(dest_port) != nodes.end()) {
-          // Direct feedthrough on ports that aren't connected to other systems
-          // don't matter to this analysis.
+        if (nodes.count(src_port) > 0 && nodes.count(dest_port) > 0) {
+          // Track direct feedthrough only on port pairs where *both* ports are
+          // connected to other ports at the diagram level.
           edges[src_port].insert(dest_port);
         }
       }
@@ -294,7 +301,7 @@ class DiagramBuilder {
     std::set<PortIdentifier> visited;
     std::set<PortIdentifier> stack;
     for (const auto& node : nodes) {
-      if (visited.find(node) == visited.end()) {
+      if (visited.count(node) == 0) {
         if (HasCycleRecurse(node, edges, &visited, &stack)) {
           throw std::logic_error("Algebraic loop detected in DiagramBuilder.");
         }
@@ -302,22 +309,22 @@ class DiagramBuilder {
     }
   }
 
-  /// Produces the Blueprint that has been described by the calls to
-  /// Connect, ExportInput, and ExportOutput. Throws std::logic_error if the
-  /// graph is not buildable or algebraic loops exist.
-  /// The DiagramBuilder passes ownership of the registered systems to the
-  /// blueprint.
-  typename Diagram<T>::Blueprint Compile() {
+  // Produces the Blueprint that has been described by the calls to
+  // Connect, ExportInput, and ExportOutput. Throws std::logic_error if the
+  // graph is empty or contains algebraic loops.
+  // The DiagramBuilder passes ownership of the registered systems to the
+  // blueprint.
+  std::unique_ptr<typename Diagram<T>::Blueprint> Compile() {
     if (registered_systems_.size() == 0) {
       throw std::logic_error("Cannot Compile an empty DiagramBuilder.");
     }
     ThrowIfAlgebraicLoopsExist();
 
-    typename Diagram<T>::Blueprint blueprint;
-    blueprint.input_port_ids = input_port_ids_;
-    blueprint.output_port_ids = output_port_ids_;
-    blueprint.dependency_graph = dependency_graph_;
-    blueprint.systems = std::move(registered_systems_);
+    auto blueprint = std::make_unique<typename Diagram<T>::Blueprint>();
+    blueprint->input_port_ids = input_port_ids_;
+    blueprint->output_port_ids = output_port_ids_;
+    blueprint->dependency_graph = dependency_graph_;
+    blueprint->systems = std::move(registered_systems_);
 
     return blueprint;
   }
