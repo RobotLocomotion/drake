@@ -34,7 +34,6 @@ if(BUILD_TESTING)
       CHECK_DEPENDENCY_STRICT SIZE small)
   endfunction()
 
-  drake_add_matlab_check_dependency_test(bullet)
   drake_add_matlab_check_dependency_test(lcm)
 
   # Unknown dependency.
@@ -52,25 +51,7 @@ if(BUILD_TESTING)
     endif()
   endfunction()
 
-  # TODO(jamiesnape): These would still pass if MATLAB fails for a reason
+  # TODO(jamiesnape): This would still pass if MATLAB fails for a reason
   # other than a missing dependency.
   drake_add_matlab_check_dependency_test_no(lcm)
-
-  if(NOT Bullet_FOUND)
-    drake_add_matlab_test(NAME matlab/check_dependency_no_bullet
-      COMMAND "checkDependency('bullet')" CHECK_DEPENDENCY_STRICT SIZE small)
-    set_tests_properties(matlab/check_dependency_no_bullet
-      PROPERTIES WILL_FAIL ON)
-  endif()
-
-  if(Matlab_SIMULINK_FOUND)
-    drake_add_matlab_test(NAME matlab/check_dependency_simulink
-      COMMAND "checkDependency('simulink')" CHECK_DEPENDENCY_STRICT
-      SIZE small)
-  else()
-    drake_add_matlab_test(NAME matlab/check_dependency_no_simulink
-      COMMAND "checkDependency('simulink')" CHECK_DEPENDENCY_STRICT SIZE small)
-    set_tests_properties(matlab/check_dependency_no_simulink
-      PROPERTIES WILL_FAIL ON)
-  endif()
 endif()
