@@ -18,11 +18,9 @@ filegroup(
 # Generates octomath library
 cc_library(
     name = "octomath",
-    srcs = [
-        "octomap/src/math/Pose6D.cpp",
-        "octomap/src/math/Quaternion.cpp",
-        "octomap/src/math/Vector3.cpp",
-    ],
+    srcs = glob([
+        "octomap/src/math/*.cpp",
+    ]),
     hdrs = glob([
         "octomap/include/octomap/math/*.h*",
     ]),
@@ -40,6 +38,7 @@ cc_library(
         "octomap/src/ColorOcTree.cpp",
         "octomap/src/CountingOcTree.cpp",
         "octomap/src/OcTree.cpp",
+        "octomap/src/OcTreeLUT.cpp",
         "octomap/src/OcTreeNode.cpp",
         "octomap/src/OcTreeStamped.cpp",
         "octomap/src/Pointcloud.cpp",

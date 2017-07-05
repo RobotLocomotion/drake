@@ -96,8 +96,8 @@ bitbucket_archive(
 github_archive(
     name = "spdlog",
     repository = "gabime/spdlog",
-    commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
-    sha256 = "5166c036eacd625b86f725bfba356547e0bc497232649662c61cde7b1b423292",  # noqa
+    commit = "v0.13.0",
+    sha256 = "d798a6ca19165f0a18a43938859359269f5a07fd8e0eb83ab8674739c9e8f361",  # noqa
     build_file = "tools/spdlog.BUILD",
 )
 
@@ -164,16 +164,16 @@ github_archive(
 github_archive(
     name = "ccd",
     repository = "danfis/libccd",
-    commit = "16b9379fb6e8610566fe5e1396166daf7106f165",
-    sha256 = "fc583888c731d91c9ef287ca9ba443426ecfce75056d6c468b063b383bd8efa1",  # noqa
+    commit = "v2.0",
+    sha256 = "1b4997e361c79262cf1fe5e1a3bf0789c9447d60b8ae2c1f945693ad574f9471",  # noqa
     build_file = "tools/ccd.BUILD",
 )
 
 github_archive(
     name = "octomap",
     repository = "OctoMap/octomap",
-    commit = "6d7c31ae4df2c93cb8a954e44d442338b58d3558",
-    sha256 = "023ddd5b1e8ed1a70374c352cbd5b02bd5a26707f61a13cfb087766d5ca466e3",  # noqa
+    commit = "v1.7.2",
+    sha256 = "fe55efbb9ebf2b3388860e54b1c8a53d23e5a05de5956c043278013e01066c34",  # noqa
     build_file = "tools/octomap.BUILD",
 )
 
@@ -235,8 +235,8 @@ github_archive(
 github_archive(
     name = "tinyobjloader",
     repository = "syoyo/tinyobjloader",
-    commit = "9d9e987c4776d9df54e0ab65639e1befddb1d5ae",
-    sha256 = "e5c7ce01a153a3d9101f6c197e10145490ecd84ba7d0b6463708a60bc2845d4b",  # noqa
+    commit = "v1.0.6",
+    sha256 = "19ee82cd201761954dd833de551edb570e33b320d6027e0d91455faf7cd4c341",  # noqa
     build_file = "tools/tinyobjloader.BUILD",
 )
 
