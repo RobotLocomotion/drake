@@ -11,31 +11,6 @@ namespace drake {
 namespace maliput {
 namespace api {
 
-// Compares equality of two LaneEnd objects.
-// @param lane_end1 A LaneEnd object to compare.
-// @param lane_end2 A LaneEnd object to compare.
-// @return ::testing::AssertionFailure() When LaneEnds objects are different.
-// @return ::testing::AssertionSuccess() When LaneEnds objects are equal.
-::testing::AssertionResult CompareLaneEnd(const LaneEnd& lane_end1,
-                                          const LaneEnd& lane_end2) {
-  if (lane_end1.lane != lane_end2.lane) {
-    return ::testing::AssertionFailure()
-           << "LaneEnds are different at lane. "
-           << "lane_end1.lane: " << lane_end1.lane << " vs. "
-           << "lane_end2.lane: " << lane_end2.lane;
-  }
-  if (lane_end1.end != lane_end2.end) {
-    return ::testing::AssertionFailure()
-           << "LaneEnds are different at end. "
-           << "lane_end1.end: "
-           << (lane_end1.end == LaneEnd::kStart ? "kStart" : "kFinish")
-           << " vs. lane_end2.end: "
-           << (lane_end2.end == LaneEnd::kStart ? "kStart" : "kFinish");
-  }
-  return ::testing::AssertionSuccess() << "lane_end1 is equal to "
-                                       << "lane_end2.";
-}
-
 // Compares equality within @p tolerance deviation of two GeoPositions objects.
 // @param pos1 A GeoPosition object to compare.
 // @param pos2 A GeoPosition object to compare.
@@ -169,52 +144,6 @@ namespace api {
                                        << rot2;
 }
 
-// Compares equality within @p tolerance deviation of two IsoLaneVelocity
-// objects.
-// @param vel1 A IsoLaneVelocity object to compare.
-// @param vel2 A IsoLaneVelocity object to compare.
-// @param tolerance An allowable deviation for each IsoLaneVelocity's
-// coordinate.
-// @return ::testing::AssertionFailure() When IsoLaneVelocity objects are
-// different.
-// @return ::testing::AssertionSuccess() When IsoLaneVelocity objects are equal
-// or within the @p tolerance deviation.
-::testing::AssertionResult CompareIsoLaneVelocity(const IsoLaneVelocity& vel1,
-                                                  const IsoLaneVelocity& vel2,
-                                                  double tolerance = 0.0) {
-  double delta = std::abs(vel1.sigma_v - vel2.sigma_v);
-  if (delta > tolerance) {
-    return ::testing::AssertionFailure()
-           << "IsoLaneVelocities are different at sigma_v coordinate. "
-           << "vel1.sigma_v: " << vel1.sigma_v << " vs. "
-           << "vel2.sigma_v: " << vel2.sigma_v << ", diff = " << delta
-           << ", tolerance = " << tolerance;
-  }
-  delta = std::abs(vel1.rho_v - vel2.rho_v);
-  if (delta > tolerance) {
-    return ::testing::AssertionFailure()
-           << "IsoLaneVelocities are different at rho_v coordinate. "
-           << "vel1.rho_v: " << vel1.rho_v << " vs. "
-           << "vel2.rho_v: " << vel2.rho_v << ", diff = " << delta
-           << ", tolerance = " << tolerance;
-  }
-  delta = std::abs(vel1.eta_v - vel2.eta_v);
-  if (delta > tolerance) {
-    return ::testing::AssertionFailure()
-           << "IsoLaneVelocities are different at eta_v coordinate. "
-           << "vel1.eta_v: " << vel1.eta_v << " vs. "
-           << "vel2.eta_v: " << vel2.eta_v << ", diff = " << delta
-           << ", tolerance = " << tolerance;
-  }
-  return ::testing::AssertionSuccess()
-         << "vel1 =\n"
-         << "(" << vel1.sigma_v << ", " << vel1.rho_v << ", " << vel1.eta_v
-         << ")"
-         << "\nis approximately equal to vel2 =\n"
-         << "(" << vel2.sigma_v << ", " << vel2.rho_v << ", " << vel2.eta_v
-         << ")";
-}
-
 // Compares equality within @p tolerance deviation of two RBounds objects.
 // @param rbounds1 A RBounds object to compare.
 // @param rbounds2 A RBounds object to compare.
@@ -229,7 +158,7 @@ namespace api {
   double delta = std::abs(rbounds1.r_min - rbounds2.r_min);
   if (delta > tolerance) {
     return ::testing::AssertionFailure()
-           << "RBounds are different at rmin. "
+           << "RBounds are different at r_min. "
            << "rbounds1.r_min: " << rbounds1.r_min << " vs. "
            << "rbounds2.r_min: " << rbounds2.r_min << ", diff = " << delta
            << ", tolerance = " << tolerance;
@@ -237,7 +166,7 @@ namespace api {
   delta = std::abs(rbounds1.r_max - rbounds2.r_max);
   if (delta > tolerance) {
     return ::testing::AssertionFailure()
-           << "RBounds are different at rmax. "
+           << "RBounds are different at r_max. "
            << "rbounds1.r_max: " << rbounds1.r_max << " vs. "
            << "rbounds2.r_max: " << rbounds2.r_max << ", diff = " << delta
            << ", tolerance = " << tolerance;

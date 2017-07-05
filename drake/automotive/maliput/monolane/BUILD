@@ -97,6 +97,7 @@ drake_cc_googletest(
     deps = [
         ":lanes",
         ":monolane_test_utils",
+        "//drake/automotive/maliput/api:maliput_types_compare",
         "//drake/common:eigen_matrix_compare",
     ],
 )
