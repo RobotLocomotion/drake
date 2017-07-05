@@ -62,13 +62,12 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     // The state to test is the default state of the tree (0 velocities
     // and default configuration positions of the tree)
 
-    VectorX<double> x0 = VectorX<double>::Zero(tree_->get_num_positions() +
-                                               tree_->get_num_velocities());
+    VectorX<double> q0 = VectorX<double>::Zero(tree_->get_num_positions());
 
     VectorXd v0 = VectorXd::Zero(tree_->get_num_velocities());
 
-    x0.head(tree_->get_num_positions()) = tree_->getZeroConfiguration();
-    auto kinsol = tree_->doKinematics(x0, v0);
+    q0 = tree_->getZeroConfiguration();
+    auto kinsol = tree_->doKinematics(q0, v0);
 
     compliant_contact_model_->ComputeContactForce(kinsol, &contact_results_);
 
