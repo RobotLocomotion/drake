@@ -29,6 +29,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "maliput_types_compare",
+    testonly = 1,
+    hdrs = ["test/maliput_types_compare.h"],
+    deps = [
+        ":api",
+        "//drake/common",
+        "//drake/math:geometric_transform",
+    ],
+)
+
 # === test/ ===
 drake_cc_googletest(
     name = "lane_data_test",
