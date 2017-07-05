@@ -7,7 +7,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -32,14 +32,14 @@ int DoMain() {
   systems::DiagramBuilder<double> builder;
 
   systems::RigidBodyPlant<double>* plant = nullptr;
-  const std::string kUrdfPath = drake::GetDrakePath() +
-                                "/manipulation/models/jaco_description/urdf/"
-                                "j2n6s300.urdf";
 
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreeFromFixedModelAtPose(kUrdfPath, tree.get());
+    CreateTreeFromFixedModelAtPose(
+        FindResourceOrThrow(
+            "drake/manipulation/models/jaco_description/urdf/j2n6s300.urdf"),
+        tree.get());
 
     auto tree_sys =
         std::make_unique<systems::RigidBodyPlant<double>>(std::move(tree));
@@ -57,7 +57,7 @@ int DoMain() {
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
   auto control_sys =
       std::make_unique<systems::InverseDynamicsController<double>>(
-          kUrdfPath, nullptr, jaco_kp, jaco_ki, jaco_kd,
+          plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
           false /* no feedforward acceleration */);
   auto controller =
       builder.AddSystem<systems::InverseDynamicsController<double>>(
@@ -93,13 +93,13 @@ int DoMain() {
 
   systems::Simulator<double> simulator(*diagram);
 
-  systems::Context<double>* jaco_context = diagram->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), plant);
+  systems::Context<double>& jaco_context = diagram->GetMutableSubsystemContext(
+      *plant, simulator.get_mutable_context());
 
   // Sets some (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
   systems::VectorBase<double>* x0 =
-      jaco_context->get_mutable_continuous_state_vector();
+      jaco_context.get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, -1.57);  // shoulder fore/aft
   x0->SetAtIndex(2, -1.57);  // elbow fore/aft
 

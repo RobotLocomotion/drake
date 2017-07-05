@@ -87,16 +87,6 @@ Use the command in `All Languages`_, but change the configuration to use
 
   bazel test --config cpplint ...
 
-Usage without Bazel
-^^^^^^^^^^^^^^^^^^^
-
-Here is the command::
-
-  drake-distro/drake/common/test/cpplint_wrapper.py
-
-By default, all files in Drake are checked using the default settings.
-Consult the program's `--help` for more detailed options.
-
 
 Python
 ======

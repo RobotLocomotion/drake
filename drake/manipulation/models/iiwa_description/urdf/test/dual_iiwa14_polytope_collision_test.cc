@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -15,9 +15,9 @@ namespace {
 // RigidBodyTree. This unit test also verifies that the URDF can be parsed by
 // the URDF parser.
 GTEST_TEST(DualIiwa14PolytopeCollisionTest, TestLoadTree) {
-  const std::string kPath(GetDrakePath() +
-      "/manipulation/models/iiwa_description/urdf/"
-      "dual_iiwa14_polytope_collision.urdf");
+  const std::string kPath(FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "dual_iiwa14_polytope_collision.urdf"));
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

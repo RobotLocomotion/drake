@@ -33,6 +33,7 @@ drake_cc_library(
         "iiwa_common.h",
     ],
     deps = [
+        "//drake/common:find_resource",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
@@ -105,6 +106,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":robot_plan_interpolator",
+        "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
@@ -160,6 +162,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":sim_diagram_builder",
+        "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
@@ -180,6 +183,7 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
+        "//drake/common:find_resource",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -205,6 +209,7 @@ drake_cc_googletest(
     deps = [
         ":iiwa_common",
         ":robot_plan_interpolator",
+        "//drake/common:find_resource",
         "//drake/systems/framework",
     ],
 )

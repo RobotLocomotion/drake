@@ -42,6 +42,7 @@ drake_cc_binary(
     ],
     deps = [
         ":particles",
+        "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/multibody/parsers",

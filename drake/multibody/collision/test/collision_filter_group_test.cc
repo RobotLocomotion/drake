@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/drake_joints.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body.h"
@@ -29,6 +29,7 @@ namespace DrakeCollision {
 namespace test {
 namespace {
 
+using drake::FindResourceOrThrow;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using Eigen::Isometry3d;
 using Eigen::VectorXd;
@@ -458,9 +459,9 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
 GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
   RigidBodyTree<double> tree;
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/collision/test/"
-          "collision_filter_group_test_multi_member.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/collision/test/"
+          "collision_filter_group_test_multi_member.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
   Eigen::Matrix<double, 16, 1> state;
   state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
@@ -480,9 +481,9 @@ GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
 GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
   RigidBodyTree<double> tree;
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/collision/test/"
-          "collision_filter_group_test_multi_ignore.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/collision/test/"
+          "collision_filter_group_test_multi_ignore.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
   Eigen::Matrix<double, 16, 1> state;
   state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23

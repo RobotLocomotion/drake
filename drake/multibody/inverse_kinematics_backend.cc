@@ -41,18 +41,9 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
-  solvers::SolverType solver_type;
-  int solver_result = 0;
-  prog.GetSolverResult(&solver_type, &solver_result);
-
-  if (solver_type ==
-      solvers::SolverType::kSnopt) {
-    // We can return SNOPT results directly.
-    return solver_result;
-  }
-
+int GetIKSolverInfo(SolutionResult result) {
   // Make a SNOPT-like return code out of the generic result.
+  // Magic constants are per rigid_body_ik.h.
   switch (result) {
     case SolutionResult::kSolutionFound: {
       return 1;
@@ -60,9 +51,7 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
     case SolutionResult::kInvalidInput: {
       return 91;
     }
-    case SolutionResult::kInfeasibleConstraints: {
-      return 13;
-    }
+    case SolutionResult::kInfeasibleConstraints:
     case SolutionResult::kInfeasible_Or_Unbounded: {
       return 13;
     }
@@ -301,7 +290,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     SolutionResult result = prog.Solve();
     const VectorXd& vars_value = prog.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
-    info[t_index] = GetIKSolverInfo(prog, result);
+    info[t_index] = GetIKSolverInfo(result);
   }
 }
 

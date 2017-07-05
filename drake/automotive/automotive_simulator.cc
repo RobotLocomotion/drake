@@ -323,9 +323,9 @@ void AutomotiveSimulator<T>::SetMaliputRailcarAccelerationCommand(int id,
   }
   DRAKE_ASSERT(diagram_ != nullptr);
   DRAKE_ASSERT(simulator_ != nullptr);
-  systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
-      simulator_->get_mutable_context(), railcar);
-  context->FixInputPort(railcar->command_input().get_index(),
+  systems::Context<T>& context = diagram_->GetMutableSubsystemContext(
+      *railcar, simulator_->get_mutable_context());
+  context.FixInputPort(railcar->command_input().get_index(),
       systems::BasicVector<double>::Make(acceleration));
 }
 
@@ -537,9 +537,9 @@ void AutomotiveSimulator<T>::InitializeTrajectoryCars() {
     const TrajectoryCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =
-        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
-                                             car)
-        ->get_mutable_continuous_state()->get_mutable_vector();
+        diagram_->GetMutableSubsystemContext(*car,
+                                             simulator_->get_mutable_context())
+        .get_mutable_continuous_state()->get_mutable_vector();
     TrajectoryCarState<T>* const state =
         dynamic_cast<TrajectoryCarState<T>*>(context_state);
     DRAKE_ASSERT(state);
@@ -554,9 +554,9 @@ void AutomotiveSimulator<T>::InitializeSimpleCars() {
     const SimpleCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =
-        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
-                                             car)
-        ->get_mutable_continuous_state()->get_mutable_vector();
+        diagram_->GetMutableSubsystemContext(*car,
+                                             simulator_->get_mutable_context())
+        .get_mutable_continuous_state()->get_mutable_vector();
     SimpleCarState<T>* const state =
         dynamic_cast<SimpleCarState<T>*>(context_state);
     DRAKE_ASSERT(state);
@@ -571,19 +571,18 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     const MaliputRailcarParams<T>& params = pair.second.first;
     const MaliputRailcarState<T>& initial_state = pair.second.second;
 
-    systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
-         simulator_->get_mutable_context(), car);
-    DRAKE_DEMAND(context != nullptr);
+    systems::Context<T>& context = diagram_->GetMutableSubsystemContext(
+         *car, simulator_->get_mutable_context());
 
     systems::VectorBase<T>* context_state =
-        context->get_mutable_continuous_state()->get_mutable_vector();
+        context.get_mutable_continuous_state()->get_mutable_vector();
     MaliputRailcarState<T>* const state =
         dynamic_cast<MaliputRailcarState<T>*>(context_state);
     DRAKE_ASSERT(state);
     state->set_value(initial_state.get_value());
 
     MaliputRailcarParams<T>* railcar_system_params =
-        car->get_mutable_parameters(context);
+        car->get_mutable_parameters(&context);
     DRAKE_DEMAND(railcar_system_params != nullptr);
     railcar_system_params->set_value(params.get_value());
   }

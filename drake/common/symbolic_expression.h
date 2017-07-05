@@ -231,11 +231,21 @@ class Expression {
    */
   double Evaluate(const Environment& env = Environment{}) const;
 
+  /** Partially evaluates this expression using an environment @p
+   * env. Internally, this method promotes @p env into a substitution
+   * (Variable → Expression) and call Evaluate::Substitute with it.
+   *
+   * @throws std::runtime_error if NaN is detected during evaluation.
+   */
+  Expression EvaluatePartial(const Environment& env) const;
+
   /** Expands out products and positive integer powers in expression. For
-   * example, <tt>(x + 1) * (x - 1)</tt> is expanded to <tt>x^2 - 1</tt> and
-   * <tt>(x + y)^2</tt> is expanded to <tt>x^2 + 2xy + y^2</tt>. Note that
-   * Expand applies recursively to sub-expressions. For instance, <tt>sin(2 * (x
-   * + y))</tt> is expanded to <tt>sin(2x + 2y)</tt>.
+   * example, `(x + 1) * (x - 1)` is expanded to `x^2 - 1` and `(x + y)^2` is
+   * expanded to `x^2 + 2xy + y^2`. Note that Expand applies recursively to
+   * sub-expressions. For instance, `sin(2 * (x + y))` is expanded to `sin(2x +
+   * 2y)`. It also simplifies "division by constant" cases. See
+   * "drake/common/test/symbolic_expansion_test.cc" to find the examples.
+   *
    * @throws std::runtime_error if NaN is detected during expansion.
    */
   Expression Expand() const;

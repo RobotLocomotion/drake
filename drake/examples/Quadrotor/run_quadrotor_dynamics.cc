@@ -6,7 +6,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
@@ -43,11 +43,11 @@ class Quadrotor : public systems::Diagram<T> {
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
-        drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+        FindResourceOrThrow("drake/examples/Quadrotor/quadrotor.urdf"),
         kRollPitchYaw, tree.get());
     const int quadrotor_id = model_id_table.at("quadrotor");
     AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
+        FindResourceOrThrow("drake/examples/Quadrotor/warehouse.sdf"),
         kFixed, nullptr /* weld to frame */, tree.get());
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
@@ -77,8 +77,8 @@ class Quadrotor : public systems::Diagram<T> {
                        systems::State<T>* state) const override {
     DRAKE_DEMAND(state != nullptr);
     systems::Diagram<T>::SetDefaultState(context, state);
-    systems::State<T>* plant_state =
-        this->GetMutableSubsystemState(state, plant_);
+    systems::State<T>& plant_state =
+        this->GetMutableSubsystemState(*plant_, state);
     VectorX<T> x0(plant_->get_num_states());
     x0.setZero();
     /* x0 is the initial state where
@@ -87,7 +87,7 @@ class Quadrotor : public systems::Diagram<T> {
      */
     x0(2) = 0.2;  // Sets arbitrary z-position. This is the initial height of
                   // the quadrotor in the world frame.
-    plant_->set_state_vector(plant_state, x0);
+    plant_->set_state_vector(&plant_state, x0);
   }
 
  private:

@@ -7,7 +7,7 @@
 #include <gflags/gflags.h>
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
@@ -33,7 +33,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-const char* const kIiwaUrdf = "/manipulation/models/iiwa_description/urdf/"
+const char* const kIiwaUrdf = "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
@@ -51,7 +51,7 @@ int DoMain() {
   plan_sub->set_name("plan_sub");
 
   const std::string urdf = (!FLAGS_urdf.empty() ? FLAGS_urdf :
-                            GetDrakePath() + kIiwaUrdf);
+                            FindResourceOrThrow(kIiwaUrdf));
   auto plan_source =
       builder.AddSystem<RobotPlanInterpolator>(urdf);
   plan_source->set_name("plan_source");
@@ -109,16 +109,16 @@ int DoMain() {
     q0[i] = first_status.joint_position_measured[i];
 
   systems::Context<double>* diagram_context = loop.get_mutable_context();
-  systems::Context<double>* status_sub_context =
-      diagram->GetMutableSubsystemContext(diagram_context, status_sub);
-  status_sub->SetDefaults(status_sub_context);
+  systems::Context<double>& status_sub_context =
+      diagram->GetMutableSubsystemContext(*status_sub, diagram_context);
+  status_sub->SetDefaults(&status_sub_context);
 
   // Explicit initialization.
   diagram_context->set_time(msg_time);
-  auto plan_source_context =
-      diagram->GetMutableSubsystemContext(diagram_context, plan_source);
+  auto& plan_source_context =
+      diagram->GetMutableSubsystemContext(*plan_source, diagram_context);
   plan_source->Initialize(msg_time, q0,
-                          plan_source_context->get_mutable_state());
+                          plan_source_context.get_mutable_state());
 
   loop.RunToSecondsAssumingInitialized();
   return 0;

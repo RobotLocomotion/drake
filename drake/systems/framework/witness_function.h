@@ -5,8 +5,7 @@
 #include <utility>
 
 #include "drake/common/symbolic_formula.h"
-#include "drake/systems/framework/discrete_event.h"
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/event_collection.h"
 
 namespace drake {
 namespace systems {
@@ -71,7 +70,8 @@ enum class WitnessFunctionDirection {
 /// when crossing from positive values to negative values, or vice versa.
 ///
 /// A good witness function should not cross zero repeatedly over a small
-/// interval of time or over small changes in state; when a witness function has
+/// interval of time (relative to the maximum designated integration step size)
+/// or over small changes in state; when a witness function has
 /// been "bracketed" over an interval of time (i.e., it changes sign), that
 /// witness function will ideally cross zero only once in that interval.
 ///
@@ -92,12 +92,10 @@ class WitnessFunction {
 
   virtual ~WitnessFunction() {}
 
-  /// Constructs the witness function with the given direction type and action
-  /// type.
+  /// Constructs the witness function with the given direction type.
   WitnessFunction(const System<T>& system,
-                  const WitnessFunctionDirection& dtype,
-                  const typename DiscreteEvent<T>::ActionType& atype) :
-                  system_(system), dir_type_(dtype), action_type_(atype) {}
+                  const WitnessFunctionDirection& dtype) :
+                  system_(system), dir_type_(dtype) {}
 
   /// Gets the name of this witness function (used primarily for logging and
   /// debugging).
@@ -106,12 +104,12 @@ class WitnessFunction {
   /// Sets the name of this witness function.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Derived classes will override this function to get the type of event
-  /// that will be taken if this witness function triggers. Example actions are
-  /// publish, perform a discrete variable update, or perform an unrestricted
-  /// update.
-  typename DiscreteEvent<T>::ActionType get_action_type() const {
-      return action_type_; }
+  /// Adds the appropriate event that will be dispatched when this witness
+  /// function triggers.
+  void AddEvent(CompositeEventCollection<T>* events) const {
+    DRAKE_DEMAND(events);
+    DoAddEvent(events);
+  }
 
   /// Gets the direction(s) under which this witness function triggers.
   WitnessFunctionDirection get_dir_type() const { return dir_type_; }
@@ -150,6 +148,12 @@ class WitnessFunction {
 
 
  protected:
+  /// Derived classes will override this function to add the appropriate event
+  /// that will be dispatched when this witness function triggers. Example
+  /// events are publish, perform a discrete variable update, and performing an
+  /// unrestricted update. @p events is guaranteed to be non-null on entry.
+  virtual void DoAddEvent(CompositeEventCollection<T>* events) const = 0;
+
   /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
   /// @param context an already-validated Context
@@ -164,9 +168,6 @@ class WitnessFunction {
 
   // Direction(s) under which this witness function triggers.
   WitnessFunctionDirection dir_type_;
-
-  // Action (event type) to be taken when this witness function triggers.
-  typename DiscreteEvent<T>::ActionType action_type_;
 };
 
 }  // namespace systems

@@ -192,6 +192,7 @@ class LcmDrivenLoop {
   std::unique_ptr<Context<double>> sub_context_;
   std::unique_ptr<SystemOutput<double>> sub_output_;
   std::unique_ptr<State<double>> sub_swap_state_;
+  std::unique_ptr<CompositeEventCollection<double>> sub_events_;
 
   int message_count_{0};
 };

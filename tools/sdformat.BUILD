@@ -142,16 +142,15 @@ install_cmake_config(package = "SDFormat")
 
 install(
     name = "install",
+    targets = [":sdformat"],
     hdrs = public_headers + [
         ":sdfhh_genrule",
         ":config",
     ],
-    hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = [
-        "LICENSE",
+    docs = [
         "COPYING",
+        "LICENSE",
     ],
-    targets = [":sdformat"],
     deps = [":install_cmake_config"],
 )

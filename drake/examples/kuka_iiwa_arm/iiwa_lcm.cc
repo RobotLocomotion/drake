@@ -1,5 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 
+#include <vector>
+
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -13,6 +15,7 @@ using systems::Context;
 using systems::DiscreteValues;
 using systems::State;
 using systems::SystemOutput;
+using systems::DiscreteUpdateEvent;
 
 // This value is chosen to match the value in getSendPeriodMilliSec()
 // when initializing the FRI configuration on the iiwa's control
@@ -24,7 +27,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   this->DeclareAbstractInputPort();
   this->DeclareVectorOutputPort(systems::BasicVector<double>(num_joints_ * 2),
                                 &IiwaCommandReceiver::OutputCommand);
-  this->DeclareDiscreteUpdatePeriodSec(kIiwaLcmStatusPeriod);
+  this->DeclarePeriodicDiscreteUpdate(kIiwaLcmStatusPeriod);
   this->DeclareDiscreteState(num_joints_ * 2);
 }
 
@@ -40,6 +43,7 @@ void IiwaCommandReceiver::set_initial_position(
 
 void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
+    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
@@ -125,11 +129,12 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
               .get_index()) {
   this->DeclareAbstractInputPort();
   this->DeclareDiscreteState(num_joints_ * 3);
-  this->DeclareDiscreteUpdatePeriodSec(kIiwaLcmStatusPeriod);
+  this->DeclarePeriodicDiscreteUpdate(kIiwaLcmStatusPeriod);
 }
 
 void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
+    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);

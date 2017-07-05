@@ -19,6 +19,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
@@ -32,6 +34,7 @@
 #include "drake/solvers/create_cost.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
+#include "drake/solvers/indeterminate.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
@@ -629,6 +632,159 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /**
+   * Adds indeterminates, appending them to an internal vector of any
+   * existing indeterminates.
+   * @tparam rows  The number of rows in the new indeterminates.
+   * @tparam cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminate of size rows x cols, containing the
+   * new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * std::array<std::string, 6> names = {"x1", "x2", "x3", "x4", "x5", "x6"};
+   * auto x = prog.NewIndeterminates<2, 3>(names);
+   * @endcode
+   * This adds a 2 x 3 matrix indeterminates into the program.
+   *
+   * The name of the indeterminates is only used for the user in order to ease
+   * readability.
+   */
+  template <int rows, int cols>
+  MatrixIndeterminate<rows, cols> NewIndeterminates(
+      const std::array<std::string, rows * cols>& names) {
+    MatrixIndeterminate<rows, cols> indeterminates_matrix;
+    NewIndeterminates_impl(names, indeterminates_matrix);
+    return indeterminates_matrix;
+  }
+
+  /**
+   * Adds indeterminates, appending them to an internal vector of any
+   * existing indeterminates.
+   * @tparam rows  The number of rows in the new indeterminates.
+   * @tparam cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminate of size rows x cols, containing the
+   * new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * std::array<std::string, 2> names = {"x1", "x2"};
+   * auto x = prog.NewIndeterminates<2>(names);
+   * @endcode
+   * This adds a 2 vector indeterminates into the program.
+   *
+   * The name of the indeterminates is only used for the user in order to ease
+   * readability.
+   */
+  template <int rows>
+  VectorIndeterminate<rows> NewIndeterminates(
+      const std::array<std::string, rows>& names) {
+    return NewIndeterminates<rows, 1>(names);
+  }
+
+  /**
+   * Adds indeterminates, appending them to an internal vector of any
+   * existing indeterminates.
+   * @tparam rows  The number of rows in the new indeterminates.
+   * @tparam cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminate of size rows x cols, containing the
+   * new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.NewIndeterminates<2, 3>("X");
+   * @endcode
+   * This adds a 2 x 3 matrix indeterminates into the program.
+   *
+   * The name of the indeterminates is only used for the user in order to ease
+   * readability.
+   */
+
+  template <int rows, int cols>
+  MatrixIndeterminate<rows, cols> NewIndeterminates(
+      const std::string& name = "X") {
+    std::array<std::string, rows * cols> names;
+    for (int j = 0; j < cols; ++j) {
+      for (int i = 0; i < rows; ++i) {
+        names[j * rows + i] =
+            name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
+      }
+    }
+    return NewIndeterminates<rows, cols>(names);
+  }
+
+  /**
+   * Adds indeterminates to the program.
+   * The name for all newly added indeterminates are set to @p name. The default
+   * name is "x"
+   * @see NewIndeterminates(const std::array<std::string, rows>& names)
+   */
+  template <int rows>
+  VectorIndeterminate<rows> NewIndeterminates(const std::string& name = "x") {
+    std::array<std::string, rows> names;
+    int offset = (name.compare("x") == 0) ? num_vars() : 0;
+    for (int i = 0; i < rows; ++i) {
+      names[i] = name + "(" + std::to_string(offset + i) + ")";
+    }
+    return NewIndeterminates<rows>(names);
+  }
+
+  /**
+   * Adds indeterminates to this MathematicalProgram.
+   * @see NewIndeterminates(int rows, int cols, const
+   * std::vector<std::string>& names);
+   */
+  VectorXIndeterminate NewIndeterminates(int rows,
+                                         const std::vector<std::string>& names);
+
+  /**
+   * Adds indeterminates to this MathematicalProgram, with default name
+   * "x".
+   * @see NewIndeterminates(int rows, int cols, const
+   * std::vector<std::string>& names);
+   */
+  VectorXIndeterminate NewIndeterminates(int rows,
+                                         const std::string& name = "x");
+
+  /**
+   * Adds indeterminates, appending them to an internal vector of any
+   * existing vars.
+   * @param rows  The number of rows in the new indeterminates.
+   * @param cols  The number of columns in the new indeterminates.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The MatrixIndeterminate of size rows x cols, containing the
+   * new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.NewIndeterminates(2, 3, {"x1", "x2", "x3", "x4",
+   * "x5", "x6"});
+   * @endcode
+   * This adds a 2 x 3 matrix indeterminates into the program.
+   *
+   * The name of the variable is only used for the user in order to ease
+   * readability.
+   */
+  MatrixXIndeterminate NewIndeterminates(int rows, int cols,
+                                         const std::vector<std::string>& names);
+
+  /**
+   * Adds indeterminates to this MathematicalProgram, with default name
+   * "X". The new variables are returned and viewed as a matrix, with size
+   * @p rows x @p cols.
+   * @see NewIndeterminates(int rows, int cols, const
+   * std::vector<std::string>& names);
+   */
+  MatrixXIndeterminate NewIndeterminates(int rows, int cols,
+                                         const std::string& name = "X");
 
   /**
    * Adds a generic cost to the optimization program.
@@ -1760,8 +1916,7 @@ class MathematicalProgram {
    */
   template <typename Derived>
   void SetInitialGuessForAllVariables(const Eigen::MatrixBase<Derived>& x0) {
-    DRAKE_ASSERT(x0.rows() == num_vars() &&
-                 x0.cols() == 1);
+    DRAKE_ASSERT(x0.rows() == num_vars() && x0.cols() == 1);
     x_initial_guess_ = x0;
   }
 
@@ -1864,15 +2019,9 @@ class MathematicalProgram {
     return solver_options_str_[solver_type];
   }
 
-  /**
-   * Get the name and result code of the particular solver which was
-   * used to solve this MathematicalProgram.  The solver names and
-   * results are not documented here as this function is only intended
-   * for debugging, testing, and support of certain legacy
-   * APIs.
-   */
+  DRAKE_DEPRECATED("Use GetSolverId() instead")
   void GetSolverResult(SolverType* solver_type, int* solver_result) const {
-    *solver_type = solver_type_;
+    *solver_type = *solver_type_;
     *solver_result = solver_result_;
   }
 
@@ -1880,6 +2029,12 @@ class MathematicalProgram {
     solver_type_ = solver_type;
     solver_result_ = solver_result;
   }
+
+  /**
+   * Returns the ID of the solver that was used to solve this program.
+   * Returns empty if Solve() has not been called.
+   */
+  optional<SolverId> GetSolverId() const;
 
   /**
    * Getter for optimal cost at the solution. Will return NaN if there has
@@ -2039,6 +2194,26 @@ class MathematicalProgram {
    * @param var The decision variables.
    * @return The value of the decision variable after solving the problem.
    */
+
+  /** Gets the number of indeterminates in the optimization program */
+  int num_indeterminates() const { return indeterminates_.rows(); }
+
+  /** Returns the index of the indeterminate. Internally a solver
+   * thinks all indeterminates are stored in an array, and it acceses each
+   * individual indeterminate using its index. This index is used when adding
+   * constraints and costs for each solver.
+   * @pre @p var is a indeterminate in the mathematical program,
+   * otherwise this function throws a runtime error.
+   */
+  size_t FindIndeterminateIndex(const symbolic::Variable& var) const;
+
+  /**
+   * Gets the solution of an Eigen matrix of decision variables.
+   * @tparam Derived An Eigen matrix containing Variable.
+   * @param var The decision variables.
+   * @return The value of the decision variable after solving the problem.
+   */
+
   template <typename Derived>
   typename std::enable_if<
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
@@ -2085,12 +2260,24 @@ class MathematicalProgram {
     return decision_variables_(i);
   }
 
+  /** Getter for all indeterminates in the program. */
+  const VectorXIndeterminate& indeterminates() const { return indeterminates_; }
+
+  /** Getter for the indeterminate with index @p i in the program. */
+  const symbolic::Variable& indeterminate(int i) const {
+    return indeterminates_(i);
+  }
+
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
 
   VectorXDecisionVariable decision_variables_;
+
+  std::unordered_map<symbolic::Variable::Id, int> indeterminates_index_;
+  VectorXIndeterminate indeterminates_;
+
   std::vector<Binding<Cost>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
@@ -2117,9 +2304,9 @@ class MathematicalProgram {
   Eigen::VectorXd x_initial_guess_;
   std::vector<double> x_values_;
   std::shared_ptr<SolverData> solver_data_;
-  SolverType solver_type_;
-  int solver_result_;
-  double optimal_cost_;
+  optional<SolverType> solver_type_;
+  int solver_result_{};
+  double optimal_cost_{};
   std::map<SolverType, std::map<std::string, double>> solver_options_double_;
   std::map<SolverType, std::map<std::string, int>> solver_options_int_;
   std::map<SolverType, std::map<std::string, std::string>> solver_options_str_;
@@ -2163,8 +2350,8 @@ class MathematicalProgram {
       num_new_vars = rows * (rows + 1) / 2;
     }
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
-    decision_variables_.conservativeResize(
-        num_vars() + num_new_vars, Eigen::NoChange);
+    decision_variables_.conservativeResize(num_vars() + num_new_vars,
+                                           Eigen::NoChange);
     x_values_.resize(num_vars() + num_new_vars, NAN);
     int row_index = 0;
     int col_index = 0;
@@ -2212,6 +2399,38 @@ class MathematicalProgram {
 
   VectorXDecisionVariable NewVariables(VarType type, int rows,
                                        const std::vector<std::string>& names);
+
+  template <typename T>
+  void NewIndeterminates_impl(
+      const T& names, Eigen::Ref<MatrixXIndeterminate> indeterminates_matrix) {
+    int rows = indeterminates_matrix.rows();
+    int cols = indeterminates_matrix.cols();
+    int num_new_vars = rows * cols;
+
+    DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
+    indeterminates_.conservativeResize(indeterminates_.rows() + num_new_vars,
+                                       Eigen::NoChange);
+    int row_index = 0;
+    int col_index = 0;
+    for (int i = 0; i < num_new_vars; ++i) {
+      indeterminates_(indeterminates_.rows() - num_new_vars + i) =
+          symbolic::Variable(names[i]);
+
+      const int new_var_index = indeterminates_.rows() - num_new_vars + i;
+      indeterminates_index_.insert(std::pair<size_t, size_t>(
+          indeterminates_(new_var_index).get_id(), new_var_index));
+      indeterminates_matrix(row_index, col_index) =
+          indeterminates_(indeterminates_.rows() - num_new_vars + i);
+
+      // store the indeterminate in column major.
+      if (row_index + 1 < rows) {
+        ++row_index;
+      } else {
+        ++col_index;
+        row_index = 0;
+      }
+    }
+  }
 
   /*
    * Given a matrix of decision variables, checks if every entry in the

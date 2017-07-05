@@ -93,8 +93,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -110,6 +110,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",

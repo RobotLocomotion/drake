@@ -8,9 +8,9 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -38,13 +38,13 @@ VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
 // derived results for the kuka iiwa arm at a given state (q, v), when
 // asked to track reference state (q_r, v_r) and reference acceleration (vd_r).
 GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
-  auto robot = std::make_unique<RigidBodyTree<double>>();
+  auto robot_ptr = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_primitive_collision.urdf",
+      drake::FindResourceOrThrow("drake/manipulation/models/"
+          "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
-      robot.get());
-  const int dim = robot->get_num_positions();
+      robot_ptr.get());
+  const int dim = robot_ptr->get_num_positions();
 
   // Sets pid gains.
   VectorX<double> kp(dim), ki(dim), kd(dim);
@@ -52,10 +52,11 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   ki << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
   kd = kp / 2.;
 
-  auto dut = std::make_unique<InverseDynamicsController<double>>(*robot, kp, ki,
-                                                                 kd, true);
+  auto dut = std::make_unique<InverseDynamicsController<double>>(
+      std::move(robot_ptr), kp, ki, kd, true);
   auto context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput(*context);
+  const RigidBodyTree<double>& robot = dut->get_robot_for_control();
 
   // Sets current state and reference state and acceleration values.
   VectorX<double> q(dim), v(dim), q_r(dim), v_r(dim), vd_r(dim);
@@ -68,15 +69,15 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
 
   // Connects inputs.
   auto state_input = std::make_unique<BasicVector<double>>(
-      robot->get_num_positions() + robot->get_num_velocities());
+      robot.get_num_positions() + robot.get_num_velocities());
   state_input->get_mutable_value() << q, v;
 
   auto reference_state_input = std::make_unique<BasicVector<double>>(
-      robot->get_num_positions() + robot->get_num_velocities());
+      robot.get_num_positions() + robot.get_num_velocities());
   reference_state_input->get_mutable_value() << q_r, v_r;
 
   auto reference_acceleration_input =
-      std::make_unique<BasicVector<double>>(robot->get_num_velocities());
+      std::make_unique<BasicVector<double>>(robot.get_num_velocities());
   reference_acceleration_input->get_mutable_value() << vd_r;
 
   context->FixInputPort(dut->get_input_port_estimated_state().get_index(),
@@ -99,7 +100,7 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
                          (kd.array() * (v_r - v).array()).matrix() +
                          (ki.array() * q_int.array()).matrix() + vd_r;
 
-  VectorX<double> expected_torque = ComputeTorque(*robot, q, v, vd_d);
+  VectorX<double> expected_torque = ComputeTorque(robot, q, v, vd_d);
 
   // Checks the expected and computed gravity torque.
   const BasicVector<double>* output_vector = output->get_vector_data(0);

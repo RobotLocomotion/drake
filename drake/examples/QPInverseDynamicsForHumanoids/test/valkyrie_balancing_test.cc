@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
@@ -25,14 +25,15 @@ namespace qp_inverse_dynamics {
 // seconds.
 GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // Loads model.
-  std::string urdf = drake::GetDrakePath() + "/examples/Valkyrie/urdf/urdf/"
-      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
-  std::string alias_groups_config =
-      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-          "config/valkyrie.alias_groups";
-  std::string controller_config =
-      drake::GetDrakePath() + "/examples/QPInverseDynamicsForHumanoids/"
-          "config/valkyrie.id_controller_config";
+  std::string urdf = FindResourceOrThrow(
+      "drake/examples/Valkyrie/urdf/urdf/"
+      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+  std::string alias_groups_config = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/valkyrie.alias_groups");
+  std::string controller_config = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/valkyrie.id_controller_config");
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

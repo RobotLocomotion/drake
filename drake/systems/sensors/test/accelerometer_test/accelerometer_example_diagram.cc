@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -32,7 +32,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
     ::drake::lcm::DrakeLcmInterface* lcm)
     : lcm_(lcm) {
   const std::string model_file_name =
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf";
+      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf");
   const std::string model_name = "Pendulum";
   const std::string xdot_channel_name = "xdot_channel";
 
@@ -112,11 +112,10 @@ void AccelerometerExampleDiagram::Initialize(
 
 void AccelerometerExampleDiagram::SetInitialState(Context<double>* context,
     double q, double v) {
-  Context<double>* plant_context =
-      GetMutableSubsystemContext(context, plant_);
-  DRAKE_DEMAND(plant_context != nullptr);
+  Context<double>& plant_context =
+      GetMutableSubsystemContext(*plant_, context);
   ContinuousState<double>* plant_state =
-      plant_context->get_mutable_continuous_state();
+      plant_context.get_mutable_continuous_state();
   DRAKE_DEMAND(plant_state != nullptr);
   DRAKE_DEMAND(plant_state->size() == 2);
   (*plant_state)[0] = q;

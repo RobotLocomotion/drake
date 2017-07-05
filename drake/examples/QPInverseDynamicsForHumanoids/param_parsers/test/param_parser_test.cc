@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
@@ -18,18 +18,15 @@ namespace {
 class ParamParserTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    const std::string urdf_name =
-        drake::GetDrakePath() +
-        "/examples/Valkyrie/urdf/urdf/"
-        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
-    const std::string alias_groups_config_name =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.alias_groups";
-    const std::string controller_config_name =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.id_controller_config";
+    const std::string urdf_name = FindResourceOrThrow(
+        "drake/examples/Valkyrie/urdf/urdf/"
+        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+    const std::string alias_groups_config_name = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "param_parsers/test/params.alias_groups");
+    const std::string controller_config_name = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "param_parsers/test/params.id_controller_config");
 
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

@@ -247,6 +247,33 @@ simulation. User-supplied information such as mass properties, visual geometry,
 and collision geometry are given with respect to frame L; Drake transforms those
 internally so that they are maintained with respect to B instead.
 
+<h3>Notation for offset frame</h3>
+Given a frame F, we commonly need to work with another frame that is rigidly
+fixed to frame F, with all axes aligned, but with its origin shifted from Fo
+to some other point R. We call that an _offset frame_. In our mathematical
+notation we would write that @f$ F_R @f$. In code we don't have subscripts so we
+lowercase the point name to make it look like one: `Fr` is the closest we can
+come. Recall that we also permit frame names and body names to serve as points
+(by using their origins), so if we have a frame E or body B we can create `Fe`
+(rigidly aligned with F but with origin at Eo) or `Fb` (rigidly aligned with F
+but with origin at Bo). Here is a typical example to clarify the use of this
+notation:
+
+We have the spatial velocity V_WP (@f$ ^WV^P @f$) of frame P in World, and the
+spatial velocity V_PB of a frame B that moves with respect to P. We would like
+to get V_WB, the spatial velocity of frame B in World. To do that we must shift
+V_WP to get V_WPb (@f$ ^WV^{P_B} @f$), where Pb is a frame rigidly aligned with
+P but with its origin at Bo.
+
+This notation is not fully satisfactory since you may not always have available
+a convenient one-letter name for the point. In that case we suggest that you
+first define the offset frame by explaining where its origin is to be placed,
+and give it a locally-meaningful frame name. Then work with the newly-named
+frame rather than deriving the name from the original frame. When in doubt, use
+comments to clarify your precise meaning. That's a good idea even if the
+notation fits since some readers of your code may not be facile with this
+notation.
+
 Next topic: @ref multibody_quantities
 **/
 
@@ -255,7 +282,11 @@ Next topic: @ref multibody_quantities
 
 Quantities of interest in multibody dynamics have distinct types,
 which we denote with a single letter. For example, a rotation matrix is
-denoted with `R` and a position vector with `p`. Most quantities have a
+denoted with `R` and a position vector with `p`. We can also create a new
+quantity by applying a differentiation operator to an existing quantity (see
+@ref Dt_multibody_quantities).
+
+Most quantities have a
 _reference_ and _target_, either of which may be a frame, basis, or point, that
 specify how the quantity is to be defined. In addition, for purposes of
 computation, vector quantities
@@ -303,9 +334,66 @@ Transform      |  X   |@f$^AX^B@f$|`X_AB`|Frame B's pose in A
 
 <!-- TODO(sherm1,mitiguy) fill out above table? -->
 
-Next topic: @ref multibody_spatial_algebra
+Next topic: @ref Dt_multibody_quantities
 **/
 
+//------------------------------------------------------------------------------
+/** @defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
+@ingroup multibody_notation
+
+(Advanced topic) Given a physical quantity, say spatial velocity of frame B in
+frame A, we can create another physical quantity by differentiating that
+quantity in time. In some contexts, we will need a notation for representing the
+differentiated quantity. Since many quantities of interest are vectors, or
+contain vectors, we must specify in which frame the derivative is being taken,
+as well as the usual differential variable dt. In our mathematical notation, a
+vector derivative operator with respect to time @f$ t @f$, taken in frame
+@f$ G @f$, and applied to some vector-containing multibody quantity @f$ Q @f$,
+is written @f$ \frac{^Gd}{dt}\,Q @f$. Our monogram notation for this is `DtG_Q`.
+When computing with these derived quantities (which are themselves
+vector-containing), we need to specify an expressed-in frame E. In mathematical
+notation we would write @f$ [\frac{^Gd}{dt}\,Q]_E @f$. In monogram notation,
+`DtG_Q_E`. In comments, where we have more flexibility but would like the
+symbol to be readable in the header file, we can write this `[ᴳd/dt Q]_E`
+or `DtG(Q)_E` (see below).
+
+It is important to note that the derivative operator applies to a physical
+quantity, _not_ the computational representation of that quantity. Thus it is
+not correct to include an expressed-in frame for the physical quantity Q in
+the symbol name; the expressed-in frame applies only to the final derived
+quantity. For example, say you have `V_PB`, the spatial velocity of frame B in
+frame P. (Spatial velocity is a vector-containing multibody quantity.)
+In your code, you may choose to express that quantity in frame E, and write
+`V_PB_E`. If you want to differentiate that to find the spatial acceleration
+A_PB, the derivative must be taken in P, and then expressed in whatever frame
+you like, let's say some frame F. It does not matter what expressed-in frame you
+were using for `V_PB`. So the symbol for the derivative would be `DtP_V_PB_F`
+which should be interpreted as `DtP(V_PB)_F` or
+@f$ [\frac{^Pd}{dt}\,^PV^B]_F @f$; the `_F` goes with the result, not the
+quantity being differentiated. Of course in that case
+a better notation is `A_PB_F`! But that is only because we took the derivative
+in frame P. We could instead have taken the derivative in F (or any other frame)
+in which case there is no conventional name for the result `DtF_V_PB`; it
+is just the time derivative of spatial quantity V_PB taken in frame F, with no
+expressed-in frame specified.
+
+If you use this derivative notation for variables in your code, you should
+_always_ specify the expressed-in frame at the end of the symbol, and _never_
+specify the expressed-in frame for the quantity being differentiated. For
+example, given a vector quantity v, an expression like `DtG(v_E)_F` has no
+meaning; the correct quantity is `DtG(v)_F` with no expressed-in frame for the
+quantity being differentiated.
+
+When writing comments that contain derivations involving vector derivatives,
+you can use Unicode to approximate mathematical notation like `ᴬd/dt Q` or use
+`DtA(Q)` as you prefer. Either way is readable in the header file, but the
+former may be easier for the Doxygen reader to understand. One drawback of
+Unicode is that while _most_ uppercase letters are available as superscripts, a
+few of them are not. So on occasion you may have to choose your frame names to
+accommodate this very strange quirk of Unicode.
+
+Next topic: @ref multibody_spatial_algebra
+**/
 
 //------------------------------------------------------------------------------
 /** @defgroup multibody_spatial_algebra Spatial Algebra

@@ -40,6 +40,7 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":constraint_relaxing_ik",
+        "//drake/common:find_resource",
     ],
 )
 

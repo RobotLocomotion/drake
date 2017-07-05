@@ -248,6 +248,7 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   /// @}
 
  private:
+  bool IsBadJacobian(const MatrixX<T>& J) const;
   void DoInitialize() override;
   void DoResetStatistics() override;
   void Factor(const MatrixX<T>& A);

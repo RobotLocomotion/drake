@@ -138,17 +138,16 @@ install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
+    workspace = CMAKE_PACKAGE,
+    targets = [":ignition_math"],
     hdrs = public_headers + [
         ":config",
         ":mathhh_genrule",
     ],
-    hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = [
-        "LICENSE",
+    docs = [
         "COPYING",
+        "LICENSE",
     ],
-    targets = [":ignition_math"],
-    workspace = CMAKE_PACKAGE,
     deps = [":install_cmake_config"],
 )

@@ -40,7 +40,7 @@ drake_cc_binary(
     data = [":models"],
     deps = [
         ":pendulum_plant",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
@@ -59,7 +59,7 @@ drake_cc_binary(
     data = [":models"],
     deps = [
         ":pendulum_plant",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
@@ -77,7 +77,7 @@ drake_cc_binary(
     data = [":models"],
     deps = [
         ":pendulum_plant",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
@@ -97,7 +97,7 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         "pendulum_swing_up",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
         "//drake/lcm",
         "//drake/multibody/joints",

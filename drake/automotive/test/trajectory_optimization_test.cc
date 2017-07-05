@@ -32,7 +32,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   xf.set_heading(0.0);
   xf.set_velocity(x0.velocity());
 
-  const int kNumTimeSamples = 10;
+  const int kNumTimeSamples = 20;
 
   // The solved trajectory may deviate from the initial guess at a reasonable
   // duration.
@@ -72,18 +72,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
       prog.SolveTraj(initial_duration, PiecewisePolynomial<double>(),
                      initial_state_trajectory);
 
-  solvers::SolverType solver;
-  int solver_result;
-  prog.GetSolverResult(&solver, &solver_result);
-
-  if (solver == solvers::SolverType::kIpopt) {
-    EXPECT_EQ(result,
-              solvers::SolutionResult::kIterationLimit);  // TODO(russt): Tune
-                                                          // Ipopt for this
-                                                          // example.
-  } else {
-    EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
-  }
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
   // Plot the solution.
   // Note: see lcm_call_matlab.h for instructions on viewing the plot.

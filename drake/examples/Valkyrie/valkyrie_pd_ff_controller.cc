@@ -8,7 +8,7 @@
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
@@ -126,10 +126,8 @@ void ValkyriePDAndFeedForwardController::OutputCommand(
 
 
 void run_valkyrie_pd_ff_controller() {
-  std::string urdf =
-      drake::GetDrakePath() +
-      std::string(
-          "/examples/Valkyrie/urdf/urdf/"
+  std::string urdf = FindResourceOrThrow(
+          "drake/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -197,7 +195,7 @@ void run_valkyrie_pd_ff_controller() {
   // Call controller.
   while (true) {
     const systems::Context<double>& pub_context =
-        diagram->GetSubsystemContext(*context.get(), &atlas_command_publisher);
+        diagram->GetSubsystemContext(atlas_command_publisher, *context);
     atlas_command_publisher.Publish(pub_context);
   }
 }

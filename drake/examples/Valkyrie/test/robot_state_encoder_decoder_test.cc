@@ -5,8 +5,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
@@ -59,9 +59,9 @@ static ContactForce<double> TransformContactWrench(
 void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   RigidBodyTree<double> tree;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-          "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
+      FindResourceOrThrow(
+          "drake/examples/Valkyrie/urdf/urdf/"
+          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
       floating_base_type, nullptr /* weld to frame */, &tree);
   // Add a collision geom for the world.
   multibody::AddFlatTerrainToWorld(&tree, 100., 10.);

@@ -24,7 +24,10 @@ def _bazel_lint(name, files, ignore):
             name = name + "_buildifier",
             size = "small",
             srcs = ["@drake//tools:buildifier-test.sh"],
-            data = files + ["@drake//tools:buildifier"],
+            data = files + [
+                "@drake//tools:buildifier",
+                "@drake//tools:buildifier-tables.json",
+            ],
             args = ["$(location %s)" % f for f in files],
             tags = ["buildifier", "lint"],
         )
@@ -50,8 +53,12 @@ def bazel_lint(name = "bazel", ignore = [265, 302, 305]):
 
     _bazel_lint(
         name = name,
-        # TODO(jwnimmer-tri) Add WORKSPACE to the list of files to find and
-        # reformat, once buildifier rules stop murdering it.
-        files = native.glob(["*.bzl", "BUILD", "BUILD.bazel", "*.BUILD"]),
+        files = native.glob([
+            "*.bzl",
+            "*.BUILD",
+            "BUILD",
+            "BUILD.bazel",
+            "WORKSPACE",
+        ]),
         ignore = ignore,
     )

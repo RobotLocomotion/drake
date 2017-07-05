@@ -2,7 +2,7 @@
 #include <memory>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -61,7 +61,7 @@ int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf"),
       multibody::joints::kFixed, tree.get());
 
   systems::DiagramBuilder<double> builder;
@@ -80,11 +80,11 @@ int do_main() {
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>* pendulum_context =
+  systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(
-          simulator.get_mutable_context(), pendulum);
-  pendulum->set_theta(pendulum_context, 0.1);
-  pendulum->set_thetadot(pendulum_context, 0.2);
+          *pendulum, simulator.get_mutable_context());
+  pendulum->set_theta(&pendulum_context, 0.1);
+  pendulum->set_thetadot(&pendulum_context, 0.2);
 
   simulator.Initialize();
   simulator.StepTo(10);

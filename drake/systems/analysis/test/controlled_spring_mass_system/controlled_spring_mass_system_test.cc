@@ -32,8 +32,8 @@ class SpringMassSystemTest : public ::testing::Test {
 
     // Gets the plant subcontext.
     plant_context_ =
-        model_->GetMutableSubsystemContext(
-            model_context_.get(), &model_->get_plant());
+        &model_->GetMutableSubsystemContext(
+            model_->get_plant(), model_context_.get());
   }
 
   std::unique_ptr<PidControlledSpringMassSystem<double>> model_;

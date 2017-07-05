@@ -10,7 +10,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
@@ -53,10 +53,10 @@ int DoMain() {
 
   // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
-  const std::string kModelPath = "/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_polytope_collision.urdf";
+  const char* kModelPath = "drake/manipulation/models/iiwa_description/"
+      "urdf/iiwa14_polytope_collision.urdf";
   const std::string urdf = (!FLAGS_urdf.empty() ? FLAGS_urdf :
-                            GetDrakePath() + kModelPath);
+                            FindResourceOrThrow(kModelPath));
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -92,7 +92,7 @@ int DoMain() {
   auto controller =
       builder.AddController<systems::InverseDynamicsController<double>>(
           RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-          urdf, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
+          tree.Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
           false /* without feedforward acceleration */);
 
   // Create the command subscriber and status publisher.
@@ -131,8 +131,8 @@ int DoMain() {
   simulator.Initialize();
 
   command_receiver->set_initial_position(
-      sys->GetMutableSubsystemContext(simulator.get_mutable_context(),
-                                      command_receiver),
+      &sys->GetMutableSubsystemContext(*command_receiver,
+                                       simulator.get_mutable_context()),
       VectorX<double>::Zero(tree.get_num_positions()));
 
 

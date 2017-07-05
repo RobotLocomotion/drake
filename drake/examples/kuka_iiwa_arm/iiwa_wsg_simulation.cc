@@ -12,7 +12,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -58,7 +57,7 @@ using systems::RigidBodyPlant;
 using systems::Simulator;
 
 const char* const kIiwaUrdf =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 // TODO(naveen): refactor this to reduce duplicate code.
@@ -72,14 +71,14 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // subsequently added to the world.
   tree_builder->StoreModel("iiwa", kIiwaUrdf);
   tree_builder->StoreModel("table",
-                           "/examples/kuka_iiwa_arm/models/table/"
+                           "drake/examples/kuka_iiwa_arm/models/table/"
                            "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel(
-      "box",
-      "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
+  tree_builder->StoreModel("box",
+                           "drake/examples/kuka_iiwa_arm/models/objects/"
+                           "block_for_pick_and_place.urdf");
   tree_builder->StoreModel(
       "wsg",
-      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
