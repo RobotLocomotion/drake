@@ -44,6 +44,7 @@ drake_cc_library(
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_vector",
+        "//drake/multibody/rigid_contact",
     ],
 )
 

@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_vector.h"
@@ -249,6 +250,24 @@ class Rod2D : public systems::LeafSystem<T> {
     erp_ = erp;
   }
 
+  /// Gets the generalized position of the rod, given a Context. The first two
+  /// components represent the location of the rod's center-of-mass, expressed
+  /// in the global frame. The third component represents the orientation of
+  /// the rod, measured counter-clockwise with respect to the x-axis.
+  Vector3<T> GetRodConfig(const systems::Context<T>& context) const {
+    return context.get_state().
+        get_continuous_state()->get_generalized_position().CopyToVector();
+  }
+
+  /// Gets the generalized velocity of the rod, given a Context. The first
+  /// two components represent the translational velocities of the
+  /// center-of-mass. The third component represents the angular velocity of
+  /// the rod.
+  Vector3<T> GetRodVelocity(const systems::Context<T>& context) const {
+    return context.get_state().
+        get_continuous_state()->get_generalized_velocity().CopyToVector();
+  }
+
   /// Models impact using an inelastic impact model with friction.
   /// @p new_state is set to the output of the impact model on return.
   void HandleImpact(const systems::Context<T>& context,
@@ -407,7 +426,81 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
     return *pose_output_port_;
   }
 
+  /// Utility method for determining the World frame location of one of three
+  /// points on the rod whose origin is Ro. Let r be the half-length of the rod.
+  /// Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
+  /// @param x The horizontal location of the rod center of mass (expressed in
+  ///        the world frame).
+  /// @param y The vertical location of the rod center of mass (expressed in
+  ///        the world frame).
+  /// @param k The rod endpoint (k=+1 indicates the rod "right" endpoint,
+  ///          k=-1 indicates the rod "left" endpoint, and k=0 indicates the
+  ///          rod origin; each of these are described in the primary class
+  ///          documentation.
+  /// @param ctheta cos(theta), where θ is the orientation of the rod (as
+  ///        described in the primary class documentation).
+  /// @param stheta sin(theta), where θ is the orientation of the rod (as
+  ///        described in the class documentation).
+  /// @param half_rod_len Half the length of the rod.
+  /// @returns p_WP, the designated point on the rod, expressed in the world
+  ///          frame.
+  static Vector2<T> CalcRodEndpoint(const T& x, const T& y, int k,
+                                    const T& ctheta, const T& stheta,
+                                    double half_rod_len);
+
+  /// Given a location p_WC of a point C in the World frame, define the point Rc
+  /// on the rod that is coincident with C, and report Rc's World frame velocity
+  /// v_WRc. We're given p_WRo=(x,y) and V_WRo = (v_WRo,w_WR) =
+  /// (xdot,ydot,thetadot).
+  /// @param p_WRo The center-of-mass of the rod, expressed in the world frame.
+  /// @param v_WRo The translational velocity of the rod, expressed in the
+  ///              world frame.
+  /// @param w_WR The angular velocity of the rod.
+  /// @param p_WC The location of a point on the rod.
+  /// @returns The translational velocity of p_WC, expressed in the world frame.
+  static Vector2<T> CalcCoincidentRodPointVelocity(
+      const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
+      const T& w_WR,  // aka thetadot
+      const Vector2<T>& p_WC);
+
+  /// Gets the point(s) of contact for the 2D rod.
+  /// @p context The context storing the current configuration and velocity of
+  ///            the rod.
+  /// @p points Contains the contact points (those rod endpoints touching or
+  ///           lying within the ground halfspace) on return. This function
+  ///           aborts if @p points is null or @p points is non-empty.
+  void GetContactPoints(const systems::Context<T>& context,
+                        std::vector<Vector2<T>>* points) const;
+
+  /// Gets the tangent velocities for all contact points.
+  /// @p context The context storing the current configuration and velocity of
+  ///            the rod.
+  /// @p points The set of context points.
+  /// @p vels Contains the velocities (measured along the x-axis) on return.
+  ///         This function aborts if @p vels is null. @p vels will be resized
+  ///         appropriately (to the same number of elements as @p points) on
+  ///         return.
+  void GetContactPointsTangentVelocities(
+      const systems::Context<T>& context,
+      const std::vector<Vector2<T>>& points, std::vector<T>* vels) const;
+
  private:
+  friend class Rod2DDAETest;
+  friend class Rod2DDAETest_RigidContactProblemDataBallistic_Test;
+
+  Vector3<T> GetJacobianRow(const systems::Context<T>& context,
+                            const Vector2<T>& p,
+                            const Vector2<T>& dir) const;
+  Vector3<T> GetJacobianDotRow(const systems::Context<T>& context,
+                               const Vector2<T>& p,
+                               const Vector2<T>& dir) const;
+  static Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot);
+  T GetSlidingVelocityTolerance() const;
+  MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
+  void CalcRigidContactProblemData(const systems::Context<T>& context,
+                                   const std::vector<Vector2<T>>& p,
+                                   const std::vector<T>& tangent_vels,
+    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
@@ -462,21 +555,6 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                         systems::VectorBase<T>* const f) const;
   Vector2<T> CalcStickingContactForces(
       const systems::Context<T>& context) const;
-
-  // Utility method for determining the World frame location of one of three
-  // points on the rod whose origin is Ro. Let r be the half-length of the rod.
-  // Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
-  static Vector2<T> CalcRodEndpoint(const T& x, const T& y, const int k,
-                                    const T& ctheta, const T& stheta,
-                                    const double half_rod_len);
-
-  // Given a location p_WC of a point C in the World frame, define the point Rc
-  // of the rod that is coincident with C, and report Rc's World frame velocity
-  // v_WRc. We're given p_WRo=(x,y) and V_WRo=(v_WRo,w_WR)=(xdot,ydot,thetadot).
-  static Vector2<T> CalcCoincidentRodPointVelocity(
-      const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
-      const T& w_WR,  // aka thetadot
-      const Vector2<T>& p_WC);
 
   // 2D cross product returns a scalar. This is the z component of the 3D
   // cross product [ax ay 0] × [bx by 0]; the x,y components are zero.
