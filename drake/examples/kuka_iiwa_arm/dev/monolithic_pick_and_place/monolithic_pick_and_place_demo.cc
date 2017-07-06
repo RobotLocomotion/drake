@@ -29,10 +29,10 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
-DEFINE_uint64(target, 0, "ID of the target to pick.");
+DEFINE_int32(target, 0, "ID of the target to pick.");
 DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
-DEFINE_uint32(start_position, 1, "Position index to start from");
-DEFINE_uint32(end_position, 2, "Position index to end at");
+DEFINE_int32(start_position, 1, "Position index to start from");
+DEFINE_int32(end_position, 2, "Position index to end at");
 DEFINE_double(realtime_rate, 0.0,
               "Rate at which to run the simulation, relative to realtime");
 
@@ -272,8 +272,8 @@ int DoMain(void) {
   Isometry3<double> iiwa_base = Isometry3<double>::Identity();
   iiwa_base.translation() = robot_base;
 
-  if (FLAGS_end_position > 0) {
-    if (FLAGS_end_position >= place_locations.size()) {
+  if (FLAGS_end_position >= 0) {
+    if (FLAGS_end_position >= static_cast<int>(place_locations.size())) {
       throw std::runtime_error("Invalid end position specified.");
     }
     std::vector<Isometry3<double>> new_place_locations;
