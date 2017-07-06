@@ -415,7 +415,7 @@ py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        "//drake/lcmtypes:lcmtypes-py",
+        "//drake/lcmtypes:lcmtypes_py",
         "@lcm//:lcm-python",
     ],
 )
@@ -424,8 +424,7 @@ java_binary(
     name = "lcm-spy",
     main_class = "lcm.spy.Spy",
     runtime_deps = [
-        "//drake/lcmtypes:automotive_java",
-        "//drake/lcmtypes:viewer_java",
+        "//drake/lcmtypes:lcmtypes_drake_java",
     ],
 )
 
