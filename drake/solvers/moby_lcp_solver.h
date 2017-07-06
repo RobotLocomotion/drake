@@ -298,12 +298,6 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  SolverType solver_type() const override { return SolverType::kMobyLCP; }
-
-  std::string SolverName() const override {
-    return MobyLcpSolverId::id().name();
-  }
-
   SolverId solver_id() const override;
 
   /// Returns the number of pivoting operations made by the last LCP solve.
