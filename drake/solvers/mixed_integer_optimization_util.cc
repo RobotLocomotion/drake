@@ -28,6 +28,10 @@ void AddLogarithmicSOS2Constraint(
   prog->AddLinearConstraint(lambda.sum() == 1);
   const int num_interval = num_lambda - 1;
   const int num_binary_vars = CeilLog2(num_interval);
+  DRAKE_DEMAND(y.rows() == num_binary_vars);
+  for (int i = 0; i < num_binary_vars; ++i) {
+    DRAKE_ASSERT(y(i).get_type() == symbolic::Variable::Type::BINARY);
+  }
   const auto gray_codes =
       math::CalculateReflectedGrayCodes(num_binary_vars);
   DRAKE_ASSERT(y.rows() == num_binary_vars);
@@ -44,6 +48,39 @@ void AddLogarithmicSOS2Constraint(
         gray_codes(num_lambda - 2, j) == 1 ? lambda(num_lambda - 1) : 0;
     lambda_sum2 +=
         gray_codes(num_lambda - 2, j) == 0 ? lambda(num_lambda - 1) : 0;
+    prog->AddLinearConstraint(lambda_sum1 <= y(j));
+    prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
+  }
+}
+
+void AddLogarithmicSOS1Constraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorXDecisionVariable>& y,
+    const Eigen::Ref<const Eigen::MatrixXi>& codes) {
+  const int num_lambda = lambda.rows();
+  const int num_digits = CeilLog2(num_lambda);
+  DRAKE_DEMAND(codes.rows() == num_lambda && codes.cols() == num_digits);
+  DRAKE_DEMAND(y.rows() == num_digits);
+  for (int i = 0; i < num_digits; ++i) {
+    DRAKE_ASSERT(y(i).get_type() == symbolic::Variable::Type::BINARY);
+  }
+  for (int i = 0; i < num_lambda; ++i) {
+    prog->AddLinearConstraint(lambda(i) >= 0);
+  }
+  prog->AddLinearConstraint(lambda.sum() == 1);
+  for (int j = 0; j < num_digits; ++j) {
+    symbolic::Expression lambda_sum1{0};
+    symbolic::Expression lambda_sum2{0};
+    for (int k = 0; k < num_lambda; ++k) {
+      if (codes(k, j) == 1) {
+        lambda_sum1 += lambda(k);
+      } else if (codes(k, j) == 0) {
+        lambda_sum2 += lambda(k);
+      } else {
+        throw std::runtime_error("The codes entry can be only 0 or 1.");
+      }
+    }
     prog->AddLinearConstraint(lambda_sum1 <= y(j));
     prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
   }

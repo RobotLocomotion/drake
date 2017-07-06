@@ -80,6 +80,86 @@ GTEST_TEST(TestLogarithmicSOS2, Test7Lambda) {
 GTEST_TEST(TestLogarithmicSOS2, Test8Lambda) {
   LogarithmicSOS2Test(8);
 }
+
+void LogarithmicSOS1Test(int num_lambda,
+                         const Eigen::Ref<const Eigen::MatrixXi>& codes) {
+  // Check if we impose the constraint
+  // λ is in sos1
+  // and assign values to the binary variables,
+  // whether the corresponding λ(i) is 1.
+  MathematicalProgram prog;
+  auto lambda = prog.NewContinuousVariables(num_lambda);
+  int num_digits = CeilLog2(num_lambda);
+  auto y = prog.NewBinaryVariables(num_digits);
+  AddLogarithmicSOS1Constraint(&prog, lambda.cast<symbolic::Expression>(), y,
+                               codes);
+  auto binary_assignment = prog.AddBoundingBoxConstraint(0, 0, y);
+  for (int i = 0; i < num_lambda; ++i) {
+    Eigen::VectorXd code = codes.row(i).cast<double>().transpose();
+    binary_assignment.constraint()->UpdateLowerBound(code);
+    binary_assignment.constraint()->UpdateUpperBound(code);
+    GurobiSolver gurobi_solver;
+    if (gurobi_solver.available()) {
+      auto result = gurobi_solver.Solve(prog);
+      EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      Eigen::VectorXd lambda_expected(num_lambda);
+      lambda_expected.setZero();
+      lambda_expected(i) = 1;
+      EXPECT_TRUE(CompareMatrices(prog.GetSolution(lambda), lambda_expected,
+                                  1E-6, MatrixCompareType::absolute));
+    }
+  }
+}
+
+GTEST_TEST(TestLogarithmicSOS1, Test2Lambda) {
+  Eigen::Matrix<int, 2, 1> codes;
+  codes << 0, 1;
+  LogarithmicSOS1Test(2, codes);
+  // Test a different codes
+  codes << 1, 0;
+  LogarithmicSOS1Test(2, codes);
+}
+
+GTEST_TEST(TestLogarithmicSOS1, Test3Lambda) {
+  Eigen::Matrix<int, 3, 2> codes;
+  // clang-format off
+  codes << 0, 0,
+           0, 1,
+           1, 0;
+  // clang-format on
+  LogarithmicSOS1Test(3, codes);
+  // Test a different codes
+  // clang-format off
+  codes << 0, 0,
+           0, 1,
+           1, 1;
+  // clang-format on
+  LogarithmicSOS1Test(3, codes);
+}
+
+GTEST_TEST(TestLogarithmicSOS1, Test4Lambda) {
+  Eigen::Matrix<int, 4, 2> codes;
+  // clang-format off
+  codes << 0, 0,
+           0, 1,
+           1, 0,
+           1, 1;
+  // clang-format on
+  LogarithmicSOS1Test(4, codes);
+  // Test a different codes
+  // clang-format off
+  codes << 0, 0,
+           0, 1,
+           1, 1,
+           1, 0;
+  // clang-format on
+  LogarithmicSOS1Test(4, codes);
+}
+
+GTEST_TEST(TestLogarithmicSOS1, Test5Lambda) {
+  auto codes = math::CalculateReflectedGrayCodes<3>();
+  LogarithmicSOS1Test(5, codes.topRows<5>());
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
