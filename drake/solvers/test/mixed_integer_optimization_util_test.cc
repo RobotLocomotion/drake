@@ -202,7 +202,8 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
   Eigen::MatrixXi gray_codes_x = math::CalculateReflectedGrayCodes(Bx_.rows());
   Eigen::MatrixXi gray_codes_y = math::CalculateReflectedGrayCodes(By_.rows());
   // We will assign the binary variables Bx_ and By to a value in the gray code,
-  // representing integer i and j
+  // representing integer i and j, such that x is constrained in
+  // [φx(i), φx(i+1)], y is constrained in [φy(j), φy(j+1)].
   auto x_gray_code_cnstr =
       prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(Bx_.rows()),
                                      Eigen::VectorXd::Zero(Bx_.rows()), Bx_);
