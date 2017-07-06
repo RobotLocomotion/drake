@@ -36,6 +36,7 @@ drake_cc_binary(
     deps = [
         ":kuka_pick_and_place_monolithic",
         "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
@@ -44,6 +45,7 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
         "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/systems/analysis:simulator",
         "@com_github_gflags_gflags//:gflags",
         "@lcmtypes_bot2_core",

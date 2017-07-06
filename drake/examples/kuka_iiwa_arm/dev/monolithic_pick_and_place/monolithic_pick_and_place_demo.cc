@@ -7,27 +7,33 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/find_resource.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_uint64(target, 0, "ID of the target to pick.");
 DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
 DEFINE_uint32(start_position, 1, "Position index to start from");
 DEFINE_uint32(end_position, 2, "Position index to end at");
+DEFINE_double(realtime_rate, 0.0,
+              "Rate at which to run the simulation, relative to realtime");
 
 using robotlocomotion::robot_plan_t;
 
@@ -92,7 +98,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel("iiwa", FindResourceOrThrow(kIiwaUrdf));
+  tree_builder->StoreModel("iiwa", kIiwaUrdf);
   tree_builder->StoreModel("table",
                            "drake/examples/kuka_iiwa_arm/models/table/"
                            "extra_heavy_duty_table_surface_only_collision.sdf");
@@ -150,10 +156,13 @@ int DoMain(void) {
   post_locations.push_back(Eigen::Vector3d(-0.1, -1.0, 0));  // position E
   post_locations.push_back(Eigen::Vector3d(-0.47, -0.8, 0));  // position F
 
-  // Location for the extra table from the pick and place tests.
+  // Position of the pick and place location on the table, relative
+  // to the base of the arm.
   Eigen::Vector3d table_position(0.9, -0.36, -0.07);  // position C
 
-  Eigen::Vector3d post_height_offset(0, 0, 0.27);
+  // The offset from the top of the table to the top of the post, used for
+  // calculating the place locations in iiwa relative coordinates.
+  Eigen::Vector3d post_height_offset(0, 0, 0.26);
 
   // TODO(sam.creasey) select only one of these
   std::vector<Isometry3<double>> place_locations;
@@ -200,15 +209,30 @@ int DoMain(void) {
   systems::DiagramBuilder<double> builder;
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
+  // Offset from the center of the second table to the pick/place
+  // location on the table.
+  const Eigen::Vector3d table_offset(0.30, 0, 0);
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant(post_locations, table_position, target.model_name,
+      BuildCombinedPlant(post_locations, table_position + table_offset,
+                         target.model_name,
                          box_origin, Vector3<double>(0, 0, FLAGS_orientation),
                          &iiwa_instance, &wsg_instance, &box_instance);
-
 
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
   plant->set_name("plant");
+
+  auto contact_viz =
+      builder.AddSystem<systems::ContactResultsToLcmSystem<double>>(
+          plant->get_tree());
+  auto contact_results_publisher = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
+  // Contact results to lcm msg.
+  builder.Connect(plant->get_output_port_contact_results(),
+                  contact_viz->get_input_port(0));
+  builder.Connect(contact_viz->get_output_port(0),
+                  contact_results_publisher->get_input_port(0));
 
   auto drake_visualizer = builder.AddSystem<systems::DrakeVisualizer>(
       plant->get_plant().get_rigid_body_tree(), &lcm);
@@ -272,6 +296,7 @@ int DoMain(void) {
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
   simulator.Initialize();
+  simulator.set_target_realtime_rate(FLAGS_realtime_rate);
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
       *iiwa_trajectory_generator, simulator.get_mutable_context());
@@ -343,5 +368,6 @@ int DoMain(void) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   return drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
 }
