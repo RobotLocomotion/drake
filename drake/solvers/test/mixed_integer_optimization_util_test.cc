@@ -216,7 +216,7 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
   // clang-format off
   a << 1, 1, 1, 1, -1, -1, -1, -1,
        1, 1, -1, -1, 1, 1, -1, -1,
-       1, -1, 1, -1, 1, -1, 1 -1;
+       1, -1, 1, -1, 1, -1, 1, -1;
   // clang-format on
   for (int i = 0; i < num_interval_x_; ++i) {
     Eigen::VectorXd x_gray_code =
