@@ -703,7 +703,7 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
-      type.compare("floating") != 0) {
+      type.compare("floating") != 0 && type.compare("ball") != 0) {
     parseVectorAttribute(axis_node, "xyz", axis);
     if (axis.norm() < 1e-8) {
       throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: axis "
@@ -731,6 +731,10 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
     joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+  } else if (type.compare("ball") == 0) {
+    joint = new QuaternionBallJoint(name, transform_to_parent_body);
+    cerr << string(__FILE__) + ": " + __func__ + ": Warning: ball joint "
+      "is not an official part of the URDF standard." << endl;
   } else {
     throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: "
         "Unrecognized joint type: " + type);

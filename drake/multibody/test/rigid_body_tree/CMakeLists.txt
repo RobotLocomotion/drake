@@ -42,6 +42,11 @@ target_link_libraries(drakeRigidBodyTreeCompareToClone
     drakeRigidBodyFrameCompareToClone
     drakeRigidBodyLoopCompareToClone)
 
+drake_add_cc_test(ball_joint_test)
+target_link_libraries(ball_joint_test
+    drakeMultibodyParsers
+    drakeRBM)
+
 drake_add_cc_test(NAME rigid_body_tree_creation_test SIZE medium)
 target_link_libraries(rigid_body_tree_creation_test
     drakeMultibodyParsers
@@ -64,6 +69,6 @@ target_link_libraries(rigid_body_tree_completeness_test
 
 drake_add_cc_test(rigid_body_tree_face_extraction_test)
 target_link_libraries(rigid_body_tree_face_extraction_test
-    drakeRBM 
+    drakeRBM
     drakeMultibodyParsers
     drakeShapes)
