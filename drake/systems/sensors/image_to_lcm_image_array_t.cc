@@ -106,7 +106,7 @@ ImageToLcmImageArrayT::image_array_t_msg_output_port() const {
 void ImageToLcmImageArrayT::CalcImageArray(
     const systems::Context<double>& context, image_array_t* msg) const {
   msg->header.utime = static_cast<int64_t>(context.get_time() * kSecToMillisec);
-  msg->header.frame_name = "";
+  msg->header.frame_name.clear();
   msg->num_images = 0;
   msg->images.clear();
 
@@ -119,7 +119,7 @@ void ImageToLcmImageArrayT::CalcImageArray(
   const AbstractValue* label_image_value =
       this->EvalAbstractInput(context, label_image_input_port_index_);
 
-  if (color_image_value != nullptr) {
+  if (color_image_value) {
     const ImageRgba8U& color_image =
         color_image_value->GetValue<ImageRgba8U>();
 
@@ -132,7 +132,7 @@ void ImageToLcmImageArrayT::CalcImageArray(
     msg->num_images++;
   }
 
-  if (depth_image_value != nullptr) {
+  if (depth_image_value) {
     const ImageDepth32F& depth_image =
         depth_image_value->GetValue<ImageDepth32F>();
     image_t depth_image_msg;
@@ -144,7 +144,7 @@ void ImageToLcmImageArrayT::CalcImageArray(
     msg->num_images++;
   }
 
-  if (label_image_value != nullptr) {
+  if (label_image_value) {
     const ImageLabel16I& label_image =
         label_image_value->GetValue<ImageLabel16I>();
 
