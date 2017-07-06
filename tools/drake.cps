@@ -46,6 +46,16 @@
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog"
       ]
+    },
+    "drake-lcmtypes-cpp": {
+      "Type": "interface",
+      "Includes": ["@prefix@/include/drake/lcmtypes"],
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "drake-lcmtypes-java": {
+      "Type": "jar",
+      "Location": "@prefix@/share/java/lcmtypes_drake.jar",
+      "Requires": ["lcm:lcm-java"]
     }
   }
 }

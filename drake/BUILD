@@ -13,7 +13,10 @@ load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
 # This is the *sorted* output of the following Bazel query:
 # bazel query 'kind("cc_library", visible("//drake:libdrake.so", "//drake/..."))
 # except("//drake/examples/...")
-# except(attr("testonly", "1", "//drake/..."))'
+# except(attr("testonly", "1", "//drake/..."))
+# except("//drake/lcmtypes/...")
+# except("//drake:libdrake_headers")
+# except("//drake:drake_shared_library")'
 _LIBDRAKE_COMPONENTS = [
     "//drake/automotive:automotive_simulator",
     "//drake/automotive:bicycle_car",
@@ -79,39 +82,10 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/common:type_safe_index",
     "//drake/common:unused",
     "//drake/geometry:identifier",
+    "//drake:gurobi_deps",
     "//drake/lcm:interface",
     "//drake/lcm:lcm",
     "//drake/lcm:translator_base",
-    "//drake/lcmtypes:acrobot",
-    "//drake/lcmtypes:automotive",
-    "//drake/lcmtypes:body_acceleration",
-    "//drake/lcmtypes:body_motion_data",
-    "//drake/lcmtypes:body_wrench_data",
-    "//drake/lcmtypes:constrained_values",
-    "//drake/lcmtypes:contact_info_for_viz",
-    "//drake/lcmtypes:contact_information",
-    "//drake/lcmtypes:contact_results_for_viz",
-    "//drake/lcmtypes:desired_body_motion",
-    "//drake/lcmtypes:desired_centroidal_momentum_dot",
-    "//drake/lcmtypes:desired_dof_motions",
-    "//drake/lcmtypes:drake_signal",
-    "//drake/lcmtypes:iiwa",
-    "//drake/lcmtypes:inverse_dynamics_debug_info",
-    "//drake/lcmtypes:joint_pd_override",
-    "//drake/lcmtypes:manipulator_plan_move_end_effector",
-    "//drake/lcmtypes:piecewise_polynomial",
-    "//drake/lcmtypes:plan_eval_debug_info",
-    "//drake/lcmtypes:polynomial",
-    "//drake/lcmtypes:polynomial_matrix",
-    "//drake/lcmtypes:qp_controller_input",
-    "//drake/lcmtypes:qp_input",
-    "//drake/lcmtypes:resolved_contact",
-    "//drake/lcmtypes:schunk",
-    "//drake/lcmtypes:support_data",
-    "//drake/lcmtypes:viewer",
-    "//drake/lcmtypes:whole_body_data",
-    "//drake/lcmtypes:zmp_com_observer_state",
-    "//drake/lcmtypes:zmp_data",
     "//drake/manipulation/planner:constraint_relaxing_ik",
     "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
     "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
@@ -129,6 +103,8 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/math:jacobian",
     "//drake/math:matrix_util",
     "//drake/math:saturate",
+    "//drake/math:vector3_util",
+    "//drake:mosek_deps",
     "//drake/multibody:approximate_ik",
     "//drake/multibody/benchmarks/acrobot:acrobot",
     "//drake/multibody/benchmarks/kuka_iiwa_robot:kuka_iiwa_robot",
@@ -142,6 +118,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/multibody/joints:joints",
     "//drake/multibody:kinematics_cache",
     "//drake/multibody/multibody_tree:bodies_and_frames",
+    "//drake/multibody/multibody_tree/math:spatial_acceleration",
     "//drake/multibody/multibody_tree/math:spatial_algebra",
     "//drake/multibody/multibody_tree/math:spatial_force",
     "//drake/multibody/multibody_tree/math:spatial_vector",
@@ -168,6 +145,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
     "//drake/multibody:rigid_body_tree",
     "//drake/multibody:rigid_body_tree_construction",
+    "//drake/multibody/rigid_contact:rigid_contact",
     "//drake/multibody/shapes:shapes",
     "//drake/solvers:binding",
     "//drake/solvers:constraint",
@@ -226,6 +204,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/systems/framework:diagram_context",
     "//drake/systems/framework:diagram_continuous_state",
     "//drake/systems/framework:discrete_values",
+    "//drake/systems/framework:event_collection",
     "//drake/systems/framework:framework",
     "//drake/systems/framework:input_port_descriptor",
     "//drake/systems/framework:input_port_evaluator_interface",
@@ -301,6 +280,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/util:lcm_util",
     "//drake/util:util",
     "//drake/util:yaml_util",
+    "//drake:vtk_deps",
 ]
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
