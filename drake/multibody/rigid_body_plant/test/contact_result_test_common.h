@@ -57,7 +57,7 @@ class ContactResultTestCommon : public ::testing::Test {
   const double kDynamicFriction = 0.5;
   const double kVStictionTolerance = 0.01;
 
-  // Places two spheres are on the x-y plane mirrored across the origin from
+  // Places two spheres on the x-y plane mirrored across the x_anchor_ from
   // each other such there is 2 * `distance` units gap between them.  Negative
   // numbers imply collision.
   std::unique_ptr<RigidBodyTree<double>> GenerateTestTree(double distance) {
