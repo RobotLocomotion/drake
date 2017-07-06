@@ -1,7 +1,7 @@
 /**
  * @file test demo to visualize a given tree in a random set of configurations.
  */
-#include "drake/examples/kuka_iiwa_arm/dev/tools/simple_tree_visualizer.h"
+#include "drake/manipulation/util/simple_tree_visualizer.h"
 
 #include <chrono>
 #include <thread>
@@ -18,9 +18,7 @@ DEFINE_int32(num_configurations, 10,
              "Number of random test configurations to display in the demo");
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
-namespace tools {
+namespace manipulation {
 namespace {
 
 int DoMain() {
@@ -57,12 +55,10 @@ int DoMain() {
 }
 
 }  // namespace
-}  // namespace tools
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::kuka_iiwa_arm::tools::DoMain();
+  return drake::manipulation::DoMain();
 }
