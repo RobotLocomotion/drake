@@ -10,7 +10,7 @@ build --output_filter="^//"
 
 # Default test options.
 test --test_output=errors
-test --test_summary=terse
+test --test_summary=short
 
 # By default, disable execution of tests that require proprietary software.
 # Individual targets that use proprietary software are responsible for ensuring
@@ -224,6 +224,7 @@ test:msan_everything --test_env=MSAN_SYMBOLIZER_PATH
 test:msan_everything --test_timeout=180,900,2700,10800
 
 ### TSan build. ###
+build:tsan --noforce_pic
 build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
@@ -311,6 +312,7 @@ build:memcheck_everything --copt -O1
 test:memcheck_everything --test_env=GRB_LICENSE_FILE
 test:memcheck_everything --test_env=HOME
 test:memcheck_everything --test_tag_filters=-no_memcheck
+test:memcheck_everything --test_size_filters=-large
 test:memcheck_everything --run_under=//tools:valgrind
 test:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
