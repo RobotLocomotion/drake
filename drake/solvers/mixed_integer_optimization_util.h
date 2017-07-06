@@ -12,15 +12,19 @@ namespace solvers {
  * @param n A positive integer.
  * @return The minimal integer no smaller than log₂(n).
  */
-constexpr int CeilLog2(int n) {
-  return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2);
-}
+constexpr int CeilLog2(int n) { return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2); }
 
 /**
- * Adds the special ordered set 2 (sos2) constraint, that at most two
- * entries in λ can be strictly positive, and these two entries have to be
- * adjacent. All other λ should be zero. Moreover, the non-zero λ satisfies
- * λ(i) + λ(i + 1) = 1.
+ * Adds the special ordered set 2 (sos2) constraint,
+ * <pre>
+ *   λ(0) + ... + λ(n) = 1
+ *   λ(i) ≥ 0 ∀i
+ *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) + λ(j + 1) = 1
+ * </pre>
+ * Namely at most two entries in λ can be strictly positive, and these two
+ * entries have to be adjacent. All other λ should be zero. Moreover, the
+ * non-zero λ satisfies
+ * λ(j) + λ(j + 1) = 1.
  * We will need to add ⌈log₂(n - 1)⌉ binary variables, where n is the number of
  * rows in λ. For more information, please refer to
  *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
@@ -41,7 +45,8 @@ VectorXDecisionVariable AddLogarithmicSOS2Constraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const std::string& binary_variable_name = "y");
 
-/** Adds the special ordered set 2 (sos2) constraint, @see AddLogarithmicSOS2Constraint.
+/** Adds the special ordered set 2 (sos2) constraint,
+ * @see AddLogarithmicSOS2Constraint.
  */
 void AddLogarithmicSOS2Constraint(
     MathematicalProgram* prog,
@@ -50,8 +55,11 @@ void AddLogarithmicSOS2Constraint(
 
 /**
  * Adds the special ordered set of type 1 (sos1) constraint. Namely
- * λ(0) + ... + λ(n-1) = 1
- * λ(i) >= 0
+ * <pre>
+ *   λ(0) + ... + λ(n-1) = 1
+ *   λ(i) ≥ 0 ∀i
+ *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) = 1
+ * </pre>
  * one and only one of λ(i) is strictly positive (equals to 1 in this case).
  * We will need to add ⌈log₂(n)⌉ binary variables, where n is the number of
  * rows in λ. For more information, please refer to
@@ -64,8 +72,9 @@ void AddLogarithmicSOS2Constraint(
  * assignment on the binary variable `y`, if (y(0), ..., y(⌈log₂(n)⌉) represents
  * integer M in `codes`, then only λ(M) is positive. Namely, if
  * (y(0), ..., y(⌈log₂(n)⌉) equals to codes.row(M), then λ(M) = 1
- * @param codes. A n x ⌈log₂(n)⌉ matrix. code.row(i) represents integer i.
- * No two rows of `codes` can be the same.
+ * @param codes A n x ⌈log₂(n)⌉ matrix. code.row(i) represents integer i.
+ * No two rows of `codes` can be the same. @throws std::runtime_error if
+ * @p codes has a non-binary entry (0, 1).
  */
 void AddLogarithmicSOS1Constraint(
     MathematicalProgram* prog,

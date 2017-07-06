@@ -59,7 +59,7 @@ void AddLogarithmicSOS1Constraint(
     const Eigen::Ref<const VectorXDecisionVariable>& y,
     const Eigen::Ref<const Eigen::MatrixXi>& codes) {
   const int num_lambda = lambda.rows();
-  int num_digits = CeilLog2(num_lambda);
+  const int num_digits = CeilLog2(num_lambda);
   DRAKE_DEMAND(codes.rows() == num_lambda && codes.cols() == num_digits);
   DRAKE_DEMAND(y.rows() == num_digits);
   for (int i = 0; i < num_digits; ++i) {
