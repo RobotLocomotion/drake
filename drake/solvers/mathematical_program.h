@@ -198,12 +198,12 @@ typedef uint32_t AttributesSet;
    * std::vector<std::string>.
    */
 template <int Size>
-struct NewVariableNameType {
+struct NewVariableName {
   typedef std::array<std::string, Size> type;
 };
 
 template <>
-struct NewVariableNameType<Eigen::Dynamic> {
+struct NewVariableName<Eigen::Dynamic> {
   typedef std::vector<std::string> type;
 };
 
@@ -213,10 +213,12 @@ namespace internal {
  * @param name The common name of all new variables.
  * @param rows The number of rows in the new variables.
  * @param cols The number of columns in the new variables.
+ * @pre The size of @p names is @p rows * @p cols.
  */
 template <typename Derived>
 void SetVariableNames(const std::string& name, int rows, int cols,
                       Derived* names) {
+  DRAKE_DEMAND(static_cast<int>(names->size()) == rows * cols);
   if (cols == 1) {
     for (int i = 0; i < rows; ++i) {
       (*names)[i] = name + "(" + std::to_string(i) + ")";
@@ -252,7 +254,7 @@ class MathematicalProgram {
    * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @tparam Rows  The number of rows in the new variables.
    * @param name The name of the newly added variables
-   * @return The MatrixDecisionVariable of size rows x cols, containing the new
+   * @return The VectorDecisionVariable of size rows x 1, containing the new
    * vars (not all the vars stored).
    *
    * Example:
@@ -287,9 +289,8 @@ class MathematicalProgram {
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * This is equivalent to NewContinuousVariables<Rows, Cols>(name). We create
-   * this function so that we can use
-   * NewContinuousVariables<Rows, Cols>(rows, cols, name) for both static and
-   * dynamic sized new variables.
+   * this function so that we can use NewContinuousVariables<Rows, Cols>(rows,
+   * cols, name) for both static and dynamic sized new variables.
    */
   template <int Rows, int Cols>
   typename std::enable_if<Rows >= 0 && Cols >= 0,
@@ -2353,7 +2354,7 @@ class MathematicalProgram {
   template <int Rows, int Cols>
   MatrixDecisionVariable<Rows, Cols> NewVariables(
       VarType type,
-      const typename NewVariableNameType<Rows == Eigen::Dynamic ||
+      const typename NewVariableName<Rows == Eigen::Dynamic ||
                                          Cols == Eigen::Dynamic ? Eigen::Dynamic
                                              : Rows * Cols>::type& names,
       int rows, int cols) {
@@ -2373,7 +2374,7 @@ class MathematicalProgram {
   template <int Rows>
   MatrixDecisionVariable<Rows, Rows> NewSymmetricVariables(
       VarType type,
-      const typename NewVariableNameType<
+      const typename NewVariableName<
           Rows == Eigen::Dynamic ? Eigen::Dynamic : Rows*(Rows + 1) / 2>::type&
           names,
       int rows = Rows) {
