@@ -1990,34 +1990,37 @@ class MathematicalProgram {
    * Manual, section 10.2 "Parameter Descriptions"
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
    */
-  void SetSolverOption(SolverType solver_type, const std::string& solver_option,
+  void SetSolverOption(const SolverId& solver_id,
+                       const std::string& solver_option,
                        double option_value) {
-    solver_options_double_[solver_type][solver_option] = option_value;
+    solver_options_double_[solver_id][solver_option] = option_value;
   }
 
-  void SetSolverOption(SolverType solver_type, const std::string& solver_option,
+  void SetSolverOption(const SolverId& solver_id,
+                       const std::string& solver_option,
                        int option_value) {
-    solver_options_int_[solver_type][solver_option] = option_value;
+    solver_options_int_[solver_id][solver_option] = option_value;
   }
 
-  void SetSolverOption(SolverType solver_type, const std::string& solver_option,
+  void SetSolverOption(const SolverId& solver_id,
+                       const std::string& solver_option,
                        const std::string& option_value) {
-    solver_options_str_[solver_type][solver_option] = option_value;
+    solver_options_str_[solver_id][solver_option] = option_value;
   }
 
   const std::map<std::string, double>& GetSolverOptionsDouble(
-      SolverType solver_type) {
-    return solver_options_double_[solver_type];
+      const SolverId& solver_id) {
+    return solver_options_double_[solver_id];
   }
 
   const std::map<std::string, int>& GetSolverOptionsInt(
-      SolverType solver_type) {
-    return solver_options_int_[solver_type];
+      const SolverId& solver_id) {
+    return solver_options_int_[solver_id];
   }
 
   const std::map<std::string, std::string>& GetSolverOptionsStr(
-      SolverType solver_type) {
-    return solver_options_str_[solver_type];
+      const SolverId& solver_id) {
+    return solver_options_str_[solver_id];
   }
 
   DRAKE_DEPRECATED("Use GetSolverId() instead")
@@ -2308,9 +2311,9 @@ class MathematicalProgram {
   optional<SolverType> solver_type_;
   int solver_result_{};
   double optimal_cost_{};
-  std::map<SolverType, std::map<std::string, double>> solver_options_double_;
-  std::map<SolverType, std::map<std::string, int>> solver_options_int_;
-  std::map<SolverType, std::map<std::string, std::string>> solver_options_str_;
+  std::map<SolverId, std::map<std::string, double>> solver_options_double_;
+  std::map<SolverId, std::map<std::string, int>> solver_options_int_;
+  std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;
 
   AttributesSet required_capabilities_{0};
 
