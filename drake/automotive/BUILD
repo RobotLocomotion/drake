@@ -424,8 +424,7 @@ java_binary(
     name = "lcm-spy",
     main_class = "lcm.spy.Spy",
     runtime_deps = [
-        "//drake/lcmtypes:automotive_java",
-        "//drake/lcmtypes:viewer_java",
+        "//drake/lcmtypes:lcmtypes_drake_java",
     ],
 )
 
