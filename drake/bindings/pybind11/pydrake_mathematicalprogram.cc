@@ -41,7 +41,6 @@ template <typename T>
 std::unique_ptr<T> deref_optional(const drake::optional<T>& value) {
   return value ? std::make_unique<T>(*value) : nullptr;
 }
-}  // namespace
 
 /*
  * Register a Binding template, and add the corresponding overloads to the
@@ -70,6 +69,8 @@ auto RegisterBinding(py::handle* pscope,
           &MathematicalProgram::EvalBindingAtSolution);
   return binding_cls;
 }
+
+}  // namespace
 
 PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   py::module m("_pydrake_mathematicalprogram",
