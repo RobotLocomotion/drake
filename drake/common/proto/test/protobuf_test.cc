@@ -1,4 +1,4 @@
-#include "drake/common/protobuf.h"
+#include "drake/common/proto/protobuf.h"
 
 #include <string>
 
@@ -10,7 +10,7 @@ namespace {
 
 GTEST_TEST(ProtobufUtilsTest, MakeFileInputStreamSucceeds) {
   auto istream = MakeFileInputStreamOrThrow(
-      "drake/common/test/test_string.txt");
+      "drake/common/proto/test/test_string.txt");
   google::protobuf::io::CodedInputStream coded_stream(istream.get());
   std::string expected("test string");
   std::string contents;

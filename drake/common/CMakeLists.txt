@@ -2,8 +2,6 @@
 # Drake common library
 #
 
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS matlab_rpc.proto)
-
 # Generated code.
 set(cmake_project_source_dir_cc ${PROJECT_BINARY_DIR}/generated/drake/common/cmake_project_source_dir.cc)
 set(THIS_FILE_IS_USED_BY_CMAKE_TO_CREATE_GENERATED_CODE
@@ -12,7 +10,6 @@ configure_file(cmake_project_source_dir.cc.in ${cmake_project_source_dir_cc})
 
 # List all source files used to build libdrakeCommon.
 set(sources
-  call_matlab.cc ${PROTO_SRCS}
   ${cmake_project_source_dir_cc}
   double_overloads.cc
   drake_assert_and_throw.cc
@@ -39,7 +36,6 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   autodiff_overloads.h
-  call_matlab.h ${PROTO_HDRS}
   cond.h
   constants.h
   copyable_unique_ptr.h
@@ -95,15 +91,14 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_include_directories(drakeCommon PUBLIC ${PROTOBUF_INCLUDE_DIRS})
+target_include_directories(drakeCommon PUBLIC)
 target_link_libraries(drakeCommon
   Eigen3::Eigen
   fmt
   gflags
   spruce
   stx
-  Threads::Threads
-  ${PROTOBUF_LIBRARIES})
+  Threads::Threads)
 
 set(drakeCommon_CFLAGS)
 set(drakeCommon_REQUIRES)
@@ -140,4 +135,5 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
+add_subdirectory(proto)
 add_subdirectory(trajectories)

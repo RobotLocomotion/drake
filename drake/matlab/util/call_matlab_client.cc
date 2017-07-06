@@ -16,7 +16,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/matlab_rpc.pb.h"
+#include "drake/common/proto/matlab_rpc.pb.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
 // Mex client for matlab remote procedure calls (RPCs).

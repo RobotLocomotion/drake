@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/matlab_rpc.pb.h"
+#include "drake/common/proto/matlab_rpc.pb.h"
 
 /// @file Utilities for calling Matlab from C++
 ///

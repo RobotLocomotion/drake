@@ -4,8 +4,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/simple_car.h"
-#include "drake/common/call_matlab.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/proto/call_matlab.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 namespace drake {
@@ -75,7 +75,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
   // Plot the solution.
-  // Note: see lcm_call_matlab.h for instructions on viewing the plot.
+  // Note: see call_matlab.h for instructions on viewing the plot.
   Eigen::MatrixXd inputs;
   Eigen::MatrixXd states;
   std::vector<double> times_out;
