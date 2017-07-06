@@ -207,7 +207,7 @@ struct NewVariableNameType<Eigen::Dynamic> {
   typedef std::vector<std::string> type;
 };
 
-namespace {
+namespace internal {
 /**
  * Set the names of the newly added variables.
  * @param name The common name of all new variables.
@@ -230,7 +230,7 @@ void SetVariableNames(const std::string& name, int rows, int cols,
     }
   }
 }
-}  // anonymous namespace
+}  // namespace internal
 
 class MathematicalProgram {
  public:
@@ -296,7 +296,7 @@ class MathematicalProgram {
                           MatrixDecisionVariable<Rows, Cols>>::type
   NewContinuousVariables(int, int, const std::string& name) {
     std::array<std::string, Rows * Cols> names;
-    SetVariableNames(name, Rows, Cols, &names);
+    internal::SetVariableNames(name, Rows, Cols, &names);
     return NewVariables<Rows, Cols>(VarType::CONTINUOUS, names, Rows, Cols);
   }
 
@@ -333,7 +333,7 @@ class MathematicalProgram {
   NewContinuousVariables(int rows, int cols, const std::string& name = "X") {
     DRAKE_DEMAND(rows >= 0 && cols >= 0);
     std::vector<std::string> names(rows * cols);
-    SetVariableNames(name, rows, cols, &names);
+    internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::CONTINUOUS, names, rows, cols);
   }
 
@@ -381,7 +381,7 @@ class MathematicalProgram {
                           MatrixDecisionVariable<Rows, Cols>>::type
   NewBinaryVariables(int, int, const std::string& name) {
     std::array<std::string, Rows * Cols> names;
-    SetVariableNames(name, Rows, Cols, &names);
+    internal::SetVariableNames(name, Rows, Cols, &names);
     return NewVariables<Rows, Cols>(VarType::BINARY, names, Rows, Cols);
   }
 
@@ -417,7 +417,7 @@ class MathematicalProgram {
                           MatrixDecisionVariable<Rows, Cols>>::type
   NewBinaryVariables(int rows, int cols, const std::string& name) {
     std::vector<std::string> names(rows * cols);
-    SetVariableNames(name, rows, cols, &names);
+    internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::BINARY, names, rows, cols);
   }
 
