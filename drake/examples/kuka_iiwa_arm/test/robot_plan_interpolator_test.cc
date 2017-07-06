@@ -117,6 +117,20 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
     EXPECT_GT(accel * kase.accel_sign, 0);
   }
 
+  // Check that the final knot point has zero acceleration and
+  // velocity.
+  {
+    context->set_time(t.back() + 0.01);
+    dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+    dut.CalcOutput(*context, output.get());
+    const double velocity = output->get_vector_data(
+        dut.get_state_output_port().get_index())->GetAtIndex(kNumJoints);
+    const double accel = output->get_vector_data(
+        dut.get_acceleration_output_port().get_index())->GetAtIndex(0);
+    EXPECT_FLOAT_EQ(velocity, 0);
+    EXPECT_FLOAT_EQ(accel, 0);
+  }
+
   // Check that sending an empty plan causes a replan to the current
   // measured position.
 
