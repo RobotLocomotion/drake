@@ -207,13 +207,6 @@ struct NewVariableNameType<Eigen::Dynamic> {
   typedef std::vector<std::string> type;
 };
 
-constexpr int VariableSize(int rows, int cols) {
-  if (rows == Eigen::Dynamic || cols == Eigen::Dynamic) {
-    return Eigen::Dynamic;
-  }
-  return rows * cols;
-}
-
 class MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
