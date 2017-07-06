@@ -33,7 +33,7 @@ template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
                                   double timestep)
     : tree_(move(tree)), timestep_(timestep), compliant_contact_model_(
-    std::make_unique<CompliantContactModel<T>>(*tree_.get())) {
+    std::make_unique<CompliantContactModel<T>>()) {
   DRAKE_DEMAND(tree_ != nullptr);
   state_output_port_index_ =
       this->DeclareVectorOutputPort(BasicVector<T>(get_num_states()),
@@ -484,7 +484,8 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     }
   }
 
-  right_hand_side += compliant_contact_model_->ComputeContactForce(kinsol);
+  right_hand_side += compliant_contact_model_->ComputeContactForce(
+      *tree_.get(), kinsol);
 
   solvers::VectorXDecisionVariable position_force{};
 
@@ -697,7 +698,7 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
   VectorX<T> v = x.bottomRows(nv);
   auto kinsol = tree_->doKinematics(q, v);
 
-  compliant_contact_model_->ComputeContactForce(kinsol, contacts);
+  compliant_contact_model_->ComputeContactForce(*tree_.get(), kinsol, contacts);
 }
 
 template <typename T>

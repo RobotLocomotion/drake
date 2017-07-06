@@ -14,14 +14,12 @@ class CompliantContactModel {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactModel)
 
-  /// Instantiates a %CompliantContactModel from a Multi-Body Dynamics (MBD)
-  /// model of the world in `tree`.  `tree` must not be `nullptr`.
-  /// \param tree tree the kinematic / dynamic model for which the compliant
-  /// contact forces are to be computed.
-  explicit CompliantContactModel(const RigidBodyTree<T>& tree);
+  /// Instantiates a %CompliantContactModel.
+  CompliantContactModel() {}
 
   /// Computes the generalized forces on all bodies due to contact.
   ///
+  /// @param tree           A Multibody Dynamics (MBD) model of the world.
   /// @param kinsol         The kinematics of the rigid body system at the time
   ///                       of contact evaluation.
   /// @param[out] contacts  The optional contact results.  If non-null, stores
@@ -29,8 +27,10 @@ class CompliantContactModel {
   ///                       port.
   /// @returns              The generalized forces across all the bodies due to
   ///                       contact response.
-  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
-                                 ContactResults<T>* contacts = nullptr) const;
+  VectorX<T> ComputeContactForce(
+      const RigidBodyTree<T>& tree,
+      const KinematicsCache<T>& kinsol,
+      ContactResults<T>* contacts = nullptr) const;
 
   // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
   // in detail.  To come in a subsequent PR.
@@ -78,8 +78,6 @@ class CompliantContactModel {
   T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
   T static_friction_coef_{0.9};
   T dynamic_friction_coef_{0.5};
-
-  const RigidBodyTree<T>* tree_{nullptr};
 };
 
 }  // namespace systems

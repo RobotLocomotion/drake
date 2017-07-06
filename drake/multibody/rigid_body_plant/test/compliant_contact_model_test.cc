@@ -53,7 +53,7 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     unique_tree_ = GenerateTestTree(distance);
     // Populate the CompliantContactModel.
     compliant_contact_model_ =
-        make_unique<CompliantContactModel<double>>(*tree_);
+        make_unique<CompliantContactModel<double>>();
     compliant_contact_model_->set_normal_contact_parameters(kStiffness,
                                                             kDissipation);
     compliant_contact_model_->set_friction_contact_parameters(
@@ -69,7 +69,8 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     q0 = tree_->getZeroConfiguration();
     auto kinsol = tree_->doKinematics(q0, v0);
 
-    compliant_contact_model_->ComputeContactForce(kinsol, &contact_results_);
+    compliant_contact_model_->ComputeContactForce(*tree_, kinsol,
+                                                  &contact_results_);
 
     return contact_results_;
   }

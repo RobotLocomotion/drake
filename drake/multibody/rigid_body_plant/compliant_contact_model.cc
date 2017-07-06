@@ -13,10 +13,6 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-CompliantContactModel<T>::CompliantContactModel(const RigidBodyTree<T>& tree)
-    : tree_(&tree) {}
-
-template <typename T>
 void CompliantContactModel<T>::set_normal_contact_parameters(
     double penetration_stiffness, double dissipation) {
   penetration_stiffness_ = penetration_stiffness;
@@ -58,6 +54,7 @@ Matrix3<T> CompliantContactModel<T>::ComputeBasisFromZ(
 
 template <typename T>
 VectorX<T> CompliantContactModel<T>::ComputeContactForce(
+    const RigidBodyTree<T>& tree,
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
   using std::sqrt;
 
@@ -65,7 +62,7 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
   std::vector<DrakeCollision::PointPair> pairs =
-      const_cast<RigidBodyTree<T>*>(tree_)->ComputeMaximumDepthCollisionPoints(
+      const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kinsol, true);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
@@ -103,9 +100,9 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       const Vector3<T> p_BBc = X_BW * p_WC;
 
       const auto JA =
-          tree_->transformPointsJacobian(kinsol, p_AAc, body_a_index, 0, false);
+          tree.transformPointsJacobian(kinsol, p_AAc, body_a_index, 0, false);
       const auto JB =
-          tree_->transformPointsJacobian(kinsol, p_BBc, body_b_index, 0, false);
+          tree.transformPointsJacobian(kinsol, p_BBc, body_b_index, 0, false);
       // This normal points *from* element B *to* element A.
       const Vector3<T> this_normal = pair.normal;
 
