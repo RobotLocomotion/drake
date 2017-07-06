@@ -248,21 +248,13 @@ void PickAndPlaceStateMachine::Update(
         const Isometry3<double>& iiwa_base = env_state.get_iiwa_base();
         X_Wobj_desired_ = iiwa_base * X_IIWAobj_desired_;
 
-        // Recomputes gripper's pose relative the object since the object
-        // probably moved during transfer.
-        const Isometry3<double> X_Obj_end_effector =
-            env_state.get_object_pose().inverse() *
-            env_state.get_iiwa_end_effector_pose();
-
         X_Wend_effector_0_ = X_Wend_effector_1_;
-        X_Wend_effector_1_ = X_Wobj_desired_ * X_Obj_end_effector;
+        X_Wend_effector_1_ = ComputeGraspPose(X_Wobj_desired_);
         X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
 
-        // 2 seconds, 2 via points. This doesn't have to be a move straight
-        // primitive. I did it this way because I have seen the IK gives a
-        // wild motion that causes the gripper to lose the object.
+        // 2 seconds, no via points.
         bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 2, 2,
+            env_state.get_iiwa_q(), 0, 2,
             X_Wend_effector_0_, X_Wend_effector_1_,
             loose_pos_tol_, loose_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
@@ -285,19 +277,9 @@ void PickAndPlaceStateMachine::Update(
     case kApproachPlace: {
       // Moves straight down.
       if (!iiwa_move_.ActionStarted()) {
-        // Recomputes gripper's pose relative the object since the object
-        // probably moved during transfer.
-        const Isometry3<double> X_Obj_end_effector =
-            env_state.get_object_pose().inverse() *
-            env_state.get_iiwa_end_effector_pose();
-
         // Computes the desired end effector pose in the world frame.
         X_Wend_effector_0_ = X_Wend_effector_1_;
-        X_Wend_effector_1_ = X_Wobj_desired_ * X_Obj_end_effector;
-        // TODO(siyuan): This hack is to prevent the robot from forcefully
-        // pushing the object into the table. Shouldn't be necessary once
-        // we have guarded moves supported by the controller side.
-        X_Wend_effector_1_.translation()[2] += 0.02;
+        X_Wend_effector_1_ = ComputeGraspPose(X_Wobj_desired_);
 
         // 1 seconds, 3 via points.
         bool res = PlanStraightLineMotion(
@@ -344,9 +326,9 @@ void PickAndPlaceStateMachine::Update(
         X_Wend_effector_0_ = X_Wend_effector_1_;
         X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
 
-        // 1 seconds, 3 via points.
+        // 2 seconds, 5 via points.
         bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 3, 1,
+            env_state.get_iiwa_q(), 5, 2,
             X_Wend_effector_0_, X_Wend_effector_1_,
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
