@@ -183,15 +183,15 @@ class BilinearProductMcCormickEnvelopeSOS2Test
 
  protected:
   MathematicalProgram prog_;
-  int num_interval_x_;
-  int num_interval_y_;
-  symbolic::Variable w_;
-  symbolic::Variable x_;
-  symbolic::Variable y_;
-  Eigen::VectorXd phi_x_;
-  Eigen::VectorXd phi_y_;
-  VectorXDecisionVariable Bx_;
-  VectorXDecisionVariable By_;
+  const int num_interval_x_;
+  const int num_interval_y_;
+  const symbolic::Variable w_;
+  const symbolic::Variable x_;
+  const symbolic::Variable y_;
+  const Eigen::VectorXd phi_x_;
+  const Eigen::VectorXd phi_y_;
+  const VectorXDecisionVariable Bx_;
+  const VectorXDecisionVariable By_;
 };
 
 TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
@@ -201,8 +201,8 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
   // We expect the optimum obtained at one of the vertices of the tetrahedron.
   Eigen::MatrixXi gray_codes_x = math::CalculateReflectedGrayCodes(Bx_.rows());
   Eigen::MatrixXi gray_codes_y = math::CalculateReflectedGrayCodes(By_.rows());
-  // We will assign the binary variables Bx_ and By to a value in the gray code,
-  // representing integer i and j, such that x is constrained in
+  // We will assign the binary variables Bx_ and By_ to a value in the gray
+  // code, representing integer i and j, such that x is constrained in
   // [φx(i), φx(i+1)], y is constrained in [φy(j), φy(j+1)].
   auto x_gray_code_cnstr =
       prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(Bx_.rows()),
@@ -212,11 +212,11 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
                                      Eigen::VectorXd::Zero(By_.rows()), By_);
   VectorDecisionVariable<3> xyw{x_, y_, w_};
   auto cost = prog_.AddLinearCost(Eigen::Vector3d::Zero(), xyw);
-  Eigen::Matrix<double, 3, 4> a;
+  Eigen::Matrix<double, 3, 8> a;
   // clang-format off
-  a << 1, 0, 1, -1,
-      -1, 1, 2, 1,
-      2, -1, -2, 3;
+  a << 1, 1, 1, 1, -1, -1, -1, -1,
+       1, 1, -1, -1, 1, 1, -1, -1,
+       1, -1, 1, -1, 1, -1, 1 -1;
   // clang-format on
   for (int i = 0; i < num_interval_x_; ++i) {
     Eigen::VectorXd x_gray_code =
@@ -231,10 +231,9 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
 
       // vertices.col(l) is the l'th vertex of the tetrahedron.
       Eigen::Matrix<double, 3, 4> vertices;
-      vertices << phi_x_(i), phi_x_(i), phi_x_(i + 1), phi_x_(i + 1), phi_y_(j),
-          phi_y_(j + 1), phi_y_(j + 1), phi_y_(j), phi_x_(i) * phi_y_(j),
-          phi_x_(i) * phi_y_(j + 1), phi_x_(i + 1) * phi_y_(j + 1),
-          phi_x_(i + 1) * phi_y_(j);
+      vertices.row(0) << phi_x_(i), phi_x_(i), phi_x_(i + 1), phi_x_(i + 1);
+      vertices.row(1) << phi_y_(j), phi_y_(j + 1), phi_y_(j), phi_y_(j + 1);
+      vertices.row(2) = vertices.row(0).cwiseProduct(vertices.row(1));
       for (int k = 0; k < a.cols(); ++k) {
         cost.constraint()->UpdateCoefficients(a.col(k));
         GurobiSolver gurobi_solver;
