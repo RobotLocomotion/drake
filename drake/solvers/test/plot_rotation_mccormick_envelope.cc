@@ -2,7 +2,7 @@
 #include "drake/solvers/test/rotation_constraint_visualization.h"
 /* clang-format on */
 
-#include "drake/common/call_matlab.h"
+#include "drake/common/proto/call_matlab.h"
 #include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/rotation_constraint_internal.h"
 

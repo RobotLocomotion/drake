@@ -645,8 +645,8 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":simple_car",
-        "//drake/common:call_matlab",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common/proto:call_matlab",
         "//drake/systems/trajectory_optimization:direct_collocation",
     ],
 )

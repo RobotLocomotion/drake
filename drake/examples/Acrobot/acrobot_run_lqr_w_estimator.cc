@@ -3,8 +3,8 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/call_matlab.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/proto/call_matlab.h"
 #include "drake/examples/Acrobot/acrobot_plant.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
@@ -146,7 +146,7 @@ int do_main(int argc, char* argv[]) {
   simulator.Initialize();
   simulator.StepTo(5);
 
-  // Plot the results (launch lcm_call_matlab_client to see the plots).
+  // Plot the results (launch call_matlab_client to see the plots).
   using common::CallMatlab;
   CallMatlab("figure", 1);
   CallMatlab("plot", x_logger->sample_times(),

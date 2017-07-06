@@ -4,7 +4,7 @@
 
 #include "google/protobuf/text_format.h"
 
-#include "drake/common/protobuf.h"
+#include "drake/common/proto/protobuf.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/alias_groups.pb.h"
 
 namespace drake {

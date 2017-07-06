@@ -1,7 +1,7 @@
 #include <chrono>
 #include <thread>
 
-#include "drake/common/call_matlab.h"
+#include "drake/common/proto/call_matlab.h"
 #include "drake/examples/ZMP/zmp_test_util.h"
 
 void PlotResults(const drake::examples::zmp::ZMPTestTraj& traj) {

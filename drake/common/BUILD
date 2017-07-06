@@ -10,7 +10,6 @@ load(
 )
 load("//tools:python_lint.bzl", "python_lint")
 load("//tools:install.bzl", "install")
-load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -236,24 +235,6 @@ drake_cc_library(
     hdrs = ["test/is_memcpy_movable.h"],
 )
 
-cc_proto_library(
-    name = "matlab_rpc",
-    srcs = [
-        "matlab_rpc.proto",
-    ],
-)
-
-drake_cc_library(
-    name = "call_matlab",
-    testonly = 1,
-    srcs = ["call_matlab.cc"],
-    hdrs = ["call_matlab.h"],
-    deps = [
-        ":common",
-        ":matlab_rpc",
-    ],
-)
-
 drake_cc_library(
     name = "monomial",
     srcs = [
@@ -346,15 +327,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "protobuf",
-    srcs = ["protobuf.cc"],
-    hdrs = ["protobuf.h"],
-    deps = [
-        "@protobuf",
-    ],
-)
-
 drake_cc_binary(
     name = "resource_tool",
     srcs = ["resource_tool.cc"],
@@ -402,13 +374,6 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":extract_double",
-    ],
-)
-
-drake_cc_googletest(
-    name = "call_matlab_test",
-    deps = [
-        ":call_matlab",
     ],
 )
 
@@ -649,16 +614,6 @@ drake_cc_googletest(
         ":common",
         ":eigen_matrix_compare",
         ":random_polynomial_matrix",
-    ],
-)
-
-drake_cc_googletest(
-    name = "protobuf_test",
-    data = [
-        "test/test_string.txt",
-    ],
-    deps = [
-        ":protobuf",
     ],
 )
 

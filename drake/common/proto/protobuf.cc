@@ -1,4 +1,4 @@
-#include "drake/common/protobuf.h"
+#include "drake/common/proto/protobuf.h"
 
 #include <fcntl.h>
 

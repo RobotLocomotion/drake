@@ -46,6 +46,7 @@ target_link_libraries(drakeOptimizationTest
 if (lcm_FOUND)
 add_library_with_exports(LIB_NAME drakeRotationConstraintVisualization SOURCE_FILES rotation_constraint_visualization.cc)
 target_link_libraries(drakeRotationConstraintVisualization
+        drakeCommonProto
         drakeRotationConstraint
         drakeLcm
         drakeLCMTypes)
@@ -93,6 +94,7 @@ target_link_libraries(solver_type_converter_test drakeOptimization)
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
   target_link_libraries(plot_feasible_rotation_matrices
+    drakeCommonProto
     drakeOptimization
     drakeRotationConstraint
     drakeLCMTypes
@@ -100,6 +102,7 @@ if (lcm_FOUND)
 
   add_executable(plot_rotation_mccormick_envelope plot_rotation_mccormick_envelope.cc)
   target_link_libraries(plot_rotation_mccormick_envelope
+          drakeCommonProto
           drakeOptimization
           drakeRotationConstraint
           drakeRotationConstraintVisualization)

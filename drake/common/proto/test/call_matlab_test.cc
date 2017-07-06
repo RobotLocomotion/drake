@@ -1,4 +1,4 @@
-#include "drake/common/call_matlab.h"
+#include "drake/common/proto/call_matlab.h"
 
 #include <cmath>
 
