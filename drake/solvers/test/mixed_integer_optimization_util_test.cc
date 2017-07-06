@@ -201,6 +201,8 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
   // We expect the optimum obtained at one of the vertices of the tetrahedron.
   Eigen::MatrixXi gray_codes_x = math::CalculateReflectedGrayCodes(Bx_.rows());
   Eigen::MatrixXi gray_codes_y = math::CalculateReflectedGrayCodes(By_.rows());
+  // We will assign the binary variables Bx_ and By to a value in the gray code,
+  // representing integer i and j
   auto x_gray_code_cnstr =
       prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(Bx_.rows()),
                                      Eigen::VectorXd::Zero(Bx_.rows()), Bx_);
@@ -225,6 +227,8 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
           gray_codes_y.cast<double>().row(j).transpose();
       y_gray_code_cnstr.constraint()->UpdateLowerBound(y_gray_code);
       y_gray_code_cnstr.constraint()->UpdateUpperBound(y_gray_code);
+
+      // vertices.col(l) is the l'th vertex of the tetrahedron.
       Eigen::Matrix<double, 3, 4> vertices;
       vertices << phi_x_(i), phi_x_(i), phi_x_(i + 1), phi_x_(i + 1), phi_y_(j),
           phi_y_(j + 1), phi_y_(j + 1), phi_y_(j), phi_x_(i) * phi_y_(j),
