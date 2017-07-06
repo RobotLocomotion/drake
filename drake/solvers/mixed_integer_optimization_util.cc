@@ -28,6 +28,10 @@ void AddLogarithmicSOS2Constraint(
   prog->AddLinearConstraint(lambda.sum() == 1);
   const int num_interval = num_lambda - 1;
   const int num_binary_vars = CeilLog2(num_interval);
+  DRAKE_DEMAND(y.rows() == num_binary_vars);
+  for (int i = 0; i < num_binary_vars; ++i) {
+    DRAKE_ASSERT(y(i).get_type() == symbolic::Variable::Type::BINARY);
+  }
   const auto gray_codes =
       math::CalculateReflectedGrayCodes(num_binary_vars);
   DRAKE_ASSERT(y.rows() == num_binary_vars);
@@ -58,6 +62,9 @@ void AddLogarithmicSOS1Constraint(
   int num_digits = CeilLog2(num_lambda);
   DRAKE_DEMAND(codes.rows() == num_lambda && codes.cols() == num_digits);
   DRAKE_DEMAND(y.rows() == num_digits);
+  for (int i = 0; i < num_digits; ++i) {
+    DRAKE_ASSERT(y(i).get_type() == symbolic::Variable::Type::BINARY);
+  }
   for (int i = 0; i < num_lambda; ++i) {
     prog->AddLinearConstraint(lambda(i) >= 0);
   }
