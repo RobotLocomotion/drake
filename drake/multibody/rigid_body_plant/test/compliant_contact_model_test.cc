@@ -1,6 +1,4 @@
-/* clang-format off */
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
-/* clang-format on */
 
 #include <memory>
 
@@ -12,11 +10,12 @@
 #include "drake/multibody/rigid_body_plant/test/contact_result_test_common.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-// The CompliantContactModel is a class that wraps the algorithms
-// The ContactResult class is largely a container for the data that is computed
-// by the CompliantContactModel while determining contact forces.  This test
-// confirms that for a known set of contacts, that the expected contact forces
-// are generated and stashed into the ContactResult data structure.
+// The CompliantContactModel is a class that wraps the algorithms that perform
+// contact computations. The ContactResult class is largely a container for the
+// data that is computed by the CompliantContactModel while determining contact
+// forces.  This test confirms that for a known set of contacts, that the
+// expected contact forces are generated and stashed into the ContactResult
+// data structure.
 //
 // Thus, a rigid body tree is created with a known configuration such that the
 // contacts and corresponding contact forces are known.
@@ -40,8 +39,8 @@ namespace rigid_body_plant {
 namespace test {
 namespace {
 
-// Base class for testing the RigidBodyPlant's logic for populating its
-// output port for collision response data.
+// Base class for testing the CompliantContactModel logic for contact force
+// computations.
 class CompliantContactModelTest : public ContactResultTestCommon {
  protected:
   // Instances owned by the test class.
@@ -91,21 +90,6 @@ TEST_F(CompliantContactModelTest, ModelTouching) {
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
 
-// Confirms a contact result for two non-colliding spheres -- expects no
-// reported collisions.
-TEST_F(CompliantContactModelTest, PlantNoCollision) {
-  auto& contact_results = RunTest(0.1);
-  ASSERT_EQ(contact_results.get_num_contacts(), 0);
-}
-
-// Confirms a contact result for two touching spheres -- expects no reported
-// collisions. For now, osculation is not considered a "contact" for reporting
-// purposes. If the definition changes, this will likewise change.
-TEST_F(CompliantContactModelTest, PlantTouching) {
-  auto& contact_results = RunTest(0.0);
-  ASSERT_EQ(contact_results.get_num_contacts(), 0);
-}
-
 // Confirms a contact result for two colliding spheres.
 TEST_F(CompliantContactModelTest, ModelSingleCollision) {
   double offset = 0.1;
@@ -131,8 +115,6 @@ TEST_F(CompliantContactModelTest, ModelSingleCollision) {
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
-  // Note: This is fragile. It assumes a particular collision model.  Once the
-  // model has been generalized, this will have to adapt to account for that.
 
   // NOTE: Because there is zero velocity, there is no frictional force and no
   // damping on the normal force.  Simply the kx term.  Penetration is twice
