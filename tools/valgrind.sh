@@ -10,4 +10,5 @@ valgrind \
     --trace-children=yes \
     --track-origins=yes \
     --show-leak-kinds=definite,possible \
+    --num-callers=16 \
     "$@"
