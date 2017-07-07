@@ -4,15 +4,15 @@
 #include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
-namespace tools {
+namespace manipulation {
+
 /**
- * A utility to render a `RigidBodyTree` in a specified configuration in the
- * `drake-visualizer` app.
+ * A utility to render a `RigidBodyTree` in a specified configuration.
  */
 class SimpleTreeVisualizer {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleTreeVisualizer)
+
   /**
    * Constructs the `SimpleTreeVisualizer` and publishes a
    * DRAKE_VIEWER_LOAD_ROBOT message. Note that the drake-visualizer must be
@@ -24,7 +24,6 @@ class SimpleTreeVisualizer {
    */
   SimpleTreeVisualizer(const RigidBodyTreed& tree, lcm::DrakeLcmInterface* lcm);
 
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleTreeVisualizer)
   /**
    * Visualizes a given state position configuration.
    * @param position_vector : A `VectorX` with the positions that are
@@ -41,7 +40,5 @@ class SimpleTreeVisualizer {
   lcm::DrakeLcmInterface* lcm_{nullptr};
 };
 
-}  // namespace tools
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake

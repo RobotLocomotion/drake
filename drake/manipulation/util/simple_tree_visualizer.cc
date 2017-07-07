@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/dev/tools/simple_tree_visualizer.h"
+#include "drake/manipulation/util/simple_tree_visualizer.h"
 
 #include <vector>
 
@@ -13,13 +13,14 @@
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
-namespace tools {
+namespace manipulation {
+
 SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
                                            lcm::DrakeLcmInterface* lcm)
-    : tree_(tree), state_dimension_(tree_.get_num_positions() +
-    tree_.get_num_velocities()), draw_message_translator_(tree_), lcm_(lcm) {
+    : tree_(tree),
+      state_dimension_(tree_.get_num_positions() + tree_.get_num_velocities()),
+      draw_message_translator_(tree_),
+      lcm_(lcm) {
   // Loads the robot.
   const lcmt_viewer_load_robot load_message(
       multibody::CreateLoadRobotMessage<double>(tree_));
@@ -42,15 +43,13 @@ void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
   state_vector.SetFromVector(state);
 
   std::vector<uint8_t> message_bytes;
-  draw_message_translator_.Serialize(0 /* context get time */, state_vector,
-                                     &message_bytes);
+  constexpr double kTime = 0;
+  draw_message_translator_.Serialize(kTime, state_vector, &message_bytes);
 
   // Publishes onto the specified LCM channel.
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
                 message_bytes.size());
 }
 
-}  // namespace tools
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace manipulation
 }  // namespace drake
