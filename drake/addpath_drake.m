@@ -25,22 +25,8 @@ if verLessThan('matlab','7.6')
 end
 
 % add package directories to the matlab path
-addpath(fullfile(root,'thirdParty'));
-addpath(fullfile(root,'thirdParty','bsd'));
-addpath(fullfile(root,'thirdParty','bsd','arrow3d'));
-addpath(fullfile(root,'thirdParty','bsd','cprintf'));
 addpath(fullfile(root,'thirdParty','bsd','GetFullPath'));
-addpath(fullfile(root,'thirdParty','bsd','plotregion'));
 addpath(fullfile(root,'thirdParty','bsd','polytopes'));
-addpath(fullfile(root,'thirdParty','bsd','psm'));
-addpath(fullfile(root,'thirdParty','bsd','xacro'));
-addpath(fullfile(root,'thirdParty','misc'));
-addpath(fullfile(root,'thirdParty','misc','pathlcp'));
-addpath(fullfile(root,'thirdParty','zlib'));
-addpath(fullfile(root,'matlab','solvers','BMI'));
-addpath(fullfile(root,'matlab','solvers','BMI','util'));
-addpath(fullfile(root,'matlab','solvers','BMI','kinematics'));
-addpath(fullfile(root,'matlab','solvers','qpSpline'));
 addpath(fullfile(root,'matlab','util'));
 addpath(fullfile(root,'matlab','util','geometry'));
 addpath(fullfile(root,'matlab','util','visualization'));
@@ -88,13 +74,7 @@ end
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 clear util/getDrakePath;
 
-% set up PATH LCP license
-% NOTE: This license was granted exclusively for the use of PATH from the Drake matlab package.
-% Any other use will be considered a violation of the license.  You can obtain a free license
-% from here: http://pages.cs.wisc.edu/~ferris/path.html
-setenv('PATH_LICENSE_STRING', '2096056969&Russ_Tedrake&Massachusetts_Institute_of_Technology&&USR&75042&18_4_2014&1000&PATH&GEN&0_0_0&0_0_0&5000&0_0');
 end
-
 
 function javaaddpathIfNew(p)
  % Add a .jar to the dynamic java classpath only if it hasn't already been added
