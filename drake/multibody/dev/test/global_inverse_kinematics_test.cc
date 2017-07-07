@@ -25,7 +25,7 @@ TEST_F(KukaTest, UnreachableTest) {
   solvers::GurobiSolver gurobi_solver;
 
   if (gurobi_solver.available()) {
-    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+    global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
 
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
@@ -74,7 +74,7 @@ TEST_F(KukaTest, ReachableWithCost) {
 
   if (gurobi_solver.available()) {
     // First solve the IK problem without the cost.
-    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+    global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);

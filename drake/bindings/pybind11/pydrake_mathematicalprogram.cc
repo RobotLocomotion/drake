@@ -41,7 +41,14 @@ template <typename T>
 std::unique_ptr<T> deref_optional(const drake::optional<T>& value) {
   return value ? std::make_unique<T>(*value) : nullptr;
 }
-}  // namespace
+
+/// Helper to adapt SolverType to SolverId.
+template <typename Value>
+void SetSolverOptionBySolverType(
+    MathematicalProgram* self,
+    SolverType solver_type, const std::string& key, const Value& value) {
+  self->SetSolverOption(SolverTypeConverter::TypeToId(solver_type), key, value);
+}
 
 /*
  * Register a Binding template, and add the corresponding overloads to the
@@ -70,6 +77,8 @@ auto RegisterBinding(py::handle* pscope,
           &MathematicalProgram::EvalBindingAtSolution);
   return binding_cls;
 }
+
+}  // namespace
 
 PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   py::module m("_pydrake_mathematicalprogram",
@@ -197,15 +206,9 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
             const MatrixXDecisionVariable& var) {
       return prog.GetSolution(var);
     })
-    .def("SetSolverOption", (void(MathematicalProgram::*)(
-         SolverType, const std::string&, double))
-         &MathematicalProgram::SetSolverOption)
-    .def("SetSolverOption", (void(MathematicalProgram::*)(
-         SolverType, const std::string&, int))
-         &MathematicalProgram::SetSolverOption)
-    .def("SetSolverOption", (void(MathematicalProgram::*)(
-         SolverType, const std::string&, const std::string&))
-         &MathematicalProgram::SetSolverOption);
+    .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
+    .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
+    .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
 
   py::enum_<SolutionResult>(m, "SolutionResult")
     .value("kSolutionFound", SolutionResult::kSolutionFound)

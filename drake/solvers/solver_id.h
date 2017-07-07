@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ostream>
+#include <functional>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -30,6 +31,7 @@ class SolverId {
  private:
   friend bool operator==(const SolverId&, const SolverId&);
   friend bool operator!=(const SolverId&, const SolverId&);
+  friend struct std::less<SolverId>;
 
   reinit_after_move<int> id_;
   std::string name_;
@@ -41,3 +43,14 @@ std::ostream& operator<<(std::ostream&, const SolverId&);
 
 }  // namespace solvers
 }  // namespace drake
+
+namespace std {
+/* Provides std::less<drake::solvers::SolverId>. */
+template <>
+struct less<drake::solvers::SolverId> {
+  bool operator()(const drake::solvers::SolverId& lhs,
+                  const drake::solvers::SolverId& rhs) const {
+    return lhs.id_ < rhs.id_;
+  }
+};
+}  // namespace std

@@ -18,6 +18,7 @@
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/snopt_solver.h"
 
 using Eigen::Map;
 using Eigen::MatrixBase;
@@ -71,17 +72,17 @@ int GetIKSolverInfo(SolutionResult result) {
 
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Derivative option", 1);
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Major optimality tolerance", ikoptions.getMajorOptimalityTolerance());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Major feasibility tolerance", ikoptions.getMajorFeasibilityTolerance());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Superbasics limit", ikoptions.getSuperbasicsLimit());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Major iterations limit", ikoptions.getMajorIterationsLimit());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Iterations limit", ikoptions.getIterationsLimit());
 }
 
