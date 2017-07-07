@@ -1,0 +1,34 @@
+#pragma once
+
+#include "drake/common/drake_copyable.h"
+#include "drake/systems/framework/diagram.h"
+
+namespace drake {
+namespace manipulation {
+namespace schunk_wsg {
+
+/// This class implements a controller for a schunk wsg.  It has two
+/// input ports which receive lcmt_schunk_wsg_command messages and the
+/// current state, and an output port which emits the target force for
+/// the actuated finger.
+class SchunkWsgController : public systems::Diagram<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgController)
+  SchunkWsgController();
+
+  const systems::InputPortDescriptor<double>& get_command_input_port() const {
+    return this->get_input_port(command_input_port_);
+  }
+
+  const systems::InputPortDescriptor<double>& get_state_input_port() const {
+    return this->get_input_port(state_input_port_);
+  }
+
+ private:
+  int command_input_port_{};
+  int state_input_port_{};
+};
+
+}  // namespace schunk_wsg
+}  // namespace manipulation
+}  // namespace drake
