@@ -17,9 +17,17 @@ namespace rigid_contact {
 /// problem data corresponding to one or more rigid or multi-rigid bodies
 /// constrained unilaterally and acted upon by Coulomb friction, this class
 /// computes the contact forces.
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following scalar types @p T are provided:
+/// - double
+/// They are already available to link against in the containing library.
 template <typename T>
 class RigidContactSolver {
  public:
+  RigidContactSolver() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidContactSolver)
+
   /// Solves the appropriate contact problem at the acceleration level.
   /// @param cfm The non-negative regularization factor to apply to the contact
   ///            problem (i.e., the underlying complementarity problem), also

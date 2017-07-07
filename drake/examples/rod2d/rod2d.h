@@ -491,7 +491,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   ///        measured along the positive x-axis.
   /// @param[out] data the rigid contact problem data.
   void CalcRigidContactProblemData(const systems::Context<T>& context,
-                                   const std::vector<Vector2<T>>& p,
+                                   const std::vector<Vector2<T>>& points,
                                    const std::vector<T>& tangent_vels,
     multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
 
@@ -508,8 +508,6 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   static Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot);
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
-
- private:
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
