@@ -1,6 +1,6 @@
 #!/bin/bash
+#
 # Prerequisite set-up script for Drake on Ubuntu 16.04.
-# 16.04 support is in beta. It is not tested in CI or officially supported.
 
 set -eu
 
@@ -39,19 +39,18 @@ while true; do
 done
 
 # The CI scripts require a newer version of CMake than apt installs.
-# Only install CMake if it's not installed or older than 3.5.
+# Only install CMake if it's not installed or older than 3.5.1.
 install_cmake=true
 if command -v cmake &>/dev/null; then
   cmake_version=$(cmake --version) &>/dev/null
-  cmake_version=${cmake_version:14:3}
-  if dpkg --compare-versions $cmake_version ge 3.5; then
+  cmake_version=${cmake_version:14:5}
+  if dpkg --compare-versions $cmake_version ge 3.5.1; then
     echo "CMake is already installed ($cmake_version)"
     install_cmake=false
   fi
 fi
 if $install_cmake; then
-  apt install --no-install-recommends cmake
-  apt install --no-install-recommends cmake-curses-gui
+  apt install --no-install-recommends cmake cmake-curses-gui
 fi
 
 # Install the APT dependencies.
@@ -65,7 +64,6 @@ automake
 bash-completion
 bison
 clang-format
-default-jdk
 doxygen
 fakeroot
 flex
@@ -82,7 +80,6 @@ graphviz
 libboost-dev
 libboost-system-dev
 libgtk2.0-dev
-libhtml-form-perl
 libmpfr-dev
 libpng12-dev
 libqt4-dev
@@ -99,6 +96,7 @@ libvtk5-qt4-dev
 libxmu-dev
 make
 ninja-build
+openjdk-8-jdk
 patchutils
 perl
 pkg-config
@@ -122,15 +120,15 @@ EOF
     )
 
 # Install Bazel.
-wget -O /tmp/bazel_0.4.5-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.4.5/bazel_0.4.5-linux-x86_64.deb
-if echo "b494d0a413e4703b6cd5312403bea4d92246d6425b3be68c9bfbeb8cc4db8a55 /tmp/bazel_0.4.5-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.4.5-linux-x86_64.deb
+wget -O /tmp/bazel_0.5.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.5.2/bazel_0.5.2-linux-x86_64.deb
+if echo "b14c8773dab078d3422fe4082f3ab4d9e14f02313c3b3eb4b5b40c44ce29ed59 /tmp/bazel_0.5.2-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.5.2-linux-x86_64.deb
 else
   echo "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
   exit 1
 fi
 
-rm /tmp/bazel_0.4.5-linux-x86_64.deb
+rm /tmp/bazel_0.5.2-linux-x86_64.deb
 
 # Repair a bad Bazel/ccache interaction.
 # See https://github.com/RobotLocomotion/drake/issues/4464.
