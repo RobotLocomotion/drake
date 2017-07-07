@@ -61,6 +61,8 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
+  // TODO(naveenoid) : This method call limits the template instanziation of
+  // this class currently to T = double only.
   std::vector<DrakeCollision::PointPair> pairs =
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kinsol, true);
@@ -194,7 +196,8 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
 }
 
 template <typename T>
-T CompliantContactModel<T>::ComputeFrictionCoefficient(T v_tangent_BAc) const {
+T CompliantContactModel<T>::ComputeFrictionCoefficient(
+    const T& v_tangent_BAc) const {
   DRAKE_ASSERT(v_tangent_BAc >= 0);
   const T v = v_tangent_BAc * inv_v_stiction_tolerance_;
   if (v >= 3) {
@@ -209,7 +212,7 @@ T CompliantContactModel<T>::ComputeFrictionCoefficient(T v_tangent_BAc) const {
 }
 
 template <typename T>
-T CompliantContactModel<T>::step5(T x) {
+T CompliantContactModel<T>::step5(const T& x) {
   DRAKE_ASSERT(0 <= x && x <= 1);
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
