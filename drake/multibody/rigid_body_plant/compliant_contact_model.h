@@ -9,13 +9,16 @@ namespace systems {
 
 /// This class encapsulates the compliant contact model force computations as
 /// described in detail in @ref drake_contacts.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
 template <typename T>
 class CompliantContactModel {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactModel)
 
   /// Instantiates a %CompliantContactModel.
-  CompliantContactModel() {}
+  CompliantContactModel() = default;
 
   /// Computes the generalized forces on all bodies due to contact.
   ///
@@ -53,11 +56,11 @@ class CompliantContactModel {
   // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
   //
   // See contact_model_doxygen.h @section tangent_force for details.
-  T ComputeFrictionCoefficient(T v_tangent_BAc) const;
+  T ComputeFrictionCoefficient(const T& v_tangent_BAc) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
-  static T step5(T x);
+  static T step5(const T& x);
 
   // Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
   // and y-axis such that the basis is orthonormal. The basis is R_WL, where W

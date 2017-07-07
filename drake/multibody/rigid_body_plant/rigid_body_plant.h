@@ -420,7 +420,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   std::vector<std::pair<int, int>> velocity_map_;
 
   // Pointer to the class that encapsulates all the contact computations.
-  std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_{nullptr};
+  const std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_;
 };
 
 }  // namespace systems
