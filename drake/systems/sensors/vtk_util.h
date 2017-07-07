@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include <Eigen/Dense>
 #include <vtkNew.h>
 #include <vtkPlaneSource.h>
