@@ -44,6 +44,24 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "schunk_wsg_controller",
+    srcs = ["schunk_wsg_controller.cc"],
+    hdrs = ["schunk_wsg_controller.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":schunk_wsg_constants",
+        ":schunk_wsg_lcm",
+        "//drake/common",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives:gain",
+        "//drake/systems/primitives:pass_through",
+        "//drake/systems/primitives:saturation",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -57,6 +75,15 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "schunk_wsg_controller_test",
+    deps = [
+        ":schunk_wsg_constants",
+        ":schunk_wsg_controller",
+        "//drake/systems/analysis:simulator",
     ],
 )
 

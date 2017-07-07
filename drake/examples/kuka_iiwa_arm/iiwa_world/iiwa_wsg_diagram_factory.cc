@@ -49,9 +49,6 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   const auto& iiwa_output_port =
       plant_->model_instance_state_output_port(iiwa_info.instance_id);
 
-  const auto& wsg_output_port =
-      plant_->model_instance_state_output_port(wsg_info.instance_id);
-
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
   // Uses integral gains to deal with the added mass from the grasped object.
@@ -89,23 +86,13 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   output_port_iiwa_state_ = base_builder->ExportOutput(iiwa_output_port);
 
   // Sets up the WSG gripper part.
-  // TODO(sam.creasey) The choice of position gains below is completely
-  // arbitrary. We'll need to revisit this once we switch to force control
-  // for the gripper.
-  const int kWsgActDim = manipulation::schunk_wsg::kSchunkWsgNumActuators;
-  const VectorX<T> wsg_kp = VectorX<T>::Constant(kWsgActDim, 300.0);
-  const VectorX<T> wsg_ki = VectorX<T>::Constant(kWsgActDim, 0.0);
-  const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
+  const auto& wsg_input_port =
+      plant_->model_instance_actuator_command_input_port(wsg_info.instance_id);
+  const auto& wsg_output_port =
+      plant_->model_instance_state_output_port(wsg_info.instance_id);
 
-  wsg_controller_ = builder.template AddController<systems::PidController<T>>(
-      wsg_info.instance_id,
-      manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<T>(),
-      wsg_kp, wsg_ki, wsg_kd);
-  wsg_controller_->set_name("SchunkWSGPIDController");
-
-  //  Export wsg's desired state input, and state output.
-  input_port_wsg_command_ = base_builder->ExportInput(
-      wsg_controller_->get_input_port_desired_state());
+  //  Export wsg's actuator command input, and state output.
+  input_port_wsg_command_ = base_builder->ExportInput(wsg_input_port);
   output_port_wsg_state_ = base_builder->ExportOutput(wsg_output_port);
 
   output_port_plant_state_ =
