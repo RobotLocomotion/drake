@@ -36,11 +36,11 @@ Clang 3.9::
 CMake
 -----
 
-CMake 3.5 or higher is required. Visit the `CMake Download Page`_ to obtain
-the CMake 3.5 pre-compiled binaries.  Extract the archive and add its ``bin``
+CMake 3.5.2 or higher is required. Visit the `CMake Download Page`_ to obtain
+the CMake 3.5.2 pre-compiled binaries.  Extract the archive and add its ``bin``
 directory to the ``PATH`` environment variable. For example, below is a
-suggested sequence of commands that installs CMake 3.5 into `~/tools/` and then
-modifies `~/.bashrc` with the new ``PATH`` environment variable::
+suggested sequence of commands that installs CMake 3.5.2 into `~/tools/` and
+then modifies `~/.bashrc` with the new ``PATH`` environment variable::
 
     mkdir -p ~/tools
     cd ~/tools
@@ -70,9 +70,9 @@ Be sure to install a version that is consistent with Drake's
 
 Here's a short recipe that summarizes the instructions on that page::
 
-    wget https://github.com/bazelbuild/bazel/releases/download/0.4.3/bazel_0.4.3-linux-x86_64.deb
-    echo "0cd6592ac2c5548d566fa9f874a386737e76029f5aabe1f04f8320173a05280d  bazel_0.4.3-linux-x86_64.deb" > bazel_0.4.3-linux-x86_64.deb.sha256
-    sha256sum --check bazel_0.4.3-linux-x86_64.deb.sha256 && sudo dpkg -i bazel_0.4.3-linux-x86_64.deb
+    wget https://github.com/bazelbuild/bazel/releases/download/0.5.2/bazel_0.5.2-linux-x86_64.deb
+    echo "b14c8773dab078d3422fe4082f3ab4d9e14f02313c3b3eb4b5b40c44ce29ed59  bazel_0.5.2-linux-x86_64.deb" > bazel_0.5.2-linux-x86_64.deb.sha256
+    sha256sum --check bazel_0.5.2-linux-x86_64.deb.sha256 && sudo dpkg -i bazel_0.5.2-linux-x86_64.deb
 
 
 Other Prerequisites
@@ -82,21 +82,19 @@ Other prerequisites may be installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends \
-      autoconf automake bison doxygen freeglut3-dev git graphviz \
-      libboost-dev libboost-system-dev libgtk2.0-dev libhtml-form-perl \
-      libjpeg-dev libmpfr-dev libpng-dev libterm-readkey-perl libtinyxml-dev \
-      libtool libvtk5-dev libwww-perl make ninja-build \
-      patchutils perl pkg-config \
-      python-bs4 python-dev python-gtk2 python-html5lib python-numpy \
-      python-pip python-sphinx python-yaml unzip valgrind
+      autoconf automake bison doxygen freeglut3-dev git graphviz libboost-dev \
+      libboost-system-dev libgtk2.0-dev libjpeg-dev libmpfr-dev libpng-dev \
+      libtinyxml-dev libtool libvtk5-dev make ninja-build patchutils perl \
+      pkg-config python-bs4 python-dev python-gtk2 python-html5lib \
+      python-numpy python-pip python-sphinx python-yaml unzip valgrind
 
 If you will be building/using Director, some additional prerequisites may be
 installed as follows::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends \
-      libqt4-dev libqt4-opengl-dev libqwt-dev \
-      libvtk-java libvtk5-qt4-dev python-lxml python-scipy python-vtk
+      libqt4-dev libqt4-opengl-dev libqwt-dev libvtk-java libvtk5-qt4-dev \
+      python-lxml python-scipy python-vtk
 
 Note that the above installs an old version of VTK that is required by Drake. If
 a different version needs to be installed, Drake's build system can be
