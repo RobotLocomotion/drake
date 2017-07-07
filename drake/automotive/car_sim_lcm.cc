@@ -11,8 +11,8 @@
 #include "drake/automotive/car_sim_lcm_common.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -92,13 +92,15 @@ int main(int argc, char* argv[]) {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   auto rigid_body_tree = make_unique<RigidBodyTreed>();
   AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
+      drake::FindResourceOrThrow(
+          "drake/automotive/models/prius/prius_with_lidar.sdf"),
       multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
   multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
   if (FLAGS_with_speed_bump) {
     AddModelInstancesFromSdfFile(
-        drake::GetDrakePath() + "/automotive/models/speed_bump/speed_bump.sdf",
+        drake::FindResourceOrThrow(
+            "drake/automotive/models/speed_bump/speed_bump.sdf"),
         multibody::joints::kFixed, nullptr /* weld to frame */,
         rigid_body_tree.get());
     VerifyCarSimLcmTree(*rigid_body_tree, 19);

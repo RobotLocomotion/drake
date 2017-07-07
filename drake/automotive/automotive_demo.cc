@@ -11,7 +11,6 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/monolane_onramp_merge.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 
 DEFINE_int32(num_simple_car, 0, "Number of SimpleCar vehicles. The cars are "

@@ -233,7 +233,7 @@ drake_cc_library(
     data = ["//drake/automotive:models"],
     deps = [
         ":car_vis",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcmtypes:viewer",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
@@ -404,6 +404,7 @@ drake_cc_binary(
     test_rule_args = [" --simulation_sec=0.01"],
     deps = [
         ":automotive_simulator",
+        "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",
@@ -517,7 +518,6 @@ drake_cc_googletest(
         "//drake/automotive/maliput/api",
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:geometric_transform",
     ],
