@@ -388,7 +388,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  IpoptCalculatedQuantities* ip_cq) {
     unused(z_L, z_U, m, g, lambda, ip_data, ip_cq);
 
-    problem_->SetSolverResult(SolverType::kIpopt, status);
+    problem_->SetSolverId(IpoptSolver::id());
 
     switch (status) {
       case Ipopt::SUCCESS: {

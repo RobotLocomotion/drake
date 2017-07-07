@@ -763,7 +763,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(SolverType::kMosek, result);
+  prog.SetSolverId(id());
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }
