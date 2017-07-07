@@ -307,7 +307,10 @@ java_binary(
 
 install(
     name = "install",
-    targets = DRAKE_LCMTYPES + [":lcmtypes_drake_java", ":lcmtypes_py"],
+    targets = DRAKE_LCMTYPES + [
+        ":lcmtypes_drake_java",
+        ":lcmtypes_py",
+    ],
     hdr_dest = "include/drake/lcmtypes",
     guess_hdrs = "PACKAGE",
     rename = {"share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar"},
