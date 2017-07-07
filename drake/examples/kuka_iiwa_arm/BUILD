@@ -137,6 +137,7 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
         "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis",

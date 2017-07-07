@@ -22,7 +22,9 @@ namespace schunk_wsg {
 /// Receives lcmt_schunk_wsg_command for a Schunk WSG (input port 0)
 /// along with the current state of the simulated WSG (input port 1),
 /// and emits target position/velocity for the actuated finger to
-/// reach the commanded target.
+/// reach the commanded target.  The force portion of the command
+/// message is passed through this system, but does not affect the
+/// generated trajectory.
 class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
  public:
   /// @param input_size The size of the state input port to create
@@ -41,8 +43,20 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
+  const systems::OutputPort<double>& get_target_output_port() const {
+    return this->get_output_port(target_output_port_);
+  }
+
+  const systems::OutputPort<double>& get_max_force_output_port() const {
+    return this->get_output_port(max_force_output_port_);
+  }
+
+
  private:
   void OutputTarget(const systems::Context<double>& context,
+                    systems::BasicVector<double>* output) const;
+
+  void OutputForce(const systems::Context<double>& context,
                     systems::BasicVector<double>* output) const;
 
   /// Latches the input port into the discrete state.
@@ -64,6 +78,9 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   const double kTargetEpsilon = 0.0001;
 
   const int position_index_{};
+  const int target_output_port_{};
+  const int max_force_output_port_{};
+
   // TODO(sam.creasey) I'd prefer to store the trajectory as
   // discrete state, but unfortunately that's not currently possible
   // as DiscreteValues may only contain BasicVector.
