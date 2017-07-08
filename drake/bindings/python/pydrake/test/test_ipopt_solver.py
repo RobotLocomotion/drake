@@ -6,7 +6,7 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.ipopt import IpoptSolver
 
 
-class TestMathematicalProgram(unittest.TestCase):
+class TestIpoptSolver(unittest.TestCase):
     def test_ipopt_solver(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
@@ -22,6 +22,11 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
+    def unavailable(self):
+        """Per the BUILD file, this test is only run when IPOPT is disabled."""
+        solver = IpoptSolver()
+        self.assertFalse(solver.available())
 
 
 if __name__ == '__main__':
