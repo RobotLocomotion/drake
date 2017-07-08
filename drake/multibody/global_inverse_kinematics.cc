@@ -34,7 +34,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
     // the body position and orientation.
     if (body.IsRigidlyFixedToWorld()) {
       R_WB_[body_idx] = NewContinuousVariables<3, 3>(body_R_name);
-      Isometry3d X_WB = body.ComputeWorldFixedPose();
+      const Isometry3d X_WB = body.ComputeWorldFixedPose();
       // TODO(hongkai.dai): clean up this for loop using elementwise matrix
       // constraint when it is ready.
       for (int i = 0; i < 3; ++i) {
@@ -227,13 +227,18 @@ GlobalInverseKinematics::body_position(int body_index) const {
 Eigen::VectorXd
 GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   Eigen::VectorXd q(robot_->get_num_positions());
+  // reconstruct_R_WB[i] is the orientation of body i'th body frame expressed in
+  // the world frame, computed from the reconstructed posture.
+  std::vector<Eigen::Matrix3d> reconstruct_R_WB(robot_->get_num_bodies());
+  // The first one is the world frame, thus the orientation is identity.
+  reconstruct_R_WB[0].setIdentity();
   for (int body_idx = 1; body_idx < robot_->get_num_bodies(); ++body_idx) {
     const RigidBody<double>& body = robot_->get_body(body_idx);
     const Matrix3d R_WC = GetSolution(R_WB_[body_idx]);
     if (!body.IsRigidlyFixedToWorld() && body.has_parent_body()) {
       const RigidBody<double>* parent = body.get_parent();
       // R_WP is the rotation matrix of parent frame to the world frame.
-      const Matrix3d R_WP = GetSolution(R_WB_[parent->get_body_index()]);
+      const Matrix3d R_WP = reconstruct_R_WB[parent->get_body_index()];
       const DrakeJoint* joint = &(body.getJoint());
       const auto& X_PF = joint->get_transform_to_parent_body();
 
@@ -256,6 +261,7 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
           q.segment<4>(body.get_position_start_index() + 3) =
               math::rotmat2quat(normalized_rotmat);
         }
+        reconstruct_R_WB[body_idx] = normalized_rotmat;
       } else if (num_positions == 1) {
         const double joint_lb = joint->getJointLimitMin()(0);
         const double joint_ub = joint->getJointLimitMax()(0);
@@ -264,7 +270,7 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
         if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
           const RevoluteJoint* revolute_joint =
               dynamic_cast<const RevoluteJoint*>(joint);
-          Matrix3d joint_rotmat =
+          const Matrix3d joint_rotmat =
               X_PF.linear().transpose() *
               R_WP.transpose() * R_WC;
           // The joint_rotmat is very likely not on SO(3). The reason is
@@ -273,8 +279,13 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
           // joint_rotmat to SO(3), with joint axis as the rotation axis, and
           // joint limits as the lower and upper bound on the rotation angle.
           const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
-          q(body.get_position_start_index()) = math::ProjectMatToRotMatWithAxis(
+          const double revolute_joint_angle = math::ProjectMatToRotMatWithAxis(
               joint_rotmat, rotate_axis, joint_lb, joint_ub);
+          q(body.get_position_start_index()) = revolute_joint_angle;
+          reconstruct_R_WB[body_idx] =
+              R_WP * X_PF.linear() *
+              Eigen::AngleAxisd(revolute_joint_angle, rotate_axis)
+                  .toRotationMatrix();
         } else {
           // TODO(hongkai.dai): add prismatic and helical joints.
           throw std::runtime_error("Unsupported joint type.");
@@ -283,6 +294,10 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
         // Deliberately left empty because the joint is removed by welding the
         // parent body to the child body.
       }
+    } else if (body.IsRigidlyFixedToWorld()) {
+      // The reconstructed body orientation is just the world fixed orientation.
+      const Isometry3d X_WB = body.ComputeWorldFixedPose();
+      reconstruct_R_WB[body_idx] = X_WB.linear();
     }
   }
 
