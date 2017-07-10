@@ -246,7 +246,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   // This is an utility function for `ReconstructGeneralizedPositionSolution`.
   // This function computes the joint generalized position on the body with
-  // index body_idx.
+  // index body_idx. Note that the orientation of the parent link of the body
+  // body_idx should have been reconstructed, in reconstruct_R_WB.
   void ReconstructGeneralizedPositionSolutionForBody(
       int body_idx, Eigen::Ref<Eigen::VectorXd> q,
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;

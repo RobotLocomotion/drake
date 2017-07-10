@@ -314,23 +314,28 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   int num_link_visited = 1;
   int body_idx = 1;
   while (num_link_visited < robot_->get_num_bodies()) {
-    // unvisited_links records all the unvisited links, along the kinematic
-    // path from the root to the body with index body_idx (including body_idx).
-    std::stack<int> unvisited_links;
-    unvisited_links.push(body_idx);
-    int parent_idx = robot_->get_body(body_idx).get_parent()->get_body_index();
-    while (!is_link_visited[parent_idx]) {
-      unvisited_links.push(parent_idx);
-      parent_idx = robot_->get_body(parent_idx).get_parent()->get_body_index();
-    }
-    // Now the link parent_idx has been visited.
-    while (!unvisited_links.empty()) {
-      int unvisited_link_idx = unvisited_links.top();
-      unvisited_links.pop();
-      ReconstructGeneralizedPositionSolutionForBody(unvisited_link_idx, q,
-                                                    &reconstruct_R_WB);
-      is_link_visited[unvisited_link_idx] = true;
-      ++num_link_visited;
+    if (!is_link_visited[body_idx]) {
+      // unvisited_links records all the unvisited links, along the kinematic
+      // path from the root to the body with index body_idx (including
+      // body_idx).
+      std::stack<int> unvisited_links;
+      unvisited_links.push(body_idx);
+      int parent_idx =
+          robot_->get_body(body_idx).get_parent()->get_body_index();
+      while (!is_link_visited[parent_idx]) {
+        unvisited_links.push(parent_idx);
+        parent_idx =
+            robot_->get_body(parent_idx).get_parent()->get_body_index();
+      }
+      // Now the link parent_idx has been visited.
+      while (!unvisited_links.empty()) {
+        int unvisited_link_idx = unvisited_links.top();
+        unvisited_links.pop();
+        ReconstructGeneralizedPositionSolutionForBody(unvisited_link_idx, q,
+                                                      &reconstruct_R_WB);
+        is_link_visited[unvisited_link_idx] = true;
+        ++num_link_visited;
+      }
     }
     ++body_idx;
   }
