@@ -74,24 +74,16 @@ class TestSystem : public System<double> {
     return *port_ptr;
   }
 
-  std::vector<std::pair<int, int>> GetDirectFeedthroughs() const override {
-    std::vector<std::pair<int, int>> pairs;
+  std::multimap<int, int> GetDirectFeedthroughs() const override {
+    std::multimap<int, int> pairs;
     // Support `HasDirectFeedthrough(int, int)`'s behavior: returns true for all
     // ports.
     for (int i = 0; i < get_num_input_ports(); ++i) {
       for (int o = 0; o < get_num_output_ports(); ++o) {
-        pairs.emplace_back(i, o);
+        pairs.emplace(i, o);
       }
     }
     return pairs;
-  }
-
-  bool HasAnyDirectFeedthrough() const override { return true; }
-
-  bool HasDirectFeedthrough(int output_port) const override { return true; }
-
-  bool HasDirectFeedthrough(int input_port, int output_port) const override {
-    return true;
   }
 
   int get_publish_count() const { return publish_count_; }
@@ -423,24 +415,16 @@ class ValueIOTestSystem : public System<T> {
 
   void SetDefaults(Context<T>* context) const override {}
 
-  std::vector<std::pair<int, int>> GetDirectFeedthroughs() const override {
-    std::vector<std::pair<int, int>> pairs;
+  std::multimap<int, int> GetDirectFeedthroughs() const override {
+    std::multimap<int, int> pairs;
     // Support `HasDirectFeedthrough(int, int)`'s behavior: returns true for all
     // ports.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
       for (int o = 0; o < this->get_num_output_ports(); ++o) {
-        pairs.emplace_back(i, o);
+        pairs.emplace(i, o);
       }
     }
     return pairs;
-  }
-
-  bool HasAnyDirectFeedthrough() const override { return true; }
-
-  bool HasDirectFeedthrough(int output_port) const override { return true; }
-
-  bool HasDirectFeedthrough(int input_port, int output_port) const override {
-    return true;
   }
 
   // Appends "output" to input(0) for output(0).

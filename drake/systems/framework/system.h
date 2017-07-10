@@ -170,21 +170,36 @@ class System {
   ///
   /// This method is virtual for framework purposes only. User code should not
   /// override it.
-  virtual bool HasAnyDirectFeedthrough() const = 0;
+  bool HasAnyDirectFeedthrough() const {
+    return GetDirectFeedthroughs().size() > 0;
+  }
 
   /// Returns true if there might be direct-feedthrough from any input port to
   /// the given @p output_port, and false otherwise.
   ///
   /// This method is virtual for framework purposes only. User code should not
   /// override it.
-  virtual bool HasDirectFeedthrough(int output_port) const = 0;
+  bool HasDirectFeedthrough(int output_port) const {
+    std::multimap<int, int> pairs = GetDirectFeedthroughs();
+    for (const auto& pair : pairs) {
+      if (pair.second == output_port) return true;
+    }
+    return false;
+  }
 
   /// Returns true if there might be direct-feedthrough from the given
   /// @p input_port to the given @p output_port, and false otherwise.
   ///
   /// This method is virtual for framework purposes only. User code should not
   /// override it.
-  virtual bool HasDirectFeedthrough(int input_port, int output_port) const = 0;
+  bool HasDirectFeedthrough(int input_port, int output_port) const {
+    std::multimap<int, int> pairs = GetDirectFeedthroughs();
+    auto range = pairs.equal_range(input_port);
+    for (auto i = range.first; i != range.second; ++i) {
+      if (i->second == output_port) return true;
+    }
+    return false;
+  }
 
   //@}
 
