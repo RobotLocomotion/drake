@@ -24,7 +24,7 @@ drake_cc_library(
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
-        "@gtest//:main",
+        "@gtest//:without_main",
     ],
 )
 
