@@ -31,6 +31,7 @@ using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
+using std::shared_ptr;
 
 namespace drake {
 namespace systems {
@@ -43,11 +44,6 @@ namespace {
 // computations.
 class CompliantContactModelTest : public ContactResultTestCommon {
  protected:
-  // Instances owned by the test class.
-  unique_ptr<CompliantContactModel<double>> compliant_contact_model_{};
-  // Holds the unique pointer to the tree.
-  unique_ptr<RigidBodyTree<double>> unique_tree_{};
-
   const ContactResults<double>& RunTest(double distance) override {
     unique_tree_ = GenerateTestTree(distance);
     // Populate the CompliantContactModel.
@@ -61,18 +57,23 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     // The state to test is the default state of the tree (0 velocities
     // and default configuration positions of the tree)
 
-    VectorX<double> q0 = VectorX<double>::Zero(tree_->get_num_positions());
+    VectorX<double> q0 = VectorX<double>::Zero(
+        unique_tree_->get_num_positions());
 
-    VectorXd v0 = VectorXd::Zero(tree_->get_num_velocities());
+    VectorXd v0 = VectorXd::Zero(unique_tree_->get_num_velocities());
 
-    q0 = tree_->getZeroConfiguration();
-    auto kinsol = tree_->doKinematics(q0, v0);
+    q0 = unique_tree_->getZeroConfiguration();
+    auto kinsol = unique_tree_->doKinematics(q0, v0);
 
-    compliant_contact_model_->ComputeContactForce(*tree_, kinsol,
+    compliant_contact_model_->ComputeContactForce(*unique_tree_.get(), kinsol,
                                                   &contact_results_);
-
     return contact_results_;
   }
+
+  // Instances owned by the test class.
+  unique_ptr<CompliantContactModel<double>> compliant_contact_model_{};
+  // Holds the shared pointer to the tree.
+  unique_ptr<RigidBodyTree<double>> unique_tree_{};
 };
 
 // Confirms a contact result for two non-colliding spheres -- expects no
@@ -100,8 +101,8 @@ TEST_F(CompliantContactModelTest, ModelSingleCollision) {
   // Confirms that the proper bodies are in contact.
   DrakeCollision::ElementId e1 = info.get_element_id_1();
   DrakeCollision::ElementId e2 = info.get_element_id_2();
-  const RigidBody<double>* b1 = tree_->FindBody(e1);
-  const RigidBody<double>* b2 = tree_->FindBody(e2);
+  const RigidBody<double>* b1 = unique_tree_->FindBody(e1);
+  const RigidBody<double>* b2 = unique_tree_->FindBody(e2);
   ASSERT_NE(e1, e2);
   ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
 

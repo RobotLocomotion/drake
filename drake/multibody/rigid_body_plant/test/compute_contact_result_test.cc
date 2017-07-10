@@ -43,15 +43,11 @@ namespace {
 // output port for collision response data.
 class ContactResultTest : public ContactResultTestCommon {
  protected:
-  // instances owned by the test class
-  unique_ptr<RigidBodyPlant<double>> plant_{};
-  unique_ptr<Context<double>> context_{};
-  unique_ptr<SystemOutput<double>> output_{};
-
   // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
     // Populate the plant.
     plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance));
+
     plant_->set_normal_contact_parameters(kStiffness, kDissipation);
     plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                             kVStictionTolerance);
@@ -64,6 +60,16 @@ class ContactResultTest : public ContactResultTestCommon {
         output_->get_data(port_index)->GetValue<ContactResults<double>>();
     return contact_results_;
   }
+
+  // Returns a constant reference to the RigidBodyTree that is within the plant.
+  const RigidBodyTree<double>& GetTree() {
+    return plant_->get_rigid_body_tree();
+  }
+
+  // instances owned by the test class
+  unique_ptr<RigidBodyPlant<double>> plant_{};
+  unique_ptr<Context<double>> context_{};
+  unique_ptr<SystemOutput<double>> output_{};
 };
 
 // Confirms a contact result for two non-colliding spheres -- expects no
@@ -91,8 +97,8 @@ TEST_F(ContactResultTest, SingleCollision) {
   // Confirms that the proper bodies are in contact.
   DrakeCollision::ElementId e1 = info.get_element_id_1();
   DrakeCollision::ElementId e2 = info.get_element_id_2();
-  const RigidBody<double>* b1 = tree_->FindBody(e1);
-  const RigidBody<double>* b2 = tree_->FindBody(e2);
+  const RigidBody<double>* b1 = GetTree().FindBody(e1);
+  const RigidBody<double>* b2 = GetTree().FindBody(e2);
   ASSERT_NE(e1, e2);
   ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
 
