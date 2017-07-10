@@ -186,9 +186,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "drake_path",
-    # TODO(david-german-tri): Set testonly = 1 once the non-test uses of
-    # drake_path are removed.
-    # testonly = 1,
     srcs = ["drake_path_bazel.cc"],
     hdrs = ["drake_path.h"],
     data = [
@@ -199,6 +196,7 @@ drake_cc_library(
         ":find_resource",
         "//drake/thirdParty:spruce",
     ],
+    visibility = ["//drake:__pkg__"],
 )
 
 # TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
