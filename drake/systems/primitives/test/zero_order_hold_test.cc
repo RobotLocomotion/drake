@@ -22,11 +22,13 @@ const int kLength = 3;
 // A simple type containing a vector, to simplify checking expected values for
 // a vector-valued ZOH (`BasicValue`) and an abstract-valued ZOH
 // (`Value<SimpleAbstractType>`).
-struct SimpleAbstractType {
+class SimpleAbstractType {
+ public:
   explicit SimpleAbstractType(const Eigen::Vector3d& value)
-      : value(value) {}
-
-  Eigen::Vector3d value;
+      : value_(value) {}
+  const Eigen::Vector3d& value() const { return value_; }
+ private:
+  Eigen::Vector3d value_;
 };
 
 template <typename EventListType>
@@ -54,8 +56,7 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
     } else {
       // Initialize to zero.
       hold_ = std::make_unique<ZeroOrderHold<double>>(
-          kTenHertz, Value<SimpleAbstractType>(
-              Eigen::Vector3d::Zero()));
+          kTenHertz, Value<SimpleAbstractType>(Eigen::Vector3d::Zero()));
     }
     context_ = hold_->CreateDefaultContext();
     output_ = hold_->AllocateOutput(*context_);
@@ -117,7 +118,7 @@ TEST_P(ZeroOrderHoldTest, InitialState) {
   } else {
     const SimpleAbstractType& state_value =
         context_->get_abstract_state<SimpleAbstractType>(0);
-    value = state_value.value;
+    value = state_value.value();
   }
   EXPECT_EQ(value_expected, value);
 }
@@ -143,7 +144,7 @@ TEST_P(ZeroOrderHoldTest, Output) {
 
     hold_->CalcOutput(*context_, output_.get());
 
-    output = output_->get_data(0)->GetValue<SimpleAbstractType>().value;
+    output = output_->get_data(0)->GetValue<SimpleAbstractType>().value();
   }
   EXPECT_EQ(output_expected, output);
 }
@@ -190,7 +191,7 @@ TEST_P(ZeroOrderHoldTest, Update) {
   } else {
     State<double>* state = context_->get_mutable_state();
     hold_->CalcUnrestrictedUpdate(*context_, state);
-    value = state->get_abstract_state<SimpleAbstractType>(0).value;
+    value = state->get_abstract_state<SimpleAbstractType>(0).value();
   }
   EXPECT_EQ(input_value_, value);
 }
