@@ -38,42 +38,6 @@ drake_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-drake_cc_binary(
-    name = "urdf_kinematics_test",
-    testonly = 1,
-    srcs = ["test/urdf_kinematics_test.cc"],
-    deps = [
-        ":parsers",
-        "//drake/multibody:rigid_body_tree",
-        "@gtest//:main",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-drake_cc_binary(
-    name = "urdf_collision_test",
-    testonly = 1,
-    srcs = ["test/urdf_collision_test.cc"],
-    deps = [
-        ":parsers",
-        "//drake/multibody:rigid_body_tree",
-        "@gtest//:main",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-drake_cc_binary(
-    name = "urdf_manipulator_dynamics_test",
-    testonly = 1,
-    srcs = ["test/urdf_manipulator_dynamics_test.cc"],
-    deps = [
-        ":parsers",
-        "//drake/multibody:rigid_body_tree",
-        "@gtest//:main",
-    ],
-)
-
 drake_cc_googletest(
     name = "package_map_test",
     srcs = ["test/package_map_test/package_map_test.cc"],
