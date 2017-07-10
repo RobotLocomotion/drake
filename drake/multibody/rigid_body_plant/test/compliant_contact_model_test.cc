@@ -72,7 +72,7 @@ class CompliantContactModelTest : public ContactResultTestCommon {
 
   // Instances owned by the test class.
   unique_ptr<CompliantContactModel<double>> compliant_contact_model_{};
-  // Holds the shared pointer to the tree.
+  // Holds the unique pointer to the tree.
   unique_ptr<RigidBodyTree<double>> unique_tree_{};
 };
 
