@@ -759,8 +759,9 @@ class Reduce : public LeafSystem<double> {
   int sink_input_{-1};
 };
 
-// Diagram inputs and outputs are connected by systems that have direct
-// feedthrough, but the input and output are not connected by such a path.
+// Diagram input and output are connected by a system that has direct
+// feedthrough, but the path between diagram input and output doesn't follow
+// this path.
 GTEST_TEST(PortDependentFeedthroughTest, DetectNoFeedthrough) {
 // This is a diagram that wraps a Reduce Leaf system, exporting the output
 // and the *sink* input. There should be *no* direct feedthrough on the diagram.
@@ -787,8 +788,8 @@ GTEST_TEST(PortDependentFeedthroughTest, DetectNoFeedthrough) {
   EXPECT_FALSE(diagram->HasDirectFeedthrough(0, 0));
 }
 
-// Diagram inputs and outputs are connected by systems that have direct
-// feedthrough, and the input and output *are* connected by such a path.
+// Diagram input and output are connected by a system that has direct
+// feedthrough, and the input and output *are* connected by that path.
 GTEST_TEST(PortDependentFeedthroughTest, DetectFeedthrough) {
 // This is a diagram that wraps a Reduce Leaf system, exporting the output
 // and the *feedthrough* input. There should be direct feedthrough on the
