@@ -535,7 +535,8 @@ template <typename JointType>
 void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
-    double damping = 0.0, coulomb_friction = 0.0, coulomb_window = 0.0;
+    double damping = 0.0, coulomb_friction = 0.0;
+    double coulomb_window = std::numeric_limits<double>::epsilon();
     parseScalarAttribute(dynamics_node, "damping", damping);
     parseScalarAttribute(dynamics_node, "friction", coulomb_friction);
     parseScalarAttribute(dynamics_node, "coulomb_window", coulomb_window);
