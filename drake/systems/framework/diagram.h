@@ -245,12 +245,12 @@ class Diagram : public System<T>,
     return result;
   }
 
-  std::vector<std::pair<int, int>> GetDirectFeedthroughs() const final {
-    std::vector<std::pair<int, int>> pairs;
+  std::multimap<int, int> GetDirectFeedthroughs() const final {
+    std::multimap<int, int> pairs;
     for (int u = 0; u < this->get_num_input_ports(); ++u) {
       for (int v = 0; v < this->get_num_output_ports(); ++v) {
         if (this->HasDirectFeedthrough(u, v)) {
-          pairs.emplace_back(std::make_pair(u, v));
+          pairs.emplace(std::make_pair(u, v));
         }
       }
     }
