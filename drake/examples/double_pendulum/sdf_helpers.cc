@@ -67,7 +67,6 @@ void ParseGeometry(const sdf::ElementPtr& geometry,
 }
 
 void ParseVisual(const sdf::ElementPtr& visual,
-                 const ModelInstance& instance,
                  RigidBody<double>* body,
                  FrameCache<double>* frame_cache) {
   const auto visual_name = visual->Get<std::string>("name");
@@ -86,7 +85,6 @@ void ParseVisual(const sdf::ElementPtr& visual,
 }
 
 void ParseCollision(const sdf::ElementPtr& collision,
-                    const ModelInstance& instance,
                     RigidBody<double>* body,
                     RigidBodyTree<double>* tree,
                     FrameCache<double>* frame_cache) {
@@ -156,7 +154,7 @@ void ParseLink(const sdf::ElementPtr& link,
   if (link->HasElement("visual")) {
     sdf::ElementPtr visual = link->GetElement("visual");
     while (visual != nullptr) {
-      ParseVisual(visual, instance, body.get(), frame_cache);
+      ParseVisual(visual, body.get(), frame_cache);
       visual = visual->GetNextElement("visual");
     }
   }
@@ -164,7 +162,7 @@ void ParseLink(const sdf::ElementPtr& link,
   if (link->HasElement("collision")) {
     sdf::ElementPtr collision = link->GetElement("collision");
     while (collision != nullptr) {
-      ParseCollision(collision, instance, body.get(), tree, frame_cache);
+      ParseCollision(collision, body.get(), tree, frame_cache);
       collision = collision->GetNextElement("collision");
     }
   }
@@ -175,7 +173,6 @@ std::unique_ptr<DrakeJoint>
 ParseJointType(const sdf::ElementPtr& joint,
                const ModelInstance& instance,
                const RigidBody<double>* parent_body,
-               const RigidBody<double>* child_body,
                const FrameCache<double>* frame_cache) {
   const auto joint_name = joint->Get<std::string>("name");
   const auto joint_type = joint->Get<std::string>("type");
@@ -247,7 +244,7 @@ void ParseJoint(const sdf::ElementPtr& joint,
 
   // Update child link's parent and joint.
   child_body->setJoint(ParseJointType(
-      joint, instance, parent_body, child_body, frame_cache));
+      joint, instance, parent_body, frame_cache));
   child_body->set_parent(parent_body);
 }
 
