@@ -972,7 +972,7 @@ class Diagram : public System<T>,
       const System<T>* sys = current_id.first;
       for (int i = 0; i < sys->get_num_input_ports(); ++i) {
         if (sys->HasDirectFeedthrough(i, current_id.second)) {
-          if (sys == target_id.first) {
+          if (sys == target_id.first && i == target_id.second) {
             // We've found a direct-feedthrough path to the input_port.
             return true;
           } else {

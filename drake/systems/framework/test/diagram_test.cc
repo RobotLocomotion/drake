@@ -712,6 +712,110 @@ GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
   EXPECT_NO_THROW(context.reset());
 }
 
+// A simple class that consumes *two* inputs and passes one input through. The
+// sink input (S) is consumed, the feed through input (F) is passed through to
+// the output (O). This system has direct feedthrough, but only with respect to
+// one input. Support class for the PortDependentFeedthroughTest.
+//      +-----------+
+//      +--+        |
+//      +S |        |
+//      +--+     +--+
+//      |     +->+O |
+//      +--+  |  +--+
+//      |F +--+     |
+//      +--+        |
+//      +-----------+
+class Reduce : public LeafSystem<double> {
+ public:
+  Reduce() {
+    feedthrough_input_ = this->DeclareInputPort(kVectorValued, 1).get_index();
+    sink_input_ = this->DeclareInputPort(kVectorValued, 1).get_index();
+    this->DeclareVectorOutputPort(BasicVector<double>(1),
+                                  &Reduce::CalcFeedthrough);
+  }
+
+  const systems::InputPortDescriptor<double>& get_sink_input() {
+    return this->get_input_port(sink_input_);
+  }
+
+  const systems::InputPortDescriptor<double>& get_feedthrough_input() {
+    return this->get_input_port(feedthrough_input_);
+  }
+
+  void CalcFeedthrough(const Context<double>& context,
+                       BasicVector<double>* output) const {
+    const BasicVector<double>* input_vector =
+        this->EvalVectorInput(context, feedthrough_input_);
+    output->get_mutable_value() = input_vector->get_value();
+  }
+
+  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
+                              int input_port, int output_port) const override {
+    return input_port == feedthrough_input_;
+  }
+
+ private:
+  int feedthrough_input_{-1};
+  int sink_input_{-1};
+};
+
+// Diagram inputs and outputs are connected by systems that have direct
+// feedthrough, but the input and output are not connected by such a path.
+GTEST_TEST(PortDependentFeedthroughTest, DetectNoFeedthrough) {
+// This is a diagram that wraps a Reduce Leaf system, exporting the output
+// and the *sink* input. There should be *no* direct feedthrough on the diagram.
+//        +-----------------+
+//        |                 |
+//        |  +-----------+  |
+//        |  +--+        |  |
+//   I +---->+S |        |  |
+//        |  +--+     +--+  |
+//        |  |     +->+O +------> O
+//        |  +--+  |  +--+  |
+//        |  |F +--+     |  |
+//        |  +--+        |  |
+//        |  +-----------+  |
+//        |                 |
+//        +-----------------+
+  DiagramBuilder<double> builder;
+  auto reduce = builder.AddSystem<Reduce>();
+  builder.ExportInput(reduce->get_sink_input());
+  builder.ExportOutput(reduce->get_output_port(0));
+  auto diagram = builder.Build();
+  EXPECT_FALSE(diagram->HasAnyDirectFeedthrough());
+  EXPECT_FALSE(diagram->HasDirectFeedthrough(0));
+  EXPECT_FALSE(diagram->HasDirectFeedthrough(0, 0));
+}
+
+// Diagram inputs and outputs are connected by systems that have direct
+// feedthrough, and the input and output *are* connected by such a path.
+GTEST_TEST(PortDependentFeedthroughTest, DetectFeedthrough) {
+// This is a diagram that wraps a Reduce Leaf system, exporting the output
+// and the *feedthrough* input. There should be direct feedthrough on the
+// diagram.
+//        +-----------------+
+//        |                 |
+//        |  +-----------+  |
+//        |  +--+        |  |
+//        |  |S |        |  |
+//        |  +--+     +--+  |
+//        |  |     +->+O +------> O
+//        |  +--+  |  +--+  |
+//   I +---->|F +--+     |  |
+//        |  +--+        |  |
+//        |  +-----------+  |
+//        |                 |
+//        +-----------------+
+  DiagramBuilder<double> builder;
+  auto reduce = builder.AddSystem<Reduce>();
+  builder.ExportInput(reduce->get_feedthrough_input());
+  builder.ExportOutput(reduce->get_output_port(0));
+  auto diagram = builder.Build();
+  EXPECT_TRUE(diagram->HasAnyDirectFeedthrough());
+  EXPECT_TRUE(diagram->HasDirectFeedthrough(0));
+  EXPECT_TRUE(diagram->HasDirectFeedthrough(0, 0));
+}
+
 // A vector with a scalar configuration and scalar velocity.
 class SecondOrderStateVector : public BasicVector<double> {
  public:
