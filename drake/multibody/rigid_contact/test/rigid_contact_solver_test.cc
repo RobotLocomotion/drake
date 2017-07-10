@@ -37,7 +37,7 @@ class RigidContact2DSolverTest : public ::testing::Test {
     context_->FixInputPort(0, std::move(ext_input));
 
     // Set epsilon.
-    eps_ = 100 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
+    eps_ = 200 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
   }
 
   double cfm_{0};    // Regularization parameter.
@@ -109,9 +109,9 @@ TEST_F(RigidContact2DSolverTest, TwoPointSticking) {
   // Set the state of the rod to resting on its side with no velocity.
   SetRodToRestingHorizontalConfig();
 
-  // Set the rod to infinite friction.
-  const double inf = std::numeric_limits<double>::infinity();
-  rod_->set_mu_coulomb(inf);
+  // Set the rod to large friction.
+  rod_->set_mu_coulomb(15.0);
+  rod_->set_mu_static(15.0);
 
   // Compute the problem data.
   CalcRigidContactAccelProblemData(&data_);
@@ -124,34 +124,42 @@ TEST_F(RigidContact2DSolverTest, TwoPointSticking) {
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
-  // Verify that the frictional forces equal the horizontal forces.
   EXPECT_TRUE(data_.sliding_contacts.empty());
+
+  // Verify that the frictional forces equal the horizontal forces.
   const int nc = data_.non_sliding_contacts.size();
-  EXPECT_NEAR(cf.segment(nc, cf.size() - nc).norm(), horz_f, eps_);
+  EXPECT_NEAR(cf.segment(nc, cf.size() - nc).lpNorm<1>(), horz_f, eps_);
 }
 
-// Tests the rod in a two-point sticking configuration.
-TEST_F(RigidContact2DSolverTest, TwoPointNonSliding) {
+// Tests the rod in a two-point non-sticking configuration that will transition
+// to sliding.
+TEST_F(RigidContact2DSolverTest, TwoPointNonSlidingToSliding) {
   // Set the state of the rod to resting on its side with no velocity.
   SetRodToRestingHorizontalConfig();
 
+  // Set the coefficient of friction.
+  rod_->set_mu_coulomb(0.1);
+  rod_->set_mu_static(0.1);
+
   // Compute the problem data.
   CalcRigidContactAccelProblemData(&data_);
+
+  // Add a force pulling the rod horizontally.
+  const double horz_f = 100.0;
+  data_.f[0] += horz_f;
 
   // Compute the contact forces.
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
-  // Verify that there are no frictional forces.
   EXPECT_TRUE(data_.sliding_contacts.empty());
-  const int nc = data_.non_sliding_contacts.size();
-  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), eps_);
 
-  // Verify that the normal contact forces exactly oppose gravity (there should
-  // be no frictional forces).
-  const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
-      rod_->get_rod_mass();
-  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, eps_);
+  // Verify that the frictional forces are not zero and are less than the
+  // horizontal forces.
+  const int nc = data_.non_sliding_contacts.size();
+  const VectorX<double> ff = cf.segment(nc, cf.size() - nc);
+  EXPECT_GT(ff.norm(), eps_);
+  EXPECT_LT(ff.lpNorm<1>(), horz_f);
 }
 
 // Tests the rod in a two-point sliding configuration.
@@ -162,6 +170,9 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
       get_mutable_continuous_state();
   xc[3] = 1.0;
 
+  // Set the coefficient of friction.
+  rod_->set_mu_coulomb(0.0);
+
   // Compute the problem data.
   CalcRigidContactAccelProblemData(&data_);
 
@@ -169,13 +180,13 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
-  // Verify that there are no frictional forces.
+  // Verify that there are no non-sliding frictional forces.
   EXPECT_TRUE(data_.non_sliding_contacts.empty());
   const int nc = data_.sliding_contacts.size();
-  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), eps_);
+  EXPECT_EQ(cf.size(), nc);
 
-  // Verify that the normal contact forces exactly oppose gravity (there should
-  // be no frictional forces).
+  // Verify that the normal contact forces exactly oppose gravity (the
+  // frictional forces should be zero).
   const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
       rod_->get_rod_mass();
   EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, eps_);
@@ -184,10 +195,13 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
 // Tests the rod in a single point sliding configuration.
 TEST_F(RigidContact2DSolverTest, SinglePointSliding) {
   // Set the state of the rod to resting on its side with horizontal velocity.
-  SetRodToRestingHorizontalConfig();
+  SetRodToRestingVerticalConfig();
   ContinuousState<double>& xc = *context_->
       get_mutable_continuous_state();
   xc[3] = 1.0;
+
+  // Set the coefficient of friction.
+  rod_->set_mu_coulomb(0.0);
 
   // Compute the problem data.
   CalcRigidContactAccelProblemData(&data_);
@@ -196,10 +210,10 @@ TEST_F(RigidContact2DSolverTest, SinglePointSliding) {
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
-  // Verify that there are no frictional forces.
+  // Verify that there are no non-sliding frictional forces.
   EXPECT_TRUE(data_.non_sliding_contacts.empty());
   const int nc = data_.sliding_contacts.size();
-  EXPECT_LT(cf.segment(nc, cf.size() - nc).norm(), eps_);
+  EXPECT_EQ(cf.size(), nc);
 
   // Verify that the normal contact forces exactly oppose gravity (there should
   // be no frictional forces).

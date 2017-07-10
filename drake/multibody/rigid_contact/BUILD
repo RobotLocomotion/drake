@@ -28,8 +28,8 @@ drake_cc_library(
         "rigid_contact_solver.h",
     ],
     deps = [
+        ":rigid_contact",
         "//drake/solvers:mathematical_program",
-        "rigid_contact",
     ],
 )
 

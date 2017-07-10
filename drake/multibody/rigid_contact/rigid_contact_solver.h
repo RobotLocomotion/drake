@@ -53,7 +53,7 @@ class RigidContactSolver {
  private:
   void FormSustainedContactLCP(
       const RigidContactAccelProblemData<T>& problem_data,
-      MatrixX<T>* MM, Eigen::Matrix<T, Eigen::Dynamic, 1>* qq) const;
+      MatrixX<T>* MM, VectorX<T>* qq) const;
 
   drake::solvers::MobyLCPSolver<T> lcp_;
 };
@@ -107,9 +107,16 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
 
   // NOTE: This LCP might not be solvable due to inconsistent configurations.
   // Check the answer and throw a runtime error if it's no good.
-  if (!success || (zz.size() > 0 && (zz.minCoeff() < -10 * zero_tol ||
-      ww.minCoeff() < -10 * zero_tol ||
-      abs(zz.dot(ww)) > nvars * 100 * zero_tol))) {
+  // LCP constraints are zz ≥ 0, ww ≥ 0, zzᵀww = 0. Since the zero tolerance
+  // is used to check a single element for zero (within a single pivoting
+  // operation), we must compensate for the number of pivoting operations and
+  // the problem size. zzᵀww must use a looser tolerance to account for the
+  // nvars multiplies.
+  const int npivots = lcp_.get_num_pivots();
+  if (!success || (zz.size() > 0 &&
+      (zz.minCoeff() < -nvars * npivots * zero_tol ||
+      ww.minCoeff() < -nvars * npivots * zero_tol ||
+      abs(zz.dot(ww)) > nvars * nvars * npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
@@ -124,7 +131,7 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
 template <class T>
 void RigidContactSolver<T>::FormSustainedContactLCP(
     const RigidContactAccelProblemData<T>& problem_data,
-    MatrixX<T>* MM, Eigen::Matrix<T, Eigen::Dynamic, 1>* qq) const {
+    MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
 
@@ -149,11 +156,15 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
 
   // Construct a matrix similar to E in Anitscu and Potra 1997. This matrix
-  // will be used to specify the constraints 0 ≤ μ⋅fN - E⋅fF ⊥ λ ≥ 0 and
-  // 0 ≤ e⋅λ + F⋅dv/dt ⊥ fF ≥ 0.
+  // will be used to specify the constraints:
+  // 0 ≤ μ⋅fN - E⋅fF ⊥ λ ≥ 0 and
+  // 0 ≤ e⋅λ + F⋅dv/dt ⊥ fF ≥ 0,
+  // where λ can roughly be interpreted as the remaining tangential acceleration
+  // at the non-sliding contacts after frictional forces have been applied and
+  // e is a vector of ones (i.e., a segment of the appropriate column of E).
   MatrixX<T> E = MatrixX<T>::Zero(nk, num_non_sliding);
   for (int i = 0, j = 0; i < num_non_sliding; ++i) {
-    const int num_tangent_dirs = problem_data.r[i];
+    const int num_tangent_dirs = problem_data.r[i] * 2;
     E.col(i).segment(j, num_tangent_dirs).setOnes();
     j += num_tangent_dirs;
   }
@@ -162,7 +173,8 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   // N⋅M⁻¹⋅(Nᵀ - μQᵀ)  N⋅M⁻¹⋅Dᵀ  0
   // D⋅M⁻¹⋅Nᵀ          D⋅M⁻¹⋅Dᵀ  E
   // μ                 -Eᵀ       0
-  // where D = [F -F]
+  // where D = |  F |
+  //           | -F |
   const int nvars = nc + nk + num_non_sliding;
   MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
   MM->resize(nvars, nvars);
@@ -174,7 +186,7 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
-  MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose();
+  MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
   MM->block(nc, nc, nr, nr) = F * M_inv_x_FT;
   MM->block(nc, nc + nr, nr, nr) = -MM->block(nc, nc, nr, nr);
 

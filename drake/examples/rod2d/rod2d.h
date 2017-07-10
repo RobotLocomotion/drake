@@ -328,8 +328,8 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.
   double get_mu_static() const { return mu_s_; }
 
-  /// Set compliant contact stiction coefficient (>= mu_coulomb). This has no
-  /// effect if the rod model is not compliant.
+  /// Set contact stiction coefficient (>= mu_coulomb). This has no
+  /// effect if the rod model is time stepping.
   void set_mu_static(double mu_static) {
     DRAKE_DEMAND(mu_static >= mu_);
     mu_s_ = mu_static;
