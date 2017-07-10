@@ -808,15 +808,12 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
       context->get_continuous_state()->get_generalized_velocity();
   diagram.MapVelocityToQDot(*context, v, &qdot);
 
-  // The order of these derivatives is arbitrary, so this test is brittle.
-  // TODO(david-german-tri): Use UnorderedElementsAre once gmock is available
-  // in the superbuild. https://github.com/RobotLocomotion/drake/issues/3133
+  // The order of these derivatives is defined to be the same as the order
+  // subsystems are added.
   EXPECT_EQ(qdot.GetAtIndex(0), 26);
   EXPECT_EQ(qdot.GetAtIndex(1), 34);
 
   // Now map the configuration derivatives back to v.
-  // TODO(david-german-tri): Address the issue broached immediately above
-  // here too.
   BasicVector<double> vmutable(v.size());
   diagram.MapQDotToVelocity(*context, qdot, &vmutable);
   EXPECT_EQ(vmutable.GetAtIndex(0), 13);

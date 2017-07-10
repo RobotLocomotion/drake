@@ -160,25 +160,22 @@ class System {
 
   /// Reports all direct feedthroughs from input ports to output ports. For
   /// a system with m input ports: `I = i₀, i₁, ..., iₘ₋₁`, and n output ports,
-  /// `O = o₀, o₁, ..., oₙ₋₁`, the return map will contain all pairs
-  /// (u, v) such that 0 ≤ u < m, 0 ≤ v < n, and there is a direct feedthrough
-  /// from input iᵤ to each output oᵥ.
+  /// `O = o₀, o₁, ..., oₙ₋₁`, the return map will contain pairs (u, v) such
+  /// that
+  ///     - 0 ≤ u < m,
+  ///     - 0 ≤ v < n,
+  ///     - and there _might_ be a direct feedthrough from input iᵤ to each
+  ///       output oᵥ.
   virtual std::multimap<int, int> GetDirectFeedthroughs() const = 0;
 
   /// Returns `true` if any of the inputs to the system might be directly
   /// fed through to any of its outputs and `false` otherwise.
-  ///
-  /// This method is virtual for framework purposes only. User code should not
-  /// override it.
   bool HasAnyDirectFeedthrough() const {
     return GetDirectFeedthroughs().size() > 0;
   }
 
   /// Returns true if there might be direct-feedthrough from any input port to
   /// the given @p output_port, and false otherwise.
-  ///
-  /// This method is virtual for framework purposes only. User code should not
-  /// override it.
   bool HasDirectFeedthrough(int output_port) const {
     std::multimap<int, int> pairs = GetDirectFeedthroughs();
     for (const auto& pair : pairs) {
@@ -189,9 +186,6 @@ class System {
 
   /// Returns true if there might be direct-feedthrough from the given
   /// @p input_port to the given @p output_port, and false otherwise.
-  ///
-  /// This method is virtual for framework purposes only. User code should not
-  /// override it.
   bool HasDirectFeedthrough(int input_port, int output_port) const {
     std::multimap<int, int> pairs = GetDirectFeedthroughs();
     auto range = pairs.equal_range(input_port);

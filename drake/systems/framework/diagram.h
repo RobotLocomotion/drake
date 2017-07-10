@@ -647,8 +647,8 @@ class Diagram : public System<T>,
     }
   }
 
-  /// Returns the index of the given @p sys in the sorted order of this diagram,
-  /// or aborts if @p sys is not a member of the diagram.
+  /// Returns the index of the given @p sys in this diagram, or aborts if @p sys
+  /// is not a member of the diagram.
   int GetSystemIndexOrAbort(const System<T>* sys) const {
     auto it = system_index_map_.find(sys);
     DRAKE_DEMAND(it != system_index_map_.end());
@@ -812,10 +812,10 @@ class Diagram : public System<T>,
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
-    // Iterate over the subsystems in sorted order, asking each subsystem to
-    // map its subslice of velocity to configuration derivatives. This approach
-    // is valid because the DiagramContinuousState guarantees that the subsystem
-    // states are concatenated in sorted order.
+    // Iterate over the subsystems, asking each subsystem to map its subslice of
+    // velocity to configuration derivatives. This approach is valid because the
+    // DiagramContinuousState guarantees that the subsystem states are
+    // concatenated in order.
     int v_index = 0;  // The next index to read in generalized_velocity.
     int q_index = 0;  // The next index to write in qdot.
     for (int i = 0; i < num_subsystems(); ++i) {
@@ -862,10 +862,10 @@ class Diagram : public System<T>,
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
-    // Iterate over the subsystems in sorted order, asking each subsystem to
-    // map its subslice of configuration derivatives to velocity. This approach
-    // is valid because the DiagramContinuousState guarantees that the subsystem
-    // states are concatenated in sorted order.
+    // Iterate over the subsystems, asking each subsystem to map its subslice of
+    // configuration derivatives to velocity. This approach is valid because the
+    // DiagramContinuousState guarantees that the subsystem states are
+    // concatenated in order.
     int q_index = 0;  // The next index to read in qdot.
     int v_index = 0;  // The next index to write in generalized_velocity.
     for (int i = 0; i < num_subsystems(); ++i) {
@@ -950,8 +950,8 @@ class Diagram : public System<T>,
   }
 
  private:
-  /// Returns true if there might be direct feedthrough from the given
-  /// @p input_port of the Diagram to the given @p output_port of the Diagram.
+  // Returns true if there might be direct feedthrough from the given
+  // @p input_port of the Diagram to the given @p output_port of the Diagram.
   bool DoHasDirectFeedthrough(int input_port, int output_port) const {
     DRAKE_ASSERT(input_port >= 0);
     DRAKE_ASSERT(input_port < this->get_num_input_ports());
@@ -967,7 +967,8 @@ class Diagram : public System<T>,
     active_set.insert(output_port_ids_[output_port]);
     while (!active_set.empty()) {
       const PortIdentifier current_id = *active_set.begin();
-      active_set.erase(current_id);
+      size_t removed_count = active_set.erase(current_id);
+      DRAKE_ASSERT(removed_count == 1);
       const System<T>* sys = current_id.first;
       for (int i = 0; i < sys->get_num_input_ports(); ++i) {
         if (sys->HasDirectFeedthrough(i, current_id.second)) {
@@ -1263,8 +1264,7 @@ class Diagram : public System<T>,
 
     *time = std::numeric_limits<T1>::infinity();
 
-    // Iterate over the subsystems in sorted order, and harvest the most
-    // imminent updates.
+    // Iterate over the subsystems, and harvest the most imminent updates.
     std::vector<T1> times(num_subsystems());
     for (int i = 0; i < num_subsystems(); ++i) {
       const Context<T1>& subcontext = diagram_context->GetSubsystemContext(i);
@@ -1338,13 +1338,14 @@ class Diagram : public System<T>,
     output_port_ids_ = std::move(blueprint->output_port_ids);
     registered_systems_ = std::move(blueprint->systems);
 
-    // Generate a map from the System pointer to its index in the sort order.
+    // Generate a map from the System pointer to its index in the registered
+    // order.
     for (int i = 0; i < num_subsystems(); ++i) {
       system_index_map_[registered_systems_[i].get()] = i;
       registered_systems_[i]->set_parent(this);
     }
 
-    // Every system must appear in the sort order exactly once.
+    // Every system must appear exactly once.
     DRAKE_DEMAND(registered_systems_.size() == system_index_map_.size());
     // Every port named in the dependency_graph_ must actually exist.
     DRAKE_ASSERT(PortsAreValid());
@@ -1374,7 +1375,7 @@ class Diagram : public System<T>,
   void ExportInput(const PortIdentifier& port) {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
-    // Fail quickly if this system is not part of the sort order.
+    // Fail quickly if this system is not part of the diagram.
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
@@ -1418,7 +1419,7 @@ class Diagram : public System<T>,
 
   // Converts a PortIdentifier to a DiagramContext::PortIdentifier.
   // The DiagramContext::PortIdentifier contains the index of the System in the
-  // sorted order of the diagram, instead of an actual pointer to the System.
+  // the diagram, instead of an actual pointer to the System.
   typename DiagramContext<T>::PortIdentifier ConvertToContextPortIdentifier(
       const PortIdentifier& id) const {
     typename DiagramContext<T>::PortIdentifier output;

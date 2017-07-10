@@ -16,7 +16,7 @@ namespace {
 
 // A special class to distinguish between cycles and algebraic loops. The system
 // has one input and two outputs. One output simply "echoes" the input (direct
-// feedthrough. The other output merely outputs a const value. That means, the
+// feedthrough). The other output merely outputs a const value. That means, the
 // system *has* feedthrough, but a cycle in the diagram graph does not imply
 // an algebraic loop.
 template <typename T>
@@ -44,7 +44,6 @@ class ConstAndEcho : public LeafSystem<T> {
     return systems::System<T>::get_output_port(echo_port_);
   }
 
- protected:
   void CalcConstant(const Context<T>& context,
                     BasicVector<T>* const_value) const {
     const_value->get_mutable_value() << 17;
@@ -60,8 +59,8 @@ class ConstAndEcho : public LeafSystem<T> {
   }
 
  private:
-  int const_port_;
-  int echo_port_;
+  int const_port_{-1};
+  int echo_port_{-1};
 };
 
 // Tests that an exception is thrown if the diagram contains an algebraic loop.
@@ -101,6 +100,32 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoLoopPortLevel) {
   EXPECT_NO_THROW(builder.Build());
 }
 
+// Contrasts with CycleButNoLoopPortLevel. In this case, the cycle *does*
+// represent an algebraic loop.
+GTEST_TEST(DiagramBuilderTest, CycleAndLoopPortLevel) {
+  DiagramBuilder<double> builder;
+
+  //    +----------+
+  //    |---+  +---|
+  // +->| I |->| E |--+
+  // |  |---+  +---|  |
+  // |  |      +---|  |
+  // |  |      | C |  |
+  // |  |      +---|  |
+  // |  |__________|  |
+  // |                |
+  // +----------------+
+  //
+  // The input feeds through to the echo output, but it is the constant output
+  // that is connected to input. So, the system has direct feeedthrough, the
+  // diagram has a cycle at the *system* level, but there is no algebraic loop.
+
+  auto echo = builder.AddSystem<ConstAndEcho>();
+  echo->set_name("echo");
+  builder.Connect(echo->get_echo_output_port(), echo->get_vec_input_port());
+  EXPECT_THROW(builder.Build(), std::logic_error);
+}
+
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
 // The cycle contains a system with no direct feedthrough; so the apparent loop
 // is broken at the *system* level.
@@ -127,7 +152,7 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoopSystemLevel) {
 }
 
 // Tests that multiple cascaded elements that are not direct-feedthrough
-// are sortable.
+// are buildable.
 GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
   DiagramBuilder<double> builder;
 

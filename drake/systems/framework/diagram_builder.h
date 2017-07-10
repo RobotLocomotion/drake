@@ -16,8 +16,7 @@
 namespace drake {
 namespace systems {
 
-/// DiagramBuilder is a factory class for Diagram. It collects the dependency
-/// graph of constituent systems, and topologically sorts them. It is single
+/// DiagramBuilder is a factory class for Diagram. It is single
 /// use: after calling Build or BuildInto, DiagramBuilder gives up ownership
 /// of the constituent systems, and should therefore be discarded.
 ///
@@ -340,8 +339,8 @@ class DiagramBuilder {
   // the systems on which they depend.
   std::map<PortIdentifier, PortIdentifier> dependency_graph_;
 
-  // The unsorted set of Systems in this DiagramBuilder. Used for fast
-  // membership queries.
+  // A mirror on the systems in the diagram. Should have the same values as
+  // registered_systems_. Used for fast membership queries.
   std::set<const System<T>*> systems_;
   // The Systems in this DiagramBuilder, in the order they were registered.
   std::vector<std::unique_ptr<System<T>>> registered_systems_;

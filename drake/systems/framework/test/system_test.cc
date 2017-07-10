@@ -76,8 +76,7 @@ class TestSystem : public System<double> {
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;
-    // Support `HasDirectFeedthrough(int, int)`'s behavior: returns true for all
-    // ports.
+    // Report *everything* as having direct feedthrough.
     for (int i = 0; i < get_num_input_ports(); ++i) {
       for (int o = 0; o < get_num_output_ports(); ++o) {
         pairs.emplace(i, o);
@@ -417,8 +416,7 @@ class ValueIOTestSystem : public System<T> {
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;
-    // Support `HasDirectFeedthrough(int, int)`'s behavior: returns true for all
-    // ports.
+    // Report *everything* as having direct feedthrough.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
       for (int o = 0; o < this->get_num_output_ports(); ++o) {
         pairs.emplace(i, o);
