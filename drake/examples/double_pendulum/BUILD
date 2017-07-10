@@ -47,7 +47,7 @@ drake_cc_binary(
     deps = [
         ":sdf_helpers",
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
@@ -75,7 +75,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":sdf_helpers",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
     ],

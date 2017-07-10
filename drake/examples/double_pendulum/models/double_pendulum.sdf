@@ -1,4 +1,5 @@
 <?xml version='1.0' ?>
+<!-- Adapted from from http://models.gazebosim.org/double_pendulum_with_base/model.sdf -->
 <sdf version='1.6'>
   <model name='double_pendulum_with_base'>
     <link name='base'>

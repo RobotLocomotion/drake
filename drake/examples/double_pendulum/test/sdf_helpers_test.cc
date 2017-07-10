@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/drake_joint.h"
 #include "drake/multibody/rigid_body.h"
 
@@ -12,10 +12,10 @@ namespace double_pendulum {
 namespace {
 
 static const char* const kTestSdfPath =
-    "/examples/double_pendulum/models/test.sdf";
+    "drake/examples/double_pendulum/models/test.sdf";
 
 GTEST_TEST(SDFHelpersTest, ParsingTest) {
-  const std::string sdf_path = GetDrakePath() + kTestSdfPath;
+  const std::string sdf_path = FindResourceOrThrow(kTestSdfPath);
   auto tree = std::make_unique<RigidBodyTree<double>>();
   ParseModelFromFile(sdf_path, tree.get());
   tree->compile();
