@@ -11,9 +11,9 @@ namespace {
   
   void TestCare(const Eigen::Ref<const MatrixXd>& A, // passing matricies and values
                 const Eigen::Ref<const MatrixXd>& B,
-                const Eigen::Ref<const MatrixXd>& Q,
+                const Eigen::Ref<const MatrixXd>& C,
                 const Eigen::Ref<const MatrixXd>& R){
-  MatrixXd X = ContinousAlgebraicRicattiEqation(A,B,Q,R); // setting matrix X as the return from CARE
+  MatrixXd X = ContinousAlgebraicRicattiEqation(A,B,C,R); // setting matrix X as the return from CARE
   
   EXPECT_TRUE(CompareMatrices(X, X.transpose(), 1E-10, MatrixCompareType::absolute));
     int n = X.rows();
@@ -34,12 +34,12 @@ namespace {
 GTEST_TEST(CARE, TestCare) {
   // First test
   // Example from mathworks; Continuous-time algebraic Riccati equation solution
-  MatrixXd A1(2,2), B1(2, 1), Q1(1,2), R1(1,1); // Dimensions of matrices
+  MatrixXd A1(2,2), B1(2, 1), C1(1,2), R1(1,1); // Dimensions of matrices
   A1 << -3, 2, 1, 1;
   B1 << 0, 1;
-  Q1 << -1, 1;
+  C1 << -1, 1;
   R1 << 3;
-  SolveDAREandVerify(A1, B1, Q1, R1);
+  SolveDAREandVerify(A1, B1, C1, R1);
 }
 
     }
