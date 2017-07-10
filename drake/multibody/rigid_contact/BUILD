@@ -18,10 +18,30 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_contact_solver",
+    srcs = ["rigid_contact_solver.cc"],
+    hdrs = [
+        "rigid_contact_solver.h",
+    ],
+    deps = [
+        ":rigid_contact",
         "//drake/solvers:mathematical_program",
     ],
 )
 
+
 # === test/ ===
+
+drake_cc_googletest(
+    name = "rigid_contact_solver_test",
+    deps = [
+        ":rigid_contact_solver",
+        "//drake/examples/rod2d",
+    ],
+)
 
 cpplint()

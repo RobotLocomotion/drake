@@ -328,8 +328,8 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.
   double get_mu_static() const { return mu_s_; }
 
-  /// Set compliant contact stiction coefficient (>= mu_coulomb). This has no
-  /// effect if the rod model is not compliant.
+  /// Set contact stiction coefficient (>= mu_coulomb). This has no
+  /// effect if the rod model is time stepping.
   void set_mu_static(double mu_static) {
     DRAKE_DEMAND(mu_static >= mu_);
     mu_s_ = mu_static;
@@ -484,6 +484,17 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
       const systems::Context<T>& context,
       const std::vector<Vector2<T>>& points, std::vector<T>* vels) const;
 
+  /// Initializes the contact data for the rod, given a set of contact points.
+  /// Aborts if data is null or if `points.size() != tangent_vels.size()`.
+  /// @param points a vector of contact points, expressed in the world frame.
+  /// @param tangent_vels a vector of tangent velocities at the contact points,
+  ///        measured along the positive x-axis.
+  /// @param[out] data the rigid contact problem data.
+  void CalcRigidContactProblemData(const systems::Context<T>& context,
+                                   const std::vector<Vector2<T>>& points,
+                                   const std::vector<T>& tangent_vels,
+    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
+
  private:
   friend class Rod2DDAETest;
   friend class Rod2DDAETest_RigidContactProblemDataBallistic_Test;
@@ -497,10 +508,6 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   static Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot);
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
-  void CalcRigidContactProblemData(const systems::Context<T>& context,
-                                   const std::vector<Vector2<T>>& p,
-                                   const std::vector<T>& tangent_vels,
-    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
   int get_k(const systems::Context<T>& context) const;
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
