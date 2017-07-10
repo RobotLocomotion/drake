@@ -279,7 +279,7 @@ drake_cc_library(
     hdrs = ["test/mathematical_program_test_util.h"],
     deps = [
         ":mathematical_program",
-        "@gtest//:main",
+        "@gtest//:without_main",
     ],
 )
 
@@ -293,7 +293,7 @@ drake_cc_library(
         ":mathematical_program_test_util",
         ":solver_type_converter",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:main",
+        "@gtest//:without_main",
     ],
 )
 
