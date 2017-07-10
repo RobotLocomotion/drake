@@ -565,8 +565,8 @@ namespace {
 
 void AddMcCormickVectorConstraints(
     MathematicalProgram* prog, const VectorDecisionVariable<3>& v,
-    const std::vector<Eigen::Matrix<Expression, 3, 1>>& cpos,
-    const std::vector<Eigen::Matrix<Expression, 3, 1>>& cneg,
+    const std::vector<Vector3<Expression>>& cpos,
+    const std::vector<Vector3<Expression>>& cneg,
     const VectorDecisionVariable<3>& v1, const VectorDecisionVariable<3>& v2) {
   const int N = cpos.size();  // number of discretization points.
 
@@ -582,7 +582,7 @@ void AddMcCormickVectorConstraints(
         box_min(2) = EnvelopeMinValue(zi, N);
         box_max(2) = EnvelopeMinValue(zi + 1, N);
 
-        Eigen::Matrix<Expression, 3, 1> this_cpos, this_cneg;
+        Vector3<Expression> this_cpos, this_cneg;
         this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
         this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
 
@@ -632,7 +632,7 @@ void AddMcCormickVectorConstraints(
               unique_intersection = box_max / box_max_norm;
             }
             Eigen::Vector3d orthant_u;
-            Eigen::Matrix<Expression, 3, 1> orthant_c;
+            Vector3<Expression> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
               orthant_u = FlipVector(unique_intersection, o);
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
@@ -688,7 +688,7 @@ void AddMcCormickVectorConstraints(
             Eigen::Matrix<double, 3, 9> A_cross;
 
             Eigen::Vector3d orthant_normal;
-            Eigen::Matrix<Expression, 3, 1> orthant_c;
+            Vector3<Expression> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
               orthant_normal = FlipVector(normal, o);
               orthant_c = PickPermutation(this_cpos, this_cneg, o);
@@ -756,7 +756,6 @@ void AddMcCormickVectorConstraints(
               //     -sin(theta)<=n'*vi <=sin(theta),
               //   we can impose a tighter Lorentz cone constraint
               //     [|sin(theta)|, n'*v1, n'*v2] is in the Lorentz cone.
-              a << orthant_normal, -2, -2, -2;
               prog->AddLinearConstraint(
                 orthant_normal.dot(v1) - 2*orthant_c.sum() >= -sin(theta) - 6);
               prog->AddLinearConstraint(
@@ -766,7 +765,6 @@ void AddMcCormickVectorConstraints(
               prog->AddLinearConstraint(
                 orthant_normal.dot(v2) - 2*orthant_c.sum() <= 1);
 
-              a.tail<3>() << 2, 2, 2;
               prog->AddLinearConstraint(
                 orthant_normal.dot(v1) + 2*orthant_c.sum() >= -1);
               prog->AddLinearConstraint(
@@ -800,12 +798,12 @@ void AddMcCormickVectorConstraints(
               // constraint of the form:
               //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
               prog->AddLinearConstraint(
-                Eigen::Matrix<Expression, 3, 1>::Constant(
+                Vector3<Expression>::Constant(
                   -2*sin(theta/2) - 6 + 2*orthant_c.sum())
                 <= v2 - orthant_normal.cross(v1));
               prog->AddLinearConstraint(
                 v2 - orthant_normal.cross(v1) <=
-                Eigen::Matrix<Expression, 3, 1>::Constant(
+                Vector3<Expression>::Constant(
                   2*sin(theta/2) + 6 - 2*orthant_c.sum()));
             }
           }
@@ -863,8 +861,8 @@ void AddNotInSameOrOppositeOrthantConstraint(
       // orthants, we will impose the constraint
       // vars_oppo_orthant.sum() <= 5. The variables in vars_oppo_orthant
       // depnd on the orthant number o.
-      Eigen::Matrix<symbolic::Variable, 6, 1> vars_same_orthant;
-      Eigen::Matrix<symbolic::Variable, 6, 1> vars_oppo_orthant;
+      Vector6<symbolic::Variable> vars_same_orthant;
+      Vector6<symbolic::Variable> vars_oppo_orthant;
       for (int axis = 0; axis < 3; ++axis) {
         // axis chooses x, y, or z axis.
         if (o & (1 << axis)) {
@@ -883,7 +881,7 @@ void AddNotInSameOrOppositeOrthantConstraint(
           vars_oppo_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
         }
       }
-      prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
+      prog->AddLinearConstraint(Vector6<double>::Ones().transpose(), 0, 5,
                                 vars_same_orthant);
       prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
                                 vars_oppo_orthant);
@@ -911,16 +909,12 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
   //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
   //
-  // For convenience, we introduce additional (continuous) variables to
+  // For convenience, we introduce additional expressions to
   // represent the individual sections of the real line
   //   CRpos[k](i,j) = BRpos[k](i,j) if k=N-1, otherwise
   //   CRpos[k](i,j) = BRpos[k](i,j) - BRpos[k+1](i,j)
-  // This is useful only because the *number of decision variables* that we
-  // pass into the constraints changes for the k=N-1 case.  Otherwise we
-  // could do a simple substitution everywhere.
-  // TODO(russt): Use symbolic constraints and remove these decision variables!
   std::vector<MatrixDecisionVariable<3, 3>> BRpos, BRneg;
-  std::vector<Eigen::Matrix<Expression, 3, 3>> CRpos, CRneg;
+  std::vector<Matrix3<Expression>> CRpos, CRneg;
   for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
     BRpos.push_back(
         prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k)));
@@ -989,7 +983,7 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                                                limits);
 
   // Add constraints to the column and row vectors.
-  std::vector<Eigen::Matrix<Expression, 3, 1>>
+  std::vector<Vector3<Expression>>
       cpos(num_binary_vars_per_half_axis),
       cneg(num_binary_vars_per_half_axis);
   for (int i = 0; i < 3; i++) {
