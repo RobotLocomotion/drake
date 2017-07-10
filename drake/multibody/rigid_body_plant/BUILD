@@ -162,6 +162,7 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )

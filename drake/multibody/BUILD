@@ -325,6 +325,7 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_tree",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -358,6 +359,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -377,6 +379,7 @@ drake_cc_googletest(
     data = ["//drake/examples/Atlas:models"],
     deps = [
         ":rigid_body_constraint",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -404,6 +407,7 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_tree",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/math:jacobian",
         "//drake/multibody/parsers",
     ],
@@ -422,6 +426,7 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_tree_compare_to_clone",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis",
@@ -444,6 +449,7 @@ drake_cc_googletest(
     data = glob(["test/rigid_body_tree/*.urdf"]),
     deps = [
         ":rigid_body_tree",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -466,6 +472,7 @@ drake_cc_googletest(
     data = ["//drake/examples/Atlas:models"],
     deps = [
         ":rigid_body_tree",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -479,6 +486,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -489,6 +497,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -500,6 +509,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -511,6 +521,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
