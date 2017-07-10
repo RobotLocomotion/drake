@@ -2,14 +2,11 @@
 /// @brief  An SDF based double pendulum example.
 ///
 
-#include <cstdlib>
 #include <limits>
 #include <memory>
 
-#include "sdf/sdf.hh"
-
-#include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/double_pendulum/sdf_helpers.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -30,7 +27,7 @@ namespace {
 
 /// Fixed path to double pendulum SDF model.
 static const char* const kDoublePendulumSdfPath =
-  "/examples/double_pendulum/models/double_pendulum.sdf";
+  "drake/examples/double_pendulum/models/double_pendulum.sdf";
 
 ///
 /// Main function for demo.
@@ -40,23 +37,23 @@ int main(int argc, char* argv[]) {
                           "make sure drake-visualizer is running!");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
-  // Instantiate interface and start receiving.
-  auto interface = std::make_unique<lcm::DrakeLcm>();
-  interface->StartReceiveThread();
+  // Instantiate LCM interface and start receiving.
+  auto lcm_interface = std::make_unique<lcm::DrakeLcm>();
+  lcm_interface->StartReceiveThread();
   // Load and parse double pendulum SDF from file into a tree.
-  const std::string sdf_path = GetDrakePath() + kDoublePendulumSdfPath;
+  const std::string sdf_path = FindResourceOrThrow(kDoublePendulumSdfPath);
   auto tree = std::make_unique<RigidBodyTree<double>>();
   ParseModelFromFile(sdf_path, tree.get());
   tree->compile();
   // Instantiate builder.
   systems::DiagramBuilder<double> builder;
-  // Moving double pendulum tree to plant.
+  // Move double pendulum tree to plant.
   auto plant = builder.template AddSystem<systems::RigidBodyPlant<double>>(
       std::move(tree));
-  // Adding visualizer client.
+  // Add visualizer client.
   auto visualizer = builder.template AddSystem<systems::DrakeVisualizer>(
-      plant->get_rigid_body_tree(), interface.get());
-  // Wiring all blocks together.
+      plant->get_rigid_body_tree(), lcm_interface.get());
+  // Wire all blocks together.
   builder.Connect(plant->get_output_port(0),
                   visualizer->get_input_port(0));
   auto diagram = builder.Build();

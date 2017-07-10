@@ -26,65 +26,66 @@ namespace double_pendulum {
 struct ModelInstance {
   ModelInstance(const std::string& name, const int& id)
       : name(name), id(id) {}
-  std::string name;
-  int id;
+  std::string name{};
+  int id{};
 };
 
-Isometry3<double> ParsePose(const sdf::ElementPtr& pose) {
-  const auto native_pose = pose->Get<ignition::math::Pose3d>();
-  const Isometry3<double>::TranslationType translation(
-      native_pose.Pos().X(),
-      native_pose.Pos().Y(),
-      native_pose.Pos().Z());
-  const Quaternion<double> rotation(
-      native_pose.Rot().W(),
-      native_pose.Rot().X(),
-      native_pose.Rot().Y(),
-      native_pose.Rot().Z());
+
+Vector3<double> ToVector(const ignition::math::Vector3d& vector) {
+  return Vector3<double>(vector.X(), vector.Y(), vector.Z());
+}
+
+Isometry3<double> ToIsometry(const ignition::math::Pose3d& pose) {
+  const Isometry3<double>::TranslationType translation(ToVector(pose.Pos()));
+  const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
+                                    pose.Rot().Y(), pose.Rot().Z());
   return translation * rotation;
 }
 
-void ParseGeometry(const sdf::ElementPtr& geometry,
+Isometry3<double> ParsePose(sdf::ElementPtr pose) {
+  return ToIsometry(pose->Get<ignition::math::Pose3d>());
+}
+
+void ParseGeometry(sdf::ElementPtr geometry,
                    DrakeShapes::Element* element) {
   sdf::ElementPtr shape;
   if (geometry->HasElement("cylinder")) {
     shape = geometry->GetElement("cylinder");
-    const sdf::ElementPtr radius = shape->GetElement("radius");
-    const sdf::ElementPtr length = shape->GetElement("length");
+    sdf::ElementPtr radius = shape->GetElement("radius");
+    sdf::ElementPtr length = shape->GetElement("length");
     element->setGeometry(DrakeShapes::Cylinder(
         radius->Get<double>(), length->Get<double>()));
     return;
   }
   if (geometry->HasElement("box")) {
     shape = geometry->GetElement("box");
-    const sdf::ElementPtr size = shape->GetElement("size");
+    sdf::ElementPtr size = shape->GetElement("size");
     const auto xyz = size->Get<ignition::math::Vector3d>();
-    element->setGeometry(DrakeShapes::Box(
-        Vector3<double>(xyz.X(), xyz.Y(), xyz.Z())));
+    element->setGeometry(DrakeShapes::Box(ToVector(xyz)));
     return;
   }
   DRAKE_ABORT_MSG("Unknown geometry!");
 }
 
-void ParseVisual(const sdf::ElementPtr& visual,
+void ParseVisual(sdf::ElementPtr visual,
                  RigidBody<double>* body,
                  FrameCache<double>* frame_cache) {
   const auto visual_name = visual->Get<std::string>("name");
   // Visual element frame's (E) pose in body frame (B).
   auto X_BE = Isometry3<double>::Identity();
   if (visual->HasElement("pose")) {
-    const sdf::ElementPtr pose = visual->GetElement("pose");
+    sdf::ElementPtr pose = visual->GetElement("pose");
     X_BE = ParsePose(pose);
   }
   frame_cache->Update(body->get_name(), visual_name, X_BE);
 
   DrakeShapes::VisualElement element(X_BE);
-  const sdf::ElementPtr geometry = visual->GetElement("geometry");
+  sdf::ElementPtr geometry = visual->GetElement("geometry");
   ParseGeometry(geometry, &element);
   body->AddVisualElement(element);
 }
 
-void ParseCollision(const sdf::ElementPtr& collision,
+void ParseCollision(sdf::ElementPtr collision,
                     RigidBody<double>* body,
                     RigidBodyTree<double>* tree,
                     FrameCache<double>* frame_cache) {
@@ -92,19 +93,19 @@ void ParseCollision(const sdf::ElementPtr& collision,
   // Collision element's frame (E) pose in body frame (B).
   auto X_BE = Isometry3<double>::Identity();
   if (collision->HasElement("pose")) {
-    const sdf::ElementPtr pose = collision->GetElement("pose");
+    sdf::ElementPtr pose = collision->GetElement("pose");
     X_BE = ParsePose(pose);
   }
   frame_cache->Update(body->get_name(), collision_name, X_BE);
   DrakeCollision::Element element(X_BE, body);
-  const sdf::ElementPtr geometry = collision->GetElement("geometry");
+  sdf::ElementPtr geometry = collision->GetElement("geometry");
   ParseGeometry(geometry, &element);
   // Collision elements are added to the rigid body
   // tree, which then updates the corresponding rigid body.
   tree->addCollisionElement(element, *body, "default");
 }
 
-void ParseInertial(const sdf::ElementPtr& inertia,
+void ParseInertial(sdf::ElementPtr inertia,
                    RigidBody<double>* body) {
   // Inertial frame's (I) pose in body frame (B).
   auto X_BI = Isometry3<double>::Identity();
@@ -117,7 +118,7 @@ void ParseInertial(const sdf::ElementPtr& inertia,
   body->set_center_of_mass(X_BI.translation());
 
   if (inertia->HasElement("mass")) {
-    const sdf::ElementPtr mass = inertia->GetElement("mass");
+    sdf::ElementPtr mass = inertia->GetElement("mass");
     body->set_mass(mass->Get<double>());
   }
 
@@ -128,7 +129,7 @@ void ParseInertial(const sdf::ElementPtr& inertia,
   body->set_spatial_inertia(transformSpatialInertia(X_BI, itensor));
 }
 
-void ParseLink(const sdf::ElementPtr& link,
+void ParseLink(sdf::ElementPtr link,
                const ModelInstance& instance,
                RigidBodyTree<double>* tree,
                FrameCache<double>* frame_cache) {
@@ -141,13 +142,13 @@ void ParseLink(const sdf::ElementPtr& link,
   // Body frame's (B) pose in model frame (M).
   auto X_MB = Isometry3<double>::Identity();
   if (link->HasElement("pose")) {
-    const sdf::ElementPtr pose = link->GetElement("pose");
+    sdf::ElementPtr pose = link->GetElement("pose");
     X_MB = ParsePose(pose);
   }
   frame_cache->Update(instance.name, link_name, X_MB);
 
   if (link->HasElement("inertial")) {
-    const sdf::ElementPtr inertia = link->GetElement("inertial");
+    sdf::ElementPtr inertia = link->GetElement("inertial");
     ParseInertial(inertia, body.get());
   }
 
@@ -170,22 +171,19 @@ void ParseLink(const sdf::ElementPtr& link,
 }
 
 std::unique_ptr<DrakeJoint>
-ParseJointType(const sdf::ElementPtr& joint,
+ParseJointType(sdf::ElementPtr joint,
                const ModelInstance& instance,
                const RigidBody<double>* parent_body,
                const FrameCache<double>* frame_cache) {
   const auto joint_name = joint->Get<std::string>("name");
   const auto joint_type = joint->Get<std::string>("type");
   if (joint_type == "revolute") {
-    const sdf::ElementPtr axis = joint->GetElement("axis");
-    const sdf::ElementPtr xyz = axis->GetElement("xyz");
-    const auto native_axis_vector = xyz->Get<ignition::math::Vector3d>();
-    Vector3<double> axis_vector(
-        native_axis_vector.X(),
-        native_axis_vector.Y(),
-        native_axis_vector.Z());
+    sdf::ElementPtr axis = joint->GetElement("axis");
+    sdf::ElementPtr xyz = axis->GetElement("xyz");
+    Vector3<double> axis_vector = ToVector(
+        xyz->Get<ignition::math::Vector3d>());
     if (joint->HasElement("use_parent_model_frame")) {
-      const sdf::ElementPtr use_parent_frame =
+      sdf::ElementPtr use_parent_frame =
           joint->GetElement("use_parent_model_frame");
       if (use_parent_frame->Get<bool>()) {
         // Axis of rotation is defined in the model frame.
@@ -210,18 +208,18 @@ ParseJointType(const sdf::ElementPtr& joint,
   DRAKE_ABORT_MSG("Unknown joint type!");
 }
 
-void ParseJoint(const sdf::ElementPtr& joint,
+void ParseJoint(sdf::ElementPtr joint,
                 const ModelInstance& instance,
                 RigidBodyTree<double>* tree,
                 FrameCache<double>* frame_cache) {
   const auto joint_name = joint->Get<std::string>("name");
 
-  const sdf::ElementPtr parent_link = joint->GetElement("parent");
+  sdf::ElementPtr parent_link = joint->GetElement("parent");
   const auto parent_link_name = parent_link->Get<std::string>();
   RigidBody<double>* parent_body = tree->FindBody(
       parent_link_name, instance.name, instance.id);
 
-  const sdf::ElementPtr child_link = joint->GetElement("child");
+  sdf::ElementPtr child_link = joint->GetElement("child");
   const auto child_link_name = child_link->Get<std::string>();
   RigidBody<double>* child_body = tree->FindBody(
       child_link_name, instance.name, instance.id);
@@ -229,7 +227,7 @@ void ParseJoint(const sdf::ElementPtr& joint,
   // Joint frame's (J) pose in child body frame (C).
   auto X_CJ = Isometry3<double>::Identity();
   if (joint->HasElement("pose")) {
-    const sdf::ElementPtr pose = joint->GetElement("pose");
+    sdf::ElementPtr pose = joint->GetElement("pose");
     // Joint poses specified in SDF files are, by default,
     // in the child link frame.
     X_CJ = ParsePose(pose);
@@ -269,7 +267,7 @@ void FixDanglingLinks(const ModelInstance& instance,
   }
 }
 
-int ParseModel(const sdf::ElementPtr& model, RigidBodyTree<double>* tree) {
+int ParseModel(sdf::ElementPtr model, RigidBodyTree<double>* tree) {
   DRAKE_DEMAND(tree != nullptr);
   DRAKE_DEMAND(model != nullptr);
 
@@ -310,7 +308,7 @@ int ParseModelFromFile(const std::string& sdf_path,
     sdf_element = sdf_element->GetFirstElement();
     DRAKE_DEMAND(sdf_element != nullptr);
   }
-  const sdf::ElementPtr model_element = sdf_element->GetElement("model");
+  sdf::ElementPtr model_element = sdf_element->GetElement("model");
   return ParseModel(model_element, tree);
 }
 
