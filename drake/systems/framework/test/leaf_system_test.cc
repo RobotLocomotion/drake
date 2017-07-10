@@ -902,6 +902,9 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
 GTEST_TEST(FeedthroughTest, DefaultWithNoInputsOrOutputs) {
   DefaultFeedthroughSystem system;
   EXPECT_FALSE(system.HasAnyDirectFeedthrough());
+  // No ports implies no pairs reported for direct feedthrough.
+  std::multimap<int, int> expected;
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
 GTEST_TEST(FeedthroughTest, DefaultWithBothInputsAndOutputs) {
@@ -911,19 +914,55 @@ GTEST_TEST(FeedthroughTest, DefaultWithBothInputsAndOutputs) {
   EXPECT_TRUE(system.HasAnyDirectFeedthrough());
   EXPECT_TRUE(system.HasDirectFeedthrough(0));
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
+  // Confirm all pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(std::make_pair(0, 0));
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
 GTEST_TEST(FeedthroughTest, DefaultWithInputsOnly) {
-  DefaultFeedthroughSystem input_only;
-  input_only.AddAbstractInputPort();
-  EXPECT_FALSE(input_only.HasAnyDirectFeedthrough());
+  DefaultFeedthroughSystem system;
+  system.AddAbstractInputPort();
+  EXPECT_FALSE(system.HasAnyDirectFeedthrough());
+  // No output ports implies no pairs reported for direct feedthrough.
+  std::multimap<int, int> expected;
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
 GTEST_TEST(FeedthroughTest, DefaultWithOutputsOnly) {
-  DefaultFeedthroughSystem output_only;
-  output_only.AddAbstractOutputPort();
-  EXPECT_FALSE(output_only.HasAnyDirectFeedthrough());
-  EXPECT_FALSE(output_only.HasDirectFeedthrough(0));
+  DefaultFeedthroughSystem system;
+  system.AddAbstractOutputPort();
+  EXPECT_FALSE(system.HasAnyDirectFeedthrough());
+  EXPECT_FALSE(system.HasDirectFeedthrough(0));
+  // No input ports implies no pairs reported for direct feedthrough.
+  std::multimap<int, int> expected;
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+}
+
+// With multiple input and output ports, all input ports are thought to feed
+// through to all output ports.
+GTEST_TEST(FeedthroughTest, DefaultWithMultipleIoPorts) {
+  const int input_count = 3;
+  const int output_count = 4;
+  std::multimap<int, int> expected;
+  DefaultFeedthroughSystem system;
+  for (int i = 0; i < input_count; ++i) {
+    system.AddAbstractInputPort();
+    for (int o = 0; o < output_count; ++o) {
+      if (i == 0) system.AddAbstractOutputPort();
+      expected.emplace(std::make_pair(i, o));
+    }
+  }
+  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
+  for (int o = 0; o < output_count; ++o) {
+    EXPECT_TRUE(system.HasDirectFeedthrough(o));
+    for (int i = 0; i < input_count; ++i) {
+      EXPECT_TRUE(system.HasDirectFeedthrough(i, o));
+    }
+  }
+  // No sparsity matrix means all inputs feedthrough to all outputs.
+  auto feedthrough_pairs = system.GetDirectFeedthroughs();
+  EXPECT_EQ(feedthrough_pairs, expected);
 }
 
 // A MIMO system with manually-configured direct feedthrough properties: input
@@ -961,6 +1000,12 @@ GTEST_TEST(FeedthroughTest, ManualSparsity) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
   EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
+  // Confirm all pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(std::make_pair(1, 0));
+  expected.emplace(std::make_pair(0, 1));
+  auto feedthrough_pairs = system.GetDirectFeedthroughs();
+  EXPECT_EQ(feedthrough_pairs, expected);
 }
 
 // SymbolicSparsitySystem has the same sparsity matrix as ManualSparsitySystem,
@@ -1010,6 +1055,12 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
   EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
+  // Confirm all pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(std::make_pair(1, 0));
+  expected.emplace(std::make_pair(0, 1));
+  auto feedthrough_pairs = system.GetDirectFeedthroughs();
+  EXPECT_EQ(feedthrough_pairs, expected);
 }
 
 GTEST_TEST(GraphvizTest, Attributes) {
