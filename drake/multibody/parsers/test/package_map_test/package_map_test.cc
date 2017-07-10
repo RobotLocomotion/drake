@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 
 using std::map;
 using std::string;
@@ -12,6 +12,16 @@ using std::string;
 namespace drake {
 namespace parsers {
 namespace {
+
+string GetTestDataRoot() {
+  const string desired_dir = "drake/multibody/parsers/test/package_map_test/";
+  const string contained_file =
+      "package_map_test_packages/package_map_test_package_a/package.xml";
+  const string absolute_file_path = FindResourceOrThrow(
+      desired_dir + contained_file);
+  return absolute_file_path.substr(
+      0, absolute_file_path.size() - contained_file.size());
+}
 
 void VerifyMatch(const PackageMap& package_map,
     const map<string, string>& expected_packages) {
@@ -28,8 +38,8 @@ void VerifyMatch(const PackageMap& package_map,
 // Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   map<string, string> expected_packages = {
-    {"package_foo", GetDrakePath() + "/multibody/parsers"},
-    {"my_package", GetDrakePath() + "/multibody"}
+    {"package_foo", "drake/multibody/parsers"},
+    {"my_package", "drake/multibody"}
   };
 
   PackageMap package_map;
@@ -42,8 +52,7 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
 
 // Tests that PackageMap can be populated by crawling down a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
-  const string root_path(GetDrakePath() +
-                         "/multibody/parsers/test/package_map_test/");
+  const string root_path = GetTestDataRoot();
 
   PackageMap package_map;
   package_map.PopulateFromFolder(root_path);
@@ -67,8 +76,7 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
 // Tests that PackageMap can handle being populated by crawling down a directory
 // tree when it is provided a path with extraneous trailing slashes.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
-  const string root_path(GetDrakePath() +
-                         "/multibody/parsers/test/package_map_test/");
+  const string root_path = GetTestDataRoot();
 
   PackageMap package_map;
   package_map.PopulateFromFolder(root_path + "///////");
@@ -91,17 +99,18 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
 
 // Tests that PackageMap can be populated by crawling up a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
-  const string sdf_file_name(GetDrakePath() +
-      "/multibody/parsers/test/package_map_test/package_map_test_packages/"
-      "package_map_test_package_a/sdf/test_model.sdf");
+  const string root_path = GetTestDataRoot();
+  const string sdf_file_name = FindResourceOrThrow(
+      "drake/multibody/parsers/test/package_map_test/"
+      "package_map_test_packages/package_map_test_package_a/"
+      "sdf/test_model.sdf");
 
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(sdf_file_name);
 
   map<string, string> expected_packages = {
     {"package_map_test_package_a",
-        GetDrakePath() + "/multibody/parsers/test/package_map_test/"
-                         "package_map_test_packages/package_map_test_package_a"}
+        root_path + "package_map_test_packages/package_map_test_package_a"}
   };
 
   VerifyMatch(package_map, expected_packages);
@@ -110,8 +119,8 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
 // Tests that PackageMap's streaming to-string operator works.
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
   map<string, string> expected_packages = {
-    {"package_foo", GetDrakePath() + "/multibody/parsers"},
-    {"my_package", GetDrakePath() + "/multibody"}
+    {"package_foo", "drake/multibody/parsers"},
+    {"my_package", "drake/multibody"}
   };
 
   PackageMap package_map;
@@ -123,8 +132,8 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   string_buffer << package_map;
   const std::string resulting_string = string_buffer.str();
 
-  // The following simply tests that the package names and their relative
-  // paths exist in the resulting string. It does not check GetDrakePath() since
+  // The following simply tests that the package names and their relative paths
+  // exist in the resulting string. It does not check the literal path since
   // that's system dependent or the actual formatting of the text.
   for (const auto& it : expected_packages) {
     EXPECT_NE(resulting_string.find(it.first), std::string::npos);
