@@ -908,21 +908,29 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   // Creates binary decision variables which discretize each axis.
   //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
   //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
-  //
-  // For convenience, we introduce additional expressions to
-  // represent the individual sections of the real line
-  //   CRpos[k](i,j) = BRpos[k](i,j) if k=N-1, otherwise
-  //   CRpos[k](i,j) = BRpos[k](i,j) - BRpos[k+1](i,j)
   std::vector<MatrixDecisionVariable<3, 3>> BRpos, BRneg;
-  std::vector<Matrix3<Expression>> CRpos, CRneg;
   for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
     BRpos.push_back(
         prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k)));
     BRneg.push_back(
         prog->NewBinaryVariables<3, 3>("BRneg" + std::to_string(k)));
-    CRpos.push_back(Eigen::Matrix3d::Ones());
-    CRneg.push_back(Eigen::Matrix3d::Ones());
   }
+
+  // For convenience, we also introduce additional expressions to
+  // represent the individual sections of the real line
+  //   CRpos[k](i,j) = BRpos[k](i,j) if k=N-1, otherwise
+  //   CRpos[k](i,j) = BRpos[k](i,j) - BRpos[k+1](i,j)
+  std::vector<Matrix3<Expression>> CRpos, CRneg;
+  CRpos.reserve(num_binary_vars_per_half_axis);
+  CRneg.reserve(num_binary_vars_per_half_axis);
+  for (int k = 0; k < num_binary_vars_per_half_axis - 1; k++) {
+    CRpos.push_back(BRpos[k] - BRpos[k + 1]);
+    CRneg.push_back(BRneg[k] - BRneg[k + 1]);
+  }
+  CRpos.push_back(
+    BRpos[num_binary_vars_per_half_axis - 1].cast<symbolic::Expression>());
+  CRneg.push_back(
+    BRneg[num_binary_vars_per_half_axis - 1].cast<symbolic::Expression>());
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
@@ -951,16 +959,9 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
         // whose vertices are (-s2, 1), (0, 0), (s1, 0), (0, 1). By computing
         // the edges of the convex hull, we get
         // -s2 * BRneg[k](i,j) <= R(i,j)+phi(k) <= s1-s1*BRneg[k](i,j)
-        prog->AddLinearConstraint(R(i, j) + phi(k) <= s1 - s1 * BRneg[k](i, j));
+        prog->AddLinearConstraint(R(i, j) + phi(k)
+                                      <= s1 - s1 * BRneg[k](i, j));
         prog->AddLinearConstraint(R(i, j) + phi(k) >= -s2 * BRneg[k](i, j));
-
-        if (k == num_binary_vars_per_half_axis - 1) {
-          CRpos[k](i, j) = BRpos[k](i, j);
-          CRneg[k](i, j) = BRneg[k](i, j);
-        } else {
-          CRpos[k](i, j) = BRpos[k](i, j) - BRpos[k + 1](i, j);
-          CRneg[k](i, j) = BRneg[k](i, j) - BRneg[k + 1](i, j);
-        }
       }
       // R(i,j) has to pick a side, either non-positive or non-negative.
       prog->AddLinearConstraint(BRpos[0](i, j) + BRneg[0](i, j) == 1);
