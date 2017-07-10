@@ -707,6 +707,28 @@ TEST_F(MonomialTest, Substitute) {
   }
 }
 
+TEST_F(MonomialTest, DegreeVariable) {
+  EXPECT_EQ(Monomial().degree(var_x_), 0);
+  EXPECT_EQ(Monomial().degree(var_y_), 0);
+
+  EXPECT_EQ(Monomial(var_x_).degree(var_x_), 1);
+  EXPECT_EQ(Monomial(var_x_).degree(var_y_), 0);
+
+  EXPECT_EQ(Monomial(var_x_, 4).degree(var_x_), 4);
+  EXPECT_EQ(Monomial(var_x_, 4).degree(var_y_), 0);
+
+  EXPECT_EQ(Monomial({{var_x_, 1}, {var_y_, 2}}).degree(var_x_), 1);
+  EXPECT_EQ(Monomial({{var_x_, 1}, {var_y_, 2}}).degree(var_y_), 2);
+}
+
+TEST_F(MonomialTest, TotalDegree) {
+  EXPECT_EQ(Monomial().total_degree(), 0);
+  EXPECT_EQ(Monomial(var_x_).total_degree(), 1);
+  EXPECT_EQ(Monomial(var_x_, 1).total_degree(), 1);
+  EXPECT_EQ(Monomial(var_x_, 4).total_degree(), 4);
+  EXPECT_EQ(Monomial({{var_x_, 1}, {var_y_, 2}}).total_degree(), 3);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
