@@ -5,6 +5,7 @@
 CLANG_FLAGS = [
     "-Werror=all",
     "-Werror=inconsistent-missing-override",
+    "-Werror=shadow",
     "-Werror=sign-compare",
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
@@ -12,6 +13,8 @@ CLANG_FLAGS = [
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
+# TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
 GCC_FLAGS = [
     "-Werror=all",
     "-Werror=extra",
