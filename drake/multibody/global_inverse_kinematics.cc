@@ -1,5 +1,6 @@
 #include "drake/multibody/global_inverse_kinematics.h"
 
+#include <stack>
 #include <string>
 
 #include "drake/common/eigen_types.h"
@@ -224,6 +225,80 @@ GlobalInverseKinematics::body_position(int body_index) const {
   return p_WBo_[body_index];
 }
 
+void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
+    int body_idx,
+    Eigen::Ref<Eigen::VectorXd> q,
+    std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const {
+  const RigidBody<double> &body = robot_->get_body(body_idx);
+  const RigidBody<double> *parent = body.get_parent();
+  if (!body.IsRigidlyFixedToWorld()) {
+    const Matrix3d R_WC = GetSolution(R_WB_[body_idx]);
+    // R_WP is the rotation matrix of parent frame to the world frame.
+    const Matrix3d& R_WP = reconstruct_R_WB->at(parent->get_body_index());
+    const DrakeJoint *joint = &(body.getJoint());
+    const auto &X_PF = joint->get_transform_to_parent_body();
+
+    int num_positions = joint->get_num_positions();
+    // For each different type of joints, use a separate branch to compute
+    // the posture for that joint.
+    if (joint->is_floating()) {
+      // p_WBi is the position of the body frame in the world frame.
+      Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
+      Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WC);
+
+      q.segment<3>(body.get_position_start_index()) = p_WBi;
+      if (num_positions == 6) {
+        // The position order is x-y-z-roll-pitch-yaw.
+        q.segment<3>(body.get_position_start_index() + 3) =
+            math::rotmat2rpy(normalized_rotmat);
+      } else {
+        // The position order is x-y-z-qw-qx-qy-qz, namely translation
+        // first, and quaternion second.
+        q.segment<4>(body.get_position_start_index() + 3) =
+            math::rotmat2quat(normalized_rotmat);
+      }
+      reconstruct_R_WB->at(body_idx) = normalized_rotmat;
+    } else if (num_positions == 1) {
+      const double joint_lb = joint->getJointLimitMin()(0);
+      const double joint_ub = joint->getJointLimitMax()(0);
+      // Should NOT do this evil dynamic cast here, but currently we do
+      // not have a method to tell if a joint is revolute or not.
+      if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
+        const RevoluteJoint *revolute_joint =
+            dynamic_cast<const RevoluteJoint *>(joint);
+        const Matrix3d joint_rotmat =
+            X_PF.linear().transpose() *
+                R_WP.transpose() * R_WC;
+        // The joint_rotmat is very likely not on SO(3). The reason is
+        // that we use a relaxation of the rotation matrix, and thus
+        // R_WC might not lie on SO(3) exactly. Here we need to project
+        // joint_rotmat to SO(3), with joint axis as the rotation axis, and
+        // joint limits as the lower and upper bound on the rotation angle.
+        const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
+        const double
+            revolute_joint_angle = math::ProjectMatToRotMatWithAxis(
+            joint_rotmat, rotate_axis, joint_lb, joint_ub);
+        q(body.get_position_start_index()) = revolute_joint_angle;
+        reconstruct_R_WB->at(body_idx) =
+            R_WP * X_PF.linear() *
+                Eigen::AngleAxisd(revolute_joint_angle, rotate_axis)
+                    .toRotationMatrix();
+      } else {
+        // TODO(hongkai.dai): add prismatic and helical joints.
+        throw std::runtime_error("Unsupported joint type.");
+      }
+    } else if (num_positions == 0) {
+      // Deliberately left empty because the joint is removed by welding the
+      // parent body to the child body.
+    }
+  } else {
+    // The reconstructed body orientation is just the world fixed
+    // orientation.
+    const Isometry3d X_WB = body.ComputeWorldFixedPose();
+    reconstruct_R_WB->at(body_idx) = X_WB.linear();
+  }
+}
+
 Eigen::VectorXd
 GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   Eigen::VectorXd q(robot_->get_num_positions());
@@ -239,89 +314,25 @@ GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   int num_link_visited = 1;
   int body_idx = 1;
   while (num_link_visited < robot_->get_num_bodies()) {
-    const RigidBody<double> &body = robot_->get_body(body_idx);
-    const RigidBody<double> *parent = body.get_parent();
-    const int parent_idx = parent->get_body_index();
-    if (is_link_visited[parent_idx]) {
-      // If the parent link has been visited, then the angles of all the joints
-      // on the kinematic path from the root link to the parent link have been
-      // computed. We can use the reconstructed parent link orientation.
-      if (!body.IsRigidlyFixedToWorld()) {
-        const Matrix3d R_WC = GetSolution(R_WB_[body_idx]);
-        // R_WP is the rotation matrix of parent frame to the world frame.
-        const Matrix3d R_WP = reconstruct_R_WB[parent->get_body_index()];
-        const DrakeJoint *joint = &(body.getJoint());
-        const auto &X_PF = joint->get_transform_to_parent_body();
-
-        int num_positions = joint->get_num_positions();
-        // For each different type of joints, use a separate branch to compute
-        // the posture for that joint.
-        if (joint->is_floating()) {
-          // p_WBi is the position of the body frame in the world frame.
-          Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
-          Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WC);
-
-          q.segment<3>(body.get_position_start_index()) = p_WBi;
-          if (num_positions == 6) {
-            // The position order is x-y-z-roll-pitch-yaw.
-            q.segment<3>(body.get_position_start_index() + 3) =
-                math::rotmat2rpy(normalized_rotmat);
-          } else {
-            // The position order is x-y-z-qw-qx-qy-qz, namely translation
-            // first, and quaternion second.
-            q.segment<4>(body.get_position_start_index() + 3) =
-                math::rotmat2quat(normalized_rotmat);
-          }
-          reconstruct_R_WB[body_idx] = normalized_rotmat;
-        } else if (num_positions == 1) {
-          const double joint_lb = joint->getJointLimitMin()(0);
-          const double joint_ub = joint->getJointLimitMax()(0);
-          // Should NOT do this evil dynamic cast here, but currently we do
-          // not have a method to tell if a joint is revolute or not.
-          if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
-            const RevoluteJoint *revolute_joint =
-                dynamic_cast<const RevoluteJoint *>(joint);
-            const Matrix3d joint_rotmat =
-                X_PF.linear().transpose() *
-                    R_WP.transpose() * R_WC;
-            // The joint_rotmat is very likely not on SO(3). The reason is
-            // that we use a relaxation of the rotation matrix, and thus
-            // R_WC might not lie on SO(3) exactly. Here we need to project
-            // joint_rotmat to SO(3), with joint axis as the rotation axis, and
-            // joint limits as the lower and upper bound on the rotation angle.
-            const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
-            const double
-                revolute_joint_angle = math::ProjectMatToRotMatWithAxis(
-                joint_rotmat, rotate_axis, joint_lb, joint_ub);
-            q(body.get_position_start_index()) = revolute_joint_angle;
-            reconstruct_R_WB[body_idx] =
-                R_WP * X_PF.linear() *
-                    Eigen::AngleAxisd(revolute_joint_angle, rotate_axis)
-                        .toRotationMatrix();
-          } else {
-            // TODO(hongkai.dai): add prismatic and helical joints.
-            throw std::runtime_error("Unsupported joint type.");
-          }
-        } else if (num_positions == 0) {
-          // Deliberately left empty because the joint is removed by welding the
-          // parent body to the child body.
-        }
-      } else {
-        // The reconstructed body orientation is just the world fixed
-        // orientation.
-        const Isometry3d X_WB = body.ComputeWorldFixedPose();
-        reconstruct_R_WB[body_idx] = X_WB.linear();
-      }
-      // The joint on this link has been computed, so set the flag to true
-      // and move to next link.
-      is_link_visited[body_idx] = true;
-      ++body_idx;
-      ++num_link_visited;
-    } else {
-      // If the joint on the parent link has not been reconstructed, then we
-      // move up the tree, to the parent link.
-      body_idx = parent_idx;
+    // unvisited_links records all the unvisited links, along the kinematic
+    // path from the root to the body with index body_idx (including body_idx).
+    std::stack<int> unvisited_links;
+    unvisited_links.push(body_idx);
+    int parent_idx = robot_->get_body(body_idx).get_parent()->get_body_index();
+    while (!is_link_visited[parent_idx]) {
+      unvisited_links.push(parent_idx);
+      parent_idx = robot_->get_body(parent_idx).get_parent()->get_body_index();
     }
+    // Now the link parent_idx has been visited.
+    while (!unvisited_links.empty()) {
+      int unvisited_link_idx = unvisited_links.top();
+      unvisited_links.pop();
+      ReconstructGeneralizedPositionSolutionForBody(unvisited_link_idx, q,
+                                                    &reconstruct_R_WB);
+      is_link_visited[unvisited_link_idx] = true;
+      ++num_link_visited;
+    }
+    ++body_idx;
   }
   return q;
 }

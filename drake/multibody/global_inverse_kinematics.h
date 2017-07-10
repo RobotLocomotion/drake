@@ -243,6 +243,13 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   // p_WBo_[i] is the position of the origin Bo of body frame B for the i'th
   // body, measured and expressed in the world frame.
   std::vector<solvers::VectorDecisionVariable<3>> p_WBo_;
+
+  // This is an utility function for `ReconstructGeneralizedPositionSolution`.
+  // This function computes the joint generalized position on the body with
+  // index body_idx.
+  void ReconstructGeneralizedPositionSolutionForBody(
+      int body_idx, Eigen::Ref<Eigen::VectorXd> q,
+      std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
 };
 }  // namespace multibody
 }  // namespace drake
