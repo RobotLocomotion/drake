@@ -62,12 +62,6 @@ bool FCLModel::collisionRaycast(const Eigen::Matrix3Xd& origins,
   return false;
 }
 
-std::vector<PointPair> FCLModel::potentialCollisionPoints(bool use_margins) {
-  drake::unused(use_margins);
-  DRAKE_ABORT_MSG("Not implemented.");
-  return std::vector<PointPair>();
-}
-
 bool FCLModel::collidingPointsCheckOnly(
     const std::vector<Eigen::Vector3d>& input_points,
     double collision_threshold) {
