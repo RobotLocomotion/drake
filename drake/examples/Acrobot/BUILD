@@ -157,6 +157,7 @@ drake_cc_binary(
     data = [":models"],
     deps = [
         ":acrobot_plant",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
@@ -175,6 +176,7 @@ drake_cc_binary(
     deps = [
         ":acrobot_plant",
         ":acrobot_swing_up",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/joints",
@@ -211,6 +213,7 @@ drake_cc_binary(
     deps = [
         ":acrobot_lcm",
         ":acrobot_plant",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",

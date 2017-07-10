@@ -30,7 +30,6 @@ drake_cc_library(
         "xml_util.h",
     ],
     deps = [
-        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/thirdParty:spruce",
         "//drake/thirdParty:tinydir",
@@ -46,6 +45,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":parsers",
+        "//drake/common:find_resource",
     ],
 )
 

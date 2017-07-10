@@ -130,6 +130,7 @@ drake_cc_googletest(
     deps = [
         ":pendulum_plant",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
