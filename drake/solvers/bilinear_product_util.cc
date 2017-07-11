@@ -50,17 +50,16 @@ symbolic::Expression ReplaceBilinearTerms(
   map_replaced.reserve(map_bilinear.size());
   for (const auto& p : map_bilinear) {
     std::unordered_map<int, int> monomial_map;
-    int xy_total_degree{0};
+    int monomial_degree = p.first.total_degree();
     for (const auto& var_power : p.first.get_powers()) {
       monomial_map.emplace(var_power.first.get_id(), var_power.second);
-      xy_total_degree += var_power.second;
     }
-    if (xy_total_degree > 2) {
+    if (monomial_degree > 2) {
       std::ostringstream oss;
       oss << "The term " << p.first
           << " has degree larger than 2 on the variables";
       throw std::runtime_error(oss.str());
-    } else if (xy_total_degree < 2) {
+    } else if (monomial_degree < 2) {
       // Only linear or constant terms, do not need to replace the variables.
       auto it = map_replaced.find(p.first);
       if (it != map_replaced.end()) {
