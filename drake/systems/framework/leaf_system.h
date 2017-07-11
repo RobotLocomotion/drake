@@ -203,7 +203,7 @@ class LeafSystem : public System<T> {
     for (int u = 0; u < this->get_num_input_ports(); ++u) {
       for (int v = 0; v < this->get_num_output_ports(); ++v) {
         if (DoHasDirectFeedthrough(sparsity.get(), u, v)) {
-          pairs.emplace(std::make_pair(u, v));
+          pairs.emplace(u, v);
         }
       }
     }

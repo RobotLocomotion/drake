@@ -916,7 +916,7 @@ GTEST_TEST(FeedthroughTest, DefaultWithBothInputsAndOutputs) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
   // Confirm all pairs are returned.
   std::multimap<int, int> expected;
-  expected.emplace(std::make_pair(0, 0));
+  expected.emplace(0, 0);
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
@@ -950,7 +950,7 @@ GTEST_TEST(FeedthroughTest, DefaultWithMultipleIoPorts) {
     system.AddAbstractInputPort();
     for (int o = 0; o < output_count; ++o) {
       if (i == 0) system.AddAbstractOutputPort();
-      expected.emplace(std::make_pair(i, o));
+      expected.emplace(i, o);
     }
   }
   EXPECT_TRUE(system.HasAnyDirectFeedthrough());
@@ -1002,8 +1002,8 @@ GTEST_TEST(FeedthroughTest, ManualSparsity) {
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
   // Confirm all pairs are returned.
   std::multimap<int, int> expected;
-  expected.emplace(std::make_pair(1, 0));
-  expected.emplace(std::make_pair(0, 1));
+  expected.emplace(1, 0);
+  expected.emplace(0, 1);
   auto feedthrough_pairs = system.GetDirectFeedthroughs();
   EXPECT_EQ(feedthrough_pairs, expected);
 }
@@ -1057,8 +1057,8 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
   // Confirm all pairs are returned.
   std::multimap<int, int> expected;
-  expected.emplace(std::make_pair(1, 0));
-  expected.emplace(std::make_pair(0, 1));
+  expected.emplace(1, 0);
+  expected.emplace(0, 1);
   auto feedthrough_pairs = system.GetDirectFeedthroughs();
   EXPECT_EQ(feedthrough_pairs, expected);
 }
