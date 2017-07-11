@@ -958,7 +958,7 @@ class Diagram : public System<T>,
     DRAKE_ASSERT(output_port >= 0);
     DRAKE_ASSERT(output_port < this->get_num_output_ports());
 
-    const PortIdentifier& target_id = input_port_ids_[input_port];
+    const PortIdentifier& target_input_id = input_port_ids_[input_port];
 
     // Search the graph for a direct-feedthrough connection from the output_port
     // back to the input_port. Maintain a set of the output port identifiers
@@ -966,21 +966,21 @@ class Diagram : public System<T>,
     std::set<PortIdentifier> active_set;
     active_set.insert(output_port_ids_[output_port]);
     while (!active_set.empty()) {
-      const PortIdentifier current_id = *active_set.begin();
-      size_t removed_count = active_set.erase(current_id);
+      const PortIdentifier current_output_id = *active_set.begin();
+      size_t removed_count = active_set.erase(current_output_id);
       DRAKE_ASSERT(removed_count == 1);
-      const System<T>* sys = current_id.first;
+      const System<T>* sys = current_output_id.first;
       for (int i = 0; i < sys->get_num_input_ports(); ++i) {
-        if (sys->HasDirectFeedthrough(i, current_id.second)) {
-          if (sys == target_id.first && i == target_id.second) {
+        if (sys->HasDirectFeedthrough(i, current_output_id.second)) {
+          const PortIdentifier curr_input_id(sys, i);
+          if (curr_input_id == target_input_id) {
             // We've found a direct-feedthrough path to the input_port.
             return true;
           } else {
             // We've found an intermediate input port has a direct-feedthrough
             // path to the output_port. Add the upstream output port (if there
             // is one) to the active set.
-            const PortIdentifier pos(sys, i);
-            auto it = dependency_graph_.find(pos);
+            auto it = dependency_graph_.find(curr_input_id);
             if (it != dependency_graph_.end()) {
               const PortIdentifier& upstream_output = it->second;
               active_set.insert(upstream_output);
