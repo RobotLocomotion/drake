@@ -1093,22 +1093,6 @@ class RigidBodyTree {
       Eigen::Matrix3Xd& ptsB,
       bool use_margins = true);
 
-  void potentialCollisions(
-      const KinematicsCache<double>& cache,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& phi,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normal,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xA,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyA_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      bool use_margins = true);
-
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
 

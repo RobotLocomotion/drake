@@ -60,31 +60,11 @@ typedef std::unordered_map<const DrakeCollision::Element*, SurfacePoint>
 //   Results are in bodies' frames.
 // - ComputeMaximumDepthCollisionPoints: Uses collision library dispatching.
 //   Results are in world frame.
-// - potentialCollisionPoints: randomly samples collision elements' pose
-//   searching for potential collision points. Results are in the bodies'
-//   frames.
 
 // CLEARING CACHED RESULTS TEST
 // Test ClearCachedResults tests the model is not caching results when a series
 // of collision dispatch queries is performed. This ensures results do not
 // depend on the past history and that the user gets a fresh query every time.
-
-// REMARKS ON MULTICONTACT
-// Results from Model::potentialCollisionPoints are affected by previous calls
-// to Model::ComputeMaximumDepthCollisionPoints even if cached results are
-// cleared with Model::ClearCachedResults. This is the reason why multicontact
-// tests using Model::potentialCollisionPoints are performed separately in their
-// own tests.
-// For instance, for the NonAlignedBoxes there is a separate test called
-// NonAlignedBoxes_multi performed with Model::potentialCollisionPoints.
-// It seems like Bullet is storing some additional configuration setup with the
-// call to Model::ComputeMaximumDepthCollisionPoints that persists throughout
-// subsequent calls to Model::potentialCollisionPoints.
-// Therefore, DO NOT mix these calls since they might produce erroneous results.
-// Notice also that the tolerance used for these tests is much higher. The
-// reason is that Bullet randomly changes the pose of the collision elements
-// searching for potential collision points. This is the additional source of
-// error introduced.
 
 /*
  * Three bodies (cube (1 m edges) and two spheres (0.5 m radii) arranged like
@@ -360,48 +340,6 @@ TEST_F(BoxVsSphereTest, SingleContact) {
       points[0].ptA.isApprox(solution_[points[0].elementA].world_frame));
   EXPECT_TRUE(
       points[0].ptB.isApprox(solution_[points[0].elementB].world_frame));
-
-  // Calls to BulletModel::potentialCollisionPoints cannot be mixed.
-  // Therefore throw an exception if user attempts to call
-  // potentialCollisionPoints after calling another dispatch method.
-  points.clear();
-  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
-               std::runtime_error);
-}
-
-// This test is exactly the same as the previous Box_vs_Sphere test.
-// The difference is that a multi-contact algorithm is being used.
-// See REMARKS ON MULTICONTACT at the top of this file.
-TEST_F(BoxVsSphereTest, MultiContact) {
-  // Numerical precision tolerance to perform floating point comparisons.
-  // Its magnitude was chosen to be the minimum value for which these tests can
-  // successfully pass.
-  tolerance_ = 2.0e-4;
-
-  // List of collision points.
-  std::vector<PointPair> points;
-
-  // Collision test performed with Model::potentialCollisionPoints.
-  points.clear();
-  points = model_->potentialCollisionPoints(false);
-
-  ASSERT_EQ(1u, points.size());
-  EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
-  // Points are in the bodies' frame on the surface of the corresponding body.
-  EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
-
-  // Ensures the vertical coordinate is computed within tolerance_.
-  EXPECT_NEAR(points[0].ptA.y(),
-              solution_[points[0].elementA].body_frame.y(), tolerance_);
-  EXPECT_NEAR(points[0].ptB.y(),
-              solution_[points[0].elementB].body_frame.y(), tolerance_);
-
-  // Notice however that the x and z coordinates are computed with a much
-  // larger error.
-  EXPECT_TRUE(points[0].ptA.isApprox(
-      solution_[points[0].elementA].body_frame, tolerance_ * 200));
-  EXPECT_TRUE(points[0].ptB.isApprox(
-      solution_[points[0].elementB].body_frame, tolerance_ * 200));
 }
 
 // This test seeks to find out whether DrakeCollision::Model can report
@@ -519,46 +457,6 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
               solution_[points[0].elementA].world_frame.y(), tolerance_);
   EXPECT_NEAR(points[0].ptB.y(),
               solution_[points[0].elementB].world_frame.y(), tolerance_);
-
-  points.clear();
-  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
-               std::runtime_error);
-}
-
-// This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
-// The difference is that a multi-contact algorithm is being used.
-// See REMARKS ON MULTICONTACT at the top of this file.
-TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
-  // Numerical precision tolerance to perform floating point comparisons.
-  // Its magnitude was chosen to be the minimum value for which these tests can
-  // successfully pass.
-  tolerance_ = 2.0e-9;
-
-  // List of collision points.
-  std::vector<PointPair> points;
-
-  // Unfortunately DrakeCollision::Model is randomly selecting the contact
-  // points. It is not even clear at this stage how many points in the manifold
-  // we should expect.
-  // What we can test for sure are:
-  // 1. The penetration depth.
-  // 2. The vertical position of the collision point (since for any of the four
-  //    corners of the small box is the same).
-
-  // Collision test performed with Model::potentialCollisionPoints.
-  points = model_->potentialCollisionPoints(false);
-  ASSERT_EQ(4u, points.size());
-  for (const PointPair& point : points) {
-    EXPECT_NEAR(-0.1, point.distance, tolerance_);
-    EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
-    // Collision points are reported on each of the respective bodies' frames.
-    // This is consistent with the return by Model::closestPointsAllToAll.
-    // Only test for vertical position.
-    EXPECT_NEAR(point.ptA.y(),
-                solution_[point.elementA].body_frame.y(), tolerance_);
-    EXPECT_NEAR(point.ptB.y(),
-                solution_[point.elementB].body_frame.y(), tolerance_);
-  }
 }
 
 // This test seeks to find out whether DrakeCollision::Model can report
@@ -660,41 +558,6 @@ TEST_F(NonAlignedBoxes, SingleContact) {
               solution_[points[0].elementA].world_frame.y(), tolerance_);
   EXPECT_NEAR(points[0].ptB.y(),
               solution_[points[0].elementB].world_frame.y(), tolerance_);
-
-  points.clear();
-  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
-               std::runtime_error);
-}
-
-// This test is exactly the same as the previous NonAlignedBoxes.
-// The difference is that a multi-contact algorithm is being used.
-// See REMARKS ON MULTICONTACT at the top of this file.
-TEST_F(NonAlignedBoxes, MultiContact) {
-  // Numerical precision tolerance to perform floating point comparisons.
-  // Its magnitude was chosen to be the minimum value for which these tests can
-  // successfully pass.
-  tolerance_ = 5.0e-4;
-
-  // List of collision points.
-  std::vector<PointPair> points;
-
-  // Collision test performed with Model::potentialCollisionPoints.
-  points.clear();
-  points = model_->potentialCollisionPoints(false);
-  ASSERT_EQ(4u, points.size());
-
-  for (const PointPair& point : points) {
-    EXPECT_NEAR(-0.1, point.distance, tolerance_);
-    EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0),
-                                               tolerance_ * 50));
-    // Collision points are reported on each of the respective bodies' frames.
-    // This is consistent with the return by Model::closestPointsAllToAll.
-    // Only test for vertical position.
-    EXPECT_NEAR(point.ptA.y(),
-                solution_[points[0].elementA].body_frame.y(), tolerance_);
-    EXPECT_NEAR(point.ptB.y(),
-                solution_[points[0].elementB].body_frame.y(), tolerance_);
-  }
 }
 
 // Tests the model is not caching results from a series of different queries.

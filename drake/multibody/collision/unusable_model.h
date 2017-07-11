@@ -45,8 +45,6 @@ class UnusableModel : public Model {
                         Eigen::VectorXd& distances,
                         Eigen::Matrix3Xd& normals) override;
 
-  std::vector<PointPair> potentialCollisionPoints(bool use_margins) override;
-
   bool collidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;

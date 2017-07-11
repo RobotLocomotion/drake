@@ -27,9 +27,6 @@ Eigen::Map<const Vector3d> toVector3d(const btVector3& bt_vec) {
   return Eigen::Map<const Vector3d>(bt_vec.m_floats);
 }
 
-static const int kPerturbationIterations = 8;
-static const int kMinimumPointsPerturbationThreshold = 8;
-
 namespace {
 // Converts between two representations of a pose.
 btTransform convert(const Isometry3d &T) {
@@ -390,81 +387,6 @@ void BulletModel::DoAddElement(const Element& element) {
       bt_collision_shapes_.push_back(move(bt_shape_no_margin));
     }
   }
-}
-
-std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
-  if (dispatch_method_in_use_ == kNotYetDecided) {
-    dispatch_method_in_use_ = kPotentialCollisionPoints;
-  } else if (dispatch_method_in_use_ != kPotentialCollisionPoints) {
-    throw std::runtime_error(
-        "Calling BulletModel::potentialCollisionPoints after previously using"
-            " another dispatch method will result in undefined behavior.");
-  }
-
-  BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
-  bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(
-      kPerturbationIterations, kMinimumPointsPerturbationThreshold);
-  bt_world.bt_collision_configuration.setPlaneConvexMultipointIterations(
-      kPerturbationIterations, kMinimumPointsPerturbationThreshold);
-  std::vector<PointPair> point_pairs;
-  bt_world.bt_collision_world->performDiscreteCollisionDetection();
-  int numManifolds =
-      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
-
-  for (int i = 0; i < numManifolds; i++) {
-    btPersistentManifold* contact_manifold =
-        bt_world.bt_collision_world->getDispatcher()
-            ->getManifoldByIndexInternal(i);
-    const btCollisionObject* obA = contact_manifold->getBody0();
-    const btCollisionObject* obB = contact_manifold->getBody1();
-
-    auto elementA = static_cast<Element*>(obA->getUserPointer());
-    auto elementB = static_cast<Element*>(obB->getUserPointer());
-
-    DrakeShapes::Shape shapeA = elementA->getShape();
-    DrakeShapes::Shape shapeB = elementB->getShape();
-
-    ElementId idA = elementA->getId();
-    ElementId idB = elementB->getId();
-
-    double marginA = 0;
-    double marginB = 0;
-
-    if (shapeA == DrakeShapes::MESH || shapeA == DrakeShapes::BOX) {
-      marginA = obA->getCollisionShape()->getMargin();
-    }
-    if (shapeB == DrakeShapes::MESH || shapeB == DrakeShapes::BOX) {
-      marginB = obB->getCollisionShape()->getMargin();
-    }
-    int num_contacts = contact_manifold->getNumContacts();
-
-    for (int j = 0; j < num_contacts; j++) {
-      btManifoldPoint& pt = contact_manifold->getContactPoint(j);
-      const btVector3& normal_on_B = pt.m_normalWorldOnB;
-      const btVector3& point_on_A_in_world =
-          pt.getPositionWorldOnA() + normal_on_B * marginA;
-      const btVector3& point_on_B_in_world =
-          pt.getPositionWorldOnB() - normal_on_B * marginB;
-      const btVector3 point_on_elemA =
-          obA->getWorldTransform().invXform(point_on_A_in_world);
-      const btVector3 point_on_elemB =
-          obB->getWorldTransform().invXform(point_on_B_in_world);
-
-      auto point_on_A =
-          elements[idA]->getLocalTransform() * toVector3d(point_on_elemA);
-      auto point_on_B =
-          elements[idB]->getLocalTransform() * toVector3d(point_on_elemB);
-
-      point_pairs.emplace_back(
-          elements[idA].get(), elements[idB].get(),
-          point_on_A, point_on_B, toVector3d(normal_on_B),
-          static_cast<double>(pt.getDistance()) + marginA + marginB);
-    }
-  }
-
-  bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(0, 0);
-  bt_world.bt_collision_configuration.setPlaneConvexMultipointIterations(0, 0);
-  return point_pairs;
 }
 
 bool BulletModel::collidingPointsCheckOnly(

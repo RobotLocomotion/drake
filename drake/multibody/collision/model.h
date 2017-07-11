@@ -169,23 +169,6 @@ class Model {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<PointPair>& closest_points) = 0;
 
-  // TODO(SeanCurtis-TRI): In the documentation below, clarify the definitions
-  // of "eligible", "additional", and "potential". Definitely do this before
-  // moving this functionality into GeometryWorld.
-  //
-  /** Computes the set of potential collision points for all eligible pairs of
-   collision geometries in this model. This includes the points of closest
-   approach, but may also include additional points that are "close" to being
-   in contact. This can be useful when simulating scenarios in which two
-   collision elements have more than one contact point.
-
-   @param use_margins A flag indicating whether or not to use the version of
-   this model with collision margins.
-
-   @return A vector of PointPair objects containing the potential collision
-   points. **/
-  virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins) = 0;
-
   // TODO(SeanCurtis-TRI): Add a C++ version of "collidingPointsTest.m". Once
   // such a test exists, update the @see reference to it below.
   //

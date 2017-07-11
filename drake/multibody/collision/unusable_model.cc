@@ -61,12 +61,6 @@ bool UnusableModel::collisionRaycast(const Eigen::Matrix3Xd&,
   return false;
 }
 
-std::vector<PointPair> UnusableModel::potentialCollisionPoints(bool) {
-  DRAKE_ABORT_MSG(
-      "Compile Drake with a collision library backend for collision support!");
-  return std::vector<PointPair>();
-}
-
 bool UnusableModel::collidingPointsCheckOnly(
     const std::vector<Eigen::Vector3d>&, double) {
   DRAKE_ABORT_MSG(
