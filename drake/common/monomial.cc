@@ -111,6 +111,15 @@ Monomial::Monomial(const map<Variable, int>& powers)
 Monomial::Monomial(const Expression& e)
     : Monomial(ToMonomialPower(e.Expand())) {}
 
+int Monomial::degree(const Variable& v) const {
+  const auto it = powers_.find(v);
+  if (it == powers_.end()) {
+    return 0;
+  } else {
+    return it->second;
+  }
+}
+
 size_t Monomial::GetHash() const {
   // To get a hash value for a Monomial, we re-use the hash value for
   // powers_. This is suitable because powers_ is the only independent

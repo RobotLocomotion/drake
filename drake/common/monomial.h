@@ -48,6 +48,9 @@ class Monomial {
   /** Constructs a Monomial from @p var and @exponent. */
   Monomial(const Variable& var, int exponent);
 
+  /** Returns the degree of this Monomial in a variable @p v. */
+  int degree(const Variable& v) const;
+
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
 
