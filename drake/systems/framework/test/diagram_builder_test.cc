@@ -95,7 +95,7 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoLoopPortLevel) {
 
 // Contrasts with CycleButNoLoopPortLevel. In this case, the cycle *does*
 // represent an algebraic loop.
-GTEST_TEST(DiagramBuilderTest, CycleAndLoopPortLevel) {
+GTEST_TEST(DiagramBuilderTest, CycleAtLoopPortLevel) {
   DiagramBuilder<double> builder;
 
   //    +----------+
@@ -137,8 +137,6 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoopSystemLevel) {
   integrator->set_name("integrator");
 
   builder.Connect(integrator->get_output_port(), adder->get_input_port(1));
-  builder.ExportInput(adder->get_input_port(0));
-  builder.ExportOutput(integrator->get_output_port());
 
   // There is no algebraic loop, so we should not throw.
   EXPECT_NO_THROW(builder.Build());
@@ -156,8 +154,6 @@ GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
 
   builder.Connect(integrator1->get_output_port(),
                   integrator2->get_input_port());
-  builder.ExportInput(integrator1->get_input_port());
-  builder.ExportOutput(integrator2->get_output_port());
 
   // There is no algebraic loop, so we should not throw.
   EXPECT_NO_THROW(builder.Build());
