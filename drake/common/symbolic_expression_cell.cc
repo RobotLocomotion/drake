@@ -173,7 +173,7 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
     //   pow(c * ∏ᵢ pow(e₁ᵢ, e₂ᵢ), exponent)
     // = pow(c, exponent) * ∏ᵢ pow(e₁ᵢ, e₂ᵢ * exponent)
     const double c{get_constant_in_multiplication(base)};
-    auto map{get_base_to_exponent_map_in_multiplication(base)};
+    auto map = get_base_to_exponent_map_in_multiplication(base);
     for (pair<const Expression, Expression>& p : map) {
       p.second = p.second * exponent;
     }
