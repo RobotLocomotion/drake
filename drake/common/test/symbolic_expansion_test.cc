@@ -105,6 +105,10 @@ TEST_F(SymbolicExpansionTest, ExpressionExpansion) {
 
   vector<pair<Expression, Expression>> test_exprs;
 
+  // (2xy²)² = 4x²y⁴
+  test_exprs.emplace_back(pow(2 * x_ * y_ * y_, 2),
+                          4 * pow(x_, 2) * pow(y_, 4));
+
   //   5 * (3 + 2y) + 30 * (7 + x_)
   // = 15 + 10y + 210 + 30x
   // = 225 + 30x + 10y
@@ -235,14 +239,14 @@ TEST_F(SymbolicExpansionTest, UninterpretedFunction) {
 }
 
 TEST_F(SymbolicExpansionTest, DivideByConstant) {
-  // (x) / 2 => x / 2  (no simplification)
-  EXPECT_PRED2(ExprEqual, (x_ / 2).Expand(), x_ / 2);
+  // (x) / 2 => 0.5 * x
+  EXPECT_PRED2(ExprEqual, (x_ / 2).Expand(), 0.5 * x_);
 
   // 3 / 2 => 3 / 2  (no simplification)
   EXPECT_PRED2(ExprEqual, (Expression(3.0) / 2).Expand(), 3.0 / 2);
 
-  // pow(x, y) / 2 => pow(x, y) / 2  (no simplification)
-  EXPECT_PRED2(ExprEqual, (pow(x_, y_) / 2).Expand(), pow(x_, y_) / 2);
+  // pow(x, y) / 2 => 0.5 * pow(x, y)
+  EXPECT_PRED2(ExprEqual, (pow(x_, y_) / 2).Expand(), 0.5 * pow(x_, y_));
 
   // (2x) / 2 => x
   EXPECT_PRED2(ExprEqual, ((2 * x_) / 2).Expand(), x_);

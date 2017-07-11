@@ -27,6 +27,7 @@ set(sources
   symbolic_formula.cc
   symbolic_formula_cell.cc
   symbolic_formula_cell.h
+  symbolic_polynomial.cc
   symbolic_variable.cc
   symbolic_variables.cc
   text_logging.cc
@@ -73,6 +74,7 @@ set(installed_headers
   symbolic_expression_visitor.h
   symbolic_formula.h
   symbolic_formula_visitor.h
+  symbolic_polynomial.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
