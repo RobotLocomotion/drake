@@ -250,6 +250,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "symbolic_polynomial",
+    srcs = [
+        "symbolic_polynomial.cc",
+    ],
+    hdrs = [
+        "symbolic_polynomial.h",
+    ],
+    deps = [
+        ":common",
+        ":monomial",
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
@@ -691,6 +706,14 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_polynomial_test",
+    deps = [
+        ":symbolic_polynomial",
+        ":symbolic_test_util",
     ],
 )
 
