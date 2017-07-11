@@ -105,6 +105,10 @@ TEST_F(SymbolicExpansionTest, ExpressionExpansion) {
 
   vector<pair<Expression, Expression>> test_exprs;
 
+  // (2xy²)² = 4x²y⁴
+  test_exprs.emplace_back(pow(2 * x_ * y_ * y_, 2),
+                          4 * pow(x_, 2) * pow(y_, 4));
+
   //   5 * (3 + 2y) + 30 * (7 + x_)
   // = 15 + 10y + 210 + 30x
   // = 225 + 30x + 10y

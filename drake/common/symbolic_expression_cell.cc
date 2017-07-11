@@ -169,6 +169,17 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
   // Precondition: base and exponent are already expanded.
   DRAKE_ASSERT(base.EqualTo(base.Expand()));
   DRAKE_ASSERT(exponent.EqualTo(exponent.Expand()));
+  if (is_multiplication(base)) {
+    //   pow(c * ∏ᵢ pow(e₁ᵢ, e₂ᵢ), exponent)
+    // = pow(c, exponent) * ∏ᵢ pow(e₁ᵢ, e₂ᵢ * exponent)
+    const double c{get_constant_in_multiplication(base)};
+    auto map{get_base_to_exponent_map_in_multiplication(base)};
+    for (pair<const Expression, Expression>& p : map) {
+      p.second = p.second * exponent;
+    }
+    return pow(c, exponent) * ExpressionMulFactory{1.0, map}.GetExpression();
+  }
+
   // Expand if
   //     1) base is an addition expression and
   //     2) exponent is a positive integer.
