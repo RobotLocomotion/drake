@@ -49,10 +49,10 @@ symbolic::Expression ReplaceBilinearTerms(
   symbolic::Polynomial::MapType map_replaced;
   map_replaced.reserve(map_bilinear.size());
   for (const auto& p : map_bilinear) {
-    std::unordered_map<symbolic::Variable, int, hash_value<symbolic::Variable>> monomial_map;
+    std::unordered_map<int, int> monomial_map;
     int xy_total_degree{0};
     for (const auto& var_power : p.first.get_powers()) {
-      monomial_map.emplace(var_power.first, var_power.second);
+      monomial_map.emplace(var_power.first.get_id(), var_power.second);
       xy_total_degree += var_power.second;
     }
     if (xy_total_degree > 2) {
@@ -76,24 +76,23 @@ symbolic::Expression ReplaceBilinearTerms(
         // The monomial is in the form of x * y, namely two different
         // variables multiplying together.
         auto monomial_map_it = monomial_map.begin();
-        const symbolic::Variable &var1{monomial_map_it->first};
+        int var1_id{monomial_map_it->first};
         ++monomial_map_it;
-        const symbolic::Variable &var2{monomial_map_it->first};
-        it_x_idx = x_to_index_map.find(var1.get_id());
+        int var2_id{monomial_map_it->first};
+        it_x_idx = x_to_index_map.find(var1_id);
         if (it_x_idx != x_to_index_map.end()) {
           // var1 is in x.
-          it_y_idx = y_to_index_map.find(var2.get_id());
+          it_y_idx = y_to_index_map.find(var2_id);
         } else {
           // var1 is in y.
-          it_x_idx = x_to_index_map.find(var2.get_id());
-          it_y_idx = y_to_index_map.find(var1.get_id());
+          it_x_idx = x_to_index_map.find(var2_id);
+          it_y_idx = y_to_index_map.find(var1_id);
         }
       } else {
         // The monomial is in the form of x * x, the square of a variable.
-        const symbolic::Variable& squared_var{
-            monomial_map.begin()->first};
-        it_x_idx = x_to_index_map.find(squared_var.get_id());
-        it_y_idx = y_to_index_map.find(squared_var.get_id());
+        int squared_var_id{monomial_map.begin()->first};
+        it_x_idx = x_to_index_map.find(squared_var_id);
+        it_y_idx = y_to_index_map.find(squared_var_id);
       }
       if (it_x_idx == x_to_index_map.end() ||
           it_y_idx == y_to_index_map.end()) {
