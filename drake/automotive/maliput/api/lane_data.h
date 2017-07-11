@@ -135,6 +135,10 @@ class GeoPosition {
   /// Fully parameterized constructor.
   GeoPosition(double x, double y, double z) : xyz_(x, y, z) {}
 
+  /// Fully parameterized constructor from a 3-vector @p xyz of the form
+  /// `[x, y, z]`.
+  explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
+
   /// Constructs a GeoPosition from a 3-vector @p xyz of the form `[x, y, z]`.
   static GeoPosition FromXyz(const Vector3<double>& xyz) {
     return GeoPosition(xyz);
@@ -163,14 +167,18 @@ class GeoPosition {
 
  private:
   Vector3<double> xyz_;
-
-  explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
 };
 
 /// Streams a string representation of @p geo_position into @p out. Returns
 /// @p out. This method is provided for the purposes of debugging or
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position);
+
+/// GeoPosition overload for the equality operator.
+bool operator==(const GeoPosition& lhs, const GeoPosition& rhs);
+
+/// GeoPosition overload for the inequality operator.
+bool operator!=(const GeoPosition& lhs, const GeoPosition& rhs);
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
