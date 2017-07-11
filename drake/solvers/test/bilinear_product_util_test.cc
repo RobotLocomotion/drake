@@ -160,6 +160,14 @@ TEST_F(BilinearProductTest, HigherOrderTest) {
   EXPECT_THROW(ReplaceBilinearTerms(x_(0) * y_(2) * y_(2), x_, y_, xy_),
                std::runtime_error);
 }
+
+TEST_F(BilinearProductTest, DuplicateEntry) {
+  // x_duplicate contains duplicate entries.
+  VectorDecisionVariable<2> x_duplicate(x_(0), x_(0));
+  EXPECT_THROW(
+      ReplaceBilinearTerms(x_(0) * x_(0), x_duplicate, x_duplicate, xx_),
+      std::runtime_error);
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
