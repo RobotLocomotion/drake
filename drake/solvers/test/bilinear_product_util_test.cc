@@ -164,9 +164,9 @@ TEST_F(BilinearProductTest, HigherOrderTest) {
 TEST_F(BilinearProductTest, DuplicateEntry) {
   // x_duplicate contains duplicate entries.
   VectorDecisionVariable<2> x_duplicate(x_(0), x_(0));
-  EXPECT_THROW(
-      ReplaceBilinearTerms(x_(0) * x_(0), x_duplicate, x_duplicate, xx_),
-      std::runtime_error);
+  EXPECT_THROW(ReplaceBilinearTerms(x_(0) * x_(0), x_duplicate, x_duplicate,
+                                    xx_.block<2, 2>(0, 0)),
+               std::runtime_error);
 }
 }  // namespace
 }  // namespace solvers
