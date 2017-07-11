@@ -26,13 +26,16 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// see http://www.gurobi.com/documentation/7.0/examples.pdf
-// First C callbacks example
-
+// Information to be passed through a Gurobi C callback to
+// grant it information about its problem (the host
+// MathematicalProgram prog, and which decision variables
+// are not represented in prog), and what user functions
+// are present for handling the callback.
 // TODO(gizatt) This struct can be replaced with a ptr to
-// the GurobiSolver class (or the callback can shell to a 
+// the GurobiSolver class (or the callback can shell to a
 // method on that class) once the above TODO(hongkai.dai) is
-// dealt with
+// completed. It might be able to be further reduced if
+// GurobiSolver subclasses GRBCallback in the Gurobi C++ API.
 struct GurobiCallbackInformation {
   MathematicalProgram * prog;
   std::vector<bool> is_new_variable;
@@ -44,22 +47,24 @@ struct GurobiCallbackInformation {
 
 static int
 gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
-  GurobiCallbackInformation * callbackInfo = (GurobiCallbackInformation *) usrdata;
+  GurobiCallbackInformation * callbackInfo =
+    reinterpret_cast<GurobiCallbackInformation *>(usrdata);
 
-  if (where == GRB_CB_POLLING){
-    ;
-  } else if (where == GRB_CB_PRESOLVE) { 
-    ;
-  } else if (where == GRB_CB_SIMPLEX) { 
-    ;
-  } else if (where == GRB_CB_MIP) { 
-    ;
+  if (where == GRB_CB_POLLING) {
+  } else if (where == GRB_CB_PRESOLVE) {
+  } else if (where == GRB_CB_SIMPLEX) {
+  } else if (where == GRB_CB_MIP) {
   } else if (where == GRB_CB_MIPSOL) {
+    // Extract variable values from Gurobi, and set the current
+    // solution of the MathematicalProgram to these values.
     int num_total_variables = callbackInfo->is_new_variable.size();
     std::vector<double> solver_sol_vector(num_total_variables);
-    auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, solver_sol_vector.data());
-    if (error){
-      printf("GRB error %d in cbget mipsol rel: %s\n", error, GRBgeterrormsg(GRBgetenv(model)));
+    auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
+      solver_sol_vector.data());
+    if (error) {
+      printf("GRB error %d in MIPSol callback cbget: %s\n", error,
+        GRBgeterrormsg(GRBgetenv(model)));
+      return 0;
     }
     // TODO(gizatt): If I use the entries from is_new_variable,
     // I wind up out of alignment. Why? Where are the new vars
@@ -69,33 +74,44 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
       prog_sol_vector(i) = solver_sol_vector[i];
     }
     callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
-  
+
+    // Extract current solve information to pass to user callback.
     GurobiSolver::SolveStatusInfo solve_status;
-    GRBcbget(cbdata, where, GRB_CB_RUNTIME, &(solve_status.reported_runtime));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &(solve_status.current_objective));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBST, &(solve_status.best_objective));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBND, &(solve_status.best_bound));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &(solve_status.feasible_solutions_count));
-    // This expects a double, so...
+    GRBcbget(cbdata, where, GRB_CB_RUNTIME,
+      &(solve_status.reported_runtime));
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ,
+      &(solve_status.current_objective));
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBST,
+      &(solve_status.best_objective));
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBND,
+      &(solve_status.best_bound));
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT,
+      &(solve_status.feasible_solutions_count));
     double explored_node_count_dbl;
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &explored_node_count_dbl); 
+    GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &explored_node_count_dbl);
     solve_status.explored_node_count = explored_node_count_dbl;
 
-    callbackInfo->mip_sol_callback(*(callbackInfo->prog), solve_status, callbackInfo->mip_node_callback_usrdata);
+    callbackInfo->mip_sol_callback(*(callbackInfo->prog), solve_status,
+      callbackInfo->mip_node_callback_usrdata);
 
   } else if (where == GRB_CB_MIPNODE) {
     int sol_status;
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
-    if (error){
-      printf("GRB error %d in cbget mipnode status: %s\n", error, GRBgeterrormsg(GRBgetenv(model)));
-    }
-    
-    if (sol_status == GRB_OPTIMAL){
+    if (error) {
+      printf("GRB error %d in MIPNode callback getting sol status: %s\n",
+        error, GRBgeterrormsg(GRBgetenv(model)));
+      return 0;
+    } else if (sol_status == GRB_OPTIMAL) {
+      // Extract variable values from Gurobi, and set the current
+      // solution of the MathematicalProgram to these values.
       int num_total_variables = callbackInfo->is_new_variable.size();
       std::vector<double> solver_sol_vector(num_total_variables);
-      error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_REL, solver_sol_vector.data());
-      if (error){
-        printf("GRB error %d in cbget mipnode rel: %s\n", error, GRBgeterrormsg(GRBgetenv(model)));
+      auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
+        solver_sol_vector.data());
+      if (error) {
+        printf("GRB error %d in MIPSol callback cbget: %s\n", error,
+          GRBgeterrormsg(GRBgetenv(model)));
+        return 0;
       }
       // TODO(gizatt): If I use the entries from is_new_variable,
       // I wind up out of alignment. Why? Where are the new vars
@@ -104,46 +120,49 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
       for (int i = 0; i < num_total_variables; ++i) {
         prog_sol_vector(i) = solver_sol_vector[i];
       }
-
       callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
-      
-      Eigen::VectorXd vals; 
-      VectorXDecisionVariable vars;
-      
+
       GurobiSolver::SolveStatusInfo solve_status;
-      GRBcbget(cbdata, where, GRB_CB_RUNTIME, &(solve_status.reported_runtime));
+      GRBcbget(cbdata, where, GRB_CB_RUNTIME,
+        &(solve_status.reported_runtime));
       solve_status.current_objective = -1.0;
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBST, &(solve_status.best_objective));
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND, &(solve_status.best_bound));
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT, &(solve_status.feasible_solutions_count));
-      // This expects a double, so...
+      GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBST,
+        &(solve_status.best_objective));
+      GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND,
+        &(solve_status.best_bound));
+      GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT,
+        &(solve_status.feasible_solutions_count));
       double explored_node_count_dbl;
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_dbl); 
+      GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_dbl);
       solve_status.explored_node_count = explored_node_count_dbl;
 
-      callbackInfo->mip_node_callback(*(callbackInfo->prog), solve_status, callbackInfo->mip_node_callback_usrdata, vals, vars);
+      Eigen::VectorXd vals;
+      VectorXDecisionVariable vars;
+      callbackInfo->mip_node_callback(*(callbackInfo->prog), solve_status,
+        callbackInfo->mip_node_callback_usrdata, vals, vars);
 
-      // The callback may return an assignment of some number of variables as a new
-      // heuristic solution seed. If so, feed those back to Gurobi.
-      if (vals.size() > 0){
-        std::vector<double> new_sol(callbackInfo->prog->num_vars(), GRB_UNDEFINED);
-        for (int i = 0; i < vals.size(); i++){
+      // The callback may return an assignment of some number of variables
+      // as a new heuristic solution seed. If so, feed those back to Gurobi.
+      if (vals.size() > 0) {
+        std::vector<double> new_sol(callbackInfo->prog->num_vars(),
+          GRB_UNDEFINED);
+        for (int i = 0; i < vals.size(); i++) {
           double val = vals[i];
           int k = callbackInfo->prog->FindDecisionVariableIndex(vars[i]);
           new_sol[k] = val;
         }
         double err;
         error = GRBcbsolution(cbdata, new_sol.data(), &err);
-        printf("Injected new sol with error %d, specified %ld vals\n", error, vals.size());
-        if (error){
-          printf("GRB error %d in injection: %s\n", error, GRBgeterrormsg(GRBgetenv(model)));
+        printf("Injected new sol with error %d, specified %ld vals\n", error,
+          vals.size());
+        if (error) {
+          printf("GRB error %d in injection: %s\n", error,
+            GRBgeterrormsg(GRBgetenv(model)));
         }
       }
     }
-  } else if (where == GRB_CB_BARRIER) { 
-    ;
+  } else if (where == GRB_CB_BARRIER) {
   } else if (where == GRB_CB_MESSAGE) {
-    ;
   }
   return 0;
 }
@@ -717,8 +736,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   }
 
   GRBupdatemodel(model);
-  
-  if (mip_node_callback_){
+
+  // If we have been supplied a callback,
+  // register it with Gurobi.
+  if (mip_node_callback_ || mip_sol_callback_) {
     GurobiCallbackInformation callbackInfo;
     callbackInfo.prog = &prog;
     callbackInfo.is_new_variable = is_new_variable;
@@ -726,7 +747,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     callbackInfo.mip_sol_callback = mip_sol_callback_;
     callbackInfo.mip_node_callback_usrdata = mip_node_callback_usrdata_;
     callbackInfo.mip_sol_callback_usrdata = mip_sol_callback_usrdata_;
-    GRBsetcallbackfunc(model, &gurobi_callback, &callbackInfo); 
+    GRBsetcallbackfunc(model, &gurobi_callback, &callbackInfo);
   }
 
   error = GRBoptimize(model);

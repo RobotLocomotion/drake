@@ -30,17 +30,30 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
       int feasible_solutions_count;
   };
 
-  // This passes the model and model environment to a
-  // an external 
-  typedef void (*mipNodeCallbackFunction)(const MathematicalProgram&, const SolveStatusInfo& callback_info, void *, Eigen::VectorXd&, VectorXDecisionVariable&);
-  void addMIPNodeCallback(mipNodeCallbackFunction fnc, void * usrdata){
-  	mip_node_callback_ = fnc;
-  	mip_node_callback_usrdata_ = usrdata;
+  // Users can supply a callback to be called when the Gurobi solver
+  // finds an intermediate solution node, which may not be feasible.
+  // The user may supply a partial solution in the VectorXd and
+  // VectorXDecisionVariable arguments that will be passed to Gurobi
+  // as a candidate feasible solution. In that case, the user function
+  // should assign the VectorXd& to be the values of the variable
+  // assignments, and the VectorXDecisionVariable& to be the decision
+  // variables being assigned.
+  // See Gurobi reference manual for more detail on callbacks:
+  // https://www.gurobi.com/documentation/7.0/refman/refman.html.
+  typedef void (*mipNodeCallbackFunction)(const MathematicalProgram&,
+    const SolveStatusInfo& callback_info, void *, Eigen::VectorXd&,
+    VectorXDecisionVariable&);
+  void addMIPNodeCallback(mipNodeCallbackFunction fnc, void * usrdata) {
+    mip_node_callback_ = fnc;
+    mip_node_callback_usrdata_ = usrdata;
   }
-  typedef void (*mipSolCallbackFunction)(const MathematicalProgram&, const SolveStatusInfo& callback_info, void *);
-  void addMIPSolCallback(mipSolCallbackFunction fnc, void * usrdata){
-  	mip_sol_callback_ = fnc;
-  	mip_sol_callback_usrdata_ = usrdata;
+  // Users can supply a callback to be called when the Gurobi solver
+  // finds a feasible solution.
+  typedef void (*mipSolCallbackFunction)(const MathematicalProgram&,
+    const SolveStatusInfo& callback_info, void *);
+  void addMIPSolCallback(mipSolCallbackFunction fnc, void * usrdata) {
+    mip_sol_callback_ = fnc;
+    mip_sol_callback_usrdata_ = usrdata;
   }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
@@ -50,14 +63,13 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
 
-  double get_best_bound() const { return best_bound_; }
-
  private:
+  // Callbacks and generic user data to pass through,
+  // or NULL if no callback has been supplied.
   mipNodeCallbackFunction mip_node_callback_ = NULL;
   mipSolCallbackFunction mip_sol_callback_ = NULL;
   void * mip_node_callback_usrdata_ = NULL;
   void * mip_sol_callback_usrdata_ = NULL;
-  double best_bound_ = -1.0;
 };
 
 }  // end namespace solvers
