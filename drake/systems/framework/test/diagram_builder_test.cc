@@ -24,24 +24,21 @@ class ConstAndEcho : public LeafSystem<T> {
  public:
   ConstAndEcho() {
     this->DeclareInputPort(kVectorValued, 1);
-    echo_port_ = this->DeclareVectorOutputPort(BasicVector<T>(1),
-                                               &ConstAndEcho::CalcEcho)
-                     .get_index();
-    const_port_ = this->DeclareVectorOutputPort(BasicVector<T>(1),
-                                                &ConstAndEcho::CalcConstant)
-        .get_index();
+    this->DeclareVectorOutputPort(BasicVector<T>(1), &ConstAndEcho::CalcEcho);
+    this->DeclareVectorOutputPort(BasicVector<T>(1),
+                                  &ConstAndEcho::CalcConstant);
   }
 
   const systems::InputPortDescriptor<T>& get_vec_input_port() {
     return this->get_input_port(0);
   }
 
-  const systems::OutputPort<T>& get_const_output_port() const {
-    return systems::System<T>::get_output_port(const_port_);
+  const systems::OutputPort<T>& get_echo_output_port() const {
+    return systems::System<T>::get_output_port(0);
   }
 
-  const systems::OutputPort<T>& get_echo_output_port() const {
-    return systems::System<T>::get_output_port(echo_port_);
+  const systems::OutputPort<T>& get_const_output_port() const {
+    return systems::System<T>::get_output_port(1);
   }
 
   void CalcConstant(const Context<T>& context,
@@ -57,10 +54,6 @@ class ConstAndEcho : public LeafSystem<T> {
   ConstAndEcho<symbolic::Expression>* DoToSymbolic() const override {
     return new ConstAndEcho<symbolic::Expression>();
   }
-
- private:
-  int const_port_{-1};
-  int echo_port_{-1};
 };
 
 // Tests that an exception is thrown if the diagram contains an algebraic loop.
