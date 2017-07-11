@@ -41,8 +41,8 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   // See Gurobi reference manual for more detail on callbacks:
   // https://www.gurobi.com/documentation/7.0/refman/refman.html.
   typedef void (*mipNodeCallbackFunction)(const MathematicalProgram&,
-    const SolveStatusInfo& callback_info, void *, Eigen::VectorXd&,
-    VectorXDecisionVariable&);
+    const SolveStatusInfo& callback_info, void *, Eigen::VectorXd*,
+    VectorXDecisionVariable*);
   void addMIPNodeCallback(mipNodeCallbackFunction fnc, void * usrdata) {
     mip_node_callback_ = fnc;
     mip_node_callback_usrdata_ = usrdata;

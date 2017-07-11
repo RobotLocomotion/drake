@@ -114,17 +114,17 @@ struct TestCallbackInfo {
 
 void mipSolCallbackFunction(const MathematicalProgram& prog,
   const drake::solvers::GurobiSolver::SolveStatusInfo& solve_info,
-  void * usrdata){
+  void * usrdata) {
   TestCallbackInfo * cb_info = reinterpret_cast<TestCallbackInfo *>(usrdata);
   cb_info->mipSolCallbackCalled = true;
 }
 void mipNodeCallbackFunction(const MathematicalProgram& prog,
   const GurobiSolver::SolveStatusInfo& solve_info,
-  void * usrdata, Eigen::VectorXd& vals, VectorXDecisionVariable& vars){
+  void * usrdata, Eigen::VectorXd * vals, VectorXDecisionVariable * vars) {
   TestCallbackInfo * cb_info = reinterpret_cast<TestCallbackInfo *>(usrdata);
   cb_info->mipNodeCallbackCalled = true;
-  vals = cb_info->x_vals;
-  vars = cb_info->x_vars;
+  *vals = cb_info->x_vals;
+  *vars = cb_info->x_vars;
 }
 
 GTEST_TEST(GurobiTest, TestCallbacks) {
@@ -138,9 +138,9 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
     // Constraint such that x_0 and x_1 can't both be
     // 1, but leave a feasible vertex at (0.75, 0.75)
     // that is optimal in the continuous relaxation.
-    prog.AddLinearConstraint( x[1] <= 1. - 0.5*x[0] );
-    prog.AddLinearConstraint( x[0] <= 1. - 0.5*x[1] );
-    prog.AddLinearCost( -x[0] - x[1]);
+    prog.AddLinearConstraint(x[1] <= 1. - 0.5*x[0]);
+    prog.AddLinearConstraint(x[0] <= 1. - 0.5*x[1]);
+    prog.AddLinearCost(-x[0] - x[1]);
 
     // Each of these options would short-circuit the solver
     // from entering a full solve and generating both

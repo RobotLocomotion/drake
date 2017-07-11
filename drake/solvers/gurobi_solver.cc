@@ -139,7 +139,7 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
       Eigen::VectorXd vals;
       VectorXDecisionVariable vars;
       callbackInfo->mip_node_callback(*(callbackInfo->prog), solve_status,
-        callbackInfo->mip_node_callback_usrdata, vals, vars);
+        callbackInfo->mip_node_callback_usrdata, &vals, &vars);
 
       // The callback may return an assignment of some number of variables
       // as a new heuristic solution seed. If so, feed those back to Gurobi.
