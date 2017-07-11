@@ -8,10 +8,10 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 
 namespace drake {
 namespace systems {
@@ -251,16 +251,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   int FindInstancePositionIndexFromWorldIndex(int model_instance_id,
                                               int world_position_index);
 
-  /// Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
-  /// and y-axis such that the basis is orthonormal. The basis is R_WL, where W
-  /// is the frame in which the z-axis is expressed and L is a local basis such
-  /// that v_W = R_WL * v_L.
-  ///
-  /// @param[in] z_axis_W   The vector defining the basis's z-axis expressed
-  ///                       in frame W.
-  /// @retval R_WL          The computed basis.
-  static Matrix3<T> ComputeBasisFromZ(const Vector3<T>& z_axis_W);
-
   /// @name System input port descriptor accessors.
   /// These are accessors for obtaining descriptors of this RigidBodyPlant's
   /// input ports. See this class's description for details about these ports
@@ -330,18 +320,6 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
   ///@}
 
-  /// Computes the generalized forces on all bodies due to contact.
-  ///
-  /// @param kinsol         The kinematics of the rigid body system at the time
-  ///                       of contact evaluation.
-  /// @param[out] contacts  The optional contact results.  If non-null, stores
-  ///                       the contact information for consuming on the output
-  ///                       port.
-  /// @returns              The generalized forces across all the bodies due to
-  ///                       contact response.
-  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
-                                 ContactResults<T>* contacts = nullptr) const;
-
  protected:
   // LeafSystem<T> overrides.
 
@@ -409,30 +387,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   // exception if at least one of the ports is not connected.
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
 
-  // Computes the friction coefficient based on the relative tangential
-  // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
-  //
-  // See contact_model_doxygen.h @section tangent_force for details.
-  T ComputeFrictionCoefficient(T v_tangent_BAc) const;
-
-  // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
-  // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
-  static T step5(T x);
-
   std::unique_ptr<const RigidBodyTree<T>> tree_;
-
-  // Some parameters defining the contact.
-  // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  // These default values are all semi-arbitrary.  They seem to produce,
-  // generally, plausible results. They are in *no* way universally valid or
-  // meaningful.
-  T penetration_stiffness_{10000.0};
-  T dissipation_{2};
-  // Note: this is the *inverse* of the v_stiction_tolerance parameter to
-  // optimize for the division.
-  T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
-  T static_friction_coef_{0.9};
-  T dynamic_friction_ceof_{0.5};
 
   int state_output_port_index_{};
   int kinematics_output_port_index_{};
@@ -463,6 +418,9 @@ class RigidBodyPlant : public LeafSystem<T> {
   // velocity states in the RigidBodyTree.  Values are stored as a
   // pair of (index, count).
   std::vector<std::pair<int, int>> velocity_map_;
+
+  // Pointer to the class that encapsulates all the contact computations.
+  const std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_;
 };
 
 }  // namespace systems

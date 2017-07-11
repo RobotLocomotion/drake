@@ -1,6 +1,4 @@
-/* clang-format off */
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-/* clang-format on */
+#include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 
 #include <memory>
 
@@ -9,19 +7,21 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_plant/test/contact_result_test_common.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-// The ContactResult class is largely a container for the data that is computed
-// by the RigidBodyPlant while determining contact forces.  This test confirms
-// that for a known set of contacts, that the expected contact forces are
-// generated and stashed into the ContactResult data structure.
+// The CompliantContactModel is a class that wraps the algorithms that perform
+// contact computations. The ContactResult class is largely a container for the
+// data that is computed by the CompliantContactModel while determining contact
+// forces.  This test confirms that for a known set of contacts, that the
+// expected contact forces are generated and stashed into the ContactResult
+// data structure.
 //
 // Thus, a rigid body tree is created with a known configuration such that the
-// contacts and corresponding contact forces are known.  The RigidBodyPlant's
-// CalcOutput is invoked on the ContactResult port and the ContactResult
-// contents are evaluated to see if they contain the expected results.
+// contacts and corresponding contact forces are known.
+// The CompliantContactModel's ComputeContactForce method is evaluated to
+// populate the ContactResult, the contents of which are evaluated to see if
+// they contain the expected results.
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -31,6 +31,7 @@ using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
+using std::shared_ptr;
 
 namespace drake {
 namespace systems {
@@ -39,42 +40,45 @@ namespace rigid_body_plant {
 namespace test {
 namespace {
 
-// Base class for testing the RigidBodyPlant's logic for populating its
-// output port for collision response data.
-class ContactResultTest : public ContactResultTestCommon {
+// Base class for testing the CompliantContactModel logic for contact force
+// computations.
+class CompliantContactModelTest : public ContactResultTestCommon {
  protected:
-  // Runs the test on the RigidBodyPlant.
-  const ContactResults<double>& RunTest(double distance) {
-    // Populate the plant.
-    plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance));
+  const ContactResults<double>& RunTest(double distance) override {
+    unique_tree_ = GenerateTestTree(distance);
+    // Populate the CompliantContactModel.
+    compliant_contact_model_ =
+        make_unique<CompliantContactModel<double>>();
+    compliant_contact_model_->set_normal_contact_parameters(kStiffness,
+                                                            kDissipation);
+    compliant_contact_model_->set_friction_contact_parameters(
+        kStaticFriction, kDynamicFriction, kVStictionTolerance);
 
-    plant_->set_normal_contact_parameters(kStiffness, kDissipation);
-    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                            kVStictionTolerance);
-    context_ = plant_->CreateDefaultContext();
-    output_ = plant_->AllocateOutput(*context_);
-    plant_->CalcOutput(*context_.get(), output_.get());
+    // The state to test is the default state of the tree (0 velocities
+    // and default configuration positions of the tree)
 
-    const int port_index = plant_->contact_results_output_port().get_index();
-    contact_results_ =
-        output_->get_data(port_index)->GetValue<ContactResults<double>>();
+    VectorX<double> q0 = VectorX<double>::Zero(
+        unique_tree_->get_num_positions());
+
+    VectorXd v0 = VectorXd::Zero(unique_tree_->get_num_velocities());
+
+    q0 = unique_tree_->getZeroConfiguration();
+    auto kinsol = unique_tree_->doKinematics(q0, v0);
+
+    compliant_contact_model_->ComputeContactForce(*unique_tree_.get(), kinsol,
+                                                  &contact_results_);
     return contact_results_;
   }
 
-  // Returns a constant reference to the RigidBodyTree that is within the plant.
-  const RigidBodyTree<double>& GetTree() {
-    return plant_->get_rigid_body_tree();
-  }
-
-  // instances owned by the test class
-  unique_ptr<RigidBodyPlant<double>> plant_{};
-  unique_ptr<Context<double>> context_{};
-  unique_ptr<SystemOutput<double>> output_{};
+  // Instances owned by the test class.
+  unique_ptr<CompliantContactModel<double>> compliant_contact_model_{};
+  // Holds the unique pointer to the tree.
+  unique_ptr<RigidBodyTree<double>> unique_tree_{};
 };
 
 // Confirms a contact result for two non-colliding spheres -- expects no
 // reported collisions.
-TEST_F(ContactResultTest, NoCollision) {
+TEST_F(CompliantContactModelTest, ModelNoCollision) {
   auto& contact_results = RunTest(0.1);
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
@@ -82,13 +86,13 @@ TEST_F(ContactResultTest, NoCollision) {
 // Confirms a contact result for two touching spheres -- expects no reported
 // collisions. For now, osculation is not considered a "contact" for reporting
 // purposes. If the definition changes, this will likewise change.
-TEST_F(ContactResultTest, Touching) {
+TEST_F(CompliantContactModelTest, ModelTouching) {
   auto& contact_results = RunTest(0.0);
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
 
 // Confirms a contact result for two colliding spheres.
-TEST_F(ContactResultTest, SingleCollision) {
+TEST_F(CompliantContactModelTest, ModelSingleCollision) {
   double offset = 0.1;
   auto& contact_results = RunTest(-offset);
   ASSERT_EQ(contact_results.get_num_contacts(), 1);
@@ -97,8 +101,8 @@ TEST_F(ContactResultTest, SingleCollision) {
   // Confirms that the proper bodies are in contact.
   DrakeCollision::ElementId e1 = info.get_element_id_1();
   DrakeCollision::ElementId e2 = info.get_element_id_2();
-  const RigidBody<double>* b1 = GetTree().FindBody(e1);
-  const RigidBody<double>* b2 = GetTree().FindBody(e2);
+  const RigidBody<double>* b1 = unique_tree_->FindBody(e1);
+  const RigidBody<double>* b2 = unique_tree_->FindBody(e2);
   ASSERT_NE(e1, e2);
   ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
 
@@ -112,8 +116,6 @@ TEST_F(ContactResultTest, SingleCollision) {
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
-  // Note: This is fragile. It assumes a particular collision model.  Once the
-  // model has been generalized, this will have to adapt to account for that.
 
   // NOTE: Because there is zero velocity, there is no frictional force and no
   // damping on the normal force.  Simply the kx term.  Penetration is twice

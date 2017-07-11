@@ -16,6 +16,18 @@ if(Bullet_FOUND)
       spruce
       )
 
+  drake_add_cc_test(compliant_contact_model_test)
+  target_link_libraries(compliant_contact_model_test
+          drakeRigidBodyPlant
+          drakeIK
+          drakeMultibodyParsers
+          drakeOptimization
+          drakeRBM
+          drakeRigidBodyConstraint
+          Eigen3::Eigen
+          spruce
+          )
+
   drake_add_cc_test(contact_force_formula_test)
   target_link_libraries(contact_force_formula_test
       drakeRigidBodyPlant
