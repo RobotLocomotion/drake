@@ -241,8 +241,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   void ReconstructGeneralizedPositionSolutionForBody(
       int body_idx, Eigen::Ref<Eigen::VectorXd> q,
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
-  
-  const RigidBodyTree<double> *robot_;
+
+  const RigidBodyTree<double>* robot_;
 
   // R_WB_[i] is the orientation of body i in the world reference frame,
   // it is expressed in the world frame.
