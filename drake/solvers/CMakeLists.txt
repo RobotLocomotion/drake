@@ -115,6 +115,14 @@ drake_install_headers(
         mixed_integer_optimization_util.h
 )
 
+add_library_with_exports(LIB_NAME drakeBilinearProductUtil SOURCE_FILES bilinear_product_util.cc)
+target_link_libraries(drakeBilinearProductUtil
+        drakeMath
+        drakeOptimization)
+drake_install_headers(
+        bilinear_product_util.cc.h
+)
+
 add_library_with_exports(LIB_NAME drakeRotationConstraint SOURCE_FILES rotation_constraint.cc)
 target_link_libraries(drakeRotationConstraint
         drakeOptimization)
