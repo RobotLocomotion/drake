@@ -79,11 +79,12 @@ Target GetTarget() {
   Target targets[] = {
     {"block_for_pick_and_place.urdf", Eigen::Vector3d(0.06, 0.06, 0.2)},
     {"black_box.urdf", Eigen::Vector3d(0.055, 0.165, 0.18)},
-    {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)}
+    {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)},
+    {"simple_cylinder.urdf", Eigen::Vector3d(0.065, 0.065, 0.13)}
   };
 
-  const int num_targets = 3;
-  if (FLAGS_target >= num_targets) {
+  const int num_targets = 4;
+  if ((FLAGS_target >= num_targets) || (FLAGS_target < 0)) {
     throw std::runtime_error("Invalid target ID");
   }
   return targets[FLAGS_target];
