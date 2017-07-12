@@ -404,6 +404,9 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
 //       this function returning `true`) and will be indeterminate on
 //       unsuccessful exit (indicated by this function returning `false`).
 template <class T>
+// theta could become 1, in line const T eta = theta / (1 - theta);
+// causing a divide by zero error when UBSan is used.
+__attribute__((no_sanitize("float-divide-by-zero")))
 bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
                           const std::function<VectorX<T>()>& g,
                           int scale, VectorX<T>* xtplus, int trial) {
