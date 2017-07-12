@@ -156,8 +156,6 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
         }
         double err;
         error = GRBcbsolution(cbdata, new_sol.data(), &err);
-        printf("Injected new sol with error %d, specified %ld vals\n", error,
-          vals.size());
         if (error) {
           printf("GRB error %d in injection: %s\n", error,
             GRBgeterrormsg(GRBgetenv(model)));
@@ -624,7 +622,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // variables to Gurobi model.
   // The invariant is
   // EXPECT_TRUE(HasCorrectNumberOfVariables(model, is_new_variables.size()))
-  printf("Setup gurobi problem starting with %d vars\n", num_prog_vars);
   std::vector<bool> is_new_variable(num_prog_vars, false);
 
   // Bound constraints.

@@ -138,9 +138,9 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
     // Constraint such that x_0 and x_1 can't both be
     // 1, but leave a feasible vertex at (0.75, 0.75)
     // that is optimal in the continuous relaxation.
-    prog.AddLinearConstraint(x[2] <= 1. - 0.5*x[3]);
-    prog.AddLinearConstraint(x[3] <= 1. - 0.5*x[2]);
-    prog.AddLinearCost(-x[2] - x[3]);
+    prog.AddLinearConstraint(x[0] <= 1. - 0.5*x[1]);
+    prog.AddLinearConstraint(x[1] <= 1. - 0.5*x[0]);
+    prog.AddLinearCost(-x[0] - x[1]);
 
     // Each of these options would short-circuit the solver
     // from entering a full solve and generating both
