@@ -49,17 +49,19 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "junction_test",
-    size = "small",
+drake_cc_library(
+    name = "ignition_types_compare",
+    testonly = 1,
+    hdrs = ["test/ignition_types_compare.h"],
+    srcs = ["test/ignition_types_compare.cc"],
     deps = [
-        ":lanes",
+        "@ignition_rndf",
+        "@gtest//:without_main",
     ],
 )
 
 drake_cc_googletest(
-    name = "spline_helpers_test",
-    size = "small",
+    name = "junction_test",
     deps = [
         ":lanes",
     ],
@@ -67,7 +69,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "road_geometry_test",
-    size = "small",
     deps = [
         ":lanes",
     ],
@@ -75,9 +76,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "segment_test",
-    size = "small",
     deps = [
         ":lanes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spline_helpers_test",
+    deps = [
+        ":lanes",
+        ":ignition_types_compare",
     ],
 )
 
