@@ -309,13 +309,17 @@ int DoMain(void) {
   // to see if the state machine thinks we're done, and if so that the
   // object is near the target.
   const double simulation_step = 1.;
-  while (state_machine->state(simulator.get_context())
+  while (state_machine->state(
+             sys->GetSubsystemContext(*state_machine,
+                                      simulator.get_context()))
          != pick_and_place::kDone) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
   }
 
   const pick_and_place::WorldState& world_state =
-      state_machine->world_state(simulator.get_context());
+      state_machine->world_state(
+          sys->GetSubsystemContext(*state_machine,
+                                   simulator.get_context()));
   const Isometry3<double>& object_pose = world_state.get_object_pose();
   const Vector6<double>& object_velocity = world_state.get_object_velocity();
   Isometry3<double> goal = place_locations.back();
