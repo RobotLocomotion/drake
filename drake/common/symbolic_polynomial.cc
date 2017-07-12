@@ -400,6 +400,8 @@ Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
 Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
 Polynomial operator*(const double c, Polynomial p) { return p *= c; }
 Polynomial operator*(Polynomial p, const double c) { return p *= c; }
+Polynomial operator*(const Monomial& m, double c) { return Polynomial(m) * c; }
+Polynomial operator*(double c, const Monomial& m) { return c * Polynomial(m); }
 
 Polynomial pow(const Polynomial& p, int n) {
   // TODO(soonho-tri): Optimize this by not relying on ToExpression() method.
