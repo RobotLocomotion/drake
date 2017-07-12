@@ -23,6 +23,8 @@ if(Bullet_FOUND)
   set(bullet_dependent_requires bullet)
 endif()
 
+target_compile_definitions(drakeCollision PUBLIC DRAKE_DISABLE_FCL)
+
 target_link_libraries(drakeCollision
   drakeCommon
   drakeShapes
