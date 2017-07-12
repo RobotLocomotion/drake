@@ -108,8 +108,11 @@ symbolic::Expression ReplaceBilinearTerms(
                            p.second);
     }
   }
-  symbolic::Polynomial poly_replaced{map_replaced};
-  return poly_replaced.ToExpression();
+  symbolic::Expression e_replaced{0};
+  for (const auto& p_replaced : map_replaced) {
+    e_replaced += p_replaced.first.ToExpression() * p_replaced.second;
+  }
+  return e_replaced;
 }
 }  // namespace solvers
 }  // namespace drake

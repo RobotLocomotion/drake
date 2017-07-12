@@ -112,6 +112,14 @@ TEST_F(BilinearProductTest, QuadraticTerm1) {
   e = (2 + y_(0) + y_(0) * y_(1)) * x_(0) * x_(1);
   e_expected = (2 + y_(0) + y_(0) * y_(1)) * xx_(0, 1);
   EXPECT_PRED2(ExprEqual, e_expected, ReplaceBilinearTerms(e, x_, x_, xx_));
+
+  e = 2 * x_(0) * x_(0) + xx_(0, 0);
+  e_expected = 3 * xx_(0, 0);
+  EXPECT_PRED2(ExprEqual, e_expected, ReplaceBilinearTerms(e, x_, x_, xx_));
+
+  e = xx_(0, 0) * x_(0) * x_(0);
+  e_expected = xx_(0, 0) * xx_(0, 0);
+  EXPECT_PRED2(ExprEqual, e_expected, ReplaceBilinearTerms(e, x_, x_, xx_));
 }
 
 TEST_F(BilinearProductTest, QuadraticTerm2) {
