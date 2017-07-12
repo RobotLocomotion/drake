@@ -55,7 +55,7 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
   } else if (where == GRB_CB_SIMPLEX) {
   } else if (where == GRB_CB_MIP) {
   } else if (where == GRB_CB_MIPSOL &&
-   callbackInfo->mip_sol_callback != NULL) {
+      callbackInfo->mip_sol_callback != NULL) {
     // Extract variable values from Gurobi, and set the current
     // solution of the MathematicalProgram to these values.
     int num_total_variables = callbackInfo->is_new_variable.size();
