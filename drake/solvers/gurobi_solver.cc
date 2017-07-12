@@ -54,7 +54,8 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
   } else if (where == GRB_CB_PRESOLVE) {
   } else if (where == GRB_CB_SIMPLEX) {
   } else if (where == GRB_CB_MIP) {
-  } else if (where == GRB_CB_MIPSOL) {
+  } else if (where == GRB_CB_MIPSOL &&
+   callbackInfo->mip_sol_callback != NULL) {
     // Extract variable values from Gurobi, and set the current
     // solution of the MathematicalProgram to these values.
     int num_total_variables = callbackInfo->is_new_variable.size();
@@ -66,16 +67,16 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
         GRBgeterrormsg(GRBgetenv(model)));
       return 0;
     }
-    // TODO(gizatt): If I use the entries from is_new_variable,
-    // I wind up out of alignment. Why? Where are the new vars
-    // coming from?
     Eigen::VectorXd prog_sol_vector(callbackInfo->prog->num_vars());
+    int k = 0;
     for (int i = 0; i < num_total_variables; ++i) {
-      prog_sol_vector(i) = solver_sol_vector[i];
+      if (callbackInfo->is_new_variable[i]) {
+        prog_sol_vector(k) = solver_sol_vector[i];
+        k++;
+      }
     }
     callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
 
-    // Extract current solve information to pass to user callback.
     GurobiSolver::SolveStatusInfo solve_status;
     GRBcbget(cbdata, where, GRB_CB_RUNTIME,
       &(solve_status.reported_runtime));
@@ -92,9 +93,10 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
     solve_status.explored_node_count = explored_node_count_dbl;
 
     callbackInfo->mip_sol_callback(*(callbackInfo->prog), solve_status,
-      callbackInfo->mip_node_callback_usrdata);
+      callbackInfo->mip_sol_callback_usrdata);
 
-  } else if (where == GRB_CB_MIPNODE) {
+  } else if (where == GRB_CB_MIPNODE &&
+      callbackInfo->mip_node_callback != NULL) {
     int sol_status;
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
     if (error) {
@@ -113,12 +115,13 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
           GRBgeterrormsg(GRBgetenv(model)));
         return 0;
       }
-      // TODO(gizatt): If I use the entries from is_new_variable,
-      // I wind up out of alignment. Why? Where are the new vars
-      // coming from?
       Eigen::VectorXd prog_sol_vector(callbackInfo->prog->num_vars());
+      int k = 0;
       for (int i = 0; i < num_total_variables; ++i) {
-        prog_sol_vector(i) = solver_sol_vector[i];
+        if (callbackInfo->is_new_variable[i]) {
+          prog_sol_vector(k) = solver_sol_vector[i];
+          k++;
+        }
       }
       callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
 
@@ -621,6 +624,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // variables to Gurobi model.
   // The invariant is
   // EXPECT_TRUE(HasCorrectNumberOfVariables(model, is_new_variables.size()))
+  printf("Setup gurobi problem starting with %d vars\n", num_prog_vars);
   std::vector<bool> is_new_variable(num_prog_vars, false);
 
   // Bound constraints.
