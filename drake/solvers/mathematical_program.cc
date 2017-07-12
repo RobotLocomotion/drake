@@ -57,9 +57,6 @@ using symbolic::Variable;
 
 using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
-using internal::DecomposeQuadraticExpressionWithMonomialToCoeffMap;
-using internal::ExtractAndAppendVariablesFromExpression;
-using internal::ExtractVariablesFromExpression;
 using internal::SymbolicError;
 
 namespace {
