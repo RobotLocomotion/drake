@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <map>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -196,38 +197,18 @@ class LeafSystem : public System<T> {
     return AllocateDiscreteState();
   }
 
-  /// Returns `true` if any of the inputs to the system is directly
-  /// fed through to any of its outputs and `false` otherwise.
-  bool HasAnyDirectFeedthrough() const final {
+  std::multimap<int, int> GetDirectFeedthroughs() const final {
     auto sparsity = MakeSparsityMatrix();
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      for (int j = 0; j < this->get_num_output_ports(); ++j) {
-        if (DoHasDirectFeedthrough(sparsity.get(), i, j)) {
-          return true;
+    std::multimap<int, int> pairs;
+    for (int u = 0; u < this->get_num_input_ports(); ++u) {
+      for (int v = 0; v < this->get_num_output_ports(); ++v) {
+        if (DoHasDirectFeedthrough(sparsity.get(), u, v)) {
+          pairs.emplace(u, v);
         }
       }
     }
-    return false;
-  }
-
-  /// Returns true if there is direct-feedthrough from any input port to the
-  /// given @p output_port, and false otherwise.
-  bool HasDirectFeedthrough(int output_port) const final {
-    auto sparsity = MakeSparsityMatrix();
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      if (DoHasDirectFeedthrough(sparsity.get(), i, output_port)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /// Returns true if there is direct-feedthrough from the given @p input_port
-  /// to the given @p output_port, and false otherwise.
-  bool HasDirectFeedthrough(int input_port, int output_port) const final {
-    auto sparsity = MakeSparsityMatrix();
-    return DoHasDirectFeedthrough(sparsity.get(), input_port, output_port);
-  }
+    return pairs;
+  };
 
  protected:
   LeafSystem() {
