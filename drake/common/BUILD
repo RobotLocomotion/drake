@@ -701,6 +701,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
+    # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
         ":symbolic_polynomial",
