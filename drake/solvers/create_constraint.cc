@@ -24,7 +24,7 @@ using symbolic::Formula;
 using symbolic::Variable;
 
 using internal::DecomposeLinearExpression;
-using internal::DecomposeQuadraticExpressionWithMonomialToCoeffMap;
+using internal::DecomposeQuadraticPolynomial;
 using internal::ExtractAndAppendVariablesFromExpression;
 using internal::ExtractVariablesFromExpression;
 using internal::SymbolicError;
@@ -308,14 +308,11 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
   const auto& quadratic_vars = quadratic_p.first;
   const auto& quadratic_var_to_index_map = quadratic_p.second;
-  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
-      quadratic_expr, quadratic_expr.GetVariables());
+  const symbolic::Polynomial poly{quadratic_expr};
   Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
   Eigen::VectorXd b(quadratic_vars.size());
   double a;
-  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-      monomial_to_coeff_map, quadratic_var_to_index_map, quadratic_vars.size(),
-      &Q, &b, &a);
+  DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q, &b, &a);
   // The constraint that the linear expression v1 satisfying
   // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
   // [z; y] being within a Lorentz cone, where
