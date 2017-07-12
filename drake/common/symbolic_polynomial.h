@@ -113,6 +113,8 @@ Polynomial operator*(Polynomial p, const Monomial& m);
 Polynomial operator*(const Monomial& m, Polynomial p);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(Polynomial p, double c);
+Polynomial operator*(const Monomial& m, double c);
+Polynomial operator*(double c, const Monomial& m);
 
 /// Returns polynomial @p rasied to @p n.
 Polynomial pow(const Polynomial& p, int n);
