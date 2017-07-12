@@ -72,6 +72,7 @@ drake_cc_library(
         ":frame_velocity",
         "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:symbolic",
     ],
 )
 

@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/rendering/frame_velocity.h"
 
 namespace drake {
@@ -37,6 +38,8 @@ namespace rendering {
 template <typename T>
 class PoseBundle {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
+
   explicit PoseBundle(int num_poses);
   ~PoseBundle();
 
@@ -52,10 +55,6 @@ class PoseBundle {
 
   int get_model_instance_id(int index) const;
   void set_model_instance_id(int index, int id);
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
-
-  std::unique_ptr<PoseBundle<AutoDiffXd>> ToAutoDiffXd() const;
 
  private:
   std::vector<Isometry3<T>> poses_;
