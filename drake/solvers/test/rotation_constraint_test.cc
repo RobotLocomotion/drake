@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
@@ -16,6 +17,8 @@
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
+
+using drake::symbolic::Expression;
 
 using std::sqrt;
 
@@ -635,8 +638,8 @@ class TestMcCormickCorner
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
-  std::vector<MatrixDecisionVariable<3, 3>> Cpos_;
-  std::vector<MatrixDecisionVariable<3, 3>> Cneg_;
+  std::vector<Eigen::Matrix<Expression, 3, 3>> Cpos_;
+  std::vector<Eigen::Matrix<Expression, 3, 3>> Cneg_;
   int orthant_;  // Index of the orthant that R_.col(col_idx_) is in.
   bool is_bmin_;  // If true, then the box bmin <= x <= bmax intersects with the
                   // surface of the unit sphere at the unique point bmin;
@@ -675,7 +678,7 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
 
   // orthant_C[i](j) is either Cpos[i](j, col_idx_) or Cneg[i](j, col_idx_),
   // depending on the orthant.
-  std::array<VectorDecisionVariable<3>, 3> orthant_C;
+  std::array<Eigen::Matrix<Expression, 3, 1>, 3> orthant_C;
 
   for (int i = 0; i < 3; ++i) {
     for (int axis = 0; axis < 3; ++axis) {
@@ -687,13 +690,13 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
     }
   }
   if (is_bmin_) {
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[1](0));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[2](1));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[2](2));
+    prog_.AddLinearConstraint(1 == orthant_C[1](0));
+    prog_.AddLinearConstraint(Eigen::Vector2d::Ones() ==
+      orthant_C[2].block<2, 1>(1, 0));
   } else {
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[0](0));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[1](1));
-    prog_.AddBoundingBoxConstraint(1, 1, orthant_C[1](2));
+    prog_.AddLinearConstraint(1 == orthant_C[0](0));
+    prog_.AddLinearConstraint(Eigen::Vector2d::Ones() ==
+      orthant_C[1].block<2, 1>(1, 0));
   }
 
   // Add a cost function to try to make the column of R not perpendicular.
