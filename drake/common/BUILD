@@ -701,6 +701,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
+    size = "medium",
     deps = [
         ":symbolic_polynomial",
         ":symbolic_test_util",

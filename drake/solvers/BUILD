@@ -788,7 +788,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rotation_constraint_test",
-    size = "medium",
+    size = "large",
     # Excluding because an assertion fails in LLVM code. Issue #6179.
     tags = gurobi_test_tags() + mosek_test_tags() + ["no_tsan"],
     deps = [
