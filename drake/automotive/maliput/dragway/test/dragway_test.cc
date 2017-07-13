@@ -86,9 +86,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     for (double s = 0 ; s < length_; s += length_ / 10) {
       const api::RBounds driveable_bounds = lane->driveable_bounds(s);
       const api::HBounds elevation_bounds0 =
-          lane->elevation_bounds(s, driveable_bounds.r_min);
+          lane->elevation_bounds(s, driveable_bounds.min());
       const api::HBounds elevation_bounds1 =
-          lane->elevation_bounds(s, driveable_bounds.r_max);
+          lane->elevation_bounds(s, driveable_bounds.max());
       EXPECT_TRUE(api::test::IsHBoundsClose(
           elevation_bounds0,
           api::HBounds(expected.elevation_min, expected.elevation_max),

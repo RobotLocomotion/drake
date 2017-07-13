@@ -32,11 +32,11 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
 
   // Check the correctness of the default parameters.
   EXPECT_EQ(
-      RoadCharacteristics{}.lane_bounds.r_max,
-      rg->junction(0)->segment(0)->lane(0)->lane_bounds(kSPosition).r_max);
+      RoadCharacteristics{}.lane_bounds.max(),
+      rg->junction(0)->segment(0)->lane(0)->lane_bounds(kSPosition).max());
   EXPECT_EQ(
-      RoadCharacteristics{}.driveable_bounds.r_max,
-      rg->junction(0)->segment(0)->lane(0)->driveable_bounds(kSPosition).r_max);
+      RoadCharacteristics{}.driveable_bounds.max(),
+      rg->junction(0)->segment(0)->lane(0)->driveable_bounds(kSPosition).max());
 
   EXPECT_EQ(rg->id().id, "monolane-merge-example");
   EXPECT_EQ(rg->num_junctions(), 9);
@@ -87,12 +87,11 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
   // Check the correctness of the non-default parameters.
   EXPECT_EQ(
       kLaneWidth / 2.,
-      new_rg->junction(0)->segment(0)->lane(0)->lane_bounds(kSPosition).r_max);
+      new_rg->junction(0)->segment(0)->lane(0)->lane_bounds(kSPosition).max());
   EXPECT_EQ(kDriveableWidth / 2., new_rg->junction(0)
                                       ->segment(0)
                                       ->lane(0)
-                                      ->driveable_bounds(kSPosition)
-                                      .r_max);
+                                      ->driveable_bounds(kSPosition).max());
 
   EXPECT_EQ(new_rg->id().id, "monolane-merge-example");
   EXPECT_EQ(new_rg->num_junctions(), 9);

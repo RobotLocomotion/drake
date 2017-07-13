@@ -28,8 +28,8 @@ Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
       driveable_bounds_(driveable_bounds),
       elevation_bounds_(elevation_bounds) {
   DRAKE_DEMAND(segment != nullptr);
-  DRAKE_DEMAND(lane_bounds_.r_min >= driveable_bounds_.r_min);
-  DRAKE_DEMAND(lane_bounds_.r_max <= driveable_bounds_.r_max);
+  DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
+  DRAKE_DEMAND(lane_bounds_.max() <= driveable_bounds_.max());
   // TODO(liang.fok) Consider initializing this variable in the constructor's
   // initializer list so branch_point_ can be declared `const`.
   branch_point_ = make_unique<BranchPoint>(
@@ -104,8 +104,8 @@ api::LanePosition Lane::DoToLanePosition(
 
   const double min_x = 0;
   const double max_x = length_;
-  const double min_y = driveable_bounds_.r_min + y_offset_;
-  const double max_y = driveable_bounds_.r_max + y_offset_;
+  const double min_y = driveable_bounds_.min() + y_offset_;
+  const double max_y = driveable_bounds_.max() + y_offset_;
   const double min_z = elevation_bounds_.min();
   const double max_z = elevation_bounds_.max();
 
