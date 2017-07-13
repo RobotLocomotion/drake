@@ -105,6 +105,7 @@ cc_library(
         "include/ignition/math/config.hh",  # created above
         "src/Angle.cc",
         "src/Box.cc",
+        "src/Color.cc",
         "src/Frustum.cc",
         "src/Helpers.cc",
         "src/Kmeans.cc",

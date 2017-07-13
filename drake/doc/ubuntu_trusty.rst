@@ -83,10 +83,10 @@ Other prerequisites may be installed as follows::
     sudo apt-get update
     sudo apt-get install --no-install-recommends \
       autoconf automake bison doxygen freeglut3-dev git graphviz libboost-dev \
-      libboost-system-dev libgtk2.0-dev libjpeg-dev libmpfr-dev libpng-dev \
-      libtinyxml-dev libtool libvtk5-dev make ninja-build patchutils perl \
-      pkg-config python-bs4 python-dev python-gtk2 python-html5lib \
-      python-numpy python-pip python-sphinx python-yaml unzip valgrind
+      libgtk2.0-dev libjpeg-dev libmpfr-dev libpng-dev libtinyxml-dev libtool \
+      libvtk5-dev make ninja-build patchutils perl pkg-config python-bs4 \
+      python-dev python-gtk2 python-html5lib python-numpy python-pip \
+      python-sphinx python-yaml unzip valgrind
 
 If you will be building/using Director, some additional prerequisites may be
 installed as follows::
