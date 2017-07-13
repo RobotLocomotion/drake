@@ -256,6 +256,8 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // Simulation in two pieces -- see notes below on the test for details.
   simulator.StepTo(kLiftStart);
 
+  // Capture the "initial" positions of the box and the gripper finger as
+  // discussed in the test notes below.
   auto state_output = model->AllocateOutput(simulator.get_context());
   model->CalcOutput(simulator.get_context(), state_output.get());
   auto& interim_kinematics_results =
@@ -268,6 +270,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   Vector3d init_finger_pos =
       interim_kinematics_results.get_body_position(finger_index);
 
+  // Now run to the end of the simulation.
   simulator.StepTo(kSimDuration);
 
   // Extract and log the state of the robot.
@@ -305,8 +308,8 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // gripper.)
   //
   // Based on this ideal end position, we compute the difference between ideal
-  // and actual final position. We compute a mean slip speed by dividing that
-  // displacement by the simulation interval. Successful simulation means that
+  // and actual final position. The _mean slip speed_ is that difference
+  // divided by the simulation duration. Successful simulation means that
   // the box will have slipped at a rate no greater than that specified by
   // kVStictionTolerance.
   //
