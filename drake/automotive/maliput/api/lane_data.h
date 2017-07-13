@@ -271,18 +271,34 @@ struct RoadPosition {
 /// Bounds in the lateral dimension (r component) of a `Lane`-frame, consisting
 /// of a pair of minimum and maximum r value.  The bounds must straddle r = 0,
 /// i.e., the minimum must be <= 0 and the maximum must be >= 0.
-struct RBounds {
+class RBounds {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RBounds)
+
   /// Default constructor.
   RBounds() = default;
 
   /// Fully parameterized constructor.
-  RBounds(double rmin, double rmax) : r_min(rmin), r_max(rmax) {
-    DRAKE_DEMAND(r_min <= 0.);
-    DRAKE_DEMAND(r_max >= 0.);
+  RBounds(double min, double max) : min_(min), max_(max) {
+    DRAKE_DEMAND(min <= 0.);
+    DRAKE_DEMAND(max >= 0.);
   }
 
-  double r_min{};
-  double r_max{};
+  /// @name Getters and Setters
+  //@{
+  /// Gets minimum bound.
+  double min() const { return min_; }
+  /// Sets minimum bound.
+  void set_min(double min) { min_ = min; }
+  /// Gets maximum bound.
+  double max() const { return max_; }
+  /// Sets maximum bound.
+  void set_max(double max) { max_ = max; }
+  //@}
+
+ private:
+  double min_{};
+  double max_{};
 };
 
 

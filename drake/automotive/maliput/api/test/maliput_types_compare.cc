@@ -149,23 +149,23 @@ namespace test {
                                           double tolerance) {
   bool fails = false;
   std::string error_message;
-  double delta = std::abs(rbounds1.r_min - rbounds2.r_min);
+  double delta = std::abs(rbounds1.min() - rbounds2.min());
   if (delta > tolerance) {
     fails = true;
     error_message = error_message
                     + "RBounds are different at r_min. "
-                    + "rbounds1.r_min: " + std::to_string(rbounds1.r_min)
-                    + " vs. rbounds2.r_min: " + std::to_string(rbounds2.r_min)
+                    + "rbounds1.r_min: " + std::to_string(rbounds1.min())
+                    + " vs. rbounds2.r_min: " + std::to_string(rbounds2.min())
                     + ", diff = " + std::to_string(delta) + ", tolerance = "
                     + std::to_string(tolerance) + "\n";
   }
-  delta = std::abs(rbounds1.r_max - rbounds2.r_max);
+  delta = std::abs(rbounds1.max() - rbounds2.max());
   if (delta > tolerance) {
     fails = true;
     error_message = error_message
                     + "RBounds are different at r_max. "
-                    + "rbounds1.r_max: " + std::to_string(rbounds1.r_max)
-                    + " vs. rbounds2.r_max: " + std::to_string(rbounds2.r_max)
+                    + "rbounds1.r_max: " + std::to_string(rbounds1.max())
+                    + " vs. rbounds2.r_max: " + std::to_string(rbounds2.max())
                     + ", diff = " + std::to_string(delta) + ", tolerance = "
                     + std::to_string(tolerance) + "\n";
   }
@@ -174,10 +174,10 @@ namespace test {
   }
   return ::testing::AssertionSuccess()
          << "rbounds1 =\n"
-         << "(" << rbounds1.r_min << ", " << rbounds1.r_max << ")"
+         << "(" << rbounds1.min() << ", " << rbounds1.max() << ")"
          << "\nis approximately equal to "
          << " rbounds2 =\n"
-         << "(" << rbounds2.r_min << ", " << rbounds2.r_max << ")"
+         << "(" << rbounds2.min() << ", " << rbounds2.max() << ")"
          << ", tolerance = " << tolerance;
 }
 

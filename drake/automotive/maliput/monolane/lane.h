@@ -191,8 +191,8 @@ class Lane : public api::Lane {
         p_scale_(p_scale),
         elevation_(elevation),
         superelevation_(superelevation) {
-    DRAKE_DEMAND(lane_bounds_.r_min >= driveable_bounds_.r_min);
-    DRAKE_DEMAND(lane_bounds_.r_max <= driveable_bounds_.r_max);
+    DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
+    DRAKE_DEMAND(lane_bounds_.max() <= driveable_bounds_.max());
   }
 
   // TODO(maddog@tri.global)  Allow superelevation to have a center-of-rotation

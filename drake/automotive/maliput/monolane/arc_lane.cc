@@ -139,9 +139,9 @@ ArcLane::ArcLane(const api::LaneId& id, const api::Segment* segment,
   // TODO(maddog@tri.global)  When you have nothing better to do, handle the
   //                          improbable case of superelevation >= 90 deg, too.
   if (d_theta > 0.) {
-    DRAKE_DEMAND((driveable_bounds.r_max * max_cos_theta) < r_);
+    DRAKE_DEMAND((driveable_bounds.max() * max_cos_theta) < r_);
   } else {
-    DRAKE_DEMAND((driveable_bounds.r_min * max_cos_theta) > -r_);
+    DRAKE_DEMAND((driveable_bounds.min() * max_cos_theta) > -r_);
   }
 }
 
@@ -218,8 +218,8 @@ api::LanePosition ArcLane::DoToLanePosition(
   // Compute r (its direction depends on the direction of the +s-coordinate)
   const double r_unsaturated = (d_theta_ >= 0.) ? r_ - v.norm() : v.norm() - r_;
   // Saturate r within drivable bounds.
-  const double r = math::saturate(r_unsaturated, driveable_bounds(s).r_min,
-                                  driveable_bounds(s).r_max);
+  const double r = math::saturate(r_unsaturated, driveable_bounds(s).min(),
+                                  driveable_bounds(s).max());
 
   // Calculate the (uniform) road elevation.
   const double p_scale = r_ * d_theta_;

@@ -137,8 +137,8 @@ bool PoseSelector<T>::IsWithinDriveable(const LanePosition& lane_position,
   }
   const maliput::api::RBounds r_bounds =
       lane->driveable_bounds(lane_position.s());
-  if (lane_position.r() < r_bounds.r_min ||
-      lane_position.r() > r_bounds.r_max) {
+  if (lane_position.r() < r_bounds.min() ||
+      lane_position.r() > r_bounds.max()) {
     return false;
   }
   const maliput::api::HBounds h_bounds =
@@ -154,8 +154,8 @@ bool PoseSelector<T>::IsWithinLane(const GeoPosition& geo_position,
   const LanePosition pos =
       lane->ToLanePosition(geo_position, nullptr, &distance);
   const maliput::api::RBounds r_bounds = lane->lane_bounds(pos.s());
-  return (distance == 0. && pos.r() >= r_bounds.r_min &&
-          pos.r() <= r_bounds.r_max);
+  return (distance == 0. && pos.r() >= r_bounds.min() &&
+          pos.r() <= r_bounds.max());
 }
 
 template <typename T>
@@ -163,8 +163,8 @@ bool PoseSelector<T>::IsWithinLane(const LanePosition& lane_position,
                                    const Lane* lane) {
   if (IsWithinDriveable(lane_position, lane)) {
     const maliput::api::RBounds r_bounds = lane->lane_bounds(lane_position.s());
-    if (lane_position.r() >= r_bounds.r_min ||
-        lane_position.r() <= r_bounds.r_max) {
+    if (lane_position.r() >= r_bounds.min() ||
+        lane_position.r() <= r_bounds.max()) {
       return true;
     }
   }
