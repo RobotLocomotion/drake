@@ -115,6 +115,7 @@ TEST_F(RigidContact2DSolverTest, TwoPointSticking) {
 
   // Compute the problem data.
   CalcRigidContactAccelProblemData(&data_);
+  EXPECT_TRUE(data_.sliding_contacts.empty());
 
   // Add a force pulling the rod horizontally.
   const double horz_f = 100.0;
@@ -124,11 +125,47 @@ TEST_F(RigidContact2DSolverTest, TwoPointSticking) {
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
+  // Verify that the frictional forces equal the horizontal forces.
+  const int nc = data_.non_sliding_contacts.size();
+  EXPECT_NEAR(cf.segment(nc, cf.size() - nc).lpNorm<1>(), horz_f, eps_);
+
+  // Verify that the generalized acceleration of the rod is equal to zero.
+  VectorX<double> ga;
+  solver_.ComputeGeneralizedAcceleration(data_, cf, &ga);
+  EXPECT_LT(ga.norm(), eps_);
+}
+
+// Tests the rod in a single-point sticking configuration.
+TEST_F(RigidContact2DSolverTest, SinglePointSticking) {
+  // Set the state of the rod to resting on its side with no velocity.
+  SetRodToRestingVerticalConfig();
+
+  // Set the rod to large friction.
+  rod_->set_mu_coulomb(15.0);
+  rod_->set_mu_static(15.0);
+
+  // Compute the problem data.
+  CalcRigidContactAccelProblemData(&data_);
   EXPECT_TRUE(data_.sliding_contacts.empty());
+
+  // Add a force, acting at the point of contact, that pulls the rod
+  // horizontally.
+  const double horz_f = 100.0;
+  data_.f[0] += horz_f;
+  data_.f[2] += horz_f * rod_->get_rod_half_length();
+
+  // Compute the contact forces.
+  VectorX<double> cf;
+  solver_.SolveContactProblem(cfm_, data_, &cf);
 
   // Verify that the frictional forces equal the horizontal forces.
   const int nc = data_.non_sliding_contacts.size();
   EXPECT_NEAR(cf.segment(nc, cf.size() - nc).lpNorm<1>(), horz_f, eps_);
+
+  // Verify that the generalized acceleration of the rod is equal to zero.
+  VectorX<double> ga;
+  solver_.ComputeGeneralizedAcceleration(data_, cf, &ga);
+  EXPECT_LT(ga.norm(), eps_);
 }
 
 // Tests the rod in a two-point non-sticking configuration that will transition
@@ -160,6 +197,11 @@ TEST_F(RigidContact2DSolverTest, TwoPointNonSlidingToSliding) {
   const VectorX<double> ff = cf.segment(nc, cf.size() - nc);
   EXPECT_GT(ff.norm(), eps_);
   EXPECT_LT(ff.lpNorm<1>(), horz_f);
+
+  // Verify that the horizontal acceleration is to the right.
+  VectorX<double> ga;
+  solver_.ComputeGeneralizedAcceleration(data_, cf, &ga);
+  EXPECT_GT(ga[0], 0);
 }
 
 // Tests the rod in a two-point sliding configuration.

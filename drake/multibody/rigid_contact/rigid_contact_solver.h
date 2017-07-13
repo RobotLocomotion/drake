@@ -50,6 +50,26 @@ class RigidContactSolver {
       const RigidContactAccelProblemData<T>& problem_data,
       VectorX<T>* cf) const;
 
+  /// Computes the generalized force on the system from the contact forces given
+  /// in packed storage. Aborts if @p generalized_force is null.
+  /// @param problem_data The data used to compute the contact forces.
+  /// @param cf The computed contact forces, in the packed storage
+  ///           format described in documentation for SolveContactProblem.
+  /// @param[out] generalized_force The generalized force acting on the system
+  ///             from the contact wrench is stored here, on return.
+  static void ComputeGeneralizedForceFromContactForces(
+      const RigidContactAccelProblemData<T>& problem_data,
+      const VectorX<T>& cf,
+      VectorX<T>* generalized_force);
+
+  /// Computes the system generalized acceleration, given the external forces
+  /// (stored in @p problem_data) and the contact forces. Aborts if
+  /// @p generalized_acceleration is null.
+  static void ComputeGeneralizedAcceleration(
+      const RigidContactAccelProblemData<T>& problem_data,
+      const VectorX<T>& cf,
+      VectorX<T>* generalized_acceleration);
+
  private:
   void FormSustainedContactLCP(
       const RigidContactAccelProblemData<T>& problem_data,
@@ -216,6 +236,46 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   qq->segment(nc, nr) = F * M_inv_x_f + Fdot_x_v;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
+}
+
+template <class T>
+void RigidContactSolver<T>::ComputeGeneralizedForceFromContactForces(
+    const RigidContactAccelProblemData<T>& problem_data,
+    const VectorX<T>& cf,
+    VectorX<T>* generalized_force) {
+  DRAKE_DEMAND(generalized_force);
+
+  // Get numbers of types of contacts.
+  const int num_sliding = problem_data.sliding_contacts.size();
+  const int num_non_sliding = problem_data.non_sliding_contacts.size();
+  const int nc = num_sliding + num_non_sliding;
+  const int nr = std::accumulate(problem_data.r.begin(),
+                                 problem_data.r.end(), 0);
+
+  /// Verify cf is the correct size.
+  const int nvars = nc + nr;
+  DRAKE_DEMAND(cf.size() == nvars);
+
+  /// Get the normal and non-sliding contact forces.
+  const auto& f_normal = cf.segment(0, nc);
+  const auto& f_non_sliding_frictional = cf.segment(nc, nvars - nc);
+
+  /// Compute the generalized force.
+  *generalized_force = problem_data.N_minus_mu_Q.transpose() * f_normal +
+      problem_data.F.transpose() * f_non_sliding_frictional;
+}
+
+template <class T>
+void RigidContactSolver<T>::ComputeGeneralizedAcceleration(
+    const RigidContactAccelProblemData<T>& problem_data,
+    const VectorX<T>& cf,
+    VectorX<T>* generalized_acceleration) {
+  DRAKE_DEMAND(generalized_acceleration);
+  VectorX<T> generalized_force;
+  ComputeGeneralizedForceFromContactForces(problem_data, cf,
+                                           &generalized_force);
+  *generalized_acceleration = problem_data.solve_inertia(problem_data.f +
+                                                         generalized_force);
 }
 
 }  // namespace rigid_contact
