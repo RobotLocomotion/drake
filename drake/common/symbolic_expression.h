@@ -53,6 +53,8 @@ enum class ExpressionKind {
   Tanh,                   ///< hyperbolic tangent
   Min,                    ///< min
   Max,                    ///< max
+  Ceil,                   ///< ceil
+  Floor,                  ///< floor
   IfThenElse,             ///< if then else
   NaN,                    ///< NaN
   UninterpretedFunction,  ///< Uninterpreted function
@@ -87,6 +89,8 @@ class ExpressionCosh;                   // In symbolic_expression_cell.h
 class ExpressionTanh;                   // In symbolic_expression_cell.h
 class ExpressionMin;                    // In symbolic_expression_cell.h
 class ExpressionMax;                    // In symbolic_expression_cell.h
+class ExpressionCeiling;                // In symbolic_expression_cell.h
+class ExpressionFloor;                  // In symbolic_expression_cell.h
 class ExpressionIfThenElse;             // In symbolic_expression_cell.h
 class ExpressionUninterpretedFunction;  // In symbolic_expression_cell.h
 class Formula;                          // In symbolic_formula.h
@@ -105,8 +109,8 @@ Its syntax tree is as follows:
     E := Var | Constant | E + ... + E | E * ... * E | E / E | log(E)
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
-       | min(E, E) | max(E, E) | if_then_else(F, E, E) | NaN
-       | uninterpreted_function(name, {v_1, ..., v_n})
+       | min(E, E) | max(E, E) | ceil(E) | floor(E) | if_then_else(F, E, E)
+       | NaN | uninterpreted_function(name, {v_1, ..., v_n})
 @endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -329,6 +333,8 @@ class Expression {
   friend Expression tanh(const Expression& e);
   friend Expression min(const Expression& e1, const Expression& e2);
   friend Expression max(const Expression& e1, const Expression& e2);
+  friend Expression ceil(const Expression& e);
+  friend Expression floor(const Expression& e);
 
   /** Constructs if-then-else expression.
 
@@ -398,6 +404,8 @@ class Expression {
   friend bool is_tanh(const Expression& e);
   friend bool is_min(const Expression& e);
   friend bool is_max(const Expression& e);
+  friend bool is_ceil(const Expression& e);
+  friend bool is_floor(const Expression& e);
   friend bool is_if_then_else(const Expression& e);
   friend bool is_uninterpreted_function(const Expression& e);
 
@@ -429,6 +437,8 @@ class Expression {
   friend std::shared_ptr<ExpressionTanh> to_tanh(const Expression& e);
   friend std::shared_ptr<ExpressionMin> to_min(const Expression& e);
   friend std::shared_ptr<ExpressionMax> to_max(const Expression& e);
+  friend std::shared_ptr<ExpressionCeiling> to_ceil(const Expression& e);
+  friend std::shared_ptr<ExpressionFloor> to_floor(const Expression& e);
   friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
       const Expression& e);
   friend std::shared_ptr<ExpressionUninterpretedFunction>
