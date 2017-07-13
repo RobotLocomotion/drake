@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include "sdf/sdf.hh"
-
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {

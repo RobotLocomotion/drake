@@ -26,22 +26,24 @@ namespace double_pendulum {
 struct ModelInstance {
   ModelInstance(const std::string& name, const int& id)
       : name(name), id(id) {}
-  std::string name;
-  int id;
+  std::string name{};
+  int id{};
 };
 
-Isometry3<double> ParsePose(const sdf::ElementPtr& pose) {
-  const auto native_pose = pose->Get<ignition::math::Pose3d>();
-  const Isometry3<double>::TranslationType translation(
-      native_pose.Pos().X(),
-      native_pose.Pos().Y(),
-      native_pose.Pos().Z());
-  const Quaternion<double> rotation(
-      native_pose.Rot().W(),
-      native_pose.Rot().X(),
-      native_pose.Rot().Y(),
-      native_pose.Rot().Z());
+
+Vector3<double> ToVector(const ignition::math::Vector3d& vector) {
+  return Vector3<double>(vector.X(), vector.Y(), vector.Z());
+}
+
+Isometry3<double> ToIsometry(const ignition::math::Pose3d& pose) {
+  const Isometry3<double>::TranslationType translation(ToVector(pose.Pos()));
+  const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
+                                    pose.Rot().Y(), pose.Rot().Z());
   return translation * rotation;
+}
+
+Isometry3<double> ParsePose(const sdf::ElementPtr& pose) {
+  return ToIsometry(pose->Get<ignition::math::Pose3d>());
 }
 
 void ParseGeometry(const sdf::ElementPtr& geometry,
@@ -59,8 +61,7 @@ void ParseGeometry(const sdf::ElementPtr& geometry,
     shape = geometry->GetElement("box");
     const sdf::ElementPtr size = shape->GetElement("size");
     const auto xyz = size->Get<ignition::math::Vector3d>();
-    element->setGeometry(DrakeShapes::Box(
-        Vector3<double>(xyz.X(), xyz.Y(), xyz.Z())));
+    element->setGeometry(DrakeShapes::Box(ToVector(xyz)));
     return;
   }
   DRAKE_ABORT_MSG("Unknown geometry!");
@@ -179,11 +180,8 @@ ParseJointType(const sdf::ElementPtr& joint,
   if (joint_type == "revolute") {
     const sdf::ElementPtr axis = joint->GetElement("axis");
     const sdf::ElementPtr xyz = axis->GetElement("xyz");
-    const auto native_axis_vector = xyz->Get<ignition::math::Vector3d>();
-    Vector3<double> axis_vector(
-        native_axis_vector.X(),
-        native_axis_vector.Y(),
-        native_axis_vector.Z());
+    Vector3<double> axis_vector = ToVector(
+        xyz->Get<ignition::math::Vector3d>());
     if (joint->HasElement("use_parent_model_frame")) {
       const sdf::ElementPtr use_parent_frame =
           joint->GetElement("use_parent_model_frame");

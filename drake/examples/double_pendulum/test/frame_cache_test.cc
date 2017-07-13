@@ -24,7 +24,7 @@ GTEST_TEST(FrameCacheTest, TransformTest) {
   frame_cache.Update("world", "body", X_WB);
 
   // Define arm frame's (A) translation in body frame (B).
-  const typename Isometry3<double>::TranslationType T_BA(0.5, 0.0, 1.8);
+  const Isometry3<double>::TranslationType T_BA(0.5, 0.0, 1.8);
   // Define arm frame's (A) rotation in body frame (B).
   const AngleAxis<double> R_BA(0.1 * M_PI, Vector3<double>::UnitY());
   // Compose arm frame's (A) pose in body frame (B) from translation
@@ -35,6 +35,20 @@ GTEST_TEST(FrameCacheTest, TransformTest) {
 
   // Check that pose resolution works as intended.
   EXPECT_TRUE(frame_cache.Transform("world", "arm").isApprox(X_WB * X_BA));
+
+  // Translate body frame's (B) pose in world frame (W)..
+  const Isometry3<double>::TranslationType T_B(0, -1.0, 0);
+  const Isometry3<double> X_WB2 = T_B * X_WB;
+  // Update tree with body frame's (B) pose in world frame (W).
+  frame_cache.Update("world", "body", X_WB2);
+
+  // Check that affecting the body frame's (B) pose did not alter
+  // the arm frame's (A) pose in that same frame.
+  EXPECT_TRUE(frame_cache.Transform("body", "arm").isApprox(X_BA));
+
+  // Check that the arm frame's (A) pose in world frame (W) is correctly
+  // re-computed.
+  EXPECT_TRUE(frame_cache.Transform("world", "arm").isApprox(X_WB2 * X_BA));
 }
 
 // Makes sure that a FrameCache throws when trying to update using a non

@@ -4,31 +4,28 @@
     <model name='test_model'>
       <link name='body'>
         <inertial>
-          <pose>0.1 0.1 0 0 0 0</pose>
+          <pose>0 0 0.9 0 0 0</pose>
           <mass>60.0</mass>
         </inertial>
         <visual name='vis_body'>
-          <pose>0 0 0.01 0 0 0</pose>
+          <pose>0 0 0.9 0 0 0</pose>
           <geometry>
-            <cylinder>
-              <radius>0.3</radius>
-              <length>1.8</length>
-            </cylinder>
+            <box>
+              <size>0.2 0.2 1.8</size>
+            </box>
           </geometry>
         </visual>
         <collision name='col_body'>
-          <pose>0 0 0.01 0 0 0</pose>
+          <pose>0 0 0.9 0 0 0</pose>
           <geometry>
-            <cylinder>
-              <radius>0.3</radius>
-              <length>1.8</length>
-            </cylinder>
+            <box>
+              <size>0.2 0.2 1.8</size>
+            </box>
           </geometry>
         </collision>
       </link>
       <link name='arm'>
         <pose>0 0 1.5 -1.5708 0 0</pose>
-        <self_collide>0</self_collide>
         <inertial>
           <mass>2.0</mass>
         </inertial>
@@ -36,8 +33,8 @@
           <pose>-0.05 0 0 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.1</radius>
-              <length>0.3</length>
+              <radius>0.05</radius>
+              <length>0.4</length>
             </cylinder>
           </geometry>
         </visual>
@@ -45,8 +42,8 @@
           <pose>-0.05 0 0 0 1.5708 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.1</radius>
-              <length>0.3</length>
+              <radius>0.05</radius>
+              <length>0.4</length>
             </cylinder>
           </geometry>
         </collision>
@@ -55,7 +52,7 @@
         <parent>body</parent>
         <child>arm</child>
         <axis>
-          <xyz>1.0 0 0</xyz>
+          <xyz>0 0 1</xyz>
         </axis>
       </joint>
     </model>
