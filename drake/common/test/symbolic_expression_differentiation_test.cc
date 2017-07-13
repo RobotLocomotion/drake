@@ -213,9 +213,11 @@ TEST_F(SymbolicDifferentiationTest, SymbolicCompoundCases) {
 TEST_F(SymbolicDifferentiationTest, NotDifferentiable) {
   const Expression& x{var_x_};
   const Expression& y{var_y_};
-  // abs, min, max, if_then_else are not differentiable with respect to a
-  // variable if an argument includes the variable.
+  // abs, min, max, ceil, floor, if_then_else are not differentiable with
+  // respect to a variable if an argument includes the variable.
   EXPECT_ANY_THROW(abs(x).Differentiate(var_x_));
+  EXPECT_ANY_THROW(ceil(x).Differentiate(var_x_));
+  EXPECT_ANY_THROW(floor(x).Differentiate(var_x_));
   EXPECT_ANY_THROW(min(x, y).Differentiate(var_x_));
   EXPECT_ANY_THROW(min(x, y).Differentiate(var_y_));
   EXPECT_ANY_THROW(max(x, y).Differentiate(var_x_));
@@ -225,6 +227,8 @@ TEST_F(SymbolicDifferentiationTest, NotDifferentiable) {
   // However, those functions are still differentiable if the variable for
   // differentiation does not occur in the function body.
   EXPECT_EQ(abs(x).Differentiate(var_y_), 0.0);
+  EXPECT_EQ(ceil(x).Differentiate(var_y_), 0.0);
+  EXPECT_EQ(floor(x).Differentiate(var_y_), 0.0);
   EXPECT_EQ(min(x, y).Differentiate(var_z_), 0.0);
   EXPECT_EQ(max(x, y).Differentiate(var_z_), 0.0);
   EXPECT_EQ(if_then_else(x > y, x, y).Differentiate(var_z_), 0.0);

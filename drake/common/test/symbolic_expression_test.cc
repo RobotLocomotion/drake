@@ -133,6 +133,8 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression e_tanh_{tanh(x_)};
   const Expression e_min_{min(x_, y_)};
   const Expression e_max_{max(x_, y_)};
+  const Expression e_ceil_{ceil(x_)};
+  const Expression e_floor_{floor(x_)};
   const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
   const Expression e_nan_{Expression::NaN()};
   const Expression e_uf_{uninterpreted_function("uf", {var_x_, var_y_})};
@@ -141,7 +143,7 @@ class SymbolicExpressionTest : public ::testing::Test {
       e_constant_, e_var_,  e_add_,  e_neg_,   e_mul_,  e_div_,  e_log_,
       e_abs_,      e_exp_,  e_sqrt_, e_pow_,   e_sin_,  e_cos_,  e_tan_,
       e_asin_,     e_acos_, e_atan_, e_atan2_, e_sinh_, e_cosh_, e_tanh_,
-      e_min_,      e_max_,  e_ite_,  e_nan_,   e_uf_};
+      e_min_,      e_max_,  e_ceil_, e_floor_, e_ite_,  e_nan_,  e_uf_};
 };
 
 TEST_F(SymbolicExpressionTest, Dummy) {
@@ -352,6 +354,22 @@ TEST_F(SymbolicExpressionTest, IsMax) {
   EXPECT_EQ(cnt, 1);
 }
 
+TEST_F(SymbolicExpressionTest, IsCeil) {
+  EXPECT_TRUE(is_ceil(e_ceil_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_ceil(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsFloor) {
+  EXPECT_TRUE(is_floor(e_floor_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_floor(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
 TEST_F(SymbolicExpressionTest, IsIfThenElse) {
   EXPECT_TRUE(is_if_then_else(e_ite_));
   const vector<Expression>::difference_type cnt{
@@ -403,6 +421,8 @@ TEST_F(SymbolicExpressionTest, GetArgument) {
   EXPECT_PRED2(ExprEqual, get_argument(e_sinh_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_cosh_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_tanh_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_ceil_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_floor_), x_);
 }
 
 TEST_F(SymbolicExpressionTest, GetFirstArgument) {
@@ -461,8 +481,9 @@ TEST_F(SymbolicExpressionTest, IsPolynomial) {
       {e_cos_, false},     {e_tan_, false},  {e_asin_, false},
       {e_acos_, false},    {e_atan_, false}, {e_atan2_, false},
       {e_sinh_, false},    {e_cosh_, false}, {e_tanh_, false},
-      {e_min_, false},     {e_max_, false},  {e_ite_, false},
-      {e_nan_, false},     {e_uf_, false}};
+      {e_min_, false},     {e_max_, false},  {e_ceil_, false},
+      {e_floor_, false},   {e_ite_, false},  {e_nan_, false},
+      {e_uf_, false}};
   for (const pair<Expression, bool>& p : test_vec) {
     EXPECT_EQ(p.first.is_polynomial(), p.second);
   }
@@ -545,9 +566,11 @@ TEST_F(SymbolicExpressionTest, ToPolynomial1) {
 
 TEST_F(SymbolicExpressionTest, ToPolynomial2) {
   const vector<Expression> test_vec{
-      e_log_,  e_abs_,  e_exp_,  e_sqrt_,           e_sin_,  e_cos_,  e_tan_,
-      e_asin_, e_acos_, e_atan_, e_atan2_,          e_sinh_, e_cosh_, e_tanh_,
-      e_min_,  e_max_,  e_ite_,  Expression::NaN(), e_uf_};
+      e_log_,   e_abs_,  e_exp_,   e_sqrt_, e_sin_,
+      e_cos_,   e_tan_,  e_asin_,  e_acos_, e_atan_,
+      e_atan2_, e_sinh_, e_cosh_,  e_tanh_, e_min_,
+      e_max_,   e_ceil_, e_floor_, e_ite_,  Expression::NaN(),
+      e_uf_};
   for (const Expression& e : test_vec) {
     EXPECT_FALSE(e.is_polynomial());
     EXPECT_THROW(e.ToPolynomial(), runtime_error);
@@ -558,8 +581,8 @@ TEST_F(SymbolicExpressionTest, LessKind) {
   CheckOrdering({e_constant_, e_var_,  e_add_,  e_neg_,  e_mul_,  e_div_,
                  e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
                  e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
-                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_,
-                 e_nan_,      e_uf_});
+                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ceil_,
+                 e_floor_,    e_ite_,  e_nan_,  e_uf_});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -742,6 +765,22 @@ TEST_F(SymbolicExpressionTest, LessMax) {
   CheckOrdering({max1, max2, max3});
 }
 
+TEST_F(SymbolicExpressionTest, LessCeil) {
+  const Expression ceil1{ceil(x_)};
+  const Expression ceil2{ceil(y_)};
+  const Expression ceil3{ceil(x_plus_y_)};
+  const Expression ceil4{ceil(x_plus_z_)};
+  CheckOrdering({ceil1, ceil2, ceil3, ceil4});
+}
+
+TEST_F(SymbolicExpressionTest, LessFloor) {
+  const Expression floor1{floor(x_)};
+  const Expression floor2{floor(y_)};
+  const Expression floor3{floor(x_plus_y_)};
+  const Expression floor4{floor(x_plus_z_)};
+  CheckOrdering({floor1, floor2, floor3, floor4});
+}
+
 TEST_F(SymbolicExpressionTest, LessIfThenElse) {
   const Formula f1{x_ < y_};
   const Formula f2{y_ < z_};
@@ -837,12 +876,14 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
   const Expression e10{sinh(x_plus_y_)};
   const Expression e11{cosh(x_plus_y_)};
   const Expression e12{tanh(x_plus_y_)};
+  const Expression e13{ceil(x_plus_y_)};
+  const Expression e14{floor(x_plus_y_)};
 
-  // e0, ..., e12 share the same sub-expression, but their hash values should be
+  // e0, ..., e14 share the same sub-expression, but their hash values should be
   // distinct.
   unordered_set<size_t> hash_set;
-  const vector<Expression> exprs{e0, e1, e2, e3,  e4,  e5, e6,
-                                 e7, e8, e9, e10, e11, e12};
+  const vector<Expression> exprs{e0, e1, e2,  e3,  e4,  e5,  e6, e7,
+                                 e8, e9, e10, e11, e12, e13, e14};
   for (auto const& e : exprs) {
     hash_set.insert(e.get_hash());
   }
@@ -1629,6 +1670,36 @@ TEST_F(SymbolicExpressionTest, Max2) {
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::max(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
   EXPECT_EQ((max(x_, y_)).to_string(), "max(x, y)");
+}
+
+TEST_F(SymbolicExpressionTest, Ceil) {
+  EXPECT_DOUBLE_EQ(ceil(pi_).Evaluate(), std::ceil(3.141592));
+  EXPECT_DOUBLE_EQ(ceil(one_).Evaluate(), std::ceil(1));
+  EXPECT_DOUBLE_EQ(ceil(two_).Evaluate(), std::ceil(2));
+  EXPECT_DOUBLE_EQ(ceil(zero_).Evaluate(), std::ceil(0));
+  EXPECT_DOUBLE_EQ(ceil(neg_one_).Evaluate(), std::ceil(-1));
+  EXPECT_DOUBLE_EQ(ceil(neg_pi_).Evaluate(), std::ceil(-3.141592));
+
+  const Expression e{ceil(x_ * y_ * pi_) + ceil(x_) + ceil(y_)};
+  const Environment env{{var_x_, 2}, {var_y_, 3.2}};
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::ceil(2 * 3.2 * 3.141592) +
+                                        std::ceil(2) + std::ceil(3.2));
+  EXPECT_EQ((ceil(x_)).to_string(), "ceil(x)");
+}
+
+TEST_F(SymbolicExpressionTest, Floor) {
+  EXPECT_DOUBLE_EQ(floor(pi_).Evaluate(), std::floor(3.141592));
+  EXPECT_DOUBLE_EQ(floor(one_).Evaluate(), std::floor(1));
+  EXPECT_DOUBLE_EQ(floor(two_).Evaluate(), std::floor(2));
+  EXPECT_DOUBLE_EQ(floor(zero_).Evaluate(), std::floor(0));
+  EXPECT_DOUBLE_EQ(floor(neg_one_).Evaluate(), std::floor(-1));
+  EXPECT_DOUBLE_EQ(floor(neg_pi_).Evaluate(), std::floor(-3.141592));
+
+  const Expression e{floor(x_ * y_ * pi_) + floor(x_) + floor(y_)};
+  const Environment env{{var_x_, 2}, {var_y_, 3.2}};
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::floor(2 * 3.2 * 3.141592) +
+                                        std::floor(2) + std::floor(3.2));
+  EXPECT_EQ((floor(x_)).to_string(), "floor(x)");
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse1) {

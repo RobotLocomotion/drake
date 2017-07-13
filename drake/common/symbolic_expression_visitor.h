@@ -61,6 +61,8 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
     case ExpressionKind::Tanh:
     case ExpressionKind::Min:
     case ExpressionKind::Max:
+    case ExpressionKind::Ceil:
+    case ExpressionKind::Floor:
     case ExpressionKind::IfThenElse:
     case ExpressionKind::UninterpretedFunction:
       // Should not be reachable because of `DRAKE_DEMAND(e.is_polynomial())` at
@@ -78,7 +80,8 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
 /// `VisitMultiplication`, `VisitDivision`, `VisitLog`, `VisitAbs`, `VisitExp`,
 /// `VisitSqrt`, `VisitPow`, `VisitSin`, `VisitCos`, `VisitTan`, `VisitAsin`,
 /// `VisitAtan`, `VisitAtan2`, `VisitSinh`, `VisitCosh`, `VisitTanh`,
-/// `VisitMin`, `VisitMax`, `VisitIfThenElse`, `VisitUninterpretedFunction.
+/// `VisitMin`, `VisitMax`, `VisitCeil`, `VisitFloor`, `VisitIfThenElse`,
+/// `VisitUninterpretedFunction.
 ///
 /// @throws std::runtime_error if NaN is detected during a visit.
 template <typename Result, typename Visitor, typename... Args>
@@ -149,6 +152,12 @@ Result VisitExpression(Visitor* v, const Expression& e, Args&&... args) {
 
     case ExpressionKind::Max:
       return v->VisitMax(e, std::forward<Args>(args)...);
+
+    case ExpressionKind::Ceil:
+      return v->VisitCeil(e, std::forward<Args>(args)...);
+
+    case ExpressionKind::Floor:
+      return v->VisitFloor(e, std::forward<Args>(args)...);
 
     case ExpressionKind::IfThenElse:
       return v->VisitIfThenElse(e, std::forward<Args>(args)...);

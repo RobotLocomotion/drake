@@ -200,6 +200,8 @@ TEST_F(SymbolicExpansionTest, MathFunctions) {
   contexts.push_back([&](const Expression& x) { return min(y_, x); });
   contexts.push_back([&](const Expression& x) { return max(x, z_); });
   contexts.push_back([&](const Expression& x) { return max(z_, x); });
+  contexts.push_back([](const Expression& x) { return ceil(x); });
+  contexts.push_back([](const Expression& x) { return floor(x); });
   contexts.push_back([&](const Expression& x) { return atan2(x, y_); });
   contexts.push_back([&](const Expression& x) { return atan2(y_, x); });
 
