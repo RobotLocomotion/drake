@@ -265,7 +265,7 @@ class MathematicalProgram {
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
-   * @tparam Rows  The number of rows in the new variables.
+   * @param rows  The number of rows in the new variables.
    * @param name The name of the newly added variables
    * @return The VectorDecisionVariable of size rows x 1, containing the new
    * vars (not all the vars stored).
@@ -273,24 +273,13 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.NewContinuousVariables<2>("x");
+   * auto x = prog.NewContinuousVariables(2, "x");
    * @endcode
    * This adds a 2 x 1 vector containing decision variables into the program.
    * The names of the variables are "x(0)" and "x(1)".
    *
    * The name of the variable is only used for the user in order to ease
    * readability.
-   */
-  template <int Rows>
-  VectorDecisionVariable<Rows> NewContinuousVariables(
-      const std::string& name = "x") {
-    return NewContinuousVariables<Rows, 1>(Rows, 1, name);
-  }
-
-  /**
-   * Adds continuous variables to this MathematicalProgram.
-   * @see NewContinuousVariables(int rows, int cols, const
-   * std::vector<std::string>& names);
    */
   VectorXDecisionVariable NewContinuousVariables(
       int rows, const std::string& name = "x") {
@@ -348,7 +337,7 @@ class MathematicalProgram {
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @tparam Rows  The number of rows in the new variables.
-   * @tparam Cols  The number of columns in the new variables.
+   * @tparam Cols  The number of columns in the new variables. The default is 1.
    * @param name All variables will share the same name, but different index.
    * @return The MatrixDecisionVariable of size rows x cols, containing the new
    * vars (not all the vars stored).
@@ -363,7 +352,7 @@ class MathematicalProgram {
    * The name of the variable is only used for the user in order to ease
    * readability.
    */
-  template <int Rows, int Cols>
+  template <int Rows, int Cols = 1>
   MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
       const std::string& name = "X") {
     return NewContinuousVariables<Rows, Cols>(Rows, Cols, name);
@@ -402,35 +391,22 @@ class MathematicalProgram {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names = internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(rows * cols);
-    internal::SetVariableNames(name, Rows, Cols, &names);
+    internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::BINARY, names, rows, cols);
   }
 
   /**
    * Adds a matrix of binary variables into the optimization program.
-   * @tparam rows The number of rows in the newly added binary variables.
-   * @tparam cols  The number of columns in the new variables.
+   * @tparam Rows The number of rows in the newly added binary variables.
+   * @tparam Cols  The number of columns in the new variables. The default is 1.
    * @param name Each newly added binary variable will share the same name. The
    * default name is "b".
    * @return A matrix containing the newly added variables.
    */
-  template <int rows, int cols>
-  MatrixDecisionVariable<rows, cols> NewBinaryVariables(
+  template <int Rows, int Cols = 1>
+  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
       const std::string& name = "b") {
-    return NewBinaryVariables<rows, cols>(rows, cols, name);
-  }
-
-  /**
-   * Adds vector of binary variables into the optimization program.
-   * @tparam rows The number of rows in the newly added binary variables.
-   * @param name Each newly added binary variable will share the same name. The
-   * default name is "b".
-   * @return A vector containing the newly added variables.
-   */
-  template <int rows>
-  VectorDecisionVariable<rows> NewBinaryVariables(
-      const std::string& name = "b") {
-    return NewBinaryVariables<rows, 1>(rows, 1, name);
+    return NewBinaryVariables<Rows, Cols>(Rows, Cols, name);
   }
 
   /**
@@ -2337,10 +2313,8 @@ class MathematicalProgram {
    */
   template <int Rows, int Cols>
   MatrixDecisionVariable<Rows, Cols> NewVariables(
-      VarType type,
-      const typename NewVariableName<Rows == Eigen::Dynamic ||
-                                         Cols == Eigen::Dynamic ? Eigen::Dynamic
-                                             : Rows * Cols>::type& names,
+      VarType type, const typename NewVariableName<
+                        MultiplyEigenSizes<Rows, Cols>::value>::type& names,
       int rows, int cols) {
     DRAKE_DEMAND(rows >= 0 && cols >= 0);
     MatrixDecisionVariable<Rows, Cols> decision_variable_matrix;
