@@ -56,6 +56,32 @@ typedef std::unordered_map<const drake::multibody::collision::Element*,
                            SurfacePoint>
     ElementToSurfacePointMap;
 
+// Base fixture for tests that own a collision model
+class ModelTestBase : public ::testing::Test {
+ protected:
+  unique_ptr<drake::multibody::collision::Model> model_;
+};
+
+// Fixture for tests that should be applied to all collision model types
+class ModelTest : public ModelTestBase,
+                  public ::testing::WithParamInterface<
+                      drake::multibody::collision::ModelType> {
+ public:
+  void SetUp() override {
+    model_ = drake::multibody::collision::newModel(GetParam());
+  }
+};
+
+TEST_P(ModelTest, NewModel) { EXPECT_FALSE(model_ == nullptr); }
+
+INSTANTIATE_TEST_CASE_P(NewModelTest, ModelTest, ::testing::Values(
+#ifdef BULLET_COLLISION
+                                                     kBullet,
+#endif
+#ifndef DRAKE_DISABLE_FCL
+                                                     kFcl,
+#endif
+                                                     kUnusable));
 // GENERAL REMARKS ON THE TESTS PERFORMED
 // A series of canonical tests are performed. These are Box_vs_Sphere,
 // SmallBoxSittingOnLargeBox and NonAlignedBoxes.
