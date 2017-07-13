@@ -109,6 +109,9 @@ class DiagramBuilder {
     return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
+  /// Returns whether any Systems have been added yet.
+  bool empty() const { return registered_systems_.empty(); }
+
   /// Returns the list of contained Systems.
   std::vector<systems::System<T>*> GetMutableSystems() {
     std::vector<systems::System<T>*> result;
