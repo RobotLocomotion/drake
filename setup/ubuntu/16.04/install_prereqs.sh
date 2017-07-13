@@ -78,7 +78,6 @@ gfortran-5-multilib
 git
 graphviz
 libboost-dev
-libboost-system-dev
 libgtk2.0-dev
 libmpfr-dev
 libpng12-dev
