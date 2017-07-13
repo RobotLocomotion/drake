@@ -5,9 +5,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "drake/geometry/geometry_ids.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/geometry/query_handle.h"
+#include "drake/geometry/geometry_query_results.h"
 
 namespace drake {
 namespace geometry {
@@ -15,17 +16,14 @@ namespace geometry {
 template <typename T> class GeometryFrame;
 template <typename T> class GeometryInstance;
 
-// TODO(SeanCurtis-TRI): Introducing the API has been decomposed into two PRs.
-// There is functionality alluded to in these comments (e.g., updating state
-// and performing queries that will come in the follow-up PR.
-
 /** GeometrySystem serves as a system-level wrapper for GeometryWorld. It serves
  as the nexus for all geometry (and geometry-based operations) in a Diagram.
  Through GeometrySystem, other systems that introduce geometry can _register_
  that geometry as part of a common global domain, including it in geometric
  queries (e.g., cars controlled by one LeafSystem can be observed by a different
  sensor system). GeometrySystem provides the interface for registering the
- geometry.
+ geometry, updating its position based on the current context, and performing
+ geometric queries.
 
  Only registered "geometry sources" can introduce geometry into %GeometrySystem.
  Geometry sources will typically be other leaf systems, but, in the case of
@@ -35,10 +33,49 @@ template <typename T> class GeometryInstance;
  geometry source must also provide pose values for all of the geometries the
  source owns, via a port connection on %GeometrySystem.
 
- The basic workflow for registering geometry with %GeometrySystem is:
+ The basic workflow for interacting with %GeometrySystem is:
    - Register as a geometry source, acquiring a unique SourceId.
    - Register geometry (anchored and dynamic) with the system.
-   - @todo Document i/o connections when that API is introduced.
+   - Connect source's geometry output ports to the corresponding %GeometrySystem
+     input ports.
+     - Implement appropriate `Calc*` methods on the geometry output ports to
+       update geometry pose values.
+
+ @section geom_sys_inputs Inputs
+ @cond
+ In future versions, this will *also* include velocity and (possibly)
+ acceleration ports.
+ // TODO(SeanCurtis-TRI): Modify this to reflect the number of actual port
+ // types.
+ @endcond
+
+ For each registered geometry source, there are _two_ input ports: id and pose.
+ Failing to connect to those ports or providing "bad" values on
+ those ports will cause runtime errors to be thrown. The two ports work in
+ tandem. Through these ports, the upstream source system communicates the
+ poses of all of the _frames_ it has registered with %GeometrySystem (see
+ RegisterFrame() for more details).
+
+ __identifier port__: An abstract-valued port containing an instance of
+ FrameIdVector. It should contain the FrameId of each frame registered by the
+ upstream source exactly once. The _order_ of the ids is how the values in the
+ pose port will be interpreted.
+
+ __pose port__: An abstract-valued port containing an instance of FramePoseSet.
+ There should be one pose value for each id in the the identifier port value.
+ The iᵗʰ pose belongs to the iᵗʰ id.
+
+ @section geom_sys_outputs Outputs
+
+ %GeometrySystem has a single output port.
+
+ __query port__: An abstract-valued port containing an instance of QueryHandle.
+ It provides a "ticket" for downstream LeafSystem instances to perform geometric
+ queries on the %GeometrySystem. To perform geometric queries, downstream
+ LeafSystem instances acquire the QueryHandle from %GeometrySystem's output port
+ and provide it as a parameter to one of %GeometrySystem's query methods (e.g.,
+ GeometrySystem::ComputeContact). This assumes that the querying system has
+ access to a const pointer to the connected %GeometrySystem instance.
 
  @section geom_sys_workflow Working with GeometrySystem
 
@@ -49,7 +86,18 @@ template <typename T> class GeometryInstance;
 
  __Consumer__
 
- @todo Document this when API is introduced.
+ Consumers perform geometric queries upon the world geometry. %GeometrySystem
+ _serves_ those queries. As indicated above, in order for a LeafSystem to act
+ as a consumer, it must:
+   1. define a QueryHandle-valued input port and connect it to %GeometrySystem's
+   corresponding output port, and
+   2. have a reference to the connected %GeometrySystem instance.
+
+ With those two requirements satisfied, a LeafSystem can perform geometry
+ queries by:
+   1. evaluating the QueryHandle input port, and
+   2. passing the returned handle into the appropriate query method on
+   GeometrySystem (e.g., GeometrySystem::ComputeContact()).
 
  __Producer__
 
@@ -101,17 +149,45 @@ template <typename T> class GeometryInstance;
 
  _Updating Kinematics_
 
- @todo Document this when the API has been introduced.
+ Registering _dynamic_ geometry implies a contract between the geometry source
+ and %GeometrySystem. The geometry source must do the following:
+   - It must provide, populate, and connect two output ports: the "id" port and
+   the "pose" port.
+   - The id port must contain _all_ the frame ids returned as a result of frame
+   registration.
+   - The pose port must contain one pose per registered frame; the pose is
+   expressed relative to the registered frame's _parent_ frame.
 
- @tparam T The underlying scalar type. Must be a valid Eigen scalar.
- */
+ Failure to meet these requirements will lead to a run-time error.
+
+ @cond
+ // TODO(SeanCurtis-TRI): Future work which will require add'l documentation:
+ //   - velocity kinematics.
+ //   - Finalizing API for topology changes at discrete events.
+ @endcond
+
+ @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
 template <typename T>
 class GeometrySystem : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometrySystem)
 
-  GeometrySystem() = default;
+  GeometrySystem();
   ~GeometrySystem() override;
+
+  /** @name       Port management
+   Access to GeometrySystem's input/output ports. This topic includes
+   registration of geometry sources because the input ports are mapped to
+   registered geometry sources.
+
+   Registration of a source doesn't automatically create all of the input ports
+   for the source. Input ports are allocated on a per-request basis. However,
+   a source that registers frames and geometries _must_ connect outputs to
+   the inputs associated with that source. Failure to do so will be treated as
+   a runtime error during the evaluation of %GeometrySystem. %GeometrySystem
+   will detect that frames have been registered but no values have been
+   provided. */
+  //@{
 
   /** Registers a new source to the geometry system (see GeometryWorld for the
    discussion of "geometry source"). The caller must save the returned SourceId;
@@ -129,6 +205,29 @@ class GeometrySystem : public systems::LeafSystem<T> {
                             %GeometrySystem.
    @see GeometryState::RegisterNewSource() */
   SourceId RegisterSource(const std::string &name = "");
+
+  /** Given a valid source `id`, returns the "frame id" input port associated
+   with that `id`. This port's value is an ordered list of frame ids; it
+   is used to provide an interpretation on the pose values provided on the
+   pose port.
+   @throws  std::logic_error if the source_id is _not_ recognized, or if the
+   context has already been allocated. */
+  const systems::InputPortDescriptor<T>& get_source_frame_id_port(SourceId id);
+
+  /** Given a valid source `id`, returns an _pose_ input port associated
+   with that `id`. This port is used to communicate _pose_ data for registered
+   frames.
+   @throws  std::logic_error if the source_id is _not_ recognized, or if the
+   context has already been allocated. */
+  const systems::InputPortDescriptor<T>& get_source_pose_port(SourceId id);
+
+  /** Returns the output port which produces the QueryHandle for performing
+   geometric queries. */
+  const systems::OutputPort<T>& get_query_output_port() const {
+    return systems::System<T>::get_output_port(query_port_index_);
+  }
+
+  //@}
 
   /** @name             Topology Manipulation
    Topology manipulation consists of changing the data contained in
@@ -270,13 +369,70 @@ class GeometrySystem : public systems::LeafSystem<T> {
 
   //@}
 
+  /** @name     System Queries
+   These methods perform queries on the state of the geometry world including:
+   proximity queries, contact queries, ray-casting queries, and look ups on
+   geometry resources.
+
+   These operations require a QueryHandle instance. The caller must acquire one
+   from the %GeometrySystem by connecting to the output port that provides
+   GeometryQuery instances. */
+  //@{
+
+  /** Report the name for the given source id.
+   @param handle   The QueryHandle produced by evaluating the connected
+                   input port on the querying LeafSystem.
+   @param id       The id of the source to query. */
+  const std::string& get_source_name(const QueryHandle<T>& handle,
+                                     SourceId id) const;
+
+  /** Reports if the given source id is registered.
+   @param id       The id of the source to query. */
+  bool SourceIsRegistered(SourceId id) const;
+
+  /** Reports the frame to which this geometry is registered.
+   @param handle   The QueryHandle produced by evaluating the connected
+                   input port on the querying LeafSystem. */
+  FrameId GetFrameId(const QueryHandle<T>& handle,
+                     GeometryId geometry_id) const;
+
+  /** Determines contacts across all geometries in GeometryWorld.
+   @param handle   The QueryHandle produced by evaluating the connected
+                   input port on the querying LeafSystem.
+   @param contacts A vector to be populated with computed contact info. The size
+                   of `contacts` remains unchanged if no contacts were found. */
+  bool ComputeContact(const QueryHandle<T>& handle,
+                      std::vector<Contact<T>>* contacts) const;
+
+  // TODO(SeanCurtis-TRI): Flesh this out with the full set of queries.
+
+  //@}
+
+ protected:
+  /** GeometrySystem *has* no direct feedthrough. The query output port can be
+   evaluated without pulling on any inputs. This implementation encodes that
+   relationship in reporting direct feedthrough. */
+  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
+                              int input_port,
+                              int output_port) const override;
+
  private:
   // Friend class to facilitate testing.
   friend class GeometrySystemTester;
 
+  // Constructs a QueryHandle for OutputPort allocation.
+  QueryHandle<T> MakeQueryHandle(const systems::Context<T>& context) const;
+
+  // Sets the context into the output port value so downstream consumers can
+  // perform queries.
+  void CalcQueryHandle(const systems::Context<T>& context,
+                      QueryHandle<T>* output) const;
+
   // Override of construction to account for
-  //    - instantiating a GeometryContext instance (as opposed to LeafContext),
-  //    - modifying the state to prevent additional sources being added. */
+  //    - instantiating a GeometryContext instance (as opposed to LeafContext)
+  //      -- NOTE: This is coming in a subsequent PR -- and
+  //    - to detect allocation in support of the topology semantics described
+  //      above.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
 
   // Helper method for throwing an exception if a context has *ever* been
@@ -285,6 +441,31 @@ class GeometrySystem : public systems::LeafSystem<T> {
   void ThrowIfContextAllocated(const char* source_method) const;
 
   mutable bool context_allocated_{false};
+
+  // Enumeration of the type of port to extract.
+  enum PortType {
+    ID,
+    POSE,
+  };
+
+  // For the given source id, returns the input port of port_type (creating it
+  // as necessary).
+  const systems::InputPortDescriptor<T>& get_port_for_source_id(
+      SourceId id, PortType port_type);
+
+  // A struct that stores the port indices for a given source.
+  // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
+  struct SourcePorts {
+    int id_port{-1};
+    int pose_port{-1};
+  };
+
+  // A mapping from added source identifier to the port indices associated with
+  // that id.
+  std::unordered_map<SourceId, SourcePorts> input_source_ids_;
+
+  // The index of the output port with the QueryHandle abstract value.
+  int query_port_index_{-1};
 };
 
 }  // namespace geometry

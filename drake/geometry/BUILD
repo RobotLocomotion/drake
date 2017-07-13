@@ -34,15 +34,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "geometry_query_results",
+    srcs = [],
+    hdrs = ["geometry_query_results.h"],
+    deps = [
+        ":geometry_ids",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "geometry_system",
     srcs = ["geometry_system.cc"],
     hdrs = [
         "geometry_system.h",
+        "query_handle.h",
     ],
     deps = [
         ":geometry_frame",
-        ":geometry_ids",
         ":geometry_instance",
+        ":geometry_query_results",
         "//drake/common",
         "//drake/systems/framework",
     ],
