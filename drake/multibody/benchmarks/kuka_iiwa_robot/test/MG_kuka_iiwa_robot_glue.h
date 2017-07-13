@@ -19,14 +19,14 @@ using Eigen::Vector3d;
 /// Geometry, joint-types, and mass/inertia properties are contained in:
 /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
 template <typename T>
-class KukaIIwaRobot {
+class MGKukaIIwaRobotGlue {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KukaIIwaRobot);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobotGlue);
 
   /// Constructs an object that serves as Drake's interface to a Motion Genesis
   /// model of the aforementioned KUKA robot.  All model parameters are from:
   /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
-  KukaIIwaRobot() {}
+  MGKukaIIwaRobotGlue() {}
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -47,8 +47,8 @@ class KukaIIwaRobot {
   /// w_NG_N     | G's angular velocity in N, expressed in N.
   /// v_NGo_N    | Go's velocity in N, expressed in N.
   std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d>
-  CalcForwardKinematicsEndEffector(const Eigen::Ref<const VectorX<T>>& q,
-                                   const Eigen::Ref<const VectorX<T>>& v) const;
+  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
+                            const Eigen::Ref<const VectorX<T>>& v) const;
 };
 
 }  // namespace benchmarks

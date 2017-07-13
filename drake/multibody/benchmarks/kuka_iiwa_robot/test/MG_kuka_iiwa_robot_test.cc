@@ -1,4 +1,4 @@
-#include "drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot_glue.h"
 
 #include <cmath>
 
@@ -27,7 +27,7 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
   const Eigen::Vector3d& p_No_Go_N_expected,
   const Eigen::Vector3d& w_NG_N_expected,
   const Eigen::Vector3d& v_NGo_N_expected) {
-  KukaIIwaRobot<double> kukaIIwaRobot;
+  MGKukaIIwaRobotGlue<double> MG_kuka_robot;
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
   // w_NG_N     | G's angular velocity in N, expressed in N.
@@ -35,7 +35,7 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
   Eigen::Matrix3d R_NG;
   Eigen::Vector3d p_No_Go_N, w_NG_N, v_NGo_N;
   std::tie(R_NG, p_No_Go_N, w_NG_N, v_NGo_N) =
-    kukaIIwaRobot.CalcForwardKinematicsEndEffector(q, qDt);
+      MG_kuka_robot.CalcEndEffectorKinematics(q, qDt);
 
   // Compare actual results with expected results.
   constexpr double epsilon = std::numeric_limits<double>::epsilon();
