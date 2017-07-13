@@ -8,9 +8,13 @@ namespace drake {
 namespace maliput {
 namespace rndf {
 
-SplineLane* Segment::NewSplineLane(const api::LaneId& id, double width) {
-  std::unique_ptr<SplineLane> lane =
-      std::make_unique<SplineLane>(id, this, width, lanes_.size());
+SplineLane* Segment::NewSplineLane(
+    const api::LaneId& id,
+    const std::vector<std::tuple<ignition::math::Vector3d,
+                                 ignition::math::Vector3d>>& control_points,
+    double width) {
+  std::unique_ptr<SplineLane> lane = std::make_unique<SplineLane>(
+      id, this, control_points, width, lanes_.size());
   SplineLane* spline_lane = lane.get();
   lanes_.push_back(std::move(lane));
   return spline_lane;

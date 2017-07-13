@@ -10,6 +10,8 @@
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
 
+#include "drake/automotive/maliput/rndf/test/ignition_types_compare.h"
+
 namespace drake {
 namespace maliput {
 namespace rndf {
@@ -20,16 +22,6 @@ const double kLinearTolerance = 1e-4;
 // We use this step to sample the spline at this rate, to get the closest path
 // length coordinate to a point in space.
 const double kLinearStep = 1e-2;
-
-#define EXPECT_IGN_VECTOR_NEAR(actual_arg, expected_arg, tolerance_arg) \
-  do {                                                                  \
-    const ignition::math::Vector3d actual(actual_arg);                  \
-    const ignition::math::Vector3d expected(expected_arg);              \
-    const double tolerance(tolerance_arg);                              \
-    EXPECT_NEAR(actual.X(), expected.X(), tolerance);                   \
-    EXPECT_NEAR(actual.Y(), expected.Y(), tolerance);                   \
-    EXPECT_NEAR(actual.Z(), expected.Z(), tolerance);                   \
-  } while (0)
 
 // This is a wrapper to easily create an ignition::math::Spline.
 // @param points a tuple consisting of two ignition::math::Vector3d. The
@@ -54,11 +46,11 @@ GTEST_TEST(RNDFSplineHelperTest, ExceptionsInInverseFunctionInterpolator) {
   EXPECT_THROW(
       InverseFunctionInterpolator([](double t) { return t; }, 0., 1., -1.),
       std::runtime_error);
-  // xmin is equal to xmax
+  // xmin is equal to xmax.
   EXPECT_THROW(
       InverseFunctionInterpolator([](double t) { return t; }, 0., 0., -1.),
       std::runtime_error);
-  // xmin is greater than xmax
+  // xmin is greater than xmax.
   EXPECT_THROW(
       InverseFunctionInterpolator([](double t) { return t; }, 1., 0., -1.),
       std::runtime_error);
@@ -79,7 +71,7 @@ GTEST_TEST(RNDFSplineHelperTest, ExceptionsInInverseFunctionInterpolator) {
 // Tests the ArcLengthParameterizedSpline exceptions.
 GTEST_TEST(RNDFSplineHelperTest, ExceptionsInArcLengthParameterizedSpline) {
   std::unique_ptr<ignition::math::Spline> spline;
-  // Spline pointer set to nullptr
+  // Spline pointer set to nullptr.
   EXPECT_THROW(
       ArcLengthParameterizedSpline(std::move(spline), kLinearTolerance),
       std::runtime_error);
@@ -107,25 +99,25 @@ GTEST_TEST(RNDFSplineHelperTest, StraightLine) {
   ignition::math::Vector3d p(kStartPoint);
   for (double l = 0.0; l < length; l += (length / 10.)) {
     p.X() = l;
-    EXPECT_IGN_VECTOR_NEAR(
+    EXPECT_TRUE(test::IsIgnitionVector3dClose(
         arc_length_param_spline->InterpolateMthDerivative(0, l), p,
-        kLinearTolerance);
-    EXPECT_IGN_VECTOR_NEAR(
+        kLinearTolerance));
+    EXPECT_TRUE(test::IsIgnitionVector3dClose(
         arc_length_param_spline->InterpolateMthDerivative(1, l),
-        kFirstDerivativeInterpolation, kLinearTolerance);
-    EXPECT_IGN_VECTOR_NEAR(
+        kFirstDerivativeInterpolation, kLinearTolerance));
+    EXPECT_TRUE(test::IsIgnitionVector3dClose(
         arc_length_param_spline->InterpolateMthDerivative(2, l),
-        kSecondDerivativeInterpolation, kLinearTolerance);
+        kSecondDerivativeInterpolation, kLinearTolerance));
   }
-  EXPECT_IGN_VECTOR_NEAR(
-      arc_length_param_spline->InterpolateMthDerivative(0, length), kEndPoint,
-      kLinearTolerance);
-  EXPECT_IGN_VECTOR_NEAR(
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(
+     arc_length_param_spline->InterpolateMthDerivative(0, length), kEndPoint,
+      kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(
       arc_length_param_spline->InterpolateMthDerivative(1, length),
-      kFirstDerivativeInterpolation, kLinearTolerance);
-  EXPECT_IGN_VECTOR_NEAR(
+      kFirstDerivativeInterpolation, kLinearTolerance));
+  EXPECT_TRUE(test::IsIgnitionVector3dClose(
       arc_length_param_spline->InterpolateMthDerivative(2, length),
-      kSecondDerivativeInterpolation, kLinearTolerance);
+      kSecondDerivativeInterpolation, kLinearTolerance));
 }
 
 // Tests a set of points and the result of the path length distance that returns
@@ -143,7 +135,7 @@ GTEST_TEST(RNDFSplineHelperTest, StraightSplineFindClosesPointTo) {
   std::unique_ptr<ignition::math::Spline> spline = CreateSpline(control_points);
   auto arc_length_param_spline = std::make_unique<ArcLengthParameterizedSpline>(
       std::move(spline), kLinearTolerance);
-  // Border checks
+  // Border checks.
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(0.0, 5.0, 0.0), kLinearStep),
               0., kLinearTolerance);
@@ -156,14 +148,14 @@ GTEST_TEST(RNDFSplineHelperTest, StraightSplineFindClosesPointTo) {
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(20.0, -5.0, 0.0), kLinearStep),
               20., kLinearTolerance);
-  // Middle checks
+  // Middle checks.
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(10.0, 5.0, 0.0), kLinearStep),
               10., kLinearTolerance);
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(10.0, -5.0, 0.0), kLinearStep),
               10., kLinearTolerance);
-  // Before and after checks
+  // Before and after checks.
   EXPECT_NEAR(arc_length_param_spline->FindClosestPointTo(
                   ignition::math::Vector3d(-5, -5.0, 0.0), kLinearStep),
               0., kLinearTolerance);

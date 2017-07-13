@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/test/maliput_types_compare.h"
 #include "drake/automotive/maliput/monolane/builder.h"
-#include "drake/automotive/maliput/monolane/test/monolane_test_utils.h"
 
 namespace drake {
 namespace maliput {
@@ -69,12 +69,15 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
       rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
 
   // Expect to locate the point centered within lane1 (straight segment).
-  EXPECT_LANE_NEAR(actual_position.pos,
-                   (kLength / 2. /* s */, 0. /* r */, 0. /* h */), kVeryExact);
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      actual_position.pos,
+      api::LanePosition(kLength / 2. /* s */, 0. /* r */, 0. /* h */),
+      kVeryExact));
   EXPECT_EQ(actual_position.lane->id().id, "l:lane1");
   EXPECT_EQ(distance, 0.);
-  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
-                  kVeryExact);
+  EXPECT_TRUE(api::test::IsGeoPositionClose(
+      nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
+      kVeryExact));
 
   // Tests the integrity of ToRoadPosition() with various other null argument
   // combinations for the case where the point is within a lane.
@@ -93,13 +96,16 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
 
   // Expect to locate the point just outside (to the left) of lane1, by an
   // amount kWidth.
-  EXPECT_LANE_NEAR(actual_position.pos,
-                   (kLength / 2. /* s */, kWidth /* r */, 0. /* h */),
-                   kVeryExact);
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      actual_position.pos,
+      api::LanePosition(kLength / 2. /* s */, kWidth /* r */, 0. /* h */),
+      kVeryExact));
   EXPECT_EQ(actual_position.lane->id().id, "l:lane1");
   EXPECT_EQ(distance, kWidth);
-  EXPECT_GEO_NEAR(nearest_position,
-                  (geo_pos.x() - kWidth, geo_pos.y(), geo_pos.z()), kVeryExact);
+  EXPECT_TRUE(api::test::IsGeoPositionClose(
+      nearest_position,
+      api::GeoPosition(geo_pos.x() - kWidth, geo_pos.y(), geo_pos.z()),
+      kVeryExact));
 
   // Tests the integrity of ToRoadPosition() with various other null argument
   // combinations for the case where the point is outside all lanes.
@@ -116,12 +122,15 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
       rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
 
   // Expect to locate the point centered within lane3a.
-  EXPECT_LANE_NEAR(actual_position.pos,
-                   (kLength / 2. /* s */, 0. /* r */, 0. /* h */), kVeryExact);
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      actual_position.pos,
+      api::LanePosition(kLength / 2. /* s */, 0. /* r */, 0. /* h */),
+      kVeryExact));
   EXPECT_EQ(actual_position.lane->id().id, "l:lane3a");
   EXPECT_EQ(distance, 0.);
-  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
-                  kVeryExact);
+  EXPECT_TRUE(api::test::IsGeoPositionClose(
+      nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
+      kVeryExact));
 
   // Place a point high above the middle of lane3a (straight segment).
   geo_pos = api::GeoPosition(2. * kArcRadius + kLength / 2.,
@@ -132,14 +141,15 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
       rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
 
   // Expect to locate the point centered above lane3a.
-  EXPECT_LANE_NEAR(actual_position.pos,
-                   (kLength / 2. /* s */, 0. /* r */, kHeight /* h */),
-                   kVeryExact);
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      actual_position.pos,
+      api::LanePosition(kLength / 2. /* s */, 0. /* r */, kHeight /* h */),
+      kVeryExact));
   EXPECT_EQ(actual_position.lane->id().id, "l:lane3a");
   EXPECT_EQ(distance, 50. - kHeight);
-  EXPECT_GEO_NEAR(nearest_position,
-                  (geo_pos.x(), geo_pos.y(), kHeight),
-                  kVeryExact);
+  EXPECT_TRUE(api::test::IsGeoPositionClose(
+      nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), kHeight),
+      kVeryExact));
 
   // Place a point at the end of lane3b (arc segment).
   geo_pos =
@@ -149,13 +159,15 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
       rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
 
   // Expect to locate the point at the end of lane3b.
-  EXPECT_LANE_NEAR(actual_position.pos,
-                   (kArcRadius * M_PI / 2. /* s */, 0. /* r */, 0. /* h */),
-                   kVeryExact);
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      actual_position.pos,
+      api::LanePosition(kArcRadius * M_PI / 2. /* s */, 0. /* r */, 0. /* h */),
+      kVeryExact));
   EXPECT_EQ(actual_position.lane->id().id, "l:lane3b");
   EXPECT_EQ(distance, 0.);
-  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
-                  kVeryExact);
+  EXPECT_TRUE(api::test::IsGeoPositionClose(
+      nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
+      kVeryExact));
 
   // Supply a hint with a position at the start of lane3c to try and determine
   // the RoadPosition for a point at the end of lane3b.
@@ -178,8 +190,9 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
   // within lane lane3b.
   EXPECT_EQ(actual_position.lane->id().id, "l:lane3b");
   EXPECT_EQ(distance, 0.);  // geo_pos is inside lane3b.
-  EXPECT_GEO_NEAR(nearest_position, (geo_pos.x(), geo_pos.y(), geo_pos.z()),
-                  kVeryExact);
+  EXPECT_TRUE(api::test::IsGeoPositionClose(
+      nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
+      kVeryExact));
 }
 
 GTEST_TEST(MonolaneLanesTest, HintWithDisconnectedLanes) {

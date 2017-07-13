@@ -169,6 +169,17 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
   // Precondition: base and exponent are already expanded.
   DRAKE_ASSERT(base.EqualTo(base.Expand()));
   DRAKE_ASSERT(exponent.EqualTo(exponent.Expand()));
+  if (is_multiplication(base)) {
+    //   pow(c * ∏ᵢ pow(e₁ᵢ, e₂ᵢ), exponent)
+    // = pow(c, exponent) * ∏ᵢ pow(e₁ᵢ, e₂ᵢ * exponent)
+    const double c{get_constant_in_multiplication(base)};
+    auto map = get_base_to_exponent_map_in_multiplication(base);
+    for (pair<const Expression, Expression>& p : map) {
+      p.second = p.second * exponent;
+    }
+    return pow(c, exponent) * ExpressionMulFactory{1.0, map}.GetExpression();
+  }
+
   // Expand if
   //     1) base is an addition expression and
   //     2) exponent is a positive integer.
@@ -965,20 +976,21 @@ namespace {
 // `e` and a constant `n`, it pushes the division in `e / n` inside for the
 // following cases:
 //
-// Case Addition      : e =  (c₀ + ∑ᵢ (cᵢ * eᵢ)) / n
+// Case Addition      :      (c₀ + ∑ᵢ (cᵢ * eᵢ)) / n
 //                        => c₀/n + ∑ᵢ (cᵢ / n * eᵢ)
 //
-// Case Multiplication: e =  (c₀ * ∏ᵢ (bᵢ * eᵢ)) / n
+// Case Multiplication:      (c₀ * ∏ᵢ (bᵢ * eᵢ)) / n
 //                        => c₀ / n * ∏ᵢ (bᵢ * eᵢ)
 //
-// Case Division      : e =  (e₁ / m) / n
+// Case Division      :      (e₁ / m) / n
 //                        => Recursively simplify e₁ / (n * m)
 //
-//                      e =  (e₁ / e₂) / n
+//                           (e₁ / e₂) / n
 //                        =  (e₁ / n) / e₂
 //                        => Recursively simplify (e₁ / n) and divide it by e₂
 //
-// For other cases, it does not perform any simplifications.
+// Other cases        :      e / n
+//                        => (1/n) * e
 //
 // Note that we use VisitExpression instead of VisitPolynomial because we want
 // to handle cases such as `(6xy / z) / 3` where (6xy / z) is not a polynomial
@@ -1023,68 +1035,68 @@ class DivExpandVisitor {
     }
   }
   Expression VisitVariable(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitConstant(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitLog(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitPow(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitAbs(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitExp(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitSqrt(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitSin(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitCos(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitTan(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitAsin(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitAcos(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitAtan(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitAtan2(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitSinh(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitCosh(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitTanh(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitMin(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitMax(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitIfThenElse(const Expression& e, const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
   Expression VisitUninterpretedFunction(const Expression& e,
                                         const double n) const {
-    return e / n;
+    return (1.0 / n) * e;
   }
 
   // Makes VisitExpression a friend of this class so that VisitExpression can

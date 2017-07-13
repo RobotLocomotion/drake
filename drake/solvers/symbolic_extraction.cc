@@ -94,25 +94,27 @@ ExtractVariablesFromExpression(const Expression& e) {
   return make_pair(vars, map_var_to_index);
 }
 
-void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
-    const unordered_map<Variable::Id, int>& map_var_to_index, int num_variables,
+void DecomposeQuadraticPolynomial(
+    const symbolic::Polynomial& poly,
+    const unordered_map<Variable::Id, int>& map_var_to_index,
     Eigen::MatrixXd* Q, Eigen::VectorXd* b, double* c) {
+  const int num_variables = map_var_to_index.size();
   DRAKE_DEMAND(Q->rows() == num_variables);
   DRAKE_DEMAND(Q->cols() == num_variables);
   DRAKE_DEMAND(b->rows() == num_variables);
   Q->setZero();
   b->setZero();
   *c = 0;
-  for (const auto& p : monomial_to_coeff_map) {
+  for (const auto& p : poly.monomial_to_coefficient_map()) {
     DRAKE_ASSERT(is_constant(p.second));
     DRAKE_DEMAND(!is_zero(p.second));
     const double coefficient = get_constant_value(p.second);
     const symbolic::Monomial& p_monomial = p.first;
     if (p_monomial.total_degree() > 2) {
       ostringstream oss;
-      oss << p.first << " has order higher than 2, cannot be handled by "
-                        "DecomposeQuadraticExpressionWithMonomialToCoeffMap"
+      oss << p.first
+          << " has order higher than 2 and it cannot be handled by "
+             "DecomposeQuadraticPolynomial."
           << endl;
       throw runtime_error(oss.str());
     }

@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -91,8 +93,8 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R);
 
 using AddRotationMatrixMcCormickEnvelopeReturnType =
-std::tuple<std::vector<MatrixDecisionVariable<3, 3>>,
-           std::vector<MatrixDecisionVariable<3, 3>>,
+std::tuple<std::vector<Matrix3<symbolic::Expression>>,
+           std::vector<Matrix3<symbolic::Expression>>,
            std::vector<MatrixDecisionVariable<3, 3>>,
            std::vector<MatrixDecisionVariable<3, 3>>>;
 /**
