@@ -208,6 +208,19 @@ struct NewVariableName<Eigen::Dynamic> {
 };
 
 namespace internal {
+template <int Size>
+typename std::enable_if< Size >= 0, typename NewVariableName<Size>::type>::type
+CreateNewVariableNames(int) {
+  typename NewVariableName<Size>::type names;
+  return names;
+}
+
+template<int Size>
+typename std::enable_if< Size == Eigen::Dynamic, typename NewVariableName<Size>::type>::type
+ CreateNewVariableNames(int size) {
+  typename NewVariableName<Eigen::Dynamic>::type names(size);
+  return names;
+}
 /**
  * Set the names of the newly added variables.
  * @param name The common name of all new variables.
@@ -288,40 +301,27 @@ class MathematicalProgram {
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
-   * This is equivalent to NewContinuousVariables<Rows, Cols>(name). We create
-   * this function so that we can use NewContinuousVariables<Rows, Cols>(rows,
-   * cols, name) for both static and dynamic sized new variables.
-   */
-  template <int Rows, int Cols>
-  typename std::enable_if<Rows >= 0 && Cols >= 0,
-                          MatrixDecisionVariable<Rows, Cols>>::type
-  NewContinuousVariables(int, int, const std::string& name) {
-    std::array<std::string, Rows * Cols> names;
-    internal::SetVariableNames(name, Rows, Cols, &names);
-    return NewVariables<Rows, Cols>(VarType::CONTINUOUS, names, Rows, Cols);
-  }
-
-  /**
-   * Adds continuous variables, appending them to an internal vector of any
-   * existing vars.
    * The initial guess values for the new variables are set to NaN, to
    * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
+   * @tparam Rows The number of rows of the new variables, in the compile time.
+   * @tparam Cols The number of columns of the new variables, in the compile time
    * @param rows The number of rows in the new variables. When Rows is not
    * Eigen::Dynamic, rows is ignored.
    * @param cols The number of columns in the new variables. When Cols is not
    * Eigen::Dynamic, cols is ignored.
    * @param name All variables will share the same name, but different index.
-   * @return The MatrixDecisionVariable of size rows x cols, containing the new
+   * @return The MatrixDecisionVariable of size Rows x Cols, containing the new
    * vars (not all the vars stored).
    *
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
    * auto x = prog.NewContinuousVariables(2, 3, "X");
+   * auto y = prog.NewContinuousVariables<2, 3>(2, 3, "X");
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
    *
@@ -329,11 +329,11 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  typename std::enable_if<Rows == Eigen::Dynamic || Cols == Eigen::Dynamic,
-                          MatrixDecisionVariable<Rows, Cols>>::type
-  NewContinuousVariables(int rows, int cols, const std::string& name = "X") {
-    DRAKE_DEMAND(rows >= 0 && cols >= 0);
-    std::vector<std::string> names(rows * cols);
+  MatrixDecisionVariable<Rows, Cols>
+  NewContinuousVariables(int rows, int cols, const std::string& name) {
+    rows = Rows == Eigen::Dynamic? rows : Rows;
+    cols = Cols == Eigen::Dynamic? cols : Cols;
+    auto names = internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(rows * cols);
     internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::CONTINUOUS, names, rows, cols);
   }
@@ -372,23 +372,6 @@ class MathematicalProgram {
   /**
    * Adds binary variables, appending them to an internal vector of any
    * existing vars.
-   * This is equivalent to NewBinaryVariables<Rows, Cols>(name). We create
-   * this function so that we can use
-   * NewBinaryVariables<Rows, Cols>(rows, cols, name) for both static and
-   * dynamic sized new variables.
-   */
-  template <int Rows, int Cols>
-  typename std::enable_if<Rows >= 0 && Cols >= 0,
-                          MatrixDecisionVariable<Rows, Cols>>::type
-  NewBinaryVariables(int, int, const std::string& name) {
-    std::array<std::string, Rows * Cols> names;
-    internal::SetVariableNames(name, Rows, Cols, &names);
-    return NewVariables<Rows, Cols>(VarType::BINARY, names, Rows, Cols);
-  }
-
-  /**
-   * Adds binary variables, appending them to an internal vector of any
-   * existing vars.
    * The initial guess values for the new variables are set to NaN, to
    * indicate that an initial guess has not been assigned.
    * Callers are expected to add costs
@@ -414,11 +397,12 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  typename std::enable_if<Rows == Eigen::Dynamic || Cols == Eigen::Dynamic,
-                          MatrixDecisionVariable<Rows, Cols>>::type
+  MatrixDecisionVariable<Rows, Cols>
   NewBinaryVariables(int rows, int cols, const std::string& name) {
-    std::vector<std::string> names(rows * cols);
-    internal::SetVariableNames(name, rows, cols, &names);
+    rows = Rows == Eigen::Dynamic ? rows : Rows;
+    cols = Cols == Eigen::Dynamic ? cols : Cols;
+    auto names = internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(rows * cols);
+    internal::SetVariableNames(name, Rows, Cols, &names);
     return NewVariables<Rows, Cols>(VarType::BINARY, names, rows, cols);
   }
 
