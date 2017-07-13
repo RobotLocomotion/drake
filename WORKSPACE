@@ -373,6 +373,22 @@ bitbucket_archive(
     build_file = "tools/ignition_rndf.BUILD",
 )
 
+github_archive(
+    name = "com_github_nelhage_boost",
+    repository = "nelhage/rules_boost",
+    commit = "0838fdac246ef9362b80009b9dd2018b5378a5ed",
+    sha256 = "3604bfef01cb50d1b6ef3410bf3dda87875fa0ed1e8d9bbd585e09677c159bd9",  # noqa
+)
+
+load("@com_github_nelhage_boost//:boost/boost.bzl", "boost_deps")
+
+boost_deps()
+
+pkg_config_package(
+    name = "tinyxml",
+    modname = "tinyxml",
+)
+
 bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
