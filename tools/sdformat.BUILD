@@ -117,12 +117,7 @@ cc_library(
     # cc_library rule, or by using a true external version of URDF.
     copts = ["-I external/sdformat/src/urdf"],
     data = glob(["sdf/1.6/*.sdf"]),
-    includes = [
-        "include",
-    ],
-    linkopts = [
-        "-lboost_system",
-    ],
+    includes = ["include"],
     visibility = ["//visibility:public"],
     deps = [
         "@ignition_math",
