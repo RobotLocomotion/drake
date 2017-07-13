@@ -122,11 +122,11 @@ cc_library(
     ],
     linkopts = [
         "-lboost_system",
-        "-ltinyxml",
     ],
     visibility = ["//visibility:public"],
     deps = [
         "@ignition_math",
+        "@tinyxml",
     ],
 )
 

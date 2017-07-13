@@ -14,6 +14,15 @@ namespace drake {
 namespace systems {
 namespace {
 
+// Tests ::empty().
+GTEST_TEST(DiagramBuilderTest, Empty) {
+  DiagramBuilder<double> builder;
+  const DiagramBuilder<double>& const_builder = builder;
+  EXPECT_TRUE(const_builder.empty());
+  builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  EXPECT_FALSE(const_builder.empty());
+}
+
 // A special class to distinguish between cycles and algebraic loops. The system
 // has one input and two outputs. One output simply "echoes" the input (direct
 // feedthrough). The other output merely outputs a const value. That means, the
