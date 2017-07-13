@@ -394,6 +394,11 @@ pkg_config_package(
 )
 
 pkg_config_package(
+    name = "tinyxml",
+    modname = "tinyxml",
+)
+
+pkg_config_package(
     name = "zlib",
     modname = "zlib",
 )
