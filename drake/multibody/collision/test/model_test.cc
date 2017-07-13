@@ -82,6 +82,91 @@ INSTANTIATE_TEST_CASE_P(NewModelTest, ModelTest, ::testing::Values(
                                                      kFcl,
 #endif
                                                      kUnusable));
+
+#ifndef DRAKE_DISABLE_FCL
+// Fixture for tests that should be applied to FCL models only
+class FclModelTest : public ModelTestBase {
+ public:
+  FclModelTest() { model_ = drake::multibody::collision::newModel(kFcl); }
+
+ protected:
+  const std::string kAbortMsg_{"Not implemented."};
+};
+
+TEST_F(FclModelTest, AddBox) {
+  const DrakeShapes::Box geom{Vector3d::Ones()};
+  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, AddSphere) {
+  const DrakeShapes::Sphere geom{1};
+  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, AddCylinder) {
+  const DrakeShapes::Cylinder geom{1, 1};
+  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, AddMesh) {
+  std::string file_name = drake::FindResourceOrThrow(
+      "drake/multibody/collision/test/ripple_cap.obj");
+  const DrakeShapes::Mesh geom{file_name, file_name};
+  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, AddCapsule) {
+  const DrakeShapes::Capsule geom{1, 1};
+  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, UpdateModelTest) {
+  EXPECT_DEATH(model_->UpdateModel(), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, ClosestPointsAllToAllTest) {
+  std::vector<ElementId> ids;
+  std::vector<PointPair> pairs;
+  EXPECT_DEATH(model_->ClosestPointsAllToAll(ids, true, &pairs), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, ComputeMaximumDepthCollisionPoints) {
+  std::vector<PointPair> pairs;
+  EXPECT_DEATH(model_->ComputeMaximumDepthCollisionPoints(true, &pairs),
+               kAbortMsg_);
+}
+
+TEST_F(FclModelTest, CollisionDetectFromPointsTest) {
+  Eigen::Matrix3Xd points;
+  std::vector<PointPair> closest_points;
+  EXPECT_DEATH(
+      model_->CollisionDetectFromPoints(points, false, &closest_points),
+      kAbortMsg_);
+}
+
+TEST_F(FclModelTest, ClearCachedResultsTest) {
+  EXPECT_DEATH(model_->ClearCachedResults(false), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, CollisionRaycastTest) {
+  Eigen::Matrix3Xd origins, ray_endpoints, normals;
+  Eigen::VectorXd distances;
+  EXPECT_DEATH(model_->CollisionRaycast(origins, ray_endpoints, false,
+                                        &distances, &normals),
+               kAbortMsg_);
+}
+
+TEST_F(FclModelTest, CollidingPointsCheckOnlyTest) {
+  std::vector<Eigen::Vector3d> input_points;
+  EXPECT_DEATH(model_->CollidingPointsCheckOnly(input_points, 0), kAbortMsg_);
+}
+
+TEST_F(FclModelTest, CollidingPointsTest) {
+  std::vector<Eigen::Vector3d> input_points;
+  EXPECT_DEATH(model_->CollidingPoints(input_points, 0), kAbortMsg_);
+}
+#endif
+
 // GENERAL REMARKS ON THE TESTS PERFORMED
 // A series of canonical tests are performed. These are Box_vs_Sphere,
 // SmallBoxSittingOnLargeBox and NonAlignedBoxes.
