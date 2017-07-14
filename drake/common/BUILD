@@ -191,12 +191,12 @@ drake_cc_library(
     data = [
         DRAKE_RESOURCE_SENTINEL,
     ],
+    visibility = ["//drake:__pkg__"],
     deps = [
         ":common",
         ":find_resource",
         "//drake/thirdParty:spruce",
     ],
-    visibility = ["//drake:__pkg__"],
 )
 
 # TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this

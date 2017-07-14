@@ -1,7 +1,7 @@
 #pragma once
 
-#include <ostream>
 #include <functional>
+#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
