@@ -219,6 +219,9 @@ struct NewSymmetricVariableNames
                                                      : Rows*(Rows + 1) / 2> {};
 
 namespace internal {
+/**
+ * Return un-initialized new variable names.
+ */
 template <int Size>
 typename std::enable_if< Size >= 0, typename NewVariableNames<Size>::type>::type
 CreateNewVariableNames(int) {
@@ -226,6 +229,9 @@ CreateNewVariableNames(int) {
   return names;
 }
 
+/**
+ * Return un-initialized new variable names.
+ */
 template <int Size>
 typename std::enable_if<Size == Eigen::Dynamic,
                         typename NewVariableNames<Size>::type>::type
