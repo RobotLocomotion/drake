@@ -1,11 +1,11 @@
 #include "drake/multibody/rigid_contact/rigid_contact_solver.h"
-#include "drake/examples/rod2d/rod2d.h"
 
 #include <memory>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/examples/rod2d/rod2d.h"
 
 using drake::systems::ContinuousState;
 using drake::systems::Context;
