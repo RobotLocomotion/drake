@@ -47,6 +47,24 @@ class RigidContact2DSolverTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   RigidContactAccelProblemData<double> data_;
 
+  // Gets the frame for a sliding contact.
+  Matrix2<double> GetSlidingContactFrame(double xaxis_velocity) const {
+    // Note: normal for the rod is always +y; sliding tangent vector is
+    // either +/-x.
+    Matrix2<double> F;
+    F << 0, 1, ((xaxis_velocity > 0) ? 1 : -1), 0;
+    return F;
+  }
+
+  // Gets the frame for a non-sliding contact.
+  Matrix2<double> GetNonSlidingContactFrame() const {
+    // Note: normal for the rod is always +y; non-sliding tangent vector is
+    // always +x.
+    Matrix2<double> F;
+    F << 0, 1, 1, 0;
+    return F;
+  }
+
   // Sets the rod to a resting horizontal configuration without modifying the
   // mode variables.
   void SetRodToRestingHorizontalConfig() {
@@ -125,9 +143,23 @@ TEST_F(RigidContact2DSolverTest, TwoPointSticking) {
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
-  // Verify that the frictional forces equal the horizontal forces.
-  const int nc = data_.non_sliding_contacts.size();
-  EXPECT_NEAR(cf.segment(nc, cf.size() - nc).lpNorm<1>(), horz_f, eps_);
+  // Construct the contact frames.
+  std::vector<Matrix2<double>> frames;
+  frames.push_back(GetNonSlidingContactFrame());
+  frames.push_back(GetNonSlidingContactFrame());
+
+  // Get the contact forces expressed in the contact frames.
+  std::vector<Vector2<double>> contact_forces;
+  RigidContactSolver<double>::CalcContactForcesInContactFrames(cf, data_,
+      frames, &contact_forces);
+
+  // Verify that the number of contact force vectors is correct.
+  EXPECT_EQ(contact_forces.size(), 2);
+
+  // Verify that the frictional forces equal the horizontal forces. Frictional
+  // forces are in the second component of each vector.
+  EXPECT_NEAR(std::fabs(contact_forces.front()[1]) +
+              std::fabs(contact_forces.back()[1]), horz_f, eps_);
 
   // Verify that the generalized acceleration of the rod is equal to zero.
   VectorX<double> ga;
@@ -158,9 +190,20 @@ TEST_F(RigidContact2DSolverTest, SinglePointSticking) {
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
+  // Construct the contact frame.
+  std::vector<Matrix2<double>> frames;
+  frames.push_back(GetNonSlidingContactFrame());
+
+  // Get the contact forces expressed in the contact frame.
+  std::vector<Vector2<double>> contact_forces;
+  RigidContactSolver<double>::CalcContactForcesInContactFrames(cf, data_,
+    frames, &contact_forces);
+
+  // Verify that the number of contact force vectors is correct.
+  EXPECT_EQ(contact_forces.size(), 1);
+
   // Verify that the frictional forces equal the horizontal forces.
-  const int nc = data_.non_sliding_contacts.size();
-  EXPECT_NEAR(cf.segment(nc, cf.size() - nc).lpNorm<1>(), horz_f, eps_);
+  EXPECT_NEAR(std::fabs(contact_forces.front()[1]), horz_f, eps_);
 
   // Verify that the generalized acceleration of the rod is equal to zero.
   VectorX<double> ga;
@@ -191,13 +234,27 @@ TEST_F(RigidContact2DSolverTest, TwoPointNonSlidingToSliding) {
 
   EXPECT_TRUE(data_.sliding_contacts.empty());
 
-  // Verify that the frictional forces are not zero and are less than the
-  // horizontal forces.
-  const int nc = data_.non_sliding_contacts.size();
-  const VectorX<double> ff = cf.segment(nc, cf.size() - nc);
-  EXPECT_GT(ff.norm(), eps_);
-  EXPECT_LT(ff.lpNorm<1>(), horz_f);
+  // Construct the contact frames.
+  std::vector<Matrix2<double>> frames;
+  frames.push_back(GetNonSlidingContactFrame());
+  frames.push_back(GetNonSlidingContactFrame());
 
+  // Get the contact forces expressed in the contact frames.
+  std::vector<Vector2<double>> contact_forces;
+  RigidContactSolver<double>::CalcContactForcesInContactFrames(cf, data_,
+    frames, &contact_forces);
+
+  // Verify that the number of contact force vectors is correct.
+  EXPECT_EQ(contact_forces.size(), 2);
+
+  // Verify that the frictional forces are not zero and are less than the
+  // horizontal forces. Frictional forces are in the second component of each
+  // vector.
+  EXPECT_GT(std::fabs(contact_forces.front()[1]) +
+              std::fabs(contact_forces.back()[1]), eps_);
+  EXPECT_LT(std::fabs(contact_forces.front()[1]) +
+            std::fabs(contact_forces.back()[1]), horz_f);
+  //
   // Verify that the horizontal acceleration is to the right.
   VectorX<double> ga;
   solver_.ComputeGeneralizedAcceleration(data_, cf, &ga);
@@ -222,6 +279,25 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
   VectorX<double> cf;
   solver_.SolveContactProblem(cfm_, data_, &cf);
 
+  // Get the contact tangent velocities.
+  std::vector<Vector2d> contacts;
+  std::vector<double> tangent_vels;
+  rod_->GetContactPoints(*context_, &contacts);
+  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+  // Construct the contact frame.
+  std::vector<Matrix2<double>> frames;
+  frames.push_back(GetSlidingContactFrame(tangent_vels.front()));
+  frames.push_back(GetSlidingContactFrame(tangent_vels.back()));
+
+  // Get the contact forces expressed in the contact frame.
+  std::vector<Vector2<double>> contact_forces;
+  RigidContactSolver<double>::CalcContactForcesInContactFrames(cf, data_,
+    frames, &contact_forces);
+
+  // Verify that the number of contact force vectors is correct.
+  EXPECT_EQ(contact_forces.size(), 2);
+
   // Verify that there are no non-sliding frictional forces.
   EXPECT_TRUE(data_.non_sliding_contacts.empty());
   const int nc = data_.sliding_contacts.size();
@@ -231,7 +307,10 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
   // frictional forces should be zero).
   const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
       rod_->get_rod_mass();
-  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, eps_);
+  EXPECT_NEAR(std::fabs(contact_forces.front()[0]) +
+              std::fabs(contact_forces.back()[0]), mg, eps_);
+  EXPECT_NEAR(std::fabs(contact_forces.front()[1]) +
+              std::fabs(contact_forces.back()[1]), 0, eps_);
 }
 
 // Tests the rod in a single point sliding configuration.
@@ -257,11 +336,30 @@ TEST_F(RigidContact2DSolverTest, SinglePointSliding) {
   const int nc = data_.sliding_contacts.size();
   EXPECT_EQ(cf.size(), nc);
 
-  // Verify that the normal contact forces exactly oppose gravity (there should
-  // be no frictional forces).
+  // Get the contact tangent velocities.
+  std::vector<Vector2d> contacts;
+  std::vector<double> tangent_vels;
+  rod_->GetContactPoints(*context_, &contacts);
+  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+  // Construct the contact frame.
+  std::vector<Matrix2<double>> frames;
+  frames.push_back(GetSlidingContactFrame(tangent_vels.front()));
+
+  // Get the contact forces expressed in the contact frame.
+  std::vector<Vector2<double>> contact_forces;
+  RigidContactSolver<double>::CalcContactForcesInContactFrames(cf, data_,
+    frames, &contact_forces);
+
+  // Verify that the number of contact force vectors is correct.
+  EXPECT_EQ(contact_forces.size(), 1);
+
+  // Verify that the normal contact forces exactly oppose gravity and there are
+  // no frictional forces).
   const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
       rod_->get_rod_mass();
-  EXPECT_NEAR(cf.segment(0, nc).lpNorm<1>(), mg, eps_);
+  EXPECT_NEAR(contact_forces.front()[0], mg, eps_);
+  EXPECT_NEAR(contact_forces.front()[1], 0, eps_);
 }
 
 }  // namespace
