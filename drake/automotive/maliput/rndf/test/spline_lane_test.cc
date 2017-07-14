@@ -8,7 +8,6 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
 

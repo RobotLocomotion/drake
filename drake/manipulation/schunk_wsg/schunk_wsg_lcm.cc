@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
@@ -19,12 +20,18 @@ using systems::DiscreteValues;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
     int input_size, int position_index)
-    : position_index_(position_index) {
+    : position_index_(position_index),
+      target_output_port_(
+          this->DeclareVectorOutputPort(
+              BasicVector<double>(2),
+              &SchunkWsgTrajectoryGenerator::OutputTarget).get_index()),
+      max_force_output_port_(
+          this->DeclareVectorOutputPort(
+              BasicVector<double>(1),
+              &SchunkWsgTrajectoryGenerator::OutputForce).get_index()) {
   this->set_name("SchunkWsgTrajectoryGenerator");
   this->DeclareAbstractInputPort();
   this->DeclareInputPort(systems::kVectorValued, input_size);
-  this->DeclareVectorOutputPort(BasicVector<double>(2),
-                                &SchunkWsgTrajectoryGenerator::OutputTarget);
   // The update period below matches the polling rate from
   // drake-schunk-driver.
   this->DeclarePeriodicDiscreteUpdate(0.05);
@@ -45,6 +52,16 @@ void SchunkWsgTrajectoryGenerator::OutputTarget(
     output->get_mutable_value()=
         Eigen::Vector2d(traj_state->last_position(), 0);
   }
+}
+
+void SchunkWsgTrajectoryGenerator::OutputForce(
+    const Context<double>& context,
+    BasicVector<double>* output) const {
+
+  const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
+      dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
+          context.get_discrete_state(0));
+  output->get_mutable_value() = Vector1d(traj_state->max_force());
 }
 
 void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
@@ -75,6 +92,12 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
       dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           discrete_state->get_mutable_vector(0));
   new_traj_state->set_last_position(cur_position);
+
+  double max_force = command.force;
+  if (std::isnan(max_force)) {
+    max_force = 0;
+  }
+  new_traj_state->set_max_force(max_force);
 
   if (std::abs(last_traj_state->last_target_position() - target_position) >
       kTargetEpsilon) {

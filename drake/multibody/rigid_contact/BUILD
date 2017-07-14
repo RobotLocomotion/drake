@@ -33,7 +33,6 @@ drake_cc_library(
     ],
 )
 
-
 # === test/ ===
 
 drake_cc_googletest(

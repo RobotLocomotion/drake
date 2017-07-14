@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <Eigen/Core>
-
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
 

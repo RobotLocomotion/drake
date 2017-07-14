@@ -52,11 +52,11 @@ drake_cc_googletest(
 drake_cc_library(
     name = "ignition_types_compare",
     testonly = 1,
-    hdrs = ["test/ignition_types_compare.h"],
     srcs = ["test/ignition_types_compare.cc"],
+    hdrs = ["test/ignition_types_compare.h"],
     deps = [
-        "@ignition_rndf",
         "@gtest//:without_main",
+        "@ignition_rndf",
     ],
 )
 
@@ -92,8 +92,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "spline_helpers_test",
     deps = [
-        ":lanes",
         ":ignition_types_compare",
+        ":lanes",
     ],
 )
 
