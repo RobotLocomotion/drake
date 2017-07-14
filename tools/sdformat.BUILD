@@ -120,6 +120,8 @@ cc_library(
     includes = ["include"],
     visibility = ["//visibility:public"],
     deps = [
+        "@boost//:any",
+        "@boost//:variant",
         "@ignition_math",
         "@tinyxml",
     ],

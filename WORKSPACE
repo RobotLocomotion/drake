@@ -373,6 +373,12 @@ bitbucket_archive(
     build_file = "tools/ignition_rndf.BUILD",
 )
 
+load("//tools:boost.bzl", "boost_repository")
+
+boost_repository(
+    name = "boost",
+)
+
 bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
