@@ -191,6 +191,8 @@ enum ProgramAttributes {
 };
 typedef uint32_t AttributesSet;
 
+template<int ...>
+struct NewVariableNames {};
 /**
    * The type of the names for the newly added variables.
    * @tparam Size If Size is a fixed non-negative integer, then the type of the
@@ -198,27 +200,37 @@ typedef uint32_t AttributesSet;
    * std::vector<std::string>.
    */
 template <int Size>
-struct NewVariableName {
+struct NewVariableNames<Size> {
   typedef std::array<std::string, Size> type;
 };
 
 template <>
-struct NewVariableName<Eigen::Dynamic> {
+struct NewVariableNames<Eigen::Dynamic> {
   typedef std::vector<std::string> type;
 };
 
+template <int Rows, int Cols>
+struct NewVariableNames<Rows, Cols>
+    : public NewVariableNames<MultiplyEigenSizes<Rows, Cols>::value> {};
+
+template <int Rows>
+struct NewSymmetricVariableNames
+    : public NewVariableNames<Rows == Eigen::Dynamic ? Eigen::Dynamic
+                                                     : Rows*(Rows + 1) / 2> {};
+
 namespace internal {
 template <int Size>
-typename std::enable_if< Size >= 0, typename NewVariableName<Size>::type>::type
+typename std::enable_if< Size >= 0, typename NewVariableNames<Size>::type>::type
 CreateNewVariableNames(int) {
-  typename NewVariableName<Size>::type names;
+  typename NewVariableNames<Size>::type names;
   return names;
 }
 
-template<int Size>
-typename std::enable_if< Size == Eigen::Dynamic, typename NewVariableName<Size>::type>::type
- CreateNewVariableNames(int size) {
-  typename NewVariableName<Eigen::Dynamic>::type names(size);
+template <int Size>
+typename std::enable_if<Size == Eigen::Dynamic,
+                        typename NewVariableNames<Size>::type>::type
+CreateNewVariableNames(int size) {
+  typename NewVariableNames<Eigen::Dynamic>::type names(size);
   return names;
 }
 /**
@@ -297,7 +309,8 @@ class MathematicalProgram {
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @tparam Rows The number of rows of the new variables, in the compile time.
-   * @tparam Cols The number of columns of the new variables, in the compile time
+   * @tparam Cols The number of columns of the new variables, in the compile
+   * time.
    * @param rows The number of rows in the new variables. When Rows is not
    * Eigen::Dynamic, rows is ignored.
    * @param cols The number of columns in the new variables. When Cols is not
@@ -322,7 +335,9 @@ class MathematicalProgram {
   NewContinuousVariables(int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic? rows : Rows;
     cols = Cols == Eigen::Dynamic? cols : Cols;
-    auto names = internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(rows * cols);
+    auto names =
+        internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(
+            rows * cols);
     internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::CONTINUOUS, names, rows, cols);
   }
@@ -390,7 +405,9 @@ class MathematicalProgram {
   NewBinaryVariables(int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
-    auto names = internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(rows * cols);
+    auto names =
+        internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(
+            rows * cols);
     internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::BINARY, names, rows, cols);
   }
@@ -2313,8 +2330,7 @@ class MathematicalProgram {
    */
   template <int Rows, int Cols>
   MatrixDecisionVariable<Rows, Cols> NewVariables(
-      VarType type, const typename NewVariableName<
-                        MultiplyEigenSizes<Rows, Cols>::value>::type& names,
+      VarType type, const typename NewVariableNames<Rows, Cols>::type& names,
       int rows, int cols) {
     DRAKE_DEMAND(rows >= 0 && cols >= 0);
     MatrixDecisionVariable<Rows, Cols> decision_variable_matrix;
@@ -2332,9 +2348,7 @@ class MathematicalProgram {
   template <int Rows>
   MatrixDecisionVariable<Rows, Rows> NewSymmetricVariables(
       VarType type,
-      const typename NewVariableName<
-          Rows == Eigen::Dynamic ? Eigen::Dynamic : Rows*(Rows + 1) / 2>::type&
-          names,
+      const typename NewSymmetricVariableNames<Rows>::type& names,
       int rows = Rows) {
     MatrixDecisionVariable<Rows, Rows> decision_variable_matrix(rows, rows);
     NewVariables_impl(type, names, true, decision_variable_matrix);
