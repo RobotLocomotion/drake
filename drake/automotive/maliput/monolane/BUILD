@@ -107,7 +107,7 @@ drake_cc_googletest(
     srcs = ["test/monolane_road_geometry_test.cc"],
     deps = [
         ":builder",
-        "//drake/automotive/maliput/api:maliput_types_compare"
+        "//drake/automotive/maliput/api:maliput_types_compare",
     ],
 )
 
