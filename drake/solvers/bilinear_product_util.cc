@@ -7,10 +7,6 @@
 
 namespace drake {
 namespace solvers {
-/*
- * Returns the map that maps x(i).get_id() to i.
- */
-
 using std::ostringstream;
 using std::runtime_error;
 using std::unordered_map;
@@ -22,6 +18,9 @@ using symbolic::Variables;
 
 using MapVarToIndex = unordered_map<Variable::Id, int>;
 
+/*
+ * Returns the map that maps x(i).get_id() to i.
+ */
 MapVarToIndex ConstructVarToIndexMap(
     const Eigen::Ref<const VectorXDecisionVariable>& x) {
   MapVarToIndex map;
@@ -79,9 +78,9 @@ Expression ReplaceBilinearTerms(
         // The monomial is in the form of x * y, namely two different
         // variables multiplying together.
         auto monomial_map_it = monomial_map.begin();
-        const auto var1_id{monomial_map_it->first};
+        const Variable::Id var1_id{monomial_map_it->first};
         ++monomial_map_it;
-        const auto var2_id{monomial_map_it->first};
+        const Variable::Id var2_id{monomial_map_it->first};
         it_x_idx = x_to_index_map.find(var1_id);
         if (it_x_idx != x_to_index_map.end()) {
           // var1 is in x.
@@ -93,7 +92,7 @@ Expression ReplaceBilinearTerms(
         }
       } else {
         // The monomial is in the form of x * x, the square of a variable.
-        const auto squared_var_id{monomial_map.begin()->first};
+        const Variable::Id squared_var_id{monomial_map.begin()->first};
         it_x_idx = x_to_index_map.find(squared_var_id);
         it_y_idx = y_to_index_map.find(squared_var_id);
       }

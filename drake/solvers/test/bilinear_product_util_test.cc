@@ -53,13 +53,11 @@ TEST_F(BilinearProductTest, ConstantTerm) {
 }
 
 TEST_F(BilinearProductTest, LinearTerm) {
-  std::vector<symbolic::Expression> e;
-  e.emplace_back(x_(0));
-  e.emplace_back(y_(0));
-  e.emplace_back(x_(0) + y_(1) + z_(0) + 2);
-  e.emplace_back(2 * x_(0) + 3 * y_(1) * z_(1) + 3);
-  e.emplace_back(2 * x_(0) + 3 * y_(1) * z_(0) + pow(z_(1), 3));
-  for (const auto& ei : e) {
+  const std::vector<symbolic::Expression> expressions{
+      x_(0), y_(0), x_(0) + y_(1) + z_(0) + 2,
+      2 * x_(0) + 3 * y_(1) * z_(1) + 3,
+      2 * x_(0) + 3 * y_(1) * z_(0) + pow(z_(1), 3)};
+  for (const auto& ei : expressions) {
     EXPECT_PRED2(ExprEqual, ei, ReplaceBilinearTerms(ei, x_, y_, xy_));
     EXPECT_PRED2(ExprEqual, ei, ReplaceBilinearTerms(ei, x_, x_, xx_));
   }
