@@ -2,6 +2,7 @@
 
 #include <ostream>
 #include <sstream>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace drake {
@@ -9,14 +10,26 @@ namespace solvers {
 /*
  * Returns the map that maps x(i).get_id() to i.
  */
-std::unordered_map<symbolic::Variable::Id, int> ConstructVarToIndexMap(
+
+using std::ostringstream;
+using std::runtime_error;
+using std::unordered_map;
+
+using symbolic::Expression;
+using symbolic::Monomial;
+using symbolic::Variable;
+using symbolic::Variables;
+
+using MapVarToIndex = unordered_map<Variable::Id, int>;
+
+MapVarToIndex ConstructVarToIndexMap(
     const Eigen::Ref<const VectorXDecisionVariable>& x) {
-  std::unordered_map<symbolic::Variable::Id, int> map;
+  MapVarToIndex map;
   map.reserve(x.rows());
   for (int i = 0; i < x.rows(); ++i) {
-    auto it = map.find(x(i).get_id());
+    const auto it = map.find(x(i).get_id());
     if (it != map.end()) {
-      throw std::runtime_error("Input vector contains duplicate variable " +
+      throw runtime_error("Input vector contains duplicate variable " +
                                x(i).get_name());
     }
     map.emplace_hint(it, x(i).get_id(), i);
@@ -24,44 +37,35 @@ std::unordered_map<symbolic::Variable::Id, int> ConstructVarToIndexMap(
   return map;
 }
 
-symbolic::Expression ReplaceBilinearTerms(
-    const symbolic::Expression& e,
+Expression ReplaceBilinearTerms(
+    const Expression& e,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const VectorXDecisionVariable>& y,
     const Eigen::Ref<const MatrixXDecisionVariable>& W) {
   DRAKE_ASSERT(W.rows() == x.rows() && W.cols() == y.rows());
-  const std::unordered_map<symbolic::Variable::Id, int> x_to_index_map =
-      ConstructVarToIndexMap(x);
-  const std::unordered_map<symbolic::Variable::Id, int> y_to_index_map =
-      ConstructVarToIndexMap(y);
+  const MapVarToIndex x_to_index_map = ConstructVarToIndexMap(x);
+  const MapVarToIndex y_to_index_map = ConstructVarToIndexMap(y);
 
-  // vars contains all the variables in x and y.
-  symbolic::Variables vars{};
-  for (int i = 0; i < x.rows(); ++i) {
-    vars.insert(x(i));
-  }
-  for (int i = 0; i < y.rows(); ++i) {
-    vars.insert(y(i));
-  }
-  symbolic::Polynomial p_bilinear(e, vars);
+  // p_bilinear is a polynomial with x and y as indeterminates.
+  const symbolic::Polynomial p_bilinear{e, Variables{x} + Variables{y}};
 
-  auto map_bilinear = p_bilinear.monomial_to_coefficient_map();
+  const auto& map_bilinear = p_bilinear.monomial_to_coefficient_map();
   symbolic::Polynomial::MapType map_replaced;
   map_replaced.reserve(map_bilinear.size());
   for (const auto& p : map_bilinear) {
-    std::unordered_map<int, int> monomial_map;
-    int monomial_degree = p.first.total_degree();
+    MapVarToIndex monomial_map;
+    const int monomial_degree = p.first.total_degree();
     for (const auto& var_power : p.first.get_powers()) {
       monomial_map.emplace(var_power.first.get_id(), var_power.second);
     }
     if (monomial_degree > 2) {
-      std::ostringstream oss;
+      ostringstream oss;
       oss << "The term " << p.first
           << " has degree larger than 2 on the variables";
-      throw std::runtime_error(oss.str());
+      throw runtime_error(oss.str());
     } else if (monomial_degree < 2) {
       // Only linear or constant terms, do not need to replace the variables.
-      auto it = map_replaced.find(p.first);
+      const auto it = map_replaced.find(p.first);
       if (it != map_replaced.end()) {
         it->second += p.second;
       } else {
@@ -69,15 +73,15 @@ symbolic::Expression ReplaceBilinearTerms(
       }
     } else {
       // This monomial contains bilinear term in x and y.
-      std::unordered_map<symbolic::Variable::Id, int>::const_iterator it_x_idx;
-      std::unordered_map<symbolic::Variable::Id, int>::const_iterator it_y_idx;
+      MapVarToIndex::const_iterator it_x_idx;
+      MapVarToIndex::const_iterator it_y_idx;
       if (monomial_map.size() == 2) {
         // The monomial is in the form of x * y, namely two different
         // variables multiplying together.
         auto monomial_map_it = monomial_map.begin();
-        int var1_id{monomial_map_it->first};
+        const auto var1_id{monomial_map_it->first};
         ++monomial_map_it;
-        int var2_id{monomial_map_it->first};
+        const auto var2_id{monomial_map_it->first};
         it_x_idx = x_to_index_map.find(var1_id);
         if (it_x_idx != x_to_index_map.end()) {
           // var1 is in x.
@@ -89,7 +93,7 @@ symbolic::Expression ReplaceBilinearTerms(
         }
       } else {
         // The monomial is in the form of x * x, the square of a variable.
-        int squared_var_id{monomial_map.begin()->first};
+        const auto squared_var_id{monomial_map.begin()->first};
         it_x_idx = x_to_index_map.find(squared_var_id);
         it_y_idx = y_to_index_map.find(squared_var_id);
       }
@@ -97,18 +101,19 @@ symbolic::Expression ReplaceBilinearTerms(
           it_y_idx == y_to_index_map.end()) {
         // This error would happen, if we ask
         // ReplaceBilinearTerms(x(i) * x(j), x, y, W).
-        std::ostringstream oss;
+        ostringstream oss;
         oss << "Term " << p.first << " is bilinear, but x and y does not have "
                                      "the corresponding variables.";
-        throw std::runtime_error(oss.str());
+        throw runtime_error(oss.str());
       }
       // w_xy is the symbolic variable representing the bilinear term x * y.
-      const symbolic::Variable& w_xy{W(it_x_idx->second, it_y_idx->second)};
-      map_replaced.emplace(symbolic::Monomial{w_xy},
-                           p.second);
+      const Variable& w_xy{W(it_x_idx->second, it_y_idx->second)};
+      // TODO(soonho.kong): will improve the code below, such that we do not add
+      // the monomial `w_xy`.
+      map_replaced.emplace(Monomial{w_xy}, p.second);
     }
   }
-  symbolic::Expression e_replaced{0};
+  Expression e_replaced{0};
   for (const auto& p_replaced : map_replaced) {
     e_replaced += p_replaced.first.ToExpression() * p_replaced.second;
   }

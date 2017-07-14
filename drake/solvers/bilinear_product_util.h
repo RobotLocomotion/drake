@@ -7,15 +7,15 @@
 namespace drake {
 namespace solvers {
 /**
- * Replace all the bilinear product terms in the expression `e`, with the
- * corresponding term in `W`, where `W` represents the matrix x * yᵀ, such that
+  * Replaces all the bilinear product terms in the expression `e`, with the
+ * corresponding terms in `W`, where `W` represents the matrix x * yᵀ, such that
  * after replacement, `e` does not have bilinear terms involving `x` and `y`.
- * For example, if e = x(0)*y(0) + 2 * x(0)*y(1) + x(1) * y(1) + 3 * x(1),
- * `e` has bilinear terms x(0)*y(0), x(0) * y(1) and x(2) * y(1), if we call
- * ReplaceBilinearTerms(e, x, y, W)
- * where W(i, j) represent the term x(i) * y(j), then this function returns
- * W(0, 0) + 2 * W(0, 1) + W(1, 1) + 3 * x(1).
- * @param e A expression potentially contains bilinear product between x and y.
+ * For example, if e = x(0)*y(0) + 2 * x(0)*y(1) + x(1) * y(1) + 3 * x(1), `e`
+ * has bilinear terms x(0)*y(0), x(0) * y(1) and x(2) * y(1), if we call
+ * ReplaceBilinearTerms(e, x, y, W) where W(i, j) represent the term x(i) *
+ * y(j), then this function returns W(0, 0) + 2 * W(0, 1) + W(1, 1) + 3 * x(1).
+ * @param e An expression potentially contains bilinear products between x and
+ * y.
  * @param x The bilinear product between `x` and `y` will be replaced by the
  * corresponding term in `W. Throws a runtime error if `x` contains duplicate
  * entries.
@@ -28,7 +28,7 @@ namespace solvers {
 symbolic::Expression ReplaceBilinearTerms(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
-const Eigen::Ref<const VectorXDecisionVariable>& y,
-const Eigen::Ref<const MatrixXDecisionVariable>& W);
+    const Eigen::Ref<const VectorXDecisionVariable>& y,
+    const Eigen::Ref<const MatrixXDecisionVariable>& W);
 }  // namespace solvers
 }  // namespace drake

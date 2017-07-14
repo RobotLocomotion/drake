@@ -44,12 +44,9 @@ class BilinearProductTest : public ::testing::Test {
 };
 
 TEST_F(BilinearProductTest, ConstantTerm) {
-  std::vector<symbolic::Expression> e;
-  e.emplace_back(0);
-  e.emplace_back(1);
-  e.emplace_back(z_(0) + z_(1));
-  e.emplace_back(pow(z_(0), 3) + z_(0) * z_(1));
-  for (const auto& ei : e) {
+  const std::vector<symbolic::Expression> expressions{
+      0, 1, z_(0) + z_(1), pow(z_(0), 3) + z_(0) * z_(1)};
+  for (const auto& ei : expressions) {
     EXPECT_PRED2(ExprEqual, ei, ReplaceBilinearTerms(ei, x_, y_, xy_));
     EXPECT_PRED2(ExprEqual, ei, ReplaceBilinearTerms(ei, x_, x_, xx_));
   }
