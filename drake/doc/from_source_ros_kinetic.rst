@@ -101,17 +101,10 @@ Execute the following commands to build the workspace::
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/kinetic/setup.bash
     catkin init
-    catkin config --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin config --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo -DWITH_DIRECTOR=OFF
     catkin build
 
-The build will fail because ``libvtk5-dev`` is not installed. To get around
-this, execute the following commands, which configure Drake to obtain VTK5
-by building it from source::
-
-    cd ~/dev/drake_catkin_workspace/build/drake
-    cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
-    cd ~/dev/drake_catkin_workspace
-    catkin build
+Director is disabled because it relies on vtk5, which is incompatible with ROS Kinetic.
 
 .. _drake_ros_kinetic_environment_variables:
 
