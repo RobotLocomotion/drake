@@ -1,6 +1,9 @@
 drake_add_cc_test(autodiff_test)
 target_link_libraries(autodiff_test drakeCommon)
 
+drake_add_cc_test(continuous_algebraic_riccati_equation_test)
+target_link_libraries(continuous_algebraic_riccati_equation_test drakeCommon drakeMath)
+
 drake_add_cc_test(cross_product_test)
 target_link_libraries(cross_product_test drakeCommon)
 
