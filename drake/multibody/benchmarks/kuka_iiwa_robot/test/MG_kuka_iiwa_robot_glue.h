@@ -36,7 +36,8 @@ class MGKukaIIwaRobotGlue {
   /// The origin Go of end-effector G is located at G's inboard revolute joint.
   ///
   /// @param[in] q robot's joint angles (generalized coordinates).
-  /// @param[in] v time-derivatives of q (generalized speeds).
+  /// @param[in] qDt 1st time-derivatives of q (generalized speeds).
+  /// @param[in] qDDt 2nd time-derivatives of q.
   ///
   /// @returns Machine-precision values as defined below.
   ///
@@ -46,9 +47,12 @@ class MGKukaIIwaRobotGlue {
   /// p_NoGo_N   | Go's position from No, expressed in N.
   /// w_NG_N     | G's angular velocity in N, expressed in N.
   /// v_NGo_N    | Go's velocity in N, expressed in N.
-  std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d>
+  /// alpha_NG_N | G's angular acceleration in N, expressed in N.
+  /// a_NGo_N    | Go's acceleration in N, expressed in N.
+  std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
-                            const Eigen::Ref<const VectorX<T>>& v) const;
+                            const Eigen::Ref<const VectorX<T>>& qDt,
+                            const Eigen::Ref<const VectorX<T>>& qDDt) const;
 };
 
 }  // namespace benchmarks

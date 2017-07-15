@@ -153,7 +153,7 @@ class KukaIIwaRobotTestKinematics {
   // The origin Go of end-effector G is located at G's inboard revolute joint.
   //
   // @param[in] q robot's joint angles (generalized coordinates).
-  // @param[in] v time-derivatives of q (generalized speeds).
+  // @param[in] qDt 1st-time-derivatives of q (generalized speeds).
   //
   // @returns  values defined below.
   //
@@ -164,8 +164,9 @@ class KukaIIwaRobotTestKinematics {
   // V_NG_N     | G's spatial velocity in N, with G's angular velocity in N
   //            | expressed in N and Go's velocity in N, expressed in N.
   std::tuple<Eigen::Isometry3d, SpatialVelocity<double>>
-  CalcEndEffectorPoseAndSpatialVelocity(const double q[7], const double v[7]) {
-    SetJointAnglesAndJointRates(q, v);
+  CalcEndEffectorPoseAndSpatialVelocity(const double q[7],
+                                        const double qDt[7]) {
+    SetJointAnglesAndJointRates(q, qDt);
 
     // For each body, set the pose and spatial velocity in the position,
     // velocity, and acceleration caches with specified values for testing.
