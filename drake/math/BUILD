@@ -28,6 +28,7 @@ drake_cc_library(
     ],
 )
 
+
 drake_cc_library(
     name = "discrete_algebraic_riccati_equation",
     srcs = ["discrete_algebraic_riccati_equation.cc"],
@@ -155,6 +156,13 @@ drake_cc_googletest(
         ":gradient",
         "//drake/common:eigen_matrix_compare",
     ],
+)
+drake_cc_googletest(
+  name = "continuous_algebraic_riccati_equation_test",
+  deps = [
+    ":continuous_algebraic_ricatti_equation",
+    "//drake/common:eigen_matrix_compare",
+  ],
 )
 
 drake_cc_googletest(
