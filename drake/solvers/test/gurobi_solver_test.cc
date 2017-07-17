@@ -130,6 +130,7 @@ static void MipNodeCallbackFunctionTest(const MathematicalProgram& prog,
 
 GTEST_TEST(GurobiTest, TestCallbacks) {
   GurobiSolver solver;
+
   if (solver.available()) {
     // Formulate a problem with multiple feasible
     // solutions and multiple clear optimal solutions.
@@ -165,28 +166,34 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
     x_init << 0.0, 0.0, 0.0, 0.0;
     prog.SetInitialGuess(x, x_init);
 
-    // Expect, and inject, a different sol that we know is
-    // one of the (several) optimal sols.
-    Eigen::VectorXd x_expected(4);
-    x_expected << 1.0, 0.0, 0.0, 1.0;
-    TestCallbackInfo cb_info;
-    cb_info.x_vals = x_expected;
-    cb_info.x_vars = x;
-    GurobiSolver::MipNodeCallbackFunction MipNodeCallbackFunctionWrapper =
-      std::bind(MipNodeCallbackFunctionTest, _1, _2, _3, _4, &cb_info);
-    GurobiSolver::MipSolCallbackFunction MipSolCallbackFunctionWrapper =
-      std::bind(MipSolCallbackFunctionTest, _1, _2, &cb_info);
-    solver.AddMipNodeCallback(MipNodeCallbackFunctionWrapper);
-    solver.AddMipSolCallback(MipSolCallbackFunctionWrapper);
+    // Enumerate a few different optimal solutions and try
+    // injecting each of them to make sure the solver
+    // is receiving these injections and listening to them.
+    std::vector<Eigen::VectorXd> optimal_sols(3, Eigen::VectorXd(4));
+    optimal_sols[0] << 1.0, 0.0, 0.0, 1.0;
+    optimal_sols[1] << 1.0, 0.0, 1.0, 0.0;
+    optimal_sols[2] << 0.0, 1.0, 1.0, 1.0;
 
-    SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    const auto& x_value = prog.GetSolution(x);
-    EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
-                                MatrixCompareType::absolute));
-    ExpectSolutionCostAccurate(prog, 1E-6);
-    EXPECT_TRUE(cb_info.mipSolCallbackCalled);
-    EXPECT_TRUE(cb_info.mipNodeCallbackCalled);
+    for (const auto& x_expected : optimal_sols) {
+      TestCallbackInfo cb_info;
+      cb_info.x_vals = x_expected;
+      cb_info.x_vars = x;
+      GurobiSolver::MipNodeCallbackFunction MipNodeCallbackFunctionWrapper =
+        std::bind(MipNodeCallbackFunctionTest, _1, _2, _3, _4, &cb_info);
+      GurobiSolver::MipSolCallbackFunction MipSolCallbackFunctionWrapper =
+        std::bind(MipSolCallbackFunctionTest, _1, _2, &cb_info);
+      solver.AddMipNodeCallback(MipNodeCallbackFunctionWrapper);
+      solver.AddMipSolCallback(MipSolCallbackFunctionWrapper);
+
+      SolutionResult result = solver.Solve(prog);
+      EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      const auto& x_value = prog.GetSolution(x);
+      EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
+                                  MatrixCompareType::absolute));
+      ExpectSolutionCostAccurate(prog, 1E-6);
+      EXPECT_TRUE(cb_info.mipSolCallbackCalled);
+      EXPECT_TRUE(cb_info.mipNodeCallbackCalled);
+    }
   }
 }
 }  // namespace TestCallbacks
