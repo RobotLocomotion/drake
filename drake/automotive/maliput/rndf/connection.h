@@ -32,58 +32,7 @@ namespace rndf {
 /// sense of direction. To define the direction, one of the Connections in the
 /// group will be flagged as the reference, and an interpolated spline is
 /// computed from the the DirectedWaypoints within the reference Connection to
-/// obtain the tangent information. An arbitrary point outside the bounding box
-/// of the road map is selected to be a "center of rotation" and the sum of all
-/// the DirectedWaypoint "momentums" (with normalized tangents) is computed. It
-/// must be said that the "momentum" equation is used to derive lane direction,
-/// but it has no physical meaning. Since all the waypoints lay in the z=0
-/// plane, the "momentum" vector will only contain a non-zero z coordinate
-/// value. The sign of the "momentum"'s z coordinate will be taken as a
-/// reference to define the sense of flow. For all other connections, the
-/// "momentum" is computed and compared against the sign of the reference. This
-/// way, grouping is achieved.
-///
-/// An example of how this is achieved is depicted in the following example.
-/// Please, note that '+' denotes RNDF waypoints, 'x' denotes invalid waypoints
-/// and 'o' denotes interpolated waypoints. Also '|' denotes Segment boundaries.
-///
-/// <pre>
-///          1.1.1                   1.1.2
-///          +-----------------------+            <---- Connection: 1_1_1-1_1_2
-/// 1.2.1                                       1.2.2
-/// +-------------------------------------------+ <---- Connection: 1_2_1-1_2_2
-///          1.3.1                   1.3.2
-///          +-----------------------+            <---- Connection: 1_3_1-1_3_2
-/// </pre>
-///
-/// Mapping the above waypoints to SplineLane and Segment objects will be done
-/// by the Builder. In the end, we end up with something like:
-///
-/// <pre>
-/// |        |1.1.1                  |1.1.2     |
-/// x--------+-----------------------+----------x <---- Connection: 1_1_1-1_1_2
-/// |1.2.1   |1.2.3                  |1.2.4     |1.2.2
-/// +--------o-----------------------o----------+ <---- Connection: 1_2_1-1_2_2
-/// |        |1.3.1                  |1.3.2     |
-/// x--------+-----------------------+----------x <---- Connection: 1_3_1-1_3_2
-/// </pre>
-///
-/// Those new waypoints that appear make possible the concept of Maliput Segment
-/// as a surface that holds all the trajectories (represented by Maliput Lanes).
-/// At the building stage, we can now match waypoints across lanes using an
-/// index-based algorithm, a pair of valid consecutive waypoints in a Connection
-/// are used to create a SplineLane. At the same time, we should
-/// create those Lanes inside the same segment, which is not difficult to do
-/// using the index approach. To sum up, Builder will create the following:
-///
-/// - Segment 1_0:
-///   - Lane 1_2_1-1_2_3
-/// - Segment 1_1:
-///   - Lane 1_3_1-1_3_2
-///   - Lane 1_2_3-1_3_4
-///   - Lane 1_1_1-1_3_2
-/// - Segment 1_2:
-///   - Lane 1_2_4-1_2_2
+/// obtain the tangent information.
 class Connection {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Connection)
