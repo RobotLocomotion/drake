@@ -53,12 +53,13 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
 
   derivative_vector->set_z(state.zdot());
 
-  const T& x = -state.z();  // Penetration depth, > 0 at penetration.
-  const T& xdot = -state.zdot();  // Penetration rate, > 0 during penetration.
+  const T& x = -state.z();        // Penetration depth, > 0 at penetration.
+  const T& xdot = -state.zdot();  // Penetration rate, > 0 implies increasing
+                                  // penetration.
 
   const T fN = max(0.0, k_ * x * (1.0 - d_ * xdot));
 
-  derivative_vector->set_zdot((- m_ * g_ + fN));
+  derivative_vector->set_zdot((- m_ * g_ + fN) / m_);
 }
 
 template class BouncingBallPlant<double>;
