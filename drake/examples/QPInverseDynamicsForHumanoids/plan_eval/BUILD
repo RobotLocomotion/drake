@@ -67,6 +67,27 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "humanoid_plan",
+    srcs = [
+        "dev/humanoid_manipulation_plan.cc",
+        "dev/humanoid_plan.cc",
+    ],
+    hdrs = [
+        "dev/humanoid_manipulation_plan.h",
+        "dev/humanoid_plan.h",
+    ],
+    deps = [
+        ":generic_plan",
+        "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/systems/controllers:zmp_planner",
+        "//drake/util:util",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
 # === test/ ===
 drake_cc_googletest(
     name = "generic_plan_test",
