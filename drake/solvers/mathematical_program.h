@@ -2049,11 +2049,13 @@ class MathematicalProgram {
    * Getter for lower bound on optimal cost. Defaults to -Infinity
    * if a lower bound has not been found.
    */
-  double GetLowerBound() const { return lower_bound_; }
+  double GetLowerBoundCost() const { return lower_bound_cost_; }
   /**
    * Setter for lower bound on optimal cost.
    */
-  void SetLowerBound(double lower_bound) { lower_bound_ = lower_bound; }
+  void SetLowerBoundCost(double lower_bound_cost) {
+    lower_bound_cost_ = lower_bound_cost;
+  }
 
   /**
    * Getter for all generic costs.
@@ -2317,7 +2319,7 @@ class MathematicalProgram {
   std::shared_ptr<SolverData> solver_data_;
   optional<SolverId> solver_id_;
   double optimal_cost_{};
-  double lower_bound_{};
+  double lower_bound_cost_{};
   std::map<SolverId, std::map<std::string, double>> solver_options_double_;
   std::map<SolverId, std::map<std::string, int>> solver_options_int_;
   std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;

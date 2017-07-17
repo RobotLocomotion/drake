@@ -816,7 +816,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       // Provide Gurobi's lower bound.
       double lower_bound = std::numeric_limits<double>::quiet_NaN();
       GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
-      prog.SetLowerBound(lower_bound);
+      prog.SetLowerBoundCost(lower_bound);
     }
   }
 
