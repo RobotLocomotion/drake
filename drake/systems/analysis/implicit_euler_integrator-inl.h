@@ -386,7 +386,12 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
 // Helper method to keep UBSan happy when a division by zero is not
 // unexpected.
 template <typename T>
+#ifdef __clang__
 __attribute__((no_sanitize("float-divide-by-zero")))
+#elif defined(__GNUC__)
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78204
+__attribute__((no_sanitize_undefined))
+#endif
 T divide_allowing_by_zero(const T& n, const T& d) {
   DRAKE_ASSERT(!(d == T{0.0} && n == T{0.0}));
   return n / d;
