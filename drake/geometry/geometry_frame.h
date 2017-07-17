@@ -7,7 +7,7 @@
 namespace drake {
 namespace geometry {
 
-/** This simple struct carries the definition of a frame used by GeometryWorld.
+/** This simple class carries the definition of a frame used by GeometryWorld.
  To register moving frames with GeometryWorld (see
  GeometryWorld::RegisterFrame), a geometry source (see
  GeometryWorld::RegisterNewSource) instantiates a frame and passes ownership

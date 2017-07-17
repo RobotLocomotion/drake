@@ -5,14 +5,13 @@
 namespace drake {
 namespace geometry {
 
-/// Type used to identify geometry sources by index in GeometryWorld.
+/** Type used to identify geometry sources n GeometryWorld. */
 using SourceId = Identifier<class SourceTag>;
 
-/// Type used to identify a frame kinematics instance by index in
-/// GeometryWorld
+/** Type used to identify geometry frames in GeometryWorld .*/
 using FrameId = Identifier<class FrameTag>;
 
-/// Type used to identify a geometry instance by index in GeometryWorld.
+/** Type used to identify geometry instances in GeometryWorld. */
 using GeometryId = Identifier<class GeometryTag>;
 
 }  // namespace geometry

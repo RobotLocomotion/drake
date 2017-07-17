@@ -85,8 +85,8 @@ TEST_F(GeometrySystemTest, PoseContextSourceRegistration) {
   EXPECT_ERROR_MESSAGE(
       system_.RegisterSource(),
       std::logic_error,
-      "A context has been created for this system. Adding new geometry "
-      "sources is no longer possible.");
+      "The call to RegisterSource is invalid; a context has already been "
+      "allocated.");
 }
 
 // Test topology changes (registration, removal, clearing, etc.)
@@ -105,7 +105,8 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
       system_.RegisterFrame(
           id, GeometryFrame<double>()),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to RegisterFrame is invalid; a context has already been "
+      "allocated.");
 
   // Attach frame to another frame.
   EXPECT_ERROR_MESSAGE(
@@ -113,45 +114,52 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
           id, FrameId::get_new_id(),
           GeometryFrame<double>()),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to RegisterFrame is invalid; a context has already been "
+      "allocated.");
 
   // Attach geometry to frame.
   EXPECT_ERROR_MESSAGE(
       system_.RegisterGeometry(
           id, FrameId::get_new_id(), make_sphere_instance()),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to RegisterGeometry is invalid; a context has already been "
+      "allocated.");
 
   // Attach geometry to another geometry.
   EXPECT_ERROR_MESSAGE(
       system_.RegisterGeometry(
           id, GeometryId::get_new_id(), make_sphere_instance()),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to RegisterGeometry is invalid; a context has already been "
+          "allocated.");
 
   // Attach anchored geometry to world.
   EXPECT_ERROR_MESSAGE(
       system_.RegisterAnchoredGeometry(id, make_sphere_instance()),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to RegisterAnchoredGeometry is invalid; a context has already "
+      "been allocated.");
 
   // Clearing a source.
   EXPECT_ERROR_MESSAGE(
       system_.ClearSource(id),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to ClearSource is invalid; a context has already been "
+      "allocated.");
 
   // Removing a frame.
   EXPECT_ERROR_MESSAGE(
       system_.RemoveFrame(id, FrameId::get_new_id()),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to RemoveFrame is invalid; a context has already been "
+      "allocated.");
 
   // Removing a geometry.
   EXPECT_ERROR_MESSAGE(
       system_.RemoveGeometry(id, GeometryId::get_new_id()),
       std::logic_error,
-      "Operation invalid; a context has already been allocated.");
+      "The call to RemoveGeometry is invalid; a context has already been "
+      "allocated.");
 }
 
 }  // namespace
