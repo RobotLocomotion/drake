@@ -1,8 +1,6 @@
 #include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
-#include <cmath>
-
 namespace drake {
 namespace multibody {
 TEST_F(KukaTest, FeasiblePostureTest) {
@@ -29,10 +27,8 @@ TEST_F(KukaTest, FeasiblePostureTest) {
   std::vector<solvers::Binding<solvers::BoundingBoxConstraint>>
       body_orientation_constraint;
   for (int body = 1; body < rigid_body_tree_->get_num_bodies(); ++body) {
-    body_position_constraint.push_back(global_ik_.AddBoundingBoxConstraint(0,
-                                                                             0,
-                                                                             global_ik_.body_position(
-                                                                                 body)));
+    body_position_constraint.push_back(global_ik_.AddBoundingBoxConstraint(
+        0, 0, global_ik_.body_position(body)));
     const auto &body_rotmat = global_ik_.body_rotation_matrix(body);
     Eigen::Matrix<symbolic::Variable, 9, 1> body_rotmat_flat;
     body_rotmat_flat << body_rotmat.col(0), body_rotmat.col(1), body_rotmat.col(
@@ -70,9 +66,8 @@ TEST_F(KukaTest, FeasiblePostureTest) {
     rigid_body_tree_->doKinematics(cache);
     for (int body = 1; body < rigid_body_tree_->get_num_bodies(); ++body) {
       const Eigen::Isometry3d body_pose =
-          rigid_body_tree_->CalcBodyPoseInWorldFrame(cache,
-                                                     rigid_body_tree_->get_body(
-                                                         body));
+          rigid_body_tree_->CalcBodyPoseInWorldFrame(
+              cache, rigid_body_tree_->get_body(body));
       const Eigen::Vector3d
           pos_lb = body_pose.translation();
       const Eigen::Vector3d

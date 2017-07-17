@@ -19,14 +19,13 @@ drake_cc_library(
         "test/global_inverse_kinematics_test_util.h",
     ],
     deps = [
-        "@gtest//:main",
+        "@gtest//:without_main",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
         "//drake/multibody:global_inverse_kinematics",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
-        "@gtest//:without_main",
     ],
 )
 
@@ -72,17 +71,17 @@ drake_cc_googletest(
     ],
 )
 
-#drake_cc_googletest(
-#    name = "global_inverse_kinematics_feasible_posture_test",
-#    size = "medium",
-#    srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
-#    data = [
-#        "//drake/manipulation/models/iiwa_description:models",
-#    ],
-#    tags = ["gurobi"],
-#    deps = [
-#        ":global_inverse_kinematics_test_util",
-#    ],
-#)
+drake_cc_googletest(
+    name = "global_inverse_kinematics_feasible_posture_test",
+    size = "medium",
+    srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags() + ["no_tsan"],
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
 
 cpplint()
