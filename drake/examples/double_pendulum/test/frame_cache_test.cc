@@ -49,11 +49,21 @@ GTEST_TEST(FrameCacheTest, TransformTest) {
   // Check that the arm frame's (A) pose in world frame (W) is correctly
   // re-computed.
   EXPECT_TRUE(frame_cache.Transform("world", "arm").isApprox(X_WB2 * X_BA));
+
+  // Check that any attempt to introduce a frame cycle into the cache
+  // results in an exception.
+  ASSERT_THROW({
+      frame_cache.Update("arm", "body", Isometry3<double>::Identity());
+    }, std::runtime_error);
+
+  ASSERT_THROW({
+      frame_cache.Update("arm", "world", Isometry3<double>::Identity());
+    }, std::runtime_error);
 }
 
 // Makes sure that a FrameCache throws when trying to update using a non
 // existent target frame or trying to transform using non existent frames.
-GTEST_TEST(FrameCacheTest, NonExistantFramesTest) {
+GTEST_TEST(FrameCacheTest, NonExistentFramesTest) {
   FrameCache<double> frame_cache("root");
   ASSERT_THROW({
       frame_cache.Update(

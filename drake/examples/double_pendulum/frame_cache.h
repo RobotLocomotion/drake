@@ -23,14 +23,12 @@ template <typename T>
 struct FramedIsometry3 {
   FramedIsometry3() {}
 
-  FramedIsometry3(const Isometry3<T>& isometry,
-                  const std::string& frame) :
-      isometry(isometry),
-      frame(frame) {}
+  FramedIsometry3(const Isometry3<T>& isometry_in,
+                  const std::string& frame_in) :
+      isometry(isometry_in),
+      frame(frame_in) {}
 
-  Isometry3<T> isometry{
-    Isometry3<T>::Identity()
-  };
+  Isometry3<T> isometry{Isometry3<T>::Identity()};
   std::string frame{};
 };
 
@@ -69,6 +67,10 @@ class FrameCache {
   Isometry3<T> Transform(const std::string& target_frame,
                          const std::string& source_frame) const;
 
+  /// Returns true if the given @p frame is known
+  /// to the cache, false otherwise.
+  bool IsFrameKnown(const std::string& frame) const;
+
  private:
   // Returns `X_RF`, that is the pose of given @p frame `F` in
   // the root frame `R`.
@@ -77,7 +79,7 @@ class FrameCache {
   // Name of the root frame of this cache.
   const std::string root_frame_;
   // Map to keep all known frames' transforms.
-  std::map<std::string, FramedIsometry3<T>> cache_;
+  std::map<std::string, FramedIsometry3<T>> X_TS_cache_;
 };
 
 }  // namespace double_pendulum
