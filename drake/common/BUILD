@@ -710,6 +710,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_polynomial_matrix_test",
+    deps = [
+        ":common",
+        ":symbolic_polynomial",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_substitution_test",
     deps = [
         ":common",

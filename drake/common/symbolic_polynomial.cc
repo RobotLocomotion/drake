@@ -385,6 +385,13 @@ Polynomial operator+(const Monomial& m1, const Monomial& m2) {
 }
 Polynomial operator+(Polynomial p, const double c) { return p += c; }
 Polynomial operator+(const double c, Polynomial p) { return p += c; }
+Polynomial operator+(const Monomial& m, const double c) {
+  return Polynomial(m) + c;
+}
+Polynomial operator+(const double c, const Monomial& m) {
+  return c + Polynomial(m);
+}
+
 Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
 Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
 Polynomial operator-(const Monomial& m, Polynomial p) {
@@ -395,6 +402,13 @@ Polynomial operator-(const Monomial& m1, const Monomial& m2) {
 }
 Polynomial operator-(Polynomial p, const double c) { return p -= c; }
 Polynomial operator-(const double c, Polynomial p) { return p = -p + c; }
+Polynomial operator-(const Monomial& m, const double c) {
+  return Polynomial(m) - c;
+}
+Polynomial operator-(const double c, const Monomial& m) {
+  return c - Polynomial(m);
+}
+
 Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
 Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
 Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
