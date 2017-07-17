@@ -72,6 +72,9 @@ class Polynomial {
   /// Returns an equivalent symbolic expression of this polynomial.
   Expression ToExpression() const;
 
+  /// Adds @p coeff * @p m to this polynomial.
+  Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
+
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
@@ -92,8 +95,6 @@ class Polynomial {
   Formula operator==(Polynomial p) const;
 
  private:
-  // Adds (coeff * m) to this polynomial.
-  Polynomial& Add(const Expression& coeff, const Monomial& m);
   // Throws std::runtime_error if there is a variable appeared in both of
   // decision_variables() and indeterminates().
   void CheckInvariant() const;
