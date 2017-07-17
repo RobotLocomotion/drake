@@ -105,6 +105,8 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
 
 namespace TestCallbacks {
 
+using namespace std::placeholders;
+
 struct TestCallbackInfo {
   Eigen::VectorXd x_vals;
   VectorXDecisionVariable x_vars;
@@ -112,16 +114,15 @@ struct TestCallbackInfo {
   bool mipNodeCallbackCalled = false;
 };
 
-void MipSolCallbackFunction(const MathematicalProgram& prog,
+static void MipSolCallbackFunctionTest(const MathematicalProgram& prog,
   const drake::solvers::GurobiSolver::SolveStatusInfo& solve_info,
-  void * usrdata) {
-  TestCallbackInfo * cb_info = reinterpret_cast<TestCallbackInfo *>(usrdata);
+  TestCallbackInfo * cb_info) {
   cb_info->mipSolCallbackCalled = true;
 }
-void MipNodeCallbackFunction(const MathematicalProgram& prog,
+static void MipNodeCallbackFunctionTest(const MathematicalProgram& prog,
   const GurobiSolver::SolveStatusInfo& solve_info,
-  void * usrdata, Eigen::VectorXd * vals, VectorXDecisionVariable * vars) {
-  TestCallbackInfo * cb_info = reinterpret_cast<TestCallbackInfo *>(usrdata);
+  Eigen::VectorXd * vals, VectorXDecisionVariable * vars,
+  TestCallbackInfo * cb_info) {
   cb_info->mipNodeCallbackCalled = true;
   *vals = cb_info->x_vals;
   *vars = cb_info->x_vars;
@@ -171,8 +172,12 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
     TestCallbackInfo cb_info;
     cb_info.x_vals = x_expected;
     cb_info.x_vars = x;
-    solver.AddMipNodeCallback(MipNodeCallbackFunction, &cb_info);
-    solver.AddMipSolCallback(MipSolCallbackFunction, &cb_info);
+    GurobiSolver::MipNodeCallbackFunction MipNodeCallbackFunctionWrapper =
+      std::bind(MipNodeCallbackFunctionTest, _1, _2, _3, _4, &cb_info);
+    GurobiSolver::MipSolCallbackFunction MipSolCallbackFunctionWrapper =
+      std::bind(MipSolCallbackFunctionTest, _1, _2, &cb_info);
+    solver.AddMipNodeCallback(MipNodeCallbackFunctionWrapper);
+    solver.AddMipSolCallback(MipSolCallbackFunctionWrapper);
 
     SolutionResult result = solver.Solve(prog);
     EXPECT_EQ(result, SolutionResult::kSolutionFound);

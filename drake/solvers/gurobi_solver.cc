@@ -41,8 +41,6 @@ struct GurobiCallbackInformation {
   std::vector<bool> is_new_variable;
   GurobiSolver::MipNodeCallbackFunction mip_node_callback;
   GurobiSolver::MipSolCallbackFunction mip_sol_callback;
-  void * mip_sol_callback_usrdata;
-  void * mip_node_callback_usrdata;
 };
 
 static int
@@ -55,7 +53,7 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
   } else if (where == GRB_CB_SIMPLEX) {
   } else if (where == GRB_CB_MIP) {
   } else if (where == GRB_CB_MIPSOL &&
-      callbackInfo->mip_sol_callback != NULL) {
+      callbackInfo->mip_sol_callback != nullptr) {
     // Extract variable values from Gurobi, and set the current
     // solution of the MathematicalProgram to these values.
     int num_total_variables = callbackInfo->is_new_variable.size();
@@ -92,11 +90,10 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
     GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &explored_node_count_dbl);
     solve_status.explored_node_count = explored_node_count_dbl;
 
-    callbackInfo->mip_sol_callback(*(callbackInfo->prog), solve_status,
-      callbackInfo->mip_sol_callback_usrdata);
+    callbackInfo->mip_sol_callback(*(callbackInfo->prog), solve_status);
 
   } else if (where == GRB_CB_MIPNODE &&
-      callbackInfo->mip_node_callback != NULL) {
+      callbackInfo->mip_node_callback != nullptr) {
     int sol_status;
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
     if (error) {
@@ -142,7 +139,7 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
       Eigen::VectorXd vals;
       VectorXDecisionVariable vars;
       callbackInfo->mip_node_callback(*(callbackInfo->prog), solve_status,
-        callbackInfo->mip_node_callback_usrdata, &vals, &vars);
+        &vals, &vars);
 
       // The callback may return an assignment of some number of variables
       // as a new heuristic solution seed. If so, feed those back to Gurobi.
@@ -740,14 +737,16 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   // If we have been supplied a callback,
   // register it with Gurobi.
-  if (mip_node_callback_ || mip_sol_callback_) {
-    GurobiCallbackInformation callbackInfo;
+  // We initialize callbackInfo outside of the if() scope
+  // so that it persists until after GRBoptimize() has been
+  // called and completed. We need this struct to survive
+  // throughout the solve process.
+  GurobiCallbackInformation callbackInfo;
+  if (mip_node_callback_ != nullptr || mip_sol_callback_ != nullptr) {
     callbackInfo.prog = &prog;
     callbackInfo.is_new_variable = is_new_variable;
     callbackInfo.mip_node_callback = mip_node_callback_;
     callbackInfo.mip_sol_callback = mip_sol_callback_;
-    callbackInfo.mip_node_callback_usrdata = mip_node_callback_usrdata_;
-    callbackInfo.mip_sol_callback_usrdata = mip_sol_callback_usrdata_;
     GRBsetcallbackfunc(model, &gurobi_callback, &callbackInfo);
   }
 

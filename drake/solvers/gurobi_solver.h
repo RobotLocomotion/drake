@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -47,36 +48,40 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   /// The user may supply a partial solution in the VectorXd and
   /// VectorXDecisionVariable arguments that will be passed to Gurobi
   /// as a candidate feasible solution.
+  /// See gurobi_solver_test.cc for an example of using std::bind
+  /// to create a callback of this signature, while allowing
+  /// additional data to be passed through.
   /// @param MathematicalProgram& The optimization wrapper, whose
   /// current variable values (accessible via
   /// MathematicalProgram::GetSolution) will be set to the intermediate
   /// solution values.
   /// @param SolveStatusInfo& Intermediate solution status information values
   /// queried from Gurobi.
-  /// @param void* Arbitrary data supplied during callback registration.
   /// @param VectorXd* User may assign this to be the values of the variable
   /// assignments.
   /// @param VectorXDecisionVariable* User may assign this to be the decision
   /// variables being assigned. Must have the same number of elements as
   /// the VectorXd assignment.
-  typedef void (*MipNodeCallbackFunction)(const MathematicalProgram&,
-    const SolveStatusInfo& callback_info, void *, Eigen::VectorXd*,
-    VectorXDecisionVariable*);
+  typedef std::function<void(const MathematicalProgram&,
+    const SolveStatusInfo& callback_info, Eigen::VectorXd*,
+    VectorXDecisionVariable*)> MipNodeCallbackFunction;
 
   /// Registers a callback to be called at intermediate solutions
   /// during the solve.
   /// @param callback User callback function.
   /// @param user_data Arbitrary data that will be passed to the user
   /// callback function.
-  void AddMipNodeCallback(MipNodeCallbackFunction callback, void * user_data) {
+  void AddMipNodeCallback(const MipNodeCallbackFunction& callback) {
     mip_node_callback_ = callback;
-    mip_node_callback_usrdata_ = user_data;
   }
 
   /// Users can supply a callback to be called when the Gurobi solver
   /// finds a feasible solution.
   /// See Gurobi reference manual for more detail on callbacks:
   /// https://www.gurobi.com/documentation/7.0/refman/refman.html.
+  /// See gurobi_solver_test.cc for an example of using std::bind
+  /// to create a callback of this signature, while allowing
+  /// additional data to be passed through.
   /// @param MathematicalProgram& The optimization wrapper, whose
   /// current variable values (accessible via
   /// MathematicalProgram::GetSolution) will be set to the intermediate
@@ -84,17 +89,16 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   /// @param SolveStatusInfo& Intermediate solution status information values
   /// queried from Gurobi.
   /// @param void* Arbitrary data supplied during callback registration.
-  typedef void (*MipSolCallbackFunction)(const MathematicalProgram&,
-    const SolveStatusInfo& callback_info, void *);
+  typedef std::function<void(const MathematicalProgram&,
+    const SolveStatusInfo& callback_info)> MipSolCallbackFunction;
 
   /// Registers a callback to be called at feasible solutions
   /// during the solve.
   /// @param fnc User callback function.
   /// @param usrdata Arbitrary data that will be passed to the user
   /// callback function.
-  void AddMipSolCallback(MipSolCallbackFunction fnc, void * usrdata) {
+  void AddMipSolCallback(const MipSolCallbackFunction& fnc) {
     mip_sol_callback_ = fnc;
-    mip_sol_callback_usrdata_ = usrdata;
   }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
@@ -107,10 +111,8 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
  private:
   // Callbacks and generic user data to pass through,
   // or NULL if no callback has been supplied.
-  MipNodeCallbackFunction mip_node_callback_ = nullptr;
-  MipSolCallbackFunction mip_sol_callback_ = nullptr;
-  void * mip_node_callback_usrdata_ = nullptr;
-  void * mip_sol_callback_usrdata_ = nullptr;
+  MipNodeCallbackFunction mip_node_callback_;
+  MipSolCallbackFunction mip_sol_callback_;
 };
 
 }  // end namespace solvers
