@@ -410,7 +410,8 @@ GlobalInverseKinematics::BodyPointInOneOfRegions(
   return z;
 }
 
-void GlobalInverseKinematics::AddJointLimitConstraint(int body_index, double joint_lower_bound, double joint_upper_bound) {
+void GlobalInverseKinematics::AddJointLimitConstraint(
+    int body_index, double joint_lower_bound, double joint_upper_bound) {
   if (joint_lower_bound > joint_upper_bound) {
     throw std::runtime_error(
         "The joint lower bound should be no larger than the upper bound.");
@@ -424,7 +425,8 @@ void GlobalInverseKinematics::AddJointLimitConstraint(int body_index, double joi
     switch (joint->get_num_velocities()) {
       case 0 : {
         // Fixed to the parent body.
-        throw std::runtime_error("Cannot impose joint limits for a fixed joint.");
+        throw std::runtime_error(
+            "Cannot impose joint limits for a fixed joint.");
       }
       case 1 : {
         // Should NOT do this evil dynamic cast here, but currently we do
@@ -508,7 +510,8 @@ void GlobalInverseKinematics::AddJointLimitConstraint(int body_index, double joi
 
             // rotmat_joint_offset is R(k, (a+b)/2) explained above.
             const Matrix3d rotmat_joint_offset =
-                Eigen::AngleAxisd((joint_lower_bound + joint_upper_bound) / 2, axis_F)
+                Eigen::AngleAxisd((joint_lower_bound + joint_upper_bound) / 2,
+                                  axis_F)
                     .toRotationMatrix();
 
             // joint_limit_expr is going to be within the Lorentz cone.
