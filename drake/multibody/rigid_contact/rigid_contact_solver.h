@@ -31,8 +31,7 @@ class RigidContactSolver {
   /// Solves the appropriate contact problem at the acceleration level.
   /// @param cfm The non-negative regularization factor to apply to the contact
   ///            problem (i.e., the underlying complementarity problem), also
-  ///            known as the "constraint force mixing" parameter. Aborts if
-  ///            @p cfm is negative.
+  ///            known as the "constraint force mixing" parameter.
   /// @param problem_data The data used to compute the contact forces.
   /// @param cf The computed contact forces, on return, in a packed storage
   ///           format. The first `nc` elements of @p cf correspond to the
@@ -42,29 +41,35 @@ class RigidContactSolver {
   ///           directions at each non-sliding point of contact. The first `r`
   ///           values (after the initial `nc` elements) correspond to the first
   ///           non-sliding contact, the next `r` values correspond to the
-  ///           second non-sliding contct, etc.
+  ///           second non-sliding contact, etc.
   /// @pre Contact data has been computed.
   /// @throws a std::runtime_error if the contact forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
+  /// @throws a std::logic_error if @p cf is null or @p cfm is negative.
   void SolveContactProblem(double cfm,
       const RigidContactAccelProblemData<T>& problem_data,
       VectorX<T>* cf) const;
 
   /// Computes the generalized force on the system from the contact forces given
-  /// in packed storage. Aborts if @p generalized_force is null.
+  /// in packed storage.
   /// @param problem_data The data used to compute the contact forces.
   /// @param cf The computed contact forces, in the packed storage
   ///           format described in documentation for SolveContactProblem.
   /// @param[out] generalized_force The generalized force acting on the system
   ///             from the contact wrench is stored here, on return.
+  /// @throws std::logic_error if @p generalized_force is null or @p cf
+  ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromContactForces(
       const RigidContactAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_force);
 
   /// Computes the system generalized acceleration, given the external forces
-  /// (stored in @p problem_data) and the contact forces. Aborts if
-  /// @p generalized_acceleration is null.
+  /// (stored in @p problem_data) and the contact forces.
+  /// @param cf The computed contact forces, in the packed storage
+  ///           format described in documentation for SolveContactProblem.
+  /// @throws std::logic_error if @p generalized_acceleration is null or
+  ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
       const RigidContactAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
@@ -84,8 +89,13 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
     VectorX<T>* cf) const {
   using std::max;
   using std::abs;
-  DRAKE_DEMAND(cf);
-  DRAKE_DEMAND(cfm >= 0.0);
+
+  if (!cf)
+    throw std::logic_error("cf (output parameter) is null.");
+  if (cfm < 0.0) {
+    throw std::logic_error("Constraint force mixing (CFM) parameter is "
+                               "negative.");
+  }
 
   // Alias problem data.
   const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
@@ -95,18 +105,18 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
   // Get numbers of friction directions and types of contacts.
   const int num_sliding = sliding_contacts.size();
   const int num_non_sliding = non_sliding_contacts.size();
-  const int nc = num_sliding + num_non_sliding;
-  const int nr = std::accumulate(problem_data.r.begin(),
-                                 problem_data.r.end(), 0);
+  const int num_contacts = num_sliding + num_non_sliding;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
 
   // Look for fast exit.
-  if (nc == 0) {
+  if (num_contacts == 0) {
     cf->resize(0);
     return;
   }
 
   // Initialize contact force vector.
-  cf->resize(nc + nr);
+  cf->resize(num_contacts + num_spanning_vectors);
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
@@ -114,8 +124,8 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
   FormSustainedContactLCP(problem_data, &MM, &qq);
 
   // Regularize the LCP matrix as necessary.
-  const int nvars = qq.size();
-  MM += MatrixX<T>::Identity(nvars, nvars) * cfm;
+  const int num_vars = qq.size();
+  MM += MatrixX<T>::Identity(num_vars, num_vars) * cfm;
 
   // Get the zero tolerance for solving the LCP.
   const T zero_tol = max(cfm, lcp_.ComputeZeroTolerance(MM));
@@ -131,18 +141,20 @@ void RigidContactSolver<T>::SolveContactProblem(double cfm,
   // is used to check a single element for zero (within a single pivoting
   // operation), we must compensate for the number of pivoting operations and
   // the problem size. zzᵀww must use a looser tolerance to account for the
-  // nvars multiplies.
+  // num_vars multiplies.
   const int npivots = lcp_.get_num_pivots();
   if (!success || (zz.size() > 0 &&
-      (zz.minCoeff() < -nvars * npivots * zero_tol ||
-      ww.minCoeff() < -nvars * npivots * zero_tol ||
-      abs(zz.dot(ww)) > nvars * nvars * npivots * zero_tol))) {
+      (zz.minCoeff() < -num_vars * npivots * zero_tol ||
+      ww.minCoeff() < -num_vars * npivots * zero_tol ||
+      abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
   // Get the contact forces in the contact frame.
-  cf->segment(0, nc) = zz.segment(0, nc);
-  cf->segment(nc, nr) = zz.segment(nc, nr) - zz.segment(nc + nr, nr);
+  cf->segment(0, num_contacts) = zz.segment(0, num_contacts);
+  cf->segment(num_contacts, num_spanning_vectors) =
+      zz.segment(num_contacts, num_spanning_vectors) -
+      zz.segment(num_contacts + num_spanning_vectors, num_spanning_vectors);
 }
 
 // Forms the LCP matrix and vector, which is used to determine the contact
@@ -158,10 +170,10 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   // Get numbers of types of contacts.
   const int num_sliding = problem_data.sliding_contacts.size();
   const int num_non_sliding = problem_data.non_sliding_contacts.size();
-  const int nc = num_sliding + num_non_sliding;
-  const int nr = std::accumulate(problem_data.r.begin(),
+  const int num_contacts = num_sliding + num_non_sliding;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
-  const int nk = nr * 2;
+  const int nk = num_spanning_vectors * 2;
 
   // Problem matrices and vectors are mildly adapted from:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
@@ -195,35 +207,47 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   // μ                 -Eᵀ       0
   // where D = |  F |
   //           | -F |
-  const int nvars = nc + nk + num_non_sliding;
+  const int num_vars = num_contacts + nk + num_non_sliding;
   MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
-  MM->resize(nvars, nvars);
-  MM->block(0, 0, nc, nc) = N *
+  MM->resize(num_vars, num_vars);
+  MM->block(0, 0, num_contacts, num_contacts) = N *
       problem_data.solve_inertia(problem_data.N_minus_mu_Q.transpose());
-  MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
-  MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
-  MM->block(0, nc + nk, num_non_sliding, num_non_sliding).setZero();
+  MM->block(0, num_contacts, num_contacts, num_spanning_vectors) = N * M_inv_x_FT;
+  MM->block(0, num_contacts + num_spanning_vectors,
+            num_contacts, num_spanning_vectors) =
+      -MM->block(0, num_contacts, num_contacts, num_spanning_vectors);
+  MM->block(0, num_contacts + nk, num_non_sliding, num_non_sliding).setZero();
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
-  MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
-  MM->block(nc, nc, nr, nr) = F * M_inv_x_FT;
-  MM->block(nc, nc + nr, nr, nr) = -MM->block(nc, nc, nr, nr);
+  MM->block(num_contacts, 0, num_spanning_vectors, num_contacts) =
+      MM->block(0, num_contacts,
+                num_contacts, num_spanning_vectors).transpose().eval();
+  MM->block(num_contacts, num_contacts,
+            num_spanning_vectors, num_spanning_vectors) = F * M_inv_x_FT;
+  MM->block(num_contacts, num_contacts + num_spanning_vectors,
+            num_spanning_vectors, num_spanning_vectors) =
+      -MM->block(num_contacts, num_contacts,
+                 num_spanning_vectors, num_spanning_vectors);
 
   // Now construct the negated tangent contact direction rows (everything but
   // last block column). These negated tangent contact directions allow the
   // LCP to compute forces applied along the negative x-axis.
-  MM->block(nc + nr, 0, nr, nc + nk) = -MM->block(nc, 0, nr, nc + nk);
+  MM->block(num_contacts + num_spanning_vectors,
+            0, num_spanning_vectors, num_contacts + nk) =
+      -MM->block(num_contacts, 0, num_spanning_vectors, num_contacts + nk);
 
   // Construct the last block column for the last set of rows (see Anitescu and
   // Potra, 1997).
-  MM->block(nc, nc + nk, nk, num_non_sliding) = E;
+  MM->block(num_contacts, num_contacts + nk, nk, num_non_sliding) = E;
 
   // Construct the last two rows, which provide the friction "cone" constraint.
-  MM->block(nc + nk, 0, num_non_sliding, num_non_sliding) =
+  MM->block(num_contacts + nk, 0, num_non_sliding, num_non_sliding) =
       Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu_non_sliding);
-  MM->block(nc + nk, nc, num_non_sliding, nk) = -E.transpose();
-  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding).setZero();
+  MM->block(num_contacts + nk, num_contacts, num_non_sliding, nk) =
+      -E.transpose();
+  MM->block(num_contacts + nk, num_contacts + nk,
+            num_non_sliding, num_non_sliding).setZero();
 
   // Construct the LCP vector:
   // N⋅M⁻¹⋅fext + dN/dt⋅v
@@ -231,11 +255,12 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   // 0
   // where, as above, D is defined as [F -F]
   VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.f);
-  qq->resize(nvars, 1);
-  qq->segment(0, nc) = N * M_inv_x_f + Ndot_x_v;
-  qq->segment(nc, nr) = F * M_inv_x_f + Fdot_x_v;
-  qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
-  qq->segment(nc + nk, num_non_sliding).setZero();
+  qq->resize(num_vars, 1);
+  qq->segment(0, num_contacts) = N * M_inv_x_f + Ndot_x_v;
+  qq->segment(num_contacts, num_spanning_vectors) = F * M_inv_x_f + Fdot_x_v;
+  qq->segment(num_contacts + num_spanning_vectors, num_spanning_vectors) =
+      -qq->segment(num_contacts, num_spanning_vectors);
+  qq->segment(num_contacts + nk, num_non_sliding).setZero();
 }
 
 template <class T>
@@ -243,22 +268,25 @@ void RigidContactSolver<T>::ComputeGeneralizedForceFromContactForces(
     const RigidContactAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_force) {
-  DRAKE_DEMAND(generalized_force);
+  if (!generalized_force)
+    throw std::logic_error("generalized_force vector is null.");
 
   // Get numbers of types of contacts.
   const int num_sliding = problem_data.sliding_contacts.size();
   const int num_non_sliding = problem_data.non_sliding_contacts.size();
-  const int nc = num_sliding + num_non_sliding;
-  const int nr = std::accumulate(problem_data.r.begin(),
+  const int num_contacts = num_sliding + num_non_sliding;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
 
-  /// Verify cf is the correct size.
-  const int nvars = nc + nr;
-  DRAKE_DEMAND(cf.size() == nvars);
+  // Verify cf is the correct size.
+  const int num_vars = num_contacts + num_spanning_vectors;
+  if (cf.size() != num_vars)
+    throw std::logic_error("cf (contact force) parameter incorrectly sized.");
 
   /// Get the normal and non-sliding contact forces.
-  const auto& f_normal = cf.segment(0, nc);
-  const auto& f_non_sliding_frictional = cf.segment(nc, nvars - nc);
+  const auto& f_normal = cf.segment(0, num_contacts);
+  const auto& f_non_sliding_frictional = cf.segment(num_contacts,
+                                                    num_vars - num_contacts);
 
   /// Compute the generalized force.
   *generalized_force = problem_data.N_minus_mu_Q.transpose() * f_normal +
@@ -270,7 +298,10 @@ void RigidContactSolver<T>::ComputeGeneralizedAcceleration(
     const RigidContactAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration) {
-  DRAKE_DEMAND(generalized_acceleration);
+
+  if (!generalized_acceleration)
+    throw std::logic_error("generalized_acceleration vector is null.");
+
   VectorX<T> generalized_force;
   ComputeGeneralizedForceFromContactForces(problem_data, cf,
                                            &generalized_force);
