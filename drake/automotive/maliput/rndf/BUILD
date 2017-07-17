@@ -14,15 +14,22 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "builder",
     srcs = [
+        "builder.cc",
         "connection.cc",
         "directed_waypoint.cc",
     ],
     hdrs = [
+        "builder.h",
         "connection.h",
         "directed_waypoint.h",
     ],
     deps = [
+        ":lanes",
+        "//drake/automotive/maliput/api",
         "//drake/common",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/math:geometric_transform",
+        "//drake/math:saturate",
         "@ignition_math",
         "@ignition_rndf",
     ],
@@ -77,6 +84,14 @@ drake_cc_googletest(
         ":ignition_types_compare",
         "@ignition_math",
         "@ignition_rndf",
+    ],
+)
+
+drake_cc_googletest(
+    name = "builder_test",
+    deps = [
+        ":builder",
+        "//drake/automotive/maliput/api:maliput_types_compare",
     ],
 )
 
