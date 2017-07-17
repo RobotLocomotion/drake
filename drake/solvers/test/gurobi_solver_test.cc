@@ -137,7 +137,7 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
     auto x = prog.NewBinaryVariables<4>("x");
 
     // Constraint such that x_0 and x_1 can't both be
-    // 1, but leave a feasible vertex at (0.75, 0.75)
+    // 1, but leave a feasible vertex at (2/3, 2/3)
     // that is optimal in the continuous relaxation.
     prog.AddLinearConstraint(x[0] <= 1. - 0.5*x[1]);
     prog.AddLinearConstraint(x[1] <= 1. - 0.5*x[0]);
