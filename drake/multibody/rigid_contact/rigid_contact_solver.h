@@ -206,16 +206,17 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   // μ                 -Eᵀ       0
   // where D = |  F |
   //           | -F |
-  const int nc = num_contacts;          // Alias these vars for more readable...
-  const int nr = num_spanning_vectors;  //  construction of MM/qq.
-  const int num_vars = nc + nr * 2 + num_non_sliding;
+  const int nc = num_contacts;          // Alias these vars for more...
+  const int nr = num_spanning_vectors;  //   readable construction...
+  const int nk = nr * 2;                //    of MM/qq.
+  const int num_vars = nc + nk + num_non_sliding;
   MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
   MM->resize(num_vars, num_vars);
   MM->block(0, 0, nc, nc) = N *
       problem_data.solve_inertia(problem_data.N_minus_mu_Q.transpose());
   MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
-  MM->block(0, nc + nr * 2, num_non_sliding, num_non_sliding).setZero();
+  MM->block(0, nc + nk, num_non_sliding, num_non_sliding).setZero();
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
@@ -227,18 +228,17 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   // Now construct the negated tangent contact direction rows (everything but
   // last block column). These negated tangent contact directions allow the
   // LCP to compute forces applied along the negative x-axis.
-  MM->block(nc + nr, 0, nr, nc + nr * 2) = -MM->block(nc, 0, nr, nc + nr * 2);
+  MM->block(nc + nr, 0, nr, nc + nk) = -MM->block(nc, 0, nr, nc + nk);
 
   // Construct the last block column for the last set of rows (see Anitescu and
   // Potra, 1997).
-  MM->block(nc, nc + nr * 2, nr * 2, num_non_sliding) = E;
+  MM->block(nc, nc + nk, nk, num_non_sliding) = E;
 
   // Construct the last two rows, which provide the friction "cone" constraint.
-  MM->block(nc + nr * 2, 0, num_non_sliding, num_non_sliding) =
+  MM->block(nc + nk, 0, num_non_sliding, num_non_sliding) =
       Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu_non_sliding);
-  MM->block(nc + nr * 2, nc, num_non_sliding, nr * 2) = -E.transpose();
-  MM->block(nc + nr * 2, nc + nr * 2, num_non_sliding, num_non_sliding).
-      setZero();
+  MM->block(nc + nk, nc, num_non_sliding, nk) = -E.transpose();
+  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding).setZero();
 
   // Construct the LCP vector:
   // N⋅M⁻¹⋅fext + dN/dt⋅v
@@ -250,7 +250,7 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   qq->segment(0, nc) = N * M_inv_x_f + Ndot_x_v;
   qq->segment(nc, nr) = F * M_inv_x_f + Fdot_x_v;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
-  qq->segment(nc + nr * 2, num_non_sliding).setZero();
+  qq->segment(nc + nk, num_non_sliding).setZero();
 }
 
 template <class T>
