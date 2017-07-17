@@ -108,6 +108,7 @@ MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
+      lower_bound_(-numeric_limits<double>::infinity()),
       required_capabilities_(kNoCapabilities),
       ipopt_solver_(new IpoptSolver()),
       nlopt_solver_(new NloptSolver()),

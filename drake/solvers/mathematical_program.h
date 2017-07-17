@@ -2046,10 +2046,13 @@ class MathematicalProgram {
   void SetOptimalCost(double optimal_cost) { optimal_cost_ = optimal_cost; }
 
   /**
-   * Getter and setter for lower bound on optical cost. Will return NaN
-   * if this has not been discovered.
+   * Getter for lower bound on optimal cost. Defaults to -Infinity
+   * if a lower bound has not been found.
    */
   double GetLowerBound() const { return lower_bound_; }
+  /**
+   * Setter for lower bound on optimal cost.
+   */
   void SetLowerBound(double lower_bound) { lower_bound_ = lower_bound; }
 
   /**

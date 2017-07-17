@@ -112,13 +112,13 @@ struct TestCallbackInfo {
   bool mipNodeCallbackCalled = false;
 };
 
-void mipSolCallbackFunction(const MathematicalProgram& prog,
+void MipSolCallbackFunction(const MathematicalProgram& prog,
   const drake::solvers::GurobiSolver::SolveStatusInfo& solve_info,
   void * usrdata) {
   TestCallbackInfo * cb_info = reinterpret_cast<TestCallbackInfo *>(usrdata);
   cb_info->mipSolCallbackCalled = true;
 }
-void mipNodeCallbackFunction(const MathematicalProgram& prog,
+void MipNodeCallbackFunction(const MathematicalProgram& prog,
   const GurobiSolver::SolveStatusInfo& solve_info,
   void * usrdata, Eigen::VectorXd * vals, VectorXDecisionVariable * vars) {
   TestCallbackInfo * cb_info = reinterpret_cast<TestCallbackInfo *>(usrdata);
@@ -171,8 +171,8 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
     TestCallbackInfo cb_info;
     cb_info.x_vals = x_expected;
     cb_info.x_vars = x;
-    solver.addMIPNodeCallback(mipNodeCallbackFunction, &cb_info);
-    solver.addMIPSolCallback(mipSolCallbackFunction, &cb_info);
+    solver.AddMipNodeCallback(MipNodeCallbackFunction, &cb_info);
+    solver.AddMipSolCallback(MipSolCallbackFunction, &cb_info);
 
     SolutionResult result = solver.Solve(prog);
     EXPECT_EQ(result, SolutionResult::kSolutionFound);

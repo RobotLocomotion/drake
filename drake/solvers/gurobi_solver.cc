@@ -39,8 +39,8 @@ namespace {
 struct GurobiCallbackInformation {
   MathematicalProgram * prog;
   std::vector<bool> is_new_variable;
-  GurobiSolver::mipNodeCallbackFunction mip_node_callback;
-  GurobiSolver::mipSolCallbackFunction mip_sol_callback;
+  GurobiSolver::MipNodeCallbackFunction mip_node_callback;
+  GurobiSolver::MipSolCallbackFunction mip_sol_callback;
   void * mip_sol_callback_usrdata;
   void * mip_node_callback_usrdata;
 };
