@@ -1,8 +1,8 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/dev/humanoid_manipulation_plan.h"
 
+#include "robotlocomotion/robot_plan_t.hpp"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
-#include "robotlocomotion/robot_plan_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -51,10 +51,12 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
   body_knots[alias_groups.get_body("torso")] =
       std::vector<Isometry3<T>>(length);
 
+  const manipulation::RobotStateLcmMessageTranslator translator(
+      robot_status.robot());
   for (size_t f = 0; f < msg.plan.size(); ++f) {
     const bot_core::robot_state_t& keyframe = msg.plan[f];
-    translator_.DecodeMessageKinematics(keyframe, q, v);
-    const double time = static_cast<double>(msg->utime) / 1e6;
+    translator.DecodeMessageKinematics(keyframe, q, v);
+    const double time = static_cast<double>(msg.utime) / 1e6;
 
     cache.initialize(q);
     robot.doKinematics(cache, false);
@@ -103,8 +105,10 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
       const std::vector<Isometry3<T>>& body_knots = body_knots_pair.second;
 
       manipulation::PiecewiseCartesianTrajectory<T> body_traj =
-          manipulation::PiecewiseCartesianTrajectory<T>::MakeCubicLinearWithEndLinearVelocity(
-              times, body_knots, Vector3<T>::Zero(), Vector3<T>::Zero());
+          manipulation::PiecewiseCartesianTrajectory<
+              T>::MakeCubicLinearWithEndLinearVelocity(times, body_knots,
+                                                       Vector3<T>::Zero(),
+                                                       Vector3<T>::Zero());
 
       this->set_body_trajectory(body, body_traj);
     }

@@ -46,8 +46,11 @@ void HumanoidPlan<T>::InitializeGenericPlanDerived(
         robot_status.cache(), *body);
 
     manipulation::PiecewiseCartesianTrajectory<T> body_traj =
-      manipulation::PiecewiseCartesianTrajectory<T>::MakeCubicLinearWithEndLinearVelocity(
-          times, {body_pose, body_pose}, Vector3<T>::Zero(), Vector3<T>::Zero());
+        manipulation::PiecewiseCartesianTrajectory<
+            T>::MakeCubicLinearWithEndLinearVelocity(times,
+                                                     {body_pose, body_pose},
+                                                     Vector3<T>::Zero(),
+                                                     Vector3<T>::Zero());
     this->set_body_trajectory(body, body_traj);
   }
 
@@ -63,7 +66,8 @@ void HumanoidPlan<T>::UpdateQpInputGenericPlanDerived(
   // Generates CoM acceleration.
   Vector4<T> xcom;
   xcom << robot_status.com().head<2>(), robot_status.comd().head<2>();
-  Vector2<T> comdd_d = zmp_planner_.ComputeOptimalCoMdd(robot_status.time(), xcom);
+  Vector2<T> comdd_d =
+      zmp_planner_.ComputeOptimalCoMdd(robot_status.time(), xcom);
   qp_input->mutable_desired_centroidal_momentum_dot()
       .mutable_values()
       .segment<2>(3) = robot_status.robot().getMass() * comdd_d;

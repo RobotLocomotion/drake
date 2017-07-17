@@ -28,8 +28,6 @@ class HumanoidManipulationPlan : public HumanoidPlan<T> {
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups);
-
-  const manipulation::RobotStateLcmMessageTranslator translator_;
 };
 
 }  // namespace qp_inverse_dynamics
