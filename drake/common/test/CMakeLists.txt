@@ -111,6 +111,9 @@ target_link_libraries(symbolic_variable_overloading_test drakeCommon)
 drake_add_cc_test(NAME symbolic_polynomial_test SIZE medium)
 target_link_libraries(symbolic_polynomial_test drakeCommon)
 
+drake_add_cc_test(symbolic_polynomial_matrix_test)
+target_link_libraries(symbolic_polynomial_matrix_test drakeCommon)
+
 drake_add_cc_test(symbolic_variables_test)
 target_link_libraries(symbolic_variables_test drakeCommon)
 

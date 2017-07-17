@@ -3,6 +3,8 @@
 #include <ostream>
 #include <unordered_map>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/monomial.h"
@@ -37,7 +39,11 @@ class Polynomial {
 
   /// Constructs a polynomial from a monomial @p m. Note that all variables
   /// in `m` are considered as indeterminates.
-  explicit Polynomial(const Monomial& m);
+  //
+  // Note that this implicit conversion is desirable to have a dot product of
+  // two Eigen::Vector<Monomial>s return a Polynomial.
+  // NOLINTNEXTLINE(runtime/explicit)
+  Polynomial(const Monomial& m);
 
   /// Constructs a polynomial from an expression @p e. Note that all variables
   /// in `e` are considered as indeterminates.
@@ -96,29 +102,177 @@ class Polynomial {
 
 /// Unary minus operation for polynomial.
 Polynomial operator-(Polynomial p);
+
 Polynomial operator+(Polynomial p1, const Polynomial& p2);
 Polynomial operator+(Polynomial p, const Monomial& m);
+Polynomial operator+(Polynomial p, double c);
 Polynomial operator+(const Monomial& m, Polynomial p);
 Polynomial operator+(const Monomial& m1, const Monomial& m2);
-Polynomial operator+(Polynomial p, double c);
+Polynomial operator+(const Monomial& m, double c);
 Polynomial operator+(double c, Polynomial p);
+Polynomial operator+(double c, const Monomial& m);
+
 Polynomial operator-(Polynomial p1, const Polynomial& p2);
 Polynomial operator-(Polynomial p, const Monomial& m);
+Polynomial operator-(Polynomial p, double c);
 Polynomial operator-(const Monomial& m, Polynomial p);
 Polynomial operator-(const Monomial& m1, const Monomial& m2);
-Polynomial operator-(Polynomial p, double c);
+Polynomial operator-(const Monomial& m, double c);
 Polynomial operator-(double c, Polynomial p);
+Polynomial operator-(double c, const Monomial& m);
+
 Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
-Polynomial operator*(const Monomial& m, Polynomial p);
-Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(Polynomial p, double c);
+Polynomial operator*(const Monomial& m, Polynomial p);
+// Note that `Monomial * Monomial -> Monomial` is provided in Monomial.h file.
 Polynomial operator*(const Monomial& m, double c);
+Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(double c, const Monomial& m);
 
 /// Returns polynomial @p rasied to @p n.
 Polynomial pow(const Polynomial& p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
+
+/// Provides the following seven operations:
+///  - Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
+///  - Matrix<Polynomial> * Matrix<double> => Matrix<Polynomial>
+///  - Matrix<Monomial> * Matrix<Polynomial> => Matrix<Polynomial>
+///  - Matrix<Monomial> * Matrix<Monomial> => Matrix<Polynomial>
+///  - Matrix<Monomial> * Matrix<double> => Matrix<Polynomial>
+///  - Matrix<double> * Matrix<Polynomial> => Matrix<Polynomial>
+///  - Matrix<double> * Matrix<Monomial> => Matrix<Polynomial>
+///
+/// @note that these operator overloadings are necessary even after providing
+/// Eigen::ScalarBinaryOpTraits. See
+/// https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
+/// for more information.
+#if defined(DRAKE_DOXYGEN_CXX)
+template <typename MatrixL, typename MatrixR>
+Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+              MatrixR::ColsAtCompileTime>
+operator*(const MatrixL& lhs, const MatrixR& rhs);
+#else
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        // {Polynomial, Monomial, double} x {Polynomial, Monomial, double}
+        (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
+         std::is_same<typename MatrixL::Scalar, Monomial>::value ||
+         std::is_same<typename MatrixL::Scalar, double>::value) &&
+        (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
+         std::is_same<typename MatrixR::Scalar, Monomial>::value ||
+         std::is_same<typename MatrixR::Scalar, double>::value) &&
+        // Exclude Polynomial x Polynomial case (because the other seven
+        // operations call this case. If we include this case here, we will have
+        // self-recursion).
+        !(std::is_same<typename MatrixL::Scalar, Polynomial>::value &&
+          std::is_same<typename MatrixR::Scalar, Polynomial>::value) &&
+        // Exclude double x double case.
+        !(std::is_same<typename MatrixL::Scalar, double>::value &&
+          std::is_same<typename MatrixR::Scalar, double>::value),
+    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  // "foo.template cast<Polynomial>()" is redundant if foo is of Polynomial.
+  // However, we have checked that `-O2` compiler optimization reduces it into a
+  // no-op.
+  return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
+}
+#endif
 }  // namespace symbolic
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+
+// Defines Eigen traits needed for Matrix<drake::symbolic::Polynomial>.
+template <>
+struct NumTraits<drake::symbolic::Polynomial>
+    : GenericNumTraits<drake::symbolic::Polynomial> {
+  static inline int digits10() { return 0; }
+};
+
+// Informs Eigen that BinaryOp(LhsType, RhsType) gets ResultType.
+#define DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType, BinaryOp,    \
+                                               ResultType)                    \
+  template <>                                                                 \
+  struct ScalarBinaryOpTraits<LhsType, RhsType, BinaryOp<LhsType, RhsType>> { \
+    enum { Defined = 1 };                                                     \
+    typedef ResultType ReturnType;                                            \
+  };
+
+// Informs Eigen that LhsType op RhsType gets ResultType
+// where op ∈ {+, -, *, conj_product}.
+#define DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(           \
+    LhsType, RhsType, ResultType)                                             \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType,                    \
+                                         internal::scalar_sum_op, ResultType) \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_difference_op, ResultType)           \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_product_op, ResultType)              \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_conj_product_op, ResultType)
+
+// Informs Eigen that Polynomial op Monomial gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Polynomial, drake::symbolic::Monomial,
+    drake::symbolic::Polynomial)
+
+// Informs Eigen that Polynomial op double gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Polynomial, double, drake::symbolic::Polynomial)
+
+// Informs Eigen that Monomial op Polynomial gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Monomial, drake::symbolic::Polynomial,
+    drake::symbolic::Polynomial)
+
+// Informs Eigen that Monomial op Monomial gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+//
+// Note that we inform Eigen that the return type of Monomial op Monomial is
+// Polynomial, not Monomial, while Monomial * Monomial gets a Monomial in our
+// implementation. This discrepency is due to the implementation of Eigen's
+// dot() method whose return type is scalar_product_op::ReturnType. For more
+// information, check line 67 of Eigen/src/Core/Dot.h and line 767 of
+// Eigen/src/Core/util/XprHelper.h.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Monomial, drake::symbolic::Monomial,
+    drake::symbolic::Polynomial)
+
+// Informs Eigen that Monomial op double gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Monomial, double, drake::symbolic::Polynomial)
+
+// Informs Eigen that double op Polynomial gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    double, drake::symbolic::Polynomial, drake::symbolic::Polynomial)
+
+// Informs Eigen that double op Monomial gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    double, drake::symbolic::Monomial, drake::symbolic::Polynomial)
+
+#undef DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS
+#undef DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS
+
+namespace internal {
+// Informs Eigen how to cast drake::symbolic::Polynomial to
+// drake::symbolic::Expression.
+template <>
+EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
+    const drake::symbolic::Polynomial& p) {
+  return p.ToExpression();
+}
+}  // namespace internal
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)
