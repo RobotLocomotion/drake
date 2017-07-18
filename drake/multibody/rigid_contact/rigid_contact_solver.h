@@ -378,7 +378,7 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
     if (abs(contact_tangent.norm() - 1) > loose_eps)
       throw std::runtime_error("Contact tangent apparently not unit length.");
 
-    // Verify that the two direcdtions are orthogonal.
+    // Verify that the two directions are orthogonal.
     if (abs(contact_normal.dot(contact_tangent)) > loose_eps) {
       std::ostringstream oss;
       oss << "Contact normal (" << contact_normal.transpose() << ") and ";
@@ -387,7 +387,7 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
       throw std::logic_error(oss.str());
     }
 
-    // Set the contact force in the global frame.
+    // Initialize the contact force expressed in the global frame.
     Vector2<T> f0(0, 0);
 
     // Add in the contact normal.
@@ -398,18 +398,15 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
         problem_data.sliding_contacts.begin(),
         problem_data.sliding_contacts.end(), i);
 
+    // Subtract/add the tangential force in the world frame.
     if (is_sliding) {
-      // Since the second direction in the contact frame is aligned with the
-      // direction of sliding, setting magnitude is straightforward.
       f0 -= contact_tangent * cf[i] * problem_data.mu_sliding[sliding_index++];
     } else {
-      // Determine the tangential force in the world frame.
       f0 += contact_tangent * cf[nc + non_sliding_index++];
     }
 
-    // Update the magnitudes.
-    contact_force_i[0] = contact_normal.dot(f0);
-    contact_force_i[1] = contact_tangent.dot(f0);
+    // Compute the contact force in the contact frame.
+    contact_force_i = contact_frames[i].transpose() * f0;
   }
 }
 
