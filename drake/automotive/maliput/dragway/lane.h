@@ -4,6 +4,7 @@
 
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace maliput {
@@ -66,9 +67,9 @@ class Segment;
   the surface itself. The origin of the lane's frame is defined by the `o` along
   the above-shown `s = 0` line.
 
-  Note: Each dagway lane has a teleportation feature at both ends: the (default)
-  ongoing lane for LaneEnd::kFinish is LaneEnd::kStart of the same lane, and
-  vice versa.
+  Note: Each dragway lane has a teleportation feature at both ends: the
+  (default) ongoing lane for LaneEnd::kFinish is LaneEnd::kStart of the same
+  lane, and vice versa.
 **/
 class Lane final : public api::Lane {
  public:
@@ -99,7 +100,7 @@ class Lane final : public api::Lane {
   ///        the entire reference path.
   ///
   Lane(const Segment* segment, const api::LaneId& id,  int index, double length,
-      double y_offset, const api::RBounds& lane_bounds,
+       double y_offset, const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        const api::HBounds& elevation_bounds);
 
@@ -163,6 +164,22 @@ class Lane final : public api::Lane {
                                      api::GeoPosition* nearest_point,
                                      double* distance) const final;
 
+  api::LanePositionT<double> DoToLanePositionT(
+      const api::GeoPositionT<double>& geo_pos,
+      api::GeoPositionT<double>* nearest_point,
+      double* distance) const final;
+
+  api::LanePositionT<AutoDiffXd> DoToLanePositionT(
+      const api::GeoPositionT<AutoDiffXd>& geo_pos,
+      api::GeoPositionT<AutoDiffXd>* nearest_point,
+      AutoDiffXd* distance) const final;
+
+  template <typename T>
+  api::LanePositionT<T> ImplDoToLanePositionT(
+      const api::GeoPositionT<T>& geo_pos,
+      api::GeoPositionT<T>* nearest_point,
+      T* distance) const;
+
   const Segment* segment_{};  // The segment to which this lane belongs.
   const api::LaneId id_;
   const int index_{};  // The index of this lane within a Segment.
@@ -178,7 +195,6 @@ class Lane final : public api::Lane {
   const api::Lane* lane_to_left_{};
   const api::Lane* lane_to_right_{};
 };
-
 
 }  // namespace dragway
 }  // namespace maliput
