@@ -22,6 +22,9 @@ target_link_libraries(constraint_test drakeOptimization drakeCommon)
 drake_add_cc_test(cost_test)
 target_link_libraries(cost_test drakeOptimization drakeCommon)
 
+drake_add_cc_test(bilinear_product_util_test)
+target_link_libraries(bilinear_product_util_test drakeBilinearProductUtil)
+
 set(drakeOptimizationTestSources
         add_solver_util.cc
         optimization_examples.cc
