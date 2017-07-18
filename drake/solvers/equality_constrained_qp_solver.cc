@@ -1,6 +1,7 @@
 #include "drake/solvers/equality_constrained_qp_solver.h"
 
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -22,7 +23,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // | A  0  | | y | = |  b |
   // for problem variables x and Lagrange multiplier variables y. This
   // corresponds to the QP:
-  // minimize 1/2 x'*G*x + c'*x
+  // minimize 1/2 x'*G*x + c'*x + constant_term
   // s.t.:    A*x = b
   // Approach 1: Solve the full linear system above.
   // Approach 2: Use the Schur complement ("range space" approach).
@@ -58,10 +59,11 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Setup the quadratic cost matrix and linear cost vector.
   Eigen::MatrixXd G = Eigen::MatrixXd::Zero(prog.num_vars(), prog.num_vars());
   Eigen::VectorXd c = Eigen::VectorXd::Zero(prog.num_vars());
+  double constant_term{0};
   for (auto const& binding : prog.quadratic_costs()) {
     const auto& Q = binding.constraint()->Q();
     const auto& b = binding.constraint()->b();
-
+    constant_term += binding.constraint()->c();
     int num_v_variables = binding.variables().rows();
 
     std::vector<size_t> v_index(num_v_variables);
@@ -77,7 +79,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
 
   Eigen::VectorXd x{};
-
+  SolutionResult solver_result{};
   if (num_constraints > 0) {
     // Setup the linear constraints.
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
@@ -115,34 +117,36 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
       // Solve G*x = A'y - c
       x = llt.solve(A.transpose() * lambda - c);
+      solver_result = SolutionResult::kSolutionFound;
+    } else {
+      // The following code assumes that the Hessian is not positive definite.
+      // It uses the singular value decomposition, which is generally overkill
+      // but does provide a useful fallback in the case that the range space
+      // approach above fails.
+
+      // The expanded problem introduces a Lagrangian multiplier for each
+      // linear equality constraint.
+      size_t num_full_vars = prog.num_vars() + num_constraints;
+      Eigen::MatrixXd A_full(num_full_vars, num_full_vars);
+      Eigen::VectorXd b_full(num_full_vars);
+
+      // Set up the big matrix.
+      A_full.block(0, 0, G.rows(), G.cols()) = G;
+      A_full.block(0, G.cols(), A.cols(), A.rows()) = -A.transpose();
+      A_full.block(G.rows(), 0, A.rows(), A.cols()) = A;
+      A_full.block(G.rows(), G.cols(), A.rows(), A.rows()).setZero();
+
+      // Set up the right hand side vector.
+      b_full.segment(0, G.rows()) = -c;
+      b_full.segment(G.rows(), A.rows()) = b;
+
+      // Compute the least-squares solution.
+      Eigen::VectorXd sol =
+          A_full.jacobiSvd(
+              Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
+      x = sol.segment(0, prog.num_vars());
+      solver_result = SolutionResult::kSolutionFound;
     }
-
-    // The following code assumes that the Hessian is not positive definite.
-    // It uses the singular value decomposition, which is generally overkill but
-    // does provide a useful fallback in the case that the range space approach
-    // above fails.
-
-    // The expanded problem introduces a Lagrangian multiplier for each
-    // linear equality constraint.
-    size_t num_full_vars = prog.num_vars() + num_constraints;
-    Eigen::MatrixXd A_full(num_full_vars, num_full_vars);
-    Eigen::VectorXd b_full(num_full_vars);
-
-    // Set up the big matrix.
-    A_full.block(0, 0, G.rows(), G.cols()) = G;
-    A_full.block(0, G.cols(), A.cols(), A.rows()) = -A.transpose();
-    A_full.block(G.rows(), 0, A.rows(), A.cols()) = A;
-    A_full.block(G.rows(), G.cols(), A.rows(), A.rows()).setZero();
-
-    // Set up the right hand side vector.
-    b_full.segment(0, G.rows()) = -c;
-    b_full.segment(G.rows(), A.rows()) = b;
-
-    // Compute the least-squares solution.
-    Eigen::VectorXd sol =
-        A_full.jacobiSvd(
-            Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
-    x = sol.segment(0, prog.num_vars());
   } else {
     // num_constraints = 0
     // Check for positive definite Hessian matrix.
@@ -150,21 +154,47 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     if (llt.info() == Eigen::Success) {
       // G is positive definite.
       x = llt.solve(-c);
+      solver_result = SolutionResult::kSolutionFound;
     } else {
       // G is not strictly positive definite.
-      x = Eigen::VectorXd::Constant(prog.num_vars(), NAN);
-      prog.SetDecisionVariableValues(x);
-      prog.SetOptimalCost(NAN);
-      prog.SetSolverId(id());
-      return SolutionResult::kInvalidInput;
+      // There are two possible cases
+      // 1. If there exists x, s.t G * x = -c, and G is positive semidefinite
+      //    then there are infinitely many optimal solutions, and we will return
+      //    one of the optimal solutions.
+      // 2. Otherwise, if G * x = -c does not have a solution, or G is not
+      //    positive semidefinite, then the problem is unbounded.
+
+      // We first check if G is positive semidefinite, by doing an LDLT
+      // decomposition.
+      Eigen::LDLT<Eigen::MatrixXd> ldlt(G);
+      if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
+        x = Eigen::VectorXd::Constant(prog.num_vars(), NAN);
+        return SolutionResult::kUnbounded;
+      }
+      // G is positive semidefinite.
+      x = ldlt.solve(-c);
+      // The precision 1E-10 here is random.
+      if (!(G * x).isApprox(-c, 1E-10)) {
+        x = Eigen::VectorXd::Constant(prog.num_vars(), NAN);
+        solver_result = SolutionResult::kUnbounded;
+      } else {
+        solver_result = SolutionResult::kSolutionFound;
+      }
     }
   }
 
   prog.SetDecisionVariableValues(x);
-  const double optimal_cost = 0.5 * x.dot(G * x + c);
+  double optimal_cost{};
+  if (solver_result == SolutionResult::kSolutionFound) {
+    optimal_cost = 0.5 * x.dot(G * x) + c.dot(x) + constant_term;
+  } else if (solver_result == SolutionResult::kUnbounded) {
+    optimal_cost = -std::numeric_limits<double>::infinity();
+  } else {
+    optimal_cost = NAN;
+  }
   prog.SetOptimalCost(optimal_cost);
   prog.SetSolverId(id());
-  return SolutionResult::kSolutionFound;
+  return solver_result;
 }
 
 SolverId EqualityConstrainedQPSolver::solver_id() const {
