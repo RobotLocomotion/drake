@@ -9,20 +9,63 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 template <typename T>
-HumanoidPlan<T>* HumanoidManipulationPlan<T>::CloneHumanoidPlanDerived() const {
-  HumanoidManipulationPlan<T>* clone = new HumanoidManipulationPlan<T>();
-  return clone;
+void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
+    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
+    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+  // Knots are constant, the second time doesn't matter as long as it's larger.
+  const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
+
+  // Current com q and v.
+  Vector4<double> xcom;
+  xcom << robot_status.com().head<2>(), robot_status.comd().head<2>();
+  // Set desired com q to current.
+  MatrixX<double> com_d = robot_status.com().head<2>();
+  PiecewisePolynomial<T> zmp_d =
+      PiecewisePolynomial<T>::ZeroOrderHold(times, {com_d, com_d});
+  // Makes a zmp planner that stays still.
+  zmp_planner_.Plan(zmp_d, xcom, zmp_height_);
+
+  // Assumes double support with both feet.
+  ContactState double_support;
+  double_support.insert(alias_groups.get_body("left_foot"));
+  double_support.insert(alias_groups.get_body("right_foot"));
+  this->UpdateContactState(double_support);
+
+  // Sets body tracking trajectories for pelvis and torso.
+  const std::vector<std::string> tracked_body_names = {"pelvis", "torso"};
+  for (const auto& name : tracked_body_names) {
+    const RigidBody<T>* body = alias_groups.get_body(name);
+    Isometry3<T> body_pose = robot_status.robot().CalcBodyPoseInWorldFrame(
+        robot_status.cache(), *body);
+
+    manipulation::PiecewiseCartesianTrajectory<T> body_traj =
+        manipulation::PiecewiseCartesianTrajectory<
+            T>::MakeCubicLinearWithEndLinearVelocity(times,
+                                                     {body_pose, body_pose},
+                                                     Vector3<T>::Zero(),
+                                                     Vector3<T>::Zero());
+    this->set_body_trajectory(body, body_traj);
+  }
 }
 
 template <typename T>
-void HumanoidManipulationPlan<T>::InitializeHumanoidPlanDerived(
+void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
+    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+    QpInput* qp_input) const {
+  // Generates CoM acceleration.
+  Vector4<T> xcom;
+  xcom << robot_status.com().head<2>(), robot_status.comd().head<2>();
+  Vector2<T> comdd_d =
+      zmp_planner_.ComputeOptimalCoMdd(robot_status.time(), xcom);
 
-template <typename T>
-void HumanoidManipulationPlan<T>::ModifyPlanGenericPlanDerived(
-    const HumanoidStatus& robot_stauts, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
+  // Zeros linear and angular momentum change.
+  qp_input->mutable_desired_centroidal_momentum_dot().mutable_values().setZero();
+  // Only sets the xy dimensions of the linear momentum change.
+  qp_input->mutable_desired_centroidal_momentum_dot()
+      .mutable_values()
+      .segment<2>(3) = robot_status.robot().getMass() * comdd_d;
+}
 
 template <typename T>
 void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
@@ -86,9 +129,7 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
         PiecewisePolynomial<T>::Pchip(times, com_knots, true);
     Vector4<T> x_com0;
     x_com0 << robot_status.com().head<2>(), robot_status.comd().head<2>();
-    // TODO: fix this
-    const T height = 1;
-    this->UpdateZmpPlan(zmp_poly, x_com0, height);
+    zmp_planner_.Plan(zmp_poly, x_com0, zmp_height_);
   }
 
   // Generates dof trajectories.
@@ -113,6 +154,11 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
       this->set_body_trajectory(body, body_traj);
     }
   }
+}
+
+template <typename T>
+GenericPlan<T>* HumanoidManipulationPlan<T>::CloneGenericPlanDerived() const {
+  return new HumanoidManipulationPlan<T>(*this);
 }
 
 template class HumanoidManipulationPlan<double>;

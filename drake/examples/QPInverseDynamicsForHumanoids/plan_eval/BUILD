@@ -68,14 +68,12 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
-    name = "humanoid_plan",
+    name = "humanoid_manipulation_plan",
     srcs = [
         "dev/humanoid_manipulation_plan.cc",
-        "dev/humanoid_plan.cc",
     ],
     hdrs = [
         "dev/humanoid_manipulation_plan.h",
-        "dev/humanoid_plan.h",
     ],
     deps = [
         ":generic_plan",
