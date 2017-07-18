@@ -41,6 +41,10 @@ class RotaryEncoders : public SisoVectorSystem<T> {
                  const std::vector<int>& input_vector_indices,
                  const std::vector<int>& ticks_per_revolution);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  RotaryEncoders(const TransmogrifierTag&, const RotaryEncoders<U>&);
+
   /// Calibration offsets are defined as parameters.
   std::unique_ptr<Parameters<T>> AllocateParameters() const override;
 
@@ -63,9 +67,6 @@ class RotaryEncoders : public SisoVectorSystem<T> {
 
   void SetDefaultParameters(const LeafContext<T>& context,
                             Parameters<T>* params) const override;
-
-  // System<T> override.
-  RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   const int num_encoders_{0};       // Dimension of the output port.
   const std::vector<int> indices_;  // Selects from the input port.
