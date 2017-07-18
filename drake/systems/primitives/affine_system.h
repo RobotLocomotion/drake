@@ -142,6 +142,10 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
                const Eigen::Ref<const Eigen::VectorXd>& y0,
                double time_period = 0.0);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  AffineSystem(const TransmogrifierTag&, const AffineSystem<U>&);
+
   /// @name Helper getter methods.
   /// @{
   const Eigen::MatrixXd& A() const { return A_; }
@@ -174,10 +178,6 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
       const drake::systems::Context<T>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const final;
-
-  // System<T> override.
-  AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const final;
-  AffineSystem<symbolic::Expression>* DoToSymbolic() const final;
 
   const Eigen::MatrixXd A_;
   const Eigen::MatrixXd B_;

@@ -33,6 +33,10 @@ class ZeroOrderHold : public LeafSystem<T> {
   /// system will be @p model_value.
   ZeroOrderHold(double period_sec, const AbstractValue& model_value);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  ZeroOrderHold(const TransmogrifierTag&, const ZeroOrderHold<U>&);
+
   ~ZeroOrderHold() override {}
 
   // TODO(eric.cousineau): Create a SisoSystem that is type-agnostic, and
@@ -56,13 +60,10 @@ class ZeroOrderHold : public LeafSystem<T> {
 
 
  protected:
-  // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
+  // Override feedthrough detection to avoid the need for Symbolic
+  // transmogrification over abstract values.
   bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
                               int input_port, int output_port) const override;
-
-  // System<T> override.  Returns a ZeroOrderHold<symbolic::Expression> with
-  // the same dimensions as this ZeroOrderHold.
-  ZeroOrderHold<symbolic::Expression>* DoToSymbolic() const override;
 
   /// Sets the output port value to the vector value that is currently
   /// latched in the zero-order hold.
@@ -91,6 +92,12 @@ class ZeroOrderHold : public LeafSystem<T> {
       State<T>* state) const override;
 
  private:
+  friend class ZeroOrderHold<double>;
+  friend class ZeroOrderHold<AutoDiffXd>;
+  friend class ZeroOrderHold<symbolic::Expression>;
+
+  ZeroOrderHold(double period_sec, int size, const AbstractValue* model_value);
+
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 
   const double period_sec_{};

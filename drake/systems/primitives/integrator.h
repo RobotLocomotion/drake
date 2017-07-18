@@ -30,6 +30,12 @@ class Integrator : public SisoVectorSystem<T> {
   /// Constructs an %Integrator system.
   /// @param size number of elements in the signal to be processed.
   explicit Integrator(int size);
+
+  /// Transmogrification constructor.
+  template <typename U>
+  Integrator(const TransmogrifierTag&, const Integrator<U>&);
+
+  /// Destructor.
   ~Integrator() override;
 
   /// Sets the value of the integral modifying the state in the context.
@@ -37,21 +43,7 @@ class Integrator : public SisoVectorSystem<T> {
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
-  // Returns an Integrator<AutoDiffXd> with the same dimensions as this
-  // Integrator.
-  std::unique_ptr<Integrator<AutoDiffXd>> ToAutoDiffXd() const {
-    return std::unique_ptr<Integrator<AutoDiffXd>>(DoToAutoDiffXd());
-  }
-
  protected:
-  // System<T> override.  Returns an Integrator<AutoDiffXd> with the same
-  // dimensions as this Integrator.
-  Integrator<AutoDiffXd>* DoToAutoDiffXd() const override;
-
-  // System<T> override.  Returns an Integrator<symbolic::Expression> with the
-  // same dimensions as this Integrator.
-  Integrator<symbolic::Expression>* DoToSymbolic() const override;
-
   // SisoVectorSystem<T> override.
   void DoCalcVectorOutput(
       const Context<T>& context,

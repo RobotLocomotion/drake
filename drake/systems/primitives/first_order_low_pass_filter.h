@@ -61,6 +61,11 @@ class FirstOrderLowPassFilter : public SisoVectorSystem<T> {
   ///                           vector must be positive.
   explicit FirstOrderLowPassFilter(const VectorX<double>& time_constants);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  FirstOrderLowPassFilter(const TransmogrifierTag&,
+                          const FirstOrderLowPassFilter<U>&);
+
   /// Returns the time constant of the filter for filters that have the same
   /// time constant τ for all signals.
   /// This method aborts if called on filters if with different time constants
@@ -88,10 +93,6 @@ class FirstOrderLowPassFilter : public SisoVectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
-
-  // System<T> override. Returns a FirstOrderLowPassFilter<symbolic::Expression>
-  // with the same time constants and dimensions as this filter.
-  FirstOrderLowPassFilter<symbolic::Expression>* DoToSymbolic() const override;
 
   const VectorX<double> time_constants_;
 };
